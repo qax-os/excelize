@@ -29,7 +29,7 @@ func setContentTypes(file []FileList, index int) []FileList {
 	var content xlsxTypes
 	xml.Unmarshal([]byte(readXml(file, `[Content_Types].xml`)), &content)
 	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    fmt.Sprintf("/xl/worksheets/sheet%d.xml", index),
+		PartName:    `/xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`,
 		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
 	})
 	output, err := xml.MarshalIndent(content, "", "")
@@ -50,7 +50,7 @@ func setSheet(file []FileList, index int) []FileList {
 	if err != nil {
 		fmt.Println(err)
 	}
-	path := fmt.Sprintf("xl/worksheets/sheet%d.xml", index)
+	path := `xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`
 	return saveFileList(file, path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
@@ -86,7 +86,7 @@ func addXlsxWorkbookRels(file []FileList, sheet int) []FileList {
 	rId := len(content.Relationships) + 1
 	content.Relationships = append(content.Relationships, xlsxWorkbookRelation{
 		Id:     "rId" + strconv.Itoa(rId),
-		Target: fmt.Sprintf("worksheets/sheet%d.xml", sheet),
+		Target: `worksheets/sheet` + strconv.Itoa(sheet) + `.xml`,
 		Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
 	})
 	output, err := xml.MarshalIndent(content, "", "")
@@ -150,7 +150,7 @@ func SetActiveSheet(file []FileList, index int) []FileList {
 	for i := 0; i < sheets; i++ {
 		xlsx := xlsxWorksheet{}
 		sheetIndex := i + 1
-		path := fmt.Sprintf("xl/worksheets/sheet%d.xml", sheetIndex)
+		path := `xl/worksheets/sheet` + strconv.Itoa(sheetIndex) + `.xml`
 		xml.Unmarshal([]byte(readXml(file, path)), &xlsx)
 		if index == sheetIndex {
 			if len(xlsx.SheetViews.SheetView) > 0 {

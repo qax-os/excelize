@@ -16,8 +16,6 @@ Excelize is a library written in pure Golang and providing a set of function tha
 
 ### Installation
 
-Golang version requirements 1.6.0 or higher.
-
 ```
 go get github.com/Luxurioust/excelize
 ```

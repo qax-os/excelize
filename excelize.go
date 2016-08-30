@@ -34,7 +34,7 @@ func SetCellInt(file []FileList, sheet string, axis string, value int) []FileLis
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
 
-	name := fmt.Sprintf("xl/worksheets/%s.xml", strings.ToLower(sheet))
+	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
 	xml.Unmarshal([]byte(readXml(file, name)), &xlsx)
 
 	rows := xAxis + 1
@@ -65,7 +65,7 @@ func SetCellStr(file []FileList, sheet string, axis string, value string) []File
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
 
-	name := fmt.Sprintf("xl/worksheets/%s.xml", strings.ToLower(sheet))
+	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
 	xml.Unmarshal([]byte(readXml(file, name)), &xlsx)
 
 	rows := xAxis + 1
