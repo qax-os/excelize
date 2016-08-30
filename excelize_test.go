@@ -2,19 +2,9 @@ package excelize
 
 import (
 	"fmt"
-	"math/rand"
-	"sync"
+	"strconv"
 	"testing"
-	"time"
 )
-
-var (
-	once sync.Once
-)
-
-func testSetup() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func TestExcelize(t *testing.T) {
 	// Test update a XLSX file
@@ -32,7 +22,7 @@ func TestExcelize(t *testing.T) {
 		fmt.Println(err)
 	}
 	for i := 1; i <= 300; i++ {
-		file = SetCellStr(file, "SHEET3", fmt.Sprintf("c%d", i), randToken(5))
+		file = SetCellStr(file, "SHEET3", fmt.Sprintf("c%d", i), strconv.Itoa(i))
 	}
 	err = Save(file, "./test/Workbook_2.xlsx")
 
@@ -46,10 +36,4 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-}
-
-func randToken(length int) string {
-	b := make([]byte, length)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
 }
