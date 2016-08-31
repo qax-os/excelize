@@ -41,6 +41,7 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	GetCellValue(file, "Sheet2", "a-1")
 	GetCellValue(file, "Sheet2", "a5")
 	GetCellValue(file, "Sheet2", "D11")
 	GetCellValue(file, "Sheet2", "D12")

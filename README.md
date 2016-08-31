@@ -4,6 +4,7 @@
 
 [![Build Status](https://travis-ci.org/Luxurioust/excelize.svg?branch=master)](https://travis-ci.org/Luxurioust/excelize)
 [![Code Coverage](https://codecov.io/gh/Luxurioust/excelize/branch/master/graph/badge.svg)](https://codecov.io/gh/Luxurioust/excelize)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Luxurioust/excelize)](https://goreportcard.com/report/github.com/Luxurioust/excelize)
 [![GoDoc](https://godoc.org/github.com/Luxurioust/excelize?status.svg)](https://godoc.org/github.com/Luxurioust/excelize)
 [![Licenses](https://img.shields.io/badge/license-bsd-orange.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Join the chat at https://gitter.im/xuri-excelize/Lobby](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/xuri-excelize/Lobby)
@@ -78,6 +79,10 @@ func main() {
 ## Contributing
 
 Contributions are welcome! Open a pull request to fix a bug, or open an issue to discuss a new feature or change.
+
+### Credits
+
+Some struct of XML originally by [tealeg/xlsx](https://github.com/tealeg/xlsx).
 
 ## Licenses
 

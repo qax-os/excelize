@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -98,15 +97,6 @@ func titleToNumber(s string) int {
 		weight++
 	}
 	return sum - 1
-}
-
-// Check the file exists
-func pathExist(_path string) bool {
-	_, err := os.Stat(_path)
-	if err != nil && os.IsNotExist(err) {
-		return false
-	}
-	return true
 }
 
 // Split Excel sheet column title to string and integer, return XAxis
