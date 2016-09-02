@@ -42,7 +42,6 @@ func SetCellInt(file []FileList, sheet string, axis string, value int) []FileLis
 	cell := yAxis + 1
 
 	xlsx = checkRow(xlsx)
-
 	xlsx = completeRow(xlsx, rows, cell)
 	xlsx = completeCol(xlsx, rows, cell)
 
@@ -173,6 +172,9 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 	for k, v := range xlsx.SheetData.Row {
 		lenCol := len(v.C)
+		if lenCol < 1 {
+			continue
+		}
 		endR := getColIndex(v.C[lenCol-1].R)
 		endRow := getRowIndex(v.C[lenCol-1].R)
 		endCol := titleToNumber(endR)
