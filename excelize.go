@@ -8,12 +8,13 @@ import (
 	"strings"
 )
 
+// FileList define a populated xlsx.File struct.
 type FileList struct {
 	Key   string
 	Value string
 }
 
-// OpenFile() take the name of an XLSX file and returns a populated
+// OpenFile take the name of an XLSX file and returns a populated
 // xlsx.File struct for it.
 func OpenFile(filename string) (file []FileList, err error) {
 	var f *zip.ReadCloser
@@ -25,7 +26,7 @@ func OpenFile(filename string) (file []FileList, err error) {
 	return
 }
 
-// Set int type value of a cell
+// SetCellInt provide function to set int type value of a cell
 func SetCellInt(file []FileList, sheet string, axis string, value int) []FileList {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -35,7 +36,7 @@ func SetCellInt(file []FileList, sheet string, axis string, value int) []FileLis
 	yAxis := titleToNumber(col)
 
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-	xml.Unmarshal([]byte(readXml(file, name)), &xlsx)
+	xml.Unmarshal([]byte(readXML(file, name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -56,7 +57,7 @@ func SetCellInt(file []FileList, sheet string, axis string, value int) []FileLis
 	return file
 }
 
-// Set string type value of a cell
+// SetCellStr provide function to set string type value of a cell
 func SetCellStr(file []FileList, sheet string, axis string, value string) []FileList {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -66,7 +67,7 @@ func SetCellStr(file []FileList, sheet string, axis string, value string) []File
 	yAxis := titleToNumber(col)
 
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-	xml.Unmarshal([]byte(readXml(file, name)), &xlsx)
+	xml.Unmarshal([]byte(readXML(file, name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1

@@ -6,23 +6,20 @@ import (
 	"os"
 )
 
-// Create a new xlsx file
-//
+// CreateFile provide function to create new file by default template
 // For example:
-//
 // xlsx := CreateFile()
-//
 func CreateFile() []FileList {
 	var file []FileList
-	file = saveFileList(file, `_rels/.rels`, TEMPLATE_RELS)
-	file = saveFileList(file, `docProps/app.xml`, TEMPLATE_DOCPROPS_APP)
-	file = saveFileList(file, `docProps/core.xml`, TEMPLATE_DOCPROPS_CORE)
-	file = saveFileList(file, `xl/_rels/workbook.xml.rels`, TEMPLATE_WORKBOOK_RELS)
-	file = saveFileList(file, `xl/theme/theme1.xml`, TEMPLATE_THEME)
-	file = saveFileList(file, `xl/worksheets/sheet1.xml`, TEMPLATE_SHEET)
-	file = saveFileList(file, `xl/styles.xml`, TEMPLATE_STYLES)
-	file = saveFileList(file, `xl/workbook.xml`, TEMPLATE_WORKBOOK)
-	file = saveFileList(file, `[Content_Types].xml`, TEMPLATE_CONTENT_TYPES)
+	file = saveFileList(file, `_rels/.rels`, templateRels)
+	file = saveFileList(file, `docProps/app.xml`, templateDocpropsApp)
+	file = saveFileList(file, `docProps/core.xml`, templateDocpropsCore)
+	file = saveFileList(file, `xl/_rels/workbook.xml.rels`, templateWorkbookRels)
+	file = saveFileList(file, `xl/theme/theme1.xml`, templateTheme)
+	file = saveFileList(file, `xl/worksheets/sheet1.xml`, templateSheet)
+	file = saveFileList(file, `xl/styles.xml`, templateStyles)
+	file = saveFileList(file, `xl/workbook.xml`, templateWorkbook)
+	file = saveFileList(file, `[Content_Types].xml`, templateContentTypes)
 	return file
 }
 

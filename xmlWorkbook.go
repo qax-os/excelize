@@ -23,7 +23,7 @@ type xlsxWorkbookRels struct {
 
 // xmlxWorkbookRelation maps sheet id and xl/worksheets/sheet%d.xml
 type xlsxWorkbookRelation struct {
-	Id     string `xml:",attr"`
+	ID     string `xml:"Id,attr"`
 	Target string `xml:",attr"`
 	Type   string `xml:",attr"`
 }
@@ -118,8 +118,8 @@ type xlsxSheets struct {
 // as I need.
 type xlsxSheet struct {
 	Name    string `xml:"name,attr,omitempty"`
-	SheetId string `xml:"sheetId,attr,omitempty"`
-	Id      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+	SheetID string `xml:"sheetId,attr,omitempty"`
+	ID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	State   string `xml:"state,attr,omitempty"`
 }
 
@@ -161,7 +161,7 @@ type xlsxDefinedName struct {
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxCalcPr struct {
-	CalcId       string  `xml:"calcId,attr,omitempty"`
+	CalcID       string  `xml:"calcId,attr,omitempty"`
 	IterateCount int     `xml:"iterateCount,attr,omitempty"`
 	RefMode      string  `xml:"refMode,attr,omitempty"`
 	Iterate      bool    `xml:"iterate,attr,omitempty"`

@@ -28,7 +28,7 @@ type xlsxWorksheet struct {
 
 // xlsxDrawing change r:id to rid in the namespace
 type xlsxDrawing struct {
-	RId string `xml:"rid,attr"`
+	RID string `xml:"rid,attr"`
 }
 
 // xlsxHeaderFooter directly maps the headerFooter element in the namespace
@@ -144,7 +144,7 @@ type xlsxSheetView struct {
 	// ZoomScale               float64         `xml:"zoomScale,attr"`
 	// ZoomScaleNormal         float64         `xml:"zoomScaleNormal,attr"`
 	// ZoomScalePageLayoutView float64         `xml:"zoomScalePageLayoutView,attr"`
-	WorkbookViewId int             `xml:"workbookViewId,attr"`
+	WorkbookViewID int             `xml:"workbookViewId,attr"`
 	Selection      []xlsxSelection `xml:"selection"`
 	Pane           *xlsxPane       `xml:"pane,omitempty"`
 }
@@ -156,7 +156,7 @@ type xlsxSheetView struct {
 type xlsxSelection struct {
 	Pane         string `xml:"pane,attr,omitempty"`
 	ActiveCell   string `xml:"activeCell,attr"`
-	ActiveCellId int    `xml:"activeCellId,attr"`
+	ActiveCellID int    `xml:"activeCellId,attr"`
 	SQRef        string `xml:"sqref,attr"`
 }
 

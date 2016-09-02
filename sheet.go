@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-// Create a new sheet by given index, when creating a new XLSX file,
-// the default sheet will be create, when you create a new file, you
-//  need to ensure that the index is continuous.
+// NewSheet provice function to greate a new sheet by given index, when
+//  creating a new XLSX file, the default sheet will be create, when you
+//  create a new file, you need to ensure that the index is continuous.
 func NewSheet(file []FileList, index int, name string) []FileList {
 	// Update docProps/app.xml
-	file = setAppXml(file)
+	file = setAppXML(file)
 	// Update [Content_Types].xml
 	file = setContentTypes(file, index)
 	// Create new sheet /xl/worksheets/sheet%d.xml
@@ -27,7 +27,7 @@ func NewSheet(file []FileList, index int, name string) []FileList {
 // Read and update property of contents type of XLSX
 func setContentTypes(file []FileList, index int) []FileList {
 	var content xlsxTypes
-	xml.Unmarshal([]byte(readXml(file, `[Content_Types].xml`)), &content)
+	xml.Unmarshal([]byte(readXML(file, `[Content_Types].xml`)), &content)
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    `/xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`,
 		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
@@ -44,7 +44,7 @@ func setSheet(file []FileList, index int) []FileList {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
-		WorkbookViewId: 0,
+		WorkbookViewID: 0,
 	})
 	output, err := xml.MarshalIndent(xlsx, "", "")
 	if err != nil {
@@ -57,14 +57,14 @@ func setSheet(file []FileList, index int) []FileList {
 // Update workbook property of XLSX
 func setWorkbook(file []FileList, index int, name string) []FileList {
 	var content xlsxWorkbook
-	xml.Unmarshal([]byte(readXml(file, `xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(readXML(file, `xl/workbook.xml`)), &content)
 
 	rels := readXlsxWorkbookRels(file)
-	rId := len(rels.Relationships)
+	rID := len(rels.Relationships)
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    name,
-		SheetId: strconv.Itoa(index),
-		Id:      "rId" + strconv.Itoa(rId),
+		SheetID: strconv.Itoa(index),
+		ID:      "rId" + strconv.Itoa(rID),
 	})
 	output, err := xml.MarshalIndent(content, "", "")
 	if err != nil {
@@ -76,16 +76,16 @@ func setWorkbook(file []FileList, index int, name string) []FileList {
 // Read and unmarshal workbook relationships of XLSX
 func readXlsxWorkbookRels(file []FileList) xlsxWorkbookRels {
 	var content xlsxWorkbookRels
-	xml.Unmarshal([]byte(readXml(file, `xl/_rels/workbook.xml.rels`)), &content)
+	xml.Unmarshal([]byte(readXML(file, `xl/_rels/workbook.xml.rels`)), &content)
 	return content
 }
 
 // Update workbook relationships property of XLSX
 func addXlsxWorkbookRels(file []FileList, sheet int) []FileList {
 	content := readXlsxWorkbookRels(file)
-	rId := len(content.Relationships) + 1
+	rID := len(content.Relationships) + 1
 	content.Relationships = append(content.Relationships, xlsxWorkbookRelation{
-		Id:     "rId" + strconv.Itoa(rId),
+		ID:     "rId" + strconv.Itoa(rID),
 		Target: `worksheets/sheet` + strconv.Itoa(sheet) + `.xml`,
 		Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
 	})
@@ -97,8 +97,8 @@ func addXlsxWorkbookRels(file []FileList, sheet int) []FileList {
 }
 
 // Update docProps/app.xml file of XML
-func setAppXml(file []FileList) []FileList {
-	return saveFileList(file, `docProps/app.xml`, TEMPLATE_DOCPROPS_APP)
+func setAppXML(file []FileList) []FileList {
+	return saveFileList(file, `docProps/app.xml`, templateDocpropsApp)
 }
 
 // Some tools that read XLSX files have very strict requirements about
@@ -125,14 +125,14 @@ func replaceRelationshipsID(workbookMarshal string) string {
 	return strings.Replace(rids, `<drawing rid="`, `<drawing r:id="`, -1)
 }
 
-// Set default active sheet of XLSX by given index
+// SetActiveSheet provide function to set default active sheet of XLSX by given index
 func SetActiveSheet(file []FileList, index int) []FileList {
 	var content xlsxWorkbook
 	if index < 1 {
 		index = 1
 	}
-	index -= 1
-	xml.Unmarshal([]byte(readXml(file, `xl/workbook.xml`)), &content)
+	index--
+	xml.Unmarshal([]byte(readXML(file, `xl/workbook.xml`)), &content)
 	if len(content.BookViews.WorkBookView) > 0 {
 		content.BookViews.WorkBookView[0].ActiveTab = index
 	} else {
@@ -146,12 +146,12 @@ func SetActiveSheet(file []FileList, index int) []FileList {
 		fmt.Println(err)
 	}
 	file = saveFileList(file, `xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
-	index += 1
+	index++
 	for i := 0; i < sheets; i++ {
 		xlsx := xlsxWorksheet{}
 		sheetIndex := i + 1
 		path := `xl/worksheets/sheet` + strconv.Itoa(sheetIndex) + `.xml`
-		xml.Unmarshal([]byte(readXml(file, path)), &xlsx)
+		xml.Unmarshal([]byte(readXML(file, path)), &xlsx)
 		if index == sheetIndex {
 			if len(xlsx.SheetViews.SheetView) > 0 {
 				xlsx.SheetViews.SheetView[0].TabSelected = true
