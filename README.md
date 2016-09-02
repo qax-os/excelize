@@ -39,7 +39,7 @@ func main() {
     xlsx = excelize.NewSheet(xlsx, 3, "Sheet3")
     xlsx = excelize.SetCellInt(xlsx, "Sheet2", "A23", 10)
     xlsx = excelize.SetCellStr(xlsx, "Sheet3", "B20", "Hello")
-    err := excelize.Save(xlsx, "~/Workbook.xlsx")
+    err := excelize.Save(xlsx, "/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
     }
@@ -59,7 +59,7 @@ import (
 )
 
 func main() {
-    xlsx, err := excelize.OpenFile("~/Workbook.xlsx")
+    xlsx, err := excelize.OpenFile("/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
     }
@@ -87,7 +87,7 @@ import (
 )
 
 func main() {
-    xlsx, err := excelize.OpenFile("~/Workbook.xlsx")
+    xlsx, err := excelize.OpenFile("/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
     }

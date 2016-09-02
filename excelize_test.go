@@ -51,10 +51,13 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	// Test given illegal rows number
 	GetCellValue(file, "Sheet2", "a-1")
+	// Test given lowercase column number
 	GetCellValue(file, "Sheet2", "a5")
 	GetCellValue(file, "Sheet2", "C11")
 	GetCellValue(file, "Sheet2", "D11")
 	GetCellValue(file, "Sheet2", "D12")
-	GetCellValue(file, "Sheet2", "E12")
+	// Test given axis large than exists row
+	GetCellValue(file, "Sheet2", "E13")
 }
