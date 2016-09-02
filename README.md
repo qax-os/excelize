@@ -69,10 +69,30 @@ func main() {
     xlsx = excelize.SetCellInt(xlsx, "Sheet3", "A23", 10)
     xlsx = excelize.SetCellStr(xlsx, "Sheet3", "b230", "World")
     xlsx = excelize.SetActiveSheet(xlsx, 2)
+    err = excelize.Save(xlsx, "~/Workbook.xlsx")
+        if err != nil {
+        fmt.Println(err)
+    }
+}
+```
+
+### Reading XLSX files
+
+```
+package main
+
+import (
+    "fmt"
+    "github.com/Luxurioust/excelize"
+)
+
+func main() {
+    xlsx, err := excelize.OpenFile("~/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
     }
-    err = excelize.Save(xlsx, "~/Workbook.xlsx")
+    cell := excelize.GetCellValue(file, "Sheet2", "D11")
+    fmt.Println(cell)
 }
 ```
 

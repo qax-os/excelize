@@ -3,7 +3,6 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"fmt"
 	"os"
 )
 
@@ -34,7 +33,7 @@ func Save(files []FileList, name string) error {
 	for _, file := range files {
 		f, err := w.Create(file.Key)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 		_, err = f.Write([]byte(file.Value))
 		if err != nil {
