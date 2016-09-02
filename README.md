@@ -69,7 +69,7 @@ func main() {
     xlsx = excelize.SetCellInt(xlsx, "Sheet3", "A23", 10)
     xlsx = excelize.SetCellStr(xlsx, "Sheet3", "b230", "World")
     xlsx = excelize.SetActiveSheet(xlsx, 2)
-    err = excelize.Save(xlsx, "~/Workbook.xlsx")
+    err = excelize.Save(xlsx, "/home/Workbook.xlsx")
         if err != nil {
         fmt.Println(err)
     }
