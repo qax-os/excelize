@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"archive/zip"
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -48,7 +49,7 @@ func SetCellInt(file []FileList, sheet string, axis string, value int) []FileLis
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
 
-	output, err := xml.MarshalIndent(xlsx, "", "")
+	output, err := xml.Marshal(xlsx)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -78,7 +79,7 @@ func SetCellStr(file []FileList, sheet string, axis string, value string) []File
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 
-	output, err := xml.MarshalIndent(xlsx, "", "")
+	output, err := xml.Marshal(xlsx)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -95,13 +96,17 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 			})
 		}
 	}
+	buffer := bytes.Buffer{}
 	for k, v := range xlsx.SheetData.Row {
 		if len(v.C) < cell {
 			start := len(v.C)
 			for iii := start; iii < cell; iii++ {
+				buffer.WriteString(toAlphaString(iii + 1))
+				buffer.WriteString(strconv.Itoa(k + 1))
 				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, xlsxC{
-					R: toAlphaString(iii+1) + strconv.Itoa(k+1),
+					R: buffer.String(),
 				})
+				buffer.Reset()
 			}
 		}
 	}
@@ -116,14 +121,17 @@ func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 				R: i + 1,
 			})
 		}
-
+		buffer := bytes.Buffer{}
 		for ii := 0; ii < row; ii++ {
 			start := len(xlsx.SheetData.Row[ii].C)
 			if start == 0 {
 				for iii := start; iii < cell; iii++ {
+					buffer.WriteString(toAlphaString(iii + 1))
+					buffer.WriteString(strconv.Itoa(ii + 1))
 					xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
-						R: toAlphaString(iii+1) + strconv.Itoa(ii+1),
+						R: buffer.String(),
 					})
+					buffer.Reset()
 				}
 			}
 		}
@@ -170,6 +178,7 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 //  </row>
 //
 func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
+	buffer := bytes.Buffer{}
 	for k, v := range xlsx.SheetData.Row {
 		lenCol := len(v.C)
 		if lenCol < 1 {
@@ -183,10 +192,12 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 			xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
 			tmp := []xlsxC{}
 			for i := 0; i <= endCol; i++ {
-				fixAxis := toAlphaString(i+1) + strconv.Itoa(endRow)
+				buffer.WriteString(toAlphaString(i + 1))
+				buffer.WriteString(strconv.Itoa(endRow))
 				tmp = append(tmp, xlsxC{
-					R: fixAxis,
+					R: buffer.String(),
 				})
+				buffer.Reset()
 			}
 			xlsx.SheetData.Row[k].C = tmp
 			for _, y := range oldRow {

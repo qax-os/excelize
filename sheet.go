@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -32,7 +33,7 @@ func setContentTypes(file []FileList, index int) []FileList {
 		PartName:    `/xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`,
 		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
 	})
-	output, err := xml.MarshalIndent(content, "", "")
+	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -46,7 +47,7 @@ func setSheet(file []FileList, index int) []FileList {
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
 		WorkbookViewID: 0,
 	})
-	output, err := xml.MarshalIndent(xlsx, "", "")
+	output, err := xml.Marshal(xlsx)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -66,7 +67,7 @@ func setWorkbook(file []FileList, index int, name string) []FileList {
 		SheetID: strconv.Itoa(index),
 		ID:      "rId" + strconv.Itoa(rID),
 	})
-	output, err := xml.MarshalIndent(content, "", "")
+	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -84,12 +85,19 @@ func readXlsxWorkbookRels(file []FileList) xlsxWorkbookRels {
 func addXlsxWorkbookRels(file []FileList, sheet int) []FileList {
 	content := readXlsxWorkbookRels(file)
 	rID := len(content.Relationships) + 1
+	ID := bytes.Buffer{}
+	ID.WriteString("rId")
+	ID.WriteString(strconv.Itoa(rID))
+	target := bytes.Buffer{}
+	target.WriteString(`worksheets/sheet`)
+	target.WriteString(strconv.Itoa(sheet))
+	target.WriteString(`.xml`)
 	content.Relationships = append(content.Relationships, xlsxWorkbookRelation{
-		ID:     "rId" + strconv.Itoa(rID),
-		Target: `worksheets/sheet` + strconv.Itoa(sheet) + `.xml`,
+		ID:     ID.String(),
+		Target: target.String(),
 		Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
 	})
-	output, err := xml.MarshalIndent(content, "", "")
+	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -141,17 +149,20 @@ func SetActiveSheet(file []FileList, index int) []FileList {
 		})
 	}
 	sheets := len(content.Sheets.Sheet)
-	output, err := xml.MarshalIndent(content, "", "")
+	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
 	file = saveFileList(file, `xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
 	index++
+	buffer := bytes.Buffer{}
 	for i := 0; i < sheets; i++ {
 		xlsx := xlsxWorksheet{}
 		sheetIndex := i + 1
-		path := `xl/worksheets/sheet` + strconv.Itoa(sheetIndex) + `.xml`
-		xml.Unmarshal([]byte(readXML(file, path)), &xlsx)
+		buffer.WriteString(`xl/worksheets/sheet`)
+		buffer.WriteString(strconv.Itoa(sheetIndex))
+		buffer.WriteString(`.xml`)
+		xml.Unmarshal([]byte(readXML(file, buffer.String())), &xlsx)
 		if index == sheetIndex {
 			if len(xlsx.SheetViews.SheetView) > 0 {
 				xlsx.SheetViews.SheetView[0].TabSelected = true
@@ -165,11 +176,12 @@ func SetActiveSheet(file []FileList, index int) []FileList {
 				xlsx.SheetViews.SheetView[0].TabSelected = false
 			}
 		}
-		sheet, err := xml.MarshalIndent(xlsx, "", "")
+		sheet, err := xml.Marshal(xlsx)
 		if err != nil {
 			fmt.Println(err)
 		}
-		file = saveFileList(file, path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(sheet))))
+		file = saveFileList(file, buffer.String(), replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(sheet))))
+		buffer.Reset()
 	}
 	return file
 }
