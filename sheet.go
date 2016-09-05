@@ -11,7 +11,7 @@ import (
 // NewSheet provice function to greate a new sheet by given index, when
 //  creating a new XLSX file, the default sheet will be create, when you
 //  create a new file, you need to ensure that the index is continuous.
-func NewSheet(file []FileList, index int, name string) []FileList {
+func NewSheet(file map[string]string, index int, name string) map[string]string {
 	// Update docProps/app.xml
 	file = setAppXML(file)
 	// Update [Content_Types].xml
@@ -26,7 +26,7 @@ func NewSheet(file []FileList, index int, name string) []FileList {
 }
 
 // Read and update property of contents type of XLSX
-func setContentTypes(file []FileList, index int) []FileList {
+func setContentTypes(file map[string]string, index int) map[string]string {
 	var content xlsxTypes
 	xml.Unmarshal([]byte(readXML(file, `[Content_Types].xml`)), &content)
 	content.Overrides = append(content.Overrides, xlsxOverride{
@@ -41,7 +41,7 @@ func setContentTypes(file []FileList, index int) []FileList {
 }
 
 // Update sheet property by given index
-func setSheet(file []FileList, index int) []FileList {
+func setSheet(file map[string]string, index int) map[string]string {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
@@ -56,7 +56,7 @@ func setSheet(file []FileList, index int) []FileList {
 }
 
 // Update workbook property of XLSX
-func setWorkbook(file []FileList, index int, name string) []FileList {
+func setWorkbook(file map[string]string, index int, name string) map[string]string {
 	var content xlsxWorkbook
 	xml.Unmarshal([]byte(readXML(file, `xl/workbook.xml`)), &content)
 
@@ -75,14 +75,14 @@ func setWorkbook(file []FileList, index int, name string) []FileList {
 }
 
 // Read and unmarshal workbook relationships of XLSX
-func readXlsxWorkbookRels(file []FileList) xlsxWorkbookRels {
+func readXlsxWorkbookRels(file map[string]string) xlsxWorkbookRels {
 	var content xlsxWorkbookRels
 	xml.Unmarshal([]byte(readXML(file, `xl/_rels/workbook.xml.rels`)), &content)
 	return content
 }
 
 // Update workbook relationships property of XLSX
-func addXlsxWorkbookRels(file []FileList, sheet int) []FileList {
+func addXlsxWorkbookRels(file map[string]string, sheet int) map[string]string {
 	content := readXlsxWorkbookRels(file)
 	rID := len(content.Relationships) + 1
 	ID := bytes.Buffer{}
@@ -105,7 +105,7 @@ func addXlsxWorkbookRels(file []FileList, sheet int) []FileList {
 }
 
 // Update docProps/app.xml file of XML
-func setAppXML(file []FileList) []FileList {
+func setAppXML(file map[string]string) map[string]string {
 	return saveFileList(file, `docProps/app.xml`, templateDocpropsApp)
 }
 
@@ -134,7 +134,7 @@ func replaceRelationshipsID(workbookMarshal string) string {
 }
 
 // SetActiveSheet provide function to set default active sheet of XLSX by given index
-func SetActiveSheet(file []FileList, index int) []FileList {
+func SetActiveSheet(file map[string]string, index int) map[string]string {
 	var content xlsxWorkbook
 	if index < 1 {
 		index = 1

@@ -14,51 +14,32 @@ import (
 // ReadZip takes a pointer to a zip.ReadCloser and returns a
 // xlsx.File struct populated with its contents. In most cases
 // ReadZip is not used directly, but is called internally by OpenFile.
-func ReadZip(f *zip.ReadCloser) ([]FileList, error) {
+func ReadZip(f *zip.ReadCloser) (map[string]string, error) {
 	defer f.Close()
 	return ReadZipReader(&f.Reader)
 }
 
 // ReadZipReader can be used to read an XLSX in memory without
 // touching the filesystem.
-func ReadZipReader(r *zip.Reader) ([]FileList, error) {
-	var fileList []FileList
+func ReadZipReader(r *zip.Reader) (map[string]string, error) {
+	fileList := make(map[string]string)
 	for _, v := range r.File {
-		singleFile := FileList{
-			Key:   v.Name,
-			Value: readFile(v),
-		}
-		fileList = append(fileList, singleFile)
+		fileList[v.Name] = readFile(v)
 	}
 	return fileList, nil
 }
 
 // Read XML content as string and replace drawing property in XML namespace of sheet
-func readXML(files []FileList, name string) string {
-	for _, file := range files {
-		if file.Key == name {
-			return strings.Replace(file.Value, "<drawing r:id=", "<drawing rid=", -1)
-		}
+func readXML(files map[string]string, name string) string {
+	if content, ok := files[name]; ok {
+		return strings.Replace(content, "<drawing r:id=", "<drawing rid=", -1)
 	}
 	return ``
 }
 
 // Update given file content in file list of XLSX
-func saveFileList(files []FileList, name string, content string) []FileList {
-	for k, v := range files {
-		if v.Key == name {
-			files = files[:k+copy(files[k:], files[k+1:])]
-			files = append(files, FileList{
-				Key:   name,
-				Value: XMLHeader + content,
-			})
-			return files
-		}
-	}
-	files = append(files, FileList{
-		Key:   name,
-		Value: XMLHeader + content,
-	})
+func saveFileList(files map[string]string, name string, content string) map[string]string {
+	files[name] = XMLHeader + content
 	return files
 }
 

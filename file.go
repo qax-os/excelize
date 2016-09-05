@@ -9,8 +9,8 @@ import (
 // CreateFile provide function to create new file by default template
 // For example:
 // xlsx := CreateFile()
-func CreateFile() []FileList {
-	var file []FileList
+func CreateFile() map[string]string {
+	file := make(map[string]string)
 	file = saveFileList(file, `_rels/.rels`, templateRels)
 	file = saveFileList(file, `docProps/app.xml`, templateDocpropsApp)
 	file = saveFileList(file, `docProps/core.xml`, templateDocpropsCore)
@@ -24,15 +24,15 @@ func CreateFile() []FileList {
 }
 
 // Save after create or update to an xlsx file at the provided path.
-func Save(files []FileList, name string) error {
+func Save(files map[string]string, name string) error {
 	buf := new(bytes.Buffer)
 	w := zip.NewWriter(buf)
-	for _, file := range files {
-		f, err := w.Create(file.Key)
+	for path, content := range files {
+		f, err := w.Create(path)
 		if err != nil {
 			return err
 		}
-		_, err = f.Write([]byte(file.Value))
+		_, err = f.Write([]byte(content))
 		if err != nil {
 			return err
 		}

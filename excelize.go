@@ -17,7 +17,7 @@ type FileList struct {
 
 // OpenFile take the name of an XLSX file and returns a populated
 // xlsx.File struct for it.
-func OpenFile(filename string) (file []FileList, err error) {
+func OpenFile(filename string) (file map[string]string, err error) {
 	var f *zip.ReadCloser
 	f, err = zip.OpenReader(filename)
 	if err != nil {
@@ -28,7 +28,7 @@ func OpenFile(filename string) (file []FileList, err error) {
 }
 
 // SetCellInt provide function to set int type value of a cell
-func SetCellInt(file []FileList, sheet string, axis string, value int) []FileList {
+func SetCellInt(file map[string]string, sheet string, axis string, value int) map[string]string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	col := getColIndex(axis)
@@ -58,7 +58,7 @@ func SetCellInt(file []FileList, sheet string, axis string, value int) []FileLis
 }
 
 // SetCellStr provide function to set string type value of a cell
-func SetCellStr(file []FileList, sheet string, axis string, value string) []FileList {
+func SetCellStr(file map[string]string, sheet string, axis string, value string) map[string]string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	col := getColIndex(axis)

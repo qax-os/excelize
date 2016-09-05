@@ -7,7 +7,7 @@ import (
 )
 
 // GetCellValue provide function get value from cell by given sheet index and axis in XLSX file
-func GetCellValue(file []FileList, sheet string, axis string) string {
+func GetCellValue(file map[string]string, sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	row := getRowIndex(axis)
