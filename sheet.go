@@ -11,24 +11,23 @@ import (
 // NewSheet provice function to greate a new sheet by given index, when
 //  creating a new XLSX file, the default sheet will be create, when you
 //  create a new file, you need to ensure that the index is continuous.
-func NewSheet(file map[string]string, index int, name string) map[string]string {
+func (f *File) NewSheet(index int, name string) {
 	// Update docProps/app.xml
-	file = setAppXML(file)
+	f.setAppXML()
 	// Update [Content_Types].xml
-	file = setContentTypes(file, index)
+	f.setContentTypes(index)
 	// Create new sheet /xl/worksheets/sheet%d.xml
-	file = setSheet(file, index)
+	f.setSheet(index)
 	// Update xl/_rels/workbook.xml.rels
-	file = addXlsxWorkbookRels(file, index)
+	f.addXlsxWorkbookRels(index)
 	// Update xl/workbook.xml
-	file = setWorkbook(file, index, name)
-	return file
+	f.setWorkbook(index, name)
 }
 
 // Read and update property of contents type of XLSX
-func setContentTypes(file map[string]string, index int) map[string]string {
+func (f *File) setContentTypes(index int) {
 	var content xlsxTypes
-	xml.Unmarshal([]byte(readXML(file, `[Content_Types].xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML(`[Content_Types].xml`)), &content)
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    `/xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`,
 		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
@@ -37,11 +36,11 @@ func setContentTypes(file map[string]string, index int) map[string]string {
 	if err != nil {
 		fmt.Println(err)
 	}
-	return saveFileList(file, `[Content_Types].xml`, string(output))
+	f.saveFileList(`[Content_Types].xml`, string(output))
 }
 
 // Update sheet property by given index
-func setSheet(file map[string]string, index int) map[string]string {
+func (f *File) setSheet(index int) {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
@@ -52,15 +51,15 @@ func setSheet(file map[string]string, index int) map[string]string {
 		fmt.Println(err)
 	}
 	path := `xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`
-	return saveFileList(file, path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
+	f.saveFileList(path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
 // Update workbook property of XLSX
-func setWorkbook(file map[string]string, index int, name string) map[string]string {
+func (f *File) setWorkbook(index int, name string) {
 	var content xlsxWorkbook
-	xml.Unmarshal([]byte(readXML(file, `xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
 
-	rels := readXlsxWorkbookRels(file)
+	rels := f.readXlsxWorkbookRels()
 	rID := len(rels.Relationships)
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    name,
@@ -71,19 +70,19 @@ func setWorkbook(file map[string]string, index int, name string) map[string]stri
 	if err != nil {
 		fmt.Println(err)
 	}
-	return saveFileList(file, `xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
+	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
 }
 
 // Read and unmarshal workbook relationships of XLSX
-func readXlsxWorkbookRels(file map[string]string) xlsxWorkbookRels {
+func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
 	var content xlsxWorkbookRels
-	xml.Unmarshal([]byte(readXML(file, `xl/_rels/workbook.xml.rels`)), &content)
+	xml.Unmarshal([]byte(f.readXML(`xl/_rels/workbook.xml.rels`)), &content)
 	return content
 }
 
 // Update workbook relationships property of XLSX
-func addXlsxWorkbookRels(file map[string]string, sheet int) map[string]string {
-	content := readXlsxWorkbookRels(file)
+func (f *File) addXlsxWorkbookRels(sheet int) {
+	content := f.readXlsxWorkbookRels()
 	rID := len(content.Relationships) + 1
 	ID := bytes.Buffer{}
 	ID.WriteString("rId")
@@ -101,12 +100,12 @@ func addXlsxWorkbookRels(file map[string]string, sheet int) map[string]string {
 	if err != nil {
 		fmt.Println(err)
 	}
-	return saveFileList(file, `xl/_rels/workbook.xml.rels`, string(output))
+	f.saveFileList(`xl/_rels/workbook.xml.rels`, string(output))
 }
 
 // Update docProps/app.xml file of XML
-func setAppXML(file map[string]string) map[string]string {
-	return saveFileList(file, `docProps/app.xml`, templateDocpropsApp)
+func (f *File) setAppXML() {
+	f.saveFileList(`docProps/app.xml`, templateDocpropsApp)
 }
 
 // Some tools that read XLSX files have very strict requirements about
@@ -134,13 +133,13 @@ func replaceRelationshipsID(workbookMarshal string) string {
 }
 
 // SetActiveSheet provide function to set default active sheet of XLSX by given index
-func SetActiveSheet(file map[string]string, index int) map[string]string {
+func (f *File) SetActiveSheet(index int) {
 	var content xlsxWorkbook
 	if index < 1 {
 		index = 1
 	}
 	index--
-	xml.Unmarshal([]byte(readXML(file, `xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
 	if len(content.BookViews.WorkBookView) > 0 {
 		content.BookViews.WorkBookView[0].ActiveTab = index
 	} else {
@@ -153,7 +152,7 @@ func SetActiveSheet(file map[string]string, index int) map[string]string {
 	if err != nil {
 		fmt.Println(err)
 	}
-	file = saveFileList(file, `xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
+	f.saveFileList(`xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
 	index++
 	buffer := bytes.Buffer{}
 	for i := 0; i < sheets; i++ {
@@ -162,7 +161,7 @@ func SetActiveSheet(file map[string]string, index int) map[string]string {
 		buffer.WriteString(`xl/worksheets/sheet`)
 		buffer.WriteString(strconv.Itoa(sheetIndex))
 		buffer.WriteString(`.xml`)
-		xml.Unmarshal([]byte(readXML(file, buffer.String())), &xlsx)
+		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
 		if index == sheetIndex {
 			if len(xlsx.SheetViews.SheetView) > 0 {
 				xlsx.SheetViews.SheetView[0].TabSelected = true
@@ -180,10 +179,10 @@ func SetActiveSheet(file map[string]string, index int) map[string]string {
 		if err != nil {
 			fmt.Println(err)
 		}
-		file = saveFileList(file, buffer.String(), replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(sheet))))
+		f.saveFileList(buffer.String(), replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(sheet))))
 		buffer.Reset()
 	}
-	return file
+	return
 }
 
 // Replace xl/workbook.xml XML tags to self-closing for compatible Office Excel 2007

@@ -30,17 +30,16 @@ func ReadZipReader(r *zip.Reader) (map[string]string, error) {
 }
 
 // Read XML content as string and replace drawing property in XML namespace of sheet
-func readXML(files map[string]string, name string) string {
-	if content, ok := files[name]; ok {
+func (f *File) readXML(name string) string {
+	if content, ok := f.XLSX[name]; ok {
 		return strings.Replace(content, "<drawing r:id=", "<drawing rid=", -1)
 	}
 	return ``
 }
 
 // Update given file content in file list of XLSX
-func saveFileList(files map[string]string, name string, content string) map[string]string {
-	files[name] = XMLHeader + content
-	return files
+func (f *File) saveFileList(name string, content string) {
+	f.XLSX[name] = XMLHeader + content
 }
 
 // Read file content as string in a archive file

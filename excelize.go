@@ -9,26 +9,27 @@ import (
 	"strings"
 )
 
-// FileList define a populated xlsx.File struct.
-type FileList struct {
-	Key   string
-	Value string
+// File define a populated xlsx.File struct.
+type File struct {
+	XLSX map[string]string
+	Path string
 }
 
 // OpenFile take the name of an XLSX file and returns a populated
 // xlsx.File struct for it.
-func OpenFile(filename string) (file map[string]string, err error) {
+func OpenFile(filename string) *File {
 	var f *zip.ReadCloser
-	f, err = zip.OpenReader(filename)
-	if err != nil {
-		return nil, err
+	file := make(map[string]string)
+	f, _ = zip.OpenReader(filename)
+	file, _ = ReadZip(f)
+	return &File{
+		XLSX: file,
+		Path: filename,
 	}
-	file, err = ReadZip(f)
-	return
 }
 
 // SetCellInt provide function to set int type value of a cell
-func SetCellInt(file map[string]string, sheet string, axis string, value int) map[string]string {
+func (f *File) SetCellInt(sheet string, axis string, value int) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	col := getColIndex(axis)
@@ -37,7 +38,7 @@ func SetCellInt(file map[string]string, sheet string, axis string, value int) ma
 	yAxis := titleToNumber(col)
 
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-	xml.Unmarshal([]byte(readXML(file, name)), &xlsx)
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -53,12 +54,11 @@ func SetCellInt(file map[string]string, sheet string, axis string, value int) ma
 	if err != nil {
 		fmt.Println(err)
 	}
-	saveFileList(file, name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
-	return file
+	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
 // SetCellStr provide function to set string type value of a cell
-func SetCellStr(file map[string]string, sheet string, axis string, value string) map[string]string {
+func (f *File) SetCellStr(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	col := getColIndex(axis)
@@ -67,7 +67,7 @@ func SetCellStr(file map[string]string, sheet string, axis string, value string)
 	yAxis := titleToNumber(col)
 
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-	xml.Unmarshal([]byte(readXML(file, name)), &xlsx)
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -83,8 +83,7 @@ func SetCellStr(file map[string]string, sheet string, axis string, value string)
 	if err != nil {
 		fmt.Println(err)
 	}
-	saveFileList(file, name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
-	return file
+	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
 // Completion column element tags of XML in a sheet

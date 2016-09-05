@@ -7,13 +7,13 @@ import (
 )
 
 // GetCellValue provide function get value from cell by given sheet index and axis in XLSX file
-func GetCellValue(file map[string]string, sheet string, axis string) string {
+func (f *File) GetCellValue(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	row := getRowIndex(axis)
 	xAxis := row - 1
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-	xml.Unmarshal([]byte(readXML(file, name)), &xlsx)
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	rows := len(xlsx.SheetData.Row)
 	if rows <= xAxis {
 		return ``
@@ -26,7 +26,7 @@ func GetCellValue(file map[string]string, sheet string, axis string) string {
 					shardStrings := xlsxSST{}
 					xlsxSI := 0
 					xlsxSI, _ = strconv.Atoi(v.V)
-					xml.Unmarshal([]byte(readXML(file, `xl/sharedStrings.xml`)), &shardStrings)
+					xml.Unmarshal([]byte(f.readXML(`xl/sharedStrings.xml`)), &shardStrings)
 					return shardStrings.SI[xlsxSI].T
 				case "str":
 					return v.V
