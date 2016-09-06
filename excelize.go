@@ -11,21 +11,28 @@ import (
 
 // File define a populated xlsx.File struct.
 type File struct {
-	XLSX map[string]string
-	Path string
+	XLSX       map[string]string
+	Path       string
+	SheetCount int
 }
 
 // OpenFile take the name of an XLSX file and returns a populated
 // xlsx.File struct for it.
-func OpenFile(filename string) *File {
+func OpenFile(filename string) (*File, error) {
 	var f *zip.ReadCloser
+	var err error
 	file := make(map[string]string)
-	f, _ = zip.OpenReader(filename)
-	file, _ = ReadZip(f)
-	return &File{
-		XLSX: file,
-		Path: filename,
+	sheetCount := 0
+	f, err = zip.OpenReader(filename)
+	if err != nil {
+		return &File{}, err
 	}
+	file, sheetCount, err = ReadZip(f)
+	return &File{
+		XLSX:       file,
+		Path:       filename,
+		SheetCount: sheetCount,
+	}, nil
 }
 
 // SetCellInt provide function to set int type value of a cell
@@ -176,6 +183,7 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 //      <c r="G15" s="1" />
 //  </row>
 //
+// Noteice: this method could be very slow for large spreadsheets (more than 3000 rows one sheet).
 func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 	buffer := bytes.Buffer{}
 	for k, v := range xlsx.SheetData.Row {
@@ -206,4 +214,45 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 		}
 	}
 	return xlsx
+}
+
+// UpdateLinkedValue fix linked values within a spreadsheet are not updating.
+// This function will be remove value tag when met a cell have a linked value.
+// Reference https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
+//
+// Notice: after open XLSX file Excel will be update linked value and generate
+// new value and will prompt save file or not.
+//
+// For example:
+//
+// <row r="19" spans="2:2">
+//     <c r="B19">
+//         <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//         <v>100</v>
+//     </c>
+// </row>
+//
+// to
+//
+// <row r="19" spans="2:2">
+//     <c r="B19">
+//         <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//     </c>
+// </row>
+func (f *File) UpdateLinkedValue() {
+	for i := 1; i <= f.SheetCount; i++ {
+		var xlsx xlsxWorksheet
+		name := `xl/worksheets/sheet` + strconv.Itoa(i) + `.xml`
+		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+		for indexR, row := range xlsx.SheetData.Row {
+			for indexC, col := range row.C {
+				if col.F != nil && col.V != `` {
+					xlsx.SheetData.Row[indexR].C[indexC].V = ``
+					xlsx.SheetData.Row[indexR].C[indexC].T = ``
+				}
+			}
+		}
+		output, _ := xml.Marshal(xlsx)
+		f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
+	}
 }

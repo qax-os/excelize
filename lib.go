@@ -14,19 +14,25 @@ import (
 // ReadZip takes a pointer to a zip.ReadCloser and returns a
 // xlsx.File struct populated with its contents. In most cases
 // ReadZip is not used directly, but is called internally by OpenFile.
-func ReadZip(f *zip.ReadCloser) (map[string]string, error) {
+func ReadZip(f *zip.ReadCloser) (map[string]string, int, error) {
 	defer f.Close()
 	return ReadZipReader(&f.Reader)
 }
 
 // ReadZipReader can be used to read an XLSX in memory without
 // touching the filesystem.
-func ReadZipReader(r *zip.Reader) (map[string]string, error) {
+func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	fileList := make(map[string]string)
+	worksheets := 0
 	for _, v := range r.File {
 		fileList[v.Name] = readFile(v)
+		if len(v.Name) > 18 {
+			if v.Name[0:19] == "xl/worksheets/sheet" {
+				worksheets++
+			}
+		}
 	}
-	return fileList, nil
+	return fileList, worksheets, nil
 }
 
 // Read XML content as string and replace drawing property in XML namespace of sheet

@@ -34,12 +34,15 @@ import (
 )
 
 func main() {
-    xlsx := excelize.CreateFile()
+    xlsx, err := excelize.CreateFile()
+    if err != nil {
+        fmt.Println(err)
+    }
     xlsx.NewSheet(2, "Sheet2")
     xlsx.NewSheet(3, "Sheet3")
     xlsx.SetCellInt("Sheet2", "A23", 10)
     xlsx.SetCellStr("Sheet3", "B20", "Hello")
-    err := xlsx.WriteTo("/home/Workbook.xlsx")
+    err = xlsx.WriteTo("/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
     }
@@ -59,14 +62,17 @@ import (
 )
 
 func main() {
-    xlsx := excelize.OpenFile("/home/Workbook.xlsx")
+    xlsx, err := excelize.OpenFile("/home/Workbook.xlsx")
+    if err != nil {
+        fmt.Println(err)
+    }
     xlsx.SetCellInt("Sheet2", "B2", 100)
     xlsx.SetCellStr("Sheet2", "C11", "Hello")
     xlsx.NewSheet(3, "TestSheet")
     xlsx.SetCellInt("Sheet3", "A23", 10)
     xlsx.SetCellStr("Sheet3", "b230", "World")
     xlsx.SetActiveSheet(2)
-    err := xlsx.Save()
+    err = xlsx.Save()
     if err != nil {
         fmt.Println(err)
     }
@@ -84,7 +90,10 @@ import (
 )
 
 func main() {
-    xlsx := excelize.OpenFile("/home/Workbook.xlsx")
+    xlsx, err := excelize.OpenFile("/home/Workbook.xlsx")
+    if err != nil {
+        fmt.Println(err)
+    }
     cell := xlsx.GetCellValue("Sheet2", "D11")
     fmt.Println(cell)
 }

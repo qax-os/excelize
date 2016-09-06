@@ -7,7 +7,11 @@ import (
 
 func TestExcelize(t *testing.T) {
 	// Test update a XLSX file
-	file := OpenFile("./test/Workbook1.xlsx")
+	file, err := OpenFile("./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	file.UpdateLinkedValue()
 	file.SetCellInt("SHEET2", "B2", 100)
 	file.SetCellStr("SHEET2", "C11", "Knowns")
 	file.NewSheet(3, "TestSheet")
@@ -15,10 +19,20 @@ func TestExcelize(t *testing.T) {
 	file.SetCellStr("SHEET3", "b230", "10")
 	file.SetCellStr("SHEET10", "b230", "10")
 	file.SetActiveSheet(2)
+	// Test read cell value with given illegal rows number
+	file.GetCellValue("Sheet2", "a-1")
+	// Test read cell value with given lowercase column number
+	file.GetCellValue("Sheet2", "a5")
+	file.GetCellValue("Sheet2", "C11")
+	file.GetCellValue("Sheet2", "D11")
+	file.GetCellValue("Sheet2", "D12")
+	// Test read cell value with given axis large than exists row
+	file.GetCellValue("Sheet2", "E13")
+
 	for i := 1; i <= 300; i++ {
 		file.SetCellStr("SHEET3", "c"+strconv.Itoa(i), strconv.Itoa(i))
 	}
-	err := file.Save()
+	err = file.Save()
 	if err != nil {
 		t.Log(err)
 	}
@@ -45,13 +59,9 @@ func TestExcelize(t *testing.T) {
 		t.Log(err)
 	}
 
-	// Test read cell value with given illegal rows number
-	file.GetCellValue("Sheet2", "a-1")
-	// Test read cell value with given lowercase column number
-	file.GetCellValue("Sheet2", "a5")
-	file.GetCellValue("Sheet2", "C11")
-	file.GetCellValue("Sheet2", "D11")
-	file.GetCellValue("Sheet2", "D12")
-	// Test read cell value with given axis large than exists row
-	file.GetCellValue("Sheet2", "E13")
+	// Test open a XLSX file with given illegal path
+	_, err = OpenFile("./test/Workbook.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
 }
