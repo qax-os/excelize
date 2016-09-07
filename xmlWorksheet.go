@@ -131,7 +131,7 @@ type xlsxSheetViews struct {
 type xlsxSheetView struct {
 	// WindowProtection        bool            `xml:"windowProtection,attr"`
 	// ShowFormulas            bool            `xml:"showFormulas,attr"`
-	// ShowGridLines           bool            `xml:"showGridLines,attr"`
+	ShowGridLines string `xml:"showGridLines,attr,omitempty"`
 	// ShowRowColHeaders       bool            `xml:"showRowColHeaders,attr"`
 	// ShowZeros               bool            `xml:"showZeros,attr"`
 	// RightToLeft             bool            `xml:"rightToLeft,attr"`
@@ -155,7 +155,7 @@ type xlsxSheetView struct {
 // as I need.
 type xlsxSelection struct {
 	Pane         string `xml:"pane,attr,omitempty"`
-	ActiveCell   string `xml:"activeCell,attr"`
+	ActiveCell   string `xml:"activeCell,attr,omitempty"`
 	ActiveCellID int    `xml:"activeCellId,attr"`
 	SQRef        string `xml:"sqref,attr"`
 }

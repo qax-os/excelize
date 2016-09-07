@@ -162,24 +162,24 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 
 // Check XML tags and fix discontinuous case, for example:
 //
-//  <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//      <c r="A15" s="2" />
-//      <c r="B15" s="2" />
-//      <c r="F15" s="1" />
-//      <c r="G15" s="1" />
-//  </row>
+//		<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//			<c r="A15" s="2" />
+//			<c r="B15" s="2" />
+//			<c r="F15" s="1" />
+//			<c r="G15" s="1" />
+//		</row>
 //
 // in this case, we should to change it to
 //
-//  <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//      <c r="A15" s="2" />
-//      <c r="B15" s="2" />
-//      <c r="C15" s="2" />
-//      <c r="D15" s="2" />
-//      <c r="E15" s="2" />
-//      <c r="F15" s="1" />
-//      <c r="G15" s="1" />
-//  </row>
+//  	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//      	<c r="A15" s="2" />
+//      	<c r="B15" s="2" />
+//      	<c r="C15" s="2" />
+//      	<c r="D15" s="2" />
+//      	<c r="E15" s="2" />
+//      	<c r="F15" s="1" />
+//      	<c r="G15" s="1" />
+//  	</row>
 //
 // Noteice: this method could be very slow for large spreadsheets (more than 3000 rows one sheet).
 func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
@@ -223,20 +223,20 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 //
 // For example:
 //
-// <row r="19" spans="2:2">
-//     <c r="B19">
-//         <f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//         <v>100</v>
-//     </c>
-// </row>
+//		<row r="19" spans="2:2">
+//     		<c r="B19">
+//         		<f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//         		<v>100</v>
+//    		 </c>
+// 		</row>
 //
 // to
 //
-// <row r="19" spans="2:2">
-//     <c r="B19">
-//         <f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//     </c>
-// </row>
+// 		<row r="19" spans="2:2">
+//     		<c r="B19">
+//         		<f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//     		</c>
+// 		</row>
 func (f *File) UpdateLinkedValue() {
 	for i := 1; i <= f.SheetCount; i++ {
 		var xlsx xlsxWorksheet
