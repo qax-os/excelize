@@ -3,6 +3,7 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/xml"
 	"io"
 	"log"
 	"math"
@@ -28,6 +29,11 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 		fileList[v.Name] = readFile(v)
 		if len(v.Name) > 18 {
 			if v.Name[0:19] == "xl/worksheets/sheet" {
+				var xlsx xlsxWorksheet
+				xml.Unmarshal([]byte(strings.Replace(fileList[v.Name], "<drawing r:id=", "<drawing rid=", -1)), &xlsx)
+				xlsx = checkRow(xlsx)
+				output, _ := xml.Marshal(xlsx)
+				fileList[v.Name] = replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output)))
 				worksheets++
 			}
 		}

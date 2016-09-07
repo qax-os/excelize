@@ -27,7 +27,7 @@ func OpenFile(filename string) (*File, error) {
 	if err != nil {
 		return &File{}, err
 	}
-	file, sheetCount, err = ReadZip(f)
+	file, sheetCount, _ = ReadZip(f)
 	return &File{
 		XLSX:       file,
 		Path:       filename,
@@ -50,7 +50,6 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	xlsx = checkRow(xlsx)
 	xlsx = completeRow(xlsx, rows, cell)
 	xlsx = completeCol(xlsx, rows, cell)
 
@@ -79,7 +78,6 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	xlsx = checkRow(xlsx)
 	xlsx = completeRow(xlsx, rows, cell)
 	xlsx = completeCol(xlsx, rows, cell)
 
@@ -193,7 +191,7 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 		}
 		endR := getColIndex(v.C[lenCol-1].R)
 		endRow := getRowIndex(v.C[lenCol-1].R)
-		endCol := titleToNumber(endR)
+		endCol := titleToNumber(endR) + 1
 		if lenCol < endCol {
 			oldRow := xlsx.SheetData.Row[k].C
 			xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
@@ -216,9 +214,9 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 	return xlsx
 }
 
-// UpdateLinkedValue fix linked values within a spreadsheet are not updating.
-// This function will be remove value tag when met a cell have a linked value.
-// Reference https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
+// UpdateLinkedValue fix linked values within a spreadsheet are not updating in
+// Office Excel 2007 and 2010. This function will be remove value tag when met a
+//  cell have a linked value. Reference https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
 //
 // Notice: after open XLSX file Excel will be update linked value and generate
 // new value and will prompt save file or not.

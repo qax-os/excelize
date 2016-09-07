@@ -12,7 +12,7 @@ func TestExcelize(t *testing.T) {
 		t.Log(err)
 	}
 	file.UpdateLinkedValue()
-	file.SetCellInt("SHEET2", "B2", 100)
+	file.SetCellInt("SHEET2", "A1", 100)
 	file.SetCellStr("SHEET2", "C11", "Knowns")
 	file.NewSheet(3, "TestSheet")
 	file.SetCellInt("Sheet3", "A23", 10)
