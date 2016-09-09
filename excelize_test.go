@@ -26,6 +26,11 @@ func TestExcelize(t *testing.T) {
 	file.GetCellValue("Sheet2", "C11")
 	file.GetCellValue("Sheet2", "D11")
 	file.GetCellValue("Sheet2", "D12")
+	// Test SetCellValue function
+	file.SetCellValue("Sheet2", "F1", "Hello")
+	file.SetCellValue("Sheet2", "G1", []byte("World"))
+	file.SetCellValue("Sheet2", "F2", 42)
+	file.SetCellValue("Sheet2", "G2", nil)
 	// Test read cell value with given axis large than exists row
 	file.GetCellValue("Sheet2", "E13")
 

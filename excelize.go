@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -35,6 +34,20 @@ func OpenFile(filename string) (*File, error) {
 	}, nil
 }
 
+// SetCellValue provide function to set int or string type value of a cell
+func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
+	switch t := value.(type) {
+	case int, int8, int16, int32, int64, float32, float64:
+		f.SetCellInt(sheet, axis, value.(int))
+	case string:
+		f.SetCellStr(sheet, axis, t)
+	case []byte:
+		f.SetCellStr(sheet, axis, string(t))
+	default:
+		f.SetCellStr(sheet, axis, ``)
+	}
+}
+
 // SetCellInt provide function to set int type value of a cell
 func (f *File) SetCellInt(sheet string, axis string, value int) {
 	axis = strings.ToUpper(axis)
@@ -56,10 +69,7 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
 
-	output, err := xml.Marshal(xlsx)
-	if err != nil {
-		fmt.Println(err)
-	}
+	output, _ := xml.Marshal(xlsx)
 	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
@@ -81,13 +91,10 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	xlsx = completeRow(xlsx, rows, cell)
 	xlsx = completeCol(xlsx, rows, cell)
 
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = `str`
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 
-	output, err := xml.Marshal(xlsx)
-	if err != nil {
-		fmt.Println(err)
-	}
+	output, _ := xml.Marshal(xlsx)
 	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
@@ -162,24 +169,24 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 
 // Check XML tags and fix discontinuous case, for example:
 //
-//		<row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//			<c r="A15" s="2" />
-//			<c r="B15" s="2" />
-//			<c r="F15" s="1" />
-//			<c r="G15" s="1" />
-//		</row>
+//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//        <c r="A15" s="2" />
+//        <c r="B15" s="2" />
+//        <c r="F15" s="1" />
+//        <c r="G15" s="1" />
+//    </row>
 //
 // in this case, we should to change it to
 //
-//  	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//      	<c r="A15" s="2" />
-//      	<c r="B15" s="2" />
-//      	<c r="C15" s="2" />
-//      	<c r="D15" s="2" />
-//      	<c r="E15" s="2" />
-//      	<c r="F15" s="1" />
-//      	<c r="G15" s="1" />
-//  	</row>
+//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//        <c r="A15" s="2" />
+//        <c r="B15" s="2" />
+//        <c r="C15" s="2" />
+//        <c r="D15" s="2" />
+//        <c r="E15" s="2" />
+//        <c r="F15" s="1" />
+//        <c r="G15" s="1" />
+//    </row>
 //
 // Noteice: this method could be very slow for large spreadsheets (more than 3000 rows one sheet).
 func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
@@ -223,20 +230,20 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 //
 // For example:
 //
-//		<row r="19" spans="2:2">
-//     		<c r="B19">
-//         		<f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//         		<v>100</v>
-//    		 </c>
-// 		</row>
+//    <row r="19" spans="2:2">
+//        <c r="B19">
+//            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//            <v>100</v>
+//         </c>
+//    </row>
 //
 // to
 //
-// 		<row r="19" spans="2:2">
-//     		<c r="B19">
-//         		<f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//     		</c>
-// 		</row>
+//    <row r="19" spans="2:2">
+//        <c r="B19">
+//            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//        </c>
+//    </row>
 func (f *File) UpdateLinkedValue() {
 	for i := 1; i <= f.SheetCount; i++ {
 		var xlsx xlsxWorksheet
