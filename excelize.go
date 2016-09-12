@@ -52,8 +52,8 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 func (f *File) SetCellInt(sheet string, axis string, value int) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
-	col := getColIndex(axis)
-	row := getRowIndex(axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
 
@@ -77,8 +77,8 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 func (f *File) SetCellStr(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
-	col := getColIndex(axis)
-	row := getRowIndex(axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
 
@@ -196,8 +196,8 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 		if lenCol < 1 {
 			continue
 		}
-		endR := getColIndex(v.C[lenCol-1].R)
-		endRow := getRowIndex(v.C[lenCol-1].R)
+		endR := string(strings.Map(letterOnlyMapF, v.C[lenCol-1].R))
+		endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, v.C[lenCol-1].R))
 		endCol := titleToNumber(endR) + 1
 		if lenCol < endCol {
 			oldRow := xlsx.SheetData.Row[k].C
@@ -213,7 +213,7 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 			}
 			xlsx.SheetData.Row[k].C = tmp
 			for _, y := range oldRow {
-				colAxis := titleToNumber(getColIndex(y.R))
+				colAxis := titleToNumber(string(strings.Map(letterOnlyMapF, y.R)))
 				xlsx.SheetData.Row[k].C[colAxis] = y
 			}
 		}
@@ -223,7 +223,7 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
 // Office Excel 2007 and 2010. This function will be remove value tag when met a
-//  cell have a linked value. Reference https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
+// cell have a linked value. Reference https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
 //
 // Notice: after open XLSX file Excel will be update linked value and generate
 // new value and will prompt save file or not.

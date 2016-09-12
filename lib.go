@@ -7,8 +7,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -28,9 +26,9 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	for _, v := range r.File {
 		fileList[v.Name] = readFile(v)
 		if len(v.Name) > 18 {
-			if v.Name[0:19] == "xl/worksheets/sheet" {
+			if v.Name[0:19] == `xl/worksheets/sheet` {
 				var xlsx xlsxWorksheet
-				xml.Unmarshal([]byte(strings.Replace(fileList[v.Name], "<drawing r:id=", "<drawing rid=", -1)), &xlsx)
+				xml.Unmarshal([]byte(strings.Replace(fileList[v.Name], `<drawing r:id=`, `<drawing rid=`, -1)), &xlsx)
 				xlsx = checkRow(xlsx)
 				output, _ := xml.Marshal(xlsx)
 				fileList[v.Name] = replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output)))
@@ -44,7 +42,7 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 // Read XML content as string and replace drawing property in XML namespace of sheet
 func (f *File) readXML(name string) string {
 	if content, ok := f.XLSX[name]; ok {
-		return strings.Replace(content, "<drawing r:id=", "<drawing rid=", -1)
+		return strings.Replace(content, `<drawing r:id=`, `<drawing rid=`, -1)
 	}
 	return ``
 }
@@ -91,24 +89,23 @@ func titleToNumber(s string) int {
 	return sum - 1
 }
 
-// Split Excel sheet column title to string and integer, return XAxis
-func getColIndex(axis string) string {
-	r, err := regexp.Compile(`[^\D]`)
-	if err != nil {
-		log.Fatal(err)
+// letterOnlyMapF is used in conjunction with strings.Map to return
+// only the characters A-Z and a-z in a string
+func letterOnlyMapF(rune rune) rune {
+	switch {
+	case 'A' <= rune && rune <= 'Z':
+		return rune
+	case 'a' <= rune && rune <= 'z':
+		return rune - 32
 	}
-	return string(r.ReplaceAll([]byte(axis), []byte("")))
+	return -1
 }
 
-// Split Excel sheet column title to string and integer, return YAxis
-func getRowIndex(axis string) int {
-	r, err := regexp.Compile(`[\D]`)
-	if err != nil {
-		log.Fatal(err)
+// intOnlyMapF is used in conjunction with strings.Map to return only
+// the numeric portions of a string.
+func intOnlyMapF(rune rune) rune {
+	if rune >= 48 && rune < 58 {
+		return rune
 	}
-	row, err := strconv.Atoi(string(r.ReplaceAll([]byte(axis), []byte(""))))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return row
+	return -1
 }

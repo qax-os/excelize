@@ -9,9 +9,9 @@ import (
 const (
 	// sheet state values as defined by
 	// http://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
-	sheetStateVisible    = "visible"
-	sheetStateHidden     = "hidden"
-	sheetStateVeryHidden = "veryHidden"
+	sheetStateVisible    = `visible`
+	sheetStateHidden     = `hidden`
+	sheetStateVeryHidden = `veryHidden`
 )
 
 // xmlxWorkbookRels contains xmlxWorkbookRelations

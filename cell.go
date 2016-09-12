@@ -10,7 +10,7 @@ import (
 func (f *File) GetCellValue(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
-	row := getRowIndex(axis)
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)

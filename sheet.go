@@ -9,8 +9,8 @@ import (
 )
 
 // NewSheet provice function to greate a new sheet by given index, when
-//  creating a new XLSX file, the default sheet will be create, when you
-//  create a new file, you need to ensure that the index is continuous.
+// creating a new XLSX file, the default sheet will be create, when you
+// create a new file, you need to ensure that the index is continuous.
 func (f *File) NewSheet(index int, name string) {
 	// Update docProps/app.xml
 	f.setAppXML()
@@ -30,7 +30,7 @@ func (f *File) setContentTypes(index int) {
 	xml.Unmarshal([]byte(f.readXML(`[Content_Types].xml`)), &content)
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    `/xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`,
-		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
+		ContentType: `application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml`,
 	})
 	output, err := xml.Marshal(content)
 	if err != nil {
@@ -94,7 +94,7 @@ func (f *File) addXlsxWorkbookRels(sheet int) {
 	content.Relationships = append(content.Relationships, xlsxWorkbookRelation{
 		ID:     ID.String(),
 		Target: target.String(),
-		Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
+		Type:   `http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet`,
 	})
 	output, err := xml.Marshal(content)
 	if err != nil {
