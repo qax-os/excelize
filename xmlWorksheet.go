@@ -112,6 +112,8 @@ type xlsxPageMargins struct {
 type xlsxSheetFormatPr struct {
 	DefaultColWidth  float64 `xml:"defaultColWidth,attr,omitempty"`
 	DefaultRowHeight float64 `xml:"defaultRowHeight,attr"`
+	CustomHeight     float64 `xml:"customHeight,attr,omitempty"`
+	ZeroHeight       float64 `xml:"zeroHeight,attr,omitempty"`
 	OutlineLevelCol  uint8   `xml:"outlineLevelCol,attr,omitempty"`
 	OutlineLevelRow  uint8   `xml:"outlineLevelRow,attr,omitempty"`
 }
