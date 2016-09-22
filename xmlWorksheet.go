@@ -143,12 +143,12 @@ type xlsxSheetView struct {
 	// View                    string          `xml:"view,attr"`
 	TopLeftCell string `xml:"topLeftCell,attr,omitempty"`
 	// ColorId                 int             `xml:"colorId,attr"`
-	// ZoomScale               float64         `xml:"zoomScale,attr"`
-	// ZoomScaleNormal         float64         `xml:"zoomScaleNormal,attr"`
-	// ZoomScalePageLayoutView float64         `xml:"zoomScalePageLayoutView,attr"`
-	WorkbookViewID int             `xml:"workbookViewId,attr"`
-	Selection      []xlsxSelection `xml:"selection"`
-	Pane           *xlsxPane       `xml:"pane,omitempty"`
+	ZoomScale               float64         `xml:"zoomScale,attr,omitempty"`
+	ZoomScaleNormal         float64         `xml:"zoomScaleNormal,attr,omitempty"`
+	ZoomScalePageLayoutView float64         `xml:"zoomScalePageLayoutView,attr,omitempty"`
+	WorkbookViewID          int             `xml:"workbookViewId,attr"`
+	Selection               []xlsxSelection `xml:"selection"`
+	Pane                    *xlsxPane       `xml:"pane,omitempty"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
