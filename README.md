@@ -17,7 +17,7 @@ Excelize is a library written in pure Golang and providing a set of functions th
 
 ### Installation
 
-```
+```go
 go get github.com/Luxurioust/excelize
 ```
 
@@ -25,7 +25,7 @@ go get github.com/Luxurioust/excelize
 
 Here is a minimal example usage that will create XLSX file.
 
-```
+```go
 package main
 
 import (
@@ -53,7 +53,7 @@ func main() {
 
 The following constitutes the bare minimum required to write an XLSX document.
 
-```
+```go
 package main
 
 import (
@@ -81,7 +81,7 @@ func main() {
 
 ### Reading XLSX files
 
-```
+```go
 package main
 
 import (
