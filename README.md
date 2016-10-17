@@ -30,6 +30,8 @@ package main
 
 import (
     "fmt"
+    "os"
+    
     "github.com/Luxurioust/excelize"
 )
 
@@ -37,6 +39,7 @@ func main() {
     xlsx, err := excelize.CreateFile()
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     }
     xlsx.NewSheet(2, "Sheet2")
     xlsx.NewSheet(3, "Sheet3")
@@ -45,6 +48,7 @@ func main() {
     err = xlsx.WriteTo("/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     }
 }
 ```
@@ -65,6 +69,7 @@ func main() {
     xlsx, err := excelize.OpenFile("/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     }
     xlsx.SetCellInt("Sheet2", "B2", 100)
     xlsx.SetCellStr("Sheet2", "C11", "Hello")
@@ -75,6 +80,7 @@ func main() {
     err = xlsx.Save()
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     }
 }
 ```
@@ -93,6 +99,7 @@ func main() {
     xlsx, err := excelize.OpenFile("/home/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     }
     cell := xlsx.GetCellValue("Sheet2", "D11")
     fmt.Println(cell)
