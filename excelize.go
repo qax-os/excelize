@@ -34,7 +34,7 @@ func OpenFile(filename string) (*File, error) {
 	}, nil
 }
 
-// SetCellValue provide function to set int or string type value of a cell
+// SetCellValue provide function to set int or string type value of a cell.
 func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	switch t := value.(type) {
 	case int, int8, int16, int32, int64, float32, float64:
@@ -48,7 +48,7 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	}
 }
 
-// SetCellInt provide function to set int type value of a cell
+// SetCellInt provide function to set int type value of a cell.
 func (f *File) SetCellInt(sheet string, axis string, value int) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -73,7 +73,7 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
-// SetCellStr provide function to set string type value of a cell
+// SetCellStr provide function to set string type value of a cell.
 func (f *File) SetCellStr(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -98,7 +98,7 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
-// Completion column element tags of XML in a sheet
+// Completion column element tags of XML in a sheet.
 func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	if len(xlsx.SheetData.Row) < cell {
 		for i := len(xlsx.SheetData.Row); i < cell; i++ {
@@ -124,7 +124,7 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	return xlsx
 }
 
-// Completion row element tags of XML in a sheet
+// Completion row element tags of XML in a sheet.
 func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	if len(xlsx.SheetData.Row) < row {
 		for i := len(xlsx.SheetData.Row); i < row; i++ {
@@ -150,7 +150,7 @@ func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	return xlsx
 }
 
-// Replace xl/worksheets/sheet%d.xml XML tags to self-closing for compatible Office Excel 2007
+// Replace xl/worksheets/sheet%d.xml XML tags to self-closing for compatible Office Excel 2007.
 func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 	oldXmlns := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
 	newXmlns := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mx="http://schemas.microsoft.com/office/mac/excel/2008/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mv="urn:schemas-microsoft-com:mac:vml" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">`

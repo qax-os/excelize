@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// CreateFile provide function to create new file by default template
+// CreateFile provide function to create new file by default template.
 // For example:
 // xlsx := CreateFile()
 func CreateFile() *File {

@@ -24,7 +24,7 @@ func (f *File) NewSheet(index int, name string) {
 	f.setWorkbook(index, name)
 }
 
-// Read and update property of contents type of XLSX
+// Read and update property of contents type of XLSX.
 func (f *File) setContentTypes(index int) {
 	var content xlsxTypes
 	xml.Unmarshal([]byte(f.readXML(`[Content_Types].xml`)), &content)
@@ -39,7 +39,7 @@ func (f *File) setContentTypes(index int) {
 	f.saveFileList(`[Content_Types].xml`, string(output))
 }
 
-// Update sheet property by given index
+// Update sheet property by given index.
 func (f *File) setSheet(index int) {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
@@ -54,7 +54,7 @@ func (f *File) setSheet(index int) {
 	f.saveFileList(path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
-// Update workbook property of XLSX
+// Update workbook property of XLSX.
 func (f *File) setWorkbook(index int, name string) {
 	var content xlsxWorkbook
 	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
@@ -73,14 +73,14 @@ func (f *File) setWorkbook(index int, name string) {
 	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
 }
 
-// Read and unmarshal workbook relationships of XLSX
+// Read and unmarshal workbook relationships of XLSX.
 func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
 	var content xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML(`xl/_rels/workbook.xml.rels`)), &content)
 	return content
 }
 
-// Update workbook relationships property of XLSX
+// Update workbook relationships property of XLSX.
 func (f *File) addXlsxWorkbookRels(sheet int) {
 	content := f.readXlsxWorkbookRels()
 	rID := len(content.Relationships) + 1
@@ -103,7 +103,7 @@ func (f *File) addXlsxWorkbookRels(sheet int) {
 	f.saveFileList(`xl/_rels/workbook.xml.rels`, string(output))
 }
 
-// Update docProps/app.xml file of XML
+// Update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
 	f.saveFileList(`docProps/app.xml`, templateDocpropsApp)
 }
@@ -132,7 +132,7 @@ func replaceRelationshipsID(workbookMarshal string) string {
 	return strings.Replace(rids, `<drawing rid="`, `<drawing r:id="`, -1)
 }
 
-// SetActiveSheet provide function to set default active sheet of XLSX by given index
+// SetActiveSheet provide function to set default active sheet of XLSX by given index.
 func (f *File) SetActiveSheet(index int) {
 	var content xlsxWorkbook
 	if index < 1 {
@@ -185,7 +185,7 @@ func (f *File) SetActiveSheet(index int) {
 	return
 }
 
-// Replace xl/workbook.xml XML tags to self-closing for compatible Office Excel 2007
+// Replace xl/workbook.xml XML tags to self-closing for compatible Office Excel 2007.
 func workBookCompatibility(workbookMarshal string) string {
 	workbookMarshal = strings.Replace(workbookMarshal, `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`, `r:id="`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></sheet>`, ` />`, -1)

@@ -39,7 +39,7 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	return fileList, worksheets, nil
 }
 
-// Read XML content as string and replace drawing property in XML namespace of sheet
+// Read XML content as string and replace drawing property in XML namespace of sheet.
 func (f *File) readXML(name string) string {
 	if content, ok := f.XLSX[name]; ok {
 		return strings.Replace(content, `<drawing r:id=`, `<drawing rid=`, -1)
@@ -47,12 +47,12 @@ func (f *File) readXML(name string) string {
 	return ``
 }
 
-// Update given file content in file list of XLSX
+// Update given file content in file list of XLSX.
 func (f *File) saveFileList(name string, content string) {
 	f.XLSX[name] = XMLHeader + content
 }
 
-// Read file content as string in a archive file
+// Read file content as string in a archive file.
 func readFile(file *zip.File) string {
 	rc, err := file.Open()
 	if err != nil {
@@ -64,7 +64,7 @@ func readFile(file *zip.File) string {
 	return string(buff.Bytes())
 }
 
-// Convert integer to Excel sheet column title
+// Convert integer to Excel sheet column title.
 func toAlphaString(value int) string {
 	if value < 0 {
 		return ``
@@ -78,7 +78,7 @@ func toAlphaString(value int) string {
 	return ans
 }
 
-// Convert Excel sheet column title to int
+// Convert Excel sheet column title to int.
 func titleToNumber(s string) int {
 	weight := 0.0
 	sum := 0
@@ -90,7 +90,7 @@ func titleToNumber(s string) int {
 }
 
 // letterOnlyMapF is used in conjunction with strings.Map to return
-// only the characters A-Z and a-z in a string
+// only the characters A-Z and a-z in a string.
 func letterOnlyMapF(rune rune) rune {
 	switch {
 	case 'A' <= rune && rune <= 'Z':

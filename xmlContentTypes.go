@@ -1,4 +1,4 @@
-// Some code of this file reference tealeg/xlsx
+// Some code of this file reference tealeg/xlsx.
 
 package excelize
 

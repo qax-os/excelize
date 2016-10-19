@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// GetCellValue provide function get value from cell by given sheet index and axis in XLSX file
+// GetCellValue provide function get value from cell by given sheet index and axis in XLSX file.
 func (f *File) GetCellValue(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet

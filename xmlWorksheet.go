@@ -1,4 +1,4 @@
-// Some code of this file reference tealeg/xlsx
+// Some code of this file reference tealeg/xlsx.
 
 package excelize
 
@@ -26,7 +26,7 @@ type xlsxWorksheet struct {
 	Drawing       xlsxDrawing       `xml:"drawing"`
 }
 
-// xlsxDrawing change r:id to rid in the namespace
+// xlsxDrawing change r:id to rid in the namespace.
 type xlsxDrawing struct {
 	RID string `xml:"rid,attr"`
 }

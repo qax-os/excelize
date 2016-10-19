@@ -1,4 +1,4 @@
-// Some code of this file reference tealeg/xlsx
+// Some code of this file reference tealeg/xlsx.
 
 package excelize
 
@@ -44,7 +44,7 @@ type xlsxWorkbook struct {
 	FileRecoveryPr     xlsxFileRecoveryPr     `xml:"fileRecoveryPr"`
 }
 
-// xlsxFileRecoveryPr maps sheet recovery information
+// xlsxFileRecoveryPr maps sheet recovery information.
 type xlsxFileRecoveryPr struct {
 	RepairLoad int `xml:"repairLoad,attr"`
 }
