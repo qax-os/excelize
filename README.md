@@ -31,16 +31,12 @@ package main
 import (
     "fmt"
     "os"
-    
+
     "github.com/Luxurioust/excelize"
 )
 
 func main() {
-    xlsx, err := excelize.CreateFile()
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
+    xlsx := excelize.CreateFile()
     xlsx.NewSheet(2, "Sheet2")
     xlsx.NewSheet(3, "Sheet3")
     xlsx.SetCellInt("Sheet2", "A23", 10)
@@ -63,7 +59,7 @@ package main
 import (
     "fmt"
     "os"
-    
+
     "github.com/Luxurioust/excelize"
 )
 
@@ -95,7 +91,7 @@ package main
 import (
     "fmt"
     "os"
-    
+
     "github.com/Luxurioust/excelize"
 )
 

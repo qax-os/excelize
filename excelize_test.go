@@ -31,6 +31,8 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellValue("Sheet2", "G1", []byte("World"))
 	f1.SetCellValue("Sheet2", "F2", 42)
 	f1.SetCellValue("Sheet2", "G2", nil)
+	// Test completion column.
+	f1.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
 	f1.GetCellValue("Sheet2", "E13")
 
