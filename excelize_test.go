@@ -34,7 +34,7 @@ func TestExcelize(t *testing.T) {
 	// Test completion column.
 	f1.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
-	f1.GetCellValue("Sheet2", "E13")
+	f1.GetCellValue("Sheet2", "E231")
 
 	for i := 1; i <= 300; i++ {
 		f1.SetCellStr("SHEET3", "c"+strconv.Itoa(i), strconv.Itoa(i))
@@ -74,6 +74,13 @@ func TestExcelize(t *testing.T) {
 	f3.SetCellStr("SHEET1", "B20", "42")
 	f3.SetActiveSheet(0)
 	err = f3.WriteTo("./test/Workbook_3.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+
+	// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
+	f4, err := OpenFile("./test/badWorkbook.xlsx")
+	f4.SetActiveSheet(2)
 	if err != nil {
 		t.Log(err)
 	}

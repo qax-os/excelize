@@ -42,7 +42,7 @@ func (f *File) setContentTypes(index int) {
 // Update sheet property by given index.
 func (f *File) setSheet(index int) {
 	var xlsx xlsxWorksheet
-	xlsx.Dimension.Ref = "A1"
+	xlsx.Dimension.Ref = `A1`
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
 		WorkbookViewID: 0,
 	})
@@ -85,7 +85,7 @@ func (f *File) addXlsxWorkbookRels(sheet int) {
 	content := f.readXlsxWorkbookRels()
 	rID := len(content.Relationships) + 1
 	ID := bytes.Buffer{}
-	ID.WriteString("rId")
+	ID.WriteString(`rId`)
 	ID.WriteString(strconv.Itoa(rID))
 	target := bytes.Buffer{}
 	target.WriteString(`worksheets/sheet`)
