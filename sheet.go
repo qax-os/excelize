@@ -185,22 +185,6 @@ func (f *File) SetActiveSheet(index int) {
 	return
 }
 
-
-
-func (f *File) GetColumnsLength(sheet string) (int, error) {
-	var xlsx xlsxWorksheet
-	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-	err := xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if ( err != nil ) {
-		return -1, err
-	}
-	rows := len(xlsx.SheetData.Row)
-
-	return rows, nil
-
-}
-
-
 // Replace xl/workbook.xml XML tags to self-closing for compatible Office Excel 2007.
 func workBookCompatibility(workbookMarshal string) string {
 	workbookMarshal = strings.Replace(workbookMarshal, `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`, `r:id="`, -1)
