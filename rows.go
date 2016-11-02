@@ -32,19 +32,19 @@ func readXMLSST(f *File) (xlsxSST, error) {
 // GetValueFrom return a value from a column/row cell,
 // this function is inteded to be used with for range on rows
 // an argument with the xlsx opened file
-func (self* xlsxC) GetValueFrom(f *File) (string, error) {
-  switch self.T {
+func (cell* xlsxC) GetValueFrom(f *File) (string, error) {
+  switch cell.T {
     case "s":
       xlsxSI := 0
-      xlsxSI, _ = strconv.Atoi(self.V)
+      xlsxSI, _ = strconv.Atoi(cell.V)
       d, err := readXMLSST(f)
       if ( err != nil ) {
         return "", err
       }
       return d.SI[xlsxSI].T, nil
     case "str":
-      return self.V, nil
+      return cell.V, nil
     default:
-      return self.V, nil
+      return cell.V, nil
   } // switch
 }
