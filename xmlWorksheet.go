@@ -228,14 +228,14 @@ type xlsxDimension struct {
 // as I need.
 type xlsxSheetData struct {
 	XMLName xml.Name  `xml:"sheetData"`
-	Row     []xlsxRow `xml:"row"`
+	Row     []XlsxRow `xml:"row"`
 }
 
-// xlsxRow directly maps the row element in the namespace
+// XlsxRow directly maps the row element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
 // currently I have not checked it for completeness - it does as much
 // as I need.
-type xlsxRow struct {
+type XlsxRow struct {
 	R            int     `xml:"r,attr"`
 	Spans        string  `xml:"spans,attr,omitempty"`
 	Hidden       bool    `xml:"hidden,attr,omitempty"`

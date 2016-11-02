@@ -102,7 +102,7 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	if len(xlsx.SheetData.Row) < cell {
 		for i := len(xlsx.SheetData.Row); i < cell; i++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row, XlsxRow{
 				R: i + 1,
 			})
 		}
@@ -128,7 +128,7 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	if len(xlsx.SheetData.Row) < row {
 		for i := len(xlsx.SheetData.Row); i < row; i++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row, XlsxRow{
 				R: i + 1,
 			})
 		}

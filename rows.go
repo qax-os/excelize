@@ -8,7 +8,7 @@ import (
 
 
 // GetRows return all the rows in a sheet
-func (f *File) GetRows(sheet string) ([]xlsxRow, error) {
+func (f *File) GetRows(sheet string) ([]XlsxRow, error) {
 	var xlsx xlsxWorksheet
 	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
 	err := xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
