@@ -11,6 +11,16 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	// Test get all the rows in a not exists sheet.
+	rows := f1.GetRows("Sheet4")
+	// Test get all the rows in a sheet.
+	rows = f1.GetRows("Sheet2")
+	for _, row := range rows {
+		for _, cell := range row {
+			t.Log(cell, "\t")
+		}
+		t.Log("\r\n")
+	}
 	f1.UpdateLinkedValue()
 	f1.SetCellInt("SHEET2", "A1", 100)
 	f1.SetCellStr("SHEET2", "C11", "Knowns")
