@@ -40,6 +40,12 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellValue("Sheet2", "F1", "Hello")
 	f1.SetCellValue("Sheet2", "G1", []byte("World"))
 	f1.SetCellValue("Sheet2", "F2", 42)
+	f1.SetCellValue("Sheet2", "F2", int8(42))
+	f1.SetCellValue("Sheet2", "F2", int16(42))
+	f1.SetCellValue("Sheet2", "F2", int32(42))
+	f1.SetCellValue("Sheet2", "F2", int64(42))
+	f1.SetCellValue("Sheet2", "F2", float32(42))
+	f1.SetCellValue("Sheet2", "F2", float64(42))
 	f1.SetCellValue("Sheet2", "G2", nil)
 	// Test completion column.
 	f1.SetCellValue("Sheet2", "M2", nil)

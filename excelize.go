@@ -37,8 +37,20 @@ func OpenFile(filename string) (*File, error) {
 // SetCellValue provide function to set int or string type value of a cell.
 func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	switch t := value.(type) {
-	case int, int8, int16, int32, int64, float32, float64:
+	case int:
 		f.SetCellInt(sheet, axis, value.(int))
+	case int8:
+		f.SetCellInt(sheet, axis, int(value.(int8)))
+	case int16:
+		f.SetCellInt(sheet, axis, int(value.(int16)))
+	case int32:
+		f.SetCellInt(sheet, axis, int(value.(int32)))
+	case int64:
+		f.SetCellInt(sheet, axis, int(value.(int64)))
+	case float32:
+		f.SetCellInt(sheet, axis, int(value.(float32)))
+	case float64:
+		f.SetCellInt(sheet, axis, int(value.(float64)))
 	case string:
 		f.SetCellStr(sheet, axis, t)
 	case []byte:
