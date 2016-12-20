@@ -2,9 +2,7 @@
 
 package excelize
 
-import (
-	"encoding/xml"
-)
+import "encoding/xml"
 
 // xlsxWorksheet directly maps the worksheet element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
@@ -18,6 +16,7 @@ type xlsxWorksheet struct {
 	SheetFormatPr xlsxSheetFormatPr `xml:"sheetFormatPr"`
 	Cols          *xlsxCols         `xml:"cols,omitempty"`
 	SheetData     xlsxSheetData     `xml:"sheetData"`
+	Hyperlinks    xlsxHyperlinks    `xml:"hyperlinks"`
 	MergeCells    *xlsxMergeCells   `xml:"mergeCells,omitempty"`
 	PrintOptions  xlsxPrintOptions  `xml:"printOptions"`
 	PageMargins   xlsxPageMargins   `xml:"pageMargins"`
@@ -277,4 +276,19 @@ type xlsxF struct {
 	T       string `xml:"t,attr,omitempty"`   // Formula type
 	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
 	Si      int    `xml:"si,attr,omitempty"`  // Shared formula index
+}
+
+// xlsxHyperlinks directly maps the hyperlinks element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main
+type xlsxHyperlinks struct {
+	Hyperlink []xlsxHyperlink `xml:"hyperlink"`
+}
+
+// xlsxHyperlink directly maps the hyperlink element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main
+type xlsxHyperlink struct {
+	Ref      string `xml:"ref,attr"`
+	Location string `xml:"location,attr,omitempty"`
+	Display  string `xml:"display,attr,omitempty"`
+	RID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }

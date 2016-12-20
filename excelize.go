@@ -138,27 +138,39 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 
 // Completion row element tags of XML in a sheet.
 func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
-	if len(xlsx.SheetData.Row) < row {
-		for i := len(xlsx.SheetData.Row); i < row; i++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
-				R: i + 1,
-			})
+	if len(xlsx.SheetData.Row) >= row {
+		row = len(xlsx.SheetData.Row)
+	}
+	sheetData := xlsxSheetData{}
+	existsRows := map[int]int{}
+	for k, v := range xlsx.SheetData.Row {
+		existsRows[v.R] = k
+	}
+	for i := 0; i < row; i++ {
+		_, ok := existsRows[i+1]
+		if ok {
+			sheetData.Row = append(sheetData.Row, xlsx.SheetData.Row[existsRows[i+1]])
+			continue
 		}
-		buffer := bytes.Buffer{}
-		for ii := 0; ii < row; ii++ {
-			start := len(xlsx.SheetData.Row[ii].C)
-			if start == 0 {
-				for iii := start; iii < cell; iii++ {
-					buffer.WriteString(toAlphaString(iii + 1))
-					buffer.WriteString(strconv.Itoa(ii + 1))
-					xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
-						R: buffer.String(),
-					})
-					buffer.Reset()
-				}
+		sheetData.Row = append(sheetData.Row, xlsxRow{
+			R: i + 1,
+		})
+	}
+	buffer := bytes.Buffer{}
+	for ii := 0; ii < row; ii++ {
+		start := len(sheetData.Row[ii].C)
+		if start == 0 {
+			for iii := start; iii < cell; iii++ {
+				buffer.WriteString(toAlphaString(iii + 1))
+				buffer.WriteString(strconv.Itoa(ii + 1))
+				sheetData.Row[ii].C = append(sheetData.Row[ii].C, xlsxC{
+					R: buffer.String(),
+				})
+				buffer.Reset()
 			}
 		}
 	}
+	xlsx.SheetData = sheetData
 	return xlsx
 }
 

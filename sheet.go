@@ -116,11 +116,6 @@ func (f *File) setAppXML() {
 // declarations in a single element of a document.  This function is a
 // horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsNameSpace(workbookMarshal string) string {
-	// newWorkbook := strings.Replace(workbookMarshal, `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id`, `r:id`, -1)
-	// Dirty hack to fix issues #63 and #91; encoding/xml currently
-	// "doesn't allow for additional namespaces to be defined in the
-	// root element of the document," as described by @tealeg in the
-	// comments for #63.
 	oldXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
 	newXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
@@ -129,6 +124,7 @@ func replaceRelationshipsNameSpace(workbookMarshal string) string {
 // replace relationships ID in worksheets/sheet%d.xml
 func replaceRelationshipsID(workbookMarshal string) string {
 	rids := strings.Replace(workbookMarshal, `<drawing rid="" />`, ``, -1)
+	rids = strings.Replace(rids, `<hyperlinks></hyperlinks>`, ``, -1)
 	return strings.Replace(rids, `<drawing rid="`, `<drawing r:id="`, -1)
 }
 
@@ -196,5 +192,6 @@ func workBookCompatibility(workbookMarshal string) string {
 	workbookMarshal = strings.Replace(workbookMarshal, `></calcPr>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></workbookProtection>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></fileRecoveryPr>`, ` />`, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `></hyperlink>`, ` />`, -1)
 	return workbookMarshal
 }
