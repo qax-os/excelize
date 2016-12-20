@@ -23,6 +23,8 @@ type xlsxWorksheet struct {
 	PageSetUp     xlsxPageSetUp     `xml:"pageSetup"`
 	HeaderFooter  xlsxHeaderFooter  `xml:"headerFooter"`
 	Drawing       xlsxDrawing       `xml:"drawing"`
+	Picture       xlsxPicture       `xml:"picture"`
+	TableParts    xlsxTableParts    `xml:"tableParts"`
 }
 
 // xlsxDrawing change r:id to rid in the namespace.
@@ -291,4 +293,60 @@ type xlsxHyperlink struct {
 	Location string `xml:"location,attr,omitempty"`
 	Display  string `xml:"display,attr,omitempty"`
 	RID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxTableParts directly maps the tableParts element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
+// The table element has several attributes applied to identify the table
+// and the data range it covers. The table id attribute needs to be unique
+// across all table parts, the same goes for the name and displayName. The
+// displayName has the further restriction that it must be unique across
+// all defined names in the workbook. Later on we will see that you can
+// define names for many elements, such as cells or formulas. The name
+// value is used for the object model in Microsoft Office Excel. The
+// displayName is used for references in formulas. The ref attribute is
+// used to identify the cell range that the table covers. This includes
+// not only the table data, but also the table header containing column
+// names.
+// To add columns to your table you add new tableColumn elements to the
+// tableColumns container. Similar to the shared string table the
+// collection keeps a count attribute identifying the number of columns.
+// Besides the table definition in the table part there is also the need
+// to identify which tables are displayed in the worksheet. The worksheet
+// part has a separate element tableParts to store this information. Each
+// table part is referenced through the relationship ID and again a count
+// of the number of table parts is maintained. The following markup sample
+// is taken from the documents accompanying this book. The sheet data
+// element has been removed to reduce the size of the sample. To reference
+// the table, just add the tableParts element, of course after having
+// created and stored the table part.
+// Example:
+//
+//    <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+//        ...
+//        <tableParts count="1">
+// 		      <tablePart r:id="rId1" />
+//        </tableParts>
+//    </worksheet>
+//
+type xlsxTableParts struct {
+	Count      int             `xml:"count,attr"`
+	TableParts []xlsxTablePart `xml:"tablePart"`
+}
+
+// xlsxTablePart directly maps the tablePart element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main
+type xlsxTablePart struct {
+	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxPicture directly maps the picture element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
+// Background sheet image.
+// Example:
+//
+//    <picture r:id="rId1"/>
+//
+type xlsxPicture struct {
+	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"` // Relationship Id pointing to the image part.
 }
