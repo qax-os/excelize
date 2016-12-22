@@ -2,9 +2,7 @@
 
 package excelize
 
-import (
-	"encoding/xml"
-)
+import "encoding/xml"
 
 type xlsxTypes struct {
 	XMLName   xml.Name       `xml:"http://schemas.openxmlformats.org/package/2006/content-types Types"`

@@ -23,6 +23,7 @@ type xlsxWorksheet struct {
 	PageSetUp     xlsxPageSetUp     `xml:"pageSetup"`
 	HeaderFooter  xlsxHeaderFooter  `xml:"headerFooter"`
 	Drawing       xlsxDrawing       `xml:"drawing"`
+	LegacyDrawing xlsxLegacyDrawing `xml:"legacyDrawing"`
 	Picture       xlsxPicture       `xml:"picture"`
 	TableParts    xlsxTableParts    `xml:"tableParts"`
 }
@@ -349,4 +350,17 @@ type xlsxTablePart struct {
 //
 type xlsxPicture struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"` // Relationship Id pointing to the image part.
+}
+
+// xlsxLegacyDrawing directly maps the legacyDrawing element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
+// A comment is a rich text note that is attached to, and associated with,
+// a cell, separate from other cell content. Comment content is stored
+// separate from the cell, and is displayed in a drawing object (like a
+// text box) that is separate from, but associated with, a cell. Comments
+// are used as reminders, such as noting how a complex formula works, or
+// to provide feedback to other users. Comments can also be used to explain
+// assumptions made in a formula or to call out something special about the cell.
+type xlsxLegacyDrawing struct {
+	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }

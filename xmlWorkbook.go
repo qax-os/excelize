@@ -2,9 +2,7 @@
 
 package excelize
 
-import (
-	"encoding/xml"
-)
+import "encoding/xml"
 
 const (
 	// sheet state values as defined by

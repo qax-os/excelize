@@ -127,6 +127,7 @@ func replaceRelationshipsID(workbookMarshal string) string {
 	rids = strings.Replace(rids, `<hyperlinks></hyperlinks>`, ``, -1)
 	rids = strings.Replace(rids, `<tableParts count="0"></tableParts>`, ``, -1)
 	rids = strings.Replace(rids, `<picture></picture>`, ``, -1)
+	rids = strings.Replace(rids, `<legacyDrawing></legacyDrawing>`, ``, -1)
 	return strings.Replace(rids, `<drawing rid="`, `<drawing r:id="`, -1)
 }
 

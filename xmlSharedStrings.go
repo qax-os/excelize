@@ -2,9 +2,7 @@
 
 package excelize
 
-import (
-	"encoding/xml"
-)
+import "encoding/xml"
 
 // xlsxSST directly maps the sst element from the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main currently
