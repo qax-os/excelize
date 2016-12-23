@@ -138,8 +138,12 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 
 // Completion row element tags of XML in a sheet.
 func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
-	if len(xlsx.SheetData.Row) >= row {
-		row = len(xlsx.SheetData.Row)
+	currentRows := len(xlsx.SheetData.Row)
+	if currentRows > 1 {
+		lastRow := xlsx.SheetData.Row[currentRows-1].R
+		if lastRow >= row {
+			row = lastRow
+		}
 	}
 	sheetData := xlsxSheetData{}
 	existsRows := map[int]int{}
