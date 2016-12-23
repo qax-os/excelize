@@ -132,25 +132,34 @@ type xlsxSheetViews struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
 // currently I have not checked it for completeness - it does as much
 // as I need.
+//
+// A single sheet view definition. When more than one sheet view is
+// defined in the file, it means that when opening the workbook, each
+// sheet view corresponds to a separate window within the spreadsheet
+// application, where each window is showing the particular sheet
+// containing the same workbookViewId value, the last sheetView
+// definition is loaded, and the others are discarded. When multiple
+// windows are viewing the same sheet, multiple sheetView elements
+// (with corresponding workbookView entries) are saved.
 type xlsxSheetView struct {
-	// WindowProtection        bool            `xml:"windowProtection,attr"`
-	// ShowFormulas            bool            `xml:"showFormulas,attr"`
-	ShowGridLines string `xml:"showGridLines,attr,omitempty"`
-	// ShowRowColHeaders       bool            `xml:"showRowColHeaders,attr"`
-	// ShowZeros               bool            `xml:"showZeros,attr"`
-	// RightToLeft             bool            `xml:"rightToLeft,attr"`
-	TabSelected bool `xml:"tabSelected,attr"`
-	// ShowOutlineSymbols      bool            `xml:"showOutlineSymbols,attr"`
-	// DefaultGridColor        bool            `xml:"defaultGridColor,attr"`
-	// View                    string          `xml:"view,attr"`
-	TopLeftCell string `xml:"topLeftCell,attr,omitempty"`
-	// ColorId                 int             `xml:"colorId,attr"`
+	WindowProtection        bool            `xml:"windowProtection,attr,omitempty"`
+	ShowFormulas            bool            `xml:"showFormulas,attr,omitempty"`
+	ShowGridLines           string          `xml:"showGridLines,attr,omitempty"`
+	ShowRowColHeaders       bool            `xml:"showRowColHeaders,attr,omitempty"`
+	ShowZeros               bool            `xml:"showZeros,attr,omitempty"`
+	RightToLeft             bool            `xml:"rightToLeft,attr,omitempty"`
+	TabSelected             bool            `xml:"tabSelected,attr,omitempty"`
+	ShowOutlineSymbols      bool            `xml:"showOutlineSymbols,attr,omitempty"`
+	DefaultGridColor        bool            `xml:"defaultGridColor,attr"`
+	View                    string          `xml:"view,attr,omitempty"`
+	TopLeftCell             string          `xml:"topLeftCell,attr,omitempty"`
+	ColorId                 int             `xml:"colorId,attr,omitempty"`
 	ZoomScale               float64         `xml:"zoomScale,attr,omitempty"`
 	ZoomScaleNormal         float64         `xml:"zoomScaleNormal,attr,omitempty"`
 	ZoomScalePageLayoutView float64         `xml:"zoomScalePageLayoutView,attr,omitempty"`
 	WorkbookViewID          int             `xml:"workbookViewId,attr"`
-	Selection               []xlsxSelection `xml:"selection"`
 	Pane                    *xlsxPane       `xml:"pane,omitempty"`
+	Selection               []xlsxSelection `xml:"selection"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
@@ -161,7 +170,7 @@ type xlsxSelection struct {
 	Pane         string `xml:"pane,attr,omitempty"`
 	ActiveCell   string `xml:"activeCell,attr,omitempty"`
 	ActiveCellID int    `xml:"activeCellId,attr"`
-	SQRef        string `xml:"sqref,attr"`
+	SQRef        string `xml:"sqref,attr,omitempty"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
@@ -181,8 +190,12 @@ type xlsxPane struct {
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxSheetPr struct {
-	FilterMode  bool              `xml:"filterMode,attr"`
-	PageSetUpPr []xlsxPageSetUpPr `xml:"pageSetUpPr"`
+	XMLName                           xml.Name        `xml:"sheetPr"`
+	FilterMode                        bool            `xml:"filterMode,attr,omitempty"`
+	CodeName                          string          `xml:"codeName,attr,omitempty"`
+	EnableFormatConditionsCalculation int             `xml:"enableFormatConditionsCalculation,attr,omitempty"`
+	TabColor                          xlsxTabColor    `xml:"tabColor,omitempty"`
+	PageSetUpPr                       xlsxPageSetUpPr `xml:"pageSetUpPr"`
 }
 
 // xlsxPageSetUpPr directly maps the pageSetupPr element in the namespace
@@ -190,7 +203,15 @@ type xlsxSheetPr struct {
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxPageSetUpPr struct {
-	FitToPage bool `xml:"fitToPage,attr"`
+	FitToPage bool `xml:"fitToPage,attr"` // Flag indicating whether the Fit to Page print option is enabled.
+}
+
+// xlsxTabColor directly maps the tabColor element in the namespace
+// currently I have not checked it for completeness - it does as much
+// as I need.
+type xlsxTabColor struct {
+	Theme int   `xml:"theme,attr,omitempty"` //  (Theme Color) A zero-based index into the <clrScheme> collection (§20.1.6.2), referencing a particular <sysClr> or <srgbClr> value expressed in the Theme part.
+	Tint  uint8 `xml:"tint,attr,omitempty"`  // Specifies the tint value applied to the color.
 }
 
 // xlsxCols directly maps the cols element in the namespace
@@ -278,7 +299,7 @@ type xlsxF struct {
 	Content string `xml:",chardata"`
 	T       string `xml:"t,attr,omitempty"`   // Formula type
 	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
-	Si      int    `xml:"si,attr,omitempty"`  // Shared formula index
+	Si      string `xml:"si,attr,omitempty"`  // Shared formula index
 }
 
 // xlsxHyperlinks directly maps the hyperlinks element in the namespace

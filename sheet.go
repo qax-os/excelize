@@ -19,9 +19,9 @@ func (f *File) NewSheet(index int, name string) {
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(index)
 	// Update xl/_rels/workbook.xml.rels
-	f.addXlsxWorkbookRels(index)
+	rid := f.addXlsxWorkbookRels(index)
 	// Update xl/workbook.xml
-	f.setWorkbook(index, name)
+	f.setWorkbook(name, rid)
 }
 
 // Read and update property of contents type of XLSX.
@@ -54,17 +54,17 @@ func (f *File) setSheet(index int) {
 	f.saveFileList(path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
 }
 
-// Update workbook property of XLSX.
-func (f *File) setWorkbook(index int, name string) {
+// Update workbook property of XLSX. Maximum 31 characters allowed in sheet title.
+func (f *File) setWorkbook(name string, rid int) {
 	var content xlsxWorkbook
+	if len(name) > 31 {
+		name = name[0:31]
+	}
 	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
-
-	rels := f.readXlsxWorkbookRels()
-	rID := len(rels.Relationships)
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    name,
-		SheetID: strconv.Itoa(index),
-		ID:      "rId" + strconv.Itoa(rID),
+		SheetID: strconv.Itoa(rid),
+		ID:      `rId` + strconv.Itoa(rid),
 	})
 	output, err := xml.Marshal(content)
 	if err != nil {
@@ -81,7 +81,7 @@ func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
 }
 
 // Update workbook relationships property of XLSX.
-func (f *File) addXlsxWorkbookRels(sheet int) {
+func (f *File) addXlsxWorkbookRels(sheet int) int {
 	content := f.readXlsxWorkbookRels()
 	rID := len(content.Relationships) + 1
 	ID := bytes.Buffer{}
@@ -101,6 +101,7 @@ func (f *File) addXlsxWorkbookRels(sheet int) {
 		fmt.Println(err)
 	}
 	f.saveFileList(`xl/_rels/workbook.xml.rels`, string(output))
+	return rID
 }
 
 // Update docProps/app.xml file of XML.
@@ -128,6 +129,7 @@ func replaceRelationshipsID(workbookMarshal string) string {
 	rids = strings.Replace(rids, `<tableParts count="0"></tableParts>`, ``, -1)
 	rids = strings.Replace(rids, `<picture></picture>`, ``, -1)
 	rids = strings.Replace(rids, `<legacyDrawing></legacyDrawing>`, ``, -1)
+	rids = strings.Replace(rids, `<tabColor></tabColor>`, ``, -1)
 	return strings.Replace(rids, `<drawing rid="`, `<drawing r:id="`, -1)
 }
 
@@ -191,10 +193,12 @@ func workBookCompatibility(workbookMarshal string) string {
 	workbookMarshal = strings.Replace(workbookMarshal, `></workbookView>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></fileVersion>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></workbookPr>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></definedNames>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></calcPr>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></workbookProtection>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></fileRecoveryPr>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></hyperlink>`, ` />`, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `></tabColor>`, ` />`, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `></pageSetUpPr>`, ` />`, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `></pane>`, ` />`, -1)
 	return workbookMarshal
 }

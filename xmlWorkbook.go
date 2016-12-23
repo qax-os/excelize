@@ -74,7 +74,8 @@ type xlsxWorkbookPr struct {
 	DefaultThemeVersion string `xml:"defaultThemeVersion,attr,omitempty"`
 	BackupFile          bool   `xml:"backupFile,attr,omitempty"`
 	ShowObjects         string `xml:"showObjects,attr,omitempty"`
-	Date1904            bool   `xml:"date1904,attr"`
+	Date1904            bool   `xml:"date1904,attr,omitempty"`
+	CodeName            string `xml:"codeName,attr,omitempty"`
 }
 
 // xlsxBookViews directly maps the bookViews element from the

@@ -24,7 +24,7 @@ func TestExcelize(t *testing.T) {
 	f1.UpdateLinkedValue()
 	f1.SetCellInt("SHEET2", "A1", 100)
 	f1.SetCellStr("SHEET2", "C11", "Knowns")
-	f1.NewSheet(3, "TestSheet")
+	f1.NewSheet(3, "Maximum 31 characters allowed in sheet title.")
 	f1.SetCellInt("Sheet3", "A23", 10)
 	f1.SetCellStr("SHEET3", "b230", "10")
 	f1.SetCellStr("SHEET10", "b230", "10")
