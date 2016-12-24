@@ -29,6 +29,9 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellStr("SHEET3", "b230", "10")
 	f1.SetCellStr("SHEET10", "b230", "10")
 	f1.SetActiveSheet(2)
+	f1.GetCellFormula("Sheet1", "B19") // Test get cell formula with given rows number.
+	f1.GetCellFormula("Sheet2", "B20") // Test get cell formula with illegal sheet index.
+	f1.GetCellFormula("Sheet1", "B20") // Test get cell formula with illegal rows number.
 	// Test read cell value with given illegal rows number.
 	f1.GetCellValue("Sheet2", "a-1")
 	// Test read cell value with given lowercase column number.
