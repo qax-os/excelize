@@ -8,6 +8,55 @@ import (
 	"strings"
 )
 
+// Define the empty element and self-close XML tags hack rules for
+// xl/workbook.xml and xl/worksheets/sheet%d.xml.
+var (
+	WorkbookRules = []map[string]string{
+		{`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`: `r:id="`},
+		{`></sheet>`: ` />`},
+		{`></workbookView>`: ` />`},
+		{`></fileVersion>`: ` />`},
+		{`></workbookPr>`: ` />`},
+		{`></calcPr>`: ` />`},
+		{`></workbookProtection>`: ` />`},
+		{`></fileRecoveryPr>`: ` />`},
+		{`></hyperlink>`: ` />`},
+		{`></tabColor>`: ` />`},
+		{`></pageSetUpPr>`: ` />`},
+		{`></pane>`: ` />`},
+		{`<extLst></extLst>`: ``},
+		{`<fileRecoveryPr />`: ``},
+		{`<workbookProtection />`: ``},
+		{`<pivotCaches></pivotCaches>`: ``},
+		{`<externalReferences></externalReferences>`: ``},
+		{`<workbookProtection></workbookProtection>`: ``},
+		{`<definedNames></definedNames>`: ``},
+		{`<fileRecoveryPr></fileRecoveryPr>`: ``},
+		{`<workbookPr />`: ``},
+	}
+	SheetRules = []map[string]string{
+		{`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`: `r:id="`},
+		{`<drawing></drawing>`: ``},
+		{`<drawing />`: ``},
+		{`<hyperlinks></hyperlinks>`: ``},
+		{`<tableParts count="0"></tableParts>`: ``},
+		{`<picture></picture>`: ``},
+		{`<legacyDrawing></legacyDrawing>`: ``},
+		{`<tabColor></tabColor>`: ``},
+		{`<sheetProtection></sheetProtection>`: ``},
+		{`<conditionalFormatting></conditionalFormatting>`: ``},
+		{`<extLst></extLst>`: ``},
+		{`></tablePart>`: ` />`},
+		{`></dimension>`: ` />`},
+		{`></selection>`: ` />`},
+		{`></sheetFormatPr>`: ` />`},
+		{`></printOptions>`: ` />`},
+		{`></pageSetup>`: ` />`},
+		{`></pageMargins>`: ` />`},
+		{`></mergeCell>`: ` />`},
+	}
+)
+
 // NewSheet provice function to greate a new sheet by given index, when
 // creating a new XLSX file, the default sheet will be create, when you
 // create a new file, you need to ensure that the index is continuous.
@@ -122,17 +171,6 @@ func replaceRelationshipsNameSpace(workbookMarshal string) string {
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
-// replace relationships ID in worksheets/sheet%d.xml
-func replaceRelationshipsID(workbookMarshal string) string {
-	rids := strings.Replace(workbookMarshal, `<drawing rid="" />`, ``, -1)
-	rids = strings.Replace(rids, `<hyperlinks></hyperlinks>`, ``, -1)
-	rids = strings.Replace(rids, `<tableParts count="0"></tableParts>`, ``, -1)
-	rids = strings.Replace(rids, `<picture></picture>`, ``, -1)
-	rids = strings.Replace(rids, `<legacyDrawing></legacyDrawing>`, ``, -1)
-	rids = strings.Replace(rids, `<tabColor></tabColor>`, ``, -1)
-	return strings.Replace(rids, `<drawing rid="`, `<drawing r:id="`, -1)
-}
-
 // SetActiveSheet provide function to set default active sheet of XLSX by given index.
 func (f *File) SetActiveSheet(index int) {
 	var content xlsxWorkbook
@@ -188,26 +226,20 @@ func (f *File) SetActiveSheet(index int) {
 
 // Replace xl/workbook.xml XML tags to self-closing for compatible Office Excel 2007.
 func workBookCompatibility(workbookMarshal string) string {
-	workbookMarshal = strings.Replace(workbookMarshal, `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`, `r:id="`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></sheet>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></workbookView>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></fileVersion>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></workbookPr>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></calcPr>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></workbookProtection>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></fileRecoveryPr>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></hyperlink>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></tabColor>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></pageSetUpPr>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `></pane>`, ` />`, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<extLst></extLst>`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<fileRecoveryPr />`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<workbookProtection />`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<pivotCaches></pivotCaches>`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<externalReferences></externalReferences>`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<workbookProtection></workbookProtection>`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<definedNames></definedNames>`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<fileRecoveryPr></fileRecoveryPr>`, ``, -1)
-	workbookMarshal = strings.Replace(workbookMarshal, `<workbookPr />`, ``, -1)
+	for _, rules := range WorkbookRules {
+		for k, v := range rules {
+			workbookMarshal = strings.Replace(workbookMarshal, k, v, -1)
+		}
+	}
+	return workbookMarshal
+}
+
+// replace relationships ID in worksheets/sheet%d.xml
+func replaceRelationshipsID(workbookMarshal string) string {
+	for _, rules := range SheetRules {
+		for k, v := range rules {
+			workbookMarshal = strings.Replace(workbookMarshal, k, v, -1)
+		}
+	}
 	return workbookMarshal
 }

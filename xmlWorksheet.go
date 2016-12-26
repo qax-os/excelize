@@ -9,29 +9,31 @@ import "encoding/xml"
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxWorksheet struct {
-	XMLName       xml.Name          `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
-	SheetPr       xlsxSheetPr       `xml:"sheetPr"`
-	Dimension     xlsxDimension     `xml:"dimension"`
-	SheetViews    xlsxSheetViews    `xml:"sheetViews"`
-	SheetFormatPr xlsxSheetFormatPr `xml:"sheetFormatPr"`
-	Cols          *xlsxCols         `xml:"cols,omitempty"`
-	SheetData     xlsxSheetData     `xml:"sheetData"`
-	Hyperlinks    xlsxHyperlinks    `xml:"hyperlinks"`
-	MergeCells    *xlsxMergeCells   `xml:"mergeCells,omitempty"`
-	PrintOptions  xlsxPrintOptions  `xml:"printOptions"`
-	PageMargins   xlsxPageMargins   `xml:"pageMargins"`
-	PageSetUp     xlsxPageSetUp     `xml:"pageSetup"`
-	HeaderFooter  xlsxHeaderFooter  `xml:"headerFooter"`
-	Drawing       xlsxDrawing       `xml:"drawing"`
-	LegacyDrawing xlsxLegacyDrawing `xml:"legacyDrawing"`
-	Picture       xlsxPicture       `xml:"picture"`
-	TableParts    xlsxTableParts    `xml:"tableParts"`
-	ExtLst        xlsxExtLst        `xml:"extLst"`
+	XMLName               xml.Name                  `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
+	SheetPr               xlsxSheetPr               `xml:"sheetPr"`
+	Dimension             xlsxDimension             `xml:"dimension"`
+	SheetViews            xlsxSheetViews            `xml:"sheetViews"`
+	SheetFormatPr         xlsxSheetFormatPr         `xml:"sheetFormatPr"`
+	Cols                  *xlsxCols                 `xml:"cols,omitempty"`
+	SheetData             xlsxSheetData             `xml:"sheetData"`
+	SheetProtection       xlsxSheetProtection       `xml:"sheetProtection"`
+	MergeCells            *xlsxMergeCells           `xml:"mergeCells,omitempty"`
+	ConditionalFormatting xlsxConditionalFormatting `xml:"conditionalFormatting"`
+	Hyperlinks            xlsxHyperlinks            `xml:"hyperlinks"`
+	PrintOptions          xlsxPrintOptions          `xml:"printOptions"`
+	PageMargins           xlsxPageMargins           `xml:"pageMargins"`
+	PageSetUp             xlsxPageSetUp             `xml:"pageSetup"`
+	HeaderFooter          xlsxHeaderFooter          `xml:"headerFooter"`
+	Drawing               xlsxDrawing               `xml:"drawing"`
+	LegacyDrawing         xlsxLegacyDrawing         `xml:"legacyDrawing"`
+	Picture               xlsxPicture               `xml:"picture"`
+	TableParts            xlsxTableParts            `xml:"tableParts"`
+	ExtLst                xlsxExtLst                `xml:"extLst"`
 }
 
 // xlsxDrawing change r:id to rid in the namespace.
 type xlsxDrawing struct {
-	RID string `xml:"rid,attr"`
+	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
 // xlsxHeaderFooter directly maps the headerFooter element in the namespace
@@ -301,6 +303,39 @@ type xlsxF struct {
 	T       string `xml:"t,attr,omitempty"`   // Formula type
 	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
 	Si      string `xml:"si,attr,omitempty"`  // Shared formula index
+}
+
+// xlsxSheetProtection collection expresses the sheet protection options
+// to enforce when the sheet is protected.
+type xlsxSheetProtection struct {
+	AlgorithmName      string `xml:"algorithmName,attr,omitempty"`
+	AutoFilter         int    `xml:"autoFilter,attr,omitempty"`
+	DeleteColumns      int    `xml:"deleteColumns,attr,omitempty"`
+	DeleteRows         int    `xml:"deleteRows,attr,omitempty"`
+	FormatCells        int    `xml:"formatCells,attr,omitempty"`
+	FormatColumns      int    `xml:"formatColumns,attr,omitempty"`
+	FormatRows         int    `xml:"formatRows,attr,omitempty"`
+	HashValue          string `xml:"hashValue,attr,omitempty"`
+	InsertColumns      int    `xml:"insertColumns,attr,omitempty"`
+	InsertHyperlinks   int    `xml:"insertHyperlinks,attr,omitempty"`
+	InsertRows         int    `xml:"insertRows,attr,omitempty"`
+	Objects            int    `xml:"objects,attr,omitempty"`
+	PivotTables        int    `xml:"pivotTables,attr,omitempty"`
+	SaltValue          string `xml:"saltValue,attr,omitempty"`
+	Scenarios          int    `xml:"scenarios,attr,omitempty"`
+	SelectLockedCells  int    `xml:"selectLockedCells,attr,omitempty"`
+	SelectUnlockedCell int    `xml:"selectUnlockedCell,attr,omitempty"`
+	Sheet              int    `xml:"sheet,attr,omitempty"`
+	Sort               int    `xml:"sort,attr,omitempty"`
+	SpinCount          int    `xml:"spinCount,attr,omitempty"`
+}
+
+// A Conditional Format is a format, such as cell shading or font color,
+// that a spreadsheet application can automatically apply to cells if a
+// specified condition is true. This collection expresses conditional
+// formatting rules applied to a particular cell or range.
+type xlsxConditionalFormatting struct {
+	CfRule string `xml:",innerxml"`
 }
 
 // xlsxHyperlinks directly maps the hyperlinks element in the namespace

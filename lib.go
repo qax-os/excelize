@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"strings"
 )
 
 // ReadZip takes a pointer to a zip.ReadCloser and returns a
@@ -28,7 +27,7 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 		if len(v.Name) > 18 {
 			if v.Name[0:19] == `xl/worksheets/sheet` {
 				var xlsx xlsxWorksheet
-				xml.Unmarshal([]byte(strings.Replace(fileList[v.Name], `<drawing r:id=`, `<drawing rid=`, -1)), &xlsx)
+				xml.Unmarshal([]byte(fileList[v.Name]), &xlsx)
 				xlsx = checkRow(xlsx)
 				output, _ := xml.Marshal(xlsx)
 				fileList[v.Name] = replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output)))
@@ -39,10 +38,10 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	return fileList, worksheets, nil
 }
 
-// Read XML content as string and replace drawing property in XML namespace of sheet.
+// Read XML content as string.
 func (f *File) readXML(name string) string {
 	if content, ok := f.XLSX[name]; ok {
-		return strings.Replace(content, `<drawing r:id=`, `<drawing rid=`, -1)
+		return content
 	}
 	return ``
 }
