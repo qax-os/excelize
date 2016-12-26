@@ -26,6 +26,7 @@ type xlsxWorksheet struct {
 	LegacyDrawing xlsxLegacyDrawing `xml:"legacyDrawing"`
 	Picture       xlsxPicture       `xml:"picture"`
 	TableParts    xlsxTableParts    `xml:"tableParts"`
+	ExtLst        xlsxExtLst        `xml:"extLst"`
 }
 
 // xlsxDrawing change r:id to rid in the namespace.

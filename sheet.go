@@ -70,7 +70,7 @@ func (f *File) setWorkbook(name string, rid int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
+	f.saveFileList(`xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
 }
 
 // Read and unmarshal workbook relationships of XLSX.
@@ -118,7 +118,7 @@ func (f *File) setAppXML() {
 // horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsNameSpace(workbookMarshal string) string {
 	oldXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
-	newXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`
+	newXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
@@ -200,5 +200,14 @@ func workBookCompatibility(workbookMarshal string) string {
 	workbookMarshal = strings.Replace(workbookMarshal, `></tabColor>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></pageSetUpPr>`, ` />`, -1)
 	workbookMarshal = strings.Replace(workbookMarshal, `></pane>`, ` />`, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<extLst></extLst>`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<fileRecoveryPr />`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<workbookProtection />`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<pivotCaches></pivotCaches>`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<externalReferences></externalReferences>`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<workbookProtection></workbookProtection>`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<definedNames></definedNames>`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<fileRecoveryPr></fileRecoveryPr>`, ``, -1)
+	workbookMarshal = strings.Replace(workbookMarshal, `<workbookPr />`, ``, -1)
 	return workbookMarshal
 }

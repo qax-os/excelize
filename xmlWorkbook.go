@@ -37,14 +37,17 @@ type xlsxWorkbook struct {
 	WorkbookProtection xlsxWorkbookProtection `xml:"workbookProtection"`
 	BookViews          xlsxBookViews          `xml:"bookViews"`
 	Sheets             xlsxSheets             `xml:"sheets"`
+	ExternalReferences xlsxExternalReferences `xml:"externalReferences"`
 	DefinedNames       xlsxDefinedNames       `xml:"definedNames"`
 	CalcPr             xlsxCalcPr             `xml:"calcPr"`
+	PivotCaches        xlsxPivotCaches        `xml:"pivotCaches"`
+	ExtLst             xlsxExtLst             `xml:"extLst"`
 	FileRecoveryPr     xlsxFileRecoveryPr     `xml:"fileRecoveryPr"`
 }
 
 // xlsxFileRecoveryPr maps sheet recovery information.
 type xlsxFileRecoveryPr struct {
-	RepairLoad int `xml:"repairLoad,attr"`
+	RepairLoad int `xml:"repairLoad,attr,omitempty"`
 }
 
 // xlsxWorkbookProtection directly maps the workbookProtection element from the
@@ -120,6 +123,43 @@ type xlsxSheet struct {
 	SheetID string `xml:"sheetId,attr,omitempty"`
 	ID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	State   string `xml:"state,attr,omitempty"`
+}
+
+// xlsxExternalReferences directly maps the externalReferences element
+// of the external workbook references part.
+type xlsxExternalReferences struct {
+	ExternalReference []xlsxExternalReference `xml:"externalReference"`
+}
+
+// xlsxExternalReference directly maps the externalReference element
+// of the external workbook references part.
+type xlsxExternalReference struct {
+	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxPivotCaches element enumerates pivot cache definition parts
+// used by pivot tables and formulas in this workbook.
+type xlsxPivotCaches struct {
+	PivotCache []xlsxPivotCache `xml:"pivotCache"`
+}
+
+// xlsxPivotCache directly maps the pivotCache element.
+type xlsxPivotCache struct {
+	CacheID int    `xml:"cacheId,attr,omitempty"`
+	RID     string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// extLst element provides a convention for extending spreadsheetML in
+// predefined locations. The locations shall be denoted with the extLst
+// element, and are called extension lists. Extension list locations
+// within the markup document are specified in the markup specification
+// and can be used to store extensions to the markup specification,
+// whether those are future version extensions of the markup specification
+// or are private extensions implemented independently from the markup
+// specification. Markup within an extension might not be understood by a
+// consumer.
+type xlsxExtLst struct {
+	Ext string `xml:",innerxml"`
 }
 
 // xlsxDefinedNames directly maps the definedNames element from the
