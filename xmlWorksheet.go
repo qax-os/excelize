@@ -1,5 +1,3 @@
-// Some code of this file reference tealeg/xlsx.
-
 package excelize
 
 import "encoding/xml"
@@ -9,26 +7,26 @@ import "encoding/xml"
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxWorksheet struct {
-	XMLName               xml.Name                  `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
-	SheetPr               xlsxSheetPr               `xml:"sheetPr"`
-	Dimension             xlsxDimension             `xml:"dimension"`
-	SheetViews            xlsxSheetViews            `xml:"sheetViews"`
-	SheetFormatPr         xlsxSheetFormatPr         `xml:"sheetFormatPr"`
-	Cols                  *xlsxCols                 `xml:"cols,omitempty"`
-	SheetData             xlsxSheetData             `xml:"sheetData"`
-	SheetProtection       xlsxSheetProtection       `xml:"sheetProtection"`
-	MergeCells            *xlsxMergeCells           `xml:"mergeCells,omitempty"`
-	ConditionalFormatting xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	Hyperlinks            xlsxHyperlinks            `xml:"hyperlinks"`
-	PrintOptions          xlsxPrintOptions          `xml:"printOptions"`
-	PageMargins           xlsxPageMargins           `xml:"pageMargins"`
-	PageSetUp             xlsxPageSetUp             `xml:"pageSetup"`
-	HeaderFooter          xlsxHeaderFooter          `xml:"headerFooter"`
-	Drawing               xlsxDrawing               `xml:"drawing"`
-	LegacyDrawing         xlsxLegacyDrawing         `xml:"legacyDrawing"`
-	Picture               xlsxPicture               `xml:"picture"`
-	TableParts            xlsxTableParts            `xml:"tableParts"`
-	ExtLst                xlsxExtLst                `xml:"extLst"`
+	XMLName               xml.Name                   `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
+	SheetPr               *xlsxSheetPr               `xml:"sheetPr"`
+	Dimension             xlsxDimension              `xml:"dimension"`
+	SheetViews            xlsxSheetViews             `xml:"sheetViews"`
+	SheetFormatPr         *xlsxSheetFormatPr         `xml:"sheetFormatPr"`
+	Cols                  *xlsxCols                  `xml:"cols,omitempty"`
+	SheetData             xlsxSheetData              `xml:"sheetData"`
+	SheetProtection       *xlsxSheetProtection       `xml:"sheetProtection"`
+	MergeCells            *xlsxMergeCells            `xml:"mergeCells,omitempty"`
+	ConditionalFormatting *xlsxConditionalFormatting `xml:"conditionalFormatting"`
+	Hyperlinks            *xlsxHyperlinks            `xml:"hyperlinks"`
+	PrintOptions          *xlsxPrintOptions          `xml:"printOptions"`
+	PageMargins           *xlsxPageMargins           `xml:"pageMargins"`
+	PageSetUp             *xlsxPageSetUp             `xml:"pageSetup"`
+	HeaderFooter          *xlsxHeaderFooter          `xml:"headerFooter"`
+	Drawing               *xlsxDrawing               `xml:"drawing"`
+	LegacyDrawing         *xlsxLegacyDrawing         `xml:"legacyDrawing"`
+	Picture               *xlsxPicture               `xml:"picture"`
+	TableParts            *xlsxTableParts            `xml:"tableParts"`
+	ExtLst                *xlsxExtLst                `xml:"extLst"`
 }
 
 // xlsxDrawing change r:id to rid in the namespace.
@@ -38,13 +36,17 @@ type xlsxDrawing struct {
 
 // xlsxHeaderFooter directly maps the headerFooter element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// When printed or viewed in page layout view (§18.18.69), each page of a
+// worksheet can have a page header, a page footer, or both. The headers and
+// footers on odd-numbered pages can differ from those on even-numbered pages,
+// and the headers and footers on the first page can differ from those on odd-
+// and even-numbered pages. In the latter case, the first page is not considered
+// an odd page.
 type xlsxHeaderFooter struct {
-	DifferentFirst   bool            `xml:"differentFirst,attr"`
-	DifferentOddEven bool            `xml:"differentOddEven,attr"`
-	OddHeader        []xlsxOddHeader `xml:"oddHeader"`
-	OddFooter        []xlsxOddFooter `xml:"oddFooter"`
+	DifferentFirst   bool             `xml:"differentFirst,attr,omitempty"`
+	DifferentOddEven bool             `xml:"differentOddEven,attr,omitempty"`
+	OddHeader        []*xlsxOddHeader `xml:"oddHeader"`
+	OddFooter        []*xlsxOddFooter `xml:"oddFooter"`
 }
 
 // xlsxOddHeader directly maps the oddHeader element in the namespace
@@ -65,49 +67,51 @@ type xlsxOddFooter struct {
 
 // xlsxPageSetUp directly maps the pageSetup element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Page setup settings for the worksheet.
 type xlsxPageSetUp struct {
-	PaperSize          string  `xml:"paperSize,attr,omitempty"`
-	Scale              int     `xml:"scale,attr"`
-	FirstPageNumber    int     `xml:"firstPageNumber,attr"`
-	FitToWidth         int     `xml:"fitToWidth,attr"`
-	FitToHeight        int     `xml:"fitToHeight,attr"`
-	PageOrder          string  `xml:"pageOrder,attr,omitempty"`
-	Orientation        string  `xml:"orientation,attr,omitempty"`
-	UsePrinterDefaults bool    `xml:"usePrinterDefaults,attr"`
-	BlackAndWhite      bool    `xml:"blackAndWhite,attr"`
-	Draft              bool    `xml:"draft,attr"`
+	BlackAndWhite      bool    `xml:"blackAndWhite,attr,omitempty"`
 	CellComments       string  `xml:"cellComments,attr,omitempty"`
-	UseFirstPageNumber bool    `xml:"useFirstPageNumber,attr"`
-	HorizontalDPI      float32 `xml:"horizontalDpi,attr"`
-	VerticalDPI        float32 `xml:"verticalDpi,attr"`
-	Copies             int     `xml:"copies,attr"`
+	Copies             int     `xml:"copies,attr,omitempty"`
+	Draft              bool    `xml:"draft,attr,omitempty"`
+	Errors             string  `xml:"errors,attr,omitempty"`
+	FirstPageNumber    int     `xml:"firstPageNumber,attr,omitempty"`
+	FitToHeight        int     `xml:"fitToHeight,attr,omitempty"`
+	FitToWidth         int     `xml:"fitToWidth,attr,omitempty"`
+	HorizontalDPI      float32 `xml:"horizontalDpi,attr,omitempty"`
+	RID                string  `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+	Orientation        string  `xml:"orientation,attr,omitempty"`
+	PageOrder          string  `xml:"pageOrder,attr,omitempty"`
+	paperHeight        string  `xml:"paperHeight,attr,omitempty"`
+	PaperSize          string  `xml:"paperSize,attr,omitempty"`
+	PaperWidth         string  `xml:"paperWidth,attr,omitempty"`
+	Scale              int     `xml:"scale,attr,omitempty"`
+	UseFirstPageNumber bool    `xml:"useFirstPageNumber,attr,omitempty"`
+	UsePrinterDefaults bool    `xml:"usePrinterDefaults,attr,omitempty"`
+	VerticalDPI        float32 `xml:"verticalDpi,attr,omitempty"`
 }
 
 // xlsxPrintOptions directly maps the printOptions element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Print options for the sheet. Printer-specific settings are stored separately
+// in the Printer Settings part.
 type xlsxPrintOptions struct {
-	Headings           bool `xml:"headings,attr"`
-	GridLines          bool `xml:"gridLines,attr"`
-	GridLinesSet       bool `xml:"gridLinesSet,attr"`
-	HorizontalCentered bool `xml:"horizontalCentered,attr"`
-	VerticalCentered   bool `xml:"verticalCentered,attr"`
+	GridLines          bool `xml:"gridLines,attr,omitempty"`
+	GridLinesSet       bool `xml:"gridLinesSet,attr,omitempty"`
+	Headings           bool `xml:"headings,attr,omitempty"`
+	HorizontalCentered bool `xml:"horizontalCentered,attr,omitempty"`
+	VerticalCentered   bool `xml:"verticalCentered,attr,omitempty"`
 }
 
 // xlsxPageMargins directly maps the pageMargins element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Page margins for a sheet or a custom sheet view.
 type xlsxPageMargins struct {
+	Bottom float64 `xml:"bottom,attr"`
+	Footer float64 `xml:"footer,attr"`
+	Header float64 `xml:"header,attr"`
 	Left   float64 `xml:"left,attr"`
 	Right  float64 `xml:"right,attr"`
 	Top    float64 `xml:"top,attr"`
-	Bottom float64 `xml:"bottom,attr"`
-	Header float64 `xml:"header,attr"`
-	Footer float64 `xml:"footer,attr"`
 }
 
 // xlsxSheetFormatPr directly maps the sheetFormatPr element in the namespace
@@ -125,8 +129,7 @@ type xlsxSheetFormatPr struct {
 
 // xlsxSheetViews directly maps the sheetViews element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Worksheet views collection.
 type xlsxSheetViews struct {
 	SheetView []xlsxSheetView `xml:"sheetView"`
 }
@@ -145,68 +148,68 @@ type xlsxSheetViews struct {
 // windows are viewing the same sheet, multiple sheetView elements
 // (with corresponding workbookView entries) are saved.
 type xlsxSheetView struct {
-	WindowProtection        bool            `xml:"windowProtection,attr,omitempty"`
-	ShowFormulas            bool            `xml:"showFormulas,attr,omitempty"`
-	ShowGridLines           string          `xml:"showGridLines,attr,omitempty"`
-	ShowRowColHeaders       bool            `xml:"showRowColHeaders,attr,omitempty"`
-	ShowZeros               bool            `xml:"showZeros,attr,omitempty"`
-	RightToLeft             bool            `xml:"rightToLeft,attr,omitempty"`
-	TabSelected             bool            `xml:"tabSelected,attr,omitempty"`
-	ShowOutlineSymbols      bool            `xml:"showOutlineSymbols,attr,omitempty"`
-	DefaultGridColor        bool            `xml:"defaultGridColor,attr"`
-	View                    string          `xml:"view,attr,omitempty"`
-	TopLeftCell             string          `xml:"topLeftCell,attr,omitempty"`
-	ColorId                 int             `xml:"colorId,attr,omitempty"`
-	ZoomScale               float64         `xml:"zoomScale,attr,omitempty"`
-	ZoomScaleNormal         float64         `xml:"zoomScaleNormal,attr,omitempty"`
-	ZoomScalePageLayoutView float64         `xml:"zoomScalePageLayoutView,attr,omitempty"`
-	WorkbookViewID          int             `xml:"workbookViewId,attr"`
-	Pane                    *xlsxPane       `xml:"pane,omitempty"`
-	Selection               []xlsxSelection `xml:"selection"`
+	WindowProtection        bool             `xml:"windowProtection,attr,omitempty"`
+	ShowFormulas            bool             `xml:"showFormulas,attr,omitempty"`
+	ShowGridLines           string           `xml:"showGridLines,attr,omitempty"`
+	ShowRowColHeaders       bool             `xml:"showRowColHeaders,attr,omitempty"`
+	ShowZeros               bool             `xml:"showZeros,attr,omitempty"`
+	RightToLeft             bool             `xml:"rightToLeft,attr,omitempty"`
+	TabSelected             bool             `xml:"tabSelected,attr,omitempty"`
+	ShowOutlineSymbols      bool             `xml:"showOutlineSymbols,attr,omitempty"`
+	DefaultGridColor        bool             `xml:"defaultGridColor,attr"`
+	View                    string           `xml:"view,attr,omitempty"`
+	TopLeftCell             string           `xml:"topLeftCell,attr,omitempty"`
+	ColorID                 int              `xml:"colorId,attr,omitempty"`
+	ZoomScale               float64          `xml:"zoomScale,attr,omitempty"`
+	ZoomScaleNormal         float64          `xml:"zoomScaleNormal,attr,omitempty"`
+	ZoomScalePageLayoutView float64          `xml:"zoomScalePageLayoutView,attr,omitempty"`
+	WorkbookViewID          int              `xml:"workbookViewId,attr"`
+	Pane                    *xlsxPane        `xml:"pane,omitempty"`
+	Selection               []*xlsxSelection `xml:"selection"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Worksheet view selection.
 type xlsxSelection struct {
-	Pane         string `xml:"pane,attr,omitempty"`
 	ActiveCell   string `xml:"activeCell,attr,omitempty"`
 	ActiveCellID int    `xml:"activeCellId,attr"`
+	Pane         string `xml:"pane,attr,omitempty"`
 	SQRef        string `xml:"sqref,attr,omitempty"`
 }
 
-// xlsxSelection directly maps the selection element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// xlsxSelection directly maps the selection element.
+// Worksheet view pane.
 type xlsxPane struct {
-	XSplit      float64 `xml:"xSplit,attr"`
-	YSplit      float64 `xml:"ySplit,attr"`
-	TopLeftCell string  `xml:"topLeftCell,attr,omitempty"`
 	ActivePane  string  `xml:"activePane,attr,omitempty"`
 	State       string  `xml:"state,attr,omitempty"` // Either "split" or "frozen"
+	TopLeftCell string  `xml:"topLeftCell,attr,omitempty"`
+	XSplit      float64 `xml:"xSplit,attr,omitempty"`
+	YSplit      float64 `xml:"ySplit,attr,omitempty"`
 }
 
 // xlsxSheetPr directly maps the sheetPr element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Sheet-level properties.
 type xlsxSheetPr struct {
-	XMLName                           xml.Name        `xml:"sheetPr"`
-	FilterMode                        bool            `xml:"filterMode,attr,omitempty"`
-	CodeName                          string          `xml:"codeName,attr,omitempty"`
-	EnableFormatConditionsCalculation int             `xml:"enableFormatConditionsCalculation,attr,omitempty"`
-	TabColor                          xlsxTabColor    `xml:"tabColor,omitempty"`
-	PageSetUpPr                       xlsxPageSetUpPr `xml:"pageSetUpPr"`
+	XMLName                           xml.Name         `xml:"sheetPr"`
+	CodeName                          string           `xml:"codeName,attr,omitempty"`
+	EnableFormatConditionsCalculation bool             `xml:"enableFormatConditionsCalculation,attr,omitempty"`
+	FilterMode                        bool             `xml:"filterMode,attr,omitempty"`
+	Published                         bool             `xml:"published,attr,omitempty"`
+	SyncHorizontal                    bool             `xml:"syncHorizontal,attr,omitempty"`
+	SyncVertical                      bool             `xml:"syncVertical,attr,omitempty"`
+	TransitionEntry                   bool             `xml:"transitionEntry,attr,omitempty"`
+	TabColor                          *xlsxTabColor    `xml:"tabColor,omitempty"`
+	PageSetUpPr                       *xlsxPageSetUpPr `xml:"pageSetUpPr,omitempty"`
 }
 
 // xlsxPageSetUpPr directly maps the pageSetupPr element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// Page setup properties of the worksheet.
 type xlsxPageSetUpPr struct {
-	FitToPage bool `xml:"fitToPage,attr"` // Flag indicating whether the Fit to Page print option is enabled.
+	AutoPageBreaks bool `xml:"autoPageBreaks,attr,omitempty"`
+	FitToPage      bool `xml:"fitToPage,attr,omitempty"` // Flag indicating whether the Fit to Page print option is enabled.
 }
 
 // xlsxTabColor directly maps the tabColor element in the namespace
@@ -242,8 +245,11 @@ type xlsxCol struct {
 
 // xlsxDimension directly maps the dimension element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// This element specifies the used range of the worksheet. It specifies
+// the row and column bounds of used cells in the worksheet. This is
+// optional and is not required. Used cells include cells with formulas,
+// text content, and cell formatting. When an entire column is formatted,
+// only the first cell in that column is considered used.
 type xlsxDimension struct {
 	Ref string `xml:"ref,attr"`
 }
@@ -257,28 +263,35 @@ type xlsxSheetData struct {
 	Row     []xlsxRow `xml:"row"`
 }
 
-// xlsxRow directly maps the row element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// xlsxRow directly maps the row element. The element expresses information
+// about an entire row of a worksheet, and contains all cell definitions for
+// a particular row in the worksheet.
 type xlsxRow struct {
-	R            int     `xml:"r,attr"`
-	Spans        string  `xml:"spans,attr,omitempty"`
-	Hidden       bool    `xml:"hidden,attr,omitempty"`
-	C            []xlsxC `xml:"c"`
-	Ht           string  `xml:"ht,attr,omitempty"`
+	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
+	CustomFormat bool    `xml:"customFormat,attr,omitempty"`
 	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
+	Hidden       bool    `xml:"hidden,attr,omitempty"`
+	Ht           string  `xml:"ht,attr,omitempty"`
 	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
+	Ph           bool    `xml:"ph,attr,omitempty"`
+	R            int     `xml:"r,attr,omitempty"`
+	S            int     `xml:"s,attr,omitempty"`
+	Spans        string  `xml:"spans,attr,omitempty"`
+	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
+	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
+	C            []xlsxC `xml:"c"`
 }
 
+// xlsxMergeCell directly maps the mergeCell element. A single merged cell.
 type xlsxMergeCell struct {
-	Ref string `xml:"ref,attr"` // ref: horiz "A1:C1", vert "B3:B6", both  "D3:G4"
+	Ref string `xml:"ref,attr,omitempty"` // ref: horiz "A1:C1", vert "B3:B6", both  "D3:G4"
 }
 
+// xlsxMergeCells directly maps the mergeCells element. This collection expresses
+// all the merged cells in the sheet.
 type xlsxMergeCells struct {
-	XMLName xml.Name        //`xml:"mergeCells,omitempty"`
-	Count   int             `xml:"count,attr,omitempty"`
-	Cells   []xlsxMergeCell `xml:"mergeCell,omitempty"`
+	Count int              `xml:"count,attr,omitempty"`
+	Cells []*xlsxMergeCell `xml:"mergeCell,omitempty"`
 }
 
 // xlsxC directly maps the c element in the namespace
@@ -339,7 +352,10 @@ type xlsxConditionalFormatting struct {
 }
 
 // xlsxHyperlinks directly maps the hyperlinks element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
+// A hyperlink can be stored in a package as a relationship. Hyperlinks
+// shall be identified by containing a target which specifies the
+// destination of the given hyperlink.
 type xlsxHyperlinks struct {
 	Hyperlink []xlsxHyperlink `xml:"hyperlink"`
 }
@@ -388,8 +404,8 @@ type xlsxHyperlink struct {
 //    </worksheet>
 //
 type xlsxTableParts struct {
-	Count      int             `xml:"count,attr"`
-	TableParts []xlsxTablePart `xml:"tablePart"`
+	Count      int              `xml:"count,attr,omitempty"`
+	TableParts []*xlsxTablePart `xml:"tablePart"`
 }
 
 // xlsxTablePart directly maps the tablePart element in the namespace

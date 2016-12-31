@@ -54,6 +54,12 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
 	f1.GetCellValue("Sheet2", "E231")
+	// Test get active sheet of XLSX and get sheet name of XLSX by given sheet index.
+	f1.GetSheetName(f1.GetActiveSheetIndex())
+	// Test get sheet name of XLSX by given invalid sheet index.
+	f1.GetSheetName(4)
+	// Test get sheet map of XLSX.
+	f1.GetSheetMap()
 
 	for i := 1; i <= 300; i++ {
 		f1.SetCellStr("SHEET3", "c"+strconv.Itoa(i), strconv.Itoa(i))

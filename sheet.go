@@ -8,55 +8,6 @@ import (
 	"strings"
 )
 
-// Define the empty element and self-close XML tags hack rules for
-// xl/workbook.xml and xl/worksheets/sheet%d.xml.
-var (
-	WorkbookRules = []map[string]string{
-		{`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`: `r:id="`},
-		{`></sheet>`: ` />`},
-		{`></workbookView>`: ` />`},
-		{`></fileVersion>`: ` />`},
-		{`></workbookPr>`: ` />`},
-		{`></calcPr>`: ` />`},
-		{`></workbookProtection>`: ` />`},
-		{`></fileRecoveryPr>`: ` />`},
-		{`></hyperlink>`: ` />`},
-		{`></tabColor>`: ` />`},
-		{`></pageSetUpPr>`: ` />`},
-		{`></pane>`: ` />`},
-		{`<extLst></extLst>`: ``},
-		{`<fileRecoveryPr />`: ``},
-		{`<workbookProtection />`: ``},
-		{`<pivotCaches></pivotCaches>`: ``},
-		{`<externalReferences></externalReferences>`: ``},
-		{`<workbookProtection></workbookProtection>`: ``},
-		{`<definedNames></definedNames>`: ``},
-		{`<fileRecoveryPr></fileRecoveryPr>`: ``},
-		{`<workbookPr />`: ``},
-	}
-	SheetRules = []map[string]string{
-		{`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships:id="`: `r:id="`},
-		{`<drawing></drawing>`: ``},
-		{`<drawing />`: ``},
-		{`<hyperlinks></hyperlinks>`: ``},
-		{`<tableParts count="0"></tableParts>`: ``},
-		{`<picture></picture>`: ``},
-		{`<legacyDrawing></legacyDrawing>`: ``},
-		{`<tabColor></tabColor>`: ``},
-		{`<sheetProtection></sheetProtection>`: ``},
-		{`<conditionalFormatting></conditionalFormatting>`: ``},
-		{`<extLst></extLst>`: ``},
-		{`></tablePart>`: ` />`},
-		{`></dimension>`: ` />`},
-		{`></selection>`: ` />`},
-		{`></sheetFormatPr>`: ` />`},
-		{`></printOptions>`: ` />`},
-		{`></pageSetup>`: ` />`},
-		{`></pageMargins>`: ` />`},
-		{`></mergeCell>`: ` />`},
-	}
-)
-
 // NewSheet provice function to greate a new sheet by given index, when
 // creating a new XLSX file, the default sheet will be create, when you
 // create a new file, you need to ensure that the index is continuous.
@@ -100,7 +51,7 @@ func (f *File) setSheet(index int) {
 		fmt.Println(err)
 	}
 	path := `xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`
-	f.saveFileList(path, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
+	f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // Update workbook property of XLSX. Maximum 31 characters allowed in sheet title.
@@ -119,7 +70,7 @@ func (f *File) setWorkbook(name string, rid int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
+	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
 }
 
 // Read and unmarshal workbook relationships of XLSX.
@@ -191,7 +142,7 @@ func (f *File) SetActiveSheet(index int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`xl/workbook.xml`, workBookCompatibility(replaceRelationshipsNameSpace(string(output))))
+	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
 	index++
 	buffer := bytes.Buffer{}
 	for i := 0; i < sheets; i++ {
@@ -218,28 +169,66 @@ func (f *File) SetActiveSheet(index int) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		f.saveFileList(buffer.String(), replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(sheet))))
+		f.saveFileList(buffer.String(), replaceWorkSheetsRelationshipsNameSpace(string(sheet)))
 		buffer.Reset()
 	}
 	return
 }
 
-// Replace xl/workbook.xml XML tags to self-closing for compatible Office Excel 2007.
-func workBookCompatibility(workbookMarshal string) string {
-	for _, rules := range WorkbookRules {
-		for k, v := range rules {
-			workbookMarshal = strings.Replace(workbookMarshal, k, v, -1)
+// GetActiveSheetIndex provide function to get active sheet of XLSX. If not found
+// the active sheet will be return integer 0.
+func (f *File) GetActiveSheetIndex() int {
+	content := xlsxWorkbook{}
+	buffer := bytes.Buffer{}
+	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	for _, v := range content.Sheets.Sheet {
+		xlsx := xlsxWorksheet{}
+		buffer.WriteString(`xl/worksheets/sheet`)
+		buffer.WriteString(strings.TrimPrefix(v.ID, `rId`))
+		buffer.WriteString(`.xml`)
+		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
+		for _, sheetView := range xlsx.SheetViews.SheetView {
+			if sheetView.TabSelected {
+				id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, `rId`))
+				return id
+			}
 		}
+		buffer.Reset()
 	}
-	return workbookMarshal
+	return 0
 }
 
-// replace relationships ID in worksheets/sheet%d.xml
-func replaceRelationshipsID(workbookMarshal string) string {
-	for _, rules := range SheetRules {
-		for k, v := range rules {
-			workbookMarshal = strings.Replace(workbookMarshal, k, v, -1)
+// GetSheetName provide function to get sheet name of XLSX by given sheet index.
+// If given sheet index is invalid, will return an empty string.
+func (f *File) GetSheetName(index int) string {
+	content := xlsxWorkbook{}
+	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	for _, v := range content.Sheets.Sheet {
+		if v.ID == `rId`+strconv.Itoa(index) {
+			return v.Name
 		}
 	}
-	return workbookMarshal
+	return ``
+}
+
+// GetSheetMap provide function to get sheet map of XLSX. For example:
+//
+//    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
+//    if err != nil {
+//        fmt.Println(err)
+//        os.Exit(1)
+//    }
+//    for k, v := range xlsx.GetSheetMap()
+//        fmt.Println(k, v)
+//    }
+//
+func (f *File) GetSheetMap() map[int]string {
+	content := xlsxWorkbook{}
+	sheetMap := map[int]string{}
+	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	for _, v := range content.Sheets.Sheet {
+		id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, `rId`))
+		sheetMap[id] = v.Name
+	}
+	return sheetMap
 }

@@ -30,7 +30,7 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 				xml.Unmarshal([]byte(fileList[v.Name]), &xlsx)
 				xlsx = checkRow(xlsx)
 				output, _ := xml.Marshal(xlsx)
-				fileList[v.Name] = replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output)))
+				fileList[v.Name] = replaceWorkSheetsRelationshipsNameSpace(string(output))
 				worksheets++
 			}
 		}

@@ -82,7 +82,7 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
 
 	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // SetCellStr provide function to set string type value of a cell.
@@ -107,7 +107,7 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 
 	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // Completion column element tags of XML in a sheet.
@@ -277,6 +277,6 @@ func (f *File) UpdateLinkedValue() {
 			}
 		}
 		output, _ := xml.Marshal(xlsx)
-		f.saveFileList(name, replaceRelationshipsID(replaceWorkSheetsRelationshipsNameSpace(string(output))))
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	}
 }
