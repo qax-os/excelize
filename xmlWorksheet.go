@@ -81,7 +81,7 @@ type xlsxPageSetUp struct {
 	RID                string  `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Orientation        string  `xml:"orientation,attr,omitempty"`
 	PageOrder          string  `xml:"pageOrder,attr,omitempty"`
-	paperHeight        string  `xml:"paperHeight,attr,omitempty"`
+	PaperHeight        string  `xml:"paperHeight,attr,omitempty"`
 	PaperSize          string  `xml:"paperSize,attr,omitempty"`
 	PaperWidth         string  `xml:"paperWidth,attr,omitempty"`
 	Scale              int     `xml:"scale,attr,omitempty"`
