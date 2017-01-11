@@ -48,9 +48,9 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	case int64:
 		f.SetCellInt(sheet, axis, int(value.(int64)))
 	case float32:
-		f.SetCellInt(sheet, axis, int(value.(float32)))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
 	case float64:
-		f.SetCellInt(sheet, axis, int(value.(float64)))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
 	case string:
 		f.SetCellStr(sheet, axis, t)
 	case []byte:
@@ -108,6 +108,31 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 
 	output, _ := xml.Marshal(xlsx)
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+}
+
+// SetCellDefault provides function to set string type value of a cell as default format without escaping the cell
+func (f *File) SetCellDefault(sheet string, axis string, value string) {
+    axis = strings.ToUpper(axis)
+    var xlsx xlsxWorksheet
+    col := string(strings.Map(letterOnlyMapF, axis))
+    row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+    xAxis := row - 1
+    yAxis := titleToNumber(col)
+
+    name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
+    xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+
+    rows := xAxis + 1
+    cell := yAxis + 1
+
+    xlsx = completeRow(xlsx, rows, cell)
+    xlsx = completeCol(xlsx, rows, cell)
+
+    xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
+    xlsx.SheetData.Row[xAxis].C[yAxis].V = value
+
+    output, _ := xml.Marshal(xlsx)
+    f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // Completion column element tags of XML in a sheet.
