@@ -21,7 +21,9 @@ func TestExcelize(t *testing.T) {
 		}
 		t.Log("\r\n")
 	}
-	f1.UpdateLinkedValue()
+	f1.UpdateLinkedValue()	
+    	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32))
+    	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
 	f1.SetCellInt("SHEET2", "A1", 100)
 	f1.SetCellStr("SHEET2", "C11", "Knowns")
 	f1.NewSheet(3, "Maximum 31 characters allowed in sheet title.")
@@ -47,6 +49,8 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellValue("Sheet2", "F2", int16(42))
 	f1.SetCellValue("Sheet2", "F2", int32(42))
 	f1.SetCellValue("Sheet2", "F2", int64(42))
+    	f1.SetCellValue("Sheet2", "F2", float32(42.65418))
+    	f1.SetCellValue("Sheet2", "F2", float64(-42.65418))
 	f1.SetCellValue("Sheet2", "F2", float32(42))
 	f1.SetCellValue("Sheet2", "F2", float64(42))
 	f1.SetCellValue("Sheet2", "G2", nil)
