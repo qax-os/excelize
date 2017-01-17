@@ -106,6 +106,28 @@ func main() {
 }
 ```
 
+### Add pictures to XLSX files
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+
+    "github.com/Luxurioust/excelize"
+)
+
+func main() {
+    xlsx := excelize.CreateFile()
+    err := xlsx.AddPicture("Sheet1", "A2", "H9", "/tmp/image.jpg")
+    if err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Open a pull request to fix a bug, or open an issue to discuss a new feature or change.

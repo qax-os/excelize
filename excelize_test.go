@@ -21,9 +21,9 @@ func TestExcelize(t *testing.T) {
 		}
 		t.Log("\r\n")
 	}
-	f1.UpdateLinkedValue()	
-    	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32))
-    	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
+	f1.UpdateLinkedValue()
+	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32))
+	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
 	f1.SetCellInt("SHEET2", "A1", 100)
 	f1.SetCellStr("SHEET2", "C11", "Knowns")
 	f1.NewSheet(3, "Maximum 31 characters allowed in sheet title.")
@@ -49,8 +49,8 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellValue("Sheet2", "F2", int16(42))
 	f1.SetCellValue("Sheet2", "F2", int32(42))
 	f1.SetCellValue("Sheet2", "F2", int64(42))
-    	f1.SetCellValue("Sheet2", "F2", float32(42.65418))
-    	f1.SetCellValue("Sheet2", "F2", float64(-42.65418))
+	f1.SetCellValue("Sheet2", "F2", float32(42.65418))
+	f1.SetCellValue("Sheet2", "F2", float64(-42.65418))
 	f1.SetCellValue("Sheet2", "F2", float32(42))
 	f1.SetCellValue("Sheet2", "F2", float64(42))
 	f1.SetCellValue("Sheet2", "G2", nil)
@@ -72,6 +72,34 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	// Test add picture to sheet.
+	err = f1.AddPicture("Sheet2", "I1", "L10", "./test/images/excel.jpg")
+	if err != nil {
+		t.Log(err)
+	}
+	err = f1.AddPicture("Sheet1", "F21", "G25", "./test/images/excel.png")
+	if err != nil {
+		t.Log(err)
+	}
+	err = f1.AddPicture("Sheet2", "L1", "O10", "./test/images/excel.bmp")
+	if err != nil {
+		t.Log(err)
+	}
+	err = f1.AddPicture("Sheet1", "G21", "H25", "./test/images/excel.ico")
+	if err != nil {
+		t.Log(err)
+	}
+	// Test add picture to sheet with unsupport file type.
+	err = f1.AddPicture("Sheet1", "G21", "H25", "./test/images/excel.icon")
+	if err != nil {
+		t.Log(err)
+	}
+	// Test add picture to sheet with invalid file path.
+	err = f1.AddPicture("Sheet1", "G21", "H25", "./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+
 	// Test write file to given path.
 	err = f1.WriteTo("./test/Workbook_2.xlsx")
 	if err != nil {
@@ -102,6 +130,15 @@ func TestExcelize(t *testing.T) {
 	f3.SetCellInt("Sheet2", "A23", 56)
 	f3.SetCellStr("SHEET1", "B20", "42")
 	f3.SetActiveSheet(0)
+	// Test add picture to sheet.
+	err = f3.AddPicture("Sheet1", "H2", "K12", "./test/images/excel.gif")
+	if err != nil {
+		t.Log(err)
+	}
+	err = f3.AddPicture("Sheet1", "C2", "F12", "./test/images/excel.tif")
+	if err != nil {
+		t.Log(err)
+	}
 	err = f3.WriteTo("./test/Workbook_3.xlsx")
 	if err != nil {
 		t.Log(err)

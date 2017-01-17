@@ -34,7 +34,7 @@ func OpenFile(filename string) (*File, error) {
 	}, nil
 }
 
-// SetCellValue provide function to set int or string type value of a cell.
+// SetCellValue provides function to set int or string type value of a cell.
 func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	switch t := value.(type) {
 	case int:
@@ -60,7 +60,7 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	}
 }
 
-// SetCellInt provide function to set int type value of a cell.
+// SetCellInt provides function to set int type value of a cell.
 func (f *File) SetCellInt(sheet string, axis string, value int) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -69,7 +69,7 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
 
-	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
@@ -85,7 +85,7 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// SetCellStr provide function to set string type value of a cell.
+// SetCellStr provides function to set string type value of a cell.
 func (f *File) SetCellStr(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -94,7 +94,7 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
 
-	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
@@ -103,36 +103,36 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	xlsx = completeRow(xlsx, rows, cell)
 	xlsx = completeCol(xlsx, rows, cell)
 
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = `str`
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 
 	output, _ := xml.Marshal(xlsx)
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// SetCellDefault provides function to set string type value of a cell as default format without escaping the cell
+// SetCellDefault provides function to set string type value of a cell as default format without escaping the cell.
 func (f *File) SetCellDefault(sheet string, axis string, value string) {
-    axis = strings.ToUpper(axis)
-    var xlsx xlsxWorksheet
-    col := string(strings.Map(letterOnlyMapF, axis))
-    row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-    xAxis := row - 1
-    yAxis := titleToNumber(col)
+	axis = strings.ToUpper(axis)
+	var xlsx xlsxWorksheet
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
+	yAxis := titleToNumber(col)
 
-    name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
-    xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
-    rows := xAxis + 1
-    cell := yAxis + 1
+	rows := xAxis + 1
+	cell := yAxis + 1
 
-    xlsx = completeRow(xlsx, rows, cell)
-    xlsx = completeCol(xlsx, rows, cell)
+	xlsx = completeRow(xlsx, rows, cell)
+	xlsx = completeCol(xlsx, rows, cell)
 
-    xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
-    xlsx.SheetData.Row[xAxis].C[yAxis].V = value
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
+	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 
-    output, _ := xml.Marshal(xlsx)
-    f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+	output, _ := xml.Marshal(xlsx)
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // Completion column element tags of XML in a sheet.
@@ -288,16 +288,17 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 //            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
 //        </c>
 //    </row>
+//
 func (f *File) UpdateLinkedValue() {
 	for i := 1; i <= f.SheetCount; i++ {
 		var xlsx xlsxWorksheet
-		name := `xl/worksheets/sheet` + strconv.Itoa(i) + `.xml`
+		name := "xl/worksheets/sheet" + strconv.Itoa(i) + ".xml"
 		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 		for indexR, row := range xlsx.SheetData.Row {
 			for indexC, col := range row.C {
 				if col.F != nil && col.V != `` {
-					xlsx.SheetData.Row[indexR].C[indexC].V = ``
-					xlsx.SheetData.Row[indexR].C[indexC].T = ``
+					xlsx.SheetData.Row[indexR].C[indexC].V = ""
+					xlsx.SheetData.Row[indexR].C[indexC].T = ""
 				}
 			}
 		}
