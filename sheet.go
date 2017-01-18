@@ -27,22 +27,22 @@ func (f *File) NewSheet(index int, name string) {
 // Read and update property of contents type of XLSX.
 func (f *File) setContentTypes(index int) {
 	var content xlsxTypes
-	xml.Unmarshal([]byte(f.readXML(`[Content_Types].xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
 	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    `/xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`,
-		ContentType: `application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml`,
+		PartName:    "/xl/worksheets/sheet" + strconv.Itoa(index) + ".xml",
+		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
 	})
 	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`[Content_Types].xml`, string(output))
+	f.saveFileList("[Content_Types].xml", string(output))
 }
 
 // Update sheet property by given index.
 func (f *File) setSheet(index int) {
 	var xlsx xlsxWorksheet
-	xlsx.Dimension.Ref = `A1`
+	xlsx.Dimension.Ref = "A1"
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
 		WorkbookViewID: 0,
 	})
@@ -50,33 +50,35 @@ func (f *File) setSheet(index int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	path := `xl/worksheets/sheet` + strconv.Itoa(index) + `.xml`
+	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// Update workbook property of XLSX. Maximum 31 characters allowed in sheet title.
+// Update workbook property of XLSX. Maximum 31 characters are allowed in sheet title.
 func (f *File) setWorkbook(name string, rid int) {
 	var content xlsxWorkbook
+	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
+	name = r.Replace(name)
 	if len(name) > 31 {
 		name = name[0:31]
 	}
-	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    name,
 		SheetID: strconv.Itoa(rid),
-		ID:      `rId` + strconv.Itoa(rid),
+		ID:      "rId" + strconv.Itoa(rid),
 	})
 	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
+	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 }
 
 // Read and unmarshal workbook relationships of XLSX.
 func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
 	var content xlsxWorkbookRels
-	xml.Unmarshal([]byte(f.readXML(`xl/_rels/workbook.xml.rels`)), &content)
+	xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
 	return content
 }
 
@@ -85,28 +87,28 @@ func (f *File) addXlsxWorkbookRels(sheet int) int {
 	content := f.readXlsxWorkbookRels()
 	rID := len(content.Relationships) + 1
 	ID := bytes.Buffer{}
-	ID.WriteString(`rId`)
+	ID.WriteString("rId")
 	ID.WriteString(strconv.Itoa(rID))
 	target := bytes.Buffer{}
-	target.WriteString(`worksheets/sheet`)
+	target.WriteString("worksheets/sheet")
 	target.WriteString(strconv.Itoa(sheet))
-	target.WriteString(`.xml`)
+	target.WriteString(".xml")
 	content.Relationships = append(content.Relationships, xlsxWorkbookRelation{
 		ID:     ID.String(),
 		Target: target.String(),
-		Type:   `http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet`,
+		Type:   SourceRelationshipWorkSheet,
 	})
 	output, err := xml.Marshal(content)
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`xl/_rels/workbook.xml.rels`, string(output))
+	f.saveFileList("xl/_rels/workbook.xml.rels", string(output))
 	return rID
 }
 
 // Update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
-	f.saveFileList(`docProps/app.xml`, templateDocpropsApp)
+	f.saveFileList("docProps/app.xml", templateDocpropsApp)
 }
 
 // Some tools that read XLSX files have very strict requirements about
@@ -129,7 +131,7 @@ func (f *File) SetActiveSheet(index int) {
 		index = 1
 	}
 	index--
-	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 	if len(content.BookViews.WorkBookView) > 0 {
 		content.BookViews.WorkBookView[0].ActiveTab = index
 	} else {
@@ -142,15 +144,15 @@ func (f *File) SetActiveSheet(index int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(`xl/workbook.xml`, replaceRelationshipsNameSpace(string(output)))
+	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 	index++
 	buffer := bytes.Buffer{}
 	for i := 0; i < sheets; i++ {
 		xlsx := xlsxWorksheet{}
 		sheetIndex := i + 1
-		buffer.WriteString(`xl/worksheets/sheet`)
+		buffer.WriteString("xl/worksheets/sheet")
 		buffer.WriteString(strconv.Itoa(sheetIndex))
-		buffer.WriteString(`.xml`)
+		buffer.WriteString(".xml")
 		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
 		if index == sheetIndex {
 			if len(xlsx.SheetViews.SheetView) > 0 {
@@ -175,21 +177,21 @@ func (f *File) SetActiveSheet(index int) {
 	return
 }
 
-// GetActiveSheetIndex provide function to get active sheet of XLSX. If not found
+// GetActiveSheetIndex provides function to get active sheet of XLSX. If not found
 // the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
 	content := xlsxWorkbook{}
 	buffer := bytes.Buffer{}
-	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 	for _, v := range content.Sheets.Sheet {
 		xlsx := xlsxWorksheet{}
-		buffer.WriteString(`xl/worksheets/sheet`)
-		buffer.WriteString(strings.TrimPrefix(v.ID, `rId`))
-		buffer.WriteString(`.xml`)
+		buffer.WriteString("xl/worksheets/sheet")
+		buffer.WriteString(strings.TrimPrefix(v.ID, "rId"))
+		buffer.WriteString(".xml")
 		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
 		for _, sheetView := range xlsx.SheetViews.SheetView {
 			if sheetView.TabSelected {
-				id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, `rId`))
+				id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
 				return id
 			}
 		}
@@ -198,20 +200,41 @@ func (f *File) GetActiveSheetIndex() int {
 	return 0
 }
 
-// GetSheetName provide function to get sheet name of XLSX by given sheet index.
+// SetSheetName provides function to set the sheet name be given old and new sheet name.
+// Maximum 31 characters are allowed in sheet title and this function only changes the
+// name of the sheet and will not update the sheet name in the formula or reference
+// associated with the cell. So there may be problem formula error or reference missing.
+func (f *File) SetSheetName(oldName, newName string) {
+	var content = xlsxWorkbook{}
+	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
+	newName = r.Replace(newName)
+	if len(newName) > 31 {
+		newName = newName[0:31]
+	}
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	for k, v := range content.Sheets.Sheet {
+		if v.Name == oldName {
+			content.Sheets.Sheet[k].Name = newName
+		}
+	}
+	output, _ := xml.Marshal(content)
+	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
+}
+
+// GetSheetName provides function to get sheet name of XLSX by given sheet index.
 // If given sheet index is invalid, will return an empty string.
 func (f *File) GetSheetName(index int) string {
-	content := xlsxWorkbook{}
-	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	var content = xlsxWorkbook{}
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 	for _, v := range content.Sheets.Sheet {
-		if v.ID == `rId`+strconv.Itoa(index) {
+		if v.ID == "rId"+strconv.Itoa(index) {
 			return v.Name
 		}
 	}
-	return ``
+	return ""
 }
 
-// GetSheetMap provide function to get sheet map of XLSX. For example:
+// GetSheetMap provides function to get sheet map of XLSX. For example:
 //
 //    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
 //    if err != nil {
@@ -225,9 +248,9 @@ func (f *File) GetSheetName(index int) string {
 func (f *File) GetSheetMap() map[int]string {
 	content := xlsxWorkbook{}
 	sheetMap := map[int]string{}
-	xml.Unmarshal([]byte(f.readXML(`xl/workbook.xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 	for _, v := range content.Sheets.Sheet {
-		id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, `rId`))
+		id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
 		sheetMap[id] = v.Name
 	}
 	return sheetMap

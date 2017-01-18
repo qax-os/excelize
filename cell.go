@@ -13,7 +13,7 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 	var xlsx xlsxWorksheet
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
-	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	rows := len(xlsx.SheetData.Row)
 	if rows > 1 {
@@ -23,7 +23,7 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 		}
 	}
 	if rows <= xAxis {
-		return ``
+		return ""
 	}
 	for _, v := range xlsx.SheetData.Row {
 		if v.R != row {
@@ -38,7 +38,7 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 				shardStrings := xlsxSST{}
 				xlsxSI := 0
 				xlsxSI, _ = strconv.Atoi(r.V)
-				xml.Unmarshal([]byte(f.readXML(`xl/sharedStrings.xml`)), &shardStrings)
+				xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &shardStrings)
 				return shardStrings.SI[xlsxSI].T
 			case "str":
 				return r.V
@@ -47,7 +47,7 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 			}
 		}
 	}
-	return ``
+	return ""
 }
 
 // GetCellFormula provide function get formula from cell by given sheet index and axis in XLSX file.
@@ -56,7 +56,7 @@ func (f *File) GetCellFormula(sheet string, axis string) string {
 	var xlsx xlsxWorksheet
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
-	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	rows := len(xlsx.SheetData.Row)
 	if rows > 1 {
@@ -66,7 +66,7 @@ func (f *File) GetCellFormula(sheet string, axis string) string {
 		}
 	}
 	if rows <= xAxis {
-		return ``
+		return ""
 	}
 	for _, v := range xlsx.SheetData.Row {
 		if v.R != row {
@@ -81,5 +81,5 @@ func (f *File) GetCellFormula(sheet string, axis string) string {
 			}
 		}
 	}
-	return ``
+	return ""
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestExcelize(t *testing.T) {
+func TestOpenFile(t *testing.T) {
 	// Test update a XLSX file.
 	f1, err := OpenFile("./test/Workbook1.xlsx")
 	if err != nil {
@@ -26,7 +26,9 @@ func TestExcelize(t *testing.T) {
 	f1.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
 	f1.SetCellInt("SHEET2", "A1", 100)
 	f1.SetCellStr("SHEET2", "C11", "Knowns")
-	f1.NewSheet(3, "Maximum 31 characters allowed in sheet title.")
+	f1.NewSheet(3, ":\\/?*[]Maximum 31 characters allowed in sheet title.")
+	// Test set sheet name with illegal name.
+	f1.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")
 	f1.SetCellInt("Sheet3", "A23", 10)
 	f1.SetCellStr("SHEET3", "b230", "10")
 	f1.SetCellStr("SHEET10", "b230", "10")
@@ -122,7 +124,9 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
 
+func TestCreateFile(t *testing.T) {
 	// Test create a XLSX file.
 	f3 := CreateFile()
 	f3.NewSheet(2, "XLSXSheet2")
@@ -131,7 +135,7 @@ func TestExcelize(t *testing.T) {
 	f3.SetCellStr("SHEET1", "B20", "42")
 	f3.SetActiveSheet(0)
 	// Test add picture to sheet.
-	err = f3.AddPicture("Sheet1", "H2", "K12", "./test/images/excel.gif")
+	err := f3.AddPicture("Sheet1", "H2", "K12", "./test/images/excel.gif")
 	if err != nil {
 		t.Log(err)
 	}
@@ -143,7 +147,9 @@ func TestExcelize(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
 
+func TestBrokenFile(t *testing.T) {
 	// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
 	f4, err := OpenFile("./test/badWorkbook.xlsx")
 	f4.SetActiveSheet(2)
@@ -153,6 +159,19 @@ func TestExcelize(t *testing.T) {
 
 	// Test open a XLSX file with given illegal path.
 	_, err = OpenFile("./test/Workbook.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestSetColWidth(t *testing.T) {
+	f5, err := OpenFile("./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	f5.SetColWidth("sheet1", "B", "A", 12)
+	f5.SetColWidth("sheet1", "A", "B", 12)
+	err = f5.Save()
 	if err != nil {
 		t.Log(err)
 	}

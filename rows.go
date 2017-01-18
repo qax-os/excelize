@@ -19,7 +19,7 @@ import (
 func (f *File) GetRows(sheet string) [][]string {
 	xlsx := xlsxWorksheet{}
 	r := [][]string{}
-	name := `xl/worksheets/` + strings.ToLower(sheet) + `.xml`
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	err := xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	if err != nil {
 		return r
@@ -39,7 +39,7 @@ func (f *File) GetRows(sheet string) [][]string {
 // readXMLSST read xmlSST simple function.
 func readXMLSST(f *File) (xlsxSST, error) {
 	shardStrings := xlsxSST{}
-	err := xml.Unmarshal([]byte(f.readXML(`xl/sharedStrings.xml`)), &shardStrings)
+	err := xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &shardStrings)
 	return shardStrings, err
 }
 

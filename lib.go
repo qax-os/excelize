@@ -25,7 +25,7 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	for _, v := range r.File {
 		fileList[v.Name] = readFile(v)
 		if len(v.Name) > 18 {
-			if v.Name[0:19] == `xl/worksheets/sheet` {
+			if v.Name[0:19] == "xl/worksheets/sheet" {
 				var xlsx xlsxWorksheet
 				xml.Unmarshal([]byte(fileList[v.Name]), &xlsx)
 				xlsx = checkRow(xlsx)

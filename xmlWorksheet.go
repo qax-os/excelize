@@ -228,19 +228,19 @@ type xlsxCols struct {
 	Col []xlsxCol `xml:"col"`
 }
 
-// xlsxCol directly maps the col element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// xlsxCol directly maps the col (Column Width & Formatting). Defines column
+// width and column formatting for one or more columns of the worksheet.
 type xlsxCol struct {
+	BestFit      bool    `xml:"bestFit,attr,omitempty"`
 	Collapsed    bool    `xml:"collapsed,attr"`
+	CustomWidth  bool    `xml:"customWidth,attr,omitempty"`
 	Hidden       bool    `xml:"hidden,attr"`
 	Max          int     `xml:"max,attr"`
 	Min          int     `xml:"min,attr"`
+	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
+	Phonetic     bool    `xml:"phonetic,attr,omitempty"`
 	Style        int     `xml:"style,attr"`
 	Width        float64 `xml:"width,attr"`
-	CustomWidth  int     `xml:"customWidth,attr,omitempty"`
-	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
 }
 
 // xlsxDimension directly maps the dimension element in the namespace

@@ -56,7 +56,7 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 	case []byte:
 		f.SetCellStr(sheet, axis, string(t))
 	default:
-		f.SetCellStr(sheet, axis, ``)
+		f.SetCellStr(sheet, axis, "")
 	}
 }
 
@@ -296,7 +296,7 @@ func (f *File) UpdateLinkedValue() {
 		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 		for indexR, row := range xlsx.SheetData.Row {
 			for indexC, col := range row.C {
-				if col.F != nil && col.V != `` {
+				if col.F != nil && col.V != "" {
 					xlsx.SheetData.Row[indexR].C[indexC].V = ""
 					xlsx.SheetData.Row[indexR].C[indexC].T = ""
 				}
