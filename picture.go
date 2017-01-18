@@ -13,8 +13,8 @@ import (
 	"strings"
 )
 
-// AddPicture provide the method to add picture in a sheet by given xAxis, yAxis and file path.
-// For example:
+// AddPicture provide the method to add picture in a sheet by given xAxis, yAxis
+// and file path. For example:
 //
 //    xlsx := excelize.CreateFile()
 //    err := xlsx.AddPicture("Sheet1", "A2", "H9", "./image.jpg")
@@ -63,8 +63,9 @@ func (f *File) AddPicture(sheet string, xAxis string, yAxis string, picture stri
 	return err
 }
 
-// addSheetRelationships provides function to add xl/worksheets/_rels/sheet%d.xml.rels by given
-// sheet name, relationship type and target.
+// addSheetRelationships provides function to add
+// xl/worksheets/_rels/sheet%d.xml.rels by given sheet name, relationship type
+// and target.
 func (f *File) addSheetRelationships(sheet string, relType string, target string) int {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
 	var sheetRels xlsxWorkbookRels
@@ -93,8 +94,8 @@ func (f *File) addSheetRelationships(sheet string, relType string, target string
 	return rID
 }
 
-// addSheetDrawing provides function to add drawing element to xl/worksheets/sheet%d.xml by
-// given sheet name and relationship index.
+// addSheetDrawing provides function to add drawing element to
+// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -109,7 +110,8 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 	f.saveFileList(name, string(output))
 }
 
-// countDrawings provides function to get drawing files count storage in the folder xl/drawings.
+// countDrawings provides function to get drawing files count storage in the
+// folder xl/drawings.
 func (f *File) countDrawings() int {
 	count := 0
 	for k := range f.XLSX {
@@ -120,10 +122,10 @@ func (f *File) countDrawings() int {
 	return count
 }
 
-// addDrawing provides function to add picture by given drawingXML, xAxis, yAxis, file name
-// and relationship index. In order to solve the problem that the label structure is changed
-// after serialization and deserialization, two different structures: decodeWsDr and encodeWsDr
-// are defined.
+// addDrawing provides function to add picture by given drawingXML, xAxis,
+// yAxis, file name and relationship index. In order to solve the problem that
+// the label structure is changed after serialization and deserialization, two
+// different structures: decodeWsDr and encodeWsDr are defined.
 func (f *File) addDrawing(drawingXML string, xAxis string, yAxis string, file string, rID int) {
 	xAxis = strings.ToUpper(xAxis)
 	fromCol := string(strings.Map(letterOnlyMapF, xAxis))
@@ -186,8 +188,9 @@ func (f *File) addDrawing(drawingXML string, xAxis string, yAxis string, file st
 	f.saveFileList(drawingXML, result)
 }
 
-// addDrawingRelationships provides function to add image part relationships in the file
-// xl/drawings/_rels/drawing%d.xml.rels by given drawing index, relationship type and target.
+// addDrawingRelationships provides function to add image part relationships in
+// the file xl/drawings/_rels/drawing%d.xml.rels by given drawing index,
+// relationship type and target.
 func (f *File) addDrawingRelationships(index int, relType string, target string) int {
 	var rels = "xl/drawings/_rels/drawing" + strconv.Itoa(index) + ".xml.rels"
 	var drawingRels xlsxWorkbookRels
@@ -216,7 +219,8 @@ func (f *File) addDrawingRelationships(index int, relType string, target string)
 	return rID
 }
 
-// countMedia provides function to get media files count storage in the folder xl/media/image.
+// countMedia provides function to get media files count storage in the folder
+// xl/media/image.
 func (f *File) countMedia() int {
 	count := 0
 	for k := range f.XLSX {
@@ -227,8 +231,8 @@ func (f *File) countMedia() int {
 	return count
 }
 
-// addMedia provides function to add picture into folder xl/media/image by given file
-// name and extension name.
+// addMedia provides function to add picture into folder xl/media/image by given
+// file name and extension name.
 func (f *File) addMedia(file string, ext string) {
 	count := f.countMedia()
 	dat, _ := ioutil.ReadFile(file)
@@ -236,8 +240,9 @@ func (f *File) addMedia(file string, ext string) {
 	f.XLSX[media] = string(dat)
 }
 
-// addDrawingContentTypePart provides function to add image part relationships in
-// http://purl.oclc.org/ooxml/officeDocument/relationships/image and appropriate content type.
+// addDrawingContentTypePart provides function to add image part relationships
+// in http://purl.oclc.org/ooxml/officeDocument/relationships/image and
+// appropriate content type.
 func (f *File) addDrawingContentTypePart(index int) {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
 	var content xlsxTypes
@@ -271,8 +276,9 @@ func (f *File) addDrawingContentTypePart(index int) {
 	f.saveFileList(`[Content_Types].xml`, string(output))
 }
 
-// getSheetRelationshipsTargetByID provides function to get Target attribute value
-// in xl/worksheets/_rels/sheet%d.xml.rels by given sheet name and relationship index.
+// getSheetRelationshipsTargetByID provides function to get Target attribute
+// value in xl/worksheets/_rels/sheet%d.xml.rels by given sheet name and
+// relationship index.
 func (f *File) getSheetRelationshipsTargetByID(sheet string, rID string) string {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
 	var sheetRels xlsxWorkbookRels

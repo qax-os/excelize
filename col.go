@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// SetColWidth provides function to set the width of a single column or multiple columns.
-// For example:
+// SetColWidth provides function to set the width of a single column or multiple
+// columns. For example:
 //
 //    xlsx := excelize.CreateFile()
 //    xlsx.SetColWidth("Sheet1", "A", "H", 20)

@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-// File define a populated xlsx.File struct.
+// File define a populated XLSX file struct.
 type File struct {
 	XLSX       map[string]string
 	Path       string
 	SheetCount int
 }
 
-// OpenFile take the name of an XLSX file and returns a populated
-// xlsx.File struct for it.
+// OpenFile take the name of an XLSX file and returns a populated XLSX file
+// struct for it.
 func OpenFile(filename string) (*File, error) {
 	var f *zip.ReadCloser
 	var err error
@@ -110,7 +110,8 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// SetCellDefault provides function to set string type value of a cell as default format without escaping the cell.
+// SetCellDefault provides function to set string type value of a cell as
+// default format without escaping the cell.
 func (f *File) SetCellDefault(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -203,7 +204,8 @@ func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 	return xlsx
 }
 
-// Replace xl/worksheets/sheet%d.xml XML tags to self-closing for compatible Office Excel 2007.
+// Replace xl/worksheets/sheet%d.xml XML tags to self-closing for compatible
+// Office Excel 2007.
 func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 	oldXmlns := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
 	newXmlns := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mx="http://schemas.microsoft.com/office/mac/excel/2008/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mv="urn:schemas-microsoft-com:mac:vml" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">`
@@ -211,7 +213,7 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 	return workbookMarshal
 }
 
-// Check XML tags and fix discontinuous case, for example:
+// Check XML tags and fix discontinuous case. For example:
 //
 //    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
 //        <c r="A15" s="2" />
@@ -232,7 +234,8 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 //        <c r="G15" s="1" />
 //    </row>
 //
-// Noteice: this method could be very slow for large spreadsheets (more than 3000 rows one sheet).
+// Noteice: this method could be very slow for large spreadsheets (more than
+// 3000 rows one sheet).
 func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 	buffer := bytes.Buffer{}
 	for k, v := range xlsx.SheetData.Row {
@@ -267,7 +270,8 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
 // Office Excel 2007 and 2010. This function will be remove value tag when met a
-// cell have a linked value. Reference https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
+// cell have a linked value. Reference
+// https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
 //
 // Notice: after open XLSX file Excel will be update linked value and generate
 // new value and will prompt save file or not.

@@ -43,9 +43,8 @@ func readXMLSST(f *File) (xlsxSST, error) {
 	return shardStrings, err
 }
 
-// getValueFrom return a value from a column/row cell,
-// this function is inteded to be used with for range on rows
-// an argument with the xlsx opened file.
+// getValueFrom return a value from a column/row cell, this function is inteded
+// to be used with for range on rows an argument with the xlsx opened file.
 func (xlsx *xlsxC) getValueFrom(f *File) (string, error) {
 	switch xlsx.T {
 	case "s":

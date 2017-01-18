@@ -112,10 +112,12 @@ func TestOpenFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
 
+func TestBrokenFile(t *testing.T) {
 	// Test write file with broken file struct.
 	f2 := File{}
-	err = f2.Save()
+	err := f2.Save()
 	if err != nil {
 		t.Log(err)
 	}
@@ -124,41 +126,39 @@ func TestOpenFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-}
 
-func TestCreateFile(t *testing.T) {
-	// Test create a XLSX file.
-	f3 := CreateFile()
-	f3.NewSheet(2, "XLSXSheet2")
-	f3.NewSheet(3, "XLSXSheet3")
-	f3.SetCellInt("Sheet2", "A23", 56)
-	f3.SetCellStr("SHEET1", "B20", "42")
-	f3.SetActiveSheet(0)
-	// Test add picture to sheet.
-	err := f3.AddPicture("Sheet1", "H2", "K12", "./test/images/excel.gif")
-	if err != nil {
-		t.Log(err)
-	}
-	err = f3.AddPicture("Sheet1", "C2", "F12", "./test/images/excel.tif")
-	if err != nil {
-		t.Log(err)
-	}
-	err = f3.WriteTo("./test/Workbook_3.xlsx")
-	if err != nil {
-		t.Log(err)
-	}
-}
-
-func TestBrokenFile(t *testing.T) {
 	// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
-	f4, err := OpenFile("./test/badWorkbook.xlsx")
-	f4.SetActiveSheet(2)
+	f3, err := OpenFile("./test/badWorkbook.xlsx")
+	f3.SetActiveSheet(2)
 	if err != nil {
 		t.Log(err)
 	}
 
 	// Test open a XLSX file with given illegal path.
 	_, err = OpenFile("./test/Workbook.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestCreateFile(t *testing.T) {
+	// Test create a XLSX file.
+	f4 := CreateFile()
+	f4.NewSheet(2, "XLSXSheet2")
+	f4.NewSheet(3, "XLSXSheet3")
+	f4.SetCellInt("Sheet2", "A23", 56)
+	f4.SetCellStr("SHEET1", "B20", "42")
+	f4.SetActiveSheet(0)
+	// Test add picture to sheet.
+	err := f4.AddPicture("Sheet1", "H2", "K12", "./test/images/excel.gif")
+	if err != nil {
+		t.Log(err)
+	}
+	err = f4.AddPicture("Sheet1", "C2", "F12", "./test/images/excel.tif")
+	if err != nil {
+		t.Log(err)
+	}
+	err = f4.WriteTo("./test/Workbook_3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}

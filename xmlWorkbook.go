@@ -10,8 +10,7 @@ const (
 	sheetStateVeryHidden = `veryHidden`
 )
 
-// xmlxWorkbookRels contains xmlxWorkbookRelations
-// which maps sheet id and sheet XML.
+// xmlxWorkbookRels contains xmlxWorkbookRelations which maps sheet id and sheet XML.
 type xlsxWorkbookRels struct {
 	XMLName       xml.Name               `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`
 	Relationships []xlsxWorkbookRelation `xml:"Relationship"`
@@ -25,9 +24,8 @@ type xlsxWorkbookRelation struct {
 }
 
 // xlsxWorkbook directly maps the workbook element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
+// not checked it for completeness - it does as much as I need.
 type xlsxWorkbook struct {
 	XMLName            xml.Name                `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
 	FileVersion        *xlsxFileVersion        `xml:"fileVersion"`
@@ -43,10 +41,10 @@ type xlsxWorkbook struct {
 	FileRecoveryPr     *xlsxFileRecoveryPr     `xml:"fileRecoveryPr"`
 }
 
-// xlsxFileRecoveryPr maps sheet recovery information. This element
-// defines properties that track the state of the workbook file, such
-// as whether the file was saved during a crash, or whether it should
-// be opened in auto-recover mode.
+// xlsxFileRecoveryPr maps sheet recovery information. This element defines
+// properties that track the state of the workbook file, such as whether the
+// file was saved during a crash, or whether it should be opened in auto-recover
+// mode.
 type xlsxFileRecoveryPr struct {
 	AutoRecover     bool `xml:"autoRecover,attr,omitempty"`
 	CrashSave       bool `xml:"crashSave,attr,omitempty"`
@@ -54,16 +52,15 @@ type xlsxFileRecoveryPr struct {
 	RepairLoad      bool `xml:"repairLoad,attr,omitempty"`
 }
 
-// xlsxWorkbookProtection directly maps the workbookProtection element.
-// This element specifies options for protecting data in the workbook.
-// Applications might use workbook protection to prevent anyone from
-// accidentally changing, moving, or deleting important data. This
-// protection can be ignored by applications which choose not to support
-// this optional protection mechanism.
-// When a password is to be hashed and stored in this element, it shall
-// be hashed as defined below, starting from a UTF-16LE encoded string
-// value. If there is a leading BOM character (U+FEFF) in the encoded
-// password it is removed before hash calculation.
+// xlsxWorkbookProtection directly maps the workbookProtection element. This
+// element specifies options for protecting data in the workbook. Applications
+// might use workbook protection to prevent anyone from accidentally changing,
+// moving, or deleting important data. This protection can be ignored by
+// applications which choose not to support this optional protection mechanism.
+// When a password is to be hashed and stored in this element, it shall be
+// hashed as defined below, starting from a UTF-16LE encoded string value. If
+// there is a leading BOM character (U+FEFF) in the encoded password it is
+// removed before hash calculation.
 type xlsxWorkbookProtection struct {
 	LockRevision           bool   `xml:"lockRevision,attr,omitempty"`
 	LockStructure          bool   `xml:"lockStructure,attr,omitempty"`
@@ -78,9 +75,9 @@ type xlsxWorkbookProtection struct {
 	WorkbookSpinCount      int    `xml:"workbookSpinCount,attr,omitempty"`
 }
 
-// xlsxFileVersion directly maps the fileVersion element. This element
-// defines properties that track which version of the application accessed
-// the data and source code contained in the file.
+// xlsxFileVersion directly maps the fileVersion element. This element defines
+// properties that track which version of the application accessed the data and
+// source code contained in the file.
 type xlsxFileVersion struct {
 	AppName      string `xml:"appName,attr,omitempty"`
 	CodeName     string `xml:"codeName,attr,omitempty"`
@@ -89,9 +86,9 @@ type xlsxFileVersion struct {
 	RupBuild     string `xml:"rupBuild,attr,omitempty"`
 }
 
-// xlsxWorkbookPr directly maps the workbookPr element from the
-// namespace http://schemas.openxmlformats.org/spreadsheetml/2006/main
-// This element defines a collection of workbook properties.
+// xlsxWorkbookPr directly maps the workbookPr element from the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
+// defines a collection of workbook properties.
 type xlsxWorkbookPr struct {
 	AllowRefreshQuery          bool   `xml:"allowRefreshQuery,attr,omitempty"`
 	AutoCompressPictures       bool   `xml:"autoCompressPictures,attr,omitempty"`
@@ -113,17 +110,17 @@ type xlsxWorkbookPr struct {
 	UpdateLinks                string `xml:"updateLinks,attr,omitempty"`
 }
 
-// xlsxBookViews directly maps the bookViews element. This element specifies
-// the collection of workbook views of the enclosing workbook. Each view can
-// specify a window position, filter options, and other configurations. There
-// is no limit on the number of workbook views that can be defined for a workbook.
+// xlsxBookViews directly maps the bookViews element. This element specifies the
+// collection of workbook views of the enclosing workbook. Each view can specify
+// a window position, filter options, and other configurations. There is no
+// limit on the number of workbook views that can be defined for a workbook.
 type xlsxBookViews struct {
 	WorkBookView []xlsxWorkBookView `xml:"workbookView"`
 }
 
-// xlsxWorkBookView directly maps the workbookView element from the
-// namespace http://schemas.openxmlformats.org/spreadsheetml/2006/main
-// This element specifies a single Workbook view.
+// xlsxWorkBookView directly maps the workbookView element from the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
+// specifies a single Workbook view.
 type xlsxWorkBookView struct {
 	ActiveTab              int    `xml:"activeTab,attr,omitempty"`
 	AutoFilterDateGrouping bool   `xml:"autoFilterDateGrouping,attr,omitempty"`
@@ -147,9 +144,8 @@ type xlsxSheets struct {
 }
 
 // xlsxSheet directly maps the sheet element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much
-// as I need.
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
+// not checked it for completeness - it does as much as I need.
 type xlsxSheet struct {
 	Name    string `xml:"name,attr,omitempty"`
 	SheetID string `xml:"sheetId,attr,omitempty"`
@@ -157,20 +153,20 @@ type xlsxSheet struct {
 	State   string `xml:"state,attr,omitempty"`
 }
 
-// xlsxExternalReferences directly maps the externalReferences element
-// of the external workbook references part.
+// xlsxExternalReferences directly maps the externalReferences element of the
+// external workbook references part.
 type xlsxExternalReferences struct {
 	ExternalReference []xlsxExternalReference `xml:"externalReference"`
 }
 
-// xlsxExternalReference directly maps the externalReference element
-// of the external workbook references part.
+// xlsxExternalReference directly maps the externalReference element of the
+// external workbook references part.
 type xlsxExternalReference struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// xlsxPivotCaches element enumerates pivot cache definition parts
-// used by pivot tables and formulas in this workbook.
+// xlsxPivotCaches element enumerates pivot cache definition parts used by pivot
+// tables and formulas in this workbook.
 type xlsxPivotCaches struct {
 	PivotCache []xlsxPivotCache `xml:"pivotCache"`
 }
@@ -182,33 +178,30 @@ type xlsxPivotCache struct {
 }
 
 // extLst element provides a convention for extending spreadsheetML in
-// predefined locations. The locations shall be denoted with the extLst
-// element, and are called extension lists. Extension list locations
-// within the markup document are specified in the markup specification
-// and can be used to store extensions to the markup specification,
-// whether those are future version extensions of the markup specification
-// or are private extensions implemented independently from the markup
-// specification. Markup within an extension might not be understood by a
-// consumer.
+// predefined locations. The locations shall be denoted with the extLst element,
+// and are called extension lists. Extension list locations within the markup
+// document are specified in the markup specification and can be used to store
+// extensions to the markup specification, whether those are future version
+// extensions of the markup specification or are private extensions implemented
+// independently from the markup specification. Markup within an extension might
+// not be understood by a consumer.
 type xlsxExtLst struct {
 	Ext string `xml:",innerxml"`
 }
 
-// xlsxDefinedNames directly maps the definedNames element. This element
-// defines the collection of defined names for this workbook. Defined
-// names are descriptive names to represent cells, ranges of cells,
-// formulas, or constant values. Defined names can be used to represent
-// a range on any worksheet.
+// xlsxDefinedNames directly maps the definedNames element. This element defines
+// the collection of defined names for this workbook. Defined names are
+// descriptive names to represent cells, ranges of cells, formulas, or constant
+// values. Defined names can be used to represent a range on any worksheet.
 type xlsxDefinedNames struct {
 	DefinedName []xlsxDefinedName `xml:"definedName"`
 }
 
-// xlsxDefinedName directly maps the definedName element from the
-// namespace http://schemas.openxmlformats.org/spreadsheetml/2006/main
-// This element defines a defined name within this workbook. A defined
-// name is descriptive text that is used to represents a cell, range of
-// cells, formula, or constant value. For a descriptions of the attributes
-// see https://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.definedname.aspx
+// xlsxDefinedName directly maps the definedName element from the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
+// defines a defined name within this workbook. A defined name is descriptive
+// text that is used to represents a cell, range of cells, formula, or constant
+// value. For a descriptions of the attributes see https://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.definedname.aspx
 type xlsxDefinedName struct {
 	Comment           string `xml:"comment,attr,omitempty"`
 	CustomMenu        string `xml:"customMenu,attr,omitempty"`
@@ -229,10 +222,9 @@ type xlsxDefinedName struct {
 }
 
 // xlsxCalcPr directly maps the calcPr element. This element defines the
-// collection of properties the application uses to record calculation
-// status and details. Calculation is the process of computing formulas
-// and then displaying the results as values in the cells that contain
-// the formulas.
+// collection of properties the application uses to record calculation status
+// and details. Calculation is the process of computing formulas and then
+// displaying the results as values in the cells that contain the formulas.
 type xlsxCalcPr struct {
 	CalcCompleted         bool    `xml:"calcCompleted,attr,omitempty"`
 	CalcID                string  `xml:"calcId,attr,omitempty"`

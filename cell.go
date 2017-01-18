@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// GetCellValue provide function get value from cell by given sheet index and axis in XLSX file.
-// The value of the merged cell is not available currently.
+// GetCellValue provide function get value from cell by given sheet index and
+// axis in XLSX file. The value of the merged cell is not available currently.
 func (f *File) GetCellValue(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
@@ -50,7 +50,8 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 	return ""
 }
 
-// GetCellFormula provide function get formula from cell by given sheet index and axis in XLSX file.
+// GetCellFormula provide function get formula from cell by given sheet index
+// and axis in XLSX file.
 func (f *File) GetCellFormula(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet

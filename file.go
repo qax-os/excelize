@@ -6,9 +6,11 @@ import (
 	"os"
 )
 
-// CreateFile provide function to create new file by default template.
-// For example:
-// xlsx := CreateFile()
+// CreateFile provides function to create new file by default template. For
+// example:
+//
+//    xlsx := CreateFile()
+//
 func CreateFile() *File {
 	file := make(map[string]string)
 	file["_rels/.rels"] = templateRels
@@ -25,7 +27,7 @@ func CreateFile() *File {
 	}
 }
 
-// Save provide function override the xlsx file with origin path.
+// Save provides function override the xlsx file with origin path.
 func (f *File) Save() error {
 	buf := new(bytes.Buffer)
 	w := zip.NewWriter(buf)
@@ -51,7 +53,8 @@ func (f *File) Save() error {
 	return err
 }
 
-// WriteTo provide function create or update to an xlsx file at the provided path.
+// WriteTo provides function to create or update to an xlsx file at the provided
+// path.
 func (f *File) WriteTo(name string) error {
 	buf := new(bytes.Buffer)
 	w := zip.NewWriter(buf)

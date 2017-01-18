@@ -9,16 +9,16 @@ import (
 	"math"
 )
 
-// ReadZip takes a pointer to a zip.ReadCloser and returns a
-// xlsx.File struct populated with its contents. In most cases
-// ReadZip is not used directly, but is called internally by OpenFile.
+// ReadZip takes a pointer to a zip.ReadCloser and returns a xlsx.File struct
+// populated with its contents. In most cases ReadZip is not used directly, but
+// is called internally by OpenFile.
 func ReadZip(f *zip.ReadCloser) (map[string]string, int, error) {
 	defer f.Close()
 	return ReadZipReader(&f.Reader)
 }
 
-// ReadZipReader can be used to read an XLSX in memory without
-// touching the filesystem.
+// ReadZipReader can be used to read an XLSX in memory without touching the
+// filesystem.
 func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	fileList := make(map[string]string)
 	worksheets := 0
@@ -88,8 +88,8 @@ func titleToNumber(s string) int {
 	return sum - 1
 }
 
-// letterOnlyMapF is used in conjunction with strings.Map to return
-// only the characters A-Z and a-z in a string.
+// letterOnlyMapF is used in conjunction with strings.Map to return only the
+// characters A-Z and a-z in a string.
 func letterOnlyMapF(rune rune) rune {
 	switch {
 	case 'A' <= rune && rune <= 'Z':
@@ -100,8 +100,8 @@ func letterOnlyMapF(rune rune) rune {
 	return -1
 }
 
-// intOnlyMapF is used in conjunction with strings.Map to return only
-// the numeric portions of a string.
+// intOnlyMapF is used in conjunction with strings.Map to return only the
+// numeric portions of a string.
 func intOnlyMapF(rune rune) rune {
 	if rune >= 48 && rune < 58 {
 		return rune

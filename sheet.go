@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
-// NewSheet provice function to greate a new sheet by given index, when
-// creating a new XLSX file, the default sheet will be create, when you
-// create a new file, you need to ensure that the index is continuous.
+// Sprint formats using the default formats for its operands and returns the
+// resulting string. NewSheet provice function to greate a new sheet by given
+// index, when creating a new XLSX file, the default sheet will be create, when
+// you create a new file, you need to ensure that the index is continuous.
 func (f *File) NewSheet(index int, name string) {
 	// Update docProps/app.xml
 	f.setAppXML()
@@ -54,7 +55,8 @@ func (f *File) setSheet(index int) {
 	f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// Update workbook property of XLSX. Maximum 31 characters are allowed in sheet title.
+// setWorkbook update workbook property of XLSX. Maximum 31 characters are
+// allowed in sheet title.
 func (f *File) setWorkbook(name string, rid int) {
 	var content xlsxWorkbook
 	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
@@ -75,14 +77,14 @@ func (f *File) setWorkbook(name string, rid int) {
 	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 }
 
-// Read and unmarshal workbook relationships of XLSX.
+// readXlsxWorkbookRels read and unmarshal workbook relationships of XLSX file.
 func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
 	var content xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
 	return content
 }
 
-// Update workbook relationships property of XLSX.
+// addXlsxWorkbookRels update workbook relationships property of XLSX.
 func (f *File) addXlsxWorkbookRels(sheet int) int {
 	content := f.readXlsxWorkbookRels()
 	rID := len(content.Relationships) + 1
@@ -106,25 +108,26 @@ func (f *File) addXlsxWorkbookRels(sheet int) int {
 	return rID
 }
 
-// Update docProps/app.xml file of XML.
+// setAppXML update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
 	f.saveFileList("docProps/app.xml", templateDocpropsApp)
 }
 
-// Some tools that read XLSX files have very strict requirements about
-// the structure of the input XML.  In particular both Numbers on the Mac
-// and SAS dislike inline XML namespace declarations, or namespace
-// prefixes that don't match the ones that Excel itself uses.  This is a
-// problem because the Go XML library doesn't multiple namespace
-// declarations in a single element of a document.  This function is a
-// horrible hack to fix that after the XML marshalling is completed.
+// Some tools that read XLSX files have very strict requirements about the
+// structure of the input XML. In particular both Numbers on the Mac and SAS
+// dislike inline XML namespace declarations, or namespace prefixes that don't
+// match the ones that Excel itself uses. This is a problem because the Go XML
+// library doesn't multiple namespace declarations in a single element of a
+// document. This function is a horrible hack to fix that after the XML
+// marshalling is completed.
 func replaceRelationshipsNameSpace(workbookMarshal string) string {
 	oldXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
 	newXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
-// SetActiveSheet provide function to set default active sheet of XLSX by given index.
+// SetActiveSheet provide function to set default active sheet of XLSX by given
+// index.
 func (f *File) SetActiveSheet(index int) {
 	var content xlsxWorkbook
 	if index < 1 {
@@ -177,8 +180,8 @@ func (f *File) SetActiveSheet(index int) {
 	return
 }
 
-// GetActiveSheetIndex provides function to get active sheet of XLSX. If not found
-// the active sheet will be return integer 0.
+// GetActiveSheetIndex provides function to get active sheet of XLSX. If not
+// found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
 	content := xlsxWorkbook{}
 	buffer := bytes.Buffer{}
@@ -200,10 +203,11 @@ func (f *File) GetActiveSheetIndex() int {
 	return 0
 }
 
-// SetSheetName provides function to set the sheet name be given old and new sheet name.
-// Maximum 31 characters are allowed in sheet title and this function only changes the
-// name of the sheet and will not update the sheet name in the formula or reference
-// associated with the cell. So there may be problem formula error or reference missing.
+// SetSheetName provides function to set the sheet name be given old and new
+// sheet name. Maximum 31 characters are allowed in sheet title and this
+// function only changes the name of the sheet and will not update the sheet
+// name in the formula or reference associated with the cell. So there may be
+// problem formula error or reference missing.
 func (f *File) SetSheetName(oldName, newName string) {
 	var content = xlsxWorkbook{}
 	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
@@ -221,8 +225,8 @@ func (f *File) SetSheetName(oldName, newName string) {
 	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 }
 
-// GetSheetName provides function to get sheet name of XLSX by given sheet index.
-// If given sheet index is invalid, will return an empty string.
+// GetSheetName provides function to get sheet name of XLSX by given sheet
+// index. If given sheet index is invalid, will return an empty string.
 func (f *File) GetSheetName(index int) string {
 	var content = xlsxWorkbook{}
 	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
