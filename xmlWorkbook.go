@@ -16,11 +16,12 @@ type xlsxWorkbookRels struct {
 	Relationships []xlsxWorkbookRelation `xml:"Relationship"`
 }
 
-// xmlxWorkbookRelation maps sheet id and xl/worksheets/sheet%d.xml
+// xmlxWorkbookRelation maps sheet id and xl/worksheets/_rels/sheet%d.xml.rels
 type xlsxWorkbookRelation struct {
-	ID     string `xml:"Id,attr"`
-	Target string `xml:",attr"`
-	Type   string `xml:",attr"`
+	ID         string `xml:"Id,attr"`
+	Target     string `xml:",attr"`
+	Type       string `xml:",attr"`
+	TargetMode string `xml:",attr,omitempty"`
 }
 
 // xlsxWorkbook directly maps the workbook element from the namespace

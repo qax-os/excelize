@@ -106,7 +106,7 @@ func main() {
 }
 ```
 
-### Add pictures to XLSX files
+### Add picture to XLSX files
 
 ```go
 package main
@@ -121,6 +121,11 @@ import (
 func main() {
     xlsx := excelize.CreateFile()
     err := xlsx.AddPicture("Sheet1", "A2", "H9", "/tmp/image.jpg")
+    if err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }
+    err = xlsx.WriteTo("/tmp/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
         os.Exit(1)

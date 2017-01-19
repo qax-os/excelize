@@ -85,9 +85,13 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// SetCellStr provides function to set string type value of a cell.
+// SetCellStr provides function to set string type value of a cell. Total number
+// of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
+	if len(value) > 32767 {
+		value = value[0:32767]
+	}
 	var xlsx xlsxWorksheet
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))

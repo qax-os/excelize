@@ -5,6 +5,7 @@ const (
 	SourceRelationship          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 	SourceRelationshipImage     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 	SourceRelationshipDrawingML = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
+	SourceRelationshipHyperLink = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	SourceRelationshipWorkSheet = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
 	NameSpaceDrawingML          = "http://schemas.openxmlformats.org/drawingml/2006/main"
 	NameSpaceSpreadSheetDrawing = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"

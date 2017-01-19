@@ -8,10 +8,9 @@ import (
 	"strings"
 )
 
-// Sprint formats using the default formats for its operands and returns the
-// resulting string. NewSheet provice function to greate a new sheet by given
-// index, when creating a new XLSX file, the default sheet will be create, when
-// you create a new file, you need to ensure that the index is continuous.
+// NewSheet provice function to greate a new sheet by given index, when creating
+// a new XLSX file, the default sheet will be create, when you create a new
+// file, you need to ensure that the index is continuous.
 func (f *File) NewSheet(index int, name string) {
 	// Update docProps/app.xml
 	f.setAppXML()
@@ -126,7 +125,7 @@ func replaceRelationshipsNameSpace(workbookMarshal string) string {
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
-// SetActiveSheet provide function to set default active sheet of XLSX by given
+// SetActiveSheet provides function to set default active sheet of XLSX by given
 // index.
 func (f *File) SetActiveSheet(index int) {
 	var content xlsxWorkbook

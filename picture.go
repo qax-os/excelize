@@ -53,7 +53,7 @@ func (f *File) AddPicture(sheet string, xAxis string, yAxis string, picture stri
 		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
 		// Add first picture for given sheet.
-		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML)
+		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 	}
 	drawingRID = f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
@@ -66,7 +66,7 @@ func (f *File) AddPicture(sheet string, xAxis string, yAxis string, picture stri
 // addSheetRelationships provides function to add
 // xl/worksheets/_rels/sheet%d.xml.rels by given sheet name, relationship type
 // and target.
-func (f *File) addSheetRelationships(sheet string, relType string, target string) int {
+func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) int {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
 	var sheetRels xlsxWorkbookRels
 	var rID = 1
@@ -82,9 +82,10 @@ func (f *File) addSheetRelationships(sheet string, relType string, target string
 		ID.WriteString(strconv.Itoa(rID))
 	}
 	sheetRels.Relationships = append(sheetRels.Relationships, xlsxWorkbookRelation{
-		ID:     ID.String(),
-		Type:   relType,
-		Target: target,
+		ID:         ID.String(),
+		Type:       relType,
+		Target:     target,
+		TargetMode: targetMode,
 	})
 	output, err := xml.Marshal(sheetRels)
 	if err != nil {
