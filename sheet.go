@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-// NewSheet provice function to greate a new sheet by given index, when creating
-// a new XLSX file, the default sheet will be create, when you create a new
-// file, you need to ensure that the index is continuous.
+// NewSheet provides function to create a new sheet by given index, when
+// creating a new XLSX file, the default sheet will be create, when you create a
+// new file, you need to ensure that the index is continuous.
 func (f *File) NewSheet(index int, name string) {
 	// Update docProps/app.xml
 	f.setAppXML()

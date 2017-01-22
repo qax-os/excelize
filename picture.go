@@ -14,22 +14,22 @@ import (
 	"strings"
 )
 
-// AddPicture provides the method to add picture in a sheet by given xAxis, yAxis
-// and file path. For example:
+// AddPicture provides the method to add picture in a sheet by given offset
+// (xAxis, yAxis), scale (xScale, yScale) and file path. For example:
 //
-//	  package main
+//    package main
 //
-//	  import (
-//	      "fmt"
-//	      "os"
-//	      _ "image/gif"
-//	      _ "image/jpeg"
-//	      _ "image/png"
+//    import (
+//        "fmt"
+//        "os"
+//        _ "image/gif"
+//        _ "image/jpeg"
+//        _ "image/png"
 //
-//	      "github.com/Luxurioust/excelize"
-//	  )
+//        "github.com/Luxurioust/excelize"
+//    )
 //
-//	  func main() {
+//    func main() {
 //        xlsx := excelize.CreateFile()
 //        // Insert a picture.
 //        err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", 0, 0, 1, 1)

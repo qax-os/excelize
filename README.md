@@ -21,7 +21,7 @@ Excelize is a library written in pure Golang and providing a set of functions th
 go get github.com/Luxurioust/excelize
 ```
 
-### Create XLSX files
+### Create XLSX file
 
 Here is a minimal example usage that will create XLSX file.
 
@@ -37,10 +37,14 @@ import (
 
 func main() {
     xlsx := excelize.CreateFile()
+    // Create a new sheet.
     xlsx.NewSheet(2, "Sheet2")
-    xlsx.NewSheet(3, "Sheet3")
-    xlsx.SetCellInt("Sheet2", "A23", 10)
-    xlsx.SetCellStr("Sheet3", "B20", "Hello")
+    // Set int or string type value of a cell.
+    xlsx.SetCellValue("Sheet2", "A2", "Hello world.")
+    xlsx.SetCellValue("Sheet1", "B2", 100)
+    // Set active sheet of workbook.
+    xlsx.SetActiveSheet(2)
+    // Save xlsx file by the given path.
     err := xlsx.WriteTo("/tmp/Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
@@ -49,9 +53,9 @@ func main() {
 }
 ```
 
-### Writing XLSX files
+### Reading XLSX file
 
-The following constitutes the bare minimum required to write an XLSX document.
+The following constitutes the bare to read a XLSX document.
 
 ```go
 package main
@@ -69,12 +73,17 @@ func main() {
         fmt.Println(err)
         os.Exit(1)
     }
-    xlsx.SetCellValue("Sheet2", "B2", 100)
-    xlsx.SetCellValue("Sheet2", "C7", "Hello")
-    xlsx.NewSheet(4, "TestSheet")
-    xlsx.SetCellInt("Sheet4", "A3", 10)
-    xlsx.SetCellStr("Sheet4", "b6", "World")
-    xlsx.SetActiveSheet(2)
+    // Get value from cell by given sheet index and axis.
+    cell := xlsx.GetCellValue("Sheet1", "B2")
+    fmt.Println(cell)
+    // Get all the rows in a sheet.
+    rows := xlsx.GetRows("Sheet2")
+    for _, row := range rows {
+        for _, colCell := range row {
+            fmt.Print(colCell, "\t")
+        }
+    }
+    // Save the xlsx file with origin path.
     err = xlsx.Save()
     if err != nil {
         fmt.Println(err)
@@ -83,30 +92,7 @@ func main() {
 }
 ```
 
-### Reading XLSX files
-
-```go
-package main
-
-import (
-    "fmt"
-    "os"
-
-    "github.com/Luxurioust/excelize"
-)
-
-func main() {
-    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
-    cell := xlsx.GetCellValue("Sheet2", "C7")
-    fmt.Println(cell)
-}
-```
-
-### Add picture to XLSX files
+### Add picture to XLSX file
 
 ```go
 package main
@@ -124,11 +110,11 @@ import (
 func main() {
     xlsx := excelize.CreateFile()
     // Insert a picture.
-    err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", 0, 0, 1, 1)
+    err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.gif", 0, 0, 1, 1)
     // Insert a picture to sheet with scaling.
-    err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image1.png", 0, 0, 0.5, 0.5)
+    err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image2.jpg", 0, 0, 0.5, 0.5)
     // Insert a picture offset in the cell.
-    err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", 15, 10, 1, 1)
+    err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.png", 15, 10, 1, 1)
     if err != nil {
         fmt.Println(err)
         os.Exit(1)
