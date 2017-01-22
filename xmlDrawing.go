@@ -115,10 +115,11 @@ type xlsxBlipFill struct {
 	Stretch xlsxStretch `xml:"a:stretch"`
 }
 
-// xlsxSpPr directly maps the spPr (Shape Properties). This element specifies the visual
-// shape properties that can be applied to a picture. These are the same properties that
-// are allowed to describe the visual properties of a shape but are used here to describe
-// the visual appearance of a picture within a document.
+// xlsxSpPr directly maps the spPr (Shape Properties). This element specifies
+// the visual shape properties that can be applied to a picture. These are the
+// same properties that are allowed to describe the visual properties of a shape
+// but are used here to describe the visual appearance of a picture within a
+// document.
 type xlsxSpPr struct {
 	Xfrm     xlsxXfrm     `xml:"a:xfrm"`
 	PrstGeom xlsxPrstGeom `xml:"a:prstGeom"`

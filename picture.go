@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"image"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,18 +14,42 @@ import (
 	"strings"
 )
 
-// AddPicture provide the method to add picture in a sheet by given xAxis, yAxis
+// AddPicture provides the method to add picture in a sheet by given xAxis, yAxis
 // and file path. For example:
 //
-//    xlsx := excelize.CreateFile()
-//    err := xlsx.AddPicture("Sheet1", "A2", "H9", "./image.jpg")
-//    if err != nil {
-//        fmt.Println(err)
-//        os.Exit(1)
+//	  package main
+//
+//	  import (
+//	      "fmt"
+//	      "os"
+//	      _ "image/gif"
+//	      _ "image/jpeg"
+//	      _ "image/png"
+//
+//	      "github.com/Luxurioust/excelize"
+//	  )
+//
+//	  func main() {
+//        xlsx := excelize.CreateFile()
+//        // Insert a picture.
+//        err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", 0, 0, 1, 1)
+//        // Insert a picture to sheet with scaling.
+//        err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image1.png", 0, 0, 0.5, 0.5)
+//        // Insert a picture offset in the cell.
+//        err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", 15, 10, 1, 1)
+//        if err != nil {
+//            fmt.Println(err)
+//            os.Exit(1)
+//        }
+//        err = xlsx.WriteTo("/tmp/Workbook.xlsx")
+//        if err != nil {
+//            fmt.Println(err)
+//            os.Exit(1)
+//        }
 //    }
 //
-func (f *File) AddPicture(sheet string, xAxis string, yAxis string, picture string) error {
-	var supportTypes = map[string]string{".bmp": ".jpeg", ".gif": ".gif", ".ico": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
+func (f *File) AddPicture(sheet, cell, picture string, offsetX, offsetY int, xScale, yScale float64) error {
+	var supportTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
@@ -34,6 +59,8 @@ func (f *File) AddPicture(sheet string, xAxis string, yAxis string, picture stri
 	if !ok {
 		return errors.New("Unsupported image extension")
 	}
+	readFile, _ := os.Open(picture)
+	image, _, err := image.DecodeConfig(readFile)
 	_, file := filepath.Split(picture)
 	// Read sheet data.
 	var xlsx xlsxWorksheet
@@ -57,7 +84,7 @@ func (f *File) AddPicture(sheet string, xAxis string, yAxis string, picture stri
 		f.addSheetDrawing(sheet, rID)
 	}
 	drawingRID = f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
-	f.addDrawing(drawingXML, xAxis, yAxis, file, drawingRID)
+	f.addDrawing(sheet, drawingXML, cell, file, offsetX, offsetY, image.Width, image.Height, drawingRID, xScale, yScale)
 	f.addMedia(picture, ext)
 	f.addDrawingContentTypePart(drawingID)
 	return err
@@ -127,17 +154,15 @@ func (f *File) countDrawings() int {
 // yAxis, file name and relationship index. In order to solve the problem that
 // the label structure is changed after serialization and deserialization, two
 // different structures: decodeWsDr and encodeWsDr are defined.
-func (f *File) addDrawing(drawingXML string, xAxis string, yAxis string, file string, rID int) {
-	xAxis = strings.ToUpper(xAxis)
-	fromCol := string(strings.Map(letterOnlyMapF, xAxis))
-	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, xAxis))
-	fromXAxis := fromRow - 1
-	fromYAxis := titleToNumber(fromCol)
-	yAxis = strings.ToUpper(yAxis)
-	ToCol := string(strings.Map(letterOnlyMapF, yAxis))
-	ToRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, yAxis))
-	ToXAxis := ToRow - 1
-	ToYAxis := titleToNumber(ToCol)
+func (f *File) addDrawing(sheet, drawingXML, cell, file string, offsetX, offsetY, width, height, rID int, xScale, yScale float64) {
+	cell = strings.ToUpper(cell)
+	fromCol := string(strings.Map(letterOnlyMapF, cell))
+	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
+	row := fromRow - 1
+	col := titleToNumber(fromCol)
+	width = int(float64(width) * xScale)
+	height = int(float64(height) * yScale)
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, offsetX, offsetY, width, height)
 	content := encodeWsDr{}
 	content.WsDr.A = NameSpaceDrawingML
 	content.WsDr.Xdr = NameSpaceSpreadSheetDrawing
@@ -157,11 +182,15 @@ func (f *File) addDrawing(drawingXML string, xAxis string, yAxis string, file st
 	twoCellAnchor := xlsxTwoCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
-	from.Col = fromYAxis
-	from.Row = fromXAxis
+	from.Col = colStart
+	from.ColOff = offsetX * EMU
+	from.Row = rowStart
+	from.RowOff = offsetY * EMU
 	to := xlsxTo{}
-	to.Col = ToYAxis
-	to.Row = ToXAxis
+	to.Col = colEnd
+	to.ColOff = x2 * EMU
+	to.Row = rowEnd
+	to.RowOff = y2 * EMU
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 	pic := xlsxPic{}
@@ -245,7 +274,7 @@ func (f *File) addMedia(file string, ext string) {
 // in http://purl.oclc.org/ooxml/officeDocument/relationships/image and
 // appropriate content type.
 func (f *File) addDrawingContentTypePart(index int) {
-	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
+	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false}
 	var content xlsxTypes
 	xml.Unmarshal([]byte(f.readXML(`[Content_Types].xml`)), &content)
 	for _, v := range content.Defaults {

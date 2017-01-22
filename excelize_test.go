@@ -1,6 +1,9 @@
 package excelize
 
 import (
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"strconv"
 	"testing"
 )
@@ -92,29 +95,22 @@ func TestAddPicture(t *testing.T) {
 		t.Log(err)
 	}
 	// Test add picture to sheet.
-	err = xlsx.AddPicture("Sheet2", "I1", "L10", "./test/images/excel.jpg")
+	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg", 140, 120, 1, 1)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.AddPicture("Sheet1", "F21", "G25", "./test/images/excel.png")
-	if err != nil {
-		t.Log(err)
-	}
-	err = xlsx.AddPicture("Sheet2", "L1", "O10", "./test/images/excel.bmp")
-	if err != nil {
-		t.Log(err)
-	}
-	err = xlsx.AddPicture("Sheet1", "G21", "H25", "./test/images/excel.ico")
-	if err != nil {
-		t.Log(err)
-	}
-	// Test add picture to sheet with unsupport file type.
-	err = xlsx.AddPicture("Sheet1", "G21", "H25", "./test/images/excel.icon")
+	// Test add picture to sheet with offset.
+	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", 10, 10, 1, 1)
 	if err != nil {
 		t.Log(err)
 	}
 	// Test add picture to sheet with invalid file path.
-	err = xlsx.AddPicture("Sheet1", "G21", "H25", "./test/Workbook1.xlsx")
+	err = xlsx.AddPicture("Sheet1", "G21", "./test/images/excel.icon", 0, 0, 1, 1)
+	if err != nil {
+		t.Log(err)
+	}
+	// Test add picture to sheet with unsupport file type.
+	err = xlsx.AddPicture("Sheet1", "G21", "./test/Workbook1.xlsx", 0, 0, 1, 1)
 	if err != nil {
 		t.Log(err)
 	}
@@ -160,12 +156,12 @@ func TestCreateFile(t *testing.T) {
 	xlsx.SetCellInt("Sheet2", "A23", 56)
 	xlsx.SetCellStr("SHEET1", "B20", "42")
 	xlsx.SetActiveSheet(0)
-	// Test add picture to sheet.
-	err := xlsx.AddPicture("Sheet1", "H2", "K12", "./test/images/excel.gif")
+	// Test add picture to sheet with scaling.
+	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", 0, 0, 0.5, 0.5)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.AddPicture("Sheet1", "C2", "F12", "./test/images/excel.tif")
+	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", 0, 0, 1, 1)
 	if err != nil {
 		t.Log(err)
 	}
@@ -176,13 +172,10 @@ func TestCreateFile(t *testing.T) {
 }
 
 func TestSetColWidth(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
-	if err != nil {
-		t.Log(err)
-	}
+	xlsx := CreateFile()
 	xlsx.SetColWidth("sheet1", "B", "A", 12)
 	xlsx.SetColWidth("sheet1", "A", "B", 12)
-	err = xlsx.Save()
+	err := xlsx.WriteTo("./test/Workbook_4.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
