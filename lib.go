@@ -43,7 +43,7 @@ func (f *File) readXML(name string) string {
 	if content, ok := f.XLSX[name]; ok {
 		return content
 	}
-	return ``
+	return ""
 }
 
 // Update given file content in file list of XLSX.
@@ -66,7 +66,7 @@ func readFile(file *zip.File) string {
 // Convert integer to Excel sheet column title.
 func toAlphaString(value int) string {
 	if value < 0 {
-		return ``
+		return ""
 	}
 	var ans string
 	i := value

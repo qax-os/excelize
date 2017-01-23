@@ -39,10 +39,10 @@ func main() {
     xlsx := excelize.CreateFile()
     // Create a new sheet.
     xlsx.NewSheet(2, "Sheet2")
-    // Set int or string type value of a cell.
+    // Set value of a cell.
     xlsx.SetCellValue("Sheet2", "A2", "Hello world.")
     xlsx.SetCellValue("Sheet1", "B2", 100)
-    // Set active sheet of workbook.
+    // Set active sheet of the workbook.
     xlsx.SetActiveSheet(2)
     // Save xlsx file by the given path.
     err := xlsx.WriteTo("/tmp/Workbook.xlsx")
@@ -82,12 +82,7 @@ func main() {
         for _, colCell := range row {
             fmt.Print(colCell, "\t")
         }
-    }
-    // Save the xlsx file with origin path.
-    err = xlsx.Save()
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
+        fmt.Println()
     }
 }
 ```
@@ -108,9 +103,13 @@ import (
 )
 
 func main() {
-    xlsx := excelize.CreateFile()
+    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
+    if err != nil {
+        fmt.Println(err)
+        os.Exit(1)
+    }
     // Insert a picture.
-    err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.gif", 0, 0, 1, 1)
+    err = xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.gif", 0, 0, 1, 1)
     // Insert a picture to sheet with scaling.
     err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image2.jpg", 0, 0, 0.5, 0.5)
     // Insert a picture offset in the cell.
@@ -119,7 +118,8 @@ func main() {
         fmt.Println(err)
         os.Exit(1)
     }
-    err = xlsx.WriteTo("/tmp/Workbook.xlsx")
+    // Save the xlsx file with the origin path.
+    err = xlsx.Save()
     if err != nil {
         fmt.Println(err)
         os.Exit(1)

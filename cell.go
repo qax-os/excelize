@@ -23,7 +23,7 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 			rows = lastRow
 		}
 	}
-	if rows <= xAxis {
+	if rows < xAxis {
 		return ""
 	}
 	for _, v := range xlsx.SheetData.Row {
@@ -67,7 +67,7 @@ func (f *File) GetCellFormula(sheet string, axis string) string {
 			rows = lastRow
 		}
 	}
-	if rows <= xAxis {
+	if rows < xAxis {
 		return ""
 	}
 	for _, v := range xlsx.SheetData.Row {
@@ -84,29 +84,6 @@ func (f *File) GetCellFormula(sheet string, axis string) string {
 		}
 	}
 	return ""
-}
-
-// SetCellHyperLink provides function to set cell hyperlink by given sheet index
-// and link URL address. Only support external link currently.
-func (f *File) SetCellHyperLink(sheet, axis, link string) {
-	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
-	hyperlink := xlsxHyperlink{
-		Ref: axis,
-		RID: "rId" + strconv.Itoa(rID),
-	}
-	if xlsx.Hyperlinks != nil {
-		xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
-	} else {
-		hyperlinks := xlsxHyperlinks{}
-		hyperlinks.Hyperlink = append(hyperlinks.Hyperlink, hyperlink)
-		xlsx.Hyperlinks = &hyperlinks
-	}
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // SetCellFormula provides function to set cell formula by given string and
@@ -135,6 +112,29 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 			Content: formula,
 		}
 		xlsx.SheetData.Row[xAxis].C[yAxis].F = &f
+	}
+	output, _ := xml.Marshal(xlsx)
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+}
+
+// SetCellHyperLink provides function to set cell hyperlink by given sheet index
+// and link URL address. Only support external link currently.
+func (f *File) SetCellHyperLink(sheet, axis, link string) {
+	axis = strings.ToUpper(axis)
+	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
+	hyperlink := xlsxHyperlink{
+		Ref: axis,
+		RID: "rId" + strconv.Itoa(rID),
+	}
+	if xlsx.Hyperlinks != nil {
+		xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
+	} else {
+		hyperlinks := xlsxHyperlinks{}
+		hyperlinks.Hyperlink = append(hyperlinks.Hyperlink, hyperlink)
+		xlsx.Hyperlinks = &hyperlinks
 	}
 	output, _ := xml.Marshal(xlsx)
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
