@@ -3,7 +3,10 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -193,8 +196,8 @@ func (f *File) GetActiveSheetIndex() int {
 		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
 		for _, sheetView := range xlsx.SheetViews.SheetView {
 			if sheetView.TabSelected {
-				id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
-				return id
+				ID, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
+				return ID
 			}
 		}
 		buffer.Reset()
@@ -257,4 +260,29 @@ func (f *File) GetSheetMap() map[int]string {
 		sheetMap[id] = v.Name
 	}
 	return sheetMap
+}
+
+// SetSheetBackground provides function to set background picture by given sheet
+// index.
+func (f *File) SetSheetBackground(sheet, picture string) error {
+	var supportTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
+	var err error
+	// Check picture exists first.
+	if _, err = os.Stat(picture); os.IsNotExist(err) {
+		return err
+	}
+	ext, ok := supportTypes[path.Ext(picture)]
+	if !ok {
+		return errors.New("Unsupported image extension")
+	}
+	// Read sheet data.
+	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	pictureID := f.countMedia() + 1
+	rID := f.addSheetRelationships(sheet, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext, "")
+	f.addSheetPicture(sheet, rID)
+	f.addMedia(picture, ext)
+	f.setContentTypePartImageExtensions()
+	return err
 }

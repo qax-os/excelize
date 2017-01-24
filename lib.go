@@ -38,7 +38,7 @@ func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
 	return fileList, worksheets, nil
 }
 
-// Read XML content as string.
+// readXML provides function to read XML content as string.
 func (f *File) readXML(name string) string {
 	if content, ok := f.XLSX[name]; ok {
 		return content
@@ -46,7 +46,8 @@ func (f *File) readXML(name string) string {
 	return ""
 }
 
-// Update given file content in file list of XLSX.
+// saveFileList provides function to update given file content in file list of
+// XLSX.
 func (f *File) saveFileList(name string, content string) {
 	f.XLSX[name] = XMLHeader + content
 }
@@ -63,7 +64,8 @@ func readFile(file *zip.File) string {
 	return string(buff.Bytes())
 }
 
-// Convert integer to Excel sheet column title.
+// toAlphaString provides function to convert integer to Excel sheet column
+// title.
 func toAlphaString(value int) string {
 	if value < 0 {
 		return ""
@@ -77,7 +79,7 @@ func toAlphaString(value int) string {
 	return ans
 }
 
-// Convert Excel sheet column title to int.
+// titleToNumber provides function to convert Excel sheet column title to int.
 func titleToNumber(s string) int {
 	weight := 0.0
 	sum := 0

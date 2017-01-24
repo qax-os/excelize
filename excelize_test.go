@@ -208,3 +208,30 @@ func TestSetCellFormula(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestSetSheetBackground(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetSheetBackground("sheet2", "./test/images/background.png")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetSheetBackground("sheet2", "./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetSheetBackground("sheet2", "./test/images/background.jpg")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetSheetBackground("sheet2", "./test/images/background.jpg")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}

@@ -68,7 +68,7 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
 //    |     |            |     (x2,y2)|
 //    +-----+------------+------------+
 //
-// Example of an object that covers some of the area from cell A1 to  B2.
+// Example of an object that covers some of the area from cell A1 to B2.
 //
 // Based on the width and height of the object we need to calculate 8 vars:
 //

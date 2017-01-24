@@ -27,7 +27,7 @@ func CreateFile() *File {
 	}
 }
 
-// Save provides function override the xlsx file with origin path.
+// Save provides function to override the xlsx file with origin path.
 func (f *File) Save() error {
 	buf := new(bytes.Buffer)
 	w := zip.NewWriter(buf)

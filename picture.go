@@ -135,7 +135,23 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	f.saveFileList(name, string(output))
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+}
+
+// addSheetPicture provides function to add picture element to
+// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
+func (f *File) addSheetPicture(sheet string, rID int) {
+	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx.Picture = &xlsxPicture{
+		RID: "rId" + strconv.Itoa(rID),
+	}
+	output, err := xml.Marshal(xlsx)
+	if err != nil {
+		fmt.Println(err)
+	}
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // countDrawings provides function to get drawing files count storage in the
@@ -270,13 +286,10 @@ func (f *File) addMedia(file string, ext string) {
 	f.XLSX[media] = string(dat)
 }
 
-// addDrawingContentTypePart provides function to add image part relationships
-// in http://purl.oclc.org/ooxml/officeDocument/relationships/image and
-// appropriate content type.
-func (f *File) addDrawingContentTypePart(index int) {
+func (f *File) setContentTypePartImageExtensions() {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false}
 	var content xlsxTypes
-	xml.Unmarshal([]byte(f.readXML(`[Content_Types].xml`)), &content)
+	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
 	for _, v := range content.Defaults {
 		_, ok := imageTypes[v.Extension]
 		if ok {
@@ -291,6 +304,17 @@ func (f *File) addDrawingContentTypePart(index int) {
 			})
 		}
 	}
+	output, _ := xml.Marshal(content)
+	f.saveFileList("[Content_Types].xml", string(output))
+}
+
+// addDrawingContentTypePart provides function to add image part relationships
+// in http://purl.oclc.org/ooxml/officeDocument/relationships/image and
+// appropriate content type.
+func (f *File) addDrawingContentTypePart(index int) {
+	f.setContentTypePartImageExtensions()
+	var content xlsxTypes
+	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
 	for _, v := range content.Overrides {
 		if v.PartName == "/xl/drawings/drawing"+strconv.Itoa(index)+".xml" {
 			output, _ := xml.Marshal(content)
@@ -303,7 +327,7 @@ func (f *File) addDrawingContentTypePart(index int) {
 		ContentType: "application/vnd.openxmlformats-officedocument.drawing+xml",
 	})
 	output, _ := xml.Marshal(content)
-	f.saveFileList(`[Content_Types].xml`, string(output))
+	f.saveFileList("[Content_Types].xml", string(output))
 }
 
 // getSheetRelationshipsTargetByID provides function to get Target attribute
