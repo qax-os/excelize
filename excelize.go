@@ -64,13 +64,19 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 func (f *File) SetCellInt(sheet string, axis string, value int) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
-
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -89,17 +95,23 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 // of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
+	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
 	if len(value) > 32767 {
 		value = value[0:32767]
 	}
-	var xlsx xlsxWorksheet
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
-
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -119,13 +131,19 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 func (f *File) SetCellDefault(sheet string, axis string, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
-
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1

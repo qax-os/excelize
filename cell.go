@@ -7,15 +7,21 @@ import (
 )
 
 // GetCellValue provides function to get value from cell by given sheet index
-// and axis in XLSX file. The value of the merged cell is not available
-// currently.
+// and axis in XLSX file.
 func (f *File) GetCellValue(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	xAxis := row - 1
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
 	rows := len(xlsx.SheetData.Row)
 	if rows > 1 {
 		lastRow := xlsx.SheetData.Row[rows-1].R
@@ -56,10 +62,17 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 func (f *File) GetCellFormula(sheet string, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	xAxis := row - 1
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
 	rows := len(xlsx.SheetData.Row)
 	if rows > 1 {
 		lastRow := xlsx.SheetData.Row[rows-1].R
@@ -91,13 +104,19 @@ func (f *File) GetCellFormula(sheet string, axis string) string {
 func (f *File) SetCellFormula(sheet, axis, formula string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	yAxis := titleToNumber(col)
-
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -124,6 +143,13 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
 	rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
 	hyperlink := xlsxHyperlink{
 		Ref: axis,
@@ -141,9 +167,9 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 }
 
 // MergeCell provides function to merge cells by given axis and sheet name.
-// For example create a merged cell of A1:B2 on Sheet1:
+// For example create a merged cell of D3:E9 on Sheet1:
 //
-//    xlsx.MergeCell("sheet1", "D9", "E9")
+//    xlsx.MergeCell("sheet1", "D3", "E9")
 //
 // If you create a merged cell that overlaps with another existing merged cell,
 // those merged cells that already exist will be removed.
