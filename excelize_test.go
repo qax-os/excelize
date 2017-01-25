@@ -235,3 +235,22 @@ func TestSetSheetBackground(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestSMergeCell(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.MergeCell("sheet1", "D9", "D9")
+	xlsx.MergeCell("sheet1", "D9", "E9")
+	xlsx.MergeCell("sheet1", "H14", "G13")
+	xlsx.MergeCell("sheet1", "C9", "D8")
+	xlsx.MergeCell("sheet1", "F11", "G13")
+	xlsx.MergeCell("sheet1", "H7", "B15")
+	xlsx.MergeCell("sheet1", "D11", "F13")
+	xlsx.MergeCell("sheet1", "G10", "I11")
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}

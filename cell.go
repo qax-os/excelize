@@ -139,3 +139,95 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	output, _ := xml.Marshal(xlsx)
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
+
+// MergeCell provides function to merge cells by given axis and sheet name.
+// For example create a merged cell of A1:B2 on Sheet1:
+//
+//    xlsx.MergeCell("sheet1", "D9", "E9")
+//
+// If you create a merged cell that overlaps with another existing merged cell,
+// those merged cells that already exist will be removed.
+func (f *File) MergeCell(sheet, hcell, vcell string) {
+	if hcell == vcell {
+		return
+	}
+
+	hcell = strings.ToUpper(hcell)
+	vcell = strings.ToUpper(vcell)
+
+	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
+	hcol := string(strings.Map(letterOnlyMapF, hcell))
+	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
+	hyAxis := hrow - 1
+	hxAxis := titleToNumber(hcol)
+
+	vcol := string(strings.Map(letterOnlyMapF, vcell))
+	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
+	vyAxis := vrow - 1
+	vxAxis := titleToNumber(vcol)
+
+	if vxAxis < hxAxis {
+		hcell, vcell = vcell, hcell
+		vxAxis, hxAxis = hxAxis, vxAxis
+	}
+
+	if vyAxis < hyAxis {
+		hcell, vcell = vcell, hcell
+		vyAxis, hyAxis = hyAxis, vyAxis
+	}
+
+	var xlsx xlsxWorksheet
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if xlsx.MergeCells != nil {
+		mergeCell := xlsxMergeCell{}
+		// Correct the coordinate area, such correct C1:B3 to B1:C3.
+		mergeCell.Ref = toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+		// Delete the merged cells of the overlapping area.
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(hcell, xlsx.MergeCells.Cells[i].Ref) || checkCellInArea(strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0], mergeCell.Ref) {
+				xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:i], xlsx.MergeCells.Cells[i+1:]...)
+			} else if checkCellInArea(vcell, xlsx.MergeCells.Cells[i].Ref) || checkCellInArea(strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[1], mergeCell.Ref) {
+				xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:i], xlsx.MergeCells.Cells[i+1:]...)
+			}
+		}
+		xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells, &mergeCell)
+	} else {
+		mergeCell := xlsxMergeCell{}
+		// Correct the coordinate area, such correct C1:B3 to B1:C3.
+		mergeCell.Ref = toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+		mergeCells := xlsxMergeCells{}
+		mergeCells.Cells = append(mergeCells.Cells, &mergeCell)
+		xlsx.MergeCells = &mergeCells
+	}
+	output, _ := xml.Marshal(xlsx)
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+}
+
+// checkCellInArea provides function to determine if a given coordinate is
+// within an area.
+func checkCellInArea(cell, area string) bool {
+	result := false
+	cell = strings.ToUpper(cell)
+	col := string(strings.Map(letterOnlyMapF, cell))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
+	xAxis := row - 1
+	yAxis := titleToNumber(col)
+
+	ref := strings.Split(area, ":")
+	hCol := string(strings.Map(letterOnlyMapF, ref[0]))
+	hRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, ref[0]))
+	hyAxis := hRow - 1
+	hxAxis := titleToNumber(hCol)
+
+	vCol := string(strings.Map(letterOnlyMapF, ref[1]))
+	vRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, ref[1]))
+	vyAxis := vRow - 1
+	vxAxis := titleToNumber(vCol)
+
+	if hxAxis <= yAxis && yAxis <= vxAxis && hyAxis <= xAxis && xAxis <= vyAxis {
+		result = true
+	}
+
+	return result
+}
