@@ -36,6 +36,34 @@ func (f *File) GetRows(sheet string) [][]string {
 	return r
 }
 
+// SetRowHeight provides a function to set the height of a single row.
+// For example:
+//
+//    xlsx := excelize.CreateFile()
+//    xlsx.SetRowHeight("Sheet1", 0, 50)
+//    err := xlsx.Save()
+//    if err != nil {
+//        fmt.Println(err)
+//        os.Exit(1)
+//    }
+//
+func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
+	xlsx := xlsxWorksheet{}
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+
+	rows := rowIndex + 1
+	cells := 0
+
+	xlsx = completeRow(xlsx, rows, cells)
+
+	xlsx.SheetData.Row[rowIndex].Ht = strconv.FormatFloat(height, 'f', -1, 64)
+	xlsx.SheetData.Row[rowIndex].CustomHeight = true
+
+	output, _ := xml.Marshal(xlsx)
+	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+}
+
 // readXMLSST read xmlSST simple function.
 func readXMLSST(f *File) (xlsxSST, error) {
 	shardStrings := xlsxSST{}
