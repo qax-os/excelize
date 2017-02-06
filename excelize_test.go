@@ -261,3 +261,13 @@ func TestSMergeCell(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestSetRowHeight(t *testing.T) {
+	xlsx := CreateFile()
+	xlsx.SetRowHeight("Sheet1", 0, 50)
+	xlsx.SetRowHeight("Sheet1", 3, 90)
+	err := xlsx.WriteTo("./test/Workbook_5.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
