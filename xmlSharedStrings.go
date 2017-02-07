@@ -3,8 +3,12 @@ package excelize
 import "encoding/xml"
 
 // xlsxSST directly maps the sst element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main currently I have
-// not checked this for completeness - it does as much as I need.
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main. String values may
+// be stored directly inside spreadsheet cell elements; however, storing the
+// same value inside multiple cell elements can result in very large worksheet
+// Parts, possibly resulting in performance degradation. The Shared String Table
+// is an indexed list of string values, shared across the workbook, which allows
+// implementations to store values only once.
 type xlsxSST struct {
 	XMLName     xml.Name `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main sst"`
 	Count       int      `xml:"count,attr"`

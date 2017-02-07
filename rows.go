@@ -82,6 +82,13 @@ func (xlsx *xlsxC) getValueFrom(f *File) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		if len(d.SI[xlsxSI].R) > 0 {
+			value := ""
+			for _, v := range d.SI[xlsxSI].R {
+				value += v.T
+			}
+			return value, nil
+		}
 		return d.SI[xlsxSI].T, nil
 	case "str":
 		return xlsx.V, nil
