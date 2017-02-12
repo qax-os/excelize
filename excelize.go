@@ -10,6 +10,7 @@ import (
 
 // File define a populated XLSX file struct.
 type File struct {
+	checked    map[string]bool
 	XLSX       map[string]string
 	Path       string
 	SheetCount int
@@ -21,6 +22,7 @@ func OpenFile(filename string) (*File, error) {
 	var f *zip.ReadCloser
 	var err error
 	file := make(map[string]string)
+	c := make(map[string]bool)
 	sheetCount := 0
 	f, err = zip.OpenReader(filename)
 	if err != nil {
@@ -28,6 +30,7 @@ func OpenFile(filename string) (*File, error) {
 	}
 	file, sheetCount, _ = ReadZip(f)
 	return &File{
+		checked:    c,
 		XLSX:       file,
 		Path:       filename,
 		SheetCount: sheetCount,
@@ -66,6 +69,15 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	ok := f.checked[name]
+	if !ok {
+		xlsx = checkRow(xlsx)
+		f.checked[name] = true
+	}
+
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -98,6 +110,14 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	ok := f.checked[name]
+	if !ok {
+		xlsx = checkRow(xlsx)
+		f.checked[name] = true
+	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -133,6 +153,14 @@ func (f *File) SetCellDefault(sheet string, axis string, value string) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	ok := f.checked[name]
+	if !ok {
+		xlsx = checkRow(xlsx)
+		f.checked[name] = true
+	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {

@@ -106,6 +106,14 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	ok := f.checked[name]
+	if !ok {
+		xlsx = checkRow(xlsx)
+		f.checked[name] = true
+	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -143,6 +151,14 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	ok := f.checked[name]
+	if !ok {
+		xlsx = checkRow(xlsx)
+		f.checked[name] = true
+	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -205,6 +221,14 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	ok := f.checked[name]
+	if !ok {
+		xlsx = checkRow(xlsx)
+		f.checked[name] = true
+	}
 	if xlsx.MergeCells != nil {
 		mergeCell := xlsxMergeCell{}
 		// Correct the coordinate area, such correct C1:B3 to B1:C3.

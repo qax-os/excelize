@@ -236,7 +236,7 @@ func TestSetSheetBackground(t *testing.T) {
 	}
 }
 
-func TestSMergeCell(t *testing.T) {
+func TestMergeCell(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook1.xlsx")
 	if err != nil {
 		t.Log(err)

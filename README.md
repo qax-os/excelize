@@ -110,13 +110,18 @@ func main() {
     }
     // Insert a picture.
     err = xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.gif", 0, 0, 1, 1)
+    if err != nil {
+        fmt.Println(err)
+    }
     // Insert a picture to sheet with scaling.
     err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image2.jpg", 0, 0, 0.5, 0.5)
+    if err != nil {
+        fmt.Println(err)
+    }
     // Insert a picture offset in the cell.
     err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.png", 15, 10, 1, 1)
     if err != nil {
         fmt.Println(err)
-        os.Exit(1)
     }
     // Save the xlsx file with the origin path.
     err = xlsx.Save()

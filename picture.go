@@ -33,13 +33,18 @@ import (
 //        xlsx := excelize.CreateFile()
 //        // Insert a picture.
 //        err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", 0, 0, 1, 1)
+//        if err != nil {
+//            fmt.Println(err)
+//        }
 //        // Insert a picture to sheet with scaling.
 //        err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image1.png", 0, 0, 0.5, 0.5)
+//        if err != nil {
+//            fmt.Println(err)
+//        }
 //        // Insert a picture offset in the cell.
 //        err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", 15, 10, 1, 1)
 //        if err != nil {
 //            fmt.Println(err)
-//            os.Exit(1)
 //        }
 //        err = xlsx.WriteTo("/tmp/Workbook.xlsx")
 //        if err != nil {

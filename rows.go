@@ -17,23 +17,37 @@ import (
 //    }
 //
 func (f *File) GetRows(sheet string) [][]string {
-	xlsx := xlsxWorksheet{}
-	r := [][]string{}
+	rows := [][]string{}
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	err := xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
+	d, err := readXMLSST(f)
 	if err != nil {
-		return r
+		return rows
 	}
-	rows := xlsx.SheetData.Row
-	for _, row := range rows {
-		c := []string{}
-		for _, colCell := range row.C {
-			val, _ := colCell.getValueFrom(f)
-			c = append(c, val)
+	var inElement string
+	var row []string
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
 		}
-		r = append(r, c)
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				var r xlsxRow
+				decoder.DecodeElement(&r, &startElement)
+				for _, colCell := range r.C {
+					val, _ := colCell.getValueFrom(f, d)
+					row = append(row, val)
+				}
+				rows = append(rows, row)
+				row = row[:0]
+			}
+		default:
+		}
 	}
-	return r
+	return rows
 }
 
 // SetRowHeight provides a function to set the height of a single row.
@@ -65,23 +79,19 @@ func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
 }
 
 // readXMLSST read xmlSST simple function.
-func readXMLSST(f *File) (xlsxSST, error) {
+func readXMLSST(f *File) (*xlsxSST, error) {
 	shardStrings := xlsxSST{}
 	err := xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &shardStrings)
-	return shardStrings, err
+	return &shardStrings, err
 }
 
 // getValueFrom return a value from a column/row cell, this function is inteded
 // to be used with for range on rows an argument with the xlsx opened file.
-func (xlsx *xlsxC) getValueFrom(f *File) (string, error) {
+func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	switch xlsx.T {
 	case "s":
 		xlsxSI := 0
 		xlsxSI, _ = strconv.Atoi(xlsx.V)
-		d, err := readXMLSST(f)
-		if err != nil {
-			return "", err
-		}
 		if len(d.SI[xlsxSI].R) > 0 {
 			value := ""
 			for _, v := range d.SI[xlsxSI].R {
