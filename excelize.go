@@ -26,19 +26,22 @@ func OpenFile(filename string) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-	return OpenReader(bytes.NewReader(b), int64(len(b)))
+	defer file.Close()
+	return OpenReader(file)
 }
 
 // OpenReader take an io.Reader and return a populated XLSX file.
-func OpenReader(r io.ReaderAt, size int64) (*File, error) {
-	zr, err := zip.NewReader(r, size)
+func OpenReader(r io.Reader) (*File, error) {
+	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
+
+	zr, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
+		return nil, err
+	}
+
 	file, sheetCount, err := ReadZipReader(zr)
 	if err != nil {
 		return nil, err
