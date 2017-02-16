@@ -4,6 +4,9 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"io"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -19,20 +22,31 @@ type File struct {
 // OpenFile take the name of an XLSX file and returns a populated XLSX file
 // struct for it.
 func OpenFile(filename string) (*File, error) {
-	var f *zip.ReadCloser
-	var err error
-	file := make(map[string]string)
-	c := make(map[string]bool)
-	sheetCount := 0
-	f, err = zip.OpenReader(filename)
+	file, err := os.Open(filename)
 	if err != nil {
-		return &File{}, err
+		return nil, err
 	}
-	file, sheetCount, _ = ReadZip(f)
+	b, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	return OpenReader(bytes.NewReader(b), int64(len(b)))
+}
+
+// OpenReader take an io.Reader and return a populated XLSX file.
+func OpenReader(r io.ReaderAt, size int64) (*File, error) {
+	zr, err := zip.NewReader(r, size)
+	if err != nil {
+		return nil, err
+	}
+	file, sheetCount, err := ReadZipReader(zr)
+	if err != nil {
+		return nil, err
+	}
 	return &File{
-		checked:    c,
+		checked:    make(map[string]bool),
 		XLSX:       file,
-		Path:       filename,
+		Path:       "",
 		SheetCount: sheetCount,
 	}, nil
 }

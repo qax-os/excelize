@@ -8,14 +8,6 @@ import (
 	"math"
 )
 
-// ReadZip takes a pointer to a zip.ReadCloser and returns a xlsx.File struct
-// populated with its contents. In most cases ReadZip is not used directly, but
-// is called internally by OpenFile.
-func ReadZip(f *zip.ReadCloser) (map[string]string, int, error) {
-	defer f.Close()
-	return ReadZipReader(&f.Reader)
-}
-
 // ReadZipReader can be used to read an XLSX in memory without touching the
 // filesystem.
 func ReadZipReader(r *zip.Reader) (map[string]string, int, error) {
