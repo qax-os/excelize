@@ -27,7 +27,12 @@ func OpenFile(filename string) (*File, error) {
 		return nil, err
 	}
 	defer file.Close()
-	return OpenReader(file)
+	f, err := OpenReader(file)
+	if err != nil {
+		return nil, err
+	}
+	f.Path = filename
+	return f, nil
 }
 
 // OpenReader take an io.Reader and return a populated XLSX file.
