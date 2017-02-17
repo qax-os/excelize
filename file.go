@@ -3,6 +3,8 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
+	"io"
 	"os"
 )
 
@@ -29,53 +31,45 @@ func CreateFile() *File {
 
 // Save provides function to override the xlsx file with origin path.
 func (f *File) Save() error {
-	buf := new(bytes.Buffer)
-	w := zip.NewWriter(buf)
-	for path, content := range f.XLSX {
-		f, err := w.Create(path)
-		if err != nil {
-			return err
-		}
-		_, err = f.Write([]byte(content))
-		if err != nil {
-			return err
-		}
+	if f.Path == "" {
+		return fmt.Errorf("No path defined for file, consider File.WriteTo or File.Write")
 	}
-	err := w.Close()
-	if err != nil {
-		return err
-	}
-	file, err := os.OpenFile(f.Path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	buf.WriteTo(file)
-	return err
+	return f.WriteTo(f.Path)
 }
 
 // WriteTo provides function to create or update to an xlsx file at the provided
 // path.
 func (f *File) WriteTo(name string) error {
-	buf := new(bytes.Buffer)
-	w := zip.NewWriter(buf)
-	for path, content := range f.XLSX {
-		f, err := w.Create(path)
-		if err != nil {
-			return err
-		}
-		_, err = f.Write([]byte(content))
-		if err != nil {
-			return err
-		}
-	}
-	err := w.Close()
-	if err != nil {
-		return err
-	}
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
-	buf.WriteTo(file)
-	return err
+	defer file.Close()
+	return f.Write(file)
+}
+
+// Write provides function to write to an io.Writer.
+func (f *File) Write(w io.Writer) error {
+	buf := new(bytes.Buffer)
+	zw := zip.NewWriter(buf)
+	for path, content := range f.XLSX {
+		fi, err := zw.Create(path)
+		if err != nil {
+			return err
+		}
+		_, err = fi.Write([]byte(content))
+		if err != nil {
+			return err
+		}
+	}
+	err := zw.Close()
+	if err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteTo(w); err != nil {
+		return err
+	}
+
+	return nil
 }
