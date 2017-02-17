@@ -25,7 +25,17 @@ func (f *File) GetRows(sheet string) [][]string {
 		return rows
 	}
 	var inElement string
+	var r xlsxRow
 	var row []string
+	tr, tc := f.getTotalRowsCols(sheet)
+	for i := 0; i < tr; i++ {
+		row = []string{}
+		for j := 0; j <= tc; j++ {
+			row = append(row, "")
+		}
+		rows = append(rows, row)
+	}
+	decoder = xml.NewDecoder(strings.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -35,19 +45,52 @@ func (f *File) GetRows(sheet string) [][]string {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				var r xlsxRow
+				r = xlsxRow{}
 				decoder.DecodeElement(&r, &startElement)
+				cr := r.R - 1
 				for _, colCell := range r.C {
+					c := titleToNumber(strings.Map(letterOnlyMapF, colCell.R))
 					val, _ := colCell.getValueFrom(f, d)
-					row = append(row, val)
+					rows[cr][c] = val
 				}
-				rows = append(rows, row)
-				row = row[:0]
 			}
 		default:
 		}
 	}
 	return rows
+}
+
+// getTotalRowsCols provides a function to get total columns and rows in a
+// sheet.
+func (f *File) getTotalRowsCols(sheet string) (int, int) {
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
+	var inElement string
+	var r xlsxRow
+	var tr, tc int
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				r = xlsxRow{}
+				decoder.DecodeElement(&r, &startElement)
+				tr = r.R
+				for _, colCell := range r.C {
+					col := titleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+					if col > tc {
+						tc = col
+					}
+				}
+			}
+		default:
+		}
+	}
+	return tr, tc
 }
 
 // SetRowHeight provides a function to set the height of a single row.
