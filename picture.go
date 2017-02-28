@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -14,8 +15,25 @@ import (
 	"strings"
 )
 
-// AddPicture provides the method to add picture in a sheet by given offset
-// (xAxis, yAxis), scale (xScale, yScale) and file path. For example:
+// parseFormatPictureSet provides function to parse the format settings of the
+// picture with default value.
+func parseFormatPictureSet(formatSet string) *xlsxFormatPicture {
+	format := xlsxFormatPicture{
+		FPrintsWithSheet: true,
+		FLocksWithSheet:  false,
+		NoChangeAspect:   false,
+		OffsetX:          0,
+		OffsetY:          0,
+		XScale:           1.0,
+		YScale:           1.0,
+	}
+	json.Unmarshal([]byte(formatSet), &format)
+	return &format
+}
+
+// AddPicture provides the method to add picture in a sheet by given picture
+// format set (such as offset, scale, aspect ratio setting and print settings)
+// and file path. For example:
 //
 //    package main
 //
@@ -32,17 +50,17 @@ import (
 //    func main() {
 //        xlsx := excelize.CreateFile()
 //        // Insert a picture.
-//        err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", 0, 0, 1, 1)
+//        err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", "")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
 //        // Insert a picture to sheet with scaling.
-//        err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image1.png", 0, 0, 0.5, 0.5)
+//        err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image1.png", `{"x_scale": 0.5, "y_scale": 0.5}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        // Insert a picture offset in the cell.
-//        err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", 15, 10, 1, 1)
+//        // Insert a picture offset in the cell with printing support.
+//        err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
@@ -53,7 +71,7 @@ import (
 //        }
 //    }
 //
-func (f *File) AddPicture(sheet, cell, picture string, offsetX, offsetY int, xScale, yScale float64) error {
+func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	var supportTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
 	var err error
 	// Check picture exists first.
@@ -67,6 +85,7 @@ func (f *File) AddPicture(sheet, cell, picture string, offsetX, offsetY int, xSc
 	readFile, _ := os.Open(picture)
 	image, _, err := image.DecodeConfig(readFile)
 	_, file := filepath.Split(picture)
+	formatSet := parseFormatPictureSet(format)
 	// Read sheet data.
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -89,7 +108,7 @@ func (f *File) AddPicture(sheet, cell, picture string, offsetX, offsetY int, xSc
 		f.addSheetDrawing(sheet, rID)
 	}
 	drawingRID = f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
-	f.addDrawing(sheet, drawingXML, cell, file, offsetX, offsetY, image.Width, image.Height, drawingRID, xScale, yScale)
+	f.addDrawing(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, formatSet)
 	f.addMedia(picture, ext)
 	f.addDrawingContentTypePart(drawingID)
 	return err
@@ -175,15 +194,15 @@ func (f *File) countDrawings() int {
 // yAxis, file name and relationship index. In order to solve the problem that
 // the label structure is changed after serialization and deserialization, two
 // different structures: decodeWsDr and encodeWsDr are defined.
-func (f *File) addDrawing(sheet, drawingXML, cell, file string, offsetX, offsetY, width, height, rID int, xScale, yScale float64) {
+func (f *File) addDrawing(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *xlsxFormatPicture) {
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	row := fromRow - 1
 	col := titleToNumber(fromCol)
-	width = int(float64(width) * xScale)
-	height = int(float64(height) * yScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, offsetX, offsetY, width, height)
+	width = int(float64(width) * formatSet.XScale)
+	height = int(float64(height) * formatSet.YScale)
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content := encodeWsDr{}
 	content.WsDr.A = NameSpaceDrawingML
 	content.WsDr.Xdr = NameSpaceSpreadSheetDrawing
@@ -204,9 +223,9 @@ func (f *File) addDrawing(sheet, drawingXML, cell, file string, offsetX, offsetY
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
 	from.Col = colStart
-	from.ColOff = offsetX * EMU
+	from.ColOff = formatSet.OffsetX * EMU
 	from.Row = rowStart
-	from.RowOff = offsetY * EMU
+	from.RowOff = formatSet.OffsetY * EMU
 	to := xlsxTo{}
 	to.Col = colEnd
 	to.ColOff = x2 * EMU
@@ -215,7 +234,7 @@ func (f *File) addDrawing(sheet, drawingXML, cell, file string, offsetX, offsetY
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 	pic := xlsxPic{}
-	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = false
+	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = formatSet.NoChangeAspect
 	pic.NvPicPr.CNvPr.ID = cNvPrID
 	pic.NvPicPr.CNvPr.Descr = file
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
@@ -225,8 +244,8 @@ func (f *File) addDrawing(sheet, drawingXML, cell, file string, offsetX, offsetY
 
 	twoCellAnchor.Pic = &pic
 	twoCellAnchor.ClientData = &xlsxClientData{
-		FLocksWithSheet:  false,
-		FPrintsWithSheet: false,
+		FLocksWithSheet:  formatSet.FLocksWithSheet,
+		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
 	content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &twoCellAnchor)
 	output, err := xml.Marshal(content)
@@ -291,6 +310,8 @@ func (f *File) addMedia(file string, ext string) {
 	f.XLSX[media] = string(dat)
 }
 
+// setContentTypePartImageExtensions provides function to set the content type
+// for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false}
 	var content xlsxTypes

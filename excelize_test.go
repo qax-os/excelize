@@ -95,22 +95,22 @@ func TestAddPicture(t *testing.T) {
 		t.Log(err)
 	}
 	// Test add picture to sheet.
-	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg", 140, 120, 1, 1)
+	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg", `{"x_offset": 140, "y_offset": 120}`)
 	if err != nil {
 		t.Log(err)
 	}
 	// Test add picture to sheet with offset.
-	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", 10, 10, 1, 1)
+	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", `{"x_offset": 10, "y_offset": 10}`)
 	if err != nil {
 		t.Log(err)
 	}
 	// Test add picture to sheet with invalid file path.
-	err = xlsx.AddPicture("Sheet1", "G21", "./test/images/excel.icon", 0, 0, 1, 1)
+	err = xlsx.AddPicture("Sheet1", "G21", "./test/images/excel.icon", "")
 	if err != nil {
 		t.Log(err)
 	}
 	// Test add picture to sheet with unsupport file type.
-	err = xlsx.AddPicture("Sheet1", "G21", "./test/Workbook1.xlsx", 0, 0, 1, 1)
+	err = xlsx.AddPicture("Sheet1", "G21", "./test/Workbook1.xlsx", "")
 	if err != nil {
 		t.Log(err)
 	}
@@ -157,11 +157,11 @@ func TestCreateFile(t *testing.T) {
 	xlsx.SetCellStr("SHEET1", "B20", "42")
 	xlsx.SetActiveSheet(0)
 	// Test add picture to sheet with scaling.
-	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", 0, 0, 0.5, 0.5)
+	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", 0, 0, 1, 1)
+	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", "")
 	if err != nil {
 		t.Log(err)
 	}
