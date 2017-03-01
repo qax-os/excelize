@@ -212,14 +212,20 @@ func (f *File) addDrawing(sheet, drawingXML, cell, file string, width, height, r
 		decodeWsDr := decodeWsDr{}
 		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
 		cNvPrID = len(decodeWsDr.TwoCellAnchor) + 1
+		for _, v := range decodeWsDr.OneCellAnchor {
+			content.WsDr.OneCellAnchor = append(content.WsDr.OneCellAnchor, &xlsxCellAnchor{
+				EditAs:       v.EditAs,
+				GraphicFrame: v.Content,
+			})
+		}
 		for _, v := range decodeWsDr.TwoCellAnchor {
-			content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &xlsxTwoCellAnchor{
+			content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &xlsxCellAnchor{
 				EditAs:       v.EditAs,
 				GraphicFrame: v.Content,
 			})
 		}
 	}
-	twoCellAnchor := xlsxTwoCellAnchor{}
+	twoCellAnchor := xlsxCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
 	from.Col = colStart

@@ -2,11 +2,11 @@ package excelize
 
 import "encoding/xml"
 
-// decodeTwoCellAnchor directly maps the twoCellAnchor (Two Cell Anchor Shape
-// Size). This element specifies a two cell anchor placeholder for a group, a
-// shape, or a drawing element. It moves with cells and its extents are in EMU
-// units.
-type decodeTwoCellAnchor struct {
+// decodeCellAnchor directly maps the oneCellAnchor (One Cell Anchor Shape Size)
+// and twoCellAnchor (Two Cell Anchor Shape Size). This element specifies a two
+// cell anchor placeholder for a group, a shape, or a drawing element. It moves
+// with cells and its extents are in EMU units.
+type decodeCellAnchor struct {
 	EditAs  string `xml:"editAs,attr,omitempty"`
 	Content string `xml:",innerxml"`
 }
@@ -16,8 +16,9 @@ type decodeTwoCellAnchor struct {
 // after serialization and deserialization, two different structures are
 // defined. decodeWsDr just for deserialization.
 type decodeWsDr struct {
-	A             string                 `xml:"xmlns a,attr"`
-	Xdr           string                 `xml:"xmlns xdr,attr"`
-	TwoCellAnchor []*decodeTwoCellAnchor `xml:"twoCellAnchor,omitempty"`
-	XMLName       xml.Name               `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr,omitempty"`
+	A             string              `xml:"xmlns a,attr"`
+	Xdr           string              `xml:"xmlns xdr,attr"`
+	OneCellAnchor []*decodeCellAnchor `xml:"oneCellAnchor,omitempty"`
+	TwoCellAnchor []*decodeCellAnchor `xml:"twoCellAnchor,omitempty"`
+	XMLName       xml.Name            `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr,omitempty"`
 }

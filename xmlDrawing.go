@@ -162,11 +162,11 @@ type xlsxClientData struct {
 	FPrintsWithSheet bool `xml:"fPrintsWithSheet,attr"`
 }
 
-// xlsxTwoCellAnchor directly maps the twoCellAnchor (Two Cell Anchor Shape
-// Size). This element specifies a two cell anchor placeholder for a group, a
-// shape, or a drawing element. It moves with cells and its extents are in EMU
-// units.
-type xlsxTwoCellAnchor struct {
+// xlsxCellAnchor directly maps the oneCellAnchor (One Cell Anchor Shape Size)
+// and twoCellAnchor (Two Cell Anchor Shape Size). This element specifies a two
+// cell anchor placeholder for a group, a shape, or a drawing element. It moves
+// with cells and its extents are in EMU units.
+type xlsxCellAnchor struct {
 	EditAs       string          `xml:"editAs,attr,omitempty"`
 	From         *xlsxFrom       `xml:"xdr:from"`
 	To           *xlsxTo         `xml:"xdr:to"`
@@ -178,9 +178,10 @@ type xlsxTwoCellAnchor struct {
 // xlsxWsDr directly maps the root element for a part of this content type shall
 // wsDr.
 type xlsxWsDr struct {
-	TwoCellAnchor []*xlsxTwoCellAnchor `xml:"xdr:twoCellAnchor"`
-	Xdr           string               `xml:"xmlns:xdr,attr"`
-	A             string               `xml:"xmlns:a,attr"`
+	OneCellAnchor []*xlsxCellAnchor `xml:"xdr:oneCellAnchor"`
+	TwoCellAnchor []*xlsxCellAnchor `xml:"xdr:twoCellAnchor"`
+	Xdr           string            `xml:"xmlns:xdr,attr"`
+	A             string            `xml:"xmlns:a,attr"`
 }
 
 // encodeWsDr directly maps the element xdr:wsDr.
