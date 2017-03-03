@@ -16,6 +16,7 @@ type xlsxWorksheet struct {
 	SheetProtection       *xlsxSheetProtection       `xml:"sheetProtection"`
 	MergeCells            *xlsxMergeCells            `xml:"mergeCells,omitempty"`
 	ConditionalFormatting *xlsxConditionalFormatting `xml:"conditionalFormatting"`
+	DataValidations       *xlsxDataValidations       `xml:"dataValidations"`
 	Hyperlinks            *xlsxHyperlinks            `xml:"hyperlinks"`
 	PrintOptions          *xlsxPrintOptions          `xml:"printOptions"`
 	PageMargins           *xlsxPageMargins           `xml:"pageMargins"`
@@ -280,6 +281,16 @@ type xlsxMergeCell struct {
 type xlsxMergeCells struct {
 	Count int              `xml:"count,attr,omitempty"`
 	Cells []*xlsxMergeCell `xml:"mergeCell,omitempty"`
+}
+
+// xlsxDataValidations expresses all data validation information for cells in a
+// sheet which have data validation features applied.
+type xlsxDataValidations struct {
+	Count          int    `xml:"count,attr,omitempty"`
+	DisablePrompts bool   `xml:"disablePrompts,attr,omitempty"`
+	XWindow        int    `xml:"xWindow,attr,omitempty"`
+	YWindow        int    `xml:"yWindow,attr,omitempty"`
+	DataValidation string `xml:",innerxml"`
 }
 
 // xlsxC directly maps the c element in the namespace
