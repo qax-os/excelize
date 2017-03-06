@@ -271,3 +271,38 @@ func TestSetRowHeight(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestSetBorder(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	// Test set border with invalid style parameter.
+	err = xlsx.SetBorder("Sheet1", "J21", "L25", "")
+	if err != nil {
+		t.Log(err)
+	}
+	// Test set border with invalid style index number.
+	err = xlsx.SetBorder("Sheet1", "J21", "L25", "")
+	if err != nil {
+		t.Log(err)
+	}
+	// Test set border on overlapping area.
+	err = xlsx.SetBorder("Sheet1", "J21", "L25", `{"border":[{"type":"left","color":"0000FF","style":-1},{"type":"top","color":"00FF00","style":14},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetBorder("Sheet1", "M28", "K24", `{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":3},{"type":"bottom","color":"FFFF00","style":4},{"type":"right","color":"FF0000","style":5},{"type":"diagonalDown","color":"A020F0","style":6},{"type":"diagonalUp","color":"A020F0","style":7}]}`)
+	if err != nil {
+		t.Log(err)
+	}
+	// Test set border for a single cell.
+	err = xlsx.SetBorder("Sheet1", "O22", "O22", `{"border":[{"type":"left","color":"0000FF","style":8},{"type":"top","color":"00FF00","style":9},{"type":"bottom","color":"FFFF00","style":10},{"type":"right","color":"FF0000","style":11},{"type":"diagonalDown","color":"A020F0","style":12},{"type":"diagonalUp","color":"A020F0","style":13}]}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}

@@ -189,8 +189,8 @@ type encodeWsDr struct {
 	WsDr xlsxWsDr `xml:"xdr:wsDr"`
 }
 
-// xlsxFormatPicture directly maps the format settings of the picture.
-type xlsxFormatPicture struct {
+// formatPicture directly maps the format settings of the picture.
+type formatPicture struct {
 	FPrintsWithSheet bool    `json:"print_obj"`
 	FLocksWithSheet  bool    `json:"locked"`
 	NoChangeAspect   bool    `json:"lock_aspect_ratio"`

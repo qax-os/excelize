@@ -8,7 +8,7 @@ import (
 
 // GetCellValue provides function to get value from cell by given sheet index
 // and axis in XLSX file.
-func (f *File) GetCellValue(sheet string, axis string) string {
+func (f *File) GetCellValue(sheet, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -59,7 +59,7 @@ func (f *File) GetCellValue(sheet string, axis string) string {
 
 // GetCellFormula provides function to get formula from cell by given sheet
 // index and axis in XLSX file.
-func (f *File) GetCellFormula(sheet string, axis string) string {
+func (f *File) GetCellFormula(sheet, axis string) string {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -182,8 +182,8 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
-// MergeCell provides function to merge cells by given axis and sheet name.
-// For example create a merged cell of D3:E9 on Sheet1:
+// MergeCell provides function to merge cells by given coordinate area and sheet
+// name. For example create a merged cell of D3:E9 on Sheet1:
 //
 //    xlsx.MergeCell("sheet1", "D3", "E9")
 //

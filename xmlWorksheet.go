@@ -9,7 +9,7 @@ type xlsxWorksheet struct {
 	XMLName               xml.Name                   `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr               *xlsxSheetPr               `xml:"sheetPr"`
 	Dimension             xlsxDimension              `xml:"dimension"`
-	SheetViews            xlsxSheetViews             `xml:"sheetViews"`
+	SheetViews            xlsxSheetViews             `xml:"sheetViews,omitempty"`
 	SheetFormatPr         *xlsxSheetFormatPr         `xml:"sheetFormatPr"`
 	Cols                  *xlsxCols                  `xml:"cols,omitempty"`
 	SheetData             xlsxSheetData              `xml:"sheetData"`
@@ -207,8 +207,8 @@ type xlsxPageSetUpPr struct {
 // xlsxTabColor directly maps the tabColor element in the namespace currently I
 // have not checked it for completeness - it does as much as I need.
 type xlsxTabColor struct {
-	Theme int   `xml:"theme,attr,omitempty"`
-	Tint  uint8 `xml:"tint,attr,omitempty"`
+	Theme int     `xml:"theme,attr,omitempty"`
+	Tint  float64 `xml:"tint,attr,omitempty"`
 }
 
 // xlsxCols directly maps the cols element in the namespace

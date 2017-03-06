@@ -34,7 +34,7 @@ func (f *File) readXML(name string) string {
 
 // saveFileList provides function to update given file content in file list of
 // XLSX.
-func (f *File) saveFileList(name string, content string) {
+func (f *File) saveFileList(name, content string) {
 	f.XLSX[name] = XMLHeader + content
 }
 

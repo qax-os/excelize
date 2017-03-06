@@ -17,8 +17,8 @@ import (
 
 // parseFormatPictureSet provides function to parse the format settings of the
 // picture with default value.
-func parseFormatPictureSet(formatSet string) *xlsxFormatPicture {
-	format := xlsxFormatPicture{
+func parseFormatPictureSet(formatSet string) *formatPicture {
+	format := formatPicture{
 		FPrintsWithSheet: true,
 		FLocksWithSheet:  false,
 		NoChangeAspect:   false,
@@ -194,7 +194,7 @@ func (f *File) countDrawings() int {
 // yAxis, file name and relationship index. In order to solve the problem that
 // the label structure is changed after serialization and deserialization, two
 // different structures: decodeWsDr and encodeWsDr are defined.
-func (f *File) addDrawing(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *xlsxFormatPicture) {
+func (f *File) addDrawing(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *formatPicture) {
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))

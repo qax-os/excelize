@@ -60,7 +60,7 @@ func OpenReader(r io.Reader) (*File, error) {
 }
 
 // SetCellValue provides function to set int or string type value of a cell.
-func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
+func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	switch t := value.(type) {
 	case int:
 		f.SetCellInt(sheet, axis, value.(int))
@@ -86,7 +86,7 @@ func (f *File) SetCellValue(sheet string, axis string, value interface{}) {
 }
 
 // SetCellInt provides function to set int type value of a cell.
-func (f *File) SetCellInt(sheet string, axis string, value int) {
+func (f *File) SetCellInt(sheet, axis string, value int) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -127,7 +127,7 @@ func (f *File) SetCellInt(sheet string, axis string, value int) {
 
 // SetCellStr provides function to set string type value of a cell. Total number
 // of characters that a cell can contain 32767 characters.
-func (f *File) SetCellStr(sheet string, axis string, value string) {
+func (f *File) SetCellStr(sheet, axis, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -170,7 +170,7 @@ func (f *File) SetCellStr(sheet string, axis string, value string) {
 
 // SetCellDefault provides function to set string type value of a cell as
 // default format without escaping the cell.
-func (f *File) SetCellDefault(sheet string, axis string, value string) {
+func (f *File) SetCellDefault(sheet, axis, value string) {
 	axis = strings.ToUpper(axis)
 	var xlsx xlsxWorksheet
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
@@ -235,7 +235,7 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 }
 
 // Completion row element tags of XML in a sheet.
-func completeRow(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
+func completeRow(xlsx xlsxWorksheet, row, cell int) xlsxWorksheet {
 	currentRows := len(xlsx.SheetData.Row)
 	if currentRows > 1 {
 		lastRow := xlsx.SheetData.Row[currentRows-1].R
