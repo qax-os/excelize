@@ -39,10 +39,10 @@ type xlsxPicLocks struct {
 	NoSelect           bool `xml:"noSelect,attr,omitempty"`
 }
 
-// xlsxBlip directly maps the blip element in the namespace http://purl.oclc.or
-// g/ooxml/officeDoc ument/relationships - This element specifies the existence
-// of an image (binary large image or picture) and contains a reference to the
-// image data.
+// xlsxBlip directly maps the blip element in the namespace
+// http://purl.oclc.org/ooxml/officeDoc ument/relationships - This element
+// specifies the existence of an image (binary large image or picture) and
+// contains a reference to the image data.
 type xlsxBlip struct {
 	Embed  string `xml:"r:embed,attr"`
 	Cstate string `xml:"cstate,attr,omitempty"`

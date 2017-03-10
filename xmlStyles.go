@@ -47,9 +47,10 @@ type xlsxLine struct {
 // in the namespace http://schemas.openxmlformats.org/spreadsheetml/2006/main -
 // currently I have not checked it for completeness - it does as much as I need.
 type xlsxColor struct {
-	RGB   string  `xml:"rgb,attr,omitempty"`
-	Theme *int    `xml:"theme,attr,omitempty"`
-	Tint  float64 `xml:"tint,attr,omitempty"`
+	RGB     string  `xml:"rgb,attr,omitempty"`
+	Indexed *int    `xml:"indexed,attr,omitempty"`
+	Theme   *int    `xml:"theme,attr,omitempty"`
+	Tint    float64 `xml:"tint,attr,omitempty"`
 }
 
 // xlsxFonts directly maps the fonts element. This element contains all font
@@ -77,7 +78,20 @@ type xlsxFills struct {
 // xlsxFill directly maps the fill element. This element specifies fill
 // formatting.
 type xlsxFill struct {
-	Fill string `xml:",innerxml"`
+	PatternFill xlsxPatternFill `xml:"patternFill,omitempty"`
+}
+
+// xlsxPatternFill directly maps the patternFill element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
+// not checked it for completeness - it does as much as I need. This element is
+// used to specify cell fill information for pattern and solid color cell fills.
+// For solid cell fills (no pattern), fgColor is used. For cell fills with
+// patterns specified, then the cell fill color is specified by the bgColor
+// element.
+type xlsxPatternFill struct {
+	PatternType string    `xml:"patternType,attr,omitempty"`
+	FgColor     xlsxColor `xml:"fgColor,omitempty"`
+	BgColor     xlsxColor `xml:"bgColor,omitempty"`
 }
 
 // xlsxBorders directly maps the borders element. This element contains borders
@@ -118,8 +132,8 @@ type xlsxCellStyles struct {
 // workbook.
 type xlsxCellStyle struct {
 	XMLName       xml.Name `xml:"cellStyle"`
-	BuiltInID     *int     `xml:"builtInId,attr,omitempty"`
-	CustomBuiltIn *bool    `xml:"customBuiltIn,attr,omitempty"`
+	BuiltInID     *int     `xml:"builtinId,attr,omitempty"`
+	CustomBuiltIn *bool    `xml:"customBuiltin,attr,omitempty"`
 	Hidden        *bool    `xml:"hidden,attr,omitempty"`
 	ILevel        *bool    `xml:"iLevel,attr,omitempty"`
 	Name          string   `xml:"name,attr"`
@@ -202,7 +216,7 @@ type xlsxTableStyles struct {
 // should format and display a table.
 type xlsxTableStyle struct {
 	Name              string `xml:"name,attr,omitempty"`
-	Pivot             int    `xml:"pivot,attr,omitempty"`
+	Pivot             int    `xml:"pivot,attr"`
 	Count             int    `xml:"count,attr,omitempty"`
 	Table             bool   `xml:"table,attr,omitempty"`
 	TableStyleElement string `xml:",innerxml"`

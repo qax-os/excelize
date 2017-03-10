@@ -112,15 +112,17 @@ type xlsxPageMargins struct {
 }
 
 // xlsxSheetFormatPr directly maps the sheetFormatPr element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main. This element
+// specifies the sheet formatting properties.
 type xlsxSheetFormatPr struct {
+	BaseColWidth     uint8   `xml:"baseColWidth,attr,omitempty"`
+	CustomHeight     float64 `xml:"customHeight,attr,omitempty"`
 	DefaultColWidth  float64 `xml:"defaultColWidth,attr,omitempty"`
 	DefaultRowHeight float64 `xml:"defaultRowHeight,attr"`
-	CustomHeight     float64 `xml:"customHeight,attr,omitempty"`
-	ZeroHeight       float64 `xml:"zeroHeight,attr,omitempty"`
+	ThickTop         bool    `xml:"thickTop,attr,omitempty"`
 	OutlineLevelCol  uint8   `xml:"outlineLevelCol,attr,omitempty"`
 	OutlineLevelRow  uint8   `xml:"outlineLevelRow,attr,omitempty"`
+	ZeroHeight       float64 `xml:"zeroHeight,attr,omitempty"`
 }
 
 // xlsxSheetViews directly maps the sheetViews element in the namespace

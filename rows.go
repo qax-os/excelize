@@ -112,7 +112,7 @@ func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
 	rows := rowIndex + 1
 	cells := 0
 
-	xlsx = completeRow(xlsx, rows, cells)
+	completeRow(&xlsx, rows, cells)
 
 	xlsx.SheetData.Row[rowIndex].Ht = strconv.FormatFloat(height, 'f', -1, 64)
 	xlsx.SheetData.Row[rowIndex].CustomHeight = true

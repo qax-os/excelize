@@ -283,12 +283,15 @@ func TestSetBorder(t *testing.T) {
 		t.Log(err)
 	}
 	// Test set border with invalid style index number.
-	err = xlsx.SetBorder("Sheet1", "J21", "L25", "")
+	err = xlsx.SetBorder("Sheet1", "J21", "L25", `{"border":[{"type":"left","color":"0000FF","style":-1},{"type":"top","color":"00FF00","style":14},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+	if err != nil {
+		t.Log(err)
+	}
 	if err != nil {
 		t.Log(err)
 	}
 	// Test set border on overlapping area.
-	err = xlsx.SetBorder("Sheet1", "J21", "L25", `{"border":[{"type":"left","color":"0000FF","style":-1},{"type":"top","color":"00FF00","style":14},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+	err = xlsx.SetBorder("Sheet1", "J21", "L25", `{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":12},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
 	if err != nil {
 		t.Log(err)
 	}

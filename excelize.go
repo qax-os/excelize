@@ -96,7 +96,7 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 
@@ -115,8 +115,8 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	xlsx = completeRow(xlsx, rows, cell)
-	xlsx = completeCol(xlsx, rows, cell)
+	completeRow(&xlsx, rows, cell)
+	completeCol(&xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
@@ -137,7 +137,7 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 	if xlsx.MergeCells != nil {
@@ -158,8 +158,8 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	xlsx = completeRow(xlsx, rows, cell)
-	xlsx = completeCol(xlsx, rows, cell)
+	completeRow(&xlsx, rows, cell)
+	completeCol(&xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
@@ -180,7 +180,7 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 	if xlsx.MergeCells != nil {
@@ -198,8 +198,8 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	xlsx = completeRow(xlsx, rows, cell)
-	xlsx = completeCol(xlsx, rows, cell)
+	completeRow(&xlsx, rows, cell)
+	completeCol(&xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
@@ -209,7 +209,7 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 }
 
 // Completion column element tags of XML in a sheet.
-func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
+func completeCol(xlsx *xlsxWorksheet, row int, cell int) {
 	if len(xlsx.SheetData.Row) < cell {
 		for i := len(xlsx.SheetData.Row); i < cell; i++ {
 			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
@@ -231,11 +231,10 @@ func completeCol(xlsx xlsxWorksheet, row int, cell int) xlsxWorksheet {
 			}
 		}
 	}
-	return xlsx
 }
 
 // Completion row element tags of XML in a sheet.
-func completeRow(xlsx xlsxWorksheet, row, cell int) xlsxWorksheet {
+func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 	currentRows := len(xlsx.SheetData.Row)
 	if currentRows > 1 {
 		lastRow := xlsx.SheetData.Row[currentRows-1].R
@@ -273,7 +272,6 @@ func completeRow(xlsx xlsxWorksheet, row, cell int) xlsxWorksheet {
 		}
 	}
 	xlsx.SheetData = sheetData
-	return xlsx
 }
 
 // Replace xl/worksheets/sheet%d.xml XML tags to self-closing for compatible
@@ -308,7 +306,7 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 //
 // Noteice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
-func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
+func checkRow(xlsx *xlsxWorksheet) {
 	buffer := bytes.Buffer{}
 	for k, v := range xlsx.SheetData.Row {
 		lenCol := len(v.C)
@@ -337,7 +335,6 @@ func checkRow(xlsx xlsxWorksheet) xlsxWorksheet {
 			}
 		}
 	}
-	return xlsx
 }
 
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in

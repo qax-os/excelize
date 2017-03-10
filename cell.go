@@ -111,7 +111,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 	if xlsx.MergeCells != nil {
@@ -129,8 +129,8 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	xlsx = completeRow(xlsx, rows, cell)
-	xlsx = completeCol(xlsx, rows, cell)
+	completeRow(&xlsx, rows, cell)
+	completeCol(&xlsx, rows, cell)
 
 	if xlsx.SheetData.Row[xAxis].C[yAxis].F != nil {
 		xlsx.SheetData.Row[xAxis].C[yAxis].F.Content = formula
@@ -156,7 +156,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 	if xlsx.MergeCells != nil {
@@ -226,7 +226,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 	if xlsx.MergeCells != nil {

@@ -204,12 +204,12 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 	}
 	ok := f.checked[name]
 	if !ok {
-		xlsx = checkRow(xlsx)
+		checkRow(&xlsx)
 		f.checked[name] = true
 	}
 
-	xlsx = completeRow(xlsx, vxAxis+1, vyAxis+1)
-	xlsx = completeCol(xlsx, vxAxis+1, vyAxis+1)
+	completeRow(&xlsx, vxAxis+1, vyAxis+1)
+	completeCol(&xlsx, vxAxis+1, vyAxis+1)
 
 	for r, row := range xlsx.SheetData.Row {
 		for k, c := range row.C {
