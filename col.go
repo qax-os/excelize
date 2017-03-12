@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"encoding/xml"
 	"math"
 	"strconv"
 	"strings"
@@ -31,9 +30,7 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
 	if min > max {
 		min, max = max, min
 	}
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx := f.workSheetReader(sheet)
 	col := xlsxCol{
 		Min:         min,
 		Max:         max,
@@ -47,8 +44,6 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
 		cols.Col = append(cols.Col, col)
 		xlsx.Cols = &cols
 	}
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // positionObjectPixels calculate the vertices that define the position of a
@@ -160,9 +155,7 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 // getColWidth provides function to get column width in pixels by given sheet
 // name and column index.
 func (f *File) getColWidth(sheet string, col int) int {
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
 		var width float64
 		for _, v := range xlsx.Cols.Col {
@@ -181,9 +174,7 @@ func (f *File) getColWidth(sheet string, col int) int {
 // getRowHeight provides function to get row height in pixels by given sheet
 // name and row index.
 func (f *File) getRowHeight(sheet string, row int) int {
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx := f.workSheetReader(sheet)
 	for _, v := range xlsx.SheetData.Row {
 		if v.R == row && v.Ht != "" {
 			ht, _ := strconv.ParseFloat(v.Ht, 64)

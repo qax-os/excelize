@@ -17,13 +17,15 @@ import (
 //    }
 //
 func (f *File) GetRows(sheet string) [][]string {
+	xlsx := f.workSheetReader(sheet)
 	rows := [][]string{}
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
-	d, err := readXMLSST(f)
-	if err != nil {
-		return rows
+	if xlsx != nil {
+		output, _ := xml.Marshal(f.Sheet[name])
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	}
+	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
+	d, _ := readXMLSST(f)
 	var inElement string
 	var r xlsxRow
 	var row []string
@@ -105,20 +107,12 @@ func (f *File) getTotalRowsCols(sheet string) (int, int) {
 //    }
 //
 func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
-	xlsx := xlsxWorksheet{}
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-
+	xlsx := f.workSheetReader(sheet)
 	rows := rowIndex + 1
 	cells := 0
-
-	completeRow(&xlsx, rows, cells)
-
+	completeRow(xlsx, rows, cells)
 	xlsx.SheetData.Row[rowIndex].Ht = strconv.FormatFloat(height, 'f', -1, 64)
 	xlsx.SheetData.Row[rowIndex].CustomHeight = true
-
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // readXMLSST read xmlSST simple function.

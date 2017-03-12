@@ -87,9 +87,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	_, file := filepath.Split(picture)
 	formatSet := parseFormatPictureSet(format)
 	// Read sheet data.
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	pictureID := f.countMedia() + 1
@@ -149,33 +147,19 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 // addSheetDrawing provides function to add drawing element to
 // xl/worksheets/sheet%d.xml by given sheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx := f.workSheetReader(sheet)
 	xlsx.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
-	output, err := xml.Marshal(xlsx)
-	if err != nil {
-		fmt.Println(err)
-	}
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // addSheetPicture provides function to add picture element to
 // xl/worksheets/sheet%d.xml by given sheet name and relationship index.
 func (f *File) addSheetPicture(sheet string, rID int) {
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+	xlsx := f.workSheetReader(sheet)
 	xlsx.Picture = &xlsxPicture{
 		RID: "rId" + strconv.Itoa(rID),
 	}
-	output, err := xml.Marshal(xlsx)
-	if err != nil {
-		fmt.Println(err)
-	}
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // countDrawings provides function to get drawing files count storage in the

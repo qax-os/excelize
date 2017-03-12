@@ -16,6 +16,7 @@ type File struct {
 	checked    map[string]bool
 	XLSX       map[string]string
 	Path       string
+	Sheet      map[string]*xlsxWorksheet
 	SheetCount int
 }
 
@@ -52,6 +53,7 @@ func OpenReader(r io.Reader) (*File, error) {
 		return nil, err
 	}
 	return &File{
+		Sheet:      make(map[string]*xlsxWorksheet),
 		checked:    make(map[string]bool),
 		XLSX:       file,
 		Path:       "",
@@ -85,21 +87,32 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	}
 }
 
+// workSheetReader provides function to get the pointer to the structure after
+// deserialization by given worksheet index.
+func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
+	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	worksheet := f.Sheet[name]
+	if worksheet == nil {
+		var xlsx xlsxWorksheet
+		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+		if f.checked == nil {
+			f.checked = make(map[string]bool)
+		}
+		ok := f.checked[name]
+		if !ok {
+			checkRow(&xlsx)
+			f.checked[name] = true
+		}
+		f.Sheet[name] = &xlsx
+		worksheet = f.Sheet[name]
+	}
+	return worksheet
+}
+
 // SetCellInt provides function to set int type value of a cell.
 func (f *File) SetCellInt(sheet, axis string, value int) {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
-
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -115,31 +128,18 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	completeRow(&xlsx, rows, cell)
-	completeCol(&xlsx, rows, cell)
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
-
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // SetCellStr provides function to set string type value of a cell. Total number
 // of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -158,31 +158,18 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	completeRow(&xlsx, rows, cell)
-	completeCol(&xlsx, rows, cell)
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
-
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // SetCellDefault provides function to set string type value of a cell as
 // default format without escaping the cell.
 func (f *File) SetCellDefault(sheet, axis, value string) {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -198,14 +185,11 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	completeRow(&xlsx, rows, cell)
-	completeCol(&xlsx, rows, cell)
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
-
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // Completion column element tags of XML in a sheet.
@@ -364,9 +348,7 @@ func checkRow(xlsx *xlsxWorksheet) {
 //
 func (f *File) UpdateLinkedValue() {
 	for i := 1; i <= f.SheetCount; i++ {
-		var xlsx xlsxWorksheet
-		name := "xl/worksheets/sheet" + strconv.Itoa(i) + ".xml"
-		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
+		xlsx := f.workSheetReader("sheet" + strconv.Itoa(i))
 		for indexR, row := range xlsx.SheetData.Row {
 			for indexC, col := range row.C {
 				if col.F != nil && col.V != "" {
@@ -375,7 +357,5 @@ func (f *File) UpdateLinkedValue() {
 				}
 			}
 		}
-		output, _ := xml.Marshal(xlsx)
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	}
 }

@@ -9,10 +9,8 @@ import (
 // GetCellValue provides function to get value from cell by given sheet index
 // and axis in XLSX file.
 func (f *File) GetCellValue(sheet, axis string) string {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -60,10 +58,8 @@ func (f *File) GetCellValue(sheet, axis string) string {
 // GetCellFormula provides function to get formula from cell by given sheet
 // index and axis in XLSX file.
 func (f *File) GetCellFormula(sheet, axis string) string {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -102,18 +98,8 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 // SetCellFormula provides function to set cell formula by given string and
 // sheet index.
 func (f *File) SetCellFormula(sheet, axis, formula string) {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -129,8 +115,8 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	rows := xAxis + 1
 	cell := yAxis + 1
 
-	completeRow(&xlsx, rows, cell)
-	completeCol(&xlsx, rows, cell)
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
 
 	if xlsx.SheetData.Row[xAxis].C[yAxis].F != nil {
 		xlsx.SheetData.Row[xAxis].C[yAxis].F.Content = formula
@@ -140,25 +126,13 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 		}
 		xlsx.SheetData.Row[xAxis].C[yAxis].F = &f
 	}
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // SetCellHyperLink provides function to set cell hyperlink by given sheet index
 // and link URL address. Only support external link currently.
 func (f *File) SetCellHyperLink(sheet, axis, link string) {
+	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -178,8 +152,6 @@ func (f *File) SetCellHyperLink(sheet, axis, link string) {
 		hyperlinks.Hyperlink = append(hyperlinks.Hyperlink, hyperlink)
 		xlsx.Hyperlinks = &hyperlinks
 	}
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // MergeCell provides function to merge cells by given coordinate area and sheet
@@ -218,17 +190,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
 
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
+	xlsx := f.workSheetReader(sheet)
 	if xlsx.MergeCells != nil {
 		mergeCell := xlsxMergeCell{}
 		// Correct the coordinate area, such correct C1:B3 to B1:C3.
@@ -250,8 +212,6 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 		mergeCells.Cells = append(mergeCells.Cells, &mergeCell)
 		xlsx.MergeCells = &mergeCells
 	}
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
 
 // checkCellInArea provides function to determine if a given coordinate is

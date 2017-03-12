@@ -22,9 +22,9 @@ func (f *File) NewSheet(index int, name string) {
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(index)
 	// Update xl/_rels/workbook.xml.rels
-	rid := f.addXlsxWorkbookRels(index)
+	rID := f.addXlsxWorkbookRels(index)
 	// Update xl/workbook.xml
-	f.setWorkbook(name, rid)
+	f.setWorkbook(name, rID)
 }
 
 // Read and update property of contents type of XLSX.
@@ -49,12 +49,8 @@ func (f *File) setSheet(index int) {
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
 		WorkbookViewID: 0,
 	})
-	output, err := xml.Marshal(xlsx)
-	if err != nil {
-		fmt.Println(err)
-	}
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
-	f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+	f.Sheet[path] = &xlsx
 }
 
 // setWorkbook update workbook property of XLSX. Maximum 31 characters are
@@ -151,14 +147,9 @@ func (f *File) SetActiveSheet(index int) {
 	}
 	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 	index++
-	buffer := bytes.Buffer{}
 	for i := 0; i < sheets; i++ {
-		xlsx := xlsxWorksheet{}
 		sheetIndex := i + 1
-		buffer.WriteString("xl/worksheets/sheet")
-		buffer.WriteString(strconv.Itoa(sheetIndex))
-		buffer.WriteString(".xml")
-		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
+		xlsx := f.workSheetReader("sheet" + strconv.Itoa(sheetIndex))
 		if index == sheetIndex {
 			if len(xlsx.SheetViews.SheetView) > 0 {
 				xlsx.SheetViews.SheetView[0].TabSelected = true
@@ -172,12 +163,6 @@ func (f *File) SetActiveSheet(index int) {
 				xlsx.SheetViews.SheetView[0].TabSelected = false
 			}
 		}
-		sheet, err := xml.Marshal(xlsx)
-		if err != nil {
-			fmt.Println(err)
-		}
-		f.saveFileList(buffer.String(), replaceWorkSheetsRelationshipsNameSpace(string(sheet)))
-		buffer.Reset()
 	}
 	return
 }
@@ -275,10 +260,6 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	if !ok {
 		return errors.New("Unsupported image extension")
 	}
-	// Read sheet data.
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 	pictureID := f.countMedia() + 1
 	rID := f.addSheetRelationships(sheet, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext, "")
 	f.addSheetPicture(sheet, rID)

@@ -196,20 +196,10 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 	hcell = toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1)
 	vcell = toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
 
-	var xlsx xlsxWorksheet
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	ok := f.checked[name]
-	if !ok {
-		checkRow(&xlsx)
-		f.checked[name] = true
-	}
+	xlsx := f.workSheetReader(sheet)
 
-	completeRow(&xlsx, vxAxis+1, vyAxis+1)
-	completeCol(&xlsx, vxAxis+1, vyAxis+1)
+	completeRow(xlsx, vxAxis+1, vyAxis+1)
+	completeCol(xlsx, vxAxis+1, vyAxis+1)
 
 	for r, row := range xlsx.SheetData.Row {
 		for k, c := range row.C {
@@ -218,6 +208,4 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 			}
 		}
 	}
-	output, _ := xml.Marshal(xlsx)
-	f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 }
