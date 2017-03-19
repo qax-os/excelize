@@ -7,23 +7,37 @@ import (
 	"strings"
 )
 
-// parseFormatBordersSet provides function to parse the format settings of the
+// parseFormatStyleSet provides function to parse the format settings of the
 // borders.
-func parseFormatBordersSet(bordersSet string) (*formatBorder, error) {
-	var format formatBorder
-	err := json.Unmarshal([]byte(bordersSet), &format)
+func parseFormatStyleSet(style string) (*formatCellStyle, error) {
+	var format formatCellStyle
+	err := json.Unmarshal([]byte(style), &format)
 	return &format, err
 }
 
-// SetBorder provides function to get value from cell by given sheet index and
-// coordinate area in XLSX file. Note that the color field uses RGB color code
-// and diagonalDown and diagonalUp type border should be use same color in the
-// same coordinate area.
+// SetCellStyle provides function to get value from cell by given sheet index
+// and coordinate area in XLSX file. Note that the color field uses RGB color
+// code and diagonalDown and diagonalUp type border should be use same color in
+// the same coordinate area.
 //
-// For example create a borders of cell H9 on
-// Sheet1:
+// For example create a borders of cell H9 on Sheet1:
 //
 //    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//
+// Set gradient fill with vertical variants shading styles for cell H9 on
+// Sheet1:
+//
+//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":[{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}]}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//
+// Set solid style pattern fill for cell H9 on Sheet1:
+//
+//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":[{"type":"pattern","color":["#E0EBF5"],"pattern":1}]}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -82,15 +96,54 @@ func parseFormatBordersSet(bordersSet string) (*formatBorder, error) {
 //    | 1     | ``-----------`` | 6     | ``===========`` |
 //    +-------+-----------------+-------+-----------------+
 //
-func (f *File) SetBorder(sheet, hcell, vcell, style string) error {
+// The following shows the shading styles sorted by excelize index number:
+//
+//    +-------+-----------------+-------+-----------------+
+//    | Index | Style           | Index | Style           |
+//    +=======+=================+=======+=================+
+//    | 0     | Horizontal      | 3     | Diagonal down   |
+//    +-------+-----------------+-------+-----------------+
+//    | 1     | Vertical        | 4     | From corner     |
+//    +-------+-----------------+-------+-----------------+
+//    | 2     | Diagonal Up     | 5     | From center     |
+//    +-------+-----------------+-------+-----------------+
+//
+// The following shows the patterns styles sorted by excelize index number:
+//
+//    +-------+-----------------+-------+-----------------+
+//    | Index | Style           | Index | Style           |
+//    +=======+=================+=======+=================+
+//    | 0     | None            | 10    | darkTrellis     |
+//    +-------+-----------------+-------+-----------------+
+//    | 1     | solid           | 11    | lightHorizontal |
+//    +-------+-----------------+-------+-----------------+
+//    | 2     | mediumGray      | 12    | lightVertical   |
+//    +-------+-----------------+-------+-----------------+
+//    | 3     | darkGray        | 13    | lightDown       |
+//    +-------+-----------------+-------+-----------------+
+//    | 4     | lightGray       | 14    | lightUp         |
+//    +-------+-----------------+-------+-----------------+
+//    | 5     | darkHorizontal  | 15    | lightGrid       |
+//    +-------+-----------------+-------+-----------------+
+//    | 6     | darkVertical    | 16    | lightTrellis    |
+//    +-------+-----------------+-------+-----------------+
+//    | 7     | darkDown        | 17    | gray125         |
+//    +-------+-----------------+-------+-----------------+
+//    | 8     | darkUp          | 18    | gray0625        |
+//    +-------+-----------------+-------+-----------------+
+//    | 9     | darkGrid        |       |                 |
+//    +-------+-----------------+-------+-----------------+
+//
+func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	var styleSheet xlsxStyleSheet
 	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
-	formatBorder, err := parseFormatBordersSet(style)
+	formatCellStyle, err := parseFormatStyleSet(style)
 	if err != nil {
 		return err
 	}
-	borderID := setBorders(&styleSheet, formatBorder)
-	cellXfsID := setCellXfs(&styleSheet, borderID)
+	borderID := setBorders(&styleSheet, formatCellStyle)
+	fillID := setFills(&styleSheet, formatCellStyle)
+	cellXfsID := setCellXfs(&styleSheet, fillID, borderID)
 	output, err := xml.Marshal(styleSheet)
 	if err != nil {
 		return err
@@ -100,9 +153,90 @@ func (f *File) SetBorder(sheet, hcell, vcell, style string) error {
 	return err
 }
 
+// setFills provides function to add fill elements in the styles.xml by given
+// cell format settings.
+func setFills(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
+	var patterns = []string{
+		"none",
+		"solid",
+		"mediumGray",
+		"darkGray",
+		"lightGray",
+		"darkHorizontal",
+		"darkVertical",
+		"darkDown",
+		"darkUp",
+		"darkGrid",
+		"darkTrellis",
+		"lightHorizontal",
+		"lightVertical",
+		"lightDown",
+		"lightUp",
+		"lightGrid",
+		"lightTrellis",
+		"gray125",
+		"gray0625",
+	}
+
+	var variants = []float64{
+		90,
+		0,
+		45,
+		135,
+	}
+
+	var fill xlsxFill
+	for _, v := range formatCellStyle.Fill {
+		switch v.Type {
+		case "gradient":
+			if len(v.Color) != 2 {
+				continue
+			}
+			var gradient xlsxGradientFill
+			switch v.Shading {
+			case 0, 1, 2, 3:
+				gradient.Degree = variants[v.Shading]
+			case 4:
+				gradient.Type = "path"
+			case 5:
+				gradient.Type = "path"
+				gradient.Bottom = 0.5
+				gradient.Left = 0.5
+				gradient.Right = 0.5
+				gradient.Top = 0.5
+			default:
+				continue
+			}
+			var stops []*xlsxGradientFillStop
+			for index, color := range v.Color {
+				var stop xlsxGradientFillStop
+				stop.Position = float64(index)
+				stop.Color.RGB = getPaletteColor(color)
+				stops = append(stops, &stop)
+			}
+			gradient.Stop = stops
+			fill.GradientFill = &gradient
+		case "pattern":
+			if v.Pattern > 18 || v.Pattern < 0 {
+				continue
+			}
+			if len(v.Color) < 1 {
+				continue
+			}
+			var pattern xlsxPatternFill
+			pattern.PatternType = patterns[v.Pattern]
+			pattern.FgColor.RGB = getPaletteColor(v.Color[0])
+			fill.PatternFill = &pattern
+		}
+	}
+	style.Fills.Count++
+	style.Fills.Fill = append(style.Fills.Fill, &fill)
+	return style.Fills.Count - 1
+}
+
 // setBorders provides function to add border elements in the styles.xml by
 // given borders format settings.
-func setBorders(style *xlsxStyleSheet, formatBorder *formatBorder) int {
+func setBorders(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 	var styles = []string{
 		"none",
 		"thin",
@@ -121,12 +255,12 @@ func setBorders(style *xlsxStyleSheet, formatBorder *formatBorder) int {
 	}
 
 	var border xlsxBorder
-	for _, v := range formatBorder.Border {
+	for _, v := range formatCellStyle.Border {
 		if v.Style > 13 || v.Style < 0 {
 			continue
 		}
 		var color xlsxColor
-		color.RGB = v.Color
+		color.RGB = getPaletteColor(v.Color)
 		switch v.Type {
 		case "left":
 			border.Left.Style = styles[v.Style]
@@ -157,8 +291,9 @@ func setBorders(style *xlsxStyleSheet, formatBorder *formatBorder) int {
 
 // setCellXfs provides function to set describes all of the formatting for a
 // cell.
-func setCellXfs(style *xlsxStyleSheet, borderID int) int {
+func setCellXfs(style *xlsxStyleSheet, fillID, borderID int) int {
 	var xf xlsxXf
+	xf.FillID = fillID
 	xf.BorderID = borderID
 	style.CellXfs.Count++
 	style.CellXfs.Xf = append(style.CellXfs.Xf, xf)
@@ -208,4 +343,9 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 			}
 		}
 	}
+}
+
+// getPaletteColor provides function to convert the RBG color by given string.
+func getPaletteColor(color string) string {
+	return "FF" + strings.Replace(strings.ToUpper(color), "#", "", -1)
 }

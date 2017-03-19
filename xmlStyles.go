@@ -43,10 +43,14 @@ type xlsxLine struct {
 	Color *xlsxColor `xml:"color,omitempty"`
 }
 
-// xlsxColor is a common mapping used for both the fgColor and bgColor elements
-// in the namespace http://schemas.openxmlformats.org/spreadsheetml/2006/main -
-// currently I have not checked it for completeness - it does as much as I need.
+// xlsxColor is a common mapping used for both the fgColor and bgColor elements.
+// Foreground color of the cell fill pattern. Cell fill patterns operate with
+// two colors: a background color and a foreground color. These combine together
+// to make a patterned cell fill. Background color of the cell fill pattern.
+// Cell fill patterns operate with two colors: a background color and a
+// foreground color. These combine together to make a patterned cell fill.
 type xlsxColor struct {
+	Auto    bool    `xml:"auto,attr,omitempty"`
 	RGB     string  `xml:"rgb,attr,omitempty"`
 	Indexed *int    `xml:"indexed,attr,omitempty"`
 	Theme   *int    `xml:"theme,attr,omitempty"`
@@ -71,14 +75,15 @@ type xlsxFont struct {
 // cell fill consists of a background color, foreground color, and pattern to be
 // applied across the cell.
 type xlsxFills struct {
-	Count int        `xml:"count,attr"`
-	Fill  []xlsxFill `xml:"fill,omitempty"`
+	Count int         `xml:"count,attr"`
+	Fill  []*xlsxFill `xml:"fill,omitempty"`
 }
 
 // xlsxFill directly maps the fill element. This element specifies fill
 // formatting.
 type xlsxFill struct {
-	PatternFill xlsxPatternFill `xml:"patternFill,omitempty"`
+	PatternFill  *xlsxPatternFill  `xml:"patternFill,omitempty"`
+	GradientFill *xlsxGradientFill `xml:"gradientFill,omitempty"`
 }
 
 // xlsxPatternFill directly maps the patternFill element in the namespace
@@ -92,6 +97,24 @@ type xlsxPatternFill struct {
 	PatternType string    `xml:"patternType,attr,omitempty"`
 	FgColor     xlsxColor `xml:"fgColor,omitempty"`
 	BgColor     xlsxColor `xml:"bgColor,omitempty"`
+}
+
+// xlsxGradientFill defines a gradient-style cell fill. Gradient cell fills can
+// use one or two colors as the end points of color interpolation.
+type xlsxGradientFill struct {
+	Bottom float64                 `xml:"bottom,attr,omitempty"`
+	Degree float64                 `xml:"degree,attr,omitempty"`
+	Left   float64                 `xml:"left,attr,omitempty"`
+	Right  float64                 `xml:"right,attr,omitempty"`
+	Top    float64                 `xml:"top,attr,omitempty"`
+	Type   string                  `xml:"type,attr,omitempty"`
+	Stop   []*xlsxGradientFillStop `xml:"stop,omitempty"`
+}
+
+// xlsxGradientFillStop directly maps the stop element.
+type xlsxGradientFillStop struct {
+	Position float64   `xml:"position,attr"`
+	Color    xlsxColor `xml:"color,omitempty"`
 }
 
 // xlsxBorders directly maps the borders element. This element contains borders
@@ -247,11 +270,17 @@ type xlsxStyleColors struct {
 	Color string `xml:",innerxml"`
 }
 
-// formatBorder directly maps the format settings of the borders.
-type formatBorder struct {
+// formatCellStyle directly maps the styles settings of the borders.
+type formatCellStyle struct {
 	Border []struct {
 		Type  string `json:"type"`
 		Color string `json:"color"`
 		Style int    `json:"style"`
 	} `json:"border"`
+	Fill []struct {
+		Type    string   `json:"type"`
+		Pattern int      `json:"pattern"`
+		Color   []string `json:"color"`
+		Shading int      `json:"shading"`
+	} `json:"fill"`
 }
