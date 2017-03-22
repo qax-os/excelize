@@ -346,3 +346,24 @@ func TestSetCellStyleFill(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestSetDeleteSheet(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_3.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.DeleteSheet("XLSXSheet3")
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx, err = OpenFile("./test/Workbook_4.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.DeleteSheet("Sheet1")
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}

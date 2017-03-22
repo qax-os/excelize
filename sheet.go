@@ -85,7 +85,14 @@ func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
 // addXlsxWorkbookRels update workbook relationships property of XLSX.
 func (f *File) addXlsxWorkbookRels(sheet int) int {
 	content := f.readXlsxWorkbookRels()
-	rID := len(content.Relationships) + 1
+	rID := 0
+	for _, v := range content.Relationships {
+		t, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
+		if t > rID {
+			rID = t
+		}
+	}
+	rID++
 	ID := bytes.Buffer{}
 	ID.WriteString("rId")
 	ID.WriteString(strconv.Itoa(rID))
@@ -266,4 +273,71 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	f.addMedia(picture, ext)
 	f.setContentTypePartImageExtensions()
 	return err
+}
+
+// DeleteSheet provides function to detele worksheet in a workbook by given
+// sheet name. Use this method with caution, which will affect changes in
+// references such as formulas, charts, and so on. If there is any referenced
+// value of the deleted worksheet, it will cause a file error when you open it.
+// This function will be invalid when only the one worksheet is left.
+func (f *File) DeleteSheet(name string) {
+	var content xlsxWorkbook
+	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	for k, v := range content.Sheets.Sheet {
+		if v.Name != name || len(content.Sheets.Sheet) < 2 {
+			continue
+		}
+		content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
+		output, _ := xml.Marshal(content)
+		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
+		sheet := "xl/worksheets/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml"
+		rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
+		target := f.deteleSheetFromWorkbookRels(v.ID)
+		f.deteleSheetFromContentTypes(target)
+		_, ok := f.XLSX[sheet]
+		if ok {
+			delete(f.XLSX, sheet)
+		}
+		_, ok = f.XLSX[rels]
+		if ok {
+			delete(f.XLSX, rels)
+		}
+		_, ok = f.Sheet[sheet]
+		if ok {
+			delete(f.Sheet, sheet)
+		}
+	}
+}
+
+// deteleSheetFromWorkbookRels provides function to remove worksheet
+// relationships by given relationships ID in the file
+// xl/_rels/workbook.xml.rels.
+func (f *File) deteleSheetFromWorkbookRels(rID string) string {
+	var content xlsxWorkbookRels
+	xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
+	for k, v := range content.Relationships {
+		if v.ID != rID {
+			continue
+		}
+		content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
+		output, _ := xml.Marshal(content)
+		f.saveFileList("xl/_rels/workbook.xml.rels", string(output))
+		return v.Target
+	}
+	return ""
+}
+
+// deteleSheetFromContentTypes provides function to remove worksheet
+// relationships by given target name in the file [Content_Types].xml.
+func (f *File) deteleSheetFromContentTypes(target string) {
+	var content xlsxTypes
+	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+	for k, v := range content.Overrides {
+		if v.PartName != "/xl/"+target {
+			continue
+		}
+		content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
+		output, _ := xml.Marshal(content)
+		f.saveFileList("[Content_Types].xml", string(output))
+	}
 }
