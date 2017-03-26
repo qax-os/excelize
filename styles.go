@@ -15,7 +15,7 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 	return &format, err
 }
 
-// SetCellStyle provides function to get value from cell by given sheet index
+// SetCellStyle provides function to set style for cells by given sheet index
 // and coordinate area in XLSX file. Note that the color field uses RGB color
 // code and diagonalDown and diagonalUp type border should be use same color in
 // the same coordinate area.
@@ -30,14 +30,21 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 // Set gradient fill with vertical variants shading styles for cell H9 on
 // Sheet1:
 //
-//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":[{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}]}`)
+//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
 //
 // Set solid style pattern fill for cell H9 on Sheet1:
 //
-//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":[{"type":"pattern","color":["#E0EBF5"],"pattern":1}]}`)
+//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//
+// Set alignment style for cell H9 on Sheet1:
+//
+//    err = xlsx.SetCellStyle("Sheet2", "H9", "H9", `{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -134,6 +141,40 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    | 9     | darkGrid        |       |                 |
 //    +-------+-----------------+-------+-----------------+
 //
+// The following the type of horizontal alignment in cells:
+//
+//    +------------------+
+//    | Style            |
+//    +==================+
+//    | left             |
+//    +------------------+
+//    | center           |
+//    +------------------+
+//    | right            |
+//    +------------------+
+//    | fill             |
+//    +------------------+
+//    | justify          |
+//    +------------------+
+//    | centerContinuous |
+//    +------------------+
+//    | distributed      |
+//    +------------------+
+//
+// The following the type of vertical alignment in cells:
+//
+//    +------------------+
+//    | Style            |
+//    +==================+
+//    | top              |
+//    +------------------+
+//    | center           |
+//    +------------------+
+//    | justify          |
+//    +------------------+
+//    | distributed      |
+//    +------------------+
+//
 func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	var styleSheet xlsxStyleSheet
 	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
@@ -143,7 +184,8 @@ func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	}
 	borderID := setBorders(&styleSheet, formatCellStyle)
 	fillID := setFills(&styleSheet, formatCellStyle)
-	cellXfsID := setCellXfs(&styleSheet, fillID, borderID)
+	applyAlignment, alignment := setAlignment(&styleSheet, formatCellStyle)
+	cellXfsID := setCellXfs(&styleSheet, fillID, borderID, applyAlignment, alignment)
 	output, err := xml.Marshal(styleSheet)
 	if err != nil {
 		return err
@@ -186,52 +228,71 @@ func setFills(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 	}
 
 	var fill xlsxFill
-	for _, v := range formatCellStyle.Fill {
-		switch v.Type {
-		case "gradient":
-			if len(v.Color) != 2 {
-				continue
-			}
-			var gradient xlsxGradientFill
-			switch v.Shading {
-			case 0, 1, 2, 3:
-				gradient.Degree = variants[v.Shading]
-			case 4:
-				gradient.Type = "path"
-			case 5:
-				gradient.Type = "path"
-				gradient.Bottom = 0.5
-				gradient.Left = 0.5
-				gradient.Right = 0.5
-				gradient.Top = 0.5
-			default:
-				continue
-			}
-			var stops []*xlsxGradientFillStop
-			for index, color := range v.Color {
-				var stop xlsxGradientFillStop
-				stop.Position = float64(index)
-				stop.Color.RGB = getPaletteColor(color)
-				stops = append(stops, &stop)
-			}
-			gradient.Stop = stops
-			fill.GradientFill = &gradient
-		case "pattern":
-			if v.Pattern > 18 || v.Pattern < 0 {
-				continue
-			}
-			if len(v.Color) < 1 {
-				continue
-			}
-			var pattern xlsxPatternFill
-			pattern.PatternType = patterns[v.Pattern]
-			pattern.FgColor.RGB = getPaletteColor(v.Color[0])
-			fill.PatternFill = &pattern
+	switch formatCellStyle.Fill.Type {
+	case "gradient":
+		if len(formatCellStyle.Fill.Color) != 2 {
+			break
 		}
+		var gradient xlsxGradientFill
+		switch formatCellStyle.Fill.Shading {
+		case 0, 1, 2, 3:
+			gradient.Degree = variants[formatCellStyle.Fill.Shading]
+		case 4:
+			gradient.Type = "path"
+		case 5:
+			gradient.Type = "path"
+			gradient.Bottom = 0.5
+			gradient.Left = 0.5
+			gradient.Right = 0.5
+			gradient.Top = 0.5
+		default:
+			break
+		}
+		var stops []*xlsxGradientFillStop
+		for index, color := range formatCellStyle.Fill.Color {
+			var stop xlsxGradientFillStop
+			stop.Position = float64(index)
+			stop.Color.RGB = getPaletteColor(color)
+			stops = append(stops, &stop)
+		}
+		gradient.Stop = stops
+		fill.GradientFill = &gradient
+	case "pattern":
+		if formatCellStyle.Fill.Pattern > 18 || formatCellStyle.Fill.Pattern < 0 {
+			break
+		}
+		if len(formatCellStyle.Fill.Color) < 1 {
+			break
+		}
+		var pattern xlsxPatternFill
+		pattern.PatternType = patterns[formatCellStyle.Fill.Pattern]
+		pattern.FgColor.RGB = getPaletteColor(formatCellStyle.Fill.Color[0])
+		fill.PatternFill = &pattern
 	}
 	style.Fills.Count++
 	style.Fills.Fill = append(style.Fills.Fill, &fill)
 	return style.Fills.Count - 1
+}
+
+// setAlignment provides function to formatting information pertaining to text
+// alignment in cells. There are a variety of choices for how text is aligned
+// both horizontally and vertically, as well as indentation settings, and so on.
+func setAlignment(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) (bool, *xlsxAlignment) {
+	if formatCellStyle.Alignment == nil {
+		return false, &xlsxAlignment{}
+	}
+	var alignment = xlsxAlignment{
+		Horizontal:      formatCellStyle.Alignment.Horizontal,
+		Indent:          formatCellStyle.Alignment.Indent,
+		JustifyLastLine: formatCellStyle.Alignment.JustifyLastLine,
+		ReadingOrder:    formatCellStyle.Alignment.ReadingOrder,
+		RelativeIndent:  formatCellStyle.Alignment.RelativeIndent,
+		ShrinkToFit:     formatCellStyle.Alignment.ShrinkToFit,
+		TextRotation:    formatCellStyle.Alignment.TextRotation,
+		Vertical:        formatCellStyle.Alignment.Vertical,
+		WrapText:        formatCellStyle.Alignment.WrapText,
+	}
+	return true, &alignment
 }
 
 // setBorders provides function to add border elements in the styles.xml by
@@ -291,11 +352,13 @@ func setBorders(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 
 // setCellXfs provides function to set describes all of the formatting for a
 // cell.
-func setCellXfs(style *xlsxStyleSheet, fillID, borderID int) int {
+func setCellXfs(style *xlsxStyleSheet, fillID, borderID int, applyAlignment bool, alignment *xlsxAlignment) int {
 	var xf xlsxXf
 	xf.FillID = fillID
 	xf.BorderID = borderID
 	style.CellXfs.Count++
+	xf.Alignment = alignment
+	xf.ApplyAlignment = applyAlignment
 	style.CellXfs.Xf = append(style.CellXfs.Xf, xf)
 	return style.CellXfs.Count - 1
 }

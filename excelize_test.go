@@ -272,7 +272,19 @@ func TestSetRowHeight(t *testing.T) {
 	}
 }
 
-func TestSetCellStyle(t *testing.T) {
+func TestSetCellStyleAlignment(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetCellStyle("Sheet1", "A22", "A22", `{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"top","wrap_text":true}}`)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestSetCellStyleBorder(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {
 		t.Log(err)
@@ -287,20 +299,17 @@ func TestSetCellStyle(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	if err != nil {
-		t.Log(err)
-	}
 	// Test set border on overlapping area with vertical variants shading styles gradient fill.
 	err = xlsx.SetCellStyle("Sheet1", "J21", "L25", `{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":12},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "M28", "K24", `{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":3},{"type":"bottom","color":"FFFF00","style":4},{"type":"right","color":"FF0000","style":5},{"type":"diagonalDown","color":"A020F0","style":6},{"type":"diagonalUp","color":"A020F0","style":7}],"fill":[{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "M28", "K24", `{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":3},{"type":"bottom","color":"FFFF00","style":4},{"type":"right","color":"FF0000","style":5},{"type":"diagonalDown","color":"A020F0","style":6},{"type":"diagonalUp","color":"A020F0","style":7}],"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
 	if err != nil {
 		t.Log(err)
 	}
 	// Test set border and solid style pattern fill for a single cell.
-	err = xlsx.SetCellStyle("Sheet1", "O22", "O22", `{"border":[{"type":"left","color":"0000FF","style":8},{"type":"top","color":"00FF00","style":9},{"type":"bottom","color":"FFFF00","style":10},{"type":"right","color":"FF0000","style":11},{"type":"diagonalDown","color":"A020F0","style":12},{"type":"diagonalUp","color":"A020F0","style":13}],"fill":[{"type":"pattern","color":["#E0EBF5"],"pattern":1}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "O22", "O22", `{"border":[{"type":"left","color":"0000FF","style":8},{"type":"top","color":"00FF00","style":9},{"type":"bottom","color":"FFFF00","style":10},{"type":"right","color":"FF0000","style":11},{"type":"diagonalDown","color":"A020F0","style":12},{"type":"diagonalUp","color":"A020F0","style":13}],"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
 	if err != nil {
 		t.Log(err)
 	}
@@ -316,28 +325,28 @@ func TestSetCellStyleFill(t *testing.T) {
 		t.Log(err)
 	}
 	// Test only set fill for a cell.
-	err = xlsx.SetCellStyle("Sheet1", "N23", "N23", `{"fill":[{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":4}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "N23", "N23", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":4}}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "N24", "N24", `{"fill":[{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "N24", "N24", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5}}`)
 	if err != nil {
 		t.Log(err)
 	}
 	// Test set fill for cell with invalid parameter.
-	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":[{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":6}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":6}}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":[{"type":"gradient","color":["#FFFFFF"],"shading":1}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":{"type":"gradient","color":["#FFFFFF"],"shading":1}}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":[{"type":"pattern","color":[],"pattern":1}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":{"type":"pattern","color":[],"pattern":1}}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":[{"type":"pattern","color":["#E0EBF5"],"pattern":19}]}`)
+	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":19}}`)
 	if err != nil {
 		t.Log(err)
 	}
