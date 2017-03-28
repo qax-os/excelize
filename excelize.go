@@ -161,6 +161,15 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 	completeRow(xlsx, rows, cell)
 	completeCol(xlsx, rows, cell)
 
+	// Leading space(s) character detection.
+	if len(value) > 0 {
+		if value[0] == 32 {
+			xlsx.SheetData.Row[xAxis].C[yAxis].XMLSpace = xml.Attr{
+				Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+				Value: "preserve",
+			}
+		}
+	}
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 }

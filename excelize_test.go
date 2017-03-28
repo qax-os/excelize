@@ -53,7 +53,7 @@ func TestOpenFile(t *testing.T) {
 	xlsx.GetCellValue("Sheet2", "D11")
 	xlsx.GetCellValue("Sheet2", "D12")
 	// Test SetCellValue function.
-	xlsx.SetCellValue("Sheet2", "F1", "Hello")
+	xlsx.SetCellValue("Sheet2", "F1", " Hello")
 	xlsx.SetCellValue("Sheet2", "G1", []byte("World"))
 	xlsx.SetCellValue("Sheet2", "F2", 42)
 	xlsx.SetCellValue("Sheet2", "F2", int8(42))

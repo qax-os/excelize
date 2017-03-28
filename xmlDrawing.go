@@ -9,6 +9,7 @@ const (
 	SourceRelationshipWorkSheet = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
 	NameSpaceDrawingML          = "http://schemas.openxmlformats.org/drawingml/2006/main"
 	NameSpaceSpreadSheetDrawing = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+	NameSpaceXML                = "http://www.w3.org/XML/1998/namespace"
 )
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
