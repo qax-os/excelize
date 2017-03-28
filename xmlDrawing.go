@@ -12,6 +12,8 @@ const (
 	NameSpaceXML                = "http://www.w3.org/XML/1998/namespace"
 )
 
+var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
+
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional
 // information that does not affect the appearance of the picture to be stored.

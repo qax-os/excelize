@@ -4,6 +4,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io/ioutil"
 	"strconv"
 	"testing"
 )
@@ -375,4 +376,29 @@ func TestSetDeleteSheet(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
+
+func TestGetPicture(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	file, raw := xlsx.GetPicture("Sheet1", "F21")
+	if file == "" {
+		err = ioutil.WriteFile(file, raw, 0644)
+		if err != nil {
+			t.Log(err)
+		}
+	}
+	// Try to get picture from a worksheet that doesn't contain any images.
+	file, raw = xlsx.GetPicture("Sheet3", "I9")
+	if file != "" {
+		err = ioutil.WriteFile(file, raw, 0644)
+		if err != nil {
+			t.Log(err)
+		}
+	}
+	// Try to get picture from a cell that doesn't contain an image.
+	file, raw = xlsx.GetPicture("Sheet2", "A2")
+	t.Log(file, len(raw))
 }

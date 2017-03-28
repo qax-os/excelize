@@ -257,13 +257,12 @@ func (f *File) GetSheetMap() map[int]string {
 // SetSheetBackground provides function to set background picture by given sheet
 // index.
 func (f *File) SetSheetBackground(sheet, picture string) error {
-	var supportTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportTypes[path.Ext(picture)]
+	ext, ok := supportImageTypes[path.Ext(picture)]
 	if !ok {
 		return errors.New("Unsupported image extension")
 	}

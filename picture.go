@@ -72,13 +72,12 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //    }
 //
 func (f *File) AddPicture(sheet, cell, picture, format string) error {
-	var supportTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportTypes[path.Ext(picture)]
+	ext, ok := supportImageTypes[path.Ext(picture)]
 	if !ok {
 		return errors.New("Unsupported image extension")
 	}
@@ -359,4 +358,83 @@ func (f *File) getSheetRelationshipsTargetByID(sheet string, rID string) string 
 		}
 	}
 	return ""
+}
+
+// GetPicture provides function to get picture base name and raw content embed
+// in XLSX by given worksheet and cell name. This function returns the file name
+// in XLSX and file contents as []byte data types. For example:
+//
+//    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
+//    if err != nil {
+//        fmt.Println(err)
+//        os.Exit(1)
+//    }
+//    file, raw := xlsx.GetPicture("Sheet1", "A2")
+//    if file == "" {
+//        os.Exit(1)
+//    }
+// 	  err := ioutil.WriteFile(file, raw, 0644)
+// 	  if err != nil {
+//        fmt.Println(err)
+//        os.Exit(1)
+// 	  }
+//
+func (f *File) GetPicture(sheet, cell string) (string, []byte) {
+	xlsx := f.workSheetReader(sheet)
+	if xlsx.Drawing == nil {
+		return "", []byte{}
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+	drawingXML := strings.Replace(target, "..", "xl", -1)
+
+	_, ok := f.XLSX[drawingXML]
+	if !ok {
+		return "", []byte{}
+	}
+	decodeWsDr := decodeWsDr{}
+	xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
+
+	cell = strings.ToUpper(cell)
+	fromCol := string(strings.Map(letterOnlyMapF, cell))
+	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
+	row := fromRow - 1
+	col := titleToNumber(fromCol)
+
+	drawingRelationships := strings.Replace(strings.Replace(target, "../drawings", "xl/drawings/_rels", -1), ".xml", ".xml.rels", -1)
+
+	for _, anchor := range decodeWsDr.TwoCellAnchor {
+		decodeTwoCellAnchor := decodeTwoCellAnchor{}
+		xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
+		if decodeTwoCellAnchor.From == nil || decodeTwoCellAnchor.Pic == nil {
+			continue
+		}
+		if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
+			xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+			_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
+			if !ok {
+				continue
+			}
+
+			return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)])
+		}
+	}
+	return "", []byte{}
+}
+
+// getDrawingRelationships provides function to get drawing relationships from
+// xl/drawings/_rels/drawing%s.xml.rels by given file name and relationship ID.
+func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
+	_, ok := f.XLSX[rels]
+	if !ok {
+		return nil
+	}
+	var drawingRels xlsxWorkbookRels
+	xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
+	for _, v := range drawingRels.Relationships {
+		if v.ID != rID {
+			continue
+		}
+		return &v
+	}
+	return nil
 }
