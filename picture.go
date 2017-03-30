@@ -373,11 +373,11 @@ func (f *File) getSheetRelationshipsTargetByID(sheet string, rID string) string 
 //    if file == "" {
 //        os.Exit(1)
 //    }
-// 	  err := ioutil.WriteFile(file, raw, 0644)
-// 	  if err != nil {
+//    err := ioutil.WriteFile(file, raw, 0644)
+//    if err != nil {
 //        fmt.Println(err)
 //        os.Exit(1)
-// 	  }
+//    }
 //
 func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 	xlsx := f.workSheetReader(sheet)

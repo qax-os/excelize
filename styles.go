@@ -22,7 +22,7 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //
 // For example create a borders of cell H9 on Sheet1:
 //
-//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+//    err := xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -30,14 +30,14 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 // Set gradient fill with vertical variants shading styles for cell H9 on
 // Sheet1:
 //
-//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
+//    err := xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
 //
 // Set solid style pattern fill for cell H9 on Sheet1:
 //
-//    err := xlsx.SetBorder("Sheet1", "H9", "H9", `{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+//    err := xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
