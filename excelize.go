@@ -100,6 +100,7 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 		}
 		ok := f.checked[name]
 		if !ok {
+			checkSheet(&xlsx)
 			checkRow(&xlsx)
 			f.checked[name] = true
 		}
@@ -226,11 +227,44 @@ func completeCol(xlsx *xlsxWorksheet, row int, cell int) {
 	}
 }
 
-// Completion row element tags of XML in a sheet.
+// completeRow provides function to check and fill each column element for a
+// single row and make that is continuous in a worksheet of XML by given row
+// index and axis.
 func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 	currentRows := len(xlsx.SheetData.Row)
 	if currentRows > 1 {
 		lastRow := xlsx.SheetData.Row[currentRows-1].R
+		if lastRow >= row {
+			row = lastRow
+		}
+	}
+	for i := currentRows; i < row; i++ {
+		xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
+			R: i + 1,
+		})
+	}
+	buffer := bytes.Buffer{}
+	for ii := currentRows; ii < row; ii++ {
+		start := len(xlsx.SheetData.Row[ii].C)
+		if start == 0 {
+			for iii := start; iii < cell; iii++ {
+				buffer.WriteString(toAlphaString(iii + 1))
+				buffer.WriteString(strconv.Itoa(ii + 1))
+				xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
+					R: buffer.String(),
+				})
+				buffer.Reset()
+			}
+		}
+	}
+}
+
+// checkSheet provides function to fill each row element and make that is
+// continuous in a worksheet of XML.
+func checkSheet(xlsx *xlsxWorksheet) {
+	row := len(xlsx.SheetData.Row)
+	if row > 1 {
+		lastRow := xlsx.SheetData.Row[row-1].R
 		if lastRow >= row {
 			row = lastRow
 		}
@@ -250,24 +284,11 @@ func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 			R: i + 1,
 		})
 	}
-	buffer := bytes.Buffer{}
-	for ii := 0; ii < row; ii++ {
-		start := len(sheetData.Row[ii].C)
-		if start == 0 {
-			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(toAlphaString(iii + 1))
-				buffer.WriteString(strconv.Itoa(ii + 1))
-				sheetData.Row[ii].C = append(sheetData.Row[ii].C, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
-			}
-		}
-	}
 	xlsx.SheetData = sheetData
 }
 
-// Replace xl/worksheets/sheet%d.xml XML tags to self-closing for compatible
+// replaceWorkSheetsRelationshipsNameSpace provides function to replace
+// xl/worksheets/sheet%d.xml XML tags to self-closing for compatible Microsoft
 // Office Excel 2007.
 func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 	oldXmlns := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
@@ -276,7 +297,8 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 	return workbookMarshal
 }
 
-// Check XML tags and fix discontinuous case. For example:
+// checkRow provides function to check and fill each column element for all rows
+// and make that is continuous in a worksheet of XML. For example:
 //
 //    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
 //        <c r="A15" s="2" />
