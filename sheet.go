@@ -256,16 +256,40 @@ func (f *File) SetSheetName(oldName, newName string) {
 	}
 }
 
-// GetSheetName provides function to get sheet name of XLSX by given sheet
+// GetSheetName provides function to get sheet name of XLSX by given worksheet
 // index. If given sheet index is invalid, will return an empty string.
 func (f *File) GetSheetName(index int) string {
 	content := f.workbookReader()
-	for _, v := range content.Sheets.Sheet {
-		if v.ID == "rId"+strconv.Itoa(index) {
-			return v.Name
+	rels := f.workbookRelsReader()
+	for _, rel := range rels.Relationships {
+		rID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(rel.Target, "worksheets/sheet"), ".xml"))
+		if rID == index {
+			for _, v := range content.Sheets.Sheet {
+				if v.ID == rel.ID {
+					return v.Name
+				}
+			}
 		}
 	}
 	return ""
+}
+
+// GetSheetIndex provides function to get worksheet index of XLSX by given sheet
+// name. If given sheet name is invalid, will return an integer type value 0.
+func (f *File) GetSheetIndex(name string) int {
+	content := f.workbookReader()
+	rels := f.workbookRelsReader()
+	for _, v := range content.Sheets.Sheet {
+		if v.Name == name {
+			for _, rel := range rels.Relationships {
+				if v.ID == rel.ID {
+					rID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(rel.Target, "worksheets/sheet"), ".xml"))
+					return rID
+				}
+			}
+		}
+	}
+	return 0
 }
 
 // GetSheetMap provides function to get sheet map of XLSX. For example:
@@ -281,10 +305,15 @@ func (f *File) GetSheetName(index int) string {
 //
 func (f *File) GetSheetMap() map[int]string {
 	content := f.workbookReader()
+	rels := f.workbookRelsReader()
 	sheetMap := map[int]string{}
 	for _, v := range content.Sheets.Sheet {
-		id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
-		sheetMap[id] = v.Name
+		for _, rel := range rels.Relationships {
+			if rel.ID == v.ID {
+				rID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(rel.Target, "worksheets/sheet"), ".xml"))
+				sheetMap[rID] = v.Name
+			}
+		}
 	}
 	return sheetMap
 }

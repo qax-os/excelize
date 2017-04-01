@@ -72,6 +72,8 @@ func TestOpenFile(t *testing.T) {
 	xlsx.GetCellValue("Sheet2", "E231")
 	// Test get active sheet of XLSX and get sheet name of XLSX by given sheet index.
 	xlsx.GetSheetName(xlsx.GetActiveSheetIndex())
+	// Test get sheet index of XLSX by given worksheet name.
+	xlsx.GetSheetIndex("Sheet1")
 	// Test get sheet name of XLSX by given invalid sheet index.
 	xlsx.GetSheetName(4)
 	// Test get sheet map of XLSX.
