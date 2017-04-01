@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"strconv"
@@ -25,21 +24,67 @@ func (f *File) NewSheet(index int, name string) {
 	rID := f.addXlsxWorkbookRels(index)
 	// Update xl/workbook.xml
 	f.setWorkbook(name, rID)
+	f.SheetCount++
+}
+
+// contentTypesReader provides function to get the pointer to the
+// [Content_Types].xml structure after deserialization.
+func (f *File) contentTypesReader() *xlsxTypes {
+	if f.ContentTypes == nil {
+		var content xlsxTypes
+		xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+		f.ContentTypes = &content
+	}
+	return f.ContentTypes
+}
+
+// contentTypesWriter provides function to save [Content_Types].xml after
+// serialize structure.
+func (f *File) contentTypesWriter() {
+	if f.ContentTypes != nil {
+		output, _ := xml.Marshal(f.ContentTypes)
+		f.saveFileList("[Content_Types].xml", string(output))
+	}
+}
+
+// workbookReader provides function to get the pointer to the xl/workbook.xml
+// structure after deserialization.
+func (f *File) workbookReader() *xlsxWorkbook {
+	if f.WorkBook == nil {
+		var content xlsxWorkbook
+		xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+		f.WorkBook = &content
+	}
+	return f.WorkBook
+}
+
+// workbookWriter provides function to save xl/workbook.xml after serialize
+// structure.
+func (f *File) workbookWriter() {
+	if f.WorkBook != nil {
+		output, _ := xml.Marshal(f.WorkBook)
+		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
+	}
+}
+
+// worksheetWriter provides function to save xl/worksheets/sheet%d.xml after
+// serialize structure.
+func (f *File) worksheetWriter() {
+	for path, sheet := range f.Sheet {
+		if sheet != nil {
+			output, _ := xml.Marshal(sheet)
+			f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+		}
+	}
 }
 
 // Read and update property of contents type of XLSX.
 func (f *File) setContentTypes(index int) {
-	var content xlsxTypes
-	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+	content := f.contentTypesReader()
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    "/xl/worksheets/sheet" + strconv.Itoa(index) + ".xml",
 		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
 	})
-	output, err := xml.Marshal(content)
-	if err != nil {
-		fmt.Println(err)
-	}
-	f.saveFileList("[Content_Types].xml", string(output))
 }
 
 // Update sheet property by given index.
@@ -56,35 +101,42 @@ func (f *File) setSheet(index int) {
 // setWorkbook update workbook property of XLSX. Maximum 31 characters are
 // allowed in sheet title.
 func (f *File) setWorkbook(name string, rid int) {
-	var content xlsxWorkbook
 	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
 	name = r.Replace(name)
 	if len(name) > 31 {
 		name = name[0:31]
 	}
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	content := f.workbookReader()
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    name,
 		SheetID: strconv.Itoa(rid),
 		ID:      "rId" + strconv.Itoa(rid),
 	})
-	output, err := xml.Marshal(content)
-	if err != nil {
-		fmt.Println(err)
-	}
-	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 }
 
-// readXlsxWorkbookRels read and unmarshal workbook relationships of XLSX file.
-func (f *File) readXlsxWorkbookRels() xlsxWorkbookRels {
-	var content xlsxWorkbookRels
-	xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
-	return content
+// workbookRelsReader provides function to read and unmarshal workbook
+// relationships of XLSX file.
+func (f *File) workbookRelsReader() *xlsxWorkbookRels {
+	if f.WorkBookRels == nil {
+		var content xlsxWorkbookRels
+		xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
+		f.WorkBookRels = &content
+	}
+	return f.WorkBookRels
+}
+
+// workbookRelsWriter provides function to save xl/_rels/workbook.xml.rels after
+// serialize structure.
+func (f *File) workbookRelsWriter() {
+	if f.WorkBookRels != nil {
+		output, _ := xml.Marshal(f.WorkBookRels)
+		f.saveFileList("xl/_rels/workbook.xml.rels", string(output))
+	}
 }
 
 // addXlsxWorkbookRels update workbook relationships property of XLSX.
 func (f *File) addXlsxWorkbookRels(sheet int) int {
-	content := f.readXlsxWorkbookRels()
+	content := f.workbookRelsReader()
 	rID := 0
 	for _, v := range content.Relationships {
 		t, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
@@ -105,11 +157,6 @@ func (f *File) addXlsxWorkbookRels(sheet int) int {
 		Target: target.String(),
 		Type:   SourceRelationshipWorkSheet,
 	})
-	output, err := xml.Marshal(content)
-	if err != nil {
-		fmt.Println(err)
-	}
-	f.saveFileList("xl/_rels/workbook.xml.rels", string(output))
 	return rID
 }
 
@@ -134,12 +181,11 @@ func replaceRelationshipsNameSpace(workbookMarshal string) string {
 // SetActiveSheet provides function to set default active sheet of XLSX by given
 // index.
 func (f *File) SetActiveSheet(index int) {
-	var content xlsxWorkbook
 	if index < 1 {
 		index = 1
 	}
 	index--
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	content := f.workbookReader()
 	if len(content.BookViews.WorkBookView) > 0 {
 		content.BookViews.WorkBookView[0].ActiveTab = index
 	} else {
@@ -148,11 +194,6 @@ func (f *File) SetActiveSheet(index int) {
 		})
 	}
 	sheets := len(content.Sheets.Sheet)
-	output, err := xml.Marshal(content)
-	if err != nil {
-		fmt.Println(err)
-	}
-	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 	index++
 	for i := 0; i < sheets; i++ {
 		sheetIndex := i + 1
@@ -177,9 +218,8 @@ func (f *File) SetActiveSheet(index int) {
 // GetActiveSheetIndex provides function to get active sheet of XLSX. If not
 // found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
-	content := xlsxWorkbook{}
 	buffer := bytes.Buffer{}
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	content := f.workbookReader()
 	for _, v := range content.Sheets.Sheet {
 		xlsx := xlsxWorksheet{}
 		buffer.WriteString("xl/worksheets/sheet")
@@ -203,27 +243,23 @@ func (f *File) GetActiveSheetIndex() int {
 // name in the formula or reference associated with the cell. So there may be
 // problem formula error or reference missing.
 func (f *File) SetSheetName(oldName, newName string) {
-	var content = xlsxWorkbook{}
 	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
 	newName = r.Replace(newName)
 	if len(newName) > 31 {
 		newName = newName[0:31]
 	}
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == oldName {
 			content.Sheets.Sheet[k].Name = newName
 		}
 	}
-	output, _ := xml.Marshal(content)
-	f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 }
 
 // GetSheetName provides function to get sheet name of XLSX by given sheet
 // index. If given sheet index is invalid, will return an empty string.
 func (f *File) GetSheetName(index int) string {
-	var content = xlsxWorkbook{}
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	content := f.workbookReader()
 	for _, v := range content.Sheets.Sheet {
 		if v.ID == "rId"+strconv.Itoa(index) {
 			return v.Name
@@ -244,9 +280,8 @@ func (f *File) GetSheetName(index int) string {
 //    }
 //
 func (f *File) GetSheetMap() map[int]string {
-	content := xlsxWorkbook{}
+	content := f.workbookReader()
 	sheetMap := map[int]string{}
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 	for _, v := range content.Sheets.Sheet {
 		id, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
 		sheetMap[id] = v.Name
@@ -280,15 +315,12 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 // value of the deleted worksheet, it will cause a file error when you open it.
 // This function will be invalid when only the one worksheet is left.
 func (f *File) DeleteSheet(name string) {
-	var content xlsxWorkbook
-	xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
 		if v.Name != name || len(content.Sheets.Sheet) < 2 {
 			continue
 		}
 		content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
-		output, _ := xml.Marshal(content)
-		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
 		sheet := "xl/worksheets/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml"
 		rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
 		target := f.deteleSheetFromWorkbookRels(v.ID)
@@ -305,6 +337,7 @@ func (f *File) DeleteSheet(name string) {
 		if ok {
 			delete(f.Sheet, sheet)
 		}
+		f.SheetCount--
 	}
 }
 
@@ -312,15 +345,12 @@ func (f *File) DeleteSheet(name string) {
 // relationships by given relationships ID in the file
 // xl/_rels/workbook.xml.rels.
 func (f *File) deteleSheetFromWorkbookRels(rID string) string {
-	var content xlsxWorkbookRels
-	xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
+	content := f.workbookRelsReader()
 	for k, v := range content.Relationships {
 		if v.ID != rID {
 			continue
 		}
 		content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
-		output, _ := xml.Marshal(content)
-		f.saveFileList("xl/_rels/workbook.xml.rels", string(output))
 		return v.Target
 	}
 	return ""
@@ -329,14 +359,11 @@ func (f *File) deteleSheetFromWorkbookRels(rID string) string {
 // deteleSheetFromContentTypes provides function to remove worksheet
 // relationships by given target name in the file [Content_Types].xml.
 func (f *File) deteleSheetFromContentTypes(target string) {
-	var content xlsxTypes
-	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+	content := f.contentTypesReader()
 	for k, v := range content.Overrides {
 		if v.PartName != "/xl/"+target {
 			continue
 		}
 		content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
-		output, _ := xml.Marshal(content)
-		f.saveFileList("[Content_Types].xml", string(output))
 	}
 }

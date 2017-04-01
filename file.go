@@ -3,7 +3,6 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -26,8 +25,8 @@ func CreateFile() *File {
 	file["xl/workbook.xml"] = templateWorkbook
 	file["[Content_Types].xml"] = templateContentTypes
 	return &File{
-		XLSX:  file,
 		Sheet: make(map[string]*xlsxWorksheet),
+		XLSX:  file,
 	}
 }
 
@@ -54,16 +53,10 @@ func (f *File) WriteTo(name string) error {
 func (f *File) Write(w io.Writer) error {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
-	for path, sheet := range f.Sheet {
-		if sheet == nil {
-			continue
-		}
-		output, err := xml.Marshal(sheet)
-		if err != nil {
-			return err
-		}
-		f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
-	}
+	f.contentTypesWriter()
+	f.workbookWriter()
+	f.workbookRelsWriter()
+	f.worksheetWriter()
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {

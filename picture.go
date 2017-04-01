@@ -303,8 +303,7 @@ func (f *File) addMedia(file string, ext string) {
 // for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false}
-	var content xlsxTypes
-	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+	content := f.contentTypesReader()
 	for _, v := range content.Defaults {
 		_, ok := imageTypes[v.Extension]
 		if ok {
@@ -319,8 +318,6 @@ func (f *File) setContentTypePartImageExtensions() {
 			})
 		}
 	}
-	output, _ := xml.Marshal(content)
-	f.saveFileList("[Content_Types].xml", string(output))
 }
 
 // addDrawingContentTypePart provides function to add image part relationships
@@ -328,12 +325,9 @@ func (f *File) setContentTypePartImageExtensions() {
 // appropriate content type.
 func (f *File) addDrawingContentTypePart(index int) {
 	f.setContentTypePartImageExtensions()
-	var content xlsxTypes
-	xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+	content := f.contentTypesReader()
 	for _, v := range content.Overrides {
 		if v.PartName == "/xl/drawings/drawing"+strconv.Itoa(index)+".xml" {
-			output, _ := xml.Marshal(content)
-			f.saveFileList(`[Content_Types].xml`, string(output))
 			return
 		}
 	}
@@ -341,8 +335,6 @@ func (f *File) addDrawingContentTypePart(index int) {
 		PartName:    "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
 		ContentType: "application/vnd.openxmlformats-officedocument.drawing+xml",
 	})
-	output, _ := xml.Marshal(content)
-	f.saveFileList("[Content_Types].xml", string(output))
 }
 
 // getSheetRelationshipsTargetByID provides function to get Target attribute

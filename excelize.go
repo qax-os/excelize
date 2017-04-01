@@ -13,11 +13,14 @@ import (
 
 // File define a populated XLSX file struct.
 type File struct {
-	checked    map[string]bool
-	XLSX       map[string]string
-	Path       string
-	Sheet      map[string]*xlsxWorksheet
-	SheetCount int
+	checked      map[string]bool
+	ContentTypes *xlsxTypes
+	Path         string
+	Sheet        map[string]*xlsxWorksheet
+	SheetCount   int
+	WorkBook     *xlsxWorkbook
+	WorkBookRels *xlsxWorkbookRels
+	XLSX         map[string]string
 }
 
 // OpenFile take the name of an XLSX file and returns a populated XLSX file
@@ -53,11 +56,10 @@ func OpenReader(r io.Reader) (*File, error) {
 		return nil, err
 	}
 	return &File{
-		Sheet:      make(map[string]*xlsxWorksheet),
 		checked:    make(map[string]bool),
-		XLSX:       file,
-		Path:       "",
+		Sheet:      make(map[string]*xlsxWorksheet),
 		SheetCount: sheetCount,
+		XLSX:       file,
 	}, nil
 }
 
