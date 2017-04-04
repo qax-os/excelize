@@ -338,7 +338,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	return err
 }
 
-// DeleteSheet provides function to detele worksheet in a workbook by given
+// DeleteSheet provides function to delete worksheet in a workbook by given
 // sheet name. Use this method with caution, which will affect changes in
 // references such as formulas, charts, and so on. If there is any referenced
 // value of the deleted worksheet, it will cause a file error when you open it.
@@ -352,8 +352,8 @@ func (f *File) DeleteSheet(name string) {
 		content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
 		sheet := "xl/worksheets/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml"
 		rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
-		target := f.deteleSheetFromWorkbookRels(v.ID)
-		f.deteleSheetFromContentTypes(target)
+		target := f.deleteSheetFromWorkbookRels(v.ID)
+		f.deleteSheetFromContentTypes(target)
 		_, ok := f.XLSX[sheet]
 		if ok {
 			delete(f.XLSX, sheet)
@@ -370,10 +370,10 @@ func (f *File) DeleteSheet(name string) {
 	}
 }
 
-// deteleSheetFromWorkbookRels provides function to remove worksheet
+// deleteSheetFromWorkbookRels provides function to remove worksheet
 // relationships by given relationships ID in the file
 // xl/_rels/workbook.xml.rels.
-func (f *File) deteleSheetFromWorkbookRels(rID string) string {
+func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	content := f.workbookRelsReader()
 	for k, v := range content.Relationships {
 		if v.ID != rID {
@@ -385,14 +385,56 @@ func (f *File) deteleSheetFromWorkbookRels(rID string) string {
 	return ""
 }
 
-// deteleSheetFromContentTypes provides function to remove worksheet
+// deleteSheetFromContentTypes provides function to remove worksheet
 // relationships by given target name in the file [Content_Types].xml.
-func (f *File) deteleSheetFromContentTypes(target string) {
+func (f *File) deleteSheetFromContentTypes(target string) {
 	content := f.contentTypesReader()
 	for k, v := range content.Overrides {
 		if v.PartName != "/xl/"+target {
 			continue
 		}
 		content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
+	}
+}
+
+// CopySheet provides function to duplicate a worksheet by gave source and
+// target worksheet index. Note that currently doesn't support duplicate
+// workbooks that contain tables, charts or pictures. For Example:
+//
+//    // Sheet1 already exists...
+//    xlsx.NewSheet(2, "sheet2")
+//    err := xlsx.CopySheet(1, 2)
+//    if err != nil {
+//        fmt.Println(err)
+//        os.Exit(1)
+//    }
+//
+func (f *File) CopySheet(from, to int) error {
+	if from < 1 || to < 1 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
+		return errors.New("Invalid worksheet index")
+	}
+	f.copySheet(from, to)
+	return nil
+}
+
+// copySheet provides function to duplicate a worksheet by gave source and
+// target worksheet index.
+func (f *File) copySheet(from, to int) {
+	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
+	var worksheet xlsxWorksheet
+	worksheet = *sheet
+	path := "xl/worksheets/sheet" + strconv.Itoa(to) + ".xml"
+	if len(worksheet.SheetViews.SheetView) > 0 {
+		worksheet.SheetViews.SheetView[0].TabSelected = false
+	}
+	worksheet.Drawing = nil
+	worksheet.TableParts = nil
+	worksheet.PageSetUp = nil
+	f.Sheet[path] = &worksheet
+	toRels := "xl/worksheets/_rels/sheet" + strconv.Itoa(to) + ".xml.rels"
+	fromRels := "xl/worksheets/_rels/sheet" + strconv.Itoa(from) + ".xml.rels"
+	_, ok := f.XLSX[fromRels]
+	if ok {
+		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
 }

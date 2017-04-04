@@ -404,3 +404,23 @@ func TestGetPicture(t *testing.T) {
 	file, raw = xlsx.GetPicture("Sheet2", "A2")
 	t.Log(file, len(raw))
 }
+
+func TestCopySheet(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.CopySheet(0, -1)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.NewSheet(4, "CopySheet")
+	err = xlsx.CopySheet(1, 4)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
