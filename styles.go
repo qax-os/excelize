@@ -7,6 +7,44 @@ import (
 	"strings"
 )
 
+// Excel styles can reference number formats that are built-in, all of which
+// have an id less than 164. This is a possibly incomplete list comprised of as
+// many of them as I could find.
+var builtInNumFmt = map[int]string{
+	0:  "general",
+	1:  "0",
+	2:  "0.00",
+	3:  "#,##0",
+	4:  "#,##0.00",
+	9:  "0%",
+	10: "0.00%",
+	11: "0.00e+00",
+	12: "# ?/?",
+	13: "# ??/??",
+	14: "mm-dd-yy",
+	15: "d-mmm-yy",
+	16: "d-mmm",
+	17: "mmm-yy",
+	18: "h:mm am/pm",
+	19: "h:mm:ss am/pm",
+	20: "h:mm",
+	21: "h:mm:ss",
+	22: "m/d/yy h:mm",
+	37: "#,##0 ;(#,##0)",
+	38: "#,##0 ;[red](#,##0)",
+	39: "#,##0.00;(#,##0.00)",
+	40: "#,##0.00;[red](#,##0.00)",
+	41: `_(* #,##0_);_(* \(#,##0\);_(* "-"_);_(@_)`,
+	42: `_("$"* #,##0_);_("$* \(#,##0\);_("$"* "-"_);_(@_)`,
+	43: `_(* #,##0.00_);_(* \(#,##0.00\);_(* "-"??_);_(@_)`,
+	44: `_("$"* #,##0.00_);_("$"* \(#,##0.00\);_("$"* "-"??_);_(@_)`,
+	45: "mm:ss",
+	46: "[h]:mm:ss",
+	47: "mmss.0",
+	48: "##0.0e+0",
+	49: "@",
+}
+
 // parseFormatStyleSet provides function to parse the format settings of the
 // borders.
 func parseFormatStyleSet(style string) (*formatCellStyle, error) {
@@ -44,7 +82,17 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //
 // Set alignment style for cell H9 on Sheet1:
 //
-//    err = xlsx.SetCellStyle("Sheet2", "H9", "H9", `{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//
+// Dates and times in Excel are represented by real numbers, for example "Apr 7
+// 2017 12:00 PM" is represented by the number 42920.5. Set date and time format
+// for cell H9 on Sheet1:
+//
+//    xlsx.SetCellValue("Sheet2", "H9", 42920.5)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"number_format": 22}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -175,6 +223,86 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    | distributed      |
 //    +------------------+
 //
+// Excel's built-in formats are shown in the following table:
+//
+//    +-------+----------------------------------------------------+
+//    | Index | Format String                                      |
+//    +=======+====================================================+
+//    | 0     | General                                            |
+//    +-------+----------------------------------------------------+
+//    | 1     | 0                                                  |
+//    +-------+----------------------------------------------------+
+//    | 2     | 0.00                                               |
+//    +-------+----------------------------------------------------+
+//    | 3     | #,##0                                              |
+//    +-------+----------------------------------------------------+
+//    | 4     | #,##0.00                                           |
+//    +-------+----------------------------------------------------+
+//    | 5     | ($#,##0_);($#,##0)                                 |
+//    +-------+----------------------------------------------------+
+//    | 6     | ($#,##0_);[Red]($#,##0)                            |
+//    +-------+----------------------------------------------------+
+//    | 7     | ($#,##0.00_);($#,##0.00)                           |
+//    +-------+----------------------------------------------------+
+//    | 8     | ($#,##0.00_);[Red]($#,##0.00)                      |
+//    +-------+----------------------------------------------------+
+//    | 9     | 0%                                                 |
+//    +-------+----------------------------------------------------+
+//    | 10    | 0.00%                                              |
+//    +-------+----------------------------------------------------+
+//    | 11    | 0.00E+00                                           |
+//    +-------+----------------------------------------------------+
+//    | 12    | # ?/?                                              |
+//    +-------+----------------------------------------------------+
+//    | 13    | # ??/??                                            |
+//    +-------+----------------------------------------------------+
+//    | 14    | m/d/yy                                             |
+//    +-------+----------------------------------------------------+
+//    | 15    | d-mmm-yy                                           |
+//    +-------+----------------------------------------------------+
+//    | 16    | d-mmm                                              |
+//    +-------+----------------------------------------------------+
+//    | 17    | mmm-yy                                             |
+//    +-------+----------------------------------------------------+
+//    | 18    | h:mm AM/PM                                         |
+//    +-------+----------------------------------------------------+
+//    | 19    | h:mm:ss AM/PM                                      |
+//    +-------+----------------------------------------------------+
+//    | 20    | h:mm                                               |
+//    +-------+----------------------------------------------------+
+//    | 21    | h:mm:ss                                            |
+//    +-------+----------------------------------------------------+
+//    | 22    | m/d/yy h:mm                                        |
+//    +-------+----------------------------------------------------+
+//    | ...   | ...                                                |
+//    +-------+----------------------------------------------------+
+//    | 37    | (#,##0_);(#,##0)                                   |
+//    +-------+----------------------------------------------------+
+//    | 38    | (#,##0_);[Red](#,##0)                              |
+//    +-------+----------------------------------------------------+
+//    | 39    | (#,##0.00_);(#,##0.00)                             |
+//    +-------+----------------------------------------------------+
+//    | 40    | (#,##0.00_);[Red](#,##0.00)                        |
+//    +-------+----------------------------------------------------+
+//    | 41    | _(* #,##0_);_(* (#,##0);_(* "-"_);_(@_)            |
+//    +-------+----------------------------------------------------+
+//    | 42    | _($* #,##0_);_($* (#,##0);_($* "-"_);_(@_)         |
+//    +-------+----------------------------------------------------+
+//    | 43    | _(* #,##0.00_);_(* (#,##0.00);_(* "-"??_);_(@_)    |
+//    +-------+----------------------------------------------------+
+//    | 44    | _($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_) |
+//    +-------+----------------------------------------------------+
+//    | 45    | mm:ss                                              |
+//    +-------+----------------------------------------------------+
+//    | 46    | [h]:mm:ss                                          |
+//    +-------+----------------------------------------------------+
+//    | 47    | mm:ss.0                                            |
+//    +-------+----------------------------------------------------+
+//    | 48    | ##0.0E+0                                           |
+//    +-------+----------------------------------------------------+
+//    | 49    | @                                                  |
+//    +-------+----------------------------------------------------+
+//
 func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	var styleSheet xlsxStyleSheet
 	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
@@ -182,10 +310,11 @@ func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	if err != nil {
 		return err
 	}
+	numFmtID := setNumFmt(&styleSheet, formatCellStyle)
 	borderID := setBorders(&styleSheet, formatCellStyle)
 	fillID := setFills(&styleSheet, formatCellStyle)
 	applyAlignment, alignment := setAlignment(&styleSheet, formatCellStyle)
-	cellXfsID := setCellXfs(&styleSheet, fillID, borderID, applyAlignment, alignment)
+	cellXfsID := setCellXfs(&styleSheet, numFmtID, fillID, borderID, applyAlignment, alignment)
 	output, err := xml.Marshal(styleSheet)
 	if err != nil {
 		return err
@@ -193,6 +322,16 @@ func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	f.saveFileList("xl/styles.xml", replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	f.setCellStyle(sheet, hcell, vcell, cellXfsID)
 	return err
+}
+
+// setNumFmt provides function to check if number format code in the range of
+// built-in values.
+func setNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
+	_, ok := builtInNumFmt[formatCellStyle.NumFmt]
+	if !ok {
+		return 0
+	}
+	return formatCellStyle.NumFmt
 }
 
 // setFills provides function to add fill elements in the styles.xml by given
@@ -352,8 +491,12 @@ func setBorders(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 
 // setCellXfs provides function to set describes all of the formatting for a
 // cell.
-func setCellXfs(style *xlsxStyleSheet, fillID, borderID int, applyAlignment bool, alignment *xlsxAlignment) int {
+func setCellXfs(style *xlsxStyleSheet, numFmtID, fillID, borderID int, applyAlignment bool, alignment *xlsxAlignment) int {
 	var xf xlsxXf
+	xf.NumFmtID = numFmtID
+	if numFmtID != 0 {
+		xf.ApplyNumberFormat = true
+	}
 	xf.FillID = fillID
 	xf.BorderID = borderID
 	style.CellXfs.Count++

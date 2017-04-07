@@ -327,12 +327,13 @@ func TestSetCellStyleFill(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	// Test only set fill for a cell.
-	err = xlsx.SetCellStyle("Sheet1", "N23", "N23", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":4}}`)
+	xlsx.SetCellValue("Sheet1", "N23", 42920.5)
+	// Test only set fill and number format for a cell.
+	err = xlsx.SetCellStyle("Sheet1", "N23", "N23", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":4},"number_format":22}`)
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "N24", "N24", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5}}`)
+	err = xlsx.SetCellStyle("Sheet1", "N24", "N24", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5},"number_format":23}`)
 	if err != nil {
 		t.Log(err)
 	}
@@ -349,6 +350,7 @@ func TestSetCellStyleFill(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+
 	err = xlsx.SetCellStyle("Sheet1", "O23", "O23", `{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":19}}`)
 	if err != nil {
 		t.Log(err)

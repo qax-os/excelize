@@ -285,7 +285,7 @@ type formatCellStyle struct {
 	} `json:"fill"`
 	Alignment *struct {
 		Horizontal      string `json:"horizontal"`
-		Indent          int    `json:"indent,omitempty"`
+		Indent          int    `json:"indent"`
 		JustifyLastLine bool   `json:"justify_last_line"`
 		ReadingOrder    uint64 `json:"reading_order"`
 		RelativeIndent  int    `json:"relative_indent"`
@@ -294,4 +294,5 @@ type formatCellStyle struct {
 		Vertical        string `json:"vertical"`
 		WrapText        bool   `json:"wrap_text"`
 	} `json:"alignment"`
+	NumFmt int `json:"number_format"`
 }
