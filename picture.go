@@ -105,7 +105,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 		f.addSheetDrawing(sheet, rID)
 	}
 	drawingRID = f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
-	f.addDrawing(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, formatSet)
+	f.addDrawingPicture(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, formatSet)
 	f.addMedia(picture, ext)
 	f.addDrawingContentTypePart(drawingID)
 	return err
@@ -173,11 +173,12 @@ func (f *File) countDrawings() int {
 	return count
 }
 
-// addDrawing provides function to add picture by given drawingXML, xAxis,
-// yAxis, file name and relationship index. In order to solve the problem that
-// the label structure is changed after serialization and deserialization, two
-// different structures: decodeWsDr and encodeWsDr are defined.
-func (f *File) addDrawing(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *formatPicture) {
+// addDrawingPicture provides function to add picture by given sheet,
+// drawingXML, cell, file name, width, height relationship index and format
+// sets. In order to solve the problem that the label structure is changed after
+// serialization and deserialization, two different structures: decodeWsDr and
+// encodeWsDr are defined.
+func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *formatPicture) {
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
@@ -321,8 +322,7 @@ func (f *File) setContentTypePartImageExtensions() {
 }
 
 // addDrawingContentTypePart provides function to add image part relationships
-// in http://purl.oclc.org/ooxml/officeDocument/relationships/image and
-// appropriate content type.
+// in the file [Content_Types].xml by given drawing index.
 func (f *File) addDrawingContentTypePart(index int) {
 	f.setContentTypePartImageExtensions()
 	content := f.contentTypesReader()

@@ -2,7 +2,7 @@ package excelize
 
 import "encoding/xml"
 
-// xlsxTypes directly maps the types elemen of content types for relationship
+// xlsxTypes directly maps the types element of content types for relationship
 // parts, it takes a Multipurpose Internet Mail Extension (MIME) media type as a
 // value.
 type xlsxTypes struct {

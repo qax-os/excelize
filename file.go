@@ -15,15 +15,15 @@ import (
 //
 func CreateFile() *File {
 	file := make(map[string]string)
-	file["_rels/.rels"] = templateRels
-	file["docProps/app.xml"] = templateDocpropsApp
-	file["docProps/core.xml"] = templateDocpropsCore
-	file["xl/_rels/workbook.xml.rels"] = templateWorkbookRels
-	file["xl/theme/theme1.xml"] = templateTheme
-	file["xl/worksheets/sheet1.xml"] = templateSheet
-	file["xl/styles.xml"] = templateStyles
-	file["xl/workbook.xml"] = templateWorkbook
-	file["[Content_Types].xml"] = templateContentTypes
+	file["_rels/.rels"] = XMLHeader + templateRels
+	file["docProps/app.xml"] = XMLHeader + templateDocpropsApp
+	file["docProps/core.xml"] = XMLHeader + templateDocpropsCore
+	file["xl/_rels/workbook.xml.rels"] = XMLHeader + templateWorkbookRels
+	file["xl/theme/theme1.xml"] = XMLHeader + templateTheme
+	file["xl/worksheets/sheet1.xml"] = XMLHeader + templateSheet
+	file["xl/styles.xml"] = XMLHeader + templateStyles
+	file["xl/workbook.xml"] = XMLHeader + templateWorkbook
+	file["[Content_Types].xml"] = XMLHeader + templateContentTypes
 	return &File{
 		Sheet: make(map[string]*xlsxWorksheet),
 		XLSX:  file,

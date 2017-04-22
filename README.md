@@ -63,6 +63,7 @@ package main
 import (
     "fmt"
     "os"
+    "strconv"
 
     "github.com/Luxurioust/excelize"
 )
@@ -76,14 +77,52 @@ func main() {
     // Get value from cell by given sheet index and axis.
     cell := xlsx.GetCellValue("Sheet1", "B2")
     fmt.Println(cell)
+    // Get sheet index.
+    index := xlsx.GetSheetIndex("Sheet2")
     // Get all the rows in a sheet.
-    rows := xlsx.GetRows("Sheet2")
+    rows := xlsx.GetRows("sheet" + strconv.Itoa(index))
     for _, row := range rows {
         for _, colCell := range row {
             fmt.Print(colCell, "\t")
         }
         fmt.Println()
     }
+}
+```
+
+### Add chart to XLSX file
+
+With Excelize chart generation and management is as easy as a few lines of code. You can build charts based off data in your worksheet or generate charts without any data in your sheet at all.
+
+![Excelize](./test/images/chart.png "Excelize")
+
+```
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/Luxurioust/excelize"
+)
+
+func main() {
+	categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Large", "C1": "Apple", "D1": "Pear"}
+	values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
+	xlsx := excelize.CreateFile()
+	for k, v := range categories {
+		xlsx.SetCellValue("Sheet1", k, v)
+	}
+	for k, v := range values {
+		xlsx.SetCellValue("Sheet1", k, v)
+	}
+	xlsx.AddChart("Sheet1", "E1", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$2","categories":"=Sheet1!$B$1:$D$1","values":"=Sheet1!$B$2:$D$2"},{"name":"=Sheet1!$A$2","categories":"=Sheet1!$B$1:$D$1","values":"=Sheet1!$B$3:$D$3"},{"name":"=Sheet1!$A$3","categories":"=Sheet1!$B$1:$D$1","values":"=Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Line Chart"}}`)
+	// Save xlsx file by the given path.
+	err := xlsx.WriteTo("./Workbook.xlsx")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 ```
 

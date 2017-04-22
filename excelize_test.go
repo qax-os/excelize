@@ -426,3 +426,38 @@ func TestCopySheet(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestAddChart(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellValue("SHEET1", "A30", "Small")
+	xlsx.SetCellValue("SHEET1", "A31", "Normal")
+	xlsx.SetCellValue("SHEET1", "A32", "Large")
+	xlsx.SetCellValue("SHEET1", "B29", "Apple")
+	xlsx.SetCellValue("SHEET1", "C29", "Prange")
+	xlsx.SetCellValue("SHEET1", "D29", "Pear")
+	xlsx.SetCellValue("SHEET1", "B30", 2)
+	xlsx.SetCellValue("SHEET1", "C30", 3)
+	xlsx.SetCellValue("SHEET1", "D30", 3)
+	xlsx.SetCellValue("SHEET1", "B31", 5)
+	xlsx.SetCellValue("SHEET1", "C31", 2)
+	xlsx.SetCellValue("SHEET1", "D31", 4)
+	xlsx.SetCellValue("SHEET1", "B32", 6)
+	xlsx.SetCellValue("SHEET1", "C32", 7)
+	xlsx.SetCellValue("SHEET1", "D32", 8)
+	xlsx.AddChart("SHEET1", "P1", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("SHEET1", "X1", `{"type":"bar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("SHEET1", "P16", `{"type":"doughnut","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"right","show_legend_key":false},"title":{"name":"Fruit Doughnut Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("SHEET1", "X16", `{"type":"line","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("SHEET1", "P30", `{"type":"pie3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("SHEET1", "X30", `{"type":"pie","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"gap"}`)
+	xlsx.AddChart("SHEET2", "P1", `{"type":"radar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top_right","show_legend_key":false},"title":{"name":"Fruit Radar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"span"}`)
+	xlsx.AddChart("SHEET2", "X1", `{"type":"scatter","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Scatter Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	// Save xlsx file by the given path.
+	err = xlsx.WriteTo("./test/Workbook_6.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}

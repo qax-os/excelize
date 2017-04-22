@@ -6,9 +6,10 @@ import (
 	"strings"
 )
 
-// GetRows return all the rows in a sheet, for example:
+// GetRows return all the rows in a sheet by given "sheet" + index, for example:
 //
-//    rows := xlsx.GetRows("Sheet2")
+//    index := xlsx.GetSheetIndex("Sheet2")
+//    rows := xlsx.GetRows("sheet" + strconv.Itoa(index))
 //    for _, row := range rows {
 //        for _, colCell := range row {
 //            fmt.Print(colCell, "\t")
