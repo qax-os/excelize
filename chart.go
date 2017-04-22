@@ -70,22 +70,15 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //    )
 //
 //    func main() {
+//        categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
+//        values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
 //        xlsx := excelize.CreateFile()
-//        xlsx.SetCellValue("SHEET1", "A30", "Small")
-//        xlsx.SetCellValue("SHEET1", "A31", "Normal")
-//        xlsx.SetCellValue("SHEET1", "A32", "Large")
-//        xlsx.SetCellValue("SHEET1", "B29", "Apple")
-//        xlsx.SetCellValue("SHEET1", "C29", "Prange")
-//        xlsx.SetCellValue("SHEET1", "D29", "Pear")
-//        xlsx.SetCellValue("SHEET1", "B30", 2)
-//        xlsx.SetCellValue("SHEET1", "C30", 3)
-//        xlsx.SetCellValue("SHEET1", "D30", 3)
-//        xlsx.SetCellValue("SHEET1", "B31", 5)
-//        xlsx.SetCellValue("SHEET1", "C31", 2)
-//        xlsx.SetCellValue("SHEET1", "D31", 4)
-//        xlsx.SetCellValue("SHEET1", "B32", 6)
-//        xlsx.SetCellValue("SHEET1", "C32", 7)
-//        xlsx.SetCellValue("SHEET1", "D32", 8)
+//        for k, v := range categories {
+//            xlsx.SetCellValue("Sheet1", k, v)
+//        }
+//        for k, v := range values {
+//            xlsx.SetCellValue("Sheet1", k, v)
+//        }
 //        xlsx.AddChart("SHEET1", "F2", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 //        // Save xlsx file by the given path.
 //        err := xlsx.WriteTo("./tmp/Workbook.xlsx")
@@ -401,8 +394,8 @@ func (f *File) drawBarChart(formatSet *formatChart) *cPlotArea {
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
 			AxID: []*attrValInt{
-				&attrValInt{Val: 754001152},
-				&attrValInt{Val: 753999904},
+				{Val: 754001152},
+				{Val: 753999904},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(),
@@ -427,8 +420,8 @@ func (f *File) drawBar3DChart(formatSet *formatChart) *cPlotArea {
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
 			AxID: []*attrValInt{
-				&attrValInt{Val: 754001152},
-				&attrValInt{Val: 753999904},
+				{Val: 754001152},
+				{Val: 753999904},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(),
@@ -467,8 +460,8 @@ func (f *File) drawLineChart(formatSet *formatChart) *cPlotArea {
 				Val: false,
 			},
 			AxID: []*attrValInt{
-				&attrValInt{Val: 754001152},
-				&attrValInt{Val: 753999904},
+				{Val: 754001152},
+				{Val: 753999904},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(),
@@ -516,8 +509,8 @@ func (f *File) drawRadarChart(formatSet *formatChart) *cPlotArea {
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
 			AxID: []*attrValInt{
-				&attrValInt{Val: 754001152},
-				&attrValInt{Val: 753999904},
+				{Val: 754001152},
+				{Val: 753999904},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(),
@@ -539,8 +532,8 @@ func (f *File) drawScatterChart(formatSet *formatChart) *cPlotArea {
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
 			AxID: []*attrValInt{
-				&attrValInt{Val: 754001152},
-				&attrValInt{Val: 753999904},
+				{Val: 754001152},
+				{Val: 753999904},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(),
@@ -599,7 +592,7 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 // drawChartSeriesDPt provides function to draw the c:dPt element by given data
 // index and format sets.
 func (f *File) drawChartSeriesDPt(i int, formatSet *formatChart) []*cDPt {
-	dpt := []*cDPt{&cDPt{
+	dpt := []*cDPt{{
 		IDx:      &attrValInt{Val: i},
 		Bubble3D: &attrValBool{Val: false},
 		SpPr: &cSpPr{
@@ -732,7 +725,7 @@ func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 // drawPlotAreaCatAx provides function to draw the c:catAx element.
 func (f *File) drawPlotAreaCatAx() []*cAxs {
 	return []*cAxs{
-		&cAxs{
+		{
 			AxID: &attrValInt{Val: 754001152},
 			Scaling: &cScaling{
 				Orientation: &attrValString{Val: "minMax"},
@@ -761,7 +754,7 @@ func (f *File) drawPlotAreaCatAx() []*cAxs {
 // drawPlotAreaCatAx provides function to draw the c:valAx element.
 func (f *File) drawPlotAreaValAx() []*cAxs {
 	return []*cAxs{
-		&cAxs{
+		{
 			AxID: &attrValInt{Val: 753999904},
 			Scaling: &cScaling{
 				Orientation: &attrValString{Val: "minMax"},
