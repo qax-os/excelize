@@ -97,6 +97,13 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //        fmt.Println(err)
 //    }
 //
+// Set font style for cell H9 on Sheet1:
+//
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//
 // The following shows the border styles sorted by excelize index number:
 //
 //    +-------+---------------+--------+-----------------+
@@ -223,6 +230,16 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    | distributed      |
 //    +------------------+
 //
+// The following the type of font underline style:
+//
+//    +------------------+
+//    | Style            |
+//    +==================+
+//    | single           |
+//    +------------------+
+//    | double           |
+//    +------------------+
+//
 // Excel's built-in formats are shown in the following table:
 //
 //    +-------+----------------------------------------------------+
@@ -311,10 +328,11 @@ func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 		return err
 	}
 	numFmtID := setNumFmt(&styleSheet, formatCellStyle)
+	fontID := setFont(&styleSheet, formatCellStyle)
 	borderID := setBorders(&styleSheet, formatCellStyle)
 	fillID := setFills(&styleSheet, formatCellStyle)
 	applyAlignment, alignment := setAlignment(&styleSheet, formatCellStyle)
-	cellXfsID := setCellXfs(&styleSheet, numFmtID, fillID, borderID, applyAlignment, alignment)
+	cellXfsID := setCellXfs(&styleSheet, fontID, numFmtID, fillID, borderID, applyAlignment, alignment)
 	output, err := xml.Marshal(styleSheet)
 	if err != nil {
 		return err
@@ -322,6 +340,42 @@ func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
 	f.saveFileList("xl/styles.xml", replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	f.setCellStyle(sheet, hcell, vcell, cellXfsID)
 	return err
+}
+
+// setFont provides function to add font style by given cell format settings.
+func setFont(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
+	if formatCellStyle.Font == nil {
+		return 0
+	}
+	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
+	if formatCellStyle.Font.Family == "" {
+		formatCellStyle.Font.Family = "Calibri"
+	}
+	if formatCellStyle.Font.Size < 1 {
+		formatCellStyle.Font.Size = 11
+	}
+	if formatCellStyle.Font.Color == "" {
+		formatCellStyle.Font.Color = "#000000"
+	}
+	f := font{
+		B:      formatCellStyle.Font.Bold,
+		I:      formatCellStyle.Font.Italic,
+		Sz:     &attrValInt{Val: formatCellStyle.Font.Size},
+		Color:  &xlsxColor{RGB: getPaletteColor(formatCellStyle.Font.Color)},
+		Name:   &attrValString{Val: formatCellStyle.Font.Family},
+		Family: &attrValInt{Val: 2},
+		Scheme: &attrValString{Val: "minor"},
+	}
+	val, ok := fontUnderlineType[formatCellStyle.Font.Underline]
+	if ok {
+		f.U = &attrValString{Val: val}
+	}
+	font, _ := xml.Marshal(f)
+	style.Fonts.Count++
+	style.Fonts.Font = append(style.Fonts.Font, &xlsxFont{
+		Font: string(font[6 : len(font)-7]),
+	})
+	return style.Fonts.Count - 1
 }
 
 // setNumFmt provides function to check if number format code in the range of
@@ -491,8 +545,12 @@ func setBorders(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 
 // setCellXfs provides function to set describes all of the formatting for a
 // cell.
-func setCellXfs(style *xlsxStyleSheet, numFmtID, fillID, borderID int, applyAlignment bool, alignment *xlsxAlignment) int {
+func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment bool, alignment *xlsxAlignment) int {
 	var xf xlsxXf
+	xf.FontID = fontID
+	if fontID != 0 {
+		xf.ApplyFont = true
+	}
 	xf.NumFmtID = numFmtID
 	if numFmtID != 0 {
 		xf.ApplyNumberFormat = true

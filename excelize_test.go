@@ -361,6 +361,37 @@ func TestSetCellStyleFill(t *testing.T) {
 	}
 }
 
+func TestSetCellStyleFont(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetCellStyle("Sheet2", "A1", "A1", `{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetCellStyle("Sheet2", "A2", "A2", `{"font":{"italic":true,"underline":"double"}}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetCellStyle("Sheet2", "A3", "A3", `{"font":{"bold":true}}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetCellStyle("Sheet2", "A4", "A4", `{"font":{"bold":true,"family":"","size":0,"color":"","underline":""}}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.SetCellStyle("Sheet2", "A5", "A5", `{"font":{"color":"#777777"}}`)
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestSetDeleteSheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_3.xlsx")
 	if err != nil {

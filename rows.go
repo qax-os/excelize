@@ -6,7 +6,11 @@ import (
 	"strings"
 )
 
-// GetRows return all the rows in a sheet by given "sheet" + index, for example:
+// GetRows return all the rows in a sheet by given "sheet" + index. For now you
+// should use sheet_name like "sheet3" where "sheet" is a constant part and "3"
+// is a sheet number. For example, if sheet named as "SomeUniqueData" and it is
+// second if spreadsheet program interface - you should use "sheet2" here. For
+// example:
 //
 //    index := xlsx.GetSheetIndex("Sheet2")
 //    rows := xlsx.GetRows("sheet" + strconv.Itoa(index))

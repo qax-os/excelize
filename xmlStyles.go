@@ -57,11 +57,23 @@ type xlsxColor struct {
 	Tint    float64 `xml:"tint,attr,omitempty"`
 }
 
-// xlsxFonts directly maps the fonts element. This element contains all font
+// xlsxFonts directly maps the font element. This element contains all font
 // definitions for this workbook.
 type xlsxFonts struct {
 	Count int         `xml:"count,attr"`
-	Font  []*xlsxFont `xml:"font,omitempty"`
+	Font  []*xlsxFont `xml:"font"`
+}
+
+// font directly maps the font element.
+type font struct {
+	B      bool           `xml:"b,omitempty"`
+	I      bool           `xml:"i,omitempty"`
+	U      *attrValString `xml:"u"`
+	Sz     *attrValInt    `xml:"sz"`
+	Color  *xlsxColor     `xml:"color"`
+	Name   *attrValString `xml:"name"`
+	Family *attrValInt    `xml:"family"`
+	Scheme *attrValString `xml:"scheme"`
 }
 
 // xlsxFont directly maps the font element. This element defines the properties
@@ -283,6 +295,14 @@ type formatCellStyle struct {
 		Color   []string `json:"color"`
 		Shading int      `json:"shading"`
 	} `json:"fill"`
+	Font *struct {
+		Bold      bool   `json:"bold"`
+		Italic    bool   `json:"italic"`
+		Underline string `json:"underline"`
+		Family    string `json:"family"`
+		Size      int    `json:"size"`
+		Color     string `json:"color"`
+	} `json:"font"`
 	Alignment *struct {
 		Horizontal      string `json:"horizontal"`
 		Indent          int    `json:"indent"`
