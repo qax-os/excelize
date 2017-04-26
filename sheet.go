@@ -243,11 +243,8 @@ func (f *File) GetActiveSheetIndex() int {
 // name in the formula or reference associated with the cell. So there may be
 // problem formula error or reference missing.
 func (f *File) SetSheetName(oldName, newName string) {
-	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
-	newName = r.Replace(newName)
-	if len(newName) > 31 {
-		newName = newName[0:31]
-	}
+	oldName = trimSheetName(oldName)
+	newName = trimSheetName(newName)
 	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == oldName {
@@ -437,4 +434,51 @@ func (f *File) copySheet(from, to int) {
 	if ok {
 		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
+}
+
+// HideSheet provides function to hide worksheet by given name. A workbook must
+// contain at least one visible worksheet. If the given worksheet has been
+// activated, this setting will be invalidated.
+func (f *File) HideSheet(name string) {
+	name = trimSheetName(name)
+	content := f.workbookReader()
+	count := 0
+	for _, v := range content.Sheets.Sheet {
+		if v.State != "hidden" {
+			count++
+		}
+	}
+	for k, v := range content.Sheets.Sheet {
+		sheetIndex := k + 1
+		xlsx := f.workSheetReader("sheet" + strconv.Itoa(sheetIndex))
+		tabSelected := false
+		if len(xlsx.SheetViews.SheetView) > 0 {
+			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
+		}
+		if v.Name == name && count > 1 && !tabSelected {
+			content.Sheets.Sheet[k].State = "hidden"
+		}
+	}
+}
+
+// UnhideSheet provides function to unhide worksheet by given name.
+func (f *File) UnhideSheet(name string) {
+	name = trimSheetName(name)
+	content := f.workbookReader()
+	for k, v := range content.Sheets.Sheet {
+		if v.Name == name {
+			content.Sheets.Sheet[k].State = ""
+		}
+	}
+}
+
+// trimSheetName provides function to trim invaild characters by given worksheet
+// name.
+func trimSheetName(name string) string {
+	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
+	name = r.Replace(name)
+	if len(name) > 31 {
+		name = name[0:31]
+	}
+	return name
 }

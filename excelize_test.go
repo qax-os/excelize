@@ -438,6 +438,20 @@ func TestGetPicture(t *testing.T) {
 	t.Log(file, len(raw))
 }
 
+func TestSheetVisibility(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.HideSheet("Sheet2")
+	xlsx.HideSheet("Sheet1")
+	xlsx.UnhideSheet("Sheet1")
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestCopySheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {
