@@ -189,7 +189,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content := encodeWsDr{}
 	content.WsDr.A = NameSpaceDrawingML
-	content.WsDr.Xdr = NameSpaceSpreadSheetDrawing
+	content.WsDr.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := 1
 	_, ok := f.XLSX[drawingXML]
 	if ok { // Append Model

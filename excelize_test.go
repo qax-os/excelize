@@ -472,6 +472,20 @@ func TestCopySheet(t *testing.T) {
 	}
 }
 
+func TestAddTable(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.AddTable("Sheet1", "B26", "A21", ``)
+	xlsx.AddTable("Sheet2", "A2", "B5", `{"table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+	xlsx.AddTable("Sheet2", "F1", "F1", `{"table_style":"TableStyleMedium8"}`)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestAddChart(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook1.xlsx")
 	if err != nil {

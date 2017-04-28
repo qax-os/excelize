@@ -5,6 +5,7 @@ const (
 	SourceRelationship              = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 	SourceRelationshipChart         = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 	SourceRelationshipImage         = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+	SourceRelationshipTable         = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
 	SourceRelationshipDrawingML     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
 	SourceRelationshipHyperLink     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	SourceRelationshipWorkSheet     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
@@ -14,7 +15,8 @@ const (
 	SourceRelationshipCompatibility = "http://schemas.openxmlformats.org/markup-compatibility/2006"
 	NameSpaceDrawingML              = "http://schemas.openxmlformats.org/drawingml/2006/main"
 	NameSpaceDrawingMLChart         = "http://schemas.openxmlformats.org/drawingml/2006/chart"
-	NameSpaceSpreadSheetDrawing     = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+	NameSpaceDrawingMLSpreadSheet   = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+	NameSpaceSpreadSheet            = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 	NameSpaceXML                    = "http://www.w3.org/XML/1998/namespace"
 )
 
