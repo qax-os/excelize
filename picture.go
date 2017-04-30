@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"image"
 	"io/ioutil"
 	"os"
@@ -50,21 +49,21 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //    func main() {
 //        xlsx := excelize.CreateFile()
 //        // Insert a picture.
-//        err := xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.jpg", "")
+//        err := xlsx.AddPicture("Sheet1", "A2", "./image1.jpg", "")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
 //        // Insert a picture to sheet with scaling.
-//        err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image1.png", `{"x_scale": 0.5, "y_scale": 0.5}`)
+//        err = xlsx.AddPicture("Sheet1", "D2", "./image1.png", `{"x_scale": 0.5, "y_scale": 0.5}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
 //        // Insert a picture offset in the cell with printing support.
-//        err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
+//        err = xlsx.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        err = xlsx.WriteTo("/tmp/Workbook.xlsx")
+//        err = xlsx.WriteTo("./Workbook.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //            os.Exit(1)
@@ -135,10 +134,7 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 		Target:     target,
 		TargetMode: targetMode,
 	})
-	output, err := xml.Marshal(sheetRels)
-	if err != nil {
-		fmt.Println(err)
-	}
+	output, _ := xml.Marshal(sheetRels)
 	f.saveFileList(rels, string(output))
 	return rID
 }
@@ -187,29 +183,29 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
-	content := encodeWsDr{}
-	content.WsDr.A = NameSpaceDrawingML
-	content.WsDr.Xdr = NameSpaceDrawingMLSpreadSheet
+	content := xlsxWsDr{}
+	content.A = NameSpaceDrawingML
+	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := 1
 	_, ok := f.XLSX[drawingXML]
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
 		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
-		cNvPrID = len(decodeWsDr.TwoCellAnchor) + 1
+		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
 		for _, v := range decodeWsDr.OneCellAnchor {
-			content.WsDr.OneCellAnchor = append(content.WsDr.OneCellAnchor, &xlsxCellAnchor{
+			content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
 				EditAs:       v.EditAs,
 				GraphicFrame: v.Content,
 			})
 		}
 		for _, v := range decodeWsDr.TwoCellAnchor {
-			content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &xlsxCellAnchor{
+			content.TwoCellAnchor = append(content.TwoCellAnchor, &xdrCellAnchor{
 				EditAs:       v.EditAs,
 				GraphicFrame: v.Content,
 			})
 		}
 	}
-	twoCellAnchor := xlsxCellAnchor{}
+	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
 	from.Col = colStart
@@ -225,7 +221,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	twoCellAnchor.To = &to
 	pic := xlsxPic{}
 	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = formatSet.NoChangeAspect
-	pic.NvPicPr.CNvPr.ID = cNvPrID
+	pic.NvPicPr.CNvPr.ID = f.countCharts() + f.countMedia() + 1
 	pic.NvPicPr.CNvPr.Descr = file
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
 	pic.BlipFill.Blip.R = SourceRelationship
@@ -233,19 +229,13 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	pic.SpPr.PrstGeom.Prst = "rect"
 
 	twoCellAnchor.Pic = &pic
-	twoCellAnchor.ClientData = &xlsxClientData{
+	twoCellAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  formatSet.FLocksWithSheet,
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
-	content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &twoCellAnchor)
-	output, err := xml.Marshal(content)
-	if err != nil {
-		fmt.Println(err)
-	}
-	// Create replacer with pairs as arguments and replace all pairs.
-	r := strings.NewReplacer("<encodeWsDr>", "", "</encodeWsDr>", "")
-	result := r.Replace(string(output))
-	f.saveFileList(drawingXML, result)
+	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
+	output, _ := xml.Marshal(content)
+	f.saveFileList(drawingXML, string(output))
 }
 
 // addDrawingRelationships provides function to add image part relationships in
@@ -271,10 +261,7 @@ func (f *File) addDrawingRelationships(index int, relType string, target string)
 		Type:   relType,
 		Target: target,
 	})
-	output, err := xml.Marshal(drawingRels)
-	if err != nil {
-		fmt.Println(err)
-	}
+	output, _ := xml.Marshal(drawingRels)
 	f.saveFileList(rels, string(output))
 	return rID
 }
@@ -356,7 +343,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet string, rID string) string 
 // in XLSX by given worksheet and cell name. This function returns the file name
 // in XLSX and file contents as []byte data types. For example:
 //
-//    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
+//    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
 //        os.Exit(1)

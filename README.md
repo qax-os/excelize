@@ -45,7 +45,7 @@ func main() {
     // Set active sheet of the workbook.
     xlsx.SetActiveSheet(2)
     // Save xlsx file by the given path.
-    err := xlsx.WriteTo("/tmp/Workbook.xlsx")
+    err := xlsx.WriteTo("./Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
         os.Exit(1)
@@ -69,7 +69,7 @@ import (
 )
 
 func main() {
-    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
+    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
         os.Exit(1)
@@ -142,23 +142,23 @@ import (
 )
 
 func main() {
-    xlsx, err := excelize.OpenFile("/tmp/Workbook.xlsx")
+    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
         os.Exit(1)
     }
     // Insert a picture.
-    err = xlsx.AddPicture("Sheet1", "A2", "/tmp/image1.gif", "")
+    err = xlsx.AddPicture("Sheet1", "A2", "./image1.gif", "")
     if err != nil {
         fmt.Println(err)
     }
     // Insert a picture to sheet with scaling.
-    err = xlsx.AddPicture("Sheet1", "D2", "/tmp/image2.jpg", `{"x_scale": 0.5, "y_scale": 0.5}`)
+    err = xlsx.AddPicture("Sheet1", "D2", "./image2.jpg", `{"x_scale": 0.5, "y_scale": 0.5}`)
     if err != nil {
         fmt.Println(err)
     }
     // Insert a picture offset in the cell with printing support.
-    err = xlsx.AddPicture("Sheet1", "H2", "/tmp/image3.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
+    err = xlsx.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
     if err != nil {
         fmt.Println(err)
     }

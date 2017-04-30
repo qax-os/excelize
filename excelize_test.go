@@ -486,6 +486,19 @@ func TestAddTable(t *testing.T) {
 	}
 }
 
+func TestAddShape(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.AddShape("Sheet1", "A30", `{"type":"rect","text":"Rectangle Shape"}`)
+	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "height": 90}`)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestAddChart(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook1.xlsx")
 	if err != nil {

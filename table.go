@@ -52,11 +52,9 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) {
 	vyAxis := vrow - 1
 	vxAxis := titleToNumber(vcol)
 	if vxAxis < hxAxis {
-		hcell, vcell = vcell, hcell
 		vxAxis, hxAxis = hxAxis, vxAxis
 	}
 	if vyAxis < hyAxis {
-		hcell, vcell = vcell, hcell
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
 	tableID := f.countTables() + 1
@@ -156,7 +154,6 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 // addTableContentTypePart provides function to add image part relationships
 // in the file [Content_Types].xml by given drawing index.
 func (f *File) addTableContentTypePart(index int) {
-	f.setContentTypePartImageExtensions()
 	content := f.contentTypesReader()
 	for _, v := range content.Overrides {
 		if v.PartName == "/xl/tables/table"+strconv.Itoa(index)+".xml" {

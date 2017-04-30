@@ -1,14 +1,12 @@
 package excelize
 
-// chartSpace directly maps the xlsxChart element.
-type xlsxChartSpace struct {
-	ChartSpace cChartSpace `xml:"c:chartSpace"`
-}
+import "encoding/xml"
 
-// cChartSpace directly maps the c:chartSpace element. The chart namespace in
+// xlsxChartSpace directly maps the c:chartSpace element. The chart namespace in
 // DrawingML is for representing visualizations of numeric data with column
 // charts, pie charts, scatter charts, or other types of charts.
-type cChartSpace struct {
+type xlsxChartSpace struct {
+	XMLName        xml.Name        `xml:"c:chartSpace"`
 	XMLNSc         string          `xml:"xmlns:c,attr"`
 	XMLNSa         string          `xml:"xmlns:a,attr"`
 	XMLNSr         string          `xml:"xmlns:r,attr"`
@@ -98,7 +96,7 @@ type aBodyPr struct {
 // aP (Paragraph) directly maps the a:p element. This element specifies a
 // paragraph of content in the document.
 type aP struct {
-	PPr        aPPr         `xml:"a:pPr"`
+	PPr        *aPPr        `xml:"a:pPr"`
 	R          *aR          `xml:"a:r"`
 	EndParaRPr *aEndParaRPr `xml:"a:endParaRPr"`
 }
@@ -210,6 +208,7 @@ type aR struct {
 type aRPr struct {
 	Lang    string `xml:"lang,attr,omitempty"`
 	AltLang string `xml:"altLang,attr,omitempty"`
+	Sz      int    `xml:"sz,attr,omitempty"`
 }
 
 // cSpPr (Shape Properties) directly maps the c:spPr element. This element
@@ -271,7 +270,9 @@ type cTxPr struct {
 // element be specified at the end of the list of text runs within the paragraph
 // so that an orderly list is maintained.
 type aEndParaRPr struct {
-	Lang string `xml:"lang,attr"`
+	Lang    string `xml:"lang,attr"`
+	AltLang string `xml:"altLang,attr,omitempty"`
+	Sz      int    `xml:"sz,attr,omitempty"`
 }
 
 // cAutoTitleDeleted (Auto Title Is Deleted) directly maps the

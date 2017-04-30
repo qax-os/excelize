@@ -3,7 +3,6 @@ package excelize
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -57,8 +56,8 @@ func parseFormatChartSet(formatSet string) *formatChart {
 
 // AddChart provides the method to add chart in a sheet by given chart format
 // set (such as offset, scale, aspect ratio setting and print settings) and
-// properties set. Only support "pie" and "3Dpie" type chart currently. For
-// example, create 3D bar chart with data Sheet1!$A$29:$D$32:
+// properties set. For example, create 3D bar chart with data
+// Sheet1!$A$29:$D$32:
 //
 //    package main
 //
@@ -81,7 +80,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //        }
 //        xlsx.AddChart("SHEET1", "F2", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 //        // Save xlsx file by the given path.
-//        err := xlsx.WriteTo("./tmp/Workbook.xlsx")
+//        err := xlsx.WriteTo("./Workbook.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //            os.Exit(1)
@@ -235,128 +234,126 @@ func (f *File) addChartContentTypePart(index int) {
 func (f *File) addChart(formatSet *formatChart) {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
-		ChartSpace: cChartSpace{
-			XMLNSc:         NameSpaceDrawingMLChart,
-			XMLNSa:         NameSpaceDrawingML,
-			XMLNSr:         SourceRelationship,
-			XMLNSc16r2:     SourceRelationshipChart201506,
-			Date1904:       &attrValBool{Val: false},
-			Lang:           &attrValString{Val: "en-US"},
-			RoundedCorners: &attrValBool{Val: false},
-			Chart: cChart{
-				Title: &cTitle{
-					Tx: cTx{
-						Rich: &cRich{
-							P: aP{
-								PPr: aPPr{
-									DefRPr: aDefRPr{
-										Kern:   1200,
-										Strike: "noStrike",
-										U:      "none",
-										Sz:     1400,
-										SolidFill: &aSolidFill{
-											SchemeClr: &aSchemeClr{
-												Val: "tx1",
-												LumMod: &attrValInt{
-													Val: 65000,
-												},
-												LumOff: &attrValInt{
-													Val: 35000,
-												},
-											},
-										},
-										Ea: &aEa{
-											Typeface: "+mn-ea",
-										},
-										Cs: &aCs{
-											Typeface: "+mn-cs",
-										},
-										Latin: &aLatin{
-											Typeface: "+mn-lt",
-										},
-									},
-								},
-								R: &aR{
-									RPr: aRPr{
-										Lang:    "en-US",
-										AltLang: "en-US",
-									},
-									T: formatSet.Title.Name,
-								},
-							},
-						},
-					},
-					TxPr: cTxPr{
+		XMLNSc:         NameSpaceDrawingMLChart,
+		XMLNSa:         NameSpaceDrawingML,
+		XMLNSr:         SourceRelationship,
+		XMLNSc16r2:     SourceRelationshipChart201506,
+		Date1904:       &attrValBool{Val: false},
+		Lang:           &attrValString{Val: "en-US"},
+		RoundedCorners: &attrValBool{Val: false},
+		Chart: cChart{
+			Title: &cTitle{
+				Tx: cTx{
+					Rich: &cRich{
 						P: aP{
-							PPr: aPPr{
+							PPr: &aPPr{
 								DefRPr: aDefRPr{
 									Kern:   1200,
-									U:      "none",
-									Sz:     14000,
 									Strike: "noStrike",
+									U:      "none",
+									Sz:     1400,
+									SolidFill: &aSolidFill{
+										SchemeClr: &aSchemeClr{
+											Val: "tx1",
+											LumMod: &attrValInt{
+												Val: 65000,
+											},
+											LumOff: &attrValInt{
+												Val: 35000,
+											},
+										},
+									},
+									Ea: &aEa{
+										Typeface: "+mn-ea",
+									},
+									Cs: &aCs{
+										Typeface: "+mn-cs",
+									},
+									Latin: &aLatin{
+										Typeface: "+mn-lt",
+									},
 								},
 							},
-							EndParaRPr: &aEndParaRPr{
-								Lang: "en-US",
+							R: &aR{
+								RPr: aRPr{
+									Lang:    "en-US",
+									AltLang: "en-US",
+								},
+								T: formatSet.Title.Name,
 							},
 						},
 					},
 				},
-				View3D: &cView3D{
-					RotX:         &attrValInt{Val: chartView3DRotX[formatSet.Type]},
-					RotY:         &attrValInt{Val: chartView3DRotY[formatSet.Type]},
-					DepthPercent: &attrValInt{Val: chartView3DDepthPercent[formatSet.Type]},
-					RAngAx:       &attrValInt{Val: chartView3DRAngAx[formatSet.Type]},
+				TxPr: cTxPr{
+					P: aP{
+						PPr: &aPPr{
+							DefRPr: aDefRPr{
+								Kern:   1200,
+								U:      "none",
+								Sz:     14000,
+								Strike: "noStrike",
+							},
+						},
+						EndParaRPr: &aEndParaRPr{
+							Lang: "en-US",
+						},
+					},
 				},
-				Floor: &cThicknessSpPr{
-					Thickness: &attrValInt{Val: 0},
-				},
-				SideWall: &cThicknessSpPr{
-					Thickness: &attrValInt{Val: 0},
-				},
-				BackWall: &cThicknessSpPr{
-					Thickness: &attrValInt{Val: 0},
-				},
-				PlotArea: &cPlotArea{},
-				Legend: &cLegend{
-					LegendPos: &attrValString{Val: chartLegendPosition[formatSet.Legend.Position]},
-					Overlay:   &attrValBool{Val: false},
-				},
+			},
+			View3D: &cView3D{
+				RotX:         &attrValInt{Val: chartView3DRotX[formatSet.Type]},
+				RotY:         &attrValInt{Val: chartView3DRotY[formatSet.Type]},
+				DepthPercent: &attrValInt{Val: chartView3DDepthPercent[formatSet.Type]},
+				RAngAx:       &attrValInt{Val: chartView3DRAngAx[formatSet.Type]},
+			},
+			Floor: &cThicknessSpPr{
+				Thickness: &attrValInt{Val: 0},
+			},
+			SideWall: &cThicknessSpPr{
+				Thickness: &attrValInt{Val: 0},
+			},
+			BackWall: &cThicknessSpPr{
+				Thickness: &attrValInt{Val: 0},
+			},
+			PlotArea: &cPlotArea{},
+			Legend: &cLegend{
+				LegendPos: &attrValString{Val: chartLegendPosition[formatSet.Legend.Position]},
+				Overlay:   &attrValBool{Val: false},
+			},
 
-				PlotVisOnly:      &attrValBool{Val: false},
-				DispBlanksAs:     &attrValString{Val: formatSet.ShowBlanksAs},
-				ShowDLblsOverMax: &attrValBool{Val: false},
+			PlotVisOnly:      &attrValBool{Val: false},
+			DispBlanksAs:     &attrValString{Val: formatSet.ShowBlanksAs},
+			ShowDLblsOverMax: &attrValBool{Val: false},
+		},
+		SpPr: &cSpPr{
+			SolidFill: &aSolidFill{
+				SchemeClr: &aSchemeClr{Val: "bg1"},
 			},
-			SpPr: &cSpPr{
+			Ln: &aLn{
+				W:    9525,
+				Cap:  "flat",
+				Cmpd: "sng",
+				Algn: "ctr",
 				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{Val: "bg1"},
-				},
-				Ln: &aLn{
-					W:    9525,
-					Cap:  "flat",
-					Cmpd: "sng",
-					Algn: "ctr",
-					SolidFill: &aSolidFill{
-						SchemeClr: &aSchemeClr{Val: "tx1",
-							LumMod: &attrValInt{
-								Val: 15000,
-							},
-							LumOff: &attrValInt{
-								Val: 85000,
-							},
+					SchemeClr: &aSchemeClr{Val: "tx1",
+						LumMod: &attrValInt{
+							Val: 15000,
+						},
+						LumOff: &attrValInt{
+							Val: 85000,
 						},
 					},
 				},
 			},
-			PrintSettings: &cPrintSettings{
-				PageMargins: &cPageMargins{
-					B:      0.75,
-					L:      0.7,
-					R:      0.7,
-					T:      0.7,
-					Header: 0.3,
-					Footer: 0.3,
-				},
+		},
+		PrintSettings: &cPrintSettings{
+			PageMargins: &cPageMargins{
+				B:      0.75,
+				L:      0.7,
+				R:      0.7,
+				T:      0.7,
+				Header: 0.3,
+				Footer: 0.3,
 			},
 		},
 	}
@@ -370,11 +367,11 @@ func (f *File) addChart(formatSet *formatChart) {
 		Radar:    f.drawRadarChart,
 		Scatter:  f.drawScatterChart,
 	}
-	xlsxChartSpace.ChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
+	xlsxChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
 
 	chart, _ := xml.Marshal(xlsxChartSpace)
 	media := "xl/charts/chart" + strconv.Itoa(count+1) + ".xml"
-	f.saveFileList(media, string(chart[16:len(chart)-17]))
+	f.saveFileList(media, string(chart))
 }
 
 // drawBarChart provides function to draw the c:plotArea element for bar chart
@@ -809,7 +806,7 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 			AnchorCtr:        true,
 		},
 		P: aP{
-			PPr: aPPr{
+			PPr: &aPPr{
 				DefRPr: aDefRPr{
 					Sz:       900,
 					B:        false,
@@ -846,29 +843,29 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
-	content := encodeWsDr{}
-	content.WsDr.A = NameSpaceDrawingML
-	content.WsDr.Xdr = NameSpaceDrawingMLSpreadSheet
+	content := xlsxWsDr{}
+	content.A = NameSpaceDrawingML
+	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := 1
 	_, ok := f.XLSX[drawingXML]
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
 		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
-		cNvPrID = len(decodeWsDr.TwoCellAnchor) + 1
+		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
 		for _, v := range decodeWsDr.OneCellAnchor {
-			content.WsDr.OneCellAnchor = append(content.WsDr.OneCellAnchor, &xlsxCellAnchor{
+			content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
 				EditAs:       v.EditAs,
 				GraphicFrame: v.Content,
 			})
 		}
 		for _, v := range decodeWsDr.TwoCellAnchor {
-			content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &xlsxCellAnchor{
+			content.TwoCellAnchor = append(content.TwoCellAnchor, &xdrCellAnchor{
 				EditAs:       v.EditAs,
 				GraphicFrame: v.Content,
 			})
 		}
 	}
-	twoCellAnchor := xlsxCellAnchor{}
+	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
 	from.Col = colStart
@@ -883,39 +880,31 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 
-	graphicFrame := graphicFrame{
-		GraphicFrame: &xlsxGraphicFrame{
-			NvGraphicFramePr: xlsxNvGraphicFramePr{
-				CNvPr: &xlsxCNvPr{
-					ID:   cNvPrID,
-					Name: "Chart " + strconv.Itoa(cNvPrID),
-				},
+	graphicFrame := xlsxGraphicFrame{
+		NvGraphicFramePr: xlsxNvGraphicFramePr{
+			CNvPr: &xlsxCNvPr{
+				ID:   f.countCharts() + f.countMedia() + 1,
+				Name: "Chart " + strconv.Itoa(cNvPrID),
 			},
-			Graphic: &xlsxGraphic{
-				GraphicData: &xlsxGraphicData{
-					URI: NameSpaceDrawingMLChart,
-					Chart: &xlsxChart{
-						C:   NameSpaceDrawingMLChart,
-						R:   SourceRelationship,
-						RID: "rId" + strconv.Itoa(rID),
-					},
+		},
+		Graphic: &xlsxGraphic{
+			GraphicData: &xlsxGraphicData{
+				URI: NameSpaceDrawingMLChart,
+				Chart: &xlsxChart{
+					C:   NameSpaceDrawingMLChart,
+					R:   SourceRelationship,
+					RID: "rId" + strconv.Itoa(rID),
 				},
 			},
 		},
 	}
 	graphic, _ := xml.Marshal(graphicFrame)
-	twoCellAnchor.GraphicFrame = string(graphic[14 : len(graphic)-15])
-	twoCellAnchor.ClientData = &xlsxClientData{
+	twoCellAnchor.GraphicFrame = string(graphic)
+	twoCellAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  formatSet.FLocksWithSheet,
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
-	content.WsDr.TwoCellAnchor = append(content.WsDr.TwoCellAnchor, &twoCellAnchor)
-	output, err := xml.Marshal(content)
-	if err != nil {
-		fmt.Println(err)
-	}
-	// Create replacer with pairs as arguments and replace all pairs.
-	r := strings.NewReplacer("<encodeWsDr>", "", "</encodeWsDr>", "")
-	result := r.Replace(string(output))
-	f.saveFileList(drawingXML, result)
+	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
+	output, _ := xml.Marshal(content)
+	f.saveFileList(drawingXML, string(output))
 }
