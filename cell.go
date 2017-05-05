@@ -66,7 +66,11 @@ func (f *File) formattedValue(s int, v string) string {
 	}
 	var styleSheet xlsxStyleSheet
 	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
-	return builtInNumFmtFunc[styleSheet.CellXfs.Xf[s].NumFmtID](styleSheet.CellXfs.Xf[s].NumFmtID, v)
+	ok := builtInNumFmtFunc[styleSheet.CellXfs.Xf[s].NumFmtID]
+	if ok != nil {
+		return ok(styleSheet.CellXfs.Xf[s].NumFmtID, v)
+	}
+	return v
 }
 
 // GetCellFormula provides function to get formula from cell by given sheet
