@@ -141,10 +141,10 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 			}
 			return value, nil
 		}
-		return d.SI[xlsxSI].T, nil
+		return f.formattedValue(xlsx.S, d.SI[xlsxSI].T), nil
 	case "str":
-		return xlsx.V, nil
+		return f.formattedValue(xlsx.S, xlsx.V), nil
 	default:
-		return xlsx.V, nil
+		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
 }

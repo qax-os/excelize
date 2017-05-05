@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestOpenFile(t *testing.T) {
@@ -66,6 +67,8 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "F2", float32(42))
 	xlsx.SetCellValue("Sheet2", "F2", float64(42))
 	xlsx.SetCellValue("Sheet2", "G2", nil)
+	xlsx.SetCellValue("Sheet2", "G3", uint8(8))
+	xlsx.SetCellValue("Sheet2", "G4", time.Now())
 	// Test completion column.
 	xlsx.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
@@ -322,18 +325,40 @@ func TestSetCellStyleBorder(t *testing.T) {
 	}
 }
 
-func TestSetCellStyleFill(t *testing.T) {
+func TestSetCellStyleNumberFormat(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.SetCellValue("Sheet1", "N23", 42920.5)
 	// Test only set fill and number format for a cell.
-	err = xlsx.SetCellStyle("Sheet1", "N23", "N23", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":4},"number_format":22}`)
+	col := []string{"L", "M", "N", "O", "P"}
+	data := []int{0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
+	value := []string{"37947.7500001", "-37947.7500001", "0.007", "2.1", "String"}
+	for i, v := range value {
+		for k, d := range data {
+			c := col[i] + strconv.Itoa(k+1)
+			var val float64
+			val, err = strconv.ParseFloat(v, 64)
+			if err != nil {
+				xlsx.SetCellValue("Sheet2", c, v)
+			} else {
+				xlsx.SetCellValue("Sheet2", c, val)
+			}
+			err := xlsx.SetCellStyle("Sheet2", c, c, `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5},"number_format": `+strconv.Itoa(d)+`}`)
+			if err != nil {
+				t.Log(err)
+			}
+			t.Log(xlsx.GetCellValue("Sheet2", c))
+		}
+	}
+	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetCellStyle("Sheet1", "N24", "N24", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5},"number_format":23}`)
+}
+
+func TestSetCellStyleFill(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}

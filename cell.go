@@ -6,8 +6,10 @@ import (
 	"strings"
 )
 
-// GetCellValue provides function to get value from cell by given sheet index
-// and axis in XLSX file.
+// GetCellValue provides function to get formatted value from cell by given
+// sheet index and axis in XLSX file. If it is possible to apply a format to the
+// cell value, it will do so, if not then an error will be returned, along with
+// the raw value of the cell.
 func (f *File) GetCellValue(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
@@ -44,15 +46,27 @@ func (f *File) GetCellValue(sheet, axis string) string {
 				xlsxSI := 0
 				xlsxSI, _ = strconv.Atoi(r.V)
 				xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &shardStrings)
-				return shardStrings.SI[xlsxSI].T
+				return f.formattedValue(r.S, shardStrings.SI[xlsxSI].T)
 			case "str":
-				return r.V
+				return f.formattedValue(r.S, r.V)
 			default:
-				return r.V
+				return f.formattedValue(r.S, r.V)
 			}
 		}
 	}
 	return ""
+}
+
+// formattedValue provides function to returns a value after formatted. If it is
+// possible to apply a format to the cell value, it will do so, if not then an
+// error will be returned, along with the raw value of the cell.
+func (f *File) formattedValue(s int, v string) string {
+	if s == 0 {
+		return v
+	}
+	var styleSheet xlsxStyleSheet
+	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
+	return builtInNumFmtFunc[styleSheet.CellXfs.Xf[s].NumFmtID](styleSheet.CellXfs.Xf[s].NumFmtID, v)
 }
 
 // GetCellFormula provides function to get formula from cell by given sheet

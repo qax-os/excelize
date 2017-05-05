@@ -4,11 +4,13 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // File define a populated XLSX file struct.
@@ -84,8 +86,13 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 		f.SetCellStr(sheet, axis, t)
 	case []byte:
 		f.SetCellStr(sheet, axis, string(t))
-	default:
+	case time.Time:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 32))
+		f.SetCellStyle(sheet, axis, axis, `{"number_format": 22}`)
+	case nil:
 		f.SetCellStr(sheet, axis, "")
+	default:
+		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
 	}
 }
 

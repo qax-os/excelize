@@ -3,6 +3,8 @@ package excelize
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -43,6 +45,183 @@ var builtInNumFmt = map[int]string{
 	47: "mmss.0",
 	48: "##0.0e+0",
 	49: "@",
+}
+
+// builtInNumFmtFunc defined the format conversion functions map. Partial format
+// code doesn't support currently and will return original string.
+var builtInNumFmtFunc = map[int]func(i int, v string) string{
+	0:  formatToString,
+	1:  formatToInt,
+	2:  formatToFloat,
+	3:  formatToInt,
+	4:  formatToFloat,
+	9:  formatToC,
+	10: formatToD,
+	11: formatToE,
+	12: formatToString, // Doesn't support currently
+	13: formatToString, // Doesn't support currently
+	14: parseTime,
+	15: parseTime,
+	16: parseTime,
+	17: parseTime,
+	18: parseTime,
+	19: parseTime,
+	20: parseTime,
+	21: parseTime,
+	22: parseTime,
+	37: formatToA,
+	38: formatToA,
+	39: formatToB,
+	40: formatToB,
+	41: formatToString, // Doesn't support currently
+	42: formatToString, // Doesn't support currently
+	43: formatToString, // Doesn't support currently
+	44: formatToString, // Doesn't support currently
+	45: parseTime,
+	46: parseTime,
+	47: parseTime,
+	48: formatToE,
+	49: formatToString,
+}
+
+// formatToString provides function to return original string by given built-in
+// number formats code and cell string.
+func formatToString(i int, v string) string {
+	return v
+}
+
+// formatToInt provides function to convert original string to integer format as
+// string type by given built-in number formats code and cell string.
+func formatToInt(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	return fmt.Sprintf("%d", int(f))
+}
+
+// formatToFloat provides function to convert original string to float format as
+// string type by given built-in number formats code and cell string.
+func formatToFloat(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	return fmt.Sprintf("%.2f", f)
+}
+
+// formatToA provides function to convert original string to special format as
+// string type by given built-in number formats code and cell string.
+func formatToA(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	if f < 0 {
+		t := int(math.Abs(f))
+		return fmt.Sprintf("(%d)", t)
+	}
+	t := int(f)
+	return fmt.Sprintf("%d", t)
+}
+
+// formatToB provides function to convert original string to special format as
+// string type by given built-in number formats code and cell string.
+func formatToB(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	if f < 0 {
+		return fmt.Sprintf("(%.2f)", f)
+	}
+	return fmt.Sprintf("%.2f", f)
+}
+
+// formatToC provides function to convert original string to special format as
+// string type by given built-in number formats code and cell string.
+func formatToC(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	f = f * 100
+	return fmt.Sprintf("%d%%", int(f))
+}
+
+// formatToD provides function to convert original string to special format as
+// string type by given built-in number formats code and cell string.
+func formatToD(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	f = f * 100
+	return fmt.Sprintf("%.2f%%", f)
+}
+
+// formatToE provides function to convert original string to special format as
+// string type by given built-in number formats code and cell string.
+func formatToE(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	return fmt.Sprintf("%.e", f)
+}
+
+// parseTime provides function to returns a string parsed using time.Time.
+// Replace Excel placeholders with Go time placeholders. For example, replace
+// yyyy with 2006. These are in a specific order, due to the fact that m is used
+// in month, minute, and am/pm. It would be easier to fix that with regular
+// expressions, but if it's possible to keep this simple it would be easier to
+// maintain. Full-length month and days (e.g. March, Tuesday) have letters in
+// them that would be replaced by other characters below (such as the 'h' in
+// March, or the 'd' in Tuesday) below. First we convert them to arbitrary
+// characters unused in Excel Date formats, and then at the end, turn them to
+// what they should actually be.
+func parseTime(i int, v string) string {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	val := timeFromExcelTime(f, false)
+	format := builtInNumFmt[i]
+
+	replacements := []struct{ xltime, gotime string }{
+		{"yyyy", "2006"},
+		{"yy", "06"},
+		{"mmmm", "%%%%"},
+		{"dddd", "&&&&"},
+		{"dd", "02"},
+		{"d", "2"},
+		{"mmm", "Jan"},
+		{"mmss", "0405"},
+		{"ss", "05"},
+		{"hh", "15"},
+		{"h", "3"},
+		{"mm:", "04:"},
+		{":mm", ":04"},
+		{"mm", "01"},
+		{"am/pm", "pm"},
+		{"m/", "1/"},
+		{"%%%%", "January"},
+		{"&&&&", "Monday"},
+	}
+	for _, repl := range replacements {
+		format = strings.Replace(format, repl.xltime, repl.gotime, 1)
+	}
+	// If the hour is optional, strip it out, along with the possible dangling
+	// colon that would remain.
+	if val.Hour() < 1 {
+		format = strings.Replace(format, "]:", "]", 1)
+		format = strings.Replace(format, "[3]", "", 1)
+		format = strings.Replace(format, "[15]", "", 1)
+	} else {
+		format = strings.Replace(format, "[3]", "3", 1)
+		format = strings.Replace(format, "[15]", "15", 1)
+	}
+	return val.Format(format)
 }
 
 // parseFormatStyleSet provides function to parse the format settings of the
