@@ -529,8 +529,12 @@ func TestAddComments(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize","text":"This is first comment."}`)
-	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize","text":"This is second comment."}`)
+	var s = "c"
+	for i := 0; i < 32767; i++ {
+		s += "c"
+	}
+	xlsx.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`)
+	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`)
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)

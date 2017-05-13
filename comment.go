@@ -19,10 +19,11 @@ func parseFormatCommentsSet(formatSet string) *formatComment {
 }
 
 // AddComment provides the method to add comment in a sheet by given worksheet
-// index, cell and format set (such as author and text). For example, add a
+// index, cell and format set (such as author and text). Note that the max
+// author length is 255 and the max text length is 32512. For example, add a
 // comment in Sheet1!$A$30:
 //
-//    xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize","text":"This is a comment."}`)
+//    xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
 //
 func (f *File) AddComment(sheet, cell, format string) {
 	formatSet := parseFormatCommentsSet(format)
@@ -147,6 +148,14 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 // addComment provides function to create chart as xl/comments%d.xml by given
 // cell and format sets.
 func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
+	a := formatSet.Author
+	t := formatSet.Text
+	if len(a) > 255 {
+		a = a[0:255]
+	}
+	if len(t) > 32512 {
+		t = t[0:32512]
+	}
 	comments := xlsxComments{
 		Authors: []xlsxAuthor{
 			xlsxAuthor{
@@ -169,7 +178,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 						RFont:  &attrValString{Val: "Calibri"},
 						Family: &attrValInt{Val: 2},
 					},
-					T: formatSet.Author + ": ",
+					T: a,
 				},
 				xlsxR{
 					RPr: &xlsxRPr{
@@ -180,7 +189,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 						RFont:  &attrValString{Val: "Calibri"},
 						Family: &attrValInt{Val: 2},
 					},
-					T: formatSet.Text,
+					T: t,
 				},
 			},
 		},

@@ -168,10 +168,15 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //    show_val
 //
 // show_bubble_size: Specifies the bubble size shall be shown in a data label. The show_bubble_size property is optional. The default value is false.
+//
 // show_cat_name: Specifies that the category name shall be shown in the data label. The show_cat_name property is optional. The default value is true.
+//
 // show_leader_lines: Specifies leader lines shall be shown for data labels. The show_leader_lines property is optional. The default value is false.
+//
 // show_percent: Specifies that the percentage shall be shown in a data label. The show_percent property is optional. The default value is false.
+//
 // show_series_name: Specifies that the series name shall be shown in a data label. The show_series_name property is optional. The default value is false.
+//
 // show_val: Specifies that the value shall be shown in a data label. The show_val property is optional. The default value is false.
 //
 func (f *File) AddChart(sheet, cell, format string) {
