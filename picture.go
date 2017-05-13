@@ -139,6 +139,15 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 	return rID
 }
 
+// addSheetLegacyDrawing provides function to add legacy drawing element to
+// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
+func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
+	xlsx := f.workSheetReader(sheet)
+	xlsx.LegacyDrawing = &xlsxLegacyDrawing{
+		RID: "rId" + strconv.Itoa(rID),
+	}
+}
+
 // addSheetDrawing provides function to add drawing element to
 // xl/worksheets/sheet%d.xml by given sheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
@@ -308,6 +317,24 @@ func (f *File) setContentTypePartImageExtensions() {
 	}
 }
 
+// setContentTypePartVMLExtensions provides function to set the content type
+// for relationship parts and the Main Document part.
+func (f *File) setContentTypePartVMLExtensions() {
+	vml := false
+	content := f.contentTypesReader()
+	for _, v := range content.Defaults {
+		if v.Extension == "vml" {
+			vml = true
+		}
+	}
+	if !vml {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   "vml",
+			ContentType: "application/vnd.openxmlformats-officedocument.vmlDrawing",
+		})
+	}
+}
+
 // addDrawingContentTypePart provides function to add image part relationships
 // in the file [Content_Types].xml by given drawing index.
 func (f *File) addDrawingContentTypePart(index int) {
@@ -321,6 +348,22 @@ func (f *File) addDrawingContentTypePart(index int) {
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
 		ContentType: "application/vnd.openxmlformats-officedocument.drawing+xml",
+	})
+}
+
+// addCommentsContentTypePart provides function to add comments part
+// relationships in the file [Content_Types].xml by given comment index.
+func (f *File) addCommentsContentTypePart(index int) {
+	f.setContentTypePartVMLExtensions()
+	content := f.contentTypesReader()
+	for _, v := range content.Overrides {
+		if v.PartName == "/xl/comments"+strconv.Itoa(index)+".xml" {
+			return
+		}
+	}
+	content.Overrides = append(content.Overrides, xlsxOverride{
+		PartName:    "/xl/comments" + strconv.Itoa(index) + ".xml",
+		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml",
 	})
 }
 

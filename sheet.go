@@ -418,8 +418,7 @@ func (f *File) CopySheet(from, to int) error {
 // target worksheet index.
 func (f *File) copySheet(from, to int) {
 	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
-	var worksheet xlsxWorksheet
-	worksheet = *sheet
+	worksheet := *sheet
 	path := "xl/worksheets/sheet" + strconv.Itoa(to) + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
 		worksheet.SheetViews.SheetView[0].TabSelected = false
@@ -444,7 +443,7 @@ func (f *File) HideSheet(name string) {
 	content := f.workbookReader()
 	count := 0
 	for _, v := range content.Sheets.Sheet {
-		if v.State != "hidden" {
+		if v.State != sheetStateHidden {
 			count++
 		}
 	}
@@ -456,7 +455,7 @@ func (f *File) HideSheet(name string) {
 			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
 		}
 		if v.Name == name && count > 1 && !tabSelected {
-			content.Sheets.Sheet[k].State = "hidden"
+			content.Sheets.Sheet[k].State = sheetStateHidden
 		}
 	}
 }

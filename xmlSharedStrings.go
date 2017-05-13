@@ -28,5 +28,19 @@ type xlsxSI struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked this for completeness - it does as much as I need.
 type xlsxR struct {
-	T string `xml:"t"`
+	RPr *xlsxRPr `xml:"rPr"`
+	T   string   `xml:"t"`
+}
+
+// xlsxRPr (Run Properties) specifies a set of run properties which shall be
+// applied to the contents of the parent run after all style formatting has been
+// applied to the text. These properties are defined as direct formatting, since
+// they are directly applied to the run and supersede any formatting from
+// styles.
+type xlsxRPr struct {
+	B      string         `xml:"b,omitempty"`
+	Sz     *attrValInt    `xml:"sz"`
+	Color  *xlsxColor     `xml:"color"`
+	RFont  *attrValString `xml:"rFont"`
+	Family *attrValInt    `xml:"family"`
 }

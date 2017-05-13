@@ -52,8 +52,8 @@ type xlsxLine struct {
 type xlsxColor struct {
 	Auto    bool    `xml:"auto,attr,omitempty"`
 	RGB     string  `xml:"rgb,attr,omitempty"`
-	Indexed *int    `xml:"indexed,attr,omitempty"`
-	Theme   *int    `xml:"theme,attr,omitempty"`
+	Indexed int     `xml:"indexed,attr,omitempty"`
+	Theme   int     `xml:"theme,attr,omitempty"`
 	Tint    float64 `xml:"tint,attr,omitempty"`
 }
 

@@ -524,6 +524,19 @@ func TestAddShape(t *testing.T) {
 	}
 }
 
+func TestAddComments(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize","text":"This is first comment."}`)
+	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize","text":"This is second comment."}`)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestAddChart(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook1.xlsx")
 	if err != nil {
