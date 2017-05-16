@@ -349,6 +349,7 @@ type formatShape struct {
 	Width  int              `json:"width"`
 	Height int              `json:"height"`
 	Format formatPicture    `json:"format"`
+	Font   formatFont       `json:"font"`
 	Text   string           `json:"text"`
 	Color  formatShapeColor `json:"color"`
 }

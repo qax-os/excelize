@@ -282,6 +282,16 @@ type xlsxStyleColors struct {
 	Color string `xml:",innerxml"`
 }
 
+// formatFont directly maps the styles settings of the fonts.
+type formatFont struct {
+	Bold      bool   `json:"bold"`
+	Italic    bool   `json:"italic"`
+	Underline string `json:"underline"`
+	Family    string `json:"family"`
+	Size      int    `json:"size"`
+	Color     string `json:"color"`
+}
+
 // formatCellStyle directly maps the styles settings of the borders.
 type formatCellStyle struct {
 	Border []struct {
@@ -295,14 +305,7 @@ type formatCellStyle struct {
 		Color   []string `json:"color"`
 		Shading int      `json:"shading"`
 	} `json:"fill"`
-	Font *struct {
-		Bold      bool   `json:"bold"`
-		Italic    bool   `json:"italic"`
-		Underline string `json:"underline"`
-		Family    string `json:"family"`
-		Size      int    `json:"size"`
-		Color     string `json:"color"`
-	} `json:"font"`
+	Font      *formatFont `json:"font"`
 	Alignment *struct {
 		Horizontal      string `json:"horizontal"`
 		Indent          int    `json:"indent"`

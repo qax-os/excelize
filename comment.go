@@ -158,7 +158,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	}
 	comments := xlsxComments{
 		Authors: []xlsxAuthor{
-			xlsxAuthor{
+			{
 				Author: formatSet.Author,
 			},
 		},
@@ -168,7 +168,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 		AuthorID: 0,
 		Text: xlsxText{
 			R: []xlsxR{
-				xlsxR{
+				{
 					RPr: &xlsxRPr{
 						B:  " ",
 						Sz: &attrValInt{Val: 9},
@@ -180,7 +180,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 					},
 					T: a,
 				},
-				xlsxR{
+				{
 					RPr: &xlsxRPr{
 						Sz: &attrValInt{Val: 9},
 						Color: &xlsxColor{

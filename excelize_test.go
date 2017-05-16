@@ -517,7 +517,7 @@ func TestAddShape(t *testing.T) {
 		t.Log(err)
 	}
 	xlsx.AddShape("Sheet1", "A30", `{"type":"rect","text":"Rectangle Shape"}`)
-	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "height": 90}`)
+	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}, "height": 90}`)
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)

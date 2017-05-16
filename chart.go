@@ -252,7 +252,7 @@ func (f *File) addChart(formatSet *formatChart) {
 					Rich: &cRich{
 						P: aP{
 							PPr: &aPPr{
-								DefRPr: aDefRPr{
+								DefRPr: aRPr{
 									Kern:   1200,
 									Strike: "noStrike",
 									U:      "none",
@@ -292,7 +292,7 @@ func (f *File) addChart(formatSet *formatChart) {
 				TxPr: cTxPr{
 					P: aP{
 						PPr: &aPPr{
-							DefRPr: aDefRPr{
+							DefRPr: aRPr{
 								Kern:   1200,
 								U:      "none",
 								Sz:     14000,
@@ -812,7 +812,7 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 		},
 		P: aP{
 			PPr: &aPPr{
-				DefRPr: aDefRPr{
+				DefRPr: aRPr{
 					Sz:       900,
 					B:        false,
 					I:        false,

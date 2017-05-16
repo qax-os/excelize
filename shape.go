@@ -22,6 +22,14 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 			XScale:           1.0,
 			YScale:           1.0,
 		},
+		Font: formatFont{
+			Bold:      false,
+			Italic:    false,
+			Underline: "none",
+			Family:    "Calibri",
+			Size:      11,
+			Color:     "#000000",
+		},
 		Text: " ",
 	}
 	json.Unmarshal([]byte(formatSet), &format)
@@ -33,7 +41,7 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 // print settings) and properties set. For example, add text box (rect shape) in
 // Sheet1:
 //
-//    xlsx.AddShape("Sheet1", "G6", `{"type":"rect", "text":"Rectangle Shape", "color":{"line":"#4286F4","fill":"#8eb9ff"}, "width": 180, "height": 90}`)
+//    xlsx.AddShape("Sheet1", "G6", `{"type":"rect", "text":"Rectangle Shape", "color":{"line":"#4286F4","fill":"#8eb9ff"}, "font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"sng"}, "width": 180, "height": 90}`)
 //
 // The following shows the type of chart supported by excelize:
 //
@@ -225,6 +233,27 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 //    wedgeRectCallout (Callout Wedge Rectangle Shape)
 //    wedgeRoundRectCallout (Callout Wedge Round Rectangle Shape)
 //
+// The following shows the type of text underline supported by excelize:
+//
+//    none
+//    words
+//    sng
+//    dbl
+//    heavy
+//    dotted
+//    dottedHeavy
+//    dash
+//    dashHeavy
+//    dashLong
+//    dashLongHeavy
+//    dotDash
+//    dotDashHeavy
+//    dotDotDash
+//    dotDotDashHeavy
+//    wavy
+//    wavyHeavy
+//    wavyDbl
+//
 func (f *File) AddShape(sheet, cell, format string) {
 	formatSet := parseFormatShapeSet(format)
 	// Read sheet data.
@@ -250,6 +279,12 @@ func (f *File) AddShape(sheet, cell, format string) {
 
 // addDrawingShape
 func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
+	textUnderlineType := map[string]bool{"none": true, "words": true, "sng": true, "dbl": true, "heavy": true, "dotted": true, "dottedHeavy": true, "dash": true, "dashHeavy": true, "dashLong": true, "dashLongHeavy": true, "dotDash": true, "dotDashHeavy": true, "dotDotDash": true, "dotDotDashHeavy": true, "wavy": true, "wavyHeavy": true, "wavyDbl": true}
+	u := formatSet.Font.Underline
+	_, ok := textUnderlineType[u]
+	if !ok {
+		u = "none"
+	}
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
@@ -262,7 +297,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	content.A = NameSpaceDrawingML
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := 1
-	_, ok := f.XLSX[drawingXML]
+	_, ok = f.XLSX[drawingXML]
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
 		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
@@ -331,9 +366,18 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 			P: &aP{
 				R: &aR{
 					RPr: aRPr{
+						I:       formatSet.Font.Italic,
+						B:       formatSet.Font.Bold,
 						Lang:    "en-US",
 						AltLang: "en-US",
-						Sz:      1100,
+						U:       u,
+						Sz:      formatSet.Font.Size * 100,
+						Latin:   &aLatin{Typeface: formatSet.Font.Family},
+						SolidFill: &aSolidFill{
+							SrgbClr: &attrValString{
+								Val: strings.Replace(strings.ToUpper(formatSet.Font.Color), "#", "", -1),
+							},
+						},
 					},
 					T: formatSet.Text,
 				},

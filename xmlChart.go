@@ -108,44 +108,15 @@ type aP struct {
 // formatting, since they are directly applied to the paragraph and supersede
 // any formatting from styles.
 type aPPr struct {
-	DefRPr aDefRPr `xml:"a:defRPr"`
-}
-
-// aDefRPr directly maps the a:defRPr element. This element contains all
-// default run level text properties for the text runs within a containing
-// paragraph. These properties are to be used when overriding properties have
-// not been defined within the rPr element.
-type aDefRPr struct {
-	AltLang    string      `xml:"altLang,attr,omitempty"`
-	B          bool        `xml:"b,attr"`
-	Baseline   int         `xml:"baseline,attr"`
-	Bmk        string      `xml:"bmk,attr,omitempty"`
-	Cap        string      `xml:"cap,attr,omitempty"`
-	Dirty      bool        `xml:"dirty,attr,omitempty"`
-	Err        bool        `xml:"err,attr,omitempty"`
-	I          bool        `xml:"i,attr"`
-	Kern       int         `xml:"kern,attr"`
-	Kumimoji   bool        `xml:"kumimoji,attr,omitempty"`
-	Lang       string      `xml:"lang,attr,omitempty"`
-	NoProof    bool        `xml:"noProof,attr,omitempty"`
-	NormalizeH bool        `xml:"normalizeH,attr,omitempty"`
-	SmtClean   bool        `xml:"smtClean,attr,omitempty"`
-	SmtID      uint64      `xml:"smtId,attr,omitempty"`
-	Spc        int         `xml:"spc,attr"`
-	Strike     string      `xml:"strike,attr,omitempty"`
-	Sz         int         `xml:"sz,attr"`
-	U          string      `xml:"u,attr,omitempty"`
-	SolidFill  *aSolidFill `xml:"a:solidFill"`
-	Latin      *aLatin     `xml:"a:latin"`
-	Ea         *aEa        `xml:"a:ea"`
-	Cs         *aCs        `xml:"a:cs"`
+	DefRPr aRPr `xml:"a:defRPr"`
 }
 
 // aSolidFill (Solid Fill) directly maps the solidFill element. This element
 // specifies a solid color fill. The shape is filled entirely with the specified
 // color.
 type aSolidFill struct {
-	SchemeClr *aSchemeClr `xml:"a:schemeClr,omitempty"`
+	SchemeClr *aSchemeClr    `xml:"a:schemeClr"`
+	SrgbClr   *attrValString `xml:"a:srgbClr"`
 }
 
 // aSchemeClr (Scheme Color) directly maps the a:schemeClr element. This
@@ -206,9 +177,29 @@ type aR struct {
 // properties are defined as direct formatting, since they are directly applied
 // to the run and supersede any formatting from styles.
 type aRPr struct {
-	Lang    string `xml:"lang,attr,omitempty"`
-	AltLang string `xml:"altLang,attr,omitempty"`
-	Sz      int    `xml:"sz,attr,omitempty"`
+	AltLang    string      `xml:"altLang,attr,omitempty"`
+	B          bool        `xml:"b,attr"`
+	Baseline   int         `xml:"baseline,attr"`
+	Bmk        string      `xml:"bmk,attr,omitempty"`
+	Cap        string      `xml:"cap,attr,omitempty"`
+	Dirty      bool        `xml:"dirty,attr,omitempty"`
+	Err        bool        `xml:"err,attr,omitempty"`
+	I          bool        `xml:"i,attr"`
+	Kern       int         `xml:"kern,attr"`
+	Kumimoji   bool        `xml:"kumimoji,attr,omitempty"`
+	Lang       string      `xml:"lang,attr,omitempty"`
+	NoProof    bool        `xml:"noProof,attr,omitempty"`
+	NormalizeH bool        `xml:"normalizeH,attr,omitempty"`
+	SmtClean   bool        `xml:"smtClean,attr,omitempty"`
+	SmtID      uint64      `xml:"smtId,attr,omitempty"`
+	Spc        int         `xml:"spc,attr"`
+	Strike     string      `xml:"strike,attr,omitempty"`
+	Sz         int         `xml:"sz,attr,omitempty"`
+	U          string      `xml:"u,attr,omitempty"`
+	SolidFill  *aSolidFill `xml:"a:solidFill"`
+	Latin      *aLatin     `xml:"a:latin"`
+	Ea         *aEa        `xml:"a:ea"`
+	Cs         *aCs        `xml:"a:cs"`
 }
 
 // cSpPr (Shape Properties) directly maps the c:spPr element. This element
@@ -579,14 +570,10 @@ type formatChart struct {
 
 // formatChartLegend directly maps the format settings of the chart legend.
 type formatChartLegend struct {
-	None         bool  `json:"none"`
-	DeleteSeries []int `json:"delete_series"`
-	Font         struct {
-		Size   int  `json:"size"`
-		Blod   bool `json:"blod"`
-		Italic bool `json:"italic"`
-	} `json:"font"`
-	Layout struct {
+	None         bool       `json:"none"`
+	DeleteSeries []int      `json:"delete_series"`
+	Font         formatFont `json:"font"`
+	Layout       struct {
 		X      float64 `json:"x"`
 		Y      float64 `json:"y"`
 		Width  float64 `json:"width"`
