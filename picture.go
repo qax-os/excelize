@@ -90,23 +90,11 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	drawingID := f.countDrawings() + 1
 	pictureID := f.countMedia() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-
-	var drawingRID int
-	if xlsx.Drawing != nil {
-		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
-		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
-		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
-		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
-	} else {
-		// Add first picture for given sheet.
-		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
-		f.addSheetDrawing(sheet, rID)
-	}
-	drawingRID = f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
+	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
 	f.addDrawingPicture(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, formatSet)
 	f.addMedia(picture, ext)
-	f.addDrawingContentTypePart(drawingID)
+	f.addContentTypePart(drawingID, "drawings")
 	return err
 }
 
@@ -180,9 +168,7 @@ func (f *File) countDrawings() int {
 
 // addDrawingPicture provides function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
-// sets. In order to solve the problem that the label structure is changed after
-// serialization and deserialization, two different structures: decodeWsDr and
-// encodeWsDr are defined.
+// sets.
 func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *formatPicture) {
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
@@ -196,24 +182,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	content.A = NameSpaceDrawingML
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := 1
-	_, ok := f.XLSX[drawingXML]
-	if ok { // Append Model
-		decodeWsDr := decodeWsDr{}
-		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
-		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
-		for _, v := range decodeWsDr.OneCellAnchor {
-			content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
-				EditAs:       v.EditAs,
-				GraphicFrame: v.Content,
-			})
-		}
-		for _, v := range decodeWsDr.TwoCellAnchor {
-			content.TwoCellAnchor = append(content.TwoCellAnchor, &xdrCellAnchor{
-				EditAs:       v.EditAs,
-				GraphicFrame: v.Content,
-			})
-		}
-	}
+	f.drawingParser(drawingXML, cNvPrID, &content)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
@@ -335,35 +304,38 @@ func (f *File) setContentTypePartVMLExtensions() {
 	}
 }
 
-// addDrawingContentTypePart provides function to add image part relationships
-// in the file [Content_Types].xml by given drawing index.
-func (f *File) addDrawingContentTypePart(index int) {
-	f.setContentTypePartImageExtensions()
+// addContentTypePart provides function to add content type part relationships
+// in the file [Content_Types].xml by given index.
+func (f *File) addContentTypePart(index int, contentType string) {
+	setContentType := map[string]func(){
+		"comments": f.setContentTypePartVMLExtensions,
+		"drawings": f.setContentTypePartImageExtensions,
+	}
+	partNames := map[string]string{
+		"chart":    "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
+		"comments": "/xl/comments" + strconv.Itoa(index) + ".xml",
+		"drawings": "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
+		"table":    "/xl/tables/table" + strconv.Itoa(index) + ".xml",
+	}
+	contentTypes := map[string]string{
+		"chart":    "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
+		"comments": "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml",
+		"drawings": "application/vnd.openxmlformats-officedocument.drawing+xml",
+		"table":    "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml",
+	}
+	s, ok := setContentType[contentType]
+	if ok {
+		s()
+	}
 	content := f.contentTypesReader()
 	for _, v := range content.Overrides {
-		if v.PartName == "/xl/drawings/drawing"+strconv.Itoa(index)+".xml" {
+		if v.PartName == partNames[contentType] {
 			return
 		}
 	}
 	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
-		ContentType: "application/vnd.openxmlformats-officedocument.drawing+xml",
-	})
-}
-
-// addCommentsContentTypePart provides function to add comments part
-// relationships in the file [Content_Types].xml by given comment index.
-func (f *File) addCommentsContentTypePart(index int) {
-	f.setContentTypePartVMLExtensions()
-	content := f.contentTypesReader()
-	for _, v := range content.Overrides {
-		if v.PartName == "/xl/comments"+strconv.Itoa(index)+".xml" {
-			return
-		}
-	}
-	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    "/xl/comments" + strconv.Itoa(index) + ".xml",
-		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml",
+		PartName:    partNames[contentType],
+		ContentType: contentTypes[contentType],
 	})
 }
 

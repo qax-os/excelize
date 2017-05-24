@@ -187,24 +187,12 @@ func (f *File) AddChart(sheet, cell, format string) {
 	drawingID := f.countDrawings() + 1
 	chartID := f.countCharts() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-
-	var drawingRID int
-	if xlsx.Drawing != nil {
-		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
-		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
-		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
-		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
-	} else {
-		// Add first picture for given sheet.
-		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
-		f.addSheetDrawing(sheet, rID)
-	}
-	drawingRID = f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml")
+	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml")
 	f.addDrawingChart(sheet, drawingXML, cell, 480, 290, drawingRID, &formatSet.Format)
 	f.addChart(formatSet)
-	f.addChartContentTypePart(chartID)
-	f.addDrawingContentTypePart(drawingID)
+	f.addContentTypePart(chartID, "chart")
+	f.addContentTypePart(drawingID, "drawings")
 }
 
 // countCharts provides function to get chart files count storage in the
@@ -219,19 +207,21 @@ func (f *File) countCharts() int {
 	return count
 }
 
-// addChartContentTypePart provides function to add chart part relationships in
-// the file [Content_Types].xml by given chart index.
-func (f *File) addChartContentTypePart(index int) {
-	content := f.contentTypesReader()
-	for _, v := range content.Overrides {
-		if v.PartName == "/xl/charts/chart"+strconv.Itoa(index)+".xml" {
-			return
-		}
+// prepareDrawing provides function to prepare drawing ID and XML by given
+// drawingID, worksheet index and default drawingXML.
+func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
+	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
+	if xlsx.Drawing != nil {
+		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
+		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
+		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
+	} else {
+		// Add first picture for given sheet.
+		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		f.addSheetDrawing(sheet, rID)
 	}
-	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
-		ContentType: "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
-	})
+	return drawingID, drawingXML
 }
 
 // addChart provides function to create chart as xl/charts/chart%d.xml by given
@@ -364,7 +354,7 @@ func (f *File) addChart(formatSet *formatChart) {
 	}
 	plotAreaFunc := map[string]func(*formatChart) *cPlotArea{
 		Bar:      f.drawBarChart,
-		Bar3D:    f.drawBar3DChart,
+		Bar3D:    f.drawBarChart,
 		Doughnut: f.drawDoughnutChart,
 		Line:     f.drawLineChart,
 		Pie3D:    f.drawPie3DChart,
@@ -379,56 +369,39 @@ func (f *File) addChart(formatSet *formatChart) {
 	f.saveFileList(media, string(chart))
 }
 
-// drawBarChart provides function to draw the c:plotArea element for bar chart
-// by given format sets.
+// drawBarChart provides function to draw the c:plotArea element for bar and
+// bar3D chart by given format sets.
 func (f *File) drawBarChart(formatSet *formatChart) *cPlotArea {
-	return &cPlotArea{
-		BarChart: &cCharts{
-			BarDir: &attrValString{
-				Val: "col",
-			},
-			Grouping: &attrValString{
-				Val: "clustered",
-			},
-			VaryColors: &attrValBool{
-				Val: true,
-			},
-			Ser:   f.drawChartSeries(formatSet),
-			DLbls: f.drawChartDLbls(formatSet),
-			AxID: []*attrValInt{
-				{Val: 754001152},
-				{Val: 753999904},
-			},
+	c := cCharts{
+		BarDir: &attrValString{
+			Val: "col",
 		},
-		CatAx: f.drawPlotAreaCatAx(),
-		ValAx: f.drawPlotAreaValAx(),
-	}
-}
-
-// drawBar3DChart provides function to draw the c:plotArea element for 3D bar
-// chart by given format sets.
-func (f *File) drawBar3DChart(formatSet *formatChart) *cPlotArea {
-	return &cPlotArea{
-		Bar3DChart: &cCharts{
-			BarDir: &attrValString{
-				Val: "col",
-			},
-			Grouping: &attrValString{
-				Val: "clustered",
-			},
-			VaryColors: &attrValBool{
-				Val: true,
-			},
-			Ser:   f.drawChartSeries(formatSet),
-			DLbls: f.drawChartDLbls(formatSet),
-			AxID: []*attrValInt{
-				{Val: 754001152},
-				{Val: 753999904},
-			},
+		Grouping: &attrValString{
+			Val: "clustered",
 		},
-		CatAx: f.drawPlotAreaCatAx(),
-		ValAx: f.drawPlotAreaValAx(),
+		VaryColors: &attrValBool{
+			Val: true,
+		},
+		Ser:   f.drawChartSeries(formatSet),
+		DLbls: f.drawChartDLbls(formatSet),
+		AxID: []*attrValInt{
+			{Val: 754001152},
+			{Val: 753999904},
+		},
 	}
+	charts := map[string]*cPlotArea{
+		"bar": &cPlotArea{
+			BarChart: &c,
+			CatAx:    f.drawPlotAreaCatAx(),
+			ValAx:    f.drawPlotAreaValAx(),
+		},
+		"bar3D": &cPlotArea{
+			Bar3DChart: &c,
+			CatAx:      f.drawPlotAreaCatAx(),
+			ValAx:      f.drawPlotAreaValAx(),
+		},
+	}
+	return charts[formatSet.Type]
 }
 
 // drawDoughnutChart provides function to draw the c:plotArea element for
@@ -711,15 +684,7 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 // drawChartSeriesDLbls provides function to draw the c:dLbls element by given
 // format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
-	dLbls := &cDLbls{
-		ShowLegendKey:   &attrValBool{Val: formatSet.Legend.ShowLegendKey},
-		ShowVal:         &attrValBool{Val: formatSet.Plotarea.ShowVal},
-		ShowCatName:     &attrValBool{Val: formatSet.Plotarea.ShowCatName},
-		ShowSerName:     &attrValBool{Val: formatSet.Plotarea.ShowSerName},
-		ShowBubbleSize:  &attrValBool{Val: formatSet.Plotarea.ShowBubbleSize},
-		ShowPercent:     &attrValBool{Val: formatSet.Plotarea.ShowPercent},
-		ShowLeaderLines: &attrValBool{Val: formatSet.Plotarea.ShowLeaderLines},
-	}
+	dLbls := f.drawChartDLbls(formatSet)
 	chartSeriesDLbls := map[string]*cDLbls{Bar: dLbls, Bar3D: dLbls, Doughnut: dLbls, Line: dLbls, Pie: dLbls, Pie3D: dLbls, Radar: dLbls, Scatter: nil}
 	return chartSeriesDLbls[formatSet.Type]
 }
@@ -837,21 +802,11 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 	}
 }
 
-// addDrawingChart provides function to add chart graphic frame by given sheet,
-// drawingXML, cell, width, height, relationship index and format sets.
-func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, formatSet *formatPicture) {
-	cell = strings.ToUpper(cell)
-	fromCol := string(strings.Map(letterOnlyMapF, cell))
-	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
-	row := fromRow - 1
-	col := titleToNumber(fromCol)
-	width = int(float64(width) * formatSet.XScale)
-	height = int(float64(height) * formatSet.YScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
-	content := xlsxWsDr{}
-	content.A = NameSpaceDrawingML
-	content.Xdr = NameSpaceDrawingMLSpreadSheet
-	cNvPrID := 1
+// drawingParser provides function to parse drawingXML. In order to solve the
+// problem that the label structure is changed after serialization and
+// deserialization, two different structures: decodeWsDr and encodeWsDr are
+// defined.
+func (f *File) drawingParser(drawingXML string, cNvPrID int, content *xlsxWsDr) {
 	_, ok := f.XLSX[drawingXML]
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
@@ -870,6 +825,24 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 			})
 		}
 	}
+}
+
+// addDrawingChart provides function to add chart graphic frame by given sheet,
+// drawingXML, cell, width, height, relationship index and format sets.
+func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, formatSet *formatPicture) {
+	cell = strings.ToUpper(cell)
+	fromCol := string(strings.Map(letterOnlyMapF, cell))
+	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
+	row := fromRow - 1
+	col := titleToNumber(fromCol)
+	width = int(float64(width) * formatSet.XScale)
+	height = int(float64(height) * formatSet.YScale)
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	content := xlsxWsDr{}
+	content.A = NameSpaceDrawingML
+	content.Xdr = NameSpaceDrawingMLSpreadSheet
+	cNvPrID := 1
+	f.drawingParser(drawingXML, cNvPrID, &content)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}

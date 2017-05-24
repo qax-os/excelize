@@ -64,7 +64,7 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) {
 	rID := f.addSheetRelationships(sheet, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 	f.addSheetTable(sheet, rID)
 	f.addTable(sheet, tableXML, hxAxis, hyAxis, vxAxis, vyAxis, tableID, formatSet)
-	f.addTableContentTypePart(tableID)
+	f.addContentTypePart(tableID, "table")
 }
 
 // countTables provides function to get table files count storage in the folder
@@ -149,19 +149,4 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 	}
 	table, _ := xml.Marshal(t)
 	f.saveFileList(tableXML, string(table))
-}
-
-// addTableContentTypePart provides function to add image part relationships
-// in the file [Content_Types].xml by given drawing index.
-func (f *File) addTableContentTypePart(index int) {
-	content := f.contentTypesReader()
-	for _, v := range content.Overrides {
-		if v.PartName == "/xl/tables/table"+strconv.Itoa(index)+".xml" {
-			return
-		}
-	}
-	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    "/xl/tables/table" + strconv.Itoa(index) + ".xml",
-		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml",
-	})
 }

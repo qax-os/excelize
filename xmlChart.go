@@ -473,57 +473,39 @@ type cPageMargins struct {
 	T      float64 `xml:"t,attr"`
 }
 
+// formatChartAxis directly maps the format settings of the chart axis.
+type formatChartAxis struct {
+	Crossing            string `json:"crossing"`
+	MajorTickMark       string `json:"major_tick_mark"`
+	MinorTickMark       string `json:"minor_tick_mark"`
+	MinorUnitType       string `json:"minor_unit_type"`
+	MajorUnit           int    `json:"major_unit"`
+	MajorUnitType       string `json:"major_unit_type"`
+	DisplayUnits        string `json:"display_units"`
+	DisplayUnitsVisible bool   `json:"display_units_visible"`
+	DateAxis            bool   `json:"date_axis"`
+	NumFormat           string `json:"num_format"`
+	NumFont             struct {
+		Color     string `json:"color"`
+		Bold      bool   `json:"bold"`
+		Italic    bool   `json:"italic"`
+		Underline bool   `json:"underline"`
+	} `json:"num_font"`
+	NameLayout struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+	} `json:"name_layout"`
+}
+
 // formatChart directly maps the format settings of the chart.
 type formatChart struct {
-	Type   string              `json:"type"`
-	Series []formatChartSeries `json:"series"`
-	Format formatPicture       `json:"format"`
-	Legend formatChartLegend   `json:"legend"`
-	Title  formatChartTitle    `json:"title"`
-	XAxis  struct {
-		Crossing            string `json:"crossing"`
-		MajorTickMark       string `json:"major_tick_mark"`
-		MinorTickMark       string `json:"minor_tick_mark"`
-		MinorUnitType       string `json:"minor_unit_type"`
-		MajorUnit           int    `json:"major_unit"`
-		MajorUnitType       string `json:"major_unit_type"`
-		DisplayUnits        string `json:"display_units"`
-		DisplayUnitsVisible bool   `json:"display_units_visible"`
-		DateAxis            bool   `json:"date_axis"`
-		NumFormat           string `json:"num_format"`
-		NumFont             struct {
-			Color     string `json:"color"`
-			Bold      bool   `json:"bold"`
-			Italic    bool   `json:"italic"`
-			Underline bool   `json:"underline"`
-		} `json:"num_font"`
-		NameLayout struct {
-			X float64 `json:"x"`
-			Y float64 `json:"y"`
-		} `json:"name_layout"`
-	} `json:"x_axis"`
-	YAxis struct {
-		Crossing            string `json:"crossing"`
-		MajorTickMark       string `json:"major_tick_mark"`
-		MinorTickMark       string `json:"minor_tick_mark"`
-		MinorUnitType       string `json:"minor_unit_type"`
-		MajorUnit           int    `json:"major_unit"`
-		MajorUnitType       string `json:"major_unit_type"`
-		DisplayUnits        string `json:"display_units"`
-		DisplayUnitsVisible bool   `json:"display_units_visible"`
-		DateAxis            bool   `json:"date_axis"`
-		NumFormat           string `json:"num_format"`
-		NumFont             struct {
-			Color     string `json:"color"`
-			Bold      bool   `json:"bold"`
-			Italic    bool   `json:"italic"`
-			Underline bool   `json:"underline"`
-		} `json:"num_font"`
-		NameLayout struct {
-			X float64 `json:"x"`
-			Y float64 `json:"y"`
-		} `json:"name_layout"`
-	} `json:"y_axis"`
+	Type      string              `json:"type"`
+	Series    []formatChartSeries `json:"series"`
+	Format    formatPicture       `json:"format"`
+	Legend    formatChartLegend   `json:"legend"`
+	Title     formatChartTitle    `json:"title"`
+	XAxis     formatChartAxis     `json:"x_axis"`
+	YAxis     formatChartAxis     `json:"y_axis"`
 	Chartarea struct {
 		Border struct {
 			None bool `json:"none"`

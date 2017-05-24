@@ -123,13 +123,7 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 func (f *File) SetCellInt(sheet, axis string, value int) {
 	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	if xlsx.MergeCells != nil {
-		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
-				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
-			}
-		}
-	}
+	f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
@@ -150,13 +144,7 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 func (f *File) SetCellStr(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	if xlsx.MergeCells != nil {
-		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
-				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
-			}
-		}
-	}
+	f.mergeCellsParser(xlsx, axis)
 	if len(value) > 32767 {
 		value = value[0:32767]
 	}
@@ -189,13 +177,7 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 func (f *File) SetCellDefault(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
-	if xlsx.MergeCells != nil {
-		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
-				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
-			}
-		}
-	}
+	f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
@@ -272,7 +254,7 @@ func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 // continuous in a worksheet of XML.
 func checkSheet(xlsx *xlsxWorksheet) {
 	row := len(xlsx.SheetData.Row)
-	if row > 1 {
+	if row >= 1 {
 		lastRow := xlsx.SheetData.Row[row-1].R
 		if lastRow >= row {
 			row = lastRow

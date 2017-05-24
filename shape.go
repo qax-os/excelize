@@ -274,10 +274,11 @@ func (f *File) AddShape(sheet, cell, format string) {
 		f.addSheetDrawing(sheet, rID)
 	}
 	f.addDrawingShape(sheet, drawingXML, cell, formatSet)
-	f.addDrawingContentTypePart(drawingID)
+	f.addContentTypePart(drawingID, "drawings")
 }
 
-// addDrawingShape
+// addDrawingShape provides function to add preset geometry by given sheet,
+// drawingXMLand format sets.
 func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
 	textUnderlineType := map[string]bool{"none": true, "words": true, "sng": true, "dbl": true, "heavy": true, "dotted": true, "dottedHeavy": true, "dash": true, "dashHeavy": true, "dashLong": true, "dashLongHeavy": true, "dotDash": true, "dotDashHeavy": true, "dotDotDash": true, "dotDotDashHeavy": true, "wavy": true, "wavyHeavy": true, "wavyDbl": true}
 	u := formatSet.Font.Underline
@@ -297,24 +298,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	content.A = NameSpaceDrawingML
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := 1
-	_, ok = f.XLSX[drawingXML]
-	if ok { // Append Model
-		decodeWsDr := decodeWsDr{}
-		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
-		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
-		for _, v := range decodeWsDr.OneCellAnchor {
-			content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
-				EditAs:       v.EditAs,
-				GraphicFrame: v.Content,
-			})
-		}
-		for _, v := range decodeWsDr.TwoCellAnchor {
-			content.TwoCellAnchor = append(content.TwoCellAnchor, &xdrCellAnchor{
-				EditAs:       v.EditAs,
-				GraphicFrame: v.Content,
-			})
-		}
-	}
+	f.drawingParser(drawingXML, cNvPrID, &content)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}

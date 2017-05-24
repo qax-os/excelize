@@ -2,14 +2,6 @@ package excelize
 
 import "encoding/xml"
 
-const (
-	// sheet state values as defined by
-	// http://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
-	sheetStateVisible    = `visible`
-	sheetStateHidden     = `hidden`
-	sheetStateVeryHidden = `veryHidden`
-)
-
 // xmlxWorkbookRels contains xmlxWorkbookRelations which maps sheet id and sheet XML.
 type xlsxWorkbookRels struct {
 	XMLName       xml.Name               `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`

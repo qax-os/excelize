@@ -437,13 +437,20 @@ func (f *File) copySheet(from, to int) {
 
 // HideSheet provides function to hide worksheet by given name. A workbook must
 // contain at least one visible worksheet. If the given worksheet has been
-// activated, this setting will be invalidated.
+// activated, this setting will be invalidated. Sheet state values as defined by
+// http://msdn.microsoft.com/en-
+// us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
+//
+//    visible
+//    hidden
+//    veryHidden
+//
 func (f *File) HideSheet(name string) {
 	name = trimSheetName(name)
 	content := f.workbookReader()
 	count := 0
 	for _, v := range content.Sheets.Sheet {
-		if v.State != sheetStateHidden {
+		if v.State != `hidden` {
 			count++
 		}
 	}
@@ -455,7 +462,7 @@ func (f *File) HideSheet(name string) {
 			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
 		}
 		if v.Name == name && count > 1 && !tabSelected {
-			content.Sheets.Sheet[k].State = sheetStateHidden
+			content.Sheets.Sheet[k].State = `hidden`
 		}
 	}
 }

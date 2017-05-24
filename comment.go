@@ -47,7 +47,7 @@ func (f *File) AddComment(sheet, cell, format string) {
 	commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
 	f.addComment(commentsXML, cell, formatSet)
 	f.addDrawingVML(commentID, drawingVML, cell)
-	f.addCommentsContentTypePart(commentID)
+	f.addContentTypePart(commentID, "comments")
 }
 
 // addDrawingVML provides function to create comment as
