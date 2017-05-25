@@ -6,27 +6,27 @@ import "encoding/xml"
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
 type xlsxWorksheet struct {
-	XMLName               xml.Name                   `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
-	SheetPr               *xlsxSheetPr               `xml:"sheetPr"`
-	Dimension             xlsxDimension              `xml:"dimension"`
-	SheetViews            xlsxSheetViews             `xml:"sheetViews,omitempty"`
-	SheetFormatPr         *xlsxSheetFormatPr         `xml:"sheetFormatPr"`
-	Cols                  *xlsxCols                  `xml:"cols,omitempty"`
-	SheetData             xlsxSheetData              `xml:"sheetData"`
-	SheetProtection       *xlsxSheetProtection       `xml:"sheetProtection"`
-	MergeCells            *xlsxMergeCells            `xml:"mergeCells,omitempty"`
-	ConditionalFormatting *xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	DataValidations       *xlsxDataValidations       `xml:"dataValidations"`
-	Hyperlinks            *xlsxHyperlinks            `xml:"hyperlinks"`
-	PrintOptions          *xlsxPrintOptions          `xml:"printOptions"`
-	PageMargins           *xlsxPageMargins           `xml:"pageMargins"`
-	PageSetUp             *xlsxPageSetUp             `xml:"pageSetup"`
-	HeaderFooter          *xlsxHeaderFooter          `xml:"headerFooter"`
-	Drawing               *xlsxDrawing               `xml:"drawing"`
-	LegacyDrawing         *xlsxLegacyDrawing         `xml:"legacyDrawing"`
-	Picture               *xlsxPicture               `xml:"picture"`
-	TableParts            *xlsxTableParts            `xml:"tableParts"`
-	ExtLst                *xlsxExtLst                `xml:"extLst"`
+	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
+	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
+	Dimension             xlsxDimension                `xml:"dimension"`
+	SheetViews            xlsxSheetViews               `xml:"sheetViews,omitempty"`
+	SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
+	Cols                  *xlsxCols                    `xml:"cols,omitempty"`
+	SheetData             xlsxSheetData                `xml:"sheetData"`
+	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
+	MergeCells            *xlsxMergeCells              `xml:"mergeCells,omitempty"`
+	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
+	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
+	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
+	PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
+	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
+	PageSetUp             *xlsxPageSetUp               `xml:"pageSetup"`
+	HeaderFooter          *xlsxHeaderFooter            `xml:"headerFooter"`
+	Drawing               *xlsxDrawing                 `xml:"drawing"`
+	LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
+	Picture               *xlsxPicture                 `xml:"picture"`
+	TableParts            *xlsxTableParts              `xml:"tableParts"`
+	ExtLst                *xlsxExtLst                  `xml:"extLst"`
 }
 
 // xlsxDrawing change r:id to rid in the namespace.
@@ -348,6 +348,7 @@ type xlsxSheetProtection struct {
 // condition is true. This collection expresses conditional formatting rules
 // applied to a particular cell or range.
 type xlsxConditionalFormatting struct {
+	SQRef  string `xml:"sqref,attr,omitempty"`
 	CfRule string `xml:",innerxml"`
 }
 

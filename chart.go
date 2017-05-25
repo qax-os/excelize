@@ -390,12 +390,12 @@ func (f *File) drawBarChart(formatSet *formatChart) *cPlotArea {
 		},
 	}
 	charts := map[string]*cPlotArea{
-		"bar": &cPlotArea{
+		"bar": {
 			BarChart: &c,
 			CatAx:    f.drawPlotAreaCatAx(),
 			ValAx:    f.drawPlotAreaValAx(),
 		},
-		"bar3D": &cPlotArea{
+		"bar3D": {
 			Bar3DChart: &c,
 			CatAx:      f.drawPlotAreaCatAx(),
 			ValAx:      f.drawPlotAreaValAx(),
