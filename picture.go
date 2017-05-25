@@ -181,8 +181,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	content := xlsxWsDr{}
 	content.A = NameSpaceDrawingML
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
-	cNvPrID := 1
-	f.drawingParser(drawingXML, cNvPrID, &content)
+	cNvPrID := f.drawingParser(drawingXML, &content)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}

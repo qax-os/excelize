@@ -806,7 +806,8 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 // problem that the label structure is changed after serialization and
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
-func (f *File) drawingParser(drawingXML string, cNvPrID int, content *xlsxWsDr) {
+func (f *File) drawingParser(drawingXML string, content *xlsxWsDr) int {
+	cNvPrID := 1
 	_, ok := f.XLSX[drawingXML]
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
@@ -825,6 +826,7 @@ func (f *File) drawingParser(drawingXML string, cNvPrID int, content *xlsxWsDr) 
 			})
 		}
 	}
+	return cNvPrID
 }
 
 // addDrawingChart provides function to add chart graphic frame by given sheet,
@@ -841,8 +843,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	content := xlsxWsDr{}
 	content.A = NameSpaceDrawingML
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
-	cNvPrID := 1
-	f.drawingParser(drawingXML, cNvPrID, &content)
+	cNvPrID := f.drawingParser(drawingXML, &content)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}

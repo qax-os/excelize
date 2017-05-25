@@ -297,8 +297,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	content := xlsxWsDr{}
 	content.A = NameSpaceDrawingML
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
-	cNvPrID := 1
-	f.drawingParser(drawingXML, cNvPrID, &content)
+	cNvPrID := f.drawingParser(drawingXML, &content)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = "oneCell"
 	from := xlsxFrom{}
