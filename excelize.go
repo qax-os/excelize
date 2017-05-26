@@ -135,8 +135,23 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	completeRow(xlsx, rows, cell)
 	completeCol(xlsx, rows, cell)
 
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell)
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
+}
+
+// prepareCellStyle provides function to prepare style index of cell in
+// worksheet by given column index.
+func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col int) int {
+	s := 0
+	if xlsx.Cols != nil {
+		for _, v := range xlsx.Cols.Col {
+			if v.Min <= col && col <= v.Max {
+				s = v.Style
+			}
+		}
+	}
+	return s
 }
 
 // SetCellStr provides function to set string type value of a cell. Total number
@@ -168,6 +183,7 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 			}
 		}
 	}
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell)
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 }
@@ -189,6 +205,7 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 	completeRow(xlsx, rows, cell)
 	completeCol(xlsx, rows, cell)
 
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell)
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 }
