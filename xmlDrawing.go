@@ -198,8 +198,9 @@ type xlsxWsDr struct {
 	XMLName       xml.Name         `xml:"xdr:wsDr"`
 	OneCellAnchor []*xdrCellAnchor `xml:"xdr:oneCellAnchor"`
 	TwoCellAnchor []*xdrCellAnchor `xml:"xdr:twoCellAnchor"`
-	Xdr           string           `xml:"xmlns:xdr,attr"`
-	A             string           `xml:"xmlns:a,attr"`
+	A             string           `xml:"xmlns:a,attr,omitempty"`
+	Xdr           string           `xml:"xmlns:xdr,attr,omitempty"`
+	R             string           `xml:"xmlns:r,attr,omitempty"`
 }
 
 // xlsxGraphicFrame (Graphic Frame) directly maps the xdr:graphicFrame element.

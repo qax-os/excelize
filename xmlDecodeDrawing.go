@@ -18,6 +18,7 @@ type decodeCellAnchor struct {
 type decodeWsDr struct {
 	A             string              `xml:"xmlns a,attr"`
 	Xdr           string              `xml:"xmlns xdr,attr"`
+	R             string              `xml:"xmlns r,attr"`
 	OneCellAnchor []*decodeCellAnchor `xml:"oneCellAnchor,omitempty"`
 	TwoCellAnchor []*decodeCellAnchor `xml:"twoCellAnchor,omitempty"`
 	XMLName       xml.Name            `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr,omitempty"`

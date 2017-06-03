@@ -812,6 +812,7 @@ func (f *File) drawingParser(drawingXML string, content *xlsxWsDr) int {
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
 		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
+		content.R = decodeWsDr.R
 		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
 		for _, v := range decodeWsDr.OneCellAnchor {
 			content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{

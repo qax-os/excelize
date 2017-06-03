@@ -7,7 +7,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Luxurioust/excelize)](https://goreportcard.com/report/github.com/Luxurioust/excelize)
 [![GoDoc](https://godoc.org/github.com/Luxurioust/excelize?status.svg)](https://godoc.org/github.com/Luxurioust/excelize)
 [![Licenses](https://img.shields.io/badge/license-bsd-orange.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Join the chat at https://gitter.im/xuri-excelize/Lobby](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/xuri-excelize/Lobby)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/xuri)
 
 ## Introduction
 
