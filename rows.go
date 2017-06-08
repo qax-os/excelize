@@ -148,3 +148,27 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
 }
+
+// HideRow provides a function to set hidden of a single row by given worksheet index and row index. For example, hide row 3 in Sheet1:
+//
+//    xlsx.HideRow("Sheet1", 2)
+//
+func (f *File) HideRow(sheet string, rowIndex int) {
+	xlsx := f.workSheetReader(sheet)
+	rows := rowIndex + 1
+	cells := 0
+	completeRow(xlsx, rows, cells)
+	xlsx.SheetData.Row[rowIndex].Hidden = true
+}
+
+// UnhideRow provides a function to set unhidden of a single row by given worksheet index and row index. For example, unhide row 3 in Sheet1:
+//
+//    xlsx.UnhideRow("Sheet1", 2)
+//
+func (f *File) UnhideRow(sheet string, rowIndex int) {
+	xlsx := f.workSheetReader(sheet)
+	rows := rowIndex + 1
+	cells := 0
+	completeRow(xlsx, rows, cells)
+	xlsx.SheetData.Row[rowIndex].Hidden = false
+}

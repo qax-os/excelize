@@ -477,6 +477,19 @@ func TestSheetVisibility(t *testing.T) {
 	}
 }
 
+func TestRowVisibility(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.HideRow("Sheet3", 2)
+	xlsx.UnhideRow("Sheet3", 2)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestCopySheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {
@@ -535,6 +548,45 @@ func TestAddComments(t *testing.T) {
 	}
 	xlsx.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`)
 	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestAutoFilter(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", ``)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x != blanks"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == blanks"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x != nonblanks"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == nonblanks"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x <= 1 and x >= 2"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == 1 or x == 2"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == 1 or x == 2*"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x <= 1 and x >= blanks"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x -- y or x == *2*"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x != y or x ? *2"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x -- y o r x == *2"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x -- y"}`)
+	t.Log(err)
+	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"A","expression":"x -- y"}`)
+	t.Log(err)
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)

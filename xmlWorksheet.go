@@ -14,6 +14,7 @@ type xlsxWorksheet struct {
 	Cols                  *xlsxCols                    `xml:"cols,omitempty"`
 	SheetData             xlsxSheetData                `xml:"sheetData"`
 	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
+	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells,omitempty"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
 	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`

@@ -450,7 +450,7 @@ func (f *File) HideSheet(name string) {
 	content := f.workbookReader()
 	count := 0
 	for _, v := range content.Sheets.Sheet {
-		if v.State != `hidden` {
+		if v.State != "hidden" {
 			count++
 		}
 	}
@@ -462,7 +462,7 @@ func (f *File) HideSheet(name string) {
 			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
 		}
 		if v.Name == name && count > 1 && !tabSelected {
-			content.Sheets.Sheet[k].State = `hidden`
+			content.Sheets.Sheet[k].State = "hidden"
 		}
 	}
 }
