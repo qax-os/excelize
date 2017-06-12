@@ -210,7 +210,7 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 }
 
 // Completion column element tags of XML in a sheet.
-func completeCol(xlsx *xlsxWorksheet, row int, cell int) {
+func completeCol(xlsx *xlsxWorksheet, row, cell int) {
 	if len(xlsx.SheetData.Row) < cell {
 		for i := len(xlsx.SheetData.Row); i < cell; i++ {
 			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{

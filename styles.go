@@ -776,8 +776,8 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 
 	xlsx := f.workSheetReader(sheet)
 
-	completeRow(xlsx, vxAxis+1, vyAxis+1)
-	completeCol(xlsx, vxAxis+1, vyAxis+1)
+	completeRow(xlsx, vyAxis+1, vxAxis+1)
+	completeCol(xlsx, vyAxis+1, vxAxis+1)
 
 	for r, row := range xlsx.SheetData.Row {
 		for k, c := range row.C {

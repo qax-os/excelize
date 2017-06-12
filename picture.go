@@ -218,7 +218,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 // addDrawingRelationships provides function to add image part relationships in
 // the file xl/drawings/_rels/drawing%d.xml.rels by given drawing index,
 // relationship type and target.
-func (f *File) addDrawingRelationships(index int, relType string, target string) int {
+func (f *File) addDrawingRelationships(index int, relType, target string) int {
 	var rels = "xl/drawings/_rels/drawing" + strconv.Itoa(index) + ".xml.rels"
 	var drawingRels xlsxWorkbookRels
 	var rID = 1
@@ -257,7 +257,7 @@ func (f *File) countMedia() int {
 
 // addMedia provides function to add picture into folder xl/media/image by given
 // file name and extension name.
-func (f *File) addMedia(file string, ext string) {
+func (f *File) addMedia(file, ext string) {
 	count := f.countMedia()
 	dat, _ := ioutil.ReadFile(file)
 	media := "xl/media/image" + strconv.Itoa(count+1) + ext
@@ -341,7 +341,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 // getSheetRelationshipsTargetByID provides function to get Target attribute
 // value in xl/worksheets/_rels/sheet%d.xml.rels by given sheet name and
 // relationship index.
-func (f *File) getSheetRelationshipsTargetByID(sheet string, rID string) string {
+func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
 	var sheetRels xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)

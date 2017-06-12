@@ -236,12 +236,10 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	vxAxis := titleToNumber(vcol)
 
 	if vxAxis < hxAxis {
-		hcell, vcell = vcell, hcell
 		vxAxis, hxAxis = hxAxis, vxAxis
 	}
 
 	if vyAxis < hyAxis {
-		hcell, vcell = vcell, hcell
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
 	ref := toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
