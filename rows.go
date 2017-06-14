@@ -149,26 +149,33 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	}
 }
 
-// HideRow provides a function to set hidden of a single row by given worksheet index and row index. For example, hide row 3 in Sheet1:
+// SetRowVisible provides a function to set visible of a single row by given
+// worksheet index and row index. For example, hide row 3 in Sheet1:
 //
-//    xlsx.HideRow("Sheet1", 2)
+//    xlsx.SetRowVisible("Sheet1", 2, false)
 //
-func (f *File) HideRow(sheet string, rowIndex int) {
+func (f *File) SetRowVisible(sheet string, rowIndex int, visible bool) {
 	xlsx := f.workSheetReader(sheet)
 	rows := rowIndex + 1
 	cells := 0
 	completeRow(xlsx, rows, cells)
+	if visible {
+		xlsx.SheetData.Row[rowIndex].Hidden = false
+		return
+	}
 	xlsx.SheetData.Row[rowIndex].Hidden = true
 }
 
-// UnhideRow provides a function to set unhidden of a single row by given worksheet index and row index. For example, unhide row 3 in Sheet1:
+// GetRowVisible provides a function to get visible of a single row by given
+// worksheet index and row index. For example, get visible state of row 3 in
+// Sheet1:
 //
-//    xlsx.UnhideRow("Sheet1", 2)
+//    xlsx.GetRowVisible("Sheet1", 2)
 //
-func (f *File) UnhideRow(sheet string, rowIndex int) {
+func (f *File) GetRowVisible(sheet string, rowIndex int) bool {
 	xlsx := f.workSheetReader(sheet)
 	rows := rowIndex + 1
 	cells := 0
 	completeRow(xlsx, rows, cells)
-	xlsx.SheetData.Row[rowIndex].Hidden = false
+	return !xlsx.SheetData.Row[rowIndex].Hidden
 }

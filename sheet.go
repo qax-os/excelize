@@ -435,19 +435,31 @@ func (f *File) copySheet(from, to int) {
 	}
 }
 
-// HideSheet provides function to hide worksheet by given name. A workbook must
-// contain at least one visible worksheet. If the given worksheet has been
-// activated, this setting will be invalidated. Sheet state values as defined by
-// http://msdn.microsoft.com/en-
+// SetSheetVisible provides function to set worksheet visible by given worksheet
+// name. A workbook must contain at least one visible worksheet. If the given
+// worksheet has been activated, this setting will be invalidated. Sheet state
+// values as defined by http://msdn.microsoft.com/en-
 // us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
 //
 //    visible
 //    hidden
 //    veryHidden
 //
-func (f *File) HideSheet(name string) {
+// For example, hide Sheet1:
+//
+//    xlsx.SetSheetVisible("Sheet1", false)
+//
+func (f *File) SetSheetVisible(name string, visible bool) {
 	name = trimSheetName(name)
 	content := f.workbookReader()
+	if visible {
+		for k, v := range content.Sheets.Sheet {
+			if v.Name == name {
+				content.Sheets.Sheet[k].State = ""
+			}
+		}
+		return
+	}
 	count := 0
 	for _, v := range content.Sheets.Sheet {
 		if v.State != "hidden" {
@@ -467,15 +479,23 @@ func (f *File) HideSheet(name string) {
 	}
 }
 
-// UnhideSheet provides function to unhide worksheet by given name.
-func (f *File) UnhideSheet(name string) {
+// GetSheetVisible provides function to get worksheet visible by given worksheet
+// name. For example, get visible state of Sheet1:
+//
+//    xlsx.GetSheetVisible("Sheet1")
+//
+func (f *File) GetSheetVisible(name string) bool {
 	name = trimSheetName(name)
 	content := f.workbookReader()
+	visible := false
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == name {
-			content.Sheets.Sheet[k].State = ""
+			if content.Sheets.Sheet[k].State == "" || content.Sheets.Sheet[k].State == "visible" {
+				visible = true
+			}
 		}
 	}
+	return visible
 }
 
 // trimSheetName provides function to trim invaild characters by given worksheet

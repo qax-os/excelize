@@ -468,9 +468,10 @@ func TestSheetVisibility(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.HideSheet("Sheet2")
-	xlsx.HideSheet("Sheet1")
-	xlsx.UnhideSheet("Sheet1")
+	xlsx.SetSheetVisible("Sheet2", false)
+	xlsx.SetSheetVisible("Sheet1", false)
+	xlsx.SetSheetVisible("Sheet1", true)
+	xlsx.GetSheetVisible("Sheet1")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
@@ -482,8 +483,9 @@ func TestRowVisibility(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.HideRow("Sheet3", 2)
-	xlsx.UnhideRow("Sheet3", 2)
+	xlsx.SetRowVisible("Sheet3", 2, false)
+	xlsx.SetRowVisible("Sheet3", 2, true)
+	xlsx.GetRowVisible("Sheet3", 2)
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)

@@ -172,13 +172,18 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //
 //    err = xlsx.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
 //
-// column defines the filter columns in a autofilter range based on simple criteria
+// column defines the filter columns in a autofilter range based on simple
+// criteria
 //
-// It isn't sufficient to just specify the filter condition. You must also hide any rows that don't match the filter condition. Rows are hidden using the HideRow() method. Excelize can't filter rows automatically since this isn't part of the file format.
+// It isn't sufficient to just specify the filter condition. You must also hide
+// any rows that don't match the filter condition. Rows are hidden using the
+// SetRowVisible() method. Excelize can't filter rows automatically since this
+// isn't part of the file format.
 //
 // Setting a filter criteria for a column:
 //
-// expression defines the conditions, the following operators are available for setting the filter criteria:
+// expression defines the conditions, the following operators are available for
+// setting the filter criteria:
 //
 //    ==
 //    !=
@@ -189,7 +194,8 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //    and
 //    or
 //
-// An expression can comprise a single statement or two statements separated by the and and or operators. For example:
+// An expression can comprise a single statement or two statements separated by
+// the and and or operators. For example:
 //
 //    x <  2000
 //    x >  2000
@@ -197,7 +203,8 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //    x >  2000 and x <  5000
 //    x == 2000 or  x == 5000
 //
-// Filtering of blank or non-blank data can be achieved by using a value of Blanks or NonBlanks in the expression:
+// Filtering of blank or non-blank data can be achieved by using a value of
+// Blanks or NonBlanks in the expression:
 //
 //    x == Blanks
 //    x == NonBlanks
@@ -211,9 +218,14 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //    x == *b*     // contains b
 //    x != *b*     // doesn't contains b
 //
-// You can also use '*' to match any character or number and '?' to match any single character or number. No other regular expression quantifier is supported by Excel's filters. Excel's regular expression characters can be escaped using '~'.
+// You can also use '*' to match any character or number and '?' to match any
+// single character or number. No other regular expression quantifier is
+// supported by Excel's filters. Excel's regular expression characters can be
+// escaped using '~'.
 //
-// The placeholder variable x in the above examples can be replaced by any simple string. The actual placeholder name is ignored internally so the following are all equivalent:
+// The placeholder variable x in the above examples can be replaced by any
+// simple string. The actual placeholder name is ignored internally so the
+// following are all equivalent:
 //
 //    x     < 2000
 //    col   < 2000
