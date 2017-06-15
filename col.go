@@ -13,6 +13,59 @@ const (
 	EMU                    int = 9525
 )
 
+// GetColVisible provides a function to get visible of a single column by given
+// worksheet index and column name. For example, get visible state of column D
+// in Sheet1:
+//
+//    xlsx.GetColVisible("Sheet1", "D")
+//
+func (f *File) GetColVisible(sheet, column string) bool {
+	xlsx := f.workSheetReader(sheet)
+	col := titleToNumber(strings.ToUpper(column)) + 1
+	visible := true
+	if xlsx.Cols == nil {
+		return visible
+	}
+	for _, c := range xlsx.Cols.Col {
+		if c.Min <= col && col <= c.Max {
+			visible = !c.Hidden
+		}
+	}
+	return visible
+}
+
+// SetColVisible provides a function to set visible of a single column by given
+// worksheet index and column name. For example, hide column D in Sheet1:
+//
+//    xlsx.SetColVisible("Sheet1", "D", false)
+//
+func (f *File) SetColVisible(sheet, column string, visible bool) {
+	xlsx := f.workSheetReader(sheet)
+	c := titleToNumber(strings.ToUpper(column)) + 1
+	col := xlsxCol{
+		Min:         c,
+		Max:         c,
+		Hidden:      !visible,
+		CustomWidth: true,
+	}
+	if xlsx.Cols == nil {
+		cols := xlsxCols{}
+		cols.Col = append(cols.Col, col)
+		xlsx.Cols = &cols
+		return
+	}
+	for _, v := range xlsx.Cols.Col {
+		if v.Min <= c && c <= v.Max {
+			col = v
+		}
+	}
+	col.Min = c
+	col.Max = c
+	col.Hidden = !visible
+	col.CustomWidth = true
+	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
+}
+
 // SetColWidth provides function to set the width of a single column or multiple
 // columns. For example:
 //

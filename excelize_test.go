@@ -492,6 +492,26 @@ func TestRowVisibility(t *testing.T) {
 	}
 }
 
+func TestColumnVisibility(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetColVisible("Sheet1", "F", false)
+	xlsx.SetColVisible("Sheet1", "F", true)
+	xlsx.GetColVisible("Sheet1", "F")
+	xlsx.SetColVisible("Sheet3", "E", false)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx, err = OpenFile("./test/Workbook_3.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.GetColVisible("Sheet1", "B")
+}
+
 func TestCopySheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {

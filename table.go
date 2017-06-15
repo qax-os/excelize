@@ -297,7 +297,7 @@ func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *fo
 	return nil
 }
 
-// writeAutoFilter provides funtion to check for single or double custom filters
+// writeAutoFilter provides function to check for single or double custom filters
 // as default filters and handle them accordingly.
 func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []string) {
 	if len(exp) == 1 && exp[0] == 2 {
