@@ -551,8 +551,10 @@ func TestAddShape(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.AddShape("Sheet1", "A30", `{"type":"rect","text":"Rectangle Shape"}`)
-	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}, "height": 90}`)
+	xlsx.AddShape("Sheet1", "A30", `{"type":"rect","paragraph":[{"text":"Rectangle","font":{"color":"CD5C5C"}},{"text":"Shape","font":{"bold":true,"color":"2980B9"}}]}`)
+	xlsx.AddShape("Sheet1", "B30", `{"type":"rect","paragraph":[{"text":"Rectangle"},{}]}`)
+	xlsx.AddShape("Sheet1", "C30", `{"type":"rect","paragraph":[]}`)
+	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}], "height": 90}`)
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)

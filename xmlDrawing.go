@@ -330,7 +330,7 @@ type aFontRef struct {
 // paragraphs multiple runs of text.
 type xdrTxBody struct {
 	BodyPr *aBodyPr `xml:"a:bodyPr"`
-	P      *aP      `xml:"a:p"`
+	P      []*aP    `xml:"a:p"`
 }
 
 // formatPicture directly maps the format settings of the picture.
@@ -346,15 +346,22 @@ type formatPicture struct {
 
 // formatShape directly maps the format settings of the shape.
 type formatShape struct {
-	Type   string           `json:"type"`
-	Width  int              `json:"width"`
-	Height int              `json:"height"`
-	Format formatPicture    `json:"format"`
-	Font   formatFont       `json:"font"`
-	Text   string           `json:"text"`
-	Color  formatShapeColor `json:"color"`
+	Type      string                 `json:"type"`
+	Width     int                    `json:"width"`
+	Height    int                    `json:"height"`
+	Format    formatPicture          `json:"format"`
+	Color     formatShapeColor       `json:"color"`
+	Paragraph []formatShapeParagraph `json:"paragraph"`
 }
 
+// formatShapeParagraph directly maps the format settings of the paragraph in
+// the shape.
+type formatShapeParagraph struct {
+	Font formatFont `json:"font"`
+	Text string     `json:"text"`
+}
+
+// formatShapeColor directly maps the color settings of the shape.
 type formatShapeColor struct {
 	Line   string `json:"line"`
 	Fill   string `json:"fill"`
