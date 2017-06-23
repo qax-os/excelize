@@ -65,7 +65,23 @@ func OpenReader(r io.Reader) (*File, error) {
 	}, nil
 }
 
-// SetCellValue provides function to set int or string type value of a cell.
+// SetCellValue provides function to set value of a cell. The following shows
+// the supported data types:
+//
+//    int
+//    int8
+//    int16
+//    int32
+//    int64
+//    float32
+//    float64
+//    string
+//    []byte
+//    time.Time
+//    nil
+//
+// Note that default date format is m/d/yy h:mm of time.Time type value. You can
+// set numbers format by SetCellStyle() method.
 func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	switch t := value.(type) {
 	case int:
@@ -88,11 +104,39 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 		f.SetCellStr(sheet, axis, string(t))
 	case time.Time:
 		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 32))
-		f.SetCellStyle(sheet, axis, axis, `{"number_format": 22}`)
+		f.setDefaultTimeStyle(sheet, axis)
 	case nil:
 		f.SetCellStr(sheet, axis, "")
 	default:
 		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+	}
+}
+
+// getCellStyle provides function to get cell style index by given worksheet
+// name and cell coordinates.
+func (f *File) getCellStyle(sheet, axis string) int {
+	xlsx := f.workSheetReader(sheet)
+	axis = strings.ToUpper(axis)
+	f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
+	yAxis := titleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	return f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
+}
+
+// setDefaultTimeStyle provides function to set default numbers format for
+// time.Time type cell value by given worksheet name and cell coordinates.
+func (f *File) setDefaultTimeStyle(sheet, axis string) {
+	if f.getCellStyle(sheet, axis) == 0 {
+		f.SetCellStyle(sheet, axis, axis, `{"number_format": 22}`)
 	}
 }
 
@@ -119,7 +163,8 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 	return worksheet
 }
 
-// SetCellInt provides function to set int type value of a cell.
+// SetCellInt provides function to set int type value of a cell by given
+// worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) {
 	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
@@ -141,7 +186,7 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 }
 
 // prepareCellStyle provides function to prepare style index of cell in
-// worksheet by given column index.
+// worksheet by given column index and style index.
 func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
 	if xlsx.Cols != nil && style == 0 {
 		for _, v := range xlsx.Cols.Col {
