@@ -57,6 +57,7 @@ func (f *File) Write(w io.Writer) error {
 	f.workbookWriter()
 	f.workbookRelsWriter()
 	f.worksheetWriter()
+	f.styleSheetWriter()
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {

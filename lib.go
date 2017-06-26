@@ -50,9 +50,12 @@ func readFile(file *zip.File) string {
 	return string(buff.Bytes())
 }
 
-// toAlphaString provides function to convert integer to Excel sheet column
-// title.
-func toAlphaString(value int) string {
+// ToAlphaString provides function to convert integer to Excel sheet column
+// title. For example convert 37 to column title AK:
+//
+//     excelize.ToAlphaString(37)
+//
+func ToAlphaString(value int) string {
 	if value < 0 {
 		return ""
 	}

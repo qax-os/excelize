@@ -70,8 +70,7 @@ func (f *File) formattedValue(s int, v string) string {
 	if s == 0 {
 		return v
 	}
-	var styleSheet xlsxStyleSheet
-	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
+	styleSheet := f.stylesReader()
 	ok := builtInNumFmtFunc[styleSheet.CellXfs.Xf[s].NumFmtID]
 	if ok != nil {
 		return ok(styleSheet.CellXfs.Xf[s].NumFmtID, v)
@@ -200,7 +199,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	if xlsx.MergeCells != nil {
 		mergeCell := xlsxMergeCell{}
 		// Correct the coordinate area, such correct C1:B3 to B1:C3.
-		mergeCell.Ref = toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+		mergeCell.Ref = ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
 		// Delete the merged cells of the overlapping area.
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(hcell, xlsx.MergeCells.Cells[i].Ref) || checkCellInArea(strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0], mergeCell.Ref) {
@@ -213,7 +212,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	} else {
 		mergeCell := xlsxMergeCell{}
 		// Correct the coordinate area, such correct C1:B3 to B1:C3.
-		mergeCell.Ref = toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+		mergeCell.Ref = ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
 		mergeCells := xlsxMergeCells{}
 		mergeCells.Cells = append(mergeCells.Cells, &mergeCell)
 		xlsx.MergeCells = &mergeCells

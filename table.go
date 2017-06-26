@@ -108,12 +108,12 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 		vyAxis++
 	}
 	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
-	ref := toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+	ref := ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
 	tableColumn := []*xlsxTableColumn{}
 	idx := 0
 	for i := hxAxis; i <= vxAxis; i++ {
 		idx++
-		cell := toAlphaString(i+1) + strconv.Itoa(hyAxis+1)
+		cell := ToAlphaString(i+1) + strconv.Itoa(hyAxis+1)
 		name := f.GetCellValue(sheet, cell)
 		if _, err := strconv.Atoi(name); err == nil {
 			f.SetCellStr(sheet, cell, name)
@@ -254,7 +254,7 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	if vyAxis < hyAxis {
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
-	ref := toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+	ref := ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
 	refRange := vxAxis - hxAxis
 	err := f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
 	return err

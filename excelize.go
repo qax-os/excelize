@@ -20,6 +20,7 @@ type File struct {
 	Path         string
 	Sheet        map[string]*xlsxWorksheet
 	SheetCount   int
+	Styles       *xlsxStyleSheet
 	WorkBook     *xlsxWorkbook
 	WorkBookRels *xlsxWorkbookRels
 	XLSX         map[string]string
@@ -268,7 +269,7 @@ func completeCol(xlsx *xlsxWorksheet, row, cell int) {
 		if len(v.C) < cell {
 			start := len(v.C)
 			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(toAlphaString(iii + 1))
+				buffer.WriteString(ToAlphaString(iii + 1))
 				buffer.WriteString(strconv.Itoa(k + 1))
 				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, xlsxC{
 					R: buffer.String(),
@@ -300,7 +301,7 @@ func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 		start := len(xlsx.SheetData.Row[ii].C)
 		if start == 0 {
 			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(toAlphaString(iii + 1))
+				buffer.WriteString(ToAlphaString(iii + 1))
 				buffer.WriteString(strconv.Itoa(ii + 1))
 				xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
 					R: buffer.String(),
@@ -388,7 +389,7 @@ func checkRow(xlsx *xlsxWorksheet) {
 			xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
 			tmp := []xlsxC{}
 			for i := 0; i <= endCol; i++ {
-				buffer.WriteString(toAlphaString(i + 1))
+				buffer.WriteString(ToAlphaString(i + 1))
 				buffer.WriteString(strconv.Itoa(endRow))
 				tmp = append(tmp, xlsxC{
 					R: buffer.String(),

@@ -224,6 +224,26 @@ func parseTime(i int, v string) string {
 	return val.Format(format)
 }
 
+// stylesReader provides function to get the pointer to the structure after
+// deserialization of workbook.
+func (f *File) stylesReader() *xlsxStyleSheet {
+	if f.Styles == nil {
+		var styleSheet xlsxStyleSheet
+		xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
+		f.Styles = &styleSheet
+	}
+	return f.Styles
+}
+
+// styleSheetWriter provides function to save xl/styles.xml after serialize
+// structure.
+func (f *File) styleSheetWriter() {
+	if f.Styles != nil {
+		output, _ := xml.Marshal(f.Styles)
+		f.saveFileList("xl/styles.xml", replaceWorkSheetsRelationshipsNameSpace(string(output)))
+	}
+}
+
 // parseFormatStyleSet provides function to parse the format settings of the
 // borders.
 func parseFormatStyleSet(style string) (*formatCellStyle, error) {
@@ -500,23 +520,17 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    +-------+----------------------------------------------------+
 //
 func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
-	var styleSheet xlsxStyleSheet
-	xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
+	styleSheet := f.stylesReader()
 	formatCellStyle, err := parseFormatStyleSet(style)
 	if err != nil {
 		return err
 	}
-	numFmtID := setNumFmt(&styleSheet, formatCellStyle)
-	fontID := setFont(&styleSheet, formatCellStyle)
-	borderID := setBorders(&styleSheet, formatCellStyle)
-	fillID := setFills(&styleSheet, formatCellStyle)
-	applyAlignment, alignment := setAlignment(&styleSheet, formatCellStyle)
-	cellXfsID := setCellXfs(&styleSheet, fontID, numFmtID, fillID, borderID, applyAlignment, alignment)
-	output, err := xml.Marshal(styleSheet)
-	if err != nil {
-		return err
-	}
-	f.saveFileList("xl/styles.xml", replaceWorkSheetsRelationshipsNameSpace(string(output)))
+	numFmtID := setNumFmt(styleSheet, formatCellStyle)
+	fontID := setFont(styleSheet, formatCellStyle)
+	borderID := setBorders(styleSheet, formatCellStyle)
+	fillID := setFills(styleSheet, formatCellStyle)
+	applyAlignment, alignment := setAlignment(styleSheet, formatCellStyle)
+	cellXfsID := setCellXfs(styleSheet, fontID, numFmtID, fillID, borderID, applyAlignment, alignment)
 	f.setCellStyle(sheet, hcell, vcell, cellXfsID)
 	return err
 }
@@ -771,8 +785,8 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 	}
 
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	hcell = toAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1)
-	vcell = toAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+	hcell = ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1)
+	vcell = ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
 
 	xlsx := f.workSheetReader(sheet)
 
