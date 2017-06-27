@@ -174,7 +174,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	row := fromRow - 1
-	col := titleToNumber(fromCol)
+	col := TitleToNumber(fromCol)
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
@@ -391,7 +391,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	row := fromRow - 1
-	col := titleToNumber(fromCol)
+	col := TitleToNumber(fromCol)
 
 	drawingRelationships := strings.Replace(strings.Replace(target, "../drawings", "xl/drawings/_rels", -1), ".xml", ".xml.rels", -1)
 

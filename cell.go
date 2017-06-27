@@ -121,7 +121,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
-	yAxis := titleToNumber(col)
+	yAxis := TitleToNumber(col)
 
 	rows := xAxis + 1
 	cell := yAxis + 1
@@ -178,12 +178,12 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	hcol := string(strings.Map(letterOnlyMapF, hcell))
 	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
 	hyAxis := hrow - 1
-	hxAxis := titleToNumber(hcol)
+	hxAxis := TitleToNumber(hcol)
 
 	vcol := string(strings.Map(letterOnlyMapF, vcell))
 	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
 	vyAxis := vrow - 1
-	vxAxis := titleToNumber(vcol)
+	vxAxis := TitleToNumber(vcol)
 
 	if vxAxis < hxAxis {
 		hcell, vcell = vcell, hcell
@@ -199,7 +199,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	if xlsx.MergeCells != nil {
 		mergeCell := xlsxMergeCell{}
 		// Correct the coordinate area, such correct C1:B3 to B1:C3.
-		mergeCell.Ref = ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+		mergeCell.Ref = ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 		// Delete the merged cells of the overlapping area.
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(hcell, xlsx.MergeCells.Cells[i].Ref) || checkCellInArea(strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0], mergeCell.Ref) {
@@ -212,7 +212,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	} else {
 		mergeCell := xlsxMergeCell{}
 		// Correct the coordinate area, such correct C1:B3 to B1:C3.
-		mergeCell.Ref = ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+		mergeCell.Ref = ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 		mergeCells := xlsxMergeCells{}
 		mergeCells.Cells = append(mergeCells.Cells, &mergeCell)
 		xlsx.MergeCells = &mergeCells
@@ -227,18 +227,18 @@ func checkCellInArea(cell, area string) bool {
 	col := string(strings.Map(letterOnlyMapF, cell))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	xAxis := row - 1
-	yAxis := titleToNumber(col)
+	yAxis := TitleToNumber(col)
 
 	ref := strings.Split(area, ":")
 	hCol := string(strings.Map(letterOnlyMapF, ref[0]))
 	hRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, ref[0]))
 	hyAxis := hRow - 1
-	hxAxis := titleToNumber(hCol)
+	hxAxis := TitleToNumber(hCol)
 
 	vCol := string(strings.Map(letterOnlyMapF, ref[1]))
 	vRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, ref[1]))
 	vyAxis := vRow - 1
-	vxAxis := titleToNumber(vCol)
+	vxAxis := TitleToNumber(vCol)
 
 	if hxAxis <= yAxis && yAxis <= vxAxis && hyAxis <= xAxis && xAxis <= vyAxis {
 		result = true

@@ -51,16 +51,16 @@ func readFile(file *zip.File) string {
 }
 
 // ToAlphaString provides function to convert integer to Excel sheet column
-// title. For example convert 37 to column title AK:
+// title. For example convert 36 to column title AK:
 //
-//     excelize.ToAlphaString(37)
+//     excelize.ToAlphaString(36)
 //
 func ToAlphaString(value int) string {
 	if value < 0 {
 		return ""
 	}
 	var ans string
-	i := value
+	i := value + 1
 	for i > 0 {
 		ans = string((i-1)%26+65) + ans
 		i = (i - 1) / 26
@@ -68,8 +68,13 @@ func ToAlphaString(value int) string {
 	return ans
 }
 
-// titleToNumber provides function to convert Excel sheet column title to int.
-func titleToNumber(s string) int {
+// TitleToNumber provides function to convert Excel sheet column title to int
+// (this function doesn't do value check currently). For example convert AK to
+// column title 36:
+//
+//    excelize.TitleToNumber("AK")
+//
+func TitleToNumber(s string) int {
 	weight := 0.0
 	sum := 0
 	for i := len(s) - 1; i >= 0; i-- {

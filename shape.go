@@ -276,7 +276,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	row := fromRow - 1
-	col := titleToNumber(fromCol)
+	col := TitleToNumber(fromCol)
 	width := int(float64(formatSet.Width) * formatSet.Format.XScale)
 	height := int(float64(formatSet.Height) * formatSet.Format.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.Format.OffsetX, formatSet.Format.OffsetY, width, height)

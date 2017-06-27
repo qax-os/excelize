@@ -56,7 +56,7 @@ func (f *File) GetRows(sheet string) [][]string {
 				decoder.DecodeElement(&r, &startElement)
 				cr := r.R - 1
 				for _, colCell := range r.C {
-					c := titleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+					c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
 					val, _ := colCell.getValueFrom(f, d)
 					rows[cr][c] = val
 				}
@@ -88,7 +88,7 @@ func (f *File) getTotalRowsCols(sheet string) (int, int) {
 				decoder.DecodeElement(&r, &startElement)
 				tr = r.R
 				for _, colCell := range r.C {
-					col := titleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+					col := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
 					if col > tc {
 						tc = col
 					}

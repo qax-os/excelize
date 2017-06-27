@@ -148,7 +148,7 @@ func main() {
         os.Exit(1)
     }
     // Insert a picture.
-    err = xlsx.AddPicture("Sheet1", "A2", "./image1.gif", "")
+    err = xlsx.AddPicture("Sheet1", "A2", "./image1.png", "")
     if err != nil {
         fmt.Println(err)
     }

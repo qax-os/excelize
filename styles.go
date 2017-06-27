@@ -767,12 +767,12 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 	hcol := string(strings.Map(letterOnlyMapF, hcell))
 	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
 	hyAxis := hrow - 1
-	hxAxis := titleToNumber(hcol)
+	hxAxis := TitleToNumber(hcol)
 
 	vcol := string(strings.Map(letterOnlyMapF, vcell))
 	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
 	vyAxis := vrow - 1
-	vxAxis := titleToNumber(vcol)
+	vxAxis := TitleToNumber(vcol)
 
 	if vxAxis < hxAxis {
 		hcell, vcell = vcell, hcell
@@ -785,8 +785,8 @@ func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
 	}
 
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	hcell = ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1)
-	vcell = ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+	hcell = ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1)
+	vcell = ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 
 	xlsx := f.workSheetReader(sheet)
 

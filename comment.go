@@ -56,7 +56,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 	col := string(strings.Map(letterOnlyMapF, cell))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	xAxis := row - 1
-	yAxis := titleToNumber(col)
+	yAxis := TitleToNumber(col)
 	vml := vmlDrawing{
 		XMLNSv:  "urn:schemas-microsoft-com:vml",
 		XMLNSo:  "urn:schemas-microsoft-com:office:office",

@@ -837,7 +837,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	row := fromRow - 1
-	col := titleToNumber(fromCol)
+	col := TitleToNumber(fromCol)
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)

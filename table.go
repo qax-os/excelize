@@ -47,12 +47,12 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) {
 	hcol := string(strings.Map(letterOnlyMapF, hcell))
 	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
 	hyAxis := hrow - 1
-	hxAxis := titleToNumber(hcol)
+	hxAxis := TitleToNumber(hcol)
 
 	vcol := string(strings.Map(letterOnlyMapF, vcell))
 	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
 	vyAxis := vrow - 1
-	vxAxis := titleToNumber(vcol)
+	vxAxis := TitleToNumber(vcol)
 	if vxAxis < hxAxis {
 		vxAxis, hxAxis = hxAxis, vxAxis
 	}
@@ -108,12 +108,12 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 		vyAxis++
 	}
 	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
-	ref := ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+	ref := ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 	tableColumn := []*xlsxTableColumn{}
 	idx := 0
 	for i := hxAxis; i <= vxAxis; i++ {
 		idx++
-		cell := ToAlphaString(i+1) + strconv.Itoa(hyAxis+1)
+		cell := ToAlphaString(i) + strconv.Itoa(hyAxis+1)
 		name := f.GetCellValue(sheet, cell)
 		if _, err := strconv.Atoi(name); err == nil {
 			f.SetCellStr(sheet, cell, name)
@@ -240,12 +240,12 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	hcol := string(strings.Map(letterOnlyMapF, hcell))
 	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
 	hyAxis := hrow - 1
-	hxAxis := titleToNumber(hcol)
+	hxAxis := TitleToNumber(hcol)
 
 	vcol := string(strings.Map(letterOnlyMapF, vcell))
 	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
 	vyAxis := vrow - 1
-	vxAxis := titleToNumber(vcol)
+	vxAxis := TitleToNumber(vcol)
 
 	if vxAxis < hxAxis {
 		vxAxis, hxAxis = hxAxis, vxAxis
@@ -254,7 +254,7 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	if vyAxis < hyAxis {
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
-	ref := ToAlphaString(hxAxis+1) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis+1) + strconv.Itoa(vyAxis+1)
+	ref := ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 	refRange := vxAxis - hxAxis
 	err := f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
 	return err
@@ -275,7 +275,7 @@ func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *fo
 	if formatSet.Column == "" || formatSet.Expression == "" {
 		return nil
 	}
-	col := titleToNumber(formatSet.Column)
+	col := TitleToNumber(formatSet.Column)
 	offset := col - hxAxis
 	if offset < 0 || offset > refRange {
 		return fmt.Errorf("Incorrect index of column '%s'", formatSet.Column)

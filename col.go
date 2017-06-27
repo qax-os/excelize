@@ -21,7 +21,7 @@ const (
 //
 func (f *File) GetColVisible(sheet, column string) bool {
 	xlsx := f.workSheetReader(sheet)
-	col := titleToNumber(strings.ToUpper(column)) + 1
+	col := TitleToNumber(strings.ToUpper(column)) + 1
 	visible := true
 	if xlsx.Cols == nil {
 		return visible
@@ -41,7 +41,7 @@ func (f *File) GetColVisible(sheet, column string) bool {
 //
 func (f *File) SetColVisible(sheet, column string, visible bool) {
 	xlsx := f.workSheetReader(sheet)
-	c := titleToNumber(strings.ToUpper(column)) + 1
+	c := TitleToNumber(strings.ToUpper(column)) + 1
 	col := xlsxCol{
 		Min:         c,
 		Max:         c,
@@ -78,8 +78,8 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 //    }
 //
 func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
-	min := titleToNumber(strings.ToUpper(startcol)) + 1
-	max := titleToNumber(strings.ToUpper(endcol)) + 1
+	min := TitleToNumber(strings.ToUpper(startcol)) + 1
+	max := TitleToNumber(strings.ToUpper(endcol)) + 1
 	if min > max {
 		min, max = max, min
 	}
