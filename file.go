@@ -8,12 +8,12 @@ import (
 	"os"
 )
 
-// CreateFile provides function to create new file by default template. For
+// NewFile provides function to create new file by default template. For
 // example:
 //
-//    xlsx := CreateFile()
+//    xlsx := NewFile()
 //
-func CreateFile() *File {
+func NewFile() *File {
 	file := make(map[string]string)
 	file["_rels/.rels"] = XMLHeader + templateRels
 	file["docProps/app.xml"] = XMLHeader + templateDocpropsApp
@@ -35,12 +35,12 @@ func (f *File) Save() error {
 	if f.Path == "" {
 		return fmt.Errorf("No path defined for file, consider File.WriteTo or File.Write")
 	}
-	return f.WriteTo(f.Path)
+	return f.SaveAs(f.Path)
 }
 
-// WriteTo provides function to create or update to an xlsx file at the provided
+// SaveAs provides function to create or update to an xlsx file at the provided
 // path.
-func (f *File) WriteTo(name string) error {
+func (f *File) SaveAs(name string) error {
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err

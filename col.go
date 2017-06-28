@@ -69,7 +69,7 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 // SetColWidth provides function to set the width of a single column or multiple
 // columns. For example:
 //
-//    xlsx := excelize.CreateFile()
+//    xlsx := excelize.NewFile()
 //    xlsx.SetColWidth("Sheet1", "A", "H", 20)
 //    err := xlsx.Save()
 //    if err != nil {

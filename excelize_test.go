@@ -89,7 +89,7 @@ func TestOpenFile(t *testing.T) {
 		t.Log(err)
 	}
 	// Test write file to not exist directory.
-	err = xlsx.WriteTo("")
+	err = xlsx.SaveAs("")
 	if err != nil {
 		t.Log(err)
 	}
@@ -121,7 +121,7 @@ func TestAddPicture(t *testing.T) {
 		t.Log(err)
 	}
 	// Test write file to given path.
-	err = xlsx.WriteTo("./test/Workbook_2.xlsx")
+	err = xlsx.SaveAs("./test/Workbook_2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -135,7 +135,7 @@ func TestBrokenFile(t *testing.T) {
 		t.Log(err)
 	}
 	// Test write file with broken file struct with given path.
-	err = xlsx.WriteTo("./test/Workbook_3.xlsx")
+	err = xlsx.SaveAs("./test/Workbook_3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -154,9 +154,9 @@ func TestBrokenFile(t *testing.T) {
 	}
 }
 
-func TestCreateFile(t *testing.T) {
+func TestNewFile(t *testing.T) {
 	// Test create a XLSX file.
-	xlsx := CreateFile()
+	xlsx := NewFile()
 	xlsx.NewSheet(2, "XLSXSheet2")
 	xlsx.NewSheet(3, "XLSXSheet3")
 	xlsx.SetCellInt("Sheet2", "A23", 56)
@@ -171,17 +171,17 @@ func TestCreateFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.WriteTo("./test/Workbook_3.xlsx")
+	err = xlsx.SaveAs("./test/Workbook_3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
 }
 
 func TestSetColWidth(t *testing.T) {
-	xlsx := CreateFile()
+	xlsx := NewFile()
 	xlsx.SetColWidth("sheet1", "B", "A", 12)
 	xlsx.SetColWidth("sheet1", "A", "B", 12)
-	err := xlsx.WriteTo("./test/Workbook_4.xlsx")
+	err := xlsx.SaveAs("./test/Workbook_4.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -269,10 +269,10 @@ func TestMergeCell(t *testing.T) {
 }
 
 func TestSetRowHeight(t *testing.T) {
-	xlsx := CreateFile()
+	xlsx := NewFile()
 	xlsx.SetRowHeight("Sheet1", 0, 50)
 	xlsx.SetRowHeight("Sheet1", 3, 90)
-	err := xlsx.WriteTo("./test/Workbook_5.xlsx")
+	err := xlsx.SaveAs("./test/Workbook_5.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -639,7 +639,7 @@ func TestAddChart(t *testing.T) {
 	xlsx.AddChart("SHEET2", "P1", `{"type":"radar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top_right","show_legend_key":false},"title":{"name":"Fruit Radar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"span"}`)
 	xlsx.AddChart("SHEET2", "X1", `{"type":"scatter","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Scatter Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 	// Save xlsx file by the given path.
-	err = xlsx.WriteTo("./test/Workbook_6.xlsx")
+	err = xlsx.SaveAs("./test/Workbook_6.xlsx")
 	if err != nil {
 		t.Log(err)
 	}

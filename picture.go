@@ -47,7 +47,7 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //    )
 //
 //    func main() {
-//        xlsx := excelize.CreateFile()
+//        xlsx := excelize.NewFile()
 //        // Insert a picture.
 //        err := xlsx.AddPicture("Sheet1", "A2", "./image1.jpg", "")
 //        if err != nil {
@@ -63,7 +63,7 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        err = xlsx.WriteTo("./Workbook.xlsx")
+//        err = xlsx.SaveAs("./Workbook.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //            os.Exit(1)

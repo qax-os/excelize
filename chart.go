@@ -71,7 +71,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //    func main() {
 //        categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
 //        values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
-//        xlsx := excelize.CreateFile()
+//        xlsx := excelize.NewFile()
 //        for k, v := range categories {
 //            xlsx.SetCellValue("Sheet1", k, v)
 //        }
@@ -80,7 +80,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //        }
 //        xlsx.AddChart("SHEET1", "F2", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 //        // Save xlsx file by the given path.
-//        err := xlsx.WriteTo("./Workbook.xlsx")
+//        err := xlsx.SaveAs("./Workbook.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //            os.Exit(1)

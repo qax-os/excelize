@@ -103,7 +103,7 @@ func (f *File) getTotalRowsCols(sheet string) (int, int) {
 // SetRowHeight provides a function to set the height of a single row.
 // For example:
 //
-//    xlsx := excelize.CreateFile()
+//    xlsx := excelize.NewFile()
 //    xlsx.SetRowHeight("Sheet1", 0, 50)
 //    err := xlsx.Save()
 //    if err != nil {
