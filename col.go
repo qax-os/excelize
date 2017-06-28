@@ -157,26 +157,26 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 
 	// Calculate the absolute x offset of the top-left vertex.
 	for colID := 1; colID <= colStart; colID++ {
-		xAbs += f.getColWidth(sheet, colID)
+		xAbs += f.GetColWidth(sheet, colID)
 	}
 	xAbs += x1
 
 	// Calculate the absolute y offset of the top-left vertex.
 	// Store the column change to allow optimisations.
 	for rowID := 1; rowID <= rowStart; rowID++ {
-		yAbs += f.getRowHeight(sheet, rowID)
+		yAbs += f.GetRowHeight(sheet, rowID)
 	}
 	yAbs += y1
 
 	// Adjust start column for offsets that are greater than the col width.
-	for x1 >= f.getColWidth(sheet, colStart) {
-		x1 -= f.getColWidth(sheet, colStart)
+	for x1 >= f.GetColWidth(sheet, colStart) {
+		x1 -= f.GetColWidth(sheet, colStart)
 		colStart++
 	}
 
 	// Adjust start row for offsets that are greater than the row height.
-	for y1 >= f.getRowHeight(sheet, rowStart) {
-		y1 -= f.getRowHeight(sheet, rowStart)
+	for y1 >= f.GetRowHeight(sheet, rowStart) {
+		y1 -= f.GetRowHeight(sheet, rowStart)
 		rowStart++
 	}
 
@@ -188,15 +188,15 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 	height += y1
 
 	// Subtract the underlying cell widths to find end cell of the object.
-	for width >= f.getColWidth(sheet, colEnd) {
+	for width >= f.GetColWidth(sheet, colEnd) {
 		colEnd++
-		width -= f.getColWidth(sheet, colEnd)
+		width -= f.GetColWidth(sheet, colEnd)
 	}
 
 	// Subtract the underlying cell heights to find end cell of the object.
-	for height >= f.getRowHeight(sheet, rowEnd) {
+	for height >= f.GetRowHeight(sheet, rowEnd) {
 		rowEnd++
-		height -= f.getRowHeight(sheet, rowEnd)
+		height -= f.GetRowHeight(sheet, rowEnd)
 	}
 
 	// The end vertices are whatever is left from the width and height.
@@ -205,9 +205,9 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 	return colStart, rowStart, xAbs, yAbs, colEnd, rowEnd, x2, y2
 }
 
-// getColWidth provides function to get column width in pixels by given sheet
+// GetColWidth provides function to get column width in pixels by given sheet
 // name and column index.
-func (f *File) getColWidth(sheet string, col int) int {
+func (f *File) GetColWidth(sheet string, col int) int {
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
 		var width float64
@@ -224,9 +224,9 @@ func (f *File) getColWidth(sheet string, col int) int {
 	return defaultColWidthPixels
 }
 
-// getRowHeight provides function to get row height in pixels by given sheet
+// GetRowHeight provides function to get row height in pixels by given sheet
 // name and row index.
-func (f *File) getRowHeight(sheet string, row int) int {
+func (f *File) GetRowHeight(sheet string, row int) int {
 	xlsx := f.workSheetReader(sheet)
 	for _, v := range xlsx.SheetData.Row {
 		if v.R == row && v.Ht != "" {
