@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"encoding/xml"
 	"strconv"
 	"strings"
 )
@@ -48,10 +47,9 @@ func (f *File) GetCellValue(sheet, axis string) string {
 			}
 			switch r.T {
 			case "s":
-				shardStrings := xlsxSST{}
+				shardStrings := f.sharedStringsReader()
 				xlsxSI := 0
 				xlsxSI, _ = strconv.Atoi(r.V)
-				xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &shardStrings)
 				return f.formattedValue(r.S, shardStrings.SI[xlsxSI].T)
 			case "str":
 				return f.formattedValue(r.S, r.V)

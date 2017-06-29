@@ -225,7 +225,7 @@ func parseTime(i int, v string) string {
 }
 
 // stylesReader provides function to get the pointer to the structure after
-// deserialization of workbook.
+// deserialization of xl/styles.xml.
 func (f *File) stylesReader() *xlsxStyleSheet {
 	if f.Styles == nil {
 		var styleSheet xlsxStyleSheet

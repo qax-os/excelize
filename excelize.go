@@ -15,15 +15,16 @@ import (
 
 // File define a populated XLSX file struct.
 type File struct {
-	checked      map[string]bool
-	ContentTypes *xlsxTypes
-	Path         string
-	Sheet        map[string]*xlsxWorksheet
-	SheetCount   int
-	Styles       *xlsxStyleSheet
-	WorkBook     *xlsxWorkbook
-	WorkBookRels *xlsxWorkbookRels
-	XLSX         map[string]string
+	checked       map[string]bool
+	ContentTypes  *xlsxTypes
+	Path          string
+	SharedStrings *xlsxSST
+	Sheet         map[string]*xlsxWorksheet
+	SheetCount    int
+	Styles        *xlsxStyleSheet
+	WorkBook      *xlsxWorkbook
+	WorkBookRels  *xlsxWorkbookRels
+	XLSX          map[string]string
 }
 
 // OpenFile take the name of an XLSX file and returns a populated XLSX file
@@ -145,8 +146,7 @@ func (f *File) setDefaultTimeStyle(sheet, axis string) {
 // deserialization by given worksheet index.
 func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
-	worksheet := f.Sheet[name]
-	if worksheet == nil {
+	if f.Sheet[name] == nil {
 		var xlsx xlsxWorksheet
 		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
 		if f.checked == nil {
@@ -159,9 +159,8 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 			f.checked[name] = true
 		}
 		f.Sheet[name] = &xlsx
-		worksheet = f.Sheet[name]
 	}
-	return worksheet
+	return f.Sheet[name]
 }
 
 // SetCellInt provides function to set int type value of a cell by given

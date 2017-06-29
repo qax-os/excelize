@@ -30,7 +30,7 @@ func (f *File) GetRows(sheet string) [][]string {
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	}
 	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
-	d, _ := readXMLSST(f)
+	d := f.sharedStringsReader()
 	var inElement string
 	var r xlsxRow
 	var row []string
@@ -146,11 +146,15 @@ func (f *File) GetRowHeight(sheet string, row int) float64 {
 	return defaultRowHeightPixels
 }
 
-// readXMLSST read xmlSST simple function.
-func readXMLSST(f *File) (*xlsxSST, error) {
-	shardStrings := xlsxSST{}
-	err := xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &shardStrings)
-	return &shardStrings, err
+// sharedStringsReader provides function to get the pointer to the structure
+// after deserialization of xl/sharedStrings.xml.
+func (f *File) sharedStringsReader() *xlsxSST {
+	if f.SharedStrings == nil {
+		var sharedStrings xlsxSST
+		xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &sharedStrings)
+		f.SharedStrings = &sharedStrings
+	}
+	return f.SharedStrings
 }
 
 // getValueFrom return a value from a column/row cell, this function is inteded
