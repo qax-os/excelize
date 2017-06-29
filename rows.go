@@ -116,8 +116,34 @@ func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
 	rows := rowIndex + 1
 	cells := 0
 	completeRow(xlsx, rows, cells)
-	xlsx.SheetData.Row[rowIndex].Ht = strconv.FormatFloat(height, 'f', -1, 64)
+	xlsx.SheetData.Row[rowIndex].Ht = height
 	xlsx.SheetData.Row[rowIndex].CustomHeight = true
+}
+
+// getRowHeight provides function to get row height in pixels by given sheet
+// name and row index.
+func (f *File) getRowHeight(sheet string, row int) int {
+	xlsx := f.workSheetReader(sheet)
+	for _, v := range xlsx.SheetData.Row {
+		if v.R == row+1 && v.Ht != 0 {
+			return int(convertRowHeightToPixels(v.Ht))
+		}
+	}
+	// Optimisation for when the row heights haven't changed.
+	return int(defaultRowHeightPixels)
+}
+
+// GetRowHeight provides function to get row height by given worksheet name and
+// row index.
+func (f *File) GetRowHeight(sheet string, row int) float64 {
+	xlsx := f.workSheetReader(sheet)
+	for _, v := range xlsx.SheetData.Row {
+		if v.R == row+1 && v.Ht != 0 {
+			return v.Ht
+		}
+	}
+	// Optimisation for when the row heights haven't changed.
+	return defaultRowHeightPixels
 }
 
 // readXMLSST read xmlSST simple function.

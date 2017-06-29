@@ -263,7 +263,7 @@ type xlsxRow struct {
 	CustomFormat bool    `xml:"customFormat,attr,omitempty"`
 	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
 	Hidden       bool    `xml:"hidden,attr,omitempty"`
-	Ht           string  `xml:"ht,attr,omitempty"`
+	Ht           float64 `xml:"ht,attr,omitempty"`
 	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
 	Ph           bool    `xml:"ph,attr,omitempty"`
 	R            int     `xml:"r,attr,omitempty"`

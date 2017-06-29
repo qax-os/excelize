@@ -2,15 +2,14 @@ package excelize
 
 import (
 	"math"
-	"strconv"
 	"strings"
 )
 
 // Define the default cell size and EMU unit of measurement.
 const (
-	defaultColWidthPixels  int = 64
-	defaultRowHeightPixels int = 20
-	EMU                    int = 9525
+	defaultColWidthPixels  float64 = 64
+	defaultRowHeightPixels float64 = 20
+	EMU                    int     = 9525
 )
 
 // GetColVisible provides a function to get visible of a single column by given
@@ -157,26 +156,26 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 
 	// Calculate the absolute x offset of the top-left vertex.
 	for colID := 1; colID <= colStart; colID++ {
-		xAbs += f.GetColWidth(sheet, colID)
+		xAbs += f.getColWidth(sheet, colID)
 	}
 	xAbs += x1
 
 	// Calculate the absolute y offset of the top-left vertex.
 	// Store the column change to allow optimisations.
 	for rowID := 1; rowID <= rowStart; rowID++ {
-		yAbs += f.GetRowHeight(sheet, rowID)
+		yAbs += f.getRowHeight(sheet, rowID)
 	}
 	yAbs += y1
 
 	// Adjust start column for offsets that are greater than the col width.
-	for x1 >= f.GetColWidth(sheet, colStart) {
-		x1 -= f.GetColWidth(sheet, colStart)
+	for x1 >= f.getColWidth(sheet, colStart) {
+		x1 -= f.getColWidth(sheet, colStart)
 		colStart++
 	}
 
 	// Adjust start row for offsets that are greater than the row height.
-	for y1 >= f.GetRowHeight(sheet, rowStart) {
-		y1 -= f.GetRowHeight(sheet, rowStart)
+	for y1 >= f.getRowHeight(sheet, rowStart) {
+		y1 -= f.getRowHeight(sheet, rowStart)
 		rowStart++
 	}
 
@@ -188,15 +187,15 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 	height += y1
 
 	// Subtract the underlying cell widths to find end cell of the object.
-	for width >= f.GetColWidth(sheet, colEnd) {
+	for width >= f.getColWidth(sheet, colEnd) {
 		colEnd++
-		width -= f.GetColWidth(sheet, colEnd)
+		width -= f.getColWidth(sheet, colEnd)
 	}
 
 	// Subtract the underlying cell heights to find end cell of the object.
-	for height >= f.GetRowHeight(sheet, rowEnd) {
+	for height >= f.getRowHeight(sheet, rowEnd) {
 		rowEnd++
-		height -= f.GetRowHeight(sheet, rowEnd)
+		height -= f.getRowHeight(sheet, rowEnd)
 	}
 
 	// The end vertices are whatever is left from the width and height.
@@ -205,9 +204,9 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 	return colStart, rowStart, xAbs, yAbs, colEnd, rowEnd, x2, y2
 }
 
-// GetColWidth provides function to get column width in pixels by given sheet
+// getColWidth provides function to get column width in pixels by given sheet
 // name and column index.
-func (f *File) GetColWidth(sheet string, col int) int {
+func (f *File) getColWidth(sheet string, col int) int {
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
 		var width float64
@@ -221,21 +220,27 @@ func (f *File) GetColWidth(sheet string, col int) int {
 		}
 	}
 	// Optimisation for when the column widths haven't changed.
-	return defaultColWidthPixels
+	return int(defaultColWidthPixels)
 }
 
-// GetRowHeight provides function to get row height in pixels by given sheet
-// name and row index.
-func (f *File) GetRowHeight(sheet string, row int) int {
+// GetColWidth provides function to get column width by given sheet name and
+// column index.
+func (f *File) GetColWidth(sheet, column string) float64 {
+	col := TitleToNumber(strings.ToUpper(column)) + 1
 	xlsx := f.workSheetReader(sheet)
-	for _, v := range xlsx.SheetData.Row {
-		if v.R == row && v.Ht != "" {
-			ht, _ := strconv.ParseFloat(v.Ht, 64)
-			return int(convertRowHeightToPixels(ht))
+	if xlsx.Cols != nil {
+		var width float64
+		for _, v := range xlsx.Cols.Col {
+			if v.Min <= col && col <= v.Max {
+				width = v.Width
+			}
+		}
+		if width != 0 {
+			return width
 		}
 	}
-	// Optimisation for when the row heights haven't changed.
-	return defaultRowHeightPixels
+	// Optimisation for when the column widths haven't changed.
+	return defaultColWidthPixels
 }
 
 // convertColWidthToPixels provieds function to convert the width of a cell from

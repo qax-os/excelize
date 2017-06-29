@@ -177,14 +177,30 @@ func TestNewFile(t *testing.T) {
 	}
 }
 
-func TestSetColWidth(t *testing.T) {
+func TestColWidth(t *testing.T) {
 	xlsx := NewFile()
 	xlsx.SetColWidth("sheet1", "B", "A", 12)
 	xlsx.SetColWidth("sheet1", "A", "B", 12)
+	xlsx.GetColWidth("sheet1", "A")
+	xlsx.GetColWidth("sheet1", "C")
 	err := xlsx.SaveAs("./test/Workbook_4.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
+	convertRowHeightToPixels(0)
+}
+
+func TestRowHeight(t *testing.T) {
+	xlsx := NewFile()
+	xlsx.SetRowHeight("Sheet1", 0, 50)
+	xlsx.SetRowHeight("Sheet1", 3, 90)
+	t.Log(xlsx.GetRowHeight("Sheet1", 1))
+	t.Log(xlsx.GetRowHeight("Sheet1", 3))
+	err := xlsx.SaveAs("./test/Workbook_5.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	convertColWidthToPixels(0)
 }
 
 func TestSetCellHyperLink(t *testing.T) {
@@ -263,16 +279,6 @@ func TestMergeCell(t *testing.T) {
 	xlsx.GetCellValue("Sheet1", "H11")
 	xlsx.GetCellFormula("Sheet1", "G12")
 	err = xlsx.Save()
-	if err != nil {
-		t.Log(err)
-	}
-}
-
-func TestSetRowHeight(t *testing.T) {
-	xlsx := NewFile()
-	xlsx.SetRowHeight("Sheet1", 0, 50)
-	xlsx.SetRowHeight("Sheet1", 3, 90)
-	err := xlsx.SaveAs("./test/Workbook_5.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
