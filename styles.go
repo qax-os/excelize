@@ -252,56 +252,8 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 	return &format, err
 }
 
-// SetCellStyle provides function to set style for cells by given sheet index
-// and coordinate area in XLSX file. Note that the color field uses RGB color
-// code and diagonalDown and diagonalUp type border should be use same color in
-// the same coordinate area.
-//
-// For example create a borders of cell H9 on Sheet1:
-//
-//    err := xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
-//    if err != nil {
-//        fmt.Println(err)
-//    }
-//
-// Set gradient fill with vertical variants shading styles for cell H9 on
-// Sheet1:
-//
-//    err := xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
-//    if err != nil {
-//        fmt.Println(err)
-//    }
-//
-// Set solid style pattern fill for cell H9 on Sheet1:
-//
-//    err := xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
-//    if err != nil {
-//        fmt.Println(err)
-//    }
-//
-// Set alignment style for cell H9 on Sheet1:
-//
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
-//    if err != nil {
-//        fmt.Println(err)
-//    }
-//
-// Dates and times in Excel are represented by real numbers, for example "Apr 7
-// 2017 12:00 PM" is represented by the number 42920.5. Set date and time format
-// for cell H9 on Sheet1:
-//
-//    xlsx.SetCellValue("Sheet2", "H9", 42920.5)
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"number_format": 22}`)
-//    if err != nil {
-//        fmt.Println(err)
-//    }
-//
-// Set font style for cell H9 on Sheet1:
-//
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", `{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
-//    if err != nil {
-//        fmt.Println(err)
-//    }
+// NewStyle provides function to create style for cells by given style format.
+// Note that the color field uses RGB color code.
 //
 // The following shows the border styles sorted by excelize index number:
 //
@@ -519,20 +471,20 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    | 49    | @                                                  |
 //    +-------+----------------------------------------------------+
 //
-func (f *File) SetCellStyle(sheet, hcell, vcell, style string) error {
+func (f *File) NewStyle(style string) (int, error) {
+	var cellXfsID int
 	styleSheet := f.stylesReader()
 	formatCellStyle, err := parseFormatStyleSet(style)
 	if err != nil {
-		return err
+		return cellXfsID, err
 	}
 	numFmtID := setNumFmt(styleSheet, formatCellStyle)
 	fontID := setFont(styleSheet, formatCellStyle)
 	borderID := setBorders(styleSheet, formatCellStyle)
 	fillID := setFills(styleSheet, formatCellStyle)
 	applyAlignment, alignment := setAlignment(styleSheet, formatCellStyle)
-	cellXfsID := setCellXfs(styleSheet, fontID, numFmtID, fillID, borderID, applyAlignment, alignment)
-	f.setCellStyle(sheet, hcell, vcell, cellXfsID)
-	return err
+	cellXfsID = setCellXfs(styleSheet, fontID, numFmtID, fillID, borderID, applyAlignment, alignment)
+	return cellXfsID, nil
 }
 
 // setFont provides function to add font style by given cell format settings.
@@ -757,9 +709,64 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	return style.CellXfs.Count - 1
 }
 
-// setCellStyle provides function to add style attribute for cells by given
-// sheet index, coordinate area and style ID.
-func (f *File) setCellStyle(sheet, hcell, vcell string, styleID int) {
+// SetCellStyle provides function to add style attribute for cells by given
+// worksheet sheet index, coordinate area and style ID. Note that diagonalDown
+// and diagonalUp type border should be use same color in the same coordinate
+// area.
+//
+// For example create a borders of cell H9 on Sheet1:
+//
+//    style, err := xlsx.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+// Set gradient fill with vertical variants shading styles for cell H9 on
+// Sheet1:
+//
+//    style, err := xlsx.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+// Set solid style pattern fill for cell H9 on Sheet1:
+//
+//    style, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+// Set alignment style for cell H9 on Sheet1:
+//
+//    style, err := xlsx.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+// Dates and times in Excel are represented by real numbers, for example "Apr 7
+// 2017 12:00 PM" is represented by the number 42920.5. Set date and time format
+// for cell H9 on Sheet1:
+//
+//    xlsx.SetCellValue("Sheet1", "H9", 42920.5)
+//    style, err := xlsx.NewStyle(`{"number_format": 22}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+// Set font style for cell H9 on Sheet1:
+//
+//    style, err := xlsx.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 

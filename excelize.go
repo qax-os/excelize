@@ -114,9 +114,9 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	}
 }
 
-// getCellStyle provides function to get cell style index by given worksheet
+// GetCellStyle provides function to get cell style index by given worksheet
 // name and cell coordinates.
-func (f *File) getCellStyle(sheet, axis string) int {
+func (f *File) GetCellStyle(sheet, axis string) int {
 	xlsx := f.workSheetReader(sheet)
 	axis = strings.ToUpper(axis)
 	f.mergeCellsParser(xlsx, axis)
@@ -137,8 +137,9 @@ func (f *File) getCellStyle(sheet, axis string) int {
 // setDefaultTimeStyle provides function to set default numbers format for
 // time.Time type cell value by given worksheet name and cell coordinates.
 func (f *File) setDefaultTimeStyle(sheet, axis string) {
-	if f.getCellStyle(sheet, axis) == 0 {
-		f.SetCellStyle(sheet, axis, axis, `{"number_format": 22}`)
+	if f.GetCellStyle(sheet, axis) == 0 {
+		style, _ := f.NewStyle(`{"number_format": 22}`)
+		f.SetCellStyle(sheet, axis, axis, style)
 	}
 }
 
