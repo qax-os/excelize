@@ -7,7 +7,8 @@ import (
 
 // mergeCellsParser provides function to check merged cells in worksheet by
 // given axis.
-func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) {
+func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
+	axis = strings.ToUpper(axis)
 	if xlsx.MergeCells != nil {
 		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
 			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
@@ -15,6 +16,7 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) {
 			}
 		}
 	}
+	return axis
 }
 
 // GetCellValue provides function to get formatted value from cell by given
@@ -23,8 +25,7 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) {
 // the raw value of the cell.
 func (f *File) GetCellValue(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	rows := len(xlsx.SheetData.Row)
@@ -80,8 +81,7 @@ func (f *File) formattedValue(s int, v string) string {
 // index and axis in XLSX file.
 func (f *File) GetCellFormula(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
 	rows := len(xlsx.SheetData.Row)
@@ -114,8 +114,7 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 // sheet index.
 func (f *File) SetCellFormula(sheet, axis, formula string) {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
@@ -141,8 +140,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 // and link URL address. Only support external link currently.
 func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
 	hyperlink := xlsxHyperlink{
 		Ref: axis,

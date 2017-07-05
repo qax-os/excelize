@@ -118,8 +118,7 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 // name and cell coordinates.
 func (f *File) GetCellStyle(sheet, axis string) int {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
@@ -168,8 +167,7 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
@@ -203,8 +201,7 @@ func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
 // of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	if len(value) > 32767 {
 		value = value[0:32767]
 	}
@@ -237,8 +234,7 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 // default format without escaping the cell.
 func (f *File) SetCellDefault(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
-	axis = strings.ToUpper(axis)
-	f.mergeCellsParser(xlsx, axis)
+	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
 	xAxis := row - 1
