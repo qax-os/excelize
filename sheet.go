@@ -296,7 +296,7 @@ func (f *File) GetSheetIndex(name string) int {
 //        fmt.Println(err)
 //        os.Exit(1)
 //    }
-//    for k, v := range xlsx.GetSheetMap()
+//    for k, v := range xlsx.GetSheetMap() {
 //        fmt.Println(k, v)
 //    }
 //
