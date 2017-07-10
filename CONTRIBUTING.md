@@ -19,7 +19,7 @@ The Excelize maintainers take security seriously. If you discover a security
 issue, please bring it to their attention right away!
 
 Please **DO NOT** file a public issue, instead send your report privately to
-[xuri.me@gmail.com](mailto:xuri.me@gmail.com).
+[xuri.me](https://xuri.me).
 
 Security reports are greatly appreciated and we will publicly thank you for it.
 We currently do not offer a paid security bounty program, but are not
@@ -235,7 +235,7 @@ By making a contribution to this project, I certify that:
 
 Then you just add a line to every git commit message:
 
-    Signed-off-by: Ri Xu <xuri.me@email.com>
+    Signed-off-by: Ri Xu https://xuri.me
 
 Use your real name (sorry, no pseudonyms or anonymous contributions.)
 
@@ -261,7 +261,7 @@ Don't forget: being a maintainer is a time investment. Make sure you
 will have time to make yourself available. You don't have to be a
 maintainer to make a difference on the project!
 
-If you want to become a meintainer, contact xuri.me@gmail.com and given a introduction of you.
+If you want to become a meintainer, contact [xuri.me](https://xuri.me) and given a introduction of you.
 
 ## Community guidelines
 
@@ -324,7 +324,7 @@ do need a fair way to deal with people who are making our community suck.
 * Extreme violations of a threatening, abusive, destructive or illegal nature
     will be addressed immediately and are not subject to 3 strikes or forgiveness.
 
-* Contact xuri.me@gmail.com to report abuse or appeal violations. In the case of
+* Contact [xuri.me](https://xuri.me) to report abuse or appeal violations. In the case of
     appeals, we know that mistakes happen, and we'll work with you to come up with a
     fair solution if there has been a misunderstanding.
 
