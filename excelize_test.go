@@ -209,9 +209,9 @@ func TestSetCellHyperLink(t *testing.T) {
 		t.Log(err)
 	}
 	// Test set cell hyperlink in a work sheet already have hyperlinks.
-	xlsx.SetCellHyperLink("sheet1", "B19", "https://github.com/Luxurioust/excelize")
+	xlsx.SetCellHyperLink("sheet1", "B19", "https://github.com/xuri/excelize")
 	// Test add first hyperlink in a work sheet.
-	xlsx.SetCellHyperLink("sheet2", "C1", "https://github.com/Luxurioust/excelize")
+	xlsx.SetCellHyperLink("sheet2", "C1", "https://github.com/xuri/excelize")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
@@ -274,7 +274,7 @@ func TestMergeCell(t *testing.T) {
 	xlsx.SetCellValue("Sheet1", "G11", "set value in merged cell")
 	xlsx.SetCellInt("Sheet1", "H11", 100)
 	xlsx.SetCellValue("Sheet1", "I11", float64(0.5))
-	xlsx.SetCellHyperLink("Sheet1", "J11", "https://github.com/Luxurioust/excelize")
+	xlsx.SetCellHyperLink("Sheet1", "J11", "https://github.com/xuri/excelize")
 	xlsx.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)")
 	xlsx.GetCellValue("Sheet1", "H11")
 	xlsx.GetCellFormula("Sheet1", "G12")

@@ -65,7 +65,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //        "fmt"
 //        "os"
 //
-//        "github.com/Luxurioust/excelize"
+//        "github.com/xuri/excelize"
 //    )
 //
 //    func main() {
