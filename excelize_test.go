@@ -392,6 +392,64 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	}
 }
 
+func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_3.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellValue("Sheet1", "A1", 56)
+	xlsx.SetCellValue("Sheet1", "A2", 32.3)
+	var style int
+	style, err = xlsx.NewStyle(`{"number_format": 188, "decimal_places": -1}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A1", "A1", style)
+	style, err = xlsx.NewStyle(`{"number_format": 188, "decimal_places": 31}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
+
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+
+	xlsx, err = OpenFile("./test/Workbook_4.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellValue("Sheet1", "A1", 37947.7500001)
+	xlsx.SetCellValue("Sheet1", "A2", 37947.7500001)
+
+	style, err = xlsx.NewStyle(`{"number_format": 26, "lang": "zh-tw"}`)
+	if err != nil {
+		t.Log(err)
+	}
+	style, err = xlsx.NewStyle(`{"number_format": 27}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A1", "A1", style)
+	style, err = xlsx.NewStyle(`{"number_format": 31, "lang": "ko-kr"}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
+
+	style, err = xlsx.NewStyle(`{"number_format": 71, "lang": "th-th"}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
+
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestSetCellStyleFill(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {

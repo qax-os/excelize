@@ -47,6 +47,285 @@ var builtInNumFmt = map[int]string{
 	49: "@",
 }
 
+// langNumFmt defined number format code with unicode in different language.
+var langNumFmt = map[string]map[int]string{
+	"zh-tw":         zhtwNumFmt,
+	"zh-cn":         zhcnNumFmt,
+	"zh-tw_unicode": zhtwUnicodeNumFmt,
+	"zh-cn_unicode": zhcnUnicodeNumFmt,
+	"ja-jp":         jajpNumFmt,
+	"ko-kr":         kokrNumFmt,
+	"ja-jp_unicode": jajpUnicodeNumFmt,
+	"ko-kr_unicode": kokrUnicodeNumFmt,
+	"th-th":         ththNumFmt,
+	"th-th_unicode": ththUnicodeNumFmt,
+}
+
+// zh-tw format code.
+var zhtwNumFmt = map[int]string{
+	27: "[$-404]e/m/d",
+	28: `[$-404]e"年"m"月"d"日"`,
+	29: `[$-404]e"年"m"月"d"日"`,
+	30: "m/d/yy",
+	31: `yyyy"年"m"月"d"日"`,
+	32: `hh"時"mm"分"`,
+	33: `hh"時"mm"分"ss"秒"`,
+	34: `上午/下午 hh"時"mm"分"`,
+	35: `上午/下午 hh"時"mm"分"ss"秒"`,
+	36: "[$-404]e/m/d",
+	50: "[$-404]e/m/d",
+	51: `[$-404]e"年"m"月"d"日"`,
+	52: `上午/下午 hh"時"mm"分"`,
+	53: `上午/下午 hh"時"mm"分"ss"秒"`,
+	54: `[$-404]e"年"m"月"d"日"`,
+	55: `上午/下午 hh"時"mm"分"`,
+	56: `上午/下午 hh"時"mm"分"ss"秒"`,
+	57: "[$-404]e/m/d",
+	58: `[$-404]e"年"m"月"d"日"`,
+}
+
+// zh-cn format code.
+var zhcnNumFmt = map[int]string{
+	27: `yyyy"年"m"月"`,
+	28: `m"月"d"日"`,
+	29: `m"月"d"日"`,
+	30: "m-d-yy",
+	31: `yyyy"年"m"月"d"日"`,
+	32: `h"时"mm"分"`,
+	33: `h"时"mm"分"ss"秒"`,
+	34: `上午/下午 h"时"mm"分"`,
+	35: `上午/下午 h"时"mm"分"ss"秒"`,
+	36: `yyyy"年"m"月"`,
+	50: `yyyy"年"m"月"`,
+	51: `m"月"d"日"`,
+	52: `yyyy"年"m"月"`,
+	53: `m"月"d"日"`,
+	54: `m"月"d"日"`,
+	55: `上午/下午 h"时"mm"分"`,
+	56: `上午/下午 h"时"mm"分"ss"秒"`,
+	57: `yyyy"年"m"月"`,
+	58: `m"月"d"日"`,
+}
+
+// zh-tw format code (with unicode values provided for language glyphs where
+// they occur).
+var zhtwUnicodeNumFmt = map[int]string{
+	27: "[$-404]e/m/d",
+	28: `[$-404]e"5E74"m"6708"d"65E5"`,
+	29: `[$-404]e"5E74"m"6708"d"65E5"`,
+	30: "m/d/yy",
+	31: `yyyy"5E74"m"6708"d"65E5"`,
+	32: `hh"6642"mm"5206"`,
+	33: `hh"6642"mm"5206"ss"79D2"`,
+	34: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
+	35: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
+	36: "[$-404]e/m/d",
+	50: "[$-404]e/m/d",
+	51: `[$-404]e"5E74"m"6708"d"65E5"`,
+	52: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
+	53: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
+	54: `[$-404]e"5E74"m"6708"d"65E5"`,
+	55: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
+	56: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
+	57: "[$-404]e/m/d",
+	58: `[$-404]e"5E74"m"6708"d"65E5"`,
+}
+
+// zh-cn format code (with unicode values provided for language glyphs where
+// they occur).
+var zhcnUnicodeNumFmt = map[int]string{
+	27: `yyyy"5E74"m"6708"`,
+	28: `m"6708"d"65E5"`,
+	29: `m"6708"d"65E5"`,
+	30: "m-d-yy",
+	31: `yyyy"5E74"m"6708"d"65E5"`,
+	32: `h"65F6"mm"5206"`,
+	33: `h"65F6"mm"5206"ss"79D2"`,
+	34: `4E0A5348/4E0B5348h"65F6"mm"5206"`,
+	35: `4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2"`,
+	36: `yyyy"5E74"m"6708"`,
+	50: `yyyy"5E74"m"6708"`,
+	51: `m"6708"d"65E5"`,
+	52: `yyyy"5E74"m"6708"`,
+	53: `m"6708"d"65E5"`,
+	54: `m"6708"d"65E5"`,
+	55: `4E0A5348/4E0B5348h"65F6"mm"5206"`,
+	56: `4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2"`,
+	57: `yyyy"5E74"m"6708"`,
+	58: `m"6708"d"65E5"`,
+}
+
+// ja-jp format code.
+var jajpNumFmt = map[int]string{
+	27: "[$-411]ge.m.d",
+	28: `[$-411]ggge"年"m"月"d"日"`,
+	29: `[$-411]ggge"年"m"月"d"日"`,
+	30: "m/d/yy",
+	31: `yyyy"年"m"月"d"日"`,
+	32: `h"時"mm"分"`,
+	33: `h"時"mm"分"ss"秒"`,
+	34: `yyyy"年"m"月"`,
+	35: `m"月"d"日"`,
+	36: "[$-411]ge.m.d",
+	50: "[$-411]ge.m.d",
+	51: `[$-411]ggge"年"m"月"d"日"`,
+	52: `yyyy"年"m"月"`,
+	53: `m"月"d"日"`,
+	54: `[$-411]ggge"年"m"月"d"日"`,
+	55: `yyyy"年"m"月"`,
+	56: `m"月"d"日"`,
+	57: "[$-411]ge.m.d",
+	58: `[$-411]ggge"年"m"月"d"日"`,
+}
+
+// ko-kr format code.
+var kokrNumFmt = map[int]string{
+	27: `yyyy"年" mm"月" dd"日"`,
+	28: "mm-dd",
+	29: "mm-dd",
+	30: "mm-dd-yy",
+	31: `yyyy"년" mm"월" dd"일"`,
+	32: `h"시" mm"분"`,
+	33: `h"시" mm"분" ss"초"`,
+	34: `yyyy-mm-dd`,
+	35: `yyyy-mm-dd`,
+	36: `yyyy"年" mm"月" dd"日"`,
+	50: `yyyy"年" mm"月" dd"日"`,
+	51: "mm-dd",
+	52: "yyyy-mm-dd",
+	53: "yyyy-mm-dd",
+	54: "mm-dd",
+	55: "yyyy-mm-dd",
+	56: "yyyy-mm-dd",
+	57: `yyyy"年" mm"月" dd"日"`,
+	58: "mm-dd",
+}
+
+// ja-jp format code (with unicode values provided for language glyphs where
+// they occur).
+var jajpUnicodeNumFmt = map[int]string{
+	27: "[$-411]ge.m.d",
+	28: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+	29: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+	30: "m/d/yy",
+	31: `yyyy"5E74"m"6708"d"65E5"`,
+	32: `h"6642"mm"5206"`,
+	33: `h"6642"mm"5206"ss"79D2"`,
+	34: `yyyy"5E74"m"6708"`,
+	35: `m"6708"d"65E5"`,
+	36: "[$-411]ge.m.d",
+	50: "[$-411]ge.m.d",
+	51: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+	52: `yyyy"5E74"m"6708"`,
+	53: `m"6708"d"65E5"`,
+	54: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+	55: `yyyy"5E74"m"6708"`,
+	56: `m"6708"d"65E5"`,
+	57: "[$-411]ge.m.d",
+	58: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+}
+
+// ko-kr format code (with unicode values provided for language glyphs where
+// they occur).
+var kokrUnicodeNumFmt = map[int]string{
+	27: `yyyy"5E74" mm"6708" dd"65E5"`,
+	28: "mm-dd",
+	29: "mm-dd",
+	30: "mm-dd-yy",
+	31: `yyyy"B144" mm"C6D4" dd"C77C"`,
+	32: `h"C2DC" mm"BD84"`,
+	33: `h"C2DC" mm"BD84" ss"CD08"`,
+	34: "yyyy-mm-dd",
+	35: "yyyy-mm-dd",
+	36: `yyyy"5E74" mm"6708" dd"65E5"`,
+	50: `yyyy"5E74" mm"6708" dd"65E5"`,
+	51: "mm-dd",
+	52: "yyyy-mm-dd",
+	53: "yyyy-mm-dd",
+	54: "mm-dd",
+	55: "yyyy-mm-dd",
+	56: "yyyy-mm-dd",
+	57: `yyyy"5E74" mm"6708" dd"65E5"`,
+	58: "mm-dd",
+}
+
+// th-th format code.
+var ththNumFmt = map[int]string{
+	59: "t0",
+	60: "t0.00",
+	61: "t#,##0",
+	62: "t#,##0.00",
+	67: "t0%",
+	68: "t0.00%",
+	69: "t# ?/?",
+	70: "t# ??/??",
+	71: "ว/ด/ปปปป",
+	72: "ว-ดดด-ปป",
+	73: "ว-ดดด",
+	74: "ดดด-ปป",
+	75: "ช:นน",
+	76: "ช:นน:ทท",
+	77: "ว/ด/ปปปป ช:นน",
+	78: "นน:ทท",
+	79: "[ช]:นน:ทท",
+	80: "นน:ทท.0",
+	81: "d/m/bb",
+}
+
+// th-th format code (with unicode values provided for language glyphs where
+// they occur).
+var ththUnicodeNumFmt = map[int]string{
+	59: "t0",
+	60: "t0.00",
+	61: "t#,##0",
+	62: "t#,##0.00",
+	67: "t0%",
+	68: "t0.00%",
+	69: "t# ?/?",
+	70: "t# ??/??",
+	71: "0E27/0E14/0E1B0E1B0E1B0E1B",
+	72: "0E27-0E140E140E14-0E1B0E1B",
+	73: "0E27-0E140E140E14",
+	74: "0E140E140E14-0E1B0E1B",
+	75: "0E0A:0E190E19",
+	76: "0E0A:0E190E19:0E170E17",
+	77: "0E27/0E14/0E1B0E1B0E1B0E1B 0E0A:0E190E19",
+	78: "0E190E19:0E170E17",
+	79: "[0E0A]:0E190E19:0E170E17",
+	80: "0E190E19:0E170E17.0",
+	81: "d/m/bb",
+}
+
+// currencyNumFmt defined the currency number format map.
+var currencyNumFmt = map[int]string{
+	164: `"CN¥",##0.00`,
+	165: "[$$-409]#,##0.00",
+	166: "[$$-45C]#,##0.00",
+	167: "[$$-1004]#,##0.00",
+	168: "[$$-404]#,##0.00",
+	169: "[$$-C09]#,##0.00",
+	170: "[$$-2809]#,##0.00",
+	171: "[$$-1009]#,##0.00",
+	172: "[$$-2009]#,##0.00",
+	173: "[$$-1409]#,##0.00",
+	174: "[$$-4809]#,##0.00",
+	175: "[$$-2C09]#,##0.00",
+	176: "[$$-2409]#,##0.00",
+	177: "[$$-1000]#,##0.00",
+	178: `#,##0.00\ [$$-C0C]`,
+	179: "[$$-475]#,##0.00",
+	180: "[$$-83E]#,##0.00",
+	181: `[$$-86B]\ #,##0.00`,
+	182: `[$$-340A]\ #,##0.00`,
+	183: "[$$-240A]#,##0.00",
+	184: `[$$-300A]\ #,##0.00`,
+	185: "[$$-440A]#,##0.00",
+	186: "[$$-80A]#,##0.00",
+	187: "[$$-500A]#,##0.00",
+	188: "[$$-540A]#,##0.00",
+	189: `[$$-380A]\ #,##0.00`,
+}
+
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
 // code doesn't support currently and will return original string.
 var builtInNumFmtFunc = map[int]func(i int, v string) string{
@@ -247,7 +526,9 @@ func (f *File) styleSheetWriter() {
 // parseFormatStyleSet provides function to parse the format settings of the
 // borders.
 func parseFormatStyleSet(style string) (*formatCellStyle, error) {
-	var format formatCellStyle
+	format := formatCellStyle{
+		DecimalPlaces: 2,
+	}
 	err := json.Unmarshal([]byte(style), &format)
 	return &format, err
 }
@@ -257,219 +538,161 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //
 // The following shows the border styles sorted by excelize index number:
 //
-//    +-------+---------------+--------+-----------------+
-//    | Index | Name          | Weight | Style           |
-//    +=======+===============+========+=================+
-//    | 0     | None          | 0      |                 |
-//    +-------+---------------+--------+-----------------+
-//    | 1     | Continuous    | 1      | ``-----------`` |
-//    +-------+---------------+--------+-----------------+
-//    | 2     | Continuous    | 2      | ``-----------`` |
-//    +-------+---------------+--------+-----------------+
-//    | 3     | Dash          | 1      | ``- - - - - -`` |
-//    +-------+---------------+--------+-----------------+
-//    | 4     | Dot           | 1      | ``. . . . . .`` |
-//    +-------+---------------+--------+-----------------+
-//    | 5     | Continuous    | 3      | ``-----------`` |
-//    +-------+---------------+--------+-----------------+
-//    | 6     | Double        | 3      | ``===========`` |
-//    +-------+---------------+--------+-----------------+
-//    | 7     | Continuous    | 0      | ``-----------`` |
-//    +-------+---------------+--------+-----------------+
-//    | 8     | Dash          | 2      | ``- - - - - -`` |
-//    +-------+---------------+--------+-----------------+
-//    | 9     | Dash Dot      | 1      | ``- . - . - .`` |
-//    +-------+---------------+--------+-----------------+
-//    | 10    | Dash Dot      | 2      | ``- . - . - .`` |
-//    +-------+---------------+--------+-----------------+
-//    | 11    | Dash Dot Dot  | 1      | ``- . . - . .`` |
-//    +-------+---------------+--------+-----------------+
-//    | 12    | Dash Dot Dot  | 2      | ``- . . - . .`` |
-//    +-------+---------------+--------+-----------------+
-//    | 13    | SlantDash Dot | 2      | ``/ - . / - .`` |
-//    +-------+---------------+--------+-----------------+
+//    | Index | Name          | Weight | Style       |
+//    +-------+---------------+--------+-------------+
+//    | 0     | None          | 0      |             |
+//    | 1     | Continuous    | 1      | ----------- |
+//    | 2     | Continuous    | 2      | ----------- |
+//    | 3     | Dash          | 1      | - - - - - - |
+//    | 4     | Dot           | 1      | . . . . . . |
+//    | 5     | Continuous    | 3      | ----------- |
+//    | 6     | Double        | 3      | =========== |
+//    | 7     | Continuous    | 0      | ----------- |
+//    | 8     | Dash          | 2      | - - - - - - |
+//    | 9     | Dash Dot      | 1      | - . - . - . |
+//    | 10    | Dash Dot      | 2      | - . - . - . |
+//    | 11    | Dash Dot Dot  | 1      | - . . - . . |
+//    | 12    | Dash Dot Dot  | 2      | - . . - . . |
+//    | 13    | SlantDash Dot | 2      | / - . / - . |
 //
 // The following shows the borders in the order shown in the Excel dialog:
 //
-//    +-------+-----------------+-------+-----------------+
-//    | Index | Style           | Index | Style           |
-//    +=======+=================+=======+=================+
-//    | 0     | None            | 12    | ``- . . - . .`` |
-//    +-------+-----------------+-------+-----------------+
-//    | 7     | ``-----------`` | 13    | ``/ - . / - .`` |
-//    +-------+-----------------+-------+-----------------+
-//    | 4     | ``. . . . . .`` | 10    | ``- . - . - .`` |
-//    +-------+-----------------+-------+-----------------+
-//    | 11    | ``- . . - . .`` | 8     | ``- - - - - -`` |
-//    +-------+-----------------+-------+-----------------+
-//    | 9     | ``- . - . - .`` | 2     | ``-----------`` |
-//    +-------+-----------------+-------+-----------------+
-//    | 3     | ``- - - - - -`` | 5     | ``-----------`` |
-//    +-------+-----------------+-------+-----------------+
-//    | 1     | ``-----------`` | 6     | ``===========`` |
-//    +-------+-----------------+-------+-----------------+
+//    | Index | Style       | Index | Style       |
+//    +-------+-------------+-------+-------------+
+//    | 0     | None        | 12    | - . . - . . |
+//    | 7     | ----------- | 13    | / - . / - . |
+//    | 4     | . . . . . . | 10    | - . - . - . |
+//    | 11    | - . . - . . | 8     | - - - - - - |
+//    | 9     | - . - . - . | 2     | ----------- |
+//    | 3     | - - - - - - | 5     | ----------- |
+//    | 1     | ----------- | 6     | =========== |
 //
 // The following shows the shading styles sorted by excelize index number:
 //
-//    +-------+-----------------+-------+-----------------+
 //    | Index | Style           | Index | Style           |
-//    +=======+=================+=======+=================+
+//    +-------+-----------------+-------+-----------------+
 //    | 0     | Horizontal      | 3     | Diagonal down   |
-//    +-------+-----------------+-------+-----------------+
 //    | 1     | Vertical        | 4     | From corner     |
-//    +-------+-----------------+-------+-----------------+
 //    | 2     | Diagonal Up     | 5     | From center     |
-//    +-------+-----------------+-------+-----------------+
 //
 // The following shows the patterns styles sorted by excelize index number:
 //
-//    +-------+-----------------+-------+-----------------+
 //    | Index | Style           | Index | Style           |
-//    +=======+=================+=======+=================+
+//    +-------+-----------------+-------+-----------------+
 //    | 0     | None            | 10    | darkTrellis     |
-//    +-------+-----------------+-------+-----------------+
 //    | 1     | solid           | 11    | lightHorizontal |
-//    +-------+-----------------+-------+-----------------+
 //    | 2     | mediumGray      | 12    | lightVertical   |
-//    +-------+-----------------+-------+-----------------+
 //    | 3     | darkGray        | 13    | lightDown       |
-//    +-------+-----------------+-------+-----------------+
 //    | 4     | lightGray       | 14    | lightUp         |
-//    +-------+-----------------+-------+-----------------+
 //    | 5     | darkHorizontal  | 15    | lightGrid       |
-//    +-------+-----------------+-------+-----------------+
 //    | 6     | darkVertical    | 16    | lightTrellis    |
-//    +-------+-----------------+-------+-----------------+
 //    | 7     | darkDown        | 17    | gray125         |
-//    +-------+-----------------+-------+-----------------+
 //    | 8     | darkUp          | 18    | gray0625        |
-//    +-------+-----------------+-------+-----------------+
 //    | 9     | darkGrid        |       |                 |
-//    +-------+-----------------+-------+-----------------+
 //
 // The following the type of horizontal alignment in cells:
 //
-//    +------------------+
 //    | Style            |
-//    +==================+
+//    +------------------+
 //    | left             |
-//    +------------------+
 //    | center           |
-//    +------------------+
 //    | right            |
-//    +------------------+
 //    | fill             |
-//    +------------------+
 //    | justify          |
-//    +------------------+
 //    | centerContinuous |
-//    +------------------+
 //    | distributed      |
-//    +------------------+
 //
 // The following the type of vertical alignment in cells:
 //
-//    +------------------+
 //    | Style            |
-//    +==================+
+//    +------------------+
 //    | top              |
-//    +------------------+
 //    | center           |
-//    +------------------+
 //    | justify          |
-//    +------------------+
 //    | distributed      |
-//    +------------------+
 //
 // The following the type of font underline style:
 //
-//    +------------------+
 //    | Style            |
-//    +==================+
+//    +------------------+
 //    | single           |
-//    +------------------+
 //    | double           |
-//    +------------------+
 //
-// Excel's built-in formats are shown in the following table:
+// Excel's built-in all languages formats are shown in the following table:
 //
-//    +-------+----------------------------------------------------+
 //    | Index | Format String                                      |
-//    +=======+====================================================+
+//    +-------+----------------------------------------------------+
 //    | 0     | General                                            |
-//    +-------+----------------------------------------------------+
 //    | 1     | 0                                                  |
-//    +-------+----------------------------------------------------+
 //    | 2     | 0.00                                               |
-//    +-------+----------------------------------------------------+
 //    | 3     | #,##0                                              |
-//    +-------+----------------------------------------------------+
 //    | 4     | #,##0.00                                           |
-//    +-------+----------------------------------------------------+
 //    | 5     | ($#,##0_);($#,##0)                                 |
-//    +-------+----------------------------------------------------+
 //    | 6     | ($#,##0_);[Red]($#,##0)                            |
-//    +-------+----------------------------------------------------+
 //    | 7     | ($#,##0.00_);($#,##0.00)                           |
-//    +-------+----------------------------------------------------+
 //    | 8     | ($#,##0.00_);[Red]($#,##0.00)                      |
-//    +-------+----------------------------------------------------+
 //    | 9     | 0%                                                 |
-//    +-------+----------------------------------------------------+
 //    | 10    | 0.00%                                              |
-//    +-------+----------------------------------------------------+
 //    | 11    | 0.00E+00                                           |
-//    +-------+----------------------------------------------------+
 //    | 12    | # ?/?                                              |
-//    +-------+----------------------------------------------------+
 //    | 13    | # ??/??                                            |
-//    +-------+----------------------------------------------------+
 //    | 14    | m/d/yy                                             |
-//    +-------+----------------------------------------------------+
 //    | 15    | d-mmm-yy                                           |
-//    +-------+----------------------------------------------------+
 //    | 16    | d-mmm                                              |
-//    +-------+----------------------------------------------------+
 //    | 17    | mmm-yy                                             |
-//    +-------+----------------------------------------------------+
 //    | 18    | h:mm AM/PM                                         |
-//    +-------+----------------------------------------------------+
 //    | 19    | h:mm:ss AM/PM                                      |
-//    +-------+----------------------------------------------------+
 //    | 20    | h:mm                                               |
-//    +-------+----------------------------------------------------+
 //    | 21    | h:mm:ss                                            |
-//    +-------+----------------------------------------------------+
 //    | 22    | m/d/yy h:mm                                        |
-//    +-------+----------------------------------------------------+
 //    | ...   | ...                                                |
-//    +-------+----------------------------------------------------+
 //    | 37    | (#,##0_);(#,##0)                                   |
-//    +-------+----------------------------------------------------+
 //    | 38    | (#,##0_);[Red](#,##0)                              |
-//    +-------+----------------------------------------------------+
 //    | 39    | (#,##0.00_);(#,##0.00)                             |
-//    +-------+----------------------------------------------------+
 //    | 40    | (#,##0.00_);[Red](#,##0.00)                        |
-//    +-------+----------------------------------------------------+
 //    | 41    | _(* #,##0_);_(* (#,##0);_(* "-"_);_(@_)            |
-//    +-------+----------------------------------------------------+
 //    | 42    | _($* #,##0_);_($* (#,##0);_($* "-"_);_(@_)         |
-//    +-------+----------------------------------------------------+
 //    | 43    | _(* #,##0.00_);_(* (#,##0.00);_(* "-"??_);_(@_)    |
-//    +-------+----------------------------------------------------+
 //    | 44    | _($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_) |
-//    +-------+----------------------------------------------------+
 //    | 45    | mm:ss                                              |
-//    +-------+----------------------------------------------------+
 //    | 46    | [h]:mm:ss                                          |
-//    +-------+----------------------------------------------------+
 //    | 47    | mm:ss.0                                            |
-//    +-------+----------------------------------------------------+
 //    | 48    | ##0.0E+0                                           |
-//    +-------+----------------------------------------------------+
 //    | 49    | @                                                  |
+//
+// Excelize built-in currency formats are shown in the following table, only
+// support these types in the following table (Index number is used only for
+// markup and is not used inside an Excel file and you can't get formatted value
+// by the function GetCellValue) currently:
+//
+//    | Index | Symbol                                             |
 //    +-------+----------------------------------------------------+
+//    | 164   | CN¥                                                |
+//    | 165   | $ English (China)                                  |
+//    | 166   | $ Cherokee (United States)                         |
+//    | 167   | $ Chinese (Singapore)                              |
+//    | 168   | $ Chinese (Taiwan)                                 |
+//    | 169   | $ English (Australia)                              |
+//    | 170   | $ English (Belize)                                 |
+//    | 171   | $ English (Canada)                                 |
+//    | 172   | $ English (Jamaica)                                |
+//    | 173   | $ English (New Zealand)                            |
+//    | 174   | $ English (Singapore)                              |
+//    | 175   | $ English (Trinidad & Tobago)                      |
+//    | 176   | $ English (U.S. Vigin Islands)                     |
+//    | 177   | $ English (United States)                          |
+//    | 178   | $ French (Canada)                                  |
+//    | 179   | $ Hawaiian (United States)                         |
+//    | 180   | $ Malay (Brunei)                                   |
+//    | 181   | $ Quechua (Ecuador)                                |
+//    | 182   | $ Spanish (Chile)                                  |
+//    | 183   | $ Spanish (Colombia)                               |
+//    | 184   | $ Spanish (Ecuador)                                |
+//    | 185   | $ Spanish (El Salvador)                            |
+//    | 186   | $ Spanish (Mexico)                                 |
+//    | 187   | $ Spanish (Puerto Rico)                            |
+//    | 188   | $ Spanish (United States)                          |
+//    | 189   | $ Spanish (Uruguay)                                |
 //
 func (f *File) NewStyle(style string) (int, error) {
 	var cellXfsID int
@@ -526,9 +749,69 @@ func setFont(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 // setNumFmt provides function to check if number format code in the range of
 // built-in values.
 func setNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
+	dp := "0."
+	numFmtID := 164 // Default custom number format code from 164.
+	if formatCellStyle.DecimalPlaces < 0 || formatCellStyle.DecimalPlaces > 30 {
+		formatCellStyle.DecimalPlaces = 2
+	}
+	for i := 0; i < formatCellStyle.DecimalPlaces; i++ {
+		dp += "0"
+	}
 	_, ok := builtInNumFmt[formatCellStyle.NumFmt]
 	if !ok {
+		fc, currency := currencyNumFmt[formatCellStyle.NumFmt]
+		if !currency {
+			return setLangNumFmt(style, formatCellStyle)
+		}
+		fc = strings.Replace(fc, "0.00", dp, -1)
+		if style.NumFmts != nil {
+			numFmtID = style.NumFmts.NumFmt[len(style.NumFmts.NumFmt)-1].NumFmtID + 1
+			nf := xlsxNumFmt{
+				FormatCode: fc,
+				NumFmtID:   numFmtID,
+			}
+			style.NumFmts.NumFmt = append(style.NumFmts.NumFmt, &nf)
+			style.NumFmts.Count++
+		} else {
+			nf := xlsxNumFmt{
+				FormatCode: fc,
+				NumFmtID:   numFmtID,
+			}
+			numFmts := xlsxNumFmts{
+				NumFmt: []*xlsxNumFmt{&nf},
+				Count:  1,
+			}
+			style.NumFmts = &numFmts
+		}
+		return numFmtID
+	}
+	return formatCellStyle.NumFmt
+}
+
+// setLangNumFmt provides function to set number format code with language.
+func setLangNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
+	numFmts, ok := langNumFmt[formatCellStyle.Lang]
+	if !ok {
 		return 0
+	}
+	var fc string
+	fc, ok = numFmts[formatCellStyle.NumFmt]
+	if !ok {
+		return 0
+	}
+	nf := xlsxNumFmt{
+		FormatCode: fc,
+		NumFmtID:   formatCellStyle.NumFmt,
+	}
+	if style.NumFmts != nil {
+		style.NumFmts.NumFmt = append(style.NumFmts.NumFmt, &nf)
+		style.NumFmts.Count++
+	} else {
+		numFmts := xlsxNumFmts{
+			NumFmt: []*xlsxNumFmt{&nf},
+			Count:  1,
+		}
+		style.NumFmts = &numFmts
 	}
 	return formatCellStyle.NumFmt
 }
