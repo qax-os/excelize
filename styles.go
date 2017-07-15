@@ -50,7 +50,7 @@ var builtInNumFmt = map[int]string{
 // langNumFmt defined number format code (with unicode values provided for
 // language glyphs where they occur) in different language.
 var langNumFmt = map[string]map[int]string{
-	"zh-tw": map[int]string{
+	"zh-tw": {
 		27: "[$-404]e/m/d",
 		28: `[$-404]e"年"m"月"d"日"`,
 		29: `[$-404]e"年"m"月"d"日"`,
@@ -71,7 +71,7 @@ var langNumFmt = map[string]map[int]string{
 		57: "[$-404]e/m/d",
 		58: `[$-404]e"年"m"月"d"日"`,
 	},
-	"zh-cn": map[int]string{
+	"zh-cn": {
 		27: `yyyy"年"m"月"`,
 		28: `m"月"d"日"`,
 		29: `m"月"d"日"`,
@@ -92,7 +92,7 @@ var langNumFmt = map[string]map[int]string{
 		57: `yyyy"年"m"月"`,
 		58: `m"月"d"日"`,
 	},
-	"zh-tw_unicode": map[int]string{
+	"zh-tw_unicode": {
 		27: "[$-404]e/m/d",
 		28: `[$-404]e"5E74"m"6708"d"65E5"`,
 		29: `[$-404]e"5E74"m"6708"d"65E5"`,
@@ -113,7 +113,7 @@ var langNumFmt = map[string]map[int]string{
 		57: "[$-404]e/m/d",
 		58: `[$-404]e"5E74"m"6708"d"65E5"`,
 	},
-	"zh-cn_unicode": map[int]string{
+	"zh-cn_unicode": {
 		27: `yyyy"5E74"m"6708"`,
 		28: `m"6708"d"65E5"`,
 		29: `m"6708"d"65E5"`,
@@ -134,7 +134,7 @@ var langNumFmt = map[string]map[int]string{
 		57: `yyyy"5E74"m"6708"`,
 		58: `m"6708"d"65E5"`,
 	},
-	"ja-jp": map[int]string{
+	"ja-jp": {
 		27: "[$-411]ge.m.d",
 		28: `[$-411]ggge"年"m"月"d"日"`,
 		29: `[$-411]ggge"年"m"月"d"日"`,
@@ -155,7 +155,7 @@ var langNumFmt = map[string]map[int]string{
 		57: "[$-411]ge.m.d",
 		58: `[$-411]ggge"年"m"月"d"日"`,
 	},
-	"ko-kr": map[int]string{
+	"ko-kr": {
 		27: `yyyy"年" mm"月" dd"日"`,
 		28: "mm-dd",
 		29: "mm-dd",
@@ -176,7 +176,7 @@ var langNumFmt = map[string]map[int]string{
 		57: `yyyy"年" mm"月" dd"日"`,
 		58: "mm-dd",
 	},
-	"ja-jp_unicode": map[int]string{
+	"ja-jp_unicode": {
 		27: "[$-411]ge.m.d",
 		28: `[$-411]ggge"5E74"m"6708"d"65E5"`,
 		29: `[$-411]ggge"5E74"m"6708"d"65E5"`,
@@ -197,7 +197,7 @@ var langNumFmt = map[string]map[int]string{
 		57: "[$-411]ge.m.d",
 		58: `[$-411]ggge"5E74"m"6708"d"65E5"`,
 	},
-	"ko-kr_unicode": map[int]string{
+	"ko-kr_unicode": {
 		27: `yyyy"5E74" mm"6708" dd"65E5"`,
 		28: "mm-dd",
 		29: "mm-dd",
@@ -218,7 +218,7 @@ var langNumFmt = map[string]map[int]string{
 		57: `yyyy"5E74" mm"6708" dd"65E5"`,
 		58: "mm-dd",
 	},
-	"th-th": map[int]string{
+	"th-th": {
 		59: "t0",
 		60: "t0.00",
 		61: "t#,##0",
@@ -239,7 +239,7 @@ var langNumFmt = map[string]map[int]string{
 		80: "นน:ทท.0",
 		81: "d/m/bb",
 	},
-	"th-th_unicode": map[int]string{
+	"th-th_unicode": {
 		59: "t0",
 		60: "t0.00",
 		61: "t#,##0",

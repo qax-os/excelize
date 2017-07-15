@@ -15,7 +15,8 @@ type xlsxWorksheet struct {
 	SheetData             xlsxSheetData                `xml:"sheetData"`
 	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
 	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
-	MergeCells            *xlsxMergeCells              `xml:"mergeCells,omitempty"`
+	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
+	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
 	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
 	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
@@ -73,7 +74,7 @@ type xlsxPageSetUp struct {
 	Draft              bool    `xml:"draft,attr,omitempty"`
 	Errors             string  `xml:"errors,attr,omitempty"`
 	FirstPageNumber    int     `xml:"firstPageNumber,attr,omitempty"`
-	FitToHeight        int     `xml:"fitToHeight,attr,omitempty"`
+	FitToHeight        *int    `xml:"fitToHeight,attr"`
 	FitToWidth         int     `xml:"fitToWidth,attr,omitempty"`
 	HorizontalDPI      float32 `xml:"horizontalDpi,attr,omitempty"`
 	RID                string  `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
@@ -144,24 +145,26 @@ type xlsxSheetViews struct {
 // multiple windows are viewing the same sheet, multiple sheetView elements
 // (with corresponding workbookView entries) are saved.
 type xlsxSheetView struct {
-	WindowProtection        bool             `xml:"windowProtection,attr,omitempty"`
-	ShowFormulas            bool             `xml:"showFormulas,attr,omitempty"`
-	ShowGridLines           string           `xml:"showGridLines,attr,omitempty"`
-	ShowRowColHeaders       bool             `xml:"showRowColHeaders,attr,omitempty"`
-	ShowZeros               bool             `xml:"showZeros,attr,omitempty"`
-	RightToLeft             bool             `xml:"rightToLeft,attr,omitempty"`
-	TabSelected             bool             `xml:"tabSelected,attr,omitempty"`
-	ShowOutlineSymbols      bool             `xml:"showOutlineSymbols,attr,omitempty"`
-	DefaultGridColor        bool             `xml:"defaultGridColor,attr"`
-	View                    string           `xml:"view,attr,omitempty"`
-	TopLeftCell             string           `xml:"topLeftCell,attr,omitempty"`
-	ColorID                 int              `xml:"colorId,attr,omitempty"`
-	ZoomScale               float64          `xml:"zoomScale,attr,omitempty"`
-	ZoomScaleNormal         float64          `xml:"zoomScaleNormal,attr,omitempty"`
-	ZoomScalePageLayoutView float64          `xml:"zoomScalePageLayoutView,attr,omitempty"`
-	WorkbookViewID          int              `xml:"workbookViewId,attr"`
-	Pane                    *xlsxPane        `xml:"pane,omitempty"`
-	Selection               []*xlsxSelection `xml:"selection"`
+	WindowProtection         bool             `xml:"windowProtection,attr,omitempty"`
+	ShowFormulas             bool             `xml:"showFormulas,attr,omitempty"`
+	ShowGridLines            string           `xml:"showGridLines,attr,omitempty"`
+	ShowRowColHeaders        bool             `xml:"showRowColHeaders,attr,omitempty"`
+	ShowZeros                bool             `xml:"showZeros,attr,omitempty"`
+	RightToLeft              bool             `xml:"rightToLeft,attr,omitempty"`
+	TabSelected              bool             `xml:"tabSelected,attr,omitempty"`
+	ShowWhiteSpace           *bool            `xml:"showWhiteSpace,attr"`
+	ShowOutlineSymbols       bool             `xml:"showOutlineSymbols,attr,omitempty"`
+	DefaultGridColor         bool             `xml:"defaultGridColor,attr"`
+	View                     string           `xml:"view,attr,omitempty"`
+	TopLeftCell              string           `xml:"topLeftCell,attr,omitempty"`
+	ColorID                  int              `xml:"colorId,attr,omitempty"`
+	ZoomScale                float64          `xml:"zoomScale,attr,omitempty"`
+	ZoomScaleNormal          float64          `xml:"zoomScaleNormal,attr,omitempty"`
+	ZoomScalePageLayoutView  float64          `xml:"zoomScalePageLayoutView,attr,omitempty"`
+	ZoomScaleSheetLayoutView float64          `xml:"zoomScaleSheetLayoutView,attr,omitempty"`
+	WorkbookViewID           int              `xml:"workbookViewId,attr"`
+	Pane                     *xlsxPane        `xml:"pane,omitempty"`
+	Selection                []*xlsxSelection `xml:"selection"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
@@ -189,7 +192,7 @@ type xlsxPane struct {
 type xlsxSheetPr struct {
 	XMLName                           xml.Name         `xml:"sheetPr"`
 	CodeName                          string           `xml:"codeName,attr,omitempty"`
-	EnableFormatConditionsCalculation bool             `xml:"enableFormatConditionsCalculation,attr,omitempty"`
+	EnableFormatConditionsCalculation *bool            `xml:"enableFormatConditionsCalculation,attr"`
 	FilterMode                        bool             `xml:"filterMode,attr,omitempty"`
 	Published                         bool             `xml:"published,attr,omitempty"`
 	SyncHorizontal                    bool             `xml:"syncHorizontal,attr,omitempty"`
@@ -342,6 +345,19 @@ type xlsxSheetProtection struct {
 	Sheet              int    `xml:"sheet,attr,omitempty"`
 	Sort               int    `xml:"sort,attr,omitempty"`
 	SpinCount          int    `xml:"spinCount,attr,omitempty"`
+}
+
+// xlsxPhoneticPr (Phonetic Properties) represents a collection of phonetic
+// properties that affect the display of phonetic text for this String Item
+// (si). Phonetic text is used to give hints as to the pronunciation of an East
+// Asian language, and the hints are displayed as text within the spreadsheet
+// cells across the top portion of the cell. Since the phonetic hints are text,
+// every phonetic hint is expressed as a phonetic run (rPh), and these
+// properties specify how to display that phonetic run.
+type xlsxPhoneticPr struct {
+	Alignment string `xml:"alignment,attr,omitempty"`
+	FontID    int    `xml:"fontId,attr,omitempty"`
+	Type      string `xml:"type,attr,omitempty"`
 }
 
 // A Conditional Format is a format, such as cell shading or font color, that a

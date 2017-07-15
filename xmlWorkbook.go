@@ -203,7 +203,7 @@ type xlsxDefinedName struct {
 	FunctionGroupID   int    `xml:"functionGroupId,attr,omitempty"`
 	Help              string `xml:"help,attr,omitempty"`
 	Hidden            bool   `xml:"hidden,attr,omitempty"`
-	LocalSheetID      int    `xml:"localSheetId,attr,omitempty"`
+	LocalSheetID      int    `xml:"localSheetId,attr"`
 	Name              string `xml:"name,attr,omitempty"`
 	PublishToServer   bool   `xml:"publishToServer,attr,omitempty"`
 	ShortcutKey       string `xml:"shortcutKey,attr,omitempty"`
@@ -223,7 +223,7 @@ type xlsxCalcPr struct {
 	CalcID                string  `xml:"calcId,attr,omitempty"`
 	CalcMode              string  `xml:"calcMode,attr,omitempty"`
 	CalcOnSave            bool    `xml:"calcOnSave,attr,omitempty"`
-	ConcurrentCalc        bool    `xml:"concurrentCalc,attr,omitempty"`
+	ConcurrentCalc        *bool   `xml:"concurrentCalc,attr"`
 	ConcurrentManualCount int     `xml:"concurrentManualCount,attr,omitempty"`
 	ForceFullCalc         bool    `xml:"forceFullCalc,attr,omitempty"`
 	FullCalcOnLoad        bool    `xml:"fullCalcOnLoad,attr,omitempty"`

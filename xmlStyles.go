@@ -35,6 +35,15 @@ type xlsxAlignment struct {
 	WrapText        bool   `xml:"wrapText,attr,omitempty"`
 }
 
+// xlsxProtection (Protection Properties) contains protection properties
+// associated with the cell. Each cell has protection properties that can be
+// set. The cell protection properties do not take effect unless the sheet has
+// been protected.
+type xlsxProtection struct {
+	Hidden bool `xml:"hidden,attr"`
+	Locked bool `xml:"locked,attr"`
+}
+
 // xlsxLine directly maps the line style element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
@@ -190,20 +199,21 @@ type xlsxCellStyleXfs struct {
 // xlsxXf directly maps the xf element. A single xf element describes all of the
 // formatting for a cell.
 type xlsxXf struct {
-	ApplyAlignment    bool           `xml:"applyAlignment,attr"`
-	ApplyBorder       bool           `xml:"applyBorder,attr"`
-	ApplyFill         bool           `xml:"applyFill,attr"`
-	ApplyFont         bool           `xml:"applyFont,attr"`
-	ApplyNumberFormat bool           `xml:"applyNumberFormat,attr"`
-	ApplyProtection   bool           `xml:"applyProtection,attr"`
-	BorderID          int            `xml:"borderId,attr"`
-	FillID            int            `xml:"fillId,attr"`
-	FontID            int            `xml:"fontId,attr"`
-	NumFmtID          int            `xml:"numFmtId,attr"`
-	PivotButton       bool           `xml:"pivotButton,attr,omitempty"`
-	QuotePrefix       bool           `xml:"quotePrefix,attr,omitempty"`
-	XfID              *int           `xml:"xfId,attr,omitempty"`
-	Alignment         *xlsxAlignment `xml:"alignment"`
+	ApplyAlignment    bool            `xml:"applyAlignment,attr"`
+	ApplyBorder       bool            `xml:"applyBorder,attr"`
+	ApplyFill         bool            `xml:"applyFill,attr"`
+	ApplyFont         bool            `xml:"applyFont,attr"`
+	ApplyNumberFormat bool            `xml:"applyNumberFormat,attr"`
+	ApplyProtection   bool            `xml:"applyProtection,attr"`
+	BorderID          int             `xml:"borderId,attr"`
+	FillID            int             `xml:"fillId,attr"`
+	FontID            int             `xml:"fontId,attr"`
+	NumFmtID          int             `xml:"numFmtId,attr"`
+	PivotButton       bool            `xml:"pivotButton,attr,omitempty"`
+	QuotePrefix       bool            `xml:"quotePrefix,attr,omitempty"`
+	XfID              *int            `xml:"xfId,attr,omitempty"`
+	Alignment         *xlsxAlignment  `xml:"alignment"`
+	Protection        *xlsxProtection `xml:"protection"`
 }
 
 // xlsxCellXfs directly maps the cellXfs element. This element contains the
