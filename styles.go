@@ -459,6 +459,74 @@ var currencyNumFmt = map[int]string{
 	356: "[$RM-4409]#,##0.00",
 	357: "[$RM-43E]#,##0.00",
 	358: "#,##0.00\\ [$RON-418]",
+	359: "[$Rp-421]#,##0.00",
+	360: "[$Rs-420]#,##0.00_-",
+	361: "[$Rs.-849]\\ #,##0.00",
+	362: "#,##0.00\\ [$RSD-81A]",
+	363: "#,##0.00\\ [$RSD-C1A]",
+	364: "#,##0.00\\ [$RUB-46D]",
+	365: "#,##0.00\\ [$RUB-444]",
+	366: "[$S/.-C6B]\\ #,##0.00",
+	367: "[$S/.-280A]\\ #,##0.00",
+	368: "#,##0.00\\ [$SEK-143B]",
+	369: "#,##0.00\\ [$SEK-1C3B]",
+	370: "#,##0.00\\ [$so\u02BBm-443]",
+	371: "#,##0.00\\ [$so\u02BBm-843]",
+	372: "#,##0.00\\ [$SYP-45A]",
+	373: "[$THB-41E]#,##0.00",
+	374: "#,##0.00[$TMT-442]",
+	375: "[$US$-3009]#,##0.00",
+	376: "[$ZAR-46C]\\ #,##0.00",
+	377: "[$ZAR-430]#,##0.00",
+	378: "[$ZAR-431]#,##0.00",
+	379: "[$ZAR-432]\\ #,##0.00",
+	380: "[$ZAR-433]#,##0.00",
+	381: "[$ZAR-434]\\ #,##0.00",
+	382: "#,##0.00\\ [$z\u0142-415]",
+	383: "#,##0.00\\ [$\u0434\u0435\u043D-42F]",
+	384: "#,##0.00\\ [$КМ-201A]",
+	385: "#,##0.00\\ [$КМ-1C1A]",
+	386: "#,##0.00\\ [$\u043B\u0432.-402]",
+	387: "#,##0.00\\ [$р.-423]",
+	388: "#,##0.00\\ [$\u0441\u043E\u043C-440]",
+	389: "#,##0.00\\ [$\u0441\u043E\u043C-428]",
+	390: "[$\u062C.\u0645.-C01]\\ #,##0.00_-",
+	391: "[$\u062F.\u0623.-2C01]\\ #,##0.00_-",
+	392: "[$\u062F.\u0625.-3801]\\ #,##0.00_-",
+	393: "[$\u062F.\u0628.-3C01]\\ #,##0.00_-",
+	394: "[$\u062F.\u062A.-1C01]\\ #,##0.00_-",
+	395: "[$\u062F.\u062C.-1401]\\ #,##0.00_-",
+	396: "[$\u062F.\u0639.-801]\\ #,##0.00_-",
+	397: "[$\u062F.\u0643.-3401]\\ #,##0.00_-",
+	398: "[$\u062F.\u0644.-1001]#,##0.00_-",
+	399: "[$\u062F.\u0645.-1801]\\ #,##0.00_-",
+	400: "[$\u0631-846]\\ #,##0.00",
+	401: "[$\u0631.\u0633.-401]\\ #,##0.00_-",
+	402: "[$\u0631.\u0639.-2001]\\ #,##0.00_-",
+	403: "[$\u0631.\u0642.-4001]\\ #,##0.00_-",
+	404: "[$\u0631.\u064A.-2401]\\ #,##0.00_-",
+	405: "[$\u0631\u06CC\u0627\u0644-429]#,##0.00_-",
+	406: "[$\u0644.\u0633.-2801]\\ #,##0.00_-",
+	407: "[$\u0644.\u0644.-3001]\\ #,##0.00_-",
+	408: "[$\u1265\u122D-45E]#,##0.00",
+	409: "[$\u0930\u0942-461]#,##0.00",
+	410: "[$\u0DBB\u0DD4.-45B]\\ #,##0.00",
+	411: "[$ADP]\\ #,##0.00",
+	412: "[$AED]\\ #,##0.00",
+	413: "[$AFA]\\ #,##0.00",
+	414: "[$AFN]\\ #,##0.00",
+	415: "[$ALL]\\ #,##0.00",
+	416: "[$AMD]\\ #,##0.00",
+	417: "[$ANG]\\ #,##0.00",
+	418: "[$AOA]\\ #,##0.00",
+	419: "[$ARS]\\ #,##0.00",
+	420: "[$ATS]\\ #,##0.00",
+	421: "[$AUD]\\ #,##0.00",
+	422: "[$AWG]\\ #,##0.00",
+	423: "[$AZM]\\ #,##0.00",
+	424: "[$AZN]\\ #,##0.00",
+	425: "[$BAM]\\ #,##0.00",
+	426: "[$BBD]\\ #,##0.00",
 }
 
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
@@ -836,7 +904,7 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    | 195   | ¥ Sichuan Yi (China)                                          |
 //    | 196   | ¥ Tibetan (China)                                             |
 //    | 197   | ¥ Uyghur (China)                                              |
-//    | 198   | ֏ Armenian (Armenia)                                         |
+//    | 198   | ֏ Armenian (Armenia)                                          |
 //    | 199   | ؋ Pashto (Afghanistan)                                        |
 //    | 200   | ؋ Persian (Afghanistan)                                       |
 //    | 201   | ৳ Bengali (Bangladesh)                                        |
@@ -997,6 +1065,74 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //    | 356   | RM English (Malaysia)                                         |
 //    | 357   | RM Malay (Malaysia)                                           |
 //    | 358   | RON Romanian (Romania)                                        |
+//    | 359   | Rp Indonesoan (Indonesia)                                     |
+//    | 360   | Rs Urdu (Pakistan)                                            |
+//    | 361   | Rs. Tamil (Sri Lanka)                                         |
+//    | 362   | RSD Latin, Serbian (Serbia)                                   |
+//    | 363   | RSD Serbian (Serbia)                                          |
+//    | 364   | RUB Bashkir (Russia)                                          |
+//    | 365   | RUB Tatar (Russia)                                            |
+//    | 366   | S/. Quechua (Peru)                                            |
+//    | 367   | S/. Spanish (Peru)                                            |
+//    | 368   | SEK Lule Sami (Sweden)                                        |
+//    | 369   | SEK Southern Sami (Sweden)                                    |
+//    | 370   | soʻm Latin, Uzbek (Uzbekistan)                                |
+//    | 371   | soʻm Uzbek (Uzbekistan)                                       |
+//    | 372   | SYP Syriac (Syria)                                            |
+//    | 373   | THB Thai (Thailand)                                           |
+//    | 374   | TMT Turkmen (Turkmenistan)                                    |
+//    | 375   | US$ English (Zimbabwe)                                        |
+//    | 376   | ZAR Northern Sotho (South Africa)                             |
+//    | 377   | ZAR Southern Sotho (South Africa)                             |
+//    | 378   | ZAR Tsonga (South Africa)                                     |
+//    | 379   | ZAR Tswana (south Africa)                                     |
+//    | 380   | ZAR Venda (South Africa)                                      |
+//    | 381   | ZAR Xhosa (South Africa)                                      |
+//    | 382   | zł Polish (Poland)                                            |
+//    | 383   | ден Macedonian (Macedonia)                                    |
+//    | 384   | KM Cyrillic, Bosnian (Bosnia & Herzegovina)                   |
+//    | 385   | KM Serbian (Bosnia & Herzegovina)                             |
+//    | 386   | лв. Bulgarian (Bulgaria)                                      |
+//    | 387   | p. Belarusian (Belarus)                                       |
+//    | 388   | сом Kyrgyz (Kyrgyzstan)                                       |
+//    | 389   | сом Tajik (Tajikistan)                                        |
+//    | 390   | ج.م. Arabic (Egypt)                                           |
+//    | 391   | د.أ. Arabic (Jordan)                                          |
+//    | 392   | د.أ. Arabic (United Arab Emirates)                            |
+//    | 393   | د.ب. Arabic (Bahrain)                                         |
+//    | 394   | د.ت. Arabic (Tunisia)                                         |
+//    | 395   | د.ج. Arabic (Algeria)                                         |
+//    | 396   | د.ع. Arabic (Iraq)                                            |
+//    | 397   | د.ك. Arabic (Kuwait)                                          |
+//    | 398   | د.ل. Arabic (Libya)                                           |
+//    | 399   | د.م. Arabic (Morocco)                                         |
+//    | 400   | ر Punjabi (Pakistan)                                          |
+//    | 401   | ر.س. Arabic (Saudi Arabia)                                    |
+//    | 402   | ر.ع. Arabic (Oman)                                            |
+//    | 403   | ر.ق. Arabic (Qatar)                                           |
+//    | 404   | ر.ي. Arabic (Yemen)                                           |
+//    | 405   | ریال Persian (Iran)                                           |
+//    | 406   | ل.س. Arabic (Syria)                                           |
+//    | 407   | ل.ل. Arabic (Lebanon)                                         |
+//    | 408   | ብር Amharic (Ethiopia)                                         |
+//    | 409   | रू Nepaol (Nepal)                                             |
+//    | 410   | රු. Sinhala (Sri Lanka)                                       |
+//    | 411   | ADP                                                           |
+//    | 412   | AED                                                           |
+//    | 413   | AFA                                                           |
+//    | 414   | AFN                                                           |
+//    | 415   | ALL                                                           |
+//    | 416   | AMD                                                           |
+//    | 417   | ANG                                                           |
+//    | 418   | AOA                                                           |
+//    | 419   | ARS                                                           |
+//    | 420   | ATS                                                           |
+//    | 421   | AUD                                                           |
+//    | 422   | AWG                                                           |
+//    | 423   | AZM                                                           |
+//    | 424   | AZN                                                           |
+//    | 425   | BAM                                                           |
+//    | 426   | BBD                                                           |
 //    | ...   | ...                                                           |
 //
 func (f *File) NewStyle(style string) (int, error) {

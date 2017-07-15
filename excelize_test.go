@@ -398,7 +398,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		t.Log(err)
 	}
 	xlsx.SetCellValue("Sheet1", "A1", 56)
-	xlsx.SetCellValue("Sheet1", "A2", 32.3)
+	xlsx.SetCellValue("Sheet1", "A2", -32.3)
 	var style int
 	style, err = xlsx.NewStyle(`{"number_format": 188, "decimal_places": -1}`)
 	if err != nil {
