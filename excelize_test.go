@@ -405,7 +405,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		t.Log(err)
 	}
 	xlsx.SetCellStyle("Sheet1", "A1", "A1", style)
-	style, err = xlsx.NewStyle(`{"number_format": 188, "decimal_places": 31}`)
+	style, err = xlsx.NewStyle(`{"number_format": 188, "decimal_places": 31, "negred": true}`)
 	if err != nil {
 		t.Log(err)
 	}

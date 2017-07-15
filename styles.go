@@ -47,253 +47,219 @@ var builtInNumFmt = map[int]string{
 	49: "@",
 }
 
-// langNumFmt defined number format code with unicode in different language.
+// langNumFmt defined number format code (with unicode values provided for
+// language glyphs where they occur) in different language.
 var langNumFmt = map[string]map[int]string{
-	"zh-tw":         zhtwNumFmt,
-	"zh-cn":         zhcnNumFmt,
-	"zh-tw_unicode": zhtwUnicodeNumFmt,
-	"zh-cn_unicode": zhcnUnicodeNumFmt,
-	"ja-jp":         jajpNumFmt,
-	"ko-kr":         kokrNumFmt,
-	"ja-jp_unicode": jajpUnicodeNumFmt,
-	"ko-kr_unicode": kokrUnicodeNumFmt,
-	"th-th":         ththNumFmt,
-	"th-th_unicode": ththUnicodeNumFmt,
-}
-
-// zh-tw format code.
-var zhtwNumFmt = map[int]string{
-	27: "[$-404]e/m/d",
-	28: `[$-404]e"年"m"月"d"日"`,
-	29: `[$-404]e"年"m"月"d"日"`,
-	30: "m/d/yy",
-	31: `yyyy"年"m"月"d"日"`,
-	32: `hh"時"mm"分"`,
-	33: `hh"時"mm"分"ss"秒"`,
-	34: `上午/下午 hh"時"mm"分"`,
-	35: `上午/下午 hh"時"mm"分"ss"秒"`,
-	36: "[$-404]e/m/d",
-	50: "[$-404]e/m/d",
-	51: `[$-404]e"年"m"月"d"日"`,
-	52: `上午/下午 hh"時"mm"分"`,
-	53: `上午/下午 hh"時"mm"分"ss"秒"`,
-	54: `[$-404]e"年"m"月"d"日"`,
-	55: `上午/下午 hh"時"mm"分"`,
-	56: `上午/下午 hh"時"mm"分"ss"秒"`,
-	57: "[$-404]e/m/d",
-	58: `[$-404]e"年"m"月"d"日"`,
-}
-
-// zh-cn format code.
-var zhcnNumFmt = map[int]string{
-	27: `yyyy"年"m"月"`,
-	28: `m"月"d"日"`,
-	29: `m"月"d"日"`,
-	30: "m-d-yy",
-	31: `yyyy"年"m"月"d"日"`,
-	32: `h"时"mm"分"`,
-	33: `h"时"mm"分"ss"秒"`,
-	34: `上午/下午 h"时"mm"分"`,
-	35: `上午/下午 h"时"mm"分"ss"秒"`,
-	36: `yyyy"年"m"月"`,
-	50: `yyyy"年"m"月"`,
-	51: `m"月"d"日"`,
-	52: `yyyy"年"m"月"`,
-	53: `m"月"d"日"`,
-	54: `m"月"d"日"`,
-	55: `上午/下午 h"时"mm"分"`,
-	56: `上午/下午 h"时"mm"分"ss"秒"`,
-	57: `yyyy"年"m"月"`,
-	58: `m"月"d"日"`,
-}
-
-// zh-tw format code (with unicode values provided for language glyphs where
-// they occur).
-var zhtwUnicodeNumFmt = map[int]string{
-	27: "[$-404]e/m/d",
-	28: `[$-404]e"5E74"m"6708"d"65E5"`,
-	29: `[$-404]e"5E74"m"6708"d"65E5"`,
-	30: "m/d/yy",
-	31: `yyyy"5E74"m"6708"d"65E5"`,
-	32: `hh"6642"mm"5206"`,
-	33: `hh"6642"mm"5206"ss"79D2"`,
-	34: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
-	35: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
-	36: "[$-404]e/m/d",
-	50: "[$-404]e/m/d",
-	51: `[$-404]e"5E74"m"6708"d"65E5"`,
-	52: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
-	53: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
-	54: `[$-404]e"5E74"m"6708"d"65E5"`,
-	55: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
-	56: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
-	57: "[$-404]e/m/d",
-	58: `[$-404]e"5E74"m"6708"d"65E5"`,
-}
-
-// zh-cn format code (with unicode values provided for language glyphs where
-// they occur).
-var zhcnUnicodeNumFmt = map[int]string{
-	27: `yyyy"5E74"m"6708"`,
-	28: `m"6708"d"65E5"`,
-	29: `m"6708"d"65E5"`,
-	30: "m-d-yy",
-	31: `yyyy"5E74"m"6708"d"65E5"`,
-	32: `h"65F6"mm"5206"`,
-	33: `h"65F6"mm"5206"ss"79D2"`,
-	34: `4E0A5348/4E0B5348h"65F6"mm"5206"`,
-	35: `4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2"`,
-	36: `yyyy"5E74"m"6708"`,
-	50: `yyyy"5E74"m"6708"`,
-	51: `m"6708"d"65E5"`,
-	52: `yyyy"5E74"m"6708"`,
-	53: `m"6708"d"65E5"`,
-	54: `m"6708"d"65E5"`,
-	55: `4E0A5348/4E0B5348h"65F6"mm"5206"`,
-	56: `4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2"`,
-	57: `yyyy"5E74"m"6708"`,
-	58: `m"6708"d"65E5"`,
-}
-
-// ja-jp format code.
-var jajpNumFmt = map[int]string{
-	27: "[$-411]ge.m.d",
-	28: `[$-411]ggge"年"m"月"d"日"`,
-	29: `[$-411]ggge"年"m"月"d"日"`,
-	30: "m/d/yy",
-	31: `yyyy"年"m"月"d"日"`,
-	32: `h"時"mm"分"`,
-	33: `h"時"mm"分"ss"秒"`,
-	34: `yyyy"年"m"月"`,
-	35: `m"月"d"日"`,
-	36: "[$-411]ge.m.d",
-	50: "[$-411]ge.m.d",
-	51: `[$-411]ggge"年"m"月"d"日"`,
-	52: `yyyy"年"m"月"`,
-	53: `m"月"d"日"`,
-	54: `[$-411]ggge"年"m"月"d"日"`,
-	55: `yyyy"年"m"月"`,
-	56: `m"月"d"日"`,
-	57: "[$-411]ge.m.d",
-	58: `[$-411]ggge"年"m"月"d"日"`,
-}
-
-// ko-kr format code.
-var kokrNumFmt = map[int]string{
-	27: `yyyy"年" mm"月" dd"日"`,
-	28: "mm-dd",
-	29: "mm-dd",
-	30: "mm-dd-yy",
-	31: `yyyy"년" mm"월" dd"일"`,
-	32: `h"시" mm"분"`,
-	33: `h"시" mm"분" ss"초"`,
-	34: `yyyy-mm-dd`,
-	35: `yyyy-mm-dd`,
-	36: `yyyy"年" mm"月" dd"日"`,
-	50: `yyyy"年" mm"月" dd"日"`,
-	51: "mm-dd",
-	52: "yyyy-mm-dd",
-	53: "yyyy-mm-dd",
-	54: "mm-dd",
-	55: "yyyy-mm-dd",
-	56: "yyyy-mm-dd",
-	57: `yyyy"年" mm"月" dd"日"`,
-	58: "mm-dd",
-}
-
-// ja-jp format code (with unicode values provided for language glyphs where
-// they occur).
-var jajpUnicodeNumFmt = map[int]string{
-	27: "[$-411]ge.m.d",
-	28: `[$-411]ggge"5E74"m"6708"d"65E5"`,
-	29: `[$-411]ggge"5E74"m"6708"d"65E5"`,
-	30: "m/d/yy",
-	31: `yyyy"5E74"m"6708"d"65E5"`,
-	32: `h"6642"mm"5206"`,
-	33: `h"6642"mm"5206"ss"79D2"`,
-	34: `yyyy"5E74"m"6708"`,
-	35: `m"6708"d"65E5"`,
-	36: "[$-411]ge.m.d",
-	50: "[$-411]ge.m.d",
-	51: `[$-411]ggge"5E74"m"6708"d"65E5"`,
-	52: `yyyy"5E74"m"6708"`,
-	53: `m"6708"d"65E5"`,
-	54: `[$-411]ggge"5E74"m"6708"d"65E5"`,
-	55: `yyyy"5E74"m"6708"`,
-	56: `m"6708"d"65E5"`,
-	57: "[$-411]ge.m.d",
-	58: `[$-411]ggge"5E74"m"6708"d"65E5"`,
-}
-
-// ko-kr format code (with unicode values provided for language glyphs where
-// they occur).
-var kokrUnicodeNumFmt = map[int]string{
-	27: `yyyy"5E74" mm"6708" dd"65E5"`,
-	28: "mm-dd",
-	29: "mm-dd",
-	30: "mm-dd-yy",
-	31: `yyyy"B144" mm"C6D4" dd"C77C"`,
-	32: `h"C2DC" mm"BD84"`,
-	33: `h"C2DC" mm"BD84" ss"CD08"`,
-	34: "yyyy-mm-dd",
-	35: "yyyy-mm-dd",
-	36: `yyyy"5E74" mm"6708" dd"65E5"`,
-	50: `yyyy"5E74" mm"6708" dd"65E5"`,
-	51: "mm-dd",
-	52: "yyyy-mm-dd",
-	53: "yyyy-mm-dd",
-	54: "mm-dd",
-	55: "yyyy-mm-dd",
-	56: "yyyy-mm-dd",
-	57: `yyyy"5E74" mm"6708" dd"65E5"`,
-	58: "mm-dd",
-}
-
-// th-th format code.
-var ththNumFmt = map[int]string{
-	59: "t0",
-	60: "t0.00",
-	61: "t#,##0",
-	62: "t#,##0.00",
-	67: "t0%",
-	68: "t0.00%",
-	69: "t# ?/?",
-	70: "t# ??/??",
-	71: "ว/ด/ปปปป",
-	72: "ว-ดดด-ปป",
-	73: "ว-ดดด",
-	74: "ดดด-ปป",
-	75: "ช:นน",
-	76: "ช:นน:ทท",
-	77: "ว/ด/ปปปป ช:นน",
-	78: "นน:ทท",
-	79: "[ช]:นน:ทท",
-	80: "นน:ทท.0",
-	81: "d/m/bb",
-}
-
-// th-th format code (with unicode values provided for language glyphs where
-// they occur).
-var ththUnicodeNumFmt = map[int]string{
-	59: "t0",
-	60: "t0.00",
-	61: "t#,##0",
-	62: "t#,##0.00",
-	67: "t0%",
-	68: "t0.00%",
-	69: "t# ?/?",
-	70: "t# ??/??",
-	71: "0E27/0E14/0E1B0E1B0E1B0E1B",
-	72: "0E27-0E140E140E14-0E1B0E1B",
-	73: "0E27-0E140E140E14",
-	74: "0E140E140E14-0E1B0E1B",
-	75: "0E0A:0E190E19",
-	76: "0E0A:0E190E19:0E170E17",
-	77: "0E27/0E14/0E1B0E1B0E1B0E1B 0E0A:0E190E19",
-	78: "0E190E19:0E170E17",
-	79: "[0E0A]:0E190E19:0E170E17",
-	80: "0E190E19:0E170E17.0",
-	81: "d/m/bb",
+	"zh-tw": map[int]string{
+		27: "[$-404]e/m/d",
+		28: `[$-404]e"年"m"月"d"日"`,
+		29: `[$-404]e"年"m"月"d"日"`,
+		30: "m/d/yy",
+		31: `yyyy"年"m"月"d"日"`,
+		32: `hh"時"mm"分"`,
+		33: `hh"時"mm"分"ss"秒"`,
+		34: `上午/下午 hh"時"mm"分"`,
+		35: `上午/下午 hh"時"mm"分"ss"秒"`,
+		36: "[$-404]e/m/d",
+		50: "[$-404]e/m/d",
+		51: `[$-404]e"年"m"月"d"日"`,
+		52: `上午/下午 hh"時"mm"分"`,
+		53: `上午/下午 hh"時"mm"分"ss"秒"`,
+		54: `[$-404]e"年"m"月"d"日"`,
+		55: `上午/下午 hh"時"mm"分"`,
+		56: `上午/下午 hh"時"mm"分"ss"秒"`,
+		57: "[$-404]e/m/d",
+		58: `[$-404]e"年"m"月"d"日"`,
+	},
+	"zh-cn": map[int]string{
+		27: `yyyy"年"m"月"`,
+		28: `m"月"d"日"`,
+		29: `m"月"d"日"`,
+		30: "m-d-yy",
+		31: `yyyy"年"m"月"d"日"`,
+		32: `h"时"mm"分"`,
+		33: `h"时"mm"分"ss"秒"`,
+		34: `上午/下午 h"时"mm"分"`,
+		35: `上午/下午 h"时"mm"分"ss"秒"`,
+		36: `yyyy"年"m"月"`,
+		50: `yyyy"年"m"月"`,
+		51: `m"月"d"日"`,
+		52: `yyyy"年"m"月"`,
+		53: `m"月"d"日"`,
+		54: `m"月"d"日"`,
+		55: `上午/下午 h"时"mm"分"`,
+		56: `上午/下午 h"时"mm"分"ss"秒"`,
+		57: `yyyy"年"m"月"`,
+		58: `m"月"d"日"`,
+	},
+	"zh-tw_unicode": map[int]string{
+		27: "[$-404]e/m/d",
+		28: `[$-404]e"5E74"m"6708"d"65E5"`,
+		29: `[$-404]e"5E74"m"6708"d"65E5"`,
+		30: "m/d/yy",
+		31: `yyyy"5E74"m"6708"d"65E5"`,
+		32: `hh"6642"mm"5206"`,
+		33: `hh"6642"mm"5206"ss"79D2"`,
+		34: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
+		35: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
+		36: "[$-404]e/m/d",
+		50: "[$-404]e/m/d",
+		51: `[$-404]e"5E74"m"6708"d"65E5"`,
+		52: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
+		53: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
+		54: `[$-404]e"5E74"m"6708"d"65E5"`,
+		55: `4E0A5348/4E0B5348hh"6642"mm"5206"`,
+		56: `4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2"`,
+		57: "[$-404]e/m/d",
+		58: `[$-404]e"5E74"m"6708"d"65E5"`,
+	},
+	"zh-cn_unicode": map[int]string{
+		27: `yyyy"5E74"m"6708"`,
+		28: `m"6708"d"65E5"`,
+		29: `m"6708"d"65E5"`,
+		30: "m-d-yy",
+		31: `yyyy"5E74"m"6708"d"65E5"`,
+		32: `h"65F6"mm"5206"`,
+		33: `h"65F6"mm"5206"ss"79D2"`,
+		34: `4E0A5348/4E0B5348h"65F6"mm"5206"`,
+		35: `4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2"`,
+		36: `yyyy"5E74"m"6708"`,
+		50: `yyyy"5E74"m"6708"`,
+		51: `m"6708"d"65E5"`,
+		52: `yyyy"5E74"m"6708"`,
+		53: `m"6708"d"65E5"`,
+		54: `m"6708"d"65E5"`,
+		55: `4E0A5348/4E0B5348h"65F6"mm"5206"`,
+		56: `4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2"`,
+		57: `yyyy"5E74"m"6708"`,
+		58: `m"6708"d"65E5"`,
+	},
+	"ja-jp": map[int]string{
+		27: "[$-411]ge.m.d",
+		28: `[$-411]ggge"年"m"月"d"日"`,
+		29: `[$-411]ggge"年"m"月"d"日"`,
+		30: "m/d/yy",
+		31: `yyyy"年"m"月"d"日"`,
+		32: `h"時"mm"分"`,
+		33: `h"時"mm"分"ss"秒"`,
+		34: `yyyy"年"m"月"`,
+		35: `m"月"d"日"`,
+		36: "[$-411]ge.m.d",
+		50: "[$-411]ge.m.d",
+		51: `[$-411]ggge"年"m"月"d"日"`,
+		52: `yyyy"年"m"月"`,
+		53: `m"月"d"日"`,
+		54: `[$-411]ggge"年"m"月"d"日"`,
+		55: `yyyy"年"m"月"`,
+		56: `m"月"d"日"`,
+		57: "[$-411]ge.m.d",
+		58: `[$-411]ggge"年"m"月"d"日"`,
+	},
+	"ko-kr": map[int]string{
+		27: `yyyy"年" mm"月" dd"日"`,
+		28: "mm-dd",
+		29: "mm-dd",
+		30: "mm-dd-yy",
+		31: `yyyy"년" mm"월" dd"일"`,
+		32: `h"시" mm"분"`,
+		33: `h"시" mm"분" ss"초"`,
+		34: `yyyy-mm-dd`,
+		35: `yyyy-mm-dd`,
+		36: `yyyy"年" mm"月" dd"日"`,
+		50: `yyyy"年" mm"月" dd"日"`,
+		51: "mm-dd",
+		52: "yyyy-mm-dd",
+		53: "yyyy-mm-dd",
+		54: "mm-dd",
+		55: "yyyy-mm-dd",
+		56: "yyyy-mm-dd",
+		57: `yyyy"年" mm"月" dd"日"`,
+		58: "mm-dd",
+	},
+	"ja-jp_unicode": map[int]string{
+		27: "[$-411]ge.m.d",
+		28: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+		29: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+		30: "m/d/yy",
+		31: `yyyy"5E74"m"6708"d"65E5"`,
+		32: `h"6642"mm"5206"`,
+		33: `h"6642"mm"5206"ss"79D2"`,
+		34: `yyyy"5E74"m"6708"`,
+		35: `m"6708"d"65E5"`,
+		36: "[$-411]ge.m.d",
+		50: "[$-411]ge.m.d",
+		51: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+		52: `yyyy"5E74"m"6708"`,
+		53: `m"6708"d"65E5"`,
+		54: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+		55: `yyyy"5E74"m"6708"`,
+		56: `m"6708"d"65E5"`,
+		57: "[$-411]ge.m.d",
+		58: `[$-411]ggge"5E74"m"6708"d"65E5"`,
+	},
+	"ko-kr_unicode": map[int]string{
+		27: `yyyy"5E74" mm"6708" dd"65E5"`,
+		28: "mm-dd",
+		29: "mm-dd",
+		30: "mm-dd-yy",
+		31: `yyyy"B144" mm"C6D4" dd"C77C"`,
+		32: `h"C2DC" mm"BD84"`,
+		33: `h"C2DC" mm"BD84" ss"CD08"`,
+		34: "yyyy-mm-dd",
+		35: "yyyy-mm-dd",
+		36: `yyyy"5E74" mm"6708" dd"65E5"`,
+		50: `yyyy"5E74" mm"6708" dd"65E5"`,
+		51: "mm-dd",
+		52: "yyyy-mm-dd",
+		53: "yyyy-mm-dd",
+		54: "mm-dd",
+		55: "yyyy-mm-dd",
+		56: "yyyy-mm-dd",
+		57: `yyyy"5E74" mm"6708" dd"65E5"`,
+		58: "mm-dd",
+	},
+	"th-th": map[int]string{
+		59: "t0",
+		60: "t0.00",
+		61: "t#,##0",
+		62: "t#,##0.00",
+		67: "t0%",
+		68: "t0.00%",
+		69: "t# ?/?",
+		70: "t# ??/??",
+		71: "ว/ด/ปปปป",
+		72: "ว-ดดด-ปป",
+		73: "ว-ดดด",
+		74: "ดดด-ปป",
+		75: "ช:นน",
+		76: "ช:นน:ทท",
+		77: "ว/ด/ปปปป ช:นน",
+		78: "นน:ทท",
+		79: "[ช]:นน:ทท",
+		80: "นน:ทท.0",
+		81: "d/m/bb",
+	},
+	"th-th_unicode": map[int]string{
+		59: "t0",
+		60: "t0.00",
+		61: "t#,##0",
+		62: "t#,##0.00",
+		67: "t0%",
+		68: "t0.00%",
+		69: "t# ?/?",
+		70: "t# ??/??",
+		71: "0E27/0E14/0E1B0E1B0E1B0E1B",
+		72: "0E27-0E140E140E14-0E1B0E1B",
+		73: "0E27-0E140E140E14",
+		74: "0E140E140E14-0E1B0E1B",
+		75: "0E0A:0E190E19",
+		76: "0E0A:0E190E19:0E170E17",
+		77: "0E27/0E14/0E1B0E1B0E1B0E1B 0E0A:0E190E19",
+		78: "0E190E19:0E170E17",
+		79: "[0E0A]:0E190E19:0E170E17",
+		80: "0E190E19:0E170E17.0",
+		81: "d/m/bb",
+	},
 }
 
 // currencyNumFmt defined the currency number format map.
@@ -324,6 +290,175 @@ var currencyNumFmt = map[int]string{
 	187: "[$$-500A]#,##0.00",
 	188: "[$$-540A]#,##0.00",
 	189: `[$$-380A]\ #,##0.00`,
+	190: "[$£-809]#,##0.00",
+	191: "[$£-491]#,##0.00",
+	192: "[$£-452]#,##0.00",
+	193: "[$¥-804]#,##0.00",
+	194: "[$¥-411]#,##0.00",
+	195: "[$¥-478]#,##0.00",
+	196: "[$¥-451]#,##0.00",
+	197: "[$¥-480]#,##0.00",
+	198: "#,##0.00\\ [$\u058F-42B]",
+	199: "[$\u060B-463]#,##0.00",
+	200: "[$\u060B-48C]#,##0.00",
+	201: "[$\u09F3-845]\\ #,##0.00",
+	202: "#,##0.00[$\u17DB-453]",
+	203: "[$\u20A1-140A]#,##0.00",
+	204: "[$\u20A6-468]\\ #,##0.00",
+	205: "[$\u20A6-470]\\ #,##0.00",
+	206: "[$\u20A9-412]#,##0.00",
+	207: "[$\u20AA-40D]\\ #,##0.00",
+	208: "#,##0.00\\ [$\u20AB-42A]",
+	209: "#,##0.00\\ [$\u20AC-42D]",
+	210: "#,##0.00\\ [$\u20AC-47E]",
+	211: "#,##0.00\\ [$\u20AC-403]",
+	212: "#,##0.00\\ [$\u20AC-483]",
+	213: "[$\u20AC-813]\\ #,##0.00",
+	214: "[$\u20AC-413]\\ #,##0.00",
+	215: "[$\u20AC-1809]#,##0.00",
+	216: "#,##0.00\\ [$\u20AC-425]",
+	217: "[$\u20AC-2]\\ #,##0.00",
+	218: "#,##0.00\\ [$\u20AC-1]",
+	219: "#,##0.00\\ [$\u20AC-40B]",
+	220: "#,##0.00\\ [$\u20AC-80C]",
+	221: "#,##0.00\\ [$\u20AC-40C]",
+	222: "#,##0.00\\ [$\u20AC-140C]",
+	223: "#,##0.00\\ [$\u20AC-180C]",
+	224: "[$\u20AC-200C]#,##0.00",
+	225: "#,##0.00\\ [$\u20AC-456]",
+	226: "#,##0.00\\ [$\u20AC-C07]",
+	227: "#,##0.00\\ [$\u20AC-407]",
+	228: "#,##0.00\\ [$\u20AC-1007]",
+	229: "#,##0.00\\ [$\u20AC-408]",
+	230: "#,##0.00\\ [$\u20AC-243B]",
+	231: "[$\u20AC-83C]#,##0.00",
+	232: "[$\u20AC-410]\\ #,##0.00",
+	233: "[$\u20AC-476]#,##0.00",
+	234: "#,##0.00\\ [$\u20AC-2C1A]",
+	235: "[$\u20AC-426]\\ #,##0.00",
+	236: "#,##0.00\\ [$\u20AC-427]",
+	237: "#,##0.00\\ [$\u20AC-82E]",
+	238: "#,##0.00\\ [$\u20AC-46E]",
+	239: "[$\u20AC-43A]#,##0.00",
+	240: "#,##0.00\\ [$\u20AC-C3B]",
+	241: "#,##0.00\\ [$\u20AC-482]",
+	242: "#,##0.00\\ [$\u20AC-816]",
+	243: "#,##0.00\\ [$\u20AC-301A]",
+	244: "#,##0.00\\ [$\u20AC-203B]",
+	245: "#,##0.00\\ [$\u20AC-41B]",
+	246: "#,##0.00\\ [$\u20AC-424]",
+	247: "#,##0.00\\ [$\u20AC-C0A]",
+	248: "#,##0.00\\ [$\u20AC-81D]",
+	249: "#,##0.00\\ [$\u20AC-484]",
+	250: "#,##0.00\\ [$\u20AC-42E]",
+	251: "[$\u20AC-462]\\ #,##0.00",
+	252: "#,##0.00\\ [$₭-454]",
+	253: "#,##0.00\\ [$₮-450]",
+	254: "[$\u20AE-C50]#,##0.00",
+	255: "[$\u20B1-3409]#,##0.00",
+	256: "[$\u20B1-464]#,##0.00",
+	257: "#,##0.00[$\u20B4-422]",
+	258: "[$\u20B8-43F]#,##0.00",
+	259: "[$\u20B9-460]#,##0.00",
+	260: "[$\u20B9-4009]\\ #,##0.00",
+	261: "[$\u20B9-447]\\ #,##0.00",
+	262: "[$\u20B9-439]\\ #,##0.00",
+	263: "[$\u20B9-44B]\\ #,##0.00",
+	264: "[$\u20B9-860]#,##0.00",
+	265: "[$\u20B9-457]\\ #,##0.00",
+	266: "[$\u20B9-458]#,##0.00",
+	267: "[$\u20B9-44E]\\ #,##0.00",
+	268: "[$\u20B9-861]#,##0.00",
+	269: "[$\u20B9-448]\\ #,##0.00",
+	270: "[$\u20B9-446]\\ #,##0.00",
+	271: "[$\u20B9-44F]\\ #,##0.00",
+	272: "[$\u20B9-459]#,##0.00",
+	273: "[$\u20B9-449]\\ #,##0.00",
+	274: "[$\u20B9-820]#,##0.00",
+	275: "#,##0.00\\ [$\u20BA-41F]",
+	276: "#,##0.00\\ [$\u20BC-42C]",
+	277: "#,##0.00\\ [$\u20BC-82C]",
+	278: "#,##0.00\\ [$\u20BD-419]",
+	279: "#,##0.00[$\u20BD-485]",
+	280: "#,##0.00\\ [$\u20BE-437]",
+	281: "[$B/.-180A]\\ #,##0.00",
+	282: "[$Br-472]#,##0.00",
+	283: "[$Br-477]#,##0.00",
+	284: "#,##0.00[$Br-473]",
+	285: "[$Bs-46B]\\ #,##0.00",
+	286: "[$Bs-400A]\\ #,##0.00",
+	287: "[$Bs.-200A]\\ #,##0.00",
+	288: "[$BWP-832]\\ #,##0.00",
+	289: "[$C$-4C0A]#,##0.00",
+	290: "[$CA$-85D]#,##0.00",
+	291: "[$CA$-47C]#,##0.00",
+	292: "[$CA$-45D]#,##0.00",
+	293: "[$CFA-340C]#,##0.00",
+	294: "[$CFA-280C]#,##0.00",
+	295: "#,##0.00\\ [$CFA-867]",
+	296: "#,##0.00\\ [$CFA-488]",
+	297: "#,##0.00\\ [$CHF-100C]",
+	298: "[$CHF-1407]\\ #,##0.00",
+	299: "[$CHF-807]\\ #,##0.00",
+	300: "[$CHF-810]\\ #,##0.00",
+	301: "[$CHF-417]\\ #,##0.00",
+	302: "[$CLP-47A]\\ #,##0.00",
+	303: "[$CN¥-850]#,##0.00",
+	304: "#,##0.00\\ [$DZD-85F]",
+	305: "[$FCFA-2C0C]#,##0.00",
+	306: "#,##0.00\\ [$Ft-40E]",
+	307: "[$G-3C0C]#,##0.00",
+	308: "[$Gs.-3C0A]\\ #,##0.00",
+	309: "[$GTQ-486]#,##0.00",
+	310: "[$HK$-C04]#,##0.00",
+	311: "[$HK$-3C09]#,##0.00",
+	312: "#,##0.00\\ [$HRK-41A]",
+	313: "[$IDR-3809]#,##0.00",
+	314: "[$IQD-492]#,##0.00",
+	315: "#,##0.00\\ [$ISK-40F]",
+	316: "[$K-455]#,##0.00",
+	317: "#,##0.00\\ [$K\u010D-405]",
+	318: "#,##0.00\\ [$KM-141A]",
+	319: "#,##0.00\\ [$KM-101A]",
+	320: "#,##0.00\\ [$KM-181A]",
+	321: "[$kr-438]\\ #,##0.00",
+	322: "[$kr-43B]\\ #,##0.00",
+	323: "#,##0.00\\ [$kr-83B]",
+	324: "[$kr-414]\\ #,##0.00",
+	325: "[$kr-814]\\ #,##0.00",
+	326: "#,##0.00\\ [$kr-41D]",
+	327: "[$kr.-406]\\ #,##0.00",
+	328: "[$kr.-46F]\\ #,##0.00",
+	329: "[$Ksh-441]#,##0.00",
+	330: "[$L-818]#,##0.00",
+	331: "[$L-819]#,##0.00",
+	332: "[$L-480A]\\ #,##0.00",
+	333: "#,##0.00\\ [$Lek\u00EB-41C]",
+	334: "[$MAD-45F]#,##0.00",
+	335: "[$MAD-380C]#,##0.00",
+	336: "#,##0.00\\ [$MAD-105F]",
+	337: "[$MOP$-1404]#,##0.00",
+	338: "#,##0.00\\ [$MVR-465]_-",
+	339: "#,##0.00[$Nfk-873]",
+	340: "[$NGN-466]#,##0.00",
+	341: "[$NGN-467]#,##0.00",
+	342: "[$NGN-469]#,##0.00",
+	343: "[$NGN-471]#,##0.00",
+	344: "[$NOK-103B]\\ #,##0.00",
+	345: "[$NOK-183B]\\ #,##0.00",
+	346: "[$NZ$-481]#,##0.00",
+	347: "[$PKR-859]\\ #,##0.00",
+	348: "[$PYG-474]#,##0.00",
+	349: "[$Q-100A]#,##0.00",
+	350: "[$R-436]\\ #,##0.00",
+	351: "[$R-1C09]\\ #,##0.00",
+	352: "[$R-435]\\ #,##0.00",
+	353: "[$R$-416]\\ #,##0.00",
+	354: "[$RD$-1C0A]#,##0.00",
+	355: "#,##0.00\\ [$RF-487]",
+	356: "[$RM-4409]#,##0.00",
+	357: "[$RM-43E]#,##0.00",
+	358: "#,##0.00\\ [$RON-418]",
 }
 
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
@@ -665,34 +800,204 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 // markup and is not used inside an Excel file and you can't get formatted value
 // by the function GetCellValue) currently:
 //
-//    | Index | Symbol                                             |
-//    +-------+----------------------------------------------------+
-//    | 164   | CN¥                                                |
-//    | 165   | $ English (China)                                  |
-//    | 166   | $ Cherokee (United States)                         |
-//    | 167   | $ Chinese (Singapore)                              |
-//    | 168   | $ Chinese (Taiwan)                                 |
-//    | 169   | $ English (Australia)                              |
-//    | 170   | $ English (Belize)                                 |
-//    | 171   | $ English (Canada)                                 |
-//    | 172   | $ English (Jamaica)                                |
-//    | 173   | $ English (New Zealand)                            |
-//    | 174   | $ English (Singapore)                              |
-//    | 175   | $ English (Trinidad & Tobago)                      |
-//    | 176   | $ English (U.S. Vigin Islands)                     |
-//    | 177   | $ English (United States)                          |
-//    | 178   | $ French (Canada)                                  |
-//    | 179   | $ Hawaiian (United States)                         |
-//    | 180   | $ Malay (Brunei)                                   |
-//    | 181   | $ Quechua (Ecuador)                                |
-//    | 182   | $ Spanish (Chile)                                  |
-//    | 183   | $ Spanish (Colombia)                               |
-//    | 184   | $ Spanish (Ecuador)                                |
-//    | 185   | $ Spanish (El Salvador)                            |
-//    | 186   | $ Spanish (Mexico)                                 |
-//    | 187   | $ Spanish (Puerto Rico)                            |
-//    | 188   | $ Spanish (United States)                          |
-//    | 189   | $ Spanish (Uruguay)                                |
+//    | Index | Symbol                                                        |
+//    +-------+---------------------------------------------------------------+
+//    | 164   | CN¥                                                           |
+//    | 165   | $ English (China)                                             |
+//    | 166   | $ Cherokee (United States)                                    |
+//    | 167   | $ Chinese (Singapore)                                         |
+//    | 168   | $ Chinese (Taiwan)                                            |
+//    | 169   | $ English (Australia)                                         |
+//    | 170   | $ English (Belize)                                            |
+//    | 171   | $ English (Canada)                                            |
+//    | 172   | $ English (Jamaica)                                           |
+//    | 173   | $ English (New Zealand)                                       |
+//    | 174   | $ English (Singapore)                                         |
+//    | 175   | $ English (Trinidad & Tobago)                                 |
+//    | 176   | $ English (U.S. Vigin Islands)                                |
+//    | 177   | $ English (United States)                                     |
+//    | 178   | $ French (Canada)                                             |
+//    | 179   | $ Hawaiian (United States)                                    |
+//    | 180   | $ Malay (Brunei)                                              |
+//    | 181   | $ Quechua (Ecuador)                                           |
+//    | 182   | $ Spanish (Chile)                                             |
+//    | 183   | $ Spanish (Colombia)                                          |
+//    | 184   | $ Spanish (Ecuador)                                           |
+//    | 185   | $ Spanish (El Salvador)                                       |
+//    | 186   | $ Spanish (Mexico)                                            |
+//    | 187   | $ Spanish (Puerto Rico)                                       |
+//    | 188   | $ Spanish (United States)                                     |
+//    | 189   | $ Spanish (Uruguay)                                           |
+//    | 190   | £ English (United Kingdom)                                    |
+//    | 191   | £ Scottish Gaelic (United Kingdom)                            |
+//    | 192   | £ Welsh (United Kindom)                                       |
+//    | 193   | ¥ Chinese (China)                                             |
+//    | 194   | ¥ Japanese (Japan)                                            |
+//    | 195   | ¥ Sichuan Yi (China)                                          |
+//    | 196   | ¥ Tibetan (China)                                             |
+//    | 197   | ¥ Uyghur (China)                                              |
+//    | 198   | ֏ Armenian (Armenia)                                         |
+//    | 199   | ؋ Pashto (Afghanistan)                                        |
+//    | 200   | ؋ Persian (Afghanistan)                                       |
+//    | 201   | ৳ Bengali (Bangladesh)                                        |
+//    | 202   | ៛ Khmer (Cambodia)                                            |
+//    | 203   | ₡ Spanish (Costa Rica)                                        |
+//    | 204   | ₦ Hausa (Nigeria)                                             |
+//    | 205   | ₦ Igbo (Nigeria)                                              |
+//    | 206   | ₦ Yoruba (Nigeria)                                            |
+//    | 207   | ₩ Korean (South Korea)                                        |
+//    | 208   | ₪ Hebrew (Israel)                                             |
+//    | 209   | ₫ Vietnamese (Vietnam)                                        |
+//    | 210   | € Basque (Spain)                                              |
+//    | 211   | € Breton (France)                                             |
+//    | 212   | € Catalan (Spain)                                             |
+//    | 213   | € Corsican (France)                                           |
+//    | 214   | € Dutch (Belgium)                                             |
+//    | 215   | € Dutch (Netherlands)                                         |
+//    | 216   | € English (Ireland)                                           |
+//    | 217   | € Estonian (Estonia)                                          |
+//    | 218   | € Euro (€ 123)                                                |
+//    | 219   | € Euro (123 €)                                                |
+//    | 220   | € Finnish (Finland)                                           |
+//    | 221   | € French (Belgium)                                            |
+//    | 222   | € French (France)                                             |
+//    | 223   | € French (Luxembourg)                                         |
+//    | 224   | € French (Monaco)                                             |
+//    | 225   | € French (Réunion)                                            |
+//    | 226   | € Galician (Spain)                                            |
+//    | 227   | € German (Austria)                                            |
+//    | 228   | € German (Luxembourg)                                         |
+//    | 229   | € Greek (Greece)                                              |
+//    | 230   | € Inari Sami (Finland)                                        |
+//    | 231   | € Irish (Ireland)                                             |
+//    | 232   | € Italian (Italy)                                             |
+//    | 233   | € Latin (Italy)                                               |
+//    | 234   | € Latin, Serbian (Montenegro)                                 |
+//    | 235   | € Larvian (Latvia)                                            |
+//    | 236   | € Lithuanian (Lithuania)                                      |
+//    | 237   | € Lower Sorbian (Germany)                                     |
+//    | 238   | € Luxembourgish (Luxembourg)                                  |
+//    | 239   | € Maltese (Malta)                                             |
+//    | 240   | € Northern Sami (Finland)                                     |
+//    | 241   | € Occitan (France)                                            |
+//    | 242   | € Portuguese (Portugal)                                       |
+//    | 243   | € Serbian (Montenegro)                                        |
+//    | 244   | € Skolt Sami (Finland)                                        |
+//    | 245   | € Slovak (Slovakia)                                           |
+//    | 246   | € Slovenian (Slovenia)                                        |
+//    | 247   | € Spanish (Spain)                                             |
+//    | 248   | € Swedish (Finland)                                           |
+//    | 249   | € Swiss German (France)                                       |
+//    | 250   | € Upper Sorbian (Germany)                                     |
+//    | 251   | € Western Frisian (Netherlands)                               |
+//    | 252   | ₭ Lao (Laos)                                                  |
+//    | 253   | ₮ Mongolian (Mongolia)                                        |
+//    | 254   | ₮ Mongolian, Mongolian (Mongolia)                             |
+//    | 255   | ₱ English (Philippines)                                       |
+//    | 256   | ₱ Filipino (Philippines)                                      |
+//    | 257   | ₴ Ukrainian (Ukraine)                                         |
+//    | 258   | ₸ Kazakh (Kazakhstan)                                         |
+//    | 259   | ₹ Arabic, Kashmiri (India)                                    |
+//    | 260   | ₹ English (India)                                             |
+//    | 261   | ₹ Gujarati (India)                                            |
+//    | 262   | ₹ Hindi (India)                                               |
+//    | 263   | ₹ Kannada (India)                                             |
+//    | 264   | ₹ Kashmiri (India)                                            |
+//    | 265   | ₹ Konkani (India)                                             |
+//    | 266   | ₹ Manipuri (India)                                            |
+//    | 267   | ₹ Marathi (India)                                             |
+//    | 268   | ₹ Nepali (India)                                              |
+//    | 269   | ₹ Oriya (India)                                               |
+//    | 270   | ₹ Punjabi (India)                                             |
+//    | 271   | ₹ Sanskrit (India)                                            |
+//    | 272   | ₹ Sindhi (India)                                              |
+//    | 273   | ₹ Tamil (India)                                               |
+//    | 274   | ₹ Urdu (India)                                                |
+//    | 275   | ₺ Turkish (Turkey)                                            |
+//    | 276   | ₼ Azerbaijani (Azerbaijan)                                    |
+//    | 277   | ₼ Cyrillic, Azerbaijani (Azerbaijan)                          |
+//    | 278   | ₽ Russian (Russia)                                            |
+//    | 279   | ₽ Sakha (Russia)                                              |
+//    | 280   | ₾ Georgian (Georgia)                                          |
+//    | 281   | B/. Spanish (Panama)                                          |
+//    | 282   | Br Oromo (Ethiopia)                                           |
+//    | 283   | Br Somali (Ethiopia)                                          |
+//    | 284   | Br Tigrinya (Ethiopia)                                        |
+//    | 285   | Bs Quechua (Bolivia)                                          |
+//    | 286   | Bs Spanish (Bolivia)                                          |
+//    | 287   | BS. Spanish (Venezuela)                                       |
+//    | 288   | BWP Tswana (Botswana)                                         |
+//    | 289   | C$ Spanish (Nicaragua)                                        |
+//    | 290   | CA$ Latin, Inuktitut (Canada)                                 |
+//    | 291   | CA$ Mohawk (Canada)                                           |
+//    | 292   | CA$ Unified Canadian Aboriginal Syllabics, Inuktitut (Canada) |
+//    | 293   | CFA French (Mali)                                             |
+//    | 294   | CFA French (Senegal)                                          |
+//    | 295   | CFA Fulah (Senegal)                                           |
+//    | 296   | CFA Wolof (Senegal)                                           |
+//    | 297   | CHF French (Switzerland)                                      |
+//    | 298   | CHF German (Liechtenstein)                                    |
+//    | 299   | CHF German (Switzerland)                                      |
+//    | 300   | CHF Italian (Switzerland)                                     |
+//    | 301   | CHF Romansh (Switzerland)                                     |
+//    | 302   | CLP Mapuche (Chile)                                           |
+//    | 303   | CN¥ Mongolian, Mongolian (China)                              |
+//    | 304   | DZD Central Atlas Tamazight (Algeria)                         |
+//    | 305   | FCFA French (Cameroon)                                        |
+//    | 306   | Ft Hungarian (Hungary)                                        |
+//    | 307   | G French (Haiti)                                              |
+//    | 308   | Gs. Spanish (Paraguay)                                        |
+//    | 309   | GTQ K'iche' (Guatemala)                                       |
+//    | 310   | HK$ Chinese (Hong Kong (China))                               |
+//    | 311   | HK$ English (Hong Kong (China))                               |
+//    | 312   | HRK Croatian (Croatia)                                        |
+//    | 313   | IDR English (Indonesia)                                       |
+//    | 314   | IQD Arbic, Central Kurdish (Iraq)                             |
+//    | 315   | ISK Icelandic (Iceland)                                       |
+//    | 316   | K Burmese (Myanmar (Burma))                                   |
+//    | 317   | Kč Czech (Czech Republic)                                     |
+//    | 318   | KM Bosnian (Bosnia & Herzegovina)                             |
+//    | 319   | KM Croatian (Bosnia & Herzegovina)                            |
+//    | 320   | KM Latin, Serbian (Bosnia & Herzegovina)                      |
+//    | 321   | kr Faroese (Faroe Islands)                                    |
+//    | 322   | kr Northern Sami (Norway)                                     |
+//    | 323   | kr Northern Sami (Sweden)                                     |
+//    | 324   | kr Norwegian Bokmål (Norway)                                  |
+//    | 325   | kr Norwegian Nynorsk (Norway)                                 |
+//    | 326   | kr Swedish (Sweden)                                           |
+//    | 327   | kr. Danish (Denmark)                                          |
+//    | 328   | kr. Kalaallisut (Greenland)                                   |
+//    | 329   | Ksh Swahili (kenya)                                           |
+//    | 330   | L Romanian (Moldova)                                          |
+//    | 331   | L Russian (Moldova)                                           |
+//    | 332   | L Spanish (Honduras)                                          |
+//    | 333   | Lekë Albanian (Albania)                                       |
+//    | 334   | MAD Arabic, Central Atlas Tamazight (Morocco)                 |
+//    | 335   | MAD French (Morocco)                                          |
+//    | 336   | MAD Tifinagh, Central Atlas Tamazight (Morocco)               |
+//    | 337   | MOP$ Chinese (Macau (China))                                  |
+//    | 338   | MVR Divehi (Maldives)                                         |
+//    | 339   | Nfk Tigrinya (Eritrea)                                        |
+//    | 340   | NGN Bini (Nigeria)                                            |
+//    | 341   | NGN Fulah (Nigeria)                                           |
+//    | 342   | NGN Ibibio (Nigeria)                                          |
+//    | 343   | NGN Kanuri (Nigeria)                                          |
+//    | 344   | NOK Lule Sami (Norway)                                        |
+//    | 345   | NOK Southern Sami (Norway)                                    |
+//    | 346   | NZ$ Maori (New Zealand)                                       |
+//    | 347   | PKR Sindhi (Pakistan)                                         |
+//    | 348   | PYG Guarani (Paraguay)                                        |
+//    | 349   | Q Spanish (Guatemala)                                         |
+//    | 350   | R Afrikaans (South Africa)                                    |
+//    | 351   | R English (South Africa)                                      |
+//    | 352   | R Zulu (South Africa)                                         |
+//    | 353   | R$ Portuguese (Brazil)                                        |
+//    | 354   | RD$ Spanish (Dominican Republic)                              |
+//    | 355   | RF Kinyarwanda (Rwanda)                                       |
+//    | 356   | RM English (Malaysia)                                         |
+//    | 357   | RM Malay (Malaysia)                                           |
+//    | 358   | RON Romanian (Romania)                                        |
+//    | ...   | ...                                                           |
 //
 func (f *File) NewStyle(style string) (int, error) {
 	var cellXfsID int
@@ -764,6 +1069,9 @@ func setNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 			return setLangNumFmt(style, formatCellStyle)
 		}
 		fc = strings.Replace(fc, "0.00", dp, -1)
+		if formatCellStyle.NegRed {
+			fc = fc + ";[Red]" + fc
+		}
 		if style.NumFmts != nil {
 			numFmtID = style.NumFmts.NumFmt[len(style.NumFmts.NumFmt)-1].NumFmtID + 1
 			nf := xlsxNumFmt{

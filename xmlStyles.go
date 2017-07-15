@@ -320,4 +320,5 @@ type formatCellStyle struct {
 	NumFmt        int    `json:"number_format"`
 	DecimalPlaces int    `json:"decimal_places"`
 	Lang          string `json:"lang"`
+	NegRed        bool   `json:"negred"`
 }
