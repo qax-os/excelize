@@ -203,7 +203,7 @@ type xlsxDefinedName struct {
 	FunctionGroupID   int    `xml:"functionGroupId,attr,omitempty"`
 	Help              string `xml:"help,attr,omitempty"`
 	Hidden            bool   `xml:"hidden,attr,omitempty"`
-	LocalSheetID      int    `xml:"localSheetId,attr"`
+	LocalSheetID      *int   `xml:"localSheetId,attr"`
 	Name              string `xml:"name,attr,omitempty"`
 	PublishToServer   bool   `xml:"publishToServer,attr,omitempty"`
 	ShortcutKey       string `xml:"shortcutKey,attr,omitempty"`

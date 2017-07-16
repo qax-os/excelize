@@ -72,10 +72,29 @@ func (f *File) workbookWriter() {
 func (f *File) worksheetWriter() {
 	for path, sheet := range f.Sheet {
 		if sheet != nil {
+			for k, v := range sheet.SheetData.Row {
+				f.Sheet[path].SheetData.Row[k].C = trimCell(v.C)
+			}
 			output, _ := xml.Marshal(sheet)
 			f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+			ok := f.checked[path]
+			if ok {
+				f.checked[path] = false
+			}
 		}
 	}
+}
+
+// trimCell provides function to trim blank cells which created by completeCol.
+func trimCell(column []xlsxC) []xlsxC {
+	col := []xlsxC{}
+	for _, c := range column {
+		if c.S == 0 && c.V == "" && c.F == nil && c.T == "" {
+			continue
+		}
+		col = append(col, c)
+	}
+	return col
 }
 
 // Read and update property of contents type of XLSX.
