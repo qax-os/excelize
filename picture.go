@@ -127,6 +127,23 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 	return rID
 }
 
+// deleteSheetRelationships provides function to delete relationships in
+// xl/worksheets/_rels/sheet%d.xml.rels by given sheet name and relationship
+// index.
+func (f *File) deleteSheetRelationships(sheet, rID string) {
+	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
+	var sheetRels xlsxWorkbookRels
+	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+	for k, v := range sheetRels.Relationships {
+		if v.ID != rID {
+			continue
+		}
+		sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
+	}
+	output, _ := xml.Marshal(sheetRels)
+	f.saveFileList(rels, string(output))
+}
+
 // addSheetLegacyDrawing provides function to add legacy drawing element to
 // xl/worksheets/sheet%d.xml by given sheet name and relationship index.
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {

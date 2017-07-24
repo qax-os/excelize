@@ -750,7 +750,88 @@ func TestAddChart(t *testing.T) {
 	xlsx.AddChart("SHEET2", "P1", `{"type":"radar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top_right","show_legend_key":false},"title":{"name":"Fruit Radar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"span"}`)
 	xlsx.AddChart("SHEET2", "X1", `{"type":"scatter","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Scatter Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 	// Save xlsx file by the given path.
-	err = xlsx.SaveAs("./test/Workbook_6.xlsx")
+	err = xlsx.SaveAs("./test/Workbook_addchart.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestInsertCol(t *testing.T) {
+	xlsx := NewFile()
+	for j := 1; j <= 10; j++ {
+		for i := 0; i <= 10; i++ {
+			axis := ToAlphaString(i) + strconv.Itoa(j)
+			xlsx.SetCellStr("Sheet1", axis, axis)
+		}
+	}
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize")
+	xlsx.MergeCell("sheet1", "A1", "C3")
+	err := xlsx.AutoFilter("Sheet1", "A2", "B2", `{"column":"B","expression":"x != blanks"}`)
+	t.Log(err)
+	xlsx.InsertCol("Sheet1", "A")
+	err = xlsx.SaveAs("./test/Workbook_insertcol.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestRemoveCol(t *testing.T) {
+	xlsx := NewFile()
+	for j := 1; j <= 10; j++ {
+		for i := 0; i <= 10; i++ {
+			axis := ToAlphaString(i) + strconv.Itoa(j)
+			xlsx.SetCellStr("Sheet1", axis, axis)
+		}
+	}
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize")
+	xlsx.SetCellHyperLink("Sheet1", "C5", "https://github.com")
+	xlsx.MergeCell("sheet1", "A1", "B1")
+	xlsx.MergeCell("sheet1", "A2", "B2")
+	xlsx.RemoveCol("Sheet1", "A")
+	xlsx.RemoveCol("Sheet1", "A")
+	err := xlsx.SaveAs("./test/Workbook_removecol.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestInsertRow(t *testing.T) {
+	xlsx := NewFile()
+	for j := 1; j <= 10; j++ {
+		for i := 0; i <= 10; i++ {
+			axis := ToAlphaString(i) + strconv.Itoa(j)
+			xlsx.SetCellStr("Sheet1", axis, axis)
+		}
+	}
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize")
+	xlsx.InsertRow("Sheet1", -1)
+	xlsx.InsertRow("Sheet1", 4)
+	err := xlsx.SaveAs("./test/Workbook_insertrow.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestRemoveRow(t *testing.T) {
+	xlsx := NewFile()
+	for j := 1; j <= 10; j++ {
+		for i := 0; i <= 10; i++ {
+			axis := ToAlphaString(i) + strconv.Itoa(j)
+			xlsx.SetCellStr("Sheet1", axis, axis)
+		}
+	}
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize")
+	xlsx.RemoveRow("Sheet1", -1)
+	xlsx.RemoveRow("Sheet1", 4)
+	xlsx.MergeCell("sheet1", "B3", "B5")
+	xlsx.RemoveRow("Sheet1", 2)
+	xlsx.RemoveRow("Sheet1", 4)
+	err := xlsx.AutoFilter("Sheet1", "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
+	t.Log(err)
+	xlsx.RemoveRow("Sheet1", 0)
+	xlsx.RemoveRow("Sheet1", 1)
+	xlsx.RemoveRow("Sheet1", 0)
+	err = xlsx.SaveAs("./test/Workbook_removerow.xlsx")
 	if err != nil {
 		t.Log(err)
 	}

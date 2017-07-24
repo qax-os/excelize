@@ -1,8 +1,11 @@
 package excelize
 
 import (
+	"encoding/xml"
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // mergeCellsParser provides function to check merged cells in worksheet by
@@ -17,6 +20,53 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 		}
 	}
 	return axis
+}
+
+// SetCellValue provides function to set value of a cell. The following shows
+// the supported data types:
+//
+//    int
+//    int8
+//    int16
+//    int32
+//    int64
+//    float32
+//    float64
+//    string
+//    []byte
+//    time.Time
+//    nil
+//
+// Note that default date format is m/d/yy h:mm of time.Time type value. You can
+// set numbers format by SetCellStyle() method.
+func (f *File) SetCellValue(sheet, axis string, value interface{}) {
+	switch t := value.(type) {
+	case int:
+		f.SetCellInt(sheet, axis, value.(int))
+	case int8:
+		f.SetCellInt(sheet, axis, int(value.(int8)))
+	case int16:
+		f.SetCellInt(sheet, axis, int(value.(int16)))
+	case int32:
+		f.SetCellInt(sheet, axis, int(value.(int32)))
+	case int64:
+		f.SetCellInt(sheet, axis, int(value.(int64)))
+	case float32:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
+	case float64:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
+	case string:
+		f.SetCellStr(sheet, axis, t)
+	case []byte:
+		f.SetCellStr(sheet, axis, string(t))
+	case time.Time:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 32))
+		f.setDefaultTimeStyle(sheet, axis)
+	case nil:
+		f.SetCellStr(sheet, axis, "")
+	default:
+		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+	}
 }
 
 // GetCellValue provides function to get formatted value from cell by given
@@ -75,6 +125,25 @@ func (f *File) formattedValue(s int, v string) string {
 		return ok(styleSheet.CellXfs.Xf[s].NumFmtID, v)
 	}
 	return v
+}
+
+// GetCellStyle provides function to get cell style index by given worksheet
+// name and cell coordinates.
+func (f *File) GetCellStyle(sheet, axis string) int {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	return f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
 }
 
 // GetCellFormula provides function to get formula from cell by given sheet
@@ -213,6 +282,94 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 		mergeCells.Cells = append(mergeCells.Cells, &mergeCell)
 		xlsx.MergeCells = &mergeCells
 	}
+}
+
+// SetCellInt provides function to set int type value of a cell by given
+// worksheet name, cell coordinates and cell value.
+func (f *File) SetCellInt(sheet, axis string, value int) {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
+	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
+}
+
+// prepareCellStyle provides function to prepare style index of cell in
+// worksheet by given column index and style index.
+func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
+	if xlsx.Cols != nil && style == 0 {
+		for _, v := range xlsx.Cols.Col {
+			if v.Min <= col && col <= v.Max {
+				style = v.Style
+			}
+		}
+	}
+	return style
+}
+
+// SetCellStr provides function to set string type value of a cell. Total number
+// of characters that a cell can contain 32767 characters.
+func (f *File) SetCellStr(sheet, axis, value string) {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	if len(value) > 32767 {
+		value = value[0:32767]
+	}
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	// Leading space(s) character detection.
+	if len(value) > 0 {
+		if value[0] == 32 {
+			xlsx.SheetData.Row[xAxis].C[yAxis].XMLSpace = xml.Attr{
+				Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+				Value: "preserve",
+			}
+		}
+	}
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
+	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
+}
+
+// SetCellDefault provides function to set string type value of a cell as
+// default format without escaping the cell.
+func (f *File) SetCellDefault(sheet, axis, value string) {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
+	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 }
 
 // checkCellInArea provides function to determine if a given coordinate is

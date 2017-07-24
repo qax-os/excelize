@@ -1,7 +1,9 @@
 package excelize
 
 import (
+	"bytes"
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -243,6 +245,61 @@ func (f *File) GetColWidth(sheet, column string) float64 {
 	return defaultColWidthPixels
 }
 
+// InsertCol provides function to insert a new column before given column index.
+// For example, create a new column before column C in Sheet1:
+//
+//    xlsx.InsertCol("Sheet1", "C")
+//
+func (f *File) InsertCol(sheet, column string) {
+	col := TitleToNumber(strings.ToUpper(column))
+	f.adjustHelper(sheet, col, -1, 1)
+}
+
+// RemoveCol provides function to remove single column by given worksheet index
+// and column index. For example, remove column C in Sheet1:
+//
+//    xlsx.RemoveCol("Sheet1", "C")
+//
+func (f *File) RemoveCol(sheet, column string) {
+	xlsx := f.workSheetReader(sheet)
+	for i, r := range xlsx.SheetData.Row {
+		for k, v := range r.C {
+			axis := v.R
+			col := string(strings.Map(letterOnlyMapF, axis))
+			if col == column {
+				xlsx.SheetData.Row[i].C = append(xlsx.SheetData.Row[i].C[:k], xlsx.SheetData.Row[i].C[k+1:]...)
+			}
+		}
+	}
+	col := TitleToNumber(strings.ToUpper(column))
+	f.adjustHelper(sheet, col, -1, -1)
+}
+
+// Completion column element tags of XML in a sheet.
+func completeCol(xlsx *xlsxWorksheet, row, cell int) {
+	if len(xlsx.SheetData.Row) < cell {
+		for i := len(xlsx.SheetData.Row); i < cell; i++ {
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
+				R: i + 1,
+			})
+		}
+	}
+	buffer := bytes.Buffer{}
+	for k, v := range xlsx.SheetData.Row {
+		if len(v.C) < cell {
+			start := len(v.C)
+			for iii := start; iii < cell; iii++ {
+				buffer.WriteString(ToAlphaString(iii))
+				buffer.WriteString(strconv.Itoa(k + 1))
+				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, xlsxC{
+					R: buffer.String(),
+				})
+				buffer.Reset()
+			}
+		}
+	}
+}
+
 // convertColWidthToPixels provieds function to convert the width of a cell from
 // user's units to pixels. Excel rounds the column width to the nearest pixel.
 // If the width hasn't been set by the user we use the default value. If the
@@ -260,16 +317,4 @@ func convertColWidthToPixels(width float64) float64 {
 	}
 	pixels = (width*maxDigitWidth + 0.5) + padding
 	return math.Ceil(pixels)
-}
-
-// convertRowHeightToPixels provides function to convert the height of a cell
-// from user's units to pixels. If the height hasn't been set by the user we use
-// the default value. If the row is hidden it has a value of zero.
-func convertRowHeightToPixels(height float64) float64 {
-	var pixels float64
-	if height == 0 {
-		return pixels
-	}
-	pixels = math.Ceil(4.0 / 3.0 * height)
-	return pixels
 }

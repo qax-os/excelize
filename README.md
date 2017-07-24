@@ -2,8 +2,8 @@
 
 # Excelize
 
-[![Build Status](https://travis-ci.org/xuri/excelize.svg?branch=master)](https://travis-ci.org/xuri/excelize)
-[![Code Coverage](https://codecov.io/gh/xuri/excelize/branch/master/graph/badge.svg)](https://codecov.io/gh/xuri/excelize)
+[![Build Status](https://travis-ci.org/360EntSecGroup-Skylar/excelize.svg?branch=master)](https://travis-ci.org/360EntSecGroup-Skylar/excelize)
+[![Code Coverage](https://codecov.io/gh/360EntSecGroup-Skylar/excelize/branch/master/graph/badge.svg)](https://codecov.io/gh/360EntSecGroup-Skylar/excelize)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xuri/excelize)](https://goreportcard.com/report/github.com/xuri/excelize)
 [![GoDoc](https://godoc.org/github.com/xuri/excelize?status.svg)](https://godoc.org/github.com/xuri/excelize)
 [![Licenses](https://img.shields.io/badge/license-bsd-orange.svg)](https://opensource.org/licenses/BSD-3-Clause)

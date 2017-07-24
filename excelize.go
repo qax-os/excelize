@@ -4,13 +4,11 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // File define a populated XLSX file struct.
@@ -67,72 +65,6 @@ func OpenReader(r io.Reader) (*File, error) {
 	}, nil
 }
 
-// SetCellValue provides function to set value of a cell. The following shows
-// the supported data types:
-//
-//    int
-//    int8
-//    int16
-//    int32
-//    int64
-//    float32
-//    float64
-//    string
-//    []byte
-//    time.Time
-//    nil
-//
-// Note that default date format is m/d/yy h:mm of time.Time type value. You can
-// set numbers format by SetCellStyle() method.
-func (f *File) SetCellValue(sheet, axis string, value interface{}) {
-	switch t := value.(type) {
-	case int:
-		f.SetCellInt(sheet, axis, value.(int))
-	case int8:
-		f.SetCellInt(sheet, axis, int(value.(int8)))
-	case int16:
-		f.SetCellInt(sheet, axis, int(value.(int16)))
-	case int32:
-		f.SetCellInt(sheet, axis, int(value.(int32)))
-	case int64:
-		f.SetCellInt(sheet, axis, int(value.(int64)))
-	case float32:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
-	case float64:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
-	case string:
-		f.SetCellStr(sheet, axis, t)
-	case []byte:
-		f.SetCellStr(sheet, axis, string(t))
-	case time.Time:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 32))
-		f.setDefaultTimeStyle(sheet, axis)
-	case nil:
-		f.SetCellStr(sheet, axis, "")
-	default:
-		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
-	}
-}
-
-// GetCellStyle provides function to get cell style index by given worksheet
-// name and cell coordinates.
-func (f *File) GetCellStyle(sheet, axis string) int {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	return f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-}
-
 // setDefaultTimeStyle provides function to set default numbers format for
 // time.Time type cell value by given worksheet name and cell coordinates.
 func (f *File) setDefaultTimeStyle(sheet, axis string) {
@@ -161,151 +93,6 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 		f.Sheet[name] = &xlsx
 	}
 	return f.Sheet[name]
-}
-
-// SetCellInt provides function to set int type value of a cell by given
-// worksheet name, cell coordinates and cell value.
-func (f *File) SetCellInt(sheet, axis string, value int) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
-	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
-}
-
-// prepareCellStyle provides function to prepare style index of cell in
-// worksheet by given column index and style index.
-func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
-	if xlsx.Cols != nil && style == 0 {
-		for _, v := range xlsx.Cols.Col {
-			if v.Min <= col && col <= v.Max {
-				style = v.Style
-			}
-		}
-	}
-	return style
-}
-
-// SetCellStr provides function to set string type value of a cell. Total number
-// of characters that a cell can contain 32767 characters.
-func (f *File) SetCellStr(sheet, axis, value string) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	if len(value) > 32767 {
-		value = value[0:32767]
-	}
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	// Leading space(s) character detection.
-	if len(value) > 0 {
-		if value[0] == 32 {
-			xlsx.SheetData.Row[xAxis].C[yAxis].XMLSpace = xml.Attr{
-				Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-				Value: "preserve",
-			}
-		}
-	}
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
-	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
-}
-
-// SetCellDefault provides function to set string type value of a cell as
-// default format without escaping the cell.
-func (f *File) SetCellDefault(sheet, axis, value string) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
-	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
-}
-
-// Completion column element tags of XML in a sheet.
-func completeCol(xlsx *xlsxWorksheet, row, cell int) {
-	if len(xlsx.SheetData.Row) < cell {
-		for i := len(xlsx.SheetData.Row); i < cell; i++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
-				R: i + 1,
-			})
-		}
-	}
-	buffer := bytes.Buffer{}
-	for k, v := range xlsx.SheetData.Row {
-		if len(v.C) < cell {
-			start := len(v.C)
-			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(ToAlphaString(iii))
-				buffer.WriteString(strconv.Itoa(k + 1))
-				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
-			}
-		}
-	}
-}
-
-// completeRow provides function to check and fill each column element for a
-// single row and make that is continuous in a worksheet of XML by given row
-// index and axis.
-func completeRow(xlsx *xlsxWorksheet, row, cell int) {
-	currentRows := len(xlsx.SheetData.Row)
-	if currentRows > 1 {
-		lastRow := xlsx.SheetData.Row[currentRows-1].R
-		if lastRow >= row {
-			row = lastRow
-		}
-	}
-	for i := currentRows; i < row; i++ {
-		xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
-			R: i + 1,
-		})
-	}
-	buffer := bytes.Buffer{}
-	for ii := currentRows; ii < row; ii++ {
-		start := len(xlsx.SheetData.Row[ii].C)
-		if start == 0 {
-			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(ToAlphaString(iii))
-				buffer.WriteString(strconv.Itoa(ii + 1))
-				xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
-			}
-		}
-	}
 }
 
 // checkSheet provides function to fill each row element and make that is
@@ -346,61 +133,6 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 	return workbookMarshal
 }
 
-// checkRow provides function to check and fill each column element for all rows
-// and make that is continuous in a worksheet of XML. For example:
-//
-//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//        <c r="A15" s="2" />
-//        <c r="B15" s="2" />
-//        <c r="F15" s="1" />
-//        <c r="G15" s="1" />
-//    </row>
-//
-// in this case, we should to change it to
-//
-//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//        <c r="A15" s="2" />
-//        <c r="B15" s="2" />
-//        <c r="C15" s="2" />
-//        <c r="D15" s="2" />
-//        <c r="E15" s="2" />
-//        <c r="F15" s="1" />
-//        <c r="G15" s="1" />
-//    </row>
-//
-// Noteice: this method could be very slow for large spreadsheets (more than
-// 3000 rows one sheet).
-func checkRow(xlsx *xlsxWorksheet) {
-	buffer := bytes.Buffer{}
-	for k, v := range xlsx.SheetData.Row {
-		lenCol := len(v.C)
-		if lenCol < 1 {
-			continue
-		}
-		endR := string(strings.Map(letterOnlyMapF, v.C[lenCol-1].R))
-		endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, v.C[lenCol-1].R))
-		endCol := TitleToNumber(endR) + 1
-		if lenCol < endCol {
-			oldRow := xlsx.SheetData.Row[k].C
-			xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
-			tmp := []xlsxC{}
-			for i := 0; i <= endCol; i++ {
-				buffer.WriteString(ToAlphaString(i))
-				buffer.WriteString(strconv.Itoa(endRow))
-				tmp = append(tmp, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
-			}
-			xlsx.SheetData.Row[k].C = tmp
-			for _, y := range oldRow {
-				colAxis := TitleToNumber(string(strings.Map(letterOnlyMapF, y.R)))
-				xlsx.SheetData.Row[k].C[colAxis] = y
-			}
-		}
-	}
-}
-
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
 // Office Excel 2007 and 2010. This function will be remove value tag when met a
 // cell have a linked value. Reference
@@ -434,6 +166,227 @@ func (f *File) UpdateLinkedValue() {
 				if col.F != nil && col.V != "" {
 					xlsx.SheetData.Row[indexR].C[indexC].V = ""
 					xlsx.SheetData.Row[indexR].C[indexC].T = ""
+				}
+			}
+		}
+	}
+}
+
+// adjustHelper provides function to adjust rows and columns dimensions,
+// hyperlinks, merged cells and auto filter when inserting or deleting rows or
+// columns.
+//
+// sheet: Worksheet index that we're editing
+// column: Index number of the column we're inserting/deleting before
+// row: Index number of the row we're inserting/deleting before
+// offset: Number of rows/column to insert/delete negative values indicate deletion
+//
+// TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
+//
+func (f *File) adjustHelper(sheet string, column, row, offset int) {
+	xlsx := f.workSheetReader(sheet)
+	f.adjustRowDimensions(xlsx, row, offset)
+	f.adjustColDimensions(xlsx, column, offset)
+	f.adjustHyperlinks(sheet, column, row, offset)
+	f.adjustMergeCells(xlsx, column, row, offset)
+	f.adjustAutoFilter(xlsx, column, row, offset)
+	checkSheet(xlsx)
+	checkRow(xlsx)
+}
+
+// adjustColDimensions provides function to update column dimensions when
+// inserting or deleting rows or columns.
+func (f *File) adjustColDimensions(xlsx *xlsxWorksheet, column, offset int) {
+	for i, r := range xlsx.SheetData.Row {
+		for k, v := range r.C {
+			axis := v.R
+			col := string(strings.Map(letterOnlyMapF, axis))
+			row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+			yAxis := TitleToNumber(col)
+			if yAxis >= column && column != -1 {
+				xlsx.SheetData.Row[i].C[k].R = ToAlphaString(yAxis+offset) + strconv.Itoa(row)
+			}
+		}
+	}
+}
+
+// adjustRowDimensions provides function to update row dimensions when inserting
+// or deleting rows or columns.
+func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, rowIndex, offset int) {
+	if rowIndex == -1 {
+		return
+	}
+	for i, r := range xlsx.SheetData.Row {
+		if r.R < rowIndex {
+			continue
+		}
+		xlsx.SheetData.Row[i].R += offset
+		for k, v := range xlsx.SheetData.Row[i].C {
+			axis := v.R
+			col := string(strings.Map(letterOnlyMapF, axis))
+			row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+			xAxis := row + offset
+			xlsx.SheetData.Row[i].C[k].R = col + strconv.Itoa(xAxis)
+		}
+	}
+}
+
+// adjustHyperlinks provides function to update hyperlinks when inserting or
+// deleting rows or columns.
+func (f *File) adjustHyperlinks(sheet string, column, rowIndex, offset int) {
+	xlsx := f.workSheetReader(sheet)
+
+	// order is important
+	if xlsx.Hyperlinks != nil && offset < 0 {
+		for i, v := range xlsx.Hyperlinks.Hyperlink {
+			axis := v.Ref
+			col := string(strings.Map(letterOnlyMapF, axis))
+			row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+			yAxis := TitleToNumber(col)
+			if row == rowIndex || yAxis == column {
+				f.deleteSheetRelationships(sheet, v.RID)
+				if len(xlsx.Hyperlinks.Hyperlink) > 1 {
+					xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink[:i], xlsx.Hyperlinks.Hyperlink[i+1:]...)
+				} else {
+					xlsx.Hyperlinks = nil
+				}
+			}
+		}
+	}
+
+	if xlsx.Hyperlinks != nil {
+		for i, v := range xlsx.Hyperlinks.Hyperlink {
+			axis := v.Ref
+			col := string(strings.Map(letterOnlyMapF, axis))
+			row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+			xAxis := row + offset
+			yAxis := TitleToNumber(col)
+			if rowIndex != -1 && row >= rowIndex {
+				xlsx.Hyperlinks.Hyperlink[i].Ref = col + strconv.Itoa(xAxis)
+			}
+			if column != -1 && yAxis >= column {
+				xlsx.Hyperlinks.Hyperlink[i].Ref = ToAlphaString(yAxis+offset) + strconv.Itoa(row)
+			}
+		}
+	}
+}
+
+// adjustMergeCellsHelper provides function to update merged cells when inserting or
+// deleting rows or columns.
+func (f *File) adjustMergeCellsHelper(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
+	if xlsx.MergeCells != nil {
+		for k, v := range xlsx.MergeCells.Cells {
+			beg := strings.Split(v.Ref, ":")[0]
+			end := strings.Split(v.Ref, ":")[1]
+
+			begcol := string(strings.Map(letterOnlyMapF, beg))
+			begrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, beg))
+			begxAxis := begrow + offset
+			begyAxis := TitleToNumber(begcol)
+
+			endcol := string(strings.Map(letterOnlyMapF, end))
+			endrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, end))
+			endxAxis := endrow + offset
+			endyAxis := TitleToNumber(endcol)
+
+			if rowIndex != -1 {
+				if begrow > 1 && begrow >= rowIndex {
+					beg = begcol + strconv.Itoa(begxAxis)
+				}
+				if endrow > 1 && endrow >= rowIndex {
+					end = endcol + strconv.Itoa(endxAxis)
+				}
+			}
+
+			if column != -1 {
+				if begyAxis >= column {
+					beg = ToAlphaString(begyAxis+offset) + strconv.Itoa(endrow)
+				}
+				if endyAxis >= column {
+					end = ToAlphaString(endyAxis+offset) + strconv.Itoa(endrow)
+				}
+			}
+
+			xlsx.MergeCells.Cells[k].Ref = beg + ":" + end
+		}
+	}
+}
+
+// adjustMergeCells provides function to update merged cells when inserting or
+// deleting rows or columns.
+func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
+	f.adjustMergeCellsHelper(xlsx, column, rowIndex, offset)
+
+	if xlsx.MergeCells != nil && offset < 0 {
+		for k, v := range xlsx.MergeCells.Cells {
+			beg := strings.Split(v.Ref, ":")[0]
+			end := strings.Split(v.Ref, ":")[1]
+			if beg == end {
+				xlsx.MergeCells.Count += offset
+				if len(xlsx.MergeCells.Cells) > 1 {
+					xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:k], xlsx.MergeCells.Cells[k+1:]...)
+				} else {
+					xlsx.MergeCells = nil
+				}
+			}
+		}
+	}
+}
+
+// adjustAutoFilter provides function to update the auto filter when inserting
+// or deleting rows or columns.
+func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
+	f.adjustAutoFilterHelper(xlsx, column, rowIndex, offset)
+
+	if xlsx.AutoFilter != nil {
+		beg := strings.Split(xlsx.AutoFilter.Ref, ":")[0]
+		end := strings.Split(xlsx.AutoFilter.Ref, ":")[1]
+
+		begcol := string(strings.Map(letterOnlyMapF, beg))
+		begrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, beg))
+		begxAxis := begrow + offset
+
+		endcol := string(strings.Map(letterOnlyMapF, end))
+		endrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, end))
+		endxAxis := endrow + offset
+		endyAxis := TitleToNumber(endcol)
+
+		if rowIndex != -1 {
+			if begrow >= rowIndex {
+				beg = begcol + strconv.Itoa(begxAxis)
+			}
+			if endrow >= rowIndex {
+				end = endcol + strconv.Itoa(endxAxis)
+			}
+		}
+
+		if column != -1 && endyAxis >= column {
+			end = ToAlphaString(endyAxis+offset) + strconv.Itoa(endrow)
+		}
+		xlsx.AutoFilter.Ref = beg + ":" + end
+	}
+}
+
+// adjustAutoFilterHelper provides function to update the auto filter when
+// inserting or deleting rows or columns.
+func (f *File) adjustAutoFilterHelper(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
+	if xlsx.AutoFilter != nil {
+		beg := strings.Split(xlsx.AutoFilter.Ref, ":")[0]
+		end := strings.Split(xlsx.AutoFilter.Ref, ":")[1]
+
+		begcol := string(strings.Map(letterOnlyMapF, beg))
+		begrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, beg))
+		begyAxis := TitleToNumber(begcol)
+
+		endcol := string(strings.Map(letterOnlyMapF, end))
+		endyAxis := TitleToNumber(endcol)
+		endrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, end))
+
+		if (begrow == rowIndex && offset < 0) || (column == begyAxis && column == endyAxis) {
+			xlsx.AutoFilter = nil
+			for i, r := range xlsx.SheetData.Row {
+				if begrow < r.R && r.R <= endrow {
+					xlsx.SheetData.Row[i].Hidden = false
 				}
 			}
 		}
