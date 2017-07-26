@@ -206,7 +206,14 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 }
 
 // SetCellHyperLink provides function to set cell hyperlink by given sheet index
-// and link URL address. Only support external link currently.
+// and link URL address. Only support external link currently. For example: add
+// hyperLink for Sheet1!A3:
+//
+//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize")
+//    // Set underline and font color style for the cell.
+//    style, _ := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+//    xlsx.SetCellStyle("Sheet1", "A3", "A3", style)
+//
 func (f *File) SetCellHyperLink(sheet, axis, link string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
