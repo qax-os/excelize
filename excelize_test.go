@@ -420,8 +420,8 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.SetCellValue("Sheet1", "A1", 37947.7500001)
-	xlsx.SetCellValue("Sheet1", "A2", 37947.7500001)
+	xlsx.SetCellValue("Sheet1", "A1", 42920.5)
+	xlsx.SetCellValue("Sheet1", "A2", 42920.5)
 
 	style, err = xlsx.NewStyle(`{"number_format": 26, "lang": "zh-tw"}`)
 	if err != nil {
@@ -445,6 +445,26 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
 
 	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestSetCellStyleCustomNumberFormat(t *testing.T) {
+	xlsx := NewFile()
+	xlsx.SetCellValue("Sheet1", "A1", 42920.5)
+	xlsx.SetCellValue("Sheet1", "A2", 42920.5)
+	style, err := xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A1", "A1", style)
+	style, err = xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
+	err = xlsx.SaveAs("./test/Workbook_custom_number_format.xlsx")
 	if err != nil {
 		t.Log(err)
 	}

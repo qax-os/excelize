@@ -1071,6 +1071,251 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //     48    | ##0.0E+0
 //     49    | @
 //
+// Number format code in zh-tw language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | [$-404]e/m/d
+//     28    | [$-404]e"年"m"月"d"日"
+//     29    | [$-404]e"年"m"月"d"日"
+//     30    | m/d/yy
+//     31    | yyyy"年"m"月"d"日"
+//     32    | hh"時"mm"分"
+//     33    | hh"時"mm"分"ss"秒"
+//     34    | 上午/下午 hh"時"mm"分"
+//     35    | 上午/下午 hh"時"mm"分"ss"秒"
+//     36    | [$-404]e/m/d
+//     50    | [$-404]e/m/d
+//     51    | [$-404]e"年"m"月"d"日"
+//     52    | 上午/下午 hh"時"mm"分"
+//     53    | 上午/下午 hh"時"mm"分"ss"秒"
+//     54    | [$-404]e"年"m"月"d"日"
+//     55    | 上午/下午 hh"時"mm"分"
+//     56    | 上午/下午 hh"時"mm"分"ss"秒"
+//     57    | [$-404]e/m/d
+//     58    | [$-404]e"年"m"月"d"日"
+//
+// Number format code in zh-cn language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | yyyy"年"m"月"
+//     28    | m"月"d"日"
+//     29    | m"月"d"日"
+//     30    | m-d-yy
+//     31    | yyyy"年"m"月"d"日"
+//     32    | h"时"mm"分"
+//     33    | h"时"mm"分"ss"秒"
+//     34    | 上午/下午 h"时"mm"分"
+//     35    | 上午/下午 h"时"mm"分"ss"秒
+//     36    | yyyy"年"m"月
+//     50    | yyyy"年"m"月
+//     51    | m"月"d"日
+//     52    | yyyy"年"m"月
+//     53    | m"月"d"日
+//     54    | m"月"d"日
+//     55    | 上午/下午 h"时"mm"分
+//     56    | 上午/下午 h"时"mm"分"ss"秒
+//     57    | yyyy"年"m"月
+//     58    | m"月"d"日"
+//
+// Number format code with unicode values provided for language glyphs where
+// they occur in zh-tw language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | [$-404]e/m/
+//     28    | [$-404]e"5E74"m"6708"d"65E5
+//     29    | [$-404]e"5E74"m"6708"d"65E5
+//     30    | m/d/y
+//     31    | yyyy"5E74"m"6708"d"65E5
+//     32    | hh"6642"mm"5206
+//     33    | hh"6642"mm"5206"ss"79D2
+//     34    | 4E0A5348/4E0B5348hh"6642"mm"5206
+//     35    | 4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2
+//     36    | [$-404]e/m/
+//     50    | [$-404]e/m/
+//     51    | [$-404]e"5E74"m"6708"d"65E5
+//     52    | 4E0A5348/4E0B5348hh"6642"mm"5206
+//     53    | 4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2
+//     54    | [$-404]e"5E74"m"6708"d"65E5
+//     55    | 4E0A5348/4E0B5348hh"6642"mm"5206
+//     56    | 4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2
+//     57    | [$-404]e/m/
+//     58    | [$-404]e"5E74"m"6708"d"65E5"
+//
+// Number format code with unicode values provided for language glyphs where
+// they occur in zh-cn language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | yyyy"5E74"m"6708
+//     28    | m"6708"d"65E5
+//     29    | m"6708"d"65E5
+//     30    | m-d-y
+//     31    | yyyy"5E74"m"6708"d"65E5
+//     32    | h"65F6"mm"5206
+//     33    | h"65F6"mm"5206"ss"79D2
+//     34    | 4E0A5348/4E0B5348h"65F6"mm"5206
+//     35    | 4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2
+//     36    | yyyy"5E74"m"6708
+//     50    | yyyy"5E74"m"6708
+//     51    | m"6708"d"65E5
+//     52    | yyyy"5E74"m"6708
+//     53    | m"6708"d"65E5
+//     54    | m"6708"d"65E5
+//     55    | 4E0A5348/4E0B5348h"65F6"mm"5206
+//     56    | 4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2
+//     57    | yyyy"5E74"m"6708
+//     58    | m"6708"d"65E5"`,
+//
+// Number format code in ja-jp language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | [$-411]ge.m.
+//     28    | [$-411]ggge"年"m"月"d"日
+//     29    | [$-411]ggge"年"m"月"d"日
+//     30    | m/d/y
+//     31    | yyyy"年"m"月"d"日
+//     32    | h"時"mm"分
+//     33    | h"時"mm"分"ss"秒
+//     34    | yyyy"年"m"月
+//     35    | m"月"d"日
+//     36    | [$-411]ge.m.
+//     50    | [$-411]ge.m.
+//     51    | [$-411]ggge"年"m"月"d"日
+//     52    | yyyy"年"m"月
+//     53    | m"月"d"日
+//     54    | [$-411]ggge"年"m"月"d"日
+//     55    | yyyy"年"m"月
+//     56    | m"月"d"日
+//     57    | [$-411]ge.m.
+//     58    | [$-411]ggge"年"m"月"d"日"
+//
+// Number format code in th-th language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | yyyy"年" mm"月" dd"日
+//     28    | mm-d
+//     29    | mm-d
+//     30    | mm-dd-y
+//     31    | yyyy"년" mm"월" dd"일
+//     32    | h"시" mm"분
+//     33    | h"시" mm"분" ss"초
+//     34    | yyyy-mm-d
+//     35    | yyyy-mm-d
+//     36    | yyyy"年" mm"月" dd"日
+//     50    | yyyy"年" mm"月" dd"日
+//     51    | mm-d
+//     52    | yyyy-mm-d
+//     53    | yyyy-mm-d
+//     54    | mm-d
+//     55    | yyyy-mm-d
+//     56    | yyyy-mm-d
+//     57    | yyyy"年" mm"月" dd"日
+//     58    | mm-dd
+//
+// Number format code with unicode values provided for language glyphs where
+// they occur in ja-jp language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | [$-411]ge.m.
+//     28    | [$-411]ggge"5E74"m"6708"d"65E5
+//     29    | [$-411]ggge"5E74"m"6708"d"65E5
+//     30    | m/d/y
+//     31    | yyyy"5E74"m"6708"d"65E5
+//     32    | h"6642"mm"5206
+//     33    | h"6642"mm"5206"ss"79D2
+//     34    | yyyy"5E74"m"6708
+//     35    | m"6708"d"65E5
+//     36    | [$-411]ge.m.
+//     50    | [$-411]ge.m.
+//     51    | [$-411]ggge"5E74"m"6708"d"65E5
+//     52    | yyyy"5E74"m"6708
+//     53    | m"6708"d"65E5
+//     54    | [$-411]ggge"5E74"m"6708"d"65E5
+//     55    | yyyy"5E74"m"6708
+//     56    | m"6708"d"65E5
+//     57    | [$-411]ge.m.
+//     58    | [$-411]ggge"5E74"m"6708"d"65E5"
+//
+// Number format code with unicode values provided for language glyphs where
+// they occur in ko-kr language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     27    | yyyy"5E74" mm"6708" dd"65E5
+//     28    | mm-d
+//     29    | mm-d
+//     30    | mm-dd-y
+//     31    | yyyy"B144" mm"C6D4" dd"C77C
+//     32    | h"C2DC" mm"BD84
+//     33    | h"C2DC" mm"BD84" ss"CD08
+//     34    | yyyy-mm-d
+//     35    | yyyy-mm-d
+//     36    | yyyy"5E74" mm"6708" dd"65E5
+//     50    | yyyy"5E74" mm"6708" dd"65E5
+//     51    | mm-d
+//     52    | yyyy-mm-d
+//     53    | yyyy-mm-d
+//     54    | mm-d
+//     55    | yyyy-mm-d
+//     56    | yyyy-mm-d
+//     57    | yyyy"5E74" mm"6708" dd"65E5
+//     58    | mm-dd
+//
+// Number format code in ko-kr language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     59    | t
+//     60    | t0.0
+//     61    | t#,##
+//     62    | t#,##0.0
+//     67    | t0
+//     68    | t0.00
+//     69    | t# ?/
+//     70    | t# ??/?
+//     71    | ว/ด/ปปป
+//     72    | ว-ดดด-ป
+//     73    | ว-ดด
+//     74    | ดดด-ป
+//     75    | ช:น
+//     76    | ช:นน:ท
+//     77    | ว/ด/ปปปป ช:น
+//     78    | นน:ท
+//     79    | [ช]:นน:ท
+//     80    | นน:ทท.
+//     81    | d/m/bb
+//
+// Number format code with unicode values provided for language glyphs where
+// they occur in th-th language:
+//
+//     Index | Symbol
+//    -------+-------------------------------------------
+//     59    | t
+//     60    | t0.0
+//     61    | t#,##
+//     62    | t#,##0.0
+//     67    | t0
+//     68    | t0.00
+//     69    | t# ?/
+//     70    | t# ??/?
+//     71    | 0E27/0E14/0E1B0E1B0E1B0E1
+//     72    | 0E27-0E140E140E14-0E1B0E1
+//     73    | 0E27-0E140E140E1
+//     74    | 0E140E140E14-0E1B0E1
+//     75    | 0E0A:0E190E1
+//     76    | 0E0A:0E190E19:0E170E1
+//     77    | 0E27/0E14/0E1B0E1B0E1B0E1B 0E0A:0E190E1
+//     78    | 0E190E19:0E170E1
+//     79    | [0E0A]:0E190E19:0E170E1
+//     80    | 0E190E19:0E170E17.
+//     81    | d/m/bb
+//
 // Excelize built-in currency formats are shown in the following table, only
 // support these types in the following table (Index number is used only for
 // markup and is not used inside an Excel file and you can't get formatted value
@@ -1549,250 +1794,11 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //     632   | ZWL
 //     633   | ZWN
 //     634   | ZWR
-// Number format code in zh-tw language:
 //
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | [$-404]e/m/d
-//     28    | [$-404]e"年"m"月"d"日"
-//     29    | [$-404]e"年"m"月"d"日"
-//     30    | m/d/yy
-//     31    | yyyy"年"m"月"d"日"
-//     32    | hh"時"mm"分"
-//     33    | hh"時"mm"分"ss"秒"
-//     34    | 上午/下午 hh"時"mm"分"
-//     35    | 上午/下午 hh"時"mm"分"ss"秒"
-//     36    | [$-404]e/m/d
-//     50    | [$-404]e/m/d
-//     51    | [$-404]e"年"m"月"d"日"
-//     52    | 上午/下午 hh"時"mm"分"
-//     53    | 上午/下午 hh"時"mm"分"ss"秒"
-//     54    | [$-404]e"年"m"月"d"日"
-//     55    | 上午/下午 hh"時"mm"分"
-//     56    | 上午/下午 hh"時"mm"分"ss"秒"
-//     57    | [$-404]e/m/d
-//     58    | [$-404]e"年"m"月"d"日"
+// Excelize support set custom number format for cell. For example, set number
+// as date type in Uruguay (Spanish) format:
 //
-// Number format code in zh-cn language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | yyyy"年"m"月"
-//     28    | m"月"d"日"
-//     29    | m"月"d"日"
-//     30    | m-d-yy
-//     31    | yyyy"年"m"月"d"日"
-//     32    | h"时"mm"分"
-//     33    | h"时"mm"分"ss"秒"
-//     34    | 上午/下午 h"时"mm"分"
-//     35    | 上午/下午 h"时"mm"分"ss"秒
-//     36    | yyyy"年"m"月
-//     50    | yyyy"年"m"月
-//     51    | m"月"d"日
-//     52    | yyyy"年"m"月
-//     53    | m"月"d"日
-//     54    | m"月"d"日
-//     55    | 上午/下午 h"时"mm"分
-//     56    | 上午/下午 h"时"mm"分"ss"秒
-//     57    | yyyy"年"m"月
-//     58    | m"月"d"日"
-//
-// Number format code with unicode values provided for language glyphs where
-// they occur in zh-tw language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | [$-404]e/m/
-//     28    | [$-404]e"5E74"m"6708"d"65E5
-//     29    | [$-404]e"5E74"m"6708"d"65E5
-//     30    | m/d/y
-//     31    | yyyy"5E74"m"6708"d"65E5
-//     32    | hh"6642"mm"5206
-//     33    | hh"6642"mm"5206"ss"79D2
-//     34    | 4E0A5348/4E0B5348hh"6642"mm"5206
-//     35    | 4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2
-//     36    | [$-404]e/m/
-//     50    | [$-404]e/m/
-//     51    | [$-404]e"5E74"m"6708"d"65E5
-//     52    | 4E0A5348/4E0B5348hh"6642"mm"5206
-//     53    | 4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2
-//     54    | [$-404]e"5E74"m"6708"d"65E5
-//     55    | 4E0A5348/4E0B5348hh"6642"mm"5206
-//     56    | 4E0A5348/4E0B5348hh"6642"mm"5206"ss"79D2
-//     57    | [$-404]e/m/
-//     58    | [$-404]e"5E74"m"6708"d"65E5"
-//
-// Number format code with unicode values provided for language glyphs where
-// they occur in zh-cn language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | yyyy"5E74"m"6708
-//     28    | m"6708"d"65E5
-//     29    | m"6708"d"65E5
-//     30    | m-d-y
-//     31    | yyyy"5E74"m"6708"d"65E5
-//     32    | h"65F6"mm"5206
-//     33    | h"65F6"mm"5206"ss"79D2
-//     34    | 4E0A5348/4E0B5348h"65F6"mm"5206
-//     35    | 4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2
-//     36    | yyyy"5E74"m"6708
-//     50    | yyyy"5E74"m"6708
-//     51    | m"6708"d"65E5
-//     52    | yyyy"5E74"m"6708
-//     53    | m"6708"d"65E5
-//     54    | m"6708"d"65E5
-//     55    | 4E0A5348/4E0B5348h"65F6"mm"5206
-//     56    | 4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2
-//     57    | yyyy"5E74"m"6708
-//     58    | m"6708"d"65E5"`,
-//
-// Number format code in ja-jp language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | [$-411]ge.m.
-//     28    | [$-411]ggge"年"m"月"d"日
-//     29    | [$-411]ggge"年"m"月"d"日
-//     30    | m/d/y
-//     31    | yyyy"年"m"月"d"日
-//     32    | h"時"mm"分
-//     33    | h"時"mm"分"ss"秒
-//     34    | yyyy"年"m"月
-//     35    | m"月"d"日
-//     36    | [$-411]ge.m.
-//     50    | [$-411]ge.m.
-//     51    | [$-411]ggge"年"m"月"d"日
-//     52    | yyyy"年"m"月
-//     53    | m"月"d"日
-//     54    | [$-411]ggge"年"m"月"d"日
-//     55    | yyyy"年"m"月
-//     56    | m"月"d"日
-//     57    | [$-411]ge.m.
-//     58    | [$-411]ggge"年"m"月"d"日"
-//
-// Number format code in th-th language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | yyyy"年" mm"月" dd"日
-//     28    | mm-d
-//     29    | mm-d
-//     30    | mm-dd-y
-//     31    | yyyy"년" mm"월" dd"일
-//     32    | h"시" mm"분
-//     33    | h"시" mm"분" ss"초
-//     34    | yyyy-mm-d
-//     35    | yyyy-mm-d
-//     36    | yyyy"年" mm"月" dd"日
-//     50    | yyyy"年" mm"月" dd"日
-//     51    | mm-d
-//     52    | yyyy-mm-d
-//     53    | yyyy-mm-d
-//     54    | mm-d
-//     55    | yyyy-mm-d
-//     56    | yyyy-mm-d
-//     57    | yyyy"年" mm"月" dd"日
-//     58    | mm-dd
-//
-// Number format code with unicode values provided for language glyphs where
-// they occur in ja-jp language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | [$-411]ge.m.
-//     28    | [$-411]ggge"5E74"m"6708"d"65E5
-//     29    | [$-411]ggge"5E74"m"6708"d"65E5
-//     30    | m/d/y
-//     31    | yyyy"5E74"m"6708"d"65E5
-//     32    | h"6642"mm"5206
-//     33    | h"6642"mm"5206"ss"79D2
-//     34    | yyyy"5E74"m"6708
-//     35    | m"6708"d"65E5
-//     36    | [$-411]ge.m.
-//     50    | [$-411]ge.m.
-//     51    | [$-411]ggge"5E74"m"6708"d"65E5
-//     52    | yyyy"5E74"m"6708
-//     53    | m"6708"d"65E5
-//     54    | [$-411]ggge"5E74"m"6708"d"65E5
-//     55    | yyyy"5E74"m"6708
-//     56    | m"6708"d"65E5
-//     57    | [$-411]ge.m.
-//     58    | [$-411]ggge"5E74"m"6708"d"65E5"
-//
-// Number format code with unicode values provided for language glyphs where
-// they occur in ko-kr language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     27    | yyyy"5E74" mm"6708" dd"65E5
-//     28    | mm-d
-//     29    | mm-d
-//     30    | mm-dd-y
-//     31    | yyyy"B144" mm"C6D4" dd"C77C
-//     32    | h"C2DC" mm"BD84
-//     33    | h"C2DC" mm"BD84" ss"CD08
-//     34    | yyyy-mm-d
-//     35    | yyyy-mm-d
-//     36    | yyyy"5E74" mm"6708" dd"65E5
-//     50    | yyyy"5E74" mm"6708" dd"65E5
-//     51    | mm-d
-//     52    | yyyy-mm-d
-//     53    | yyyy-mm-d
-//     54    | mm-d
-//     55    | yyyy-mm-d
-//     56    | yyyy-mm-d
-//     57    | yyyy"5E74" mm"6708" dd"65E5
-//     58    | mm-dd
-//
-// Number format code in ko-kr language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     59    | t
-//     60    | t0.0
-//     61    | t#,##
-//     62    | t#,##0.0
-//     67    | t0
-//     68    | t0.00
-//     69    | t# ?/
-//     70    | t# ??/?
-//     71    | ว/ด/ปปป
-//     72    | ว-ดดด-ป
-//     73    | ว-ดด
-//     74    | ดดด-ป
-//     75    | ช:น
-//     76    | ช:นน:ท
-//     77    | ว/ด/ปปปป ช:น
-//     78    | นน:ท
-//     79    | [ช]:นน:ท
-//     80    | นน:ทท.
-//     81    | d/m/bb
-//
-// Number format code with unicode values provided for language glyphs where
-// they occur in th-th language:
-//
-//     Index | Symbol
-//    -------+-------------------------------------------
-//     59    | t
-//     60    | t0.0
-//     61    | t#,##
-//     62    | t#,##0.0
-//     67    | t0
-//     68    | t0.00
-//     69    | t# ?/
-//     70    | t# ??/?
-//     71    | 0E27/0E14/0E1B0E1B0E1B0E1
-//     72    | 0E27-0E140E140E14-0E1B0E1
-//     73    | 0E27-0E140E140E1
-//     74    | 0E140E140E14-0E1B0E1
-//     75    | 0E0A:0E190E1
-//     76    | 0E0A:0E190E19:0E170E1
-//     77    | 0E27/0E14/0E1B0E1B0E1B0E1B 0E0A:0E190E1
-//     78    | 0E190E19:0E170E1
-//     79    | [0E0A]:0E190E19:0E170E1
-//     80    | 0E190E19:0E170E17.
-//     81    | d/m/bb
+//    xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
 //
 func (f *File) NewStyle(style string) (int, error) {
 	var cellXfsID int
@@ -1857,6 +1863,9 @@ func setNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 	for i := 0; i < formatCellStyle.DecimalPlaces; i++ {
 		dp += "0"
 	}
+	if formatCellStyle.CustomNumFmt != nil {
+		return setCustomNumFmt(style, formatCellStyle)
+	}
 	_, ok := builtInNumFmt[formatCellStyle.NumFmt]
 	if !ok {
 		fc, currency := currencyNumFmt[formatCellStyle.NumFmt]
@@ -1891,6 +1900,24 @@ func setNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 	return formatCellStyle.NumFmt
 }
 
+// setCustomNumFmt provides function to set custom number format code.
+func setCustomNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
+	nf := xlsxNumFmt{FormatCode: *formatCellStyle.CustomNumFmt}
+	if style.NumFmts != nil {
+		nf.NumFmtID = style.NumFmts.NumFmt[len(style.NumFmts.NumFmt)-1].NumFmtID + 1
+		style.NumFmts.NumFmt = append(style.NumFmts.NumFmt, &nf)
+		style.NumFmts.Count++
+	} else {
+		nf.NumFmtID = 164
+		numFmts := xlsxNumFmts{
+			NumFmt: []*xlsxNumFmt{&nf},
+			Count:  1,
+		}
+		style.NumFmts = &numFmts
+	}
+	return nf.NumFmtID
+}
+
 // setLangNumFmt provides function to set number format code with language.
 func setLangNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int {
 	numFmts, ok := langNumFmt[formatCellStyle.Lang]
@@ -1902,21 +1929,20 @@ func setLangNumFmt(style *xlsxStyleSheet, formatCellStyle *formatCellStyle) int 
 	if !ok {
 		return 0
 	}
-	nf := xlsxNumFmt{
-		FormatCode: fc,
-		NumFmtID:   formatCellStyle.NumFmt,
-	}
+	nf := xlsxNumFmt{FormatCode: fc}
 	if style.NumFmts != nil {
+		nf.NumFmtID = style.NumFmts.NumFmt[len(style.NumFmts.NumFmt)-1].NumFmtID + 1
 		style.NumFmts.NumFmt = append(style.NumFmts.NumFmt, &nf)
 		style.NumFmts.Count++
 	} else {
+		nf.NumFmtID = formatCellStyle.NumFmt
 		numFmts := xlsxNumFmts{
 			NumFmt: []*xlsxNumFmt{&nf},
 			Count:  1,
 		}
 		style.NumFmts = &numFmts
 	}
-	return formatCellStyle.NumFmt
+	return nf.NumFmtID
 }
 
 // setFills provides function to add fill elements in the styles.xml by given

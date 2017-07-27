@@ -302,7 +302,7 @@ type formatFont struct {
 	Color     string `json:"color"`
 }
 
-// formatCellStyle directly maps the styles settings of the borders.
+// formatCellStyle directly maps the styles settings of the cells.
 type formatCellStyle struct {
 	Border []struct {
 		Type  string `json:"type"`
@@ -327,8 +327,9 @@ type formatCellStyle struct {
 		Vertical        string `json:"vertical"`
 		WrapText        bool   `json:"wrap_text"`
 	} `json:"alignment"`
-	NumFmt        int    `json:"number_format"`
-	DecimalPlaces int    `json:"decimal_places"`
-	Lang          string `json:"lang"`
-	NegRed        bool   `json:"negred"`
+	NumFmt        int     `json:"number_format"`
+	DecimalPlaces int     `json:"decimal_places"`
+	CustomNumFmt  *string `json:"custom_number_format"`
+	Lang          string  `json:"lang"`
+	NegRed        bool    `json:"negred"`
 }
