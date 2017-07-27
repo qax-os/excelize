@@ -1796,9 +1796,14 @@ func parseFormatStyleSet(style string) (*formatCellStyle, error) {
 //     634   | ZWR
 //
 // Excelize support set custom number format for cell. For example, set number
-// as date type in Uruguay (Spanish) format:
+// as date type in Uruguay (Spanish) format for Sheet1!A6:
 //
-//    xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+//    xlsx := excelize.NewFile()
+//    xlsx.SetCellValue("Sheet1", "A6", 42920.5)
+//    style, _ := xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+//    xlsx.SetCellStyle("Sheet1", "A6", "A6", style)
+//
+// Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
 //
 func (f *File) NewStyle(style string) (int, error) {
 	var cellXfsID int
