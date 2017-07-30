@@ -206,23 +206,37 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 }
 
 // SetCellHyperLink provides function to set cell hyperlink by given sheet index
-// and link URL address. Only support external link currently. For example: add
-// hyperLink for Sheet1!A3:
+// and link URL address. LinkType defines two types of hyperlink "External" for
+// web site or "Location" for moving to one of cell in this workbook. The below
+// is example for external link.
 //
-//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize")
+//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
 //    // Set underline and font color style for the cell.
 //    style, _ := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 //    xlsx.SetCellStyle("Sheet1", "A3", "A3", style)
 //
-func (f *File) SetCellHyperLink(sheet, axis, link string) {
+// A this is another example for "Location"
+//
+//    xlsx.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
+func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
-	rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
-	hyperlink := xlsxHyperlink{
-		Ref: axis,
-		RID: "rId" + strconv.Itoa(rID),
+	var hyperlink xlsxHyperlink
+	if linkType == "External" {
+		rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
+		hyperlink = xlsxHyperlink{
+			Ref: axis,
+			RID: "rId" + strconv.Itoa(rID),
+		}
+	} else if linkType == "Location" {
+		hyperlink = xlsxHyperlink{
+			Ref:      axis,
+			Location: link,
+		}
 	}
-	if xlsx.Hyperlinks != nil {
+	if hyperlink.Ref == "" {
+		panic("linkType only support External and Location now")
+	} else if xlsx.Hyperlinks != nil {
 		xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
 	} else {
 		hyperlinks := xlsxHyperlinks{}
