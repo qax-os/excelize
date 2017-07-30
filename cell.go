@@ -215,34 +215,30 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 //    style, _ := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 //    xlsx.SetCellStyle("Sheet1", "A3", "A3", style)
 //
-// A this is another example for "Location"
+// A this is another example for "Location":
 //
 //    xlsx.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
+//
 func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
-	var hyperlink xlsxHyperlink
+	linkTypes := map[string]xlsxHyperlink{
+		"External": {},
+		"Location": {Location: link},
+	}
+	hyperlink, ok := linkTypes[linkType]
+	if !ok || axis == "" {
+		return
+	}
+	hyperlink.Ref = axis
 	if linkType == "External" {
-		rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, "External")
-		hyperlink = xlsxHyperlink{
-			Ref: axis,
-			RID: "rId" + strconv.Itoa(rID),
-		}
-	} else if linkType == "Location" {
-		hyperlink = xlsxHyperlink{
-			Ref:      axis,
-			Location: link,
-		}
+		rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, linkType)
+		hyperlink.RID = "rId" + strconv.Itoa(rID)
 	}
-	if hyperlink.Ref == "" {
-		panic("linkType only support External and Location now")
-	} else if xlsx.Hyperlinks != nil {
-		xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
-	} else {
-		hyperlinks := xlsxHyperlinks{}
-		hyperlinks.Hyperlink = append(hyperlinks.Hyperlink, hyperlink)
-		xlsx.Hyperlinks = &hyperlinks
+	if xlsx.Hyperlinks == nil {
+		xlsx.Hyperlinks = &xlsxHyperlinks{}
 	}
+	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
 }
 
 // MergeCell provides function to merge cells by given coordinate area and sheet

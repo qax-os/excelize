@@ -88,16 +88,11 @@ func (f *File) addSheetTable(sheet string, rID int) {
 	table := &xlsxTablePart{
 		RID: "rId" + strconv.Itoa(rID),
 	}
-	if xlsx.TableParts != nil {
-		xlsx.TableParts.Count++
-		xlsx.TableParts.TableParts = append(xlsx.TableParts.TableParts, table)
-	} else {
-		xlsx.TableParts = &xlsxTableParts{
-			Count:      1,
-			TableParts: []*xlsxTablePart{table},
-		}
+	if xlsx.TableParts == nil {
+		xlsx.TableParts = &xlsxTableParts{}
 	}
-
+	xlsx.TableParts.Count++
+	xlsx.TableParts.TableParts = append(xlsx.TableParts.TableParts, table)
 }
 
 // addTable provides function to add table by given sheet index, coordinate area

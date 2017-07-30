@@ -213,6 +213,10 @@ func TestSetCellHyperLink(t *testing.T) {
 	xlsx.SetCellHyperLink("sheet1", "B19", "https://github.com/xuri/excelize", "External")
 	// Test add first hyperlink in a work sheet.
 	xlsx.SetCellHyperLink("sheet2", "C1", "https://github.com/xuri/excelize", "External")
+	// Test add Location hyperlink in a work sheet.
+	xlsx.SetCellHyperLink("sheet2", "D6", "Sheet1!D8", "Location")
+	xlsx.SetCellHyperLink("sheet2", "C3", "Sheet1!D8", "")
+	xlsx.SetCellHyperLink("sheet2", "", "Sheet1!D60", "Location")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)

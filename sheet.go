@@ -547,7 +547,7 @@ func parseFormatPanesSet(formatSet string) *formatPanes {
 //                                    | regions. In that case, this value specifies the right
 //                                    | pane.
 //
-//  Pane state type is restricted to the values supported currently listed in the following table:
+// Pane state type is restricted to the values supported currently listed in the following table:
 //
 //     Enumeration Value              | Description
 //    --------------------------------+-------------------------------------------------------------
