@@ -172,7 +172,7 @@ type xlsxSheetView struct {
 // selection.
 type xlsxSelection struct {
 	ActiveCell   string `xml:"activeCell,attr,omitempty"`
-	ActiveCellID int    `xml:"activeCellId,attr"`
+	ActiveCellID *int   `xml:"activeCellId,attr"`
 	Pane         string `xml:"pane,attr,omitempty"`
 	SQRef        string `xml:"sqref,attr,omitempty"`
 }
@@ -449,4 +449,19 @@ type xlsxPicture struct {
 // something special about the cell.
 type xlsxLegacyDrawing struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// formatPanes directly maps the settings of the panes.
+type formatPanes struct {
+	Freeze      bool   `json:"freeze"`
+	Split       bool   `json:"split"`
+	XSplit      int    `json:"x_split"`
+	YSplit      int    `json:"y_split"`
+	TopLeftCell string `json:"top_left_cell"`
+	ActivePane  string `json:"active_pane"`
+	Panes       []struct {
+		SQRef      string `json:"sqref"`
+		ActiveCell string `json:"active_cell"`
+		Pane       string `json:"pane"`
+	} `json:"panes"`
 }

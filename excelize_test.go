@@ -142,6 +142,7 @@ func TestBrokenFile(t *testing.T) {
 
 	// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
 	f3, err := OpenFile("./test/badWorkbook.xlsx")
+	f3.GetActiveSheetIndex()
 	f3.SetActiveSheet(2)
 	if err != nil {
 		t.Log(err)
@@ -563,7 +564,8 @@ func TestSetDeleteSheet(t *testing.T) {
 		t.Log(err)
 	}
 	xlsx.DeleteSheet("Sheet1")
-	err = xlsx.Save()
+	xlsx.AddComment("Sheet1", "A1", `{"author":"Excelize: ","text":"This is a comment."}`)
+	err = xlsx.SaveAs("./test/Workbook_delete_sheet.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -827,6 +829,21 @@ func TestInsertRow(t *testing.T) {
 	xlsx.InsertRow("Sheet1", -1)
 	xlsx.InsertRow("Sheet1", 4)
 	err := xlsx.SaveAs("./test/Workbook_insertrow.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func TestSetPane(t *testing.T) {
+	xlsx := NewFile()
+	xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
+	xlsx.NewSheet(2, "Panes 2")
+	xlsx.SetPanes("Sheet2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
+	xlsx.NewSheet(3, "Panes 3")
+	xlsx.SetPanes("Sheet3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
+	xlsx.NewSheet(4, "Panes 4")
+	xlsx.SetPanes("Sheet4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
+	err := xlsx.SaveAs("./test/Workbook_set_panes.xlsx")
 	if err != nil {
 		t.Log(err)
 	}

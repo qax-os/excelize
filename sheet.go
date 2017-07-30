@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"os"
@@ -495,6 +496,131 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 			content.Sheets.Sheet[k].State = "hidden"
 		}
 	}
+}
+
+// parseFormatPanesSet provides function to parse the panes settings.
+func parseFormatPanesSet(formatSet string) *formatPanes {
+	format := formatPanes{}
+	json.Unmarshal([]byte(formatSet), &format)
+	return &format
+}
+
+// SetPanes provides function to create and remove freeze panes and split panes
+// by given worksheet index and panes format set.
+//
+// activePane defines the pane that is active. The possible values for this
+// attribute are defined in the following table:
+//
+//     Enumeration Value              | Description
+//    --------------------------------+-------------------------------------------------------------
+//     bottomLeft (Bottom Left Pane)  | Bottom left pane, when both vertical and horizontal
+//                                    | splits are applied.
+//                                    |
+//                                    | This value is also used when only a horizontal split has
+//                                    | been applied, dividing the pane into upper and lower
+//                                    | regions. In that case, this value specifies the bottom
+//                                    | pane.
+//                                    |
+//    bottomRight (Bottom Right Pane) | Bottom right pane, when both vertical and horizontal
+//                                    | splits are applied.
+//                                    |
+//    topLeft (Top Left Pane)         | Top left pane, when both vertical and horizontal splits
+//                                    | are applied.
+//                                    |
+//                                    | This value is also used when only a horizontal split has
+//                                    | been applied, dividing the pane into upper and lower
+//                                    | regions. In that case, this value specifies the top pane.
+//                                    |
+//                                    | This value is also used when only a vertical split has
+//                                    | been applied, dividing the pane into right and left
+//                                    | regions. In that case, this value specifies the left pane
+//                                    |
+//                                    | Top right pane, when both vertical and horizontal
+//                                    | splits are applied.
+//                                    |
+//    topRight (Top Right Pane)       | This value is also used when only a vertical split has
+//                                    | splits are applied.
+//                                    |
+//                                    |
+//                                    | This value is also used when only a vertical split has
+//                                    | been applied, dividing the pane into right and left
+//                                    | regions. In that case, this value specifies the right
+//                                    | pane.
+//
+//  Pane state type is restricted to the values supported currently listed in the following table:
+//
+//     Enumeration Value              | Description
+//    --------------------------------+-------------------------------------------------------------
+//     frozen (Frozen)                | Panes are frozen, but were not split being frozen. In
+//                                    | this state, when the panes are unfrozen again, a single
+//                                    | pane results, with no split.
+//                                    |
+//                                    | In this state, the split bars are not adjustable.
+//                                    |
+//     split (Split)                  | Panes are split, but not frozen. In this state, the split
+//                                    | bars are adjustable by the user.
+//
+// x_split (Horizontal Split Position): Horizontal position of the split, in
+// 1/20th of a point; 0 (zero) if none. If the pane is frozen, this value
+// indicates the number of columns visible in the top pane.
+//
+// y_split (Vertical Split Position): Vertical position of the split, in 1/20th
+// of a point; 0 (zero) if none. If the pane is frozen, this value indicates the
+// number of rows visible in the left pane. The possible values for this
+// attribute are defined by the W3C XML Schema double datatype.
+//
+// top_left_cell: Location of the top left visible cell in the bottom right pane
+// (when in Left-To-Right mode).
+//
+// sqref (Sequence of References): Range of the selection. Can be non-contiguous
+// set of ranges.
+//
+// An example of how to freeze column A in the Sheet1 and set the active cell on
+// Sheet1!A16:
+//
+//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"topLeftCell":"B1","activePane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
+//
+// An example of how to freeze rows 1 to 9 in the Sheet1 and set the active cell
+// on Sheet1!A11:
+//
+//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"topLeftCell":"A34","activePane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
+//
+// An example of how to create split panes in the Sheet1 and set the active cell
+// on Sheet1!J60:
+//
+//    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"topLeftCell":"N57","activePane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
+//
+// An example of how to unfreeze and remove all panes on Sheet1:
+//
+//    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
+//
+func (f *File) SetPanes(sheet, panes string) {
+	fs := parseFormatPanesSet(panes)
+	xlsx := f.workSheetReader(sheet)
+	p := &xlsxPane{
+		ActivePane:  fs.ActivePane,
+		TopLeftCell: fs.TopLeftCell,
+		XSplit:      float64(fs.XSplit),
+		YSplit:      float64(fs.YSplit),
+	}
+	if fs.Freeze {
+		p.State = "frozen"
+	}
+	xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Pane = p
+	if !(fs.Freeze) && !(fs.Split) {
+		if len(xlsx.SheetViews.SheetView) > 0 {
+			xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Pane = nil
+		}
+	}
+	s := []*xlsxSelection{}
+	for _, p := range fs.Panes {
+		s = append(s, &xlsxSelection{
+			ActiveCell: p.ActiveCell,
+			Pane:       p.Pane,
+			SQRef:      p.SQRef,
+		})
+	}
+	xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Selection = s
 }
 
 // GetSheetVisible provides function to get worksheet visible by given worksheet
