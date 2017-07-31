@@ -60,7 +60,7 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	case []byte:
 		f.SetCellStr(sheet, axis, string(t))
 	case time.Time:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 32))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 64))
 		f.setDefaultTimeStyle(sheet, axis)
 	case nil:
 		f.SetCellStr(sheet, axis, "")
