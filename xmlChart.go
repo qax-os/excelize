@@ -491,10 +491,7 @@ type formatChartAxis struct {
 		Italic    bool   `json:"italic"`
 		Underline bool   `json:"underline"`
 	} `json:"num_font"`
-	NameLayout struct {
-		X float64 `json:"x"`
-		Y float64 `json:"y"`
-	} `json:"name_layout"`
+	NameLayout formatLayout `json:"name_layout"`
 }
 
 // formatChart directly maps the format settings of the chart.
@@ -537,12 +534,7 @@ type formatChart struct {
 		Fill struct {
 			Color string `json:"color"`
 		} `json:"fill"`
-		Layout struct {
-			X      float64 `json:"x"`
-			Y      float64 `json:"y"`
-			Width  float64 `json:"width"`
-			Height float64 `json:"height"`
-		} `json:"layout"`
+		Layout formatLayout `json:"layout"`
 	} `json:"plotarea"`
 	ShowBlanksAs   string `json:"show_blanks_as"`
 	ShowHiddenData bool   `json:"show_hidden_data"`
@@ -552,18 +544,13 @@ type formatChart struct {
 
 // formatChartLegend directly maps the format settings of the chart legend.
 type formatChartLegend struct {
-	None         bool       `json:"none"`
-	DeleteSeries []int      `json:"delete_series"`
-	Font         formatFont `json:"font"`
-	Layout       struct {
-		X      float64 `json:"x"`
-		Y      float64 `json:"y"`
-		Width  float64 `json:"width"`
-		Height float64 `json:"height"`
-	} `json:"layout"`
-	Position        string `json:"position"`
-	ShowLegendEntry bool   `json:"show_legend_entry"`
-	ShowLegendKey   bool   `json:"show_legend_key"`
+	None            bool         `json:"none"`
+	DeleteSeries    []int        `json:"delete_series"`
+	Font            formatFont   `json:"font"`
+	Layout          formatLayout `json:"layout"`
+	Position        string       `json:"position"`
+	ShowLegendEntry bool         `json:"show_legend_entry"`
+	ShowLegendKey   bool         `json:"show_legend_key"`
 }
 
 // formatChartSeries directly maps the format settings of the chart series.
@@ -592,13 +579,16 @@ type formatChartSeries struct {
 
 // formatChartTitle directly maps the format settings of the chart title.
 type formatChartTitle struct {
-	None    bool   `json:"none"`
-	Name    string `json:"name"`
-	Overlay bool   `json:"overlay"`
-	Layout  struct {
-		X      float64 `json:"x"`
-		Y      float64 `json:"y"`
-		Width  float64 `json:"width"`
-		Height float64 `json:"height"`
-	} `json:"layout"`
+	None    bool         `json:"none"`
+	Name    string       `json:"name"`
+	Overlay bool         `json:"overlay"`
+	Layout  formatLayout `json:"layout"`
+}
+
+// formatLayout directly maps the format settings of the element layout.
+type formatLayout struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }

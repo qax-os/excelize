@@ -598,6 +598,9 @@ func TestGetPicture(t *testing.T) {
 	// Try to get picture from a cell that doesn't contain an image.
 	file, raw = xlsx.GetPicture("Sheet2", "A2")
 	t.Log(file, len(raw))
+	xlsx.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
+	xlsx.getDrawingRelationships("", "")
+	xlsx.getSheetRelationshipsTargetByID("", "")
 }
 
 func TestSheetVisibility(t *testing.T) {

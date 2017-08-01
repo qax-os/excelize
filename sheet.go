@@ -629,11 +629,10 @@ func (f *File) SetPanes(sheet, panes string) {
 //    xlsx.GetSheetVisible("Sheet1")
 //
 func (f *File) GetSheetVisible(name string) bool {
-	name = trimSheetName(name)
 	content := f.workbookReader()
 	visible := false
 	for k, v := range content.Sheets.Sheet {
-		if v.Name == name {
+		if v.Name == trimSheetName(name) {
 			if content.Sheets.Sheet[k].State == "" || content.Sheets.Sheet[k].State == "visible" {
 				visible = true
 			}

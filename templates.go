@@ -1,5 +1,5 @@
-// This file contains default templates for XML files we don't yet
-// populated based on content.
+// This file contains default templates for XML files we don't yet populated
+// based on content.
 
 package excelize
 
