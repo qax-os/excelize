@@ -211,7 +211,7 @@ type xlsxXf struct {
 	NumFmtID          int             `xml:"numFmtId,attr"`
 	PivotButton       bool            `xml:"pivotButton,attr,omitempty"`
 	QuotePrefix       bool            `xml:"quotePrefix,attr,omitempty"`
-	XfID              *int            `xml:"xfId,attr,omitempty"`
+	XfID              *int            `xml:"xfId,attr"`
 	Alignment         *xlsxAlignment  `xml:"alignment"`
 	Protection        *xlsxProtection `xml:"protection"`
 }

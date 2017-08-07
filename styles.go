@@ -2122,6 +2122,8 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	style.CellXfs.Count++
 	xf.Alignment = alignment
 	xf.ApplyAlignment = applyAlignment
+	xfID := 0
+	xf.XfID = &xfID
 	style.CellXfs.Xf = append(style.CellXfs.Xf, xf)
 	return style.CellXfs.Count - 1
 }
