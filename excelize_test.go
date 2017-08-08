@@ -223,6 +223,21 @@ func TestSetCellHyperLink(t *testing.T) {
 	}
 }
 
+func TestGetCellHyperLink(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	link, target := xlsx.GetCellHyperLink("Sheet1", "")
+	t.Log(link, target)
+	link, target = xlsx.GetCellHyperLink("Sheet1", "B19")
+	t.Log(link, target)
+	link, target = xlsx.GetCellHyperLink("Sheet2", "D6")
+	t.Log(link, target)
+	link, target = xlsx.GetCellHyperLink("Sheet3", "H3")
+	t.Log(link, target)
+}
+
 func TestSetCellFormula(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook1.xlsx")
 	if err != nil {

@@ -241,6 +241,34 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
 	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
 }
 
+// GetCellHyperLink provides function to get cell hyperlink by given sheet index
+// and axis. Boolean type value link will be ture if the cell has a hyperlink
+// and the target is the address of the hyperlink. Otherwise, the value of link
+// will be false and the value of the target will be a blank string. For example
+// get hyperlink of Sheet1!H6:
+//
+//    link, target := xlsx.GetCellHyperLink("Sheet1", "H6")
+//
+func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
+	var link bool
+	var target string
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	if xlsx.Hyperlinks == nil || axis == "" {
+		return link, target
+	}
+	for _, h := range xlsx.Hyperlinks.Hyperlink {
+		if h.Ref == axis {
+			link = true
+			target = h.Location
+			if h.RID != "" {
+				target = f.getSheetRelationshipsTargetByID(sheet, h.RID)
+			}
+		}
+	}
+	return link, target
+}
+
 // MergeCell provides function to merge cells by given coordinate area and sheet
 // name. For example create a merged cell of D3:E9 on Sheet1:
 //
