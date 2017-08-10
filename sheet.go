@@ -9,6 +9,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // NewSheet provides function to create a new sheet by given index, when
@@ -121,11 +122,7 @@ func (f *File) setSheet(index int) {
 // setWorkbook update workbook property of XLSX. Maximum 31 characters are
 // allowed in sheet title.
 func (f *File) setWorkbook(name string, rid int) {
-	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
-	name = r.Replace(name)
-	if len(name) > 31 {
-		name = name[0:31]
-	}
+	name = trimSheetName(name)
 	content := f.workbookReader()
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    name,
@@ -646,8 +643,8 @@ func (f *File) GetSheetVisible(name string) bool {
 func trimSheetName(name string) string {
 	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
 	name = r.Replace(name)
-	if len(name) > 31 {
-		name = name[0:31]
+	if utf8.RuneCountInString(name) > 31 {
+		name = string([]rune(name)[0:31])
 	}
 	return name
 }
