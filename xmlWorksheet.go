@@ -365,8 +365,65 @@ type xlsxPhoneticPr struct {
 // condition is true. This collection expresses conditional formatting rules
 // applied to a particular cell or range.
 type xlsxConditionalFormatting struct {
-	SQRef  string `xml:"sqref,attr,omitempty"`
-	CfRule string `xml:",innerxml"`
+	SQRef  string        `xml:"sqref,attr,omitempty"`
+	CfRule []*xlsxCfRule `xml:"cfRule"`
+}
+
+// xlsxCfRule (Conditional Formatting Rule) represents a description of a
+// conditional formatting rule.
+type xlsxCfRule struct {
+	AboveAverage *bool           `xml:"aboveAverage,attr"`
+	Bottom       bool            `xml:"bottom,attr,omitempty"`
+	DxfID        *int            `xml:"dxfId,attr"`
+	EqualAverage bool            `xml:"equalAverage,attr,omitempty"`
+	Operator     string          `xml:"operator,attr,omitempty"`
+	Percent      bool            `xml:"percent,attr,omitempty"`
+	Priority     int             `xml:"priority,attr,omitempty"`
+	Rank         int             `xml:"rank,attr,omitempty"`
+	StdDev       int             `xml:"stdDev,attr,omitempty"`
+	StopIfTrue   bool            `xml:"stopIfTrue,attr,omitempty"`
+	Text         string          `xml:"text,attr,omitempty"`
+	TimePeriod   string          `xml:"timePeriod,attr,omitempty"`
+	Type         string          `xml:"type,attr,omitempty"`
+	Formula      []string        `xml:"formula,omitempty"`
+	ColorScale   *xlsxColorScale `xml:"colorScale"`
+	DataBar      *xlsxDataBar    `xml:"dataBar"`
+	IconSet      *xlsxIconSet    `xml:"iconSet"`
+	ExtLst       *xlsxExtLst     `xml:"extLst"`
+}
+
+// xlsxColorScale (Color Scale) describes a gradated color scale in this
+// conditional formatting rule.
+type xlsxColorScale struct {
+	Cfvo  []*xlsxCfvo  `xml:"cfvo"`
+	Color []*xlsxColor `xml:"color"`
+}
+
+// dataBar (Data Bar) describes a data bar conditional formatting rule.
+type xlsxDataBar struct {
+	MaxLength int          `xml:"maxLength,attr,omitempty"`
+	MinLength int          `xml:"minLength,attr,omitempty"`
+	ShowValue bool         `xml:"showValue,attr,omitempty"`
+	Cfvo      []*xlsxCfvo  `xml:"cfvo"`
+	Color     []*xlsxColor `xml:"color"`
+}
+
+// xlsxIconSet (Icon Set) describes an icon set conditional formatting rule.
+type xlsxIconSet struct {
+	Cfvo      []*xlsxCfvo `xml:"cfvo"`
+	IconSet   string      `xml:"iconSet,attr,omitempty"`
+	ShowValue bool        `xml:"showValue,attr,omitempty"`
+	Percent   bool        `xml:"percent,attr,omitempty"`
+	Reverse   bool        `xml:"reverse,attr,omitempty"`
+}
+
+// cfvo (Conditional Format Value Object) describes the values of the
+// interpolation points in a gradient scale.
+type xlsxCfvo struct {
+	Gte    bool        `xml:"gte,attr,omitempty"`
+	Type   string      `xml:"type,attr,omitempty"`
+	Val    int         `xml:"val,attr"`
+	ExtLst *xlsxExtLst `xml:"extLst"`
 }
 
 // xlsxHyperlinks directly maps the hyperlinks element in the namespace
@@ -464,4 +521,29 @@ type formatPanes struct {
 		ActiveCell string `json:"active_cell"`
 		Pane       string `json:"pane"`
 	} `json:"panes"`
+}
+
+// formatConditional
+type formatConditional struct {
+	Type         string `json:"type"`
+	AboveAverage bool   `json:"above_average"`
+	Percent      bool   `json:"percent"`
+	Format       int    `json:"format"`
+	Criteria     string `json:"criteria"`
+	Value        string `json:"value,omitempty"`
+	Minimum      string `json:"minimum,omitempty"`
+	Maximum      string `json:"maximum,omitempty"`
+	MinType      string `json:"min_type,omitempty"`
+	MidType      string `json:"mid_type,omitempty"`
+	MaxType      string `json:"max_type,omitempty"`
+	MinValue     string `json:"min_value,omitempty"`
+	MidValue     string `json:"mid_value,omitempty"`
+	MaxValue     string `json:"max_value,omitempty"`
+	MinColor     string `json:"min_color,omitempty"`
+	MidColor     string `json:"mid_color,omitempty"`
+	MaxColor     string `json:"max_color,omitempty"`
+	MinLength    string `json:"min_length,omitempty"`
+	MaxLength    string `json:"max_length,omitempty"`
+	MultiRange   string `json:"multi_range,omitempty"`
+	BarColor     string `json:"bar_color,omitempty"`
 }

@@ -62,7 +62,7 @@ type xlsxColor struct {
 	Auto    bool    `xml:"auto,attr,omitempty"`
 	RGB     string  `xml:"rgb,attr,omitempty"`
 	Indexed int     `xml:"indexed,attr,omitempty"`
-	Theme   int     `xml:"theme,attr,omitempty"`
+	Theme   *int    `xml:"theme,attr"`
 	Tint    float64 `xml:"tint,attr,omitempty"`
 }
 
@@ -75,14 +75,20 @@ type xlsxFonts struct {
 
 // font directly maps the font element.
 type font struct {
-	B      bool           `xml:"b,omitempty"`
-	I      bool           `xml:"i,omitempty"`
-	U      *attrValString `xml:"u"`
-	Sz     *attrValInt    `xml:"sz"`
-	Color  *xlsxColor     `xml:"color"`
-	Name   *attrValString `xml:"name"`
-	Family *attrValInt    `xml:"family"`
-	Scheme *attrValString `xml:"scheme"`
+	Name     *attrValString `xml:"name"`
+	Charset  *attrValInt    `xml:"charset"`
+	Family   *attrValInt    `xml:"family"`
+	B        bool           `xml:"b,omitempty"`
+	I        bool           `xml:"i,omitempty"`
+	Strike   bool           `xml:"strike,omitempty"`
+	Outline  bool           `xml:"outline,omitempty"`
+	Shadow   bool           `xml:"shadow,omitempty"`
+	Condense bool           `xml:"condense,omitempty"`
+	Extend   bool           `xml:"extend,omitempty"`
+	Color    *xlsxColor     `xml:"color"`
+	Sz       *attrValInt    `xml:"sz"`
+	U        *attrValString `xml:"u"`
+	Scheme   *attrValString `xml:"scheme"`
 }
 
 // xlsxFont directly maps the font element. This element defines the properties
@@ -245,6 +251,17 @@ type xlsxDxf struct {
 	Dxf string `xml:",innerxml"`
 }
 
+// dxf directly maps the dxf element.
+type dxf struct {
+	Font       *font           `xml:"font"`
+	NumFmt     *xlsxNumFmt     `xml:"numFmt"`
+	Fill       *xlsxFill       `xml:"fill"`
+	Alignment  *xlsxAlignment  `xml:"alignment"`
+	Border     *xlsxBorder     `xml:"border"`
+	Protection *xlsxProtection `xml:"protection"`
+	ExtLst     *xlsxExt        `xml:"extLst"`
+}
+
 // xlsxTableStyles directly maps the tableStyles element. This element
 // represents a collection of Table style definitions for Table styles and
 // PivotTable styles used in this workbook. It consists of a sequence of
@@ -302,8 +319,8 @@ type formatFont struct {
 	Color     string `json:"color"`
 }
 
-// formatCellStyle directly maps the styles settings of the cells.
-type formatCellStyle struct {
+// formatStyle directly maps the styles settings of the cells.
+type formatStyle struct {
 	Border []struct {
 		Type  string `json:"type"`
 		Color string `json:"color"`

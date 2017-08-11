@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"fmt"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -894,4 +895,63 @@ func TestRemoveRow(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
+
+func TestConditionalFormat(t *testing.T) {
+	xlsx := NewFile()
+	for j := 1; j <= 10; j++ {
+		for i := 0; i <= 10; i++ {
+			xlsx.SetCellInt("Sheet1", ToAlphaString(i)+strconv.Itoa(j), j)
+		}
+	}
+	var format1, format2, format3 int
+	var err error
+	// Rose format for bad conditional.
+	format1, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+	t.Log(err)
+	// Light yellow format for neutral conditional.
+	format2, err = xlsx.NewConditionalStyle(`{"fill":{"type":"pattern","color":["#FEEAA0"],"pattern":1}}`)
+	t.Log(err)
+	// Light green format for good conditional.
+	format3, err = xlsx.NewConditionalStyle(`{"font":{"color":"#09600B"},"fill":{"type":"pattern","color":["#C7EECF"],"pattern":1}}`)
+	t.Log(err)
+	// Color scales: 2 color.
+	xlsx.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"2_color_scale","criteria":"=","min_type":"min","max_type":"max","min_color":"#F8696B","max_color":"#63BE7B"}]`)
+	// Color scales: 3 color.
+	xlsx.SetConditionalFormat("Sheet1", "B1:B10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
+	// Hightlight cells rules: between...
+	xlsx.SetConditionalFormat("Sheet1", "C1:C10", fmt.Sprintf(`[{"type":"cell","criteria":"between","format":%d,"minimum":"6","maximum":"8"}]`, format1))
+	// Hightlight cells rules: Greater Than...
+	xlsx.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format3))
+	// Hightlight cells rules: Equal To...
+	xlsx.SetConditionalFormat("Sheet1", "E1:E10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d}]`, format3))
+	// Hightlight cells rules: Not Equal To...
+	xlsx.SetConditionalFormat("Sheet1", "F1:F10", fmt.Sprintf(`[{"type":"unique","criteria":"=","format":%d}]`, format2))
+	// Hightlight cells rules: Duplicate Values...
+	xlsx.SetConditionalFormat("Sheet1", "G1:G10", fmt.Sprintf(`[{"type":"duplicate","criteria":"=","format":%d}]`, format2))
+	// Top/Bottom rules: Top 10%.
+	xlsx.SetConditionalFormat("Sheet1", "H1:H10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6","percent":true}]`, format1))
+	// Top/Bottom rules: Above Average...
+	xlsx.SetConditionalFormat("Sheet1", "I1:I10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": true}]`, format3))
+	// Top/Bottom rules: Below Average...
+	xlsx.SetConditionalFormat("Sheet1", "J1:J10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": false}]`, format1))
+	// Data Bars: Gradient Fill.
+	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
+	err = xlsx.SaveAs("./test/Workbook_conditional_format.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+
+	// Set conditional format with illegal JSON string.
+	_, err = xlsx.NewConditionalStyle("")
+	t.Log(err)
+	// Set conditional format with illegal valid type.
+	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
+	// Set conditional format with illegal criteria type.
+	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
+	// Set conditional format with file without dxfs element.
+	xlsx, err = OpenFile("./test/Workbook1.xlsx")
+	t.Log(err)
+	_, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+	t.Log(err)
 }
