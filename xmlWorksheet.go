@@ -523,7 +523,7 @@ type formatPanes struct {
 	} `json:"panes"`
 }
 
-// formatConditional
+// formatConditional directly maps the conditional format settings of the cells.
 type formatConditional struct {
 	Type         string `json:"type"`
 	AboveAverage bool   `json:"above_average"`
