@@ -255,7 +255,7 @@ type xlsxDimension struct {
 // not checked it for completeness - it does as much as I need.
 type xlsxSheetData struct {
 	XMLName xml.Name  `xml:"sheetData"`
-	Row     []xlsxRow `xml:"row"`
+	Row     []*xlsxRow `xml:"row"`
 }
 
 // xlsxRow directly maps the row element. The element expresses information
@@ -274,7 +274,7 @@ type xlsxRow struct {
 	Spans        string  `xml:"spans,attr,omitempty"`
 	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
 	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
-	C            []xlsxC `xml:"c"`
+	C            []*xlsxC `xml:"c"`
 }
 
 // xlsxMergeCell directly maps the mergeCell element. A single merged cell.

@@ -284,7 +284,7 @@ func completeCol(xlsx *xlsxWorksheet, row, cell int) {
 			for iii := start; iii < cell; iii++ {
 				buffer.WriteString(ToAlphaString(iii))
 				buffer.WriteString(strconv.Itoa(k + 1))
-				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, xlsxC{
+				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, &xlsxC{
 					R: buffer.String(),
 				})
 				buffer.Reset()

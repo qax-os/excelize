@@ -88,8 +88,8 @@ func (f *File) worksheetWriter() {
 }
 
 // trimCell provides function to trim blank cells which created by completeCol.
-func trimCell(column []xlsxC) []xlsxC {
-	col := []xlsxC{}
+func trimCell(column []*xlsxC) []*xlsxC {
+	col := []*xlsxC{}
 	for _, c := range column {
 		if c.S == 0 && c.V == "" && c.F == nil && c.T == "" {
 			continue

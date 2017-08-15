@@ -116,7 +116,7 @@ func checkSheet(xlsx *xlsxWorksheet) {
 			sheetData.Row = append(sheetData.Row, xlsx.SheetData.Row[existsRows[i+1]])
 			continue
 		}
-		sheetData.Row = append(sheetData.Row, xlsxRow{
+		sheetData.Row = append(sheetData.Row, &xlsxRow{
 			R: i + 1,
 		})
 	}
