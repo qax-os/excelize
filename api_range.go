@@ -1,0 +1,69 @@
+package excelize
+
+import (
+	"encoding/json"
+)
+
+type Range struct {
+	w *Worksheet
+	fromAxis string
+	toAxis string
+}
+
+//range
+func (r *Range)SetStyle(s Style) {
+	for _, row := range r.w.sheet.SheetData.Row {
+		for _, c := range row.C {
+			if checkCellInArea(c.R, r.fromAxis + ":" + r.toAxis) {
+				c.S = int(s)
+			}
+		}
+	}
+}
+
+func (r *Range)Contains(axis string) bool {
+	return checkCellInArea(axis, r.fromAxis + ":" + r.toAxis)
+}
+
+func (r *Range)ConditionalFormat(formatSet string){
+	var format []*formatConditional
+	json.Unmarshal([]byte(formatSet), &format)
+
+	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *formatConditional) *xlsxCfRule{
+		"cellIs":          drawCondFmtCellIs,
+		"top10":           drawCondFmtTop10,
+		"aboveAverage":    drawCondFmtAboveAverage,
+		"duplicateValues": drawCondFmtDuplicateUniqueValues,
+		"uniqueValues":    drawCondFmtDuplicateUniqueValues,
+		"2_color_scale":   drawCondFmtColorScale,
+		"3_color_scale":   drawCondFmtColorScale,
+		"dataBar":         drawCondFmtDataBar,
+	}
+
+	cfRule := []*xlsxCfRule{}
+	for p, v := range format {
+		var vt, ct string
+		var ok bool
+		// "type" is a required parameter, check for valid validation types.
+		vt, ok = validType[v.Type]
+		if !ok {
+			continue
+		}
+		// Check for valid criteria types.
+		ct, ok = criteriaType[v.Criteria]
+		if !ok {
+			continue
+		}
+
+		drawfunc, ok := drawContFmtFunc[vt]
+		if ok {
+			cfRule = append(cfRule, drawfunc(p, ct, v))
+		}
+	}
+
+	r.w.sheet.ConditionalFormatting = append(r.w.sheet.ConditionalFormatting, &xlsxConditionalFormatting{
+		SQRef:  r.fromAxis + ":" + r.toAxis,
+		CfRule: cfRule,
+	})
+}
+
