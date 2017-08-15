@@ -7,17 +7,19 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/plandem/excelize/format"
 )
 
 // parseFormatTableSet provides function to parse the format settings of the
 // table with default value.
-func parseFormatTableSet(formatSet string) *formatTable {
-	format := formatTable{
+func parseFormatTableSet(formatSet string) *format.Table {
+	fs := format.Table{
 		TableStyle:     "",
 		ShowRowStripes: true,
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	json.Unmarshal([]byte(formatSet), &fs)
+	return &fs
 }
 
 // AddTable provides the method to add table in a worksheet by given sheet
@@ -39,8 +41,8 @@ func parseFormatTableSet(formatSet string) *formatTable {
 //    TableStyleMedium1 - TableStyleMedium28
 //    TableStyleDark1 - TableStyleDark11
 //
-func (f *File) AddTable(sheet, hcell, vcell, format string) {
-	formatSet := parseFormatTableSet(format)
+func (f *File) AddTable(sheet, hcell, vcell, fs string) {
+	formatSet := parseFormatTableSet(fs)
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
@@ -97,7 +99,7 @@ func (f *File) addSheetTable(sheet string, rID int) {
 
 // addTable provides function to add table by given sheet index, coordinate area
 // and format set.
-func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, i int, formatSet *formatTable) {
+func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, i int, formatSet *format.Table) {
 	// Correct the minimum number of rows, the table at least two lines.
 	if hyAxis == vyAxis {
 		vyAxis++
@@ -150,10 +152,10 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 
 // parseAutoFilterSet provides function to parse the settings of the auto
 // filter.
-func parseAutoFilterSet(formatSet string) *formatAutoFilter {
-	format := formatAutoFilter{}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+func parseAutoFilterSet(formatSet string) *format.AutoFilter {
+	fs := format.AutoFilter{}
+	json.Unmarshal([]byte(formatSet), &fs)
+	return &fs
 }
 
 // AutoFilter provides the method to add auto filter in a worksheet by given
@@ -226,8 +228,8 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //    col   < 2000
 //    Price < 2000
 //
-func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
-	formatSet := parseAutoFilterSet(format)
+func (f *File) AutoFilter(sheet, hcell, vcell, fs string) error {
+	formatSet := parseAutoFilterSet(fs)
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 
@@ -257,7 +259,7 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 
 // autoFilter provides function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
-func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *formatAutoFilter) error {
+func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *format.AutoFilter) error {
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.SheetPr != nil {
 		xlsx.SheetPr.FilterMode = true

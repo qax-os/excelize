@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/plandem/excelize/format"
 )
 
 // NewSheet provides function to create a new sheet by given index, when
@@ -496,10 +498,10 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 }
 
 // parseFormatPanesSet provides function to parse the panes settings.
-func parseFormatPanesSet(formatSet string) *formatPanes {
-	format := formatPanes{}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+func parseFormatPanesSet(formatSet string) *format.Panes {
+	fs := format.Panes{}
+	json.Unmarshal([]byte(formatSet), &fs)
+	return &fs
 }
 
 // SetPanes provides function to create and remove freeze panes and split panes

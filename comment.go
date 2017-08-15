@@ -5,17 +5,19 @@ import (
 	"encoding/xml"
 	"strconv"
 	"strings"
+
+	"github.com/plandem/excelize/format"
 )
 
 // parseFormatCommentsSet provides function to parse the format settings of the
 // comment with default value.
-func parseFormatCommentsSet(formatSet string) *formatComment {
-	format := formatComment{
+func parseFormatCommentsSet(formatSet string) *format.Comment {
+	fs := format.Comment{
 		Author: "Author:",
 		Text:   " ",
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	json.Unmarshal([]byte(formatSet), &fs)
+	return &fs
 }
 
 // AddComment provides the method to add comment in a sheet by given worksheet
@@ -147,7 +149,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 
 // addComment provides function to create chart as xl/comments%d.xml by given
 // cell and format sets.
-func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
+func (f *File) addComment(commentsXML, cell string, formatSet *format.Comment) {
 	a := formatSet.Author
 	t := formatSet.Text
 	if len(a) > 255 {

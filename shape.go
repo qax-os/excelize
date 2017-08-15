@@ -5,15 +5,17 @@ import (
 	"encoding/xml"
 	"strconv"
 	"strings"
+
+	"github.com/plandem/excelize/format"
 )
 
 // parseFormatShapeSet provides function to parse the format settings of the
 // shape with default value.
-func parseFormatShapeSet(formatSet string) *formatShape {
-	format := formatShape{
+func parseFormatShapeSet(formatSet string) *format.Shape {
+	fs := format.Shape{
 		Width:  160,
 		Height: 160,
-		Format: formatPicture{
+		Format: format.Picture{
 			FPrintsWithSheet: true,
 			FLocksWithSheet:  false,
 			NoChangeAspect:   false,
@@ -23,8 +25,8 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 			YScale:           1.0,
 		},
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	json.Unmarshal([]byte(formatSet), &fs)
+	return &fs
 }
 
 // AddShape provides the method to add shape in a sheet by given worksheet
@@ -270,7 +272,7 @@ func (f *File) AddShape(sheet, cell, format string) {
 
 // addDrawingShape provides function to add preset geometry by given sheet,
 // drawingXMLand format sets.
-func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
+func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format.Shape) {
 	textUnderlineType := map[string]bool{"none": true, "words": true, "sng": true, "dbl": true, "heavy": true, "dotted": true, "dottedHeavy": true, "dash": true, "dashHeavy": true, "dashLong": true, "dashLongHeavy": true, "dotDash": true, "dotDashHeavy": true, "dotDotDash": true, "dotDotDashHeavy": true, "wavy": true, "wavyHeavy": true, "wavyDbl": true}
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
@@ -335,9 +337,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		},
 	}
 	if len(formatSet.Paragraph) < 1 {
-		formatSet.Paragraph = []formatShapeParagraph{
+		formatSet.Paragraph = []format.ShapeParagraph{
 			{
-				Font: formatFont{
+				Font: format.Font{
 					Bold:      false,
 					Italic:    false,
 					Underline: "none",

@@ -12,12 +12,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/plandem/excelize/format"
 )
 
 // parseFormatPictureSet provides function to parse the format settings of the
 // picture with default value.
-func parseFormatPictureSet(formatSet string) *formatPicture {
-	format := formatPicture{
+func parseFormatPictureSet(formatSet string) *format.Picture {
+	fs := format.Picture{
 		FPrintsWithSheet: true,
 		FLocksWithSheet:  false,
 		NoChangeAspect:   false,
@@ -26,8 +28,8 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 		XScale:           1.0,
 		YScale:           1.0,
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	json.Unmarshal([]byte(formatSet), &fs)
+	return &fs
 }
 
 // AddPicture provides the method to add picture in a sheet by given picture
@@ -70,7 +72,7 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //        }
 //    }
 //
-func (f *File) AddPicture(sheet, cell, picture, format string) error {
+func (f *File) AddPicture(sheet, cell, picture, formatSet string) error {
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
@@ -81,9 +83,9 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 		return errors.New("Unsupported image extension")
 	}
 	readFile, _ := os.Open(picture)
-	image, _, err := image.DecodeConfig(readFile)
+	img, _, err := image.DecodeConfig(readFile)
 	_, file := filepath.Split(picture)
-	formatSet := parseFormatPictureSet(format)
+	fs := parseFormatPictureSet(formatSet)
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
@@ -92,7 +94,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
 	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext)
-	f.addDrawingPicture(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, formatSet)
+	f.addDrawingPicture(sheet, drawingXML, cell, file, img.Width, img.Height, drawingRID, fs)
 	f.addMedia(picture, ext)
 	f.addContentTypePart(drawingID, "drawings")
 	return err
@@ -186,7 +188,7 @@ func (f *File) countDrawings() int {
 // addDrawingPicture provides function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
-func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *formatPicture) {
+func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID int, formatSet *format.Picture) {
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
 	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))

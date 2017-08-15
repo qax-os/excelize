@@ -35,8 +35,8 @@ func (r *Range)SetStyle(s Style) {
 }
 
 func (r *Range)SetConditionalFormat(formatSet string){
-	var f []*format.Conditional
-	json.Unmarshal([]byte(formatSet), &format)
+	var fs []*format.Conditional
+	json.Unmarshal([]byte(formatSet), &fs)
 
 	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *format.Conditional) *xlsxCfRule{
 		"cellIs":          drawCondFmtCellIs,
@@ -50,7 +50,7 @@ func (r *Range)SetConditionalFormat(formatSet string){
 	}
 
 	cfRule := []*xlsxCfRule{}
-	for p, v := range f {
+	for p, v := range fs {
 		var vt, ct string
 		var ok bool
 		// "type" is a required parameter, check for valid validation types.
