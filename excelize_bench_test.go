@@ -151,6 +151,18 @@ func BenchmarkNewSetCellStyle(b *testing.B) {
 		b.Log(err)
 	}
 
+	//style, err = xlsx.NewFormatStyle(FormatStyle{
+	//	Alignment: struct {
+	//		Horizontal:
+	//	},
+	//})
+
+	//`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"top","wrap_text":true}}`)
+	if err != nil {
+		b.Log(err)
+	}
+
+
 	maxCol := len(cols)
 	maxRow := maxCol
 

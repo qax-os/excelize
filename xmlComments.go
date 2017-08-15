@@ -47,9 +47,3 @@ type xlsxComment struct {
 type xlsxText struct {
 	R []xlsxR `xml:"r"`
 }
-
-// formatComment directly maps the format settings of the comment.
-type formatComment struct {
-	Author string `json:"author"`
-	Text   string `json:"text"`
-}

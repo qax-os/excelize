@@ -2,6 +2,8 @@ package excelize
 
 import (
 	"encoding/json"
+
+	"github.com/plandem/excelize/format"
 )
 
 type Range struct {
@@ -33,10 +35,10 @@ func (r *Range)SetStyle(s Style) {
 }
 
 func (r *Range)SetConditionalFormat(formatSet string){
-	var format []*formatConditional
+	var f []*format.Conditional
 	json.Unmarshal([]byte(formatSet), &format)
 
-	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *formatConditional) *xlsxCfRule{
+	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *format.Conditional) *xlsxCfRule{
 		"cellIs":          drawCondFmtCellIs,
 		"top10":           drawCondFmtTop10,
 		"aboveAverage":    drawCondFmtAboveAverage,
@@ -48,7 +50,7 @@ func (r *Range)SetConditionalFormat(formatSet string){
 	}
 
 	cfRule := []*xlsxCfRule{}
-	for p, v := range format {
+	for p, v := range f {
 		var vt, ct string
 		var ok bool
 		// "type" is a required parameter, check for valid validation types.
