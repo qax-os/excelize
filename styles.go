@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"math"
@@ -2522,9 +2521,8 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 //
 // bar_color - Used for data_bar. Same as min_color, see above.
 //
-func (f *File) SetConditionalFormat(sheet, area, formatSet string) {
-	var fs []*format.Conditional
-	json.Unmarshal([]byte(formatSet), &fs)
+func (f *File) SetConditionalFormat(sheet, area string, formatSet interface{}) {
+	fs, _ := format.NewConditional(formatSet)
 
 	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *format.Conditional) *xlsxCfRule{
 		"cellIs":          drawCondFmtCellIs,
