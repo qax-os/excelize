@@ -64,11 +64,9 @@ func (w *Worksheet)GetRange(fromAxis, toAxis string)(*Range) {
 	}
 }
 
-func (w *Worksheet)getRow(rowIndex int, cells int )(*Row) {
-	rows := rowIndex + 1
-	completeRow(w.sheet, rows, cells)
-
-	return &Row{w, w.sheet.SheetData.Row[rows]}
+func (w *Worksheet)getRow(rowIndex int, cells int)(*Row) {
+	completeRow(w.sheet, rowIndex + 1, cells)
+	return &Row{w, w.sheet.SheetData.Row[rowIndex]}
 }
 
 func (w *Worksheet)GetRow(rowIndex int)(*Row) {
