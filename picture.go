@@ -2,7 +2,6 @@ package excelize
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"image"
@@ -15,22 +14,6 @@ import (
 
 	"github.com/plandem/excelize/format"
 )
-
-// parseFormatPictureSet provides function to parse the format settings of the
-// picture with default value.
-func parseFormatPictureSet(formatSet string) *format.Picture {
-	fs := format.Picture{
-		FPrintsWithSheet: true,
-		FLocksWithSheet:  false,
-		NoChangeAspect:   false,
-		OffsetX:          0,
-		OffsetY:          0,
-		XScale:           1.0,
-		YScale:           1.0,
-	}
-	json.Unmarshal([]byte(formatSet), &fs)
-	return &fs
-}
 
 // AddPicture provides the method to add picture in a sheet by given picture
 // format set (such as offset, scale, aspect ratio setting and print settings)
@@ -72,7 +55,7 @@ func parseFormatPictureSet(formatSet string) *format.Picture {
 //        }
 //    }
 //
-func (f *File) AddPicture(sheet, cell, picture, formatSet string) error {
+func (f *File) AddPicture(sheet, cell, picture string, fp interface{}) error {
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
@@ -85,7 +68,8 @@ func (f *File) AddPicture(sheet, cell, picture, formatSet string) error {
 	readFile, _ := os.Open(picture)
 	img, _, err := image.DecodeConfig(readFile)
 	_, file := filepath.Split(picture)
-	fs := parseFormatPictureSet(formatSet)
+	fs, _ := format.NewPicture(fp)
+
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.

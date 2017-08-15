@@ -1,5 +1,9 @@
 package format
 
+import (
+	"encoding/json"
+)
+
 // formatChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
 	Crossing            string `json:"crossing"`
@@ -122,4 +126,44 @@ type Layout struct {
 	Y      float64 `json:"y"`
 	Width  float64 `json:"width"`
 	Height float64 `json:"height"`
+}
+
+// NewChart provides function to parse the format settings of the
+func NewChart(f interface{})(*Chart, error) {
+	def := Chart{
+		Format: Picture{
+			FPrintsWithSheet: true,
+			FLocksWithSheet:  false,
+			NoChangeAspect:   false,
+			OffsetX:          0,
+			OffsetY:          0,
+			XScale:           1.0,
+			YScale:           1.0,
+		},
+		Legend: ChartLegend{
+			Position:      "bottom",
+			ShowLegendKey: false,
+		},
+		Title: ChartTitle{
+			Name: " ",
+		},
+		ShowBlanksAs: "gap",
+	}
+
+	var s []byte
+
+	switch t := f.(type) {
+	case string:
+		s = []byte(t)
+	case Chart:
+		s, _ = json.Marshal(t)
+	case *Chart:
+		s, _ = json.Marshal(t)
+	default:
+		return &def, unknownFormat
+	}
+
+	c := &def
+	err := json.Unmarshal(s, c)
+	return c, err
 }

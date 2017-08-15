@@ -1,5 +1,15 @@
 package format
 
+import (
+	"encoding/json"
+)
+
+type Pane struct {
+	SQRef      string `json:"sqref"`
+	ActiveCell string `json:"active_cell"`
+	Pane       string `json:"pane"`
+}
+
 // Panes directly maps the settings of the panes.
 type Panes struct {
 	Freeze      bool   `json:"freeze"`
@@ -8,11 +18,7 @@ type Panes struct {
 	YSplit      int    `json:"y_split"`
 	TopLeftCell string `json:"top_left_cell"`
 	ActivePane  string `json:"active_pane"`
-	Panes       []struct {
-		SQRef      string `json:"sqref"`
-		ActiveCell string `json:"active_cell"`
-		Pane       string `json:"pane"`
-	} `json:"panes"`
+	Panes       []Pane `json:"panes"`
 }
 
 // Conditional directly maps the conditional format settings of the cells.
@@ -40,3 +46,18 @@ type Conditional struct {
 	BarColor     string `json:"bar_color,omitempty"`
 }
 
+// NewPanes provides function to parse the panes settings.
+func NewPanes(f interface{})(*Panes, error) {
+	switch t := f.(type) {
+	case string:
+		fs := Panes{}
+		err := json.Unmarshal([]byte(t), &fs)
+		return &fs, err
+	case Panes:
+		return &t, nil
+	case *Panes:
+		return &(*t), nil
+	default:
+		return nil, unknownFormat
+	}
+}

@@ -991,16 +991,6 @@ func (f *File) styleSheetWriter() {
 	}
 }
 
-// parseFormatStyleSet provides function to parse the format settings of the
-// cells and conditional formats.
-func parseFormatStyleSet(style string) (*format.Style, error) {
-	fs := format.Style{
-		DecimalPlaces: 2,
-	}
-	err := json.Unmarshal([]byte(style), &fs)
-	return &fs, err
-}
-
 // NewStyle provides function to create style for cells by given style format.
 // Note that the color field uses RGB color code.
 //
@@ -1862,13 +1852,15 @@ func parseFormatStyleSet(style string) (*format.Style, error) {
 //
 // Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
 //
-func (f *File) NewStyle(style string) (int, error) {
+func (f *File) NewStyle(style interface{}) (int, error) {
 	var cellXfsID, fontID, borderID, fillID int
 	s := f.stylesReader()
-	fs, err := parseFormatStyleSet(style)
+
+	fs, err := format.NewStyleSet(style)
 	if err != nil {
 		return cellXfsID, err
 	}
+
 	numFmtID := setNumFmt(s, fs)
 
 	if fs.Font != (format.Font{}) {
@@ -1897,9 +1889,9 @@ func (f *File) NewStyle(style string) (int, error) {
 // by given style format. The parameters are the same as function NewStyle().
 // Note that the color field uses RGB color code and only support to set font,
 // fills, alignment and borders currently.
-func (f *File) NewConditionalStyle(style string) (int, error) {
+func (f *File) NewConditionalStyle(style interface{}) (int, error) {
 	s := f.stylesReader()
-	fs, err := parseFormatStyleSet(style)
+	fs, err := format.NewStyleSet(style)
 	if err != nil {
 		return 0, err
 	}

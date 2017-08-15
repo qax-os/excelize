@@ -1,33 +1,12 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"strconv"
 	"strings"
 
 	"github.com/plandem/excelize/format"
 )
-
-// parseFormatShapeSet provides function to parse the format settings of the
-// shape with default value.
-func parseFormatShapeSet(formatSet string) *format.Shape {
-	fs := format.Shape{
-		Width:  160,
-		Height: 160,
-		Format: format.Picture{
-			FPrintsWithSheet: true,
-			FLocksWithSheet:  false,
-			NoChangeAspect:   false,
-			OffsetX:          0,
-			OffsetY:          0,
-			XScale:           1.0,
-			YScale:           1.0,
-		},
-	}
-	json.Unmarshal([]byte(formatSet), &fs)
-	return &fs
-}
 
 // AddShape provides the method to add shape in a sheet by given worksheet
 // index, shape format set (such as offset, scale, aspect ratio setting and
@@ -247,8 +226,9 @@ func parseFormatShapeSet(formatSet string) *format.Shape {
 //    wavyHeavy
 //    wavyDbl
 //
-func (f *File) AddShape(sheet, cell, format string) {
-	formatSet := parseFormatShapeSet(format)
+func (f *File) AddShape(sheet, cell string, fs interface{}) {
+	formatSet, _ := format.NewShape(fs)
+
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first shape for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.

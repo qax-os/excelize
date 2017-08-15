@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"strconv"
 	"strings"
@@ -29,32 +28,6 @@ var (
 	chartView3DRAngAx       = map[string]int{Bar: 0, Bar3D: 1, Doughnut: 0, Line: 0, Pie: 0, Pie3D: 0, Radar: 0, Scatter: 0}
 	chartLegendPosition     = map[string]string{"bottom": "b", "left": "l", "right": "r", "top": "t", "top_right": "tr"}
 )
-
-// parseFormatChartSet provides function to parse the format settings of the
-// chart with default value.
-func parseFormatChartSet(formatSet string) *format.Chart {
-	fs := format.Chart{
-		Format: format.Picture{
-			FPrintsWithSheet: true,
-			FLocksWithSheet:  false,
-			NoChangeAspect:   false,
-			OffsetX:          0,
-			OffsetY:          0,
-			XScale:           1.0,
-			YScale:           1.0,
-		},
-		Legend: format.ChartLegend{
-			Position:      "bottom",
-			ShowLegendKey: false,
-		},
-		Title: format.ChartTitle{
-			Name: " ",
-		},
-		ShowBlanksAs: "gap",
-	}
-	json.Unmarshal([]byte(formatSet), &fs)
-	return &fs
-}
 
 // AddChart provides the method to add chart in a sheet by given chart format
 // set (such as offset, scale, aspect ratio setting and print settings) and
@@ -172,8 +145,9 @@ func parseFormatChartSet(formatSet string) *format.Chart {
 //
 // show_val: Specifies that the value shall be shown in a data label. The show_val property is optional. The default value is false.
 //
-func (f *File) AddChart(sheet, cell, format string) {
-	formatSet := parseFormatChartSet(format)
+func (f *File) AddChart(sheet, cell string, fs interface{}) {
+	formatSet, _ := format.NewChart(fs)
+
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.

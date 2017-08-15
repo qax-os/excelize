@@ -2,7 +2,6 @@ package excelize
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"os"
@@ -497,13 +496,6 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 	}
 }
 
-// parseFormatPanesSet provides function to parse the panes settings.
-func parseFormatPanesSet(formatSet string) *format.Panes {
-	fs := format.Panes{}
-	json.Unmarshal([]byte(formatSet), &fs)
-	return &fs
-}
-
 // SetPanes provides function to create and remove freeze panes and split panes
 // by given worksheet index and panes format set.
 //
@@ -593,8 +585,9 @@ func parseFormatPanesSet(formatSet string) *format.Panes {
 //
 //    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 //
-func (f *File) SetPanes(sheet, panes string) {
-	fs := parseFormatPanesSet(panes)
+func (f *File) SetPanes(sheet string, panes interface{}) {
+	fs, _ := format.NewPanes(panes)
+
 	xlsx := f.workSheetReader(sheet)
 	p := &xlsxPane{
 		ActivePane:  fs.ActivePane,

@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"regexp"
@@ -10,17 +9,6 @@ import (
 
 	"github.com/plandem/excelize/format"
 )
-
-// parseFormatTableSet provides function to parse the format settings of the
-// table with default value.
-func parseFormatTableSet(formatSet string) *format.Table {
-	fs := format.Table{
-		TableStyle:     "",
-		ShowRowStripes: true,
-	}
-	json.Unmarshal([]byte(formatSet), &fs)
-	return &fs
-}
 
 // AddTable provides the method to add table in a worksheet by given sheet
 // index, coordinate area and format set. For example, create a table of A1:D5
@@ -41,8 +29,9 @@ func parseFormatTableSet(formatSet string) *format.Table {
 //    TableStyleMedium1 - TableStyleMedium28
 //    TableStyleDark1 - TableStyleDark11
 //
-func (f *File) AddTable(sheet, hcell, vcell, fs string) {
-	formatSet := parseFormatTableSet(fs)
+func (f *File) AddTable(sheet, hcell, vcell string, fs interface{}) {
+	formatSet, _ := format.NewTable(fs)
+
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
@@ -150,14 +139,6 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 	f.saveFileList(tableXML, string(table))
 }
 
-// parseAutoFilterSet provides function to parse the settings of the auto
-// filter.
-func parseAutoFilterSet(formatSet string) *format.AutoFilter {
-	fs := format.AutoFilter{}
-	json.Unmarshal([]byte(formatSet), &fs)
-	return &fs
-}
-
 // AutoFilter provides the method to add auto filter in a worksheet by given
 // sheet index, coordinate area and settings. An autofilter in Excel is a way of
 // filtering a 2D range of data based on some simple criteria. For example
@@ -228,8 +209,12 @@ func parseAutoFilterSet(formatSet string) *format.AutoFilter {
 //    col   < 2000
 //    Price < 2000
 //
-func (f *File) AutoFilter(sheet, hcell, vcell, fs string) error {
-	formatSet := parseAutoFilterSet(fs)
+func (f *File) AutoFilter(sheet, hcell, vcell string, fs interface{}) error {
+	formatSet, err := format.NewAutoFilter(fs)
+	if err != nil {
+		return err
+	}
+
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 
@@ -253,8 +238,7 @@ func (f *File) AutoFilter(sheet, hcell, vcell, fs string) error {
 	}
 	ref := ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 	refRange := vxAxis - hxAxis
-	err := f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
-	return err
+	return f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
 }
 
 // autoFilter provides function to extract the tokens from the filter

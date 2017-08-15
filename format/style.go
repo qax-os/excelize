@@ -1,5 +1,12 @@
 package format
 
+import (
+	"encoding/json"
+	"errors"
+)
+
+var unknownFormat = errors.New("Unknown format")
+
 type Font struct {
 	Bold      bool   `json:"bold"`
 	Italic    bool   `json:"italic"`
@@ -44,4 +51,19 @@ type Style struct {
 	CustomNumFmt  string `json:"custom_number_format"`
 	Lang          string  `json:"lang"`
 	NegRed        bool    `json:"negred"`
+}
+
+func NewStyleSet(f interface{})(*Style, error) {
+	switch t := f.(type) {
+	case string:
+		s := &Style{}
+		err := json.Unmarshal([]byte(t), s)
+		return s, err
+	case Style:
+		return &t, nil
+	case *Style:
+		return &(*t), nil
+	default:
+		return nil, unknownFormat
+	}
 }
