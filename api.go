@@ -65,7 +65,7 @@ func (w *Worksheet)GetRow(rowIndex int)(Row) {
 func (w *Worksheet)GetCell(axis string)(Cell) {
 	xAxis, yAxis := w.axisToIndex(axis)
 
-	r := w.getRow(xAxis + 1, yAxis + 1)
+	r := w.getRow(xAxis, yAxis + 1)
 
 	completeCol(w.sheet, xAxis + 1, yAxis + 1)
 	c := w.sheet.SheetData.Row[xAxis].C[yAxis]
