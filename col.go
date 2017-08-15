@@ -51,20 +51,20 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 	}
 	if xlsx.Cols == nil {
 		cols := xlsxCols{}
-		cols.Col = append(cols.Col, col)
+		cols.Col = append(cols.Col, &col)
 		xlsx.Cols = &cols
 		return
 	}
 	for _, v := range xlsx.Cols.Col {
 		if v.Min <= c && c <= v.Max {
-			col = v
+			col = *v
 		}
 	}
 	col.Min = c
 	col.Max = c
 	col.Hidden = !visible
 	col.CustomWidth = true
-	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
+	xlsx.Cols.Col = append(xlsx.Cols.Col, &col)
 }
 
 // SetColWidth provides function to set the width of a single column or multiple
@@ -92,10 +92,10 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
 		CustomWidth: true,
 	}
 	if xlsx.Cols != nil {
-		xlsx.Cols.Col = append(xlsx.Cols.Col, col)
+		xlsx.Cols.Col = append(xlsx.Cols.Col, &col)
 	} else {
 		cols := xlsxCols{}
-		cols.Col = append(cols.Col, col)
+		cols.Col = append(cols.Col, &col)
 		xlsx.Cols = &cols
 	}
 }

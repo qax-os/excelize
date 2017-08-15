@@ -8,6 +8,8 @@ import (
 	"encoding/xml"
 )
 
+type Style int
+
 type Worksheet struct {
 	f *File
 	sheet *xlsxWorksheet
@@ -18,7 +20,13 @@ type Row struct {
 	row *xlsxRow
 }
 
+type Col struct {
+	w *Worksheet
+	col *xlsxCol
+}
+
 type Cell struct {
+	//c *Col
 	r *Row
 	cell *xlsxC
 }
@@ -99,7 +107,7 @@ func (c *Cell) SetInt(value int) {
 	c.cell.V = strconv.Itoa(value)
 }
 
-func (c *Cell) SetStr(value string) {
+func (c *Cell) SetString(value string) {
 	if len(value) > 32767 {
 		value = value[0:32767]
 	}
@@ -118,9 +126,23 @@ func (c *Cell) SetStr(value string) {
 	c.cell.V = value
 }
 
-func (c *Cell) SetDefault(value string) {
+func (c *Cell) SetTime(value time.Time) {
 	c.cell.T = ""
-	c.cell.V = value
+	c.cell.V = strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value))), 'f', -1, 64)
+	if c.cell.S == 0 {
+		style, _ := c.r.w.f.NewStyle(`{"number_format": 22}`)
+		c.cell.S = style
+	}
+}
+
+func (c *Cell) SetFloat(value float64) {
+	c.cell.T = ""
+	c.cell.V = strconv.FormatFloat(value, 'f', -1, 64)
+}
+
+func (c *Cell) SetFloatWithFormat(value float64, format byte) {
+	c.cell.T = ""
+	c.cell.V = strconv.FormatFloat(value, format, -1, 64)
 }
 
 func (c *Cell)SetValue(value interface{}) {
@@ -136,19 +158,36 @@ func (c *Cell)SetValue(value interface{}) {
 	case int64:
 		c.SetInt(int(value.(int64)))
 	case float32:
-		c.SetDefault(strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
+		c.SetFloat(float64(value.(float32)))
 	case float64:
-		c.SetDefault(strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
+		c.SetFloat(float64(value.(float64)))
 	case string:
-		c.SetStr(t)
+		c.SetString(t)
 	case []byte:
-		c.SetStr(string(t))
+		c.SetString(string(t))
 	case time.Time:
-		c.SetDefault(strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 64))
-		//c.setDefaultTimeStyle(sheet, axis)
+		c.SetTime(value.(time.Time))
 	case nil:
-		c.SetStr("")
+		c.SetString("")
 	default:
-		c.SetStr(fmt.Sprintf("%v", value))
+		c.SetString(fmt.Sprintf("%v", value))
+	}
+}
+
+func (c *Cell) GetStyle() Style {
+	return Style(c.cell.S)
+}
+
+func (c *Cell) SetStyle(s Style) {
+	c.cell.S = int(s)
+}
+
+func (c *Cell) SetFormula(formula string) {
+	if c.cell.F != nil {
+		c.cell.F.Content = formula
+	} else {
+		c.cell.F = &xlsxF{
+			Content: formula,
+		}
 	}
 }

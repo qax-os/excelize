@@ -221,7 +221,7 @@ type xlsxTabColor struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
 type xlsxCols struct {
-	Col []xlsxCol `xml:"col"`
+	Col []*xlsxCol `xml:"col"`
 }
 
 // xlsxCol directly maps the col (Column Width & Formatting). Defines column
