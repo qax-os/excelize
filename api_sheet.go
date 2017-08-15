@@ -10,7 +10,6 @@ type Worksheet struct {
 	sheet *xlsxWorksheet
 }
 
-//worksheets
 func (w *Worksheet)mergeCellsParser(axis string) string {
 	axis = strings.ToUpper(axis)
 	if w.sheet.MergeCells != nil {

@@ -10,15 +10,18 @@ type Range struct {
 	toAxis string
 }
 
-//range
-func (r *Range)SetStyle(s Style) {
+func (r *Range)walk(cb func(c *xlsxC)) {
 	for _, row := range r.w.sheet.SheetData.Row {
 		for _, c := range row.C {
 			if checkCellInArea(c.R, r.fromAxis + ":" + r.toAxis) {
-				c.S = int(s)
+				cb(c)
 			}
 		}
 	}
+}
+
+func (r *Range)SetStyle(s Style) {
+	r.walk(func(c *xlsxC) { c.S = int(s) })
 }
 
 func (r *Range)Contains(axis string) bool {
