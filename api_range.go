@@ -20,15 +20,19 @@ func (r *Range)walk(cb func(c *xlsxC)) {
 	}
 }
 
-func (r *Range)SetStyle(s Style) {
-	r.walk(func(c *xlsxC) { c.S = int(s) })
+func (r *Range)Clear() {
+	r.walk(func(c *xlsxC) { c.V = "" })
 }
 
 func (r *Range)Contains(axis string) bool {
 	return checkCellInArea(axis, r.fromAxis + ":" + r.toAxis)
 }
 
-func (r *Range)ConditionalFormat(formatSet string){
+func (r *Range)SetStyle(s Style) {
+	r.walk(func(c *xlsxC) { c.S = int(s) })
+}
+
+func (r *Range)SetConditionalFormat(formatSet string){
 	var format []*formatConditional
 	json.Unmarshal([]byte(formatSet), &format)
 
