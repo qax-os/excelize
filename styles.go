@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/plandem/excelize/format"
+	"github.com/xuri/excelize/format"
 )
 
 // Excel styles can reference number formats that are built-in, all of which

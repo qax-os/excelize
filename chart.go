@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/plandem/excelize/format"
+	"github.com/xuri/excelize/format"
 )
 
 // This section defines the currently supported chart types.

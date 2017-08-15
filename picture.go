@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/plandem/excelize/format"
+	"github.com/xuri/excelize/format"
 )
 
 // AddPicture provides the method to add picture in a sheet by given picture

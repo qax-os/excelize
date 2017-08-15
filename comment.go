@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/plandem/excelize/format"
+	"github.com/xuri/excelize/format"
 )
 
 // AddComment provides the method to add comment in a sheet by given worksheet

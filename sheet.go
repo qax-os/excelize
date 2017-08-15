@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/plandem/excelize/format"
+	"github.com/xuri/excelize/format"
 )
 
 // NewSheet provides function to create a new sheet by given index, when

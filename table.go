@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/plandem/excelize/format"
+	"github.com/xuri/excelize/format"
 )
 
 // AddTable provides the method to add table in a worksheet by given sheet
