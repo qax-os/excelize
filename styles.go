@@ -793,7 +793,7 @@ var validType = map[string]string{
 	"2_color_scale": "2_color_scale",
 	"3_color_scale": "3_color_scale",
 	"data_bar":      "dataBar",
-	"formula":       "expression", // Doesn't support currently
+	"formula":       "expression",
 }
 
 // criteriaType defined the list of valid criteria types.
@@ -2540,6 +2540,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) {
 		"2_color_scale":   drawCondFmtColorScale,
 		"3_color_scale":   drawCondFmtColorScale,
 		"dataBar":         drawCondFmtDataBar,
+		"expression":      drawConfFmtExp,
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -2554,7 +2555,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) {
 		}
 		// Check for valid criteria types.
 		ct, ok = criteriaType[v.Criteria]
-		if !ok {
+		if !ok && vt != "expression" {
 			continue
 		}
 
@@ -2669,6 +2670,17 @@ func drawCondFmtDataBar(p int, ct string, format *formatConditional) *xlsxCfRule
 			Cfvo:  []*xlsxCfvo{{Type: format.MinType}, {Type: format.MaxType}},
 			Color: []*xlsxColor{{RGB: getPaletteColor(format.BarColor)}},
 		},
+	}
+}
+
+// drawConfFmtExp provides function to create conditional formatting rule for
+// expression by given priority, criteria type and format settings.
+func drawConfFmtExp(p int, ct string, format *formatConditional) *xlsxCfRule {
+	return &xlsxCfRule{
+		Priority: p + 1,
+		Type:     validType[format.Type],
+		Formula:  []string{format.Criteria},
+		DxfID:    &format.Format,
 	}
 }
 

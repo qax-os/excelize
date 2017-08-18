@@ -900,7 +900,7 @@ func TestRemoveRow(t *testing.T) {
 func TestConditionalFormat(t *testing.T) {
 	xlsx := NewFile()
 	for j := 1; j <= 10; j++ {
-		for i := 0; i <= 10; i++ {
+		for i := 0; i <= 15; i++ {
 			xlsx.SetCellInt("Sheet1", ToAlphaString(i)+strconv.Itoa(j), j)
 		}
 	}
@@ -937,6 +937,8 @@ func TestConditionalFormat(t *testing.T) {
 	xlsx.SetConditionalFormat("Sheet1", "J1:J10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": false}]`, format1))
 	// Data Bars: Gradient Fill.
 	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
+	// Use a formula to determine which cells to format.
+	xlsx.SetConditionalFormat("Sheet1", "L1:L10", fmt.Sprintf(`[{"type":"formula", "criteria":"L2<3", "format":%d}]`, format1))
 	err = xlsx.SaveAs("./test/Workbook_conditional_format.xlsx")
 	if err != nil {
 		t.Log(err)
