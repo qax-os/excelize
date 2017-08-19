@@ -692,6 +692,23 @@ func TestCopySheet(t *testing.T) {
 	}
 }
 
+func TestCopySheetWithCellChanges(t *testing.T) {
+	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.NewSheet(4, "CopySheet")
+	err = xlsx.CopySheet(1, 4)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellValue("Sheet4", "F1", "Hello")
+
+	if xlsx.GetCellValue("Sheet1", "F1") == "Hello" {
+		t.Error("Invalid value \"Hello\" in Sheet1")
+	}
+}
+
 func TestAddTable(t *testing.T) {
 	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
 	if err != nil {
