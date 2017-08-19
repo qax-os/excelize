@@ -1,22 +1,12 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"strconv"
 	"strings"
-)
 
-// parseFormatCommentsSet provides function to parse the format settings of the
-// comment with default value.
-func parseFormatCommentsSet(formatSet string) *formatComment {
-	format := formatComment{
-		Author: "Author:",
-		Text:   " ",
-	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
-}
+	"github.com/xuri/excelize/format"
+)
 
 // AddComment provides the method to add comment in a sheet by given worksheet
 // index, cell and format set (such as author and text). Note that the max
@@ -25,8 +15,9 @@ func parseFormatCommentsSet(formatSet string) *formatComment {
 //
 //    xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
 //
-func (f *File) AddComment(sheet, cell, format string) {
-	formatSet := parseFormatCommentsSet(format)
+func (f *File) AddComment(sheet, cell string, fs interface{}) {
+	formatSet, _ := format.NewComment(fs)
+
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	commentID := f.countComments() + 1
@@ -147,7 +138,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 
 // addComment provides function to create chart as xl/comments%d.xml by given
 // cell and format sets.
-func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
+func (f *File) addComment(commentsXML, cell string, formatSet *format.Comment) {
 	a := formatSet.Author
 	t := formatSet.Text
 	if len(a) > 255 {

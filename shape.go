@@ -1,31 +1,12 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"strconv"
 	"strings"
-)
 
-// parseFormatShapeSet provides function to parse the format settings of the
-// shape with default value.
-func parseFormatShapeSet(formatSet string) *formatShape {
-	format := formatShape{
-		Width:  160,
-		Height: 160,
-		Format: formatPicture{
-			FPrintsWithSheet: true,
-			FLocksWithSheet:  false,
-			NoChangeAspect:   false,
-			OffsetX:          0,
-			OffsetY:          0,
-			XScale:           1.0,
-			YScale:           1.0,
-		},
-	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
-}
+	"github.com/xuri/excelize/format"
+)
 
 // AddShape provides the method to add shape in a sheet by given worksheet
 // index, shape format set (such as offset, scale, aspect ratio setting and
@@ -245,8 +226,9 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 //    wavyHeavy
 //    wavyDbl
 //
-func (f *File) AddShape(sheet, cell, format string) {
-	formatSet := parseFormatShapeSet(format)
+func (f *File) AddShape(sheet, cell string, fs interface{}) {
+	formatSet, _ := format.NewShape(fs)
+
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first shape for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
@@ -270,7 +252,7 @@ func (f *File) AddShape(sheet, cell, format string) {
 
 // addDrawingShape provides function to add preset geometry by given sheet,
 // drawingXMLand format sets.
-func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
+func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format.Shape) {
 	textUnderlineType := map[string]bool{"none": true, "words": true, "sng": true, "dbl": true, "heavy": true, "dotted": true, "dottedHeavy": true, "dash": true, "dashHeavy": true, "dashLong": true, "dashLongHeavy": true, "dotDash": true, "dotDashHeavy": true, "dotDotDash": true, "dotDotDashHeavy": true, "wavy": true, "wavyHeavy": true, "wavyDbl": true}
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
@@ -335,9 +317,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		},
 	}
 	if len(formatSet.Paragraph) < 1 {
-		formatSet.Paragraph = []formatShapeParagraph{
+		formatSet.Paragraph = []format.ShapeParagraph{
 			{
-				Font: formatFont{
+				Font: format.Font{
 					Bold:      false,
 					Italic:    false,
 					Underline: "none",

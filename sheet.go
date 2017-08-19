@@ -2,7 +2,6 @@ package excelize
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/xuri/excelize/format"
 )
 
 // NewSheet provides function to create a new sheet by given index, when
@@ -88,8 +89,8 @@ func (f *File) worksheetWriter() {
 }
 
 // trimCell provides function to trim blank cells which created by completeCol.
-func trimCell(column []xlsxC) []xlsxC {
-	col := []xlsxC{}
+func trimCell(column []*xlsxC) []*xlsxC {
+	col := []*xlsxC{}
 	for _, c := range column {
 		if c.S == 0 && c.V == "" && c.F == nil && c.T == "" {
 			continue
@@ -496,13 +497,6 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 	}
 }
 
-// parseFormatPanesSet provides function to parse the panes settings.
-func parseFormatPanesSet(formatSet string) *formatPanes {
-	format := formatPanes{}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
-}
-
 // SetPanes provides function to create and remove freeze panes and split panes
 // by given worksheet index and panes format set.
 //
@@ -592,8 +586,9 @@ func parseFormatPanesSet(formatSet string) *formatPanes {
 //
 //    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 //
-func (f *File) SetPanes(sheet, panes string) {
-	fs := parseFormatPanesSet(panes)
+func (f *File) SetPanes(sheet string, panes interface{}) {
+	fs, _ := format.NewPanes(panes)
+
 	xlsx := f.workSheetReader(sheet)
 	p := &xlsxPane{
 		ActivePane:  fs.ActivePane,

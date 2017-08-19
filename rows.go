@@ -283,11 +283,11 @@ func checkRow(xlsx *xlsxWorksheet) {
 		if lenCol < endCol {
 			oldRow := xlsx.SheetData.Row[k].C
 			xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
-			tmp := []xlsxC{}
+			tmp := []*xlsxC{}
 			for i := 0; i <= endCol; i++ {
 				buffer.WriteString(ToAlphaString(i))
 				buffer.WriteString(strconv.Itoa(endRow))
-				tmp = append(tmp, xlsxC{
+				tmp = append(tmp, &xlsxC{
 					R: buffer.String(),
 				})
 				buffer.Reset()
@@ -313,7 +313,7 @@ func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 		}
 	}
 	for i := currentRows; i < row; i++ {
-		xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
+		xlsx.SheetData.Row = append(xlsx.SheetData.Row, &xlsxRow{
 			R: i + 1,
 		})
 	}
@@ -324,7 +324,7 @@ func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 			for iii := start; iii < cell; iii++ {
 				buffer.WriteString(ToAlphaString(iii))
 				buffer.WriteString(strconv.Itoa(ii + 1))
-				xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
+				xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, &xlsxC{
 					R: buffer.String(),
 				})
 				buffer.Reset()
