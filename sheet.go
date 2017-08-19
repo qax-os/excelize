@@ -435,7 +435,8 @@ func (f *File) CopySheet(from, to int) error {
 // target worksheet index.
 func (f *File) copySheet(from, to int) {
 	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
-	worksheet := *sheet
+	worksheet := xlsxWorksheet{}
+	deepCopy(&worksheet, &sheet)
 	path := "xl/worksheets/sheet" + strconv.Itoa(to) + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
 		worksheet.SheetViews.SheetView[0].TabSelected = false

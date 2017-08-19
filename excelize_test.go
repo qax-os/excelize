@@ -682,6 +682,10 @@ func TestCopySheet(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	xlsx.SetCellValue("Sheet4", "F1", "Hello")
+	if xlsx.GetCellValue("Sheet1", "F1") == "Hello" {
+		t.Error("Invalid value \"Hello\" in Sheet1")
+	}
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
