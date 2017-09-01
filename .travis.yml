@@ -5,7 +5,7 @@ install:
 
 go:
   - 1.8
-  - tip
+  - 1.9
 
 script:
   - go vet ./...
