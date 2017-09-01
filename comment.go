@@ -171,7 +171,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 				{
 					RPr: &xlsxRPr{
 						B:  " ",
-						Sz: &attrValInt{Val: 9},
+						Sz: &attrValFloat{Val: 9},
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
@@ -182,7 +182,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 				},
 				{
 					RPr: &xlsxRPr{
-						Sz: &attrValInt{Val: 9},
+						Sz: &attrValFloat{Val: 9},
 						Color: &xlsxColor{
 							Indexed: 81,
 						},

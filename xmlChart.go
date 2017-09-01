@@ -135,6 +135,12 @@ type attrValInt struct {
 	Val int `xml:"val,attr"`
 }
 
+// attrValFloat directly maps the val element with float64 data type as an
+// attribute。
+type attrValFloat struct {
+	Val float64 `xml:"val,attr"`
+}
+
 // attrValBool directly maps the val element with boolean data type as an
 // attribute。
 type attrValBool struct {

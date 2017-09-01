@@ -39,7 +39,7 @@ type xlsxR struct {
 // styles.
 type xlsxRPr struct {
 	B      string         `xml:"b,omitempty"`
-	Sz     *attrValInt    `xml:"sz"`
+	Sz     *attrValFloat  `xml:"sz"`
 	Color  *xlsxColor     `xml:"color"`
 	RFont  *attrValString `xml:"rFont"`
 	Family *attrValInt    `xml:"family"`

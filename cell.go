@@ -96,17 +96,8 @@ func (f *File) GetCellValue(sheet, axis string) string {
 			if axis != r.R {
 				continue
 			}
-			switch r.T {
-			case "s":
-				shardStrings := f.sharedStringsReader()
-				xlsxSI := 0
-				xlsxSI, _ = strconv.Atoi(r.V)
-				return f.formattedValue(r.S, shardStrings.SI[xlsxSI].T)
-			case "str":
-				return f.formattedValue(r.S, r.V)
-			default:
-				return f.formattedValue(r.S, r.V)
-			}
+			val, _ := r.getValueFrom(f, f.sharedStringsReader())
+			return val
 		}
 	}
 	return ""
