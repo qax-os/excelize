@@ -118,13 +118,14 @@ type xlsxPageMargins struct {
 // specifies the sheet formatting properties.
 type xlsxSheetFormatPr struct {
 	BaseColWidth     uint8   `xml:"baseColWidth,attr,omitempty"`
-	CustomHeight     float64 `xml:"customHeight,attr,omitempty"`
 	DefaultColWidth  float64 `xml:"defaultColWidth,attr,omitempty"`
 	DefaultRowHeight float64 `xml:"defaultRowHeight,attr"`
+	CustomHeight     bool    `xml:"customHeight,attr,omitempty"`
+	ZeroHeight       bool    `xml:"zeroHeight,attr,omitempty"`
 	ThickTop         bool    `xml:"thickTop,attr,omitempty"`
-	OutlineLevelCol  uint8   `xml:"outlineLevelCol,attr,omitempty"`
+	ThickBottom      bool    `xml:"thickBottom,attr,omitempty"`
 	OutlineLevelRow  uint8   `xml:"outlineLevelRow,attr,omitempty"`
-	ZeroHeight       float64 `xml:"zeroHeight,attr,omitempty"`
+	OutlineLevelCol  uint8   `xml:"outlineLevelCol,attr,omitempty"`
 }
 
 // xlsxSheetViews directly maps the sheetViews element in the namespace
