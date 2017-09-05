@@ -70,10 +70,11 @@ func ToAlphaString(value int) string {
 }
 
 // TitleToNumber provides function to convert Excel sheet column title to int
-// (this function doesn't do value check currently). For example convert AK to
+// (this function doesn't do value check currently). For example convert AK(ak、Ak) to
 // column title 36:
 //
 //    excelize.TitleToNumber("AK")
+//    excelize.TitleToNumber("ak")
 //
 func TitleToNumber(s string) int {
 	weight := 0.0
