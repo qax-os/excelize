@@ -79,7 +79,13 @@ func TitleToNumber(s string) int {
 	weight := 0.0
 	sum := 0
 	for i := len(s) - 1; i >= 0; i-- {
-		sum = sum + (int(s[i])-int('A')+1)*int(math.Pow(26, weight))
+		var ch int
+		if int(s[i]) >= int('a') && int(s[i]) >= int('a') {
+			ch = int(s[i]) - 32
+		} else {
+			ch = int(s[i])
+		}
+		sum = sum + (ch-int('A')+1)*int(math.Pow(26, weight))
 		weight++
 	}
 	return sum - 1
