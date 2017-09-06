@@ -961,3 +961,12 @@ func TestConditionalFormat(t *testing.T) {
 	_, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
 	t.Log(err)
 }
+
+func TestTitleToNumber(t *testing.T) {
+	if TitleToNumber("AK") != 36 {
+		t.Error("Conver title to number failed")
+	}
+	if TitleToNumber("ak") != 36 {
+		t.Error("Conver title to number failed")
+	}
+}
