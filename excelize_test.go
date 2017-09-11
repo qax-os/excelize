@@ -7,6 +7,7 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -33,11 +34,7 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellInt("SHEET2", "A1", 100)
 	xlsx.SetCellStr("SHEET2", "C11", "Knowns")
 	// Test max characters in a cell.
-	var s = "c"
-	for i := 0; i < 32768; i++ {
-		s += "c"
-	}
-	xlsx.SetCellStr("SHEET2", "D11", s)
+	xlsx.SetCellStr("SHEET2", "D11", strings.Repeat("c", 32769))
 	xlsx.NewSheet(3, ":\\/?*[]Maximum 31 characters allowed in sheet title.")
 	// Test set sheet name with illegal name.
 	xlsx.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")
@@ -726,10 +723,7 @@ func TestAddComments(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	var s = "c"
-	for i := 0; i < 32767; i++ {
-		s += "c"
-	}
+	s := strings.Repeat("c", 32768)
 	xlsx.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`)
 	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`)
 	err = xlsx.Save()
