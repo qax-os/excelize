@@ -38,12 +38,12 @@ import (
 func main() {
     xlsx := excelize.NewFile()
     // Create a new sheet.
-    xlsx.NewSheet(2, "Sheet2")
+    index := xlsx.NewSheet("Sheet2")
     // Set value of a cell.
     xlsx.SetCellValue("Sheet2", "A2", "Hello world.")
     xlsx.SetCellValue("Sheet1", "B2", 100)
     // Set active sheet of the workbook.
-    xlsx.SetActiveSheet(2)
+    xlsx.SetActiveSheet(index)
     // Save xlsx file by the given path.
     err := xlsx.SaveAs("./Workbook.xlsx")
     if err != nil {
@@ -63,7 +63,6 @@ package main
 import (
     "fmt"
     "os"
-    "strconv"
 
     "github.com/xuri/excelize"
 )
@@ -74,13 +73,11 @@ func main() {
         fmt.Println(err)
         os.Exit(1)
     }
-    // Get value from cell by given sheet index and axis.
+    // Get value from cell by given worksheet name and axis.
     cell := xlsx.GetCellValue("Sheet1", "B2")
     fmt.Println(cell)
-    // Get sheet index.
-    index := xlsx.GetSheetIndex("Sheet2")
-    // Get all the rows in a sheet.
-    rows := xlsx.GetRows("sheet" + strconv.Itoa(index))
+    // Get all the rows in the Sheet1.
+    rows := xlsx.GetRows("Sheet1")
     for _, row := range rows {
         for _, colCell := range row {
             fmt.Print(colCell, "\t")
@@ -88,11 +85,12 @@ func main() {
         fmt.Println()
     }
 }
+
 ```
 
 ### Add chart to XLSX file
 
-With Excelize chart generation and management is as easy as a few lines of code. You can build charts based off data in your worksheet or generate charts without any data in your sheet at all.
+With Excelize chart generation and management is as easy as a few lines of code. You can build charts based off data in your worksheet or generate charts without any data in your worksheet at all.
 
 ![Excelize](./test/images/chart.png "Excelize")
 
@@ -152,7 +150,7 @@ func main() {
     if err != nil {
         fmt.Println(err)
     }
-    // Insert a picture to sheet with scaling.
+    // Insert a picture to worksheet with scaling.
     err = xlsx.AddPicture("Sheet1", "D2", "./image2.jpg", `{"x_scale": 0.5, "y_scale": 0.5}`)
     if err != nil {
         fmt.Println(err)

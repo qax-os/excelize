@@ -263,7 +263,7 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
 // MergeCell provides function to merge cells by given coordinate area and sheet
 // name. For example create a merged cell of D3:E9 on Sheet1:
 //
-//    xlsx.MergeCell("sheet1", "D3", "E9")
+//    xlsx.MergeCell("Sheet1", "D3", "E9")
 //
 // If you create a merged cell that overlaps with another existing merged cell,
 // those merged cells that already exist will be removed.

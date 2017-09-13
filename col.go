@@ -225,7 +225,7 @@ func (f *File) getColWidth(sheet string, col int) int {
 	return int(defaultColWidthPixels)
 }
 
-// GetColWidth provides function to get column width by given sheet name and
+// GetColWidth provides function to get column width by given worksheet name and
 // column index.
 func (f *File) GetColWidth(sheet, column string) float64 {
 	col := TitleToNumber(strings.ToUpper(column)) + 1
@@ -255,7 +255,7 @@ func (f *File) InsertCol(sheet, column string) {
 	f.adjustHelper(sheet, col, -1, 1)
 }
 
-// RemoveCol provides function to remove single column by given worksheet index
+// RemoveCol provides function to remove single column by given worksheet name
 // and column index. For example, remove column C in Sheet1:
 //
 //    xlsx.RemoveCol("Sheet1", "C")

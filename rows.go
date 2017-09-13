@@ -8,15 +8,10 @@ import (
 	"strings"
 )
 
-// GetRows return all the rows in a sheet by given "sheet" + index. For now you
-// should use sheet_name like "sheet3" where "sheet" is a constant part and "3"
-// is a sheet number. For example, if sheet named as "SomeUniqueData" and it is
-// second if spreadsheet program interface - you should use "sheet2" here. For
-// example:
+// GetRows return all the rows in a sheet by given worksheet name (case
+// sensitive). For example:
 //
-//    index := xlsx.GetSheetIndex("Sheet2")
-//    rows := xlsx.GetRows("sheet" + strconv.Itoa(index))
-//    for _, row := range rows {
+//    for _, row := range xlsx.GetRows("Sheet1") {
 //        for _, colCell := range row {
 //            fmt.Print(colCell, "\t")
 //        }
@@ -70,7 +65,7 @@ func (f *File) GetRows(sheet string) [][]string {
 }
 
 // getTotalRowsCols provides a function to get total columns and rows in a
-// sheet.
+// worksheet.
 func (f *File) getTotalRowsCols(sheet string) (int, int) {
 	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
 	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
@@ -182,7 +177,7 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 }
 
 // SetRowVisible provides a function to set visible of a single row by given
-// worksheet index and row index. For example, hide row 3 in Sheet1:
+// worksheet name and row index. For example, hide row 3 in Sheet1:
 //
 //    xlsx.SetRowVisible("Sheet1", 2, false)
 //
@@ -199,7 +194,7 @@ func (f *File) SetRowVisible(sheet string, rowIndex int, visible bool) {
 }
 
 // GetRowVisible provides a function to get visible of a single row by given
-// worksheet index and row index. For example, get visible state of row 3 in
+// worksheet name and row index. For example, get visible state of row 3 in
 // Sheet1:
 //
 //    xlsx.GetRowVisible("Sheet1", 2)
@@ -212,7 +207,7 @@ func (f *File) GetRowVisible(sheet string, rowIndex int) bool {
 	return !xlsx.SheetData.Row[rowIndex].Hidden
 }
 
-// RemoveRow provides function to remove single row by given worksheet index and
+// RemoveRow provides function to remove single row by given worksheet name and
 // row index. For example, remove row 3 in Sheet1:
 //
 //    xlsx.RemoveRow("Sheet1", 2)

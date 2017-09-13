@@ -14,6 +14,7 @@ import (
 // File define a populated XLSX file struct.
 type File struct {
 	checked       map[string]bool
+	sheetMap      map[string]string
 	ContentTypes  *xlsxTypes
 	Path          string
 	SharedStrings *xlsxSST
@@ -38,6 +39,8 @@ func OpenFile(filename string) (*File, error) {
 		return nil, err
 	}
 	f.Path = filename
+	f.sheetMap = f.getSheetMap()
+	f.Styles = f.stylesReader()
 	return f, nil
 }
 
@@ -77,7 +80,10 @@ func (f *File) setDefaultTimeStyle(sheet, axis string) {
 // workSheetReader provides function to get the pointer to the structure after
 // deserialization by given worksheet index.
 func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	name, ok := f.sheetMap[sheet]
+	if !ok {
+		name = "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	}
 	if f.Sheet[name] == nil {
 		var xlsx xlsxWorksheet
 		xml.Unmarshal([]byte(f.readXML(name)), &xlsx)
@@ -159,8 +165,8 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 //    </row>
 //
 func (f *File) UpdateLinkedValue() {
-	for i := 1; i <= f.SheetCount; i++ {
-		xlsx := f.workSheetReader("sheet" + strconv.Itoa(i))
+	for _, name := range f.GetSheetMap() {
+		xlsx := f.workSheetReader(name)
 		for indexR, row := range xlsx.SheetData.Row {
 			for indexC, col := range row.C {
 				if col.F != nil && col.V != "" {
@@ -176,7 +182,7 @@ func (f *File) UpdateLinkedValue() {
 // hyperlinks, merged cells and auto filter when inserting or deleting rows or
 // columns.
 //
-// sheet: Worksheet index that we're editing
+// sheet: Worksheet name that we're editing
 // column: Index number of the column we're inserting/deleting before
 // row: Index number of the row we're inserting/deleting before
 // offset: Number of rows/column to insert/delete negative values indicate deletion

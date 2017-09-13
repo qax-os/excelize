@@ -24,10 +24,19 @@ func NewFile() *File {
 	file["xl/styles.xml"] = XMLHeader + templateStyles
 	file["xl/workbook.xml"] = XMLHeader + templateWorkbook
 	file["[Content_Types].xml"] = XMLHeader + templateContentTypes
-	return &File{
-		Sheet: make(map[string]*xlsxWorksheet),
-		XLSX:  file,
+	f := &File{
+		sheetMap:   make(map[string]string),
+		Sheet:      make(map[string]*xlsxWorksheet),
+		SheetCount: 1,
+		XLSX:       file,
 	}
+	f.ContentTypes = f.contentTypesReader()
+	f.Styles = f.stylesReader()
+	f.WorkBook = f.workbookReader()
+	f.WorkBookRels = f.workbookRelsReader()
+	f.Sheet["xl/worksheets/sheet1.xml"] = f.workSheetReader("Sheet1")
+	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
+	return f
 }
 
 // Save provides function to override the xlsx file with origin path.

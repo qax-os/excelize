@@ -18,9 +18,9 @@ func TestOpenFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	// Test get all the rows in a not exists sheet.
+	// Test get all the rows in a not exists worksheet.
 	rows := xlsx.GetRows("Sheet4")
-	// Test get all the rows in a sheet.
+	// Test get all the rows in a worksheet.
 	rows = xlsx.GetRows("Sheet2")
 	for _, row := range rows {
 		for _, cell := range row {
@@ -29,21 +29,22 @@ func TestOpenFile(t *testing.T) {
 		t.Log("\r\n")
 	}
 	xlsx.UpdateLinkedValue()
-	xlsx.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32))
-	xlsx.SetCellDefault("SHEET2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
-	xlsx.SetCellInt("SHEET2", "A1", 100)
-	xlsx.SetCellStr("SHEET2", "C11", "Knowns")
+	xlsx.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32))
+	xlsx.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
+	xlsx.SetCellInt("Sheet2", "A1", 100)
+	xlsx.SetCellStr("Sheet2", "C11", "Knowns")
+
 	// Test max characters in a cell.
-	xlsx.SetCellStr("SHEET2", "D11", strings.Repeat("c", 32769))
-	xlsx.NewSheet(3, ":\\/?*[]Maximum 31 characters allowed in sheet title.")
-	// Test set sheet name with illegal name.
+	xlsx.SetCellStr("Sheet2", "D11", strings.Repeat("c", 32769))
+	xlsx.NewSheet(":\\/?*[]Maximum 31 characters allowed in sheet title.")
+	// Test set worksheet name with illegal name.
 	xlsx.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")
 	xlsx.SetCellInt("Sheet3", "A23", 10)
-	xlsx.SetCellStr("SHEET3", "b230", "10")
-	xlsx.SetCellStr("SHEET10", "b230", "10")
+	xlsx.SetCellStr("Sheet3", "b230", "10")
+	xlsx.SetCellStr("Sheet10", "b230", "10")
 	xlsx.SetActiveSheet(2)
 	xlsx.GetCellFormula("Sheet1", "B19") // Test get cell formula with given rows number.
-	xlsx.GetCellFormula("Sheet2", "B20") // Test get cell formula with illegal sheet index.
+	xlsx.GetCellFormula("Sheet2", "B20") // Test get cell formula with illegal worksheet index.
 	xlsx.GetCellFormula("Sheet1", "B20") // Test get cell formula with illegal rows number.
 	// Test read cell value with given illegal rows number.
 	xlsx.GetCellValue("Sheet2", "a-1")
@@ -71,16 +72,16 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
 	xlsx.GetCellValue("Sheet2", "E231")
-	// Test get active sheet of XLSX and get sheet name of XLSX by given sheet index.
+	// Test get active worksheet of XLSX and get worksheet name of XLSX by given worksheet index.
 	xlsx.GetSheetName(xlsx.GetActiveSheetIndex())
-	// Test get sheet index of XLSX by given worksheet name.
+	// Test get worksheet index of XLSX by given worksheet name.
 	xlsx.GetSheetIndex("Sheet1")
-	// Test get sheet name of XLSX by given invalid sheet index.
+	// Test get worksheet name of XLSX by given invalid worksheet index.
 	xlsx.GetSheetName(4)
-	// Test get sheet map of XLSX.
+	// Test get worksheet map of XLSX.
 	xlsx.GetSheetMap()
 	for i := 1; i <= 300; i++ {
-		xlsx.SetCellStr("SHEET3", "c"+strconv.Itoa(i), strconv.Itoa(i))
+		xlsx.SetCellStr("Sheet3", "c"+strconv.Itoa(i), strconv.Itoa(i))
 	}
 	err = xlsx.Save()
 	if err != nil {
@@ -91,6 +92,7 @@ func TestOpenFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+
 }
 
 func TestAddPicture(t *testing.T) {
@@ -156,10 +158,10 @@ func TestBrokenFile(t *testing.T) {
 func TestNewFile(t *testing.T) {
 	// Test create a XLSX file.
 	xlsx := NewFile()
-	xlsx.NewSheet(2, "XLSXSheet2")
-	xlsx.NewSheet(3, "XLSXSheet3")
-	xlsx.SetCellInt("Sheet2", "A23", 56)
-	xlsx.SetCellStr("SHEET1", "B20", "42")
+	xlsx.NewSheet("XLSXSheet2")
+	xlsx.NewSheet("XLSXSheet3")
+	xlsx.SetCellInt("XLSXSheet2", "A23", 56)
+	xlsx.SetCellStr("Sheet1", "B20", "42")
 	xlsx.SetActiveSheet(0)
 	// Test add picture to sheet with scaling.
 	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5}`)
@@ -178,10 +180,10 @@ func TestNewFile(t *testing.T) {
 
 func TestColWidth(t *testing.T) {
 	xlsx := NewFile()
-	xlsx.SetColWidth("sheet1", "B", "A", 12)
-	xlsx.SetColWidth("sheet1", "A", "B", 12)
-	xlsx.GetColWidth("sheet1", "A")
-	xlsx.GetColWidth("sheet1", "C")
+	xlsx.SetColWidth("Sheet1", "B", "A", 12)
+	xlsx.SetColWidth("Sheet1", "A", "B", 12)
+	xlsx.GetColWidth("Sheet1", "A")
+	xlsx.GetColWidth("Sheet1", "C")
 	err := xlsx.SaveAs("./test/Workbook_4.xlsx")
 	if err != nil {
 		t.Log(err)
@@ -208,13 +210,13 @@ func TestSetCellHyperLink(t *testing.T) {
 		t.Log(err)
 	}
 	// Test set cell hyperlink in a work sheet already have hyperlinks.
-	xlsx.SetCellHyperLink("sheet1", "B19", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "B19", "https://github.com/xuri/excelize", "External")
 	// Test add first hyperlink in a work sheet.
-	xlsx.SetCellHyperLink("sheet2", "C1", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet2", "C1", "https://github.com/xuri/excelize", "External")
 	// Test add Location hyperlink in a work sheet.
-	xlsx.SetCellHyperLink("sheet2", "D6", "Sheet1!D8", "Location")
-	xlsx.SetCellHyperLink("sheet2", "C3", "Sheet1!D8", "")
-	xlsx.SetCellHyperLink("sheet2", "", "Sheet1!D60", "Location")
+	xlsx.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location")
+	xlsx.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", "")
+	xlsx.SetCellHyperLink("Sheet2", "", "Sheet1!D60", "Location")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
@@ -241,8 +243,8 @@ func TestSetCellFormula(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.SetCellFormula("sheet1", "B19", "SUM(Sheet2!D2,Sheet2!D11)")
-	xlsx.SetCellFormula("sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)")
+	xlsx.SetCellFormula("Sheet1", "B19", "SUM(Sheet2!D2,Sheet2!D11)")
+	xlsx.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
@@ -254,19 +256,19 @@ func TestSetSheetBackground(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetSheetBackground("sheet2", "./test/images/background.png")
+	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.png")
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetSheetBackground("sheet2", "./test/Workbook1.xlsx")
+	err = xlsx.SetSheetBackground("Sheet2", "./test/Workbook1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetSheetBackground("sheet2", "./test/images/background.jpg")
+	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.jpg")
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetSheetBackground("sheet2", "./test/images/background.jpg")
+	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.jpg")
 	if err != nil {
 		t.Log(err)
 	}
@@ -674,8 +676,8 @@ func TestCopySheet(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx.NewSheet(4, "CopySheet")
-	err = xlsx.CopySheet(1, 4)
+	idx := xlsx.NewSheet("CopySheet")
+	err = xlsx.CopySheet(1, idx)
 	if err != nil {
 		t.Log(err)
 	}
@@ -784,14 +786,14 @@ func TestAddChart(t *testing.T) {
 	for k, v := range values {
 		xlsx.SetCellValue("Sheet1", k, v)
 	}
-	xlsx.AddChart("SHEET1", "P1", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
-	xlsx.AddChart("SHEET1", "X1", `{"type":"bar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
-	xlsx.AddChart("SHEET1", "P16", `{"type":"doughnut","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"right","show_legend_key":false},"title":{"name":"Fruit Doughnut Chart"},"plotarea":{"show_bubble_size":false,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"zero"}`)
-	xlsx.AddChart("SHEET1", "X16", `{"type":"line","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
-	xlsx.AddChart("SHEET1", "P30", `{"type":"pie3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"zero"}`)
-	xlsx.AddChart("SHEET1", "X30", `{"type":"pie","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"gap"}`)
-	xlsx.AddChart("SHEET2", "P1", `{"type":"radar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top_right","show_legend_key":false},"title":{"name":"Fruit Radar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"span"}`)
-	xlsx.AddChart("SHEET2", "X1", `{"type":"scatter","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Scatter Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("Sheet1", "P1", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("Sheet1", "X1", `{"type":"bar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("Sheet1", "P16", `{"type":"doughnut","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"right","show_legend_key":false},"title":{"name":"Fruit Doughnut Chart"},"plotarea":{"show_bubble_size":false,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("Sheet1", "X16", `{"type":"line","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("Sheet1", "P30", `{"type":"pie3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"zero"}`)
+	xlsx.AddChart("Sheet1", "X30", `{"type":"pie","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"gap"}`)
+	xlsx.AddChart("Sheet2", "P1", `{"type":"radar","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top_right","show_legend_key":false},"title":{"name":"Fruit Radar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"span"}`)
+	xlsx.AddChart("Sheet2", "X1", `{"type":"scatter","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Scatter Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 	// Save xlsx file by the given path.
 	err = xlsx.SaveAs("./test/Workbook_addchart.xlsx")
 	if err != nil {
@@ -808,7 +810,7 @@ func TestInsertCol(t *testing.T) {
 		}
 	}
 	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
-	xlsx.MergeCell("sheet1", "A1", "C3")
+	xlsx.MergeCell("Sheet1", "A1", "C3")
 	err := xlsx.AutoFilter("Sheet1", "A2", "B2", `{"column":"B","expression":"x != blanks"}`)
 	t.Log(err)
 	xlsx.InsertCol("Sheet1", "A")
@@ -828,8 +830,8 @@ func TestRemoveCol(t *testing.T) {
 	}
 	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
 	xlsx.SetCellHyperLink("Sheet1", "C5", "https://github.com", "External")
-	xlsx.MergeCell("sheet1", "A1", "B1")
-	xlsx.MergeCell("sheet1", "A2", "B2")
+	xlsx.MergeCell("Sheet1", "A1", "B1")
+	xlsx.MergeCell("Sheet1", "A2", "B2")
 	xlsx.RemoveCol("Sheet1", "A")
 	xlsx.RemoveCol("Sheet1", "A")
 	err := xlsx.SaveAs("./test/Workbook_removecol.xlsx")
@@ -858,12 +860,12 @@ func TestInsertRow(t *testing.T) {
 func TestSetPane(t *testing.T) {
 	xlsx := NewFile()
 	xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
-	xlsx.NewSheet(2, "Panes 2")
-	xlsx.SetPanes("Sheet2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
-	xlsx.NewSheet(3, "Panes 3")
-	xlsx.SetPanes("Sheet3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
-	xlsx.NewSheet(4, "Panes 4")
-	xlsx.SetPanes("Sheet4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
+	xlsx.NewSheet("Panes 2")
+	xlsx.SetPanes("Panes 2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
+	xlsx.NewSheet("Panes 3")
+	xlsx.SetPanes("Panes 3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
+	xlsx.NewSheet("Panes 4")
+	xlsx.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
 	err := xlsx.SaveAs("./test/Workbook_set_panes.xlsx")
 	if err != nil {
 		t.Log(err)
@@ -881,7 +883,7 @@ func TestRemoveRow(t *testing.T) {
 	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
 	xlsx.RemoveRow("Sheet1", -1)
 	xlsx.RemoveRow("Sheet1", 4)
-	xlsx.MergeCell("sheet1", "B3", "B5")
+	xlsx.MergeCell("Sheet1", "B3", "B5")
 	xlsx.RemoveRow("Sheet1", 2)
 	xlsx.RemoveRow("Sheet1", 4)
 	err := xlsx.AutoFilter("Sheet1", "A2", "A2", `{"column":"A","expression":"x != blanks"}`)

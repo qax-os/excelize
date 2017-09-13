@@ -2218,9 +2218,8 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 }
 
 // SetCellStyle provides function to add style attribute for cells by given
-// worksheet sheet index, coordinate area and style ID. Note that diagonalDown
-// and diagonalUp type border should be use same color in the same coordinate
-// area.
+// worksheet name, coordinate area and style ID. Note that diagonalDown and
+// diagonalUp type border should be use same color in the same coordinate area.
 //
 // For example create a borders of cell H9 on Sheet1:
 //

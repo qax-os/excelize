@@ -14,19 +14,20 @@ import (
 
 // NewSheet provides function to create a new sheet by given index, when
 // creating a new XLSX file, the default sheet will be create, when you create a
-// new file, you need to ensure that the index is continuous.
-func (f *File) NewSheet(index int, name string) {
+// new file.
+func (f *File) NewSheet(name string) int {
+	f.SheetCount++
 	// Update docProps/app.xml
 	f.setAppXML()
 	// Update [Content_Types].xml
-	f.setContentTypes(index)
+	f.setContentTypes(f.SheetCount)
 	// Create new sheet /xl/worksheets/sheet%d.xml
-	f.setSheet(index)
+	f.setSheet(f.SheetCount, name)
 	// Update xl/_rels/workbook.xml.rels
-	rID := f.addXlsxWorkbookRels(index)
+	rID := f.addXlsxWorkbookRels(f.SheetCount)
 	// Update xl/workbook.xml
 	f.setWorkbook(name, rID)
-	f.SheetCount++
+	return f.SheetCount
 }
 
 // contentTypesReader provides function to get the pointer to the
@@ -109,23 +110,23 @@ func (f *File) setContentTypes(index int) {
 }
 
 // Update sheet property by given index.
-func (f *File) setSheet(index int) {
+func (f *File) setSheet(index int, name string) {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
 	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
 		WorkbookViewID: 0,
 	})
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
+	f.sheetMap[trimSheetName(name)] = path
 	f.Sheet[path] = &xlsx
 }
 
 // setWorkbook update workbook property of XLSX. Maximum 31 characters are
 // allowed in sheet title.
 func (f *File) setWorkbook(name string, rid int) {
-	name = trimSheetName(name)
 	content := f.workbookReader()
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
-		Name:    name,
+		Name:    trimSheetName(name),
 		SheetID: strconv.Itoa(rid),
 		ID:      "rId" + strconv.Itoa(rid),
 	})
@@ -210,12 +211,10 @@ func (f *File) SetActiveSheet(index int) {
 			ActiveTab: index,
 		})
 	}
-	sheets := len(content.Sheets.Sheet)
 	index++
-	for i := 0; i < sheets; i++ {
-		sheetIndex := i + 1
-		xlsx := f.workSheetReader("sheet" + strconv.Itoa(sheetIndex))
-		if index == sheetIndex {
+	for idx, name := range f.GetSheetMap() {
+		xlsx := f.workSheetReader(name)
+		if index == idx {
 			if len(xlsx.SheetViews.SheetView) > 0 {
 				xlsx.SheetViews.SheetView[0].TabSelected = true
 			} else {
@@ -254,8 +253,8 @@ func (f *File) GetActiveSheetIndex() int {
 	return 0
 }
 
-// SetSheetName provides function to set the sheet name be given old and new
-// sheet name. Maximum 31 characters are allowed in sheet title and this
+// SetSheetName provides function to set the worksheet name be given old and new
+// worksheet name. Maximum 31 characters are allowed in sheet title and this
 // function only changes the name of the sheet and will not update the sheet
 // name in the formula or reference associated with the cell. So there may be
 // problem formula error or reference missing.
@@ -266,12 +265,15 @@ func (f *File) SetSheetName(oldName, newName string) {
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == oldName {
 			content.Sheets.Sheet[k].Name = newName
+			f.sheetMap[newName] = f.sheetMap[oldName]
+			delete(f.sheetMap, oldName)
 		}
 	}
 }
 
-// GetSheetName provides function to get sheet name of XLSX by given worksheet
-// index. If given sheet index is invalid, will return an empty string.
+// GetSheetName provides function to get worksheet name of XLSX by given
+// worksheet index. If given sheet index is invalid, will return an empty
+// string.
 func (f *File) GetSheetName(index int) string {
 	content := f.workbookReader()
 	rels := f.workbookRelsReader()
@@ -289,7 +291,8 @@ func (f *File) GetSheetName(index int) string {
 }
 
 // GetSheetIndex provides function to get worksheet index of XLSX by given sheet
-// name. If given sheet name is invalid, will return an integer type value 0.
+// name. If given worksheet name is invalid, will return an integer type value
+// 0.
 func (f *File) GetSheetIndex(name string) int {
 	content := f.workbookReader()
 	rels := f.workbookRelsReader()
@@ -306,15 +309,16 @@ func (f *File) GetSheetIndex(name string) int {
 	return 0
 }
 
-// GetSheetMap provides function to get sheet map of XLSX. For example:
+// GetSheetMap provides function to get worksheet name and index map of XLSX.
+// For example:
 //
 //    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
 //        os.Exit(1)
 //    }
-//    for k, v := range xlsx.GetSheetMap() {
-//        fmt.Println(k, v)
+//    for index, name := range xlsx.GetSheetMap() {
+//        fmt.Println(index, name)
 //    }
 //
 func (f *File) GetSheetMap() map[int]string {
@@ -330,6 +334,16 @@ func (f *File) GetSheetMap() map[int]string {
 		}
 	}
 	return sheetMap
+}
+
+// getSheetMap provides function to get worksheet name and XML file path map of
+// XLSX.
+func (f *File) getSheetMap() map[string]string {
+	maps := make(map[string]string)
+	for idx, name := range f.GetSheetMap() {
+		maps[name] = "xl/worksheets/sheet" + strconv.Itoa(idx) + ".xml"
+	}
+	return maps
 }
 
 // SetSheetBackground provides function to set background picture by given sheet
@@ -353,14 +367,14 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 }
 
 // DeleteSheet provides function to delete worksheet in a workbook by given
-// sheet name. Use this method with caution, which will affect changes in
+// worksheet name. Use this method with caution, which will affect changes in
 // references such as formulas, charts, and so on. If there is any referenced
 // value of the deleted worksheet, it will cause a file error when you open it.
 // This function will be invalid when only the one worksheet is left.
 func (f *File) DeleteSheet(name string) {
 	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
-		if v.Name != name || len(content.Sheets.Sheet) < 2 {
+		if v.Name != trimSheetName(name) || len(content.Sheets.Sheet) < 2 {
 			continue
 		}
 		content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
@@ -368,18 +382,10 @@ func (f *File) DeleteSheet(name string) {
 		rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
 		target := f.deleteSheetFromWorkbookRels(v.ID)
 		f.deleteSheetFromContentTypes(target)
-		_, ok := f.XLSX[sheet]
-		if ok {
-			delete(f.XLSX, sheet)
-		}
-		_, ok = f.XLSX[rels]
-		if ok {
-			delete(f.XLSX, rels)
-		}
-		_, ok = f.Sheet[sheet]
-		if ok {
-			delete(f.Sheet, sheet)
-		}
+		delete(f.sheetMap, name)
+		delete(f.XLSX, sheet)
+		delete(f.XLSX, rels)
+		delete(f.Sheet, sheet)
 		f.SheetCount--
 	}
 }
@@ -416,8 +422,8 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 // workbooks that contain tables, charts or pictures. For Example:
 //
 //    // Sheet1 already exists...
-//    xlsx.NewSheet(2, "sheet2")
-//    err := xlsx.CopySheet(1, 2)
+//    index := xlsx.NewSheet("Sheet2")
+//    err := xlsx.CopySheet(1, index)
 //    if err != nil {
 //        fmt.Println(err)
 //        os.Exit(1)
@@ -432,7 +438,7 @@ func (f *File) CopySheet(from, to int) error {
 }
 
 // copySheet provides function to duplicate a worksheet by gave source and
-// target worksheet index.
+// target worksheet name.
 func (f *File) copySheet(from, to int) {
 	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
 	worksheet := xlsxWorksheet{}
@@ -484,8 +490,7 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 		}
 	}
 	for k, v := range content.Sheets.Sheet {
-		sheetIndex := k + 1
-		xlsx := f.workSheetReader("sheet" + strconv.Itoa(sheetIndex))
+		xlsx := f.workSheetReader(f.GetSheetMap()[k])
 		tabSelected := false
 		if len(xlsx.SheetViews.SheetView) > 0 {
 			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
@@ -504,7 +509,7 @@ func parseFormatPanesSet(formatSet string) *formatPanes {
 }
 
 // SetPanes provides function to create and remove freeze panes and split panes
-// by given worksheet index and panes format set.
+// by given worksheet name and panes format set.
 //
 // activePane defines the pane that is active. The possible values for this
 // attribute are defined in the following table:

@@ -99,8 +99,8 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 }
 
 // addSheetRelationships provides function to add
-// xl/worksheets/_rels/sheet%d.xml.rels by given sheet name, relationship type
-// and target.
+// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name, relationship
+// type and target.
 func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) int {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
 	var sheetRels xlsxWorkbookRels
@@ -128,7 +128,7 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 }
 
 // deleteSheetRelationships provides function to delete relationships in
-// xl/worksheets/_rels/sheet%d.xml.rels by given sheet name and relationship
+// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and relationship
 // index.
 func (f *File) deleteSheetRelationships(sheet, rID string) {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
@@ -145,7 +145,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 }
 
 // addSheetLegacyDrawing provides function to add legacy drawing element to
-// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
+// xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
 	xlsx.LegacyDrawing = &xlsxLegacyDrawing{
@@ -154,7 +154,7 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 }
 
 // addSheetDrawing provides function to add drawing element to
-// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
+// xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
 	xlsx.Drawing = &xlsxDrawing{
@@ -163,7 +163,7 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 }
 
 // addSheetPicture provides function to add picture element to
-// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
+// xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetPicture(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
 	xlsx.Picture = &xlsxPicture{
@@ -356,7 +356,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 }
 
 // getSheetRelationshipsTargetByID provides function to get Target attribute
-// value in xl/worksheets/_rels/sheet%d.xml.rels by given sheet name and
+// value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"

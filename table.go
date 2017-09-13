@@ -82,7 +82,7 @@ func (f *File) countTables() int {
 }
 
 // addSheetTable provides function to add tablePart element to
-// xl/worksheets/sheet%d.xml by given sheet name and relationship index.
+// xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetTable(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
 	table := &xlsxTablePart{
@@ -95,8 +95,8 @@ func (f *File) addSheetTable(sheet string, rID int) {
 	xlsx.TableParts.TableParts = append(xlsx.TableParts.TableParts, table)
 }
 
-// addTable provides function to add table by given sheet index, coordinate area
-// and format set.
+// addTable provides function to add table by given worksheet name, coordinate
+// area and format set.
 func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, i int, formatSet *formatTable) {
 	// Correct the minimum number of rows, the table at least two lines.
 	if hyAxis == vyAxis {
@@ -157,8 +157,8 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 }
 
 // AutoFilter provides the method to add auto filter in a worksheet by given
-// sheet index, coordinate area and settings. An autofilter in Excel is a way of
-// filtering a 2D range of data based on some simple criteria. For example
+// worksheet name, coordinate area and settings. An autofilter in Excel is a way
+// of filtering a 2D range of data based on some simple criteria. For example
 // applying an autofilter to a cell range A1:D4 in the worksheet 1:
 //
 //    err = xlsx.AutoFilter("Sheet1", "A1", "D4", "")
