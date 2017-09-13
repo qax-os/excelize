@@ -20,8 +20,8 @@ func parseFormatTableSet(formatSet string) *formatTable {
 	return &format
 }
 
-// AddTable provides the method to add table in a worksheet by given sheet
-// index, coordinate area and format set. For example, create a table of A1:D5
+// AddTable provides the method to add table in a worksheet by given worksheet
+// name, coordinate area and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
 //    xlsx.AddTable("Sheet1", "A1", "D5", ``)

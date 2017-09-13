@@ -137,8 +137,8 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 	return f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
 }
 
-// GetCellFormula provides function to get formula from cell by given sheet
-// index and axis in XLSX file.
+// GetCellFormula provides function to get formula from cell by given worksheet
+// name and axis in XLSX file.
 func (f *File) GetCellFormula(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
@@ -196,10 +196,10 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	}
 }
 
-// SetCellHyperLink provides function to set cell hyperlink by given sheet index
-// and link URL address. LinkType defines two types of hyperlink "External" for
-// web site or "Location" for moving to one of cell in this workbook. The below
-// is example for external link.
+// SetCellHyperLink provides function to set cell hyperlink by given worksheet
+// name and link URL address. LinkType defines two types of hyperlink "External"
+// for web site or "Location" for moving to one of cell in this workbook. The
+// below is example for external link.
 //
 //    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
 //    // Set underline and font color style for the cell.
@@ -232,11 +232,11 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
 	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
 }
 
-// GetCellHyperLink provides function to get cell hyperlink by given sheet index
-// and axis. Boolean type value link will be ture if the cell has a hyperlink
-// and the target is the address of the hyperlink. Otherwise, the value of link
-// will be false and the value of the target will be a blank string. For example
-// get hyperlink of Sheet1!H6:
+// GetCellHyperLink provides function to get cell hyperlink by given worksheet
+// name and axis. Boolean type value link will be ture if the cell has a
+// hyperlink and the target is the address of the hyperlink. Otherwise, the
+// value of link will be false and the value of the target will be a blank
+// string. For example get hyperlink of Sheet1!H6:
 //
 //    link, target := xlsx.GetCellHyperLink("Sheet1", "H6")
 //

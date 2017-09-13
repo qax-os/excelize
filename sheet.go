@@ -346,8 +346,8 @@ func (f *File) getSheetMap() map[string]string {
 	return maps
 }
 
-// SetSheetBackground provides function to set background picture by given sheet
-// index.
+// SetSheetBackground provides function to set background picture by given
+// worksheet name.
 func (f *File) SetSheetBackground(sheet, picture string) error {
 	var err error
 	// Check picture exists first.
