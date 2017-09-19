@@ -76,7 +76,10 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 func (f *File) GetCellValue(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return ""
+	}
 	xAxis := row - 1
 	rows := len(xlsx.SheetData.Row)
 	if rows > 1 {
@@ -124,7 +127,10 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return 0
+	}
 	xAxis := row - 1
 	yAxis := TitleToNumber(col)
 
@@ -142,7 +148,10 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 func (f *File) GetCellFormula(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return ""
+	}
 	xAxis := row - 1
 	rows := len(xlsx.SheetData.Row)
 	if rows > 1 {
@@ -176,7 +185,10 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
 	xAxis := row - 1
 	yAxis := TitleToNumber(col)
 
@@ -326,7 +338,10 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
 	xAxis := row - 1
 	yAxis := TitleToNumber(col)
 
@@ -363,7 +378,10 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 		value = value[0:32767]
 	}
 	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
 	xAxis := row - 1
 	yAxis := TitleToNumber(col)
 
@@ -393,7 +411,10 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
 	col := string(strings.Map(letterOnlyMapF, axis))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
 	xAxis := row - 1
 	yAxis := TitleToNumber(col)
 

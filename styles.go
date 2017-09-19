@@ -2279,12 +2279,18 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
 	hcol := string(strings.Map(letterOnlyMapF, hcell))
-	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
+	hrow, err := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
+	if err != nil {
+		return
+	}
 	hyAxis := hrow - 1
 	hxAxis := TitleToNumber(hcol)
 
 	vcol := string(strings.Map(letterOnlyMapF, vcell))
-	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
+	vrow, err := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
+	if err != nil {
+		return
+	}
 	vyAxis := vrow - 1
 	vxAxis := TitleToNumber(vcol)
 

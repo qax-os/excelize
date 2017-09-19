@@ -31,9 +31,12 @@ func TestOpenFile(t *testing.T) {
 	xlsx.UpdateLinkedValue()
 	xlsx.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32))
 	xlsx.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
+	// Test set cell value with illegal row number.
+	xlsx.SetCellDefault("Sheet2", "A", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64))
 	xlsx.SetCellInt("Sheet2", "A1", 100)
+	// Test set cell integer value with illegal row number.
+	xlsx.SetCellInt("Sheet2", "A", 100)
 	xlsx.SetCellStr("Sheet2", "C11", "Knowns")
-
 	// Test max characters in a cell.
 	xlsx.SetCellStr("Sheet2", "D11", strings.Repeat("c", 32769))
 	xlsx.NewSheet(":\\/?*[]Maximum 31 characters allowed in sheet title.")
@@ -42,12 +45,19 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellInt("Sheet3", "A23", 10)
 	xlsx.SetCellStr("Sheet3", "b230", "10")
 	xlsx.SetCellStr("Sheet10", "b230", "10")
+	// Test set cell string value with illegal row number.
+	xlsx.SetCellStr("Sheet10", "A", "10")
 	xlsx.SetActiveSheet(2)
-	xlsx.GetCellFormula("Sheet1", "B19") // Test get cell formula with given rows number.
-	xlsx.GetCellFormula("Sheet2", "B20") // Test get cell formula with illegal worksheet index.
-	xlsx.GetCellFormula("Sheet1", "B20") // Test get cell formula with illegal rows number.
+	// Test get cell formula with given rows number.
+	xlsx.GetCellFormula("Sheet1", "B19")
+	// Test get cell formula with illegal worksheet index.
+	xlsx.GetCellFormula("Sheet2", "B20")
+	// Test get cell formula with illegal rows number.
+	xlsx.GetCellFormula("Sheet1", "B20")
+	xlsx.GetCellFormula("Sheet1", "B")
 	// Test read cell value with given illegal rows number.
 	xlsx.GetCellValue("Sheet2", "a-1")
+	xlsx.GetCellValue("Sheet2", "A")
 	// Test read cell value with given lowercase column number.
 	xlsx.GetCellValue("Sheet2", "a5")
 	xlsx.GetCellValue("Sheet2", "C11")
@@ -245,6 +255,8 @@ func TestSetCellFormula(t *testing.T) {
 	}
 	xlsx.SetCellFormula("Sheet1", "B19", "SUM(Sheet2!D2,Sheet2!D11)")
 	xlsx.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)")
+	// Test set cell formula with illegal rows number.
+	xlsx.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
@@ -315,6 +327,11 @@ func TestSetCellStyleAlignment(t *testing.T) {
 		t.Log(err)
 	}
 	xlsx.SetCellStyle("Sheet1", "A22", "A22", style)
+	// Test set cell style with given illegal rows number.
+	xlsx.SetCellStyle("Sheet1", "A", "A22", style)
+	xlsx.SetCellStyle("Sheet1", "A22", "A", style)
+	// Test get cell style with given illegal rows number.
+	xlsx.GetCellStyle("Sheet1", "A")
 	err = xlsx.Save()
 	if err != nil {
 		t.Log(err)
