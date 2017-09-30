@@ -120,11 +120,11 @@ func checkSheet(xlsx *xlsxWorksheet) {
 		_, ok := existsRows[i+1]
 		if ok {
 			sheetData.Row = append(sheetData.Row, xlsx.SheetData.Row[existsRows[i+1]])
-			continue
+		} else {
+			sheetData.Row = append(sheetData.Row, xlsxRow{
+				R: i + 1,
+			})
 		}
-		sheetData.Row = append(sheetData.Row, xlsxRow{
-			R: i + 1,
-		})
 	}
 	xlsx.SheetData = sheetData
 }
@@ -223,16 +223,15 @@ func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, rowIndex, offset int) {
 		return
 	}
 	for i, r := range xlsx.SheetData.Row {
-		if r.R < rowIndex {
-			continue
-		}
-		xlsx.SheetData.Row[i].R += offset
-		for k, v := range xlsx.SheetData.Row[i].C {
-			axis := v.R
-			col := string(strings.Map(letterOnlyMapF, axis))
-			row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-			xAxis := row + offset
-			xlsx.SheetData.Row[i].C[k].R = col + strconv.Itoa(xAxis)
+		if r.R >= rowIndex {
+			xlsx.SheetData.Row[i].R += offset
+			for k, v := range xlsx.SheetData.Row[i].C {
+				axis := v.R
+				col := string(strings.Map(letterOnlyMapF, axis))
+				row, _ := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+				xAxis := row + offset
+				xlsx.SheetData.Row[i].C[k].R = col + strconv.Itoa(xAxis)
+			}
 		}
 	}
 }

@@ -2163,32 +2163,31 @@ func setBorders(formatStyle *formatStyle) *xlsxBorder {
 
 	var border xlsxBorder
 	for _, v := range formatStyle.Border {
-		if v.Style > 13 || v.Style < 0 {
-			continue
-		}
-		var color xlsxColor
-		color.RGB = getPaletteColor(v.Color)
-		switch v.Type {
-		case "left":
-			border.Left.Style = styles[v.Style]
-			border.Left.Color = &color
-		case "right":
-			border.Right.Style = styles[v.Style]
-			border.Right.Color = &color
-		case "top":
-			border.Top.Style = styles[v.Style]
-			border.Top.Color = &color
-		case "bottom":
-			border.Bottom.Style = styles[v.Style]
-			border.Bottom.Color = &color
-		case "diagonalUp":
-			border.Diagonal.Style = styles[v.Style]
-			border.Diagonal.Color = &color
-			border.DiagonalUp = true
-		case "diagonalDown":
-			border.Diagonal.Style = styles[v.Style]
-			border.Diagonal.Color = &color
-			border.DiagonalDown = true
+		if 0 <= v.Style && v.Style < 14 {
+			var color xlsxColor
+			color.RGB = getPaletteColor(v.Color)
+			switch v.Type {
+			case "left":
+				border.Left.Style = styles[v.Style]
+				border.Left.Color = &color
+			case "right":
+				border.Right.Style = styles[v.Style]
+				border.Right.Color = &color
+			case "top":
+				border.Top.Style = styles[v.Style]
+				border.Top.Color = &color
+			case "bottom":
+				border.Bottom.Style = styles[v.Style]
+				border.Bottom.Color = &color
+			case "diagonalUp":
+				border.Diagonal.Style = styles[v.Style]
+				border.Diagonal.Color = &color
+				border.DiagonalUp = true
+			case "diagonalDown":
+				border.Diagonal.Style = styles[v.Style]
+				border.Diagonal.Color = &color
+				border.DiagonalDown = true
+			}
 		}
 	}
 	return &border
@@ -2555,18 +2554,15 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) {
 		var ok bool
 		// "type" is a required parameter, check for valid validation types.
 		vt, ok = validType[v.Type]
-		if !ok {
-			continue
-		}
-		// Check for valid criteria types.
-		ct, ok = criteriaType[v.Criteria]
-		if !ok && vt != "expression" {
-			continue
-		}
-
-		drawfunc, ok := drawContFmtFunc[vt]
 		if ok {
-			cfRule = append(cfRule, drawfunc(p, ct, v))
+			// Check for valid criteria types.
+			ct, ok = criteriaType[v.Criteria]
+			if ok || vt == "expression" {
+				drawfunc, ok := drawContFmtFunc[vt]
+				if ok {
+					cfRule = append(cfRule, drawfunc(p, ct, v))
+				}
+			}
 		}
 	}
 

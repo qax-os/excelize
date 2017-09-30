@@ -38,7 +38,6 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //
 //    import (
 //        "fmt"
-//        "os"
 //        _ "image/gif"
 //        _ "image/jpeg"
 //        _ "image/png"
@@ -66,7 +65,6 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //        err = xlsx.SaveAs("./Workbook.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
-//            os.Exit(1)
 //        }
 //    }
 //
@@ -135,10 +133,9 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	var sheetRels xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
 	for k, v := range sheetRels.Relationships {
-		if v.ID != rID {
-			continue
+		if v.ID == rID {
+			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
-		sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 	}
 	output, _ := xml.Marshal(sheetRels)
 	f.saveFileList(rels, string(output))
@@ -415,17 +412,14 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 	for _, anchor := range decodeWsDr.TwoCellAnchor {
 		decodeTwoCellAnchor := decodeTwoCellAnchor{}
 		xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
-		if decodeTwoCellAnchor.From == nil || decodeTwoCellAnchor.Pic == nil {
-			continue
-		}
-		if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
-			xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
-			_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
-			if !ok {
-				continue
+		if decodeTwoCellAnchor.From != nil && decodeTwoCellAnchor.Pic != nil {
+			if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
+				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+				_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
+				if ok {
+					return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)])
+				}
 			}
-
-			return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)])
 		}
 	}
 	return "", []byte{}
@@ -441,10 +435,9 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
 	var drawingRels xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
 	for _, v := range drawingRels.Relationships {
-		if v.ID != rID {
-			continue
+		if v.ID == rID {
+			return &v
 		}
-		return &v
 	}
 	return nil
 }

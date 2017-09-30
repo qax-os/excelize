@@ -219,12 +219,11 @@ func (f *File) RemoveRow(sheet string, row int) {
 	xlsx := f.workSheetReader(sheet)
 	row++
 	for i, r := range xlsx.SheetData.Row {
-		if r.R != row {
-			continue
+		if r.R == row {
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row[:i], xlsx.SheetData.Row[i+1:]...)
+			f.adjustHelper(sheet, -1, row, -1)
+			return
 		}
-		xlsx.SheetData.Row = append(xlsx.SheetData.Row[:i], xlsx.SheetData.Row[i+1:]...)
-		f.adjustHelper(sheet, -1, row, -1)
-		return
 	}
 }
 
@@ -269,28 +268,27 @@ func checkRow(xlsx *xlsxWorksheet) {
 	buffer := bytes.Buffer{}
 	for k, v := range xlsx.SheetData.Row {
 		lenCol := len(v.C)
-		if lenCol < 1 {
-			continue
-		}
-		endR := string(strings.Map(letterOnlyMapF, v.C[lenCol-1].R))
-		endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, v.C[lenCol-1].R))
-		endCol := TitleToNumber(endR) + 1
-		if lenCol < endCol {
-			oldRow := xlsx.SheetData.Row[k].C
-			xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
-			tmp := []xlsxC{}
-			for i := 0; i <= endCol; i++ {
-				buffer.WriteString(ToAlphaString(i))
-				buffer.WriteString(strconv.Itoa(endRow))
-				tmp = append(tmp, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
-			}
-			xlsx.SheetData.Row[k].C = tmp
-			for _, y := range oldRow {
-				colAxis := TitleToNumber(string(strings.Map(letterOnlyMapF, y.R)))
-				xlsx.SheetData.Row[k].C[colAxis] = y
+		if lenCol > 0 {
+			endR := string(strings.Map(letterOnlyMapF, v.C[lenCol-1].R))
+			endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, v.C[lenCol-1].R))
+			endCol := TitleToNumber(endR) + 1
+			if lenCol < endCol {
+				oldRow := xlsx.SheetData.Row[k].C
+				xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
+				tmp := []xlsxC{}
+				for i := 0; i <= endCol; i++ {
+					buffer.WriteString(ToAlphaString(i))
+					buffer.WriteString(strconv.Itoa(endRow))
+					tmp = append(tmp, xlsxC{
+						R: buffer.String(),
+					})
+					buffer.Reset()
+				}
+				xlsx.SheetData.Row[k].C = tmp
+				for _, y := range oldRow {
+					colAxis := TitleToNumber(string(strings.Map(letterOnlyMapF, y.R)))
+					xlsx.SheetData.Row[k].C[colAxis] = y
+				}
 			}
 		}
 	}

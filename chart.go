@@ -21,11 +21,52 @@ const (
 
 // This section defines the default value of chart properties.
 var (
-	chartView3DRotX         = map[string]int{Bar: 0, Bar3D: 15, Doughnut: 0, Line: 0, Pie: 0, Pie3D: 30, Radar: 0, Scatter: 0}
-	chartView3DRotY         = map[string]int{Bar: 0, Bar3D: 20, Doughnut: 0, Line: 0, Pie: 0, Pie3D: 0, Radar: 0, Scatter: 0}
-	chartView3DDepthPercent = map[string]int{Bar: 100, Bar3D: 100, Doughnut: 100, Line: 100, Pie: 100, Pie3D: 100, Radar: 100, Scatter: 100}
-	chartView3DRAngAx       = map[string]int{Bar: 0, Bar3D: 1, Doughnut: 0, Line: 0, Pie: 0, Pie3D: 0, Radar: 0, Scatter: 0}
-	chartLegendPosition     = map[string]string{"bottom": "b", "left": "l", "right": "r", "top": "t", "top_right": "tr"}
+	chartView3DRotX = map[string]int{
+		Bar:      0,
+		Bar3D:    15,
+		Doughnut: 0,
+		Line:     0,
+		Pie:      0,
+		Pie3D:    30,
+		Radar:    0,
+		Scatter:  0,
+	}
+	chartView3DRotY = map[string]int{
+		Bar:      0,
+		Bar3D:    20,
+		Doughnut: 0,
+		Line:     0,
+		Pie:      0,
+		Pie3D:    0,
+		Radar:    0,
+		Scatter:  0,
+	}
+	chartView3DDepthPercent = map[string]int{
+		Bar:      100,
+		Bar3D:    100,
+		Doughnut: 100,
+		Line:     100,
+		Pie:      100,
+		Pie3D:    100,
+		Radar:    100,
+		Scatter:  100,
+	}
+	chartView3DRAngAx = map[string]int{
+		Bar:      0,
+		Bar3D:    1,
+		Doughnut: 0,
+		Line:     0,
+		Pie:      0,
+		Pie3D:    0,
+		Radar:    0,
+		Scatter:  0}
+	chartLegendPosition = map[string]string{
+		"bottom":    "b",
+		"left":      "l",
+		"right":     "r",
+		"top":       "t",
+		"top_right": "tr",
+	}
 )
 
 // parseFormatChartSet provides function to parse the format settings of the
@@ -63,7 +104,6 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //
 //    import (
 //        "fmt"
-//        "os"
 //
 //        "github.com/xuri/excelize"
 //    )
@@ -83,7 +123,6 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //        err := xlsx.SaveAs("./Workbook.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
-//            os.Exit(1)
 //        }
 //    }
 //

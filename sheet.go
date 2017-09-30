@@ -92,10 +92,9 @@ func (f *File) worksheetWriter() {
 func trimCell(column []xlsxC) []xlsxC {
 	col := []xlsxC{}
 	for _, c := range column {
-		if c.S == 0 && c.V == "" && c.F == nil && c.T == "" {
-			continue
+		if c.S != 0 || c.V != "" || c.F != nil || c.T != "" {
+			col = append(col, c)
 		}
-		col = append(col, c)
 	}
 	return col
 }
@@ -374,19 +373,18 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 func (f *File) DeleteSheet(name string) {
 	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
-		if v.Name != trimSheetName(name) || len(content.Sheets.Sheet) < 2 {
-			continue
+		if v.Name == trimSheetName(name) && len(content.Sheets.Sheet) > 1 {
+			content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
+			sheet := "xl/worksheets/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml"
+			rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
+			target := f.deleteSheetFromWorkbookRels(v.ID)
+			f.deleteSheetFromContentTypes(target)
+			delete(f.sheetMap, name)
+			delete(f.XLSX, sheet)
+			delete(f.XLSX, rels)
+			delete(f.Sheet, sheet)
+			f.SheetCount--
 		}
-		content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
-		sheet := "xl/worksheets/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml"
-		rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
-		target := f.deleteSheetFromWorkbookRels(v.ID)
-		f.deleteSheetFromContentTypes(target)
-		delete(f.sheetMap, name)
-		delete(f.XLSX, sheet)
-		delete(f.XLSX, rels)
-		delete(f.Sheet, sheet)
-		f.SheetCount--
 	}
 }
 
@@ -396,11 +394,10 @@ func (f *File) DeleteSheet(name string) {
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	content := f.workbookRelsReader()
 	for k, v := range content.Relationships {
-		if v.ID != rID {
-			continue
+		if v.ID == rID {
+			content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
+			return v.Target
 		}
-		content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
-		return v.Target
 	}
 	return ""
 }
@@ -410,10 +407,9 @@ func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 func (f *File) deleteSheetFromContentTypes(target string) {
 	content := f.contentTypesReader()
 	for k, v := range content.Overrides {
-		if v.PartName != "/xl/"+target {
-			continue
+		if v.PartName == "/xl/"+target {
+			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
 		}
-		content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
 	}
 }
 

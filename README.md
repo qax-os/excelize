@@ -30,7 +30,6 @@ package main
 
 import (
     "fmt"
-    "os"
 
     "github.com/xuri/excelize"
 )
@@ -48,7 +47,6 @@ func main() {
     err := xlsx.SaveAs("./Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
-        os.Exit(1)
     }
 }
 ```
@@ -62,7 +60,6 @@ package main
 
 import (
     "fmt"
-    "os"
 
     "github.com/xuri/excelize"
 )
@@ -71,7 +68,7 @@ func main() {
     xlsx, err := excelize.OpenFile("./Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
-        os.Exit(1)
+        return
     }
     // Get value from cell by given worksheet name and axis.
     cell := xlsx.GetCellValue("Sheet1", "B2")
@@ -99,7 +96,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/xuri/excelize"
 )
@@ -119,7 +115,6 @@ func main() {
 	err := xlsx.SaveAs("./Workbook.xlsx")
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
 	}
 }
 ```
@@ -131,7 +126,6 @@ package main
 
 import (
     "fmt"
-    "os"
     _ "image/gif"
     _ "image/jpeg"
     _ "image/png"
@@ -143,7 +137,7 @@ func main() {
     xlsx, err := excelize.OpenFile("./Workbook.xlsx")
     if err != nil {
         fmt.Println(err)
-        os.Exit(1)
+        return
     }
     // Insert a picture.
     err = xlsx.AddPicture("Sheet1", "A2", "./image1.png", "")
@@ -164,7 +158,6 @@ func main() {
     err = xlsx.Save()
     if err != nil {
         fmt.Println(err)
-        os.Exit(1)
     }
 }
 ```

@@ -92,15 +92,13 @@ func (f *File) GetCellValue(sheet, axis string) string {
 		return ""
 	}
 	for _, v := range xlsx.SheetData.Row {
-		if v.R != row {
-			continue
-		}
-		for _, r := range v.C {
-			if axis != r.R {
-				continue
+		if v.R == row {
+			for _, r := range v.C {
+				if axis == r.R {
+					val, _ := r.getValueFrom(f, f.sharedStringsReader())
+					return val
+				}
 			}
-			val, _ := r.getValueFrom(f, f.sharedStringsReader())
-			return val
 		}
 	}
 	return ""
@@ -164,15 +162,13 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 		return ""
 	}
 	for _, v := range xlsx.SheetData.Row {
-		if v.R != row {
-			continue
-		}
-		for _, f := range v.C {
-			if axis != f.R {
-				continue
-			}
-			if f.F != nil {
-				return f.F.Content
+		if v.R == row {
+			for _, f := range v.C {
+				if axis == f.R {
+					if f.F != nil {
+						return f.F.Content
+					}
+				}
 			}
 		}
 	}
