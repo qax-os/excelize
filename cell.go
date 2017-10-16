@@ -91,11 +91,11 @@ func (f *File) GetCellValue(sheet, axis string) string {
 	if rows < xAxis {
 		return ""
 	}
-	for _, v := range xlsx.SheetData.Row {
-		if v.R == row {
-			for _, r := range v.C {
-				if axis == r.R {
-					val, _ := r.getValueFrom(f, f.sharedStringsReader())
+	for k := range xlsx.SheetData.Row {
+		if xlsx.SheetData.Row[k].R == row {
+			for i := range xlsx.SheetData.Row[k].C {
+				if axis == xlsx.SheetData.Row[k].C[i].R {
+					val, _ := xlsx.SheetData.Row[k].C[i].getValueFrom(f, f.sharedStringsReader())
 					return val
 				}
 			}
@@ -161,12 +161,12 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 	if rows < xAxis {
 		return ""
 	}
-	for _, v := range xlsx.SheetData.Row {
-		if v.R == row {
-			for _, f := range v.C {
-				if axis == f.R {
-					if f.F != nil {
-						return f.F.Content
+	for k := range xlsx.SheetData.Row {
+		if xlsx.SheetData.Row[k].R == row {
+			for i := range xlsx.SheetData.Row[k].C {
+				if axis == xlsx.SheetData.Row[k].C[i].R {
+					if xlsx.SheetData.Row[k].C[i].F != nil {
+						return xlsx.SheetData.Row[k].C[i].F.Content
 					}
 				}
 			}
@@ -256,12 +256,12 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
 	if xlsx.Hyperlinks == nil || axis == "" {
 		return link, target
 	}
-	for _, h := range xlsx.Hyperlinks.Hyperlink {
-		if h.Ref == axis {
+	for h := range xlsx.Hyperlinks.Hyperlink {
+		if xlsx.Hyperlinks.Hyperlink[h].Ref == axis {
 			link = true
-			target = h.Location
-			if h.RID != "" {
-				target = f.getSheetRelationshipsTargetByID(sheet, h.RID)
+			target = xlsx.Hyperlinks.Hyperlink[h].Location
+			if xlsx.Hyperlinks.Hyperlink[h].RID != "" {
+				target = f.getSheetRelationshipsTargetByID(sheet, xlsx.Hyperlinks.Hyperlink[h].RID)
 			}
 		}
 	}

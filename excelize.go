@@ -113,8 +113,8 @@ func checkSheet(xlsx *xlsxWorksheet) {
 	}
 	sheetData := xlsxSheetData{}
 	existsRows := map[int]int{}
-	for k, v := range xlsx.SheetData.Row {
-		existsRows[v.R] = k
+	for k := range xlsx.SheetData.Row {
+		existsRows[xlsx.SheetData.Row[k].R] = k
 	}
 	for i := 0; i < row; i++ {
 		_, ok := existsRows[i+1]
@@ -167,8 +167,8 @@ func replaceWorkSheetsRelationshipsNameSpace(workbookMarshal string) string {
 func (f *File) UpdateLinkedValue() {
 	for _, name := range f.GetSheetMap() {
 		xlsx := f.workSheetReader(name)
-		for indexR, row := range xlsx.SheetData.Row {
-			for indexC, col := range row.C {
+		for indexR := range xlsx.SheetData.Row {
+			for indexC, col := range xlsx.SheetData.Row[indexR].C {
 				if col.F != nil && col.V != "" {
 					xlsx.SheetData.Row[indexR].C[indexC].V = ""
 					xlsx.SheetData.Row[indexR].C[indexC].T = ""

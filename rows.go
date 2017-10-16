@@ -266,11 +266,11 @@ func (f *File) InsertRow(sheet string, row int) {
 // 3000 rows one sheet).
 func checkRow(xlsx *xlsxWorksheet) {
 	buffer := bytes.Buffer{}
-	for k, v := range xlsx.SheetData.Row {
-		lenCol := len(v.C)
+	for k := range xlsx.SheetData.Row {
+		lenCol := len(xlsx.SheetData.Row[k].C)
 		if lenCol > 0 {
-			endR := string(strings.Map(letterOnlyMapF, v.C[lenCol-1].R))
-			endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, v.C[lenCol-1].R))
+			endR := string(strings.Map(letterOnlyMapF, xlsx.SheetData.Row[k].C[lenCol-1].R))
+			endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, xlsx.SheetData.Row[k].C[lenCol-1].R))
 			endCol := TitleToNumber(endR) + 1
 			if lenCol < endCol {
 				oldRow := xlsx.SheetData.Row[k].C

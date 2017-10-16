@@ -27,9 +27,9 @@ func (f *File) GetColVisible(sheet, column string) bool {
 	if xlsx.Cols == nil {
 		return visible
 	}
-	for _, c := range xlsx.Cols.Col {
-		if c.Min <= col && col <= c.Max {
-			visible = !c.Hidden
+	for c := range xlsx.Cols.Col {
+		if xlsx.Cols.Col[c].Min <= col && col <= xlsx.Cols.Col[c].Max {
+			visible = !xlsx.Cols.Col[c].Hidden
 		}
 	}
 	return visible
@@ -55,9 +55,9 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 		xlsx.Cols = &cols
 		return
 	}
-	for _, v := range xlsx.Cols.Col {
-		if v.Min <= c && c <= v.Max {
-			col = v
+	for v := range xlsx.Cols.Col {
+		if xlsx.Cols.Col[v].Min <= c && c <= xlsx.Cols.Col[v].Max {
+			col = xlsx.Cols.Col[v]
 		}
 	}
 	col.Min = c
@@ -262,12 +262,12 @@ func (f *File) InsertCol(sheet, column string) {
 //
 func (f *File) RemoveCol(sheet, column string) {
 	xlsx := f.workSheetReader(sheet)
-	for i, r := range xlsx.SheetData.Row {
-		for k, v := range r.C {
+	for r := range xlsx.SheetData.Row {
+		for k, v := range xlsx.SheetData.Row[r].C {
 			axis := v.R
 			col := string(strings.Map(letterOnlyMapF, axis))
 			if col == column {
-				xlsx.SheetData.Row[i].C = append(xlsx.SheetData.Row[i].C[:k], xlsx.SheetData.Row[i].C[k+1:]...)
+				xlsx.SheetData.Row[r].C = append(xlsx.SheetData.Row[r].C[:k], xlsx.SheetData.Row[r].C[k+1:]...)
 			}
 		}
 	}
@@ -278,13 +278,13 @@ func (f *File) RemoveCol(sheet, column string) {
 // Completion column element tags of XML in a sheet.
 func completeCol(xlsx *xlsxWorksheet, row, cell int) {
 	buffer := bytes.Buffer{}
-	for k, v := range xlsx.SheetData.Row {
-		if len(v.C) < cell {
-			start := len(v.C)
+	for r := range xlsx.SheetData.Row {
+		if len(xlsx.SheetData.Row[r].C) < cell {
+			start := len(xlsx.SheetData.Row[r].C)
 			for iii := start; iii < cell; iii++ {
 				buffer.WriteString(ToAlphaString(iii))
-				buffer.WriteString(strconv.Itoa(k + 1))
-				xlsx.SheetData.Row[k].C = append(xlsx.SheetData.Row[k].C, xlsxC{
+				buffer.WriteString(strconv.Itoa(r + 1))
+				xlsx.SheetData.Row[r].C = append(xlsx.SheetData.Row[r].C, xlsxC{
 					R: buffer.String(),
 				})
 				buffer.Reset()

@@ -550,23 +550,23 @@ func (f *File) drawScatterChart(formatSet *formatChart) *cPlotArea {
 // sets.
 func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 	ser := []cSer{}
-	for k, v := range formatSet.Series {
+	for k := range formatSet.Series {
 		ser = append(ser, cSer{
 			IDx:   &attrValInt{Val: k},
 			Order: &attrValInt{Val: k},
 			Tx: &cTx{
 				StrRef: &cStrRef{
-					F: v.Name,
+					F: formatSet.Series[k].Name,
 				},
 			},
 			SpPr:   f.drawChartSeriesSpPr(k, formatSet),
 			Marker: f.drawChartSeriesMarker(k, formatSet),
 			DPt:    f.drawChartSeriesDPt(k, formatSet),
 			DLbls:  f.drawChartSeriesDLbls(formatSet),
-			Cat:    f.drawChartSeriesCat(v, formatSet),
-			Val:    f.drawChartSeriesVal(v, formatSet),
-			XVal:   f.drawChartSeriesXVal(v, formatSet),
-			YVal:   f.drawChartSeriesYVal(v, formatSet),
+			Cat:    f.drawChartSeriesCat(formatSet.Series[k], formatSet),
+			Val:    f.drawChartSeriesVal(formatSet.Series[k], formatSet),
+			XVal:   f.drawChartSeriesXVal(formatSet.Series[k], formatSet),
+			YVal:   f.drawChartSeriesYVal(formatSet.Series[k], formatSet),
 		})
 	}
 	return &ser
