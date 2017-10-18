@@ -21,7 +21,10 @@ import (
 func (f *File) GetRows(sheet string) [][]string {
 	xlsx := f.workSheetReader(sheet)
 	rows := [][]string{}
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		return rows
+	}
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
@@ -31,7 +34,7 @@ func (f *File) GetRows(sheet string) [][]string {
 	var inElement string
 	var r xlsxRow
 	var row []string
-	tr, tc := f.getTotalRowsCols(sheet)
+	tr, tc := f.getTotalRowsCols(name)
 	for i := 0; i < tr; i++ {
 		row = []string{}
 		for j := 0; j <= tc; j++ {
@@ -66,8 +69,7 @@ func (f *File) GetRows(sheet string) [][]string {
 
 // getTotalRowsCols provides a function to get total columns and rows in a
 // worksheet.
-func (f *File) getTotalRowsCols(sheet string) (int, int) {
-	name := "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+func (f *File) getTotalRowsCols(name string) (int, int) {
 	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
 	var inElement string
 	var r xlsxRow
