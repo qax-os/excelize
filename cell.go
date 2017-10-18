@@ -30,6 +30,11 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 //    int16
 //    int32
 //    int64
+//    uint
+//    uint8
+//    uint16
+//    uint32
+//    uint64
 //    float32
 //    float64
 //    string
@@ -51,6 +56,16 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 		f.SetCellInt(sheet, axis, int(value.(int32)))
 	case int64:
 		f.SetCellInt(sheet, axis, int(value.(int64)))
+	case uint:
+		f.SetCellInt(sheet, axis, int(value.(uint)))
+	case uint8:
+		f.SetCellInt(sheet, axis, int(value.(uint8)))
+	case uint16:
+		f.SetCellInt(sheet, axis, int(value.(uint16)))
+	case uint32:
+		f.SetCellInt(sheet, axis, int(value.(uint32)))
+	case uint64:
+		f.SetCellInt(sheet, axis, int(value.(uint64)))
 	case float32:
 		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
 	case float64:
