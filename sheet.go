@@ -314,7 +314,7 @@ func (f *File) GetSheetIndex(name string) int {
 //    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
-//        os.Exit(1)
+//        return
 //    }
 //    for index, name := range xlsx.GetSheetMap() {
 //        fmt.Println(index, name)
@@ -420,10 +420,7 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 //    // Sheet1 already exists...
 //    index := xlsx.NewSheet("Sheet2")
 //    err := xlsx.CopySheet(1, index)
-//    if err != nil {
-//        fmt.Println(err)
-//        os.Exit(1)
-//    }
+//    return err
 //
 func (f *File) CopySheet(from, to int) error {
 	if from < 1 || to < 1 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {

@@ -100,13 +100,17 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 // xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name, relationship
 // type and target.
 func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) int {
-	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
+	}
+	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
 	var rID = 1
 	var ID bytes.Buffer
 	ID.WriteString("rId")
 	ID.WriteString(strconv.Itoa(rID))
-	_, ok := f.XLSX[rels]
+	_, ok = f.XLSX[rels]
 	if ok {
 		ID.Reset()
 		xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
@@ -129,7 +133,11 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 // xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and relationship
 // index.
 func (f *File) deleteSheetRelationships(sheet, rID string) {
-	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
+	}
+	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
 	for k, v := range sheetRels.Relationships {
@@ -374,16 +382,15 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
-//        os.Exit(1)
+//        return
 //    }
 //    file, raw := xlsx.GetPicture("Sheet1", "A2")
 //    if file == "" {
-//        os.Exit(1)
+//        return
 //    }
 //    err := ioutil.WriteFile(file, raw, 0644)
 //    if err != nil {
 //        fmt.Println(err)
-//        os.Exit(1)
 //    }
 //
 func (f *File) GetPicture(sheet, cell string) (string, []byte) {

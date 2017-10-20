@@ -75,7 +75,6 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 //    err := xlsx.Save()
 //    if err != nil {
 //        fmt.Println(err)
-//        os.Exit(1)
 //    }
 //
 func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {

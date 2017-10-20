@@ -107,7 +107,6 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 //    err := xlsx.Save()
 //    if err != nil {
 //        fmt.Println(err)
-//        os.Exit(1)
 //    }
 //
 func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
