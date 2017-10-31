@@ -15,7 +15,7 @@ const (
 )
 
 // GetColVisible provides a function to get visible of a single column by given
-// worksheet index and column name. For example, get visible state of column D
+// worksheet name and column name. For example, get visible state of column D
 // in Sheet1:
 //
 //    xlsx.GetColVisible("Sheet1", "D")
@@ -36,7 +36,7 @@ func (f *File) GetColVisible(sheet, column string) bool {
 }
 
 // SetColVisible provides a function to set visible of a single column by given
-// worksheet index and column name. For example, hide column D in Sheet1:
+// worksheet name and column name. For example, hide column D in Sheet1:
 //
 //    xlsx.SetColVisible("Sheet1", "D", false)
 //

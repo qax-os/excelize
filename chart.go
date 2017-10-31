@@ -238,7 +238,7 @@ func (f *File) countCharts() int {
 }
 
 // prepareDrawing provides function to prepare drawing ID and XML by given
-// drawingID, worksheet index and default drawingXML.
+// drawingID, worksheet name and default drawingXML.
 func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	if xlsx.Drawing != nil {

@@ -50,7 +50,7 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetActiveSheet(2)
 	// Test get cell formula with given rows number.
 	xlsx.GetCellFormula("Sheet1", "B19")
-	// Test get cell formula with illegal worksheet index.
+	// Test get cell formula with illegal worksheet name.
 	xlsx.GetCellFormula("Sheet2", "B20")
 	// Test get cell formula with illegal rows number.
 	xlsx.GetCellFormula("Sheet1", "B20")
@@ -638,6 +638,7 @@ func TestGetPicture(t *testing.T) {
 	xlsx.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
 	xlsx.getDrawingRelationships("", "")
 	xlsx.getSheetRelationshipsTargetByID("", "")
+	xlsx.deleteSheetRelationships("", "")
 }
 
 func TestSheetVisibility(t *testing.T) {

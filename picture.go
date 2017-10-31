@@ -364,7 +364,11 @@ func (f *File) addContentTypePart(index int, contentType string) {
 // value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
-	var rels = "xl/worksheets/_rels/" + strings.ToLower(sheet) + ".xml.rels"
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
+	}
+	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
 	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
 	for _, v := range sheetRels.Relationships {

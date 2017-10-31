@@ -85,9 +85,9 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 }
 
 // GetCellValue provides function to get formatted value from cell by given
-// sheet index and axis in XLSX file. If it is possible to apply a format to the
-// cell value, it will do so, if not then an error will be returned, along with
-// the raw value of the cell.
+// worksheet name and axis in XLSX file. If it is possible to apply a format to
+// the cell value, it will do so, if not then an error will be returned, along
+// with the raw value of the cell.
 func (f *File) GetCellValue(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
@@ -191,7 +191,7 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 }
 
 // SetCellFormula provides function to set cell formula by given string and
-// sheet index.
+// worksheet name.
 func (f *File) SetCellFormula(sheet, axis, formula string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)

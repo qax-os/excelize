@@ -78,7 +78,7 @@ func (f *File) setDefaultTimeStyle(sheet, axis string) {
 }
 
 // workSheetReader provides function to get the pointer to the structure after
-// deserialization by given worksheet index.
+// deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {

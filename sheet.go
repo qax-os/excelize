@@ -313,7 +313,6 @@ func (f *File) GetSheetIndex(name string) int {
 //
 //    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
 //    if err != nil {
-//        fmt.Println(err)
 //        return
 //    }
 //    for index, name := range xlsx.GetSheetMap() {
