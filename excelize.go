@@ -39,8 +39,6 @@ func OpenFile(filename string) (*File, error) {
 		return nil, err
 	}
 	f.Path = filename
-	f.sheetMap = f.getSheetMap()
-	f.Styles = f.stylesReader()
 	return f, nil
 }
 
@@ -60,12 +58,15 @@ func OpenReader(r io.Reader) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &File{
+	f := &File{
 		checked:    make(map[string]bool),
 		Sheet:      make(map[string]*xlsxWorksheet),
 		SheetCount: sheetCount,
 		XLSX:       file,
-	}, nil
+	}
+	f.sheetMap = f.getSheetMap()
+	f.Styles = f.stylesReader()
+	return f, nil
 }
 
 // setDefaultTimeStyle provides function to set default numbers format for
