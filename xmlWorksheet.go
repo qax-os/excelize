@@ -196,7 +196,7 @@ type xlsxSheetPr struct {
 	CodeName                          string           `xml:"codeName,attr,omitempty"`
 	EnableFormatConditionsCalculation *bool            `xml:"enableFormatConditionsCalculation,attr"`
 	FilterMode                        bool             `xml:"filterMode,attr,omitempty"`
-	Published                         bool             `xml:"published,attr,omitempty"`
+	Published                         *bool            `xml:"published,attr"`
 	SyncHorizontal                    bool             `xml:"syncHorizontal,attr,omitempty"`
 	SyncVertical                      bool             `xml:"syncVertical,attr,omitempty"`
 	TransitionEntry                   bool             `xml:"transitionEntry,attr,omitempty"`
