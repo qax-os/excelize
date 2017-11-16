@@ -224,7 +224,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 // for web site or "Location" for moving to one of cell in this workbook. The
 // below is example for external link.
 //
-//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
+//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 //    // Set underline and font color style for the cell.
 //    style, _ := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 //    xlsx.SetCellStyle("Sheet1", "A3", "A3", style)

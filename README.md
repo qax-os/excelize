@@ -4,7 +4,7 @@
 
 [![Build Status](https://travis-ci.org/360EntSecGroup-Skylar/excelize.svg?branch=master)](https://travis-ci.org/360EntSecGroup-Skylar/excelize)
 [![Code Coverage](https://codecov.io/gh/360EntSecGroup-Skylar/excelize/branch/master/graph/badge.svg)](https://codecov.io/gh/360EntSecGroup-Skylar/excelize)
-[![Go Report Card](https://goreportcard.com/badge/github.com/xuri/excelize)](https://goreportcard.com/report/github.com/xuri/excelize)
+[![Go Report Card](https://goreportcard.com/badge/github.com/360EntSecGroup-Skylar/excelize)](https://goreportcard.com/report/github.com/360EntSecGroup-Skylar/excelize)
 [![GoDoc](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize?status.svg)](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize)
 [![Licenses](https://img.shields.io/badge/license-bsd-orange.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/xuri)
@@ -18,7 +18,7 @@ Excelize is a library written in pure Golang and providing a set of functions th
 ### Installation
 
 ```go
-go get github.com/xuri/excelize
+go get github.com/360EntSecGroup-Skylar/excelize
 ```
 
 ### Create XLSX file
@@ -31,7 +31,7 @@ package main
 import (
     "fmt"
 
-    "github.com/xuri/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize"
 )
 
 func main() {
@@ -61,7 +61,7 @@ package main
 import (
     "fmt"
 
-    "github.com/xuri/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize"
 )
 
 func main() {
@@ -97,7 +97,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/xuri/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
 func main() {
@@ -130,7 +130,7 @@ import (
     _ "image/jpeg"
     _ "image/png"
 
-    "github.com/xuri/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize"
 )
 
 func main() {

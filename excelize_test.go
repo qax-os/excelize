@@ -225,9 +225,9 @@ func TestSetCellHyperLink(t *testing.T) {
 		t.Log(err)
 	}
 	// Test set cell hyperlink in a work sheet already have hyperlinks.
-	xlsx.SetCellHyperLink("Sheet1", "B19", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "B19", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	// Test add first hyperlink in a work sheet.
-	xlsx.SetCellHyperLink("Sheet2", "C1", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet2", "C1", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	// Test add Location hyperlink in a work sheet.
 	xlsx.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location")
 	xlsx.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", "")
@@ -311,7 +311,7 @@ func TestMergeCell(t *testing.T) {
 	xlsx.SetCellValue("Sheet1", "G11", "set value in merged cell")
 	xlsx.SetCellInt("Sheet1", "H11", 100)
 	xlsx.SetCellValue("Sheet1", "I11", float64(0.5))
-	xlsx.SetCellHyperLink("Sheet1", "J11", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)")
 	xlsx.GetCellValue("Sheet1", "H11")
 	xlsx.GetCellFormula("Sheet1", "G12")
@@ -832,7 +832,7 @@ func TestInsertCol(t *testing.T) {
 			xlsx.SetCellStr("Sheet1", axis, axis)
 		}
 	}
-	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.MergeCell("Sheet1", "A1", "C3")
 	err := xlsx.AutoFilter("Sheet1", "A2", "B2", `{"column":"B","expression":"x != blanks"}`)
 	t.Log(err)
@@ -851,7 +851,7 @@ func TestRemoveCol(t *testing.T) {
 			xlsx.SetCellStr("Sheet1", axis, axis)
 		}
 	}
-	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.SetCellHyperLink("Sheet1", "C5", "https://github.com", "External")
 	xlsx.MergeCell("Sheet1", "A1", "B1")
 	xlsx.MergeCell("Sheet1", "A2", "B2")
@@ -871,7 +871,7 @@ func TestInsertRow(t *testing.T) {
 			xlsx.SetCellStr("Sheet1", axis, axis)
 		}
 	}
-	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.InsertRow("Sheet1", -1)
 	xlsx.InsertRow("Sheet1", 4)
 	err := xlsx.SaveAs("./test/Workbook_insertrow.xlsx")
@@ -903,7 +903,7 @@ func TestRemoveRow(t *testing.T) {
 			xlsx.SetCellStr("Sheet1", axis, axis)
 		}
 	}
-	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/xuri/excelize", "External")
+	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.RemoveRow("Sheet1", -1)
 	xlsx.RemoveRow("Sheet1", 4)
 	xlsx.MergeCell("Sheet1", "B3", "B5")
