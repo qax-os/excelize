@@ -357,7 +357,7 @@ type xlsxSheetProtection struct {
 // properties specify how to display that phonetic run.
 type xlsxPhoneticPr struct {
 	Alignment string `xml:"alignment,attr,omitempty"`
-	FontID    int    `xml:"fontId,attr,omitempty"`
+	FontID    *int   `xml:"fontId,attr"`
 	Type      string `xml:"type,attr,omitempty"`
 }
 
