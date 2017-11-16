@@ -20,18 +20,19 @@ type xlsxWorkbookRelation struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
 type xlsxWorkbook struct {
-	XMLName            xml.Name                `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
-	FileVersion        *xlsxFileVersion        `xml:"fileVersion"`
-	WorkbookPr         *xlsxWorkbookPr         `xml:"workbookPr"`
-	WorkbookProtection *xlsxWorkbookProtection `xml:"workbookProtection"`
-	BookViews          xlsxBookViews           `xml:"bookViews"`
-	Sheets             xlsxSheets              `xml:"sheets"`
-	ExternalReferences *xlsxExternalReferences `xml:"externalReferences"`
-	DefinedNames       *xlsxDefinedNames       `xml:"definedNames"`
-	CalcPr             *xlsxCalcPr             `xml:"calcPr"`
-	PivotCaches        *xlsxPivotCaches        `xml:"pivotCaches"`
-	ExtLst             *xlsxExtLst             `xml:"extLst"`
-	FileRecoveryPr     *xlsxFileRecoveryPr     `xml:"fileRecoveryPr"`
+	XMLName             xml.Name                 `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
+	FileVersion         *xlsxFileVersion         `xml:"fileVersion"`
+	WorkbookPr          *xlsxWorkbookPr          `xml:"workbookPr"`
+	WorkbookProtection  *xlsxWorkbookProtection  `xml:"workbookProtection"`
+	BookViews           xlsxBookViews            `xml:"bookViews"`
+	Sheets              xlsxSheets               `xml:"sheets"`
+	ExternalReferences  *xlsxExternalReferences  `xml:"externalReferences"`
+	DefinedNames        *xlsxDefinedNames        `xml:"definedNames"`
+	CalcPr              *xlsxCalcPr              `xml:"calcPr"`
+	CustomWorkbookViews *xlsxCustomWorkbookViews `xml:"customWorkbookViews"`
+	PivotCaches         *xlsxPivotCaches         `xml:"pivotCaches"`
+	ExtLst              *xlsxExtLst              `xml:"extLst"`
+	FileRecoveryPr      *xlsxFileRecoveryPr      `xml:"fileRecoveryPr"`
 }
 
 // xlsxFileRecoveryPr maps sheet recovery information. This element defines
@@ -232,4 +233,50 @@ type xlsxCalcPr struct {
 	IterateCount          int     `xml:"iterateCount,attr,omitempty"`
 	IterateDelta          float64 `xml:"iterateDelta,attr,omitempty"`
 	RefMode               string  `xml:"refMode,attr,omitempty"`
+}
+
+// xlsxCustomWorkbookViews defines the collection of custom workbook views that
+// are defined for this workbook. A customWorkbookView is similar in concept to
+// a workbookView in that its attributes contain settings related to the way
+// that the workbook should be displayed on a screen by a spreadsheet
+// application.
+type xlsxCustomWorkbookViews struct {
+	CustomWorkbookView []xlsxCustomWorkbookView `xml:"customWorkbookView"`
+}
+
+// xlsxCustomWorkbookView directly maps the customWorkbookView element. This
+// element specifies a single custom workbook view. A custom workbook view
+// consists of a set of display and print settings that you can name and apply
+// to a workbook. You can create more than one custom workbook view of the same
+// workbook. Custom Workbook Views are not required in order to construct a
+// valid SpreadsheetML document, and are not necessary if the document is never
+// displayed by a spreadsheet application, or if the spreadsheet application has
+// a fixed display for workbooks. However, if a spreadsheet application chooses
+// to implement configurable display modes, the customWorkbookView element
+// should be used to persist the settings for those display modes.
+type xlsxCustomWorkbookView struct {
+	ActiveSheetID        *int    `xml:"activeSheetId,attr"`
+	AutoUpdate           *bool   `xml:"autoUpdate,attr"`
+	ChangesSavedWin      *bool   `xml:"changesSavedWin,attr"`
+	GUID                 *string `xml:"guid,attr"`
+	IncludeHiddenRowCol  *bool   `xml:"includeHiddenRowCol,attr"`
+	IncludePrintSettings *bool   `xml:"includePrintSettings,attr"`
+	Maximized            *bool   `xml:"maximized,attr"`
+	MergeInterval        int     `xml:"mergeInterval,attr"`
+	Minimized            *bool   `xml:"minimized,attr"`
+	Name                 *string `xml:"name,attr"`
+	OnlySync             *bool   `xml:"onlySync,attr"`
+	PersonalView         *bool   `xml:"personalView,attr"`
+	ShowComments         *string `xml:"showComments,attr"`
+	ShowFormulaBar       *bool   `xml:"showFormulaBar,attr"`
+	ShowHorizontalScroll *bool   `xml:"showHorizontalScroll,attr"`
+	ShowObjects          *string `xml:"showObjects,attr"`
+	ShowSheetTabs        *bool   `xml:"showSheetTabs,attr"`
+	ShowStatusbar        *bool   `xml:"showStatusbar,attr"`
+	ShowVerticalScroll   *bool   `xml:"showVerticalScroll,attr"`
+	TabRatio             *int    `xml:"tabRatio,attr"`
+	WindowHeight         *int    `xml:"windowHeight,attr"`
+	WindowWidth          *int    `xml:"windowWidth,attr"`
+	XWindow              *int    `xml:"xWindow,attr"`
+	YWindow              *int    `xml:"yWindow,attr"`
 }
