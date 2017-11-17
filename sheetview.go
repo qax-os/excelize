@@ -9,6 +9,7 @@ type SheetViewOption interface {
 
 // SheetViewOptionPtr is a writable SheetViewOption. See GetSheetViewOptions().
 type SheetViewOptionPtr interface {
+	SheetViewOption
 	getSheetViewOption(view *xlsxSheetView)
 }
 
