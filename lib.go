@@ -121,3 +121,14 @@ func deepCopy(dst, src interface{}) error {
 	}
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
+
+// boolPtr returns a pointer to a bool with the given value.
+func boolPtr(b bool) *bool { return &b }
+
+// defaultTrue returns true if b is nil, or the pointed value.
+func defaultTrue(b *bool) bool {
+	if b == nil {
+		return true
+	}
+	return *b
+}

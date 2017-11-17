@@ -145,17 +145,18 @@ type xlsxSheetViews struct {
 // last sheetView definition is loaded, and the others are discarded. When
 // multiple windows are viewing the same sheet, multiple sheetView elements
 // (with corresponding workbookView entries) are saved.
+// See https://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetview.aspx
 type xlsxSheetView struct {
 	WindowProtection         bool             `xml:"windowProtection,attr,omitempty"`
 	ShowFormulas             bool             `xml:"showFormulas,attr,omitempty"`
-	ShowGridLines            string           `xml:"showGridLines,attr,omitempty"`
-	ShowRowColHeaders        bool             `xml:"showRowColHeaders,attr,omitempty"`
+	ShowGridLines            *bool            `xml:"showGridLines,attr"`
+	ShowRowColHeaders        *bool            `xml:"showRowColHeaders,attr"`
 	ShowZeros                bool             `xml:"showZeros,attr,omitempty"`
 	RightToLeft              bool             `xml:"rightToLeft,attr,omitempty"`
 	TabSelected              bool             `xml:"tabSelected,attr,omitempty"`
 	ShowWhiteSpace           *bool            `xml:"showWhiteSpace,attr"`
 	ShowOutlineSymbols       bool             `xml:"showOutlineSymbols,attr,omitempty"`
-	DefaultGridColor         bool             `xml:"defaultGridColor,attr"`
+	DefaultGridColor         *bool            `xml:"defaultGridColor,attr"`
 	View                     string           `xml:"view,attr,omitempty"`
 	TopLeftCell              string           `xml:"topLeftCell,attr,omitempty"`
 	ColorID                  int              `xml:"colorId,attr,omitempty"`
