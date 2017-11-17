@@ -3,7 +3,6 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/gob"
 	"io"
 	"log"
 	"math"
@@ -113,17 +112,6 @@ func intOnlyMapF(rune rune) rune {
 		return rune
 	}
 	return -1
-}
-
-// deepCopy provides method to creates a deep copy of whatever is passed to it
-// and returns the copy in an interface. The returned value will need to be
-// asserted to the correct type.
-func deepCopy(dst, src interface{}) error {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		return err
-	}
-	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
 // boolPtr returns a pointer to a bool with the given value.
