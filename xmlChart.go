@@ -316,6 +316,7 @@ type cCharts struct {
 	DLbls        *cDLbls        `xml:"c:dLbls"`
 	HoleSize     *attrValInt    `xml:"c:holeSize"`
 	Smooth       *attrValBool   `xml:"c:smooth"`
+	Overlap      *attrValInt    `xml:"c:overlap"`
 	AxID         []*attrValInt  `xml:"c:axId"`
 }
 
@@ -491,7 +492,7 @@ type formatChartAxis struct {
 	DisplayUnitsVisible bool   `json:"display_units_visible"`
 	DateAxis            bool   `json:"date_axis"`
 	NumFormat           string `json:"num_format"`
-	NumFont             struct {
+	NumFont struct {
 		Color     string `json:"color"`
 		Bold      bool   `json:"bold"`
 		Italic    bool   `json:"italic"`
@@ -502,13 +503,13 @@ type formatChartAxis struct {
 
 // formatChart directly maps the format settings of the chart.
 type formatChart struct {
-	Type      string              `json:"type"`
-	Series    []formatChartSeries `json:"series"`
-	Format    formatPicture       `json:"format"`
-	Legend    formatChartLegend   `json:"legend"`
-	Title     formatChartTitle    `json:"title"`
-	XAxis     formatChartAxis     `json:"x_axis"`
-	YAxis     formatChartAxis     `json:"y_axis"`
+	Type   string              `json:"type"`
+	Series []formatChartSeries `json:"series"`
+	Format formatPicture       `json:"format"`
+	Legend formatChartLegend   `json:"legend"`
+	Title  formatChartTitle    `json:"title"`
+	XAxis  formatChartAxis     `json:"x_axis"`
+	YAxis  formatChartAxis     `json:"y_axis"`
 	Chartarea struct {
 		Border struct {
 			None bool `json:"none"`
@@ -529,7 +530,7 @@ type formatChart struct {
 		ShowPercent     bool `json:"show_percent"`
 		ShowSerName     bool `json:"show_series_name"`
 		ShowVal         bool `json:"show_val"`
-		Gradient        struct {
+		Gradient struct {
 			Colors []string `json:"colors"`
 		} `json:"gradient"`
 		Border struct {
@@ -564,14 +565,14 @@ type formatChartSeries struct {
 	Name       string `json:"name"`
 	Categories string `json:"categories"`
 	Values     string `json:"values"`
-	Line       struct {
+	Line struct {
 		None  bool   `json:"none"`
 		Color string `json:"color"`
 	} `json:"line"`
 	Marker struct {
-		Type   string  `json:"type"`
-		Size   int     `json:"size,"`
-		Width  float64 `json:"width"`
+		Type  string  `json:"type"`
+		Size  int     `json:"size,"`
+		Width float64 `json:"width"`
 		Border struct {
 			Color string `json:"color"`
 			None  bool   `json:"none"`
