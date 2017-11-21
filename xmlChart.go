@@ -316,6 +316,7 @@ type cCharts struct {
 	DLbls        *cDLbls        `xml:"c:dLbls"`
 	HoleSize     *attrValInt    `xml:"c:holeSize"`
 	Smooth       *attrValBool   `xml:"c:smooth"`
+	Overlap      *attrValInt    `xml:"c:overlap"`
 	AxID         []*attrValInt  `xml:"c:axId"`
 }
 
