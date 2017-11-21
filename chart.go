@@ -9,57 +9,62 @@ import (
 
 // This section defines the currently supported chart types.
 const (
-	Bar      = "bar"
-	Bar3D    = "bar3D"
-	Doughnut = "doughnut"
-	Line     = "line"
-	Pie      = "pie"
-	Pie3D    = "pie3D"
-	Radar    = "radar"
-	Scatter  = "scatter"
+	Bar        = "bar"
+	BarStacked = "barStacked"
+	Bar3D      = "bar3D"
+	Doughnut   = "doughnut"
+	Line       = "line"
+	Pie        = "pie"
+	Pie3D      = "pie3D"
+	Radar      = "radar"
+	Scatter    = "scatter"
 )
 
 // This section defines the default value of chart properties.
 var (
 	chartView3DRotX = map[string]int{
-		Bar:      0,
-		Bar3D:    15,
-		Doughnut: 0,
-		Line:     0,
-		Pie:      0,
-		Pie3D:    30,
-		Radar:    0,
-		Scatter:  0,
+		Bar:        0,
+		BarStacked: 0,
+		Bar3D:      15,
+		Doughnut:   0,
+		Line:       0,
+		Pie:        0,
+		Pie3D:      30,
+		Radar:      0,
+		Scatter:    0,
 	}
 	chartView3DRotY = map[string]int{
-		Bar:      0,
-		Bar3D:    20,
-		Doughnut: 0,
-		Line:     0,
-		Pie:      0,
-		Pie3D:    0,
-		Radar:    0,
-		Scatter:  0,
+		Bar:        0,
+		BarStacked: 0,
+		Bar3D:      20,
+		Doughnut:   0,
+		Line:       0,
+		Pie:        0,
+		Pie3D:      0,
+		Radar:      0,
+		Scatter:    0,
 	}
 	chartView3DDepthPercent = map[string]int{
-		Bar:      100,
-		Bar3D:    100,
-		Doughnut: 100,
-		Line:     100,
-		Pie:      100,
-		Pie3D:    100,
-		Radar:    100,
-		Scatter:  100,
+		Bar:        100,
+		BarStacked: 100,
+		Bar3D:      100,
+		Doughnut:   100,
+		Line:       100,
+		Pie:        100,
+		Pie3D:      100,
+		Radar:      100,
+		Scatter:    100,
 	}
 	chartView3DRAngAx = map[string]int{
-		Bar:      0,
-		Bar3D:    1,
-		Doughnut: 0,
-		Line:     0,
-		Pie:      0,
-		Pie3D:    0,
-		Radar:    0,
-		Scatter:  0}
+		Bar:        0,
+		BarStacked: 0,
+		Bar3D:      1,
+		Doughnut:   0,
+		Line:       0,
+		Pie:        0,
+		Pie3D:      0,
+		Radar:      0,
+		Scatter:    0}
 	chartLegendPosition = map[string]string{
 		"bottom":    "b",
 		"left":      "l",
@@ -383,14 +388,15 @@ func (f *File) addChart(formatSet *formatChart) {
 		},
 	}
 	plotAreaFunc := map[string]func(*formatChart) *cPlotArea{
-		Bar:      f.drawBarChart,
-		Bar3D:    f.drawBarChart,
-		Doughnut: f.drawDoughnutChart,
-		Line:     f.drawLineChart,
-		Pie3D:    f.drawPie3DChart,
-		Pie:      f.drawPieChart,
-		Radar:    f.drawRadarChart,
-		Scatter:  f.drawScatterChart,
+		Bar:        f.drawBarChart,
+		BarStacked: f.drawBarChart,
+		Bar3D:      f.drawBarChart,
+		Doughnut:   f.drawDoughnutChart,
+		Line:       f.drawLineChart,
+		Pie3D:      f.drawPie3DChart,
+		Pie:        f.drawPieChart,
+		Radar:      f.drawRadarChart,
+		Scatter:    f.drawScatterChart,
 	}
 	xlsxChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
 
@@ -419,16 +425,27 @@ func (f *File) drawBarChart(formatSet *formatChart) *cPlotArea {
 			{Val: 753999904},
 		},
 	}
+	if formatSet.Type == "barStacked" {
+		c.Grouping.Val = "stacked"
+		c.Overlap = &attrValInt{ Val: 100 }
+	}
+	catAx := f.drawPlotAreaCatAx()
+	valAx := f.drawPlotAreaValAx()
 	charts := map[string]*cPlotArea{
 		"bar": {
 			BarChart: &c,
-			CatAx:    f.drawPlotAreaCatAx(),
-			ValAx:    f.drawPlotAreaValAx(),
+			CatAx:    catAx,
+			ValAx:    valAx,
+		},
+		"barStacked": {
+			BarChart: &c,
+			CatAx:    catAx,
+			ValAx:    valAx,
 		},
 		"bar3D": {
 			Bar3DChart: &c,
-			CatAx:      f.drawPlotAreaCatAx(),
-			ValAx:      f.drawPlotAreaValAx(),
+			CatAx:      catAx,
+			ValAx:      valAx,
 		},
 	}
 	return charts[formatSet.Type]
@@ -590,7 +607,7 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 			},
 		},
 	}
-	chartSeriesSpPr := map[string]*cSpPr{Bar: nil, Bar3D: nil, Doughnut: nil, Line: spPrLine, Pie: nil, Pie3D: nil, Radar: nil, Scatter: spPrScatter}
+	chartSeriesSpPr := map[string]*cSpPr{Bar: nil, BarStacked: nil, Bar3D: nil, Doughnut: nil, Line: spPrLine, Pie: nil, Pie3D: nil, Radar: nil, Scatter: spPrScatter}
 	return chartSeriesSpPr[formatSet.Type]
 }
 
@@ -619,7 +636,7 @@ func (f *File) drawChartSeriesDPt(i int, formatSet *formatChart) []*cDPt {
 			},
 		},
 	}}
-	chartSeriesDPt := map[string][]*cDPt{Bar: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: dpt, Pie3D: dpt, Radar: nil, Scatter: nil}
+	chartSeriesDPt := map[string][]*cDPt{Bar: nil, BarStacked: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: dpt, Pie3D: dpt, Radar: nil, Scatter: nil}
 	return chartSeriesDPt[formatSet.Type]
 }
 
@@ -631,7 +648,7 @@ func (f *File) drawChartSeriesCat(v formatChartSeries, formatSet *formatChart) *
 			F: v.Categories,
 		},
 	}
-	chartSeriesCat := map[string]*cCat{Bar: cat, Bar3D: cat, Doughnut: cat, Line: cat, Pie: cat, Pie3D: cat, Radar: cat, Scatter: nil}
+	chartSeriesCat := map[string]*cCat{Bar: cat, BarStacked: cat, Bar3D: cat, Doughnut: cat, Line: cat, Pie: cat, Pie3D: cat, Radar: cat, Scatter: nil}
 	return chartSeriesCat[formatSet.Type]
 }
 
@@ -643,7 +660,7 @@ func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *
 			F: v.Values,
 		},
 	}
-	chartSeriesVal := map[string]*cVal{Bar: val, Bar3D: val, Doughnut: val, Line: val, Pie: val, Pie3D: val, Radar: val, Scatter: nil}
+	chartSeriesVal := map[string]*cVal{Bar: val, BarStacked: val, Bar3D: val, Doughnut: val, Line: val, Pie: val, Pie3D: val, Radar: val, Scatter: nil}
 	return chartSeriesVal[formatSet.Type]
 }
 
@@ -669,7 +686,7 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 			},
 		},
 	}
-	chartSeriesMarker := map[string]*cMarker{Bar: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: marker}
+	chartSeriesMarker := map[string]*cMarker{Bar: nil, BarStacked: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: marker}
 	return chartSeriesMarker[formatSet.Type]
 }
 
@@ -681,7 +698,7 @@ func (f *File) drawChartSeriesXVal(v formatChartSeries, formatSet *formatChart) 
 			F: v.Categories,
 		},
 	}
-	chartSeriesXVal := map[string]*cCat{Bar: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: cat}
+	chartSeriesXVal := map[string]*cCat{Bar: nil, BarStacked: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: cat}
 	return chartSeriesXVal[formatSet.Type]
 }
 
@@ -693,7 +710,7 @@ func (f *File) drawChartSeriesYVal(v formatChartSeries, formatSet *formatChart) 
 			F: v.Values,
 		},
 	}
-	chartSeriesYVal := map[string]*cVal{Bar: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: val}
+	chartSeriesYVal := map[string]*cVal{Bar: nil, BarStacked: nil, Bar3D: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: val}
 	return chartSeriesYVal[formatSet.Type]
 }
 
@@ -715,7 +732,7 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 // format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
-	chartSeriesDLbls := map[string]*cDLbls{Bar: dLbls, Bar3D: dLbls, Doughnut: dLbls, Line: dLbls, Pie: dLbls, Pie3D: dLbls, Radar: dLbls, Scatter: nil}
+	chartSeriesDLbls := map[string]*cDLbls{Bar: dLbls, BarStacked: dLbls, Bar3D: dLbls, Doughnut: dLbls, Line: dLbls, Pie: dLbls, Pie3D: dLbls, Radar: dLbls, Scatter: nil}
 	return chartSeriesDLbls[formatSet.Type]
 }
 
