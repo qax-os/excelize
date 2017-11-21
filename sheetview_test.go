@@ -13,6 +13,12 @@ var _ = []excelize.SheetViewOption{
 	excelize.ShowFormulas(false),
 	excelize.ShowGridLines(true),
 	excelize.ShowRowColHeaders(true),
+	// SheetViewOptionPtr are also SheetViewOption
+	new(excelize.DefaultGridColor),
+	new(excelize.RightToLeft),
+	new(excelize.ShowFormulas),
+	new(excelize.ShowGridLines),
+	new(excelize.ShowRowColHeaders),
 }
 
 var _ = []excelize.SheetViewOptionPtr{
