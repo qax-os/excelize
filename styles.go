@@ -952,8 +952,8 @@ func parseTime(i int, v string) string {
 		{"%%%%", "January"},
 		{"&&&&", "Monday"},
 	}
-	// It is the presence of the "am/pm" indicator that determins if this is a
-	// 12 hour or 24 hours time format, not the number of 'h' characters.
+	// It is the presence of the "am/pm" indicator that determines if this is
+	// a 12 hour or 24 hours time format, not the number of 'h' characters.
 	if is12HourTime(format) {
 		format = strings.Replace(format, "hh", "03", 1)
 		format = strings.Replace(format, "h", "3", 1)
