@@ -2,7 +2,7 @@
 
 # Excelize
 
-[![Build Status](https://travis-ci.org/360EntSecGroup-Skylar/excelize.svg?branch=master)](https://travis-ci.org/360EntSecGroup-Skylar/excelize)
+[![Backers on Open Collective](https://opencollective.com/excelize/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/excelize/sponsors/badge.svg)](#sponsors) [![Build Status](https://travis-ci.org/360EntSecGroup-Skylar/excelize.svg?branch=master)](https://travis-ci.org/360EntSecGroup-Skylar/excelize)
 [![Code Coverage](https://codecov.io/gh/360EntSecGroup-Skylar/excelize/branch/master/graph/badge.svg)](https://codecov.io/gh/360EntSecGroup-Skylar/excelize)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xuri/excelize)](https://goreportcard.com/report/github.com/xuri/excelize)
 [![GoDoc](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize?status.svg)](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize)
@@ -166,9 +166,36 @@ func main() {
 
 Contributions are welcome! Open a pull request to fix a bug, or open an issue to discuss a new feature or change. XML is compliant with [part 1 of the 5th edition of the ECMA-376 Standard for Office Open XML](http://www.ecma-international.org/publications/standards/Ecma-376.htm).
 
+This project exists thanks to all the people who contribute. [[Contribute]](CONTRIBUTING.md).
+<a href="graphs/contributors"><img src="https://opencollective.com/excelize/contributors.svg?width=890" /></a>
+
+
+## Backers
+
+Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com/excelize#backer)]
+
+<a href="https://opencollective.com/excelize#backers" target="_blank"><img src="https://opencollective.com/excelize/backers.svg?width=890"></a>
+
+
+## Sponsors
+
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/excelize#sponsor)]
+
+<a href="https://opencollective.com/excelize/sponsor/0/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/0/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/1/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/1/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/2/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/2/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/3/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/3/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/4/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/4/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/5/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/5/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/6/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/6/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/7/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/7/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/8/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/8/avatar.svg"></a>
+<a href="https://opencollective.com/excelize/sponsor/9/website" target="_blank"><img src="https://opencollective.com/excelize/sponsor/9/avatar.svg"></a>
+
 ## Credits
 
 Some struct of XML originally by [tealeg/xlsx](https://github.com/tealeg/xlsx).
+
 
 ## Licenses
 
