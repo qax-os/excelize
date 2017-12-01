@@ -925,6 +925,7 @@ func formatToE(i int, v string) string {
 // March, or the 'd' in Tuesday) below. First we convert them to arbitrary
 // characters unused in Excel Date formats, and then at the end, turn them to
 // what they should actually be.
+// Based off: http://www.ozgrid.com/Excel/CustomFormats.htm
 func parseTime(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -943,8 +944,6 @@ func parseTime(i int, v string) string {
 		{"mmm", "Jan"},
 		{"mmss", "0405"},
 		{"ss", "05"},
-		{"hh", "15"},
-		{"h", "3"},
 		{"mm:", "04:"},
 		{":mm", ":04"},
 		{"mm", "01"},
@@ -953,6 +952,15 @@ func parseTime(i int, v string) string {
 		{"%%%%", "January"},
 		{"&&&&", "Monday"},
 	}
+	// It is the presence of the "am/pm" indicator that determins if this is a
+	// 12 hour or 24 hours time format, not the number of 'h' characters.
+	if is12HourTime(format) {
+		format = strings.Replace(format, "hh", "03", 1)
+		format = strings.Replace(format, "h", "3", 1)
+	} else {
+		format = strings.Replace(format, "hh", "15", 1)
+		format = strings.Replace(format, "h", "15", 1)
+	}
 	for _, repl := range replacements {
 		format = strings.Replace(format, repl.xltime, repl.gotime, 1)
 	}
@@ -960,6 +968,7 @@ func parseTime(i int, v string) string {
 	// colon that would remain.
 	if val.Hour() < 1 {
 		format = strings.Replace(format, "]:", "]", 1)
+		format = strings.Replace(format, "[03]", "", 1)
 		format = strings.Replace(format, "[3]", "", 1)
 		format = strings.Replace(format, "[15]", "", 1)
 	} else {
@@ -967,6 +976,11 @@ func parseTime(i int, v string) string {
 		format = strings.Replace(format, "[15]", "15", 1)
 	}
 	return val.Format(format)
+}
+
+// is12HourTime checks whether an Excel time format string is a 12 hours form.
+func is12HourTime(format string) bool {
+	return strings.Contains(format, "am/pm") || strings.Contains(format, "AM/PM") || strings.Contains(format, "a/p") || strings.Contains(format, "A/P")
 }
 
 // stylesReader provides function to get the pointer to the structure after
