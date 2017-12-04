@@ -195,8 +195,10 @@ func replaceRelationshipsNameSpace(workbookMarshal string) string {
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
-// SetActiveSheet provides function to set default active sheet of XLSX by given
-// index.
+// SetActiveSheet provides function to set default active worksheet of XLSX by
+// given index. Note that active index is different with the index that got by
+// function GetSheetMap, and it should be greater than 0 and less than total
+// worksheet numbers.
 func (f *File) SetActiveSheet(index int) {
 	if index < 1 {
 		index = 1
@@ -227,7 +229,6 @@ func (f *File) SetActiveSheet(index int) {
 			}
 		}
 	}
-	return
 }
 
 // GetActiveSheetIndex provides function to get active sheet of XLSX. If not
@@ -385,6 +386,7 @@ func (f *File) DeleteSheet(name string) {
 			f.SheetCount--
 		}
 	}
+	f.SetActiveSheet(len(f.GetSheetMap()))
 }
 
 // deleteSheetFromWorkbookRels provides function to remove worksheet
