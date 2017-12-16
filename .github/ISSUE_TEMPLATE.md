@@ -36,3 +36,5 @@ Briefly describe the problem you are having in a few paragraphs.
 ```
 (paste here)
 ```
+
+**Environment details (OS, Microsoft Excel™ version, physical, etc.):**

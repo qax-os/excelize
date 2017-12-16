@@ -1,8 +1,8 @@
-# Contributing to Excelize
+# Contributing to excelize
 
-Want to hack on Excelize? Awesome! This page contains information about reporting issues as well as some tips and
+Want to hack on excelize? Awesome! This page contains information about reporting issues as well as some tips and
 guidelines useful to experienced open source contributors. Finally, make sure
-you read our [community guidelines](#excelize-community-guidelines) before you
+you read our [community guidelines](#community-guidelines) before you
 start participating.
 
 ## Topics
@@ -15,7 +15,7 @@ start participating.
 
 ## Reporting security issues
 
-The Excelize maintainers take security seriously. If you discover a security
+The excelize maintainers take security seriously. If you discover a security
 issue, please bring it to their attention right away!
 
 Please **DO NOT** file a public issue, instead send your report privately to
@@ -65,13 +65,13 @@ don't get discouraged!
 
 ### Design and cleanup proposals
 
-You can propose new designs for existing Excelize features. You can also design
+You can propose new designs for existing excelize features. You can also design
 entirely new features. We really appreciate contributors who want to refactor or
 otherwise cleanup our project.
 
-We try hard to keep Excelize lean and focused. Excelize can't do everything for
+We try hard to keep excelize lean and focused. Excelize can't do everything for
 everybody. This means that we might decide against incorporating a new feature.
-However, there might be a way to implement that feature *on top of* Excelize.
+However, there might be a way to implement that feature *on top of* excelize.
 
 ### Conventions
 
@@ -184,7 +184,7 @@ Please see the [Coding Style](#coding-style) for further guidelines.
 
 ### Merge approval
 
-Excelize maintainers use LGTM (Looks Good To Me) in comments on the code review to
+The excelize maintainers use LGTM (Looks Good To Me) in comments on the code review to
 indicate acceptance.
 
 ### Sign your work
