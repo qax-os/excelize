@@ -39,6 +39,7 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 //    float64
 //    string
 //    []byte
+//    time.Duration
 //    time.Time
 //    nil
 //
@@ -46,6 +47,30 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 // set numbers format by SetCellStyle() method.
 func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	switch t := value.(type) {
+	case float32:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
+	case float64:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
+	case string:
+		f.SetCellStr(sheet, axis, t)
+	case []byte:
+		f.SetCellStr(sheet, axis, string(t))
+	case time.Duration:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(time.Duration).Seconds()/86400), 'f', -1, 32))
+		f.setDefaultTimeStyle(sheet, axis, 21)
+	case time.Time:
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 64))
+		f.setDefaultTimeStyle(sheet, axis, 22)
+	case nil:
+		f.SetCellStr(sheet, axis, "")
+	default:
+		f.setCellIntValue(sheet, axis, value)
+	}
+}
+
+// setCellIntValue provides function to set int value of a cell.
+func (f *File) setCellIntValue(sheet, axis string, value interface{}) {
+	switch value.(type) {
 	case int:
 		f.SetCellInt(sheet, axis, value.(int))
 	case int8:
@@ -66,19 +91,6 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 		f.SetCellInt(sheet, axis, int(value.(uint32)))
 	case uint64:
 		f.SetCellInt(sheet, axis, int(value.(uint64)))
-	case float32:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
-	case float64:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
-	case string:
-		f.SetCellStr(sheet, axis, t)
-	case []byte:
-		f.SetCellStr(sheet, axis, string(t))
-	case time.Time:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 64))
-		f.setDefaultTimeStyle(sheet, axis)
-	case nil:
-		f.SetCellStr(sheet, axis, "")
 	default:
 		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
 	}

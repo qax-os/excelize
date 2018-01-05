@@ -70,10 +70,11 @@ func OpenReader(r io.Reader) (*File, error) {
 }
 
 // setDefaultTimeStyle provides function to set default numbers format for
-// time.Time type cell value by given worksheet name and cell coordinates.
-func (f *File) setDefaultTimeStyle(sheet, axis string) {
+// time.Time type cell value by given worksheet name, cell coordinates and
+// number format code.
+func (f *File) setDefaultTimeStyle(sheet, axis string, format int) {
 	if f.GetCellStyle(sheet, axis) == 0 {
-		style, _ := f.NewStyle(`{"number_format": 22}`)
+		style, _ := f.NewStyle(`{"number_format": ` + strconv.Itoa(format) + `}`)
 		f.SetCellStyle(sheet, axis, axis, style)
 	}
 }

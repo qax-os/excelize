@@ -83,6 +83,8 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "F16", true)
 	xlsx.SetCellValue("Sheet2", "G2", nil)
 	xlsx.SetCellValue("Sheet2", "G4", time.Now())
+	// 02:46:40
+	xlsx.SetCellValue("Sheet2", "G5", time.Duration(1e13))
 	// Test completion column.
 	xlsx.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
