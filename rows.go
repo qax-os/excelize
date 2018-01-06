@@ -277,7 +277,7 @@ func checkRow(xlsx *xlsxWorksheet) {
 				oldRow := xlsx.SheetData.Row[k].C
 				xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
 				tmp := []xlsxC{}
-				for i := 0; i <= endCol; i++ {
+				for i := 0; i < endCol; i++ {
 					buffer.WriteString(ToAlphaString(i))
 					buffer.WriteString(strconv.Itoa(endRow))
 					tmp = append(tmp, xlsxC{
