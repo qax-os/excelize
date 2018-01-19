@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"unicode"
 )
 
 // ReadZipReader can be used to read an XLSX in memory without touching the
@@ -131,4 +132,44 @@ func defaultTrue(b *bool) bool {
 		return true
 	}
 	return *b
+}
+
+// axisLowerOrEqualThan returns true if axis1 <= axis2
+// axis1/axis2 can be either a column or a row axis, e.g. "A", "AAE", "42", "1", etc.
+//
+// For instance, the following comparisons are all true:
+//
+// "A" <= "B"
+// "A" <= "AA"
+// "B" <= "AA"
+// "BC" <= "ABCD" (in a XLSX sheet, the BC col comes before the ABCD col)
+// "1" <= "2"
+// "2" <= "11" (in a XLSX sheet, the row 2 comes before the row 11)
+// and so on
+func axisLowerOrEqualThan(axis1, axis2 string) bool {
+	if len(axis1) < len(axis2) {
+		return true
+	} else if len(axis1) > len(axis2) {
+		return false
+	} else {
+		return axis1 <= axis2
+	}
+}
+
+// getCellColRow returns the two parts of a cell identifier (its col and row) as strings
+//
+// For instance:
+//
+// "C220" => "C", "220"
+// "aaef42" => "aaef", "42"
+// "" => "", ""
+func getCellColRow(cell string) (col, row string) {
+	for index, rune := range cell {
+		if unicode.IsDigit(rune) {
+			return cell[:index], cell[index:]
+		}
+
+	}
+
+	return cell, ""
 }

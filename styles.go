@@ -2327,7 +2327,19 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 	completeCol(xlsx, vyAxis+1, vxAxis+1)
 
 	for r, row := range xlsx.SheetData.Row {
+		if r < hyAxis {
+			continue
+		} else if r > vyAxis {
+			break
+		}
+
 		for k, c := range row.C {
+			if k < hxAxis {
+				continue
+			} else if k > vxAxis {
+				break
+			}
+
 			if checkCellInArea(c.R, hcell+":"+vcell) {
 				xlsx.SheetData.Row[r].C[k].S = styleID
 			}
