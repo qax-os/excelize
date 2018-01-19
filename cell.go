@@ -455,27 +455,16 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 // checkCellInArea provides function to determine if a given coordinate is
 // within an area.
 func checkCellInArea(cell, area string) bool {
-	result := false
 	cell = strings.ToUpper(cell)
-	col := string(strings.Map(letterOnlyMapF, cell))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
+	area = strings.ToUpper(area)
 
 	ref := strings.Split(area, ":")
-	hCol := string(strings.Map(letterOnlyMapF, ref[0]))
-	hRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, ref[0]))
-	hyAxis := hRow - 1
-	hxAxis := TitleToNumber(hCol)
+	from := ref[0]
+	to := ref[1]
 
-	vCol := string(strings.Map(letterOnlyMapF, ref[1]))
-	vRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, ref[1]))
-	vyAxis := vRow - 1
-	vxAxis := TitleToNumber(vCol)
+	col, row := getCellColRow(cell)
+	fromCol, fromRow := getCellColRow(from)
+	toCol, toRow := getCellColRow(to)
 
-	if hxAxis <= yAxis && yAxis <= vxAxis && hyAxis <= xAxis && xAxis <= vyAxis {
-		result = true
-	}
-
-	return result
+	return axisLowerOrEqualThan(fromCol, col) && axisLowerOrEqualThan(col, toCol) && axisLowerOrEqualThan(fromRow, row) && axisLowerOrEqualThan(row, toRow)
 }
