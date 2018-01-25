@@ -81,6 +81,21 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "F14", uint32(1<<32-1))
 	xlsx.SetCellValue("Sheet2", "F15", uint64(1<<32-1))
 	xlsx.SetCellValue("Sheet2", "F16", true)
+	// Test boolean write
+	booltest := []struct {
+		value    bool
+		expected string
+	}{
+		{false, "0"},
+		{true, "1"},
+	}
+	for _, test := range booltest {
+		xlsx.SetCellValue("Sheet2", "F16", test.value)
+		value := xlsx.GetCellValue("Sheet2", "F16")
+		if value != test.expected {
+			t.Errorf(`Expecting result of xlsx.SetCellValue("Sheet2", "F16", %v) to be %v (false), got: %s `, test.value, test.expected, value)
+		}
+	}
 	xlsx.SetCellValue("Sheet2", "G2", nil)
 	xlsx.SetCellValue("Sheet2", "G4", time.Now())
 	// 02:46:40
