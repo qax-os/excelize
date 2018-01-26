@@ -41,6 +41,7 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 //    []byte
 //    time.Duration
 //    time.Time
+//    bool
 //    nil
 //
 // Note that default date format is m/d/yy h:mm of time.Time type value. You can
@@ -63,6 +64,8 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 		f.setDefaultTimeStyle(sheet, axis, 22)
 	case nil:
 		f.SetCellStr(sheet, axis, "")
+	case bool:
+		f.SetCellBool(sheet, axis, bool(value.(bool)))
 	default:
 		f.setCellIntValue(sheet, axis, value)
 	}
@@ -93,6 +96,34 @@ func (f *File) setCellIntValue(sheet, axis string, value interface{}) {
 		f.SetCellInt(sheet, axis, int(value.(uint64)))
 	default:
 		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+	}
+}
+
+// SetCellBool provides function to set bool type value of a cell by given
+// worksheet name, cell coordinates and cell value.
+func (f *File) SetCellBool(sheet, axis string, value bool) {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
+	xlsx.SheetData.Row[xAxis].C[yAxis].T = "b"
+	if value {
+		xlsx.SheetData.Row[xAxis].C[yAxis].V = "1"
+	} else {
+		xlsx.SheetData.Row[xAxis].C[yAxis].V = "0"
 	}
 }
 
