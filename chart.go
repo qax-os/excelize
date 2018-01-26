@@ -170,8 +170,8 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //     bar                 | bar chart
 //     barStacked          | stacked bar chart
 //     bar3D               | 3D bar chart
-//	   bar3DColumn 		   | 3D column bar chart
-// 	   bar3DPercentStacked | 3D 100% stacked bar chart
+//     bar3DColumn         | 3D column bar chart
+//     bar3DPercentStacked | 3D 100% stacked bar chart
 //     doughnut            | doughnut chart
 //     line                | line chart
 //     pie                 | pie chart
