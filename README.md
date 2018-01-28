@@ -166,15 +166,6 @@ func main() {
 
 Contributions are welcome! Open a pull request to fix a bug, or open an issue to discuss a new feature or change. XML is compliant with [part 1 of the 5th edition of the ECMA-376 Standard for Office Open XML](http://www.ecma-international.org/publications/standards/Ecma-376.htm).
 
-
-## Who is using Excelize
-
-![](./test/images/360.png)
-
-[Add our company](mailto:xuri.me@gmail.com?Subject=Please add our company in Excelize README page&Body=Hello, this is <your name> from <your company name>.
-We are using Excelize and will be proud to add our company name to Excelize README page.
-Please see attachment for our logo. <Be sure to include logo in attachment>)
-
 ## Credits
 
 Some struct of XML originally by [tealeg/xlsx](https://github.com/tealeg/xlsx).
