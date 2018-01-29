@@ -2307,6 +2307,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 	vyAxis := vrow - 1
 	vxAxis := TitleToNumber(vcol)
 
+	// Correct the coordinate area, such correct C1:B3 to B1:C3.
 	if vxAxis < hxAxis {
 		hcell, vcell = vcell, hcell
 		vxAxis, hxAxis = hxAxis, vxAxis
@@ -2317,32 +2318,14 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
 
-	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	hcell = ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1)
-	vcell = ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
-
 	xlsx := f.workSheetReader(sheet)
 
 	completeRow(xlsx, vyAxis+1, vxAxis+1)
 	completeCol(xlsx, vyAxis+1, vxAxis+1)
 
-	for r, row := range xlsx.SheetData.Row {
-		if r < hyAxis {
-			continue
-		} else if r > vyAxis {
-			break
-		}
-
-		for k, c := range row.C {
-			if k < hxAxis {
-				continue
-			} else if k > vxAxis {
-				break
-			}
-
-			if checkCellInArea(c.R, hcell+":"+vcell) {
-				xlsx.SheetData.Row[r].C[k].S = styleID
-			}
+	for r := hyAxis; r <= vyAxis; r++ {
+		for k := hxAxis; k <= vxAxis; k++ {
+			xlsx.SheetData.Row[r].C[k].S = styleID
 		}
 	}
 }
