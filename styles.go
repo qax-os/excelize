@@ -2309,12 +2309,10 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
 	if vxAxis < hxAxis {
-		hcell, vcell = vcell, hcell
 		vxAxis, hxAxis = hxAxis, vxAxis
 	}
 
 	if vyAxis < hyAxis {
-		hcell, vcell = vcell, hcell
 		vyAxis, hyAxis = hyAxis, vyAxis
 	}
 

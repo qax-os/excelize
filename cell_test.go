@@ -4,10 +4,10 @@ import "testing"
 
 func TestCheckCellInArea(t *testing.T) {
 	expectedTrueCellInAreaList := [][2]string{
-		[2]string{"c2", "A1:AAZ32"},
-		[2]string{"AA0", "Z0:AB1"},
-		[2]string{"B9", "A1:B9"},
-		[2]string{"C2", "C2:C2"},
+		{"c2", "A1:AAZ32"},
+		{"AA0", "Z0:AB1"},
+		{"B9", "A1:B9"},
+		{"C2", "C2:C2"},
 	}
 
 	for _, expectedTrueCellInArea := range expectedTrueCellInAreaList {
@@ -22,9 +22,9 @@ func TestCheckCellInArea(t *testing.T) {
 	}
 
 	expectedFalseCellInAreaList := [][2]string{
-		[2]string{"c2", "A4:AAZ32"},
-		[2]string{"C4", "D6:A1"}, // weird case, but you never know
-		[2]string{"AEF42", "BZ40:AEF41"},
+		{"c2", "A4:AAZ32"},
+		{"C4", "D6:A1"}, // weird case, but you never know
+		{"AEF42", "BZ40:AEF41"},
 	}
 
 	for _, expectedFalseCellInArea := range expectedFalseCellInAreaList {

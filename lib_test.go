@@ -4,12 +4,12 @@ import "testing"
 
 func TestAxisLowerOrEqualThan(t *testing.T) {
 	trueExpectedInputList := [][2]string{
-		[2]string{"A", "B"},
-		[2]string{"A", "AA"},
-		[2]string{"B", "AA"},
-		[2]string{"BC", "ABCD"},
-		[2]string{"1", "2"},
-		[2]string{"2", "11"},
+		{"A", "B"},
+		{"A", "AA"},
+		{"B", "AA"},
+		{"BC", "ABCD"},
+		{"1", "2"},
+		{"2", "11"},
 	}
 
 	for _, trueExpectedInput := range trueExpectedInputList {
@@ -20,12 +20,12 @@ func TestAxisLowerOrEqualThan(t *testing.T) {
 	}
 
 	falseExpectedInputList := [][2]string{
-		[2]string{"B", "A"},
-		[2]string{"AA", "A"},
-		[2]string{"AA", "B"},
-		[2]string{"ABCD", "AB"},
-		[2]string{"2", "1"},
-		[2]string{"11", "2"},
+		{"B", "A"},
+		{"AA", "A"},
+		{"AA", "B"},
+		{"ABCD", "AB"},
+		{"2", "1"},
+		{"11", "2"},
 	}
 
 	for _, falseExpectedInput := range falseExpectedInputList {
@@ -38,11 +38,11 @@ func TestAxisLowerOrEqualThan(t *testing.T) {
 
 func TestGetCellColRow(t *testing.T) {
 	cellExpectedColRowList := map[string][2]string{
-		"C220":    [2]string{"C", "220"},
-		"aaef42":  [2]string{"aaef", "42"},
-		"bonjour": [2]string{"bonjour", ""},
-		"59":      [2]string{"", "59"},
-		"":        [2]string{"", ""},
+		"C220":    {"C", "220"},
+		"aaef42":  {"aaef", "42"},
+		"bonjour": {"bonjour", ""},
+		"59":      {"", "59"},
+		"":        {"", ""},
 	}
 
 	for cell, expectedColRow := range cellExpectedColRowList {
