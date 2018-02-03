@@ -258,7 +258,7 @@ func (f *File) AddChart(sheet, cell, format string) {
 	chartID := f.countCharts() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
-	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml")
+	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
 	f.addDrawingChart(sheet, drawingXML, cell, 480, 290, drawingRID, &formatSet.Format)
 	f.addChart(formatSet)
 	f.addContentTypePart(chartID, "chart")

@@ -132,22 +132,22 @@ func TestAddPicture(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	// Test add picture to sheet.
-	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg", `{"x_offset": 140, "y_offset": 120}`)
+	// Test add picture to worksheet with offset and location hyperlink.
+	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg", `{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
 	if err != nil {
 		t.Log(err)
 	}
-	// Test add picture to sheet with offset.
-	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", `{"x_offset": 10, "y_offset": 10}`)
+	// Test add picture to worksheet with offset and external hyperlink.
+	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", `{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External"}`)
 	if err != nil {
 		t.Log(err)
 	}
-	// Test add picture to sheet with invalid file path.
+	// Test add picture to worksheet with invalid file path.
 	err = xlsx.AddPicture("Sheet1", "G21", "./test/images/excel.icon", "")
 	if err != nil {
 		t.Log(err)
 	}
-	// Test add picture to sheet with unsupport file type.
+	// Test add picture to worksheet with unsupport file type.
 	err = xlsx.AddPicture("Sheet1", "G21", "./test/Workbook1.xlsx", "")
 	if err != nil {
 		t.Log(err)

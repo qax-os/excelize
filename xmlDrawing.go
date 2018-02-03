@@ -30,10 +30,26 @@ var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpe
 // element specifies non-visual canvas properties. This allows for additional
 // information that does not affect the appearance of the picture to be stored.
 type xlsxCNvPr struct {
-	ID    int    `xml:"id,attr"`
-	Name  string `xml:"name,attr"`
-	Descr string `xml:"descr,attr"`
-	Title string `xml:"title,attr,omitempty"`
+	ID         int             `xml:"id,attr"`
+	Name       string          `xml:"name,attr"`
+	Descr      string          `xml:"descr,attr"`
+	Title      string          `xml:"title,attr,omitempty"`
+	HlinkClick *xlsxHlinkClick `xml:"a:hlinkClick"`
+}
+
+// xlsxHlinkClick (Click Hyperlink) Specifies the on-click hyperlink
+// information to be applied to a run of text. When the hyperlink text is
+// clicked the link is fetched.
+type xlsxHlinkClick struct {
+	R              string `xml:"xmlns:r,attr,omitempty"`
+	RID            string `xml:"r:id,attr,omitempty"`
+	InvalidURL     string `xml:"invalidUrl,attr,omitempty"`
+	Action         string `xml:"action,attr,omitempty"`
+	TgtFrame       string `xml:"tgtFrame,attr,omitempty"`
+	Tooltip        string `xml:"tooltip,attr,omitempty"`
+	History        bool   `xml:"history,attr,omitempty"`
+	HighlightClick bool   `xml:"highlightClick,attr,omitempty"`
+	EndSnd         bool   `xml:"endSnd,attr,omitempty"`
 }
 
 // xlsxPicLocks directly maps the picLocks (Picture Locks). This element
@@ -342,6 +358,8 @@ type formatPicture struct {
 	OffsetY          int     `json:"y_offset"`
 	XScale           float64 `json:"x_scale"`
 	YScale           float64 `json:"y_scale"`
+	Hyperlink        string  `json:"hyperlink"`
+	HyperlinkType    string  `json:"hyperlink_type"`
 }
 
 // formatShape directly maps the format settings of the shape.
