@@ -155,7 +155,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //        for k, v := range values {
 //            xlsx.SetCellValue("Sheet1", k, v)
 //        }
-//        xlsx.AddChart("SHEET1", "F2", `{"type":"bar3D","series":[{"name":"=Sheet1!$A$30","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$30:$D$30"},{"name":"=Sheet1!$A$31","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$31:$D$31"},{"name":"=Sheet1!$A$32","categories":"=Sheet1!$B$29:$D$29","values":"=Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+//        xlsx.AddChart("SHEET1", "F2", `{"type":"bar3D","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 //        // Save xlsx file by the given path.
 //        err := xlsx.SaveAs("./Workbook.xlsx")
 //        if err != nil {
@@ -187,7 +187,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //    categories
 //    values
 //
-// name: Set the name for the series. The name is displayed in the chart legend and in the formula bar. The name property is optional and if it isn't supplied it will default to Series 1..n. The name can also be a formula such as =Sheet1!$A$1
+// name: Set the name for the series. The name is displayed in the chart legend and in the formula bar. The name property is optional and if it isn't supplied it will default to Series 1..n. The name can also be a formula such as Sheet1!$A$1
 //
 // categories: This sets the chart category labels. The category is more or less the same as the X axis. In most chart types the categories property is optional and the chart will just assume a sequential series from 1..n.
 //
@@ -212,7 +212,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //
 //    title
 //
-// name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as =Sheet1!$A$1 or a list with a sheetname. The name property is optional. The default is to have no chart title.
+// name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as Sheet1!$A$1 or a list with a sheetname. The name property is optional. The default is to have no chart title.
 //
 // Specifies how blank cells are plotted on the chart by show_blanks_as. The default value is gap. The options that can be set are:
 //
