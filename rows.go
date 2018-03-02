@@ -149,7 +149,11 @@ func (f *File) GetRowHeight(sheet string, row int) float64 {
 func (f *File) sharedStringsReader() *xlsxSST {
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
-		xml.Unmarshal([]byte(f.readXML("xl/sharedStrings.xml")), &sharedStrings)
+		ss := f.readXML("xl/sharedStrings.xml")
+		if ss == "" {
+			ss = f.readXML("xl/SharedStrings.xml")
+		}
+		xml.Unmarshal([]byte(ss), &sharedStrings)
 		f.SharedStrings = &sharedStrings
 	}
 	return f.SharedStrings

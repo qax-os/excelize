@@ -1009,3 +1009,12 @@ func TestTitleToNumber(t *testing.T) {
 		t.Error("Conver title to number failed")
 	}
 }
+
+func TestSharedStrings(t *testing.T) {
+	xlsx, err := OpenFile("./test/SharedStrings.xlsx")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	xlsx.GetRows("Sheet1")
+}
