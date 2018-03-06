@@ -14,7 +14,7 @@ import (
 
 func TestOpenFile(t *testing.T) {
 	// Test update a XLSX file.
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -128,7 +128,7 @@ func TestOpenFile(t *testing.T) {
 }
 
 func TestAddPicture(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -148,12 +148,12 @@ func TestAddPicture(t *testing.T) {
 		t.Log(err)
 	}
 	// Test add picture to worksheet with unsupport file type.
-	err = xlsx.AddPicture("Sheet1", "G21", "./test/Workbook1.xlsx", "")
+	err = xlsx.AddPicture("Sheet1", "G21", "./test/Book1.xlsx", "")
 	if err != nil {
 		t.Log(err)
 	}
 	// Test write file to given path.
-	err = xlsx.SaveAs("./test/Workbook_2.xlsx")
+	err = xlsx.SaveAs("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -167,7 +167,7 @@ func TestBrokenFile(t *testing.T) {
 		t.Log(err)
 	}
 	// Test write file with broken file struct with given path.
-	err = xlsx.SaveAs("./test/Workbook_3.xlsx")
+	err = xlsx.SaveAs("./test/Book3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -181,7 +181,7 @@ func TestBrokenFile(t *testing.T) {
 	}
 
 	// Test open a XLSX file with given illegal path.
-	_, err = OpenFile("./test/Workbook.xlsx")
+	_, err = OpenFile("./test/Book.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -204,7 +204,7 @@ func TestNewFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SaveAs("./test/Workbook_3.xlsx")
+	err = xlsx.SaveAs("./test/Book3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -216,7 +216,7 @@ func TestColWidth(t *testing.T) {
 	xlsx.SetColWidth("Sheet1", "A", "B", 12)
 	xlsx.GetColWidth("Sheet1", "A")
 	xlsx.GetColWidth("Sheet1", "C")
-	err := xlsx.SaveAs("./test/Workbook_4.xlsx")
+	err := xlsx.SaveAs("./test/Book4.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -229,7 +229,7 @@ func TestRowHeight(t *testing.T) {
 	xlsx.SetRowHeight("Sheet1", 3, 90)
 	t.Log(xlsx.GetRowHeight("Sheet1", 1))
 	t.Log(xlsx.GetRowHeight("Sheet1", 3))
-	err := xlsx.SaveAs("./test/Workbook_5.xlsx")
+	err := xlsx.SaveAs("./test/Book5.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -237,7 +237,7 @@ func TestRowHeight(t *testing.T) {
 }
 
 func TestSetCellHyperLink(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -256,7 +256,7 @@ func TestSetCellHyperLink(t *testing.T) {
 }
 
 func TestGetCellHyperLink(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -271,7 +271,7 @@ func TestGetCellHyperLink(t *testing.T) {
 }
 
 func TestSetCellFormula(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -286,7 +286,7 @@ func TestSetCellFormula(t *testing.T) {
 }
 
 func TestSetSheetBackground(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -294,7 +294,7 @@ func TestSetSheetBackground(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	err = xlsx.SetSheetBackground("Sheet2", "./test/Workbook1.xlsx")
+	err = xlsx.SetSheetBackground("Sheet2", "./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -313,7 +313,7 @@ func TestSetSheetBackground(t *testing.T) {
 }
 
 func TestMergeCell(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -339,7 +339,7 @@ func TestMergeCell(t *testing.T) {
 }
 
 func TestSetCellStyleAlignment(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -361,7 +361,7 @@ func TestSetCellStyleAlignment(t *testing.T) {
 }
 
 func TestSetCellStyleBorder(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -413,7 +413,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 }
 
 func TestSetCellStyleNumberFormat(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -452,7 +452,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 }
 
 func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_3.xlsx")
+	xlsx, err := OpenFile("./test/Book3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -475,7 +475,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		t.Log(err)
 	}
 
-	xlsx, err = OpenFile("./test/Workbook_4.xlsx")
+	xlsx, err = OpenFile("./test/Book4.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -523,14 +523,14 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 		t.Log(err)
 	}
 	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
-	err = xlsx.SaveAs("./test/Workbook_custom_number_format.xlsx")
+	err = xlsx.SaveAs("./test/Book_custom_number_format.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
 }
 
 func TestSetCellStyleFill(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -567,7 +567,7 @@ func TestSetCellStyleFill(t *testing.T) {
 }
 
 func TestSetCellStyleFont(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -608,7 +608,7 @@ func TestSetCellStyleFont(t *testing.T) {
 }
 
 func TestSetDeleteSheet(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_3.xlsx")
+	xlsx, err := OpenFile("./test/Book3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -617,20 +617,20 @@ func TestSetDeleteSheet(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx, err = OpenFile("./test/Workbook_4.xlsx")
+	xlsx, err = OpenFile("./test/Book4.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
 	xlsx.DeleteSheet("Sheet1")
 	xlsx.AddComment("Sheet1", "A1", `{"author":"Excelize: ","text":"This is a comment."}`)
-	err = xlsx.SaveAs("./test/Workbook_delete_sheet.xlsx")
+	err = xlsx.SaveAs("./test/Book_delete_sheet.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
 }
 
 func TestGetPicture(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -659,7 +659,7 @@ func TestGetPicture(t *testing.T) {
 }
 
 func TestSheetVisibility(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -674,7 +674,7 @@ func TestSheetVisibility(t *testing.T) {
 }
 
 func TestRowVisibility(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -688,7 +688,7 @@ func TestRowVisibility(t *testing.T) {
 }
 
 func TestColumnVisibility(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -700,7 +700,7 @@ func TestColumnVisibility(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	xlsx, err = OpenFile("./test/Workbook_3.xlsx")
+	xlsx, err = OpenFile("./test/Book3.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -708,7 +708,7 @@ func TestColumnVisibility(t *testing.T) {
 }
 
 func TestCopySheet(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -732,7 +732,7 @@ func TestCopySheet(t *testing.T) {
 }
 
 func TestAddTable(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -746,7 +746,7 @@ func TestAddTable(t *testing.T) {
 }
 
 func TestAddShape(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -761,7 +761,7 @@ func TestAddShape(t *testing.T) {
 }
 
 func TestAddComments(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -775,7 +775,7 @@ func TestAddComments(t *testing.T) {
 }
 
 func TestAutoFilter(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook_2.xlsx")
+	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -814,7 +814,7 @@ func TestAutoFilter(t *testing.T) {
 }
 
 func TestAddChart(t *testing.T) {
-	xlsx, err := OpenFile("./test/Workbook1.xlsx")
+	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -846,7 +846,7 @@ func TestAddChart(t *testing.T) {
 	xlsx.AddChart("Sheet2", "P80", `{"type":"bar3DStacked","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit 3D Stacked Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 	xlsx.AddChart("Sheet2", "X80", `{"type":"bar3DPercentStacked","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit 3D 100% Stacked Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 	// Save xlsx file by the given path.
-	err = xlsx.SaveAs("./test/Workbook_addchart.xlsx")
+	err = xlsx.SaveAs("./test/Book_addchart.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -865,7 +865,7 @@ func TestInsertCol(t *testing.T) {
 	err := xlsx.AutoFilter("Sheet1", "A2", "B2", `{"column":"B","expression":"x != blanks"}`)
 	t.Log(err)
 	xlsx.InsertCol("Sheet1", "A")
-	err = xlsx.SaveAs("./test/Workbook_insertcol.xlsx")
+	err = xlsx.SaveAs("./test/Book_insertcol.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -885,7 +885,7 @@ func TestRemoveCol(t *testing.T) {
 	xlsx.MergeCell("Sheet1", "A2", "B2")
 	xlsx.RemoveCol("Sheet1", "A")
 	xlsx.RemoveCol("Sheet1", "A")
-	err := xlsx.SaveAs("./test/Workbook_removecol.xlsx")
+	err := xlsx.SaveAs("./test/Book_removecol.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -902,7 +902,7 @@ func TestInsertRow(t *testing.T) {
 	xlsx.SetCellHyperLink("Sheet1", "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.InsertRow("Sheet1", -1)
 	xlsx.InsertRow("Sheet1", 4)
-	err := xlsx.SaveAs("./test/Workbook_insertrow.xlsx")
+	err := xlsx.SaveAs("./test/Book_insertrow.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -917,7 +917,7 @@ func TestSetPane(t *testing.T) {
 	xlsx.SetPanes("Panes 3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
 	xlsx.NewSheet("Panes 4")
 	xlsx.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
-	err := xlsx.SaveAs("./test/Workbook_set_panes.xlsx")
+	err := xlsx.SaveAs("./test/Book_set_panes.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -942,7 +942,7 @@ func TestRemoveRow(t *testing.T) {
 	xlsx.RemoveRow("Sheet1", 0)
 	xlsx.RemoveRow("Sheet1", 1)
 	xlsx.RemoveRow("Sheet1", 0)
-	err = xlsx.SaveAs("./test/Workbook_removerow.xlsx")
+	err = xlsx.SaveAs("./test/Book_removerow.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -990,7 +990,7 @@ func TestConditionalFormat(t *testing.T) {
 	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
 	// Use a formula to determine which cells to format.
 	xlsx.SetConditionalFormat("Sheet1", "L1:L10", fmt.Sprintf(`[{"type":"formula", "criteria":"L2<3", "format":%d}]`, format1))
-	err = xlsx.SaveAs("./test/Workbook_conditional_format.xlsx")
+	err = xlsx.SaveAs("./test/Book_conditional_format.xlsx")
 	if err != nil {
 		t.Log(err)
 	}
@@ -1003,7 +1003,7 @@ func TestConditionalFormat(t *testing.T) {
 	// Set conditional format with illegal criteria type.
 	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
 	// Set conditional format with file without dxfs element.
-	xlsx, err = OpenFile("./test/Workbook1.xlsx")
+	xlsx, err = OpenFile("./test/Book1.xlsx")
 	t.Log(err)
 	_, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
 	t.Log(err)

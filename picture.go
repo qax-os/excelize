@@ -62,7 +62,7 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        err = xlsx.SaveAs("./Workbook.xlsx")
+//        err = xlsx.SaveAs("./Book1.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
@@ -402,7 +402,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 // in XLSX by given worksheet and cell name. This function returns the file name
 // in XLSX and file contents as []byte data types. For example:
 //
-//    xlsx, err := excelize.OpenFile("./Workbook.xlsx")
+//    xlsx, err := excelize.OpenFile("./Book1.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
 //        return
