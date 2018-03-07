@@ -607,6 +607,23 @@ func TestSetCellStyleFont(t *testing.T) {
 	}
 }
 
+func TestSetCellStyleProtection(t *testing.T) {
+	xlsx, err := OpenFile("./test/Book2.xlsx")
+	if err != nil {
+		t.Log(err)
+	}
+	var style int
+	style, err = xlsx.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
+	if err != nil {
+		t.Log(err)
+	}
+	xlsx.SetCellStyle("Sheet2", "A6", "A6", style)
+	err = xlsx.Save()
+	if err != nil {
+		t.Log(err)
+	}
+}
+
 func TestSetDeleteSheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book3.xlsx")
 	if err != nil {

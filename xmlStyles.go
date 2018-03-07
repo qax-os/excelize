@@ -344,6 +344,10 @@ type formatStyle struct {
 		Vertical        string `json:"vertical"`
 		WrapText        bool   `json:"wrap_text"`
 	} `json:"alignment"`
+	Protection *struct {
+		Hidden bool `json:"hidden"`
+		Locked bool `json:"locked"`
+	} `json:"protection"`
 	NumFmt        int     `json:"number_format"`
 	DecimalPlaces int     `json:"decimal_places"`
 	CustomNumFmt  *string `json:"custom_number_format"`

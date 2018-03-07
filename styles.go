@@ -1901,7 +1901,8 @@ func (f *File) NewStyle(style string) (int, error) {
 	fillID = s.Fills.Count - 1
 
 	applyAlignment, alignment := fs.Alignment != nil, setAlignment(fs)
-	cellXfsID = setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, alignment)
+	applyProtection, protection := fs.Protection != nil, setProtection(fs)
+	cellXfsID = setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 	return cellXfsID, nil
 }
 
@@ -2155,6 +2156,17 @@ func setAlignment(formatStyle *formatStyle) *xlsxAlignment {
 	return &alignment
 }
 
+// setProtection provides function to set protection properties associated
+// with the cell.
+func setProtection(formatStyle *formatStyle) *xlsxProtection {
+	var protection xlsxProtection
+	if formatStyle.Protection != nil {
+		protection.Hidden = formatStyle.Protection.Hidden
+		protection.Locked = formatStyle.Protection.Locked
+	}
+	return &protection
+}
+
 // setBorders provides function to add border elements in the styles.xml by
 // given borders format settings.
 func setBorders(formatStyle *formatStyle) *xlsxBorder {
@@ -2209,7 +2221,7 @@ func setBorders(formatStyle *formatStyle) *xlsxBorder {
 
 // setCellXfs provides function to set describes all of the formatting for a
 // cell.
-func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment bool, alignment *xlsxAlignment) int {
+func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment, applyProtection bool, alignment *xlsxAlignment, protection *xlsxProtection) int {
 	var xf xlsxXf
 	xf.FontID = fontID
 	if fontID != 0 {
@@ -2224,6 +2236,10 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	style.CellXfs.Count++
 	xf.Alignment = alignment
 	xf.ApplyAlignment = applyAlignment
+	if applyProtection {
+		xf.ApplyProtection = applyProtection
+		xf.Protection = protection
+	}
 	xfID := 0
 	xf.XfID = &xfID
 	style.CellXfs.Xf = append(style.CellXfs.Xf, xf)
@@ -2281,6 +2297,14 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 // Set font style for cell H9 on Sheet1:
 //
 //    style, err := xlsx.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//
+// Hide and lock for cell H9 on Sheet1:
+//
+//    style, err := xlsx.NewStyle(`{"protection":{"hidden":true, "locked":true}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
