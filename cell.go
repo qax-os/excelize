@@ -3,6 +3,7 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -481,6 +482,47 @@ func (f *File) SetCellDefault(sheet, axis, value string) {
 	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
 	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
+}
+
+// SetSheetRow writes an array to row by given worksheet name, starting
+// coordinate and a pointer to array type 'slice'. For example, writes an
+// array to row 6 start with the cell B6 on Sheet1:
+//
+//     xlsx.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
+//
+func (f *File) SetSheetRow(sheet, axis string, slice interface{}) {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
+	// Make sure 'slice' is a Ptr to Slice
+	v := reflect.ValueOf(slice)
+	if v.Kind() != reflect.Ptr {
+		return
+	}
+	v = v.Elem()
+	if v.Kind() != reflect.Slice {
+		return
+	}
+
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	idx := 0
+	for i := cell - 1; i < v.Len()+cell-1; i++ {
+		c := ToAlphaString(i) + strconv.Itoa(row)
+		f.SetCellValue(sheet, c, v.Index(idx).Interface())
+		idx++
+	}
 }
 
 // checkCellInArea provides function to determine if a given coordinate is

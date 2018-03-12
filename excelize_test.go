@@ -1043,3 +1043,20 @@ func TestSharedStrings(t *testing.T) {
 	}
 	xlsx.GetRows("Sheet1")
 }
+
+func TestSetSheetRow(t *testing.T) {
+	xlsx, err := OpenFile("./test/Book1.xlsx")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	xlsx.SetSheetRow("Sheet1", "B27", &[]interface{}{"cell", nil, int32(42), float64(42), time.Now()})
+	xlsx.SetSheetRow("Sheet1", "", &[]interface{}{"cell", nil, 2})
+	xlsx.SetSheetRow("Sheet1", "B27", []interface{}{})
+	xlsx.SetSheetRow("Sheet1", "B27", &xlsx)
+	err = xlsx.Save()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
