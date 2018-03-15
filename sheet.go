@@ -16,6 +16,10 @@ import (
 // creating a new XLSX file, the default sheet will be create, when you create a
 // new file.
 func (f *File) NewSheet(name string) int {
+	// Prevent corrupting the excel file by recreating the default sheet
+	if strings.ToLower(name) == "sheet1" {
+		return 1
+	}
 	f.SheetCount++
 	// Update docProps/app.xml
 	f.setAppXML()
