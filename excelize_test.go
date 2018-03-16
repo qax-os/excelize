@@ -190,6 +190,7 @@ func TestBrokenFile(t *testing.T) {
 func TestNewFile(t *testing.T) {
 	// Test create a XLSX file.
 	xlsx := NewFile()
+	xlsx.NewSheet("Sheet1")
 	xlsx.NewSheet("XLSXSheet2")
 	xlsx.NewSheet("XLSXSheet3")
 	xlsx.SetCellInt("XLSXSheet2", "A23", 56)

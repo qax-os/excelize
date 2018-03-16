@@ -13,9 +13,13 @@ import (
 )
 
 // NewSheet provides function to create a new sheet by given index, when
-// creating a new XLSX file, the default sheet will be create, when you create a
-// new file.
+// creating a new XLSX file, the default sheet will be create, when you create
+// a new file.
 func (f *File) NewSheet(name string) int {
+	// Check if the worksheet already exists
+	if f.GetSheetIndex(name) != 0 {
+		return f.SheetCount
+	}
 	f.SheetCount++
 	// Update docProps/app.xml
 	f.setAppXML()
