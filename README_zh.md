@@ -86,8 +86,6 @@ func main() {
 
 ### 在 Excel 文档中创建图表
 
-With Excelize chart generation and management is as easy as a few lines of code. You can build charts based off data in your worksheet or generate charts without any data in your worksheet at all.
-
 使用 Excelize 生成图表十分简单，仅需几行代码。您可以根据工作表中的已有数据构建图表，或向工作表中添加数据并创建图表。
 
 ![Excelize](./test/images/chart.png "Excelize")
