@@ -176,6 +176,18 @@ var (
 		Col3DPercentStacked: "col",
 		Line:                "standard",
 	}
+	orientation = map[bool]string{
+		true:  "maxMin",
+		false: "minMax",
+	}
+	catAxPos = map[bool]string{
+		true:  "t",
+		false: "b",
+	}
+	valAxPos = map[bool]string{
+		true:  "r",
+		false: "l",
+	}
 )
 
 // parseFormatChartSet provides function to parse the format settings of the
@@ -227,7 +239,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //        for k, v := range values {
 //            xlsx.SetCellValue("Sheet1", k, v)
 //        }
-//        xlsx.AddChart("Sheet1", "E1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Clustered Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
+//        xlsx.AddChart("Sheet1", "E1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Clustered Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"reverse_order":true},"y_axis":{"maximum":7.5,"minimum":0.5}}`)
 //        // Save xlsx file by the given path.
 //        err := xlsx.SaveAs("./Book1.xlsx")
 //        if err != nil {
@@ -328,6 +340,16 @@ func parseFormatChartSet(formatSet string) *formatChart {
 // show_series_name: Specifies that the series name shall be shown in a data label. The show_series_name property is optional. The default value is false.
 //
 // show_val: Specifies that the value shall be shown in a data label. The show_val property is optional. The default value is false.
+//
+// Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties that can be set are:
+//
+//    reverse_order
+//    maximum
+//    minimum
+//
+// reverse_order: Specifies that the categories or values on reverse order (orientation of the chart). The reverse_order property is optional. The default value is false.
+// maximum: Specifies that the fixed maximum, 0 is auto. The maximum property is optional. The default value is auto.
+// minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
 //
 func (f *File) AddChart(sheet, cell, format string) {
 	formatSet := parseFormatChartSet(format)
@@ -914,14 +936,24 @@ func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 
 // drawPlotAreaCatAx provides function to draw the c:catAx element.
 func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
+	min := &attrValFloat{Val: formatSet.XAxis.Minimum}
+	max := &attrValFloat{Val: formatSet.XAxis.Maximum}
+	if formatSet.XAxis.Minimum == 0 {
+		min = nil
+	}
+	if formatSet.XAxis.Maximum == 0 {
+		max = nil
+	}
 	return []*cAxs{
 		{
 			AxID: &attrValInt{Val: 754001152},
 			Scaling: &cScaling{
-				Orientation: &attrValString{Val: "minMax"},
+				Orientation: &attrValString{Val: orientation[formatSet.XAxis.ReverseOrder]},
+				Max:         max,
+				Min:         min,
 			},
 			Delete: &attrValBool{Val: false},
-			AxPos:  &attrValString{Val: "b"},
+			AxPos:  &attrValString{Val: catAxPos[formatSet.XAxis.ReverseOrder]},
 			NumFmt: &cNumFmt{
 				FormatCode:   "General",
 				SourceLinked: true,
@@ -943,14 +975,24 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 
 // drawPlotAreaValAx provides function to draw the c:valAx element.
 func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
+	min := &attrValFloat{Val: formatSet.YAxis.Minimum}
+	max := &attrValFloat{Val: formatSet.YAxis.Maximum}
+	if formatSet.YAxis.Minimum == 0 {
+		min = nil
+	}
+	if formatSet.YAxis.Maximum == 0 {
+		max = nil
+	}
 	return []*cAxs{
 		{
 			AxID: &attrValInt{Val: 753999904},
 			Scaling: &cScaling{
-				Orientation: &attrValString{Val: "minMax"},
+				Orientation: &attrValString{Val: orientation[formatSet.YAxis.ReverseOrder]},
+				Max:         max,
+				Min:         min,
 			},
 			Delete: &attrValBool{Val: false},
-			AxPos:  &attrValString{Val: "l"},
+			AxPos:  &attrValString{Val: valAxPos[formatSet.YAxis.ReverseOrder]},
 			NumFmt: &cNumFmt{
 				FormatCode:   chartValAxNumFmtFormatCode[formatSet.Type],
 				SourceLinked: true,

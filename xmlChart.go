@@ -345,6 +345,8 @@ type cAxs struct {
 // additional axis settings.
 type cScaling struct {
 	Orientation *attrValString `xml:"c:orientation"`
+	Max         *attrValFloat  `xml:"c:max"`
+	Min         *attrValFloat  `xml:"c:min"`
 }
 
 // cNumFmt (Numbering Format) directly maps the c:numFmt element. This element
@@ -482,16 +484,19 @@ type cPageMargins struct {
 
 // formatChartAxis directly maps the format settings of the chart axis.
 type formatChartAxis struct {
-	Crossing            string `json:"crossing"`
-	MajorTickMark       string `json:"major_tick_mark"`
-	MinorTickMark       string `json:"minor_tick_mark"`
-	MinorUnitType       string `json:"minor_unit_type"`
-	MajorUnit           int    `json:"major_unit"`
-	MajorUnitType       string `json:"major_unit_type"`
-	DisplayUnits        string `json:"display_units"`
-	DisplayUnitsVisible bool   `json:"display_units_visible"`
-	DateAxis            bool   `json:"date_axis"`
-	NumFormat           string `json:"num_format"`
+	Crossing            string  `json:"crossing"`
+	MajorTickMark       string  `json:"major_tick_mark"`
+	MinorTickMark       string  `json:"minor_tick_mark"`
+	MinorUnitType       string  `json:"minor_unit_type"`
+	MajorUnit           int     `json:"major_unit"`
+	MajorUnitType       string  `json:"major_unit_type"`
+	DisplayUnits        string  `json:"display_units"`
+	DisplayUnitsVisible bool    `json:"display_units_visible"`
+	DateAxis            bool    `json:"date_axis"`
+	ReverseOrder        bool    `json:"reverse_order"`
+	Maximum             float64 `json:"maximum"`
+	Minimum             float64 `json:"minimum"`
+	NumFormat           string  `json:"num_format"`
 	NumFont             struct {
 		Color     string `json:"color"`
 		Bold      bool   `json:"bold"`
