@@ -226,10 +226,10 @@ func TestColWidth(t *testing.T) {
 
 func TestRowHeight(t *testing.T) {
 	xlsx := NewFile()
-	xlsx.SetRowHeight("Sheet1", 0, 50)
-	xlsx.SetRowHeight("Sheet1", 3, 90)
+	xlsx.SetRowHeight("Sheet1", 1, 50)
+	xlsx.SetRowHeight("Sheet1", 4, 90)
 	t.Log(xlsx.GetRowHeight("Sheet1", 1))
-	t.Log(xlsx.GetRowHeight("Sheet1", 3))
+	t.Log(xlsx.GetRowHeight("Sheet1", 0))
 	err := xlsx.SaveAs("./test/Book5.xlsx")
 	if err != nil {
 		t.Log(err)

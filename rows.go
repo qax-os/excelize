@@ -99,23 +99,18 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 	return tr, tc
 }
 
-// SetRowHeight provides a function to set the height of a single row.
-// For example:
+// SetRowHeight provides a function to set the height of a single row. For
+// example, set the height of the first row in Sheet1:
 //
-//    xlsx := excelize.NewFile()
-//    xlsx.SetRowHeight("Sheet1", 0, 50)
-//    err := xlsx.Save()
-//    if err != nil {
-//        fmt.Println(err)
-//    }
+//    xlsx.SetRowHeight("Sheet1", 1, 50)
 //
-func (f *File) SetRowHeight(sheet string, rowIndex int, height float64) {
+func (f *File) SetRowHeight(sheet string, row int, height float64) {
 	xlsx := f.workSheetReader(sheet)
-	rows := rowIndex + 1
 	cells := 0
-	completeRow(xlsx, rows, cells)
-	xlsx.SheetData.Row[rowIndex].Ht = height
-	xlsx.SheetData.Row[rowIndex].CustomHeight = true
+	rowIdx := row - 1
+	completeRow(xlsx, row, cells)
+	xlsx.SheetData.Row[rowIdx].Ht = height
+	xlsx.SheetData.Row[rowIdx].CustomHeight = true
 }
 
 // getRowHeight provides function to get row height in pixels by given sheet
@@ -131,12 +126,15 @@ func (f *File) getRowHeight(sheet string, row int) int {
 	return int(defaultRowHeightPixels)
 }
 
-// GetRowHeight provides function to get row height by given worksheet name and
-// row index.
+// GetRowHeight provides function to get row height by given worksheet name
+// and row index. For example, get the height of the first row in Sheet1:
+//
+//    xlsx.GetRowHeight("Sheet1", 1)
+//
 func (f *File) GetRowHeight(sheet string, row int) float64 {
 	xlsx := f.workSheetReader(sheet)
 	for _, v := range xlsx.SheetData.Row {
-		if v.R == row+1 && v.Ht != 0 {
+		if v.R == row && v.Ht != 0 {
 			return v.Ht
 		}
 	}
