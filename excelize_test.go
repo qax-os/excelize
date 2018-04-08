@@ -332,6 +332,7 @@ func TestMergeCell(t *testing.T) {
 	xlsx.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	xlsx.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)")
 	xlsx.GetCellValue("Sheet1", "H11")
+	xlsx.GetCellValue("Sheet2", "A6") // Merged cell ref is single coordinate.
 	xlsx.GetCellFormula("Sheet1", "G12")
 	err = xlsx.Save()
 	if err != nil {

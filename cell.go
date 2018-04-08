@@ -532,6 +532,10 @@ func checkCellInArea(cell, area string) bool {
 	area = strings.ToUpper(area)
 
 	ref := strings.Split(area, ":")
+	if len(ref) < 2 {
+		return false
+	}
+
 	from := ref[0]
 	to := ref[1]
 
