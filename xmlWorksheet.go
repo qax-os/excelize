@@ -304,6 +304,19 @@ type xlsxDataValidations struct {
 // xlsxC directly maps the c element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
+//
+// This simple type is restricted to the values listed in the following table:
+//
+//      Enumeration Value         | Description
+//     ---------------------------+---------------------------------
+//      b (Boolean)               | Cell containing a boolean.
+//      d (Date)                  | Cell contains a date in the ISO 8601 format.
+//      e (Error)                 | Cell containing an error.
+//      inlineStr (Inline String) | Cell containing an (inline) rich string, i.e., one not in the shared string table. If this cell type is used, then the cell value is in the is element rather than the v element in the cell (c element).
+//      n (Number)                | Cell containing a number.
+//      s (Shared String)         | Cell containing a shared string.
+//      str (String)              | Cell containing a formula string.
+//
 type xlsxC struct {
 	R string `xml:"r,attr"`           // Cell ID, e.g. A1
 	S int    `xml:"s,attr,omitempty"` // Style reference.
@@ -311,7 +324,16 @@ type xlsxC struct {
 	T        string   `xml:"t,attr,omitempty"` // Type.
 	F        *xlsxF   `xml:"f,omitempty"`      // Formula
 	V        string   `xml:"v,omitempty"`      // Value
+	IS       *xlsxIS  `xml:"is"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
+}
+
+// xlsxIS directly maps the t element. Cell containing an (inline) rich
+// string, i.e., one not in the shared string table. If this cell type is
+// used, then the cell value is in the is element rather than the v element in
+// the cell (c element).
+type xlsxIS struct {
+	T string `xml:"t"`
 }
 
 // xlsxF directly maps the f element in the namespace

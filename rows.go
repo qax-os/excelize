@@ -174,6 +174,8 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		return f.formattedValue(xlsx.S, d.SI[xlsxSI].T), nil
 	case "str":
 		return f.formattedValue(xlsx.S, xlsx.V), nil
+	case "inlineStr":
+		return f.formattedValue(xlsx.S, xlsx.IS.T), nil
 	default:
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
