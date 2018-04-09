@@ -312,6 +312,7 @@ type xlsxC struct {
 	F        *xlsxF   `xml:"f,omitempty"`      // Formula
 	V        string   `xml:"v,omitempty"`      // Value
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
+	InlineStr string `xml:"is>t,omitempty"`
 }
 
 // xlsxF directly maps the f element in the namespace
