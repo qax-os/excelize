@@ -79,7 +79,10 @@ func (o *ShowRowColHeaders) getSheetViewOption(view *xlsxSheetView) {
 }
 
 func (o ZoomScale) setSheetViewOption(view *xlsxSheetView) {
-	view.ZoomScale = float64(o)
+	//This attribute is restricted to values ranging from 10 to 400.
+	if float64(o) >= 10 && float64(o) <= 400 {
+		view.ZoomScale = float64(o)
+	}
 }
 
 func (o *ZoomScale) getSheetViewOption(view *xlsxSheetView) {
