@@ -24,6 +24,8 @@ type (
 	ShowGridLines bool
 	// ShowRowColHeaders is a SheetViewOption.
 	ShowRowColHeaders bool
+	// ZoomScale is a SheetViewOption.
+	ZoomScale float64
 	/* TODO
 	// ShowWhiteSpace is a SheetViewOption.
 	ShowWhiteSpace bool
@@ -74,6 +76,17 @@ func (o ShowRowColHeaders) setSheetViewOption(view *xlsxSheetView) {
 
 func (o *ShowRowColHeaders) getSheetViewOption(view *xlsxSheetView) {
 	*o = ShowRowColHeaders(defaultTrue(view.ShowRowColHeaders)) // Excel default: true
+}
+
+func (o ZoomScale) setSheetViewOption(view *xlsxSheetView) {
+	//This attribute is restricted to values ranging from 10 to 400.
+	if float64(o) >= 10 && float64(o) <= 400 {
+		view.ZoomScale = float64(o)
+	}
+}
+
+func (o *ZoomScale) getSheetViewOption(view *xlsxSheetView) {
+	*o = ZoomScale(view.ZoomScale)
 }
 
 // getSheetView returns the SheetView object
