@@ -2304,7 +2304,7 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 //
 // Hide and lock for cell H9 on Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"protection":{"hidden":true, "locked":true}`)
+//    style, err := xlsx.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }

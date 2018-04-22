@@ -261,7 +261,7 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //     colStacked          | 2D stacked column chart
 //     colPercentStacked   | 2D 100% stacked column chart
 //     col3DClustered      | 3D clustered column chart
-//     col3D               | 3D column column chart
+//     col3D               | 3D column chart
 //     col3DStacked        | 3D stacked column chart
 //     col3DPercentStacked | 3D 100% stacked column chart
 //     doughnut            | doughnut chart

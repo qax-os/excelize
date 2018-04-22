@@ -182,7 +182,7 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 }
 
 // SetRowVisible provides a function to set visible of a single row by given
-// worksheet name and row index. For example, hide row 3 in Sheet1:
+// worksheet name and row index. For example, hide row 2 in Sheet1:
 //
 //    xlsx.SetRowVisible("Sheet1", 2, false)
 //
@@ -199,7 +199,7 @@ func (f *File) SetRowVisible(sheet string, rowIndex int, visible bool) {
 }
 
 // GetRowVisible provides a function to get visible of a single row by given
-// worksheet name and row index. For example, get visible state of row 3 in
+// worksheet name and row index. For example, get visible state of row 2 in
 // Sheet1:
 //
 //    xlsx.GetRowVisible("Sheet1", 2)
