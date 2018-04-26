@@ -360,6 +360,7 @@ type formatPicture struct {
 	YScale           float64 `json:"y_scale"`
 	Hyperlink        string  `json:"hyperlink"`
 	HyperlinkType    string  `json:"hyperlink_type"`
+	Positioning      string  `json:"positioning"`
 }
 
 // formatShape directly maps the format settings of the shape.

@@ -1111,7 +1111,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := f.drawingParser(drawingXML, &content)
 	twoCellAnchor := xdrCellAnchor{}
-	twoCellAnchor.EditAs = "oneCell"
+	twoCellAnchor.EditAs = formatSet.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
 	from.ColOff = formatSet.OffsetX * EMU

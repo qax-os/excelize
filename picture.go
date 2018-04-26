@@ -57,8 +57,8 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        // Insert a picture offset in the cell with external hyperlink and printing support.
-//        err = xlsx.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
+//        // Insert a picture offset in the cell with external hyperlink, printing and positioning support.
+//        err = xlsx.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
@@ -71,6 +71,11 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 // LinkType defines two types of hyperlink "External" for web site or
 // "Location" for moving to one of cell in this workbook. When the
 // "hyperlink_type" is "Location", coordinates need to start with "#".
+//
+// Positioning defines two types of the position of a picture in an Excel
+// spreadsheet, "oneCell" (Move but don't size with cells) or "absolute"
+// (Don't move or size with cells). If you don't set this parameter, default
+// positioning is move and size with cells.
 func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	var err error
 	var drawingHyperlinkRID int
@@ -217,7 +222,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	content.Xdr = NameSpaceDrawingMLSpreadSheet
 	cNvPrID := f.drawingParser(drawingXML, &content)
 	twoCellAnchor := xdrCellAnchor{}
-	twoCellAnchor.EditAs = "oneCell"
+	twoCellAnchor.EditAs = formatSet.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
 	from.ColOff = formatSet.OffsetX * EMU

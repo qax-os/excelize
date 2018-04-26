@@ -137,8 +137,8 @@ func TestAddPicture(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	// Test add picture to worksheet with offset and external hyperlink.
-	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", `{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External"}`)
+	// Test add picture to worksheet with offset, external hyperlink and positioning.
+	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", `{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
 	if err != nil {
 		t.Log(err)
 	}
@@ -196,8 +196,8 @@ func TestNewFile(t *testing.T) {
 	xlsx.SetCellInt("XLSXSheet2", "A23", 56)
 	xlsx.SetCellStr("Sheet1", "B20", "42")
 	xlsx.SetActiveSheet(0)
-	// Test add picture to sheet with scaling.
-	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5}`)
+	// Test add picture to sheet with scaling and positioning.
+	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
 	if err != nil {
 		t.Log(err)
 	}
