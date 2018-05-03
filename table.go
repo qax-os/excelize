@@ -157,9 +157,9 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 }
 
 // AutoFilter provides the method to add auto filter in a worksheet by given
-// worksheet name, coordinate area and settings. An autofilter in Excel is a way
-// of filtering a 2D range of data based on some simple criteria. For example
-// applying an autofilter to a cell range A1:D4 in the worksheet 1:
+// worksheet name, coordinate area and settings. An autofilter in Excel is a
+// way of filtering a 2D range of data based on some simple criteria. For
+// example applying an autofilter to a cell range A1:D4 in the Sheet1:
 //
 //    err = xlsx.AutoFilter("Sheet1", "A1", "D4", "")
 //
@@ -170,15 +170,15 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 // column defines the filter columns in a autofilter range based on simple
 // criteria
 //
-// It isn't sufficient to just specify the filter condition. You must also hide
-// any rows that don't match the filter condition. Rows are hidden using the
-// SetRowVisible() method. Excelize can't filter rows automatically since this
-// isn't part of the file format.
+// It isn't sufficient to just specify the filter condition. You must also
+// hide any rows that don't match the filter condition. Rows are hidden using
+// the SetRowVisible() method. Excelize can't filter rows automatically since
+// this isn't part of the file format.
 //
 // Setting a filter criteria for a column:
 //
-// expression defines the conditions, the following operators are available for
-// setting the filter criteria:
+// expression defines the conditions, the following operators are available
+// for setting the filter criteria:
 //
 //    ==
 //    !=
@@ -189,8 +189,8 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //    and
 //    or
 //
-// An expression can comprise a single statement or two statements separated by
-// the and and or operators. For example:
+// An expression can comprise a single statement or two statements separated
+// by the 'and' and 'or' operators. For example:
 //
 //    x <  2000
 //    x >  2000

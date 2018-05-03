@@ -536,12 +536,8 @@ func parseFormatPanesSet(formatSet string) *formatPanes {
 //                                    | been applied, dividing the pane into right and left
 //                                    | regions. In that case, this value specifies the left pane
 //                                    |
-//                                    | Top right pane, when both vertical and horizontal
+//    topRight (Top Right Pane)       | Top right pane, when both vertical and horizontal
 //                                    | splits are applied.
-//                                    |
-//    topRight (Top Right Pane)       | This value is also used when only a vertical split has
-//                                    | splits are applied.
-//                                    |
 //                                    |
 //                                    | This value is also used when only a vertical split has
 //                                    | been applied, dividing the pane into right and left
@@ -577,19 +573,19 @@ func parseFormatPanesSet(formatSet string) *formatPanes {
 // set of ranges.
 //
 // An example of how to freeze column A in the Sheet1 and set the active cell on
-// Sheet1!A16:
+// Sheet1!K16:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"topLeftCell":"B1","activePane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
+//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
 //
 // An example of how to freeze rows 1 to 9 in the Sheet1 and set the active cell
-// on Sheet1!A11:
+// ranges on Sheet1!A11:XFD11:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"topLeftCell":"A34","activePane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
+//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
 //
 // An example of how to create split panes in the Sheet1 and set the active cell
 // on Sheet1!J60:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"topLeftCell":"N57","activePane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
+//    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
 //
 // An example of how to unfreeze and remove all panes on Sheet1:
 //

@@ -1236,13 +1236,13 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //     55    | 4E0A5348/4E0B5348h"65F6"mm"5206
 //     56    | 4E0A5348/4E0B5348h"65F6"mm"5206"ss"79D2
 //     57    | yyyy"5E74"m"6708
-//     58    | m"6708"d"65E5"`,
+//     58    | m"6708"d"65E5"
 //
 // Number format code in ja-jp language:
 //
 //     Index | Symbol
 //    -------+-------------------------------------------
-//     27    | [$-411]ge.m.
+//     27    | [$-411]ge.m.d
 //     28    | [$-411]ggge"年"m"月"d"日
 //     29    | [$-411]ggge"年"m"月"d"日
 //     30    | m/d/y
@@ -1251,18 +1251,18 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //     33    | h"時"mm"分"ss"秒
 //     34    | yyyy"年"m"月
 //     35    | m"月"d"日
-//     36    | [$-411]ge.m.
-//     50    | [$-411]ge.m.
+//     36    | [$-411]ge.m.d
+//     50    | [$-411]ge.m.d
 //     51    | [$-411]ggge"年"m"月"d"日
 //     52    | yyyy"年"m"月
 //     53    | m"月"d"日
 //     54    | [$-411]ggge"年"m"月"d"日
 //     55    | yyyy"年"m"月
 //     56    | m"月"d"日
-//     57    | [$-411]ge.m.
+//     57    | [$-411]ge.m.d
 //     58    | [$-411]ggge"年"m"月"d"日"
 //
-// Number format code in th-th language:
+// Number format code in ko-kr language:
 //
 //     Index | Symbol
 //    -------+-------------------------------------------
@@ -1291,7 +1291,7 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //
 //     Index | Symbol
 //    -------+-------------------------------------------
-//     27    | [$-411]ge.m.
+//     27    | [$-411]ge.m.d
 //     28    | [$-411]ggge"5E74"m"6708"d"65E5
 //     29    | [$-411]ggge"5E74"m"6708"d"65E5
 //     30    | m/d/y
@@ -1300,15 +1300,15 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //     33    | h"6642"mm"5206"ss"79D2
 //     34    | yyyy"5E74"m"6708
 //     35    | m"6708"d"65E5
-//     36    | [$-411]ge.m.
-//     50    | [$-411]ge.m.
+//     36    | [$-411]ge.m.d
+//     50    | [$-411]ge.m.d
 //     51    | [$-411]ggge"5E74"m"6708"d"65E5
 //     52    | yyyy"5E74"m"6708
 //     53    | m"6708"d"65E5
 //     54    | [$-411]ggge"5E74"m"6708"d"65E5
 //     55    | yyyy"5E74"m"6708
 //     56    | m"6708"d"65E5
-//     57    | [$-411]ge.m.
+//     57    | [$-411]ge.m.d
 //     58    | [$-411]ggge"5E74"m"6708"d"65E5"
 //
 // Number format code with unicode values provided for language glyphs where
@@ -1336,7 +1336,7 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //     57    | yyyy"5E74" mm"6708" dd"65E5
 //     58    | mm-dd
 //
-// Number format code in ko-kr language:
+// Number format code in th-th language:
 //
 //     Index | Symbol
 //    -------+-------------------------------------------
