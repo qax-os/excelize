@@ -28,10 +28,12 @@ func parseFormatTableSet(formatSet string) *formatTable {
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
-//    xlsx.AddTable("Sheet2", "F2", "H6", `{"table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+//    xlsx.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 //
-// Note that the table at least two lines include string type header. The two
-// chart coordinate areas can not have an intersection.
+// Note that the table at least two lines include string type header. Multiple
+// tables coordinate areas can't have an intersection.
+//
+// table_name: The name of the table, in the same worksheet name of the table should be unique
 //
 // table_style: The built-in table style names
 //
@@ -122,7 +124,10 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 			Name: name,
 		})
 	}
-	name := "Table" + strconv.Itoa(i)
+	name := formatSet.TableName
+	if name == "" {
+		name = "Table" + strconv.Itoa(i)
+	}
 	t := xlsxTable{
 		XMLNS:       NameSpaceSpreadSheet,
 		ID:          i,

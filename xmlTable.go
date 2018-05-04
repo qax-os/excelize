@@ -186,6 +186,7 @@ type xlsxTableStyleInfo struct {
 
 // formatTable directly maps the format settings of the table.
 type formatTable struct {
+	TableName         string `json:"table_name"`
 	TableStyle        string `json:"table_style"`
 	ShowFirstColumn   bool   `json:"show_first_column"`
 	ShowLastColumn    bool   `json:"show_last_column"`
