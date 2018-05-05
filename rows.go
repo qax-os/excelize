@@ -3,6 +3,8 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -65,6 +67,100 @@ func (f *File) GetRows(sheet string) [][]string {
 		}
 	}
 	return rows
+}
+
+// Rows defines an iterator to a sheet
+type Rows struct {
+	decoder *xml.Decoder
+	token   xml.Token
+	err     error
+	f       *File
+}
+
+// Next will return true if find the next row element.
+func (rows *Rows) Next() bool {
+	for {
+		rows.token, rows.err = rows.decoder.Token()
+		if rows.err == io.EOF {
+			rows.err = nil
+		}
+		if rows.token == nil {
+			return false
+		}
+
+		switch startElement := rows.token.(type) {
+		case xml.StartElement:
+			inElement := startElement.Name.Local
+			if inElement == "row" {
+				return true
+			}
+		}
+	}
+}
+
+// Error will return the error when the find next row element
+func (rows *Rows) Error() error {
+	return rows.err
+}
+
+// Columns return the current row's column values
+func (rows *Rows) Columns() []string {
+	if rows.token == nil {
+		return []string{}
+	}
+
+	startElement := rows.token.(xml.StartElement)
+	r := xlsxRow{}
+	rows.decoder.DecodeElement(&r, &startElement)
+
+	d := rows.f.sharedStringsReader()
+	row := make([]string, len(r.C), len(r.C))
+	for _, colCell := range r.C {
+		c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+		val, _ := colCell.getValueFrom(rows.f, d)
+		row[c] = val
+	}
+	return row
+}
+
+// ErrSheetNotExist defines an error of sheet is not exist
+type ErrSheetNotExist struct {
+	SheetName string
+}
+
+func (err ErrSheetNotExist) Error() string {
+	return fmt.Sprintf("Sheet %s is not exist", string(err.SheetName))
+}
+
+// Rows return a rows iterator. For example:
+//
+//    rows, err := xlsx.GetRows("Sheet1")
+//
+//    for rows.Next() {
+//        for _, colCell := range rows.Columns() {
+//            fmt.Print(colCell, "\t")
+//        }
+//        fmt.Println()
+//    }
+//
+func (f *File) Rows(sheet string) (*Rows, error) {
+	xlsx := f.workSheetReader(sheet)
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		return nil, ErrSheetNotExist{sheet}
+	}
+	if xlsx != nil {
+		output, err := xml.Marshal(f.Sheet[name])
+		if err != nil {
+			return nil, err
+		}
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+	}
+
+	return &Rows{
+		f:       f,
+		decoder: xml.NewDecoder(strings.NewReader(f.readXML(name))),
+	}, nil
 }
 
 // getTotalRowsCols provides a function to get total columns and rows in a
