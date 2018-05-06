@@ -351,7 +351,13 @@ func parseFormatChartSet(formatSet string) *formatChart {
 // maximum: Specifies that the fixed maximum, 0 is auto. The maximum property is optional. The default value is auto.
 // minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
 //
-func (f *File) AddChart(sheet, cell, format string) {
+func (f *File) AddChart(sheet, cell, format string, opts ...chartOpts) {
+
+	var defOpts = defaultChartOptions
+	for _, optF := range opts {
+		optF(&defOpts)
+	}
+
 	formatSet := parseFormatChartSet(format)
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
@@ -361,10 +367,38 @@ func (f *File) AddChart(sheet, cell, format string) {
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
 	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	f.addDrawingChart(sheet, drawingXML, cell, 480, 290, drawingRID, &formatSet.Format)
+	f.addDrawingChart(sheet, drawingXML, cell, defOpts.width, defOpts.height, drawingRID, &formatSet.Format)
 	f.addChart(formatSet)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
+}
+
+type chartOptions struct {
+	width  int
+	height int
+}
+
+var defaultChartOptions = chartOptions{
+	width:  480,
+	height: 290,
+}
+
+type chartOpts func(opts *chartOptions)
+
+// ChartWidth sets the chart width.
+func ChartWidth(width int) chartOpts {
+	return func(opts *chartOptions) {
+		opts.width = width
+		return
+	}
+}
+
+// ChartHeight sets the chart height.
+func ChartHeight(height int) chartOpts {
+	return func(opts *chartOptions) {
+		opts.height = height
+		return
+	}
 }
 
 // countCharts provides function to get chart files count storage in the
