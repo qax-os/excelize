@@ -108,11 +108,9 @@ func (rows *Rows) Columns() []string {
 	if rows.token == nil {
 		return []string{}
 	}
-
 	startElement := rows.token.(xml.StartElement)
 	r := xlsxRow{}
 	rows.decoder.DecodeElement(&r, &startElement)
-
 	d := rows.f.sharedStringsReader()
 	row := make([]string, len(r.C), len(r.C))
 	for _, colCell := range r.C {
@@ -135,7 +133,6 @@ func (err ErrSheetNotExist) Error() string {
 // Rows return a rows iterator. For example:
 //
 //    rows, err := xlsx.GetRows("Sheet1")
-//
 //    for rows.Next() {
 //        for _, colCell := range rows.Columns() {
 //            fmt.Print(colCell, "\t")
@@ -150,13 +147,9 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		return nil, ErrSheetNotExist{sheet}
 	}
 	if xlsx != nil {
-		output, err := xml.Marshal(f.Sheet[name])
-		if err != nil {
-			return nil, err
-		}
+		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
 	}
-
 	return &Rows{
 		f:       f,
 		decoder: xml.NewDecoder(strings.NewReader(f.readXML(name))),
