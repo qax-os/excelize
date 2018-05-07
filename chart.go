@@ -549,7 +549,7 @@ func (f *File) addChart(formatSet *formatChart) {
 
 	chart, _ := xml.Marshal(xlsxChartSpace)
 	media := "xl/charts/chart" + strconv.Itoa(count+1) + ".xml"
-	f.saveFileList(media, string(chart))
+	f.saveFileList(media, chart)
 }
 
 // drawBaseChart provides function to draw the c:plotArea element for bar,
@@ -1151,5 +1151,5 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	output, _ := xml.Marshal(content)
-	f.saveFileList(drawingXML, string(output))
+	f.saveFileList(drawingXML, output)
 }

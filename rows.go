@@ -29,9 +29,9 @@ func (f *File) GetRows(sheet string) [][]string {
 	}
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
-	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
+	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	d := f.sharedStringsReader()
 	var inElement string
 	var r xlsxRow
@@ -44,7 +44,7 @@ func (f *File) GetRows(sheet string) [][]string {
 		}
 		rows = append(rows, row)
 	}
-	decoder = xml.NewDecoder(strings.NewReader(f.readXML(name)))
+	decoder = xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -154,19 +154,19 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		if err != nil {
 			return nil, err
 		}
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
 
 	return &Rows{
 		f:       f,
-		decoder: xml.NewDecoder(strings.NewReader(f.readXML(name))),
+		decoder: xml.NewDecoder(bytes.NewReader(f.readXML(name))),
 	}, nil
 }
 
 // getTotalRowsCols provides a function to get total columns and rows in a
 // worksheet.
 func (f *File) getTotalRowsCols(name string) (int, int) {
-	decoder := xml.NewDecoder(strings.NewReader(f.readXML(name)))
+	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	var inElement string
 	var r xlsxRow
 	var tr, tc int
@@ -244,7 +244,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
-		if ss == "" {
+		if len(ss) == 0 {
 			ss = f.readXML("xl/SharedStrings.xml")
 		}
 		xml.Unmarshal([]byte(ss), &sharedStrings)
