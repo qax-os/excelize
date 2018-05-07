@@ -150,7 +150,7 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 		},
 	}
 	table, _ := xml.Marshal(t)
-	f.saveFileList(tableXML, string(table))
+	f.saveFileList(tableXML, table)
 }
 
 // parseAutoFilterSet provides function to parse the settings of the auto

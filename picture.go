@@ -142,7 +142,7 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 		TargetMode: targetMode,
 	})
 	output, _ := xml.Marshal(sheetRels)
-	f.saveFileList(rels, string(output))
+	f.saveFileList(rels, output)
 	return rID
 }
 
@@ -163,7 +163,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 		}
 	}
 	output, _ := xml.Marshal(sheetRels)
-	f.saveFileList(rels, string(output))
+	f.saveFileList(rels, output)
 }
 
 // addSheetLegacyDrawing provides function to add legacy drawing element to
@@ -257,7 +257,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	output, _ := xml.Marshal(content)
-	f.saveFileList(drawingXML, string(output))
+	f.saveFileList(drawingXML, output)
 }
 
 // addDrawingRelationships provides function to add image part relationships in
@@ -285,7 +285,7 @@ func (f *File) addDrawingRelationships(index int, relType, target, targetMode st
 		TargetMode: targetMode,
 	})
 	output, _ := xml.Marshal(drawingRels)
-	f.saveFileList(rels, string(output))
+	f.saveFileList(rels, output)
 	return rID
 }
 
@@ -307,7 +307,7 @@ func (f *File) addMedia(file, ext string) {
 	count := f.countMedia()
 	dat, _ := ioutil.ReadFile(file)
 	media := "xl/media/image" + strconv.Itoa(count+1) + ext
-	f.XLSX[media] = string(dat)
+	f.XLSX[media] = dat
 }
 
 // setContentTypePartImageExtensions provides function to set the content type

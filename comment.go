@@ -142,7 +142,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 	}
 	vml.Shape = append(vml.Shape, shape)
 	v, _ := xml.Marshal(vml)
-	f.XLSX[drawingVML] = string(v)
+	f.XLSX[drawingVML] = v
 }
 
 // addComment provides function to create chart as xl/comments%d.xml by given
@@ -202,7 +202,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)
 	v, _ := xml.Marshal(comments)
-	f.saveFileList(commentsXML, string(v))
+	f.saveFileList(commentsXML, v)
 }
 
 // countComments provides function to get comments files count storage in the

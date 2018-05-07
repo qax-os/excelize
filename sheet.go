@@ -50,7 +50,7 @@ func (f *File) contentTypesReader() *xlsxTypes {
 func (f *File) contentTypesWriter() {
 	if f.ContentTypes != nil {
 		output, _ := xml.Marshal(f.ContentTypes)
-		f.saveFileList("[Content_Types].xml", string(output))
+		f.saveFileList("[Content_Types].xml", output)
 	}
 }
 
@@ -70,7 +70,7 @@ func (f *File) workbookReader() *xlsxWorkbook {
 func (f *File) workbookWriter() {
 	if f.WorkBook != nil {
 		output, _ := xml.Marshal(f.WorkBook)
-		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpace(string(output)))
+		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpaceBytes(output))
 	}
 }
 
@@ -83,7 +83,7 @@ func (f *File) worksheetWriter() {
 				f.Sheet[path].SheetData.Row[k].C = trimCell(v.C)
 			}
 			output, _ := xml.Marshal(sheet)
-			f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpace(string(output)))
+			f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 			ok := f.checked[path]
 			if ok {
 				f.checked[path] = false
@@ -151,7 +151,7 @@ func (f *File) workbookRelsReader() *xlsxWorkbookRels {
 func (f *File) workbookRelsWriter() {
 	if f.WorkBookRels != nil {
 		output, _ := xml.Marshal(f.WorkBookRels)
-		f.saveFileList("xl/_rels/workbook.xml.rels", string(output))
+		f.saveFileList("xl/_rels/workbook.xml.rels", output)
 	}
 }
 
@@ -183,7 +183,7 @@ func (f *File) addXlsxWorkbookRels(sheet int) int {
 
 // setAppXML update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
-	f.saveFileList("docProps/app.xml", templateDocpropsApp)
+	f.saveFileList("docProps/app.xml", []byte(templateDocpropsApp))
 }
 
 // Some tools that read XLSX files have very strict requirements about the
@@ -197,6 +197,12 @@ func replaceRelationshipsNameSpace(workbookMarshal string) string {
 	oldXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
 	newXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`
 	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
+}
+
+func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
+	oldXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	newXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`)
+	return bytes.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
 // SetActiveSheet provides function to set default active worksheet of XLSX by

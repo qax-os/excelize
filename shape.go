@@ -390,7 +390,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	output, _ := xml.Marshal(content)
-	f.saveFileList(drawingXML, string(output))
+	f.saveFileList(drawingXML, output)
 }
 
 // setShapeRef provides function to set color with hex model by given actual
