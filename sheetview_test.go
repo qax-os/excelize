@@ -39,10 +39,45 @@ func ExampleFile_SetSheetViewOptions() {
 		excelize.ShowFormulas(true),
 		excelize.ShowGridLines(true),
 		excelize.ShowRowColHeaders(true),
+		excelize.ZoomScale(80),
 	); err != nil {
 		panic(err)
 	}
+
+	var zoomScale excelize.ZoomScale
+	fmt.Println("Default:")
+	fmt.Println("- zoomScale: 80")
+
+	if err := xl.SetSheetViewOptions(sheet, 0, excelize.ZoomScale(500)); err != nil {
+		panic(err)
+	}
+
+	if err := xl.GetSheetViewOptions(sheet, 0, &zoomScale); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Used out of range value:")
+	fmt.Println("- zoomScale:", zoomScale)
+
+	if err := xl.SetSheetViewOptions(sheet, 0, excelize.ZoomScale(123)); err != nil {
+		panic(err)
+	}
+
+	if err := xl.GetSheetViewOptions(sheet, 0, &zoomScale); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Used correct value:")
+	fmt.Println("- zoomScale:", zoomScale)
+
 	// Output:
+	// Default:
+	// - zoomScale: 80
+	// Used out of range value:
+	// - zoomScale: 80
+	// Used correct value:
+	// - zoomScale: 123
+
 }
 
 func ExampleFile_GetSheetViewOptions() {
@@ -55,6 +90,7 @@ func ExampleFile_GetSheetViewOptions() {
 		showFormulas      excelize.ShowFormulas
 		showGridLines     excelize.ShowGridLines
 		showRowColHeaders excelize.ShowRowColHeaders
+		zoomScale         excelize.ZoomScale
 	)
 
 	if err := xl.GetSheetViewOptions(sheet, 0,
@@ -63,6 +99,7 @@ func ExampleFile_GetSheetViewOptions() {
 		&showFormulas,
 		&showGridLines,
 		&showRowColHeaders,
+		&zoomScale,
 	); err != nil {
 		panic(err)
 	}
@@ -73,6 +110,7 @@ func ExampleFile_GetSheetViewOptions() {
 	fmt.Println("- showFormulas:", showFormulas)
 	fmt.Println("- showGridLines:", showGridLines)
 	fmt.Println("- showRowColHeaders:", showRowColHeaders)
+	fmt.Println("- zoomScale:", zoomScale)
 
 	if err := xl.SetSheetViewOptions(sheet, 0, excelize.ShowGridLines(false)); err != nil {
 		panic(err)
@@ -92,6 +130,7 @@ func ExampleFile_GetSheetViewOptions() {
 	// - showFormulas: false
 	// - showGridLines: true
 	// - showRowColHeaders: true
+	// - zoomScale: 0
 	// After change:
 	// - showGridLines: false
 }

@@ -6,6 +6,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,7 +17,7 @@ func TestOpenFile(t *testing.T) {
 	// Test update a XLSX file.
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	// Test get all the rows in a not exists worksheet.
 	rows := xlsx.GetRows("Sheet4")
@@ -130,17 +131,17 @@ func TestOpenFile(t *testing.T) {
 func TestAddPicture(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	// Test add picture to worksheet with offset and location hyperlink.
 	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg", `{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
 	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png", `{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	// Test add picture to worksheet with invalid file path.
 	err = xlsx.AddPicture("Sheet1", "G21", "./test/images/excel.icon", "")
@@ -155,7 +156,7 @@ func TestAddPicture(t *testing.T) {
 	// Test write file to given path.
 	err = xlsx.SaveAs("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -199,15 +200,15 @@ func TestNewFile(t *testing.T) {
 	// Test add picture to sheet with scaling and positioning.
 	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", "")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.SaveAs("./test/Book3.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -219,7 +220,7 @@ func TestColWidth(t *testing.T) {
 	xlsx.GetColWidth("Sheet1", "C")
 	err := xlsx.SaveAs("./test/Book4.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	convertRowHeightToPixels(0)
 }
@@ -232,7 +233,7 @@ func TestRowHeight(t *testing.T) {
 	t.Log(xlsx.GetRowHeight("Sheet1", 0))
 	err := xlsx.SaveAs("./test/Book5.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	convertColWidthToPixels(0)
 }
@@ -252,14 +253,14 @@ func TestSetCellHyperLink(t *testing.T) {
 	xlsx.SetCellHyperLink("Sheet2", "", "Sheet1!D60", "Location")
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestGetCellHyperLink(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	link, target := xlsx.GetCellHyperLink("Sheet1", "")
 	t.Log(link, target)
@@ -274,7 +275,7 @@ func TestGetCellHyperLink(t *testing.T) {
 func TestSetCellFormula(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.SetCellFormula("Sheet1", "B19", "SUM(Sheet2!D2,Sheet2!D11)")
 	xlsx.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)")
@@ -282,14 +283,14 @@ func TestSetCellFormula(t *testing.T) {
 	xlsx.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)")
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetSheetBackground(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.png")
 	if err != nil {
@@ -301,22 +302,22 @@ func TestSetSheetBackground(t *testing.T) {
 	}
 	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.jpg")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.jpg")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestMergeCell(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.MergeCell("Sheet1", "D9", "D9")
 	xlsx.MergeCell("Sheet1", "D9", "E9")
@@ -336,19 +337,19 @@ func TestMergeCell(t *testing.T) {
 	xlsx.GetCellFormula("Sheet1", "G12")
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleAlignment(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	var style int
 	style, err = xlsx.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"top","wrap_text":true}}`)
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.SetCellStyle("Sheet1", "A22", "A22", style)
 	// Test set cell style with given illegal rows number.
@@ -358,14 +359,14 @@ func TestSetCellStyleAlignment(t *testing.T) {
 	xlsx.GetCellStyle("Sheet1", "A")
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleBorder(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	var style int
 	// Test set border with invalid style parameter.
@@ -835,7 +836,7 @@ func TestAutoFilter(t *testing.T) {
 func TestAddChart(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	categories := map[string]string{"A30": "Small", "A31": "Normal", "A32": "Large", "B29": "Apple", "C29": "Orange", "D29": "Pear"}
 	values := map[string]int{"B30": 2, "C30": 3, "D30": 3, "B31": 5, "C31": 2, "D31": 4, "B32": 6, "C32": 7, "D32": 8}
@@ -1061,4 +1062,54 @@ func TestSetSheetRow(t *testing.T) {
 		t.Error(err)
 		return
 	}
+}
+
+func TestRows(t *testing.T) {
+	xlsx, err := OpenFile("./test/Book1.xlsx")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	rows, err := xlsx.Rows("Sheet2")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	rowStrs := make([][]string, 0)
+	var i = 0
+	for rows.Next() {
+		i++
+		columns := rows.Columns()
+		rowStrs = append(rowStrs, columns)
+	}
+	if rows.Error() != nil {
+		t.Error(rows.Error())
+		return
+	}
+	dstRows := xlsx.GetRows("Sheet2")
+	if len(dstRows) != len(rowStrs) {
+		t.Error("values not equal")
+		return
+	}
+	for i := 0; i < len(rowStrs); i++ {
+		if !reflect.DeepEqual(trimSliceSpace(dstRows[i]), trimSliceSpace(rowStrs[i])) {
+			t.Error("values not equal")
+			return
+		}
+	}
+	rows, err = xlsx.Rows("SheetN")
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func trimSliceSpace(s []string) []string {
+	for {
+		if len(s) > 0 && s[len(s)-1] == "" {
+			s = s[:len(s)-1]
+		} else {
+			break
+		}
+	}
+	return s
 }
