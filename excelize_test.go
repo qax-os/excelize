@@ -411,14 +411,14 @@ func TestSetCellStyleBorder(t *testing.T) {
 	xlsx.SetCellStyle("Sheet1", "O22", "O22", style)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleNumberFormat(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	// Test only set fill and number format for a cell.
 	col := []string{"L", "M", "N", "O", "P"}
@@ -450,14 +450,14 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	xlsx.SetCellStyle("Sheet2", "L33", "L33", style)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book3.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.SetCellValue("Sheet1", "A1", 56)
 	xlsx.SetCellValue("Sheet1", "A2", -32.3)
@@ -508,7 +508,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -528,14 +528,14 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
 	err = xlsx.SaveAs("./test/Book_custom_number_format.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleFill(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	var style int
 	// Test set fill for cell with invalid parameter.
@@ -565,14 +565,14 @@ func TestSetCellStyleFill(t *testing.T) {
 
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleFont(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	var style int
 	style, err = xlsx.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}`)
@@ -606,14 +606,14 @@ func TestSetCellStyleFont(t *testing.T) {
 	xlsx.SetCellStyle("Sheet2", "A5", "A5", style)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetCellStyleProtection(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	var style int
 	style, err = xlsx.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
@@ -623,29 +623,29 @@ func TestSetCellStyleProtection(t *testing.T) {
 	xlsx.SetCellStyle("Sheet2", "A6", "A6", style)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestSetDeleteSheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book3.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.DeleteSheet("XLSXSheet3")
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx, err = OpenFile("./test/Book4.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.DeleteSheet("Sheet1")
 	xlsx.AddComment("Sheet1", "A1", `{"author":"Excelize: ","text":"This is a comment."}`)
 	err = xlsx.SaveAs("./test/Book_delete_sheet.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -681,7 +681,7 @@ func TestGetPicture(t *testing.T) {
 func TestSheetVisibility(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.SetSheetVisible("Sheet2", false)
 	xlsx.SetSheetVisible("Sheet1", false)
@@ -689,28 +689,28 @@ func TestSheetVisibility(t *testing.T) {
 	xlsx.GetSheetVisible("Sheet1")
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestRowVisibility(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.SetRowVisible("Sheet3", 2, false)
 	xlsx.SetRowVisible("Sheet3", 2, true)
 	xlsx.GetRowVisible("Sheet3", 2)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestColumnVisibility(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.SetColVisible("Sheet1", "F", false)
 	xlsx.SetColVisible("Sheet1", "F", true)
@@ -718,11 +718,11 @@ func TestColumnVisibility(t *testing.T) {
 	xlsx.SetColVisible("Sheet3", "E", false)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx, err = OpenFile("./test/Book3.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.GetColVisible("Sheet1", "B")
 }
@@ -730,7 +730,7 @@ func TestColumnVisibility(t *testing.T) {
 func TestCopySheet(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.CopySheet(0, -1)
 	if err != nil {
@@ -747,28 +747,28 @@ func TestCopySheet(t *testing.T) {
 	}
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestAddTable(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.AddTable("Sheet1", "B26", "A21", ``)
 	xlsx.AddTable("Sheet2", "A2", "B5", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 	xlsx.AddTable("Sheet2", "F1", "F1", `{"table_style":"TableStyleMedium8"}`)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestAddShape(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	xlsx.AddShape("Sheet1", "A30", `{"type":"rect","paragraph":[{"text":"Rectangle","font":{"color":"CD5C5C"}},{"text":"Shape","font":{"bold":true,"color":"2980B9"}}]}`)
 	xlsx.AddShape("Sheet1", "B30", `{"type":"rect","paragraph":[{"text":"Rectangle"},{}]}`)
@@ -776,28 +776,28 @@ func TestAddShape(t *testing.T) {
 	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}], "height": 90}`)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestAddComments(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	s := strings.Repeat("c", 32768)
 	xlsx.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`)
 	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
 func TestAutoFilter(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	err = xlsx.AutoFilter("Sheet3", "D4", "B1", ``)
 	t.Log(err)
@@ -829,7 +829,7 @@ func TestAutoFilter(t *testing.T) {
 	t.Log(err)
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -868,7 +868,7 @@ func TestAddChart(t *testing.T) {
 	// Save xlsx file by the given path.
 	err = xlsx.SaveAs("./test/Book_addchart.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -887,7 +887,7 @@ func TestInsertCol(t *testing.T) {
 	xlsx.InsertCol("Sheet1", "A")
 	err = xlsx.SaveAs("./test/Book_insertcol.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -907,7 +907,7 @@ func TestRemoveCol(t *testing.T) {
 	xlsx.RemoveCol("Sheet1", "A")
 	err := xlsx.SaveAs("./test/Book_removecol.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -924,7 +924,7 @@ func TestInsertRow(t *testing.T) {
 	xlsx.InsertRow("Sheet1", 4)
 	err := xlsx.SaveAs("./test/Book_insertrow.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -939,7 +939,7 @@ func TestSetPane(t *testing.T) {
 	xlsx.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
 	err := xlsx.SaveAs("./test/Book_set_panes.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 
@@ -964,7 +964,7 @@ func TestRemoveRow(t *testing.T) {
 	xlsx.RemoveRow("Sheet1", 0)
 	err = xlsx.SaveAs("./test/Book_removerow.xlsx")
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 }
 

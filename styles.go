@@ -1938,9 +1938,6 @@ func (f *File) NewConditionalStyle(style string) (int, error) {
 // setFont provides function to add font style by given cell format settings.
 func setFont(formatStyle *formatStyle) *font {
 	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
-	if formatStyle.Font.Family == "" {
-		formatStyle.Font.Family = "Calibri"
-	}
 	if formatStyle.Font.Size < 1 {
 		formatStyle.Font.Size = 11
 	}
@@ -1954,7 +1951,10 @@ func setFont(formatStyle *formatStyle) *font {
 		Color:  &xlsxColor{RGB: getPaletteColor(formatStyle.Font.Color)},
 		Name:   &attrValString{Val: formatStyle.Font.Family},
 		Family: &attrValInt{Val: 2},
-		Scheme: &attrValString{Val: "minor"},
+	}
+	if f.Name.Val == "" {
+		f.Name.Val = "Calibri"
+		f.Scheme = &attrValString{Val: "minor"}
 	}
 	val, ok := fontUnderlineType[formatStyle.Font.Underline]
 	if ok {
