@@ -301,6 +301,33 @@ func (f *File) GetRowVisible(sheet string, rowIndex int) bool {
 	return !xlsx.SheetData.Row[rowIndex].Hidden
 }
 
+// SetRowOutlineLevel provides a function to set outline level number of a single row by given
+// worksheet name and row index. For example, outline row 2 in Sheet1 to level 1:
+//
+//    xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
+//
+func (f *File) SetRowOutlineLevel(sheet string, rowIndex int, level uint8) {
+	xlsx := f.workSheetReader(sheet)
+	rows := rowIndex + 1
+	cells := 0
+	completeRow(xlsx, rows, cells)
+	xlsx.SheetData.Row[rowIndex].OutlineLevel = level
+}
+
+// GetRowOutlineLevel provides a function to get outline level number of a single row by given
+// worksheet name and row index. For example, get outline number of row 2 in
+// Sheet1:
+//
+//    xlsx.GetRowOutlineLevel("Sheet1", 2)
+//
+func (f *File) GetRowOutlineLevel(sheet string, rowIndex int) uint8 {
+	xlsx := f.workSheetReader(sheet)
+	rows := rowIndex + 1
+	cells := 0
+	completeRow(xlsx, rows, cells)
+	return xlsx.SheetData.Row[rowIndex].OutlineLevel
+}
+
 // RemoveRow provides function to remove single row by given worksheet name and
 // row index. For example, remove row 3 in Sheet1:
 //

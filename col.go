@@ -67,6 +67,59 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
 }
 
+// GetColOutlineLevel provides a function to get outline level of a single column by given
+// worksheet name and column name. For example, get outline level of column D
+// in Sheet1:
+//
+//    xlsx.getColOutlineLevel("Sheet1", "D")
+//
+func (f *File) GetColOutlineLevel(sheet, column string) uint8 {
+	xlsx := f.workSheetReader(sheet)
+	col := TitleToNumber(strings.ToUpper(column)) + 1
+	level := uint8(0)
+	if xlsx.Cols == nil {
+		return level
+	}
+	for c := range xlsx.Cols.Col {
+		if xlsx.Cols.Col[c].Min <= col && col <= xlsx.Cols.Col[c].Max {
+			level = xlsx.Cols.Col[c].OutlineLevel
+		}
+	}
+	return level
+}
+
+// SetColOutlineLevel provides a function to set outline level of a single column by given
+// worksheet name and column name. For example, set outline level of column D in Sheet1 to 2:
+//
+//    xlsx.SetColOutlineLevel("Sheet1", "D", 2)
+//
+func (f *File) SetColOutlineLevel(sheet, column string, level uint8) {
+	xlsx := f.workSheetReader(sheet)
+	c := TitleToNumber(strings.ToUpper(column)) + 1
+	col := xlsxCol{
+		Min:          c,
+		Max:          c,
+		OutlineLevel: level,
+		CustomWidth:  true,
+	}
+	if xlsx.Cols == nil {
+		cols := xlsxCols{}
+		cols.Col = append(cols.Col, col)
+		xlsx.Cols = &cols
+		return
+	}
+	for v := range xlsx.Cols.Col {
+		if xlsx.Cols.Col[v].Min <= c && c <= xlsx.Cols.Col[v].Max {
+			col = xlsx.Cols.Col[v]
+		}
+	}
+	col.Min = c
+	col.Max = c
+	col.OutlineLevel = level
+	col.CustomWidth = true
+	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
+}
+
 // SetColWidth provides function to set the width of a single column or multiple
 // columns. For example:
 //
