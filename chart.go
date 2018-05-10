@@ -194,6 +194,10 @@ var (
 // chart with default value.
 func parseFormatChartSet(formatSet string) *formatChart {
 	format := formatChart{
+		Dimension: formatChartDimension{
+			Width:  480,
+			Height: 290,
+		},
 		Format: formatPicture{
 			FPrintsWithSheet: true,
 			FLocksWithSheet:  false,
@@ -361,7 +365,7 @@ func (f *File) AddChart(sheet, cell, format string) {
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
 	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	f.addDrawingChart(sheet, drawingXML, cell, 480, 290, drawingRID, &formatSet.Format)
+	f.addDrawingChart(sheet, drawingXML, cell, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
 	f.addChart(formatSet)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
