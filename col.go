@@ -67,11 +67,11 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
 }
 
-// GetColOutlineLevel provides a function to get outline level of a single column by given
-// worksheet name and column name. For example, get outline level of column D
-// in Sheet1:
+// GetColOutlineLevel provides a function to get outline level of a single
+// column by given worksheet name and column name. For example, get outline
+// level of column D in Sheet1:
 //
-//    xlsx.getColOutlineLevel("Sheet1", "D")
+//    xlsx.GetColOutlineLevel("Sheet1", "D")
 //
 func (f *File) GetColOutlineLevel(sheet, column string) uint8 {
 	xlsx := f.workSheetReader(sheet)
@@ -88,8 +88,9 @@ func (f *File) GetColOutlineLevel(sheet, column string) uint8 {
 	return level
 }
 
-// SetColOutlineLevel provides a function to set outline level of a single column by given
-// worksheet name and column name. For example, set outline level of column D in Sheet1 to 2:
+// SetColOutlineLevel provides a function to set outline level of a single
+// column by given worksheet name and column name. For example, set outline
+// level of column D in Sheet1 to 2:
 //
 //    xlsx.SetColOutlineLevel("Sheet1", "D", 2)
 //

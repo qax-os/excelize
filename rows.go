@@ -301,8 +301,9 @@ func (f *File) GetRowVisible(sheet string, rowIndex int) bool {
 	return !xlsx.SheetData.Row[rowIndex].Hidden
 }
 
-// SetRowOutlineLevel provides a function to set outline level number of a single row by given
-// worksheet name and row index. For example, outline row 2 in Sheet1 to level 1:
+// SetRowOutlineLevel provides a function to set outline level number of a
+// single row by given worksheet name and row index. For example, outline row
+// 2 in Sheet1 to level 1:
 //
 //    xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
 //

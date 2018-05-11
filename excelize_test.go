@@ -799,34 +799,25 @@ func TestAutoFilter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", ``)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x != blanks"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == blanks"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x != nonblanks"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == nonblanks"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x <= 1 and x >= 2"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == 1 or x == 2"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x == 1 or x == 2*"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x <= 1 and x >= blanks"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x -- y or x == *2*"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x != y or x ? *2"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x -- y o r x == *2"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"B","expression":"x -- y"}`)
-	t.Log(err)
-	err = xlsx.AutoFilter("Sheet3", "D4", "B1", `{"column":"A","expression":"x -- y"}`)
-	t.Log(err)
+	formats := []string{``,
+		`{"column":"B","expression":"x != blanks"}`,
+		`{"column":"B","expression":"x == blanks"}`,
+		`{"column":"B","expression":"x != nonblanks"}`,
+		`{"column":"B","expression":"x == nonblanks"}`,
+		`{"column":"B","expression":"x <= 1 and x >= 2"}`,
+		`{"column":"B","expression":"x == 1 or x == 2"}`,
+		`{"column":"B","expression":"x == 1 or x == 2*"}`,
+		`{"column":"B","expression":"x <= 1 and x >= blanks"}`,
+		`{"column":"B","expression":"x -- y or x == *2*"}`,
+		`{"column":"B","expression":"x != y or x ? *2"}`,
+		`{"column":"B","expression":"x -- y o r x == *2"}`,
+		`{"column":"B","expression":"x -- y"}`,
+		`{"column":"A","expression":"x -- y"}`,
+	}
+	for _, format := range formats {
+		err = xlsx.AutoFilter("Sheet3", "D4", "B1", format)
+		t.Log(err)
+	}
 	err = xlsx.Save()
 	if err != nil {
 		t.Error(err)
@@ -1101,6 +1092,29 @@ func TestRows(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+}
+
+func TestOutlineLevel(t *testing.T) {
+	xlsx := NewFile()
+	xlsx.NewSheet("Sheet2")
+	xlsx.SetColOutlineLevel("Sheet1", "D", 4)
+	xlsx.GetColOutlineLevel("Sheet1", "D")
+	xlsx.GetColOutlineLevel("Shee2", "A")
+	xlsx.SetColWidth("Sheet2", "A", "D", 13)
+	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
+	xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
+	xlsx.GetRowOutlineLevel("Sheet1", 2)
+	err := xlsx.SaveAs("./test/Book_outline_level.xlsx")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	xlsx, err = OpenFile("./test/Book1.xlsx")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
 }
 
 func trimSliceSpace(s []string) []string {
