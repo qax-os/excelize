@@ -275,6 +275,11 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //     radar               | radar chart
 //     scatter             | scatter chart
 //
+// You may want to set the dimension of the chart area using the "dimension" object that has the following properties
+//
+//    width   chart width
+//    height  chart height
+//
 // In Excel a chart series is a collection of information that defines which data is plotted such as values, axis labels and formatting.
 //
 // The series options that can be set are:
