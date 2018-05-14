@@ -82,6 +82,9 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "F14", uint32(1<<32-1))
 	xlsx.SetCellValue("Sheet2", "F15", uint64(1<<32-1))
 	xlsx.SetCellValue("Sheet2", "F16", true)
+	xlsx.SetCellValue("Sheet2", "F17", complex64(5+10i))
+	t.Log(letterOnlyMapF('x'))
+	t.Log(deepCopy(nil, nil))
 	// Test boolean write
 	booltest := []struct {
 		value    bool
@@ -125,7 +128,6 @@ func TestOpenFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-
 }
 
 func TestAddPicture(t *testing.T) {

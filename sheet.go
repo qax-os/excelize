@@ -193,12 +193,6 @@ func (f *File) setAppXML() {
 // library doesn't multiple namespace declarations in a single element of a
 // document. This function is a horrible hack to fix that after the XML
 // marshalling is completed.
-func replaceRelationshipsNameSpace(workbookMarshal string) string {
-	oldXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
-	newXmlns := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`
-	return strings.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
-}
-
 func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
 	oldXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	newXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`)

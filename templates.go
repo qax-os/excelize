@@ -7,6 +7,8 @@ package excelize
 const XMLHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 
 var (
+	// XMLHeaderByte define an XML declaration can also contain a standalone
+	// declaration.
 	XMLHeaderByte = []byte(XMLHeader)
 )
 
