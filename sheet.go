@@ -94,13 +94,15 @@ func (f *File) worksheetWriter() {
 
 // trimCell provides function to trim blank cells which created by completeCol.
 func trimCell(column []xlsxC) []xlsxC {
-	col := []xlsxC{}
+	col := make([]xlsxC, len(column))
+	i := 0
 	for _, c := range column {
 		if c.S != 0 || c.V != "" || c.F != nil || c.T != "" {
-			col = append(col, c)
+			col[i] = c
+			i++
 		}
 	}
-	return col
+	return col[0:i]
 }
 
 // Read and update property of contents type of XLSX.
@@ -641,8 +643,16 @@ func (f *File) GetSheetVisible(name string) bool {
 // trimSheetName provides function to trim invaild characters by given worksheet
 // name.
 func trimSheetName(name string) string {
-	r := strings.NewReplacer(":", "", "\\", "", "/", "", "?", "", "*", "", "[", "", "]", "")
-	name = r.Replace(name)
+	r := []rune{}
+	for _, v := range []rune(name) {
+		switch v {
+		case 58, 92, 47, 63, 42, 91, 93: // replace :\/?*[]
+			continue
+		default:
+			r = append(r, v)
+		}
+	}
+	name = string(r)
 	if utf8.RuneCountInString(name) > 31 {
 		name = string([]rune(name)[0:31])
 	}

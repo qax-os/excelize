@@ -21,19 +21,17 @@ Briefly describe the problem you are having in a few paragraphs.
 
 **Describe the results you received:**
 
-
 **Describe the results you expected:**
-
 
 **Output of `go version`:**
 
-```
+```text
 (paste your output here)
 ```
 
 **Excelize version or commit ID:**
 
-```
+```text
 (paste here)
 ```
 

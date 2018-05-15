@@ -25,7 +25,6 @@ Security reports are greatly appreciated and we will publicly thank you for it.
 We currently do not offer a paid security bounty program, but are not
 ruling it out in the future.
 
-
 ## Reporting other issues
 
 A great way to contribute to the project is to send a detailed report when you
@@ -44,7 +43,7 @@ When reporting issues, always include the output of `go env`.
 
 Also include the steps required to reproduce the problem if possible and
 applicable. This information will help us review and fix your issue faster.
-When sending lengthy log-files, consider posting them as a gist (https://gist.github.com).
+When sending lengthy log-files, consider posting them as a gist [https://gist.github.com](https://gist.github.com).
 Don't forget to remove sensitive data from your logfiles before posting (you can
 replace those parts with "REDACTED").
 
@@ -77,9 +76,9 @@ However, there might be a way to implement that feature *on top of* excelize.
 
 Fork the repository and make changes on your fork in a feature branch:
 
-- If it's a bug fix branch, name it XXXX-something where XXXX is the number of
+* If it's a bug fix branch, name it XXXX-something where XXXX is the number of
     the issue.
-- If it's a feature branch, create an enhancement issue to announce
+* If it's a feature branch, create an enhancement issue to announce
     your intentions, and name it XXXX-something where XXXX is the number of the
     issue.
 
@@ -194,7 +193,7 @@ signature certifies that you wrote the patch or otherwise have the right to pass
 it on as an open-source patch. The rules are pretty simple: if you can certify
 the below (from [developercertificate.org](http://developercertificate.org/)):
 
-```
+```text
 Developer Certificate of Origin
 Version 1.1
 
@@ -242,14 +241,14 @@ Use your real name (sorry, no pseudonyms or anonymous contributions.)
 If you set your `user.name` and `user.email` git configs, you can sign your
 commit automatically with `git commit -s`.
 
-### How can I become a maintainer?
+### How can I become a maintainer
 
 First, all maintainers have 3 things
 
-- They share responsibility in the project's success.
-- They have made a long-term, recurring time investment to improve the project.
-- They spend that time doing whatever needs to be done, not necessarily what
-is the most interesting or fun.
+* They share responsibility in the project's success.
+* They have made a long-term, recurring time investment to improve the project.
+* They spend that time doing whatever needs to be done, not necessarily what
+ is the most interesting or fun.
 
 Maintainers are often under-appreciated, because their work is harder to appreciate.
 It's easy to appreciate a really cool and technically advanced feature. It's harder
