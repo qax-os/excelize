@@ -56,6 +56,10 @@ func TestOpenFile(t *testing.T) {
 	// Test get cell formula with illegal rows number.
 	xlsx.GetCellFormula("Sheet1", "B20")
 	xlsx.GetCellFormula("Sheet1", "B")
+	// Test get shared cell formula
+	xlsx.GetCellFormula("Sheet2", "H11")
+	xlsx.GetCellFormula("Sheet2", "I11")
+	getSharedForumula(&xlsxWorksheet{}, "")
 	// Test read cell value with given illegal rows number.
 	xlsx.GetCellValue("Sheet2", "a-1")
 	xlsx.GetCellValue("Sheet2", "A")

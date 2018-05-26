@@ -72,7 +72,7 @@ func (f *File) Write(w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		_, err = fi.Write([]byte(content))
+		_, err = fi.Write(content)
 		if err != nil {
 			return err
 		}

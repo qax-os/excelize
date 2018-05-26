@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+const (
+	// STCellFormulaTypeArray defined the formula is an array formula.
+	STCellFormulaTypeArray = "array"
+	// STCellFormulaTypeDataTable defined the formula is a data table formula.
+	STCellFormulaTypeDataTable = "dataTable"
+	// STCellFormulaTypeNormal defined the formula is a regular cell formula.
+	STCellFormulaTypeNormal = "normal"
+	// STCellFormulaTypeShared defined the formula is part of a shared formula.
+	STCellFormulaTypeShared = "shared"
+)
+
 // mergeCellsParser provides function to check merged cells in worksheet by
 // given axis.
 func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
@@ -224,10 +235,41 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 		if xlsx.SheetData.Row[k].R == row {
 			for i := range xlsx.SheetData.Row[k].C {
 				if axis == xlsx.SheetData.Row[k].C[i].R {
+					if xlsx.SheetData.Row[k].C[i].F.T == STCellFormulaTypeShared {
+						return getSharedForumula(xlsx, xlsx.SheetData.Row[k].C[i].F.Si)
+					}
 					if xlsx.SheetData.Row[k].C[i].F != nil {
 						return xlsx.SheetData.Row[k].C[i].F.Content
 					}
 				}
+			}
+		}
+	}
+	return ""
+}
+
+// getSharedForumula find a cell contains the same formula as another cell,
+// the "shared" value can be used for the t attribute and the si attribute can
+// be used to refer to the cell containing the formula. Two formulas are
+// considered to be the same when their respective representations in
+// R1C1-reference notation, are the same.
+//
+// Note that this function not validate ref tag to check the cell if or not in
+// allow area, and always return origin shared formula.
+func getSharedForumula(xlsx *xlsxWorksheet, si string) string {
+	for k := range xlsx.SheetData.Row {
+		for i := range xlsx.SheetData.Row[k].C {
+			if xlsx.SheetData.Row[k].C[i].F == nil {
+				continue
+			}
+			if xlsx.SheetData.Row[k].C[i].F.T != STCellFormulaTypeShared {
+				continue
+			}
+			if xlsx.SheetData.Row[k].C[i].F.Si != si {
+				continue
+			}
+			if xlsx.SheetData.Row[k].C[i].F.Ref != "" {
+				return xlsx.SheetData.Row[k].C[i].F.Content
 			}
 		}
 	}
