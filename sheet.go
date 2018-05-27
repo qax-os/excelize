@@ -39,7 +39,7 @@ func (f *File) NewSheet(name string) int {
 func (f *File) contentTypesReader() *xlsxTypes {
 	if f.ContentTypes == nil {
 		var content xlsxTypes
-		xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+		_ = xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
 		f.ContentTypes = &content
 	}
 	return f.ContentTypes
@@ -59,7 +59,7 @@ func (f *File) contentTypesWriter() {
 func (f *File) workbookReader() *xlsxWorkbook {
 	if f.WorkBook == nil {
 		var content xlsxWorkbook
-		xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+		_ = xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
 		f.WorkBook = &content
 	}
 	return f.WorkBook
@@ -142,7 +142,7 @@ func (f *File) setWorkbook(name string, rid int) {
 func (f *File) workbookRelsReader() *xlsxWorkbookRels {
 	if f.WorkBookRels == nil {
 		var content xlsxWorkbookRels
-		xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
+		_ = xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
 		f.WorkBookRels = &content
 	}
 	return f.WorkBookRels
@@ -247,7 +247,7 @@ func (f *File) GetActiveSheetIndex() int {
 		buffer.WriteString("xl/worksheets/sheet")
 		buffer.WriteString(strings.TrimPrefix(v.ID, "rId"))
 		buffer.WriteString(".xml")
-		xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
+		_ = xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
 		for _, sheetView := range xlsx.SheetViews.SheetView {
 			if sheetView.TabSelected {
 				ID, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
@@ -433,16 +433,18 @@ func (f *File) CopySheet(from, to int) error {
 	if from < 1 || to < 1 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return errors.New("Invalid worksheet index")
 	}
-	f.copySheet(from, to)
-	return nil
+	return f.copySheet(from, to)
 }
 
 // copySheet provides function to duplicate a worksheet by gave source and
 // target worksheet name.
-func (f *File) copySheet(from, to int) {
+func (f *File) copySheet(from, to int) error {
 	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
 	worksheet := xlsxWorksheet{}
-	deepCopy(&worksheet, &sheet)
+	err := deepCopy(&worksheet, &sheet)
+	if err != nil {
+		return err
+	}
 	path := "xl/worksheets/sheet" + strconv.Itoa(to) + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
 		worksheet.SheetViews.SheetView[0].TabSelected = false
@@ -457,6 +459,7 @@ func (f *File) copySheet(from, to int) {
 	if ok {
 		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
+	return err
 }
 
 // SetSheetVisible provides function to set worksheet visible by given worksheet
@@ -502,10 +505,10 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 }
 
 // parseFormatPanesSet provides function to parse the panes settings.
-func parseFormatPanesSet(formatSet string) *formatPanes {
+func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 	format := formatPanes{}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // SetPanes provides function to create and remove freeze panes and split panes
@@ -594,7 +597,7 @@ func parseFormatPanesSet(formatSet string) *formatPanes {
 //    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 //
 func (f *File) SetPanes(sheet, panes string) {
-	fs := parseFormatPanesSet(panes)
+	fs, _ := parseFormatPanesSet(panes)
 	xlsx := f.workSheetReader(sheet)
 	p := &xlsxPane{
 		ActivePane:  fs.ActivePane,
@@ -644,7 +647,7 @@ func (f *File) GetSheetVisible(name string) bool {
 // name.
 func trimSheetName(name string) string {
 	r := []rune{}
-	for _, v := range []rune(name) {
+	for _, v := range name {
 		switch v {
 		case 58, 92, 47, 63, 42, 91, 93: // replace :\/?*[]
 			continue

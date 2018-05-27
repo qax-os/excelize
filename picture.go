@@ -16,7 +16,7 @@ import (
 
 // parseFormatPictureSet provides function to parse the format settings of the
 // picture with default value.
-func parseFormatPictureSet(formatSet string) *formatPicture {
+func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 	format := formatPicture{
 		FPrintsWithSheet: true,
 		FLocksWithSheet:  false,
@@ -26,8 +26,8 @@ func parseFormatPictureSet(formatSet string) *formatPicture {
 		XScale:           1.0,
 		YScale:           1.0,
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // AddPicture provides the method to add picture in a sheet by given picture
@@ -89,9 +89,12 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 		return errors.New("Unsupported image extension")
 	}
 	readFile, _ := os.Open(picture)
-	image, _, err := image.DecodeConfig(readFile)
+	image, _, _ := image.DecodeConfig(readFile)
 	_, file := filepath.Split(picture)
-	formatSet := parseFormatPictureSet(format)
+	formatSet, err := parseFormatPictureSet(format)
+	if err != nil {
+		return err
+	}
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
@@ -130,7 +133,7 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 	_, ok = f.XLSX[rels]
 	if ok {
 		ID.Reset()
-		xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+		_ = xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
 		rID = len(sheetRels.Relationships) + 1
 		ID.WriteString("rId")
 		ID.WriteString(strconv.Itoa(rID))
@@ -156,7 +159,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
-	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+	_ = xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
 	for k, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
@@ -273,7 +276,7 @@ func (f *File) addDrawingRelationships(index int, relType, target, targetMode st
 	_, ok := f.XLSX[rels]
 	if ok {
 		ID.Reset()
-		xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
+		_ = xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
 		rID = len(drawingRels.Relationships) + 1
 		ID.WriteString("rId")
 		ID.WriteString(strconv.Itoa(rID))
@@ -394,7 +397,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
-	xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+	_ = xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
 	for _, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			return v.Target
@@ -431,10 +434,10 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 
 	_, ok := f.XLSX[drawingXML]
 	if !ok {
-		return "", []byte{}
+		return "", nil
 	}
 	decodeWsDr := decodeWsDr{}
-	xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
+	_ = xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
 
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
@@ -446,7 +449,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 
 	for _, anchor := range decodeWsDr.TwoCellAnchor {
 		decodeTwoCellAnchor := decodeTwoCellAnchor{}
-		xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
+		_ = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
 		if decodeTwoCellAnchor.From != nil && decodeTwoCellAnchor.Pic != nil {
 			if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
 				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
@@ -468,7 +471,7 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
 		return nil
 	}
 	var drawingRels xlsxWorkbookRels
-	xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
+	_ = xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
 	for _, v := range drawingRels.Relationships {
 		if v.ID == rID {
 			return &v

@@ -9,7 +9,7 @@ import (
 
 // parseFormatShapeSet provides function to parse the format settings of the
 // shape with default value.
-func parseFormatShapeSet(formatSet string) *formatShape {
+func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 	format := formatShape{
 		Width:  160,
 		Height: 160,
@@ -23,8 +23,8 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 			YScale:           1.0,
 		},
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // AddShape provides the method to add shape in a sheet by given worksheet
@@ -245,8 +245,11 @@ func parseFormatShapeSet(formatSet string) *formatShape {
 //    wavyHeavy
 //    wavyDbl
 //
-func (f *File) AddShape(sheet, cell, format string) {
-	formatSet := parseFormatShapeSet(format)
+func (f *File) AddShape(sheet, cell, format string) error {
+	formatSet, err := parseFormatShapeSet(format)
+	if err != nil {
+		return err
+	}
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first shape for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
@@ -266,6 +269,7 @@ func (f *File) AddShape(sheet, cell, format string) {
 	}
 	f.addDrawingShape(sheet, drawingXML, cell, formatSet)
 	f.addContentTypePart(drawingID, "drawings")
+	return err
 }
 
 // addDrawingShape provides function to add preset geometry by given sheet,

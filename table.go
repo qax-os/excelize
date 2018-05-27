@@ -11,13 +11,13 @@ import (
 
 // parseFormatTableSet provides function to parse the format settings of the
 // table with default value.
-func parseFormatTableSet(formatSet string) *formatTable {
+func parseFormatTableSet(formatSet string) (*formatTable, error) {
 	format := formatTable{
 		TableStyle:     "",
 		ShowRowStripes: true,
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // AddTable provides the method to add table in a worksheet by given worksheet
@@ -41,8 +41,11 @@ func parseFormatTableSet(formatSet string) *formatTable {
 //    TableStyleMedium1 - TableStyleMedium28
 //    TableStyleDark1 - TableStyleDark11
 //
-func (f *File) AddTable(sheet, hcell, vcell, format string) {
-	formatSet := parseFormatTableSet(format)
+func (f *File) AddTable(sheet, hcell, vcell, format string) error {
+	formatSet, err := parseFormatTableSet(format)
+	if err != nil {
+		return err
+	}
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
@@ -69,6 +72,7 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) {
 	f.addSheetTable(sheet, rID)
 	f.addTable(sheet, tableXML, hxAxis, hyAxis, vxAxis, vyAxis, tableID, formatSet)
 	f.addContentTypePart(tableID, "table")
+	return err
 }
 
 // countTables provides function to get table files count storage in the folder
@@ -155,10 +159,10 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 
 // parseAutoFilterSet provides function to parse the settings of the auto
 // filter.
-func parseAutoFilterSet(formatSet string) *formatAutoFilter {
+func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 	format := formatAutoFilter{}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // AutoFilter provides the method to add auto filter in a worksheet by given
@@ -232,7 +236,8 @@ func parseAutoFilterSet(formatSet string) *formatAutoFilter {
 //    Price < 2000
 //
 func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
-	formatSet := parseAutoFilterSet(format)
+	formatSet, _ := parseAutoFilterSet(format)
+
 	hcell = strings.ToUpper(hcell)
 	vcell = strings.ToUpper(vcell)
 
@@ -256,8 +261,7 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	}
 	ref := ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
 	refRange := vxAxis - hxAxis
-	err := f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
-	return err
+	return f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
 }
 
 // autoFilter provides function to extract the tokens from the filter

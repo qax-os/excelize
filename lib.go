@@ -50,7 +50,7 @@ func readFile(file *zip.File) []byte {
 		log.Fatal(err)
 	}
 	buff := bytes.NewBuffer(nil)
-	io.Copy(buff, rc)
+	_, _ = io.Copy(buff, rc)
 	rc.Close()
 	return buff.Bytes()
 }

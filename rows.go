@@ -31,7 +31,7 @@ func (f *File) GetRows(sheet string) [][]string {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	d := f.sharedStringsReader()
 	var inElement string
 	var r xlsxRow
@@ -44,7 +44,7 @@ func (f *File) GetRows(sheet string) [][]string {
 		}
 		rows = append(rows, row)
 	}
-	decoder = xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -55,7 +55,7 @@ func (f *File) GetRows(sheet string) [][]string {
 			inElement = startElement.Name.Local
 			if inElement == "row" {
 				r = xlsxRow{}
-				decoder.DecodeElement(&r, &startElement)
+				_ = decoder.DecodeElement(&r, &startElement)
 				cr := r.R - 1
 				for _, colCell := range r.C {
 					c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
@@ -110,9 +110,9 @@ func (rows *Rows) Columns() []string {
 	}
 	startElement := rows.token.(xml.StartElement)
 	r := xlsxRow{}
-	rows.decoder.DecodeElement(&r, &startElement)
+	_ = rows.decoder.DecodeElement(&r, &startElement)
 	d := rows.f.sharedStringsReader()
-	row := make([]string, len(r.C), len(r.C))
+	row := make([]string, len(r.C))
 	for _, colCell := range r.C {
 		c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
 		val, _ := colCell.getValueFrom(rows.f, d)
@@ -173,7 +173,7 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 			inElement = startElement.Name.Local
 			if inElement == "row" {
 				r = xlsxRow{}
-				decoder.DecodeElement(&r, &startElement)
+				_ = decoder.DecodeElement(&r, &startElement)
 				tr = r.R
 				for _, colCell := range r.C {
 					col := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
@@ -240,7 +240,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		if len(ss) == 0 {
 			ss = f.readXML("xl/SharedStrings.xml")
 		}
-		xml.Unmarshal([]byte(ss), &sharedStrings)
+		_ = xml.Unmarshal([]byte(ss), &sharedStrings)
 		f.SharedStrings = &sharedStrings
 	}
 	return f.SharedStrings

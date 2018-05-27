@@ -192,7 +192,7 @@ var (
 
 // parseFormatChartSet provides function to parse the format settings of the
 // chart with default value.
-func parseFormatChartSet(formatSet string) *formatChart {
+func parseFormatChartSet(formatSet string) (*formatChart, error) {
 	format := formatChart{
 		Dimension: formatChartDimension{
 			Width:  480,
@@ -216,8 +216,8 @@ func parseFormatChartSet(formatSet string) *formatChart {
 		},
 		ShowBlanksAs: "gap",
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // AddChart provides the method to add chart in a sheet by given chart format
@@ -357,8 +357,11 @@ func parseFormatChartSet(formatSet string) *formatChart {
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.
 //
-func (f *File) AddChart(sheet, cell, format string) {
-	formatSet := parseFormatChartSet(format)
+func (f *File) AddChart(sheet, cell, format string) error {
+	formatSet, err := parseFormatChartSet(format)
+	if err != nil {
+		return err
+	}
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
@@ -371,6 +374,7 @@ func (f *File) AddChart(sheet, cell, format string) {
 	f.addChart(formatSet)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
+	return err
 }
 
 // countCharts provides function to get chart files count storage in the
@@ -1082,7 +1086,7 @@ func (f *File) drawingParser(drawingXML string, content *xlsxWsDr) int {
 	_, ok := f.XLSX[drawingXML]
 	if ok { // Append Model
 		decodeWsDr := decodeWsDr{}
-		xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
+		_ = xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
 		content.R = decodeWsDr.R
 		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
 		for _, v := range decodeWsDr.OneCellAnchor {

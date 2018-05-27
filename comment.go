@@ -9,13 +9,13 @@ import (
 
 // parseFormatCommentsSet provides function to parse the format settings of the
 // comment with default value.
-func parseFormatCommentsSet(formatSet string) *formatComment {
+func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 	format := formatComment{
 		Author: "Author:",
 		Text:   " ",
 	}
-	json.Unmarshal([]byte(formatSet), &format)
-	return &format
+	err := json.Unmarshal([]byte(formatSet), &format)
+	return &format, err
 }
 
 // AddComment provides the method to add comment in a sheet by given worksheet
@@ -25,8 +25,11 @@ func parseFormatCommentsSet(formatSet string) *formatComment {
 //
 //    xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
 //
-func (f *File) AddComment(sheet, cell, format string) {
-	formatSet := parseFormatCommentsSet(format)
+func (f *File) AddComment(sheet, cell, format string) error {
+	formatSet, err := parseFormatCommentsSet(format)
+	if err != nil {
+		return err
+	}
 	// Read sheet data.
 	xlsx := f.workSheetReader(sheet)
 	commentID := f.countComments() + 1
@@ -48,6 +51,7 @@ func (f *File) AddComment(sheet, cell, format string) {
 	f.addComment(commentsXML, cell, formatSet)
 	f.addDrawingVML(commentID, drawingVML, cell)
 	f.addContentTypePart(commentID, "comments")
+	return err
 }
 
 // addDrawingVML provides function to create comment as
@@ -127,7 +131,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 	c, ok := f.XLSX[drawingVML]
 	if ok {
 		d := decodeVmlDrawing{}
-		xml.Unmarshal([]byte(c), &d)
+		_ = xml.Unmarshal([]byte(c), &d)
 		for _, v := range d.Shape {
 			s := xlsxShape{
 				ID:          "_x0000_s1025",
@@ -197,7 +201,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	c, ok := f.XLSX[commentsXML]
 	if ok {
 		d := xlsxComments{}
-		xml.Unmarshal([]byte(c), &d)
+		_ = xml.Unmarshal([]byte(c), &d)
 		comments.CommentList.Comment = append(comments.CommentList.Comment, d.CommentList.Comment...)
 	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)

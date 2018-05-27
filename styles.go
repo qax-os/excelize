@@ -988,7 +988,7 @@ func is12HourTime(format string) bool {
 func (f *File) stylesReader() *xlsxStyleSheet {
 	if f.Styles == nil {
 		var styleSheet xlsxStyleSheet
-		xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
+		_ = xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
 		f.Styles = &styleSheet
 	}
 	return f.Styles
@@ -2562,10 +2562,12 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 //
 // bar_color - Used for data_bar. Same as min_color, see above.
 //
-func (f *File) SetConditionalFormat(sheet, area, formatSet string) {
+func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	var format []*formatConditional
-	json.Unmarshal([]byte(formatSet), &format)
-
+	err := json.Unmarshal([]byte(formatSet), &format)
+	if err != nil {
+		return err
+	}
 	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *formatConditional) *xlsxCfRule{
 		"cellIs":          drawCondFmtCellIs,
 		"top10":           drawCondFmtTop10,
@@ -2601,6 +2603,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) {
 		SQRef:  area,
 		CfRule: cfRule,
 	})
+	return err
 }
 
 // drawCondFmtCellIs provides function to create conditional formatting rule for
