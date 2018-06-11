@@ -12,9 +12,10 @@ import (
 	"unicode/utf8"
 )
 
-// NewSheet provides function to create a new sheet by given worksheet name,
-// when creating a new XLSX file, the default sheet will be create, when you
-// create a new file.
+// NewSheet provides function to create a new sheet by given worksheet name.
+// When creating a new XLSX file, the default sheet will be created.
+// Returns the number of sheets in the workbook (file) after appending the new
+// sheet.
 func (f *File) NewSheet(name string) int {
 	// Check if the worksheet already exists
 	if f.GetSheetIndex(name) != 0 {
@@ -202,8 +203,8 @@ func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
 }
 
 // SetActiveSheet provides function to set default active worksheet of XLSX by
-// given index. Note that active index is different with the index that got by
-// function GetSheetMap, and it should be greater than 0 and less than total
+// given index. Note that active index is different from the index returned by
+// function GetSheetMap(). It should be greater than 0 and less than total
 // worksheet numbers.
 func (f *File) SetActiveSheet(index int) {
 	if index < 1 {
@@ -237,7 +238,7 @@ func (f *File) SetActiveSheet(index int) {
 	}
 }
 
-// GetActiveSheetIndex provides function to get active sheet of XLSX. If not
+// GetActiveSheetIndex provides function to get active sheet index of the XLSX. If not
 // found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
 	buffer := bytes.Buffer{}
