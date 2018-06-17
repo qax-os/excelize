@@ -88,7 +88,6 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "F16", true)
 	xlsx.SetCellValue("Sheet2", "F17", complex64(5+10i))
 	t.Log(letterOnlyMapF('x'))
-	t.Log(deepCopy(nil, nil))
 	shiftJulianToNoon(1, -0.6)
 	timeFromExcelTime(61, true)
 	timeFromExcelTime(62, true)

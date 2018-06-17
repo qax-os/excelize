@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/mohae/deepcopy"
 )
 
 // NewSheet provides function to create a new sheet by given worksheet name,
@@ -433,18 +435,15 @@ func (f *File) CopySheet(from, to int) error {
 	if from < 1 || to < 1 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return errors.New("Invalid worksheet index")
 	}
-	return f.copySheet(from, to)
+	f.copySheet(from, to)
+	return nil
 }
 
 // copySheet provides function to duplicate a worksheet by gave source and
 // target worksheet name.
-func (f *File) copySheet(from, to int) error {
+func (f *File) copySheet(from, to int) {
 	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
-	worksheet := xlsxWorksheet{}
-	err := deepCopy(&worksheet, &sheet)
-	if err != nil {
-		return err
-	}
+	worksheet := deepcopy.Copy(sheet).(*xlsxWorksheet)
 	path := "xl/worksheets/sheet" + strconv.Itoa(to) + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
 		worksheet.SheetViews.SheetView[0].TabSelected = false
@@ -452,14 +451,13 @@ func (f *File) copySheet(from, to int) error {
 	worksheet.Drawing = nil
 	worksheet.TableParts = nil
 	worksheet.PageSetUp = nil
-	f.Sheet[path] = &worksheet
+	f.Sheet[path] = worksheet
 	toRels := "xl/worksheets/_rels/sheet" + strconv.Itoa(to) + ".xml.rels"
 	fromRels := "xl/worksheets/_rels/sheet" + strconv.Itoa(from) + ".xml.rels"
 	_, ok := f.XLSX[fromRels]
 	if ok {
 		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
-	return err
 }
 
 // SetSheetVisible provides function to set worksheet visible by given worksheet
