@@ -3,6 +3,7 @@ package excelize
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -49,14 +50,23 @@ func (f *File) AddComment(sheet, cell, format string) error {
 	}
 	commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
 	f.addComment(commentsXML, cell, formatSet)
-	f.addDrawingVML(commentID, drawingVML, cell)
+	var colCount int
+	for i, l := range strings.Split(formatSet.Text, "\n") {
+		if ll := len(l); ll > colCount {
+			if i == 0 {
+				ll += len(formatSet.Author)
+			}
+			colCount = ll
+		}
+	}
+	f.addDrawingVML(commentID, drawingVML, cell, strings.Count(formatSet.Text, "\n")+1, colCount)
 	f.addContentTypePart(commentID, "comments")
 	return err
 }
 
 // addDrawingVML provides function to create comment as
 // xl/drawings/vmlDrawing%d.vml by given commit ID and cell.
-func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
+func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, colCount int) {
 	col := string(strings.Map(letterOnlyMapF, cell))
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	xAxis := row - 1
@@ -83,7 +93,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 			},
 			VPath: &vPath{
 				Gradientshapeok: "t",
-				Connecttype:     "rect",
+				Connecttype:     "miter",
 			},
 		},
 	}
@@ -113,10 +123,12 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string) {
 		},
 		ClientData: &xClientData{
 			ObjectType: "Note",
-			Anchor:     "3, 15, 8, 6, 4, 54, 13, 2",
-			AutoFill:   "False",
-			Row:        xAxis,
-			Column:     yAxis,
+			Anchor: fmt.Sprintf(
+				"%d, 23, %d, 0, %d, %d, %d, 5",
+				1+yAxis, 1+xAxis, 1+yAxis+lineCount, (colCount*991)/175+5, 2+xAxis),
+			AutoFill: "True",
+			Row:      xAxis,
+			Column:   yAxis,
 		},
 	}
 	s, _ := xml.Marshal(sp)
