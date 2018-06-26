@@ -17,12 +17,13 @@ func timeToUTCTime(t time.Time) time.Time {
 func timeToExcelTime(t time.Time) float64 {
 	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
 	var excelTime float64
+	var deltaDays int64
 	excelTime = 0
+	deltaDays = 290 * 364
 	// check if UnixNano would be out of int64 range
-	for t.Unix() > 9223372036 {
+	for t.Unix() > deltaDays*24*60*60 {
 		// reduce by aprox. 290 years, which is max for int64 nanoseconds
-		deltaDays := 290 * 364
-		delta := time.Duration(deltaDays * 8.64e13)
+		delta := time.Duration(deltaDays) * 24 * time.Hour
 		excelTime = excelTime + float64(deltaDays)
 		t = t.Add(-delta)
 	}
@@ -103,7 +104,7 @@ func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 // timeFromExcelTime provides function to convert an excelTime representation
 // (stored as a floating point number) to a time.Time.
 func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
-	const MDD int64 = 106750    // Max time.Duration Days, aprox. 290 years
+	const MDD int64 = 106750 // Max time.Duration Days, aprox. 290 years
 	var date time.Time
 	var intPart = int64(excelTime)
 	// Excel uses Julian dates prior to March 1st 1900, and Gregorian
@@ -127,7 +128,7 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 	} else {
 		date = time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
 	}
-	
+
 	// Duration is limited to aprox. 290 years
 	for intPart > MDD {
 		durationDays := time.Duration(MDD) * time.Hour * 24
