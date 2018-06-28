@@ -125,7 +125,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 			ObjectType: "Note",
 			Anchor: fmt.Sprintf(
 				"%d, 23, %d, 0, %d, %d, %d, 5",
-				1+yAxis, 1+xAxis, 1+yAxis+lineCount, (colCount*991)/175+5, 2+xAxis),
+				1+yAxis, 1+xAxis, 2+yAxis+lineCount, colCount+yAxis, 2+xAxis+lineCount),
 			AutoFill: "True",
 			Row:      xAxis,
 			Column:   yAxis,
