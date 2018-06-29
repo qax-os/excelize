@@ -26,6 +26,9 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 		XScale:           1.0,
 		YScale:           1.0,
 	}
+	if strings.TrimSpace(formatSet) == "" {
+		return &format, nil
+	}
 	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err
 }
@@ -77,6 +80,12 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 // (Don't move or size with cells). If you don't set this parameter, default
 // positioning is move and size with cells.
 func (f *File) AddPicture(sheet, cell, picture, format string) error {
+	return f.AddPictureWith(sheet, cell, picture, format, 0, 0)
+}
+
+// add with maxWidth or maxHeight support.
+// if the picture height or width bigger than maxWidth or maxHeight, will scale the picture.
+func (f *File) AddPictureWith(sheet, cell, picture, format string, maxWidth, maxHeight int) error {
 	var err error
 	var drawingHyperlinkRID int
 	var hyperlinkType string
@@ -110,7 +119,25 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 		}
 		drawingHyperlinkRID = f.addDrawingRelationships(drawingID, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
-	f.addDrawingPicture(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, drawingHyperlinkRID, formatSet)
+	theHeight, theWidth := 0, 0
+	//calculate for maxHeight or MaxWidth
+	if maxHeight != 0 && maxWidth != 0 {
+		diffWith := image.Width - maxWidth
+		diffHeight := image.Height - maxHeight
+		if diffWith > 0 || diffHeight > 0 {
+			if diffWith > diffHeight {
+				theWidth = maxWidth
+				theHeight = int(float32(maxWidth) / float32(image.Width) * float32(image.Height))
+			} else {
+				theHeight = maxHeight
+				theWidth = int(float32(maxHeight) / float32(image.Height) * float32(image.Width))
+			}
+		} else {
+			theHeight = image.Height
+			theWidth = image.Width
+		}
+	}
+	f.addDrawingPicture(sheet, drawingXML, cell, file, theWidth, theHeight, drawingRID, drawingHyperlinkRID, formatSet)
 	f.addMedia(picture, ext)
 	f.addContentTypePart(drawingID, "drawings")
 	return err
