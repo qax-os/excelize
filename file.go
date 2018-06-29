@@ -60,6 +60,12 @@ func (f *File) SaveAs(name string) error {
 
 // Write provides function to write to an io.Writer.
 func (f *File) Write(w io.Writer) error {
+	_, err := f.WriteTo(w)
+	return err
+}
+
+// WriteTo implements io.WriterTo to write the file.
+func (f *File) WriteTo(w io.Writer) (int64, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
 	f.contentTypesWriter()
@@ -70,21 +76,17 @@ func (f *File) Write(w io.Writer) error {
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		_, err = fi.Write(content)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 	err := zw.Close()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	if _, err := buf.WriteTo(w); err != nil {
-		return err
-	}
-
-	return nil
+	return buf.WriteTo(w)
 }
