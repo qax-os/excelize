@@ -6,6 +6,16 @@ install:
 go:
   - 1.8.x
   - 1.9.x
+  - 1.10.x
+
+os:
+  - linux
+  - osx
+
+env:
+  matrix:
+    - GOARCH=amd64
+    - GOARCH=386
 
 script:
   - go vet ./...

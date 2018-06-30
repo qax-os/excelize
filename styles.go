@@ -1404,7 +1404,7 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //     173   | $ English (New Zealand)
 //     174   | $ English (Singapore)
 //     175   | $ English (Trinidad & Tobago)
-//     176   | $ English (U.S. Vigin Islands)
+//     176   | $ English (U.S. Virgin Islands)
 //     177   | $ English (United States)
 //     178   | $ French (Canada)
 //     179   | $ Hawaiian (United States)
