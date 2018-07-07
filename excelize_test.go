@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -1143,6 +1144,31 @@ func TestOutlineLevel(t *testing.T) {
 		return
 	}
 	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
+}
+
+func TestThemeColor(t *testing.T) {
+	t.Log(ThemeColor("000000", -0.1))
+	t.Log(ThemeColor("000000", 0))
+	t.Log(ThemeColor("000000", 1))
+}
+
+func TestHSL(t *testing.T) {
+	var hsl HSL
+	t.Log(hsl.RGBA())
+	t.Log(hslModel(hsl))
+	t.Log(hslModel(color.Gray16{Y: uint16(1)}))
+	t.Log(HSLToRGB(0, 1, 0.4))
+	t.Log(HSLToRGB(0, 1, 0.6))
+	t.Log(hueToRGB(0, 0, -1))
+	t.Log(hueToRGB(0, 0, 2))
+	t.Log(hueToRGB(0, 0, 1.0/7))
+	t.Log(hueToRGB(0, 0, 0.4))
+	t.Log(hueToRGB(0, 0, 2.0/4))
+	t.Log(RGBToHSL(255, 255, 0))
+	t.Log(RGBToHSL(0, 255, 255))
+	t.Log(RGBToHSL(250, 100, 50))
+	t.Log(RGBToHSL(50, 100, 250))
+	t.Log(RGBToHSL(250, 50, 100))
 }
 
 func trimSliceSpace(s []string) []string {

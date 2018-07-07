@@ -2723,3 +2723,29 @@ func drawConfFmtExp(p int, ct string, format *formatConditional) *xlsxCfRule {
 func getPaletteColor(color string) string {
 	return "FF" + strings.Replace(strings.ToUpper(color), "#", "", -1)
 }
+
+// themeReader provides function to get the pointer to the xl/theme/theme1.xml
+// structure after deserialization.
+func (f *File) themeReader() *xlsxTheme {
+	var theme xlsxTheme
+	_ = xml.Unmarshal([]byte(f.readXML("xl/theme/theme1.xml")), &theme)
+	return &theme
+}
+
+// ThemeColor applied the color with tint value.
+func ThemeColor(baseColor string, tint float64) string {
+	if tint == 0 {
+		return "FF" + baseColor
+	}
+	r, _ := strconv.ParseInt(baseColor[0:2], 16, 64)
+	g, _ := strconv.ParseInt(baseColor[2:4], 16, 64)
+	b, _ := strconv.ParseInt(baseColor[4:6], 16, 64)
+	h, s, l := RGBToHSL(uint8(r), uint8(g), uint8(b))
+	if tint < 0 {
+		l *= (1 + tint)
+	} else {
+		l = l*(1-tint) + (1 - (1 - tint))
+	}
+	br, bg, bb := HSLToRGB(h, s, l)
+	return fmt.Sprintf("FF%02X%02X%02X", br, bg, bb)
+}

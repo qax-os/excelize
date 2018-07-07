@@ -21,6 +21,7 @@ type File struct {
 	Sheet         map[string]*xlsxWorksheet
 	SheetCount    int
 	Styles        *xlsxStyleSheet
+	Theme         *xlsxTheme
 	WorkBook      *xlsxWorkbook
 	WorkBookRels  *xlsxWorkbookRels
 	XLSX          map[string][]byte
@@ -66,6 +67,7 @@ func OpenReader(r io.Reader) (*File, error) {
 	}
 	f.sheetMap = f.getSheetMap()
 	f.Styles = f.stylesReader()
+	f.Theme = f.themeReader()
 	return f, nil
 }
 
