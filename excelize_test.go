@@ -817,6 +817,11 @@ func TestAddComments(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	allComments := xlsx.GetComments()
+	if len(allComments) != 2 {
+		t.Error("Expected 2 comment entry elements.")
+	}
+
 }
 
 func TestAutoFilter(t *testing.T) {

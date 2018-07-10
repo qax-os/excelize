@@ -19,6 +19,23 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 	return &format, err
 }
 
+// GetComments retrievs all comments and returns a map
+// of worksheet name to the worksheet comments.
+func (f *File) GetComments() (comments map[string]*xlsxComments) {
+	comments = map[string]*xlsxComments{}
+	for n := range f.sheetMap {
+		commentID := f.GetSheetIndex(n)
+		commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
+		c, ok := f.XLSX[commentsXML]
+		if ok {
+			d := xlsxComments{}
+			xml.Unmarshal([]byte(c), &d)
+			comments[n] = &d
+		}
+	}
+	return
+}
+
 // AddComment provides the method to add comment in a sheet by given worksheet
 // index, cell and format set (such as author and text). Note that the max
 // author length is 255 and the max text length is 32512. For example, add a
