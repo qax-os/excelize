@@ -16,7 +16,7 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 		TableStyle:     "",
 		ShowRowStripes: true,
 	}
-	err := json.Unmarshal([]byte(formatSet), &format)
+	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
 }
 

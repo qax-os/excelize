@@ -15,11 +15,11 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 		Author: "Author:",
 		Text:   " ",
 	}
-	err := json.Unmarshal([]byte(formatSet), &format)
+	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
 }
 
-// GetComments retrievs all comments and returns a map
+// GetComments retrieves all comments and returns a map
 // of worksheet name to the worksheet comments.
 func (f *File) GetComments() (comments map[string]*xlsxComments) {
 	comments = map[string]*xlsxComments{}

@@ -164,3 +164,12 @@ func getCellColRow(cell string) (col, row string) {
 
 	return cell, ""
 }
+
+// parseFormatSet provides a method to convert format string to []byte and
+// handle empty string.
+func parseFormatSet(formatSet string) []byte {
+	if formatSet != "" {
+		return []byte(formatSet)
+	}
+	return []byte("{}")
+}

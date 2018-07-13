@@ -352,7 +352,9 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //    minimum
 //
 // reverse_order: Specifies that the categories or values on reverse order (orientation of the chart). The reverse_order property is optional. The default value is false.
+//
 // maximum: Specifies that the fixed maximum, 0 is auto. The maximum property is optional. The default value is auto.
+//
 // minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.

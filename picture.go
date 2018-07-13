@@ -26,7 +26,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 		XScale:           1.0,
 		YScale:           1.0,
 	}
-	err := json.Unmarshal([]byte(formatSet), &format)
+	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
 }
 
