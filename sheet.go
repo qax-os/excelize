@@ -132,9 +132,17 @@ func (f *File) setSheet(index int, name string) {
 // allowed in sheet title.
 func (f *File) setWorkbook(name string, rid int) {
 	content := f.workbookReader()
+	rID := 0
+	for _, v := range content.Sheets.Sheet {
+		t, _ := strconv.Atoi(v.SheetID)
+		if t > rID {
+			rID = t
+		}
+	}
+	rID++
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    trimSheetName(name),
-		SheetID: strconv.Itoa(rid),
+		SheetID: strconv.Itoa(rID),
 		ID:      "rId" + strconv.Itoa(rid),
 	})
 }

@@ -15,7 +15,7 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 		Author: "Author:",
 		Text:   " ",
 	}
-	err := json.Unmarshal(parseFormatSet(formatSet), &format)
+	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err
 }
 

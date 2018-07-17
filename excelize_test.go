@@ -771,10 +771,6 @@ func TestAddTable(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = xlsx.AddTable("Sheet2", "A2", "B5", ``)
-	if err != nil {
-		t.Log(err)
-	}
 	err = xlsx.AddTable("Sheet2", "A2", "B5", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 	if err != nil {
 		t.Error(err)
