@@ -32,13 +32,13 @@ func TestSetConditionalFormat(t *testing.T) {
 			ColorScale: &xlsxColorScale{
 				Cfvo: []*xlsxCfvo{{
 					Type: "num",
-					Val:  -10,
+					Val:  "-10",
 				}, {
 					Type: "num",
-					Val:  0,
+					Val:  "0",
 				}, {
 					Type: "num",
-					Val:  10,
+					Val:  "10",
 				}},
 				Color: []*xlsxColor{{
 					RGB: "FFFF0000",
@@ -67,13 +67,13 @@ func TestSetConditionalFormat(t *testing.T) {
 			ColorScale: &xlsxColorScale{
 				Cfvo: []*xlsxCfvo{{
 					Type: "num",
-					Val:  0,
+					Val:  "0",
 				}, {
 					Type: "num",
-					Val:  50,
+					Val:  "50",
 				}, {
 					Type: "num",
-					Val:  0,
+					Val:  "0",
 				}},
 				Color: []*xlsxColor{{
 					RGB: "FFFF0000",
@@ -100,10 +100,10 @@ func TestSetConditionalFormat(t *testing.T) {
 			ColorScale: &xlsxColorScale{
 				Cfvo: []*xlsxCfvo{{
 					Type: "num",
-					Val:  0,
+					Val:  "0",
 				}, {
 					Type: "num",
-					Val:  0,
+					Val:  "0",
 				}},
 				Color: []*xlsxColor{{
 					RGB: "FFFF0000",

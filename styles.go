@@ -2674,12 +2674,25 @@ func drawCondFmtDuplicateUniqueValues(p int, ct string, format *formatConditiona
 // for color scale (include 2 color scale and 3 color scale) by given priority,
 // criteria type and format settings.
 func drawCondFmtColorScale(p int, ct string, format *formatConditional) *xlsxCfRule {
+	minValue := format.MinValue
+	if minValue == "" {
+		minValue = "0"
+	}
+	maxValue := format.MaxValue
+	if maxValue == "" {
+		maxValue = "0"
+	}
+	midValue := format.MidValue
+	if midValue == "" {
+		midValue = "50"
+	}
+
 	c := &xlsxCfRule{
 		Priority: p + 1,
 		Type:     "colorScale",
 		ColorScale: &xlsxColorScale{
 			Cfvo: []*xlsxCfvo{
-				{Type: format.MinType},
+				{Type: format.MinType, Val: minValue},
 			},
 			Color: []*xlsxColor{
 				{RGB: getPaletteColor(format.MinColor)},
@@ -2687,10 +2700,10 @@ func drawCondFmtColorScale(p int, ct string, format *formatConditional) *xlsxCfR
 		},
 	}
 	if validType[format.Type] == "3_color_scale" {
-		c.ColorScale.Cfvo = append(c.ColorScale.Cfvo, &xlsxCfvo{Type: format.MidType, Val: 50})
+		c.ColorScale.Cfvo = append(c.ColorScale.Cfvo, &xlsxCfvo{Type: format.MidType, Val: midValue})
 		c.ColorScale.Color = append(c.ColorScale.Color, &xlsxColor{RGB: getPaletteColor(format.MidColor)})
 	}
-	c.ColorScale.Cfvo = append(c.ColorScale.Cfvo, &xlsxCfvo{Type: format.MaxType})
+	c.ColorScale.Cfvo = append(c.ColorScale.Cfvo, &xlsxCfvo{Type: format.MaxType, Val: maxValue})
 	c.ColorScale.Color = append(c.ColorScale.Color, &xlsxColor{RGB: getPaletteColor(format.MaxColor)})
 	return c
 }
