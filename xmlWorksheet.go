@@ -446,7 +446,7 @@ type xlsxIconSet struct {
 type xlsxCfvo struct {
 	Gte    bool        `xml:"gte,attr,omitempty"`
 	Type   string      `xml:"type,attr,omitempty"`
-	Val    int         `xml:"val,attr"`
+	Val    string      `xml:"val,attr"`
 	ExtLst *xlsxExtLst `xml:"extLst"`
 }
 
