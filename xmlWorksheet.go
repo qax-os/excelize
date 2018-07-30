@@ -294,11 +294,27 @@ type xlsxMergeCells struct {
 // xlsxDataValidations expresses all data validation information for cells in a
 // sheet which have data validation features applied.
 type xlsxDataValidations struct {
-	Count          int    `xml:"count,attr,omitempty"`
-	DisablePrompts bool   `xml:"disablePrompts,attr,omitempty"`
-	XWindow        int    `xml:"xWindow,attr,omitempty"`
-	YWindow        int    `xml:"yWindow,attr,omitempty"`
-	DataValidation string `xml:",innerxml"`
+	Count          int               `xml:"count,attr,omitempty"`
+	DisablePrompts bool              `xml:"disablePrompts,attr,omitempty"`
+	XWindow        int               `xml:"xWindow,attr,omitempty"`
+	YWindow        int               `xml:"yWindow,attr,omitempty"`
+	DataValidation []*DataValidation `xml:"dataValidation,innerxml"`
+}
+
+type DataValidation struct {
+	AllowBlank       string  `xml:"allowBlank,attr"`       // allow empty
+	ShowInputMessage string  `xml:"showInputMessage,attr"` // 1, true,0,false,  select cell,  Whether the input message is displayed
+	ShowErrorMessage string  `xml:"showErrorMessage,attr"` // 1, true,0,false,  input error value, Whether the error message is displayed
+	ErrorStyle       *string `xml:"errorStyle,attr"`       //error icon style, warning, infomation,stop
+	ErrorTitle       *string `xml:"errorTitle,attr"`       // error title
+	Operator         string  `xml:"operator,attr"`         //
+	Error            *string `xml:"error,attr"`            // input error value,  notice message
+	PromptTitle      *string `xml:"promptTitle"`
+	Prompt           *string `xml:"prompt,attr"`
+	Type             string  `xml:"type,attr"`  //data type, none,custom,date,decimal,list, textLength,time,whole
+	Sqref            string  `xml:"sqref,attr"` //Validity of data validation rules, cell and range, eg: A1 OR A1:A20
+	Formula1         string  `xml:"formula1"`   // data validation role
+	Formula2         string  `xml:"formula2"`   //data validation role
 }
 
 // xlsxC directly maps the c element in the namespace
