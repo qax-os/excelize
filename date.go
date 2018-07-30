@@ -101,6 +101,10 @@ func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 	return d, m, y
 }
 
+func round(x float64) int64 {
+	return int64(math.Floor(x + 0.5))
+}
+
 // timeFromExcelTime provides function to convert an excelTime representation
 // (stored as a floating point number) to a time.Time.
 func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
@@ -136,6 +140,6 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		intPart = intPart - MDD
 	}
 	durationDays := time.Duration(intPart) * time.Hour * 24
-	durationPart := time.Duration(dayNanoSeconds * floatPart)
+	durationPart := time.Duration(round(dayNanoSeconds*floatPart/float64(time.Second))) * time.Second
 	return date.Add(durationDays).Add(durationPart)
 }
