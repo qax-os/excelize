@@ -25,7 +25,7 @@ func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	return fileList, worksheets, nil
 }
 
-// readXML provides function to read XML content as string.
+// readXML provides a function to read XML content as string.
 func (f *File) readXML(name string) []byte {
 	if content, ok := f.XLSX[name]; ok {
 		return content
@@ -33,8 +33,8 @@ func (f *File) readXML(name string) []byte {
 	return []byte{}
 }
 
-// saveFileList provides function to update given file content in file list of
-// XLSX.
+// saveFileList provides a function to update given file content in file list
+// of XLSX.
 func (f *File) saveFileList(name string, content []byte) {
 	newContent := make([]byte, 0, len(XMLHeader)+len(content))
 	newContent = append(newContent, []byte(XMLHeader)...)
@@ -54,7 +54,7 @@ func readFile(file *zip.File) []byte {
 	return buff.Bytes()
 }
 
-// ToAlphaString provides function to convert integer to Excel sheet column
+// ToAlphaString provides a function to convert integer to Excel sheet column
 // title. For example convert 36 to column title AK:
 //
 //     excelize.ToAlphaString(36)
@@ -72,9 +72,9 @@ func ToAlphaString(value int) string {
 	return ans
 }
 
-// TitleToNumber provides function to convert Excel sheet column title to int
-// (this function doesn't do value check currently). For example convert AK
-// and ak to column title 36:
+// TitleToNumber provides a function to convert Excel sheet column title to
+// int (this function doesn't do value check currently). For example convert
+// AK and ak to column title 36:
 //
 //    excelize.TitleToNumber("AK")
 //    excelize.TitleToNumber("ak")
@@ -125,8 +125,8 @@ func defaultTrue(b *bool) bool {
 	return *b
 }
 
-// axisLowerOrEqualThan returns true if axis1 <= axis2
-// axis1/axis2 can be either a column or a row axis, e.g. "A", "AAE", "42", "1", etc.
+// axisLowerOrEqualThan returns true if axis1 <= axis2 axis1/axis2 can be
+// either a column or a row axis, e.g. "A", "AAE", "42", "1", etc.
 //
 // For instance, the following comparisons are all true:
 //
@@ -147,7 +147,8 @@ func axisLowerOrEqualThan(axis1, axis2 string) bool {
 	}
 }
 
-// getCellColRow returns the two parts of a cell identifier (its col and row) as strings
+// getCellColRow returns the two parts of a cell identifier (its col and row)
+// as strings
 //
 // For instance:
 //

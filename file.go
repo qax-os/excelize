@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-// NewFile provides function to create new file by default template. For
+// NewFile provides a function to create new file by default template. For
 // example:
 //
 //    xlsx := NewFile()
@@ -40,7 +40,7 @@ func NewFile() *File {
 	return f
 }
 
-// Save provides function to override the xlsx file with origin path.
+// Save provides a function to override the xlsx file with origin path.
 func (f *File) Save() error {
 	if f.Path == "" {
 		return fmt.Errorf("No path defined for file, consider File.WriteTo or File.Write")
@@ -48,8 +48,8 @@ func (f *File) Save() error {
 	return f.SaveAs(f.Path)
 }
 
-// SaveAs provides function to create or update to an xlsx file at the provided
-// path.
+// SaveAs provides a function to create or update to an xlsx file at the
+// provided path.
 func (f *File) SaveAs(name string) error {
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
@@ -59,7 +59,7 @@ func (f *File) SaveAs(name string) error {
 	return f.Write(file)
 }
 
-// Write provides function to write to an io.Writer.
+// Write provides a function to write to an io.Writer.
 func (f *File) Write(w io.Writer) error {
 	_, err := f.WriteTo(w)
 	return err

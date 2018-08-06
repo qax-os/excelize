@@ -14,7 +14,7 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
-// NewSheet provides function to create a new sheet by given worksheet name,
+// NewSheet provides a function to create a new sheet by given worksheet name,
 // when creating a new XLSX file, the default sheet will be create, when you
 // create a new file.
 func (f *File) NewSheet(name string) int {
@@ -36,7 +36,7 @@ func (f *File) NewSheet(name string) int {
 	return f.SheetCount
 }
 
-// contentTypesReader provides function to get the pointer to the
+// contentTypesReader provides a function to get the pointer to the
 // [Content_Types].xml structure after deserialization.
 func (f *File) contentTypesReader() *xlsxTypes {
 	if f.ContentTypes == nil {
@@ -47,7 +47,7 @@ func (f *File) contentTypesReader() *xlsxTypes {
 	return f.ContentTypes
 }
 
-// contentTypesWriter provides function to save [Content_Types].xml after
+// contentTypesWriter provides a function to save [Content_Types].xml after
 // serialize structure.
 func (f *File) contentTypesWriter() {
 	if f.ContentTypes != nil {
@@ -56,7 +56,7 @@ func (f *File) contentTypesWriter() {
 	}
 }
 
-// workbookReader provides function to get the pointer to the xl/workbook.xml
+// workbookReader provides a function to get the pointer to the xl/workbook.xml
 // structure after deserialization.
 func (f *File) workbookReader() *xlsxWorkbook {
 	if f.WorkBook == nil {
@@ -67,7 +67,7 @@ func (f *File) workbookReader() *xlsxWorkbook {
 	return f.WorkBook
 }
 
-// workbookWriter provides function to save xl/workbook.xml after serialize
+// workbookWriter provides a function to save xl/workbook.xml after serialize
 // structure.
 func (f *File) workbookWriter() {
 	if f.WorkBook != nil {
@@ -76,7 +76,7 @@ func (f *File) workbookWriter() {
 	}
 }
 
-// worksheetWriter provides function to save xl/worksheets/sheet%d.xml after
+// worksheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
 func (f *File) worksheetWriter() {
 	for path, sheet := range f.Sheet {
@@ -94,7 +94,7 @@ func (f *File) worksheetWriter() {
 	}
 }
 
-// trimCell provides function to trim blank cells which created by completeCol.
+// trimCell provides a function to trim blank cells which created by completeCol.
 func trimCell(column []xlsxC) []xlsxC {
 	col := make([]xlsxC, len(column))
 	i := 0
@@ -147,7 +147,7 @@ func (f *File) setWorkbook(name string, rid int) {
 	})
 }
 
-// workbookRelsReader provides function to read and unmarshal workbook
+// workbookRelsReader provides a function to read and unmarshal workbook
 // relationships of XLSX file.
 func (f *File) workbookRelsReader() *xlsxWorkbookRels {
 	if f.WorkBookRels == nil {
@@ -158,7 +158,7 @@ func (f *File) workbookRelsReader() *xlsxWorkbookRels {
 	return f.WorkBookRels
 }
 
-// workbookRelsWriter provides function to save xl/_rels/workbook.xml.rels after
+// workbookRelsWriter provides a function to save xl/_rels/workbook.xml.rels after
 // serialize structure.
 func (f *File) workbookRelsWriter() {
 	if f.WorkBookRels != nil {
@@ -211,7 +211,7 @@ func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
 	return bytes.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
-// SetActiveSheet provides function to set default active worksheet of XLSX by
+// SetActiveSheet provides a function to set default active worksheet of XLSX by
 // given index. Note that active index is different with the index that got by
 // function GetSheetMap, and it should be greater than 0 and less than total
 // worksheet numbers.
@@ -247,7 +247,7 @@ func (f *File) SetActiveSheet(index int) {
 	}
 }
 
-// GetActiveSheetIndex provides function to get active sheet of XLSX. If not
+// GetActiveSheetIndex provides a function to get active sheet of XLSX. If not
 // found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
 	buffer := bytes.Buffer{}
@@ -269,7 +269,7 @@ func (f *File) GetActiveSheetIndex() int {
 	return 0
 }
 
-// SetSheetName provides function to set the worksheet name be given old and new
+// SetSheetName provides a function to set the worksheet name be given old and new
 // worksheet name. Maximum 31 characters are allowed in sheet title and this
 // function only changes the name of the sheet and will not update the sheet
 // name in the formula or reference associated with the cell. So there may be
@@ -287,7 +287,7 @@ func (f *File) SetSheetName(oldName, newName string) {
 	}
 }
 
-// GetSheetName provides function to get worksheet name of XLSX by given
+// GetSheetName provides a function to get worksheet name of XLSX by given
 // worksheet index. If given sheet index is invalid, will return an empty
 // string.
 func (f *File) GetSheetName(index int) string {
@@ -306,7 +306,7 @@ func (f *File) GetSheetName(index int) string {
 	return ""
 }
 
-// GetSheetIndex provides function to get worksheet index of XLSX by given sheet
+// GetSheetIndex provides a function to get worksheet index of XLSX by given sheet
 // name. If given worksheet name is invalid, will return an integer type value
 // 0.
 func (f *File) GetSheetIndex(name string) int {
@@ -325,7 +325,7 @@ func (f *File) GetSheetIndex(name string) int {
 	return 0
 }
 
-// GetSheetMap provides function to get worksheet name and index map of XLSX.
+// GetSheetMap provides a function to get worksheet name and index map of XLSX.
 // For example:
 //
 //    xlsx, err := excelize.OpenFile("./Book1.xlsx")
@@ -351,7 +351,7 @@ func (f *File) GetSheetMap() map[int]string {
 	return sheetMap
 }
 
-// getSheetMap provides function to get worksheet name and XML file path map of
+// getSheetMap provides a function to get worksheet name and XML file path map of
 // XLSX.
 func (f *File) getSheetMap() map[string]string {
 	maps := make(map[string]string)
@@ -361,7 +361,7 @@ func (f *File) getSheetMap() map[string]string {
 	return maps
 }
 
-// SetSheetBackground provides function to set background picture by given
+// SetSheetBackground provides a function to set background picture by given
 // worksheet name.
 func (f *File) SetSheetBackground(sheet, picture string) error {
 	var err error
@@ -381,7 +381,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	return err
 }
 
-// DeleteSheet provides function to delete worksheet in a workbook by given
+// DeleteSheet provides a function to delete worksheet in a workbook by given
 // worksheet name. Use this method with caution, which will affect changes in
 // references such as formulas, charts, and so on. If there is any referenced
 // value of the deleted worksheet, it will cause a file error when you open it.
@@ -405,7 +405,7 @@ func (f *File) DeleteSheet(name string) {
 	f.SetActiveSheet(len(f.GetSheetMap()))
 }
 
-// deleteSheetFromWorkbookRels provides function to remove worksheet
+// deleteSheetFromWorkbookRels provides a function to remove worksheet
 // relationships by given relationships ID in the file
 // xl/_rels/workbook.xml.rels.
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
@@ -419,7 +419,7 @@ func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	return ""
 }
 
-// deleteSheetFromContentTypes provides function to remove worksheet
+// deleteSheetFromContentTypes provides a function to remove worksheet
 // relationships by given target name in the file [Content_Types].xml.
 func (f *File) deleteSheetFromContentTypes(target string) {
 	content := f.contentTypesReader()
@@ -430,7 +430,7 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 	}
 }
 
-// CopySheet provides function to duplicate a worksheet by gave source and
+// CopySheet provides a function to duplicate a worksheet by gave source and
 // target worksheet index. Note that currently doesn't support duplicate
 // workbooks that contain tables, charts or pictures. For Example:
 //
@@ -447,7 +447,7 @@ func (f *File) CopySheet(from, to int) error {
 	return nil
 }
 
-// copySheet provides function to duplicate a worksheet by gave source and
+// copySheet provides a function to duplicate a worksheet by gave source and
 // target worksheet name.
 func (f *File) copySheet(from, to int) {
 	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
@@ -468,7 +468,7 @@ func (f *File) copySheet(from, to int) {
 	}
 }
 
-// SetSheetVisible provides function to set worksheet visible by given worksheet
+// SetSheetVisible provides a function to set worksheet visible by given worksheet
 // name. A workbook must contain at least one visible worksheet. If the given
 // worksheet has been activated, this setting will be invalidated. Sheet state
 // values as defined by http://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
@@ -510,14 +510,14 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 	}
 }
 
-// parseFormatPanesSet provides function to parse the panes settings.
+// parseFormatPanesSet provides a function to parse the panes settings.
 func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 	format := formatPanes{}
 	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err
 }
 
-// SetPanes provides function to create and remove freeze panes and split panes
+// SetPanes provides a function to create and remove freeze panes and split panes
 // by given worksheet name and panes format set.
 //
 // activePane defines the pane that is active. The possible values for this
@@ -631,7 +631,7 @@ func (f *File) SetPanes(sheet, panes string) {
 	xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Selection = s
 }
 
-// GetSheetVisible provides function to get worksheet visible by given worksheet
+// GetSheetVisible provides a function to get worksheet visible by given worksheet
 // name. For example, get visible state of Sheet1:
 //
 //    xlsx.GetSheetVisible("Sheet1")
@@ -649,7 +649,7 @@ func (f *File) GetSheetVisible(name string) bool {
 	return visible
 }
 
-// trimSheetName provides function to trim invaild characters by given worksheet
+// trimSheetName provides a function to trim invaild characters by given worksheet
 // name.
 func trimSheetName(name string) string {
 	r := []rune{}

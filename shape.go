@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// parseFormatShapeSet provides function to parse the format settings of the
+// parseFormatShapeSet provides a function to parse the format settings of the
 // shape with default value.
 func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 	format := formatShape{
@@ -29,8 +29,8 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 
 // AddShape provides the method to add shape in a sheet by given worksheet
 // index, shape format set (such as offset, scale, aspect ratio setting and
-// print settings) and properties set. For example, add text box (rect shape) in
-// Sheet1:
+// print settings) and properties set. For example, add text box (rect shape)
+// in Sheet1:
 //
 //    xlsx.AddShape("Sheet1", "G6", `{"type":"rect","color":{"line":"#4286F4","fill":"#8eb9ff"},"paragraph":[{"text":"Rectangle Shape","font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"sng"}}],"width":180,"height": 90}`)
 //
@@ -272,7 +272,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 	return err
 }
 
-// addDrawingShape provides function to add preset geometry by given sheet,
+// addDrawingShape provides a function to add preset geometry by given sheet,
 // drawingXMLand format sets.
 func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
 	textUnderlineType := map[string]bool{"none": true, "words": true, "sng": true, "dbl": true, "heavy": true, "dotted": true, "dottedHeavy": true, "dash": true, "dashHeavy": true, "dashLong": true, "dashLongHeavy": true, "dotDash": true, "dotDashHeavy": true, "dotDotDash": true, "dotDotDashHeavy": true, "wavy": true, "wavyHeavy": true, "wavyDbl": true}
@@ -397,7 +397,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	f.saveFileList(drawingXML, output)
 }
 
-// setShapeRef provides function to set color with hex model by given actual
+// setShapeRef provides a function to set color with hex model by given actual
 // color value.
 func setShapeRef(color string, i int) *aRef {
 	if color == "" {

@@ -132,7 +132,7 @@ func (err ErrSheetNotExist) Error() string {
 
 // Rows return a rows iterator. For example:
 //
-//    rows, err := xlsx.GetRows("Sheet1")
+//    rows, err := xlsx.Rows("Sheet1")
 //    for rows.Next() {
 //        for _, colCell := range rows.Columns() {
 //            fmt.Print(colCell, "\t")
@@ -202,7 +202,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) {
 	xlsx.SheetData.Row[rowIdx].CustomHeight = true
 }
 
-// getRowHeight provides function to get row height in pixels by given sheet
+// getRowHeight provides a function to get row height in pixels by given sheet
 // name and row index.
 func (f *File) getRowHeight(sheet string, row int) int {
 	xlsx := f.workSheetReader(sheet)
@@ -215,7 +215,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 	return int(defaultRowHeightPixels)
 }
 
-// GetRowHeight provides function to get row height by given worksheet name
+// GetRowHeight provides a function to get row height by given worksheet name
 // and row index. For example, get the height of the first row in Sheet1:
 //
 //    xlsx.GetRowHeight("Sheet1", 1)
@@ -231,7 +231,7 @@ func (f *File) GetRowHeight(sheet string, row int) float64 {
 	return defaultRowHeightPixels
 }
 
-// sharedStringsReader provides function to get the pointer to the structure
+// sharedStringsReader provides a function to get the pointer to the structure
 // after deserialization of xl/sharedStrings.xml.
 func (f *File) sharedStringsReader() *xlsxSST {
 	if f.SharedStrings == nil {
@@ -246,8 +246,9 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	return f.SharedStrings
 }
 
-// getValueFrom return a value from a column/row cell, this function is inteded
-// to be used with for range on rows an argument with the xlsx opened file.
+// getValueFrom return a value from a column/row cell, this function is
+// inteded to be used with for range on rows an argument with the xlsx opened
+// file.
 func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	switch xlsx.T {
 	case "s":
@@ -315,9 +316,9 @@ func (f *File) SetRowOutlineLevel(sheet string, rowIndex int, level uint8) {
 	xlsx.SheetData.Row[rowIndex].OutlineLevel = level
 }
 
-// GetRowOutlineLevel provides a function to get outline level number of a single row by given
-// worksheet name and row index. For example, get outline number of row 2 in
-// Sheet1:
+// GetRowOutlineLevel provides a function to get outline level number of a
+// single row by given worksheet name and row index. For example, get outline
+// number of row 2 in Sheet1:
 //
 //    xlsx.GetRowOutlineLevel("Sheet1", 2)
 //
@@ -329,8 +330,8 @@ func (f *File) GetRowOutlineLevel(sheet string, rowIndex int) uint8 {
 	return xlsx.SheetData.Row[rowIndex].OutlineLevel
 }
 
-// RemoveRow provides function to remove single row by given worksheet name and
-// row index. For example, remove row 3 in Sheet1:
+// RemoveRow provides a function to remove single row by given worksheet name
+// and row index. For example, remove row 3 in Sheet1:
 //
 //    xlsx.RemoveRow("Sheet1", 2)
 //
@@ -349,8 +350,8 @@ func (f *File) RemoveRow(sheet string, row int) {
 	}
 }
 
-// InsertRow provides function to insert a new row before given row index. For
-// example, create a new row before row 3 in Sheet1:
+// InsertRow provides a function to insert a new row before given row index.
+// For example, create a new row before row 3 in Sheet1:
 //
 //    xlsx.InsertRow("Sheet1", 2)
 //
@@ -362,8 +363,8 @@ func (f *File) InsertRow(sheet string, row int) {
 	f.adjustHelper(sheet, -1, row, 1)
 }
 
-// checkRow provides function to check and fill each column element for all rows
-// and make that is continuous in a worksheet of XML. For example:
+// checkRow provides a function to check and fill each column element for all
+// rows and make that is continuous in a worksheet of XML. For example:
 //
 //    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
 //        <c r="A15" s="2" />
@@ -416,7 +417,7 @@ func checkRow(xlsx *xlsxWorksheet) {
 	}
 }
 
-// completeRow provides function to check and fill each column element for a
+// completeRow provides a function to check and fill each column element for a
 // single row and make that is continuous in a worksheet of XML by given row
 // index and axis.
 func completeRow(xlsx *xlsxWorksheet, row, cell int) {
@@ -448,9 +449,9 @@ func completeRow(xlsx *xlsxWorksheet, row, cell int) {
 	}
 }
 
-// convertRowHeightToPixels provides function to convert the height of a cell
-// from user's units to pixels. If the height hasn't been set by the user we use
-// the default value. If the row is hidden it has a value of zero.
+// convertRowHeightToPixels provides a function to convert the height of a
+// cell from user's units to pixels. If the height hasn't been set by the user
+// we use the default value. If the row is hidden it has a value of zero.
 func convertRowHeightToPixels(height float64) float64 {
 	var pixels float64
 	if height == 0 {

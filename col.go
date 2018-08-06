@@ -121,8 +121,8 @@ func (f *File) SetColOutlineLevel(sheet, column string, level uint8) {
 	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
 }
 
-// SetColWidth provides function to set the width of a single column or multiple
-// columns. For example:
+// SetColWidth provides a function to set the width of a single column or
+// multiple columns. For example:
 //
 //    xlsx := excelize.NewFile()
 //    xlsx.SetColWidth("Sheet1", "A", "H", 20)
@@ -259,8 +259,8 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 	return colStart, rowStart, xAbs, yAbs, colEnd, rowEnd, x2, y2
 }
 
-// getColWidth provides function to get column width in pixels by given sheet
-// name and column index.
+// getColWidth provides a function to get column width in pixels by given
+// sheet name and column index.
 func (f *File) getColWidth(sheet string, col int) int {
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
@@ -278,8 +278,8 @@ func (f *File) getColWidth(sheet string, col int) int {
 	return int(defaultColWidthPixels)
 }
 
-// GetColWidth provides function to get column width by given worksheet name and
-// column index.
+// GetColWidth provides a function to get column width by given worksheet name
+// and column index.
 func (f *File) GetColWidth(sheet, column string) float64 {
 	col := TitleToNumber(strings.ToUpper(column)) + 1
 	xlsx := f.workSheetReader(sheet)
@@ -298,8 +298,8 @@ func (f *File) GetColWidth(sheet, column string) float64 {
 	return defaultColWidthPixels
 }
 
-// InsertCol provides function to insert a new column before given column index.
-// For example, create a new column before column C in Sheet1:
+// InsertCol provides a function to insert a new column before given column
+// index. For example, create a new column before column C in Sheet1:
 //
 //    xlsx.InsertCol("Sheet1", "C")
 //
@@ -308,8 +308,8 @@ func (f *File) InsertCol(sheet, column string) {
 	f.adjustHelper(sheet, col, -1, 1)
 }
 
-// RemoveCol provides function to remove single column by given worksheet name
-// and column index. For example, remove column C in Sheet1:
+// RemoveCol provides a function to remove single column by given worksheet
+// name and column index. For example, remove column C in Sheet1:
 //
 //    xlsx.RemoveCol("Sheet1", "C")
 //
@@ -346,10 +346,10 @@ func completeCol(xlsx *xlsxWorksheet, row, cell int) {
 	}
 }
 
-// convertColWidthToPixels provieds function to convert the width of a cell from
-// user's units to pixels. Excel rounds the column width to the nearest pixel.
-// If the width hasn't been set by the user we use the default value. If the
-// column is hidden it has a value of zero.
+// convertColWidthToPixels provieds function to convert the width of a cell
+// from user's units to pixels. Excel rounds the column width to the nearest
+// pixel. If the width hasn't been set by the user we use the default value.
+// If the column is hidden it has a value of zero.
 func convertColWidthToPixels(width float64) float64 {
 	var padding float64 = 5
 	var pixels float64

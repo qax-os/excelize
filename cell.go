@@ -20,7 +20,7 @@ const (
 	STCellFormulaTypeShared = "shared"
 )
 
-// mergeCellsParser provides function to check merged cells in worksheet by
+// mergeCellsParser provides a function to check merged cells in worksheet by
 // given axis.
 func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 	axis = strings.ToUpper(axis)
@@ -34,8 +34,8 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 	return axis
 }
 
-// SetCellValue provides function to set value of a cell. The following shows
-// the supported data types:
+// SetCellValue provides a function to set value of a cell. The following
+// shows the supported data types:
 //
 //    int
 //    int8
@@ -83,7 +83,7 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	}
 }
 
-// setCellIntValue provides function to set int value of a cell.
+// setCellIntValue provides a function to set int value of a cell.
 func (f *File) setCellIntValue(sheet, axis string, value interface{}) {
 	switch value.(type) {
 	case int:
@@ -111,7 +111,7 @@ func (f *File) setCellIntValue(sheet, axis string, value interface{}) {
 	}
 }
 
-// SetCellBool provides function to set bool type value of a cell by given
+// SetCellBool provides a function to set bool type value of a cell by given
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellBool(sheet, axis string, value bool) {
 	xlsx := f.workSheetReader(sheet)
@@ -139,10 +139,10 @@ func (f *File) SetCellBool(sheet, axis string, value bool) {
 	}
 }
 
-// GetCellValue provides function to get formatted value from cell by given
-// worksheet name and axis in XLSX file. If it is possible to apply a format to
-// the cell value, it will do so, if not then an error will be returned, along
-// with the raw value of the cell.
+// GetCellValue provides a function to get formatted value from cell by given
+// worksheet name and axis in XLSX file. If it is possible to apply a format
+// to the cell value, it will do so, if not then an error will be returned,
+// along with the raw value of the cell.
 func (f *File) GetCellValue(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
@@ -174,9 +174,9 @@ func (f *File) GetCellValue(sheet, axis string) string {
 	return ""
 }
 
-// formattedValue provides function to returns a value after formatted. If it is
-// possible to apply a format to the cell value, it will do so, if not then an
-// error will be returned, along with the raw value of the cell.
+// formattedValue provides a function to returns a value after formatted. If
+// it is possible to apply a format to the cell value, it will do so, if not
+// then an error will be returned, along with the raw value of the cell.
 func (f *File) formattedValue(s int, v string) string {
 	if s == 0 {
 		return v
@@ -189,7 +189,7 @@ func (f *File) formattedValue(s int, v string) string {
 	return v
 }
 
-// GetCellStyle provides function to get cell style index by given worksheet
+// GetCellStyle provides a function to get cell style index by given worksheet
 // name and cell coordinates.
 func (f *File) GetCellStyle(sheet, axis string) int {
 	xlsx := f.workSheetReader(sheet)
@@ -211,8 +211,8 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 	return f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
 }
 
-// GetCellFormula provides function to get formula from cell by given worksheet
-// name and axis in XLSX file.
+// GetCellFormula provides a function to get formula from cell by given
+// worksheet name and axis in XLSX file.
 func (f *File) GetCellFormula(sheet, axis string) string {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
@@ -276,7 +276,7 @@ func getSharedForumula(xlsx *xlsxWorksheet, si string) string {
 	return ""
 }
 
-// SetCellFormula provides function to set cell formula by given string and
+// SetCellFormula provides a function to set cell formula by given string and
 // worksheet name.
 func (f *File) SetCellFormula(sheet, axis, formula string) {
 	xlsx := f.workSheetReader(sheet)
@@ -305,10 +305,10 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	}
 }
 
-// SetCellHyperLink provides function to set cell hyperlink by given worksheet
-// name and link URL address. LinkType defines two types of hyperlink "External"
-// for web site or "Location" for moving to one of cell in this workbook. The
-// below is example for external link.
+// SetCellHyperLink provides a function to set cell hyperlink by given
+// worksheet name and link URL address. LinkType defines two types of
+// hyperlink "External" for web site or "Location" for moving to one of cell
+// in this workbook. The below is example for external link.
 //
 //    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 //    // Set underline and font color style for the cell.
@@ -341,10 +341,10 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
 	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
 }
 
-// GetCellHyperLink provides function to get cell hyperlink by given worksheet
-// name and axis. Boolean type value link will be ture if the cell has a
-// hyperlink and the target is the address of the hyperlink. Otherwise, the
-// value of link will be false and the value of the target will be a blank
+// GetCellHyperLink provides a function to get cell hyperlink by given
+// worksheet name and axis. Boolean type value link will be ture if the cell
+// has a hyperlink and the target is the address of the hyperlink. Otherwise,
+// the value of link will be false and the value of the target will be a blank
 // string. For example get hyperlink of Sheet1!H6:
 //
 //    link, target := xlsx.GetCellHyperLink("Sheet1", "H6")
@@ -369,8 +369,8 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
 	return link, target
 }
 
-// MergeCell provides function to merge cells by given coordinate area and sheet
-// name. For example create a merged cell of D3:E9 on Sheet1:
+// MergeCell provides a function to merge cells by given coordinate area and
+// sheet name. For example create a merged cell of D3:E9 on Sheet1:
 //
 //    xlsx.MergeCell("Sheet1", "D3", "E9")
 //
@@ -429,7 +429,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) {
 	}
 }
 
-// SetCellInt provides function to set int type value of a cell by given
+// SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) {
 	xlsx := f.workSheetReader(sheet)
@@ -453,7 +453,7 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
 }
 
-// prepareCellStyle provides function to prepare style index of cell in
+// prepareCellStyle provides a function to prepare style index of cell in
 // worksheet by given column index and style index.
 func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
 	if xlsx.Cols != nil && style == 0 {
@@ -466,8 +466,8 @@ func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
 	return style
 }
 
-// SetCellStr provides function to set string type value of a cell. Total number
-// of characters that a cell can contain 32767 characters.
+// SetCellStr provides a function to set string type value of a cell. Total
+// number of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
 	axis = f.mergeCellsParser(xlsx, axis)
@@ -502,7 +502,7 @@ func (f *File) SetCellStr(sheet, axis, value string) {
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
 }
 
-// SetCellDefault provides function to set string type value of a cell as
+// SetCellDefault provides a function to set string type value of a cell as
 // default format without escaping the cell.
 func (f *File) SetCellDefault(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
@@ -567,7 +567,7 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) {
 	}
 }
 
-// checkCellInArea provides function to determine if a given coordinate is
+// checkCellInArea provides a function to determine if a given coordinate is
 // within an area.
 func checkCellInArea(cell, area string) bool {
 	cell = strings.ToUpper(cell)

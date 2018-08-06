@@ -8,12 +8,12 @@ import (
 // timeLocationUTC defined the UTC time location.
 var timeLocationUTC, _ = time.LoadLocation("UTC")
 
-// timeToUTCTime provides function to convert time to UTC time.
+// timeToUTCTime provides a function to convert time to UTC time.
 func timeToUTCTime(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), timeLocationUTC)
 }
 
-// timeToExcelTime provides function to convert time to Excel time.
+// timeToExcelTime provides a function to convert time to Excel time.
 func timeToExcelTime(t time.Time) float64 {
 	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
 	var excelTime float64
@@ -32,7 +32,7 @@ func timeToExcelTime(t time.Time) float64 {
 	return excelTime + float64(t.UnixNano())/8.64e13 + 25569.0
 }
 
-// shiftJulianToNoon provides function to process julian date to noon.
+// shiftJulianToNoon provides a function to process julian date to noon.
 func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 	switch {
 	case -0.5 < julianFraction && julianFraction < 0.5:
@@ -47,7 +47,7 @@ func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 	return julianDays, julianFraction
 }
 
-// fractionOfADay provides function to return the integer values for hour,
+// fractionOfADay provides a function to return the integer values for hour,
 // minutes, seconds and nanoseconds that comprised a given fraction of a day.
 // values would round to 1 us.
 func fractionOfADay(fraction float64) (hours, minutes, seconds, nanoseconds int) {
@@ -68,7 +68,7 @@ func fractionOfADay(fraction float64) (hours, minutes, seconds, nanoseconds int)
 	return
 }
 
-// julianDateToGregorianTime provides function to convert julian date to
+// julianDateToGregorianTime provides a function to convert julian date to
 // gregorian time.
 func julianDateToGregorianTime(part1, part2 float64) time.Time {
 	part1I, part1F := math.Modf(part1)
@@ -81,12 +81,12 @@ func julianDateToGregorianTime(part1, part2 float64) time.Time {
 	return time.Date(year, time.Month(month), day, hours, minutes, seconds, nanoseconds, time.UTC)
 }
 
-// By this point generations of programmers have repeated the algorithm sent to
-// the editor of "Communications of the ACM" in 1968 (published in CACM, volume
-// 11, number 10, October 1968, p.657). None of those programmers seems to have
-// found it necessary to explain the constants or variable names set out by
-// Henry F. Fliegel and Thomas C. Van Flandern.  Maybe one day I'll buy that
-// jounal and expand an explanation here - that day is not today.
+// By this point generations of programmers have repeated the algorithm sent
+// to the editor of "Communications of the ACM" in 1968 (published in CACM,
+// volume 11, number 10, October 1968, p.657). None of those programmers seems
+// to have found it necessary to explain the constants or variable names set
+// out by Henry F. Fliegel and Thomas C. Van Flandern.  Maybe one day I'll buy
+// that jounal and expand an explanation here - that day is not today.
 func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 	l := jd + 68569
 	n := (4 * l) / 146097
@@ -101,8 +101,8 @@ func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 	return d, m, y
 }
 
-// timeFromExcelTime provides function to convert an excelTime representation
-// (stored as a floating point number) to a time.Time.
+// timeFromExcelTime provides a function to convert an excelTime
+// representation (stored as a floating point number) to a time.Time.
 func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 	const MDD int64 = 106750 // Max time.Duration Days, aprox. 290 years
 	var date time.Time

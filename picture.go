@@ -14,8 +14,8 @@ import (
 	"strings"
 )
 
-// parseFormatPictureSet provides function to parse the format settings of the
-// picture with default value.
+// parseFormatPictureSet provides a function to parse the format settings of
+// the picture with default value.
 func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 	format := formatPicture{
 		FPrintsWithSheet: true,
@@ -116,7 +116,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	return err
 }
 
-// addSheetRelationships provides function to add
+// addSheetRelationships provides a function to add
 // xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name, relationship
 // type and target.
 func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) int {
@@ -149,9 +149,9 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 	return rID
 }
 
-// deleteSheetRelationships provides function to delete relationships in
-// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and relationship
-// index.
+// deleteSheetRelationships provides a function to delete relationships in
+// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
+// relationship index.
 func (f *File) deleteSheetRelationships(sheet, rID string) {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
@@ -169,7 +169,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	f.saveFileList(rels, output)
 }
 
-// addSheetLegacyDrawing provides function to add legacy drawing element to
+// addSheetLegacyDrawing provides a function to add legacy drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
@@ -178,7 +178,7 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 	}
 }
 
-// addSheetDrawing provides function to add drawing element to
+// addSheetDrawing provides a function to add drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
@@ -187,7 +187,7 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 	}
 }
 
-// addSheetPicture provides function to add picture element to
+// addSheetPicture provides a function to add picture element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetPicture(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
@@ -196,7 +196,7 @@ func (f *File) addSheetPicture(sheet string, rID int) {
 	}
 }
 
-// countDrawings provides function to get drawing files count storage in the
+// countDrawings provides a function to get drawing files count storage in the
 // folder xl/drawings.
 func (f *File) countDrawings() int {
 	count := 0
@@ -208,7 +208,7 @@ func (f *File) countDrawings() int {
 	return count
 }
 
-// addDrawingPicture provides function to add picture by given sheet,
+// addDrawingPicture provides a function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
 func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID, hyperlinkRID int, formatSet *formatPicture) {
@@ -263,8 +263,8 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	f.saveFileList(drawingXML, output)
 }
 
-// addDrawingRelationships provides function to add image part relationships in
-// the file xl/drawings/_rels/drawing%d.xml.rels by given drawing index,
+// addDrawingRelationships provides a function to add image part relationships
+// in the file xl/drawings/_rels/drawing%d.xml.rels by given drawing index,
 // relationship type and target.
 func (f *File) addDrawingRelationships(index int, relType, target, targetMode string) int {
 	var rels = "xl/drawings/_rels/drawing" + strconv.Itoa(index) + ".xml.rels"
@@ -292,8 +292,8 @@ func (f *File) addDrawingRelationships(index int, relType, target, targetMode st
 	return rID
 }
 
-// countMedia provides function to get media files count storage in the folder
-// xl/media/image.
+// countMedia provides a function to get media files count storage in the
+// folder xl/media/image.
 func (f *File) countMedia() int {
 	count := 0
 	for k := range f.XLSX {
@@ -304,8 +304,8 @@ func (f *File) countMedia() int {
 	return count
 }
 
-// addMedia provides function to add picture into folder xl/media/image by given
-// file name and extension name.
+// addMedia provides a function to add picture into folder xl/media/image by
+// given file name and extension name.
 func (f *File) addMedia(file, ext string) {
 	count := f.countMedia()
 	dat, _ := ioutil.ReadFile(file)
@@ -313,8 +313,8 @@ func (f *File) addMedia(file, ext string) {
 	f.XLSX[media] = dat
 }
 
-// setContentTypePartImageExtensions provides function to set the content type
-// for relationship parts and the Main Document part.
+// setContentTypePartImageExtensions provides a function to set the content
+// type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false}
 	content := f.contentTypesReader()
@@ -334,7 +334,7 @@ func (f *File) setContentTypePartImageExtensions() {
 	}
 }
 
-// setContentTypePartVMLExtensions provides function to set the content type
+// setContentTypePartVMLExtensions provides a function to set the content type
 // for relationship parts and the Main Document part.
 func (f *File) setContentTypePartVMLExtensions() {
 	vml := false
@@ -352,8 +352,8 @@ func (f *File) setContentTypePartVMLExtensions() {
 	}
 }
 
-// addContentTypePart provides function to add content type part relationships
-// in the file [Content_Types].xml by given index.
+// addContentTypePart provides a function to add content type part
+// relationships in the file [Content_Types].xml by given index.
 func (f *File) addContentTypePart(index int, contentType string) {
 	setContentType := map[string]func(){
 		"comments": f.setContentTypePartVMLExtensions,
@@ -387,7 +387,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 	})
 }
 
-// getSheetRelationshipsTargetByID provides function to get Target attribute
+// getSheetRelationshipsTargetByID provides a function to get Target attribute
 // value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
@@ -406,9 +406,9 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	return ""
 }
 
-// GetPicture provides function to get picture base name and raw content embed
-// in XLSX by given worksheet and cell name. This function returns the file name
-// in XLSX and file contents as []byte data types. For example:
+// GetPicture provides a function to get picture base name and raw content
+// embed in XLSX by given worksheet and cell name. This function returns the
+// file name in XLSX and file contents as []byte data types. For example:
 //
 //    xlsx, err := excelize.OpenFile("./Book1.xlsx")
 //    if err != nil {
@@ -463,8 +463,9 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 	return "", []byte{}
 }
 
-// getDrawingRelationships provides function to get drawing relationships from
-// xl/drawings/_rels/drawing%s.xml.rels by given file name and relationship ID.
+// getDrawingRelationships provides a function to get drawing relationships
+// from xl/drawings/_rels/drawing%s.xml.rels by given file name and
+// relationship ID.
 func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
 	_, ok := f.XLSX[rels]
 	if !ok {

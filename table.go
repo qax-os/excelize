@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// parseFormatTableSet provides function to parse the format settings of the
+// parseFormatTableSet provides a function to parse the format settings of the
 // table with default value.
 func parseFormatTableSet(formatSet string) (*formatTable, error) {
 	format := formatTable{
@@ -75,8 +75,8 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 	return err
 }
 
-// countTables provides function to get table files count storage in the folder
-// xl/tables.
+// countTables provides a function to get table files count storage in the
+// folder xl/tables.
 func (f *File) countTables() int {
 	count := 0
 	for k := range f.XLSX {
@@ -87,7 +87,7 @@ func (f *File) countTables() int {
 	return count
 }
 
-// addSheetTable provides function to add tablePart element to
+// addSheetTable provides a function to add tablePart element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetTable(sheet string, rID int) {
 	xlsx := f.workSheetReader(sheet)
@@ -101,8 +101,8 @@ func (f *File) addSheetTable(sheet string, rID int) {
 	xlsx.TableParts.TableParts = append(xlsx.TableParts.TableParts, table)
 }
 
-// addTable provides function to add table by given worksheet name, coordinate
-// area and format set.
+// addTable provides a function to add table by given worksheet name,
+// coordinate area and format set.
 func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, i int, formatSet *formatTable) {
 	// Correct the minimum number of rows, the table at least two lines.
 	if hyAxis == vyAxis {
@@ -157,7 +157,7 @@ func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, 
 	f.saveFileList(tableXML, table)
 }
 
-// parseAutoFilterSet provides function to parse the settings of the auto
+// parseAutoFilterSet provides a function to parse the settings of the auto
 // filter.
 func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 	format := formatAutoFilter{}
@@ -264,7 +264,7 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	return f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
 }
 
-// autoFilter provides function to extract the tokens from the filter
+// autoFilter provides a function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
 func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *formatAutoFilter) error {
 	xlsx := f.workSheetReader(sheet)
@@ -301,8 +301,8 @@ func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *fo
 	return nil
 }
 
-// writeAutoFilter provides function to check for single or double custom filters
-// as default filters and handle them accordingly.
+// writeAutoFilter provides a function to check for single or double custom
+// filters as default filters and handle them accordingly.
 func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []string) {
 	if len(exp) == 1 && exp[0] == 2 {
 		// Single equality.
@@ -329,7 +329,7 @@ func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []strin
 	}
 }
 
-// writeCustomFilter provides function to write the <customFilter> element.
+// writeCustomFilter provides a function to write the <customFilter> element.
 func (f *File) writeCustomFilter(filter *xlsxAutoFilter, operator int, val string) {
 	operators := map[int]string{
 		1:  "lessThan",
@@ -353,8 +353,9 @@ func (f *File) writeCustomFilter(filter *xlsxAutoFilter, operator int, val strin
 	}
 }
 
-// parseFilterExpression provides function to converts the tokens of a possibly
-// conditional expression into 1 or 2 sub expressions for further parsing.
+// parseFilterExpression provides a function to converts the tokens of a
+// possibly conditional expression into 1 or 2 sub expressions for further
+// parsing.
 //
 // Examples:
 //
@@ -394,7 +395,7 @@ func (f *File) parseFilterExpression(expression string, tokens []string) ([]int,
 	return expressions, t, nil
 }
 
-// parseFilterTokens provides function to parse the 3 tokens of a filter
+// parseFilterTokens provides a function to parse the 3 tokens of a filter
 // expression and return the operator and token.
 func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, string, error) {
 	operators := map[string]int{

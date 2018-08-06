@@ -10,8 +10,8 @@ import (
 )
 
 // Excel styles can reference number formats that are built-in, all of which
-// have an id less than 164. This is a possibly incomplete list comprised of as
-// many of them as I could find.
+// have an id less than 164. This is a possibly incomplete list comprised of
+// as many of them as I could find.
 var builtInNumFmt = map[int]string{
 	0:  "general",
 	1:  "0",
@@ -829,14 +829,15 @@ var criteriaType = map[string]string{
 	"continue month": "continueMonth",
 }
 
-// formatToString provides function to return original string by given built-in
-// number formats code and cell string.
+// formatToString provides a function to return original string by given
+// built-in number formats code and cell string.
 func formatToString(i int, v string) string {
 	return v
 }
 
-// formatToInt provides function to convert original string to integer format as
-// string type by given built-in number formats code and cell string.
+// formatToInt provides a function to convert original string to integer
+// format as string type by given built-in number formats code and cell
+// string.
 func formatToInt(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -845,8 +846,9 @@ func formatToInt(i int, v string) string {
 	return fmt.Sprintf("%d", int(f))
 }
 
-// formatToFloat provides function to convert original string to float format as
-// string type by given built-in number formats code and cell string.
+// formatToFloat provides a function to convert original string to float
+// format as string type by given built-in number formats code and cell
+// string.
 func formatToFloat(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -855,8 +857,8 @@ func formatToFloat(i int, v string) string {
 	return fmt.Sprintf("%.2f", f)
 }
 
-// formatToA provides function to convert original string to special format as
-// string type by given built-in number formats code and cell string.
+// formatToA provides a function to convert original string to special format
+// as string type by given built-in number formats code and cell string.
 func formatToA(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -870,8 +872,8 @@ func formatToA(i int, v string) string {
 	return fmt.Sprintf("%d", t)
 }
 
-// formatToB provides function to convert original string to special format as
-// string type by given built-in number formats code and cell string.
+// formatToB provides a function to convert original string to special format
+// as string type by given built-in number formats code and cell string.
 func formatToB(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -883,8 +885,8 @@ func formatToB(i int, v string) string {
 	return fmt.Sprintf("%.2f", f)
 }
 
-// formatToC provides function to convert original string to special format as
-// string type by given built-in number formats code and cell string.
+// formatToC provides a function to convert original string to special format
+// as string type by given built-in number formats code and cell string.
 func formatToC(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -894,8 +896,8 @@ func formatToC(i int, v string) string {
 	return fmt.Sprintf("%d%%", int(f))
 }
 
-// formatToD provides function to convert original string to special format as
-// string type by given built-in number formats code and cell string.
+// formatToD provides a function to convert original string to special format
+// as string type by given built-in number formats code and cell string.
 func formatToD(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -905,8 +907,8 @@ func formatToD(i int, v string) string {
 	return fmt.Sprintf("%.2f%%", f)
 }
 
-// formatToE provides function to convert original string to special format as
-// string type by given built-in number formats code and cell string.
+// formatToE provides a function to convert original string to special format
+// as string type by given built-in number formats code and cell string.
 func formatToE(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -915,17 +917,17 @@ func formatToE(i int, v string) string {
 	return fmt.Sprintf("%.e", f)
 }
 
-// parseTime provides function to returns a string parsed using time.Time.
+// parseTime provides a function to returns a string parsed using time.Time.
 // Replace Excel placeholders with Go time placeholders. For example, replace
-// yyyy with 2006. These are in a specific order, due to the fact that m is used
-// in month, minute, and am/pm. It would be easier to fix that with regular
-// expressions, but if it's possible to keep this simple it would be easier to
-// maintain. Full-length month and days (e.g. March, Tuesday) have letters in
-// them that would be replaced by other characters below (such as the 'h' in
-// March, or the 'd' in Tuesday) below. First we convert them to arbitrary
-// characters unused in Excel Date formats, and then at the end, turn them to
-// what they should actually be.
-// Based off: http://www.ozgrid.com/Excel/CustomFormats.htm
+// yyyy with 2006. These are in a specific order, due to the fact that m is
+// used in month, minute, and am/pm. It would be easier to fix that with
+// regular expressions, but if it's possible to keep this simple it would be
+// easier to maintain. Full-length month and days (e.g. March, Tuesday) have
+// letters in them that would be replaced by other characters below (such as
+// the 'h' in March, or the 'd' in Tuesday) below. First we convert them to
+// arbitrary characters unused in Excel Date formats, and then at the end,
+// turn them to what they should actually be. Based off:
+// http://www.ozgrid.com/Excel/CustomFormats.htm
 func parseTime(i int, v string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -983,7 +985,7 @@ func is12HourTime(format string) bool {
 	return strings.Contains(format, "am/pm") || strings.Contains(format, "AM/PM") || strings.Contains(format, "a/p") || strings.Contains(format, "A/P")
 }
 
-// stylesReader provides function to get the pointer to the structure after
+// stylesReader provides a function to get the pointer to the structure after
 // deserialization of xl/styles.xml.
 func (f *File) stylesReader() *xlsxStyleSheet {
 	if f.Styles == nil {
@@ -994,7 +996,7 @@ func (f *File) stylesReader() *xlsxStyleSheet {
 	return f.Styles
 }
 
-// styleSheetWriter provides function to save xl/styles.xml after serialize
+// styleSheetWriter provides a function to save xl/styles.xml after serialize
 // structure.
 func (f *File) styleSheetWriter() {
 	if f.Styles != nil {
@@ -1003,7 +1005,7 @@ func (f *File) styleSheetWriter() {
 	}
 }
 
-// parseFormatStyleSet provides function to parse the format settings of the
+// parseFormatStyleSet provides a function to parse the format settings of the
 // cells and conditional formats.
 func parseFormatStyleSet(style string) (*formatStyle, error) {
 	format := formatStyle{
@@ -1013,8 +1015,8 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 	return &format, err
 }
 
-// NewStyle provides function to create style for cells by given style format.
-// Note that the color field uses RGB color code.
+// NewStyle provides a function to create style for cells by given style
+// format. Note that the color field uses RGB color code.
 //
 // The following shows the border styles sorted by excelize index number:
 //
@@ -1906,10 +1908,10 @@ func (f *File) NewStyle(style string) (int, error) {
 	return cellXfsID, nil
 }
 
-// NewConditionalStyle provides function to create style for conditional format
-// by given style format. The parameters are the same as function NewStyle().
-// Note that the color field uses RGB color code and only support to set font,
-// fills, alignment and borders currently.
+// NewConditionalStyle provides a function to create style for conditional
+// format by given style format. The parameters are the same as function
+// NewStyle(). Note that the color field uses RGB color code and only support
+// to set font, fills, alignment and borders currently.
 func (f *File) NewConditionalStyle(style string) (int, error) {
 	s := f.stylesReader()
 	fs, err := parseFormatStyleSet(style)
@@ -1935,7 +1937,8 @@ func (f *File) NewConditionalStyle(style string) (int, error) {
 	return s.Dxfs.Count - 1, nil
 }
 
-// setFont provides function to add font style by given cell format settings.
+// setFont provides a function to add font style by given cell format
+// settings.
 func setFont(formatStyle *formatStyle) *font {
 	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
 	if formatStyle.Font.Size < 1 {
@@ -1963,8 +1966,8 @@ func setFont(formatStyle *formatStyle) *font {
 	return &f
 }
 
-// setNumFmt provides function to check if number format code in the range of
-// built-in values.
+// setNumFmt provides a function to check if number format code in the range
+// of built-in values.
 func setNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 	dp := "0."
 	numFmtID := 164 // Default custom number format code from 164.
@@ -2011,7 +2014,7 @@ func setNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 	return formatStyle.NumFmt
 }
 
-// setCustomNumFmt provides function to set custom number format code.
+// setCustomNumFmt provides a function to set custom number format code.
 func setCustomNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 	nf := xlsxNumFmt{FormatCode: *formatStyle.CustomNumFmt}
 	if style.NumFmts != nil {
@@ -2029,7 +2032,7 @@ func setCustomNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 	return nf.NumFmtID
 }
 
-// setLangNumFmt provides function to set number format code with language.
+// setLangNumFmt provides a function to set number format code with language.
 func setLangNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 	numFmts, ok := langNumFmt[formatStyle.Lang]
 	if !ok {
@@ -2056,8 +2059,8 @@ func setLangNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 	return nf.NumFmtID
 }
 
-// setFills provides function to add fill elements in the styles.xml by given
-// cell format settings.
+// setFills provides a function to add fill elements in the styles.xml by
+// given cell format settings.
 func setFills(formatStyle *formatStyle, fg bool) *xlsxFill {
 	var patterns = []string{
 		"none",
@@ -2137,9 +2140,10 @@ func setFills(formatStyle *formatStyle, fg bool) *xlsxFill {
 	return &fill
 }
 
-// setAlignment provides function to formatting information pertaining to text
-// alignment in cells. There are a variety of choices for how text is aligned
-// both horizontally and vertically, as well as indentation settings, and so on.
+// setAlignment provides a function to formatting information pertaining to
+// text alignment in cells. There are a variety of choices for how text is
+// aligned both horizontally and vertically, as well as indentation settings,
+// and so on.
 func setAlignment(formatStyle *formatStyle) *xlsxAlignment {
 	var alignment xlsxAlignment
 	if formatStyle.Alignment != nil {
@@ -2156,7 +2160,7 @@ func setAlignment(formatStyle *formatStyle) *xlsxAlignment {
 	return &alignment
 }
 
-// setProtection provides function to set protection properties associated
+// setProtection provides a function to set protection properties associated
 // with the cell.
 func setProtection(formatStyle *formatStyle) *xlsxProtection {
 	var protection xlsxProtection
@@ -2167,7 +2171,7 @@ func setProtection(formatStyle *formatStyle) *xlsxProtection {
 	return &protection
 }
 
-// setBorders provides function to add border elements in the styles.xml by
+// setBorders provides a function to add border elements in the styles.xml by
 // given borders format settings.
 func setBorders(formatStyle *formatStyle) *xlsxBorder {
 	var styles = []string{
@@ -2219,7 +2223,7 @@ func setBorders(formatStyle *formatStyle) *xlsxBorder {
 	return &border
 }
 
-// setCellXfs provides function to set describes all of the formatting for a
+// setCellXfs provides a function to set describes all of the formatting for a
 // cell.
 func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment, applyProtection bool, alignment *xlsxAlignment, protection *xlsxProtection) int {
 	var xf xlsxXf
@@ -2246,9 +2250,10 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	return style.CellXfs.Count - 1
 }
 
-// SetCellStyle provides function to add style attribute for cells by given
+// SetCellStyle provides a function to add style attribute for cells by given
 // worksheet name, coordinate area and style ID. Note that diagonalDown and
-// diagonalUp type border should be use same color in the same coordinate area.
+// diagonalUp type border should be use same color in the same coordinate
+// area.
 //
 // For example create a borders of cell H9 on Sheet1:
 //
@@ -2352,9 +2357,10 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 	}
 }
 
-// SetConditionalFormat provides function to create conditional formatting rule
-// for cell value. Conditional formatting is a feature of Excel which allows you
-// to apply a format to a cell or a range of cells based on certain criteria.
+// SetConditionalFormat provides a function to create conditional formatting
+// rule for cell value. Conditional formatting is a feature of Excel which
+// allows you to apply a format to a cell or a range of cells based on certain
+// criteria.
 //
 // The type option is a required parameter and it has no default value.
 // Allowable type values and their associated parameters are:
@@ -2606,9 +2612,9 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	return err
 }
 
-// drawCondFmtCellIs provides function to create conditional formatting rule for
-// cell value (include between, not between, equal, not equal, greater than and
-// less than) by given priority, criteria type and format settings.
+// drawCondFmtCellIs provides a function to create conditional formatting rule
+// for cell value (include between, not between, equal, not equal, greater
+// than and less than) by given priority, criteria type and format settings.
 func drawCondFmtCellIs(p int, ct string, format *formatConditional) *xlsxCfRule {
 	c := &xlsxCfRule{
 		Priority: p + 1,
@@ -2629,8 +2635,8 @@ func drawCondFmtCellIs(p int, ct string, format *formatConditional) *xlsxCfRule 
 	return c
 }
 
-// drawCondFmtTop10 provides function to create conditional formatting rule for
-// top N (default is top 10) by given priority, criteria type and format
+// drawCondFmtTop10 provides a function to create conditional formatting rule
+// for top N (default is top 10) by given priority, criteria type and format
 // settings.
 func drawCondFmtTop10(p int, ct string, format *formatConditional) *xlsxCfRule {
 	c := &xlsxCfRule{
@@ -2647,9 +2653,9 @@ func drawCondFmtTop10(p int, ct string, format *formatConditional) *xlsxCfRule {
 	return c
 }
 
-// drawCondFmtAboveAverage provides function to create conditional formatting
-// rule for above average and below average by given priority, criteria type and
-// format settings.
+// drawCondFmtAboveAverage provides a function to create conditional
+// formatting rule for above average and below average by given priority,
+// criteria type and format settings.
 func drawCondFmtAboveAverage(p int, ct string, format *formatConditional) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority:     p + 1,
@@ -2659,7 +2665,7 @@ func drawCondFmtAboveAverage(p int, ct string, format *formatConditional) *xlsxC
 	}
 }
 
-// drawCondFmtDuplicateUniqueValues provides function to create conditional
+// drawCondFmtDuplicateUniqueValues provides a function to create conditional
 // formatting rule for duplicate and unique values by given priority, criteria
 // type and format settings.
 func drawCondFmtDuplicateUniqueValues(p int, ct string, format *formatConditional) *xlsxCfRule {
@@ -2670,9 +2676,9 @@ func drawCondFmtDuplicateUniqueValues(p int, ct string, format *formatConditiona
 	}
 }
 
-// drawCondFmtColorScale provides function to create conditional formatting rule
-// for color scale (include 2 color scale and 3 color scale) by given priority,
-// criteria type and format settings.
+// drawCondFmtColorScale provides a function to create conditional formatting
+// rule for color scale (include 2 color scale and 3 color scale) by given
+// priority, criteria type and format settings.
 func drawCondFmtColorScale(p int, ct string, format *formatConditional) *xlsxCfRule {
 	minValue := format.MinValue
 	if minValue == "" {
@@ -2708,8 +2714,8 @@ func drawCondFmtColorScale(p int, ct string, format *formatConditional) *xlsxCfR
 	return c
 }
 
-// drawCondFmtDataBar provides function to create conditional formatting rule
-// for data bar by given priority, criteria type and format settings.
+// drawCondFmtDataBar provides a function to create conditional formatting
+// rule for data bar by given priority, criteria type and format settings.
 func drawCondFmtDataBar(p int, ct string, format *formatConditional) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
@@ -2721,8 +2727,8 @@ func drawCondFmtDataBar(p int, ct string, format *formatConditional) *xlsxCfRule
 	}
 }
 
-// drawConfFmtExp provides function to create conditional formatting rule for
-// expression by given priority, criteria type and format settings.
+// drawConfFmtExp provides a function to create conditional formatting rule
+// for expression by given priority, criteria type and format settings.
 func drawConfFmtExp(p int, ct string, format *formatConditional) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
@@ -2732,12 +2738,13 @@ func drawConfFmtExp(p int, ct string, format *formatConditional) *xlsxCfRule {
 	}
 }
 
-// getPaletteColor provides function to convert the RBG color by given string.
+// getPaletteColor provides a function to convert the RBG color by given
+// string.
 func getPaletteColor(color string) string {
 	return "FF" + strings.Replace(strings.ToUpper(color), "#", "", -1)
 }
 
-// themeReader provides function to get the pointer to the xl/theme/theme1.xml
+// themeReader provides a function to get the pointer to the xl/theme/theme1.xml
 // structure after deserialization.
 func (f *File) themeReader() *xlsxTheme {
 	var theme xlsxTheme

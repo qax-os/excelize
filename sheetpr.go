@@ -98,7 +98,7 @@ func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = AutoPageBreaks(pr.PageSetUpPr.AutoPageBreaks)
 }
 
-// SetSheetPrOptions provides function to sets worksheet properties.
+// SetSheetPrOptions provides a function to sets worksheet properties.
 //
 // Available options:
 //   CodeName(string)
@@ -120,7 +120,7 @@ func (f *File) SetSheetPrOptions(name string, opts ...SheetPrOption) error {
 	return nil
 }
 
-// GetSheetPrOptions provides function to gets worksheet properties.
+// GetSheetPrOptions provides a function to gets worksheet properties.
 //
 // Available options:
 //   CodeName(string)

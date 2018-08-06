@@ -71,7 +71,7 @@ func OpenReader(r io.Reader) (*File, error) {
 	return f, nil
 }
 
-// setDefaultTimeStyle provides function to set default numbers format for
+// setDefaultTimeStyle provides a function to set default numbers format for
 // time.Time type cell value by given worksheet name, cell coordinates and
 // number format code.
 func (f *File) setDefaultTimeStyle(sheet, axis string, format int) {
@@ -81,8 +81,8 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) {
 	}
 }
 
-// workSheetReader provides function to get the pointer to the structure after
-// deserialization by given worksheet name.
+// workSheetReader provides a function to get the pointer to the structure
+// after deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
@@ -105,7 +105,7 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 	return f.Sheet[name]
 }
 
-// checkSheet provides function to fill each row element and make that is
+// checkSheet provides a function to fill each row element and make that is
 // continuous in a worksheet of XML.
 func checkSheet(xlsx *xlsxWorksheet) {
 	row := len(xlsx.SheetData.Row)
@@ -133,7 +133,7 @@ func checkSheet(xlsx *xlsxWorksheet) {
 	xlsx.SheetData = sheetData
 }
 
-// replaceWorkSheetsRelationshipsNameSpaceBytes provides function to replace
+// replaceWorkSheetsRelationshipsNameSpaceBytes provides a function to replace
 // xl/worksheets/sheet%d.xml XML tags to self-closing for compatible Microsoft
 // Office Excel 2007.
 func replaceWorkSheetsRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
@@ -182,7 +182,7 @@ func (f *File) UpdateLinkedValue() {
 	}
 }
 
-// adjustHelper provides function to adjust rows and columns dimensions,
+// adjustHelper provides a function to adjust rows and columns dimensions,
 // hyperlinks, merged cells and auto filter when inserting or deleting rows or
 // columns.
 //
@@ -204,7 +204,7 @@ func (f *File) adjustHelper(sheet string, column, row, offset int) {
 	checkRow(xlsx)
 }
 
-// adjustColDimensions provides function to update column dimensions when
+// adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
 func (f *File) adjustColDimensions(xlsx *xlsxWorksheet, column, offset int) {
 	for i, r := range xlsx.SheetData.Row {
@@ -220,8 +220,8 @@ func (f *File) adjustColDimensions(xlsx *xlsxWorksheet, column, offset int) {
 	}
 }
 
-// adjustRowDimensions provides function to update row dimensions when inserting
-// or deleting rows or columns.
+// adjustRowDimensions provides a function to update row dimensions when
+// inserting or deleting rows or columns.
 func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, rowIndex, offset int) {
 	if rowIndex == -1 {
 		return
@@ -240,7 +240,7 @@ func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, rowIndex, offset int) {
 	}
 }
 
-// adjustHyperlinks provides function to update hyperlinks when inserting or
+// adjustHyperlinks provides a function to update hyperlinks when inserting or
 // deleting rows or columns.
 func (f *File) adjustHyperlinks(sheet string, column, rowIndex, offset int) {
 	xlsx := f.workSheetReader(sheet)
@@ -280,8 +280,8 @@ func (f *File) adjustHyperlinks(sheet string, column, rowIndex, offset int) {
 	}
 }
 
-// adjustMergeCellsHelper provides function to update merged cells when inserting or
-// deleting rows or columns.
+// adjustMergeCellsHelper provides a function to update merged cells when
+// inserting or deleting rows or columns.
 func (f *File) adjustMergeCellsHelper(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
 	if xlsx.MergeCells != nil {
 		for k, v := range xlsx.MergeCells.Cells {
@@ -321,8 +321,8 @@ func (f *File) adjustMergeCellsHelper(xlsx *xlsxWorksheet, column, rowIndex, off
 	}
 }
 
-// adjustMergeCells provides function to update merged cells when inserting or
-// deleting rows or columns.
+// adjustMergeCells provides a function to update merged cells when inserting
+// or deleting rows or columns.
 func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
 	f.adjustMergeCellsHelper(xlsx, column, rowIndex, offset)
 
@@ -342,8 +342,8 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, column, rowIndex, offset in
 	}
 }
 
-// adjustAutoFilter provides function to update the auto filter when inserting
-// or deleting rows or columns.
+// adjustAutoFilter provides a function to update the auto filter when
+// inserting or deleting rows or columns.
 func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
 	f.adjustAutoFilterHelper(xlsx, column, rowIndex, offset)
 
@@ -376,7 +376,7 @@ func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, column, rowIndex, offset in
 	}
 }
 
-// adjustAutoFilterHelper provides function to update the auto filter when
+// adjustAutoFilterHelper provides a function to update the auto filter when
 // inserting or deleting rows or columns.
 func (f *File) adjustAutoFilterHelper(xlsx *xlsxWorksheet, column, rowIndex, offset int) {
 	if xlsx.AutoFilter != nil {

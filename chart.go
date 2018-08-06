@@ -190,7 +190,7 @@ var (
 	}
 )
 
-// parseFormatChartSet provides function to parse the format settings of the
+// parseFormatChartSet provides a function to parse the format settings of the
 // chart with default value.
 func parseFormatChartSet(formatSet string) (*formatChart, error) {
 	format := formatChart{
@@ -379,7 +379,7 @@ func (f *File) AddChart(sheet, cell, format string) error {
 	return err
 }
 
-// countCharts provides function to get chart files count storage in the
+// countCharts provides a function to get chart files count storage in the
 // folder xl/charts.
 func (f *File) countCharts() int {
 	count := 0
@@ -391,7 +391,7 @@ func (f *File) countCharts() int {
 	return count
 }
 
-// prepareDrawing provides function to prepare drawing ID and XML by given
+// prepareDrawing provides a function to prepare drawing ID and XML by given
 // drawingID, worksheet name and default drawingXML.
 func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
@@ -408,8 +408,8 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 	return drawingID, drawingXML
 }
 
-// addChart provides function to create chart as xl/charts/chart%d.xml by given
-// format sets.
+// addChart provides a function to create chart as xl/charts/chart%d.xml by
+// given format sets.
 func (f *File) addChart(formatSet *formatChart) {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
@@ -564,7 +564,7 @@ func (f *File) addChart(formatSet *formatChart) {
 	f.saveFileList(media, chart)
 }
 
-// drawBaseChart provides function to draw the c:plotArea element for bar,
+// drawBaseChart provides a function to draw the c:plotArea element for bar,
 // and column series charts by given format sets.
 func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 	c := cCharts{
@@ -661,7 +661,7 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 	return charts[formatSet.Type]
 }
 
-// drawDoughnutChart provides function to draw the c:plotArea element for
+// drawDoughnutChart provides a function to draw the c:plotArea element for
 // doughnut chart by given format sets.
 func (f *File) drawDoughnutChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
@@ -675,8 +675,8 @@ func (f *File) drawDoughnutChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
-// drawLineChart provides function to draw the c:plotArea element for line chart
-// by given format sets.
+// drawLineChart provides a function to draw the c:plotArea element for line
+// chart by given format sets.
 func (f *File) drawLineChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		LineChart: &cCharts{
@@ -701,8 +701,8 @@ func (f *File) drawLineChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
-// drawPieChart provides function to draw the c:plotArea element for pie chart
-// by given format sets.
+// drawPieChart provides a function to draw the c:plotArea element for pie
+// chart by given format sets.
 func (f *File) drawPieChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		PieChart: &cCharts{
@@ -714,8 +714,8 @@ func (f *File) drawPieChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
-// drawPie3DChart provides function to draw the c:plotArea element for 3D pie
-// chart by given format sets.
+// drawPie3DChart provides a function to draw the c:plotArea element for 3D
+// pie chart by given format sets.
 func (f *File) drawPie3DChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		Pie3DChart: &cCharts{
@@ -727,7 +727,7 @@ func (f *File) drawPie3DChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
-// drawRadarChart provides function to draw the c:plotArea element for radar
+// drawRadarChart provides a function to draw the c:plotArea element for radar
 // chart by given format sets.
 func (f *File) drawRadarChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
@@ -750,8 +750,8 @@ func (f *File) drawRadarChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
-// drawScatterChart provides function to draw the c:plotArea element for scatter
-// chart by given format sets.
+// drawScatterChart provides a function to draw the c:plotArea element for
+// scatter chart by given format sets.
 func (f *File) drawScatterChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		ScatterChart: &cCharts{
@@ -773,8 +773,8 @@ func (f *File) drawScatterChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
-// drawChartSeries provides function to draw the c:ser element by given format
-// sets.
+// drawChartSeries provides a function to draw the c:ser element by given
+// format sets.
 func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 	ser := []cSer{}
 	for k := range formatSet.Series {
@@ -799,7 +799,7 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 	return &ser
 }
 
-// drawChartSeriesSpPr provides function to draw the c:spPr element by given
+// drawChartSeriesSpPr provides a function to draw the c:spPr element by given
 // format sets.
 func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 	spPrScatter := &cSpPr{
@@ -821,8 +821,8 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 	return chartSeriesSpPr[formatSet.Type]
 }
 
-// drawChartSeriesDPt provides function to draw the c:dPt element by given data
-// index and format sets.
+// drawChartSeriesDPt provides a function to draw the c:dPt element by given
+// data index and format sets.
 func (f *File) drawChartSeriesDPt(i int, formatSet *formatChart) []*cDPt {
 	dpt := []*cDPt{{
 		IDx:      &attrValInt{Val: i},
@@ -850,8 +850,8 @@ func (f *File) drawChartSeriesDPt(i int, formatSet *formatChart) []*cDPt {
 	return chartSeriesDPt[formatSet.Type]
 }
 
-// drawChartSeriesCat provides function to draw the c:cat element by given chart
-// series and format sets.
+// drawChartSeriesCat provides a function to draw the c:cat element by given
+// chart series and format sets.
 func (f *File) drawChartSeriesCat(v formatChartSeries, formatSet *formatChart) *cCat {
 	cat := &cCat{
 		StrRef: &cStrRef{
@@ -862,8 +862,8 @@ func (f *File) drawChartSeriesCat(v formatChartSeries, formatSet *formatChart) *
 	return chartSeriesCat[formatSet.Type]
 }
 
-// drawChartSeriesVal provides function to draw the c:val element by given chart
-// series and format sets.
+// drawChartSeriesVal provides a function to draw the c:val element by given
+// chart series and format sets.
 func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
@@ -874,8 +874,8 @@ func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *
 	return chartSeriesVal[formatSet.Type]
 }
 
-// drawChartSeriesMarker provides function to draw the c:marker element by given
-// data index and format sets.
+// drawChartSeriesMarker provides a function to draw the c:marker element by
+// given data index and format sets.
 func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 	marker := &cMarker{
 		Symbol: &attrValString{Val: "circle"},
@@ -900,7 +900,7 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 	return chartSeriesMarker[formatSet.Type]
 }
 
-// drawChartSeriesXVal provides function to draw the c:xVal element by given
+// drawChartSeriesXVal provides a function to draw the c:xVal element by given
 // chart series and format sets.
 func (f *File) drawChartSeriesXVal(v formatChartSeries, formatSet *formatChart) *cCat {
 	cat := &cCat{
@@ -912,7 +912,7 @@ func (f *File) drawChartSeriesXVal(v formatChartSeries, formatSet *formatChart) 
 	return chartSeriesXVal[formatSet.Type]
 }
 
-// drawChartSeriesYVal provides function to draw the c:yVal element by given
+// drawChartSeriesYVal provides a function to draw the c:yVal element by given
 // chart series and format sets.
 func (f *File) drawChartSeriesYVal(v formatChartSeries, formatSet *formatChart) *cVal {
 	val := &cVal{
@@ -924,8 +924,8 @@ func (f *File) drawChartSeriesYVal(v formatChartSeries, formatSet *formatChart) 
 	return chartSeriesYVal[formatSet.Type]
 }
 
-// drawChartDLbls provides function to draw the c:dLbls element by given format
-// sets.
+// drawChartDLbls provides a function to draw the c:dLbls element by given
+// format sets.
 func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 	return &cDLbls{
 		ShowLegendKey:   &attrValBool{Val: formatSet.Legend.ShowLegendKey},
@@ -938,15 +938,15 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 	}
 }
 
-// drawChartSeriesDLbls provides function to draw the c:dLbls element by given
-// format sets.
+// drawChartSeriesDLbls provides a function to draw the c:dLbls element by
+// given format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
 	chartSeriesDLbls := map[string]*cDLbls{Bar: dLbls, BarStacked: dLbls, BarPercentStacked: dLbls, Bar3DClustered: dLbls, Bar3DStacked: dLbls, Bar3DPercentStacked: dLbls, Col: dLbls, ColStacked: dLbls, ColPercentStacked: dLbls, Col3DClustered: dLbls, Col3D: dLbls, Col3DStacked: dLbls, Col3DPercentStacked: dLbls, Doughnut: dLbls, Line: dLbls, Pie: dLbls, Pie3D: dLbls, Radar: dLbls, Scatter: nil}
 	return chartSeriesDLbls[formatSet.Type]
 }
 
-// drawPlotAreaCatAx provides function to draw the c:catAx element.
+// drawPlotAreaCatAx provides a function to draw the c:catAx element.
 func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 	min := &attrValFloat{Val: formatSet.XAxis.Minimum}
 	max := &attrValFloat{Val: formatSet.XAxis.Maximum}
@@ -985,7 +985,7 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 	}
 }
 
-// drawPlotAreaValAx provides function to draw the c:valAx element.
+// drawPlotAreaValAx provides a function to draw the c:valAx element.
 func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 	min := &attrValFloat{Val: formatSet.YAxis.Minimum}
 	max := &attrValFloat{Val: formatSet.YAxis.Maximum}
@@ -1021,7 +1021,7 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 	}
 }
 
-// drawPlotAreaSpPr provides function to draw the c:spPr element.
+// drawPlotAreaSpPr provides a function to draw the c:spPr element.
 func (f *File) drawPlotAreaSpPr() *cSpPr {
 	return &cSpPr{
 		Ln: &aLn{
@@ -1040,7 +1040,7 @@ func (f *File) drawPlotAreaSpPr() *cSpPr {
 	}
 }
 
-// drawPlotAreaTxPr provides function to draw the c:txPr element.
+// drawPlotAreaTxPr provides a function to draw the c:txPr element.
 func (f *File) drawPlotAreaTxPr() *cTxPr {
 	return &cTxPr{
 		BodyPr: aBodyPr{
@@ -1079,8 +1079,8 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 	}
 }
 
-// drawingParser provides function to parse drawingXML. In order to solve the
-// problem that the label structure is changed after serialization and
+// drawingParser provides a function to parse drawingXML. In order to solve
+// the problem that the label structure is changed after serialization and
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
 func (f *File) drawingParser(drawingXML string, content *xlsxWsDr) int {
@@ -1107,8 +1107,8 @@ func (f *File) drawingParser(drawingXML string, content *xlsxWsDr) int {
 	return cNvPrID
 }
 
-// addDrawingChart provides function to add chart graphic frame by given sheet,
-// drawingXML, cell, width, height, relationship index and format sets.
+// addDrawingChart provides a function to add chart graphic frame by given
+// sheet, drawingXML, cell, width, height, relationship index and format sets.
 func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, formatSet *formatPicture) {
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
