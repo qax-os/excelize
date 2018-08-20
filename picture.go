@@ -88,7 +88,11 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	if !ok {
 		return errors.New("Unsupported image extension")
 	}
-	readFile, _ := os.Open(picture)
+	readFile, err := os.Open(picture)
+	if err!=nil{
+		return err
+	}
+	defer readFile.Close()
 	image, _, _ := image.DecodeConfig(readFile)
 	_, file := filepath.Split(picture)
 	formatSet, err := parseFormatPictureSet(format)
