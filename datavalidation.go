@@ -167,11 +167,11 @@ func convDataValidationOperatior(o DataValidationOperator) string {
 // object can be created by NewDataValidation function.
 //
 // Example 1, set data validation on Sheet1!A1:B2 with validation criteria
-// settings, show error alert after invalid data is entered whth "Stop" style
+// settings, show error alert after invalid data is entered with "Stop" style
 // and custom title "error body":
 //
 //     dvRange := excelize.NewDataValidation(true)
-// 	   dvRange.Sqref = "A1:B2"
+//     dvRange.Sqref = "A1:B2"
 //     dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorBetween)
 //     dvRange.SetError(excelize.DataValidationErrorStyleStop, "error title", "error body")
 //     xlsx.AddDataValidation("Sheet1", dvRange)
@@ -185,7 +185,7 @@ func convDataValidationOperatior(o DataValidationOperator) string {
 //     dvRange.SetInput("input title", "input body")
 //     xlsx.AddDataValidation("Sheet1", dvRange)
 //
-// Example 4, set data validation on Sheet1!A5:B6 with validation criteria
+// Example 3, set data validation on Sheet1!A5:B6 with validation criteria
 // settings, create in-cell dropdown by allow list source:
 //
 //     dvRange = excelize.NewDataValidation(true)

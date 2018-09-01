@@ -25,7 +25,7 @@ func TestDataValidation(t *testing.T) {
 	xlsx.AddDataValidation("Sheet1", dvRange)
 
 	// Test write file to given path.
-	err := xlsx.SaveAs("./test/Bookdatavalition.xlsx")
+	err := xlsx.SaveAs("./test/Book_data_validation.xlsx")
 	if err != nil {
 		t.Error(err)
 	}
