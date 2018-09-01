@@ -18,7 +18,7 @@ type xlsxWorksheet struct {
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
 	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
+	DataValidations       *xlsxDataValidations         `xml:"dataValidations,omitempty"`
 	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
 	PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
 	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
@@ -298,7 +298,7 @@ type xlsxDataValidations struct {
 	DisablePrompts bool              `xml:"disablePrompts,attr,omitempty"`
 	XWindow        int               `xml:"xWindow,attr,omitempty"`
 	YWindow        int               `xml:"yWindow,attr,omitempty"`
-	DataValidation []*DataValidation `xml:"dataValidation,innerxml"`
+	DataValidation []*DataValidation `xml:"dataValidation"`
 }
 
 type DataValidation struct {

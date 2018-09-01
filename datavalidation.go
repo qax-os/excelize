@@ -33,9 +33,9 @@ type DataValidationErrorStyle int
 // Data validation error styles
 const (
 	_ DataValidationErrorStyle = iota
-	DataValidationStyleStop
-	DataValidationStyleWarning
-	DataValidationStyleInformation
+	DataValidationErrorStyleStop
+	DataValidationErrorStyleWarning
+	DataValidationErrorStyleInformation
 )
 
 // Data validation error styles
@@ -71,16 +71,16 @@ func NewDataValidation(allowBlank bool) *DataValidation {
 }
 
 // SetError set error notice
-func (dd *DataValidation) SetError(style DataValidationErrorStyle, title, msg *string) {
-	dd.Error = msg
-	dd.ErrorTitle = title
+func (dd *DataValidation) SetError(style DataValidationErrorStyle, title, msg string) {
+	dd.Error = &msg
+	dd.ErrorTitle = &title
 	strStyle := styleStop
 	switch style {
-	case DataValidationStyleStop:
+	case DataValidationErrorStyleStop:
 		strStyle = styleStop
-	case DataValidationStyleWarning:
+	case DataValidationErrorStyleWarning:
 		strStyle = styleWarning
-	case DataValidationStyleInformation:
+	case DataValidationErrorStyleInformation:
 		strStyle = styleInformation
 
 	}
@@ -89,10 +89,10 @@ func (dd *DataValidation) SetError(style DataValidationErrorStyle, title, msg *s
 }
 
 // SetInput set prompt notice
-func (dd *DataValidation) SetInput(title, msg *string) {
+func (dd *DataValidation) SetInput(title, msg string) {
 	dd.ShowInputMessage = convBoolToStr(true)
-	dd.PromptTitle = title
-	dd.Prompt = msg
+	dd.PromptTitle = &title
+	dd.Prompt = &msg
 }
 
 // SetDropList data validation list
@@ -109,7 +109,7 @@ func (dd *DataValidation) SetRange(f1, f2 int, t DataValidationType, o DataValid
 	if dataValidationFormulaStrLen < len(dd.Formula1) || dataValidationFormulaStrLen < len(dd.Formula2) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
-	switch o {
+	/*switch o {
 	case DataValidationOperatorBetween:
 		if f1 > f2 {
 			tmp := formula1
@@ -122,7 +122,7 @@ func (dd *DataValidation) SetRange(f1, f2 int, t DataValidationType, o DataValid
 			formula1 = formula2
 			formula2 = tmp
 		}
-	}
+	}*/
 
 	dd.Formula1 = formula1
 	dd.Formula2 = formula2
@@ -189,8 +189,4 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) {
 	}
 	xlsx.DataValidations.DataValidation = append(xlsx.DataValidations.DataValidation, dv)
 	xlsx.DataValidations.Count = len(xlsx.DataValidations.DataValidation)
-}
-
-func (f *File) GetDataValidation(sheet, sqref string) {
-
 }
