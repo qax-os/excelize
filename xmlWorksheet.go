@@ -18,7 +18,7 @@ type xlsxWorksheet struct {
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
 	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
+	DataValidations       *xlsxDataValidations         `xml:"dataValidations,omitempty"`
 	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
 	PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
 	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
@@ -294,11 +294,30 @@ type xlsxMergeCells struct {
 // xlsxDataValidations expresses all data validation information for cells in a
 // sheet which have data validation features applied.
 type xlsxDataValidations struct {
-	Count          int    `xml:"count,attr,omitempty"`
-	DisablePrompts bool   `xml:"disablePrompts,attr,omitempty"`
-	XWindow        int    `xml:"xWindow,attr,omitempty"`
-	YWindow        int    `xml:"yWindow,attr,omitempty"`
-	DataValidation string `xml:",innerxml"`
+	Count          int               `xml:"count,attr,omitempty"`
+	DisablePrompts bool              `xml:"disablePrompts,attr,omitempty"`
+	XWindow        int               `xml:"xWindow,attr,omitempty"`
+	YWindow        int               `xml:"yWindow,attr,omitempty"`
+	DataValidation []*DataValidation `xml:"dataValidation"`
+}
+
+// DataValidation directly maps the a single item of data validation defined
+// on a range of the worksheet.
+type DataValidation struct {
+	AllowBlank       bool    `xml:"allowBlank,attr"`
+	Error            *string `xml:"error,attr"`
+	ErrorStyle       *string `xml:"errorStyle,attr"`
+	ErrorTitle       *string `xml:"errorTitle,attr"`
+	Operator         string  `xml:"operator,attr"`
+	Prompt           *string `xml:"prompt,attr"`
+	PromptTitle      *string `xml:"promptTitle"`
+	ShowDropDown     bool    `xml:"showDropDown,attr"`
+	ShowErrorMessage bool    `xml:"showErrorMessage,attr"`
+	ShowInputMessage bool    `xml:"showInputMessage,attr"`
+	Sqref            string  `xml:"sqref,attr"`
+	Type             string  `xml:"type,attr"`
+	Formula1         string  `xml:"formula1"`
+	Formula2         string  `xml:"formula2"`
 }
 
 // xlsxC directly maps the c element in the namespace
