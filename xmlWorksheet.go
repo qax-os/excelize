@@ -301,20 +301,23 @@ type xlsxDataValidations struct {
 	DataValidation []*DataValidation `xml:"dataValidation"`
 }
 
+// DataValidation directly maps the a single item of data validation defined
+// on a range of the worksheet.
 type DataValidation struct {
-	AllowBlank       string  `xml:"allowBlank,attr"`       // allow empty
-	ShowInputMessage string  `xml:"showInputMessage,attr"` // 1, true,0,false,  select cell,  Whether the input message is displayed
-	ShowErrorMessage string  `xml:"showErrorMessage,attr"` // 1, true,0,false,  input error value, Whether the error message is displayed
-	ErrorStyle       *string `xml:"errorStyle,attr"`       //error icon style, warning, infomation,stop
-	ErrorTitle       *string `xml:"errorTitle,attr"`       // error title
-	Operator         string  `xml:"operator,attr"`         //
-	Error            *string `xml:"error,attr"`            // input error value,  notice message
-	PromptTitle      *string `xml:"promptTitle"`
+	AllowBlank       bool    `xml:"allowBlank,attr"`
+	Error            *string `xml:"error,attr"`
+	ErrorStyle       *string `xml:"errorStyle,attr"`
+	ErrorTitle       *string `xml:"errorTitle,attr"`
+	Operator         string  `xml:"operator,attr"`
 	Prompt           *string `xml:"prompt,attr"`
-	Type             string  `xml:"type,attr"`  //data type, none,custom,date,decimal,list, textLength,time,whole
-	Sqref            string  `xml:"sqref,attr"` //Validity of data validation rules, cell and range, eg: A1 OR A1:A20
-	Formula1         string  `xml:"formula1"`   // data validation role
-	Formula2         string  `xml:"formula2"`   //data validation role
+	PromptTitle      *string `xml:"promptTitle"`
+	ShowDropDown     bool    `xml:"showDropDown,attr"`
+	ShowErrorMessage bool    `xml:"showErrorMessage,attr"`
+	ShowInputMessage bool    `xml:"showInputMessage,attr"`
+	Sqref            string  `xml:"sqref,attr"`
+	Type             string  `xml:"type,attr"`
+	Formula1         string  `xml:"formula1"`
+	Formula2         string  `xml:"formula2"`
 }
 
 // xlsxC directly maps the c element in the namespace
