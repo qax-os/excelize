@@ -119,6 +119,18 @@ func (dd *DataValidation) SetRange(f1, f2 int, t DataValidationType, o DataValid
 	return nil
 }
 
+// SetSqrefDropList data validation list with current sheet cell rang
+func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
+	if isCurrentSheet {
+		dd.Formula1 = sqref
+		dd.Type = convDataValidationType(typeList)
+		return nil
+	}
+
+	//isCurrentSheet = false   Cross-sheet sqref cell use extLst xml node  unrealized
+	return fmt.Errorf("Cross-sheet sqref cell  are not supported")
+}
+
 // SetSqref provides function to set data validation range in drop list.
 func (dd *DataValidation) SetSqref(sqref string) {
 	if dd.Sqref == "" {

@@ -24,6 +24,14 @@ func TestDataValidation(t *testing.T) {
 	dvRange.SetDropList([]string{"1", "2", "3"})
 	xlsx.AddDataValidation("Sheet1", dvRange)
 
+	xlsx.SetCellStr("Sheet1", "E1", "E1")
+	xlsx.SetCellStr("Sheet1", "E2", "E2")
+	xlsx.SetCellStr("Sheet1", "E3", "E3")
+	dvRange = NewDataValidation(true)
+	dvRange.Sqref = "A7:B8"
+	dvRange.SetSqrefDropList("$E$1:$E$3", true)
+	xlsx.AddDataValidation("Sheet1", dvRange)
+
 	// Test write file to given path.
 	err := xlsx.SaveAs("./test/Book_data_validation.xlsx")
 	if err != nil {
