@@ -492,3 +492,99 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
 	}
 	return nil
 }
+
+func (f *File) AddPictureFromBytes(sheet, cell, format, ext string, bts []byte) error {
+	var drawingHyperlinkRID int
+	var hyperlinkType string
+
+	img, _, err := image.DecodeConfig(bytes.NewReader(bts))
+	if err != nil {
+		return err
+	}
+
+	formatSet, err := parseFormatPictureSet(format)
+	if err != nil {
+		return err
+	}
+
+	xlsx := f.workSheetReader(sheet)
+	drawingID := f.countDrawings() + 1
+	pictureID := f.countMedia() + 1
+	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
+	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext, hyperlinkType)
+	// Add picture with hyperlink.
+	if formatSet.Hyperlink != "" && formatSet.HyperlinkType != "" {
+		if formatSet.HyperlinkType == "External" {
+			hyperlinkType = formatSet.HyperlinkType
+		}
+		drawingHyperlinkRID = f.addDrawingRelationships(drawingID, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
+	}
+	f.addDrawingPictureFromBytes(sheet, drawingXML, cell, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet, bts)
+	f.addMediaFromBytes(bts, ext)
+	f.addContentTypePart(drawingID, "drawings")
+	return err
+}
+
+// addMediaFromBytes provides a function to add picture into folder xl/media/image by
+// given byte slice and extension name.
+func (f *File) addMediaFromBytes(bts []byte, ext string) {
+	count := f.countMedia()
+	media := "xl/media/image" + strconv.Itoa(count+1) + "." + ext
+	f.XLSX[media] = bts
+}
+
+// addDrawingPictureFromBytes provides a function to add picture by given sheet,
+// drawingXML, cell, byte slice, width, height relationship index and format
+// sets.
+func (f *File) addDrawingPictureFromBytes(sheet, drawingXML, cell string, width, height, rID, hyperlinkRID int, formatSet *formatPicture, bts []byte) {
+	cell = strings.ToUpper(cell)
+	fromCol := string(strings.Map(letterOnlyMapF, cell))
+	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
+	row := fromRow - 1
+	col := TitleToNumber(fromCol)
+	width = int(float64(width) * formatSet.XScale)
+	height = int(float64(height) * formatSet.YScale)
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	content := xlsxWsDr{}
+	content.A = NameSpaceDrawingML
+	content.Xdr = NameSpaceDrawingMLSpreadSheet
+	cNvPrID := f.drawingParser(drawingXML, &content)
+	twoCellAnchor := xdrCellAnchor{}
+	twoCellAnchor.EditAs = formatSet.Positioning
+	from := xlsxFrom{}
+	from.Col = colStart
+	from.ColOff = formatSet.OffsetX * EMU
+	from.Row = rowStart
+	from.RowOff = formatSet.OffsetY * EMU
+	to := xlsxTo{}
+	to.Col = colEnd
+	to.ColOff = x2 * EMU
+	to.Row = rowEnd
+	to.RowOff = y2 * EMU
+	twoCellAnchor.From = &from
+	twoCellAnchor.To = &to
+	pic := xlsxPic{}
+	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = formatSet.NoChangeAspect
+	pic.NvPicPr.CNvPr.ID = f.countCharts() + f.countMedia() + 1
+	//pic.NvPicPr.CNvPr.Descr = file
+	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
+	if hyperlinkRID != 0 {
+		pic.NvPicPr.CNvPr.HlinkClick = &xlsxHlinkClick{
+			R:   SourceRelationship,
+			RID: "rId" + strconv.Itoa(hyperlinkRID),
+		}
+	}
+	pic.BlipFill.Blip.R = SourceRelationship
+	pic.BlipFill.Blip.Embed = "rId" + strconv.Itoa(rID)
+	pic.SpPr.PrstGeom.Prst = "rect"
+
+	twoCellAnchor.Pic = &pic
+	twoCellAnchor.ClientData = &xdrClientData{
+		FLocksWithSheet:  formatSet.FLocksWithSheet,
+		FPrintsWithSheet: formatSet.FPrintsWithSheet,
+	}
+	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
+	output, _ := xml.Marshal(content)
+	f.saveFileList(drawingXML, output)
+}
