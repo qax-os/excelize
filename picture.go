@@ -514,16 +514,16 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, ext string, bts []byte) 
 	return err
 }
 
-// addMedia provides a function to add picture into folder xl/media/image by
-// given file name and extension name.
+// addMediaFromBytes provides a function to add picture into folder xl/media/image by
+// given byte slice and extension name.
 func (f *File) addMediaFromBytes(bts []byte, ext string) {
 	count := f.countMedia()
 	media := "xl/media/image" + strconv.Itoa(count+1) + "." + ext
 	f.XLSX[media] = bts
 }
 
-// addDrawingPicture provides a function to add picture by given sheet,
-// drawingXML, cell, file name, width, height relationship index and format
+// addDrawingPictureFromBytes provides a function to add picture by given sheet,
+// drawingXML, cell, byte slice, width, height relationship index and format
 // sets.
 func (f *File) addDrawingPictureFromBytes(sheet, drawingXML, cell string, width, height, rID, hyperlinkRID int, formatSet *formatPicture, bts []byte) {
 	cell = strings.ToUpper(cell)
