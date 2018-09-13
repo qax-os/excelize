@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -370,7 +371,7 @@ func (f *File) getSheetMap() map[string]string {
 }
 
 // SetSheetBackground provides a function to set background picture by given
-// worksheet name.
+// worksheet name and file path.
 func (f *File) SetSheetBackground(sheet, picture string) error {
 	var err error
 	// Check picture exists first.
@@ -384,7 +385,8 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	pictureID := f.countMedia() + 1
 	rID := f.addSheetRelationships(sheet, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext, "")
 	f.addSheetPicture(sheet, rID)
-	f.addMedia(picture, ext)
+	file, _ := ioutil.ReadFile(picture)
+	f.addMedia(file, ext)
 	f.setContentTypePartImageExtensions()
 	return err
 }

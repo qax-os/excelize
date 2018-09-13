@@ -8,9 +8,7 @@
 // the LICENSE file.
 package excelize
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestDataValidation(t *testing.T) {
 	xlsx := NewFile()

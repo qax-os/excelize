@@ -61,3 +61,11 @@ type formatComment struct {
 	Author string `json:"author"`
 	Text   string `json:"text"`
 }
+
+// Comment directly maps the comment information.
+type Comment struct {
+	Author   string `json:"author"`
+	AuthorID int    `json:"author_id"`
+	Ref      string `json:"ref"`
+	Text     string `json:"text"`
+}

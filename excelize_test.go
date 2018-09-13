@@ -162,6 +162,24 @@ func TestAddPicture(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
+	if err != nil {
+		t.Log(err)
+	}
+	// Test add picture to worksheet with invalid file data.
+	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
+	if err != nil {
+		t.Log(err)
+	}
+	file, err := ioutil.ReadFile("./test/images/excel.jpg")
+	if err != nil {
+		t.Error(err)
+	}
+	// Test add picture to worksheet from bytes.
+	err = xlsx.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".jpg", file)
+	if err != nil {
+		t.Log(err)
+	}
 	// Test write file to given path.
 	err = xlsx.SaveAs("./test/Book2.xlsx")
 	if err != nil {
@@ -211,8 +229,13 @@ func TestNewFile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// Test add picture to worksheet with invalid formatset
+	// Test add picture to worksheet without formatset.
 	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", "")
+	if err != nil {
+		t.Error(err)
+	}
+	// Test add picture to worksheet with invalid formatset.
+	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", `{`)
 	if err != nil {
 		t.Log(err)
 	}

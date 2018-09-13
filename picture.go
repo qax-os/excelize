@@ -86,8 +86,6 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 // positioning is move and size with cells.
 func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	var err error
-	var drawingHyperlinkRID int
-	var hyperlinkType string
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
@@ -96,14 +94,55 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	if !ok {
 		return errors.New("unsupported image extension")
 	}
-	readFile, err := os.Open(picture)
+	file, _ := ioutil.ReadFile(picture)
+	_, name := filepath.Split(picture)
+	return f.AddPictureFromBytes(sheet, cell, format, name, ext, file)
+}
+
+// AddPictureFromBytes provides the method to add picture in a sheet by given
+// picture format set (such as offset, scale, aspect ratio setting and print
+// settings), file base name, extension name and file bytes. For example:
+//
+//    package main
+//
+//    import (
+//        "fmt"
+//        _ "image/jpeg"
+//        "io/ioutil"
+//
+//        "github.com/360EntSecGroup-Skylar/excelize"
+//    )
+//
+//    func main() {
+//        xlsx := excelize.NewFile()
+//
+//        file, err := ioutil.ReadFile("./image1.jpg")
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        err = xlsx.AddPictureFromBytes("Sheet1", "A2", "", "Excel Logo", ".jpg", file)
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        err = xlsx.SaveAs("./Book1.xlsx")
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
+func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, file []byte) error {
+	var err error
+	var drawingHyperlinkRID int
+	var hyperlinkType string
+	ext, ok := supportImageTypes[extension]
+	if !ok {
+		return errors.New("unsupported image extension")
+	}
+	formatSet, err := parseFormatPictureSet(format)
 	if err != nil {
 		return err
 	}
-	defer readFile.Close()
-	image, _, _ := image.DecodeConfig(readFile)
-	_, file := filepath.Split(picture)
-	formatSet, err := parseFormatPictureSet(format)
+	image, _, err := image.DecodeConfig(bytes.NewReader(file))
 	if err != nil {
 		return err
 	}
@@ -122,8 +161,8 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 		}
 		drawingHyperlinkRID = f.addDrawingRelationships(drawingID, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
-	f.addDrawingPicture(sheet, drawingXML, cell, file, image.Width, image.Height, drawingRID, drawingHyperlinkRID, formatSet)
-	f.addMedia(picture, ext)
+	f.addDrawingPicture(sheet, drawingXML, cell, name, image.Width, image.Height, drawingRID, drawingHyperlinkRID, formatSet)
+	f.addMedia(file, ext)
 	f.addContentTypePart(drawingID, "drawings")
 	return err
 }
@@ -317,12 +356,11 @@ func (f *File) countMedia() int {
 }
 
 // addMedia provides a function to add picture into folder xl/media/image by
-// given file name and extension name.
-func (f *File) addMedia(file, ext string) {
+// given file and extension name.
+func (f *File) addMedia(file []byte, ext string) {
 	count := f.countMedia()
-	dat, _ := ioutil.ReadFile(file)
 	media := "xl/media/image" + strconv.Itoa(count+1) + ext
-	f.XLSX[media] = dat
+	f.XLSX[media] = file
 }
 
 // setContentTypePartImageExtensions provides a function to set the content

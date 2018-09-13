@@ -29,8 +29,8 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 
 // GetComments retrieves all comments and returns a map of worksheet name to
 // the worksheet comments.
-func (f *File) GetComments() (comments map[string]*xlsxComments) {
-	comments = map[string]*xlsxComments{}
+func (f *File) GetComments() (comments map[string][]Comment) {
+	comments = map[string][]Comment{}
 	for n := range f.sheetMap {
 		commentID := f.GetSheetIndex(n)
 		commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
@@ -38,7 +38,20 @@ func (f *File) GetComments() (comments map[string]*xlsxComments) {
 		if ok {
 			d := xlsxComments{}
 			xml.Unmarshal([]byte(c), &d)
-			comments[n] = &d
+			sheetComments := []Comment{}
+			for _, comment := range d.CommentList.Comment {
+				sheetComment := Comment{}
+				if comment.AuthorID < len(d.Authors) {
+					sheetComment.Author = d.Authors[comment.AuthorID].Author
+				}
+				sheetComment.Ref = comment.Ref
+				sheetComment.AuthorID = comment.AuthorID
+				for _, text := range comment.Text.R {
+					sheetComment.Text += text.T
+				}
+				sheetComments = append(sheetComments, sheetComment)
+			}
+			comments[n] = sheetComments
 		}
 	}
 	return
