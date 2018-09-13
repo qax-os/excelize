@@ -127,15 +127,24 @@ func (dd *DataValidation) SetRange(f1, f2 int, t DataValidationType, o DataValid
 	return nil
 }
 
-// SetSqrefDropList data validation list with current sheet cell rang
+// SetSqrefDropList provides set data validation on a range with source
+// reference range of the worksheet by given data validation object and
+// worksheet name. The data validation object can be created by
+// NewDataValidation function. For example, set data validation on
+// Sheet1!A7:B8 with validation criteria source Sheet1!E1:E3 settings, create
+// in-cell dropdown by allowing list source:
+//
+//     dvRange := excelize.NewDataValidation(true)
+//     dvRange.Sqref = "A7:B8"
+//     dvRange.SetSqrefDropList("E1:E3", true)
+//     xlsx.AddDataValidation("Sheet1", dvRange)
+//
 func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
 	if isCurrentSheet {
 		dd.Formula1 = sqref
 		dd.Type = convDataValidationType(typeList)
 		return nil
 	}
-
-	//isCurrentSheet = false   Cross-sheet sqref cell use extLst xml node  unrealized
 	return fmt.Errorf("cross-sheet sqref cell are not supported")
 }
 
@@ -206,7 +215,7 @@ func convDataValidationOperatior(o DataValidationOperator) string {
 //     xlsx.AddDataValidation("Sheet1", dvRange)
 //
 // Example 3, set data validation on Sheet1!A5:B6 with validation criteria
-// settings, create in-cell dropdown by allow list source:
+// settings, create in-cell dropdown by allowing list source:
 //
 //     dvRange = excelize.NewDataValidation(true)
 //     dvRange.Sqref = "A5:B6"
