@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -88,7 +89,6 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetCellValue("Sheet2", "F16", true)
 	xlsx.SetCellValue("Sheet2", "F17", complex64(5+10i))
 	t.Log(letterOnlyMapF('x'))
-	t.Log(deepCopy(nil, nil))
 	shiftJulianToNoon(1, -0.6)
 	timeFromExcelTime(61, true)
 	timeFromExcelTime(62, true)
@@ -162,6 +162,24 @@ func TestAddPicture(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
+	if err != nil {
+		t.Log(err)
+	}
+	// Test add picture to worksheet with invalid file data.
+	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
+	if err != nil {
+		t.Log(err)
+	}
+	file, err := ioutil.ReadFile("./test/images/excel.jpg")
+	if err != nil {
+		t.Error(err)
+	}
+	// Test add picture to worksheet from bytes.
+	err = xlsx.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".jpg", file)
+	if err != nil {
+		t.Log(err)
+	}
 	// Test write file to given path.
 	err = xlsx.SaveAs("./test/Book2.xlsx")
 	if err != nil {
@@ -211,8 +229,13 @@ func TestNewFile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// Test add picture to worksheet with invalid formatset
+	// Test add picture to worksheet without formatset.
 	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", "")
+	if err != nil {
+		t.Error(err)
+	}
+	// Test add picture to worksheet with invalid formatset.
+	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", `{`)
 	if err != nil {
 		t.Log(err)
 	}
@@ -771,10 +794,6 @@ func TestAddTable(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = xlsx.AddTable("Sheet2", "A2", "B5", ``)
-	if err != nil {
-		t.Log(err)
-	}
 	err = xlsx.AddTable("Sheet2", "A2", "B5", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 	if err != nil {
 		t.Error(err)
@@ -817,6 +836,11 @@ func TestAddComments(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	allComments := xlsx.GetComments()
+	if len(allComments) != 2 {
+		t.Error("Expected 2 comment entry elements.")
+	}
+
 }
 
 func TestAutoFilter(t *testing.T) {
@@ -1144,6 +1168,31 @@ func TestOutlineLevel(t *testing.T) {
 		return
 	}
 	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
+}
+
+func TestThemeColor(t *testing.T) {
+	t.Log(ThemeColor("000000", -0.1))
+	t.Log(ThemeColor("000000", 0))
+	t.Log(ThemeColor("000000", 1))
+}
+
+func TestHSL(t *testing.T) {
+	var hsl HSL
+	t.Log(hsl.RGBA())
+	t.Log(hslModel(hsl))
+	t.Log(hslModel(color.Gray16{Y: uint16(1)}))
+	t.Log(HSLToRGB(0, 1, 0.4))
+	t.Log(HSLToRGB(0, 1, 0.6))
+	t.Log(hueToRGB(0, 0, -1))
+	t.Log(hueToRGB(0, 0, 2))
+	t.Log(hueToRGB(0, 0, 1.0/7))
+	t.Log(hueToRGB(0, 0, 0.4))
+	t.Log(hueToRGB(0, 0, 2.0/4))
+	t.Log(RGBToHSL(255, 255, 0))
+	t.Log(RGBToHSL(0, 255, 255))
+	t.Log(RGBToHSL(250, 100, 50))
+	t.Log(RGBToHSL(50, 100, 250))
+	t.Log(RGBToHSL(250, 50, 100))
 }
 
 func trimSliceSpace(s []string) []string {

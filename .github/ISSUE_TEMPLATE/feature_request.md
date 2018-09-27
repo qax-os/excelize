@@ -1,3 +1,9 @@
+---
+name: Feature request
+about: Suggest an idea for this project
+
+---
+
 <!--
 If you are reporting a new issue, make sure that we do not have any duplicates
 already open. You can ensure this by searching the issue list for this
