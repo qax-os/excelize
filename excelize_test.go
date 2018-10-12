@@ -135,6 +135,10 @@ func TestOpenFile(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
+	_, err = xlsx.WriteToBuffer()
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestAddPicture(t *testing.T) {
