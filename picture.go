@@ -185,7 +185,7 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 	_, ok = f.XLSX[rels]
 	if ok {
 		ID.Reset()
-		_ = xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
 		rID = len(sheetRels.Relationships) + 1
 		ID.WriteString("rId")
 		ID.WriteString(strconv.Itoa(rID))
@@ -211,7 +211,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
-	_ = xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
 	for k, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
@@ -328,7 +328,7 @@ func (f *File) addDrawingRelationships(index int, relType, target, targetMode st
 	_, ok := f.XLSX[rels]
 	if ok {
 		ID.Reset()
-		_ = xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &drawingRels)
 		rID = len(drawingRels.Relationships) + 1
 		ID.WriteString("rId")
 		ID.WriteString(strconv.Itoa(rID))
@@ -448,7 +448,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	var sheetRels xlsxWorkbookRels
-	_ = xml.Unmarshal([]byte(f.readXML(rels)), &sheetRels)
+	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
 	for _, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			return v.Target
@@ -488,7 +488,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 		return "", nil
 	}
 	decodeWsDr := decodeWsDr{}
-	_ = xml.Unmarshal([]byte(f.readXML(drawingXML)), &decodeWsDr)
+	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(drawingXML)), &decodeWsDr)
 
 	cell = strings.ToUpper(cell)
 	fromCol := string(strings.Map(letterOnlyMapF, cell))
@@ -523,7 +523,7 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
 		return nil
 	}
 	var drawingRels xlsxWorkbookRels
-	_ = xml.Unmarshal([]byte(f.readXML(rels)), &drawingRels)
+	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &drawingRels)
 	for _, v := range drawingRels.Relationships {
 		if v.ID == rID {
 			return &v

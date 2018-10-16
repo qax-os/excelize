@@ -183,3 +183,19 @@ func parseFormatSet(formatSet string) []byte {
 	}
 	return []byte("{}")
 }
+
+// namespaceStrictToTransitional provides a method to convert Strict and
+// Transitional namespaces.
+func namespaceStrictToTransitional(content []byte) []byte {
+	var namespaceTranslationDic = map[string]string{
+		StrictSourceRelationship:         SourceRelationship,
+		StrictSourceRelationshipChart:    SourceRelationshipChart,
+		StrictSourceRelationshipComments: SourceRelationshipComments,
+		StrictSourceRelationshipImage:    SourceRelationshipImage,
+		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet,
+	}
+	for s, n := range namespaceTranslationDic {
+		content = bytes.Replace(content, []byte(s), []byte(n), -1)
+	}
+	return content
+}

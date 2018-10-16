@@ -51,7 +51,7 @@ func (f *File) NewSheet(name string) int {
 func (f *File) contentTypesReader() *xlsxTypes {
 	if f.ContentTypes == nil {
 		var content xlsxTypes
-		_ = xml.Unmarshal([]byte(f.readXML("[Content_Types].xml")), &content)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")), &content)
 		f.ContentTypes = &content
 	}
 	return f.ContentTypes
@@ -71,7 +71,7 @@ func (f *File) contentTypesWriter() {
 func (f *File) workbookReader() *xlsxWorkbook {
 	if f.WorkBook == nil {
 		var content xlsxWorkbook
-		_ = xml.Unmarshal([]byte(f.readXML("xl/workbook.xml")), &content)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")), &content)
 		f.WorkBook = &content
 	}
 	return f.WorkBook
@@ -162,7 +162,7 @@ func (f *File) setWorkbook(name string, rid int) {
 func (f *File) workbookRelsReader() *xlsxWorkbookRels {
 	if f.WorkBookRels == nil {
 		var content xlsxWorkbookRels
-		_ = xml.Unmarshal([]byte(f.readXML("xl/_rels/workbook.xml.rels")), &content)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/_rels/workbook.xml.rels")), &content)
 		f.WorkBookRels = &content
 	}
 	return f.WorkBookRels
@@ -267,7 +267,7 @@ func (f *File) GetActiveSheetIndex() int {
 		buffer.WriteString("xl/worksheets/sheet")
 		buffer.WriteString(strings.TrimPrefix(v.ID, "rId"))
 		buffer.WriteString(".xml")
-		_ = xml.Unmarshal([]byte(f.readXML(buffer.String())), &xlsx)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(buffer.String())), &xlsx)
 		for _, sheetView := range xlsx.SheetViews.SheetView {
 			if sheetView.TabSelected {
 				ID, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))

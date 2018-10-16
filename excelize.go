@@ -100,7 +100,7 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 	}
 	if f.Sheet[name] == nil {
 		var xlsx xlsxWorksheet
-		_ = xml.Unmarshal(f.readXML(name), &xlsx)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(name)), &xlsx)
 		if f.checked == nil {
 			f.checked = make(map[string]bool)
 		}

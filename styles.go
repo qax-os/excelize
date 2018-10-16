@@ -999,7 +999,7 @@ func is12HourTime(format string) bool {
 func (f *File) stylesReader() *xlsxStyleSheet {
 	if f.Styles == nil {
 		var styleSheet xlsxStyleSheet
-		_ = xml.Unmarshal([]byte(f.readXML("xl/styles.xml")), &styleSheet)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/styles.xml")), &styleSheet)
 		f.Styles = &styleSheet
 	}
 	return f.Styles
@@ -2757,7 +2757,7 @@ func getPaletteColor(color string) string {
 // structure after deserialization.
 func (f *File) themeReader() *xlsxTheme {
 	var theme xlsxTheme
-	_ = xml.Unmarshal([]byte(f.readXML("xl/theme/theme1.xml")), &theme)
+	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")), &theme)
 	return &theme
 }
 
