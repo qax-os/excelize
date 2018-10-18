@@ -182,7 +182,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 	c, ok := f.XLSX[drawingVML]
 	if ok {
 		d := decodeVmlDrawing{}
-		_ = xml.Unmarshal([]byte(c), &d)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
 		for _, v := range d.Shape {
 			s := xlsxShape{
 				ID:          "_x0000_s1025",
@@ -252,7 +252,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	c, ok := f.XLSX[commentsXML]
 	if ok {
 		d := xlsxComments{}
-		_ = xml.Unmarshal([]byte(c), &d)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
 		comments.CommentList.Comment = append(comments.CommentList.Comment, d.CommentList.Comment...)
 	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)

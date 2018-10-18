@@ -249,7 +249,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		if len(ss) == 0 {
 			ss = f.readXML("xl/SharedStrings.xml")
 		}
-		_ = xml.Unmarshal([]byte(ss), &sharedStrings)
+		_ = xml.Unmarshal(namespaceStrictToTransitional(ss), &sharedStrings)
 		f.SharedStrings = &sharedStrings
 	}
 	return f.SharedStrings
