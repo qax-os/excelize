@@ -253,7 +253,7 @@ type aLn struct {
 	Algn      string      `xml:"algn,attr,omitempty"`
 	Cap       string      `xml:"cap,attr,omitempty"`
 	Cmpd      string      `xml:"cmpd,attr,omitempty"`
-	W         int         `xml:"w,attr,omitempty" `
+	W         int         `xml:"w,attr,omitempty"`
 	NoFill    string      `xml:"a:noFill,omitempty"`
 	Round     string      `xml:"a:round,omitempty"`
 	SolidFill *aSolidFill `xml:"a:solidFill"`
@@ -591,7 +591,7 @@ type formatChartSeries struct {
 	} `json:"line"`
 	Marker struct {
 		Type   string  `json:"type"`
-		Size   int     `json:"size,"`
+		Size   int     `json:"size"`
 		Width  float64 `json:"width"`
 		Border struct {
 			Color string `json:"color"`
