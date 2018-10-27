@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -658,6 +659,56 @@ func (f *File) GetSheetVisible(name string) bool {
 		}
 	}
 	return visible
+}
+
+// SearchSheet provides a function to get coordinates by given worksheet name
+// and cell value. This function only supports exact match of strings and
+// numbers, doesn't support the calculated result, formatted numbers and
+// conditional lookup currently. If it is a merged cell, it will return the
+// coordinates of the upper left corner of the merged area. For example,
+// search the coordinates of the value of "100" on Sheet1:
+//
+//    xlsx.SearchSheet("Sheet1", "100")
+//
+func (f *File) SearchSheet(sheet, value string) []string {
+	xlsx := f.workSheetReader(sheet)
+	result := []string{}
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		return result
+	}
+	if xlsx != nil {
+		output, _ := xml.Marshal(f.Sheet[name])
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+	}
+	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	d := f.sharedStringsReader()
+	var inElement string
+	var r xlsxRow
+	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				r = xlsxRow{}
+				_ = decoder.DecodeElement(&r, &startElement)
+				for _, colCell := range r.C {
+					val, _ := colCell.getValueFrom(f, d)
+					if val != value {
+						continue
+					}
+					result = append(result, fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R))
+				}
+			}
+		default:
+		}
+	}
+	return result
 }
 
 // trimSheetName provides a function to trim invaild characters by given worksheet
