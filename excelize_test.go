@@ -1195,6 +1195,19 @@ func TestHSL(t *testing.T) {
 	t.Log(RGBToHSL(250, 50, 100))
 }
 
+func TestSearchSheet(t *testing.T) {
+	xlsx, err := OpenFile("./test/SharedStrings.xlsx")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	// Test search in a not exists worksheet.
+	t.Log(xlsx.SearchSheet("Sheet4", ""))
+	// Test search a not exists value.
+	t.Log(xlsx.SearchSheet("Sheet1", "X"))
+	t.Log(xlsx.SearchSheet("Sheet1", "A"))
+}
+
 func trimSliceSpace(s []string) []string {
 	for {
 		if len(s) > 0 && s[len(s)-1] == "" {
