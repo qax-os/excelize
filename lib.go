@@ -15,6 +15,8 @@ import (
 	"io"
 	"log"
 	"math"
+	"strconv"
+	"strings"
 	"unicode"
 )
 
@@ -198,4 +200,30 @@ func namespaceStrictToTransitional(content []byte) []byte {
 		content = bytes.Replace(content, []byte(s), []byte(n), -1)
 	}
 	return content
+}
+
+// genSheetPasswd provides a method to generate password for worksheet
+// protection by given plaintext. When an Excel sheet is being protected with
+// a password, a 16-bit (two byte) long hash is generated. To verify a
+// password, it is compared to the hash. Obviously, if the input data volume
+// is great, numerous passwords will match the same hash. Here is the
+// algorithm to create the hash value:
+//
+// take the ASCII values of all characters shift left the first character 1 bit, the second 2 bits and so on (use only the lower 15 bits and rotate all higher bits, the highest bit of the 16-bit value is always 0 [signed short])
+// XOR all these values
+// XOR the count of characters
+// XOR the constant 0xCE4B
+func genSheetPasswd(plaintext string) string {
+	var password int64 = 0x0000
+	var charPos uint = 1
+	for _, v := range plaintext {
+		value := int64(v) << charPos
+		charPos++
+		rotatedBits := value >> 15 // rotated bits beyond bit 15
+		value &= 0x7fff            // first 15 bits
+		password ^= (value | rotatedBits)
+	}
+	password ^= int64(len(plaintext))
+	password ^= 0xCE4B
+	return strings.ToUpper(strconv.FormatInt(password, 16))
 }

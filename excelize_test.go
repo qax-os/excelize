@@ -1208,6 +1208,19 @@ func TestSearchSheet(t *testing.T) {
 	t.Log(xlsx.SearchSheet("Sheet1", "A"))
 }
 
+func TestProtectSheet(t *testing.T) {
+	xlsx := NewFile()
+	xlsx.ProtectSheet("Sheet1", nil)
+	xlsx.ProtectSheet("Sheet1", &FormatSheetProtection{
+		Password:      "password",
+		EditScenarios: false,
+	})
+	err := xlsx.SaveAs("./test/Book_protect_sheet.xlsx")
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func trimSliceSpace(s []string) []string {
 	for {
 		if len(s) > 0 && s[len(s)-1] == "" {

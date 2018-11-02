@@ -711,6 +711,47 @@ func (f *File) SearchSheet(sheet, value string) []string {
 	return result
 }
 
+// ProtectSheet provides a function to prevent other users from accidentally
+// or deliberately changing, moving, or deleting data in a worksheet. For
+// example protect Sheet1 with protection settings:
+//
+//    xlsx.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//        Password:      "password",
+//        EditScenarios: false,
+//    })
+//
+func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) {
+	xlsx := f.workSheetReader(sheet)
+	if settings == nil {
+		settings = &FormatSheetProtection{
+			EditObjects:       true,
+			EditScenarios:     true,
+			SelectLockedCells: true,
+		}
+	}
+	xlsx.SheetProtection = &xlsxSheetProtection{
+		AutoFilter:          settings.AutoFilter,
+		DeleteColumns:       settings.DeleteColumns,
+		DeleteRows:          settings.DeleteRows,
+		FormatCells:         settings.FormatCells,
+		FormatColumns:       settings.FormatColumns,
+		FormatRows:          settings.FormatRows,
+		InsertColumns:       settings.InsertColumns,
+		InsertHyperlinks:    settings.InsertHyperlinks,
+		InsertRows:          settings.InsertRows,
+		Objects:             settings.EditObjects,
+		PivotTables:         settings.PivotTables,
+		Scenarios:           settings.EditScenarios,
+		SelectLockedCells:   settings.SelectLockedCells,
+		SelectUnlockedCells: settings.SelectUnlockedCells,
+		Sheet:               true,
+		Sort:                settings.Sort,
+	}
+	if settings.Password != "" {
+		xlsx.SheetProtection.Password = genSheetPasswd(settings.Password)
+	}
+}
+
 // trimSheetName provides a function to trim invaild characters by given worksheet
 // name.
 func trimSheetName(name string) string {

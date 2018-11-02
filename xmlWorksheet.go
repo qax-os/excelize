@@ -377,26 +377,27 @@ type xlsxF struct {
 // xlsxSheetProtection collection expresses the sheet protection options to
 // enforce when the sheet is protected.
 type xlsxSheetProtection struct {
-	AlgorithmName      string `xml:"algorithmName,attr,omitempty"`
-	AutoFilter         int    `xml:"autoFilter,attr,omitempty"`
-	DeleteColumns      int    `xml:"deleteColumns,attr,omitempty"`
-	DeleteRows         int    `xml:"deleteRows,attr,omitempty"`
-	FormatCells        int    `xml:"formatCells,attr,omitempty"`
-	FormatColumns      int    `xml:"formatColumns,attr,omitempty"`
-	FormatRows         int    `xml:"formatRows,attr,omitempty"`
-	HashValue          string `xml:"hashValue,attr,omitempty"`
-	InsertColumns      int    `xml:"insertColumns,attr,omitempty"`
-	InsertHyperlinks   int    `xml:"insertHyperlinks,attr,omitempty"`
-	InsertRows         int    `xml:"insertRows,attr,omitempty"`
-	Objects            int    `xml:"objects,attr,omitempty"`
-	PivotTables        int    `xml:"pivotTables,attr,omitempty"`
-	SaltValue          string `xml:"saltValue,attr,omitempty"`
-	Scenarios          int    `xml:"scenarios,attr,omitempty"`
-	SelectLockedCells  int    `xml:"selectLockedCells,attr,omitempty"`
-	SelectUnlockedCell int    `xml:"selectUnlockedCell,attr,omitempty"`
-	Sheet              int    `xml:"sheet,attr,omitempty"`
-	Sort               int    `xml:"sort,attr,omitempty"`
-	SpinCount          int    `xml:"spinCount,attr,omitempty"`
+	AlgorithmName       string `xml:"algorithmName,attr,omitempty"`
+	AutoFilter          bool   `xml:"autoFilter,attr,omitempty"`
+	DeleteColumns       bool   `xml:"deleteColumns,attr,omitempty"`
+	DeleteRows          bool   `xml:"deleteRows,attr,omitempty"`
+	FormatCells         bool   `xml:"formatCells,attr,omitempty"`
+	FormatColumns       bool   `xml:"formatColumns,attr,omitempty"`
+	FormatRows          bool   `xml:"formatRows,attr,omitempty"`
+	HashValue           string `xml:"hashValue,attr,omitempty"`
+	InsertColumns       bool   `xml:"insertColumns,attr,omitempty"`
+	InsertHyperlinks    bool   `xml:"insertHyperlinks,attr,omitempty"`
+	InsertRows          bool   `xml:"insertRows,attr,omitempty"`
+	Objects             bool   `xml:"objects,attr,omitempty"`
+	Password            string `xml:"password,attr,omitempty"`
+	PivotTables         bool   `xml:"pivotTables,attr,omitempty"`
+	SaltValue           string `xml:"saltValue,attr,omitempty"`
+	Scenarios           bool   `xml:"scenarios,attr,omitempty"`
+	SelectLockedCells   bool   `xml:"selectLockedCells,attr,omitempty"`
+	SelectUnlockedCells bool   `xml:"selectUnlockedCells,attr,omitempty"`
+	Sheet               bool   `xml:"sheet,attr,omitempty"`
+	Sort                bool   `xml:"sort,attr,omitempty"`
+	SpinCount           int    `xml:"spinCount,attr,omitempty"`
 }
 
 // xlsxPhoneticPr (Phonetic Properties) represents a collection of phonetic
@@ -598,4 +599,24 @@ type formatConditional struct {
 	MaxLength    string `json:"max_length,omitempty"`
 	MultiRange   string `json:"multi_range,omitempty"`
 	BarColor     string `json:"bar_color,omitempty"`
+}
+
+// FormatSheetProtection directly maps the settings of worksheet protection.
+type FormatSheetProtection struct {
+	AutoFilter          bool
+	DeleteColumns       bool
+	DeleteRows          bool
+	EditObjects         bool
+	EditScenarios       bool
+	FormatCells         bool
+	FormatColumns       bool
+	FormatRows          bool
+	InsertColumns       bool
+	InsertHyperlinks    bool
+	InsertRows          bool
+	Password            string
+	PivotTables         bool
+	SelectLockedCells   bool
+	SelectUnlockedCells bool
+	Sort                bool
 }
