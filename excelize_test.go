@@ -128,7 +128,7 @@ func TestOpenFile(t *testing.T) {
 	}
 	err = xlsx.Save()
 	if err != nil {
-		t.Log(err)
+		t.Error(err)
 	}
 	// Test write file to not exist directory.
 	err = xlsx.SaveAs("")
@@ -1216,6 +1216,18 @@ func TestProtectSheet(t *testing.T) {
 		EditScenarios: false,
 	})
 	err := xlsx.SaveAs("./test/Book_protect_sheet.xlsx")
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestUnprotectSheet(t *testing.T) {
+	xlsx, err := OpenFile("./test/Book1.xlsx")
+	if err != nil {
+		t.Error(err)
+	}
+	xlsx.UnprotectSheet("Sheet1")
+	err = xlsx.Save()
 	if err != nil {
 		t.Error(err)
 	}
