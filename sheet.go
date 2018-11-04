@@ -713,7 +713,7 @@ func (f *File) SearchSheet(sheet, value string) []string {
 
 // ProtectSheet provides a function to prevent other users from accidentally
 // or deliberately changing, moving, or deleting data in a worksheet. For
-// example protect Sheet1 with protection settings:
+// example, protect Sheet1 with protection settings:
 //
 //    xlsx.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
 //        Password:      "password",
@@ -750,6 +750,12 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) {
 	if settings.Password != "" {
 		xlsx.SheetProtection.Password = genSheetPasswd(settings.Password)
 	}
+}
+
+// UnprotectSheet provides a function to unprotect an Excel worksheet.
+func (f *File) UnprotectSheet(sheet string) {
+	xlsx := f.workSheetReader(sheet)
+	xlsx.SheetProtection = nil
 }
 
 // trimSheetName provides a function to trim invaild characters by given worksheet
