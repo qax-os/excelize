@@ -244,12 +244,13 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 		if xlsx.SheetData.Row[k].R == row {
 			for i := range xlsx.SheetData.Row[k].C {
 				if axis == xlsx.SheetData.Row[k].C[i].R {
+					if xlsx.SheetData.Row[k].C[i].F == nil {
+						continue
+					}
 					if xlsx.SheetData.Row[k].C[i].F.T == STCellFormulaTypeShared {
 						return getSharedForumula(xlsx, xlsx.SheetData.Row[k].C[i].F.Si)
 					}
-					if xlsx.SheetData.Row[k].C[i].F != nil {
-						return xlsx.SheetData.Row[k].C[i].F.Content
-					}
+					return xlsx.SheetData.Row[k].C[i].F.Content
 				}
 			}
 		}
