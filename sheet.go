@@ -353,8 +353,9 @@ func (f *File) GetSheetMap() map[int]string {
 	sheetMap := map[int]string{}
 	for _, v := range content.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
-			if rel.ID == v.ID {
-				rID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(rel.Target, "worksheets/sheet"), ".xml"))
+			relStr := strings.SplitN(rel.Target, "worksheets/sheet", 2)
+			if rel.ID == v.ID && len(relStr) == 2 {
+				rID, _ := strconv.Atoi(strings.TrimSuffix(relStr[1], ".xml"))
 				sheetMap[rID] = v.Name
 			}
 		}
