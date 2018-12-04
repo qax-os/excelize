@@ -337,7 +337,7 @@ func (f *File) RemoveCol(sheet, column string) {
 	f.adjustHelper(sheet, col, -1, -1)
 }
 
-// Completion column element tags of XML in a sheet.
+// completeCol; Completion column element tags of XML in a sheet.
 func completeCol(xlsx *xlsxWorksheet, row, cell int) {
 	buffer := bytes.Buffer{}
 	for r := range xlsx.SheetData.Row {
