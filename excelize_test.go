@@ -21,9 +21,9 @@ func TestOpenFile(t *testing.T) {
 		t.Error(err)
 	}
 	// Test get all the rows in a not exists worksheet.
-	rows := xlsx.GetRows("Sheet4")
+	xlsx.GetRows("Sheet4")
 	// Test get all the rows in a worksheet.
-	rows = xlsx.GetRows("Sheet2")
+	rows := xlsx.GetRows("Sheet2")
 	for _, row := range rows {
 		for _, cell := range row {
 			t.Log(cell, "\t")
@@ -518,7 +518,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 	xlsx.SetCellValue("Sheet1", "A1", 42920.5)
 	xlsx.SetCellValue("Sheet1", "A2", 42920.5)
 
-	style, err = xlsx.NewStyle(`{"number_format": 26, "lang": "zh-tw"}`)
+	_, err = xlsx.NewStyle(`{"number_format": 26, "lang": "zh-tw"}`)
 	if err != nil {
 		t.Log(err)
 	}
