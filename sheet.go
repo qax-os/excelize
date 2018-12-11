@@ -118,7 +118,7 @@ func trimCell(column []xlsxC) []xlsxC {
 	return col[0:i]
 }
 
-// Read and update property of contents type of XLSX.
+// setContentTypes; Read and update property of contents type of XLSX.
 func (f *File) setContentTypes(index int) {
 	content := f.contentTypesReader()
 	content.Overrides = append(content.Overrides, xlsxOverride{
@@ -127,7 +127,7 @@ func (f *File) setContentTypes(index int) {
 	})
 }
 
-// Update sheet property by given index.
+// setSheet; Update sheet property by given index.
 func (f *File) setSheet(index int, name string) {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
@@ -209,7 +209,7 @@ func (f *File) setAppXML() {
 	f.saveFileList("docProps/app.xml", []byte(templateDocpropsApp))
 }
 
-// Some tools that read XLSX files have very strict requirements about the
+// replaceRelationshipsNameSpaceBytes; Some tools that read XLSX files have very strict requirements about the
 // structure of the input XML. In particular both Numbers on the Mac and SAS
 // dislike inline XML namespace declarations, or namespace prefixes that don't
 // match the ones that Excel itself uses. This is a problem because the Go XML
