@@ -15,6 +15,7 @@ var _ = []excelize.SheetPrOption{
 	excelize.Published(false),
 	excelize.FitToPage(true),
 	excelize.AutoPageBreaks(true),
+	excelize.OutlineSummaryBelow(true),
 }
 
 var _ = []excelize.SheetPrOptionPtr{
@@ -23,6 +24,7 @@ var _ = []excelize.SheetPrOptionPtr{
 	(*excelize.Published)(nil),
 	(*excelize.FitToPage)(nil),
 	(*excelize.AutoPageBreaks)(nil),
+	(*excelize.OutlineSummaryBelow)(nil),
 }
 
 func ExampleFile_SetSheetPrOptions() {
@@ -35,6 +37,7 @@ func ExampleFile_SetSheetPrOptions() {
 		excelize.Published(false),
 		excelize.FitToPage(true),
 		excelize.AutoPageBreaks(true),
+		excelize.OutlineSummaryBelow(false),
 	); err != nil {
 		panic(err)
 	}
@@ -51,6 +54,7 @@ func ExampleFile_GetSheetPrOptions() {
 		published                         excelize.Published
 		fitToPage                         excelize.FitToPage
 		autoPageBreaks                    excelize.AutoPageBreaks
+		outlineSummaryBelow               excelize.OutlineSummaryBelow
 	)
 
 	if err := xl.GetSheetPrOptions(sheet,
@@ -59,6 +63,7 @@ func ExampleFile_GetSheetPrOptions() {
 		&published,
 		&fitToPage,
 		&autoPageBreaks,
+		&outlineSummaryBelow,
 	); err != nil {
 		panic(err)
 	}
@@ -68,6 +73,7 @@ func ExampleFile_GetSheetPrOptions() {
 	fmt.Println("- published:", published)
 	fmt.Println("- fitToPage:", fitToPage)
 	fmt.Println("- autoPageBreaks:", autoPageBreaks)
+	fmt.Println("- outlineSummaryBelow:", outlineSummaryBelow)
 	// Output:
 	// Defaults:
 	// - codeName: ""
@@ -75,6 +81,7 @@ func ExampleFile_GetSheetPrOptions() {
 	// - published: true
 	// - fitToPage: false
 	// - autoPageBreaks: false
+	// - outlineSummaryBelow: true
 }
 
 func TestSheetPrOptions(t *testing.T) {
@@ -88,6 +95,7 @@ func TestSheetPrOptions(t *testing.T) {
 		{new(excelize.Published), excelize.Published(false)},
 		{new(excelize.FitToPage), excelize.FitToPage(true)},
 		{new(excelize.AutoPageBreaks), excelize.AutoPageBreaks(true)},
+		{new(excelize.OutlineSummaryBelow), excelize.OutlineSummaryBelow(false)},
 	} {
 		opt := test.nonDefault
 		t.Logf("option %T", opt)
