@@ -90,12 +90,13 @@ func julianDateToGregorianTime(part1, part2 float64) time.Time {
 	return time.Date(year, time.Month(month), day, hours, minutes, seconds, nanoseconds, time.UTC)
 }
 
-// doTheFliegelAndVanFlandernAlgorithm; By this point generations of programmers have repeated the algorithm sent
-// to the editor of "Communications of the ACM" in 1968 (published in CACM,
-// volume 11, number 10, October 1968, p.657). None of those programmers seems
-// to have found it necessary to explain the constants or variable names set
-// out by Henry F. Fliegel and Thomas C. Van Flandern.  Maybe one day I'll buy
-// that jounal and expand an explanation here - that day is not today.
+// doTheFliegelAndVanFlandernAlgorithm; By this point generations of
+// programmers have repeated the algorithm sent to the editor of
+// "Communications of the ACM" in 1968 (published in CACM, volume 11, number
+// 10, October 1968, p.657). None of those programmers seems to have found it
+// necessary to explain the constants or variable names set out by Henry F.
+// Fliegel and Thomas C. Van Flandern.  Maybe one day I'll buy that jounal and
+// expand an explanation here - that day is not today.
 func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 	l := jd + 68569
 	n := (4 * l) / 146097

@@ -33,18 +33,27 @@ func (f *File) NewSheet(name string) int {
 	if f.GetSheetIndex(name) != 0 {
 		return f.SheetCount
 	}
+	f.DeleteSheet(name)
 	f.SheetCount++
+	wb := f.workbookReader()
+	sheetID := 0
+	for _, v := range wb.Sheets.Sheet {
+		if v.SheetID > sheetID {
+			sheetID = v.SheetID
+		}
+	}
+	sheetID++
 	// Update docProps/app.xml
 	f.setAppXML()
 	// Update [Content_Types].xml
-	f.setContentTypes(f.SheetCount)
+	f.setContentTypes(sheetID)
 	// Create new sheet /xl/worksheets/sheet%d.xml
-	f.setSheet(f.SheetCount, name)
+	f.setSheet(sheetID, name)
 	// Update xl/_rels/workbook.xml.rels
-	rID := f.addXlsxWorkbookRels(f.SheetCount)
+	rID := f.addXlsxWorkbookRels(sheetID)
 	// Update xl/workbook.xml
-	f.setWorkbook(name, rID)
-	return f.SheetCount
+	f.setWorkbook(name, sheetID, rID)
+	return sheetID
 }
 
 // contentTypesReader provides a function to get the pointer to the
@@ -118,7 +127,8 @@ func trimCell(column []xlsxC) []xlsxC {
 	return col[0:i]
 }
 
-// setContentTypes; Read and update property of contents type of XLSX.
+// setContentTypes provides a function to read and update property of contents
+// type of XLSX.
 func (f *File) setContentTypes(index int) {
 	content := f.contentTypesReader()
 	content.Overrides = append(content.Overrides, xlsxOverride{
@@ -127,7 +137,7 @@ func (f *File) setContentTypes(index int) {
 	})
 }
 
-// setSheet; Update sheet property by given index.
+// setSheet provides a function to update sheet property by given index.
 func (f *File) setSheet(index int, name string) {
 	var xlsx xlsxWorksheet
 	xlsx.Dimension.Ref = "A1"
@@ -141,19 +151,11 @@ func (f *File) setSheet(index int, name string) {
 
 // setWorkbook update workbook property of XLSX. Maximum 31 characters are
 // allowed in sheet title.
-func (f *File) setWorkbook(name string, rid int) {
+func (f *File) setWorkbook(name string, sheetID, rid int) {
 	content := f.workbookReader()
-	rID := 0
-	for _, v := range content.Sheets.Sheet {
-		t, _ := strconv.Atoi(v.SheetID)
-		if t > rID {
-			rID = t
-		}
-	}
-	rID++
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    trimSheetName(name),
-		SheetID: strconv.Itoa(rID),
+		SheetID: sheetID,
 		ID:      "rId" + strconv.Itoa(rid),
 	})
 }
@@ -209,13 +211,13 @@ func (f *File) setAppXML() {
 	f.saveFileList("docProps/app.xml", []byte(templateDocpropsApp))
 }
 
-// replaceRelationshipsNameSpaceBytes; Some tools that read XLSX files have very strict requirements about the
-// structure of the input XML. In particular both Numbers on the Mac and SAS
-// dislike inline XML namespace declarations, or namespace prefixes that don't
-// match the ones that Excel itself uses. This is a problem because the Go XML
-// library doesn't multiple namespace declarations in a single element of a
-// document. This function is a horrible hack to fix that after the XML
-// marshalling is completed.
+// replaceRelationshipsNameSpaceBytes; Some tools that read XLSX files have
+// very strict requirements about the structure of the input XML. In
+// particular both Numbers on the Mac and SAS dislike inline XML namespace
+// declarations, or namespace prefixes that don't match the ones that Excel
+// itself uses. This is a problem because the Go XML library doesn't multiple
+// namespace declarations in a single element of a document. This function is
+// a horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
 	oldXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	newXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`)
@@ -230,18 +232,23 @@ func (f *File) SetActiveSheet(index int) {
 	if index < 1 {
 		index = 1
 	}
-	index--
-	content := f.workbookReader()
-	if len(content.BookViews.WorkBookView) > 0 {
-		content.BookViews.WorkBookView[0].ActiveTab = index
-	} else {
-		content.BookViews.WorkBookView = append(content.BookViews.WorkBookView, xlsxWorkBookView{
-			ActiveTab: index,
-		})
+	wb := f.workbookReader()
+	for activeTab, sheet := range wb.Sheets.Sheet {
+		if sheet.SheetID == index {
+			if len(wb.BookViews.WorkBookView) > 0 {
+				wb.BookViews.WorkBookView[0].ActiveTab = activeTab
+			} else {
+				wb.BookViews.WorkBookView = append(wb.BookViews.WorkBookView, xlsxWorkBookView{
+					ActiveTab: activeTab,
+				})
+			}
+		}
 	}
-	index++
 	for idx, name := range f.GetSheetMap() {
 		xlsx := f.workSheetReader(name)
+		if len(xlsx.SheetViews.SheetView) > 0 {
+			xlsx.SheetViews.SheetView[0].TabSelected = false
+		}
 		if index == idx {
 			if len(xlsx.SheetViews.SheetView) > 0 {
 				xlsx.SheetViews.SheetView[0].TabSelected = true
@@ -250,10 +257,6 @@ func (f *File) SetActiveSheet(index int) {
 					TabSelected: true,
 				})
 			}
-		} else {
-			if len(xlsx.SheetViews.SheetView) > 0 {
-				xlsx.SheetViews.SheetView[0].TabSelected = false
-			}
 		}
 	}
 }
@@ -261,21 +264,13 @@ func (f *File) SetActiveSheet(index int) {
 // GetActiveSheetIndex provides a function to get active sheet index of the
 // XLSX. If not found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
-	buffer := bytes.Buffer{}
-	content := f.workbookReader()
-	for _, v := range content.Sheets.Sheet {
-		xlsx := xlsxWorksheet{}
-		buffer.WriteString("xl/worksheets/sheet")
-		buffer.WriteString(strings.TrimPrefix(v.ID, "rId"))
-		buffer.WriteString(".xml")
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(buffer.String())), &xlsx)
+	for idx, name := range f.GetSheetMap() {
+		xlsx := f.workSheetReader(name)
 		for _, sheetView := range xlsx.SheetViews.SheetView {
 			if sheetView.TabSelected {
-				ID, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
-				return ID
+				return idx
 			}
 		}
-		buffer.Reset()
 	}
 	return 0
 }
@@ -404,8 +399,8 @@ func (f *File) DeleteSheet(name string) {
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == trimSheetName(name) && len(content.Sheets.Sheet) > 1 {
 			content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
-			sheet := "xl/worksheets/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml"
-			rels := "xl/worksheets/_rels/sheet" + strings.TrimPrefix(v.ID, "rId") + ".xml.rels"
+			sheet := "xl/worksheets/sheet" + strconv.Itoa(v.SheetID) + ".xml"
+			rels := "xl/worksheets/_rels/sheet" + strconv.Itoa(v.SheetID) + ".xml.rels"
 			target := f.deleteSheetFromWorkbookRels(v.ID)
 			f.deleteSheetFromContentTypes(target)
 			delete(f.sheetMap, name)
