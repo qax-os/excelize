@@ -211,6 +211,13 @@ type xlsxSheetPr struct {
 	TransitionEntry                   bool             `xml:"transitionEntry,attr,omitempty"`
 	TabColor                          *xlsxTabColor    `xml:"tabColor,omitempty"`
 	PageSetUpPr                       *xlsxPageSetUpPr `xml:"pageSetUpPr,omitempty"`
+	OutlinePr                         *xlsxOutlinePr   `xml:"outlinePr,omitempty"`
+}
+
+// xlsxOutlinePr maps to the outlinePr element
+// SummaryBelow allows you to adjust the direction of grouper controls
+type xlsxOutlinePr struct {
+	SummaryBelow bool `xml:"summaryBelow,attr"`
 }
 
 // xlsxPageSetUpPr directly maps the pageSetupPr element in the namespace
