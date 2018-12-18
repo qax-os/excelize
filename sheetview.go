@@ -35,6 +35,8 @@ type (
 	ShowRowColHeaders bool
 	// ZoomScale is a SheetViewOption.
 	ZoomScale float64
+	// TopLeftCell is a SheetViewOption.
+	TopLeftCell string
 	/* TODO
 	// ShowWhiteSpace is a SheetViewOption.
 	ShowWhiteSpace bool
@@ -46,6 +48,14 @@ type (
 )
 
 // Defaults for each option are described in XML schema for CT_SheetView
+
+func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
+	view.TopLeftCell = string(o)
+}
+
+func (o *TopLeftCell) getSheetViewOption(view *xlsxSheetView) {
+	*o = TopLeftCell(string(view.TopLeftCell))
+}
 
 func (o DefaultGridColor) setSheetViewOption(view *xlsxSheetView) {
 	view.DefaultGridColor = boolPtr(bool(o))
