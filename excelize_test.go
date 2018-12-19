@@ -374,6 +374,59 @@ func TestMergeCell(t *testing.T) {
 	}
 }
 
+func TestGetMergeCells(t *testing.T) {
+	wants := []struct {
+		value string
+		start string
+		end   string
+	}{
+		{
+			value: "A1",
+			start: "A1",
+			end:   "B1",
+		},
+		{
+			value: "A2",
+			start: "A2",
+			end:   "A3",
+		},
+		{
+			value: "A4",
+			start: "A4",
+			end:   "B5",
+		},
+		{
+			value: "A7",
+			start: "A7",
+			end:   "C10",
+		},
+	}
+
+	xlsx, err := OpenFile("./test/MergeCell.xlsx")
+	if err != nil {
+		t.Error(err)
+	}
+
+	mergeCells := xlsx.GetMergeCells("Sheet1")
+	if len(mergeCells) != len(wants) {
+		t.Fatalf("Expected count of merge cells %d, but got %d\n", len(wants), len(mergeCells))
+	}
+
+	for i, m := range mergeCells {
+		if wants[i].value != m.GetCellValue() {
+			t.Fatalf("Expected merged cell value %s, but got %s\n", wants[i].value, m.GetCellValue())
+		}
+
+		if wants[i].start != m.GetStartAxis() {
+			t.Fatalf("Expected merged cell value %s, but got %s\n", wants[i].start, m.GetStartAxis())
+		}
+
+		if wants[i].end != m.GetEndAxis() {
+			t.Fatalf("Expected merged cell value %s, but got %s\n", wants[i].end, m.GetEndAxis())
+		}
+	}
+}
+
 func TestSetCellStyleAlignment(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book2.xlsx")
 	if err != nil {

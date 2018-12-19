@@ -411,3 +411,43 @@ func (f *File) adjustAutoFilterHelper(xlsx *xlsxWorksheet, column, rowIndex, off
 		}
 	}
 }
+
+// GetMergeCells provides a function to get all merged cells from a worksheet currently.
+func (f *File) GetMergeCells(sheet string) []MergeCell {
+	mergeCells := []MergeCell{}
+
+	xlsx := f.workSheetReader(sheet)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			ref := xlsx.MergeCells.Cells[i].Ref
+			axis := strings.Split(ref, ":")[0]
+			mergeCells = append(mergeCells, []string{ref, f.GetCellValue(sheet, axis)})
+		}
+	}
+
+	return mergeCells
+}
+
+// MergeCell define a merged cell data.
+// It consists of the following structure.
+// example: []string{"D4:E10", "cell value"}
+type MergeCell []string
+
+// GetCellValue returns merged cell value.
+func (m *MergeCell) GetCellValue() string {
+	return (*m)[1]
+}
+
+// GetStartAxis returns the merge start axis.
+// example: "C2"
+func (m *MergeCell) GetStartAxis() string {
+	axis := strings.Split((*m)[0], ":")
+	return axis[0]
+}
+
+// GetEndAxis returns the merge end axis.
+// example: "D4"
+func (m *MergeCell) GetEndAxis() string {
+	axis := strings.Split((*m)[0], ":")
+	return axis[1]
+}
