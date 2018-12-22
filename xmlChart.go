@@ -301,6 +301,8 @@ type cView3D struct {
 // plot area of the chart.
 type cPlotArea struct {
 	Layout        *string  `xml:"c:layout"`
+	AreaChart     *cCharts `xml:"c:areaChart"`
+	Area3DChart   *cCharts `xml:"c:area3DChart"`
 	BarChart      *cCharts `xml:"c:barChart"`
 	Bar3DChart    *cCharts `xml:"c:bar3DChart"`
 	DoughnutChart *cCharts `xml:"c:doughnutChart"`
