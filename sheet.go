@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -699,6 +700,59 @@ func (f *File) SearchSheet(sheet, value string) []string {
 						continue
 					}
 					result = append(result, fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R))
+				}
+			}
+		default:
+		}
+	}
+	return result
+}
+
+// RegSearchSheet provides the ability to retrieve coordinates
+// with the given worksheet name and regular expression
+// For a merged cell, get the coordinates
+// of the upper left corner of the merge area.
+// :example)
+// Search the coordinates where the numerical value in the range of "0 - 9" of Sheet 1 is described:
+//
+//    xlsx.RegSearchSheet("Sheet1", "[0-9]")
+//
+// return map[CELL:result CELL:result ...]
+func (f *File) RegSearchSheet(sheet, value string) map[string]string {
+	xlsx := f.workSheetReader(sheet)
+	result := map[string]string{}
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		return result
+	}
+	if xlsx != nil {
+		output, _ := xml.Marshal(f.Sheet[name])
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+	}
+	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	d := f.sharedStringsReader()
+	var inElement string
+	var r xlsxRow
+	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				r = xlsxRow{}
+				_ = decoder.DecodeElement(&r, &startElement)
+				for _, colCell := range r.C {
+					val, _ := colCell.getValueFrom(f, d)
+					_reg := regexp.MustCompile(value)
+					if !_reg.MatchString(val) {
+						continue
+					}
+					key := fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R)
+					result[key] = _reg.FindString(val)
 				}
 			}
 		default:
