@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenFile(t *testing.T) {
@@ -1027,6 +1029,71 @@ func TestInsertRow(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestDuplicateRow(t *testing.T) {
+	const (
+		file    = "./test/Book_DuplicateRow_%s.xlsx"
+		sheet   = "Sheet1"
+		a1      = "A1"
+		b1      = "B1"
+		a2      = "A2"
+		b2      = "B2"
+		a3      = "A3"
+		b3      = "B3"
+		a4      = "A4"
+		b4      = "B4"
+		a1Value = "A1 value"
+		a2Value = "A2 value"
+		a3Value = "A3 value"
+		bnValue = "Bn value"
+	)
+	xlsx := NewFile()
+	xlsx.SetCellStr(sheet, a1, a1Value)
+	xlsx.SetCellStr(sheet, b1, bnValue)
+
+	t.Run("FromSingleRow", func(t *testing.T) {
+		xlsx.DuplicateRow(sheet, 1)
+		xlsx.DuplicateRow(sheet, 2)
+
+		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "SignleRow"))) {
+			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a1))
+			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a2))
+			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a3))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b1))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b3))
+		}
+	})
+
+	t.Run("UpdateDuplicatedRows", func(t *testing.T) {
+		xlsx.SetCellStr(sheet, a2, a2Value)
+		xlsx.SetCellStr(sheet, a3, a3Value)
+
+		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "Updated"))) {
+			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a1))
+			assert.Equal(t, a2Value, xlsx.GetCellValue(sheet, a2))
+			assert.Equal(t, a3Value, xlsx.GetCellValue(sheet, a3))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b1))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b3))
+		}
+	})
+
+	t.Run("FromFirstOfMultipleRows", func(t *testing.T) {
+		xlsx.DuplicateRow(sheet, 1)
+
+		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "FirstOfMultipleRows"))) {
+			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a1))
+			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a2))
+			assert.Equal(t, a2Value, xlsx.GetCellValue(sheet, a3))
+			assert.Equal(t, a3Value, xlsx.GetCellValue(sheet, a4))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b1))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b3))
+			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b4))
+		}
+	})
 }
 
 func TestSetPane(t *testing.T) {

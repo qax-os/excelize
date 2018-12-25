@@ -359,7 +359,7 @@ func (f *File) RemoveRow(sheet string, row int) {
 	}
 }
 
-// InsertRow provides a function to insert a new row before given row index.
+// InsertRow provides a function to insert a new row after given row index.
 // For example, create a new row before row 3 in Sheet1:
 //
 //    xlsx.InsertRow("Sheet1", 2)
@@ -370,6 +370,46 @@ func (f *File) InsertRow(sheet string, row int) {
 	}
 	row++
 	f.adjustHelper(sheet, -1, row, 1)
+}
+
+// DuplicateRow inserts a copy of specified row below specified
+//
+//    xlsx.DuplicateRow("Sheet1", 2)
+//
+func (f *File) DuplicateRow(sheet string, row int) {
+	if row < 0 {
+		return
+	}
+	row2 := row + 1
+	f.adjustHelper(sheet, -1, row2, 1)
+
+	xlsx := f.workSheetReader(sheet)
+	idx := -1
+	idx2 := -1
+
+	for i, r := range xlsx.SheetData.Row {
+		if r.R == row {
+			idx = i
+		} else if r.R == row2 {
+			idx2 = i
+		}
+		if idx != -1 && idx2 != -1 {
+			break
+		}
+	}
+
+	if idx == -1 || (idx2 == -1 && len(xlsx.SheetData.Row) >= row2) {
+		return
+	}
+	rowData := xlsx.SheetData.Row[idx]
+	cols := make([]xlsxC, 0, len(rowData.C))
+	rowData.C = append(cols, rowData.C...)
+	f.ajustSingleRowDimensions(&rowData, 1)
+	if idx2 != -1 {
+		xlsx.SheetData.Row[idx2] = rowData
+	} else {
+		xlsx.SheetData.Row = append(xlsx.SheetData.Row, rowData)
+	}
 }
 
 // checkRow provides a function to check and fill each column element for all
