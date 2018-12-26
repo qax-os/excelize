@@ -1236,8 +1236,18 @@ func TestSetSheetRow(t *testing.T) {
 	}
 }
 
-func TestRows(t *testing.T) {
+func TestRowsWithoutEmptyLimit(t *testing.T) {
+	testRows(t, 0)
+}
+
+// Fix issue #195
+func TestRowsWithEmptyLimit(t *testing.T) {
+	testRows(t, 10)
+}
+
+func testRows(t *testing.T, emptyLimit int) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx.SetEmptyLimit(emptyLimit)
 	if err != nil {
 		t.Error(err)
 		return
@@ -1260,7 +1270,7 @@ func TestRows(t *testing.T) {
 	}
 	dstRows := xlsx.GetRows("Sheet2")
 	if len(dstRows) != len(rowStrs) {
-		t.Error("values not equal")
+		t.Errorf("%d is not equal to %d", len(dstRows), len(rowStrs))
 		return
 	}
 	for i := 0; i < len(rowStrs); i++ {

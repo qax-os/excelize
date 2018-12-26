@@ -45,6 +45,7 @@ func (f *File) GetRows(sheet string) [][]string {
 	var inElement string
 	var r xlsxRow
 	var row []string
+	var isDone bool
 	tr, tc := f.getTotalRowsCols(name)
 	for i := 0; i < tr; i++ {
 		row = []string{}
@@ -65,6 +66,19 @@ func (f *File) GetRows(sheet string) [][]string {
 			if inElement == "row" {
 				r = xlsxRow{}
 				_ = decoder.DecodeElement(&r, &startElement)
+
+				if len(startElement.Attr) <= 1 {
+					f.emptyLines++
+
+					if f.emptyLines > f.EmptyLimit {
+						isDone = true
+					}
+
+					break
+				} else if f.emptyLines > 0 {
+					f.emptyLines--
+				}
+
 				cr := r.R - 1
 				for _, colCell := range r.C {
 					c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
@@ -73,6 +87,10 @@ func (f *File) GetRows(sheet string) [][]string {
 				}
 			}
 		default:
+		}
+
+		if isDone {
+			break
 		}
 	}
 	return rows
@@ -101,6 +119,16 @@ func (rows *Rows) Next() bool {
 		case xml.StartElement:
 			inElement := startElement.Name.Local
 			if inElement == "row" {
+				if len(startElement.Attr) <= 1 {
+					rows.f.emptyLines++
+
+					if rows.f.emptyLines > rows.f.EmptyLimit {
+						return false
+					}
+				} else if rows.f.emptyLines > 0 {
+					rows.f.emptyLines--
+				}
+
 				return true
 			}
 		}
@@ -172,6 +200,7 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 	var inElement string
 	var r xlsxRow
 	var tr, tc int
+	var isDone bool
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -183,6 +212,19 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 			if inElement == "row" {
 				r = xlsxRow{}
 				_ = decoder.DecodeElement(&r, &startElement)
+
+				if len(startElement.Attr) <= 1 {
+					f.emptyLines++
+
+					if f.emptyLines > f.EmptyLimit {
+						isDone = true
+					}
+
+					break
+				} else if f.emptyLines > 0 {
+					f.emptyLines--
+				}
+
 				tr = r.R
 				for _, colCell := range r.C {
 					col := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
@@ -192,6 +234,10 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 				}
 			}
 		default:
+		}
+
+		if isDone {
+			break
 		}
 	}
 	return tr, tc

@@ -35,6 +35,8 @@ type File struct {
 	WorkBook      *xlsxWorkbook
 	WorkBookRels  *xlsxWorkbookRels
 	XLSX          map[string][]byte
+	EmptyLimit    int
+	emptyLines    int
 }
 
 // OpenFile take the name of an XLSX file and returns a populated XLSX file
@@ -74,11 +76,18 @@ func OpenReader(r io.Reader) (*File, error) {
 		Sheet:      make(map[string]*xlsxWorksheet),
 		SheetCount: sheetCount,
 		XLSX:       file,
+		EmptyLimit: 1000000,
 	}
 	f.sheetMap = f.getSheetMap()
 	f.Styles = f.stylesReader()
 	f.Theme = f.themeReader()
 	return f, nil
+}
+
+// SetEmptyLimit sets the empty limit of the file, which means how many empty
+// lines the GetRows method will tolerate before aborting
+func (f *File) SetEmptyLimit(emptyLimit int) {
+	f.EmptyLimit = emptyLimit
 }
 
 // setDefaultTimeStyle provides a function to set default numbers format for
