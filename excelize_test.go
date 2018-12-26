@@ -1268,6 +1268,19 @@ func TestSearchSheet(t *testing.T) {
 	t.Log(xlsx.SearchSheet("Sheet1", "A"))
 }
 
+func TestRegSearchSheet(t *testing.T) {
+	xlsx, err := OpenFile("./test/Book1.xlsx")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log(xlsx.SearchSheet("Sheet1", "[0-9]"))
+	// Test search in a not exists worksheet.
+	t.Log(xlsx.SearchSheet("Sheet4", ""))
+	// Test search a not exists value.
+	t.Log(xlsx.SearchSheet("Sheet1", ""))
+}
+
 func TestProtectSheet(t *testing.T) {
 	xlsx := NewFile()
 	xlsx.ProtectSheet("Sheet1", nil)
