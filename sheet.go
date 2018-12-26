@@ -713,14 +713,13 @@ func (f *File) SearchSheet(sheet, value string) []string {
 // For a merged cell, get the coordinates
 // of the upper left corner of the merge area.
 // :example)
-// Search the coordinates where the numerical value in the range of "0 - 9" of Sheet 1 is described:
+// Search the coordinates where the numerical value in the range of "0-9" of Sheet 1 is described:
 //
 //    xlsx.RegSearchSheet("Sheet1", "[0-9]")
 //
-// return map[CELL:result CELL:result ...]
-func (f *File) RegSearchSheet(sheet, value string) map[string]string {
+func (f *File) RegSearchSheet(sheet, value string) []string {
 	xlsx := f.workSheetReader(sheet)
-	result := map[string]string{}
+	result := []string{}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return result
@@ -747,12 +746,11 @@ func (f *File) RegSearchSheet(sheet, value string) map[string]string {
 				_ = decoder.DecodeElement(&r, &startElement)
 				for _, colCell := range r.C {
 					val, _ := colCell.getValueFrom(f, d)
-					_reg := regexp.MustCompile(value)
-					if !_reg.MatchString(val) {
+					regex := regexp.MustCompile(value)
+					if !regex.MatchString(val) {
 						continue
 					}
-					key := fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R)
-					result[key] = _reg.FindString(val)
+					result = append(result, fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R))
 				}
 			}
 		default:
