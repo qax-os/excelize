@@ -658,16 +658,26 @@ func (f *File) GetSheetVisible(name string) bool {
 	return visible
 }
 
-// SearchSheet provides a function to get coordinates by given worksheet name
-// and cell value. This function only supports exact match of strings and
-// numbers, doesn't support the calculated result, formatted numbers and
-// conditional lookup currently. If it is a merged cell, it will return the
-// coordinates of the upper left corner of the merged area. For example,
-// search the coordinates of the value of "100" on Sheet1:
+// SearchSheet provides a function to get coordinates by given worksheet name,
+// cell value, and regular expression. The function doesn't support searching
+// on the calculated result, formatted numbers and conditional lookup
+// currently. If it is a merged cell, it will return the coordinates of the
+// upper left corner of the merged area.
+//
+// An example of search the coordinates of the value of "100" on Sheet1:
 //
 //    xlsx.SearchSheet("Sheet1", "100")
 //
-func (f *File) SearchSheet(sheet, value string) []string {
+// An example of search the coordinates where the numerical value in the range
+// of "0-9" of Sheet1 is described:
+//
+//    xlsx.SearchSheet("Sheet1", "[0-9]", true)
+//
+func (f *File) SearchSheet(sheet, value string, reg ...bool) []string {
+	var regSearch bool
+	for _, r := range reg {
+		regSearch = r
+	}
 	xlsx := f.workSheetReader(sheet)
 	result := []string{}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
@@ -696,59 +706,15 @@ func (f *File) SearchSheet(sheet, value string) []string {
 				_ = decoder.DecodeElement(&r, &startElement)
 				for _, colCell := range r.C {
 					val, _ := colCell.getValueFrom(f, d)
-					if val != value {
-						continue
-					}
-					result = append(result, fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R))
-				}
-			}
-		default:
-		}
-	}
-	return result
-}
-
-// RegSearchSheet provides the ability to retrieve coordinates
-// with the given worksheet name and regular expression
-// For a merged cell, get the coordinates
-// of the upper left corner of the merge area.
-// :example)
-// Search the coordinates where the numerical value in the range of "0-9" of Sheet 1 is described:
-//
-//    xlsx.RegSearchSheet("Sheet1", "[0-9]")
-//
-func (f *File) RegSearchSheet(sheet, value string) []string {
-	xlsx := f.workSheetReader(sheet)
-	result := []string{}
-	name, ok := f.sheetMap[trimSheetName(sheet)]
-	if !ok {
-		return result
-	}
-	if xlsx != nil {
-		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
-	}
-	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
-	d := f.sharedStringsReader()
-	var inElement string
-	var r xlsxRow
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
-	for {
-		token, _ := decoder.Token()
-		if token == nil {
-			break
-		}
-		switch startElement := token.(type) {
-		case xml.StartElement:
-			inElement = startElement.Name.Local
-			if inElement == "row" {
-				r = xlsxRow{}
-				_ = decoder.DecodeElement(&r, &startElement)
-				for _, colCell := range r.C {
-					val, _ := colCell.getValueFrom(f, d)
-					regex := regexp.MustCompile(value)
-					if !regex.MatchString(val) {
-						continue
+					if regSearch {
+						regex := regexp.MustCompile(value)
+						if !regex.MatchString(val) {
+							continue
+						}
+					} else {
+						if val != value {
+							continue
+						}
 					}
 					result = append(result, fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R))
 				}

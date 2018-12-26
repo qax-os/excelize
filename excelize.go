@@ -243,6 +243,8 @@ func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, rowIndex, offset int) {
 	}
 }
 
+// ajustSingleRowDimensions provides a function to ajust single row
+// dimensions.
 func (f *File) ajustSingleRowDimensions(r *xlsxRow, offset int) {
 	r.R += offset
 	for i, col := range r.C {

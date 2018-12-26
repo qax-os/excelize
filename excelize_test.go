@@ -1053,6 +1053,7 @@ func TestDuplicateRow(t *testing.T) {
 	xlsx.SetCellStr(sheet, b1, bnValue)
 
 	t.Run("FromSingleRow", func(t *testing.T) {
+		xlsx.DuplicateRow(sheet, -1)
 		xlsx.DuplicateRow(sheet, 1)
 		xlsx.DuplicateRow(sheet, 2)
 
@@ -1333,19 +1334,9 @@ func TestSearchSheet(t *testing.T) {
 	// Test search a not exists value.
 	t.Log(xlsx.SearchSheet("Sheet1", "X"))
 	t.Log(xlsx.SearchSheet("Sheet1", "A"))
-}
-
-func TestRegSearchSheet(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Log(xlsx.SearchSheet("Sheet1", "[0-9]"))
-	// Test search in a not exists worksheet.
-	t.Log(xlsx.SearchSheet("Sheet4", ""))
-	// Test search a not exists value.
-	t.Log(xlsx.SearchSheet("Sheet1", ""))
+	// Test search the coordinates where the numerical value in the range of
+	// "0-9" of Sheet1 is described by regular expression:
+	t.Log(xlsx.SearchSheet("Sheet1", "[0-9]", true))
 }
 
 func TestProtectSheet(t *testing.T) {
