@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/xml"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChartSize(t *testing.T) {
@@ -22,18 +24,18 @@ func TestChartSize(t *testing.T) {
 	xlsx.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},"series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`)
 	// Save xlsx file by the given path.
 	err := xlsx.Write(&buffer)
-	if err != nil {
-		t.Fatal(err)
+	if !assert.NoError(t, err) {
+		t.FailNow()
 	}
 
 	newFile, err := OpenReader(&buffer)
-	if err != nil {
-		t.Fatal(err)
+	if !assert.NoError(t, err) {
+		t.FailNow()
 	}
 
 	chartsNum := newFile.countCharts()
-	if chartsNum != 1 {
-		t.Fatalf("Expected 1 chart, actual %d", chartsNum)
+	if !assert.Equal(t, 1, chartsNum, "Expected 1 chart, actual %d", chartsNum) {
+		t.FailNow()
 	}
 
 	var (
@@ -42,25 +44,27 @@ func TestChartSize(t *testing.T) {
 	)
 
 	content, ok := newFile.XLSX["xl/drawings/drawing1.xml"]
-	if !ok {
-		t.Fatal("Can't open the chart")
-	}
+	assert.True(t, ok, "Can't open the chart")
 
 	err = xml.Unmarshal([]byte(content), &workdir)
-	if err != nil {
-		t.Fatal(err)
+	if !assert.NoError(t, err) {
+		t.FailNow()
 	}
 
 	err = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+workdir.TwoCellAnchor[0].Content+"</decodeTwoCellAnchor>"), &anchor)
-	if err != nil {
-		t.Fatal(err)
+	if !assert.NoError(t, err) {
+		t.FailNow()
 	}
 
-	if anchor.From.Col != 4 || anchor.From.Row != 3 {
-		t.Fatalf("From: Expected column 4, row 3, actual column %d, row %d", anchor.From.Col, anchor.From.Row)
-	}
-	if anchor.To.Col != 14 || anchor.To.Row != 27 {
-		t.Fatalf("To: Expected column 14, row 27, actual column %d, row %d", anchor.To.Col, anchor.To.Row)
+	if !assert.Equal(t, 4, anchor.From.Col, "Expected 'from' column 4") ||
+		!assert.Equal(t, 3, anchor.From.Row, "Expected 'from' row 3") {
+
+		t.FailNow()
 	}
 
+	if !assert.Equal(t, 14, anchor.To.Col, "Expected 'to' column 14") ||
+		!assert.Equal(t, 27, anchor.To.Row, "Expected 'to' row 27") {
+
+		t.FailNow()
+	}
 }

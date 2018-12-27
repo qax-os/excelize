@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
@@ -157,29 +159,12 @@ func TestSheetViewOptionsErrors(t *testing.T) {
 	xl := excelize.NewFile()
 	const sheet = "Sheet1"
 
-	if err := xl.GetSheetViewOptions(sheet, 0); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.GetSheetViewOptions(sheet, -1); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.GetSheetViewOptions(sheet, 1); err == nil {
-		t.Error("Error expected but got nil")
-	}
-	if err := xl.GetSheetViewOptions(sheet, -2); err == nil {
-		t.Error("Error expected but got nil")
-	}
-
-	if err := xl.SetSheetViewOptions(sheet, 0); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.SetSheetViewOptions(sheet, -1); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.SetSheetViewOptions(sheet, 1); err == nil {
-		t.Error("Error expected but got nil")
-	}
-	if err := xl.SetSheetViewOptions(sheet, -2); err == nil {
-		t.Error("Error expected but got nil")
-	}
+	assert.NoError(t, xl.GetSheetViewOptions(sheet, 0))
+	assert.NoError(t, xl.GetSheetViewOptions(sheet, -1))
+	assert.Error(t, xl.GetSheetViewOptions(sheet, 1))
+	assert.Error(t, xl.GetSheetViewOptions(sheet, -2))
+	assert.NoError(t, xl.SetSheetViewOptions(sheet, 0))
+	assert.NoError(t, xl.SetSheetViewOptions(sheet, -1))
+	assert.Error(t, xl.SetSheetViewOptions(sheet, 1))
+	assert.Error(t, xl.SetSheetViewOptions(sheet, -2))
 }
