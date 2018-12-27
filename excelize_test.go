@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -18,7 +19,7 @@ import (
 
 func TestOpenFile(t *testing.T) {
 	// Test update a XLSX file.
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -126,16 +127,16 @@ func TestOpenFile(t *testing.T) {
 	for i := 1; i <= 300; i++ {
 		xlsx.SetCellStr("Sheet3", "c"+strconv.Itoa(i), strconv.Itoa(i))
 	}
-	assert.NoError(t, xlsx.SaveAs("./test/TestOpenFile.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestOpenFile.xlsx")))
 }
 
 func TestSaveFile(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	assert.NoError(t, xlsx.SaveAs("./test/TestSaveFile.xlsx"))
-	xlsx, err = OpenFile("./test/TestSaveFile.xlsx")
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSaveFile.xlsx")))
+	xlsx, err = OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -143,7 +144,7 @@ func TestSaveFile(t *testing.T) {
 }
 
 func TestSaveAsWrongPath(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if assert.NoError(t, err) {
 		// Test write file to not exist directory.
 		err = xlsx.SaveAs("")
@@ -154,26 +155,26 @@ func TestSaveAsWrongPath(t *testing.T) {
 }
 
 func TestAddPicture(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with offset and location hyperlink.
-	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg",
+	err = xlsx.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
 		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
-	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png",
+	err = xlsx.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	file, err := ioutil.ReadFile("./test/images/excel.jpg")
+	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -183,24 +184,24 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test write file to given path.
-	err = xlsx.SaveAs("./test/TestAddPicture.xlsx")
+	err = xlsx.SaveAs(filepath.Join("test", "TestAddPicture.xlsx"))
 	assert.NoError(t, err)
 }
 
 func TestAddPictureErrors(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with invalid file path.
-	err = xlsx.AddPicture("Sheet1", "G21", "./test/not_exists_dir/not_exists.icon", "")
+	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), "")
 	if assert.Error(t, err) {
 		assert.True(t, os.IsNotExist(err), "Expected os.IsNotExist(err) == true")
 	}
 
 	// Test add picture to worksheet with unsupport file type.
-	err = xlsx.AddPicture("Sheet1", "G21", "./test/Book1.xlsx", "")
+	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), "")
 	assert.EqualError(t, err, "unsupported image extension")
 
 	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
@@ -221,12 +222,12 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
 		// Test write file with broken file struct with given path.
-		assert.NoError(t, xlsx.SaveAs("./test/TestBrokenFile.SaveAsEmptyStruct.xlsx"))
+		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestBrokenFile.SaveAsEmptyStruct.xlsx")))
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
 		// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
-		f3, err := OpenFile("./test/BadWorkbook.xlsx")
+		f3, err := OpenFile(filepath.Join("test", "BadWorkbook.xlsx"))
 		f3.GetActiveSheetIndex()
 		f3.SetActiveSheet(2)
 		assert.NoError(t, err)
@@ -234,7 +235,7 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("OpenNotExistsFile", func(t *testing.T) {
 		// Test open a XLSX file with given illegal path.
-		_, err := OpenFile("./test/NotExistsFile.xlsx")
+		_, err := OpenFile(filepath.Join("test", "NotExistsFile.xlsx"))
 		if assert.Error(t, err) {
 			assert.True(t, os.IsNotExist(err), "Expected os.IsNotExists(err) == true")
 		}
@@ -252,24 +253,25 @@ func TestNewFile(t *testing.T) {
 	xlsx.SetActiveSheet(0)
 
 	// Test add picture to sheet with scaling and positioning.
-	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
+	err := xlsx.AddPicture("Sheet1", "H2", filepath.Join("test", "images", "excel.gif"),
+		`{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet without formatset.
-	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", "")
+	err = xlsx.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), "")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with invalid formatset.
-	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", `{`)
+	err = xlsx.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), `{`)
 	if !assert.Error(t, err) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestNewFile.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestNewFile.xlsx")))
 }
 
 func TestColWidth(t *testing.T) {
@@ -278,7 +280,7 @@ func TestColWidth(t *testing.T) {
 	xlsx.SetColWidth("Sheet1", "A", "B", 12)
 	xlsx.GetColWidth("Sheet1", "A")
 	xlsx.GetColWidth("Sheet1", "C")
-	err := xlsx.SaveAs("./test/TestColWidth.xlsx")
+	err := xlsx.SaveAs(filepath.Join("test", "TestColWidth.xlsx"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -291,7 +293,7 @@ func TestRowHeight(t *testing.T) {
 	xlsx.SetRowHeight("Sheet1", 4, 90)
 	t.Log(xlsx.GetRowHeight("Sheet1", 1))
 	t.Log(xlsx.GetRowHeight("Sheet1", 0))
-	err := xlsx.SaveAs("./test/TestRowHeight.xlsx")
+	err := xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -299,7 +301,7 @@ func TestRowHeight(t *testing.T) {
 }
 
 func TestSetCellHyperLink(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if err != nil {
 		t.Log(err)
 	}
@@ -311,11 +313,11 @@ func TestSetCellHyperLink(t *testing.T) {
 	xlsx.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location")
 	xlsx.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", "")
 	xlsx.SetCellHyperLink("Sheet2", "", "Sheet1!D60", "Location")
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellHyperLink.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellHyperLink.xlsx")))
 }
 
 func TestGetCellHyperLink(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -331,7 +333,7 @@ func TestGetCellHyperLink(t *testing.T) {
 }
 
 func TestSetCellFormula(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -341,45 +343,45 @@ func TestSetCellFormula(t *testing.T) {
 	// Test set cell formula with illegal rows number.
 	xlsx.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellFormula.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellFormula.xlsx")))
 }
 
 func TestSetSheetBackground(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.jpg")
+	err = xlsx.SetSheetBackground("Sheet2", filepath.Join("test", "images", "background.jpg"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	err = xlsx.SetSheetBackground("Sheet2", "./test/images/background.jpg")
+	err = xlsx.SetSheetBackground("Sheet2", filepath.Join("test", "images", "background.jpg"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetSheetBackground.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetSheetBackground.xlsx")))
 }
 
 func TestSetSheetBackgroundErrors(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	err = xlsx.SetSheetBackground("Sheet2", "./test/not_exists/not_exists.png")
+	err = xlsx.SetSheetBackground("Sheet2", filepath.Join("test", "not_exists", "not_exists.png"))
 	if assert.Error(t, err) {
 		assert.True(t, os.IsNotExist(err), "Expected os.IsNotExists(err) == true")
 	}
 
-	err = xlsx.SetSheetBackground("Sheet2", "./test/Book1.xlsx")
+	err = xlsx.SetSheetBackground("Sheet2", filepath.Join("test", "Book1.xlsx"))
 	assert.EqualError(t, err, "unsupported image extension")
 }
 
 func TestMergeCell(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -401,7 +403,7 @@ func TestMergeCell(t *testing.T) {
 	xlsx.GetCellValue("Sheet2", "A6") // Merged cell ref is single coordinate.
 	xlsx.GetCellFormula("Sheet1", "G12")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestMergeCell.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
 }
 
 func TestGetMergeCells(t *testing.T) {
@@ -432,7 +434,7 @@ func TestGetMergeCells(t *testing.T) {
 		},
 	}
 
-	xlsx, err := OpenFile("./test/MergeCell.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "MergeCell.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -476,7 +478,7 @@ func TestSetCellStyleAlignment(t *testing.T) {
 	// Test get cell style with given illegal rows number.
 	xlsx.GetCellStyle("Sheet1", "A")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleAlignment.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleAlignment.xlsx")))
 }
 
 func TestSetCellStyleBorder(t *testing.T) {
@@ -514,7 +516,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 
 	xlsx.SetCellStyle("Sheet1", "O22", "O22", style)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleBorder.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleBorder.xlsx")))
 }
 
 func TestSetCellStyleBorderErrors(t *testing.T) {
@@ -571,7 +573,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	}
 	xlsx.SetCellStyle("Sheet2", "L33", "L33", style)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleNumberFormat.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleNumberFormat.xlsx")))
 }
 
 func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
@@ -597,7 +599,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 
 		xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
 
-		assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleCurrencyNumberFormat.TestBook3.xlsx"))
+		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleCurrencyNumberFormat.TestBook3.xlsx")))
 	})
 
 	t.Run("TestBook4", func(t *testing.T) {
@@ -632,7 +634,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		}
 		xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
 
-		assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleCurrencyNumberFormat.TestBook4.xlsx"))
+		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleCurrencyNumberFormat.TestBook4.xlsx")))
 	})
 }
 
@@ -651,7 +653,7 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 	}
 	xlsx.SetCellStyle("Sheet1", "A2", "A2", style)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleCustomNumberFormat.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleCustomNumberFormat.xlsx")))
 }
 
 func TestSetCellStyleFill(t *testing.T) {
@@ -686,7 +688,7 @@ func TestSetCellStyleFill(t *testing.T) {
 	}
 	xlsx.SetCellStyle("Sheet1", "O23", "O23", style)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleFill.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleFill.xlsx")))
 }
 
 func TestSetCellStyleFont(t *testing.T) {
@@ -731,7 +733,7 @@ func TestSetCellStyleFont(t *testing.T) {
 
 	xlsx.SetCellStyle("Sheet2", "A5", "A5", style)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetCellStyleFont.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleFont.xlsx")))
 }
 
 func TestSetCellStyleProtection(t *testing.T) {
@@ -747,7 +749,7 @@ func TestSetCellStyleProtection(t *testing.T) {
 	}
 
 	xlsx.SetCellStyle("Sheet2", "A6", "A6", style)
-	err = xlsx.SaveAs("./test/TestSetCellStyleProtection.xlsx")
+	err = xlsx.SaveAs(filepath.Join("test", "TestSetCellStyleProtection.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -761,7 +763,7 @@ func TestSetDeleteSheet(t *testing.T) {
 		}
 
 		xlsx.DeleteSheet("XLSXSheet3")
-		assert.NoError(t, xlsx.SaveAs("./test/TestSetDeleteSheet.TestBook3.xlsx"))
+		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetDeleteSheet.TestBook3.xlsx")))
 	})
 
 	t.Run("TestBook4", func(t *testing.T) {
@@ -772,7 +774,7 @@ func TestSetDeleteSheet(t *testing.T) {
 		xlsx.DeleteSheet("Sheet1")
 		xlsx.AddComment("Sheet1", "A1", "")
 		xlsx.AddComment("Sheet1", "A1", `{"author":"Excelize: ","text":"This is a comment."}`)
-		assert.NoError(t, xlsx.SaveAs("./test/TestSetDeleteSheet.TestBook4.xlsx"))
+		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetDeleteSheet.TestBook4.xlsx")))
 	})
 }
 
@@ -818,7 +820,7 @@ func TestSheetVisibility(t *testing.T) {
 	xlsx.SetSheetVisible("Sheet1", true)
 	xlsx.GetSheetVisible("Sheet1")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSheetVisibility.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSheetVisibility.xlsx")))
 }
 
 func TestRowVisibility(t *testing.T) {
@@ -831,7 +833,7 @@ func TestRowVisibility(t *testing.T) {
 	xlsx.SetRowVisible("Sheet3", 2, true)
 	xlsx.GetRowVisible("Sheet3", 2)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestRowVisibility.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
 }
 
 func TestColumnVisibility(t *testing.T) {
@@ -845,7 +847,7 @@ func TestColumnVisibility(t *testing.T) {
 		xlsx.SetColVisible("Sheet1", "F", true)
 		xlsx.GetColVisible("Sheet1", "F")
 		xlsx.SetColVisible("Sheet3", "E", false)
-		assert.NoError(t, xlsx.SaveAs("./test/TestColumnVisibility.xlsx"))
+		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestColumnVisibility.xlsx")))
 	})
 
 	t.Run("TestBook3", func(t *testing.T) {
@@ -872,7 +874,7 @@ func TestCopySheet(t *testing.T) {
 	xlsx.SetCellValue("Sheet4", "F1", "Hello")
 	assert.NotEqual(t, "Hello", xlsx.GetCellValue("Sheet1", "F1"))
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestCopySheet.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestCopySheet.xlsx")))
 }
 
 func TestCopySheetError(t *testing.T) {
@@ -886,7 +888,7 @@ func TestCopySheetError(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestCopySheetError.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestCopySheetError.xlsx")))
 }
 
 func TestAddTable(t *testing.T) {
@@ -910,7 +912,7 @@ func TestAddTable(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestAddTable.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 }
 
 func TestAddShape(t *testing.T) {
@@ -925,7 +927,7 @@ func TestAddShape(t *testing.T) {
 	xlsx.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}], "height": 90}`)
 	xlsx.AddShape("Sheet3", "H1", "")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestAddShape.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddShape.xlsx")))
 }
 
 func TestAddComments(t *testing.T) {
@@ -938,12 +940,14 @@ func TestAddComments(t *testing.T) {
 	xlsx.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`)
 	xlsx.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`)
 
-	if assert.NoError(t, xlsx.SaveAs("./test/TestAddComments.xlsx")) {
+	if assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
 		assert.Len(t, xlsx.GetComments(), 2)
 	}
 }
 
 func TestAutoFilter(t *testing.T) {
+	outFile := filepath.Join("test", "TestAutoFilter%d.xlsx")
+
 	xlsx, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -964,7 +968,7 @@ func TestAutoFilter(t *testing.T) {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			err = xlsx.AutoFilter("Sheet3", "D4", "B1", format)
 			if assert.NoError(t, err) {
-				assert.NoError(t, xlsx.SaveAs(fmt.Sprintf("./test/TestAutoFilter%d.xlsx", i+1)))
+				assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, i+1)))
 			}
 		})
 	}
@@ -972,6 +976,8 @@ func TestAutoFilter(t *testing.T) {
 }
 
 func TestAutoFilterError(t *testing.T) {
+	outFile := filepath.Join("test", "TestAutoFilterError%d.xlsx")
+
 	xlsx, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -989,14 +995,14 @@ func TestAutoFilterError(t *testing.T) {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			err = xlsx.AutoFilter("Sheet3", "D4", "B1", format)
 			if assert.Error(t, err) {
-				assert.NoError(t, xlsx.SaveAs(fmt.Sprintf("./test/TestAutoFilterError%d.xlsx", i+1)))
+				assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, i+1)))
 			}
 		})
 	}
 }
 
 func TestAddChart(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1037,7 +1043,7 @@ func TestAddChart(t *testing.T) {
 	xlsx.AddChart("Sheet2", "AF32", `{"type":"area3DStacked","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit 3D Stacked Area Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 	xlsx.AddChart("Sheet2", "AN32", `{"type":"area3DPercentStacked","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Fruit 3D 100% Stacked Area Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestAddChart.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddChart.xlsx")))
 }
 
 func TestInsertCol(t *testing.T) {
@@ -1057,7 +1063,7 @@ func TestInsertCol(t *testing.T) {
 
 	xlsx.InsertCol("Sheet1", "A")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestInsertCol.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertCol.xlsx")))
 }
 
 func TestRemoveCol(t *testing.T) {
@@ -1075,7 +1081,7 @@ func TestRemoveCol(t *testing.T) {
 	xlsx.RemoveCol("Sheet1", "A")
 	xlsx.RemoveCol("Sheet1", "A")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestRemoveCol.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRemoveCol.xlsx")))
 }
 
 func TestInsertRow(t *testing.T) {
@@ -1090,84 +1096,321 @@ func TestInsertRow(t *testing.T) {
 	xlsx.InsertRow("Sheet1", -1)
 	xlsx.InsertRow("Sheet1", 4)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestInsertRow.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertRow.xlsx")))
+}
+
+// Testing internal sructure state after insert operations.
+// It is important for insert workflow to be constant to avoid side effect with functions related to internal structure.
+func TestInsertRowInEmptyFile(t *testing.T) {
+	xlsx := NewFile()
+	sheet1 := xlsx.GetSheetName(1)
+	r := xlsx.workSheetReader(sheet1)
+	xlsx.InsertRow(sheet1, 0)
+	assert.Len(t, r.SheetData.Row, 0)
+	xlsx.InsertRow(sheet1, 1)
+	assert.Len(t, r.SheetData.Row, 0)
+	xlsx.InsertRow(sheet1, 99)
+	assert.Len(t, r.SheetData.Row, 0)
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }
 
 func TestDuplicateRow(t *testing.T) {
-	const (
-		file = "./test/TestDuplicateRow" +
-			".%s.xlsx"
-		sheet   = "Sheet1"
-		a1      = "A1"
-		b1      = "B1"
-		a2      = "A2"
-		b2      = "B2"
-		a3      = "A3"
-		b3      = "B3"
-		a4      = "A4"
-		b4      = "B4"
-		a1Value = "A1 value"
-		a2Value = "A2 value"
-		a3Value = "A3 value"
-		bnValue = "Bn value"
-	)
-	xlsx := NewFile()
-	xlsx.SetCellStr(sheet, a1, a1Value)
-	xlsx.SetCellStr(sheet, b1, bnValue)
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			f.SetCellStr(sheet, cell, val)
+
+		}
+		return f
+	}
 
 	t.Run("FromSingleRow", func(t *testing.T) {
-		xlsx.DuplicateRow(sheet, 1)
-		xlsx.DuplicateRow(sheet, 2)
+		xlsx := NewFile()
+		xlsx.SetCellStr(sheet, "A1", cells["A1"])
+		xlsx.SetCellStr(sheet, "B1", cells["B1"])
 
-		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "TestDuplicateRow.FromSingleRow"))) {
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a1))
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a2))
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a3))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b1))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b3))
+		xlsx.DuplicateRow(sheet, 1)
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FromSingleRow_1"))) {
+			t.FailNow()
+		}
+		expect := map[string]string{
+			"A1": cells["A1"], "B1": cells["B1"],
+			"A2": cells["A1"], "B2": cells["B1"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
+		}
+
+		xlsx.DuplicateRow(sheet, 2)
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FromSingleRow_2"))) {
+			t.FailNow()
+		}
+		expect = map[string]string{
+			"A1": cells["A1"], "B1": cells["B1"],
+			"A2": cells["A1"], "B2": cells["B1"],
+			"A3": cells["A1"], "B3": cells["B1"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
 		}
 	})
 
 	t.Run("UpdateDuplicatedRows", func(t *testing.T) {
-		xlsx.SetCellStr(sheet, a2, a2Value)
-		xlsx.SetCellStr(sheet, a3, a3Value)
+		xlsx := NewFile()
+		xlsx.SetCellStr(sheet, "A1", cells["A1"])
+		xlsx.SetCellStr(sheet, "B1", cells["B1"])
 
-		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "TestDuplicateRow.UpdateDuplicatedRows"))) {
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a1))
-			assert.Equal(t, a2Value, xlsx.GetCellValue(sheet, a2))
-			assert.Equal(t, a3Value, xlsx.GetCellValue(sheet, a3))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b1))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b3))
-		}
-	})
-
-	t.Run("FromFirstOfMultipleRows", func(t *testing.T) {
 		xlsx.DuplicateRow(sheet, 1)
 
-		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "TestDuplicateRow.FromFirstOfMultipleRows"))) {
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a1))
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a2))
-			assert.Equal(t, a2Value, xlsx.GetCellValue(sheet, a3))
-			assert.Equal(t, a3Value, xlsx.GetCellValue(sheet, a4))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b1))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b3))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b4))
+		xlsx.SetCellStr(sheet, "A2", cells["A2"])
+		xlsx.SetCellStr(sheet, "B2", cells["B2"])
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.UpdateDuplicatedRows"))) {
+			t.FailNow()
+		}
+		expect := map[string]string{
+			"A1": cells["A1"], "B1": cells["B1"],
+			"A2": cells["A2"], "B2": cells["B2"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
 		}
 	})
 
-	t.Run("ZeroAndNegativeRowNum", func(t *testing.T) {
-		xlsx.DuplicateRow(sheet, -1)
-		xlsx.DuplicateRow(sheet, 0)
-		if assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(file, "TestDuplicateRow.ZeroAndNegativeRowNum"))) {
-			assert.Equal(t, "", xlsx.GetCellValue(sheet, a1))
-			assert.Equal(t, "", xlsx.GetCellValue(sheet, b1))
-			assert.Equal(t, a1Value, xlsx.GetCellValue(sheet, a2))
-			assert.Equal(t, bnValue, xlsx.GetCellValue(sheet, b2))
+	t.Run("FirstOfMultipleRows", func(t *testing.T) {
+		xlsx := newFileWithDefaults()
+
+		xlsx.DuplicateRow(sheet, 1)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FirstOfMultipleRows"))) {
+			t.FailNow()
+		}
+		expect := map[string]string{
+			"A1": cells["A1"], "B1": cells["B1"],
+			"A2": cells["A1"], "B2": cells["B1"],
+			"A3": cells["A2"], "B3": cells["B2"],
+			"A4": cells["A3"], "B4": cells["B3"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
 		}
 	})
+
+	t.Run("ZeroWithNoRows", func(t *testing.T) {
+		xlsx := NewFile()
+
+		xlsx.DuplicateRow(sheet, 0)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.ZeroWithNoRows"))) {
+			t.FailNow()
+		}
+		assert.Equal(t, "", xlsx.GetCellValue(sheet, "A1"))
+		assert.Equal(t, "", xlsx.GetCellValue(sheet, "B1"))
+		assert.Equal(t, "", xlsx.GetCellValue(sheet, "A2"))
+		assert.Equal(t, "", xlsx.GetCellValue(sheet, "B2"))
+		expect := map[string]string{
+			"A1": "", "B1": "",
+			"A2": "", "B2": "",
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
+		}
+	})
+
+	t.Run("MiddleRowOfEmptyFile", func(t *testing.T) {
+		xlsx := NewFile()
+
+		xlsx.DuplicateRow(sheet, 99)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.MiddleRowOfEmptyFile"))) {
+			t.FailNow()
+		}
+		expect := map[string]string{
+			"A98":  "",
+			"A99":  "",
+			"A100": "",
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
+		}
+	})
+
+	t.Run("WithLargeOffsetToMiddleOfData", func(t *testing.T) {
+		xlsx := newFileWithDefaults()
+
+		xlsx.DuplicateRowTo(sheet, 1, 3)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.WithLargeOffsetToMiddleOfData"))) {
+			t.FailNow()
+		}
+		expect := map[string]string{
+			"A1": cells["A1"], "B1": cells["B1"],
+			"A2": cells["A2"], "B2": cells["B2"],
+			"A3": cells["A1"], "B3": cells["B1"],
+			"A4": cells["A3"], "B4": cells["B3"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
+		}
+	})
+
+	t.Run("WithLargeOffsetToEmptyRows", func(t *testing.T) {
+		xlsx := newFileWithDefaults()
+
+		xlsx.DuplicateRowTo(sheet, 1, 7)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.WithLargeOffsetToEmptyRows"))) {
+			t.FailNow()
+		}
+		expect := map[string]string{
+			"A1": cells["A1"], "B1": cells["B1"],
+			"A2": cells["A2"], "B2": cells["B2"],
+			"A3": cells["A3"], "B3": cells["B3"],
+			"A7": cells["A1"], "B7": cells["B1"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
+		}
+	})
+
+	t.Run("InsertBefore", func(t *testing.T) {
+		xlsx := newFileWithDefaults()
+
+		xlsx.DuplicateRowTo(sheet, 2, 1)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.InsertBefore"))) {
+			t.FailNow()
+		}
+
+		expect := map[string]string{
+			"A1": cells["A2"], "B1": cells["B2"],
+			"A2": cells["A1"], "B2": cells["B1"],
+			"A3": cells["A2"], "B3": cells["B2"],
+			"A4": cells["A3"], "B4": cells["B3"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+				t.FailNow()
+			}
+		}
+	})
+
+	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
+		xlsx := newFileWithDefaults()
+
+		xlsx.DuplicateRowTo(sheet, 3, 1)
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.InsertBeforeWithLargeOffset"))) {
+			t.FailNow()
+		}
+
+		expect := map[string]string{
+			"A1": cells["A3"], "B1": cells["B3"],
+			"A2": cells["A1"], "B2": cells["B1"],
+			"A3": cells["A2"], "B3": cells["B2"],
+			"A4": cells["A3"], "B4": cells["B3"],
+		}
+		for cell, val := range expect {
+			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell)) {
+				t.FailNow()
+			}
+		}
+	})
+}
+
+func TestDuplicateRowInvalidRownum(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRowInvalidRownum.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	testRows := []int{-2, -1}
+
+	testRowPairs := []struct {
+		row1 int
+		row2 int
+	}{
+		{-1, -1},
+		{-1, 0},
+		{-1, 1},
+		{0, -1},
+		{0, 0},
+		{0, 1},
+		{1, -1},
+		{1, 1},
+		{1, 0},
+	}
+
+	for i, row := range testRows {
+		name := fmt.Sprintf("TestRow_%d", i+1)
+		t.Run(name, func(t *testing.T) {
+			xlsx := NewFile()
+			for col, val := range cells {
+				xlsx.SetCellStr(sheet, col, val)
+			}
+			xlsx.DuplicateRow(sheet, row)
+
+			for col, val := range cells {
+				if !assert.Equal(t, val, xlsx.GetCellValue(sheet, col)) {
+					t.FailNow()
+				}
+			}
+			assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, name)))
+		})
+	}
+
+	for i, pair := range testRowPairs {
+		name := fmt.Sprintf("TestRowPair_%d", i+1)
+		t.Run(name, func(t *testing.T) {
+			xlsx := NewFile()
+			for col, val := range cells {
+				xlsx.SetCellStr(sheet, col, val)
+			}
+			xlsx.DuplicateRowTo(sheet, pair.row1, pair.row2)
+
+			for col, val := range cells {
+				if !assert.Equal(t, val, xlsx.GetCellValue(sheet, col)) {
+					t.FailNow()
+				}
+			}
+			assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, name)))
+		})
+	}
 }
 
 func TestSetPane(t *testing.T) {
@@ -1181,7 +1424,7 @@ func TestSetPane(t *testing.T) {
 	xlsx.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
 	xlsx.SetPanes("Panes 4", "")
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetPane.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
 }
 
 func TestRemoveRow(t *testing.T) {
@@ -1208,7 +1451,7 @@ func TestRemoveRow(t *testing.T) {
 	xlsx.RemoveRow("Sheet1", 1)
 	xlsx.RemoveRow("Sheet1", 0)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestRemoveRow.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
 }
 
 func TestConditionalFormat(t *testing.T) {
@@ -1265,7 +1508,7 @@ func TestConditionalFormat(t *testing.T) {
 	// Test set invalid format set in conditional format
 	xlsx.SetConditionalFormat("Sheet1", "L1:L10", "")
 
-	err = xlsx.SaveAs("./test/TestConditionalFormat.xlsx")
+	err = xlsx.SaveAs(filepath.Join("test", "TestConditionalFormat.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1276,7 +1519,7 @@ func TestConditionalFormat(t *testing.T) {
 	xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
 
 	// Set conditional format with file without dxfs element shold not return error.
-	xlsx, err = OpenFile("./test/Book1.xlsx")
+	xlsx, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1308,7 +1551,7 @@ func TestTitleToNumber(t *testing.T) {
 }
 
 func TestSharedStrings(t *testing.T) {
-	xlsx, err := OpenFile("./test/SharedStrings.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1316,7 +1559,7 @@ func TestSharedStrings(t *testing.T) {
 }
 
 func TestSetSheetRow(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1326,11 +1569,11 @@ func TestSetSheetRow(t *testing.T) {
 	xlsx.SetSheetRow("Sheet1", "B27", []interface{}{})
 	xlsx.SetSheetRow("Sheet1", "B27", &xlsx)
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestSetSheetRow.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetSheetRow.xlsx")))
 }
 
 func TestRows(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1365,7 +1608,7 @@ func TestRows(t *testing.T) {
 }
 
 func TestRowsError(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1383,12 +1626,12 @@ func TestOutlineLevel(t *testing.T) {
 	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
 	xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
 	xlsx.GetRowOutlineLevel("Sheet1", 2)
-	err := xlsx.SaveAs("./test/TestOutlineLevel.xlsx")
+	err := xlsx.SaveAs(filepath.Join("test", "TestOutlineLevel.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	xlsx, err = OpenFile("./test/Book1.xlsx")
+	xlsx, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1422,7 +1665,7 @@ func TestHSL(t *testing.T) {
 }
 
 func TestSearchSheet(t *testing.T) {
-	xlsx, err := OpenFile("./test/SharedStrings.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1445,17 +1688,17 @@ func TestProtectSheet(t *testing.T) {
 		EditScenarios: false,
 	})
 
-	assert.NoError(t, xlsx.SaveAs("./test/TestProtectSheet.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestProtectSheet.xlsx")))
 }
 
 func TestUnprotectSheet(t *testing.T) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	xlsx.UnprotectSheet("Sheet1")
-	assert.NoError(t, xlsx.SaveAs("./test/TestUnprotectSheet.xlsx"))
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestUnprotectSheet.xlsx")))
 }
 
 func trimSliceSpace(s []string) []string {
@@ -1470,25 +1713,25 @@ func trimSliceSpace(s []string) []string {
 }
 
 func prepareTestBook1() (*File, error) {
-	xlsx, err := OpenFile("./test/Book1.xlsx")
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if err != nil {
 		return nil, err
 	}
 
-	err = xlsx.AddPicture("Sheet2", "I9", "./test/images/excel.jpg",
+	err = xlsx.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
 		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
 	if err != nil {
 		return nil, err
 	}
 
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
-	err = xlsx.AddPicture("Sheet1", "F21", "./test/images/excel.png",
+	err = xlsx.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.png"),
 		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := ioutil.ReadFile("./test/images/excel.jpg")
+	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
 	if err != nil {
 		return nil, err
 	}
@@ -1510,12 +1753,13 @@ func prepareTestBook3() (*File, error) {
 	xlsx.SetCellStr("Sheet1", "B20", "42")
 	xlsx.SetActiveSheet(0)
 
-	err := xlsx.AddPicture("Sheet1", "H2", "./test/images/excel.gif", `{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
+	err := xlsx.AddPicture("Sheet1", "H2", filepath.Join("test", "images", "excel.gif"),
+		`{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
 	if err != nil {
 		return nil, err
 	}
 
-	err = xlsx.AddPicture("Sheet1", "C2", "./test/images/excel.png", "")
+	err = xlsx.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), "")
 	if err != nil {
 		return nil, err
 	}

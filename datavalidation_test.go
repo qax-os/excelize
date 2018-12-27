@@ -10,13 +10,14 @@
 package excelize
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDataValidation(t *testing.T) {
-	const resultFile = "./test/TestDataValidation.xlsx"
+	resultFile := filepath.Join("test", "TestDataValidation.xlsx")
 
 	xlsx := NewFile()
 
@@ -50,7 +51,7 @@ func TestDataValidation(t *testing.T) {
 }
 
 func TestDataValidationError(t *testing.T) {
-	const resultFile = "./test/TestDataValidationError.xlsx"
+	resultFile := filepath.Join("test", "TestDataValidationError.xlsx")
 
 	xlsx := NewFile()
 	xlsx.SetCellStr("Sheet1", "E1", "E1")
