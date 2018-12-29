@@ -1,8 +1,11 @@
 package excelize
 
 import (
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type dateTest struct {
@@ -18,10 +21,10 @@ func TestTimeToExcelTime(t *testing.T) {
 		{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
 
-	for _, test := range trueExpectedInputList {
-		if test.ExcelValue != timeToExcelTime(test.GoValue) {
-			t.Fatalf("Expected %v from %v = true, got %v\n", test.ExcelValue, test.GoValue, timeToExcelTime(test.GoValue))
-		}
+	for i, test := range trueExpectedInputList {
+		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
+			assert.Equal(t, test.ExcelValue, timeToExcelTime(test.GoValue))
+		})
 	}
 }
 
@@ -34,9 +37,9 @@ func TestTimeFromExcelTime(t *testing.T) {
 		{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
 
-	for _, test := range trueExpectedInputList {
-		if test.GoValue != timeFromExcelTime(test.ExcelValue, false) {
-			t.Fatalf("Expected %v from %v = true, got %v\n", test.GoValue, test.ExcelValue, timeFromExcelTime(test.ExcelValue, false))
-		}
+	for i, test := range trueExpectedInputList {
+		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
+			assert.Equal(t, test.GoValue, timeFromExcelTime(test.ExcelValue, false))
+		})
 	}
 }
