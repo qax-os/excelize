@@ -1,4 +1,4 @@
-// Copyright 2016 - 2018 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2019 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -31,10 +31,9 @@ import (
 //
 func (f *File) GetRows(sheet string) [][]string {
 	xlsx := f.workSheetReader(sheet)
-	rows := [][]string{}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		return rows
+		return [][]string{}
 	}
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
@@ -44,16 +43,12 @@ func (f *File) GetRows(sheet string) [][]string {
 	d := f.sharedStringsReader()
 	var inElement string
 	var r xlsxRow
-	var row []string
-	var isDone bool
 	tr, tc := f.getTotalRowsCols(name)
-	for i := 0; i < tr; i++ {
-		row = []string{}
-		for j := 0; j <= tc; j++ {
-			row = append(row, "")
-		}
-		rows = append(rows, row)
+	rows := make([][]string, tr)
+	for i := range rows {
+		rows[i] = make([]string, tc+1)
 	}
+	var row int
 	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()
@@ -66,34 +61,20 @@ func (f *File) GetRows(sheet string) [][]string {
 			if inElement == "row" {
 				r = xlsxRow{}
 				_ = decoder.DecodeElement(&r, &startElement)
-
-				if len(startElement.Attr) <= 1 {
-					f.emptyLines++
-
-					if f.emptyLines > f.EmptyLimit {
-						isDone = true
-					}
-
-					break
-				} else if f.emptyLines > 0 {
-					f.emptyLines--
-				}
-
 				cr := r.R - 1
 				for _, colCell := range r.C {
 					c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
 					val, _ := colCell.getValueFrom(f, d)
 					rows[cr][c] = val
+					if val != "" {
+						row = r.R
+					}
 				}
 			}
 		default:
 		}
-
-		if isDone {
-			break
-		}
 	}
-	return rows
+	return rows[:row]
 }
 
 // Rows defines an iterator to a sheet
@@ -119,16 +100,6 @@ func (rows *Rows) Next() bool {
 		case xml.StartElement:
 			inElement := startElement.Name.Local
 			if inElement == "row" {
-				if len(startElement.Attr) <= 1 {
-					rows.f.emptyLines++
-
-					if rows.f.emptyLines > rows.f.EmptyLimit {
-						return false
-					}
-				} else if rows.f.emptyLines > 0 {
-					rows.f.emptyLines--
-				}
-
 				return true
 			}
 		}
@@ -200,7 +171,6 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 	var inElement string
 	var r xlsxRow
 	var tr, tc int
-	var isDone bool
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -212,19 +182,6 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 			if inElement == "row" {
 				r = xlsxRow{}
 				_ = decoder.DecodeElement(&r, &startElement)
-
-				if len(startElement.Attr) <= 1 {
-					f.emptyLines++
-
-					if f.emptyLines > f.EmptyLimit {
-						isDone = true
-					}
-
-					break
-				} else if f.emptyLines > 0 {
-					f.emptyLines--
-				}
-
 				tr = r.R
 				for _, colCell := range r.C {
 					col := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
@@ -234,10 +191,6 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 				}
 			}
 		default:
-		}
-
-		if isDone {
-			break
 		}
 	}
 	return tr, tc

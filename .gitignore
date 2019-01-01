@@ -1,6 +1,1 @@
-go.sum
-test/Book2.xlsx
-test/Book3.xlsx
-test/Book4.xlsx
-test/Book5.xlsx
-test/Book_*
+test/Test*.xlsx

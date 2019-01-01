@@ -1,6 +1,10 @@
 package excelize
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestCheckCellInArea(t *testing.T) {
 	expectedTrueCellInAreaList := [][2]string{
@@ -14,11 +18,8 @@ func TestCheckCellInArea(t *testing.T) {
 		cell := expectedTrueCellInArea[0]
 		area := expectedTrueCellInArea[1]
 
-		cellInArea := checkCellInArea(cell, area)
-
-		if !cellInArea {
-			t.Fatalf("Expected cell %v to be in area %v, got false\n", cell, area)
-		}
+		assert.True(t, checkCellInArea(cell, area),
+			"Expected cell %v to be in area %v, got false\n", cell, area)
 	}
 
 	expectedFalseCellInAreaList := [][2]string{
@@ -31,10 +32,7 @@ func TestCheckCellInArea(t *testing.T) {
 		cell := expectedFalseCellInArea[0]
 		area := expectedFalseCellInArea[1]
 
-		cellInArea := checkCellInArea(cell, area)
-
-		if cellInArea {
-			t.Fatalf("Expected cell %v not to be inside of area %v, but got true\n", cell, area)
-		}
+		assert.False(t, checkCellInArea(cell, area),
+			"Expected cell %v not to be inside of area %v, but got true\n", cell, area)
 	}
 }

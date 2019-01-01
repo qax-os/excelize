@@ -1,4 +1,4 @@
-// Copyright 2016 - 2018 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2019 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -9,9 +9,15 @@
 
 package excelize
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestDataValidation(t *testing.T) {
+	const resultFile = "./test/TestDataValidation.xlsx"
+
 	xlsx := NewFile()
 
 	dvRange := NewDataValidation(true)
@@ -21,37 +27,57 @@ func TestDataValidation(t *testing.T) {
 	dvRange.SetError(DataValidationErrorStyleWarning, "error title", "error body")
 	dvRange.SetError(DataValidationErrorStyleInformation, "error title", "error body")
 	xlsx.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+		t.FailNow()
+	}
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A3:B4"
 	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
 	dvRange.SetInput("input title", "input body")
 	xlsx.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+		t.FailNow()
+	}
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
 	dvRange.SetDropList([]string{"1", "2", "3"})
 	xlsx.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+		t.FailNow()
+	}
+}
 
+func TestDataValidationError(t *testing.T) {
+	const resultFile = "./test/TestDataValidationError.xlsx"
+
+	xlsx := NewFile()
 	xlsx.SetCellStr("Sheet1", "E1", "E1")
 	xlsx.SetCellStr("Sheet1", "E2", "E2")
 	xlsx.SetCellStr("Sheet1", "E3", "E3")
-	dvRange = NewDataValidation(true)
+
+	dvRange := NewDataValidation(true)
 	dvRange.SetSqref("A7:B8")
 	dvRange.SetSqref("A7:B8")
 	dvRange.SetSqrefDropList("$E$1:$E$3", true)
+
 	err := dvRange.SetSqrefDropList("$E$1:$E$3", false)
-	t.Log(err)
+	assert.EqualError(t, err, "cross-sheet sqref cell are not supported")
+
 	xlsx.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+		t.FailNow()
+	}
 
 	dvRange = NewDataValidation(true)
 	dvRange.SetDropList(make([]string, 258))
-	err = dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
-	t.Log(err)
 
-	// Test write file to given path.
-	err = xlsx.SaveAs("./test/Book_data_validation.xlsx")
-	if err != nil {
-		t.Error(err)
+	err = dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+	assert.EqualError(t, err, "data validation must be 0-255 characters")
+
+	xlsx.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+		t.FailNow()
 	}
 }
