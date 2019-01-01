@@ -13,7 +13,7 @@
 
 ## 简介
 
-Excelize 是 Go 语言编写的用于操作 Office Excel 文档类库，基于 ECMA-376 Office OpenXML 标准。可以使用它来读取、写入由 Microsoft Excel™ 2007 及以上版本创建的 XLSX 文档。相比较其他的开源类库，Excelize 支持写入原本带有图片(表)、透视表和切片器等复杂样式的文档，还支持向 Excel 文档中插入图片与图表，并且在保存后不会丢失文档原有样式，可以应用于各类报表系统中。使用本类库要求使用的 Go 语言为 1.8 或更高版本，完整的 API 使用文档请访问 [godoc.org](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize) 或查看 [参考文档](https://xuri.me/excelize/)。
+Excelize 是 Go 语言编写的用于操作 Office Excel 文档类库，基于 ECMA-376 Office OpenXML 标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的 XLSX 文档。相比较其他的开源类库，Excelize 支持写入原本带有图片(表)、透视表和切片器等复杂样式的文档，还支持向 Excel 文档中插入图片与图表，并且在保存后不会丢失文档原有样式，可以应用于各类报表系统中。使用本类库要求使用的 Go 语言为 1.8 或更高版本，完整的 API 使用文档请访问 [godoc.org](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize) 或查看 [参考文档](https://xuri.me/excelize/)。
 
 ## 快速上手
 
@@ -175,3 +175,5 @@ func main() {
 ## 开源许可
 
 本项目遵循 BSD 3-Clause 开源许可协议，访问 [https://opensource.org/licenses/BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) 查看许可协议文件。
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize?ref=badge_large)

@@ -129,6 +129,19 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, xlsx.SaveAs("./test/TestOpenFile.xlsx"))
 }
 
+func TestSaveFile(t *testing.T) {
+	xlsx, err := OpenFile("./test/Book1.xlsx")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	assert.NoError(t, xlsx.SaveAs("./test/TestSaveFile.xlsx"))
+	xlsx, err = OpenFile("./test/TestSaveFile.xlsx")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	assert.NoError(t, xlsx.Save())
+}
+
 func TestSaveAsWrongPath(t *testing.T) {
 	xlsx, err := OpenFile("./test/Book1.xlsx")
 	if assert.NoError(t, err) {
@@ -309,7 +322,7 @@ func TestGetCellHyperLink(t *testing.T) {
 
 	link, target := xlsx.GetCellHyperLink("Sheet1", "")
 	t.Log(link, target)
-	link, target = xlsx.GetCellHyperLink("Sheet1", "B19")
+	link, target = xlsx.GetCellHyperLink("Sheet1", "A22")
 	t.Log(link, target)
 	link, target = xlsx.GetCellHyperLink("Sheet2", "D6")
 	t.Log(link, target)
@@ -1082,7 +1095,7 @@ func TestInsertRow(t *testing.T) {
 
 func TestDuplicateRow(t *testing.T) {
 	const (
-		file    = "./test/TestDuplicateRow" +
+		file = "./test/TestDuplicateRow" +
 			".%s.xlsx"
 		sheet   = "Sheet1"
 		a1      = "A1"
