@@ -31,10 +31,9 @@ import (
 //
 func (f *File) GetRows(sheet string) [][]string {
 	xlsx := f.workSheetReader(sheet)
-	rows := [][]string{}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		return rows
+		return [][]string{}
 	}
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
@@ -44,15 +43,12 @@ func (f *File) GetRows(sheet string) [][]string {
 	d := f.sharedStringsReader()
 	var inElement string
 	var r xlsxRow
-	var row []string
 	tr, tc := f.getTotalRowsCols(name)
-	for i := 0; i < tr; i++ {
-		row = []string{}
-		for j := 0; j <= tc; j++ {
-			row = append(row, "")
-		}
-		rows = append(rows, row)
+	rows := make([][]string, tr)
+	for i := range rows {
+		rows[i] = make([]string, tc+1)
 	}
+	var row int
 	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()
@@ -70,12 +66,15 @@ func (f *File) GetRows(sheet string) [][]string {
 					c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
 					val, _ := colCell.getValueFrom(f, d)
 					rows[cr][c] = val
+					if val != "" {
+						row = r.R
+					}
 				}
 			}
 		default:
 		}
 	}
-	return rows
+	return rows[:row]
 }
 
 // Rows defines an iterator to a sheet
