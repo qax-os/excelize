@@ -168,12 +168,14 @@ func main() {
 
 欢迎您为此项目贡献代码，提出建议或问题、修复 Bug 以及参与讨论对新功能的想法。 XML 符合标准： [part 1 of the 5th edition of the ECMA-376 Standard for Office Open XML](http://www.ecma-international.org/publications/standards/Ecma-376.htm)。
 
-## 致谢
-
-本类库中部分 XML 结构体的定义参考了开源项目：[tealeg/xlsx](https://github.com/tealeg/xlsx).
-
 ## 开源许可
 
 本项目遵循 BSD 3-Clause 开源许可协议，访问 [https://opensource.org/licenses/BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) 查看许可协议文件。
+
+Excel 徽标是 [Microsoft Corporation](https://aka.ms/trademarks-usage) 的商标，项目的图片是一种改编。
+
+本类库中部分 XML 结构体的定义参考了开源项目：[tealeg/xlsx](https://github.com/tealeg/xlsx)，遵循 [BSD 3-Clause License](https://github.com/tealeg/xlsx/blob/master/LICENSE) 开源许可协议。
+
+gopher.{ai,svg,png} 由 [Takuya Ueda](https://twitter.com/tenntenn) 创作，遵循 [Creative Commons 3.0 Attributions license](http://creativecommons.org/licenses/by/3.0/) 创作共用授权条款。
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize?ref=badge_large)

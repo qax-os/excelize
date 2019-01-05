@@ -168,12 +168,14 @@ func main() {
 
 Contributions are welcome! Open a pull request to fix a bug, or open an issue to discuss a new feature or change. XML is compliant with [part 1 of the 5th edition of the ECMA-376 Standard for Office Open XML](http://www.ecma-international.org/publications/standards/Ecma-376.htm).
 
-## Credits
-
-Some struct of XML originally by [tealeg/xlsx](https://github.com/tealeg/xlsx).
-
 ## Licenses
 
 This program is under the terms of the BSD 3-Clause License. See [https://opensource.org/licenses/BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause).
+
+The Excel logo is a trademark of [Microsoft Corporation](https://aka.ms/trademarks-usage). This artwork is an adaptation.
+
+Some struct of XML originally by [tealeg/xlsx](https://github.com/tealeg/xlsx). Licensed under the [BSD 3-Clause License](https://github.com/tealeg/xlsx/blob/master/LICENSE).
+
+gopher.{ai,svg,png} was created by [Takuya Ueda](https://twitter.com/tenntenn). Licensed under the [Creative Commons 3.0 Attributions license](http://creativecommons.org/licenses/by/3.0/).
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize?ref=badge_large)
