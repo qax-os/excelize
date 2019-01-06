@@ -156,7 +156,7 @@ func replaceWorkSheetsRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
 // Office Excel 2007 and 2010. This function will be remove value tag when met a
 // cell have a linked value. Reference
-// https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating?forum=excel
+// https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating
 //
 // Notice: after open XLSX file Excel will be update linked value and generate
 // new value and will prompt save file or not.
