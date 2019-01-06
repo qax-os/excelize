@@ -790,3 +790,73 @@ func trimSheetName(name string) string {
 	}
 	return name
 }
+
+// PageLayoutOption is an option of a page layout of a worksheet. See
+// SetPageLayout().
+type PageLayoutOption interface {
+	setPageLayout(layout *xlsxPageSetUp)
+}
+
+// PageLayoutOptionPtr is a writable PageLayoutOption. See GetPageLayout().
+type PageLayoutOptionPtr interface {
+	PageLayoutOption
+	getPageLayout(layout *xlsxPageSetUp)
+}
+
+// PageLayoutOrientation defines the orientation of page layout for a
+// worksheet.
+type PageLayoutOrientation string
+
+const (
+	// OrientationPortrait indicates page layout orientation id portrait.
+	OrientationPortrait = "portrait"
+	// OrientationLandscape indicates page layout orientation id landscape.
+	OrientationLandscape = "landscape"
+)
+
+// setPageLayout provides a method to set the orientation for the worksheet.
+func (o PageLayoutOrientation) setPageLayout(ps *xlsxPageSetUp) {
+	ps.Orientation = string(o)
+}
+
+// getPageLayout provides a method to get the orientation for the worksheet.
+func (o *PageLayoutOrientation) getPageLayout(ps *xlsxPageSetUp) {
+	// Excel default: portrait
+	if ps == nil || ps.Orientation == "" {
+		*o = OrientationPortrait
+		return
+	}
+	*o = PageLayoutOrientation(ps.Orientation)
+}
+
+// SetPageLayout provides a function to sets worksheet page layout.
+//
+// Available options:
+//   PageLayoutOrientation(string)
+func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
+	s := f.workSheetReader(sheet)
+	ps := s.PageSetUp
+	if ps == nil {
+		ps = new(xlsxPageSetUp)
+		s.PageSetUp = ps
+	}
+
+	for _, opt := range opts {
+		opt.setPageLayout(ps)
+	}
+	return nil
+}
+
+// GetPageLayout provides a function to gets worksheet page layout.
+//
+// Available options:
+//   PageLayoutOrientation(string)
+func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
+	s := f.workSheetReader(sheet)
+	ps := s.PageSetUp
+
+	for _, opt := range opts {
+		opt.getPageLayout(ps)
+	}
+	return nil
+}

@@ -35,6 +35,7 @@ type (
 	OutlineSummaryBelow bool
 )
 
+// setSheetPrOption implements the SheetPrOption interface.
 func (o OutlineSummaryBelow) setSheetPrOption(pr *xlsxSheetPr) {
 	if pr.OutlinePr == nil {
 		pr.OutlinePr = new(xlsxOutlinePr)
@@ -42,6 +43,7 @@ func (o OutlineSummaryBelow) setSheetPrOption(pr *xlsxSheetPr) {
 	pr.OutlinePr.SummaryBelow = bool(o)
 }
 
+// getSheetPrOption implements the SheetPrOptionPtr interface.
 func (o *OutlineSummaryBelow) getSheetPrOption(pr *xlsxSheetPr) {
 	// Excel default: true
 	if pr == nil || pr.OutlinePr == nil {
@@ -51,10 +53,14 @@ func (o *OutlineSummaryBelow) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = OutlineSummaryBelow(defaultTrue(&pr.OutlinePr.SummaryBelow))
 }
 
+// setSheetPrOption implements the SheetPrOption interface and specifies a
+// stable name of the sheet.
 func (o CodeName) setSheetPrOption(pr *xlsxSheetPr) {
 	pr.CodeName = string(o)
 }
 
+// getSheetPrOption implements the SheetPrOptionPtr interface and get the
+// stable name of the sheet.
 func (o *CodeName) getSheetPrOption(pr *xlsxSheetPr) {
 	if pr == nil {
 		*o = ""
@@ -63,10 +69,15 @@ func (o *CodeName) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = CodeName(pr.CodeName)
 }
 
+// setSheetPrOption implements the SheetPrOption interface and flag indicating
+// whether the conditional formatting calculations shall be evaluated.
 func (o EnableFormatConditionsCalculation) setSheetPrOption(pr *xlsxSheetPr) {
 	pr.EnableFormatConditionsCalculation = boolPtr(bool(o))
 }
 
+// getSheetPrOption implements the SheetPrOptionPtr interface and get the
+// settings of whether the conditional formatting calculations shall be
+// evaluated.
 func (o *EnableFormatConditionsCalculation) getSheetPrOption(pr *xlsxSheetPr) {
 	if pr == nil {
 		*o = true
@@ -75,10 +86,14 @@ func (o *EnableFormatConditionsCalculation) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = EnableFormatConditionsCalculation(defaultTrue(pr.EnableFormatConditionsCalculation))
 }
 
+// setSheetPrOption implements the SheetPrOption interface and flag indicating
+// whether the worksheet is published.
 func (o Published) setSheetPrOption(pr *xlsxSheetPr) {
 	pr.Published = boolPtr(bool(o))
 }
 
+// getSheetPrOption implements the SheetPrOptionPtr interface and get the
+// settings of whether the worksheet is published.
 func (o *Published) getSheetPrOption(pr *xlsxSheetPr) {
 	if pr == nil {
 		*o = true
@@ -87,6 +102,7 @@ func (o *Published) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = Published(defaultTrue(pr.Published))
 }
 
+// setSheetPrOption implements the SheetPrOption interface.
 func (o FitToPage) setSheetPrOption(pr *xlsxSheetPr) {
 	if pr.PageSetUpPr == nil {
 		if !o {
@@ -97,6 +113,7 @@ func (o FitToPage) setSheetPrOption(pr *xlsxSheetPr) {
 	pr.PageSetUpPr.FitToPage = bool(o)
 }
 
+// getSheetPrOption implements the SheetPrOptionPtr interface.
 func (o *FitToPage) getSheetPrOption(pr *xlsxSheetPr) {
 	// Excel default: false
 	if pr == nil || pr.PageSetUpPr == nil {
@@ -106,6 +123,7 @@ func (o *FitToPage) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = FitToPage(pr.PageSetUpPr.FitToPage)
 }
 
+// setSheetPrOption implements the SheetPrOption interface.
 func (o AutoPageBreaks) setSheetPrOption(pr *xlsxSheetPr) {
 	if pr.PageSetUpPr == nil {
 		if !o {
@@ -116,6 +134,7 @@ func (o AutoPageBreaks) setSheetPrOption(pr *xlsxSheetPr) {
 	pr.PageSetUpPr.AutoPageBreaks = bool(o)
 }
 
+// getSheetPrOption implements the SheetPrOptionPtr interface.
 func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 	// Excel default: false
 	if pr == nil || pr.PageSetUpPr == nil {
