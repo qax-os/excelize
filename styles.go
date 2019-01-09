@@ -1907,9 +1907,11 @@ func (f *File) NewStyle(style string) (int, error) {
 	s.Borders.Border = append(s.Borders.Border, setBorders(fs))
 	borderID = s.Borders.Count - 1
 
-	s.Fills.Count++
-	s.Fills.Fill = append(s.Fills.Fill, setFills(fs, true))
-	fillID = s.Fills.Count - 1
+	if fill := setFills(fs, true); fill != nil {
+		s.Fills.Count++
+		s.Fills.Fill = append(s.Fills.Fill, fill)
+		fillID = s.Fills.Count - 1
+	}
 
 	applyAlignment, alignment := fs.Alignment != nil, setAlignment(fs)
 	applyProtection, protection := fs.Protection != nil, setProtection(fs)
@@ -2145,6 +2147,8 @@ func setFills(formatStyle *formatStyle, fg bool) *xlsxFill {
 			pattern.BgColor.RGB = getPaletteColor(formatStyle.Fill.Color[0])
 		}
 		fill.PatternFill = &pattern
+	default:
+		return nil
 	}
 	return &fill
 }
