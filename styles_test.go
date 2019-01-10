@@ -6,6 +6,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStyleFill(t *testing.T) {
+	cases := []struct {
+		label      string
+		format     string
+		expectFill bool
+	}{{
+		label:      "no_fill",
+		format:     `{"alignment":{"wrap_text":true}}`,
+		expectFill: false,
+	}, {
+		label:      "fill",
+		format:     `{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`,
+		expectFill: true,
+	}}
+
+	for _, testCase := range cases {
+		xl := NewFile()
+		const sheet = "Sheet1"
+
+		styleID, err := xl.NewStyle(testCase.format)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		styles := xl.stylesReader()
+		style := styles.CellXfs.Xf[styleID]
+		if testCase.expectFill {
+			assert.NotEqual(t, style.FillID, 0, testCase.label)
+		} else {
+			assert.Equal(t, style.FillID, 0, testCase.label)
+		}
+	}
+}
+
 func TestSetConditionalFormat(t *testing.T) {
 	cases := []struct {
 		label  string
