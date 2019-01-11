@@ -376,38 +376,55 @@ func (f *File) InsertRow(sheet string, row int) {
 //    xlsx.DuplicateRow("Sheet1", 2)
 //
 func (f *File) DuplicateRow(sheet string, row int) {
-	if row < 0 {
+	f.DuplicateRowTo(sheet, row, row+1)
+}
+
+// DuplicateRowTo inserts a copy of specified row at specified row position
+// movig down exists rows aftet target position
+//
+//    xlsx.DuplicateRowTo("Sheet1", 2, 7)
+//
+func (f *File) DuplicateRowTo(sheet string, row, row2 int) {
+	if row <= 0 || row2 <= 0 || row == row2 {
 		return
 	}
-	row2 := row + 1
-	f.adjustHelper(sheet, -1, row2, 1)
 
-	xlsx := f.workSheetReader(sheet)
-	idx := -1
-	idx2 := -1
+	ws := f.workSheetReader(sheet)
 
-	for i, r := range xlsx.SheetData.Row {
+	var ok bool
+	var rowCopy xlsxRow
+
+	for i, r := range ws.SheetData.Row {
 		if r.R == row {
-			idx = i
-		} else if r.R == row2 {
-			idx2 = i
-		}
-		if idx != -1 && idx2 != -1 {
+			rowCopy = ws.SheetData.Row[i]
+			ok = true
 			break
 		}
 	}
-
-	if idx == -1 || (idx2 == -1 && len(xlsx.SheetData.Row) >= row2) {
+	if !ok {
 		return
 	}
-	rowData := xlsx.SheetData.Row[idx]
-	cols := make([]xlsxC, 0, len(rowData.C))
-	rowData.C = append(cols, rowData.C...)
-	f.ajustSingleRowDimensions(&rowData, 1)
+
+	f.adjustHelper(sheet, -1, row2, 1)
+
+	idx2 := -1
+	for i, r := range ws.SheetData.Row {
+		if r.R == row2 {
+			idx2 = i
+			break
+		}
+	}
+	if idx2 == -1 && len(ws.SheetData.Row) >= row2 {
+		return
+	}
+
+	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
+	f.ajustSingleRowDimensions(&rowCopy, row2)
+
 	if idx2 != -1 {
-		xlsx.SheetData.Row[idx2] = rowData
+		ws.SheetData.Row[idx2] = rowCopy
 	} else {
-		xlsx.SheetData.Row = append(xlsx.SheetData.Row, rowData)
+		ws.SheetData.Row = append(ws.SheetData.Row, rowCopy)
 	}
 }
 
@@ -446,7 +463,7 @@ func checkRow(xlsx *xlsxWorksheet) {
 			if lenCol < endCol {
 				oldRow := xlsx.SheetData.Row[k].C
 				xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
-				tmp := []xlsxC{}
+				var tmp []xlsxC
 				for i := 0; i < endCol; i++ {
 					buffer.WriteString(ToAlphaString(i))
 					buffer.WriteString(strconv.Itoa(endRow))

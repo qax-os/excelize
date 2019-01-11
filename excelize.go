@@ -238,18 +238,16 @@ func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, rowIndex, offset int) {
 	}
 	for i, r := range xlsx.SheetData.Row {
 		if r.R >= rowIndex {
-			f.ajustSingleRowDimensions(&xlsx.SheetData.Row[i], offset)
+			f.ajustSingleRowDimensions(&xlsx.SheetData.Row[i], r.R+offset)
 		}
 	}
 }
 
-// ajustSingleRowDimensions provides a function to ajust single row
-// dimensions.
-func (f *File) ajustSingleRowDimensions(r *xlsxRow, offset int) {
-	r.R += offset
+// ajustSingleRowDimensions provides a function to ajust single row dimensions.
+func (f *File) ajustSingleRowDimensions(r *xlsxRow, row int) {
+	r.R = row
 	for i, col := range r.C {
-		row, _ := strconv.Atoi(strings.Map(intOnlyMapF, col.R))
-		r.C[i].R = string(strings.Map(letterOnlyMapF, col.R)) + strconv.Itoa(row+offset)
+		r.C[i].R = string(strings.Map(letterOnlyMapF, col.R)) + strconv.Itoa(r.R)
 	}
 }
 
