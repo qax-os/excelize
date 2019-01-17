@@ -19,6 +19,12 @@ func ExampleFile_SetPageLayout() {
 	); err != nil {
 		panic(err)
 	}
+	if err := xl.SetPageLayout(
+		"Sheet1",
+		excelize.PageLayoutPaperSize(10),
+	); err != nil {
+		panic(err)
+	}
 	// Output:
 }
 
@@ -27,15 +33,21 @@ func ExampleFile_GetPageLayout() {
 	const sheet = "Sheet1"
 	var (
 		orientation excelize.PageLayoutOrientation
+		paperSize   excelize.PageLayoutPaperSize
 	)
 	if err := xl.GetPageLayout("Sheet1", &orientation); err != nil {
 		panic(err)
 	}
+	if err := xl.GetPageLayout("Sheet1", &paperSize); err != nil {
+		panic(err)
+	}
 	fmt.Println("Defaults:")
 	fmt.Printf("- orientation: %q\n", orientation)
+	fmt.Printf("- paper size: %d\n", paperSize)
 	// Output:
 	// Defaults:
 	// - orientation: "portrait"
+	// - paper size: 1
 }
 
 func TestPageLayoutOption(t *testing.T) {
@@ -46,6 +58,7 @@ func TestPageLayoutOption(t *testing.T) {
 		nonDefault excelize.PageLayoutOption
 	}{
 		{new(excelize.PageLayoutOrientation), excelize.PageLayoutOrientation(excelize.OrientationLandscape)},
+		{new(excelize.PageLayoutPaperSize), excelize.PageLayoutPaperSize(10)},
 	}
 
 	for i, test := range testData {

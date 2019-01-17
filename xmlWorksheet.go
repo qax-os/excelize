@@ -90,7 +90,7 @@ type xlsxPageSetUp struct {
 	Orientation        string  `xml:"orientation,attr,omitempty"`
 	PageOrder          string  `xml:"pageOrder,attr,omitempty"`
 	PaperHeight        string  `xml:"paperHeight,attr,omitempty"`
-	PaperSize          string  `xml:"paperSize,attr,omitempty"`
+	PaperSize          int     `xml:"paperSize,attr,omitempty"`
 	PaperWidth         string  `xml:"paperWidth,attr,omitempty"`
 	Scale              int     `xml:"scale,attr,omitempty"`
 	UseFirstPageNumber bool    `xml:"useFirstPageNumber,attr,omitempty"`
