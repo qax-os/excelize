@@ -72,10 +72,14 @@ func TestDataValidationError(t *testing.T) {
 	}
 
 	dvRange = NewDataValidation(true)
-	dvRange.SetDropList(make([]string, 258))
-
-	err = dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+	err = dvRange.SetDropList(make([]string, 258))
+	if dvRange.Formula1 != "" {
+		t.Errorf("data validation error. Formula1 must be empty!")
+		return
+	}
 	assert.EqualError(t, err, "data validation must be 0-255 characters")
+	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+	dvRange.SetSqref("A9:B10")
 
 	xlsx.AddDataValidation("Sheet1", dvRange)
 	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {

@@ -108,7 +108,11 @@ func (dd *DataValidation) SetInput(title, msg string) {
 
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
-	dd.Formula1 = "\"" + strings.Join(keys, ",") + "\""
+	formula := "\"" + strings.Join(keys, ",") + "\""
+	if dataValidationFormulaStrLen < len(formula) {
+		return fmt.Errorf(dataValidationFormulaStrLenErr)
+	}
+	dd.Formula1 = formula
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
