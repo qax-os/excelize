@@ -177,5 +177,3 @@ Excel 徽标是 [Microsoft Corporation](https://aka.ms/trademarks-usage) 的商�
 本类库中部分 XML 结构体的定义参考了开源项目：[tealeg/xlsx](https://github.com/tealeg/xlsx)，遵循 [BSD 3-Clause License](https://github.com/tealeg/xlsx/blob/master/LICENSE) 开源许可协议。
 
 gopher.{ai,svg,png} 由 [Takuya Ueda](https://twitter.com/tenntenn) 创作，遵循 [Creative Commons 3.0 Attributions license](http://creativecommons.org/licenses/by/3.0/) 创作共用授权条款。
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2F360EntSecGroup-Skylar%2Fexcelize?ref=badge_large)
