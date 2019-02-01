@@ -93,11 +93,11 @@ func TitleToNumber(s string) int {
 	weight := 1
 	sum := 0
 	for i := len(s) - 1; i >= 0; i-- {
-		ch := int(s[i])
-		if int(s[i]) >= int('a') && int(s[i]) <= int('z') {
-			ch = int(s[i]) - 32
+		ch := s[i]
+		if ch >= 'a' && ch <= 'z' {
+			ch -= 32
 		}
-		sum += (ch - int('A') + 1) * weight
+		sum += int(ch-'A'+1) * weight
 		weight *= 26
 	}
 	return sum - 1
