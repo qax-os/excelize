@@ -1546,8 +1546,12 @@ func TestConditionalFormatError(t *testing.T) {
 }
 
 func TestTitleToNumber(t *testing.T) {
+	assert.Equal(t, 0, TitleToNumber("A"))
+	assert.Equal(t, 25, TitleToNumber("Z"))
+	assert.Equal(t, 26, TitleToNumber("AA"))
 	assert.Equal(t, 36, TitleToNumber("AK"))
 	assert.Equal(t, 36, TitleToNumber("ak"))
+	assert.Equal(t, 51, TitleToNumber("AZ"))
 }
 
 func TestSharedStrings(t *testing.T) {
