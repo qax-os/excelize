@@ -14,7 +14,6 @@ import (
 	"bytes"
 	"io"
 	"log"
-	"math"
 	"strconv"
 	"strings"
 	"unicode"
@@ -91,15 +90,15 @@ func ToAlphaString(value int) string {
 //    excelize.TitleToNumber("ak")
 //
 func TitleToNumber(s string) int {
-	weight := 0.0
+	weight := 1
 	sum := 0
 	for i := len(s) - 1; i >= 0; i-- {
 		ch := int(s[i])
 		if int(s[i]) >= int('a') && int(s[i]) <= int('z') {
 			ch = int(s[i]) - 32
 		}
-		sum = sum + (ch-int('A')+1)*int(math.Pow(26, weight))
-		weight++
+		sum += (ch - int('A') + 1) * weight
+		weight *= 26
 	}
 	return sum - 1
 }
