@@ -342,8 +342,18 @@ func TestSetCellFormula(t *testing.T) {
 	xlsx.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)")
 	// Test set cell formula with illegal rows number.
 	xlsx.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)")
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellFormula1.xlsx")))
 
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellFormula.xlsx")))
+	xlsx, err = OpenFile(filepath.Join("test", "CalcChain.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	// Test remove cell formula.
+	xlsx.SetCellFormula("Sheet1", "A1", "")
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellFormula2.xlsx")))
+	// Test remove all cell formula.
+	xlsx.SetCellFormula("Sheet1", "B1", "")
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestSetCellFormula3.xlsx")))
 }
 
 func TestSetSheetBackground(t *testing.T) {

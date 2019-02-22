@@ -343,6 +343,10 @@ func (f *File) GetRowOutlineLevel(sheet string, rowIndex int) uint8 {
 //
 //    xlsx.RemoveRow("Sheet1", 2)
 //
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
 func (f *File) RemoveRow(sheet string, row int) {
 	if row < 0 {
 		return
@@ -375,15 +379,23 @@ func (f *File) InsertRow(sheet string, row int) {
 //
 //    xlsx.DuplicateRow("Sheet1", 2)
 //
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
 func (f *File) DuplicateRow(sheet string, row int) {
 	f.DuplicateRowTo(sheet, row, row+1)
 }
 
 // DuplicateRowTo inserts a copy of specified row at specified row position
-// movig down exists rows aftet target position
+// moving down exists rows after target position
 //
 //    xlsx.DuplicateRowTo("Sheet1", 2, 7)
 //
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
 func (f *File) DuplicateRowTo(sheet string, row, row2 int) {
 	if row <= 0 || row2 <= 0 || row == row2 {
 		return

@@ -322,6 +322,10 @@ func (f *File) InsertCol(sheet, column string) {
 //
 //    xlsx.RemoveCol("Sheet1", "C")
 //
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
 func (f *File) RemoveCol(sheet, column string) {
 	xlsx := f.workSheetReader(sheet)
 	for r := range xlsx.SheetData.Row {

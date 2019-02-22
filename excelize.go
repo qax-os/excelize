@@ -25,6 +25,7 @@ import (
 type File struct {
 	checked       map[string]bool
 	sheetMap      map[string]string
+	CalcChain     *xlsxCalcChain
 	ContentTypes  *xlsxTypes
 	Path          string
 	SharedStrings *xlsxSST
@@ -201,7 +202,8 @@ func (f *File) UpdateLinkedValue() {
 // row: Index number of the row we're inserting/deleting before
 // offset: Number of rows/column to insert/delete negative values indicate deletion
 //
-// TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
+// TODO: adjustCalcChain, adjustPageBreaks, adjustComments,
+// adjustDataValidations, adjustProtectedCells
 //
 func (f *File) adjustHelper(sheet string, column, row, offset int) {
 	xlsx := f.workSheetReader(sheet)

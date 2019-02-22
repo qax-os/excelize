@@ -900,7 +900,7 @@ func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
 //       40  | German standard fanfold (8.5 in. by 12 in.)
 //       41  | German legal fanfold (8.5 in. by 13 in.)
 //       42  | ISO B4 (250 mm by 353 mm)
-//       43  | Japanese double postcard (200 mm by 148 mm)
+//       43  | Japanese postcard (100 mm by 148 mm)
 //       44  | Standard paper (9 in. by 11 in.)
 //       45  | Standard paper (10 in. by 11 in.)
 //       46  | Standard paper (15 in. by 11 in.)

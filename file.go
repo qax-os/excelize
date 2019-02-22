@@ -92,6 +92,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	f.workbookRelsWriter()
 	f.worksheetWriter()
 	f.styleSheetWriter()
+	f.calcChainWriter()
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {

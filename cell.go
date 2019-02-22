@@ -305,6 +305,11 @@ func (f *File) SetCellFormula(sheet, axis, formula string) {
 	completeRow(xlsx, rows, cell)
 	completeCol(xlsx, rows, cell)
 
+	if formula == "" {
+		xlsx.SheetData.Row[xAxis].C[yAxis].F = nil
+		f.deleteCalcChain(axis)
+		return
+	}
 	if xlsx.SheetData.Row[xAxis].C[yAxis].F != nil {
 		xlsx.SheetData.Row[xAxis].C[yAxis].F.Content = formula
 	} else {
