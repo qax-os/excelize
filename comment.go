@@ -33,9 +33,7 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 func (f *File) GetComments() (comments map[string][]Comment) {
 	comments = map[string][]Comment{}
 	for n := range f.sheetMap {
-		commentID := f.GetSheetIndex(n)
-		commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
-		c, ok := f.XLSX[commentsXML]
+		c, ok := f.XLSX["xl"+strings.TrimPrefix(f.getSheetComments(f.GetSheetIndex(n)), "..")]
 		if ok {
 			d := xlsxComments{}
 			xml.Unmarshal([]byte(c), &d)
@@ -56,6 +54,20 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 		}
 	}
 	return
+}
+
+// getSheetComments provides the method to get the target comment reference by
+// given worksheet index.
+func (f *File) getSheetComments(sheetID int) string {
+	var rels = "xl/worksheets/_rels/sheet" + strconv.Itoa(sheetID) + ".xml.rels"
+	var sheetRels xlsxWorkbookRels
+	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
+	for _, v := range sheetRels.Relationships {
+		if v.Type == SourceRelationshipComments {
+			return v.Target
+		}
+	}
+	return ""
 }
 
 // AddComment provides the method to add comment in a sheet by given worksheet
