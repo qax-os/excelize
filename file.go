@@ -39,8 +39,12 @@ func NewFile() *File {
 		SheetCount: 1,
 		XLSX:       file,
 	}
+	f.CalcChain = f.calcChainReader()
+	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes = f.contentTypesReader()
 	f.Styles = f.stylesReader()
+	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
+	f.VMLDrawing = make(map[string]*vmlDrawing)
 	f.WorkBook = f.workbookReader()
 	f.WorkBookRels = f.workbookRelsReader()
 	f.Sheet["xl/worksheets/sheet1.xml"] = f.workSheetReader("Sheet1")
@@ -87,12 +91,15 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
+	f.calcChainWriter()
+	f.commentsWriter()
 	f.contentTypesWriter()
+	f.vmlDrawingWriter()
 	f.workbookWriter()
 	f.workbookRelsWriter()
 	f.worksheetWriter()
 	f.styleSheetWriter()
-	f.calcChainWriter()
+
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {
