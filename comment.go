@@ -122,31 +122,34 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
 	xAxis := row - 1
 	yAxis := TitleToNumber(col)
-	vml := vmlDrawing{
-		XMLNSv:  "urn:schemas-microsoft-com:vml",
-		XMLNSo:  "urn:schemas-microsoft-com:office:office",
-		XMLNSx:  "urn:schemas-microsoft-com:office:excel",
-		XMLNSmv: "http://macVmlSchemaUri",
-		Shapelayout: &xlsxShapelayout{
-			Ext: "edit",
-			IDmap: &xlsxIDmap{
-				Ext:  "edit",
-				Data: commentID,
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		vml = &vmlDrawing{
+			XMLNSv:  "urn:schemas-microsoft-com:vml",
+			XMLNSo:  "urn:schemas-microsoft-com:office:office",
+			XMLNSx:  "urn:schemas-microsoft-com:office:excel",
+			XMLNSmv: "http://macVmlSchemaUri",
+			Shapelayout: &xlsxShapelayout{
+				Ext: "edit",
+				IDmap: &xlsxIDmap{
+					Ext:  "edit",
+					Data: commentID,
+				},
 			},
-		},
-		Shapetype: &xlsxShapetype{
-			ID:        "_x0000_t202",
-			Coordsize: "21600,21600",
-			Spt:       202,
-			Path:      "m0,0l0,21600,21600,21600,21600,0xe",
-			Stroke: &xlsxStroke{
-				Joinstyle: "miter",
+			Shapetype: &xlsxShapetype{
+				ID:        "_x0000_t202",
+				Coordsize: "21600,21600",
+				Spt:       202,
+				Path:      "m0,0l0,21600,21600,21600,21600,0xe",
+				Stroke: &xlsxStroke{
+					Joinstyle: "miter",
+				},
+				VPath: &vPath{
+					Gradientshapeok: "t",
+					Connecttype:     "miter",
+				},
 			},
-			VPath: &vPath{
-				Gradientshapeok: "t",
-				Connecttype:     "miter",
-			},
-		},
+		}
 	}
 	sp := encodeShape{
 		Fill: &vFill{
@@ -191,10 +194,8 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 		Strokecolor: "#edeaa1",
 		Val:         string(s[13 : len(s)-14]),
 	}
-	c, ok := f.XLSX[drawingVML]
-	if ok {
-		d := decodeVmlDrawing{}
-		_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
+	d := f.decodeVMLDrawingReader(drawingVML)
+	if d != nil {
 		for _, v := range d.Shape {
 			s := xlsxShape{
 				ID:          "_x0000_s1025",
@@ -208,8 +209,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 		}
 	}
 	vml.Shape = append(vml.Shape, shape)
-	v, _ := xml.Marshal(vml)
-	f.XLSX[drawingVML] = v
+	f.VMLDrawing[drawingVML] = vml
 }
 
 // addComment provides a function to create chart as xl/comments%d.xml by
@@ -223,12 +223,15 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	if len(t) > 32512 {
 		t = t[0:32512]
 	}
-	comments := xlsxComments{
-		Authors: []xlsxAuthor{
-			{
-				Author: formatSet.Author,
+	comments := f.commentsReader(commentsXML)
+	if comments == nil {
+		comments = &xlsxComments{
+			Authors: []xlsxAuthor{
+				{
+					Author: formatSet.Author,
+				},
 			},
-		},
+		}
 	}
 	cmt := xlsxComment{
 		Ref:      cell,
@@ -261,15 +264,8 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 			},
 		},
 	}
-	c, ok := f.XLSX[commentsXML]
-	if ok {
-		d := xlsxComments{}
-		_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
-		comments.CommentList.Comment = append(comments.CommentList.Comment, d.CommentList.Comment...)
-	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)
-	v, _ := xml.Marshal(comments)
-	f.saveFileList(commentsXML, v)
+	f.Comments[commentsXML] = comments
 }
 
 // countComments provides a function to get comments files count storage in
@@ -282,4 +278,54 @@ func (f *File) countComments() int {
 		}
 	}
 	return count
+}
+
+// decodeVMLDrawingReader provides a function to get the pointer to the
+// structure after deserialization of xl/drawings/vmlDrawing%d.xml.
+func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
+	if f.DecodeVMLDrawing[path] == nil {
+		c, ok := f.XLSX[path]
+		if ok {
+			d := decodeVmlDrawing{}
+			_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
+			f.DecodeVMLDrawing[path] = &d
+		}
+	}
+	return f.DecodeVMLDrawing[path]
+}
+
+// vmlDrawingWriter provides a function to save xl/drawings/vmlDrawing%d.xml.
+// after serialize structure.
+func (f *File) vmlDrawingWriter() {
+	for path, vml := range f.VMLDrawing {
+		if vml != nil {
+			v, _ := xml.Marshal(vml)
+			f.XLSX[path] = v
+		}
+	}
+}
+
+// commentsReader provides a function to get the pointer to the structure
+// after deserialization of xl/comments%d.xml.
+func (f *File) commentsReader(path string) *xlsxComments {
+	if f.Comments[path] == nil {
+		content, ok := f.XLSX[path]
+		if ok {
+			c := xlsxComments{}
+			_ = xml.Unmarshal(namespaceStrictToTransitional(content), &c)
+			f.Comments[path] = &c
+		}
+	}
+	return f.Comments[path]
+}
+
+// commentsWriter provides a function to save xl/comments%d.xml after
+// serialize structure.
+func (f *File) commentsWriter() {
+	for path, c := range f.Comments {
+		if c != nil {
+			v, _ := xml.Marshal(c)
+			f.saveFileList(path, v)
+		}
+	}
 }

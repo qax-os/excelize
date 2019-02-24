@@ -23,19 +23,22 @@ import (
 
 // File define a populated XLSX file struct.
 type File struct {
-	checked       map[string]bool
-	sheetMap      map[string]string
-	CalcChain     *xlsxCalcChain
-	ContentTypes  *xlsxTypes
-	Path          string
-	SharedStrings *xlsxSST
-	Sheet         map[string]*xlsxWorksheet
-	SheetCount    int
-	Styles        *xlsxStyleSheet
-	Theme         *xlsxTheme
-	WorkBook      *xlsxWorkbook
-	WorkBookRels  *xlsxWorkbookRels
-	XLSX          map[string][]byte
+	checked          map[string]bool
+	sheetMap         map[string]string
+	CalcChain        *xlsxCalcChain
+	Comments         map[string]*xlsxComments
+	ContentTypes     *xlsxTypes
+	Path             string
+	SharedStrings    *xlsxSST
+	Sheet            map[string]*xlsxWorksheet
+	SheetCount       int
+	Styles           *xlsxStyleSheet
+	Theme            *xlsxTheme
+	DecodeVMLDrawing map[string]*decodeVmlDrawing
+	VMLDrawing       map[string]*vmlDrawing
+	WorkBook         *xlsxWorkbook
+	WorkBookRels     *xlsxWorkbookRels
+	XLSX             map[string][]byte
 }
 
 // OpenFile take the name of an XLSX file and returns a populated XLSX file
@@ -71,11 +74,15 @@ func OpenReader(r io.Reader) (*File, error) {
 		return nil, err
 	}
 	f := &File{
-		checked:    make(map[string]bool),
-		Sheet:      make(map[string]*xlsxWorksheet),
-		SheetCount: sheetCount,
-		XLSX:       file,
+		checked:          make(map[string]bool),
+		Comments:         make(map[string]*xlsxComments),
+		Sheet:            make(map[string]*xlsxWorksheet),
+		SheetCount:       sheetCount,
+		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
+		VMLDrawing:       make(map[string]*vmlDrawing),
+		XLSX:             file,
 	}
+	f.CalcChain = f.calcChainReader()
 	f.sheetMap = f.getSheetMap()
 	f.Styles = f.stylesReader()
 	f.Theme = f.themeReader()
