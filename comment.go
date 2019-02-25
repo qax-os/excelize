@@ -33,10 +33,7 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 func (f *File) GetComments() (comments map[string][]Comment) {
 	comments = map[string][]Comment{}
 	for n := range f.sheetMap {
-		c, ok := f.XLSX["xl"+strings.TrimPrefix(f.getSheetComments(f.GetSheetIndex(n)), "..")]
-		if ok {
-			d := xlsxComments{}
-			xml.Unmarshal([]byte(c), &d)
+		if d := f.commentsReader("xl" + strings.TrimPrefix(f.getSheetComments(f.GetSheetIndex(n)), "..")); d != nil {
 			sheetComments := []Comment{}
 			for _, comment := range d.CommentList.Comment {
 				sheetComment := Comment{}
@@ -294,7 +291,7 @@ func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
 	return f.DecodeVMLDrawing[path]
 }
 
-// vmlDrawingWriter provides a function to save xl/drawings/vmlDrawing%d.xml.
+// vmlDrawingWriter provides a function to save xl/drawings/vmlDrawing%d.xml
 // after serialize structure.
 func (f *File) vmlDrawingWriter() {
 	for path, vml := range f.VMLDrawing {

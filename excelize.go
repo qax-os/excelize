@@ -28,6 +28,8 @@ type File struct {
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
+	DrawingRels      map[string]*xlsxWorkbookRels
+	Drawings         map[string]*xlsxWsDr
 	Path             string
 	SharedStrings    *xlsxSST
 	Sheet            map[string]*xlsxWorksheet
@@ -76,6 +78,8 @@ func OpenReader(r io.Reader) (*File, error) {
 	f := &File{
 		checked:          make(map[string]bool),
 		Comments:         make(map[string]*xlsxComments),
+		DrawingRels:      make(map[string]*xlsxWorkbookRels),
+		Drawings:         make(map[string]*xlsxWsDr),
 		Sheet:            make(map[string]*xlsxWorksheet),
 		SheetCount:       sheetCount,
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),

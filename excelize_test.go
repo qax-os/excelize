@@ -817,6 +817,24 @@ func TestGetPicture(t *testing.T) {
 	xlsx.getDrawingRelationships("", "")
 	xlsx.getSheetRelationshipsTargetByID("", "")
 	xlsx.deleteSheetRelationships("", "")
+
+	// Try to get picture from a local storage file.
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestGetPicture.xlsx")))
+	xlsx, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	file, raw = xlsx.GetPicture("Sheet1", "F21")
+	if file == "" {
+		err = ioutil.WriteFile(file, raw, 0644)
+		if !assert.NoError(t, err) {
+			t.FailNow()
+		}
+	}
+
+	// Try to get picture from a local storage file that doesn't contain an image.
+	file, raw = xlsx.GetPicture("Sheet1", "F22")
+	t.Log(file, len(raw))
 }
 
 func TestSheetVisibility(t *testing.T) {

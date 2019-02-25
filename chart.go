@@ -1207,28 +1207,34 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 // the problem that the label structure is changed after serialization and
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
-func (f *File) drawingParser(drawingXML string, content *xlsxWsDr) int {
+func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 	cNvPrID := 1
-	_, ok := f.XLSX[drawingXML]
-	if ok { // Append Model
-		decodeWsDr := decodeWsDr{}
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(drawingXML)), &decodeWsDr)
-		content.R = decodeWsDr.R
-		cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
-		for _, v := range decodeWsDr.OneCellAnchor {
-			content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
-				EditAs:       v.EditAs,
-				GraphicFrame: v.Content,
-			})
+	if f.Drawings[path] == nil {
+		content := xlsxWsDr{}
+		content.A = NameSpaceDrawingML
+		content.Xdr = NameSpaceDrawingMLSpreadSheet
+		_, ok := f.XLSX[path]
+		if ok { // Append Model
+			decodeWsDr := decodeWsDr{}
+			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &decodeWsDr)
+			content.R = decodeWsDr.R
+			cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
+			for _, v := range decodeWsDr.OneCellAnchor {
+				content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
+					EditAs:       v.EditAs,
+					GraphicFrame: v.Content,
+				})
+			}
+			for _, v := range decodeWsDr.TwoCellAnchor {
+				content.TwoCellAnchor = append(content.TwoCellAnchor, &xdrCellAnchor{
+					EditAs:       v.EditAs,
+					GraphicFrame: v.Content,
+				})
+			}
 		}
-		for _, v := range decodeWsDr.TwoCellAnchor {
-			content.TwoCellAnchor = append(content.TwoCellAnchor, &xdrCellAnchor{
-				EditAs:       v.EditAs,
-				GraphicFrame: v.Content,
-			})
-		}
+		f.Drawings[path] = &content
 	}
-	return cNvPrID
+	return f.Drawings[path], cNvPrID
 }
 
 // addDrawingChart provides a function to add chart graphic frame by given
@@ -1242,10 +1248,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
-	content := xlsxWsDr{}
-	content.A = NameSpaceDrawingML
-	content.Xdr = NameSpaceDrawingMLSpreadSheet
-	cNvPrID := f.drawingParser(drawingXML, &content)
+	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning
 	from := xlsxFrom{}
@@ -1286,6 +1289,5 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
-	output, _ := xml.Marshal(content)
-	f.saveFileList(drawingXML, output)
+	f.Drawings[drawingXML] = content
 }

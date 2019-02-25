@@ -11,7 +11,6 @@ package excelize
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"strconv"
 	"strings"
 )
@@ -293,10 +292,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	width := int(float64(formatSet.Width) * formatSet.Format.XScale)
 	height := int(float64(formatSet.Height) * formatSet.Format.YScale)
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.Format.OffsetX, formatSet.Format.OffsetY, width, height)
-	content := xlsxWsDr{}
-	content.A = NameSpaceDrawingML
-	content.Xdr = NameSpaceDrawingMLSpreadSheet
-	cNvPrID := f.drawingParser(drawingXML, &content)
+	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Format.Positioning
 	from := xlsxFrom{}
@@ -402,8 +398,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		FPrintsWithSheet: formatSet.Format.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
-	output, _ := xml.Marshal(content)
-	f.saveFileList(drawingXML, output)
+	f.Drawings[drawingXML] = content
 }
 
 // setShapeRef provides a function to set color with hex model by given actual
