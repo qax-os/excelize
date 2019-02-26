@@ -57,11 +57,11 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 // given worksheet index.
 func (f *File) getSheetComments(sheetID int) string {
 	var rels = "xl/worksheets/_rels/sheet" + strconv.Itoa(sheetID) + ".xml.rels"
-	var sheetRels xlsxWorkbookRels
-	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
-	for _, v := range sheetRels.Relationships {
-		if v.Type == SourceRelationshipComments {
-			return v.Target
+	if sheetRels := f.workSheetRelsReader(rels); sheetRels != nil {
+		for _, v := range sheetRels.Relationships {
+			if v.Type == SourceRelationshipComments {
+				return v.Target
+			}
 		}
 	}
 	return ""

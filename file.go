@@ -49,6 +49,7 @@ func NewFile() *File {
 	f.VMLDrawing = make(map[string]*vmlDrawing)
 	f.WorkBook = f.workbookReader()
 	f.WorkBookRels = f.workbookRelsReader()
+	f.WorkSheetRels = make(map[string]*xlsxWorkbookRels)
 	f.Sheet["xl/worksheets/sheet1.xml"] = f.workSheetReader("Sheet1")
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
 	f.Theme = f.themeReader()
@@ -99,9 +100,10 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	f.drawingRelsWriter()
 	f.drawingsWriter()
 	f.vmlDrawingWriter()
-	f.workbookWriter()
-	f.workbookRelsWriter()
-	f.worksheetWriter()
+	f.workBookWriter()
+	f.workBookRelsWriter()
+	f.workSheetWriter()
+	f.workSheetRelsWriter()
 	f.styleSheetWriter()
 
 	for path, content := range f.XLSX {

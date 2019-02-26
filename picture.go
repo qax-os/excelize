@@ -177,27 +177,25 @@ func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) 
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	var sheetRels xlsxWorkbookRels
+	sheetRels := f.workSheetRelsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxWorkbookRels{}
+	}
 	var rID = 1
 	var ID bytes.Buffer
 	ID.WriteString("rId")
 	ID.WriteString(strconv.Itoa(rID))
-	_, ok = f.XLSX[rels]
-	if ok {
-		ID.Reset()
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
-		rID = len(sheetRels.Relationships) + 1
-		ID.WriteString("rId")
-		ID.WriteString(strconv.Itoa(rID))
-	}
+	ID.Reset()
+	rID = len(sheetRels.Relationships) + 1
+	ID.WriteString("rId")
+	ID.WriteString(strconv.Itoa(rID))
 	sheetRels.Relationships = append(sheetRels.Relationships, xlsxWorkbookRelation{
 		ID:         ID.String(),
 		Type:       relType,
 		Target:     target,
 		TargetMode: targetMode,
 	})
-	output, _ := xml.Marshal(sheetRels)
-	f.saveFileList(rels, output)
+	f.WorkSheetRels[rels] = sheetRels
 	return rID
 }
 
@@ -210,15 +208,16 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	var sheetRels xlsxWorkbookRels
-	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
+	sheetRels := f.workSheetRelsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxWorkbookRels{}
+	}
 	for k, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
-	output, _ := xml.Marshal(sheetRels)
-	f.saveFileList(rels, output)
+	f.WorkSheetRels[rels] = sheetRels
 }
 
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
@@ -441,8 +440,10 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	var sheetRels xlsxWorkbookRels
-	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rels)), &sheetRels)
+	sheetRels := f.workSheetRelsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxWorkbookRels{}
+	}
 	for _, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			return v.Target

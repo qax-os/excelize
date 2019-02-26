@@ -40,6 +40,7 @@ type File struct {
 	VMLDrawing       map[string]*vmlDrawing
 	WorkBook         *xlsxWorkbook
 	WorkBookRels     *xlsxWorkbookRels
+	WorkSheetRels    map[string]*xlsxWorkbookRels
 	XLSX             map[string][]byte
 }
 
@@ -84,6 +85,7 @@ func OpenReader(r io.Reader) (*File, error) {
 		SheetCount:       sheetCount,
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
 		VMLDrawing:       make(map[string]*vmlDrawing),
+		WorkSheetRels:    make(map[string]*xlsxWorkbookRels),
 		XLSX:             file,
 	}
 	f.CalcChain = f.calcChainReader()

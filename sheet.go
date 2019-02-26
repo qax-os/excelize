@@ -88,18 +88,18 @@ func (f *File) workbookReader() *xlsxWorkbook {
 	return f.WorkBook
 }
 
-// workbookWriter provides a function to save xl/workbook.xml after serialize
+// workBookWriter provides a function to save xl/workbook.xml after serialize
 // structure.
-func (f *File) workbookWriter() {
+func (f *File) workBookWriter() {
 	if f.WorkBook != nil {
 		output, _ := xml.Marshal(f.WorkBook)
 		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpaceBytes(output))
 	}
 }
 
-// worksheetWriter provides a function to save xl/worksheets/sheet%d.xml after
+// workSheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
-func (f *File) worksheetWriter() {
+func (f *File) workSheetWriter() {
 	for path, sheet := range f.Sheet {
 		if sheet != nil {
 			for k, v := range sheet.SheetData.Row {
@@ -172,9 +172,9 @@ func (f *File) workbookRelsReader() *xlsxWorkbookRels {
 	return f.WorkBookRels
 }
 
-// workbookRelsWriter provides a function to save xl/_rels/workbook.xml.rels after
+// workBookRelsWriter provides a function to save xl/_rels/workbook.xml.rels after
 // serialize structure.
-func (f *File) workbookRelsWriter() {
+func (f *File) workBookRelsWriter() {
 	if f.WorkBookRels != nil {
 		output, _ := xml.Marshal(f.WorkBookRels)
 		f.saveFileList("xl/_rels/workbook.xml.rels", output)
@@ -1002,4 +1002,29 @@ func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 		opt.getPageLayout(ps)
 	}
 	return nil
+}
+
+// workSheetRelsReader provides a function to get the pointer to the structure
+// after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
+func (f *File) workSheetRelsReader(path string) *xlsxWorkbookRels {
+	if f.WorkSheetRels[path] == nil {
+		_, ok := f.XLSX[path]
+		if ok {
+			c := xlsxWorkbookRels{}
+			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &c)
+			f.WorkSheetRels[path] = &c
+		}
+	}
+	return f.WorkSheetRels[path]
+}
+
+// workSheetRelsWriter provides a function to save
+// xl/worksheets/_rels/sheet%d.xml.rels after serialize structure.
+func (f *File) workSheetRelsWriter() {
+	for path, r := range f.WorkSheetRels {
+		if r != nil {
+			v, _ := xml.Marshal(r)
+			f.saveFileList(path, v)
+		}
+	}
 }
