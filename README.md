@@ -17,10 +17,8 @@ Excelize is a library written in pure Go and providing a set of functions that a
 
 **WARNING!**
 
-Please note that row manipulation methods using different row numbering.
-Some part of methods using zero-based row indexses while another using Excel row numbering starting with 1.
-
-Please use Row methods with suffix `2` (`RemoveRow2()` for example) if present to operate Excel row numberinng.   
+From version 1.5 all row manipulation methods uses Excel row numbering starting with `1` instead of zero-based numbering
+which take place in some methods in eraler versions.   
 
 ## Basic Usage
 
