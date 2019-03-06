@@ -285,21 +285,12 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	}
 }
 
-// SetRowVisible provides a function to set visible of a single row by given
-// worksheet name and ZERO-based row index. For example, hide row 1 in Sheet1:
+// SetRowVisible2 provides a function to set visible of a single row by given
+// worksheet name and Excel row number. For example, hide row 2 in Sheet1:
 //
 //    xlsx.SetRowVisible("Sheet1", 2, false)
 //
 func (f *File) SetRowVisible(sheet string, row int, visible bool) {
-	f.SetRowVisible2(sheet, row+1, visible)
-}
-
-// SetRowVisible2 provides a function to set visible of a single row by given
-// worksheet name and Excel row number. For example, hide row 2 in Sheet1:
-//
-//    xlsx.SetRowVisible2("Sheet1", 2, false)
-//
-func (f *File) SetRowVisible2(sheet string, row int, visible bool) {
 	xlsx := f.workSheetReader(sheet)
 	if row < 1 {
 		return
@@ -314,25 +305,14 @@ func (f *File) SetRowVisible2(sheet string, row int, visible bool) {
 	xlsx.SheetData.Row[rowIdx].Hidden = true
 }
 
-// GetRowVisible provides a function to get visible of a single row by given
-// worksheet name and ZERO-based row index.
-// For example, get visible state of row 1 in
-// Sheet1:
-//
-//    xlsx.GetRowVisible("Sheet1", 2)
-//
-func (f *File) GetRowVisible(sheet string, row int) bool {
-	return f.GetRowVisible2(sheet, row+1)
-}
-
 // GetRowVisible2 provides a function to get visible of a single row by given
 // worksheet name and Excel row number.
 // For example, get visible state of row 2 in
 // Sheet1:
 //
-//    xlsx.GetRowVisible2("Sheet1", 2)
+//    xlsx.GetRowVisible("Sheet1", 2)
 //
-func (f *File) GetRowVisible2(sheet string, row int) bool {
+func (f *File) GetRowVisible(sheet string, row int) bool {
 	xlsx := f.workSheetReader(sheet)
 	if row < 1 || row > len(xlsx.SheetData.Row) {
 		return false
@@ -344,22 +324,12 @@ func (f *File) GetRowVisible2(sheet string, row int) bool {
 }
 
 // SetRowOutlineLevel provides a function to set outline level number of a
-// single row by given worksheet name and ZERO-based row index. For example, outline row
-// 2 in Sheet1 to level 1:
-//
-//    xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
-//
-func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) {
-	f.SetRowOutlineLevel2(sheet, row+1, level)
-}
-
-// SetRowOutlineLevel provides a function to set outline level number of a
 // single row by given worksheet name and Excel row number. For example, outline row
 // 2 in Sheet1 to level 1:
 //
 //    xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
 //
-func (f *File) SetRowOutlineLevel2(sheet string, row int, level uint8) {
+func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) {
 	xlsx := f.workSheetReader(sheet)
 	if row < 1 {
 		return
@@ -370,22 +340,12 @@ func (f *File) SetRowOutlineLevel2(sheet string, row int, level uint8) {
 }
 
 // GetRowOutlineLevel provides a function to get outline level number of a
-// single row by given worksheet name and ZERO-based row index.
-// For example, get outline number of row 3 in Sheet1:
-//
-//    xlsx.GetRowOutlineLevel("Sheet1", 2)
-//
-func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
-	return f.GetRowOutlineLevel2(sheet, row+1)
-}
-
-// GetRowOutlineLevel provides a function to get outline level number of a
 // single row by given worksheet name and Exce row number.
 // For example, get outline number of row 2 in Sheet1:
 //
 //    xlsx.GetRowOutlineLevel("Sheet1", 2)
 //
-func (f *File) GetRowOutlineLevel2(sheet string, row int) uint8 {
+func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
 	xlsx := f.workSheetReader(sheet)
 	if row < 1 || row > len(xlsx.SheetData.Row) {
 		return 0
@@ -393,29 +353,16 @@ func (f *File) GetRowOutlineLevel2(sheet string, row int) uint8 {
 	return xlsx.SheetData.Row[row-1].OutlineLevel
 }
 
-// RemoveRow provides a function to remove single row by given worksheet name
-// and ZERO-based row index. For example, remove row 3 in Sheet1:
+// RemoveRow2 provides a function to remove single row by given worksheet name
+// and Excel row number. For example, remove row 3 in Sheet1:
 //
-//    xlsx.RemoveRow("Sheet1", 2)
+//    xlsx.RemoveRow("Sheet1", 3)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) RemoveRow(sheet string, row int) {
-	f.RemoveRow2(sheet, row+1)
-}
-
-// RemoveRow2 provides a function to remove single row by given worksheet name
-// and Excel row number. For example, remove row 3 in Sheet1:
-//
-//    xlsx.RemoveRow2("Sheet1", 3)
-//
-// Use this method with caution, which will affect changes in references such
-// as formulas, charts, and so on. If there is any referenced value of the
-// worksheet, it will cause a file error when you open it. The excelize only
-// partially updates these references currently.
-func (f *File) RemoveRow2(sheet string, row int) {
 	xlsx := f.workSheetReader(sheet)
 	if row < 1 || row > len(xlsx.SheetData.Row) {
 		return
@@ -429,21 +376,12 @@ func (f *File) RemoveRow2(sheet string, row int) {
 	}
 }
 
-// InsertRow provides a function to insert a new row after given ZERO-based row index.
-// For example, create a new row before row 3 in Sheet1:
-//
-//    xlsx.InsertRow("Sheet1", 2)
-//
-func (f *File) InsertRow(sheet string, row int) {
-	f.InsertRow2(sheet, row+1)
-}
-
 // InsertRow2 provides a function to insert a new row after given Excel row number
 // starting from 1. For example, create a new row before row 3 in Sheet1:
 //
-//    xlsx.InsertRow2("Sheet1", 3)
+//    xlsx.InsertRow("Sheet1", 3)
 //
-func (f *File) InsertRow2(sheet string, row int) {
+func (f *File) InsertRow(sheet string, row int) {
 	if row < 1 {
 		return
 	}

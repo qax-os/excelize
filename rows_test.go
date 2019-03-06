@@ -96,12 +96,7 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow2(sheet1, -1)
-	if !assert.Len(t, r.SheetData.Row, rowCount) {
-		t.FailNow()
-	}
-
-	xlsx.RemoveRow2(sheet1, 0)
+	xlsx.RemoveRow(sheet1, 0)
 	if !assert.Len(t, r.SheetData.Row, rowCount) {
 		t.FailNow()
 	}
@@ -128,17 +123,17 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow2(sheet1, 1)
+	xlsx.RemoveRow(sheet1, 1)
 	if !assert.Len(t, r.SheetData.Row, rowCount-4) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow2(sheet1, 2)
+	xlsx.RemoveRow(sheet1, 2)
 	if !assert.Len(t, r.SheetData.Row, rowCount-5) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow2(sheet1, 1)
+	xlsx.RemoveRow(sheet1, 1)
 	if !assert.Len(t, r.SheetData.Row, rowCount-6) {
 		t.FailNow()
 	}
@@ -168,28 +163,18 @@ func TestInsertRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	xlsx.InsertRow2(sheet1, -1)
-	if !assert.Len(t, r.SheetData.Row, rowCount) {
-		t.FailNow()
-	}
-
-	xlsx.InsertRow2(sheet1, 0)
-	if !assert.Len(t, r.SheetData.Row, rowCount) {
-		t.FailNow()
-	}
-
 	xlsx.InsertRow(sheet1, 0)
+	if !assert.Len(t, r.SheetData.Row, rowCount) {
+		t.FailNow()
+	}
+
+	xlsx.InsertRow(sheet1, 1)
 	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
 		t.FailNow()
 	}
 
-	xlsx.InsertRow2(sheet1, 1)
-	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
-		t.FailNow()
-	}
-
 	xlsx.InsertRow(sheet1, 4)
-	if !assert.Len(t, r.SheetData.Row, rowCount+3) {
+	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
 		t.FailNow()
 	}
 
@@ -202,11 +187,11 @@ func TestInsertRowInEmptyFile(t *testing.T) {
 	xlsx := NewFile()
 	sheet1 := xlsx.GetSheetName(1)
 	r := xlsx.workSheetReader(sheet1)
-	xlsx.InsertRow2(sheet1, 1)
+	xlsx.InsertRow(sheet1, 1)
 	assert.Len(t, r.SheetData.Row, 0)
-	xlsx.InsertRow2(sheet1, 2)
+	xlsx.InsertRow(sheet1, 2)
 	assert.Len(t, r.SheetData.Row, 0)
-	xlsx.InsertRow2(sheet1, 99)
+	xlsx.InsertRow(sheet1, 99)
 	assert.Len(t, r.SheetData.Row, 0)
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }
