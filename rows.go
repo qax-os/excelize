@@ -285,7 +285,7 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	}
 }
 
-// SetRowVisible2 provides a function to set visible of a single row by given
+// SetRowVisible provides a function to set visible of a single row by given
 // worksheet name and Excel row number. For example, hide row 2 in Sheet1:
 //
 //    xlsx.SetRowVisible("Sheet1", 2, false)
@@ -305,10 +305,9 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) {
 	xlsx.SheetData.Row[rowIdx].Hidden = true
 }
 
-// GetRowVisible2 provides a function to get visible of a single row by given
-// worksheet name and Excel row number.
-// For example, get visible state of row 2 in
-// Sheet1:
+// GetRowVisible provides a function to get visible of a single row by given
+// worksheet name and Excel row number. For example, get visible state of row
+// 2 in Sheet1:
 //
 //    xlsx.GetRowVisible("Sheet1", 2)
 //
@@ -376,8 +375,9 @@ func (f *File) RemoveRow(sheet string, row int) {
 	}
 }
 
-// InsertRow2 provides a function to insert a new row after given Excel row number
-// starting from 1. For example, create a new row before row 3 in Sheet1:
+// InsertRow provides a function to insert a new row after given Excel row
+// number starting from 1. For example, create a new row before row 3 in
+// Sheet1:
 //
 //    xlsx.InsertRow("Sheet1", 3)
 //
