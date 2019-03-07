@@ -352,7 +352,7 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
 	return xlsx.SheetData.Row[row-1].OutlineLevel
 }
 
-// RemoveRow2 provides a function to remove single row by given worksheet name
+// RemoveRow provides a function to remove single row by given worksheet name
 // and Excel row number. For example, remove row 3 in Sheet1:
 //
 //    xlsx.RemoveRow("Sheet1", 3)

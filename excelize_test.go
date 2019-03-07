@@ -846,7 +846,9 @@ func TestRowVisibility(t *testing.T) {
 
 	xlsx.SetRowVisible("Sheet3", 2, false)
 	xlsx.SetRowVisible("Sheet3", 2, true)
+	xlsx.SetRowVisible("Sheet3", 0, true)
 	xlsx.GetRowVisible("Sheet3", 2)
+	xlsx.GetRowVisible("Sheet3", 0)
 
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
 }
@@ -1244,7 +1246,9 @@ func TestOutlineLevel(t *testing.T) {
 	xlsx.SetColWidth("Sheet2", "A", "D", 13)
 	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
 	xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
+	xlsx.SetRowOutlineLevel("Sheet1", 0, 1)
 	xlsx.GetRowOutlineLevel("Sheet1", 2)
+	xlsx.GetRowOutlineLevel("Sheet1", 0)
 	err := xlsx.SaveAs(filepath.Join("test", "TestOutlineLevel.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()

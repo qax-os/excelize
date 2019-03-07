@@ -42,6 +42,9 @@ func TestRows(t *testing.T) {
 			t.FailNow()
 		}
 	}
+
+	r := Rows{}
+	r.Columns()
 }
 
 func TestRowsError(t *testing.T) {
