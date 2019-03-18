@@ -1240,14 +1240,14 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 // addDrawingChart provides a function to add chart graphic frame by given
 // sheet, drawingXML, cell, width, height, relationship index and format sets.
 func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, formatSet *formatPicture) {
-	cell = strings.ToUpper(cell)
-	fromCol := string(strings.Map(letterOnlyMapF, cell))
-	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
-	row := fromRow - 1
-	col := TitleToNumber(fromCol)
+	col, row := MustCellNameToCoordinates(cell)
+	colIdx := col - 1
+	rowIdx := row - 1
+
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning

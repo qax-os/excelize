@@ -11,6 +11,7 @@ package excelize
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -29,18 +30,18 @@ const (
 	STCellFormulaTypeShared = "shared"
 )
 
-// mergeCellsParser provides a function to check merged cells in worksheet by
-// given axis.
-func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
-	axis = strings.ToUpper(axis)
-	if xlsx.MergeCells != nil {
-		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
-				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
-			}
+// GetCellValue provides a function to get formatted value from cell by given
+// worksheet name and axis in XLSX file. If it is possible to apply a format
+// to the cell value, it will do so, if not then an error will be returned,
+// along with the raw value of the cell.
+func (f *File) GetCellValue(sheet, axis string) string {
+	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool) {
+		val, err := c.getValueFrom(f, f.sharedStringsReader())
+		if err != nil {
+			panic(err) // Fail fast to avoid future side effects!
 		}
-	}
-	return axis
+		return val, true
+	})
 }
 
 // SetCellValue provides a function to set value of a cell. The following
@@ -68,115 +69,353 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 // Note that default date format is m/d/yy h:mm of time.Time type value. You can
 // set numbers format by SetCellStyle() method.
 func (f *File) SetCellValue(sheet, axis string, value interface{}) {
-	switch t := value.(type) {
+	switch v := value.(type) {
+	case int:
+		f.SetCellInt(sheet, axis, v)
+	case int8:
+		f.SetCellInt(sheet, axis, int(v))
+	case int16:
+		f.SetCellInt(sheet, axis, int(v))
+	case int32:
+		f.SetCellInt(sheet, axis, int(v))
+	case int64:
+		f.SetCellInt(sheet, axis, int(v))
+	case uint:
+		f.SetCellInt(sheet, axis, int(v))
+	case uint8:
+		f.SetCellInt(sheet, axis, int(v))
+	case uint16:
+		f.SetCellInt(sheet, axis, int(v))
+	case uint32:
+		f.SetCellInt(sheet, axis, int(v))
+	case uint64:
+		f.SetCellInt(sheet, axis, int(v))
 	case float32:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(v), 'f', -1, 32))
 	case float64:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(v, 'f', -1, 64))
 	case string:
-		f.SetCellStr(sheet, axis, t)
+		f.SetCellStr(sheet, axis, v)
 	case []byte:
-		f.SetCellStr(sheet, axis, string(t))
+		f.SetCellStr(sheet, axis, string(v))
 	case time.Duration:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(time.Duration).Seconds()/86400), 'f', -1, 32))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(v.Seconds()/86400.0, 'f', -1, 32))
 		f.setDefaultTimeStyle(sheet, axis, 21)
 	case time.Time:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 64))
-		f.setDefaultTimeStyle(sheet, axis, 22)
+		vv := timeToExcelTime(v)
+		if vv > 0 {
+			f.SetCellDefault(sheet, axis, strconv.FormatFloat(timeToExcelTime(v), 'f', -1, 64))
+			f.setDefaultTimeStyle(sheet, axis, 22)
+		} else {
+			f.SetCellStr(sheet, axis, v.Format(time.RFC3339Nano))
+		}
+	case bool:
+		f.SetCellBool(sheet, axis, v)
 	case nil:
 		f.SetCellStr(sheet, axis, "")
-	case bool:
-		f.SetCellBool(sheet, axis, bool(value.(bool)))
-	default:
-		f.setCellIntValue(sheet, axis, value)
-	}
-}
-
-// setCellIntValue provides a function to set int value of a cell.
-func (f *File) setCellIntValue(sheet, axis string, value interface{}) {
-	switch value.(type) {
-	case int:
-		f.SetCellInt(sheet, axis, value.(int))
-	case int8:
-		f.SetCellInt(sheet, axis, int(value.(int8)))
-	case int16:
-		f.SetCellInt(sheet, axis, int(value.(int16)))
-	case int32:
-		f.SetCellInt(sheet, axis, int(value.(int32)))
-	case int64:
-		f.SetCellInt(sheet, axis, int(value.(int64)))
-	case uint:
-		f.SetCellInt(sheet, axis, int(value.(uint)))
-	case uint8:
-		f.SetCellInt(sheet, axis, int(value.(uint8)))
-	case uint16:
-		f.SetCellInt(sheet, axis, int(value.(uint16)))
-	case uint32:
-		f.SetCellInt(sheet, axis, int(value.(uint32)))
-	case uint64:
-		f.SetCellInt(sheet, axis, int(value.(uint64)))
 	default:
 		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
 	}
 }
 
-// SetCellBool provides a function to set bool type value of a cell by given
+// SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell coordinates and cell value.
+func (f *File) SetCellInt(sheet, axis string, value int) {
+	xlsx := f.workSheetReader(sheet)
+	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
+	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
+	cellData.T = ""
+	cellData.V = strconv.Itoa(value)
+}
+
+// SetCellBool provides a function to set bool type value of a cell by given
+// worksheet name, cell name and cell value.
 func (f *File) SetCellBool(sheet, axis string, value bool) {
 	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return
-	}
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = "b"
+	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
+	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
+	cellData.T = "b"
 	if value {
-		xlsx.SheetData.Row[xAxis].C[yAxis].V = "1"
+		cellData.V = "1"
 	} else {
-		xlsx.SheetData.Row[xAxis].C[yAxis].V = "0"
+		cellData.V = "0"
 	}
 }
 
-// GetCellValue provides a function to get formatted value from cell by given
-// worksheet name and axis in XLSX file. If it is possible to apply a format
-// to the cell value, it will do so, if not then an error will be returned,
-// along with the raw value of the cell.
-func (f *File) GetCellValue(sheet, axis string) string {
+// SetCellStr provides a function to set string type value of a cell. Total
+// number of characters that a cell can contain 32767 characters.
+func (f *File) SetCellStr(sheet, axis, value string) {
 	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return ""
-	}
-	xAxis := row - 1
-	rows := len(xlsx.SheetData.Row)
-	if rows > 1 {
-		lastRow := xlsx.SheetData.Row[rows-1].R
-		if lastRow >= rows {
-			rows = lastRow
+	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
+
+	// Leading space(s) character detection.
+	if len(value) > 0 && value[0] == 32 {
+		cellData.XMLSpace = xml.Attr{
+			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+			Value: "preserve",
 		}
 	}
-	if rows < xAxis {
+
+	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
+	cellData.T = "str"
+	cellData.V = value
+}
+
+// SetCellDefault provides a function to set string type value of a cell as
+// default format without escaping the cell.
+func (f *File) SetCellDefault(sheet, axis, value string) {
+	xlsx := f.workSheetReader(sheet)
+	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
+	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
+	cellData.T = ""
+	cellData.V = value
+}
+
+// GetCellFormula provides a function to get formula from cell by given
+// worksheet name and axis in XLSX file.
+func (f *File) GetCellFormula(sheet, axis string) string {
+	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool) {
+		if c.F == nil {
+			return "", false
+		}
+		if c.F.T == STCellFormulaTypeShared {
+			return getSharedForumula(x, c.F.Si), true
+		}
+		return c.F.Content, true
+	})
+}
+
+// SetCellFormula provides a function to set cell formula by given string and
+// worksheet name.
+func (f *File) SetCellFormula(sheet, axis, formula string) {
+	xlsx := f.workSheetReader(sheet)
+	cellData, _, _ := f.prepareCell(xlsx, sheet, axis)
+
+	if formula == "" {
+		cellData.F = nil
+		f.deleteCalcChain(axis)
+		return
+	}
+
+	if cellData.F != nil {
+		cellData.F.Content = formula
+	} else {
+		cellData.F = &xlsxF{Content: formula}
+	}
+}
+
+// GetCellHyperLink provides a function to get cell hyperlink by given
+// worksheet name and axis. Boolean type value link will be ture if the cell
+// has a hyperlink and the target is the address of the hyperlink. Otherwise,
+// the value of link will be false and the value of the target will be a blank
+// string. For example get hyperlink of Sheet1!H6:
+//
+//    link, target := xlsx.GetCellHyperLink("Sheet1", "H6")
+//
+func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
+	// Check for correct cell name
+	if _, _, err := SplitCellName(axis); err != nil {
+		panic(err) // Fail fast to avoid possible future side effects
+	}
+
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+
+	if xlsx.Hyperlinks != nil {
+		for _, link := range xlsx.Hyperlinks.Hyperlink {
+			if link.Ref == axis {
+				if link.RID != "" {
+					return true, f.getSheetRelationshipsTargetByID(sheet, link.RID)
+				} else {
+					return true, link.Location
+				}
+			}
+		}
+	}
+	return false, ""
+}
+
+// SetCellHyperLink provides a function to set cell hyperlink by given
+// worksheet name and link URL address. LinkType defines two types of
+// hyperlink "External" for web site or "Location" for moving to one of cell
+// in this workbook. The below is example for external link.
+//
+//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+//    // Set underline and font color style for the cell.
+//    style, _ := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+//    xlsx.SetCellStyle("Sheet1", "A3", "A3", style)
+//
+// A this is another example for "Location":
+//
+//    xlsx.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
+//
+func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
+	// Check for correct cell name
+	if _, _, err := SplitCellName(axis); err != nil {
+		panic(err) // Fail fast to avoid possible future side effects
+	}
+
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+
+	var linkData xlsxHyperlink
+
+	switch linkType {
+	case "External":
+		linkData = xlsxHyperlink{
+			Ref: axis,
+		}
+		rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, linkType)
+		linkData.RID = "rId" + strconv.Itoa(rID)
+	case "Location":
+		linkData = xlsxHyperlink{
+			Ref:      axis,
+			Location: link,
+		}
+	default:
+		panic(fmt.Errorf("invalid link type %q", linkType))
+	}
+
+	if xlsx.Hyperlinks == nil {
+		xlsx.Hyperlinks = new(xlsxHyperlinks)
+	}
+	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, linkData)
+}
+
+// MergeCell provides a function to merge cells by given coordinate area and
+// sheet name. For example create a merged cell of D3:E9 on Sheet1:
+//
+//    xlsx.MergeCell("Sheet1", "D3", "E9")
+//
+// If you create a merged cell that overlaps with another existing merged cell,
+// those merged cells that already exist will be removed.
+func (f *File) MergeCell(sheet, hcell, vcell string) {
+	hcol, hrow, err := CellNameToCoordinates(hcell)
+	if err != nil {
+		panic(err)
+	}
+
+	vcol, vrow, err := CellNameToCoordinates(vcell)
+	if err != nil {
+		panic(err)
+	}
+
+	if hcol == vcol && hrow == vrow {
+		return
+	}
+
+	if vcol < hcol {
+		hcol, vcol = vcol, hcol
+	}
+
+	if vrow < hrow {
+		hrow, vrow = vrow, hrow
+	}
+
+	hcell, _ = CoordinatesToCellName(hcol, hrow)
+	vcell, _ = CoordinatesToCellName(vcol, vrow)
+
+	xlsx := f.workSheetReader(sheet)
+	if xlsx.MergeCells != nil {
+		ref := hcell + ":" + vcell
+		cells := make([]*xlsxMergeCell, 0, len(xlsx.MergeCells.Cells))
+
+		// Delete the merged cells of the overlapping area.
+		for _, cellData := range xlsx.MergeCells.Cells {
+			cc := strings.Split(cellData.Ref, ":")
+			if len(cc) != 2 {
+				panic(fmt.Errorf("invalid area %q", cellData.Ref))
+			}
+
+			if !checkCellInArea(hcell, cellData.Ref) && !checkCellInArea(vcell, cellData.Ref) &&
+				!checkCellInArea(cc[0], ref) && !checkCellInArea(cc[1], ref) {
+				cells = append(cells, cellData)
+			}
+		}
+		cells = append(xlsx.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
+		xlsx.MergeCells.Cells = cells
+	} else {
+		xlsx.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: hcell + ":" + vcell}}}
+	}
+}
+
+// SetSheetRow writes an array to row by given worksheet name, starting
+// coordinate and a pointer to array type 'slice'. For example, writes an
+// array to row 6 start with the cell B6 on Sheet1:
+//
+//     xlsx.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
+//
+func (f *File) SetSheetRow(sheet, axis string, slice interface{}) {
+	col, row, err := CellNameToCoordinates(axis)
+	if err != nil {
+		panic(err) // Fail fast to avoid future side effects!
+	}
+
+	// Make sure 'slice' is a Ptr to Slice
+	v := reflect.ValueOf(slice)
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
+		panic(errors.New("pointer to slice expected")) // Fail fast to avoid future side effects!
+	}
+	v = v.Elem()
+
+	for i := 0; i < v.Len(); i++ {
+		cell, err := CoordinatesToCellName(col+i, row)
+		// Error should never happens here. But keep ckecking to early detect regresions
+		// if it will be introduced in furure
+		if err != nil {
+			panic(err) // Fail fast to avoid future side effects!
+		}
+		f.SetCellValue(sheet, cell, v.Index(i).Interface())
+	}
+}
+
+// getCellInfo does common preparation for all SetCell* methods.
+func (f *File) prepareCell(xlsx *xlsxWorksheet, sheet, cell string) (*xlsxC, int, int) {
+	cell = f.mergeCellsParser(xlsx, cell)
+
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		panic(err) // Fail fast and prevent future side effects
+	}
+
+	prepareSheetXML(xlsx, col, row)
+
+	return &xlsx.SheetData.Row[row-1].C[col-1], col, row
+}
+
+// getCellStringFunc does common value extraction workflow for all GetCell* methods.
+// Passed function implements specific part of required logic.
+func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c *xlsxC) (string, bool)) string {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+
+	_, row, err := CellNameToCoordinates(axis)
+	if err != nil {
+		panic(err) // Fail fast to avoid future side effects!
+	}
+
+	lastRowNum := 0
+	if l := len(xlsx.SheetData.Row); l > 0 {
+		lastRowNum = xlsx.SheetData.Row[l-1].R
+	}
+
+	// keep in mind: row starts from 1
+	if row > lastRowNum {
 		return ""
 	}
-	for k := range xlsx.SheetData.Row {
-		if xlsx.SheetData.Row[k].R == row {
-			for i := range xlsx.SheetData.Row[k].C {
-				if axis == xlsx.SheetData.Row[k].C[i].R {
-					val, _ := xlsx.SheetData.Row[k].C[i].getValueFrom(f, f.sharedStringsReader())
-					return val
-				}
+
+	for rowIdx := range xlsx.SheetData.Row {
+		rowData := &xlsx.SheetData.Row[rowIdx]
+		if rowData.R != row {
+			continue
+		}
+		for colIdx := range rowData.C {
+			colData := &rowData.C[colIdx]
+			if axis != colData.R {
+				continue
+			}
+			if val, ok := fn(xlsx, colData); ok {
+				return val
 			}
 		}
 	}
@@ -198,64 +437,50 @@ func (f *File) formattedValue(s int, v string) string {
 	return v
 }
 
-// GetCellStyle provides a function to get cell style index by given worksheet
-// name and cell coordinates.
-func (f *File) GetCellStyle(sheet, axis string) int {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return 0
-	}
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	return f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-}
-
-// GetCellFormula provides a function to get formula from cell by given
-// worksheet name and axis in XLSX file.
-func (f *File) GetCellFormula(sheet, axis string) string {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return ""
-	}
-	xAxis := row - 1
-	rows := len(xlsx.SheetData.Row)
-	if rows > 1 {
-		lastRow := xlsx.SheetData.Row[rows-1].R
-		if lastRow >= rows {
-			rows = lastRow
-		}
-	}
-	if rows < xAxis {
-		return ""
-	}
-	for k := range xlsx.SheetData.Row {
-		if xlsx.SheetData.Row[k].R == row {
-			for i := range xlsx.SheetData.Row[k].C {
-				if axis == xlsx.SheetData.Row[k].C[i].R {
-					if xlsx.SheetData.Row[k].C[i].F == nil {
-						continue
-					}
-					if xlsx.SheetData.Row[k].C[i].F.T == STCellFormulaTypeShared {
-						return getSharedForumula(xlsx, xlsx.SheetData.Row[k].C[i].F.Si)
-					}
-					return xlsx.SheetData.Row[k].C[i].F.Content
-				}
+// prepareCellStyle provides a function to prepare style index of cell in
+// worksheet by given column index and style index.
+func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
+	if xlsx.Cols != nil && style == 0 {
+		for _, c := range xlsx.Cols.Col {
+			if c.Min <= col && col <= c.Max {
+				style = c.Style
 			}
 		}
 	}
-	return ""
+	return style
+}
+
+// mergeCellsParser provides a function to check merged cells in worksheet by
+// given axis.
+func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
+	axis = strings.ToUpper(axis)
+	if xlsx.MergeCells != nil {
+		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+			if checkCellInArea(axis, xlsx.MergeCells.Cells[i].Ref) {
+				axis = strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
+	return axis
+}
+
+// checkCellInArea provides a function to determine if a given coordinate is
+// within an area.
+func checkCellInArea(cell, area string) bool {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		panic(err)
+	}
+
+	rng := strings.Split(area, ":")
+	if len(rng) != 2 {
+		return false
+	}
+
+	firstCol, firtsRow, _ := CellNameToCoordinates(rng[0])
+	lastCol, lastRow, _ := CellNameToCoordinates(rng[1])
+
+	return col >= firstCol && col <= lastCol && row >= firtsRow && row <= lastRow
 }
 
 // getSharedForumula find a cell contains the same formula as another cell,
@@ -267,338 +492,12 @@ func (f *File) GetCellFormula(sheet, axis string) string {
 // Note that this function not validate ref tag to check the cell if or not in
 // allow area, and always return origin shared formula.
 func getSharedForumula(xlsx *xlsxWorksheet, si string) string {
-	for k := range xlsx.SheetData.Row {
-		for i := range xlsx.SheetData.Row[k].C {
-			if xlsx.SheetData.Row[k].C[i].F == nil {
-				continue
-			}
-			if xlsx.SheetData.Row[k].C[i].F.T != STCellFormulaTypeShared {
-				continue
-			}
-			if xlsx.SheetData.Row[k].C[i].F.Si != si {
-				continue
-			}
-			if xlsx.SheetData.Row[k].C[i].F.Ref != "" {
-				return xlsx.SheetData.Row[k].C[i].F.Content
+	for _, r := range xlsx.SheetData.Row {
+		for _, c := range r.C {
+			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si == si {
+				return c.F.Content
 			}
 		}
 	}
 	return ""
-}
-
-// SetCellFormula provides a function to set cell formula by given string and
-// worksheet name.
-func (f *File) SetCellFormula(sheet, axis, formula string) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return
-	}
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	if formula == "" {
-		xlsx.SheetData.Row[xAxis].C[yAxis].F = nil
-		f.deleteCalcChain(axis)
-		return
-	}
-	if xlsx.SheetData.Row[xAxis].C[yAxis].F != nil {
-		xlsx.SheetData.Row[xAxis].C[yAxis].F.Content = formula
-	} else {
-		f := xlsxF{
-			Content: formula,
-		}
-		xlsx.SheetData.Row[xAxis].C[yAxis].F = &f
-	}
-}
-
-// SetCellHyperLink provides a function to set cell hyperlink by given
-// worksheet name and link URL address. LinkType defines two types of
-// hyperlink "External" for web site or "Location" for moving to one of cell
-// in this workbook. The below is example for external link.
-//
-//    xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
-//    // Set underline and font color style for the cell.
-//    style, _ := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
-//    xlsx.SetCellStyle("Sheet1", "A3", "A3", style)
-//
-// A this is another example for "Location":
-//
-//    xlsx.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
-//
-func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	linkTypes := map[string]xlsxHyperlink{
-		"External": {},
-		"Location": {Location: link},
-	}
-	hyperlink, ok := linkTypes[linkType]
-	if !ok || axis == "" {
-		return
-	}
-	hyperlink.Ref = axis
-	if linkType == "External" {
-		rID := f.addSheetRelationships(sheet, SourceRelationshipHyperLink, link, linkType)
-		hyperlink.RID = "rId" + strconv.Itoa(rID)
-	}
-	if xlsx.Hyperlinks == nil {
-		xlsx.Hyperlinks = &xlsxHyperlinks{}
-	}
-	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, hyperlink)
-}
-
-// GetCellHyperLink provides a function to get cell hyperlink by given
-// worksheet name and axis. Boolean type value link will be ture if the cell
-// has a hyperlink and the target is the address of the hyperlink. Otherwise,
-// the value of link will be false and the value of the target will be a blank
-// string. For example get hyperlink of Sheet1!H6:
-//
-//    link, target := xlsx.GetCellHyperLink("Sheet1", "H6")
-//
-func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
-	var link bool
-	var target string
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	if xlsx.Hyperlinks == nil || axis == "" {
-		return link, target
-	}
-	for h := range xlsx.Hyperlinks.Hyperlink {
-		if xlsx.Hyperlinks.Hyperlink[h].Ref == axis {
-			link = true
-			target = xlsx.Hyperlinks.Hyperlink[h].Location
-			if xlsx.Hyperlinks.Hyperlink[h].RID != "" {
-				target = f.getSheetRelationshipsTargetByID(sheet, xlsx.Hyperlinks.Hyperlink[h].RID)
-			}
-		}
-	}
-	return link, target
-}
-
-// MergeCell provides a function to merge cells by given coordinate area and
-// sheet name. For example create a merged cell of D3:E9 on Sheet1:
-//
-//    xlsx.MergeCell("Sheet1", "D3", "E9")
-//
-// If you create a merged cell that overlaps with another existing merged cell,
-// those merged cells that already exist will be removed.
-func (f *File) MergeCell(sheet, hcell, vcell string) {
-	if hcell == vcell {
-		return
-	}
-
-	hcell = strings.ToUpper(hcell)
-	vcell = strings.ToUpper(vcell)
-
-	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hcol := string(strings.Map(letterOnlyMapF, hcell))
-	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
-	hyAxis := hrow - 1
-	hxAxis := TitleToNumber(hcol)
-
-	vcol := string(strings.Map(letterOnlyMapF, vcell))
-	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
-	vyAxis := vrow - 1
-	vxAxis := TitleToNumber(vcol)
-
-	if vxAxis < hxAxis {
-		hcell, vcell = vcell, hcell
-		vxAxis, hxAxis = hxAxis, vxAxis
-	}
-
-	if vyAxis < hyAxis {
-		hcell, vcell = vcell, hcell
-		vyAxis, hyAxis = hyAxis, vyAxis
-	}
-
-	xlsx := f.workSheetReader(sheet)
-	if xlsx.MergeCells != nil {
-		mergeCell := xlsxMergeCell{}
-		// Correct the coordinate area, such correct C1:B3 to B1:C3.
-		mergeCell.Ref = ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
-		// Delete the merged cells of the overlapping area.
-		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-			if checkCellInArea(hcell, xlsx.MergeCells.Cells[i].Ref) || checkCellInArea(strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[0], mergeCell.Ref) {
-				xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:i], xlsx.MergeCells.Cells[i+1:]...)
-			} else if checkCellInArea(vcell, xlsx.MergeCells.Cells[i].Ref) || checkCellInArea(strings.Split(xlsx.MergeCells.Cells[i].Ref, ":")[1], mergeCell.Ref) {
-				xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:i], xlsx.MergeCells.Cells[i+1:]...)
-			}
-		}
-		xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells, &mergeCell)
-	} else {
-		mergeCell := xlsxMergeCell{}
-		// Correct the coordinate area, such correct C1:B3 to B1:C3.
-		mergeCell.Ref = ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
-		mergeCells := xlsxMergeCells{}
-		mergeCells.Cells = append(mergeCells.Cells, &mergeCell)
-		xlsx.MergeCells = &mergeCells
-	}
-}
-
-// SetCellInt provides a function to set int type value of a cell by given
-// worksheet name, cell coordinates and cell value.
-func (f *File) SetCellInt(sheet, axis string, value int) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return
-	}
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
-	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
-}
-
-// prepareCellStyle provides a function to prepare style index of cell in
-// worksheet by given column index and style index.
-func (f *File) prepareCellStyle(xlsx *xlsxWorksheet, col, style int) int {
-	if xlsx.Cols != nil && style == 0 {
-		for _, v := range xlsx.Cols.Col {
-			if v.Min <= col && col <= v.Max {
-				style = v.Style
-			}
-		}
-	}
-	return style
-}
-
-// SetCellStr provides a function to set string type value of a cell. Total
-// number of characters that a cell can contain 32767 characters.
-func (f *File) SetCellStr(sheet, axis, value string) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	if len(value) > 32767 {
-		value = value[0:32767]
-	}
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return
-	}
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	// Leading space(s) character detection.
-	if len(value) > 0 {
-		if value[0] == 32 {
-			xlsx.SheetData.Row[xAxis].C[yAxis].XMLSpace = xml.Attr{
-				Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-				Value: "preserve",
-			}
-		}
-	}
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = "str"
-	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
-}
-
-// SetCellDefault provides a function to set string type value of a cell as
-// default format without escaping the cell.
-func (f *File) SetCellDefault(sheet, axis, value string) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return
-	}
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
-	xlsx.SheetData.Row[xAxis].C[yAxis].V = value
-}
-
-// SetSheetRow writes an array to row by given worksheet name, starting
-// coordinate and a pointer to array type 'slice'. For example, writes an
-// array to row 6 start with the cell B6 on Sheet1:
-//
-//     xlsx.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
-//
-func (f *File) SetSheetRow(sheet, axis string, slice interface{}) {
-	xlsx := f.workSheetReader(sheet)
-	axis = f.mergeCellsParser(xlsx, axis)
-	col := string(strings.Map(letterOnlyMapF, axis))
-	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
-	if err != nil {
-		return
-	}
-	// Make sure 'slice' is a Ptr to Slice
-	v := reflect.ValueOf(slice)
-	if v.Kind() != reflect.Ptr {
-		return
-	}
-	v = v.Elem()
-	if v.Kind() != reflect.Slice {
-		return
-	}
-
-	xAxis := row - 1
-	yAxis := TitleToNumber(col)
-
-	rows := xAxis + 1
-	cell := yAxis + 1
-
-	completeRow(xlsx, rows, cell)
-	completeCol(xlsx, rows, cell)
-
-	idx := 0
-	for i := cell - 1; i < v.Len()+cell-1; i++ {
-		c := ToAlphaString(i) + strconv.Itoa(row)
-		f.SetCellValue(sheet, c, v.Index(idx).Interface())
-		idx++
-	}
-}
-
-// checkCellInArea provides a function to determine if a given coordinate is
-// within an area.
-func checkCellInArea(cell, area string) bool {
-	cell = strings.ToUpper(cell)
-	area = strings.ToUpper(area)
-
-	ref := strings.Split(area, ":")
-	if len(ref) < 2 {
-		return false
-	}
-
-	from := ref[0]
-	to := ref[1]
-
-	col, row := getCellColRow(cell)
-	fromCol, fromRow := getCellColRow(from)
-	toCol, toRow := getCellColRow(to)
-
-	return axisLowerOrEqualThan(fromCol, col) && axisLowerOrEqualThan(col, toCol) && axisLowerOrEqualThan(fromRow, row) && axisLowerOrEqualThan(row, toRow)
 }

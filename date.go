@@ -14,31 +14,53 @@ import (
 	"time"
 )
 
-// timeLocationUTC defined the UTC time location.
-var timeLocationUTC, _ = time.LoadLocation("UTC")
+const (
+	dayNanoseconds = 24 * time.Hour
+	maxDuration    = 290 * 364 * dayNanoseconds
+)
 
-// timeToUTCTime provides a function to convert time to UTC time.
-func timeToUTCTime(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), timeLocationUTC)
-}
+var (
+	excelMinTime1900      = time.Date(1899, time.December, 31, 0, 0, 0, 0, time.UTC)
+	excelBuggyPeriodStart = time.Date(1900, time.March, 1, 0, 0, 0, 0, time.UTC).Add(-time.Nanosecond)
+)
 
 // timeToExcelTime provides a function to convert time to Excel time.
 func timeToExcelTime(t time.Time) float64 {
 	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
-	var excelTime float64
-	var deltaDays int64
-	excelTime = 0
-	deltaDays = 290 * 364
-	// check if UnixNano would be out of int64 range
-	for t.Unix() > deltaDays*24*60*60 {
-		// reduce by aprox. 290 years, which is max for int64 nanoseconds
-		delta := time.Duration(deltaDays) * 24 * time.Hour
-		excelTime = excelTime + float64(deltaDays)
-		t = t.Add(-delta)
+
+	// Force user to explicit convet passed value to UTC time.
+	// Because for example 1900-01-01 00:00:00 +0300 MSK converts to 1900-01-01 00:00:00 +0230 LMT
+	// probably due to daylight saving.
+	if t.Location() != time.UTC {
+		panic("only UTC time expected")
 	}
-	// finally add remainder of UnixNano to keep nano precision
-	// and 25569 which is days between 1900 and 1970
-	return excelTime + float64(t.UnixNano())/8.64e13 + 25569.0
+
+	if t.Before(excelMinTime1900) {
+		return 0.0
+	}
+
+	tt := t
+	diff := t.Sub(excelMinTime1900)
+	result := float64(0)
+
+	for diff >= maxDuration {
+		result += float64(maxDuration / dayNanoseconds)
+		tt = tt.Add(-maxDuration)
+		diff = tt.Sub(excelMinTime1900)
+	}
+
+	rem := diff % dayNanoseconds
+	result += float64(diff-rem)/float64(dayNanoseconds) + float64(rem)/float64(dayNanoseconds)
+
+	// Excel dates after 28th February 1900 are actually one day out.
+	// Excel behaves as though the date 29th February 1900 existed, which it didn't.
+	// Microsoft intentionally included this bug in Excel so that it would remain compatible with the spreadsheet
+	// program that had the majority market share at the time; Lotus 1-2-3.
+	// https://www.myonlinetraininghub.com/excel-date-and-time
+	if t.After(excelBuggyPeriodStart) {
+		result += 1.0
+	}
+	return result
 }
 
 // shiftJulianToNoon provides a function to process julian date to noon.

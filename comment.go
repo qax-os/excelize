@@ -115,10 +115,9 @@ func (f *File) AddComment(sheet, cell, format string) error {
 // addDrawingVML provides a function to create comment as
 // xl/drawings/vmlDrawing%d.vml by given commit ID and cell.
 func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, colCount int) {
-	col := string(strings.Map(letterOnlyMapF, cell))
-	row, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
+	col, row := MustCellNameToCoordinates(cell)
+	yAxis := col - 1
 	xAxis := row - 1
-	yAxis := TitleToNumber(col)
 	vml := f.VMLDrawing[drawingVML]
 	if vml == nil {
 		vml = &vmlDrawing{

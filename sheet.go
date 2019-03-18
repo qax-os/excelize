@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -100,16 +99,16 @@ func (f *File) workBookWriter() {
 // workSheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
 func (f *File) workSheetWriter() {
-	for path, sheet := range f.Sheet {
+	for p, sheet := range f.Sheet {
 		if sheet != nil {
 			for k, v := range sheet.SheetData.Row {
-				f.Sheet[path].SheetData.Row[k].C = trimCell(v.C)
+				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 			}
 			output, _ := xml.Marshal(sheet)
-			f.saveFileList(path, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
-			ok := f.checked[path]
+			f.saveFileList(p, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+			ok := f.checked[p]
 			if ok {
-				f.checked[path] = false
+				f.checked[p] = false
 			}
 		}
 	}
@@ -679,7 +678,9 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) []string {
 		regSearch = r
 	}
 	xlsx := f.workSheetReader(sheet)
-	result := []string{}
+	var (
+		result []string
+	)
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return result
@@ -716,7 +717,9 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) []string {
 							continue
 						}
 					}
-					result = append(result, fmt.Sprintf("%s%d", strings.Map(letterOnlyMapF, colCell.R), r.R))
+
+					cellCol, _ := MustCellNameToCoordinates(colCell.R)
+					result = append(result, MustCoordinatesToCellName(cellCol, r.R))
 				}
 			}
 		default:
@@ -775,7 +778,7 @@ func (f *File) UnprotectSheet(sheet string) {
 // trimSheetName provides a function to trim invaild characters by given worksheet
 // name.
 func trimSheetName(name string) string {
-	r := []rune{}
+	var r []rune
 	for _, v := range name {
 		switch v {
 		case 58, 92, 47, 63, 42, 91, 93: // replace :\/?*[]
@@ -852,7 +855,7 @@ func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
 //
 // Available options:
 //   PageLayoutOrientation(string)
-//	 PageLayoutPaperSize(int)
+// 	 PageLayoutPaperSize(int)
 //
 // The following shows the paper size sorted by excelize index number:
 //
@@ -1021,10 +1024,31 @@ func (f *File) workSheetRelsReader(path string) *xlsxWorkbookRels {
 // workSheetRelsWriter provides a function to save
 // xl/worksheets/_rels/sheet%d.xml.rels after serialize structure.
 func (f *File) workSheetRelsWriter() {
-	for path, r := range f.WorkSheetRels {
+	for p, r := range f.WorkSheetRels {
 		if r != nil {
 			v, _ := xml.Marshal(r)
-			f.saveFileList(path, v)
+			f.saveFileList(p, v)
+		}
+	}
+}
+
+// fillSheetData fill missing row and cell XML data to made it continous from first cell [1, 1] to last cell [col, row]
+func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
+	rowCount := len(xlsx.SheetData.Row)
+	if rowCount < row {
+		// append missing rows
+		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1})
+		}
+	}
+	for rowIdx := range xlsx.SheetData.Row {
+		rowData := &xlsx.SheetData.Row[rowIdx] // take reference
+		cellCount := len(rowData.C)
+		if cellCount < col {
+			for colIdx := cellCount; colIdx < col; colIdx++ {
+				cellName, _ := CoordinatesToCellName(colIdx+1, rowIdx+1)
+				rowData.C = append(rowData.C, xlsxC{R: cellName})
+			}
 		}
 	}
 }

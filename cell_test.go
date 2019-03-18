@@ -9,7 +9,6 @@ import (
 func TestCheckCellInArea(t *testing.T) {
 	expectedTrueCellInAreaList := [][2]string{
 		{"c2", "A1:AAZ32"},
-		{"AA0", "Z0:AB1"},
 		{"B9", "A1:B9"},
 		{"C2", "C2:C2"},
 	}
@@ -18,7 +17,7 @@ func TestCheckCellInArea(t *testing.T) {
 		cell := expectedTrueCellInArea[0]
 		area := expectedTrueCellInArea[1]
 
-		assert.True(t, checkCellInArea(cell, area),
+		assert.Truef(t, checkCellInArea(cell, area),
 			"Expected cell %v to be in area %v, got false\n", cell, area)
 	}
 
@@ -32,7 +31,11 @@ func TestCheckCellInArea(t *testing.T) {
 		cell := expectedFalseCellInArea[0]
 		area := expectedFalseCellInArea[1]
 
-		assert.False(t, checkCellInArea(cell, area),
+		assert.Falsef(t, checkCellInArea(cell, area),
 			"Expected cell %v not to be inside of area %v, but got true\n", cell, area)
 	}
+
+	assert.Panics(t, func() {
+		checkCellInArea("AA0", "Z0:AB1")
+	})
 }
