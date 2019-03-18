@@ -36,3 +36,12 @@ func TestCheckCellInArea(t *testing.T) {
 			"Expected cell %v not to be inside of area %v, but got true\n", cell, area)
 	}
 }
+
+func TestSetCellFloat(t *testing.T) {
+	f := NewFile()
+	f.SetCellFloat("Sheet1", "A1", 123.01)
+	val := f.GetCellValue("Sheet1", "A1")
+	if val != "123.01" {
+		t.Errorf("Expected 123.01 but got %s", val)
+	}
+}

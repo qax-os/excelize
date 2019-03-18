@@ -70,23 +70,23 @@ func (f *File) mergeCellsParser(xlsx *xlsxWorksheet, axis string) string {
 func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 	switch t := value.(type) {
 	case float32:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float32)), 'f', -1, 32))
+		f.SetCellFloat(sheet, axis, float64(t))
 	case float64:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(float64)), 'f', -1, 64))
+		f.SetCellFloat(sheet, axis, t)
 	case string:
 		f.SetCellStr(sheet, axis, t)
 	case []byte:
 		f.SetCellStr(sheet, axis, string(t))
 	case time.Duration:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(value.(time.Duration).Seconds()/86400), 'f', -1, 32))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(t.Seconds()/86400), 'f', -1, 32))
 		f.setDefaultTimeStyle(sheet, axis, 21)
 	case time.Time:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(value.(time.Time)))), 'f', -1, 64))
+		f.SetCellDefault(sheet, axis, strconv.FormatFloat(float64(timeToExcelTime(timeToUTCTime(t))), 'f', -1, 64))
 		f.setDefaultTimeStyle(sheet, axis, 22)
 	case nil:
 		f.SetCellStr(sheet, axis, "")
 	case bool:
-		f.SetCellBool(sheet, axis, bool(value.(bool)))
+		f.SetCellBool(sheet, axis, t)
 	default:
 		f.setCellIntValue(sheet, axis, value)
 	}
@@ -94,27 +94,27 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) {
 
 // setCellIntValue provides a function to set int value of a cell.
 func (f *File) setCellIntValue(sheet, axis string, value interface{}) {
-	switch value.(type) {
+	switch t := value.(type) {
 	case int:
-		f.SetCellInt(sheet, axis, value.(int))
+		f.SetCellInt(sheet, axis, t)
 	case int8:
-		f.SetCellInt(sheet, axis, int(value.(int8)))
+		f.SetCellInt(sheet, axis, int(t))
 	case int16:
-		f.SetCellInt(sheet, axis, int(value.(int16)))
+		f.SetCellInt(sheet, axis, int(t))
 	case int32:
-		f.SetCellInt(sheet, axis, int(value.(int32)))
+		f.SetCellInt(sheet, axis, int(t))
 	case int64:
-		f.SetCellInt(sheet, axis, int(value.(int64)))
+		f.SetCellInt(sheet, axis, int(t))
 	case uint:
-		f.SetCellInt(sheet, axis, int(value.(uint)))
+		f.SetCellInt(sheet, axis, int(t))
 	case uint8:
-		f.SetCellInt(sheet, axis, int(value.(uint8)))
+		f.SetCellInt(sheet, axis, int(t))
 	case uint16:
-		f.SetCellInt(sheet, axis, int(value.(uint16)))
+		f.SetCellInt(sheet, axis, int(t))
 	case uint32:
-		f.SetCellInt(sheet, axis, int(value.(uint32)))
+		f.SetCellInt(sheet, axis, int(t))
 	case uint64:
-		f.SetCellInt(sheet, axis, int(value.(uint64)))
+		f.SetCellInt(sheet, axis, int(t))
 	default:
 		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
 	}
@@ -146,6 +146,29 @@ func (f *File) SetCellBool(sheet, axis string, value bool) {
 	} else {
 		xlsx.SheetData.Row[xAxis].C[yAxis].V = "0"
 	}
+}
+
+// SetCellFloat provides a function to set float value of a cell by given
+// worksheet name, cell coordinates and cell value.
+func (f *File) SetCellFloat(sheet, axis string, value float64) {
+	xlsx := f.workSheetReader(sheet)
+	axis = f.mergeCellsParser(xlsx, axis)
+	col := string(strings.Map(letterOnlyMapF, axis))
+	row, err := strconv.Atoi(strings.Map(intOnlyMapF, axis))
+	if err != nil {
+		return
+	}
+	xAxis := row - 1
+	yAxis := TitleToNumber(col)
+
+	rows := xAxis + 1
+	cell := yAxis + 1
+
+	completeRow(xlsx, rows, cell)
+	completeCol(xlsx, rows, cell)
+
+	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
+	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.FormatFloat(value, 'f', -1, 64)
 }
 
 // GetCellValue provides a function to get formatted value from cell by given
@@ -464,7 +487,6 @@ func (f *File) SetCellInt(sheet, axis string, value int) {
 	completeCol(xlsx, rows, cell)
 
 	xlsx.SheetData.Row[xAxis].C[yAxis].S = f.prepareCellStyle(xlsx, cell, xlsx.SheetData.Row[xAxis].C[yAxis].S)
-	xlsx.SheetData.Row[xAxis].C[yAxis].T = ""
 	xlsx.SheetData.Row[xAxis].C[yAxis].V = strconv.Itoa(value)
 }
 

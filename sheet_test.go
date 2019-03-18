@@ -14,13 +14,13 @@ func ExampleFile_SetPageLayout() {
 	const sheet = "Sheet1"
 
 	if err := xl.SetPageLayout(
-		"Sheet1",
+		sheet,
 		excelize.PageLayoutOrientation(excelize.OrientationLandscape),
 	); err != nil {
 		panic(err)
 	}
 	if err := xl.SetPageLayout(
-		"Sheet1",
+		sheet,
 		excelize.PageLayoutPaperSize(10),
 	); err != nil {
 		panic(err)
@@ -35,10 +35,10 @@ func ExampleFile_GetPageLayout() {
 		orientation excelize.PageLayoutOrientation
 		paperSize   excelize.PageLayoutPaperSize
 	)
-	if err := xl.GetPageLayout("Sheet1", &orientation); err != nil {
+	if err := xl.GetPageLayout(sheet, &orientation); err != nil {
 		panic(err)
 	}
-	if err := xl.GetPageLayout("Sheet1", &paperSize); err != nil {
+	if err := xl.GetPageLayout(sheet, &paperSize); err != nil {
 		panic(err)
 	}
 	fmt.Println("Defaults:")
