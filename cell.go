@@ -226,9 +226,8 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string) {
 			if link.Ref == axis {
 				if link.RID != "" {
 					return true, f.getSheetRelationshipsTargetByID(sheet, link.RID)
-				} else {
-					return true, link.Location
 				}
+				return true, link.Location
 			}
 		}
 	}

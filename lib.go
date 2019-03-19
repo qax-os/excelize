@@ -107,8 +107,8 @@ func JoinCellName(col string, row int) (string, error) {
 	return fmt.Sprintf("%s%d", normCol, row), nil
 }
 
-// ColumnNameToNumber provides a function to convert Excel sheet column name to int.
-// Column name case insencitive
+// ColumnNameToNumber provides a function to convert Excel sheet
+// column name to int. Column name case insencitive
 // Function returns error if column name incorrect.
 //
 // Example:
@@ -135,8 +135,8 @@ func ColumnNameToNumber(name string) (int, error) {
 	return col, nil
 }
 
-// MustColumnNameToNumber provides a function to convert Excel sheet column name to int.
-// Column name case insencitive
+// MustColumnNameToNumber provides a function to convert Excel sheet column
+// name to int. Column name case insencitive.
 // Function returns error if column name incorrect.
 //
 // Example:
@@ -151,8 +151,8 @@ func MustColumnNameToNumber(name string) int {
 	return n
 }
 
-// ColumnNumberToName provides a function to convert integer to Excel sheet column
-// title.
+// ColumnNumberToName provides a function to convert integer
+// to Excel sheet column title.
 //
 // Example:
 //
@@ -170,7 +170,8 @@ func ColumnNumberToName(num int) (string, error) {
 	return col, nil
 }
 
-// CellCoordinates converts alpha-numeric cell name to [X, Y] coordinates or retrusn an error.
+// CellNameToCoordinates converts alpha-numeric cell name
+// to [X, Y] coordinates or retrusn an error.
 //
 // Example:
 //     CellCoordinates("A1") // returns 1, 1, nil
@@ -192,7 +193,8 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 	return col, row, nil
 }
 
-// MustCellNameToCoordinates converts alpha-numeric cell name to [X, Y] coordinates or panics.
+// MustCellNameToCoordinates converts alpha-numeric cell name
+// to [X, Y] coordinates or panics.
 //
 // Example:
 //     MustCellNameToCoordinates("A1") // returns 1, 1
@@ -278,7 +280,9 @@ func namespaceStrictToTransitional(content []byte) []byte {
 // is great, numerous passwords will match the same hash. Here is the
 // algorithm to create the hash value:
 //
-// take the ASCII values of all characters shift left the first character 1 bit, the second 2 bits and so on (use only the lower 15 bits and rotate all higher bits, the highest bit of the 16-bit value is always 0 [signed short])
+// take the ASCII values of all characters shift left the first character 1 bit,
+// the second 2 bits and so on (use only the lower 15 bits and rotate all higher bits,
+// the highest bit of the 16-bit value is always 0 [signed short])
 // XOR all these values
 // XOR the count of characters
 // XOR the constant 0xCE4B
