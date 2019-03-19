@@ -10,10 +10,7 @@
 package excelize
 
 import (
-	"bytes"
 	"math"
-	"strconv"
-	"strings"
 )
 
 // Define the default cell size and EMU unit of measurement.
@@ -29,16 +26,19 @@ const (
 //
 //    xlsx.GetColVisible("Sheet1", "D")
 //
-func (f *File) GetColVisible(sheet, column string) bool {
+func (f *File) GetColVisible(sheet, col string) bool {
+	colNum := MustColumnNameToNumber(col)
+
 	xlsx := f.workSheetReader(sheet)
-	col := TitleToNumber(strings.ToUpper(column)) + 1
-	visible := true
 	if xlsx.Cols == nil {
-		return visible
+		return true
 	}
+
+	visible := true
 	for c := range xlsx.Cols.Col {
-		if xlsx.Cols.Col[c].Min <= col && col <= xlsx.Cols.Col[c].Max {
-			visible = !xlsx.Cols.Col[c].Hidden
+		colData := &xlsx.Cols.Col[c]
+		if colData.Min <= colNum && colNum <= colData.Max {
+			visible = !colData.Hidden
 		}
 	}
 	return visible
@@ -49,31 +49,31 @@ func (f *File) GetColVisible(sheet, column string) bool {
 //
 //    xlsx.SetColVisible("Sheet1", "D", false)
 //
-func (f *File) SetColVisible(sheet, column string, visible bool) {
-	xlsx := f.workSheetReader(sheet)
-	c := TitleToNumber(strings.ToUpper(column)) + 1
-	col := xlsxCol{
-		Min:         c,
-		Max:         c,
+func (f *File) SetColVisible(sheet, col string, visible bool) {
+	colNum := MustColumnNameToNumber(col)
+	colData := xlsxCol{
+		Min:         colNum,
+		Max:         colNum,
 		Hidden:      !visible,
 		CustomWidth: true,
 	}
+	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols == nil {
 		cols := xlsxCols{}
-		cols.Col = append(cols.Col, col)
+		cols.Col = append(cols.Col, colData)
 		xlsx.Cols = &cols
 		return
 	}
 	for v := range xlsx.Cols.Col {
-		if xlsx.Cols.Col[v].Min <= c && c <= xlsx.Cols.Col[v].Max {
-			col = xlsx.Cols.Col[v]
+		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
+			colData = xlsx.Cols.Col[v]
 		}
 	}
-	col.Min = c
-	col.Max = c
-	col.Hidden = !visible
-	col.CustomWidth = true
-	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
+	colData.Min = colNum
+	colData.Max = colNum
+	colData.Hidden = !visible
+	colData.CustomWidth = true
+	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
 }
 
 // GetColOutlineLevel provides a function to get outline level of a single
@@ -82,16 +82,17 @@ func (f *File) SetColVisible(sheet, column string, visible bool) {
 //
 //    xlsx.GetColOutlineLevel("Sheet1", "D")
 //
-func (f *File) GetColOutlineLevel(sheet, column string) uint8 {
+func (f *File) GetColOutlineLevel(sheet, col string) uint8 {
+	colNum := MustColumnNameToNumber(col)
 	xlsx := f.workSheetReader(sheet)
-	col := TitleToNumber(strings.ToUpper(column)) + 1
 	level := uint8(0)
 	if xlsx.Cols == nil {
 		return level
 	}
 	for c := range xlsx.Cols.Col {
-		if xlsx.Cols.Col[c].Min <= col && col <= xlsx.Cols.Col[c].Max {
-			level = xlsx.Cols.Col[c].OutlineLevel
+		colData := &xlsx.Cols.Col[c]
+		if colData.Min <= colNum && colNum <= colData.Max {
+			level = colData.OutlineLevel
 		}
 	}
 	return level
@@ -103,31 +104,31 @@ func (f *File) GetColOutlineLevel(sheet, column string) uint8 {
 //
 //    xlsx.SetColOutlineLevel("Sheet1", "D", 2)
 //
-func (f *File) SetColOutlineLevel(sheet, column string, level uint8) {
-	xlsx := f.workSheetReader(sheet)
-	c := TitleToNumber(strings.ToUpper(column)) + 1
-	col := xlsxCol{
-		Min:          c,
-		Max:          c,
+func (f *File) SetColOutlineLevel(sheet, col string, level uint8) {
+	colNum := MustColumnNameToNumber(col)
+	colData := xlsxCol{
+		Min:          colNum,
+		Max:          colNum,
 		OutlineLevel: level,
 		CustomWidth:  true,
 	}
+	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols == nil {
 		cols := xlsxCols{}
-		cols.Col = append(cols.Col, col)
+		cols.Col = append(cols.Col, colData)
 		xlsx.Cols = &cols
 		return
 	}
 	for v := range xlsx.Cols.Col {
-		if xlsx.Cols.Col[v].Min <= c && c <= xlsx.Cols.Col[v].Max {
-			col = xlsx.Cols.Col[v]
+		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
+			colData = xlsx.Cols.Col[v]
 		}
 	}
-	col.Min = c
-	col.Max = c
-	col.OutlineLevel = level
-	col.CustomWidth = true
-	xlsx.Cols.Col = append(xlsx.Cols.Col, col)
+	colData.Min = colNum
+	colData.Max = colNum
+	colData.OutlineLevel = level
+	colData.CustomWidth = true
+	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
 }
 
 // SetColWidth provides a function to set the width of a single column or
@@ -141,11 +142,12 @@ func (f *File) SetColOutlineLevel(sheet, column string, level uint8) {
 //    }
 //
 func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
-	min := TitleToNumber(strings.ToUpper(startcol)) + 1
-	max := TitleToNumber(strings.ToUpper(endcol)) + 1
+	min := MustColumnNameToNumber(startcol)
+	max := MustColumnNameToNumber(endcol)
 	if min > max {
 		min, max = max, min
 	}
+
 	xlsx := f.workSheetReader(sheet)
 	col := xlsxCol{
 		Min:         min,
@@ -214,38 +216,38 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
 //    xAbs            # Absolute distance to left side of object.
 //    yAbs            # Absolute distance to top side of object.
 //
-func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, width, height int) (int, int, int, int, int, int, int, int) {
+func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int, int, int) {
 	xAbs := 0
 	yAbs := 0
 
 	// Calculate the absolute x offset of the top-left vertex.
-	for colID := 1; colID <= colStart; colID++ {
+	for colID := 1; colID <= col; colID++ {
 		xAbs += f.getColWidth(sheet, colID)
 	}
 	xAbs += x1
 
 	// Calculate the absolute y offset of the top-left vertex.
 	// Store the column change to allow optimisations.
-	for rowID := 1; rowID <= rowStart; rowID++ {
+	for rowID := 1; rowID <= row; rowID++ {
 		yAbs += f.getRowHeight(sheet, rowID)
 	}
 	yAbs += y1
 
 	// Adjust start column for offsets that are greater than the col width.
-	for x1 >= f.getColWidth(sheet, colStart) {
-		x1 -= f.getColWidth(sheet, colStart)
-		colStart++
+	for x1 >= f.getColWidth(sheet, col) {
+		x1 -= f.getColWidth(sheet, col)
+		col++
 	}
 
 	// Adjust start row for offsets that are greater than the row height.
-	for y1 >= f.getRowHeight(sheet, rowStart) {
-		y1 -= f.getRowHeight(sheet, rowStart)
-		rowStart++
+	for y1 >= f.getRowHeight(sheet, row) {
+		y1 -= f.getRowHeight(sheet, row)
+		row++
 	}
 
 	// Initialise end cell to the same as the start cell.
-	colEnd := colStart
-	rowEnd := rowStart
+	colEnd := col
+	rowEnd := row
 
 	width += x1
 	height += y1
@@ -265,7 +267,7 @@ func (f *File) positionObjectPixels(sheet string, colStart, rowStart, x1, y1, wi
 	// The end vertices are whatever is left from the width and height.
 	x2 := width
 	y2 := height
-	return colStart, rowStart, xAbs, yAbs, colEnd, rowEnd, x2, y2
+	return col, row, xAbs, yAbs, colEnd, rowEnd, x2, y2
 }
 
 // getColWidth provides a function to get column width in pixels by given
@@ -289,13 +291,13 @@ func (f *File) getColWidth(sheet string, col int) int {
 
 // GetColWidth provides a function to get column width by given worksheet name
 // and column index.
-func (f *File) GetColWidth(sheet, column string) float64 {
-	col := TitleToNumber(strings.ToUpper(column)) + 1
+func (f *File) GetColWidth(sheet, col string) float64 {
+	colNum := MustColumnNameToNumber(col)
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
 		var width float64
 		for _, v := range xlsx.Cols.Col {
-			if v.Min <= col && col <= v.Max {
+			if v.Min <= colNum && colNum <= v.Max {
 				width = v.Width
 			}
 		}
@@ -312,9 +314,12 @@ func (f *File) GetColWidth(sheet, column string) float64 {
 //
 //    xlsx.InsertCol("Sheet1", "C")
 //
-func (f *File) InsertCol(sheet, column string) {
-	col := TitleToNumber(strings.ToUpper(column))
-	f.adjustHelper(sheet, col, -1, 1)
+func (f *File) InsertCol(sheet, col string) {
+	num, err := ColumnNameToNumber(col)
+	if err != nil {
+		panic(err)
+	}
+	f.adjustHelper(sheet, columns, num, 1)
 }
 
 // RemoveCol provides a function to remove single column by given worksheet
@@ -326,38 +331,23 @@ func (f *File) InsertCol(sheet, column string) {
 // as formulas, charts, and so on. If there is any referenced value of the
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
-func (f *File) RemoveCol(sheet, column string) {
-	xlsx := f.workSheetReader(sheet)
-	for r := range xlsx.SheetData.Row {
-		for k, v := range xlsx.SheetData.Row[r].C {
-			axis := v.R
-			col := string(strings.Map(letterOnlyMapF, axis))
-			if col == column {
-				xlsx.SheetData.Row[r].C = append(xlsx.SheetData.Row[r].C[:k], xlsx.SheetData.Row[r].C[k+1:]...)
-			}
-		}
+func (f *File) RemoveCol(sheet, col string) {
+	num, err := ColumnNameToNumber(col)
+	if err != nil {
+		panic(err) // Fail fast to avoid possible future side effects!
 	}
-	col := TitleToNumber(strings.ToUpper(column))
-	f.adjustHelper(sheet, col, -1, -1)
-}
 
-// completeCol provieds function to completion column element tags of XML in a
-// sheet.
-func completeCol(xlsx *xlsxWorksheet, row, cell int) {
-	buffer := bytes.Buffer{}
-	for r := range xlsx.SheetData.Row {
-		if len(xlsx.SheetData.Row[r].C) < cell {
-			start := len(xlsx.SheetData.Row[r].C)
-			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(ToAlphaString(iii))
-				buffer.WriteString(strconv.Itoa(r + 1))
-				xlsx.SheetData.Row[r].C = append(xlsx.SheetData.Row[r].C, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
+	xlsx := f.workSheetReader(sheet)
+	for rowIdx := range xlsx.SheetData.Row {
+		rowData := xlsx.SheetData.Row[rowIdx]
+		for colIdx, cellData := range rowData.C {
+			colName, _, _ := SplitCellName(cellData.R)
+			if colName == col {
+				rowData.C = append(rowData.C[:colIdx], rowData.C[colIdx+1:]...)
 			}
 		}
 	}
+	f.adjustHelper(sheet, columns, num, -1)
 }
 
 // convertColWidthToPixels provieds function to convert the width of a cell

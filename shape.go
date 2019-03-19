@@ -283,15 +283,37 @@ func (f *File) AddShape(sheet, cell, format string) error {
 // addDrawingShape provides a function to add preset geometry by given sheet,
 // drawingXMLand format sets.
 func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
-	textUnderlineType := map[string]bool{"none": true, "words": true, "sng": true, "dbl": true, "heavy": true, "dotted": true, "dottedHeavy": true, "dash": true, "dashHeavy": true, "dashLong": true, "dashLongHeavy": true, "dotDash": true, "dotDashHeavy": true, "dotDotDash": true, "dotDotDashHeavy": true, "wavy": true, "wavyHeavy": true, "wavyDbl": true}
-	cell = strings.ToUpper(cell)
-	fromCol := string(strings.Map(letterOnlyMapF, cell))
-	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
-	row := fromRow - 1
-	col := TitleToNumber(fromCol)
+	fromCol, fromRow := MustCellNameToCoordinates(cell)
+	colIdx := fromCol - 1
+	rowIdx := fromRow - 1
+
+	textUnderlineType := map[string]bool{
+		"none":            true,
+		"words":           true,
+		"sng":             true,
+		"dbl":             true,
+		"heavy":           true,
+		"dotted":          true,
+		"dottedHeavy":     true,
+		"dash":            true,
+		"dashHeavy":       true,
+		"dashLong":        true,
+		"dashLongHeavy":   true,
+		"dotDash":         true,
+		"dotDashHeavy":    true,
+		"dotDotDash":      true,
+		"dotDotDashHeavy": true,
+		"wavy":            true,
+		"wavyHeavy":       true,
+		"wavyDbl":         true,
+	}
+
 	width := int(float64(formatSet.Width) * formatSet.Format.XScale)
 	height := int(float64(formatSet.Height) * formatSet.Format.YScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.Format.OffsetX, formatSet.Format.OffsetY, width, height)
+
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.Format.OffsetX, formatSet.Format.OffsetY,
+			width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Format.Positioning

@@ -2263,6 +2263,14 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	return style.CellXfs.Count - 1
 }
 
+// GetCellStyle provides a function to get cell style index by given worksheet
+// name and cell coordinates.
+func (f *File) GetCellStyle(sheet, axis string) int {
+	xlsx := f.workSheetReader(sheet)
+	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
+	return f.prepareCellStyle(xlsx, col, cellData.S)
+}
+
 // SetCellStyle provides a function to add style attribute for cells by given
 // worksheet name, coordinate area and style ID. Note that diagonalDown and
 // diagonalUp type border should be use same color in the same coordinate
@@ -2329,42 +2337,36 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 //    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
-	hcell = strings.ToUpper(hcell)
-	vcell = strings.ToUpper(vcell)
-
-	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hcol := string(strings.Map(letterOnlyMapF, hcell))
-	hrow, err := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
+	hcol, hrow, err := CellNameToCoordinates(hcell)
 	if err != nil {
-		return
+		panic(err)
 	}
-	hyAxis := hrow - 1
-	hxAxis := TitleToNumber(hcol)
 
-	vcol := string(strings.Map(letterOnlyMapF, vcell))
-	vrow, err := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
+	vcol, vrow, err := CellNameToCoordinates(vcell)
 	if err != nil {
-		return
-	}
-	vyAxis := vrow - 1
-	vxAxis := TitleToNumber(vcol)
-
-	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	if vxAxis < hxAxis {
-		vxAxis, hxAxis = hxAxis, vxAxis
+		panic(err)
 	}
 
-	if vyAxis < hyAxis {
-		vyAxis, hyAxis = hyAxis, vyAxis
+	// Normalize the coordinate area, such correct C1:B3 to B1:C3.
+	if vcol < hcol {
+		vcol, hcol = hcol, vcol
 	}
+
+	if vrow < hrow {
+		vrow, hrow = hrow, vrow
+	}
+
+	hcolIdx := hcol - 1
+	hrowIdx := hrow - 1
+
+	vcolIdx := vcol - 1
+	vrowIdx := vrow - 1
 
 	xlsx := f.workSheetReader(sheet)
+	prepareSheetXML(xlsx, vcol, vrow)
 
-	completeRow(xlsx, vyAxis+1, vxAxis+1)
-	completeCol(xlsx, vyAxis+1, vxAxis+1)
-
-	for r := hyAxis; r <= vyAxis; r++ {
-		for k := hxAxis; k <= vxAxis; k++ {
+	for r := hrowIdx; r <= vrowIdx; r++ {
+		for k := hcolIdx; k <= vcolIdx; k++ {
 			xlsx.SheetData.Row[r].C[k].S = styleID
 		}
 	}

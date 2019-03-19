@@ -55,31 +55,25 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 	if err != nil {
 		return err
 	}
-	hcell = strings.ToUpper(hcell)
-	vcell = strings.ToUpper(vcell)
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hcol := string(strings.Map(letterOnlyMapF, hcell))
-	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
-	hyAxis := hrow - 1
-	hxAxis := TitleToNumber(hcol)
+	hcol, hrow := MustCellNameToCoordinates(hcell)
+	vcol, vrow := MustCellNameToCoordinates(vcell)
 
-	vcol := string(strings.Map(letterOnlyMapF, vcell))
-	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
-	vyAxis := vrow - 1
-	vxAxis := TitleToNumber(vcol)
-	if vxAxis < hxAxis {
-		vxAxis, hxAxis = hxAxis, vxAxis
+	if vcol < hcol {
+		vcol, hcol = hcol, vcol
 	}
-	if vyAxis < hyAxis {
-		vyAxis, hyAxis = hyAxis, vyAxis
+
+	if vrow < hrow {
+		vrow, hrow = hrow, vrow
 	}
+
 	tableID := f.countTables() + 1
 	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
 	tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
 	// Add first table for given sheet.
 	rID := f.addSheetRelationships(sheet, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 	f.addSheetTable(sheet, rID)
-	f.addTable(sheet, tableXML, hxAxis, hyAxis, vxAxis, vyAxis, tableID, formatSet)
+	f.addTable(sheet, tableXML, hcol, hrow, vcol, vrow, tableID, formatSet)
 	f.addContentTypePart(tableID, "table")
 	return err
 }
@@ -112,18 +106,23 @@ func (f *File) addSheetTable(sheet string, rID int) {
 
 // addTable provides a function to add table by given worksheet name,
 // coordinate area and format set.
-func (f *File) addTable(sheet, tableXML string, hxAxis, hyAxis, vxAxis, vyAxis, i int, formatSet *formatTable) {
+func (f *File) addTable(sheet, tableXML string, hcol, hrow, vcol, vrow, i int, formatSet *formatTable) {
 	// Correct the minimum number of rows, the table at least two lines.
-	if hyAxis == vyAxis {
-		vyAxis++
+	if hrow == vrow {
+		vrow++
 	}
+
 	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
-	ref := ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
-	tableColumn := []*xlsxTableColumn{}
+	ref := MustCoordinatesToCellName(hcol, hrow) + ":" + MustCoordinatesToCellName(vcol, vrow)
+
+	var (
+		tableColumn []*xlsxTableColumn
+	)
+
 	idx := 0
-	for i := hxAxis; i <= vxAxis; i++ {
+	for i := hcol; i <= vcol; i++ {
 		idx++
-		cell := ToAlphaString(i) + strconv.Itoa(hyAxis+1)
+		cell := MustCoordinatesToCellName(i, hrow)
 		name := f.GetCellValue(sheet, cell)
 		if _, err := strconv.Atoi(name); err == nil {
 			f.SetCellStr(sheet, cell, name)
@@ -245,37 +244,26 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 //    Price < 2000
 //
 func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
+	hcol, hrow := MustCellNameToCoordinates(hcell)
+	vcol, vrow := MustCellNameToCoordinates(vcell)
+
+	if vcol < hcol {
+		vcol, hcol = hcol, vcol
+	}
+
+	if vrow < hrow {
+		vrow, hrow = hrow, vrow
+	}
+
 	formatSet, _ := parseAutoFilterSet(format)
-
-	hcell = strings.ToUpper(hcell)
-	vcell = strings.ToUpper(vcell)
-
-	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hcol := string(strings.Map(letterOnlyMapF, hcell))
-	hrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, hcell))
-	hyAxis := hrow - 1
-	hxAxis := TitleToNumber(hcol)
-
-	vcol := string(strings.Map(letterOnlyMapF, vcell))
-	vrow, _ := strconv.Atoi(strings.Map(intOnlyMapF, vcell))
-	vyAxis := vrow - 1
-	vxAxis := TitleToNumber(vcol)
-
-	if vxAxis < hxAxis {
-		vxAxis, hxAxis = hxAxis, vxAxis
-	}
-
-	if vyAxis < hyAxis {
-		vyAxis, hyAxis = hyAxis, vyAxis
-	}
-	ref := ToAlphaString(hxAxis) + strconv.Itoa(hyAxis+1) + ":" + ToAlphaString(vxAxis) + strconv.Itoa(vyAxis+1)
-	refRange := vxAxis - hxAxis
-	return f.autoFilter(sheet, ref, refRange, hxAxis, formatSet)
+	ref := MustCoordinatesToCellName(hcol, hrow) + ":" + MustCoordinatesToCellName(vcol, vrow)
+	refRange := vcol - hcol
+	return f.autoFilter(sheet, ref, refRange, hcol, formatSet)
 }
 
 // autoFilter provides a function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
-func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *formatAutoFilter) error {
+func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *formatAutoFilter) error {
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.SheetPr != nil {
 		xlsx.SheetPr.FilterMode = true
@@ -288,11 +276,13 @@ func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *fo
 	if formatSet.Column == "" || formatSet.Expression == "" {
 		return nil
 	}
-	col := TitleToNumber(formatSet.Column)
-	offset := col - hxAxis
+
+	fsCol := MustColumnNameToNumber(formatSet.Column)
+	offset := fsCol - col
 	if offset < 0 || offset > refRange {
 		return fmt.Errorf("incorrect index of column '%s'", formatSet.Column)
 	}
+
 	filter.FilterColumn = &xlsxFilterColumn{
 		ColID: offset,
 	}
@@ -315,7 +305,7 @@ func (f *File) autoFilter(sheet, ref string, refRange, hxAxis int, formatSet *fo
 func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []string) {
 	if len(exp) == 1 && exp[0] == 2 {
 		// Single equality.
-		filters := []*xlsxFilter{}
+		var filters []*xlsxFilter
 		filters = append(filters, &xlsxFilter{Val: tokens[0]})
 		filter.FilterColumn.Filters = &xlsxFilters{Filter: filters}
 	} else if len(exp) == 3 && exp[0] == 2 && exp[1] == 1 && exp[2] == 2 {

@@ -12,11 +12,11 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // ReadZipReader can be used to read an XLSX in memory without touching the
@@ -64,64 +64,177 @@ func readFile(file *zip.File) []byte {
 	return buff.Bytes()
 }
 
-// ToAlphaString provides a function to convert integer to Excel sheet column
-// title. For example convert 36 to column title AK:
+// SplitCellName splits cell name to column name and row number.
 //
-//     excelize.ToAlphaString(36)
+// Example:
 //
-func ToAlphaString(value int) string {
-	if value < 0 {
-		return ""
+//     excelize.SplitCellName("AK74") // return "AK", 74, nil
+//
+func SplitCellName(cell string) (string, int, error) {
+	alpha := func(r rune) bool {
+		return ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z')
 	}
-	var ans string
-	i := value + 1
-	for i > 0 {
-		ans = string((i-1)%26+65) + ans
-		i = (i - 1) / 26
-	}
-	return ans
-}
 
-// TitleToNumber provides a function to convert Excel sheet column title to
-// int (this function doesn't do value check currently). For example convert
-// AK and ak to column title 36:
-//
-//    excelize.TitleToNumber("AK")
-//    excelize.TitleToNumber("ak")
-//
-func TitleToNumber(s string) int {
-	weight := 1
-	sum := 0
-	for i := len(s) - 1; i >= 0; i-- {
-		ch := s[i]
-		if ch >= 'a' && ch <= 'z' {
-			ch -= 32
+	if strings.IndexFunc(cell, alpha) == 0 {
+		i := strings.LastIndexFunc(cell, alpha)
+		if i >= 0 && i < len(cell)-1 {
+			col, rowstr := cell[:i+1], cell[i+1:]
+			if row, err := strconv.Atoi(rowstr); err == nil && row > 0 {
+				return col, row, nil
+			}
 		}
-		sum += int(ch-'A'+1) * weight
-		weight *= 26
 	}
-	return sum - 1
+	return "", -1, newInvalidCellNameError(cell)
 }
 
-// letterOnlyMapF is used in conjunction with strings.Map to return only the
-// characters A-Z and a-z in a string.
-func letterOnlyMapF(rune rune) rune {
-	switch {
-	case 'A' <= rune && rune <= 'Z':
-		return rune
-	case 'a' <= rune && rune <= 'z':
-		return rune - 32
+// JoinCellName joins cell name from column name and row number
+func JoinCellName(col string, row int) (string, error) {
+	normCol := strings.Map(func(rune rune) rune {
+		switch {
+		case 'A' <= rune && rune <= 'Z':
+			return rune
+		case 'a' <= rune && rune <= 'z':
+			return rune - 32
+		}
+		return -1
+	}, col)
+	if len(col) == 0 || len(col) != len(normCol) {
+		return "", newInvalidColumnNameError(col)
 	}
-	return -1
+	if row < 1 {
+		return "", newInvalidRowNumberError(row)
+	}
+	return fmt.Sprintf("%s%d", normCol, row), nil
 }
 
-// intOnlyMapF is used in conjunction with strings.Map to return only the
-// numeric portions of a string.
-func intOnlyMapF(rune rune) rune {
-	if rune >= 48 && rune < 58 {
-		return rune
+// ColumnNameToNumber provides a function to convert Excel sheet
+// column name to int. Column name case insencitive
+// Function returns error if column name incorrect.
+//
+// Example:
+//
+//     excelize.ColumnNameToNumber("AK") // returns 37, nil
+//
+func ColumnNameToNumber(name string) (int, error) {
+	if len(name) == 0 {
+		return -1, newInvalidColumnNameError(name)
 	}
-	return -1
+	col := 0
+	multi := 1
+	for i := len(name) - 1; i >= 0; i-- {
+		r := name[i]
+		if r >= 'A' && r <= 'Z' {
+			col += int(r-'A'+1) * multi
+		} else if r >= 'a' && r <= 'z' {
+			col += int(r-'a'+1) * multi
+		} else {
+			return -1, newInvalidColumnNameError(name)
+		}
+		multi *= 26
+	}
+	return col, nil
+}
+
+// MustColumnNameToNumber provides a function to convert Excel sheet column
+// name to int. Column name case insencitive.
+// Function returns error if column name incorrect.
+//
+// Example:
+//
+//     excelize.MustColumnNameToNumber("AK") // returns 37
+//
+func MustColumnNameToNumber(name string) int {
+	n, err := ColumnNameToNumber(name)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
+// ColumnNumberToName provides a function to convert integer
+// to Excel sheet column title.
+//
+// Example:
+//
+//     excelize.ToAlphaString(37) // returns "AK", nil
+//
+func ColumnNumberToName(num int) (string, error) {
+	if num < 1 {
+		return "", fmt.Errorf("incorrect column number %d", num)
+	}
+	var col string
+	for num > 0 {
+		col = string((num-1)%26+65) + col
+		num = (num - 1) / 26
+	}
+	return col, nil
+}
+
+// CellNameToCoordinates converts alpha-numeric cell name
+// to [X, Y] coordinates or retrusn an error.
+//
+// Example:
+//     CellCoordinates("A1") // returns 1, 1, nil
+//     CellCoordinates("Z3") // returns 26, 3, nil
+//
+func CellNameToCoordinates(cell string) (int, int, error) {
+	const msg = "cannot convert cell %q to coordinates: %v"
+
+	colname, row, err := SplitCellName(cell)
+	if err != nil {
+		return -1, -1, fmt.Errorf(msg, cell, err)
+	}
+
+	col, err := ColumnNameToNumber(colname)
+	if err != nil {
+		return -1, -1, fmt.Errorf(msg, cell, err)
+	}
+
+	return col, row, nil
+}
+
+// MustCellNameToCoordinates converts alpha-numeric cell name
+// to [X, Y] coordinates or panics.
+//
+// Example:
+//     MustCellNameToCoordinates("A1") // returns 1, 1
+//     MustCellNameToCoordinates("Z3") // returns 26, 3
+//
+func MustCellNameToCoordinates(cell string) (int, int) {
+	c, r, err := CellNameToCoordinates(cell)
+	if err != nil {
+		panic(err)
+	}
+	return c, r
+}
+
+// CoordinatesToCellName converts [X, Y] coordinates to alpha-numeric cell name or returns an error.
+//
+// Example:
+//     CoordinatesToCellName(1, 1) // returns "A1", nil
+//
+func CoordinatesToCellName(col, row int) (string, error) {
+	if col < 1 || row < 1 {
+		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
+	}
+	colname, err := ColumnNumberToName(col)
+	if err != nil {
+		return "", fmt.Errorf("invalid cell coordinates [%d, %d]: %v", col, row, err)
+	}
+	return fmt.Sprintf("%s%d", colname, row), nil
+}
+
+// MustCoordinatesToCellName converts [X, Y] coordinates to alpha-numeric cell name or panics.
+//
+// Example:
+//     MustCoordinatesToCellName(1, 1) // returns "A1"
+//
+func MustCoordinatesToCellName(col, row int) string {
+	n, err := CoordinatesToCellName(col, row)
+	if err != nil {
+		panic(err)
+	}
+	return n
 }
 
 // boolPtr returns a pointer to a bool with the given value.
@@ -133,47 +246,6 @@ func defaultTrue(b *bool) bool {
 		return true
 	}
 	return *b
-}
-
-// axisLowerOrEqualThan returns true if axis1 <= axis2 axis1/axis2 can be
-// either a column or a row axis, e.g. "A", "AAE", "42", "1", etc.
-//
-// For instance, the following comparisons are all true:
-//
-// "A" <= "B"
-// "A" <= "AA"
-// "B" <= "AA"
-// "BC" <= "ABCD" (in a XLSX sheet, the BC col comes before the ABCD col)
-// "1" <= "2"
-// "2" <= "11" (in a XLSX sheet, the row 2 comes before the row 11)
-// and so on
-func axisLowerOrEqualThan(axis1, axis2 string) bool {
-	if len(axis1) < len(axis2) {
-		return true
-	} else if len(axis1) > len(axis2) {
-		return false
-	} else {
-		return axis1 <= axis2
-	}
-}
-
-// getCellColRow returns the two parts of a cell identifier (its col and row)
-// as strings
-//
-// For instance:
-//
-// "C220" => "C", "220"
-// "aaef42" => "aaef", "42"
-// "" => "", ""
-func getCellColRow(cell string) (col, row string) {
-	for index, rune := range cell {
-		if unicode.IsDigit(rune) {
-			return cell[:index], cell[index:]
-		}
-
-	}
-
-	return cell, ""
 }
 
 // parseFormatSet provides a method to convert format string to []byte and
@@ -208,7 +280,9 @@ func namespaceStrictToTransitional(content []byte) []byte {
 // is great, numerous passwords will match the same hash. Here is the
 // algorithm to create the hash value:
 //
-// take the ASCII values of all characters shift left the first character 1 bit, the second 2 bits and so on (use only the lower 15 bits and rotate all higher bits, the highest bit of the 16-bit value is always 0 [signed short])
+// take the ASCII values of all characters shift left the first character 1 bit,
+// the second 2 bits and so on (use only the lower 15 bits and rotate all higher bits,
+// the highest bit of the 16-bit value is always 0 [signed short])
 // XOR all these values
 // XOR the count of characters
 // XOR the constant 0xCE4B

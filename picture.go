@@ -143,7 +143,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	if err != nil {
 		return err
 	}
-	image, _, err := image.DecodeConfig(bytes.NewReader(file))
+	img, _, err := image.DecodeConfig(bytes.NewReader(file))
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		}
 		drawingHyperlinkRID = f.addDrawingRelationships(drawingID, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
-	f.addDrawingPicture(sheet, drawingXML, cell, name, image.Width, image.Height, drawingRID, drawingHyperlinkRID, formatSet)
+	f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
 	f.addMedia(file, ext)
 	f.addContentTypePart(drawingID, "drawings")
 	return err
@@ -263,14 +263,11 @@ func (f *File) countDrawings() int {
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
 func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID, hyperlinkRID int, formatSet *formatPicture) {
-	cell = strings.ToUpper(cell)
-	fromCol := string(strings.Map(letterOnlyMapF, cell))
-	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
-	row := fromRow - 1
-	col := TitleToNumber(fromCol)
+	col, row := MustCellNameToCoordinates(cell)
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+		f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning
@@ -471,30 +468,36 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //    }
 //
 func (f *File) GetPicture(sheet, cell string) (string, []byte) {
+	col, row := MustCellNameToCoordinates(cell)
+
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Drawing == nil {
 		return "", []byte{}
 	}
+
 	target := f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
 	drawingXML := strings.Replace(target, "..", "xl", -1)
-	cell = strings.ToUpper(cell)
-	fromCol := string(strings.Map(letterOnlyMapF, cell))
-	fromRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, cell))
-	row := fromRow - 1
-	col := TitleToNumber(fromCol)
-	drawingRelationships := strings.Replace(strings.Replace(target, "../drawings", "xl/drawings/_rels", -1), ".xml", ".xml.rels", -1)
+
+	drawingRelationships := strings.Replace(
+		strings.Replace(target, "../drawings", "xl/drawings/_rels", -1), ".xml", ".xml.rels", -1)
+
 	wsDr, _ := f.drawingParser(drawingXML)
+
 	for _, anchor := range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
-				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, anchor.Pic.BlipFill.Blip.Embed)
+				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships,
+					anchor.Pic.BlipFill.Blip.Embed)
 				_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
 				if ok {
-					return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)])
+					return filepath.Base(xlsxWorkbookRelation.Target),
+						[]byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target,
+							"..", "xl", -1)])
 				}
 			}
 		}
 	}
+
 	_, ok := f.XLSX[drawingXML]
 	if !ok {
 		return "", nil

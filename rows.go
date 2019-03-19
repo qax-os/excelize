@@ -16,7 +16,6 @@ import (
 	"io"
 	"math"
 	"strconv"
-	"strings"
 )
 
 // GetRows return all the rows in a sheet by given worksheet name (case
@@ -30,24 +29,30 @@ import (
 //    }
 //
 func (f *File) GetRows(sheet string) [][]string {
-	xlsx := f.workSheetReader(sheet)
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		return [][]string{}
+		return nil
 	}
+
+	xlsx := f.workSheetReader(sheet)
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
+
 	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	d := f.sharedStringsReader()
-	var inElement string
-	var r xlsxRow
-	tr, tc := f.getTotalRowsCols(name)
-	rows := make([][]string, tr)
+	var (
+		inElement string
+		rowData   xlsxRow
+	)
+
+	rowCount, colCount := f.getTotalRowsCols(name)
+	rows := make([][]string, rowCount)
 	for i := range rows {
-		rows[i] = make([]string, tc+1)
+		rows[i] = make([]string, colCount+1)
 	}
+
 	var row int
 	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
@@ -59,15 +64,15 @@ func (f *File) GetRows(sheet string) [][]string {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				r = xlsxRow{}
-				_ = decoder.DecodeElement(&r, &startElement)
-				cr := r.R - 1
-				for _, colCell := range r.C {
-					c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+				rowData = xlsxRow{}
+				_ = decoder.DecodeElement(&rowData, &startElement)
+				cr := rowData.R - 1
+				for _, colCell := range rowData.C {
+					col, _ := MustCellNameToCoordinates(colCell.R)
 					val, _ := colCell.getValueFrom(f, d)
-					rows[cr][c] = val
+					rows[cr][col-1] = val
 					if val != "" {
-						row = r.R
+						row = rowData.R
 					}
 				}
 			}
@@ -120,13 +125,13 @@ func (rows *Rows) Columns() []string {
 	r := xlsxRow{}
 	_ = rows.decoder.DecodeElement(&r, &startElement)
 	d := rows.f.sharedStringsReader()
-	row := make([]string, len(r.C))
+	columns := make([]string, len(r.C))
 	for _, colCell := range r.C {
-		c := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+		col, _ := MustCellNameToCoordinates(colCell.R)
 		val, _ := colCell.getValueFrom(rows.f, d)
-		row[c] = val
+		columns[col-1] = val
 	}
-	return row
+	return columns
 }
 
 // ErrSheetNotExist defines an error of sheet is not exist
@@ -184,7 +189,7 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 				_ = decoder.DecodeElement(&r, &startElement)
 				tr = r.R
 				for _, colCell := range r.C {
-					col := TitleToNumber(strings.Map(letterOnlyMapF, colCell.R))
+					col, _ := MustCellNameToCoordinates(colCell.R)
 					if col > tc {
 						tc = col
 					}
@@ -202,13 +207,15 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 //    xlsx.SetRowHeight("Sheet1", 1, 50)
 //
 func (f *File) SetRowHeight(sheet string, row int, height float64) {
-	xlsx := f.workSheetReader(sheet)
 	if row < 1 {
-		return
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
 	}
-	cells := 0
+
+	xlsx := f.workSheetReader(sheet)
+
+	prepareSheetXML(xlsx, 0, row)
+
 	rowIdx := row - 1
-	completeRow(xlsx, row, cells)
 	xlsx.SheetData.Row[rowIdx].Ht = height
 	xlsx.SheetData.Row[rowIdx].CustomHeight = true
 }
@@ -232,8 +239,12 @@ func (f *File) getRowHeight(sheet string, row int) int {
 //    xlsx.GetRowHeight("Sheet1", 1)
 //
 func (f *File) GetRowHeight(sheet string, row int) float64 {
+	if row < 1 {
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+	}
+
 	xlsx := f.workSheetReader(sheet)
-	if row < 1 || row > len(xlsx.SheetData.Row) {
+	if row > len(xlsx.SheetData.Row) {
 		return defaultRowHeightPixels // it will be better to use 0, but we take care with BC
 	}
 	for _, v := range xlsx.SheetData.Row {
@@ -291,18 +302,13 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 //    xlsx.SetRowVisible("Sheet1", 2, false)
 //
 func (f *File) SetRowVisible(sheet string, row int, visible bool) {
-	xlsx := f.workSheetReader(sheet)
 	if row < 1 {
-		return
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
 	}
-	cells := 0
-	completeRow(xlsx, row, cells)
-	rowIdx := row - 1
-	if visible {
-		xlsx.SheetData.Row[rowIdx].Hidden = false
-		return
-	}
-	xlsx.SheetData.Row[rowIdx].Hidden = true
+
+	xlsx := f.workSheetReader(sheet)
+	prepareSheetXML(xlsx, 0, row)
+	xlsx.SheetData.Row[row-1].Hidden = !visible
 }
 
 // GetRowVisible provides a function to get visible of a single row by given
@@ -312,14 +318,15 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) {
 //    xlsx.GetRowVisible("Sheet1", 2)
 //
 func (f *File) GetRowVisible(sheet string, row int) bool {
+	if row < 1 {
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+	}
+
 	xlsx := f.workSheetReader(sheet)
-	if row < 1 || row > len(xlsx.SheetData.Row) {
+	if row > len(xlsx.SheetData.Row) {
 		return false
 	}
-	rowIndex := row - 1
-	cells := 0
-	completeRow(xlsx, row, cells)
-	return !xlsx.SheetData.Row[rowIndex].Hidden
+	return !xlsx.SheetData.Row[row-1].Hidden
 }
 
 // SetRowOutlineLevel provides a function to set outline level number of a
@@ -329,12 +336,11 @@ func (f *File) GetRowVisible(sheet string, row int) bool {
 //    xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
 //
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) {
-	xlsx := f.workSheetReader(sheet)
 	if row < 1 {
-		return
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
 	}
-	cells := 0
-	completeRow(xlsx, row, cells)
+	xlsx := f.workSheetReader(sheet)
+	prepareSheetXML(xlsx, 0, row)
 	xlsx.SheetData.Row[row-1].OutlineLevel = level
 }
 
@@ -345,8 +351,11 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) {
 //    xlsx.GetRowOutlineLevel("Sheet1", 2)
 //
 func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
+	if row < 1 {
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+	}
 	xlsx := f.workSheetReader(sheet)
-	if row < 1 || row > len(xlsx.SheetData.Row) {
+	if row > len(xlsx.SheetData.Row) {
 		return 0
 	}
 	return xlsx.SheetData.Row[row-1].OutlineLevel
@@ -362,14 +371,18 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) RemoveRow(sheet string, row int) {
+	if row < 1 {
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+	}
+
 	xlsx := f.workSheetReader(sheet)
-	if row < 1 || row > len(xlsx.SheetData.Row) {
+	if row > len(xlsx.SheetData.Row) {
 		return
 	}
 	for i, r := range xlsx.SheetData.Row {
 		if r.R == row {
 			xlsx.SheetData.Row = append(xlsx.SheetData.Row[:i], xlsx.SheetData.Row[i+1:]...)
-			f.adjustHelper(sheet, -1, row, -1)
+			f.adjustHelper(sheet, rows, row, -1)
 			return
 		}
 	}
@@ -383,9 +396,9 @@ func (f *File) RemoveRow(sheet string, row int) {
 //
 func (f *File) InsertRow(sheet string, row int) {
 	if row < 1 {
-		return
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
 	}
-	f.adjustHelper(sheet, -1, row, 1)
+	f.adjustHelper(sheet, rows, row, 1)
 }
 
 // DuplicateRow inserts a copy of specified row (by it Excel row number) below
@@ -410,9 +423,12 @@ func (f *File) DuplicateRow(sheet string, row int) {
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) DuplicateRowTo(sheet string, row, row2 int) {
-	xlsx := f.workSheetReader(sheet)
+	if row < 1 {
+		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+	}
 
-	if row < 1 || row > len(xlsx.SheetData.Row) || row2 < 1 || row == row2 {
+	xlsx := f.workSheetReader(sheet)
+	if row > len(xlsx.SheetData.Row) || row2 < 1 || row == row2 {
 		return
 	}
 
@@ -430,7 +446,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) {
 		return
 	}
 
-	f.adjustHelper(sheet, -1, row2, 1)
+	f.adjustHelper(sheet, rows, row2, 1)
 
 	idx2 := -1
 	for i, r := range xlsx.SheetData.Row {
@@ -478,62 +494,31 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) {
 // Noteice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
 func checkRow(xlsx *xlsxWorksheet) {
-	buffer := bytes.Buffer{}
-	for k := range xlsx.SheetData.Row {
-		lenCol := len(xlsx.SheetData.Row[k].C)
-		if lenCol > 0 {
-			endR := string(strings.Map(letterOnlyMapF, xlsx.SheetData.Row[k].C[lenCol-1].R))
-			endRow, _ := strconv.Atoi(strings.Map(intOnlyMapF, xlsx.SheetData.Row[k].C[lenCol-1].R))
-			endCol := TitleToNumber(endR) + 1
-			if lenCol < endCol {
-				oldRow := xlsx.SheetData.Row[k].C
-				xlsx.SheetData.Row[k].C = xlsx.SheetData.Row[k].C[:0]
-				var tmp []xlsxC
-				for i := 0; i < endCol; i++ {
-					buffer.WriteString(ToAlphaString(i))
-					buffer.WriteString(strconv.Itoa(endRow))
-					tmp = append(tmp, xlsxC{
-						R: buffer.String(),
-					})
-					buffer.Reset()
-				}
-				xlsx.SheetData.Row[k].C = tmp
-				for _, y := range oldRow {
-					colAxis := TitleToNumber(string(strings.Map(letterOnlyMapF, y.R)))
-					xlsx.SheetData.Row[k].C[colAxis] = y
-				}
-			}
-		}
-	}
-}
+	for rowIdx := range xlsx.SheetData.Row {
+		rowData := &xlsx.SheetData.Row[rowIdx]
 
-// completeRow provides a function to check and fill each column element for a
-// single row and make that is continuous in a worksheet of XML by given row
-// index and axis.
-func completeRow(xlsx *xlsxWorksheet, row, cell int) {
-	currentRows := len(xlsx.SheetData.Row)
-	if currentRows > 1 {
-		lastRow := xlsx.SheetData.Row[currentRows-1].R
-		if lastRow >= row {
-			row = lastRow
+		colCount := len(rowData.C)
+		if colCount == 0 {
+			continue
 		}
-	}
-	for i := currentRows; i < row; i++ {
-		xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{
-			R: i + 1,
-		})
-	}
-	buffer := bytes.Buffer{}
-	for ii := currentRows; ii < row; ii++ {
-		start := len(xlsx.SheetData.Row[ii].C)
-		if start == 0 {
-			for iii := start; iii < cell; iii++ {
-				buffer.WriteString(ToAlphaString(iii))
-				buffer.WriteString(strconv.Itoa(ii + 1))
-				xlsx.SheetData.Row[ii].C = append(xlsx.SheetData.Row[ii].C, xlsxC{
-					R: buffer.String(),
-				})
-				buffer.Reset()
+		lastCol, _ := MustCellNameToCoordinates(rowData.C[colCount-1].R)
+
+		if colCount < lastCol {
+			oldList := rowData.C
+			newlist := make([]xlsxC, 0, lastCol)
+
+			rowData.C = xlsx.SheetData.Row[rowIdx].C[:0]
+
+			for colIdx := 0; colIdx < lastCol; colIdx++ {
+				newlist = append(newlist, xlsxC{R: MustCoordinatesToCellName(colIdx+1, rowIdx+1)})
+			}
+
+			rowData.C = newlist
+
+			for colIdx := range oldList {
+				colData := &oldList[colIdx]
+				colNum, _ := MustCellNameToCoordinates(colData.R)
+				xlsx.SheetData.Row[rowIdx].C[colNum-1] = *colData
 			}
 		}
 	}
