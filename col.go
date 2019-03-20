@@ -9,9 +9,7 @@
 
 package excelize
 
-import (
-	"math"
-)
+import "math"
 
 // Define the default cell size and EMU unit of measurement.
 const (

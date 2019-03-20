@@ -208,7 +208,7 @@ func (f *File) getTotalRowsCols(name string) (int, int) {
 //
 func (f *File) SetRowHeight(sheet string, row int, height float64) {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -240,7 +240,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 //
 func (f *File) GetRowHeight(sheet string, row int) float64 {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -303,7 +303,7 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 //
 func (f *File) SetRowVisible(sheet string, row int, visible bool) {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -319,7 +319,7 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) {
 //
 func (f *File) GetRowVisible(sheet string, row int) bool {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -330,14 +330,14 @@ func (f *File) GetRowVisible(sheet string, row int) bool {
 }
 
 // SetRowOutlineLevel provides a function to set outline level number of a
-// single row by given worksheet name and Excel row number. For example, outline row
-// 2 in Sheet1 to level 1:
+// single row by given worksheet name and Excel row number. For example,
+// outline row 2 in Sheet1 to level 1:
 //
 //    xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
 //
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 	xlsx := f.workSheetReader(sheet)
 	prepareSheetXML(xlsx, 0, row)
@@ -345,14 +345,14 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) {
 }
 
 // GetRowOutlineLevel provides a function to get outline level number of a
-// single row by given worksheet name and Exce row number.
-// For example, get outline number of row 2 in Sheet1:
+// single row by given worksheet name and Excel row number. For example, get
+// outline number of row 2 in Sheet1:
 //
 //    xlsx.GetRowOutlineLevel("Sheet1", 2)
 //
 func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 	xlsx := f.workSheetReader(sheet)
 	if row > len(xlsx.SheetData.Row) {
@@ -372,7 +372,7 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
 // partially updates these references currently.
 func (f *File) RemoveRow(sheet string, row int) {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -396,7 +396,7 @@ func (f *File) RemoveRow(sheet string, row int) {
 //
 func (f *File) InsertRow(sheet string, row int) {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 	f.adjustHelper(sheet, rows, row, 1)
 }
@@ -424,7 +424,7 @@ func (f *File) DuplicateRow(sheet string, row int) {
 // partially updates these references currently.
 func (f *File) DuplicateRowTo(sheet string, row, row2 int) {
 	if row < 1 {
-		panic(newInvalidRowNumberError(row)) // Fail fats to avoid possible future side effects!
+		panic(newInvalidRowNumberError(row)) // Fail fast to avoid possible future side effects!
 	}
 
 	xlsx := f.workSheetReader(sheet)

@@ -23,7 +23,7 @@ Excelize 是 Go 语言编写的用于操作 Office Excel 文档类库，基于 E
 
 ### 安装
 
-```go
+```bash
 go get github.com/360EntSecGroup-Skylar/excelize
 ```
 

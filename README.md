@@ -24,7 +24,7 @@ which take place in some methods in eraler versions.
 
 ### Installation
 
-```go
+```bash
 go get github.com/360EntSecGroup-Skylar/excelize
 ```
 

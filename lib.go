@@ -156,7 +156,7 @@ func MustColumnNameToNumber(name string) int {
 //
 // Example:
 //
-//     excelize.ToAlphaString(37) // returns "AK", nil
+//     excelize.ColumnNumberToName(37) // returns "AK", nil
 //
 func ColumnNumberToName(num int) (string, error) {
 	if num < 1 {
