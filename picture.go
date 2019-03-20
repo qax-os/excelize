@@ -266,6 +266,8 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	col, row := MustCellNameToCoordinates(cell)
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
+	col--
+	row--
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
@@ -469,7 +471,8 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //
 func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 	col, row := MustCellNameToCoordinates(cell)
-
+	col--
+	row--
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Drawing == nil {
 		return "", []byte{}

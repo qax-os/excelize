@@ -1032,7 +1032,8 @@ func (f *File) workSheetRelsWriter() {
 	}
 }
 
-// fillSheetData fill missing row and cell XML data to made it continous from first cell [1, 1] to last cell [col, row]
+// fillSheetData fill missing row and cell XML data to made it continuous from
+// first cell [1, 1] to last cell [col, row]
 func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
 	rowCount := len(xlsx.SheetData.Row)
 	if rowCount < row {

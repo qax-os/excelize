@@ -819,8 +819,8 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	file, raw := xlsx.GetPicture("Sheet1", "F21")
-	if !assert.NotEmpty(t, file) || !assert.NotEmpty(t, raw) ||
-		!assert.NoError(t, ioutil.WriteFile(file, raw, 0644)) {
+	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
+		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
 
 		t.FailNow()
 	}
@@ -851,8 +851,8 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	file, raw = xlsx.GetPicture("Sheet1", "F21")
-	if !assert.NotEmpty(t, file) || !assert.NotEmpty(t, raw) ||
-		!assert.NoError(t, ioutil.WriteFile(file, raw, 0644)) {
+	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
+		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
 
 		t.FailNow()
 	}
