@@ -361,6 +361,18 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) uint8 {
 	return xlsx.SheetData.Row[row-1].OutlineLevel
 }
 
+// SetRowOutlineRangeLevel provides a function to set outline level number of a
+// range of rows by giving worksheet name, start & end row index. For example, outline row
+// 2-10 in Sheet1 to level 1:
+//
+//    xlsx.SetRowOutlineRangeLevel("Sheet1", 2, 10, 1)
+//
+func (f *File) SetRowOutlineRangeLevel(sheet string, startRow int, endRow int, level uint8) {
+	for i := startRow; i <= endRow; i++ {
+		f.SetRowOutlineLevel(sheet, i, level)
+	}
+}
+
 // RemoveRow provides a function to remove single row by given worksheet name
 // and Excel row number. For example, remove row 3 in Sheet1:
 //
