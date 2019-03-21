@@ -337,11 +337,12 @@ func (f *File) RemoveCol(sheet, col string) {
 
 	xlsx := f.workSheetReader(sheet)
 	for rowIdx := range xlsx.SheetData.Row {
-		rowData := xlsx.SheetData.Row[rowIdx]
-		for colIdx, cellData := range rowData.C {
-			colName, _, _ := SplitCellName(cellData.R)
+		rowData := &xlsx.SheetData.Row[rowIdx]
+		for colIdx := range rowData.C {
+			colName, _, _ := SplitCellName(rowData.C[colIdx].R)
 			if colName == col {
-				rowData.C = append(rowData.C[:colIdx], rowData.C[colIdx+1:]...)
+				rowData.C = append(rowData.C[:colIdx], rowData.C[colIdx+1:]...)[:len(rowData.C)-1]
+				break
 			}
 		}
 	}

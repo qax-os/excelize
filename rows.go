@@ -379,9 +379,10 @@ func (f *File) RemoveRow(sheet string, row int) {
 	if row > len(xlsx.SheetData.Row) {
 		return
 	}
-	for i, r := range xlsx.SheetData.Row {
-		if r.R == row {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row[:i], xlsx.SheetData.Row[i+1:]...)
+	for rowIdx := range xlsx.SheetData.Row {
+		if xlsx.SheetData.Row[rowIdx].R == row {
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row[:rowIdx],
+				xlsx.SheetData.Row[rowIdx+1:]...)[:len(xlsx.SheetData.Row)-1]
 			f.adjustHelper(sheet, rows, row, -1)
 			return
 		}
