@@ -38,14 +38,14 @@ func TestTimeToExcelTime(t *testing.T) {
 }
 
 func TestTimeToExcelTime_Timezone(t *testing.T) {
-	msk, err := time.LoadLocation("Europe/Moscow")
+	location, err := time.LoadLocation("America/Los_Angeles")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	for i, test := range trueExpectedDateList {
 		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
 			assert.Panics(t, func() {
-				timeToExcelTime(test.GoValue.In(msk))
+				timeToExcelTime(test.GoValue.In(location))
 			}, "Time: %s", test.GoValue.String())
 		})
 	}

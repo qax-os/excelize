@@ -66,7 +66,7 @@ func TestSetCellFloat(t *testing.T) {
 
 func ExampleFile_SetCellFloat() {
 	f := NewFile()
-	var x float64 = 3.14159265
+	var x = 3.14159265
 	f.SetCellFloat("Sheet1", "A1", x, 2, 64)
 	fmt.Println(f.GetCellValue("Sheet1", "A1"))
 	// Output: 3.14

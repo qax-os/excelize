@@ -143,18 +143,20 @@ func (f *File) SetCellBool(sheet, axis string, value bool) {
 }
 
 // SetCellFloat sets a floating point value into a cell. The prec parameter
-// specifies how many places after the decimal will be shown while -1
-// is a special value that will use as many decimal places as necessary to
-// represent the number. bitSize is 32 or 64 depending on if a float32 or float64
-// was originally used for the value
-//     var x float32 = 1.325
-//     f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
+// specifies how many places after the decimal will be shown while -1 is a
+// special value that will use as many decimal places as necessary to
+// represent the number. bitSize is 32 or 64 depending on if a float32 or
+// float64 was originally used for the value. For Example:
+//
+//    var x float32 = 1.325
+//    f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
+//
 func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int) {
 	xlsx := f.workSheetReader(sheet)
 	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
 	cellData.T = ""
-	cellData.V = strconv.FormatFloat(value, 'f', prec, 64)
+	cellData.V = strconv.FormatFloat(value, 'f', prec, bitSize)
 }
 
 // SetCellStr provides a function to set string type value of a cell. Total
