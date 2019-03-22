@@ -778,18 +778,20 @@ func (f *File) UnprotectSheet(sheet string) {
 // trimSheetName provides a function to trim invaild characters by given worksheet
 // name.
 func trimSheetName(name string) string {
-	var r []rune
-	for _, v := range name {
-		switch v {
-		case 58, 92, 47, 63, 42, 91, 93: // replace :\/?*[]
-			continue
-		default:
-			r = append(r, v)
+	if strings.ContainsAny(name, ":\\/?*[]") || utf8.RuneCountInString(name) > 31 {
+		r := make([]rune, 0, 31)
+		for _, v := range name {
+			switch v {
+			case 58, 92, 47, 63, 42, 91, 93: // replace :\/?*[]
+				continue
+			default:
+				r = append(r, v)
+			}
+			if len(r) == 31 {
+				break
+			}
 		}
-	}
-	name = string(r)
-	if utf8.RuneCountInString(name) > 31 {
-		name = string([]rune(name)[0:31])
+		name = string(r)
 	}
 	return name
 }
