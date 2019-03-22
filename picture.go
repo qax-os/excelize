@@ -250,13 +250,21 @@ func (f *File) addSheetPicture(sheet string, rID int) {
 // countDrawings provides a function to get drawing files count storage in the
 // folder xl/drawings.
 func (f *File) countDrawings() int {
-	count := 0
+	c1, c2 := 0, 0
 	for k := range f.XLSX {
 		if strings.Contains(k, "xl/drawings/drawing") {
-			count++
+			c1++
 		}
 	}
-	return count
+	for rel := range f.Drawings {
+		if strings.Contains(rel, "xl/drawings/drawing") {
+			c2++
+		}
+	}
+	if c1 < c2 {
+		return c2
+	}
+	return c1
 }
 
 // addDrawingPicture provides a function to add picture by given sheet,
