@@ -98,11 +98,16 @@ func OpenReader(r io.Reader) (*File, error) {
 // setDefaultTimeStyle provides a function to set default numbers format for
 // time.Time type cell value by given worksheet name, cell coordinates and
 // number format code.
-func (f *File) setDefaultTimeStyle(sheet, axis string, format int) {
-	if f.GetCellStyle(sheet, axis) == 0 {
+func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
+	s, err := f.GetCellStyle(sheet, axis)
+	if err != nil {
+		return err
+	}
+	if s == 0 {
 		style, _ := f.NewStyle(`{"number_format": ` + strconv.Itoa(format) + `}`)
 		f.SetCellStyle(sheet, axis, axis, style)
 	}
+	return err
 }
 
 // workSheetReader provides a function to get the pointer to the structure
@@ -218,7 +223,8 @@ func (f *File) GetMergeCells(sheet string) []MergeCell {
 		for i := range xlsx.MergeCells.Cells {
 			ref := xlsx.MergeCells.Cells[i].Ref
 			axis := strings.Split(ref, ":")[0]
-			mergeCells = append(mergeCells, []string{ref, f.GetCellValue(sheet, axis)})
+			val, _ := f.GetCellValue(sheet, axis)
+			mergeCells = append(mergeCells, []string{ref, val})
 		}
 	}
 

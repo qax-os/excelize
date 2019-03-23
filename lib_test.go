@@ -71,9 +71,6 @@ func TestColumnNameToNumber_Error(t *testing.T) {
 		if assert.Errorf(t, err, msg, col.Name) {
 			assert.Equalf(t, col.Num, out, msg, col.Name)
 		}
-		assert.Panicsf(t, func() {
-			MustColumnNameToNumber(col.Name)
-		}, msg, col.Name)
 	}
 }
 
@@ -174,9 +171,6 @@ func TestCellNameToCoordinates_Error(t *testing.T) {
 			assert.Equalf(t, -1, c, msg, cell)
 			assert.Equalf(t, -1, r, msg, cell)
 		}
-		assert.Panicsf(t, func() {
-			MustCellNameToCoordinates(cell)
-		}, msg, cell)
 	}
 }
 
@@ -199,9 +193,6 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 		if assert.Errorf(t, err, msg, col, row) {
 			assert.Equalf(t, "", cell, msg, col, row)
 		}
-		assert.Panicsf(t, func() {
-			MustCoordinatesToCellName(col, row)
-		}, msg, col, row)
 	}
 
 	for _, col := range invalidIndexes {

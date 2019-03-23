@@ -135,22 +135,6 @@ func ColumnNameToNumber(name string) (int, error) {
 	return col, nil
 }
 
-// MustColumnNameToNumber provides a function to convert Excel sheet column
-// name to int. Column name case insencitive.
-// Function returns error if column name incorrect.
-//
-// Example:
-//
-//     excelize.MustColumnNameToNumber("AK") // returns 37
-//
-func MustColumnNameToNumber(name string) int {
-	n, err := ColumnNameToNumber(name)
-	if err != nil {
-		panic(err)
-	}
-	return n
-}
-
 // ColumnNumberToName provides a function to convert integer
 // to Excel sheet column title.
 //
@@ -174,8 +158,9 @@ func ColumnNumberToName(num int) (string, error) {
 // to [X, Y] coordinates or retrusn an error.
 //
 // Example:
-//     CellCoordinates("A1") // returns 1, 1, nil
-//     CellCoordinates("Z3") // returns 26, 3, nil
+//
+//    CellCoordinates("A1") // returns 1, 1, nil
+//    CellCoordinates("Z3") // returns 26, 3, nil
 //
 func CellNameToCoordinates(cell string) (int, int, error) {
 	const msg = "cannot convert cell %q to coordinates: %v"
@@ -193,25 +178,12 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 	return col, row, nil
 }
 
-// MustCellNameToCoordinates converts alpha-numeric cell name
-// to [X, Y] coordinates or panics.
+// CoordinatesToCellName converts [X, Y] coordinates to alpha-numeric cell
+// name or returns an error.
 //
 // Example:
-//     MustCellNameToCoordinates("A1") // returns 1, 1
-//     MustCellNameToCoordinates("Z3") // returns 26, 3
 //
-func MustCellNameToCoordinates(cell string) (int, int) {
-	c, r, err := CellNameToCoordinates(cell)
-	if err != nil {
-		panic(err)
-	}
-	return c, r
-}
-
-// CoordinatesToCellName converts [X, Y] coordinates to alpha-numeric cell name or returns an error.
-//
-// Example:
-//     CoordinatesToCellName(1, 1) // returns "A1", nil
+//    CoordinatesToCellName(1, 1) // returns "A1", nil
 //
 func CoordinatesToCellName(col, row int) (string, error) {
 	if col < 1 || row < 1 {
@@ -222,19 +194,6 @@ func CoordinatesToCellName(col, row int) (string, error) {
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]: %v", col, row, err)
 	}
 	return fmt.Sprintf("%s%d", colname, row), nil
-}
-
-// MustCoordinatesToCellName converts [X, Y] coordinates to alpha-numeric cell name or panics.
-//
-// Example:
-//     MustCoordinatesToCellName(1, 1) // returns "A1"
-//
-func MustCoordinatesToCellName(col, row int) string {
-	n, err := CoordinatesToCellName(col, row)
-	if err != nil {
-		panic(err)
-	}
-	return n
 }
 
 // boolPtr returns a pointer to a bool with the given value.

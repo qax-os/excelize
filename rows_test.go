@@ -23,13 +23,16 @@ func TestRows(t *testing.T) {
 
 	collectedRows := make([][]string, 0)
 	for rows.Next() {
-		collectedRows = append(collectedRows, trimSliceSpace(rows.Columns()))
+		columns, err := rows.Columns()
+		assert.NoError(t, err)
+		collectedRows = append(collectedRows, trimSliceSpace(columns))
 	}
 	if !assert.NoError(t, rows.Error()) {
 		t.FailNow()
 	}
 
-	returnedRows := xlsx.GetRows(sheet2)
+	returnedRows, err := xlsx.GetRows(sheet2)
+	assert.NoError(t, err)
 	for i := range returnedRows {
 		returnedRows[i] = trimSliceSpace(returnedRows[i])
 	}
@@ -54,21 +57,22 @@ func TestRowHeight(t *testing.T) {
 	xlsx := NewFile()
 	sheet1 := xlsx.GetSheetName(1)
 
-	assert.Panics(t, func() {
-		xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0)
-	})
+	assert.EqualError(t, xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
 
-	assert.Panics(t, func() {
-		xlsx.GetRowHeight("Sheet1", 0)
-	})
+	height, err := xlsx.GetRowHeight("Sheet1", 0)
+	assert.EqualError(t, err, "invalid row number 0")
 
-	xlsx.SetRowHeight(sheet1, 1, 111.0)
-	assert.Equal(t, 111.0, xlsx.GetRowHeight(sheet1, 1))
+	assert.NoError(t, xlsx.SetRowHeight(sheet1, 1, 111.0))
+	height, err = xlsx.GetRowHeight(sheet1, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 111.0, height)
 
-	xlsx.SetRowHeight(sheet1, 4, 444.0)
-	assert.Equal(t, 444.0, xlsx.GetRowHeight(sheet1, 4))
+	assert.NoError(t, xlsx.SetRowHeight(sheet1, 4, 444.0))
+	height, err = xlsx.GetRowHeight(sheet1, 4)
+	assert.NoError(t, err)
+	assert.Equal(t, 444.0, height)
 
-	err := xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
+	err = xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -86,13 +90,11 @@ func TestRowVisibility(t *testing.T) {
 	xlsx.SetRowVisible("Sheet3", 2, true)
 	xlsx.GetRowVisible("Sheet3", 2)
 
-	assert.Panics(t, func() {
-		xlsx.SetRowVisible("Sheet3", 0, true)
-	})
+	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
 
-	assert.Panics(t, func() {
-		xlsx.GetRowVisible("Sheet3", 0)
-	})
+	visible, err := xlsx.GetRowVisible("Sheet3", 0)
+	assert.Equal(t, false, visible)
+	assert.EqualError(t, err, "invalid row number 0")
 
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
 }
@@ -110,27 +112,23 @@ func TestRemoveRow(t *testing.T) {
 
 	xlsx.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 
-	assert.Panics(t, func() {
-		xlsx.RemoveRow(sheet1, -1)
-	})
+	assert.EqualError(t, xlsx.RemoveRow(sheet1, -1), "invalid row number -1")
 
-	assert.Panics(t, func() {
-		xlsx.RemoveRow(sheet1, 0)
-	})
+	assert.EqualError(t, xlsx.RemoveRow(sheet1, 0), "invalid row number 0")
 
-	xlsx.RemoveRow(sheet1, 4)
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-1) {
 		t.FailNow()
 	}
 
 	xlsx.MergeCell(sheet1, "B3", "B5")
 
-	xlsx.RemoveRow(sheet1, 2)
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 2))
 	if !assert.Len(t, r.SheetData.Row, rowCount-2) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow(sheet1, 4)
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-3) {
 		t.FailNow()
 	}
@@ -140,17 +138,17 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow(sheet1, 1)
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount-4) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow(sheet1, 2)
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 2))
 	if !assert.Len(t, r.SheetData.Row, rowCount-5) {
 		t.FailNow()
 	}
 
-	xlsx.RemoveRow(sheet1, 1)
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount-6) {
 		t.FailNow()
 	}
@@ -171,20 +169,16 @@ func TestInsertRow(t *testing.T) {
 
 	xlsx.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 
-	assert.Panics(t, func() {
-		xlsx.InsertRow(sheet1, -1)
-	})
+	assert.EqualError(t, xlsx.InsertRow(sheet1, -1), "invalid row number -1")
 
-	assert.Panics(t, func() {
-		xlsx.InsertRow(sheet1, 0)
-	})
+	assert.EqualError(t, xlsx.InsertRow(sheet1, 0), "invalid row number 0")
 
-	xlsx.InsertRow(sheet1, 1)
+	assert.NoError(t, xlsx.InsertRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
 		t.FailNow()
 	}
 
-	xlsx.InsertRow(sheet1, 4)
+	assert.NoError(t, xlsx.InsertRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
 		t.FailNow()
 	}
@@ -198,11 +192,11 @@ func TestInsertRowInEmptyFile(t *testing.T) {
 	xlsx := NewFile()
 	sheet1 := xlsx.GetSheetName(1)
 	r := xlsx.workSheetReader(sheet1)
-	xlsx.InsertRow(sheet1, 1)
+	assert.NoError(t, xlsx.InsertRow(sheet1, 1))
 	assert.Len(t, r.SheetData.Row, 0)
-	xlsx.InsertRow(sheet1, 2)
+	assert.NoError(t, xlsx.InsertRow(sheet1, 2))
 	assert.Len(t, r.SheetData.Row, 0)
-	xlsx.InsertRow(sheet1, 99)
+	assert.NoError(t, xlsx.InsertRow(sheet1, 99))
 	assert.Len(t, r.SheetData.Row, 0)
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }
@@ -234,7 +228,7 @@ func TestDuplicateRow(t *testing.T) {
 		xlsx.SetCellStr(sheet, "A1", cells["A1"])
 		xlsx.SetCellStr(sheet, "B1", cells["B1"])
 
-		xlsx.DuplicateRow(sheet, 1)
+		assert.NoError(t, xlsx.DuplicateRow(sheet, 1))
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FromSingleRow_1"))) {
 			t.FailNow()
 		}
@@ -243,12 +237,14 @@ func TestDuplicateRow(t *testing.T) {
 			"A2": cells["A1"], "B2": cells["B1"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
 
-		xlsx.DuplicateRow(sheet, 2)
+		assert.NoError(t, xlsx.DuplicateRow(sheet, 2))
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FromSingleRow_2"))) {
 			t.FailNow()
 		}
@@ -258,7 +254,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A3": cells["A1"], "B3": cells["B1"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -269,7 +267,7 @@ func TestDuplicateRow(t *testing.T) {
 		xlsx.SetCellStr(sheet, "A1", cells["A1"])
 		xlsx.SetCellStr(sheet, "B1", cells["B1"])
 
-		xlsx.DuplicateRow(sheet, 1)
+		assert.NoError(t, xlsx.DuplicateRow(sheet, 1))
 
 		xlsx.SetCellStr(sheet, "A2", cells["A2"])
 		xlsx.SetCellStr(sheet, "B2", cells["B2"])
@@ -282,7 +280,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A2": cells["A2"], "B2": cells["B2"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -291,7 +291,7 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("FirstOfMultipleRows", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
 
-		xlsx.DuplicateRow(sheet, 1)
+		assert.NoError(t, xlsx.DuplicateRow(sheet, 1))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FirstOfMultipleRows"))) {
 			t.FailNow()
@@ -303,7 +303,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A4": cells["A3"], "B4": cells["B3"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -312,26 +314,35 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("ZeroWithNoRows", func(t *testing.T) {
 		xlsx := NewFile()
 
-		assert.Panics(t, func() {
-			xlsx.DuplicateRow(sheet, 0)
-		})
+		assert.EqualError(t, xlsx.DuplicateRow(sheet, 0), "invalid row number 0")
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.ZeroWithNoRows"))) {
 			t.FailNow()
 		}
 
-		assert.Equal(t, "", xlsx.GetCellValue(sheet, "A1"))
-		assert.Equal(t, "", xlsx.GetCellValue(sheet, "B1"))
-		assert.Equal(t, "", xlsx.GetCellValue(sheet, "A2"))
-		assert.Equal(t, "", xlsx.GetCellValue(sheet, "B2"))
+		val, err := xlsx.GetCellValue(sheet, "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "", val)
+		val, err = xlsx.GetCellValue(sheet, "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "", val)
+		val, err = xlsx.GetCellValue(sheet, "A2")
+		assert.NoError(t, err)
+		assert.Equal(t, "", val)
+		val, err = xlsx.GetCellValue(sheet, "B2")
+		assert.NoError(t, err)
+		assert.Equal(t, "", val)
 
+		assert.NoError(t, err)
 		expect := map[string]string{
 			"A1": "", "B1": "",
 			"A2": "", "B2": "",
 		}
 
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -340,7 +351,7 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("MiddleRowOfEmptyFile", func(t *testing.T) {
 		xlsx := NewFile()
 
-		xlsx.DuplicateRow(sheet, 99)
+		assert.NoError(t, xlsx.DuplicateRow(sheet, 99))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.MiddleRowOfEmptyFile"))) {
 			t.FailNow()
@@ -351,7 +362,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A100": "",
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -360,7 +373,7 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("WithLargeOffsetToMiddleOfData", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
 
-		xlsx.DuplicateRowTo(sheet, 1, 3)
+		assert.NoError(t, xlsx.DuplicateRowTo(sheet, 1, 3))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.WithLargeOffsetToMiddleOfData"))) {
 			t.FailNow()
@@ -372,7 +385,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A4": cells["A3"], "B4": cells["B3"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -381,7 +396,7 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("WithLargeOffsetToEmptyRows", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
 
-		xlsx.DuplicateRowTo(sheet, 1, 7)
+		assert.NoError(t, xlsx.DuplicateRowTo(sheet, 1, 7))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.WithLargeOffsetToEmptyRows"))) {
 			t.FailNow()
@@ -393,7 +408,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A7": cells["A1"], "B7": cells["B1"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -402,7 +419,7 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("InsertBefore", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
 
-		xlsx.DuplicateRowTo(sheet, 2, 1)
+		assert.NoError(t, xlsx.DuplicateRowTo(sheet, 2, 1))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.InsertBefore"))) {
 			t.FailNow()
@@ -415,7 +432,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A4": cells["A3"], "B4": cells["B3"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell), cell) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v, cell) {
 				t.FailNow()
 			}
 		}
@@ -424,7 +443,7 @@ func TestDuplicateRow(t *testing.T) {
 	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
 
-		xlsx.DuplicateRowTo(sheet, 3, 1)
+		assert.NoError(t, xlsx.DuplicateRowTo(sheet, 3, 1))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.InsertBeforeWithLargeOffset"))) {
 			t.FailNow()
@@ -437,7 +456,9 @@ func TestDuplicateRow(t *testing.T) {
 			"A4": cells["A3"], "B4": cells["B3"],
 		}
 		for cell, val := range expect {
-			if !assert.Equal(t, val, xlsx.GetCellValue(sheet, cell)) {
+			v, err := xlsx.GetCellValue(sheet, cell)
+			assert.NoError(t, err)
+			if !assert.Equal(t, val, v) {
 				t.FailNow()
 			}
 		}
@@ -467,12 +488,12 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 				xlsx.SetCellStr(sheet, col, val)
 			}
 
-			assert.Panics(t, func() {
-				xlsx.DuplicateRow(sheet, row)
-			})
+			assert.EqualError(t, xlsx.DuplicateRow(sheet, row), fmt.Sprintf("invalid row number %d", row))
 
 			for col, val := range cells {
-				if !assert.Equal(t, val, xlsx.GetCellValue(sheet, col)) {
+				v, err := xlsx.GetCellValue(sheet, col)
+				assert.NoError(t, err)
+				if !assert.Equal(t, val, v) {
 					t.FailNow()
 				}
 			}
@@ -489,12 +510,12 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 					xlsx.SetCellStr(sheet, col, val)
 				}
 
-				assert.Panics(t, func() {
-					xlsx.DuplicateRowTo(sheet, row1, row2)
-				})
+				assert.EqualError(t, xlsx.DuplicateRowTo(sheet, row1, row2), fmt.Sprintf("invalid row number %d", row1))
 
 				for col, val := range cells {
-					if !assert.Equal(t, val, xlsx.GetCellValue(sheet, col)) {
+					v, err := xlsx.GetCellValue(sheet, col)
+					assert.NoError(t, err)
+					if !assert.Equal(t, val, v) {
 						t.FailNow()
 					}
 				}

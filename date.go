@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"errors"
 	"math"
 	"time"
 )
@@ -25,18 +26,18 @@ var (
 )
 
 // timeToExcelTime provides a function to convert time to Excel time.
-func timeToExcelTime(t time.Time) float64 {
+func timeToExcelTime(t time.Time) (float64, error) {
 	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
 
 	// Force user to explicit convet passed value to UTC time.
 	// Because for example 1900-01-01 00:00:00 +0300 MSK converts to 1900-01-01 00:00:00 +0230 LMT
 	// probably due to daylight saving.
 	if t.Location() != time.UTC {
-		panic("only UTC time expected")
+		return 0.0, errors.New("only UTC time expected")
 	}
 
 	if t.Before(excelMinTime1900) {
-		return 0.0
+		return 0.0, nil
 	}
 
 	tt := t
@@ -60,7 +61,7 @@ func timeToExcelTime(t time.Time) float64 {
 	if t.After(excelBuggyPeriodStart) {
 		result += 1.0
 	}
-	return result
+	return result, nil
 }
 
 // shiftJulianToNoon provides a function to process julian date to noon.

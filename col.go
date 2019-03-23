@@ -22,33 +22,39 @@ const (
 // worksheet name and column name. For example, get visible state of column D
 // in Sheet1:
 //
-//    xlsx.GetColVisible("Sheet1", "D")
+//    visiable, err := xlsx.GetColVisible("Sheet1", "D")
 //
-func (f *File) GetColVisible(sheet, col string) bool {
-	colNum := MustColumnNameToNumber(col)
+func (f *File) GetColVisible(sheet, col string) (bool, error) {
+	visible := true
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return visible, err
+	}
 
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols == nil {
-		return true
+		return visible, err
 	}
 
-	visible := true
 	for c := range xlsx.Cols.Col {
 		colData := &xlsx.Cols.Col[c]
 		if colData.Min <= colNum && colNum <= colData.Max {
 			visible = !colData.Hidden
 		}
 	}
-	return visible
+	return visible, err
 }
 
 // SetColVisible provides a function to set visible of a single column by given
 // worksheet name and column name. For example, hide column D in Sheet1:
 //
-//    xlsx.SetColVisible("Sheet1", "D", false)
+//    err := xlsx.SetColVisible("Sheet1", "D", false)
 //
-func (f *File) SetColVisible(sheet, col string, visible bool) {
-	colNum := MustColumnNameToNumber(col)
+func (f *File) SetColVisible(sheet, col string, visible bool) error {
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return err
+	}
 	colData := xlsxCol{
 		Min:         colNum,
 		Max:         colNum,
@@ -60,7 +66,7 @@ func (f *File) SetColVisible(sheet, col string, visible bool) {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
 		xlsx.Cols = &cols
-		return
+		return err
 	}
 	for v := range xlsx.Cols.Col {
 		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
@@ -72,20 +78,24 @@ func (f *File) SetColVisible(sheet, col string, visible bool) {
 	colData.Hidden = !visible
 	colData.CustomWidth = true
 	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
+	return err
 }
 
 // GetColOutlineLevel provides a function to get outline level of a single
 // column by given worksheet name and column name. For example, get outline
 // level of column D in Sheet1:
 //
-//    xlsx.GetColOutlineLevel("Sheet1", "D")
+//    level, err := xlsx.GetColOutlineLevel("Sheet1", "D")
 //
-func (f *File) GetColOutlineLevel(sheet, col string) uint8 {
-	colNum := MustColumnNameToNumber(col)
-	xlsx := f.workSheetReader(sheet)
+func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 	level := uint8(0)
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return level, err
+	}
+	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols == nil {
-		return level
+		return level, err
 	}
 	for c := range xlsx.Cols.Col {
 		colData := &xlsx.Cols.Col[c]
@@ -93,17 +103,20 @@ func (f *File) GetColOutlineLevel(sheet, col string) uint8 {
 			level = colData.OutlineLevel
 		}
 	}
-	return level
+	return level, err
 }
 
 // SetColOutlineLevel provides a function to set outline level of a single
 // column by given worksheet name and column name. For example, set outline
 // level of column D in Sheet1 to 2:
 //
-//    xlsx.SetColOutlineLevel("Sheet1", "D", 2)
+//    err := xlsx.SetColOutlineLevel("Sheet1", "D", 2)
 //
-func (f *File) SetColOutlineLevel(sheet, col string, level uint8) {
-	colNum := MustColumnNameToNumber(col)
+func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return err
+	}
 	colData := xlsxCol{
 		Min:          colNum,
 		Max:          colNum,
@@ -115,7 +128,7 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
 		xlsx.Cols = &cols
-		return
+		return err
 	}
 	for v := range xlsx.Cols.Col {
 		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
@@ -127,21 +140,24 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) {
 	colData.OutlineLevel = level
 	colData.CustomWidth = true
 	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
+	return err
 }
 
 // SetColWidth provides a function to set the width of a single column or
 // multiple columns. For example:
 //
 //    xlsx := excelize.NewFile()
-//    xlsx.SetColWidth("Sheet1", "A", "H", 20)
-//    err := xlsx.Save()
-//    if err != nil {
-//        fmt.Println(err)
-//    }
+//    err := xlsx.SetColWidth("Sheet1", "A", "H", 20)
 //
-func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
-	min := MustColumnNameToNumber(startcol)
-	max := MustColumnNameToNumber(endcol)
+func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error {
+	min, err := ColumnNameToNumber(startcol)
+	if err != nil {
+		return err
+	}
+	max, err := ColumnNameToNumber(endcol)
+	if err != nil {
+		return err
+	}
 	if min > max {
 		min, max = max, min
 	}
@@ -160,6 +176,7 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) {
 		cols.Col = append(cols.Col, col)
 		xlsx.Cols = &cols
 	}
+	return err
 }
 
 // positionObjectPixels calculate the vertices that define the position of a
@@ -289,8 +306,11 @@ func (f *File) getColWidth(sheet string, col int) int {
 
 // GetColWidth provides a function to get column width by given worksheet name
 // and column index.
-func (f *File) GetColWidth(sheet, col string) float64 {
-	colNum := MustColumnNameToNumber(col)
+func (f *File) GetColWidth(sheet, col string) (float64, error) {
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return defaultColWidthPixels, err
+	}
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
 		var width float64
@@ -300,39 +320,39 @@ func (f *File) GetColWidth(sheet, col string) float64 {
 			}
 		}
 		if width != 0 {
-			return width
+			return width, err
 		}
 	}
 	// Optimisation for when the column widths haven't changed.
-	return defaultColWidthPixels
+	return defaultColWidthPixels, err
 }
 
 // InsertCol provides a function to insert a new column before given column
 // index. For example, create a new column before column C in Sheet1:
 //
-//    xlsx.InsertCol("Sheet1", "C")
+//    err := xlsx.InsertCol("Sheet1", "C")
 //
-func (f *File) InsertCol(sheet, col string) {
+func (f *File) InsertCol(sheet, col string) error {
 	num, err := ColumnNameToNumber(col)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	f.adjustHelper(sheet, columns, num, 1)
+	return f.adjustHelper(sheet, columns, num, 1)
 }
 
 // RemoveCol provides a function to remove single column by given worksheet
 // name and column index. For example, remove column C in Sheet1:
 //
-//    xlsx.RemoveCol("Sheet1", "C")
+//    err := xlsx.RemoveCol("Sheet1", "C")
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
-func (f *File) RemoveCol(sheet, col string) {
+func (f *File) RemoveCol(sheet, col string) error {
 	num, err := ColumnNameToNumber(col)
 	if err != nil {
-		panic(err) // Fail fast to avoid possible future side effects!
+		return err
 	}
 
 	xlsx := f.workSheetReader(sheet)
@@ -346,7 +366,7 @@ func (f *File) RemoveCol(sheet, col string) {
 			}
 		}
 	}
-	f.adjustHelper(sheet, columns, num, -1)
+	return f.adjustHelper(sheet, columns, num, -1)
 }
 
 // convertColWidthToPixels provieds function to convert the width of a cell

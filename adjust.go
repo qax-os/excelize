@@ -30,7 +30,7 @@ const (
 // TODO: adjustCalcChain, adjustPageBreaks, adjustComments,
 // adjustDataValidations, adjustProtectedCells
 //
-func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) {
+func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
 	xlsx := f.workSheetReader(sheet)
 
 	if dir == rows {
@@ -39,11 +39,16 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		f.adjustColDimensions(xlsx, num, offset)
 	}
 	f.adjustHyperlinks(xlsx, sheet, dir, num, offset)
-	f.adjustMergeCells(xlsx, dir, num, offset)
-	f.adjustAutoFilter(xlsx, dir, num, offset)
+	if err := f.adjustMergeCells(xlsx, dir, num, offset); err != nil {
+		return err
+	}
+	if err := f.adjustAutoFilter(xlsx, dir, num, offset); err != nil {
+		return err
+	}
 
 	checkSheet(xlsx)
 	checkRow(xlsx)
+	return nil
 }
 
 // adjustColDimensions provides a function to update column dimensions when
@@ -127,9 +132,9 @@ func (f *File) adjustHyperlinks(xlsx *xlsxWorksheet, sheet string, dir adjustDir
 
 // adjustAutoFilter provides a function to update the auto filter when
 // inserting or deleting rows or columns.
-func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, offset int) {
+func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, offset int) error {
 	if xlsx.AutoFilter == nil {
-		return
+		return nil
 	}
 
 	rng := strings.Split(xlsx.AutoFilter.Ref, ":")
@@ -138,12 +143,12 @@ func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 
 	firstCol, firstRow, err := CellNameToCoordinates(firstCell)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	lastCol, lastRow, err := CellNameToCoordinates(lastCell)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if (dir == rows && firstRow == num && offset < 0) || (dir == columns && firstCol == num && lastCol == num) {
@@ -154,7 +159,7 @@ func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 				rowData.Hidden = false
 			}
 		}
-		return
+		return nil
 	}
 
 	if dir == rows {
@@ -171,13 +176,14 @@ func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 	}
 
 	xlsx.AutoFilter.Ref = firstCell + ":" + lastCell
+	return nil
 }
 
 // adjustMergeCells provides a function to update merged cells when inserting
 // or deleting rows or columns.
-func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, offset int) {
+func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, offset int) error {
 	if xlsx.MergeCells == nil {
-		return
+		return nil
 	}
 
 	for i, areaData := range xlsx.MergeCells.Cells {
@@ -187,12 +193,12 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 
 		firstCol, firstRow, err := CellNameToCoordinates(firstCell)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		lastCol, lastRow, err := CellNameToCoordinates(lastCell)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		adjust := func(v int) int {
@@ -224,13 +230,14 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 		}
 
 		if firstCell, err = CoordinatesToCellName(firstCol, firstRow); err != nil {
-			panic(err)
+			return err
 		}
 
 		if lastCell, err = CoordinatesToCellName(lastCol, lastRow); err != nil {
-			panic(err)
+			return err
 		}
 
 		areaData.Ref = firstCell + ":" + lastCell
 	}
+	return nil
 }

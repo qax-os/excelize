@@ -33,11 +33,11 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 // name, coordinate area and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
-//    xlsx.AddTable("Sheet1", "A1", "D5", ``)
+//    err := xlsx.AddTable("Sheet1", "A1", "D5", ``)
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
-//    xlsx.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+//    err := xlsx.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 //
 // Note that the table at least two lines include string type header. Multiple
 // tables coordinate areas can't have an intersection.
@@ -56,8 +56,14 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 		return err
 	}
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hcol, hrow := MustCellNameToCoordinates(hcell)
-	vcol, vrow := MustCellNameToCoordinates(vcell)
+	hcol, hrow, err := CellNameToCoordinates(hcell)
+	if err != nil {
+		return err
+	}
+	vcol, vrow, err := CellNameToCoordinates(vcell)
+	if err != nil {
+		return err
+	}
 
 	if vcol < hcol {
 		vcol, hcol = hcol, vcol
@@ -73,7 +79,10 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 	// Add first table for given sheet.
 	rID := f.addSheetRelationships(sheet, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 	f.addSheetTable(sheet, rID)
-	f.addTable(sheet, tableXML, hcol, hrow, vcol, vrow, tableID, formatSet)
+	err = f.addTable(sheet, tableXML, hcol, hrow, vcol, vrow, tableID, formatSet)
+	if err != nil {
+		return err
+	}
 	f.addContentTypePart(tableID, "table")
 	return err
 }
@@ -106,24 +115,33 @@ func (f *File) addSheetTable(sheet string, rID int) {
 
 // addTable provides a function to add table by given worksheet name,
 // coordinate area and format set.
-func (f *File) addTable(sheet, tableXML string, hcol, hrow, vcol, vrow, i int, formatSet *formatTable) {
+func (f *File) addTable(sheet, tableXML string, hcol, hrow, vcol, vrow, i int, formatSet *formatTable) error {
 	// Correct the minimum number of rows, the table at least two lines.
 	if hrow == vrow {
 		vrow++
 	}
 
 	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
-	ref := MustCoordinatesToCellName(hcol, hrow) + ":" + MustCoordinatesToCellName(vcol, vrow)
+	hcell, err := CoordinatesToCellName(hcol, hrow)
+	if err != nil {
+		return err
+	}
+	vcell, err := CoordinatesToCellName(vcol, vrow)
+	if err != nil {
+		return err
+	}
+	ref := hcell + ":" + vcell
 
-	var (
-		tableColumn []*xlsxTableColumn
-	)
+	var tableColumn []*xlsxTableColumn
 
 	idx := 0
 	for i := hcol; i <= vcol; i++ {
 		idx++
-		cell := MustCoordinatesToCellName(i, hrow)
-		name := f.GetCellValue(sheet, cell)
+		cell, err := CoordinatesToCellName(i, hrow)
+		if err != nil {
+			return err
+		}
+		name, _ := f.GetCellValue(sheet, cell)
 		if _, err := strconv.Atoi(name); err == nil {
 			f.SetCellStr(sheet, cell, name)
 		}
@@ -163,6 +181,7 @@ func (f *File) addTable(sheet, tableXML string, hcol, hrow, vcol, vrow, i int, f
 	}
 	table, _ := xml.Marshal(t)
 	f.saveFileList(tableXML, table)
+	return nil
 }
 
 // parseAutoFilterSet provides a function to parse the settings of the auto
@@ -244,8 +263,14 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 //    Price < 2000
 //
 func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
-	hcol, hrow := MustCellNameToCoordinates(hcell)
-	vcol, vrow := MustCellNameToCoordinates(vcell)
+	hcol, hrow, err := CellNameToCoordinates(hcell)
+	if err != nil {
+		return err
+	}
+	vcol, vrow, err := CellNameToCoordinates(vcell)
+	if err != nil {
+		return err
+	}
 
 	if vcol < hcol {
 		vcol, hcol = hcol, vcol
@@ -256,7 +281,17 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	}
 
 	formatSet, _ := parseAutoFilterSet(format)
-	ref := MustCoordinatesToCellName(hcol, hrow) + ":" + MustCoordinatesToCellName(vcol, vrow)
+
+	var cellStart, cellEnd string
+	cellStart, err = CoordinatesToCellName(hcol, hrow)
+	if err != nil {
+		return err
+	}
+	cellEnd, err = CoordinatesToCellName(vcol, vrow)
+	if err != nil {
+		return err
+	}
+	ref := cellStart + ":" + cellEnd
 	refRange := vcol - hcol
 	return f.autoFilter(sheet, ref, refRange, hcol, formatSet)
 }
@@ -277,7 +312,10 @@ func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *forma
 		return nil
 	}
 
-	fsCol := MustColumnNameToNumber(formatSet.Column)
+	fsCol, err := ColumnNameToNumber(formatSet.Column)
+	if err != nil {
+		return err
+	}
 	offset := fsCol - col
 	if offset < 0 || offset > refRange {
 		return fmt.Errorf("incorrect index of column '%s'", formatSet.Column)

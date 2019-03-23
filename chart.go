@@ -456,7 +456,10 @@ func (f *File) AddChart(sheet, cell, format string) error {
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
 	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	f.addDrawingChart(sheet, drawingXML, cell, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
+	err = f.addDrawingChart(sheet, drawingXML, cell, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
+	if err != nil {
+		return err
+	}
 	f.addChart(formatSet)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
@@ -1239,8 +1242,11 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 
 // addDrawingChart provides a function to add chart graphic frame by given
 // sheet, drawingXML, cell, width, height, relationship index and format sets.
-func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, formatSet *formatPicture) {
-	col, row := MustCellNameToCoordinates(cell)
+func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, formatSet *formatPicture) error {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return err
+	}
 	colIdx := col - 1
 	rowIdx := row - 1
 
@@ -1290,4 +1296,5 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings[drawingXML] = content
+	return err
 }

@@ -1,5 +1,4 @@
 ~$*.xlsx
 test/Test*.xlsx
 *.out
-test/image3.png
 *.test

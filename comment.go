@@ -72,7 +72,7 @@ func (f *File) getSheetComments(sheetID int) string {
 // author length is 255 and the max text length is 32512. For example, add a
 // comment in Sheet1!$A$30:
 //
-//    xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
+//    err := xlsx.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
 //
 func (f *File) AddComment(sheet, cell, format string) error {
 	formatSet, err := parseFormatCommentsSet(format)
@@ -107,15 +107,21 @@ func (f *File) AddComment(sheet, cell, format string) error {
 			colCount = ll
 		}
 	}
-	f.addDrawingVML(commentID, drawingVML, cell, strings.Count(formatSet.Text, "\n")+1, colCount)
+	err = f.addDrawingVML(commentID, drawingVML, cell, strings.Count(formatSet.Text, "\n")+1, colCount)
+	if err != nil {
+		return err
+	}
 	f.addContentTypePart(commentID, "comments")
 	return err
 }
 
 // addDrawingVML provides a function to create comment as
 // xl/drawings/vmlDrawing%d.vml by given commit ID and cell.
-func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, colCount int) {
-	col, row := MustCellNameToCoordinates(cell)
+func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, colCount int) error {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return err
+	}
 	yAxis := col - 1
 	xAxis := row - 1
 	vml := f.VMLDrawing[drawingVML]
@@ -206,6 +212,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 	}
 	vml.Shape = append(vml.Shape, shape)
 	f.VMLDrawing[drawingVML] = vml
+	return err
 }
 
 // addComment provides a function to create chart as xl/comments%d.xml by

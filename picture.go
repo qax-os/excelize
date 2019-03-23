@@ -162,7 +162,10 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		}
 		drawingHyperlinkRID = f.addDrawingRelationships(drawingID, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
-	f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
+	err = f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
+	if err != nil {
+		return err
+	}
 	f.addMedia(file, ext)
 	f.addContentTypePart(drawingID, "drawings")
 	return err
@@ -270,8 +273,11 @@ func (f *File) countDrawings() int {
 // addDrawingPicture provides a function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
-func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID, hyperlinkRID int, formatSet *formatPicture) {
-	col, row := MustCellNameToCoordinates(cell)
+func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID, hyperlinkRID int, formatSet *formatPicture) error {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return err
+	}
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	col--
@@ -315,6 +321,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings[drawingXML] = content
+	return err
 }
 
 // addDrawingRelationships provides a function to add image part relationships
@@ -468,7 +475,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //        fmt.Println(err)
 //        return
 //    }
-//    file, raw := xlsx.GetPicture("Sheet1", "A2")
+//    file, raw, err := xlsx.GetPicture("Sheet1", "A2")
 //    if file == "" {
 //        return
 //    }
@@ -477,13 +484,16 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //        fmt.Println(err)
 //    }
 //
-func (f *File) GetPicture(sheet, cell string) (string, []byte) {
-	col, row := MustCellNameToCoordinates(cell)
+func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return "", []byte{}, err
+	}
 	col--
 	row--
 	xlsx := f.workSheetReader(sheet)
 	if xlsx.Drawing == nil {
-		return "", []byte{}
+		return "", []byte{}, err
 	}
 
 	target := f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
@@ -503,7 +513,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 				if ok {
 					return filepath.Base(xlsxWorkbookRelation.Target),
 						[]byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target,
-							"..", "xl", -1)])
+							"..", "xl", -1)]), err
 				}
 			}
 		}
@@ -511,7 +521,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 
 	_, ok := f.XLSX[drawingXML]
 	if !ok {
-		return "", nil
+		return "", nil, err
 	}
 	decodeWsDr := decodeWsDr{}
 	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(drawingXML)), &decodeWsDr)
@@ -523,12 +533,12 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte) {
 				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
 				if ok {
-					return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)])
+					return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)]), err
 				}
 			}
 		}
 	}
-	return "", []byte{}
+	return "", []byte{}, err
 }
 
 // getDrawingRelationships provides a function to get drawing relationships

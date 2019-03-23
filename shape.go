@@ -275,15 +275,21 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 	}
-	f.addDrawingShape(sheet, drawingXML, cell, formatSet)
+	err = f.addDrawingShape(sheet, drawingXML, cell, formatSet)
+	if err != nil {
+		return err
+	}
 	f.addContentTypePart(drawingID, "drawings")
 	return err
 }
 
 // addDrawingShape provides a function to add preset geometry by given sheet,
 // drawingXMLand format sets.
-func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) {
-	fromCol, fromRow := MustCellNameToCoordinates(cell)
+func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) error {
+	fromCol, fromRow, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return err
+	}
 	colIdx := fromCol - 1
 	rowIdx := fromRow - 1
 
@@ -421,6 +427,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings[drawingXML] = content
+	return err
 }
 
 // setShapeRef provides a function to set color with hex model by given actual

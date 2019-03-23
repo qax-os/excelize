@@ -275,11 +275,11 @@ func (f *File) GetActiveSheetIndex() int {
 	return 0
 }
 
-// SetSheetName provides a function to set the worksheet name be given old and new
-// worksheet name. Maximum 31 characters are allowed in sheet title and this
-// function only changes the name of the sheet and will not update the sheet
-// name in the formula or reference associated with the cell. So there may be
-// problem formula error or reference missing.
+// SetSheetName provides a function to set the worksheet name be given old and
+// new worksheet name. Maximum 31 characters are allowed in sheet title and
+// this function only changes the name of the sheet and will not update the
+// sheet name in the formula or reference associated with the cell. So there
+// may be problem formula error or reference missing.
 func (f *File) SetSheetName(oldName, newName string) {
 	oldName = trimSheetName(oldName)
 	newName = trimSheetName(newName)
@@ -665,14 +665,14 @@ func (f *File) GetSheetVisible(name string) bool {
 //
 // An example of search the coordinates of the value of "100" on Sheet1:
 //
-//    xlsx.SearchSheet("Sheet1", "100")
+//    result, err := xlsx.SearchSheet("Sheet1", "100")
 //
 // An example of search the coordinates where the numerical value in the range
 // of "0-9" of Sheet1 is described:
 //
-//    xlsx.SearchSheet("Sheet1", "[0-9]", true)
+//    result, err := xlsx.SearchSheet("Sheet1", "[0-9]", true)
 //
-func (f *File) SearchSheet(sheet, value string, reg ...bool) []string {
+func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	var regSearch bool
 	for _, r := range reg {
 		regSearch = r
@@ -683,7 +683,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) []string {
 	)
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		return result
+		return result, nil
 	}
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
@@ -718,14 +718,21 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) []string {
 						}
 					}
 
-					cellCol, _ := MustCellNameToCoordinates(colCell.R)
-					result = append(result, MustCoordinatesToCellName(cellCol, r.R))
+					cellCol, _, err := CellNameToCoordinates(colCell.R)
+					if err != nil {
+						return result, err
+					}
+					cellName, err := CoordinatesToCellName(cellCol, r.R)
+					if err != nil {
+						return result, err
+					}
+					result = append(result, cellName)
 				}
 			}
 		default:
 		}
 	}
-	return result
+	return result, nil
 }
 
 // ProtectSheet provides a function to prevent other users from accidentally

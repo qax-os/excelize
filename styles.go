@@ -1880,8 +1880,8 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //
 //    xlsx := excelize.NewFile()
 //    xlsx.SetCellValue("Sheet1", "A6", 42920.5)
-//    style, _ := xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
-//    xlsx.SetCellStyle("Sheet1", "A6", "A6", style)
+//    style, err := xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+//    err = xlsx.SetCellStyle("Sheet1", "A6", "A6", style)
 //
 // Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
 //
@@ -2265,10 +2265,13 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 
 // GetCellStyle provides a function to get cell style index by given worksheet
 // name and cell coordinates.
-func (f *File) GetCellStyle(sheet, axis string) int {
+func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 	xlsx := f.workSheetReader(sheet)
-	cellData, col, _ := f.prepareCell(xlsx, sheet, axis)
-	return f.prepareCellStyle(xlsx, col, cellData.S)
+	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
+	if err != nil {
+		return 0, err
+	}
+	return f.prepareCellStyle(xlsx, col, cellData.S), err
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given
@@ -2282,7 +2285,7 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set gradient fill with vertical variants shading styles for cell H9 on
 // Sheet1:
@@ -2291,7 +2294,7 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set solid style pattern fill for cell H9 on Sheet1:
 //
@@ -2299,7 +2302,7 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set alignment style for cell H9 on Sheet1:
 //
@@ -2307,7 +2310,7 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Dates and times in Excel are represented by real numbers, for example "Apr 7
 // 2017 12:00 PM" is represented by the number 42920.5. Set date and time format
@@ -2318,7 +2321,7 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set font style for cell H9 on Sheet1:
 //
@@ -2326,7 +2329,7 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Hide and lock for cell H9 on Sheet1:
 //
@@ -2334,17 +2337,17 @@ func (f *File) GetCellStyle(sheet, axis string) int {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
 //
-func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
+func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 	hcol, hrow, err := CellNameToCoordinates(hcell)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	vcol, vrow, err := CellNameToCoordinates(vcell)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Normalize the coordinate area, such correct C1:B3 to B1:C3.
@@ -2370,6 +2373,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) {
 			xlsx.SheetData.Row[r].C[k].S = styleID
 		}
 	}
+	return nil
 }
 
 // SetConditionalFormat provides a function to create conditional formatting
