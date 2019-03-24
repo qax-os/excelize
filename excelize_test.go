@@ -175,64 +175,6 @@ func TestSaveAsWrongPath(t *testing.T) {
 	}
 }
 
-func TestAddPicture(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	// Test add picture to worksheet with offset and location hyperlink.
-	err = xlsx.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	// Test add picture to worksheet with offset, external hyperlink and positioning.
-	err = xlsx.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	// Test add picture to worksheet from bytes.
-	err = xlsx.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".jpg", file)
-	assert.NoError(t, err)
-
-	// Test write file to given path.
-	err = xlsx.SaveAs(filepath.Join("test", "TestAddPicture.xlsx"))
-	assert.NoError(t, err)
-}
-
-func TestAddPictureErrors(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	// Test add picture to worksheet with invalid file path.
-	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), "")
-	if assert.Error(t, err) {
-		assert.True(t, os.IsNotExist(err), "Expected os.IsNotExist(err) == true")
-	}
-
-	// Test add picture to worksheet with unsupport file type.
-	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), "")
-	assert.EqualError(t, err, "unsupported image extension")
-
-	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
-	assert.EqualError(t, err, "unsupported image extension")
-
-	// Test add picture to worksheet with invalid file data.
-	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
-	assert.EqualError(t, err, "image: unknown format")
-}
-
 func TestBrokenFile(t *testing.T) {
 	// Test write file with broken file struct.
 	xlsx := File{}
@@ -301,11 +243,24 @@ func TestColWidth(t *testing.T) {
 	xlsx.SetColWidth("Sheet1", "A", "B", 12)
 	xlsx.GetColWidth("Sheet1", "A")
 	xlsx.GetColWidth("Sheet1", "C")
-	err := xlsx.SaveAs(filepath.Join("test", "TestColWidth.xlsx"))
+
+	// Test set and get column width with illegal cell coordinates.
+	_, err := xlsx.GetColWidth("Sheet1", "*")
+	assert.EqualError(t, err, `invalid column name "*"`)
+	assert.EqualError(t, xlsx.SetColWidth("Sheet1", "*", "B", 1), `invalid column name "*"`)
+	assert.EqualError(t, xlsx.SetColWidth("Sheet1", "A", "*", 1), `invalid column name "*"`)
+
+	err = xlsx.SaveAs(filepath.Join("test", "TestColWidth.xlsx"))
 	if err != nil {
 		t.Error(err)
 	}
 	convertRowHeightToPixels(0)
+}
+
+func TestAddDrawingVML(t *testing.T) {
+	// Test addDrawingVML with illegal cell coordinates.
+	f := NewFile()
+	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), `cannot convert cell "*" to coordinates: invalid cell name "*"`)
 }
 
 func TestSetCellHyperLink(t *testing.T) {
@@ -797,62 +752,6 @@ func TestSetDeleteSheet(t *testing.T) {
 	})
 }
 
-func TestGetPicture(t *testing.T) {
-	xlsx, err := prepareTestBook1()
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	file, raw, err := xlsx.GetPicture("Sheet1", "F21")
-	assert.NoError(t, err)
-	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
-		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
-
-		t.FailNow()
-	}
-
-	// Try to get picture from a worksheet that doesn't contain any images.
-	file, raw, err = xlsx.GetPicture("Sheet3", "I9")
-	assert.NoError(t, err)
-	assert.Empty(t, file)
-	assert.Empty(t, raw)
-
-	// Try to get picture from a cell that doesn't contain an image.
-	file, raw, err = xlsx.GetPicture("Sheet2", "A2")
-	assert.NoError(t, err)
-	assert.Empty(t, file)
-	assert.Empty(t, raw)
-
-	xlsx.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
-	xlsx.getDrawingRelationships("", "")
-	xlsx.getSheetRelationshipsTargetByID("", "")
-	xlsx.deleteSheetRelationships("", "")
-
-	// Try to get picture from a local storage file.
-	if !assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestGetPicture.xlsx"))) {
-		t.FailNow()
-	}
-
-	xlsx, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	file, raw, err = xlsx.GetPicture("Sheet1", "F21")
-	assert.NoError(t, err)
-	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
-		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
-
-		t.FailNow()
-	}
-
-	// Try to get picture from a local storage file that doesn't contain an image.
-	file, raw, err = xlsx.GetPicture("Sheet1", "F22")
-	assert.NoError(t, err)
-	assert.Empty(t, file)
-	assert.Empty(t, raw)
-}
-
 func TestSheetVisibility(t *testing.T) {
 	xlsx, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
@@ -874,10 +773,18 @@ func TestColumnVisibility(t *testing.T) {
 			t.FailNow()
 		}
 
-		xlsx.SetColVisible("Sheet1", "F", false)
-		xlsx.SetColVisible("Sheet1", "F", true)
-		xlsx.GetColVisible("Sheet1", "F")
-		xlsx.SetColVisible("Sheet3", "E", false)
+		assert.NoError(t, xlsx.SetColVisible("Sheet1", "F", false))
+		assert.NoError(t, xlsx.SetColVisible("Sheet1", "F", true))
+		visible, err := xlsx.GetColVisible("Sheet1", "F")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
+
+		// Test get column visiable with illegal cell coordinates.
+		_, err = xlsx.GetColVisible("Sheet1", "*")
+		assert.EqualError(t, err, `invalid column name "*"`)
+		assert.EqualError(t, xlsx.SetColVisible("Sheet1", "*", false), `invalid column name "*"`)
+
+		assert.NoError(t, xlsx.SetColVisible("Sheet3", "E", false))
 		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestColumnVisibility.xlsx")))
 	})
 
@@ -945,7 +852,18 @@ func TestAddTable(t *testing.T) {
 		t.FailNow()
 	}
 
+	// Test add table with illegal formatset.
+	assert.EqualError(t, xlsx.AddTable("Sheet1", "B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
+	// Test add table with illegal cell coordinates.
+	assert.EqualError(t, xlsx.AddTable("Sheet1", "A", "B1", `{}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, xlsx.AddTable("Sheet1", "A1", "B", `{}`), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
+
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
+
+	// Test addTable with illegal cell coordinates.
+	f := NewFile()
+	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
+	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
 }
 
 func TestAddShape(t *testing.T) {
@@ -978,6 +896,11 @@ func TestAddComments(t *testing.T) {
 	}
 }
 
+func TestGetSheetComments(t *testing.T) {
+	f := NewFile()
+	assert.Equal(t, "", f.getSheetComments(0))
+}
+
 func TestAutoFilter(t *testing.T) {
 	outFile := filepath.Join("test", "TestAutoFilter%d.xlsx")
 
@@ -1006,6 +929,9 @@ func TestAutoFilter(t *testing.T) {
 		})
 	}
 
+	// testing AutoFilter with illegal cell coordinates.
+	assert.EqualError(t, xlsx.AutoFilter("Sheet1", "A", "B1", ""), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, xlsx.AutoFilter("Sheet1", "A1", "B", ""), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
 }
 
 func TestAutoFilterError(t *testing.T) {
@@ -1095,6 +1021,9 @@ func TestInsertCol(t *testing.T) {
 
 	assert.NoError(t, xlsx.InsertCol(sheet1, "A"))
 
+	// Test insert column with illegal cell coordinates.
+	assert.EqualError(t, xlsx.InsertCol("Sheet1", "*"), `invalid column name "*"`)
+
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertCol.xlsx")))
 }
 
@@ -1112,6 +1041,9 @@ func TestRemoveCol(t *testing.T) {
 
 	assert.NoError(t, xlsx.RemoveCol(sheet1, "A"))
 	assert.NoError(t, xlsx.RemoveCol(sheet1, "A"))
+
+	// Test remove column with illegal cell coordinates.
+	assert.EqualError(t, xlsx.RemoveCol("Sheet1", "*"), `invalid column name "*"`)
 
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRemoveCol.xlsx")))
 }
@@ -1252,13 +1184,22 @@ func TestOutlineLevel(t *testing.T) {
 	xlsx.SetColOutlineLevel("Sheet2", "B", 2)
 	xlsx.SetRowOutlineLevel("Sheet1", 2, 250)
 
+	// Test set and get column outline level with illegal cell coordinates.
+	assert.EqualError(t, xlsx.SetColOutlineLevel("Sheet1", "*", 1), `invalid column name "*"`)
+	level, err := xlsx.GetColOutlineLevel("Sheet1", "*")
+	assert.EqualError(t, err, `invalid column name "*"`)
+
 	assert.EqualError(t, xlsx.SetRowOutlineLevel("Sheet1", 0, 1), "invalid row number 0")
-	level, err := xlsx.GetRowOutlineLevel("Sheet1", 2)
+	level, err = xlsx.GetRowOutlineLevel("Sheet1", 2)
 	assert.NoError(t, err)
 	assert.Equal(t, uint8(250), level)
 
 	_, err = xlsx.GetRowOutlineLevel("Sheet1", 0)
 	assert.EqualError(t, err, `invalid row number 0`)
+
+	level, err = xlsx.GetRowOutlineLevel("Sheet1", 10)
+	assert.NoError(t, err)
+	assert.Equal(t, uint8(0), level)
 
 	err = xlsx.SaveAs(filepath.Join("test", "TestOutlineLevel.xlsx"))
 	if !assert.NoError(t, err) {

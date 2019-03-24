@@ -72,6 +72,16 @@ func TestRowHeight(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 444.0, height)
 
+	// Test get row height that rows index over exists rows.
+	height, err = xlsx.GetRowHeight(sheet1, 5)
+	assert.NoError(t, err)
+	assert.Equal(t, defaultRowHeightPixels, height)
+
+	// Test get row height that rows heights haven't changed.
+	height, err = xlsx.GetRowHeight(sheet1, 3)
+	assert.NoError(t, err)
+	assert.Equal(t, defaultRowHeightPixels, height)
+
 	err = xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -86,10 +96,10 @@ func TestRowVisibility(t *testing.T) {
 		t.FailNow()
 	}
 
-	xlsx.SetRowVisible("Sheet3", 2, false)
-	xlsx.SetRowVisible("Sheet3", 2, true)
+	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, false))
+	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, true))
 	xlsx.GetRowVisible("Sheet3", 2)
-
+	xlsx.GetRowVisible("Sheet3", 25)
 	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
 
 	visible, err := xlsx.GetRowVisible("Sheet3", 0)
@@ -153,6 +163,7 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
+	assert.NoError(t, xlsx.RemoveRow(sheet1, 10))
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
 }
 
