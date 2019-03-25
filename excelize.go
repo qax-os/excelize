@@ -113,9 +113,11 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	trimdSheet := trimSheetName(sheet)
+	name, ok := f.sheetMap[trimdSheet]
 	if !ok {
-		name = "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+		f.NewSheet(sheet)
+		name, _ = f.sheetMap[trimdSheet]
 	}
 	if f.Sheet[name] == nil {
 		var xlsx xlsxWorksheet
