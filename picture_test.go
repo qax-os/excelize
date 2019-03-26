@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -145,4 +146,21 @@ func TestAddDrawingPicture(t *testing.T) {
 	// testing addDrawingPicture with illegal cell coordinates.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestAddPictureFromBytes(t *testing.T) {
+	f := NewFile()
+	imgFile, err := ioutil.ReadFile("logo.png")
+	if err != nil {
+		t.Error("Unable to load logo for test")
+	}
+	f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile)
+	f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile)
+	imageCount := 0
+	for fileName := range f.XLSX {
+		if strings.Contains(fileName, "media/image") {
+			imageCount++
+		}
+	}
+	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
 }

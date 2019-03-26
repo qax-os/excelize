@@ -151,10 +151,10 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	xlsx := f.workSheetReader(sheet)
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
-	pictureID := f.countMedia() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
-	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext, hyperlinkType)
+	mediaStr := ".." + strings.TrimPrefix(f.addMedia(file, ext), "xl")
+	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipImage, mediaStr, hyperlinkType)
 	// Add picture with hyperlink.
 	if formatSet.Hyperlink != "" && formatSet.HyperlinkType != "" {
 		if formatSet.HyperlinkType == "External" {
@@ -166,7 +166,6 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	if err != nil {
 		return err
 	}
-	f.addMedia(file, ext)
 	f.addContentTypePart(drawingID, "drawings")
 	return err
 }
@@ -363,12 +362,22 @@ func (f *File) countMedia() int {
 	return count
 }
 
-// addMedia provides a function to add picture into folder xl/media/image by
-// given file and extension name.
-func (f *File) addMedia(file []byte, ext string) {
+// addMedia provides a function to add a picture into folder xl/media/image by
+// given file and extension name. Duplicate images are only actually stored once
+// and drawings that use it will reference the same image.
+func (f *File) addMedia(file []byte, ext string) string {
 	count := f.countMedia()
+	for name, existing := range f.XLSX {
+		if !strings.HasPrefix(name, "xl/media/image") {
+			continue
+		}
+		if bytes.Equal(file, existing) {
+			return name
+		}
+	}
 	media := "xl/media/image" + strconv.Itoa(count+1) + ext
 	f.XLSX[media] = file
+	return media
 }
 
 // setContentTypePartImageExtensions provides a function to set the content
