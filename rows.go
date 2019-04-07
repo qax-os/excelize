@@ -54,7 +54,7 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 	}
 	rows := make([][]string, rowCount)
 	for i := range rows {
-		rows[i] = make([]string, colCount+1)
+		rows[i] = make([]string, colCount)
 	}
 
 	var row int
