@@ -403,6 +403,7 @@ func (f *File) DeleteSheet(name string) {
 			rels := "xl/worksheets/_rels/sheet" + strconv.Itoa(v.SheetID) + ".xml.rels"
 			target := f.deleteSheetFromWorkbookRels(v.ID)
 			f.deleteSheetFromContentTypes(target)
+			f.deleteCalcChain(v.SheetID, "") // Delete CalcChain
 			delete(f.sheetMap, name)
 			delete(f.XLSX, sheet)
 			delete(f.XLSX, rels)

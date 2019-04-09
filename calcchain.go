@@ -33,14 +33,12 @@ func (f *File) calcChainWriter() {
 
 // deleteCalcChain provides a function to remove cell reference on the
 // calculation chain.
-func (f *File) deleteCalcChain(axis string) {
+func (f *File) deleteCalcChain(index int, axis string) {
 	calc := f.calcChainReader()
 	if calc != nil {
-		for i, c := range calc.C {
-			if c.R == axis {
-				calc.C = append(calc.C[:i], calc.C[i+1:]...)
-			}
-		}
+		calc.C = xlsxCalcChainCollection(calc.C).Filter(func(c xlsxCalcChainC) bool {
+			return !((c.I == index && c.R == axis) || (c.I == index && axis == ""))
+		})
 	}
 	if len(calc.C) == 0 {
 		f.CalcChain = nil
@@ -52,4 +50,16 @@ func (f *File) deleteCalcChain(axis string) {
 			}
 		}
 	}
+}
+
+type xlsxCalcChainCollection []xlsxCalcChainC
+
+func (c xlsxCalcChainCollection) Filter(fn func(v xlsxCalcChainC) bool) []xlsxCalcChainC {
+	results := make([]xlsxCalcChainC, 0)
+	for _, v := range c {
+		if fn(v) {
+			results = append(results, v)
+		}
+	}
+	return results
 }
