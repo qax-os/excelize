@@ -82,3 +82,15 @@ func ExampleFile_SetCellFloat() {
 	fmt.Println(val)
 	// Output: 3.14
 }
+
+func BenchmarkSetCellValue(b *testing.B) {
+	values := []string{"First", "Second", "Third", "Fourth", "Fifth", "Sixth"}
+	cols := []string{"A", "B", "C", "D", "E", "F"}
+	f := NewFile()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < len(values); j++ {
+			f.SetCellValue("Sheet1", fmt.Sprint(cols[j], i), values[j])
+		}
+	}
+}

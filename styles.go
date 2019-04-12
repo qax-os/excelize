@@ -2367,6 +2367,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 
 	xlsx := f.workSheetReader(sheet)
 	prepareSheetXML(xlsx, vcol, vrow)
+	makeContiguousColumns(xlsx, hrow, vrow, vcol)
 
 	for r := hrowIdx; r <= vrowIdx; r++ {
 		for k := hcolIdx; k <= vcolIdx; k++ {

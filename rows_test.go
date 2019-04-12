@@ -59,11 +59,11 @@ func TestRowHeight(t *testing.T) {
 
 	assert.EqualError(t, xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
 
-	height, err := xlsx.GetRowHeight("Sheet1", 0)
+	_, err := xlsx.GetRowHeight("Sheet1", 0)
 	assert.EqualError(t, err, "invalid row number 0")
 
 	assert.NoError(t, xlsx.SetRowHeight(sheet1, 1, 111.0))
-	height, err = xlsx.GetRowHeight(sheet1, 1)
+	height, err := xlsx.GetRowHeight(sheet1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 111.0, height)
 

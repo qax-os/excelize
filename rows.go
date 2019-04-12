@@ -419,7 +419,7 @@ func (f *File) InsertRow(sheet string, row int) error {
 	return f.adjustHelper(sheet, rows, row, 1)
 }
 
-// DuplicateRow inserts a copy of specified row (by it Excel row number) below
+// DuplicateRow inserts a copy of specified row (by its Excel row number) below
 //
 //    err := xlsx.DuplicateRow("Sheet1", 2)
 //
