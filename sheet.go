@@ -1068,7 +1068,6 @@ func fillColumns(rowData *xlsxRow, col, row int) {
 func makeContiguousColumns(xlsx *xlsxWorksheet, fromRow, toRow, colCount int) {
 	for ; fromRow < toRow; fromRow++ {
 		rowData := &xlsx.SheetData.Row[fromRow-1]
-		rowData.R = fromRow
 		fillColumns(rowData, colCount, fromRow)
 	}
 }
