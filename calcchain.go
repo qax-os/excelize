@@ -54,6 +54,7 @@ func (f *File) deleteCalcChain(index int, axis string) {
 
 type xlsxCalcChainCollection []xlsxCalcChainC
 
+// Filter provides a function to filter calculation chain.
 func (c xlsxCalcChainCollection) Filter(fn func(v xlsxCalcChainC) bool) []xlsxCalcChainC {
 	results := make([]xlsxCalcChainC, 0)
 	for _, v := range c {

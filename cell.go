@@ -183,6 +183,9 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
+	if len(value) > 32767 {
+		value = value[0:32767]
+	}
 	// Leading space(s) character detection.
 	if len(value) > 0 && value[0] == 32 {
 		cellData.XMLSpace = xml.Attr{
@@ -352,6 +355,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 		return err
 	}
 
+	// Correct the coordinate area, such correct C1:B3 to B1:C3.
 	if vcol < hcol {
 		hcol, vcol = vcol, hcol
 	}
@@ -378,9 +382,10 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 			c2, _ := checkCellInArea(vcell, cellData.Ref)
 			c3, _ := checkCellInArea(cc[0], ref)
 			c4, _ := checkCellInArea(cc[1], ref)
-			if !c1 && !c2 && !c3 && !c4 {
-				cells = append(cells, cellData)
+			if !(!c1 && !c2 && !c3 && !c4) {
+				return nil
 			}
+			cells = append(cells, cellData)
 		}
 		cells = append(xlsx.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
 		xlsx.MergeCells.Cells = cells
@@ -543,10 +548,10 @@ func checkCellInArea(cell, area string) (bool, error) {
 		return false, err
 	}
 
-	firstCol, firtsRow, _ := CellNameToCoordinates(rng[0])
+	firstCol, firstRow, _ := CellNameToCoordinates(rng[0])
 	lastCol, lastRow, _ := CellNameToCoordinates(rng[1])
 
-	return col >= firstCol && col <= lastCol && row >= firtsRow && row <= lastRow, err
+	return col >= firstCol && col <= lastCol && row >= firstRow && row <= lastRow, err
 }
 
 // getSharedForumula find a cell contains the same formula as another cell,
