@@ -154,7 +154,10 @@ func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 //   AutoPageBreaks(bool)
 //   OutlineSummaryBelow(bool)
 func (f *File) SetSheetPrOptions(name string, opts ...SheetPrOption) error {
-	sheet := f.workSheetReader(name)
+	sheet, err := f.workSheetReader(name)
+	if err != nil {
+		return err
+	}
 	pr := sheet.SheetPr
 	if pr == nil {
 		pr = new(xlsxSheetPr)
@@ -164,7 +167,7 @@ func (f *File) SetSheetPrOptions(name string, opts ...SheetPrOption) error {
 	for _, opt := range opts {
 		opt.setSheetPrOption(pr)
 	}
-	return nil
+	return err
 }
 
 // GetSheetPrOptions provides a function to gets worksheet properties.
@@ -177,11 +180,14 @@ func (f *File) SetSheetPrOptions(name string, opts ...SheetPrOption) error {
 //   AutoPageBreaks(bool)
 //   OutlineSummaryBelow(bool)
 func (f *File) GetSheetPrOptions(name string, opts ...SheetPrOptionPtr) error {
-	sheet := f.workSheetReader(name)
+	sheet, err := f.workSheetReader(name)
+	if err != nil {
+		return err
+	}
 	pr := sheet.SheetPr
 
 	for _, opt := range opts {
 		opt.getSheetPrOption(pr)
 	}
-	return nil
+	return err
 }

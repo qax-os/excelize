@@ -132,7 +132,6 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //    }
 //
 func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, file []byte) error {
-	var err error
 	var drawingHyperlinkRID int
 	var hyperlinkType string
 	ext, ok := supportImageTypes[extension]
@@ -148,7 +147,10 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		return err
 	}
 	// Read sheet data.
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
@@ -225,7 +227,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, _ := f.workSheetReader(sheet)
 	xlsx.LegacyDrawing = &xlsxLegacyDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
@@ -234,7 +236,7 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 // addSheetDrawing provides a function to add drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, _ := f.workSheetReader(sheet)
 	xlsx.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
@@ -243,7 +245,7 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 // addSheetPicture provides a function to add picture element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetPicture(sheet string, rID int) {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, _ := f.workSheetReader(sheet)
 	xlsx.Picture = &xlsxPicture{
 		RID: "rId" + strconv.Itoa(rID),
 	}
@@ -500,7 +502,10 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	}
 	col--
 	row--
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return "", []byte{}, err
+	}
 	if xlsx.Drawing == nil {
 		return "", []byte{}, err
 	}

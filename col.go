@@ -31,7 +31,10 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 		return visible, err
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return false, err
+	}
 	if xlsx.Cols == nil {
 		return visible, err
 	}
@@ -61,7 +64,10 @@ func (f *File) SetColVisible(sheet, col string, visible bool) error {
 		Hidden:      !visible,
 		CustomWidth: true,
 	}
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if xlsx.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
@@ -93,7 +99,10 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 	if err != nil {
 		return level, err
 	}
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return 0, err
+	}
 	if xlsx.Cols == nil {
 		return level, err
 	}
@@ -123,7 +132,10 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 		OutlineLevel: level,
 		CustomWidth:  true,
 	}
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if xlsx.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
@@ -162,7 +174,10 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 		min, max = max, min
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	col := xlsxCol{
 		Min:         min,
 		Max:         max,
@@ -288,7 +303,7 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 // getColWidth provides a function to get column width in pixels by given
 // sheet name and column index.
 func (f *File) getColWidth(sheet string, col int) int {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, _ := f.workSheetReader(sheet)
 	if xlsx.Cols != nil {
 		var width float64
 		for _, v := range xlsx.Cols.Col {
@@ -311,7 +326,10 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	if err != nil {
 		return defaultColWidthPixels, err
 	}
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return defaultColWidthPixels, err
+	}
 	if xlsx.Cols != nil {
 		var width float64
 		for _, v := range xlsx.Cols.Col {
@@ -355,7 +373,10 @@ func (f *File) RemoveCol(sheet, col string) error {
 		return err
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	for rowIdx := range xlsx.SheetData.Row {
 		rowData := &xlsx.SheetData.Row[rowIdx]
 		for colIdx := range rowData.C {

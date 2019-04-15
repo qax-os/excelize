@@ -57,10 +57,10 @@ func TestOpenFile(t *testing.T) {
 	xlsx.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")
 	xlsx.SetCellInt("Sheet3", "A23", 10)
 	xlsx.SetCellStr("Sheet3", "b230", "10")
-	xlsx.SetCellStr("Sheet10", "b230", "10")
+	assert.EqualError(t, xlsx.SetCellStr("Sheet10", "b230", "10"), "Sheet Sheet10 is not exist")
 
 	// Test set cell string value with illegal row number.
-	assert.EqualError(t, xlsx.SetCellStr("Sheet10", "A", "10"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, xlsx.SetCellStr("Sheet1", "A", "10"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	xlsx.SetActiveSheet(2)
 	// Test get cell formula with given rows number.
@@ -298,7 +298,7 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.NoError(t, err)
 	t.Log(link, target)
 	link, target, err = xlsx.GetCellHyperLink("Sheet3", "H3")
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "Sheet Sheet3 is not exist")
 	t.Log(link, target)
 }
 
@@ -417,7 +417,7 @@ func TestGetMergeCells(t *testing.T) {
 	}
 	sheet1 := xlsx.GetSheetName(1)
 
-	mergeCells := xlsx.GetMergeCells(sheet1)
+	mergeCells, err := xlsx.GetMergeCells(sheet1)
 	if !assert.Len(t, mergeCells, len(wants)) {
 		t.FailNow()
 	}
@@ -784,7 +784,8 @@ func TestColumnVisibility(t *testing.T) {
 		assert.EqualError(t, err, `invalid column name "*"`)
 		assert.EqualError(t, xlsx.SetColVisible("Sheet1", "*", false), `invalid column name "*"`)
 
-		assert.NoError(t, xlsx.SetColVisible("Sheet3", "E", false))
+		err = xlsx.SetColVisible("Sheet3", "E", false)
+		assert.EqualError(t, err, "Sheet Sheet3 is not exist")
 		assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestColumnVisibility.xlsx")))
 	})
 
@@ -804,10 +805,7 @@ func TestCopySheet(t *testing.T) {
 	}
 
 	idx := xlsx.NewSheet("CopySheet")
-	err = xlsx.CopySheet(1, idx)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.EqualError(t, xlsx.CopySheet(1, idx), "Sheet sheet1 is not exist")
 
 	xlsx.SetCellValue("Sheet4", "F1", "Hello")
 	val, err := xlsx.GetCellValue("Sheet1", "F1")
@@ -923,9 +921,8 @@ func TestAutoFilter(t *testing.T) {
 	for i, format := range formats {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			err = xlsx.AutoFilter("Sheet3", "D4", "B1", format)
-			if assert.NoError(t, err) {
-				assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, i+1)))
-			}
+			assert.EqualError(t, err, "Sheet Sheet3 is not exist")
+			assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, i+1)))
 		})
 	}
 

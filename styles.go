@@ -2266,7 +2266,10 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 // GetCellStyle provides a function to get cell style index by given worksheet
 // name and cell coordinates.
 func (f *File) GetCellStyle(sheet, axis string) (int, error) {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return 0, err
+	}
 	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return 0, err
@@ -2365,7 +2368,10 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 	vcolIdx := vcol - 1
 	vrowIdx := vrow - 1
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	prepareSheetXML(xlsx, vcol, vrow)
 
 	for r := hrowIdx; r <= vrowIdx; r++ {
@@ -2373,7 +2379,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 			xlsx.SheetData.Row[r].C[k].S = styleID
 		}
 	}
-	return nil
+	return err
 }
 
 // SetConditionalFormat provides a function to create conditional formatting
@@ -2605,7 +2611,10 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 		"expression":      drawConfFmtExp,
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cfRule := []*xlsxCfRule{}
 	for p, v := range format {
 		var vt, ct string

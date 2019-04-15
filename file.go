@@ -50,7 +50,7 @@ func NewFile() *File {
 	f.WorkBook = f.workbookReader()
 	f.WorkBookRels = f.workbookRelsReader()
 	f.WorkSheetRels = make(map[string]*xlsxWorkbookRels)
-	f.Sheet["xl/worksheets/sheet1.xml"] = f.workSheetReader("Sheet1")
+	f.Sheet["xl/worksheets/sheet1.xml"], _ = f.workSheetReader("Sheet1")
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
 	f.Theme = f.themeReader()
 	return f

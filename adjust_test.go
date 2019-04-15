@@ -46,6 +46,7 @@ func TestAdjustAutoFilter(t *testing.T) {
 
 func TestAdjustHelper(t *testing.T) {
 	f := NewFile()
+	f.NewSheet("Sheet2")
 	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -61,6 +62,6 @@ func TestAdjustHelper(t *testing.T) {
 		},
 	}
 	// testing adjustHelper with illegal cell coordinates.
-	assert.EqualError(t, f.adjustHelper("sheet1", rows, 0, 0), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, f.adjustHelper("sheet2", rows, 0, 0), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
+	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
 }

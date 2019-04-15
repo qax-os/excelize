@@ -102,7 +102,7 @@ func (f *File) countTables() int {
 // addSheetTable provides a function to add tablePart element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetTable(sheet string, rID int) {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, _ := f.workSheetReader(sheet)
 	table := &xlsxTablePart{
 		RID: "rId" + strconv.Itoa(rID),
 	}
@@ -299,7 +299,10 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 // autoFilter provides a function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
 func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *formatAutoFilter) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if xlsx.SheetPr != nil {
 		xlsx.SheetPr.FilterMode = true
 	}

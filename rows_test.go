@@ -96,8 +96,8 @@ func TestRowVisibility(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, false))
-	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, true))
+	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 2, false), "Sheet Sheet3 is not exist")
+	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 2, true), "Sheet Sheet3 is not exist")
 	xlsx.GetRowVisible("Sheet3", 2)
 	xlsx.GetRowVisible("Sheet3", 25)
 	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
@@ -112,8 +112,8 @@ func TestRowVisibility(t *testing.T) {
 func TestRemoveRow(t *testing.T) {
 	xlsx := NewFile()
 	sheet1 := xlsx.GetSheetName(1)
-	r := xlsx.workSheetReader(sheet1)
-
+	r, err := xlsx.workSheetReader(sheet1)
+	assert.NoError(t, err)
 	const (
 		colCount = 10
 		rowCount = 10
@@ -143,7 +143,7 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	err := xlsx.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
+	err = xlsx.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -170,8 +170,8 @@ func TestRemoveRow(t *testing.T) {
 func TestInsertRow(t *testing.T) {
 	xlsx := NewFile()
 	sheet1 := xlsx.GetSheetName(1)
-	r := xlsx.workSheetReader(sheet1)
-
+	r, err := xlsx.workSheetReader(sheet1)
+	assert.NoError(t, err)
 	const (
 		colCount = 10
 		rowCount = 10
@@ -202,7 +202,8 @@ func TestInsertRow(t *testing.T) {
 func TestInsertRowInEmptyFile(t *testing.T) {
 	xlsx := NewFile()
 	sheet1 := xlsx.GetSheetName(1)
-	r := xlsx.workSheetReader(sheet1)
+	r, err := xlsx.workSheetReader(sheet1)
+	assert.NoError(t, err)
 	assert.NoError(t, xlsx.InsertRow(sheet1, 1))
 	assert.Len(t, r.SheetData.Row, 0)
 	assert.NoError(t, xlsx.InsertRow(sheet1, 2))

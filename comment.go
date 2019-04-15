@@ -80,7 +80,10 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		return err
 	}
 	// Read sheet data.
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	commentID := f.countComments() + 1
 	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(commentID) + ".vml"
 	sheetRelationshipsComments := "../comments" + strconv.Itoa(commentID) + ".xml"

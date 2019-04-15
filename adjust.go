@@ -31,18 +31,20 @@ const (
 // adjustDataValidations, adjustProtectedCells
 //
 func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
-	xlsx := f.workSheetReader(sheet)
-
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if dir == rows {
 		f.adjustRowDimensions(xlsx, num, offset)
 	} else {
 		f.adjustColDimensions(xlsx, num, offset)
 	}
 	f.adjustHyperlinks(xlsx, sheet, dir, num, offset)
-	if err := f.adjustMergeCells(xlsx, dir, num, offset); err != nil {
+	if err = f.adjustMergeCells(xlsx, dir, num, offset); err != nil {
 		return err
 	}
-	if err := f.adjustAutoFilter(xlsx, dir, num, offset); err != nil {
+	if err = f.adjustAutoFilter(xlsx, dir, num, offset); err != nil {
 		return err
 	}
 

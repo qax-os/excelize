@@ -14,6 +14,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -112,10 +113,10 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
+func (f *File) workSheetReader(sheet string) (*xlsxWorksheet, error) {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		name = "xl/worksheets/" + strings.ToLower(sheet) + ".xml"
+		return nil, fmt.Errorf("Sheet %s is not exist", sheet)
 	}
 	if f.Sheet[name] == nil {
 		var xlsx xlsxWorksheet
@@ -131,7 +132,7 @@ func (f *File) workSheetReader(sheet string) *xlsxWorksheet {
 		}
 		f.Sheet[name] = &xlsx
 	}
-	return f.Sheet[name]
+	return f.Sheet[name], nil
 }
 
 // checkSheet provides a function to fill each row element and make that is
@@ -197,9 +198,12 @@ func replaceWorkSheetsRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte
 //        </c>
 //    </row>
 //
-func (f *File) UpdateLinkedValue() {
+func (f *File) UpdateLinkedValue() error {
 	for _, name := range f.GetSheetMap() {
-		xlsx := f.workSheetReader(name)
+		xlsx, err := f.workSheetReader(name)
+		if err != nil {
+			return err
+		}
 		for indexR := range xlsx.SheetData.Row {
 			for indexC, col := range xlsx.SheetData.Row[indexR].C {
 				if col.F != nil && col.V != "" {
@@ -209,14 +213,16 @@ func (f *File) UpdateLinkedValue() {
 			}
 		}
 	}
+	return nil
 }
 
 // GetMergeCells provides a function to get all merged cells from a worksheet currently.
-func (f *File) GetMergeCells(sheet string) []MergeCell {
-	xlsx := f.workSheetReader(sheet)
-
+func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	var mergeCells []MergeCell
-
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return mergeCells, err
+	}
 	if xlsx.MergeCells != nil {
 		mergeCells = make([]MergeCell, 0, len(xlsx.MergeCells.Cells))
 
@@ -228,7 +234,7 @@ func (f *File) GetMergeCells(sheet string) []MergeCell {
 		}
 	}
 
-	return mergeCells
+	return mergeCells, err
 }
 
 // MergeCell define a merged cell data.

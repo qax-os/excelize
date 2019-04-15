@@ -35,7 +35,10 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 		return nil, nil
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return nil, err
+	}
 	if xlsx != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
@@ -165,7 +168,10 @@ func (err ErrSheetNotExist) Error() string {
 //    }
 //
 func (f *File) Rows(sheet string) (*Rows, error) {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return nil, err
+	}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
@@ -225,7 +231,10 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 		return newInvalidRowNumberError(row)
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 
 	prepareSheetXML(xlsx, 0, row)
 
@@ -238,7 +247,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 // getRowHeight provides a function to get row height in pixels by given sheet
 // name and row index.
 func (f *File) getRowHeight(sheet string, row int) int {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, _ := f.workSheetReader(sheet)
 	for _, v := range xlsx.SheetData.Row {
 		if v.R == row+1 && v.Ht != 0 {
 			return int(convertRowHeightToPixels(v.Ht))
@@ -258,7 +267,10 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return defaultRowHeightPixels, err
+	}
 	if row > len(xlsx.SheetData.Row) {
 		return defaultRowHeightPixels, nil // it will be better to use 0, but we take care with BC
 	}
@@ -321,7 +333,10 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 		return newInvalidRowNumberError(row)
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	prepareSheetXML(xlsx, 0, row)
 	xlsx.SheetData.Row[row-1].Hidden = !visible
 	return nil
@@ -338,7 +353,10 @@ func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 		return false, newInvalidRowNumberError(row)
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return false, err
+	}
 	if row > len(xlsx.SheetData.Row) {
 		return false, nil
 	}
@@ -355,7 +373,10 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	prepareSheetXML(xlsx, 0, row)
 	xlsx.SheetData.Row[row-1].OutlineLevel = level
 	return nil
@@ -371,7 +392,10 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 	if row < 1 {
 		return 0, newInvalidRowNumberError(row)
 	}
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return 0, err
+	}
 	if row > len(xlsx.SheetData.Row) {
 		return 0, nil
 	}
@@ -392,7 +416,10 @@ func (f *File) RemoveRow(sheet string, row int) error {
 		return newInvalidRowNumberError(row)
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if row > len(xlsx.SheetData.Row) {
 		return nil
 	}
@@ -445,7 +472,10 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 		return newInvalidRowNumberError(row)
 	}
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if row > len(xlsx.SheetData.Row) || row2 < 1 || row == row2 {
 		return nil
 	}

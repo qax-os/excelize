@@ -158,7 +158,8 @@ func TestSetConditionalFormat(t *testing.T) {
 			t.Fatalf("%s", err)
 		}
 
-		xlsx := xl.workSheetReader(sheet)
+		xlsx, err := xl.workSheetReader(sheet)
+		assert.NoError(t, err)
 		cf := xlsx.ConditionalFormatting
 		assert.Len(t, cf, 1, testCase.label)
 		assert.Len(t, cf[0].CfRule, 1, testCase.label)

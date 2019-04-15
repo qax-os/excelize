@@ -69,63 +69,67 @@ func (f *File) GetCellValue(sheet, axis string) (string, error) {
 // Note that default date format is m/d/yy h:mm of time.Time type value. You can
 // set numbers format by SetCellStyle() method.
 func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
+	var err error
 	switch v := value.(type) {
 	case int:
-		f.SetCellInt(sheet, axis, v)
+		err = f.SetCellInt(sheet, axis, v)
 	case int8:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case int16:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case int32:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case int64:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case uint:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case uint8:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case uint16:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case uint32:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case uint64:
-		f.SetCellInt(sheet, axis, int(v))
+		err = f.SetCellInt(sheet, axis, int(v))
 	case float32:
-		f.SetCellFloat(sheet, axis, float64(v), -1, 32)
+		err = f.SetCellFloat(sheet, axis, float64(v), -1, 32)
 	case float64:
-		f.SetCellFloat(sheet, axis, v, -1, 64)
+		err = f.SetCellFloat(sheet, axis, v, -1, 64)
 	case string:
-		f.SetCellStr(sheet, axis, v)
+		err = f.SetCellStr(sheet, axis, v)
 	case []byte:
-		f.SetCellStr(sheet, axis, string(v))
+		err = f.SetCellStr(sheet, axis, string(v))
 	case time.Duration:
-		f.SetCellDefault(sheet, axis, strconv.FormatFloat(v.Seconds()/86400.0, 'f', -1, 32))
-		f.setDefaultTimeStyle(sheet, axis, 21)
+		err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(v.Seconds()/86400.0, 'f', -1, 32))
+		err = f.setDefaultTimeStyle(sheet, axis, 21)
 	case time.Time:
 		excelTime, err := timeToExcelTime(v)
 		if err != nil {
 			return err
 		}
 		if excelTime > 0 {
-			f.SetCellDefault(sheet, axis, strconv.FormatFloat(excelTime, 'f', -1, 64))
-			f.setDefaultTimeStyle(sheet, axis, 22)
+			err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(excelTime, 'f', -1, 64))
+			err = f.setDefaultTimeStyle(sheet, axis, 22)
 		} else {
-			f.SetCellStr(sheet, axis, v.Format(time.RFC3339Nano))
+			err = f.SetCellStr(sheet, axis, v.Format(time.RFC3339Nano))
 		}
 	case bool:
-		f.SetCellBool(sheet, axis, v)
+		err = f.SetCellBool(sheet, axis, v)
 	case nil:
-		f.SetCellStr(sheet, axis, "")
+		err = f.SetCellStr(sheet, axis, "")
 	default:
-		f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+		err = f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
 	}
-	return nil
+	return err
 }
 
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return err
@@ -139,7 +143,10 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 // SetCellBool provides a function to set bool type value of a cell by given
 // worksheet name, cell name and cell value.
 func (f *File) SetCellBool(sheet, axis string, value bool) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return err
@@ -164,7 +171,10 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 //    f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 //
 func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return err
@@ -178,7 +188,10 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int
 // SetCellStr provides a function to set string type value of a cell. Total
 // number of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return err
@@ -203,7 +216,10 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 // SetCellDefault provides a function to set string type value of a cell as
 // default format without escaping the cell.
 func (f *File) SetCellDefault(sheet, axis, value string) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return err
@@ -231,7 +247,10 @@ func (f *File) GetCellFormula(sheet, axis string) (string, error) {
 // SetCellFormula provides a function to set cell formula by given string and
 // worksheet name.
 func (f *File) SetCellFormula(sheet, axis, formula string) error {
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	cellData, _, _, err := f.prepareCell(xlsx, sheet, axis)
 	if err != nil {
 		return err
@@ -264,8 +283,11 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 		return false, "", err
 	}
 
-	xlsx := f.workSheetReader(sheet)
-	axis, err := f.mergeCellsParser(xlsx, axis)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return false, "", err
+	}
+	axis, err = f.mergeCellsParser(xlsx, axis)
 	if err != nil {
 		return false, "", err
 	}
@@ -302,8 +324,11 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 		return err
 	}
 
-	xlsx := f.workSheetReader(sheet)
-	axis, err := f.mergeCellsParser(xlsx, axis)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	axis, err = f.mergeCellsParser(xlsx, axis)
 	if err != nil {
 		return err
 	}
@@ -367,7 +392,10 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 	hcell, _ = CoordinatesToCellName(hcol, hrow)
 	vcell, _ = CoordinatesToCellName(vcol, vrow)
 
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if xlsx.MergeCells != nil {
 		ref := hcell + ":" + vcell
 		cells := make([]*xlsxMergeCell, 0, len(xlsx.MergeCells.Cells))
@@ -446,8 +474,10 @@ func (f *File) prepareCell(xlsx *xlsxWorksheet, sheet, cell string) (*xlsxC, int
 // getCellStringFunc does common value extraction workflow for all GetCell*
 // methods. Passed function implements specific part of required logic.
 func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c *xlsxC) (string, bool, error)) (string, error) {
-	xlsx := f.workSheetReader(sheet)
-	var err error
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return "", err
+	}
 	axis, err = f.mergeCellsParser(xlsx, axis)
 	if err != nil {
 		return "", err

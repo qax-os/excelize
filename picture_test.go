@@ -102,7 +102,7 @@ func TestGetPicture(t *testing.T) {
 
 	// Try to get picture from a worksheet that doesn't contain any images.
 	file, raw, err = xlsx.GetPicture("Sheet3", "I9")
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "Sheet Sheet3 is not exist")
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 

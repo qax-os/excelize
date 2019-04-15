@@ -245,7 +245,7 @@ func (f *File) SetActiveSheet(index int) {
 		}
 	}
 	for idx, name := range f.GetSheetMap() {
-		xlsx := f.workSheetReader(name)
+		xlsx, _ := f.workSheetReader(name)
 		if len(xlsx.SheetViews.SheetView) > 0 {
 			xlsx.SheetViews.SheetView[0].TabSelected = false
 		}
@@ -265,7 +265,7 @@ func (f *File) SetActiveSheet(index int) {
 // XLSX. If not found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
 	for idx, name := range f.GetSheetMap() {
-		xlsx := f.workSheetReader(name)
+		xlsx, _ := f.workSheetReader(name)
 		for _, sheetView := range xlsx.SheetViews.SheetView {
 			if sheetView.TabSelected {
 				return idx
@@ -380,11 +380,10 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	if !ok {
 		return errors.New("unsupported image extension")
 	}
-	pictureID := f.countMedia() + 1
-	rID := f.addSheetRelationships(sheet, SourceRelationshipImage, "../media/image"+strconv.Itoa(pictureID)+ext, "")
-	f.addSheetPicture(sheet, rID)
 	file, _ := ioutil.ReadFile(picture)
-	f.addMedia(file, ext)
+	name := f.addMedia(file, ext)
+	rID := f.addSheetRelationships(sheet, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
+	f.addSheetPicture(sheet, rID)
 	f.setContentTypePartImageExtensions()
 	return err
 }
@@ -452,14 +451,16 @@ func (f *File) CopySheet(from, to int) error {
 	if from < 1 || to < 1 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return errors.New("invalid worksheet index")
 	}
-	f.copySheet(from, to)
-	return nil
+	return f.copySheet(from, to)
 }
 
 // copySheet provides a function to duplicate a worksheet by gave source and
 // target worksheet name.
-func (f *File) copySheet(from, to int) {
-	sheet := f.workSheetReader("sheet" + strconv.Itoa(from))
+func (f *File) copySheet(from, to int) error {
+	sheet, err := f.workSheetReader("sheet" + strconv.Itoa(from))
+	if err != nil {
+		return err
+	}
 	worksheet := deepcopy.Copy(sheet).(*xlsxWorksheet)
 	path := "xl/worksheets/sheet" + strconv.Itoa(to) + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
@@ -475,6 +476,7 @@ func (f *File) copySheet(from, to int) {
 	if ok {
 		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
+	return err
 }
 
 // SetSheetVisible provides a function to set worksheet visible by given worksheet
@@ -488,9 +490,9 @@ func (f *File) copySheet(from, to int) {
 //
 // For example, hide Sheet1:
 //
-//    xlsx.SetSheetVisible("Sheet1", false)
+//    err := xlsx.SetSheetVisible("Sheet1", false)
 //
-func (f *File) SetSheetVisible(name string, visible bool) {
+func (f *File) SetSheetVisible(name string, visible bool) error {
 	name = trimSheetName(name)
 	content := f.workbookReader()
 	if visible {
@@ -499,7 +501,7 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 				content.Sheets.Sheet[k].State = ""
 			}
 		}
-		return
+		return nil
 	}
 	count := 0
 	for _, v := range content.Sheets.Sheet {
@@ -508,7 +510,10 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 		}
 	}
 	for k, v := range content.Sheets.Sheet {
-		xlsx := f.workSheetReader(f.GetSheetMap()[k])
+		xlsx, err := f.workSheetReader(f.GetSheetMap()[k])
+		if err != nil {
+			return err
+		}
 		tabSelected := false
 		if len(xlsx.SheetViews.SheetView) > 0 {
 			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
@@ -517,6 +522,7 @@ func (f *File) SetSheetVisible(name string, visible bool) {
 			content.Sheets.Sheet[k].State = "hidden"
 		}
 	}
+	return nil
 }
 
 // parseFormatPanesSet provides a function to parse the panes settings.
@@ -611,9 +617,12 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 //
 //    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 //
-func (f *File) SetPanes(sheet, panes string) {
+func (f *File) SetPanes(sheet, panes string) error {
 	fs, _ := parseFormatPanesSet(panes)
-	xlsx := f.workSheetReader(sheet)
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	p := &xlsxPane{
 		ActivePane:  fs.ActivePane,
 		TopLeftCell: fs.TopLeftCell,
@@ -638,6 +647,7 @@ func (f *File) SetPanes(sheet, panes string) {
 		})
 	}
 	xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Selection = s
+	return err
 }
 
 // GetSheetVisible provides a function to get worksheet visible by given worksheet
@@ -678,10 +688,16 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	for _, r := range reg {
 		regSearch = r
 	}
-	xlsx := f.workSheetReader(sheet)
+
 	var (
 		result []string
 	)
+
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return result, err
+	}
+
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return result, nil
@@ -740,13 +756,16 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 // or deliberately changing, moving, or deleting data in a worksheet. For
 // example, protect Sheet1 with protection settings:
 //
-//    xlsx.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//    err := xlsx.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
 //        Password:      "password",
 //        EditScenarios: false,
 //    })
 //
-func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) {
-	xlsx := f.workSheetReader(sheet)
+func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error {
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	if settings == nil {
 		settings = &FormatSheetProtection{
 			EditObjects:       true,
@@ -775,12 +794,17 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) {
 	if settings.Password != "" {
 		xlsx.SheetProtection.Password = genSheetPasswd(settings.Password)
 	}
+	return err
 }
 
 // UnprotectSheet provides a function to unprotect an Excel worksheet.
-func (f *File) UnprotectSheet(sheet string) {
-	xlsx := f.workSheetReader(sheet)
+func (f *File) UnprotectSheet(sheet string) error {
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	xlsx.SheetProtection = nil
+	return err
 }
 
 // trimSheetName provides a function to trim invaild characters by given worksheet
@@ -989,7 +1013,10 @@ func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
 //       118 | PRC Envelope #10 Rotated (458 mm x 324 mm)
 //
 func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
-	s := f.workSheetReader(sheet)
+	s, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	ps := s.PageSetUp
 	if ps == nil {
 		ps = new(xlsxPageSetUp)
@@ -999,7 +1026,7 @@ func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
 	for _, opt := range opts {
 		opt.setPageLayout(ps)
 	}
-	return nil
+	return err
 }
 
 // GetPageLayout provides a function to gets worksheet page layout.
@@ -1008,13 +1035,16 @@ func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
 //   PageLayoutOrientation(string)
 //   PageLayoutPaperSize(int)
 func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
-	s := f.workSheetReader(sheet)
+	s, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	ps := s.PageSetUp
 
 	for _, opt := range opts {
 		opt.getPageLayout(ps)
 	}
-	return nil
+	return err
 }
 
 // workSheetRelsReader provides a function to get the pointer to the structure
