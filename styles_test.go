@@ -23,8 +23,6 @@ func TestStyleFill(t *testing.T) {
 
 	for _, testCase := range cases {
 		xl := NewFile()
-		const sheet = "Sheet1"
-
 		styleID, err := xl.NewStyle(testCase.format)
 		if err != nil {
 			t.Fatalf("%v", err)

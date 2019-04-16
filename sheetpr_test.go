@@ -112,38 +112,24 @@ func TestSheetPrOptions(t *testing.T) {
 
 			xl := excelize.NewFile()
 			// Get the default value
-			if !assert.NoError(t, xl.GetSheetPrOptions(sheet, def), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.GetSheetPrOptions(sheet, def), opt)
 			// Get again and check
-			if !assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
 			if !assert.Equal(t, val1, def, opt) {
 				t.FailNow()
 			}
 			// Set the same value
-			if !assert.NoError(t, xl.SetSheetPrOptions(sheet, val1), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.SetSheetPrOptions(sheet, val1), opt)
 			// Get again and check
-			if !assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
 			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
 				t.FailNow()
 			}
 			// Set a different value
-			if !assert.NoError(t, xl.SetSheetPrOptions(sheet, test.nonDefault), opt) {
-				t.FailNow()
-			}
-			if !assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.SetSheetPrOptions(sheet, test.nonDefault), opt)
+			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
 			// Get again and compare
-			if !assert.NoError(t, xl.GetSheetPrOptions(sheet, val2), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.GetSheetPrOptions(sheet, val2), opt)
 			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
 				t.FailNow()
 			}
@@ -152,12 +138,8 @@ func TestSheetPrOptions(t *testing.T) {
 				t.FailNow()
 			}
 			// Restore the default value
-			if !assert.NoError(t, xl.SetSheetPrOptions(sheet, def), opt) {
-				t.FailNow()
-			}
-			if !assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt) {
-				t.FailNow()
-			}
+			assert.NoError(t, xl.SetSheetPrOptions(sheet, def), opt)
+			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
 			if !assert.Equal(t, def, val1) {
 				t.FailNow()
 			}

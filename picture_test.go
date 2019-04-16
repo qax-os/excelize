@@ -97,12 +97,12 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	// Try to get picture from a worksheet with illegal cell coordinates.
-	file, raw, err = xlsx.GetPicture("Sheet1", "A")
+	_, _, err = xlsx.GetPicture("Sheet1", "A")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// Try to get picture from a worksheet that doesn't contain any images.
 	file, raw, err = xlsx.GetPicture("Sheet3", "I9")
-	assert.EqualError(t, err, "Sheet Sheet3 is not exist")
+	assert.EqualError(t, err, "sheet Sheet3 is not exist")
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 

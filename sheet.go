@@ -684,14 +684,15 @@ func (f *File) GetSheetVisible(name string) bool {
 //    result, err := xlsx.SearchSheet("Sheet1", "[0-9]", true)
 //
 func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
-	var regSearch bool
+	var (
+		regSearch bool
+		result    []string
+		inElement string
+		r         xlsxRow
+	)
 	for _, r := range reg {
 		regSearch = r
 	}
-
-	var (
-		result []string
-	)
 
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -708,8 +709,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	}
 	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	d := f.sharedStringsReader()
-	var inElement string
-	var r xlsxRow
+
 	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()

@@ -116,7 +116,7 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 func (f *File) workSheetReader(sheet string) (*xlsxWorksheet, error) {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		return nil, fmt.Errorf("Sheet %s is not exist", sheet)
+		return nil, fmt.Errorf("sheet %s is not exist", sheet)
 	}
 	if f.Sheet[name] == nil {
 		var xlsx xlsxWorksheet

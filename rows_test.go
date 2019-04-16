@@ -50,7 +50,7 @@ func TestRowsError(t *testing.T) {
 		t.FailNow()
 	}
 	_, err = xlsx.Rows("SheetN")
-	assert.EqualError(t, err, "Sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
 func TestRowHeight(t *testing.T) {
@@ -59,11 +59,11 @@ func TestRowHeight(t *testing.T) {
 
 	assert.EqualError(t, xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
 
-	height, err := xlsx.GetRowHeight("Sheet1", 0)
+	_, err := xlsx.GetRowHeight("Sheet1", 0)
 	assert.EqualError(t, err, "invalid row number 0")
 
 	assert.NoError(t, xlsx.SetRowHeight(sheet1, 1, 111.0))
-	height, err = xlsx.GetRowHeight(sheet1, 1)
+	height, err := xlsx.GetRowHeight(sheet1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 111.0, height)
 
@@ -82,6 +82,11 @@ func TestRowHeight(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, defaultRowHeightPixels, height)
 
+	// Test set and get row height on not exists worksheet.
+	assert.EqualError(t, xlsx.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")
+	_, err = xlsx.GetRowHeight("SheetN", 3)
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+
 	err = xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -95,9 +100,9 @@ func TestRowVisibility(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-
-	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 2, false), "Sheet Sheet3 is not exist")
-	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 2, true), "Sheet Sheet3 is not exist")
+	xlsx.NewSheet("Sheet3")
+	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, false))
+	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, true))
 	xlsx.GetRowVisible("Sheet3", 2)
 	xlsx.GetRowVisible("Sheet3", 25)
 	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
@@ -213,7 +218,7 @@ func TestInsertRowInEmptyFile(t *testing.T) {
 	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }
 
-func TestDuplicateRow(t *testing.T) {
+func TestDuplicateRowFromSingleRow(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
@@ -224,15 +229,6 @@ func TestDuplicateRow(t *testing.T) {
 		"B1": "B1 Value",
 		"B2": "B2 Value",
 		"B3": "B3 Value",
-	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			f.SetCellStr(sheet, cell, val)
-
-		}
-		return f
 	}
 
 	t.Run("FromSingleRow", func(t *testing.T) {
@@ -273,6 +269,20 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
 
 	t.Run("UpdateDuplicatedRows", func(t *testing.T) {
 		xlsx := NewFile()
@@ -299,6 +309,29 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			f.SetCellStr(sheet, cell, val)
+
+		}
+		return f
+	}
 
 	t.Run("FirstOfMultipleRows", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
@@ -322,6 +355,11 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowZeroWithNoRows(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("ZeroWithNoRows", func(t *testing.T) {
 		xlsx := NewFile()
@@ -359,6 +397,11 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowMiddleRowOfEmptyFile(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("MiddleRowOfEmptyFile", func(t *testing.T) {
 		xlsx := NewFile()
@@ -381,6 +424,29 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			f.SetCellStr(sheet, cell, val)
+
+		}
+		return f
+	}
 
 	t.Run("WithLargeOffsetToMiddleOfData", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
@@ -404,6 +470,29 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			f.SetCellStr(sheet, cell, val)
+
+		}
+		return f
+	}
 
 	t.Run("WithLargeOffsetToEmptyRows", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
@@ -427,6 +516,29 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowInsertBefore(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			f.SetCellStr(sheet, cell, val)
+
+		}
+		return f
+	}
 
 	t.Run("InsertBefore", func(t *testing.T) {
 		xlsx := newFileWithDefaults()
@@ -451,6 +563,29 @@ func TestDuplicateRow(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			f.SetCellStr(sheet, cell, val)
+
+		}
+		return f
+	}
 
 	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
 		xlsx := newFileWithDefaults()

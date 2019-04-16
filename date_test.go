@@ -69,7 +69,7 @@ func TestTimeFromExcelTime(t *testing.T) {
 }
 
 func TestTimeFromExcelTime_1904(t *testing.T) {
-	shiftJulianToNoon(1, -0.6)
+	_, _ = shiftJulianToNoon(1, -0.6)
 	timeFromExcelTime(61, true)
 	timeFromExcelTime(62, true)
 }

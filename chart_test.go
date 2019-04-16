@@ -96,3 +96,8 @@ func TestChartSize(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+func TestAddDrawingChart(t *testing.T) {
+	f := NewFile()
+	assert.EqualError(t, f.addDrawingChart("SheetN", "", "", 0, 0, 0, nil), `cannot convert cell "" to coordinates: invalid cell name ""`)
+}

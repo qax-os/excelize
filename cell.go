@@ -71,6 +71,38 @@ func (f *File) GetCellValue(sheet, axis string) (string, error) {
 func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	var err error
 	switch v := value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		err = f.setCellIntFunc(sheet, axis, v)
+	case float32:
+		err = f.SetCellFloat(sheet, axis, float64(v), -1, 32)
+	case float64:
+		err = f.SetCellFloat(sheet, axis, v, -1, 64)
+	case string:
+		err = f.SetCellStr(sheet, axis, v)
+	case []byte:
+		err = f.SetCellStr(sheet, axis, string(v))
+	case time.Duration:
+		err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(v.Seconds()/86400.0, 'f', -1, 32))
+		if err != nil {
+			return err
+		}
+		err = f.setDefaultTimeStyle(sheet, axis, 21)
+	case time.Time:
+		err = f.setCellTimeFunc(sheet, axis, v)
+	case bool:
+		err = f.SetCellBool(sheet, axis, v)
+	case nil:
+		err = f.SetCellStr(sheet, axis, "")
+	default:
+		err = f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+	}
+	return err
+}
+
+// setCellIntFunc is a wrapper of SetCellInt.
+func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
+	var err error
+	switch v := value.(type) {
 	case int:
 		err = f.SetCellInt(sheet, axis, v)
 	case int8:
@@ -91,34 +123,31 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 		err = f.SetCellInt(sheet, axis, int(v))
 	case uint64:
 		err = f.SetCellInt(sheet, axis, int(v))
-	case float32:
-		err = f.SetCellFloat(sheet, axis, float64(v), -1, 32)
-	case float64:
-		err = f.SetCellFloat(sheet, axis, v, -1, 64)
-	case string:
-		err = f.SetCellStr(sheet, axis, v)
-	case []byte:
-		err = f.SetCellStr(sheet, axis, string(v))
-	case time.Duration:
-		err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(v.Seconds()/86400.0, 'f', -1, 32))
-		err = f.setDefaultTimeStyle(sheet, axis, 21)
-	case time.Time:
-		excelTime, err := timeToExcelTime(v)
+	}
+	return err
+}
+
+// setCellTimeFunc provides a method to process time type of value for
+// SetCellValue.
+func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
+	excelTime, err := timeToExcelTime(value)
+	if err != nil {
+		return err
+	}
+	if excelTime > 0 {
+		err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(excelTime, 'f', -1, 64))
 		if err != nil {
 			return err
 		}
-		if excelTime > 0 {
-			err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(excelTime, 'f', -1, 64))
-			err = f.setDefaultTimeStyle(sheet, axis, 22)
-		} else {
-			err = f.SetCellStr(sheet, axis, v.Format(time.RFC3339Nano))
+		err = f.setDefaultTimeStyle(sheet, axis, 22)
+		if err != nil {
+			return err
 		}
-	case bool:
-		err = f.SetCellBool(sheet, axis, v)
-	case nil:
-		err = f.SetCellStr(sheet, axis, "")
-	default:
-		err = f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+	} else {
+		err = f.SetCellStr(sheet, axis, value.Format(time.RFC3339Nano))
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -398,8 +427,6 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 	}
 	if xlsx.MergeCells != nil {
 		ref := hcell + ":" + vcell
-		cells := make([]*xlsxMergeCell, 0, len(xlsx.MergeCells.Cells))
-
 		// Delete the merged cells of the overlapping area.
 		for _, cellData := range xlsx.MergeCells.Cells {
 			cc := strings.Split(cellData.Ref, ":")
@@ -413,10 +440,8 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 			if !(!c1 && !c2 && !c3 && !c4) {
 				return nil
 			}
-			cells = append(cells, cellData)
 		}
-		cells = append(xlsx.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
-		xlsx.MergeCells.Cells = cells
+		xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
 	} else {
 		xlsx.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: hcell + ":" + vcell}}}
 	}
