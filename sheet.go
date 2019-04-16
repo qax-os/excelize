@@ -1072,8 +1072,8 @@ func (f *File) workSheetRelsWriter() {
 	}
 }
 
-// fillSheetData fill missing row and cell XML data to made it continuous from
-// first cell [1, 1] to last cell [col, row]
+// fillSheetData ensures there are enough rows, and columns in the chosen
+// row to accept data. Missing rows are backfilled and given their row number
 func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
 	rowCount := len(xlsx.SheetData.Row)
 	if rowCount < row {
@@ -1082,14 +1082,23 @@ func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
 			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1})
 		}
 	}
-	for rowIdx := range xlsx.SheetData.Row {
-		rowData := &xlsx.SheetData.Row[rowIdx] // take reference
-		cellCount := len(rowData.C)
-		if cellCount < col {
-			for colIdx := cellCount; colIdx < col; colIdx++ {
-				cellName, _ := CoordinatesToCellName(colIdx+1, rowIdx+1)
-				rowData.C = append(rowData.C, xlsxC{R: cellName})
-			}
+	rowData := &xlsx.SheetData.Row[row-1]
+	fillColumns(rowData, col, row)
+}
+
+func fillColumns(rowData *xlsxRow, col, row int) {
+	cellCount := len(rowData.C)
+	if cellCount < col {
+		for colIdx := cellCount; colIdx < col; colIdx++ {
+			cellName, _ := CoordinatesToCellName(colIdx+1, row)
+			rowData.C = append(rowData.C, xlsxC{R: cellName})
 		}
+	}
+}
+
+func makeContiguousColumns(xlsx *xlsxWorksheet, fromRow, toRow, colCount int) {
+	for ; fromRow < toRow; fromRow++ {
+		rowData := &xlsx.SheetData.Row[fromRow-1]
+		fillColumns(rowData, colCount, fromRow)
 	}
 }
