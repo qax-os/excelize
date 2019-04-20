@@ -21,7 +21,7 @@ import (
 // GetRows return all the rows in a sheet by given worksheet name (case
 // sensitive). For example:
 //
-//	  rows, err := xlsx.GetRows("Sheet1")
+//	  rows, err := f.GetRows("Sheet1")
 //    for _, row := range rows {
 //        for _, colCell := range row {
 //            fmt.Print(colCell, "\t")
@@ -158,7 +158,7 @@ func (err ErrSheetNotExist) Error() string {
 
 // Rows return a rows iterator. For example:
 //
-//    rows, err := xlsx.Rows("Sheet1")
+//    rows, err := f.Rows("Sheet1")
 //    for rows.Next() {
 //    	  row, err := rows.Columns()
 //        for _, colCell := range row {
@@ -224,7 +224,7 @@ func (f *File) getTotalRowsCols(name string) (int, int, error) {
 // SetRowHeight provides a function to set the height of a single row. For
 // example, set the height of the first row in Sheet1:
 //
-//    err := xlsx.SetRowHeight("Sheet1", 1, 50)
+//    err := f.SetRowHeight("Sheet1", 1, 50)
 //
 func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if row < 1 {
@@ -260,7 +260,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 // GetRowHeight provides a function to get row height by given worksheet name
 // and row index. For example, get the height of the first row in Sheet1:
 //
-//    height, err := xlsx.GetRowHeight("Sheet1", 1)
+//    height, err := f.GetRowHeight("Sheet1", 1)
 //
 func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
@@ -326,7 +326,7 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 // SetRowVisible provides a function to set visible of a single row by given
 // worksheet name and Excel row number. For example, hide row 2 in Sheet1:
 //
-//    err := xlsx.SetRowVisible("Sheet1", 2, false)
+//    err := f.SetRowVisible("Sheet1", 2, false)
 //
 func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 	if row < 1 {
@@ -346,7 +346,7 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 // worksheet name and Excel row number. For example, get visible state of row
 // 2 in Sheet1:
 //
-//    visible, err := xlsx.GetRowVisible("Sheet1", 2)
+//    visible, err := f.GetRowVisible("Sheet1", 2)
 //
 func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 	if row < 1 {
@@ -367,7 +367,7 @@ func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 // single row by given worksheet name and Excel row number. For example,
 // outline row 2 in Sheet1 to level 1:
 //
-//    err := xlsx.SetRowOutlineLevel("Sheet1", 2, 1)
+//    err := f.SetRowOutlineLevel("Sheet1", 2, 1)
 //
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if row < 1 {
@@ -386,7 +386,7 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 // single row by given worksheet name and Excel row number. For example, get
 // outline number of row 2 in Sheet1:
 //
-//    level, err := xlsx.GetRowOutlineLevel("Sheet1", 2)
+//    level, err := f.GetRowOutlineLevel("Sheet1", 2)
 //
 func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 	if row < 1 {
@@ -405,7 +405,7 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 // RemoveRow provides a function to remove single row by given worksheet name
 // and Excel row number. For example, remove row 3 in Sheet1:
 //
-//    err := xlsx.RemoveRow("Sheet1", 3)
+//    err := f.RemoveRow("Sheet1", 3)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -437,7 +437,7 @@ func (f *File) RemoveRow(sheet string, row int) error {
 // number starting from 1. For example, create a new row before row 3 in
 // Sheet1:
 //
-//    err := elsx.InsertRow("Sheet1", 3)
+//    err := f.InsertRow("Sheet1", 3)
 //
 func (f *File) InsertRow(sheet string, row int) error {
 	if row < 1 {
@@ -448,7 +448,7 @@ func (f *File) InsertRow(sheet string, row int) error {
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below
 //
-//    err := xlsx.DuplicateRow("Sheet1", 2)
+//    err := f.DuplicateRow("Sheet1", 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -461,7 +461,7 @@ func (f *File) DuplicateRow(sheet string, row int) error {
 // DuplicateRowTo inserts a copy of specified row by it Excel number
 // to specified row position moving down exists rows after target position
 //
-//    err := xlsx.DuplicateRowTo("Sheet1", 2, 7)
+//    err := f.DuplicateRowTo("Sheet1", 2, 7)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the

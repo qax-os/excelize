@@ -87,7 +87,7 @@ func SplitCellName(cell string) (string, int, error) {
 	return "", -1, newInvalidCellNameError(cell)
 }
 
-// JoinCellName joins cell name from column name and row number
+// JoinCellName joins cell name from column name and row number.
 func JoinCellName(col string, row int) (string, error) {
 	normCol := strings.Map(func(rune rune) rune {
 		switch {
@@ -107,9 +107,9 @@ func JoinCellName(col string, row int) (string, error) {
 	return fmt.Sprintf("%s%d", normCol, row), nil
 }
 
-// ColumnNameToNumber provides a function to convert Excel sheet
-// column name to int. Column name case insencitive
-// Function returns error if column name incorrect.
+// ColumnNameToNumber provides a function to convert Excel sheet column name
+// to int. Column name case insensitive. The function returns an error if
+// column name incorrect.
 //
 // Example:
 //
@@ -135,8 +135,8 @@ func ColumnNameToNumber(name string) (int, error) {
 	return col, nil
 }
 
-// ColumnNumberToName provides a function to convert integer
-// to Excel sheet column title.
+// ColumnNumberToName provides a function to convert the integer to Excel
+// sheet column title.
 //
 // Example:
 //
@@ -154,8 +154,8 @@ func ColumnNumberToName(num int) (string, error) {
 	return col, nil
 }
 
-// CellNameToCoordinates converts alpha-numeric cell name
-// to [X, Y] coordinates or retrusn an error.
+// CellNameToCoordinates converts alphanumeric cell name to [X, Y] coordinates
+// or returns an error.
 //
 // Example:
 //

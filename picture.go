@@ -55,23 +55,23 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //    )
 //
 //    func main() {
-//        xlsx := excelize.NewFile()
+//        f := excelize.NewFile()
 //        // Insert a picture.
-//        err := xlsx.AddPicture("Sheet1", "A2", "./image1.jpg", "")
+//        err := f.AddPicture("Sheet1", "A2", "./image1.jpg", "")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
 //        // Insert a picture scaling in the cell with location hyperlink.
-//        err = xlsx.AddPicture("Sheet1", "D2", "./image1.png", `{"x_scale": 0.5, "y_scale": 0.5, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
+//        err = f.AddPicture("Sheet1", "D2", "./image1.png", `{"x_scale": 0.5, "y_scale": 0.5, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
 //        // Insert a picture offset in the cell with external hyperlink, printing and positioning support.
-//        err = xlsx.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`)
+//        err = f.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        err = xlsx.SaveAs("./Book1.xlsx")
+//        err = f.SaveAs("./Book1.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
@@ -115,17 +115,17 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //    )
 //
 //    func main() {
-//        xlsx := excelize.NewFile()
+//        f := excelize.NewFile()
 //
 //        file, err := ioutil.ReadFile("./image1.jpg")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        err = xlsx.AddPictureFromBytes("Sheet1", "A2", "", "Excel Logo", ".jpg", file)
+//        err = f.AddPictureFromBytes("Sheet1", "A2", "", "Excel Logo", ".jpg", file)
 //        if err != nil {
 //            fmt.Println(err)
 //        }
-//        err = xlsx.SaveAs("./Book1.xlsx")
+//        err = f.SaveAs("./Book1.xlsx")
 //        if err != nil {
 //            fmt.Println(err)
 //        }
@@ -481,16 +481,17 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 // embed in XLSX by given worksheet and cell name. This function returns the
 // file name in XLSX and file contents as []byte data types. For example:
 //
-//    xlsx, err := excelize.OpenFile("./Book1.xlsx")
+//    f, err := excelize.OpenFile("./Book1.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
 //        return
 //    }
-//    file, raw, err := xlsx.GetPicture("Sheet1", "A2")
-//    if file == "" {
+//    file, raw, err := f.GetPicture("Sheet1", "A2")
+//    if err != nil {
+//        fmt.Println(err)
 //        return
 //    }
-//    err := ioutil.WriteFile(file, raw, 0644)
+//    err = ioutil.WriteFile(file, raw, 0644)
 //    if err != nil {
 //        fmt.Println(err)
 //    }

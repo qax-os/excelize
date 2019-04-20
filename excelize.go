@@ -216,7 +216,8 @@ func (f *File) UpdateLinkedValue() error {
 	return nil
 }
 
-// GetMergeCells provides a function to get all merged cells from a worksheet currently.
+// GetMergeCells provides a function to get all merged cells from a worksheet
+// currently.
 func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	var mergeCells []MergeCell
 	xlsx, err := f.workSheetReader(sheet)

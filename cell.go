@@ -304,7 +304,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string) error {
 // the value of link will be false and the value of the target will be a blank
 // string. For example get hyperlink of Sheet1!H6:
 //
-//    link, target, err := xlsx.GetCellHyperLink("Sheet1", "H6")
+//    link, target, err := f.GetCellHyperLink("Sheet1", "H6")
 //
 func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	// Check for correct cell name
@@ -338,14 +338,14 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 // hyperlink "External" for web site or "Location" for moving to one of cell
 // in this workbook. The below is example for external link.
 //
-//    err := xlsx.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 //    // Set underline and font color style for the cell.
-//    style, err := xlsx.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
-//    err = xlsx.SetCellStyle("Sheet1", "A3", "A3", style)
+//    style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+//    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
 //
 // A this is another example for "Location":
 //
-//    err := xlsx.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
+//    err := f.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
 //
 func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 	// Check for correct cell name
@@ -390,7 +390,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 // MergeCell provides a function to merge cells by given coordinate area and
 // sheet name. For example create a merged cell of D3:E9 on Sheet1:
 //
-//    err := xlsx.MergeCell("Sheet1", "D3", "E9")
+//    err := f.MergeCell("Sheet1", "D3", "E9")
 //
 // If you create a merged cell that overlaps with another existing merged cell,
 // those merged cells that already exist will be removed.
@@ -452,7 +452,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 // coordinate and a pointer to array type 'slice'. For example, writes an
 // array to row 6 start with the cell B6 on Sheet1:
 //
-//     err := xlsx.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
+//     err := f.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
 //
 func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 	col, row, err := CellNameToCoordinates(axis)
