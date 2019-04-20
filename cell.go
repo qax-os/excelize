@@ -336,7 +336,8 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 // SetCellHyperLink provides a function to set cell hyperlink by given
 // worksheet name and link URL address. LinkType defines two types of
 // hyperlink "External" for web site or "Location" for moving to one of cell
-// in this workbook. The below is example for external link.
+// in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
+// below is example for external link.
 //
 //    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 //    // Set underline and font color style for the cell.
@@ -364,6 +365,14 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 
 	var linkData xlsxHyperlink
 
+	if xlsx.Hyperlinks == nil {
+		xlsx.Hyperlinks = new(xlsxHyperlinks)
+	}
+
+	if len(xlsx.Hyperlinks.Hyperlink) > 65529 {
+		return errors.New("over maximum limit hyperlinks in a worksheet")
+	}
+
 	switch linkType {
 	case "External":
 		linkData = xlsxHyperlink{
@@ -380,9 +389,6 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 		return fmt.Errorf("invalid link type %q", linkType)
 	}
 
-	if xlsx.Hyperlinks == nil {
-		xlsx.Hyperlinks = new(xlsxHyperlinks)
-	}
 	xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink, linkData)
 	return nil
 }
