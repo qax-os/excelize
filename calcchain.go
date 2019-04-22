@@ -25,7 +25,7 @@ func (f *File) calcChainReader() *xlsxCalcChain {
 // calcChainWriter provides a function to save xl/calcChain.xml after
 // serialize structure.
 func (f *File) calcChainWriter() {
-	if f.CalcChain != nil {
+	if f.CalcChain != nil && f.CalcChain.C != nil {
 		output, _ := xml.Marshal(f.CalcChain)
 		f.saveFileList("xl/calcChain.xml", output)
 	}
