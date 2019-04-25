@@ -25,7 +25,7 @@ func TestStyleFill(t *testing.T) {
 		xl := NewFile()
 		styleID, err := xl.NewStyle(testCase.format)
 		if err != nil {
-			t.Fatalf("%v", err)
+			t.Fatal(err)
 		}
 
 		styles := xl.stylesReader()
@@ -164,4 +164,32 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.Equal(t, cellRange, cf[0].SQRef, testCase.label)
 		assert.EqualValues(t, testCase.rules, cf[0].CfRule, testCase.label)
 	}
+}
+
+func TestNewStyle(t *testing.T) {
+	f := NewFile()
+	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	styles := f.stylesReader()
+	fontID := styles.CellXfs.Xf[styleID].FontID
+	font := styles.Fonts.Font[fontID]
+	assert.Contains(t, font.Name.Val, "Berlin Sans FB Demi", "Stored font should contain font name")
+	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
+}
+
+func TestGetDefaultFont(t *testing.T) {
+	f := NewFile()
+	s := f.GetDefaultFont()
+	assert.Equal(t, s, "Calibri", "Default font should be Calibri")
+}
+
+func TestSetDefaultFont(t *testing.T) {
+	f := NewFile()
+	f.SetDefaultFont("Ariel")
+	styles := f.stylesReader()
+	s := f.GetDefaultFont()
+	assert.Equal(t, s, "Ariel", "Default font should change to Ariel")
+	assert.Equal(t, *styles.CellStyles.CellStyle[0].CustomBuiltIn, true)
 }
