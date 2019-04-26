@@ -33,11 +33,11 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 // name, coordinate area and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
-//    err := xlsx.AddTable("Sheet1", "A1", "D5", ``)
+//    err := f.AddTable("Sheet1", "A1", "D5", ``)
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
-//    err := xlsx.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+//    err := f.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 //
 // Note that the table at least two lines include string type header. Multiple
 // tables coordinate areas can't have an intersection.
@@ -197,11 +197,11 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 // way of filtering a 2D range of data based on some simple criteria. For
 // example applying an autofilter to a cell range A1:D4 in the Sheet1:
 //
-//    err = xlsx.AutoFilter("Sheet1", "A1", "D4", "")
+//    err := f.AutoFilter("Sheet1", "A1", "D4", "")
 //
 // Filter data in an autofilter:
 //
-//    err = xlsx.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
+//    err := f.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
 //
 // column defines the filter columns in a autofilter range based on simple
 // criteria

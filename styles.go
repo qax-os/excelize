@@ -1878,10 +1878,10 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 // Excelize support set custom number format for cell. For example, set number
 // as date type in Uruguay (Spanish) format for Sheet1!A6:
 //
-//    xlsx := excelize.NewFile()
-//    xlsx.SetCellValue("Sheet1", "A6", 42920.5)
-//    style, err := xlsx.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
-//    err = xlsx.SetCellStyle("Sheet1", "A6", "A6", style)
+//    f := excelize.NewFile()
+//    f.SetCellValue("Sheet1", "A6", 42920.5)
+//    style, err := f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+//    err = f.SetCellStyle("Sheet1", "A6", "A6", style)
 //
 // Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
 //
@@ -2284,63 +2284,63 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // For example create a borders of cell H9 on Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+//    style, err := f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set gradient fill with vertical variants shading styles for cell H9 on
 // Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
+//    style, err := f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set solid style pattern fill for cell H9 on Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+//    style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set alignment style for cell H9 on Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
+//    style, err := f.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Dates and times in Excel are represented by real numbers, for example "Apr 7
 // 2017 12:00 PM" is represented by the number 42920.5. Set date and time format
 // for cell H9 on Sheet1:
 //
-//    xlsx.SetCellValue("Sheet1", "H9", 42920.5)
-//    style, err := xlsx.NewStyle(`{"number_format": 22}`)
+//    f.SetCellValue("Sheet1", "H9", 42920.5)
+//    style, err := f.NewStyle(`{"number_format": 22}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Set font style for cell H9 on Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+//    style, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 // Hide and lock for cell H9 on Sheet1:
 //
-//    style, err := xlsx.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
+//    style, err := f.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    err = xlsx.SetCellStyle("Sheet1", "H9", "H9", style)
+//    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
 func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 	hcol, hrow, err := CellNameToCoordinates(hcell)
@@ -2459,22 +2459,22 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 // value: The value is generally used along with the criteria parameter to set
 // the rule by which the cell data will be evaluated:
 //
-//    xlsx.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
+//    f.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
 //
 // The value property can also be an cell reference:
 //
-//    xlsx.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"$C$1"}]`, format))
+//    f.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"$C$1"}]`, format))
 //
 // type: format - The format parameter is used to specify the format that will
 // be applied to the cell when the conditional formatting criterion is met. The
 // format is created using the NewConditionalStyle() method in the same way as
 // cell formats:
 //
-//    format, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+//    format, err = f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
+//    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
 //
 // Note: In Excel, a conditional format is superimposed over the existing cell
 // format and not all cell format properties can be modified. Properties that
@@ -2486,19 +2486,19 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 // These can be replicated using the following excelize formats:
 //
 //    // Rose format for bad conditional.
-//    format1, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+//    format1, err = f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
 //
 //    // Light yellow format for neutral conditional.
-//    format2, err = xlsx.NewConditionalStyle(`{"font":{"color":"#9B5713"},"fill":{"type":"pattern","color":["#FEEAA0"],"pattern":1}}`)
+//    format2, err = f.NewConditionalStyle(`{"font":{"color":"#9B5713"},"fill":{"type":"pattern","color":["#FEEAA0"],"pattern":1}}`)
 //
 //    // Light green format for good conditional.
-//    format3, err = xlsx.NewConditionalStyle(`{"font":{"color":"#09600B"},"fill":{"type":"pattern","color":["#C7EECF"],"pattern":1}}`)
+//    format3, err = f.NewConditionalStyle(`{"font":{"color":"#09600B"},"fill":{"type":"pattern","color":["#C7EECF"],"pattern":1}}`)
 //
 // type: minimum - The minimum parameter is used to set the lower limiting value
 // when the criteria is either "between" or "not between".
 //
 //    // Hightlight cells rules: between...
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":"between","format":%d,"minimum":"6","maximum":"8"}]`, format))
+//    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":"between","format":%d,"minimum":"6","maximum":"8"}]`, format))
 //
 // type: maximum - The maximum parameter is used to set the upper limiting value
 // when the criteria is either "between" or "not between". See the previous
@@ -2508,35 +2508,35 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 // conditional format:
 //
 //    // Top/Bottom rules: Above Average...
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": true}]`, format1))
+//    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": true}]`, format1))
 //
 //    // Top/Bottom rules: Below Average...
-//    xlsx.SetConditionalFormat("Sheet1", "B1:B10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": false}]`, format2))
+//    f.SetConditionalFormat("Sheet1", "B1:B10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": false}]`, format2))
 //
 // type: duplicate - The duplicate type is used to highlight duplicate cells in a range:
 //
 //    // Hightlight cells rules: Duplicate Values...
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"duplicate","criteria":"=","format":%d}]`, format))
+//    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"duplicate","criteria":"=","format":%d}]`, format))
 //
 // type: unique - The unique type is used to highlight unique cells in a range:
 //
 //    // Hightlight cells rules: Not Equal To...
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"unique","criteria":"=","format":%d}]`, format))
+//    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"unique","criteria":"=","format":%d}]`, format))
 //
 // type: top - The top type is used to specify the top n values by number or percentage in a range:
 //
 //    // Top/Bottom rules: Top 10.
-//    xlsx.SetConditionalFormat("Sheet1", "H1:H10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6"}]`, format))
+//    f.SetConditionalFormat("Sheet1", "H1:H10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6"}]`, format))
 //
 // The criteria can be used to indicate that a percentage condition is required:
 //
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6","percent":true}]`, format))
+//    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6","percent":true}]`, format))
 //
 // type: 2_color_scale - The 2_color_scale type is used to specify Excel's "2
 // Color Scale" style conditional format:
 //
 //    // Color scales: 2 color.
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"2_color_scale","criteria":"=","min_type":"min","max_type":"max","min_color":"#F8696B","max_color":"#63BE7B"}]`)
+//    f.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"2_color_scale","criteria":"=","min_type":"min","max_type":"max","min_color":"#F8696B","max_color":"#63BE7B"}]`)
 //
 // This conditional type can be modified with min_type, max_type, min_value,
 // max_value, min_color and max_color, see below.
@@ -2545,7 +2545,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 // Color Scale" style conditional format:
 //
 //    // Color scales: 3 color.
-//    xlsx.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
+//    f.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
 //
 // This conditional type can be modified with min_type, mid_type, max_type,
 // min_value, mid_value, max_value, min_color, mid_color and max_color, see
@@ -2557,7 +2557,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 // min_type - The min_type and max_type properties are available when the conditional formatting type is 2_color_scale, 3_color_scale or data_bar. The mid_type is available for 3_color_scale. The properties are used as follows:
 //
 //    // Data Bars: Gradient Fill.
-//    xlsx.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
+//    f.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
 //
 // The available min/mid/max types are:
 //
@@ -2586,7 +2586,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 // follows:
 //
 //    // Color scales: 3 color.
-//    xlsx.SetConditionalFormat("Sheet1", "B1:B10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
+//    f.SetConditionalFormat("Sheet1", "B1:B10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
 //
 // mid_color - Used for 3_color_scale. Same as min_color, see above.
 //

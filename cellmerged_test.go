@@ -30,13 +30,13 @@ func TestGetMergeCells(t *testing.T) {
 		end:   "C10",
 	}}
 
-	xlsx, err := OpenFile(filepath.Join("test", "MergeCell.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "MergeCell.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	sheet1 := xlsx.GetSheetName(1)
+	sheet1 := f.GetSheetName(1)
 
-	mergeCells, err := xlsx.GetMergeCells(sheet1)
+	mergeCells, err := f.GetMergeCells(sheet1)
 	if !assert.Len(t, mergeCells, len(wants)) {
 		t.FailNow()
 	}
@@ -49,6 +49,6 @@ func TestGetMergeCells(t *testing.T) {
 	}
 
 	// Test get merged cells on not exists worksheet.
-	_, err = xlsx.GetMergeCells("SheetN")
+	_, err = f.GetMergeCells("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 }

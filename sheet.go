@@ -334,11 +334,11 @@ func (f *File) GetSheetIndex(name string) int {
 // GetSheetMap provides a function to get worksheet name and index map of XLSX.
 // For example:
 //
-//    xlsx, err := excelize.OpenFile("./Book1.xlsx")
+//    f, err := excelize.OpenFile("./Book1.xlsx")
 //    if err != nil {
 //        return
 //    }
-//    for index, name := range xlsx.GetSheetMap() {
+//    for index, name := range f.GetSheetMap() {
 //        fmt.Println(index, name)
 //    }
 //
@@ -443,8 +443,8 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 // workbooks that contain tables, charts or pictures. For Example:
 //
 //    // Sheet1 already exists...
-//    index := xlsx.NewSheet("Sheet2")
-//    err := xlsx.CopySheet(1, index)
+//    index := f.NewSheet("Sheet2")
+//    err := f.CopySheet(1, index)
 //    return err
 //
 func (f *File) CopySheet(from, to int) error {
@@ -490,7 +490,7 @@ func (f *File) copySheet(from, to int) error {
 //
 // For example, hide Sheet1:
 //
-//    err := xlsx.SetSheetVisible("Sheet1", false)
+//    err := f.SetSheetVisible("Sheet1", false)
 //
 func (f *File) SetSheetVisible(name string, visible bool) error {
 	name = trimSheetName(name)
@@ -601,21 +601,21 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 // An example of how to freeze column A in the Sheet1 and set the active cell on
 // Sheet1!K16:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
+//    f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
 //
 // An example of how to freeze rows 1 to 9 in the Sheet1 and set the active cell
 // ranges on Sheet1!A11:XFD11:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
+//    f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
 //
 // An example of how to create split panes in the Sheet1 and set the active cell
 // on Sheet1!J60:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
+//    f.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
 //
 // An example of how to unfreeze and remove all panes on Sheet1:
 //
-//    xlsx.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
+//    f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 //
 func (f *File) SetPanes(sheet, panes string) error {
 	fs, _ := parseFormatPanesSet(panes)
@@ -653,7 +653,7 @@ func (f *File) SetPanes(sheet, panes string) error {
 // GetSheetVisible provides a function to get worksheet visible by given worksheet
 // name. For example, get visible state of Sheet1:
 //
-//    xlsx.GetSheetVisible("Sheet1")
+//    f.GetSheetVisible("Sheet1")
 //
 func (f *File) GetSheetVisible(name string) bool {
 	content := f.workbookReader()
@@ -676,12 +676,12 @@ func (f *File) GetSheetVisible(name string) bool {
 //
 // An example of search the coordinates of the value of "100" on Sheet1:
 //
-//    result, err := xlsx.SearchSheet("Sheet1", "100")
+//    result, err := f.SearchSheet("Sheet1", "100")
 //
 // An example of search the coordinates where the numerical value in the range
 // of "0-9" of Sheet1 is described:
 //
-//    result, err := xlsx.SearchSheet("Sheet1", "[0-9]", true)
+//    result, err := f.SearchSheet("Sheet1", "[0-9]", true)
 //
 func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	var (
@@ -756,7 +756,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 // or deliberately changing, moving, or deleting data in a worksheet. For
 // example, protect Sheet1 with protection settings:
 //
-//    err := xlsx.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//    err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
 //        Password:      "password",
 //        EditScenarios: false,
 //    })
