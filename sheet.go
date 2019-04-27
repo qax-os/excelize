@@ -92,7 +92,7 @@ func (f *File) workbookReader() *xlsxWorkbook {
 func (f *File) workBookWriter() {
 	if f.WorkBook != nil {
 		output, _ := xml.Marshal(f.WorkBook)
-		f.saveFileList("xl/workbook.xml", replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList("xl/workbook.xml", replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(output)))
 	}
 }
 
@@ -105,7 +105,7 @@ func (f *File) workSheetWriter() {
 				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 			}
 			output, _ := xml.Marshal(sheet)
-			f.saveFileList(p, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+			f.saveFileList(p, replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(output)))
 			ok := f.checked[p]
 			if ok {
 				f.checked[p] = false
@@ -209,6 +209,15 @@ func (f *File) addXlsxWorkbookRels(sheet int) int {
 // setAppXML update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
 	f.saveFileList("docProps/app.xml", []byte(templateDocpropsApp))
+}
+
+// replaceRelationshipsBytes; Some tools that read XLSX files have very strict
+// requirements about the structure of the input XML. This function is a
+// horrible hack to fix that after the XML marshalling is completed.
+func replaceRelationshipsBytes(content []byte) []byte {
+	oldXmlns := []byte(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
+	newXmlns := []byte("r")
+	return bytes.Replace(content, oldXmlns, newXmlns, -1)
 }
 
 // replaceRelationshipsNameSpaceBytes; Some tools that read XLSX files have
