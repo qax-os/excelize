@@ -21,7 +21,7 @@ Supports saving a file without losing original charts of XLSX. This library need
 ### Installation
 
 ```bash
-go get github.com/360EntSecGroup-Skylar/excelize
+go get github.com/360EntSecGroup-Skylar/excelize/v2
 ```
 
 ### Create XLSX file
@@ -34,7 +34,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {
@@ -64,7 +64,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {
@@ -103,7 +103,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {
@@ -140,7 +140,7 @@ import (
     _ "image/jpeg"
     _ "image/png"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {

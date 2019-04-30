@@ -20,7 +20,7 @@ Excelize 是 Go 语言编写的用于操作 Office Excel 文档类库，基于 E
 ### 安装
 
 ```bash
-go get github.com/360EntSecGroup-Skylar/excelize
+go get github.com/360EntSecGroup-Skylar/excelize/v2
 ```
 
 ### 创建 Excel 文档
@@ -33,7 +33,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {
@@ -63,7 +63,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {
@@ -102,7 +102,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {
@@ -140,7 +140,7 @@ import (
     _ "image/jpeg"
     _ "image/png"
 
-    "github.com/360EntSecGroup-Skylar/excelize"
+    "github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 func main() {

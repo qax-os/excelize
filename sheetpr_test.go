@@ -7,7 +7,7 @@ import (
 	"github.com/mohae/deepcopy"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
 var _ = []excelize.SheetPrOption{
@@ -29,10 +29,10 @@ var _ = []excelize.SheetPrOptionPtr{
 }
 
 func ExampleFile_SetSheetPrOptions() {
-	xl := excelize.NewFile()
+	f := excelize.NewFile()
 	const sheet = "Sheet1"
 
-	if err := xl.SetSheetPrOptions(sheet,
+	if err := f.SetSheetPrOptions(sheet,
 		excelize.CodeName("code"),
 		excelize.EnableFormatConditionsCalculation(false),
 		excelize.Published(false),
@@ -46,7 +46,7 @@ func ExampleFile_SetSheetPrOptions() {
 }
 
 func ExampleFile_GetSheetPrOptions() {
-	xl := excelize.NewFile()
+	f := excelize.NewFile()
 	const sheet = "Sheet1"
 
 	var (
@@ -58,7 +58,7 @@ func ExampleFile_GetSheetPrOptions() {
 		outlineSummaryBelow               excelize.OutlineSummaryBelow
 	)
 
-	if err := xl.GetSheetPrOptions(sheet,
+	if err := f.GetSheetPrOptions(sheet,
 		&codeName,
 		&enableFormatConditionsCalculation,
 		&published,
@@ -110,26 +110,26 @@ func TestSheetPrOptions(t *testing.T) {
 			val1 := deepcopy.Copy(def).(excelize.SheetPrOptionPtr)
 			val2 := deepcopy.Copy(def).(excelize.SheetPrOptionPtr)
 
-			xl := excelize.NewFile()
+			f := excelize.NewFile()
 			// Get the default value
-			assert.NoError(t, xl.GetSheetPrOptions(sheet, def), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, def), opt)
 			// Get again and check
-			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
 			if !assert.Equal(t, val1, def, opt) {
 				t.FailNow()
 			}
 			// Set the same value
-			assert.NoError(t, xl.SetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetPrOptions(sheet, val1), opt)
 			// Get again and check
-			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
 			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
 				t.FailNow()
 			}
 			// Set a different value
-			assert.NoError(t, xl.SetSheetPrOptions(sheet, test.nonDefault), opt)
-			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetPrOptions(sheet, test.nonDefault), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
 			// Get again and compare
-			assert.NoError(t, xl.GetSheetPrOptions(sheet, val2), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val2), opt)
 			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
 				t.FailNow()
 			}
@@ -138,8 +138,8 @@ func TestSheetPrOptions(t *testing.T) {
 				t.FailNow()
 			}
 			// Restore the default value
-			assert.NoError(t, xl.SetSheetPrOptions(sheet, def), opt)
-			assert.NoError(t, xl.GetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetPrOptions(sheet, def), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
 			if !assert.Equal(t, def, val1) {
 				t.FailNow()
 			}
