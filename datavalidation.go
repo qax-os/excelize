@@ -112,7 +112,7 @@ func (dd *DataValidation) SetDropList(keys []string) error {
 	if dataValidationFormulaStrLen < len(formula) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
-	dd.Formula1 = formula
+	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula)
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
@@ -121,12 +121,12 @@ func (dd *DataValidation) SetDropList(keys []string) error {
 func (dd *DataValidation) SetRange(f1, f2 int, t DataValidationType, o DataValidationOperator) error {
 	formula1 := fmt.Sprintf("%d", f1)
 	formula2 := fmt.Sprintf("%d", f2)
-	if dataValidationFormulaStrLen < len(dd.Formula1) || dataValidationFormulaStrLen < len(dd.Formula2) {
+	if dataValidationFormulaStrLen+21 < len(dd.Formula1) || dataValidationFormulaStrLen+21 < len(dd.Formula2) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
 
-	dd.Formula1 = formula1
-	dd.Formula2 = formula2
+	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula1)
+	dd.Formula2 = fmt.Sprintf("<formula2>%s</formula2>", formula2)
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil

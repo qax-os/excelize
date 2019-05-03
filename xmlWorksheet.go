@@ -53,23 +53,27 @@ type xlsxDrawing struct {
 // footers on the first page can differ from those on odd- and even-numbered
 // pages. In the latter case, the first page is not considered an odd page.
 type xlsxHeaderFooter struct {
-	DifferentFirst   bool             `xml:"differentFirst,attr,omitempty"`
-	DifferentOddEven bool             `xml:"differentOddEven,attr,omitempty"`
-	OddHeader        []*xlsxOddHeader `xml:"oddHeader"`
-	OddFooter        []*xlsxOddFooter `xml:"oddFooter"`
+	AlignWithMargins bool           `xml:"alignWithMargins,attr,omitempty"`
+	DifferentFirst   bool           `xml:"differentFirst,attr,omitempty"`
+	DifferentOddEven bool           `xml:"differentOddEven,attr,omitempty"`
+	ScaleWithDoc     bool           `xml:"scaleWithDoc,attr,omitempty"`
+	OddHeader        string         `xml:"oddHeader,omitempty"`
+	OddFooter        string         `xml:"oddFooter,omitempty"`
+	EvenHeader       string         `xml:"evenHeader,omitempty"`
+	EvenFooter       string         `xml:"evenFooter,omitempty"`
+	FirstFooter      string         `xml:"firstFooter,omitempty"`
+	FirstHeader      string         `xml:"firstHeader,omitempty"`
+	DrawingHF        *xlsxDrawingHF `xml:"drawingHF"`
 }
 
-// xlsxOddHeader directly maps the oddHeader element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
-type xlsxOddHeader struct {
-	Content string `xml:",chardata"`
-}
-
-// xlsxOddFooter directly maps the oddFooter element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
-type xlsxOddFooter struct {
+// xlsxDrawingHF (Drawing Reference in Header Footer) specifies the usage of
+// drawing objects to be rendered in the headers and footers of the sheet. It
+// specifies an explicit relationship to the part containing the DrawingML
+// shapes used in the headers and footers. It also indicates where in the
+// headers and footers each shape belongs. One drawing object can appear in
+// each of the left section, center section and right section of a header and
+// a footer.
+type xlsxDrawingHF struct {
 	Content string `xml:",chardata"`
 }
 
@@ -324,16 +328,16 @@ type DataValidation struct {
 	Error            *string `xml:"error,attr"`
 	ErrorStyle       *string `xml:"errorStyle,attr"`
 	ErrorTitle       *string `xml:"errorTitle,attr"`
-	Operator         string  `xml:"operator,attr"`
+	Operator         string  `xml:"operator,attr,omitempty"`
 	Prompt           *string `xml:"prompt,attr"`
-	PromptTitle      *string `xml:"promptTitle"`
-	ShowDropDown     bool    `xml:"showDropDown,attr"`
-	ShowErrorMessage bool    `xml:"showErrorMessage,attr"`
-	ShowInputMessage bool    `xml:"showInputMessage,attr"`
+	PromptTitle      *string `xml:"promptTitle,attr"`
+	ShowDropDown     bool    `xml:"showDropDown,attr,omitempty"`
+	ShowErrorMessage bool    `xml:"showErrorMessage,attr,omitempty"`
+	ShowInputMessage bool    `xml:"showInputMessage,attr,omitempty"`
 	Sqref            string  `xml:"sqref,attr"`
 	Type             string  `xml:"type,attr"`
-	Formula1         string  `xml:"formula1"`
-	Formula2         string  `xml:"formula2"`
+	Formula1         string  `xml:",innerxml"`
+	Formula2         string  `xml:",innerxml"`
 }
 
 // xlsxC directly maps the c element in the namespace
@@ -482,7 +486,7 @@ type xlsxIconSet struct {
 type xlsxCfvo struct {
 	Gte    bool        `xml:"gte,attr,omitempty"`
 	Type   string      `xml:"type,attr,omitempty"`
-	Val    string      `xml:"val,attr"`
+	Val    string      `xml:"val,attr,omitempty"`
 	ExtLst *xlsxExtLst `xml:"extLst"`
 }
 
@@ -626,4 +630,18 @@ type FormatSheetProtection struct {
 	SelectLockedCells   bool
 	SelectUnlockedCells bool
 	Sort                bool
+}
+
+// FormatHeaderFooter directly maps the settings of header and footer.
+type FormatHeaderFooter struct {
+	AlignWithMargins bool
+	DifferentFirst   bool
+	DifferentOddEven bool
+	ScaleWithDoc     bool
+	OddHeader        string
+	OddFooter        string
+	EvenHeader       string
+	EvenFooter       string
+	FirstFooter      string
+	FirstHeader      string
 }
