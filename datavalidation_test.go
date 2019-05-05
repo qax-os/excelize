@@ -19,7 +19,7 @@ import (
 func TestDataValidation(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidation.xlsx")
 
-	xlsx := NewFile()
+	f := NewFile()
 
 	dvRange := NewDataValidation(true)
 	dvRange.Sqref = "A1:B2"
@@ -27,8 +27,8 @@ func TestDataValidation(t *testing.T) {
 	dvRange.SetError(DataValidationErrorStyleStop, "error title", "error body")
 	dvRange.SetError(DataValidationErrorStyleWarning, "error title", "error body")
 	dvRange.SetError(DataValidationErrorStyleInformation, "error title", "error body")
-	xlsx.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+	f.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, f.SaveAs(resultFile)) {
 		t.FailNow()
 	}
 
@@ -36,16 +36,16 @@ func TestDataValidation(t *testing.T) {
 	dvRange.Sqref = "A3:B4"
 	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
 	dvRange.SetInput("input title", "input body")
-	xlsx.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+	f.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, f.SaveAs(resultFile)) {
 		t.FailNow()
 	}
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
 	dvRange.SetDropList([]string{"1", "2", "3"})
-	xlsx.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+	f.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, f.SaveAs(resultFile)) {
 		t.FailNow()
 	}
 }
@@ -53,10 +53,10 @@ func TestDataValidation(t *testing.T) {
 func TestDataValidationError(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidationError.xlsx")
 
-	xlsx := NewFile()
-	xlsx.SetCellStr("Sheet1", "E1", "E1")
-	xlsx.SetCellStr("Sheet1", "E2", "E2")
-	xlsx.SetCellStr("Sheet1", "E3", "E3")
+	f := NewFile()
+	f.SetCellStr("Sheet1", "E1", "E1")
+	f.SetCellStr("Sheet1", "E2", "E2")
+	f.SetCellStr("Sheet1", "E3", "E3")
 
 	dvRange := NewDataValidation(true)
 	dvRange.SetSqref("A7:B8")
@@ -66,8 +66,8 @@ func TestDataValidationError(t *testing.T) {
 	err := dvRange.SetSqrefDropList("$E$1:$E$3", false)
 	assert.EqualError(t, err, "cross-sheet sqref cell are not supported")
 
-	xlsx.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+	f.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, f.SaveAs(resultFile)) {
 		t.FailNow()
 	}
 
@@ -81,8 +81,8 @@ func TestDataValidationError(t *testing.T) {
 	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
 	dvRange.SetSqref("A9:B10")
 
-	xlsx.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, xlsx.SaveAs(resultFile)) {
+	f.AddDataValidation("Sheet1", dvRange)
+	if !assert.NoError(t, f.SaveAs(resultFile)) {
 		t.FailNow()
 	}
 }

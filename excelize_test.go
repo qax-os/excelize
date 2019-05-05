@@ -789,9 +789,9 @@ func TestCopySheet(t *testing.T) {
 	}
 
 	idx := f.NewSheet("CopySheet")
-	assert.EqualError(t, f.CopySheet(1, idx), "sheet sheet1 is not exist")
+	assert.NoError(t, f.CopySheet(1, idx))
 
-	f.SetCellValue("Sheet4", "F1", "Hello")
+	f.SetCellValue("CopySheet", "F1", "Hello")
 	val, err := f.GetCellValue("Sheet1", "F1")
 	assert.NoError(t, err)
 	assert.NotEqual(t, "Hello", val)
@@ -805,8 +805,8 @@ func TestCopySheetError(t *testing.T) {
 		t.FailNow()
 	}
 
-	err = f.CopySheet(0, -1)
-	if !assert.EqualError(t, err, "invalid worksheet index") {
+	assert.EqualError(t, f.copySheet(0, -1), "sheet  is not exist")
+	if !assert.EqualError(t, f.CopySheet(0, -1), "invalid worksheet index") {
 		t.FailNow()
 	}
 

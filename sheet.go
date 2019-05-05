@@ -14,9 +14,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -466,7 +468,7 @@ func (f *File) CopySheet(from, to int) error {
 // copySheet provides a function to duplicate a worksheet by gave source and
 // target worksheet name.
 func (f *File) copySheet(from, to int) error {
-	sheet, err := f.workSheetReader("sheet" + strconv.Itoa(from))
+	sheet, err := f.workSheetReader(f.GetSheetName(from))
 	if err != nil {
 		return err
 	}
@@ -761,6 +763,155 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	return result, nil
 }
 
+// SetHeaderFooter provides a function to set headers and footers by given
+// worksheet name and the control characters.
+//
+// Headers and footers are specified using the following settings fields:
+//
+//     Fields           | Description
+//    ------------------+-----------------------------------------------------------
+//     AlignWithMargins | Align header footer margins with page margins
+//     DifferentFirst   | Different first-page header and footer indicator
+//     DifferentOddEven | Different odd and even page headers and footers indicator
+//     ScaleWithDoc     | Scale header and footer with document scaling
+//     OddFooter        | Odd Page Footer
+//     OddHeader        | Odd Header
+//     EvenFooter       | Even Page Footer
+//     EvenHeader       | Even Page Header
+//     FirstFooter      | First Page Footer
+//     FirstHeader      | First Page Header
+//
+// The following formatting codes can be used in 6 string type fields:
+// OddHeader, OddFooter, EvenHeader, EvenFooter, FirstFooter, FirstHeader
+//
+//     Formatting Code        | Description
+//    ------------------------+-------------------------------------------------------------------------
+//     &&                     | The character "&"
+//                            |
+//     &font-size             | Size of the text font, where font-size is a decimal font size in points
+//                            |
+//     &"font name,font type" | A text font-name string, font name, and a text font-type string,
+//                            | font type
+//                            |
+//     &"-,Regular"           | Regular text format. Toggles bold and italic modes to off
+//                            |
+//     &A                     | Current worksheet's tab name
+//                            |
+//     &B or &"-,Bold"        | Bold text format, from off to on, or vice versa. The default mode is off
+//                            |
+//     &D                     | Current date
+//                            |
+//     &C                     | Center section
+//                            |
+//     &E                     | Double-underline text format
+//                            |
+//     &F                     | Current workbook's file name
+//                            |
+//     &G                     | Drawing object as background
+//                            |
+//     &H                     | Shadow text format
+//                            |
+//     &I or &"-,Italic"      | Italic text format
+//                            |
+//     &K                     | Text font color
+//                            |
+//                            | An RGB Color is specified as RRGGBB
+//                            |
+//                            | A Theme Color is specified as TTSNNN where TT is the theme color Id,
+//                            | S is either "+" or "-" of the tint/shade value, and NNN is the
+//                            | tint/shade value
+//                            |
+//     &L                     | Left section
+//                            |
+//     &N                     | Total number of pages
+//                            |
+//     &O                     | Outline text format
+//                            |
+//     &P[[+|-]n]             | Without the optional suffix, the current page number in decimal
+//                            |
+//     &R                     | Right section
+//                            |
+//     &S                     | Strikethrough text format
+//                            |
+//     &T                     | Current time
+//                            |
+//     &U                     | Single-underline text format. If double-underline mode is on, the next
+//                            | occurrence in a section specifier toggles double-underline mode to off;
+//                            | otherwise, it toggles single-underline mode, from off to on, or vice
+//                            | versa. The default mode is off
+//                            |
+//     &X                     | Superscript text format
+//                            |
+//     &Y                     | Subscript text format
+//                            |
+//     &Z                     | Current workbook's file path
+//
+// For example:
+//
+//    err := f.SetHeaderFooter("Sheet1", &excelize.FormatHeaderFooter{
+//        DifferentFirst:   true,
+//        DifferentOddEven: true,
+//        OddHeader:        "&R&P",
+//        OddFooter:        "&C&F",
+//        EvenHeader:       "&L&P",
+//        EvenFooter:       "&L&D&R&T",
+//        FirstHeader:      `&CCenter &"-,Bold"Bold&"-,Regular"HeaderU+000A&D`,
+//    })
+//
+// This example shows:
+//
+// - The first page has its own header and footer
+//
+// - Odd and even-numbered pages have different headers and footers
+//
+// - Current page number in the right section of odd-page headers
+//
+// - Current workbook's file name in the center section of odd-page footers
+//
+// - Current page number in the left section of even-page headers
+//
+// - Current date in the left section and the current time in the right section
+// of even-page footers
+//
+// - The text "Center Bold Header" on the first line of the center section of
+// the first page, and the date on the second line of the center section of
+// that same page
+//
+// - No footer on the first page
+//
+func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error {
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	if settings == nil {
+		xlsx.HeaderFooter = nil
+		return err
+	}
+
+	v := reflect.ValueOf(*settings)
+	// Check 6 string type fields: OddHeader, OddFooter, EvenHeader, EvenFooter,
+	// FirstFooter, FirstHeader
+	for i := 4; i < v.NumField()-1; i++ {
+		if v.Field(i).Len() >= 255 {
+			return fmt.Errorf("field %s must be less than 255 characters", v.Type().Field(i).Name)
+		}
+	}
+	xlsx.HeaderFooter = &xlsxHeaderFooter{
+		AlignWithMargins: settings.AlignWithMargins,
+		DifferentFirst:   settings.DifferentFirst,
+		DifferentOddEven: settings.DifferentOddEven,
+		ScaleWithDoc:     settings.ScaleWithDoc,
+		OddHeader:        settings.OddHeader,
+		OddFooter:        settings.OddFooter,
+		EvenHeader:       settings.EvenHeader,
+		EvenFooter:       settings.EvenFooter,
+		FirstFooter:      settings.FirstFooter,
+		FirstHeader:      settings.FirstHeader,
+	}
+	return err
+}
+
 // ProtectSheet provides a function to prevent other users from accidentally
 // or deliberately changing, moving, or deleting data in a worksheet. For
 // example, protect Sheet1 with protection settings:
@@ -898,7 +1049,7 @@ func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
 //
 // Available options:
 //   PageLayoutOrientation(string)
-// 	 PageLayoutPaperSize(int)
+//   PageLayoutPaperSize(int)
 //
 // The following shows the paper size sorted by excelize index number:
 //
