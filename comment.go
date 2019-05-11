@@ -277,13 +277,21 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 // countComments provides a function to get comments files count storage in
 // the folder xl.
 func (f *File) countComments() int {
-	count := 0
+	c1, c2 := 0, 0
 	for k := range f.XLSX {
 		if strings.Contains(k, "xl/comments") {
-			count++
+			c1++
 		}
 	}
-	return count
+	for rel := range f.Comments {
+		if strings.Contains(rel, "xl/comments") {
+			c2++
+		}
+	}
+	if c1 < c2 {
+		return c2
+	}
+	return c1
 }
 
 // decodeVMLDrawingReader provides a function to get the pointer to the
