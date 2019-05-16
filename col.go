@@ -9,7 +9,10 @@
 
 package excelize
 
-import "math"
+import (
+	"math"
+	"strings"
+)
 
 // Define the default cell size and EMU unit of measurement.
 const (
@@ -153,6 +156,63 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 	colData.CustomWidth = true
 	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
 	return err
+}
+
+// SetColStyle provides a function to set style of columns by given worksheet
+// name, columns range and style ID.
+//
+// For example set style of column H on Sheet1:
+//
+//    err = f.SetColStyle("Sheet1", "H", style)
+//
+// Set style of columns C:F on Sheet1:
+//
+//    err = f.SetColStyle("Sheet1", "C:F", style)
+//
+func (f *File) SetColStyle(sheet, columns string, styleID int) error {
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	var c1, c2 string
+	var min, max int
+	cols := strings.Split(columns, ":")
+	c1 = cols[0]
+	min, err = ColumnNameToNumber(c1)
+	if err != nil {
+		return err
+	}
+	if len(cols) == 2 {
+		c2 = cols[1]
+		max, err = ColumnNameToNumber(c2)
+		if err != nil {
+			return err
+		}
+	} else {
+		max = min
+	}
+	if max < min {
+		min, max = max, min
+	}
+	if xlsx.Cols == nil {
+		xlsx.Cols = &xlsxCols{}
+	}
+	var find bool
+	for idx, col := range xlsx.Cols.Col {
+		if col.Min == min && col.Max == max {
+			xlsx.Cols.Col[idx].Style = styleID
+			find = true
+		}
+	}
+	if !find {
+		xlsx.Cols.Col = append(xlsx.Cols.Col, xlsxCol{
+			Min:   min,
+			Max:   max,
+			Width: 9,
+			Style: styleID,
+		})
+	}
+	return nil
 }
 
 // SetColWidth provides a function to set the width of a single column or
