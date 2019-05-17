@@ -146,9 +146,8 @@ type xlsxSheets struct {
 	Sheet []xlsxSheet `xml:"sheet"`
 }
 
-// xlsxSheet directly maps the sheet element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxSheet defines a sheet in this workbook. Sheet data is stored in a
+// separate part.
 type xlsxSheet struct {
 	Name    string `xml:"name,attr,omitempty"`
 	SheetID int    `xml:"sheetId,attr,omitempty"`

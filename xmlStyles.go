@@ -82,8 +82,9 @@ type xlsxFonts struct {
 	Font  []*xlsxFont `xml:"font"`
 }
 
-// font directly maps the font element.
-type font struct {
+// xlsxFont directly maps the font element. This element defines the
+// properties for one of the fonts used in this workbook.
+type xlsxFont struct {
 	Name     *attrValString `xml:"name"`
 	Charset  *attrValInt    `xml:"charset"`
 	Family   *attrValInt    `xml:"family"`
@@ -98,12 +99,6 @@ type font struct {
 	Sz       *attrValInt    `xml:"sz"`
 	U        *attrValString `xml:"u"`
 	Scheme   *attrValString `xml:"scheme"`
-}
-
-// xlsxFont directly maps the font element. This element defines the properties
-// for one of the fonts used in this workbook.
-type xlsxFont struct {
-	Font string `xml:",innerxml"`
 }
 
 // xlsxFills directly maps the fills element. This element defines the cell
@@ -262,7 +257,7 @@ type xlsxDxf struct {
 
 // dxf directly maps the dxf element.
 type dxf struct {
-	Font       *font           `xml:"font"`
+	Font       *xlsxFont       `xml:"font"`
 	NumFmt     *xlsxNumFmt     `xml:"numFmt"`
 	Fill       *xlsxFill       `xml:"fill"`
 	Alignment  *xlsxAlignment  `xml:"alignment"`

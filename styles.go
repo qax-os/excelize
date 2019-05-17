@@ -1895,11 +1895,8 @@ func (f *File) NewStyle(style string) (int, error) {
 	numFmtID := setNumFmt(s, fs)
 
 	if fs.Font != nil {
-		font, _ := xml.Marshal(setFont(fs))
 		s.Fonts.Count++
-		s.Fonts.Font = append(s.Fonts.Font, &xlsxFont{
-			Font: string(font[6 : len(font)-7]),
-		})
+		s.Fonts.Font = append(s.Fonts.Font, setFont(fs))
 		fontID = s.Fonts.Count - 1
 	}
 
@@ -1950,7 +1947,7 @@ func (f *File) NewConditionalStyle(style string) (int, error) {
 
 // setFont provides a function to add font style by given cell format
 // settings.
-func setFont(formatStyle *formatStyle) *font {
+func setFont(formatStyle *formatStyle) *xlsxFont {
 	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
 	if formatStyle.Font.Size < 1 {
 		formatStyle.Font.Size = 11
@@ -1958,7 +1955,7 @@ func setFont(formatStyle *formatStyle) *font {
 	if formatStyle.Font.Color == "" {
 		formatStyle.Font.Color = "#000000"
 	}
-	f := font{
+	f := xlsxFont{
 		B:      formatStyle.Font.Bold,
 		I:      formatStyle.Font.Italic,
 		Sz:     &attrValInt{Val: formatStyle.Font.Size},

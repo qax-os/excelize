@@ -369,12 +369,18 @@ func (f *File) GetSheetMap() map[int]string {
 	return sheetMap
 }
 
-// getSheetMap provides a function to get worksheet name and XML file path map of
-// XLSX.
+// getSheetMap provides a function to get worksheet name and XML file path map
+// of XLSX.
 func (f *File) getSheetMap() map[string]string {
-	maps := make(map[string]string)
-	for idx, name := range f.GetSheetMap() {
-		maps[name] = "xl/worksheets/sheet" + strconv.Itoa(idx) + ".xml"
+	content := f.workbookReader()
+	rels := f.workbookRelsReader()
+	maps := map[string]string{}
+	for _, v := range content.Sheets.Sheet {
+		for _, rel := range rels.Relationships {
+			if rel.ID == v.ID {
+				maps[v.Name] = fmt.Sprintf("xl/%s", rel.Target)
+			}
+		}
 	}
 	return maps
 }
