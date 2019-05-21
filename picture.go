@@ -30,6 +30,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 		FPrintsWithSheet: true,
 		FLocksWithSheet:  false,
 		NoChangeAspect:   false,
+		Autofit:          false,
 		OffsetX:          0,
 		OffsetY:          0,
 		XScale:           1.0,
@@ -279,8 +280,10 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	if err != nil {
 		return err
 	}
-	width = int(float64(width) * formatSet.XScale)
-	height = int(float64(height) * formatSet.YScale)
+	width, height, err = f.resizeTo(sheet, cell, width, height, formatSet)
+	if err != nil {
+		return err
+	}
 	col--
 	row--
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
@@ -604,4 +607,61 @@ func (f *File) drawingsWriter() {
 			f.saveFileList(path, v)
 		}
 	}
+}
+
+// calculate the height and width after resizing.
+func (f *File) resizeTo(sheet string, cell string, width, height int, formatSet *formatPicture) (int, int, error) {
+	Width := float64(width)
+	Height := float64(height)
+
+	if formatSet.Autofit {
+		mergeCells, err := f.GetMergeCells(sheet)
+		if err != nil {
+			return width, height, err
+		}
+
+		axis := f.searchMergedCell(mergeCells, cell)
+		cellsX, cellsY, err := f.GetRangeCells(axis)
+		if err != nil {
+			return width, height, err
+		}
+
+		// sum y cells width
+		var cellWidth int
+		for _, cell := range cellsX {
+			colX, _, err := CellNameToCoordinates(cell)
+			if err != nil {
+				return width, height, err
+			}
+			cellWidth += f.getColWidth(sheet, colX)
+		}
+
+		// sum x cells height
+		var cellHeight int
+		for _, cell := range cellsY {
+			_, rowY, err := CellNameToCoordinates(cell)
+			if err != nil {
+				return width, height, err
+			}
+			cellHeight += f.getRowHeight(sheet, rowY)
+		}
+
+		if float64(cellWidth) < Width {
+			asp := float64(cellWidth) / Width
+			Width = float64(cellWidth)
+			Height = Height * asp
+		}
+		if float64(cellHeight) < Height {
+			asp := float64(cellHeight) / Height
+			Height = float64(cellHeight)
+			Width = Width * asp
+		}
+
+		Width = Width - float64(formatSet.OffsetX)
+		Height = Height - float64(formatSet.OffsetY)
+	}
+
+	width = int(Width * formatSet.XScale)
+	height = int(Height * formatSet.YScale)
+	return width, height, nil
 }
