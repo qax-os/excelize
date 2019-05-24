@@ -381,7 +381,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 					Bold:      false,
 					Italic:    false,
 					Underline: "none",
-					Family:    "Calibri",
+					Family:    f.GetDefaultFont(),
 					Size:      11,
 					Color:     "#000000",
 				},

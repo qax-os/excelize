@@ -239,6 +239,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 			},
 		}
 	}
+	defaultFont := f.GetDefaultFont()
 	cmt := xlsxComment{
 		Ref:      cell,
 		AuthorID: 0,
@@ -251,7 +252,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
-						RFont:  &attrValString{Val: "Calibri"},
+						RFont:  &attrValString{Val: defaultFont},
 						Family: &attrValInt{Val: 2},
 					},
 					T: a,
@@ -262,7 +263,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
-						RFont:  &attrValString{Val: "Calibri"},
+						RFont:  &attrValString{Val: defaultFont},
 						Family: &attrValInt{Val: 2},
 					},
 					T: t,
