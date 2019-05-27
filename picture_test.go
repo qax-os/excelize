@@ -44,6 +44,19 @@ func TestAddPicture(t *testing.T) {
 		t.FailNow()
 	}
 
+	// Test add picture to worksheet with autofit.
+	err = xlsx.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"),
+		`{"autofit": true}`)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	err = xlsx.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"),
+		`{"x_offset": 10, "y_offset": 10, "autofit": true}`)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
 	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
