@@ -175,7 +175,7 @@ type xlsxPivotCaches struct {
 
 // xlsxPivotCache directly maps the pivotCache element.
 type xlsxPivotCache struct {
-	CacheID int    `xml:"cacheId,attr,omitempty"`
+	CacheID int    `xml:"cacheId,attr"`
 	RID     string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
