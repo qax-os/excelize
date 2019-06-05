@@ -24,6 +24,7 @@ type xlsxWorksheet struct {
 	SheetData             xlsxSheetData                `xml:"sheetData"`
 	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
 	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
+	CustomSheetViews      *xlsxCustomSheetViews        `xml:"customSheetViews"`
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
 	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
@@ -33,6 +34,8 @@ type xlsxWorksheet struct {
 	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
 	PageSetUp             *xlsxPageSetUp               `xml:"pageSetup"`
 	HeaderFooter          *xlsxHeaderFooter            `xml:"headerFooter"`
+	RowBreaks             *xlsxBreaks                  `xml:"rowBreaks"`
+	ColBreaks             *xlsxBreaks                  `xml:"colBreaks"`
 	Drawing               *xlsxDrawing                 `xml:"drawing"`
 	LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
 	Picture               *xlsxPicture                 `xml:"picture"`
@@ -299,6 +302,63 @@ type xlsxRow struct {
 	C            []xlsxC `xml:"c"`
 }
 
+// xlsxCustomSheetViews directly maps the customSheetViews element. This is a
+// collection of custom sheet views.
+type xlsxCustomSheetViews struct {
+	CustomSheetView []*xlsxCustomSheetView `xml:"customSheetView"`
+}
+
+// xlsxBrk directly maps the row or column break to use when paginating a
+// worksheet.
+type xlsxBrk struct {
+	ID  int  `xml:"id,attr,omitempty"`
+	Min int  `xml:"min,attr,omitempty"`
+	Max int  `xml:"max,attr,omitempty"`
+	Man bool `xml:"man,attr,omitempty"`
+	Pt  bool `xml:"pt,attr,omitempty"`
+}
+
+// xlsxBreaks directly maps a collection of the row or column breaks.
+type xlsxBreaks struct {
+	Brk              *xlsxBrk `xml:"brk"`
+	Count            int      `xml:"count,attr,omitempty"`
+	ManualBreakCount int      `xml:"manualBreakCount,attr,omitempty"`
+}
+
+// xlsxCustomSheetView directly maps the customSheetView element.
+type xlsxCustomSheetView struct {
+	Pane           *xlsxPane         `xml:"pane"`
+	Selection      *xlsxSelection    `xml:"selection"`
+	RowBreaks      *xlsxBreaks       `xml:"rowBreaks"`
+	ColBreaks      *xlsxBreaks       `xml:"colBreaks"`
+	PageMargins    *xlsxPageMargins  `xml:"pageMargins"`
+	PrintOptions   *xlsxPrintOptions `xml:"printOptions"`
+	PageSetup      *xlsxPageSetUp    `xml:"pageSetup"`
+	HeaderFooter   *xlsxHeaderFooter `xml:"headerFooter"`
+	AutoFilter     *xlsxAutoFilter   `xml:"autoFilter"`
+	ExtLst         *xlsxExt          `xml:"extLst"`
+	GUID           string            `xml:"guid,attr"`
+	Scale          int               `xml:"scale,attr,omitempty"`
+	ColorID        int               `xml:"colorId,attr,omitempty"`
+	ShowPageBreaks bool              `xml:"showPageBreaks,attr,omitempty"`
+	ShowFormulas   bool              `xml:"showFormulas,attr,omitempty"`
+	ShowGridLines  bool              `xml:"showGridLines,attr,omitempty"`
+	ShowRowCol     bool              `xml:"showRowCol,attr,omitempty"`
+	OutlineSymbols bool              `xml:"outlineSymbols,attr,omitempty"`
+	ZeroValues     bool              `xml:"zeroValues,attr,omitempty"`
+	FitToPage      bool              `xml:"fitToPage,attr,omitempty"`
+	PrintArea      bool              `xml:"printArea,attr,omitempty"`
+	Filter         bool              `xml:"filter,attr,omitempty"`
+	ShowAutoFilter bool              `xml:"showAutoFilter,attr,omitempty"`
+	HiddenRows     bool              `xml:"hiddenRows,attr,omitempty"`
+	HiddenColumns  bool              `xml:"hiddenColumns,attr,omitempty"`
+	State          string            `xml:"state,attr,omitempty"`
+	FilterUnique   bool              `xml:"filterUnique,attr,omitempty"`
+	View           string            `xml:"view,attr,omitempty"`
+	ShowRuler      bool              `xml:"showRuler,attr,omitempty"`
+	TopLeftCell    string            `xml:"topLeftCell,attr,omitempty"`
+}
+
 // xlsxMergeCell directly maps the mergeCell element. A single merged cell.
 type xlsxMergeCell struct {
 	Ref string `xml:"ref,attr,omitempty"`
@@ -389,26 +449,26 @@ type xlsxF struct {
 // enforce when the sheet is protected.
 type xlsxSheetProtection struct {
 	AlgorithmName       string `xml:"algorithmName,attr,omitempty"`
-	AutoFilter          bool   `xml:"autoFilter,attr,omitempty"`
-	DeleteColumns       bool   `xml:"deleteColumns,attr,omitempty"`
-	DeleteRows          bool   `xml:"deleteRows,attr,omitempty"`
+	Password            string `xml:"password,attr,omitempty"`
+	HashValue           string `xml:"hashValue,attr,omitempty"`
+	SaltValue           string `xml:"saltValue,attr,omitempty"`
+	SpinCount           int    `xml:"spinCount,attr,omitempty"`
+	Sheet               bool   `xml:"sheet,attr,omitempty"`
+	Objects             bool   `xml:"objects,attr,omitempty"`
+	Scenarios           bool   `xml:"scenarios,attr,omitempty"`
 	FormatCells         bool   `xml:"formatCells,attr,omitempty"`
 	FormatColumns       bool   `xml:"formatColumns,attr,omitempty"`
 	FormatRows          bool   `xml:"formatRows,attr,omitempty"`
-	HashValue           string `xml:"hashValue,attr,omitempty"`
 	InsertColumns       bool   `xml:"insertColumns,attr,omitempty"`
-	InsertHyperlinks    bool   `xml:"insertHyperlinks,attr,omitempty"`
 	InsertRows          bool   `xml:"insertRows,attr,omitempty"`
-	Objects             bool   `xml:"objects,attr,omitempty"`
-	Password            string `xml:"password,attr,omitempty"`
-	PivotTables         bool   `xml:"pivotTables,attr,omitempty"`
-	SaltValue           string `xml:"saltValue,attr,omitempty"`
-	Scenarios           bool   `xml:"scenarios,attr,omitempty"`
+	InsertHyperlinks    bool   `xml:"insertHyperlinks,attr,omitempty"`
+	DeleteColumns       bool   `xml:"deleteColumns,attr,omitempty"`
+	DeleteRows          bool   `xml:"deleteRows,attr,omitempty"`
 	SelectLockedCells   bool   `xml:"selectLockedCells,attr,omitempty"`
-	SelectUnlockedCells bool   `xml:"selectUnlockedCells,attr,omitempty"`
-	Sheet               bool   `xml:"sheet,attr,omitempty"`
 	Sort                bool   `xml:"sort,attr,omitempty"`
-	SpinCount           int    `xml:"spinCount,attr,omitempty"`
+	AutoFilter          bool   `xml:"autoFilter,attr,omitempty"`
+	PivotTables         bool   `xml:"pivotTables,attr,omitempty"`
+	SelectUnlockedCells bool   `xml:"selectUnlockedCells,attr,omitempty"`
 }
 
 // xlsxPhoneticPr (Phonetic Properties) represents a collection of phonetic

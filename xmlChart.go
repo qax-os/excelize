@@ -11,66 +11,66 @@ package excelize
 
 import "encoding/xml"
 
-// xlsxChartSpace directly maps the c:chartSpace element. The chart namespace in
+// xlsxChartSpace directly maps the chartSpace element. The chart namespace in
 // DrawingML is for representing visualizations of numeric data with column
 // charts, pie charts, scatter charts, or other types of charts.
 type xlsxChartSpace struct {
-	XMLName        xml.Name        `xml:"c:chartSpace"`
+	XMLName        xml.Name        `xml:"http://schemas.openxmlformats.org/drawingml/2006/chart chartSpace"`
 	XMLNSc         string          `xml:"xmlns:c,attr"`
 	XMLNSa         string          `xml:"xmlns:a,attr"`
 	XMLNSr         string          `xml:"xmlns:r,attr"`
 	XMLNSc16r2     string          `xml:"xmlns:c16r2,attr"`
-	Date1904       *attrValBool    `xml:"c:date1904"`
-	Lang           *attrValString  `xml:"c:lang"`
-	RoundedCorners *attrValBool    `xml:"c:roundedCorners"`
-	Chart          cChart          `xml:"c:chart"`
-	SpPr           *cSpPr          `xml:"c:spPr"`
-	TxPr           *cTxPr          `xml:"c:txPr"`
-	PrintSettings  *cPrintSettings `xml:"c:printSettings"`
+	Date1904       *attrValBool    `xml:"date1904"`
+	Lang           *attrValString  `xml:"lang"`
+	RoundedCorners *attrValBool    `xml:"roundedCorners"`
+	Chart          cChart          `xml:"chart"`
+	SpPr           *cSpPr          `xml:"spPr"`
+	TxPr           *cTxPr          `xml:"txPr"`
+	PrintSettings  *cPrintSettings `xml:"printSettings"`
 }
 
-// cThicknessSpPr directly maps the element that specifies the thickness of the
-// walls or floor as a percentage of the largest dimension of the plot volume
-// and SpPr element.
+// cThicknessSpPr directly maps the element that specifies the thickness of
+// the walls or floor as a percentage of the largest dimension of the plot
+// volume and SpPr element.
 type cThicknessSpPr struct {
-	Thickness *attrValInt `xml:"c:thickness"`
-	SpPr      *cSpPr      `xml:"c:spPr"`
+	Thickness *attrValInt `xml:"thickness"`
+	SpPr      *cSpPr      `xml:"spPr"`
 }
 
-// cChart (Chart) directly maps the c:chart element. This element specifies a
+// cChart (Chart) directly maps the chart element. This element specifies a
 // title.
 type cChart struct {
-	Title            *cTitle            `xml:"c:title"`
-	AutoTitleDeleted *cAutoTitleDeleted `xml:"c:autoTitleDeleted"`
-	View3D           *cView3D           `xml:"c:view3D"`
-	Floor            *cThicknessSpPr    `xml:"c:floor"`
-	SideWall         *cThicknessSpPr    `xml:"c:sideWall"`
-	BackWall         *cThicknessSpPr    `xml:"c:backWall"`
-	PlotArea         *cPlotArea         `xml:"c:plotArea"`
-	Legend           *cLegend           `xml:"c:legend"`
-	PlotVisOnly      *attrValBool       `xml:"c:plotVisOnly"`
-	DispBlanksAs     *attrValString     `xml:"c:dispBlanksAs"`
-	ShowDLblsOverMax *attrValBool       `xml:"c:showDLblsOverMax"`
+	Title            *cTitle            `xml:"title"`
+	AutoTitleDeleted *cAutoTitleDeleted `xml:"autoTitleDeleted"`
+	View3D           *cView3D           `xml:"view3D"`
+	Floor            *cThicknessSpPr    `xml:"floor"`
+	SideWall         *cThicknessSpPr    `xml:"sideWall"`
+	BackWall         *cThicknessSpPr    `xml:"backWall"`
+	PlotArea         *cPlotArea         `xml:"plotArea"`
+	Legend           *cLegend           `xml:"legend"`
+	PlotVisOnly      *attrValBool       `xml:"plotVisOnly"`
+	DispBlanksAs     *attrValString     `xml:"dispBlanksAs"`
+	ShowDLblsOverMax *attrValBool       `xml:"showDLblsOverMax"`
 }
 
-// cTitle (Title) directly maps the c:title element. This element specifies a
+// cTitle (Title) directly maps the title element. This element specifies a
 // title.
 type cTitle struct {
-	Tx      cTx         `xml:"c:tx,omitempty"`
-	Layout  string      `xml:"c:layout,omitempty"`
-	Overlay attrValBool `xml:"c:overlay,omitempty"`
-	SpPr    cSpPr       `xml:"c:spPr,omitempty"`
-	TxPr    cTxPr       `xml:"c:txPr,omitempty"`
+	Tx      cTx         `xml:"tx,omitempty"`
+	Layout  string      `xml:"layout,omitempty"`
+	Overlay attrValBool `xml:"overlay,omitempty"`
+	SpPr    cSpPr       `xml:"spPr,omitempty"`
+	TxPr    cTxPr       `xml:"txPr,omitempty"`
 }
 
-// cTx (Chart Text) directly maps the c:tx element. This element specifies text
+// cTx (Chart Text) directly maps the tx element. This element specifies text
 // to use on a chart, including rich text formatting.
 type cTx struct {
-	StrRef *cStrRef `xml:"c:strRef"`
-	Rich   *cRich   `xml:"c:rich,omitempty"`
+	StrRef *cStrRef `xml:"strRef"`
+	Rich   *cRich   `xml:"rich,omitempty"`
 }
 
-// cRich (Rich Text) directly maps the c:rich element. This element contains a
+// cRich (Rich Text) directly maps the rich element. This element contains a
 // string with rich text formatting.
 type cRich struct {
 	BodyPr   aBodyPr `xml:"a:bodyPr,omitempty"`
@@ -186,7 +186,7 @@ type aR struct {
 	T   string `xml:"a:t,omitempty"`
 }
 
-// aRPr (Run Properties) directly maps the c:rPr element. This element
+// aRPr (Run Properties) directly maps the rPr element. This element
 // specifies a set of run properties which shall be applied to the contents of
 // the parent run after all style formatting has been applied to the text. These
 // properties are defined as direct formatting, since they are directly applied
@@ -217,7 +217,7 @@ type aRPr struct {
 	Cs         *aCs        `xml:"a:cs"`
 }
 
-// cSpPr (Shape Properties) directly maps the c:spPr element. This element
+// cSpPr (Shape Properties) directly maps the spPr element. This element
 // specifies the visual shape properties that can be applied to a shape. These
 // properties include the shape fill, outline, geometry, effects, and 3D
 // orientation.
@@ -259,7 +259,7 @@ type aLn struct {
 	SolidFill *aSolidFill `xml:"a:solidFill"`
 }
 
-// cTxPr (Text Properties) directly maps the c:txPr element. This element
+// cTxPr (Text Properties) directly maps the txPr element. This element
 // specifies text formatting. The lstStyle element is not supported.
 type cTxPr struct {
 	BodyPr   aBodyPr `xml:"a:bodyPr,omitempty"`
@@ -282,207 +282,207 @@ type aEndParaRPr struct {
 }
 
 // cAutoTitleDeleted (Auto Title Is Deleted) directly maps the
-// c:autoTitleDeleted element. This element specifies the title shall not be
+// autoTitleDeleted element. This element specifies the title shall not be
 // shown for this chart.
 type cAutoTitleDeleted struct {
 	Val bool `xml:"val,attr"`
 }
 
-// cView3D (View In 3D) directly maps the c:view3D element. This element
+// cView3D (View In 3D) directly maps the view3D element. This element
 // specifies the 3-D view of the chart.
 type cView3D struct {
-	RotX         *attrValInt `xml:"c:rotX"`
-	RotY         *attrValInt `xml:"c:rotY"`
-	DepthPercent *attrValInt `xml:"c:depthPercent"`
-	RAngAx       *attrValInt `xml:"c:rAngAx"`
+	RotX         *attrValInt `xml:"rotX"`
+	RotY         *attrValInt `xml:"rotY"`
+	DepthPercent *attrValInt `xml:"depthPercent"`
+	RAngAx       *attrValInt `xml:"rAngAx"`
 }
 
-// cPlotArea directly maps the c:plotArea element. This element specifies the
+// cPlotArea directly maps the plotArea element. This element specifies the
 // plot area of the chart.
 type cPlotArea struct {
-	Layout        *string  `xml:"c:layout"`
-	AreaChart     *cCharts `xml:"c:areaChart"`
-	Area3DChart   *cCharts `xml:"c:area3DChart"`
-	BarChart      *cCharts `xml:"c:barChart"`
-	Bar3DChart    *cCharts `xml:"c:bar3DChart"`
-	DoughnutChart *cCharts `xml:"c:doughnutChart"`
-	LineChart     *cCharts `xml:"c:lineChart"`
-	PieChart      *cCharts `xml:"c:pieChart"`
-	Pie3DChart    *cCharts `xml:"c:pie3DChart"`
-	RadarChart    *cCharts `xml:"c:radarChart"`
-	ScatterChart  *cCharts `xml:"c:scatterChart"`
-	CatAx         []*cAxs  `xml:"c:catAx"`
-	ValAx         []*cAxs  `xml:"c:valAx"`
-	SpPr          *cSpPr   `xml:"c:spPr"`
+	Layout        *string  `xml:"layout"`
+	AreaChart     *cCharts `xml:"areaChart"`
+	Area3DChart   *cCharts `xml:"area3DChart"`
+	BarChart      *cCharts `xml:"barChart"`
+	Bar3DChart    *cCharts `xml:"bar3DChart"`
+	DoughnutChart *cCharts `xml:"doughnutChart"`
+	LineChart     *cCharts `xml:"lineChart"`
+	PieChart      *cCharts `xml:"pieChart"`
+	Pie3DChart    *cCharts `xml:"pie3DChart"`
+	RadarChart    *cCharts `xml:"radarChart"`
+	ScatterChart  *cCharts `xml:"scatterChart"`
+	CatAx         []*cAxs  `xml:"catAx"`
+	ValAx         []*cAxs  `xml:"valAx"`
+	SpPr          *cSpPr   `xml:"spPr"`
 }
 
 // cCharts specifies the common element of the chart.
 type cCharts struct {
-	BarDir       *attrValString `xml:"c:barDir"`
-	Grouping     *attrValString `xml:"c:grouping"`
-	RadarStyle   *attrValString `xml:"c:radarStyle"`
-	ScatterStyle *attrValString `xml:"c:scatterStyle"`
-	VaryColors   *attrValBool   `xml:"c:varyColors"`
-	Ser          *[]cSer        `xml:"c:ser"`
-	DLbls        *cDLbls        `xml:"c:dLbls"`
-	HoleSize     *attrValInt    `xml:"c:holeSize"`
-	Smooth       *attrValBool   `xml:"c:smooth"`
-	Overlap      *attrValInt    `xml:"c:overlap"`
-	AxID         []*attrValInt  `xml:"c:axId"`
+	BarDir       *attrValString `xml:"barDir"`
+	Grouping     *attrValString `xml:"grouping"`
+	RadarStyle   *attrValString `xml:"radarStyle"`
+	ScatterStyle *attrValString `xml:"scatterStyle"`
+	VaryColors   *attrValBool   `xml:"varyColors"`
+	Ser          *[]cSer        `xml:"ser"`
+	DLbls        *cDLbls        `xml:"dLbls"`
+	HoleSize     *attrValInt    `xml:"holeSize"`
+	Smooth       *attrValBool   `xml:"smooth"`
+	Overlap      *attrValInt    `xml:"overlap"`
+	AxID         []*attrValInt  `xml:"axId"`
 }
 
-// cAxs directly maps the c:catAx and c:valAx element.
+// cAxs directly maps the catAx and valAx element.
 type cAxs struct {
-	AxID          *attrValInt    `xml:"c:axId"`
-	Scaling       *cScaling      `xml:"c:scaling"`
-	Delete        *attrValBool   `xml:"c:delete"`
-	AxPos         *attrValString `xml:"c:axPos"`
-	NumFmt        *cNumFmt       `xml:"c:numFmt"`
-	MajorTickMark *attrValString `xml:"c:majorTickMark"`
-	MinorTickMark *attrValString `xml:"c:minorTickMark"`
-	TickLblPos    *attrValString `xml:"c:tickLblPos"`
-	SpPr          *cSpPr         `xml:"c:spPr"`
-	TxPr          *cTxPr         `xml:"c:txPr"`
-	CrossAx       *attrValInt    `xml:"c:crossAx"`
-	Crosses       *attrValString `xml:"c:crosses"`
-	CrossBetween  *attrValString `xml:"c:crossBetween"`
-	Auto          *attrValBool   `xml:"c:auto"`
-	LblAlgn       *attrValString `xml:"c:lblAlgn"`
-	LblOffset     *attrValInt    `xml:"c:lblOffset"`
-	NoMultiLvlLbl *attrValBool   `xml:"c:noMultiLvlLbl"`
+	AxID          *attrValInt    `xml:"axId"`
+	Scaling       *cScaling      `xml:"scaling"`
+	Delete        *attrValBool   `xml:"delete"`
+	AxPos         *attrValString `xml:"axPos"`
+	NumFmt        *cNumFmt       `xml:"numFmt"`
+	MajorTickMark *attrValString `xml:"majorTickMark"`
+	MinorTickMark *attrValString `xml:"minorTickMark"`
+	TickLblPos    *attrValString `xml:"tickLblPos"`
+	SpPr          *cSpPr         `xml:"spPr"`
+	TxPr          *cTxPr         `xml:"txPr"`
+	CrossAx       *attrValInt    `xml:"crossAx"`
+	Crosses       *attrValString `xml:"crosses"`
+	CrossBetween  *attrValString `xml:"crossBetween"`
+	Auto          *attrValBool   `xml:"auto"`
+	LblAlgn       *attrValString `xml:"lblAlgn"`
+	LblOffset     *attrValInt    `xml:"lblOffset"`
+	NoMultiLvlLbl *attrValBool   `xml:"noMultiLvlLbl"`
 }
 
-// cScaling directly maps the c:scaling element. This element contains
+// cScaling directly maps the scaling element. This element contains
 // additional axis settings.
 type cScaling struct {
-	Orientation *attrValString `xml:"c:orientation"`
-	Max         *attrValFloat  `xml:"c:max"`
-	Min         *attrValFloat  `xml:"c:min"`
+	Orientation *attrValString `xml:"orientation"`
+	Max         *attrValFloat  `xml:"max"`
+	Min         *attrValFloat  `xml:"min"`
 }
 
-// cNumFmt (Numbering Format) directly maps the c:numFmt element. This element
+// cNumFmt (Numbering Format) directly maps the numFmt element. This element
 // specifies number formatting for the parent element.
 type cNumFmt struct {
 	FormatCode   string `xml:"formatCode,attr"`
 	SourceLinked bool   `xml:"sourceLinked,attr"`
 }
 
-// cSer directly maps the c:ser element. This element specifies a series on a
+// cSer directly maps the ser element. This element specifies a series on a
 // chart.
 type cSer struct {
-	IDx              *attrValInt  `xml:"c:idx"`
-	Order            *attrValInt  `xml:"c:order"`
-	Tx               *cTx         `xml:"c:tx"`
-	SpPr             *cSpPr       `xml:"c:spPr"`
-	DPt              []*cDPt      `xml:"c:dPt"`
-	DLbls            *cDLbls      `xml:"c:dLbls"`
-	Marker           *cMarker     `xml:"c:marker"`
-	InvertIfNegative *attrValBool `xml:"c:invertIfNegative"`
-	Cat              *cCat        `xml:"c:cat"`
-	Val              *cVal        `xml:"c:val"`
-	XVal             *cCat        `xml:"c:xVal"`
-	YVal             *cVal        `xml:"c:yVal"`
-	Smooth           *attrValBool `xml:"c:smooth"`
+	IDx              *attrValInt  `xml:"idx"`
+	Order            *attrValInt  `xml:"order"`
+	Tx               *cTx         `xml:"tx"`
+	SpPr             *cSpPr       `xml:"spPr"`
+	DPt              []*cDPt      `xml:"dPt"`
+	DLbls            *cDLbls      `xml:"dLbls"`
+	Marker           *cMarker     `xml:"marker"`
+	InvertIfNegative *attrValBool `xml:"invertIfNegative"`
+	Cat              *cCat        `xml:"cat"`
+	Val              *cVal        `xml:"val"`
+	XVal             *cCat        `xml:"xVal"`
+	YVal             *cVal        `xml:"yVal"`
+	Smooth           *attrValBool `xml:"smooth"`
 }
 
-// cMarker (Marker) directly maps the c:marker element. This element specifies a
+// cMarker (Marker) directly maps the marker element. This element specifies a
 // data marker.
 type cMarker struct {
-	Symbol *attrValString `xml:"c:symbol"`
-	Size   *attrValInt    `xml:"c:size"`
-	SpPr   *cSpPr         `xml:"c:spPr"`
+	Symbol *attrValString `xml:"symbol"`
+	Size   *attrValInt    `xml:"size"`
+	SpPr   *cSpPr         `xml:"spPr"`
 }
 
-// cDPt (Data Point) directly maps the c:dPt element. This element specifies a
+// cDPt (Data Point) directly maps the dPt element. This element specifies a
 // single data point.
 type cDPt struct {
-	IDx      *attrValInt  `xml:"c:idx"`
-	Bubble3D *attrValBool `xml:"c:bubble3D"`
-	SpPr     *cSpPr       `xml:"c:spPr"`
+	IDx      *attrValInt  `xml:"idx"`
+	Bubble3D *attrValBool `xml:"bubble3D"`
+	SpPr     *cSpPr       `xml:"spPr"`
 }
 
-// cCat (Category Axis Data) directly maps the c:cat element. This element
+// cCat (Category Axis Data) directly maps the cat element. This element
 // specifies the data used for the category axis.
 type cCat struct {
-	StrRef *cStrRef `xml:"c:strRef"`
+	StrRef *cStrRef `xml:"strRef"`
 }
 
-// cStrRef (String Reference) directly maps the c:strRef element. This element
+// cStrRef (String Reference) directly maps the strRef element. This element
 // specifies a reference to data for a single data label or title with a cache
 // of the last values used.
 type cStrRef struct {
-	F        string     `xml:"c:f"`
-	StrCache *cStrCache `xml:"c:strCache"`
+	F        string     `xml:"f"`
+	StrCache *cStrCache `xml:"strCache"`
 }
 
-// cStrCache (String Cache) directly maps the c:strCache element. This element
+// cStrCache (String Cache) directly maps the strCache element. This element
 // specifies the last string data used for a chart.
 type cStrCache struct {
-	Pt      []*cPt      `xml:"c:pt"`
-	PtCount *attrValInt `xml:"c:ptCount"`
+	Pt      []*cPt      `xml:"pt"`
+	PtCount *attrValInt `xml:"ptCount"`
 }
 
-// cPt directly maps the c:pt element. This element specifies data for a
+// cPt directly maps the pt element. This element specifies data for a
 // particular data point.
 type cPt struct {
 	IDx int     `xml:"idx,attr"`
-	V   *string `xml:"c:v"`
+	V   *string `xml:"v"`
 }
 
-// cVal directly maps the c:val element. This element specifies the data values
+// cVal directly maps the val element. This element specifies the data values
 // which shall be used to define the location of data markers on a chart.
 type cVal struct {
-	NumRef *cNumRef `xml:"c:numRef"`
+	NumRef *cNumRef `xml:"numRef"`
 }
 
-// cNumRef directly maps the c:numRef element. This element specifies a
+// cNumRef directly maps the numRef element. This element specifies a
 // reference to numeric data with a cache of the last values used.
 type cNumRef struct {
-	F        string     `xml:"c:f"`
-	NumCache *cNumCache `xml:"c:numCache"`
+	F        string     `xml:"f"`
+	NumCache *cNumCache `xml:"numCache"`
 }
 
-// cNumCache directly maps the c:numCache element. This element specifies the
+// cNumCache directly maps the numCache element. This element specifies the
 // last data shown on the chart for a series.
 type cNumCache struct {
-	FormatCode string      `xml:"c:formatCode"`
-	Pt         []*cPt      `xml:"c:pt"`
-	PtCount    *attrValInt `xml:"c:ptCount"`
+	FormatCode string      `xml:"formatCode"`
+	Pt         []*cPt      `xml:"pt"`
+	PtCount    *attrValInt `xml:"ptCount"`
 }
 
-// cDLbls (Data Lables) directly maps the c:dLbls element. This element serves
+// cDLbls (Data Lables) directly maps the dLbls element. This element serves
 // as a root element that specifies the settings for the data labels for an
 // entire series or the entire chart. It contains child elements that specify
 // the specific formatting and positioning settings.
 type cDLbls struct {
-	ShowLegendKey   *attrValBool `xml:"c:showLegendKey"`
-	ShowVal         *attrValBool `xml:"c:showVal"`
-	ShowCatName     *attrValBool `xml:"c:showCatName"`
-	ShowSerName     *attrValBool `xml:"c:showSerName"`
-	ShowPercent     *attrValBool `xml:"c:showPercent"`
-	ShowBubbleSize  *attrValBool `xml:"c:showBubbleSize"`
-	ShowLeaderLines *attrValBool `xml:"c:showLeaderLines"`
+	ShowLegendKey   *attrValBool `xml:"showLegendKey"`
+	ShowVal         *attrValBool `xml:"showVal"`
+	ShowCatName     *attrValBool `xml:"showCatName"`
+	ShowSerName     *attrValBool `xml:"showSerName"`
+	ShowPercent     *attrValBool `xml:"showPercent"`
+	ShowBubbleSize  *attrValBool `xml:"showBubbleSize"`
+	ShowLeaderLines *attrValBool `xml:"showLeaderLines"`
 }
 
-// cLegend (Legend) directly maps the c:legend element. This element specifies
+// cLegend (Legend) directly maps the legend element. This element specifies
 // the legend.
 type cLegend struct {
-	Layout    *string        `xml:"c:layout"`
-	LegendPos *attrValString `xml:"c:legendPos"`
-	Overlay   *attrValBool   `xml:"c:overlay"`
-	SpPr      *cSpPr         `xml:"c:spPr"`
-	TxPr      *cTxPr         `xml:"c:txPr"`
+	Layout    *string        `xml:"layout"`
+	LegendPos *attrValString `xml:"legendPos"`
+	Overlay   *attrValBool   `xml:"overlay"`
+	SpPr      *cSpPr         `xml:"spPr"`
+	TxPr      *cTxPr         `xml:"txPr"`
 }
 
-// cPrintSettings directly maps the c:printSettings element. This element
+// cPrintSettings directly maps the printSettings element. This element
 // specifies the print settings for the chart.
 type cPrintSettings struct {
-	HeaderFooter *string       `xml:"c:headerFooter"`
-	PageMargins  *cPageMargins `xml:"c:pageMargins"`
-	PageSetup    *string       `xml:"c:pageSetup"`
+	HeaderFooter *string       `xml:"headerFooter"`
+	PageMargins  *cPageMargins `xml:"pageMargins"`
+	PageSetup    *string       `xml:"pageSetup"`
 }
 
-// cPageMargins directly maps the c:pageMargins element. This element specifies
+// cPageMargins directly maps the pageMargins element. This element specifies
 // the page margins for a chart.
 type cPageMargins struct {
 	B      float64 `xml:"b,attr"`
