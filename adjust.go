@@ -27,8 +27,7 @@ const (
 // row: Index number of the row we're inserting/deleting before
 // offset: Number of rows/column to insert/delete negative values indicate deletion
 //
-// TODO: adjustCalcChain, adjustPageBreaks, adjustComments,
-// adjustDataValidations, adjustProtectedCells
+// TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
 //
 func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
 	xlsx, err := f.workSheetReader(sheet)
@@ -47,7 +46,9 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err = f.adjustAutoFilter(xlsx, dir, num, offset); err != nil {
 		return err
 	}
-
+	if err = f.adjustCalcChain(dir, num, offset); err != nil {
+		return err
+	}
 	checkSheet(xlsx)
 	checkRow(xlsx)
 	return nil
@@ -240,6 +241,31 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 		}
 
 		areaData.Ref = firstCell + ":" + lastCell
+	}
+	return nil
+}
+
+// adjustCalcChain provides a function to update the calculation chain when
+// inserting or deleting rows or columns.
+func (f *File) adjustCalcChain(dir adjustDirection, num, offset int) error {
+	if f.CalcChain == nil {
+		return nil
+	}
+	for index, c := range f.CalcChain.C {
+		colNum, rowNum, err := CellNameToCoordinates(c.R)
+		if err != nil {
+			return err
+		}
+		if dir == rows && num <= rowNum {
+			if newRow := rowNum + offset; newRow > 0 {
+				f.CalcChain.C[index].R, _ = CoordinatesToCellName(colNum, newRow)
+			}
+		}
+		if dir == columns && num <= colNum {
+			if newCol := colNum + offset; newCol > 0 {
+				f.CalcChain.C[index].R, _ = CoordinatesToCellName(newCol, rowNum)
+			}
+		}
 	}
 	return nil
 }

@@ -88,13 +88,13 @@ type xlsxFont struct {
 	Name     *attrValString `xml:"name"`
 	Charset  *attrValInt    `xml:"charset"`
 	Family   *attrValInt    `xml:"family"`
-	B        bool           `xml:"b,omitempty"`
-	I        bool           `xml:"i,omitempty"`
-	Strike   bool           `xml:"strike,omitempty"`
-	Outline  bool           `xml:"outline,omitempty"`
-	Shadow   bool           `xml:"shadow,omitempty"`
-	Condense bool           `xml:"condense,omitempty"`
-	Extend   bool           `xml:"extend,omitempty"`
+	B        *bool          `xml:"b,omitempty"`
+	I        *bool          `xml:"i,omitempty"`
+	Strike   *bool          `xml:"strike,omitempty"`
+	Outline  *bool          `xml:"outline,omitempty"`
+	Shadow   *bool          `xml:"shadow,omitempty"`
+	Condense *bool          `xml:"condense,omitempty"`
+	Extend   *bool          `xml:"extend,omitempty"`
 	Color    *xlsxColor     `xml:"color"`
 	Sz       *attrValFloat  `xml:"sz"`
 	U        *attrValString `xml:"u"`

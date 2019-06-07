@@ -439,6 +439,10 @@ func (f *File) RemoveRow(sheet string, row int) error {
 //
 //    err := f.InsertRow("Sheet1", 3)
 //
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
 func (f *File) InsertRow(sheet string, row int) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)

@@ -527,7 +527,7 @@ func (f *File) SetSheetVisible(name string, visible bool) error {
 		}
 	}
 	for k, v := range content.Sheets.Sheet {
-		xlsx, err := f.workSheetReader(f.GetSheetMap()[k])
+		xlsx, err := f.workSheetReader(v.Name)
 		if err != nil {
 			return err
 		}

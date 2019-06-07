@@ -1979,8 +1979,8 @@ func (f *File) setFont(formatStyle *formatStyle) *xlsxFont {
 		formatStyle.Font.Color = "#000000"
 	}
 	fnt := xlsxFont{
-		B:      formatStyle.Font.Bold,
-		I:      formatStyle.Font.Italic,
+		B:      &formatStyle.Font.Bold,
+		I:      &formatStyle.Font.Italic,
 		Sz:     &attrValFloat{Val: formatStyle.Font.Size},
 		Color:  &xlsxColor{RGB: getPaletteColor(formatStyle.Font.Color)},
 		Name:   &attrValString{Val: formatStyle.Font.Family},
