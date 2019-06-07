@@ -209,7 +209,7 @@ type aRPr struct {
 	SmtID      uint64      `xml:"smtId,attr,omitempty"`
 	Spc        int         `xml:"spc,attr"`
 	Strike     string      `xml:"strike,attr,omitempty"`
-	Sz         int         `xml:"sz,attr,omitempty"`
+	Sz         float64     `xml:"sz,attr,omitempty"`
 	U          string      `xml:"u,attr,omitempty"`
 	SolidFill  *aSolidFill `xml:"a:solidFill"`
 	Latin      *aLatin     `xml:"a:latin"`

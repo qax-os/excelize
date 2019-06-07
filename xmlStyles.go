@@ -96,7 +96,7 @@ type xlsxFont struct {
 	Condense bool           `xml:"condense,omitempty"`
 	Extend   bool           `xml:"extend,omitempty"`
 	Color    *xlsxColor     `xml:"color"`
-	Sz       *attrValInt    `xml:"sz"`
+	Sz       *attrValFloat  `xml:"sz"`
 	U        *attrValString `xml:"u"`
 	Scheme   *attrValString `xml:"scheme"`
 }
@@ -315,12 +315,12 @@ type xlsxStyleColors struct {
 
 // formatFont directly maps the styles settings of the fonts.
 type formatFont struct {
-	Bold      bool   `json:"bold"`
-	Italic    bool   `json:"italic"`
-	Underline string `json:"underline"`
-	Family    string `json:"family"`
-	Size      int    `json:"size"`
-	Color     string `json:"color"`
+	Bold      bool    `json:"bold"`
+	Italic    bool    `json:"italic"`
+	Underline string  `json:"underline"`
+	Family    string  `json:"family"`
+	Size      float64 `json:"size"`
+	Color     string  `json:"color"`
 }
 
 // formatStyle directly maps the styles settings of the cells.
