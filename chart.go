@@ -946,10 +946,12 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 		Ln: &aLn{
 			W:   25400,
 			Cap: "rnd", // rnd, sq, flat
-			SolidFill: &aSolidFill{
-				SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
-			},
 		},
+	}
+	if i < 6 {
+		spPrLine.Ln.SolidFill = &aSolidFill{
+			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
+		}
 	}
 	chartSeriesSpPr := map[string]*cSpPr{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: spPrLine, Pie: nil, Pie3D: nil, Radar: nil, Scatter: spPrScatter}
 	return chartSeriesSpPr[formatSet.Type]
@@ -1014,7 +1016,9 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 	marker := &cMarker{
 		Symbol: &attrValString{Val: "circle"},
 		Size:   &attrValInt{Val: 5},
-		SpPr: &cSpPr{
+	}
+	if i < 6 {
+		marker.SpPr = &cSpPr{
 			SolidFill: &aSolidFill{
 				SchemeClr: &aSchemeClr{
 					Val: "accent" + strconv.Itoa(i+1),
@@ -1028,7 +1032,7 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 					},
 				},
 			},
-		},
+		}
 	}
 	chartSeriesMarker := map[string]*cMarker{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: marker}
 	return chartSeriesMarker[formatSet.Type]
