@@ -27,6 +27,24 @@ func TestAdjustMergeCells(t *testing.T) {
 			},
 		},
 	}, rows, 0, 0), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
+	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
+		MergeCells: &xlsxMergeCells{
+			Cells: []*xlsxMergeCell{
+				{
+					Ref: "A1:B1",
+				},
+			},
+		},
+	}, rows, 1, -1))
+	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
+		MergeCells: &xlsxMergeCells{
+			Cells: []*xlsxMergeCell{
+				{
+					Ref: "A1:A2",
+				},
+			},
+		},
+	}, columns, 1, -1))
 }
 
 func TestAdjustAutoFilter(t *testing.T) {
@@ -82,4 +100,17 @@ func TestAdjustCalcChain(t *testing.T) {
 	assert.EqualError(t, f.InsertCol("Sheet1", "A"), `cannot convert cell "invalid coordinates" to coordinates: invalid cell name "invalid coordinates"`)
 	f.CalcChain = nil
 	assert.NoError(t, f.InsertCol("Sheet1", "A"))
+}
+
+func TestCoordinatesToAreaRef(t *testing.T) {
+	f := NewFile()
+	ref, err := f.coordinatesToAreaRef([]int{})
+	assert.EqualError(t, err, "coordinates length must be 4")
+	ref, err = f.coordinatesToAreaRef([]int{1, -1, 1, 1})
+	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
+	ref, err = f.coordinatesToAreaRef([]int{1, 1, 1, -1})
+	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
+	ref, err = f.coordinatesToAreaRef([]int{1, 1, 1, 1})
+	assert.NoError(t, err)
+	assert.EqualValues(t, ref, "A1:A1")
 }

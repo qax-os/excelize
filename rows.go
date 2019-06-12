@@ -421,7 +421,7 @@ func (f *File) RemoveRow(sheet string, row int) error {
 		return err
 	}
 	if row > len(xlsx.SheetData.Row) {
-		return nil
+		return f.adjustHelper(sheet, rows, row, -1)
 	}
 	for rowIdx := range xlsx.SheetData.Row {
 		if xlsx.SheetData.Row[rowIdx].R == row {

@@ -401,31 +401,27 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 // If you create a merged cell that overlaps with another existing merged cell,
 // those merged cells that already exist will be removed.
 func (f *File) MergeCell(sheet, hcell, vcell string) error {
-	hcol, hrow, err := CellNameToCoordinates(hcell)
+	coordinates, err := f.areaRefToCoordinates(hcell + ":" + vcell)
 	if err != nil {
 		return err
 	}
+	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
-	vcol, vrow, err := CellNameToCoordinates(vcell)
-	if err != nil {
-		return err
-	}
-
-	if hcol == vcol && hrow == vrow {
+	if x1 == x2 && y1 == y2 {
 		return err
 	}
 
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	if vcol < hcol {
-		hcol, vcol = vcol, hcol
+	if x2 < x1 {
+		x1, x2 = x2, x1
 	}
 
-	if vrow < hrow {
-		hrow, vrow = vrow, hrow
+	if y2 < y1 {
+		y1, y2 = y2, y1
 	}
 
-	hcell, _ = CoordinatesToCellName(hcol, hrow)
-	vcell, _ = CoordinatesToCellName(vcol, vrow)
+	hcell, _ = CoordinatesToCellName(x1, y1)
+	vcell, _ = CoordinatesToCellName(x2, y2)
 
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {

@@ -115,29 +115,24 @@ func (f *File) addSheetTable(sheet string, rID int) {
 
 // addTable provides a function to add table by given worksheet name,
 // coordinate area and format set.
-func (f *File) addTable(sheet, tableXML string, hcol, hrow, vcol, vrow, i int, formatSet *formatTable) error {
+func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet *formatTable) error {
 	// Correct the minimum number of rows, the table at least two lines.
-	if hrow == vrow {
-		vrow++
+	if y1 == y2 {
+		y2++
 	}
 
 	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
-	hcell, err := CoordinatesToCellName(hcol, hrow)
+	ref, err := f.coordinatesToAreaRef([]int{x1, y1, x2, y2})
 	if err != nil {
 		return err
 	}
-	vcell, err := CoordinatesToCellName(vcol, vrow)
-	if err != nil {
-		return err
-	}
-	ref := hcell + ":" + vcell
 
 	var tableColumn []*xlsxTableColumn
 
 	idx := 0
-	for i := hcol; i <= vcol; i++ {
+	for i := x1; i <= x2; i++ {
 		idx++
-		cell, err := CoordinatesToCellName(i, hrow)
+		cell, err := CoordinatesToCellName(i, y1)
 		if err != nil {
 			return err
 		}

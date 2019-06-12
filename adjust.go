@@ -9,7 +9,10 @@
 
 package excelize
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 type adjustDirection bool
 
@@ -140,46 +143,85 @@ func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 		return nil
 	}
 
-	rng := strings.Split(xlsx.AutoFilter.Ref, ":")
-	firstCell := rng[0]
-	lastCell := rng[1]
-
-	firstCol, firstRow, err := CellNameToCoordinates(firstCell)
+	coordinates, err := f.areaRefToCoordinates(xlsx.AutoFilter.Ref)
 	if err != nil {
 		return err
 	}
+	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
-	lastCol, lastRow, err := CellNameToCoordinates(lastCell)
-	if err != nil {
-		return err
-	}
-
-	if (dir == rows && firstRow == num && offset < 0) || (dir == columns && firstCol == num && lastCol == num) {
+	if (dir == rows && y1 == num && offset < 0) || (dir == columns && x1 == num && x2 == num) {
 		xlsx.AutoFilter = nil
 		for rowIdx := range xlsx.SheetData.Row {
 			rowData := &xlsx.SheetData.Row[rowIdx]
-			if rowData.R > firstRow && rowData.R <= lastRow {
+			if rowData.R > y1 && rowData.R <= y2 {
 				rowData.Hidden = false
 			}
 		}
 		return nil
 	}
 
+	coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
+	x1, y1, x2, y2 = coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+
+	if xlsx.AutoFilter.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// adjustAutoFilterHelper provides a function for adjusting auto filter to
+// compare and calculate cell axis by the given adjust direction, operation
+// axis and offset.
+func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, num, offset int) []int {
 	if dir == rows {
-		if firstRow >= num {
-			firstCell, _ = CoordinatesToCellName(firstCol, firstRow+offset)
+		if coordinates[1] >= num {
+			coordinates[1] += offset
 		}
-		if lastRow >= num {
-			lastCell, _ = CoordinatesToCellName(lastCol, lastRow+offset)
+		if coordinates[3] >= num {
+			coordinates[3] += offset
 		}
 	} else {
-		if lastCol >= num {
-			lastCell, _ = CoordinatesToCellName(lastCol+offset, lastRow)
+		if coordinates[2] >= num {
+			coordinates[2] += offset
 		}
 	}
+	return coordinates
+}
 
-	xlsx.AutoFilter.Ref = firstCell + ":" + lastCell
-	return nil
+// areaRefToCoordinates provides a function to convert area reference to a
+// pair of coordinates.
+func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
+	coordinates := make([]int, 4)
+	rng := strings.Split(ref, ":")
+	firstCell := rng[0]
+	lastCell := rng[1]
+	var err error
+	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
+	if err != nil {
+		return coordinates, err
+	}
+	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
+	if err != nil {
+		return coordinates, err
+	}
+	return coordinates, err
+}
+
+// coordinatesToAreaRef provides a function to convert a pair of coordinates
+// to area reference.
+func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
+	if len(coordinates) != 4 {
+		return "", errors.New("coordinates length must be 4")
+	}
+	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1])
+	if err != nil {
+		return "", err
+	}
+	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3])
+	if err != nil {
+		return "", err
+	}
+	return firstCell + ":" + lastCell, err
 }
 
 // adjustMergeCells provides a function to update merged cells when inserting
@@ -190,59 +232,56 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 	}
 
 	for i, areaData := range xlsx.MergeCells.Cells {
-		rng := strings.Split(areaData.Ref, ":")
-		firstCell := rng[0]
-		lastCell := rng[1]
-
-		firstCol, firstRow, err := CellNameToCoordinates(firstCell)
+		coordinates, err := f.areaRefToCoordinates(areaData.Ref)
 		if err != nil {
 			return err
 		}
-
-		lastCol, lastRow, err := CellNameToCoordinates(lastCell)
-		if err != nil {
-			return err
-		}
-
-		adjust := func(v int) int {
-			if v >= num {
-				v += offset
-				if v < 1 {
-					return 1
-				}
-				return v
-			}
-			return v
-		}
-
+		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 		if dir == rows {
-			firstRow = adjust(firstRow)
-			lastRow = adjust(lastRow)
-		} else {
-			firstCol = adjust(firstCol)
-			lastCol = adjust(lastCol)
-		}
-
-		if firstCol == lastCol && firstRow == lastRow {
-			if len(xlsx.MergeCells.Cells) > 1 {
-				xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:i], xlsx.MergeCells.Cells[i+1:]...)
-				xlsx.MergeCells.Count = len(xlsx.MergeCells.Cells)
-			} else {
-				xlsx.MergeCells = nil
+			if y1 == num && y2 == num && offset < 0 {
+				f.deleteMergeCell(xlsx, i)
 			}
+			y1 = f.adjustMergeCellsHelper(y1, num, offset)
+			y2 = f.adjustMergeCellsHelper(y2, num, offset)
+		} else {
+			if x1 == num && x2 == num && offset < 0 {
+				f.deleteMergeCell(xlsx, i)
+			}
+			x1 = f.adjustMergeCellsHelper(x1, num, offset)
+			x2 = f.adjustMergeCellsHelper(x2, num, offset)
 		}
-
-		if firstCell, err = CoordinatesToCellName(firstCol, firstRow); err != nil {
+		if x1 == x2 && y1 == y2 {
+			f.deleteMergeCell(xlsx, i)
+		}
+		if areaData.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
 			return err
 		}
-
-		if lastCell, err = CoordinatesToCellName(lastCol, lastRow); err != nil {
-			return err
-		}
-
-		areaData.Ref = firstCell + ":" + lastCell
 	}
 	return nil
+}
+
+// adjustMergeCellsHelper provides a function for adjusting merge cells to
+// compare and calculate cell axis by the given pivot, operation axis and
+// offset.
+func (f *File) adjustMergeCellsHelper(pivot, num, offset int) int {
+	if pivot >= num {
+		pivot += offset
+		if pivot < 1 {
+			return 1
+		}
+		return pivot
+	}
+	return pivot
+}
+
+// deleteMergeCell provides a function to delete merged cell by given index.
+func (f *File) deleteMergeCell(sheet *xlsxWorksheet, idx int) {
+	if len(sheet.MergeCells.Cells) > 1 {
+		sheet.MergeCells.Cells = append(sheet.MergeCells.Cells[:idx], sheet.MergeCells.Cells[idx+1:]...)
+		sheet.MergeCells.Count = len(sheet.MergeCells.Cells)
+	} else {
+		sheet.MergeCells = nil
+	}
 }
 
 // adjustCalcChain provides a function to update the calculation chain when
