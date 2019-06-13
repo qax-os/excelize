@@ -324,6 +324,7 @@ type cCharts struct {
 	ScatterStyle *attrValString `xml:"scatterStyle"`
 	VaryColors   *attrValBool   `xml:"varyColors"`
 	Ser          *[]cSer        `xml:"ser"`
+	Shape        *attrValString `xml:"shape"`
 	DLbls        *cDLbls        `xml:"dLbls"`
 	HoleSize     *attrValInt    `xml:"holeSize"`
 	Smooth       *attrValBool   `xml:"smooth"`

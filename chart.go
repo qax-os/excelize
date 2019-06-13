@@ -12,148 +12,254 @@ package excelize
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"strconv"
 	"strings"
 )
 
 // This section defines the currently supported chart types.
 const (
-	Area                 = "area"
-	AreaStacked          = "areaStacked"
-	AreaPercentStacked   = "areaPercentStacked"
-	Area3D               = "area3D"
-	Area3DStacked        = "area3DStacked"
-	Area3DPercentStacked = "area3DPercentStacked"
-	Bar                  = "bar"
-	BarStacked           = "barStacked"
-	BarPercentStacked    = "barPercentStacked"
-	Bar3DClustered       = "bar3DClustered"
-	Bar3DStacked         = "bar3DStacked"
-	Bar3DPercentStacked  = "bar3DPercentStacked"
-	Col                  = "col"
-	ColStacked           = "colStacked"
-	ColPercentStacked    = "colPercentStacked"
-	Col3DClustered       = "col3DClustered"
-	Col3D                = "col3D"
-	Col3DStacked         = "col3DStacked"
-	Col3DPercentStacked  = "col3DPercentStacked"
-	Doughnut             = "doughnut"
-	Line                 = "line"
-	Pie                  = "pie"
-	Pie3D                = "pie3D"
-	Radar                = "radar"
-	Scatter              = "scatter"
+	Area                        = "area"
+	AreaStacked                 = "areaStacked"
+	AreaPercentStacked          = "areaPercentStacked"
+	Area3D                      = "area3D"
+	Area3DStacked               = "area3DStacked"
+	Area3DPercentStacked        = "area3DPercentStacked"
+	Bar                         = "bar"
+	BarStacked                  = "barStacked"
+	BarPercentStacked           = "barPercentStacked"
+	Bar3DClustered              = "bar3DClustered"
+	Bar3DStacked                = "bar3DStacked"
+	Bar3DPercentStacked         = "bar3DPercentStacked"
+	Bar3DConeClustered          = "bar3DConeClustered"
+	Bar3DConeStacked            = "bar3DConeStacked"
+	Bar3DConePercentStacked     = "bar3DConePercentStacked"
+	Bar3DPyramidClustered       = "bar3DPyramidClustered"
+	Bar3DPyramidStacked         = "bar3DPyramidStacked"
+	Bar3DPyramidPercentStacked  = "bar3DPyramidPercentStacked"
+	Bar3DCylinderClustered      = "bar3DCylinderClustered"
+	Bar3DCylinderStacked        = "bar3DCylinderStacked"
+	Bar3DCylinderPercentStacked = "bar3DCylinderPercentStacked"
+	Col                         = "col"
+	ColStacked                  = "colStacked"
+	ColPercentStacked           = "colPercentStacked"
+	Col3D                       = "col3D"
+	Col3DClustered              = "col3DClustered"
+	Col3DStacked                = "col3DStacked"
+	Col3DPercentStacked         = "col3DPercentStacked"
+	Col3DCone                   = "col3DCone"
+	Col3DConeClustered          = "col3DConeClustered"
+	Col3DConeStacked            = "col3DConeStacked"
+	Col3DConePercentStacked     = "col3DConePercentStacked"
+	Col3DPyramid                = "col3DPyramid"
+	Col3DPyramidClustered       = "col3DPyramidClustered"
+	Col3DPyramidStacked         = "col3DPyramidStacked"
+	Col3DPyramidPercentStacked  = "col3DPyramidPercentStacked"
+	Col3DCylinder               = "col3DCylinder"
+	Col3DCylinderClustered      = "col3DCylinderClustered"
+	Col3DCylinderStacked        = "col3DCylinderStacked"
+	Col3DCylinderPercentStacked = "col3DCylinderPercentStacked"
+	Doughnut                    = "doughnut"
+	Line                        = "line"
+	Pie                         = "pie"
+	Pie3D                       = "pie3D"
+	Radar                       = "radar"
+	Scatter                     = "scatter"
 )
 
 // This section defines the default value of chart properties.
 var (
 	chartView3DRotX = map[string]int{
-		Area:                 0,
-		AreaStacked:          0,
-		AreaPercentStacked:   0,
-		Area3D:               15,
-		Area3DStacked:        15,
-		Area3DPercentStacked: 15,
-		Bar:                  0,
-		BarStacked:           0,
-		BarPercentStacked:    0,
-		Bar3DClustered:       15,
-		Bar3DStacked:         15,
-		Bar3DPercentStacked:  15,
-		Col:                  0,
-		ColStacked:           0,
-		ColPercentStacked:    0,
-		Col3DClustered:       15,
-		Col3D:                15,
-		Col3DStacked:         15,
-		Col3DPercentStacked:  15,
-		Doughnut:             0,
-		Line:                 0,
-		Pie:                  0,
-		Pie3D:                30,
-		Radar:                0,
-		Scatter:              0,
+		Area:                        0,
+		AreaStacked:                 0,
+		AreaPercentStacked:          0,
+		Area3D:                      15,
+		Area3DStacked:               15,
+		Area3DPercentStacked:        15,
+		Bar:                         0,
+		BarStacked:                  0,
+		BarPercentStacked:           0,
+		Bar3DClustered:              15,
+		Bar3DStacked:                15,
+		Bar3DPercentStacked:         15,
+		Bar3DConeClustered:          15,
+		Bar3DConeStacked:            15,
+		Bar3DConePercentStacked:     15,
+		Bar3DPyramidClustered:       15,
+		Bar3DPyramidStacked:         15,
+		Bar3DPyramidPercentStacked:  15,
+		Bar3DCylinderClustered:      15,
+		Bar3DCylinderStacked:        15,
+		Bar3DCylinderPercentStacked: 15,
+		Col:                         0,
+		ColStacked:                  0,
+		ColPercentStacked:           0,
+		Col3D:                       15,
+		Col3DClustered:              15,
+		Col3DStacked:                15,
+		Col3DPercentStacked:         15,
+		Col3DCone:                   15,
+		Col3DConeClustered:          15,
+		Col3DConeStacked:            15,
+		Col3DConePercentStacked:     15,
+		Col3DPyramid:                15,
+		Col3DPyramidClustered:       15,
+		Col3DPyramidStacked:         15,
+		Col3DPyramidPercentStacked:  15,
+		Col3DCylinder:               15,
+		Col3DCylinderClustered:      15,
+		Col3DCylinderStacked:        15,
+		Col3DCylinderPercentStacked: 15,
+		Doughnut:                    0,
+		Line:                        0,
+		Pie:                         0,
+		Pie3D:                       30,
+		Radar:                       0,
+		Scatter:                     0,
 	}
 	chartView3DRotY = map[string]int{
-		Area:                 0,
-		AreaStacked:          0,
-		AreaPercentStacked:   0,
-		Area3D:               20,
-		Area3DStacked:        20,
-		Area3DPercentStacked: 20,
-		Bar:                  0,
-		BarStacked:           0,
-		BarPercentStacked:    0,
-		Bar3DClustered:       20,
-		Bar3DStacked:         20,
-		Bar3DPercentStacked:  20,
-		Col:                  0,
-		ColStacked:           0,
-		ColPercentStacked:    0,
-		Col3DClustered:       20,
-		Col3D:                20,
-		Col3DStacked:         20,
-		Col3DPercentStacked:  20,
-		Doughnut:             0,
-		Line:                 0,
-		Pie:                  0,
-		Pie3D:                0,
-		Radar:                0,
-		Scatter:              0,
+		Area:                        0,
+		AreaStacked:                 0,
+		AreaPercentStacked:          0,
+		Area3D:                      20,
+		Area3DStacked:               20,
+		Area3DPercentStacked:        20,
+		Bar:                         0,
+		BarStacked:                  0,
+		BarPercentStacked:           0,
+		Bar3DClustered:              20,
+		Bar3DStacked:                20,
+		Bar3DPercentStacked:         20,
+		Bar3DConeClustered:          20,
+		Bar3DConeStacked:            20,
+		Bar3DConePercentStacked:     20,
+		Bar3DPyramidClustered:       20,
+		Bar3DPyramidStacked:         20,
+		Bar3DPyramidPercentStacked:  20,
+		Bar3DCylinderClustered:      20,
+		Bar3DCylinderStacked:        20,
+		Bar3DCylinderPercentStacked: 20,
+		Col:                         0,
+		ColStacked:                  0,
+		ColPercentStacked:           0,
+		Col3D:                       20,
+		Col3DClustered:              20,
+		Col3DStacked:                20,
+		Col3DPercentStacked:         20,
+		Col3DCone:                   20,
+		Col3DConeClustered:          20,
+		Col3DConeStacked:            20,
+		Col3DConePercentStacked:     20,
+		Col3DPyramid:                20,
+		Col3DPyramidClustered:       20,
+		Col3DPyramidStacked:         20,
+		Col3DPyramidPercentStacked:  20,
+		Col3DCylinder:               20,
+		Col3DCylinderClustered:      20,
+		Col3DCylinderStacked:        20,
+		Col3DCylinderPercentStacked: 20,
+		Doughnut:                    0,
+		Line:                        0,
+		Pie:                         0,
+		Pie3D:                       0,
+		Radar:                       0,
+		Scatter:                     0,
 	}
 	chartView3DDepthPercent = map[string]int{
-		Area:                 100,
-		AreaStacked:          100,
-		AreaPercentStacked:   100,
-		Area3D:               100,
-		Area3DStacked:        100,
-		Area3DPercentStacked: 100,
-		Bar:                  100,
-		BarStacked:           100,
-		BarPercentStacked:    100,
-		Bar3DClustered:       100,
-		Bar3DStacked:         100,
-		Bar3DPercentStacked:  100,
-		Col:                  100,
-		ColStacked:           100,
-		ColPercentStacked:    100,
-		Col3DClustered:       100,
-		Col3D:                100,
-		Col3DStacked:         100,
-		Col3DPercentStacked:  100,
-		Doughnut:             100,
-		Line:                 100,
-		Pie:                  100,
-		Pie3D:                100,
-		Radar:                100,
-		Scatter:              100,
+		Area:                        100,
+		AreaStacked:                 100,
+		AreaPercentStacked:          100,
+		Area3D:                      100,
+		Area3DStacked:               100,
+		Area3DPercentStacked:        100,
+		Bar:                         100,
+		BarStacked:                  100,
+		BarPercentStacked:           100,
+		Bar3DClustered:              100,
+		Bar3DStacked:                100,
+		Bar3DPercentStacked:         100,
+		Bar3DConeClustered:          100,
+		Bar3DConeStacked:            100,
+		Bar3DConePercentStacked:     100,
+		Bar3DPyramidClustered:       100,
+		Bar3DPyramidStacked:         100,
+		Bar3DPyramidPercentStacked:  100,
+		Bar3DCylinderClustered:      100,
+		Bar3DCylinderStacked:        100,
+		Bar3DCylinderPercentStacked: 100,
+		Col:                         100,
+		ColStacked:                  100,
+		ColPercentStacked:           100,
+		Col3D:                       100,
+		Col3DClustered:              100,
+		Col3DStacked:                100,
+		Col3DPercentStacked:         100,
+		Col3DCone:                   100,
+		Col3DConeClustered:          100,
+		Col3DConeStacked:            100,
+		Col3DConePercentStacked:     100,
+		Col3DPyramid:                100,
+		Col3DPyramidClustered:       100,
+		Col3DPyramidStacked:         100,
+		Col3DPyramidPercentStacked:  100,
+		Col3DCylinder:               100,
+		Col3DCylinderClustered:      100,
+		Col3DCylinderStacked:        100,
+		Col3DCylinderPercentStacked: 100,
+		Doughnut:                    100,
+		Line:                        100,
+		Pie:                         100,
+		Pie3D:                       100,
+		Radar:                       100,
+		Scatter:                     100,
 	}
 	chartView3DRAngAx = map[string]int{
-		Area:                 0,
-		AreaStacked:          0,
-		AreaPercentStacked:   0,
-		Area3D:               1,
-		Area3DStacked:        1,
-		Area3DPercentStacked: 1,
-		Bar:                  0,
-		BarStacked:           0,
-		BarPercentStacked:    0,
-		Bar3DClustered:       1,
-		Bar3DStacked:         1,
-		Bar3DPercentStacked:  1,
-		Col:                  0,
-		ColStacked:           0,
-		ColPercentStacked:    0,
-		Col3DClustered:       1,
-		Col3D:                1,
-		Col3DStacked:         1,
-		Col3DPercentStacked:  1,
-		Doughnut:             0,
-		Line:                 0,
-		Pie:                  0,
-		Pie3D:                0,
-		Radar:                0,
-		Scatter:              0,
+		Area:                        0,
+		AreaStacked:                 0,
+		AreaPercentStacked:          0,
+		Area3D:                      1,
+		Area3DStacked:               1,
+		Area3DPercentStacked:        1,
+		Bar:                         0,
+		BarStacked:                  0,
+		BarPercentStacked:           0,
+		Bar3DClustered:              1,
+		Bar3DStacked:                1,
+		Bar3DPercentStacked:         1,
+		Bar3DConeClustered:          1,
+		Bar3DConeStacked:            1,
+		Bar3DConePercentStacked:     1,
+		Bar3DPyramidClustered:       1,
+		Bar3DPyramidStacked:         1,
+		Bar3DPyramidPercentStacked:  1,
+		Bar3DCylinderClustered:      1,
+		Bar3DCylinderStacked:        1,
+		Bar3DCylinderPercentStacked: 1,
+		Col:                         0,
+		ColStacked:                  0,
+		ColPercentStacked:           0,
+		Col3D:                       1,
+		Col3DClustered:              1,
+		Col3DStacked:                1,
+		Col3DPercentStacked:         1,
+		Col3DCone:                   1,
+		Col3DConeClustered:          1,
+		Col3DConeStacked:            1,
+		Col3DConePercentStacked:     1,
+		Col3DPyramid:                1,
+		Col3DPyramidClustered:       1,
+		Col3DPyramidStacked:         1,
+		Col3DPyramidPercentStacked:  1,
+		Col3DCylinder:               1,
+		Col3DCylinderClustered:      1,
+		Col3DCylinderStacked:        1,
+		Col3DCylinderPercentStacked: 1,
+		Doughnut:                    0,
+		Line:                        0,
+		Pie:                         0,
+		Pie3D:                       0,
+		Radar:                       0,
+		Scatter:                     0,
 	}
 	chartLegendPosition = map[string]string{
 		"bottom":    "b",
@@ -163,96 +269,180 @@ var (
 		"top_right": "tr",
 	}
 	chartValAxNumFmtFormatCode = map[string]string{
-		Area:                 "General",
-		AreaStacked:          "General",
-		AreaPercentStacked:   "0%",
-		Area3D:               "General",
-		Area3DStacked:        "General",
-		Area3DPercentStacked: "0%",
-		Bar:                  "General",
-		BarStacked:           "General",
-		BarPercentStacked:    "0%",
-		Bar3DClustered:       "General",
-		Bar3DStacked:         "General",
-		Bar3DPercentStacked:  "0%",
-		Col:                  "General",
-		ColStacked:           "General",
-		ColPercentStacked:    "0%",
-		Col3DClustered:       "General",
-		Col3D:                "General",
-		Col3DStacked:         "General",
-		Col3DPercentStacked:  "0%",
-		Doughnut:             "General",
-		Line:                 "General",
-		Pie:                  "General",
-		Pie3D:                "General",
-		Radar:                "General",
-		Scatter:              "General",
+		Area:                        "General",
+		AreaStacked:                 "General",
+		AreaPercentStacked:          "0%",
+		Area3D:                      "General",
+		Area3DStacked:               "General",
+		Area3DPercentStacked:        "0%",
+		Bar:                         "General",
+		BarStacked:                  "General",
+		BarPercentStacked:           "0%",
+		Bar3DClustered:              "General",
+		Bar3DStacked:                "General",
+		Bar3DPercentStacked:         "0%",
+		Bar3DConeClustered:          "General",
+		Bar3DConeStacked:            "General",
+		Bar3DConePercentStacked:     "0%",
+		Bar3DPyramidClustered:       "General",
+		Bar3DPyramidStacked:         "General",
+		Bar3DPyramidPercentStacked:  "0%",
+		Bar3DCylinderClustered:      "General",
+		Bar3DCylinderStacked:        "General",
+		Bar3DCylinderPercentStacked: "0%",
+		Col:                         "General",
+		ColStacked:                  "General",
+		ColPercentStacked:           "0%",
+		Col3D:                       "General",
+		Col3DClustered:              "General",
+		Col3DStacked:                "General",
+		Col3DPercentStacked:         "0%",
+		Col3DCone:                   "General",
+		Col3DConeClustered:          "General",
+		Col3DConeStacked:            "General",
+		Col3DConePercentStacked:     "0%",
+		Col3DPyramid:                "General",
+		Col3DPyramidClustered:       "General",
+		Col3DPyramidStacked:         "General",
+		Col3DPyramidPercentStacked:  "0%",
+		Col3DCylinder:               "General",
+		Col3DCylinderClustered:      "General",
+		Col3DCylinderStacked:        "General",
+		Col3DCylinderPercentStacked: "0%",
+		Doughnut:                    "General",
+		Line:                        "General",
+		Pie:                         "General",
+		Pie3D:                       "General",
+		Radar:                       "General",
+		Scatter:                     "General",
 	}
 	chartValAxCrossBetween = map[string]string{
-		Area:                 "midCat",
-		AreaStacked:          "midCat",
-		AreaPercentStacked:   "midCat",
-		Area3D:               "midCat",
-		Area3DStacked:        "midCat",
-		Area3DPercentStacked: "midCat",
-		Bar:                  "between",
-		BarStacked:           "between",
-		BarPercentStacked:    "between",
-		Bar3DClustered:       "between",
-		Bar3DStacked:         "between",
-		Bar3DPercentStacked:  "between",
-		Col:                  "between",
-		ColStacked:           "between",
-		ColPercentStacked:    "between",
-		Col3DClustered:       "between",
-		Col3D:                "between",
-		Col3DStacked:         "between",
-		Col3DPercentStacked:  "between",
-		Doughnut:             "between",
-		Line:                 "between",
-		Pie:                  "between",
-		Pie3D:                "between",
-		Radar:                "between",
-		Scatter:              "between",
+		Area:                        "midCat",
+		AreaStacked:                 "midCat",
+		AreaPercentStacked:          "midCat",
+		Area3D:                      "midCat",
+		Area3DStacked:               "midCat",
+		Area3DPercentStacked:        "midCat",
+		Bar:                         "between",
+		BarStacked:                  "between",
+		BarPercentStacked:           "between",
+		Bar3DClustered:              "between",
+		Bar3DStacked:                "between",
+		Bar3DPercentStacked:         "between",
+		Bar3DConeClustered:          "between",
+		Bar3DConeStacked:            "between",
+		Bar3DConePercentStacked:     "between",
+		Bar3DPyramidClustered:       "between",
+		Bar3DPyramidStacked:         "between",
+		Bar3DPyramidPercentStacked:  "between",
+		Bar3DCylinderClustered:      "between",
+		Bar3DCylinderStacked:        "between",
+		Bar3DCylinderPercentStacked: "between",
+		Col:                         "between",
+		ColStacked:                  "between",
+		ColPercentStacked:           "between",
+		Col3D:                       "between",
+		Col3DClustered:              "between",
+		Col3DStacked:                "between",
+		Col3DPercentStacked:         "between",
+		Col3DCone:                   "between",
+		Col3DConeClustered:          "between",
+		Col3DConeStacked:            "between",
+		Col3DConePercentStacked:     "between",
+		Col3DPyramid:                "between",
+		Col3DPyramidClustered:       "between",
+		Col3DPyramidStacked:         "between",
+		Col3DPyramidPercentStacked:  "between",
+		Col3DCylinder:               "between",
+		Col3DCylinderClustered:      "between",
+		Col3DCylinderStacked:        "between",
+		Col3DCylinderPercentStacked: "between",
+		Doughnut:                    "between",
+		Line:                        "between",
+		Pie:                         "between",
+		Pie3D:                       "between",
+		Radar:                       "between",
+		Scatter:                     "between",
 	}
 	plotAreaChartGrouping = map[string]string{
-		Area:                 "standard",
-		AreaStacked:          "stacked",
-		AreaPercentStacked:   "percentStacked",
-		Area3D:               "standard",
-		Area3DStacked:        "stacked",
-		Area3DPercentStacked: "percentStacked",
-		Bar:                  "clustered",
-		BarStacked:           "stacked",
-		BarPercentStacked:    "percentStacked",
-		Bar3DClustered:       "clustered",
-		Bar3DStacked:         "stacked",
-		Bar3DPercentStacked:  "percentStacked",
-		Col:                  "clustered",
-		ColStacked:           "stacked",
-		ColPercentStacked:    "percentStacked",
-		Col3DClustered:       "clustered",
-		Col3D:                "standard",
-		Col3DStacked:         "stacked",
-		Col3DPercentStacked:  "percentStacked",
-		Line:                 "standard",
+		Area:                        "standard",
+		AreaStacked:                 "stacked",
+		AreaPercentStacked:          "percentStacked",
+		Area3D:                      "standard",
+		Area3DStacked:               "stacked",
+		Area3DPercentStacked:        "percentStacked",
+		Bar:                         "clustered",
+		BarStacked:                  "stacked",
+		BarPercentStacked:           "percentStacked",
+		Bar3DClustered:              "clustered",
+		Bar3DStacked:                "stacked",
+		Bar3DPercentStacked:         "percentStacked",
+		Bar3DConeClustered:          "clustered",
+		Bar3DConeStacked:            "stacked",
+		Bar3DConePercentStacked:     "percentStacked",
+		Bar3DPyramidClustered:       "clustered",
+		Bar3DPyramidStacked:         "stacked",
+		Bar3DPyramidPercentStacked:  "percentStacked",
+		Bar3DCylinderClustered:      "clustered",
+		Bar3DCylinderStacked:        "stacked",
+		Bar3DCylinderPercentStacked: "percentStacked",
+		Col:                         "clustered",
+		ColStacked:                  "stacked",
+		ColPercentStacked:           "percentStacked",
+		Col3D:                       "standard",
+		Col3DClustered:              "clustered",
+		Col3DStacked:                "stacked",
+		Col3DPercentStacked:         "percentStacked",
+		Col3DCone:                   "standard",
+		Col3DConeClustered:          "clustered",
+		Col3DConeStacked:            "stacked",
+		Col3DConePercentStacked:     "percentStacked",
+		Col3DPyramid:                "standard",
+		Col3DPyramidClustered:       "clustered",
+		Col3DPyramidStacked:         "stacked",
+		Col3DPyramidPercentStacked:  "percentStacked",
+		Col3DCylinder:               "standard",
+		Col3DCylinderClustered:      "clustered",
+		Col3DCylinderStacked:        "stacked",
+		Col3DCylinderPercentStacked: "percentStacked",
+		Line:                        "standard",
 	}
 	plotAreaChartBarDir = map[string]string{
-		Bar:                 "bar",
-		BarStacked:          "bar",
-		BarPercentStacked:   "bar",
-		Bar3DClustered:      "bar",
-		Bar3DStacked:        "bar",
-		Bar3DPercentStacked: "bar",
-		Col:                 "col",
-		ColStacked:          "col",
-		ColPercentStacked:   "col",
-		Col3DClustered:      "col",
-		Col3D:               "col",
-		Col3DStacked:        "col",
-		Col3DPercentStacked: "col",
-		Line:                "standard",
+		Bar:                         "bar",
+		BarStacked:                  "bar",
+		BarPercentStacked:           "bar",
+		Bar3DClustered:              "bar",
+		Bar3DStacked:                "bar",
+		Bar3DPercentStacked:         "bar",
+		Bar3DConeClustered:          "bar",
+		Bar3DConeStacked:            "bar",
+		Bar3DConePercentStacked:     "bar",
+		Bar3DPyramidClustered:       "bar",
+		Bar3DPyramidStacked:         "bar",
+		Bar3DPyramidPercentStacked:  "bar",
+		Bar3DCylinderClustered:      "bar",
+		Bar3DCylinderStacked:        "bar",
+		Bar3DCylinderPercentStacked: "bar",
+		Col:                         "col",
+		ColStacked:                  "col",
+		ColPercentStacked:           "col",
+		Col3D:                       "col",
+		Col3DClustered:              "col",
+		Col3DStacked:                "col",
+		Col3DPercentStacked:         "col",
+		Col3DCone:                   "col",
+		Col3DConeStacked:            "col",
+		Col3DConeClustered:          "col",
+		Col3DConePercentStacked:     "col",
+		Col3DPyramid:                "col",
+		Col3DPyramidClustered:       "col",
+		Col3DPyramidStacked:         "col",
+		Col3DPyramidPercentStacked:  "col",
+		Col3DCylinder:               "col",
+		Col3DCylinderClustered:      "col",
+		Col3DCylinderStacked:        "col",
+		Col3DCylinderPercentStacked: "col",
+		Line:                        "standard",
 	}
 	orientation = map[bool]string{
 		true:  "maxMin",
@@ -335,33 +525,54 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // The following shows the type of chart supported by excelize:
 //
-//     Type                 | Chart
-//    ----------------------+------------------------------
-//     area                 | 2D area chart
-//     areaStacked          | 2D stacked area chart
-//     areaPercentStacked   | 2D 100% stacked area chart
-//     area3D               | 3D area chart
-//     area3DStacked        | 3D stacked area chart
-//     area3DPercentStacked | 3D 100% stacked area chart
-//     bar                  | 2D clustered bar chart
-//     barStacked           | 2D stacked bar chart
-//     barPercentStacked    | 2D 100% stacked bar chart
-//     bar3DClustered       | 3D clustered bar chart
-//     bar3DStacked         | 3D stacked bar chart
-//     bar3DPercentStacked  | 3D 100% stacked bar chart
-//     col                  | 2D clustered column chart
-//     colStacked           | 2D stacked column chart
-//     colPercentStacked    | 2D 100% stacked column chart
-//     col3DClustered       | 3D clustered column chart
-//     col3D                | 3D column chart
-//     col3DStacked         | 3D stacked column chart
-//     col3DPercentStacked  | 3D 100% stacked column chart
-//     doughnut             | doughnut chart
-//     line                 | line chart
-//     pie                  | pie chart
-//     pie3D                | 3D pie chart
-//     radar                | radar chart
-//     scatter              | scatter chart
+//     Type                        | Chart
+//    -----------------------------+------------------------------
+//     area                        | 2D area chart
+//     areaStacked                 | 2D stacked area chart
+//     areaPercentStacked          | 2D 100% stacked area chart
+//     area3D                      | 3D area chart
+//     area3DStacked               | 3D stacked area chart
+//     area3DPercentStacked        | 3D 100% stacked area chart
+//     bar                         | 2D clustered bar chart
+//     barStacked                  | 2D stacked bar chart
+//     barPercentStacked           | 2D 100% stacked bar chart
+//     bar3DClustered              | 3D clustered bar chart
+//     bar3DStacked                | 3D stacked bar chart
+//     bar3DPercentStacked         | 3D 100% stacked bar chart
+//     bar3DConeClustered          | 3D cone clustered bar chart
+//     bar3DConeStacked            | 3D cone stacked bar chart
+//     bar3DConePercentStacked     | 3D cone percent bar chart
+//     bar3DPyramidClustered       | 3D pyramid clustered bar chart
+//     bar3DPyramidStacked         | 3D pyramid stacked bar chart
+//     bar3DPyramidPercentStacked  | 3D pyramid percent stacked bar chart
+//     bar3DCylinderClustered      | 3D cylinder clustered bar chart
+//     bar3DCylinderStacked        | 3D cylinder stacked bar chart
+//     bar3DCylinderPercentStacked | 3D cylinder percent stacked bar chart
+//     col                         | 2D clustered column chart
+//     colStacked                  | 2D stacked column chart
+//     colPercentStacked           | 2D 100% stacked column chart
+//     col3DClustered              | 3D clustered column chart
+//     col3D                       | 3D column chart
+//     col3DStacked                | 3D stacked column chart
+//     col3DPercentStacked         | 3D 100% stacked column chart
+//     col3DCone                   | 3D cone column chart
+//     col3DConeClustered          | 3D cone clustered column chart
+//     col3DConeStacked            | 3D cone stacked column chart
+//     col3DConePercentStacked     | 3D cone percent stacked column chart
+//     col3DPyramid                | 3D pyramid column chart
+//     col3DPyramidClustered       | 3D pyramid clustered column chart
+//     col3DPyramidStacked         | 3D pyramid stacked column chart
+//     col3DPyramidPercentStacked  | 3D pyramid percent stacked column chart
+//     col3DCylinder               | 3D cylinder column chart
+//     col3DCylinderClustered      | 3D cylinder clustered column chart
+//     col3DCylinderStacked        | 3D cylinder stacked column chart
+//     col3DCylinderPercentStacked | 3D cylinder percent stacked column chart
+//     doughnut                    | doughnut chart
+//     line                        | line chart
+//     pie                         | pie chart
+//     pie3D                       | 3D pie chart
+//     radar                       | radar chart
+//     scatter                     | scatter chart
 //
 // In Excel a chart series is a collection of information that defines which data is plotted such as values, axis labels and formatting.
 //
@@ -456,6 +667,9 @@ func (f *File) AddChart(sheet, cell, format string) error {
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
+	}
+	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
+		return errors.New("unsupported chart type " + formatSet.Type)
 	}
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
@@ -631,31 +845,52 @@ func (f *File) addChart(formatSet *formatChart) {
 		},
 	}
 	plotAreaFunc := map[string]func(*formatChart) *cPlotArea{
-		Area:                 f.drawBaseChart,
-		AreaStacked:          f.drawBaseChart,
-		AreaPercentStacked:   f.drawBaseChart,
-		Area3D:               f.drawBaseChart,
-		Area3DStacked:        f.drawBaseChart,
-		Area3DPercentStacked: f.drawBaseChart,
-		Bar:                  f.drawBaseChart,
-		BarStacked:           f.drawBaseChart,
-		BarPercentStacked:    f.drawBaseChart,
-		Bar3DClustered:       f.drawBaseChart,
-		Bar3DStacked:         f.drawBaseChart,
-		Bar3DPercentStacked:  f.drawBaseChart,
-		Col:                  f.drawBaseChart,
-		ColStacked:           f.drawBaseChart,
-		ColPercentStacked:    f.drawBaseChart,
-		Col3DClustered:       f.drawBaseChart,
-		Col3D:                f.drawBaseChart,
-		Col3DStacked:         f.drawBaseChart,
-		Col3DPercentStacked:  f.drawBaseChart,
-		Doughnut:             f.drawDoughnutChart,
-		Line:                 f.drawLineChart,
-		Pie3D:                f.drawPie3DChart,
-		Pie:                  f.drawPieChart,
-		Radar:                f.drawRadarChart,
-		Scatter:              f.drawScatterChart,
+		Area:                        f.drawBaseChart,
+		AreaStacked:                 f.drawBaseChart,
+		AreaPercentStacked:          f.drawBaseChart,
+		Area3D:                      f.drawBaseChart,
+		Area3DStacked:               f.drawBaseChart,
+		Area3DPercentStacked:        f.drawBaseChart,
+		Bar:                         f.drawBaseChart,
+		BarStacked:                  f.drawBaseChart,
+		BarPercentStacked:           f.drawBaseChart,
+		Bar3DClustered:              f.drawBaseChart,
+		Bar3DStacked:                f.drawBaseChart,
+		Bar3DPercentStacked:         f.drawBaseChart,
+		Bar3DConeClustered:          f.drawBaseChart,
+		Bar3DConeStacked:            f.drawBaseChart,
+		Bar3DConePercentStacked:     f.drawBaseChart,
+		Bar3DPyramidClustered:       f.drawBaseChart,
+		Bar3DPyramidStacked:         f.drawBaseChart,
+		Bar3DPyramidPercentStacked:  f.drawBaseChart,
+		Bar3DCylinderClustered:      f.drawBaseChart,
+		Bar3DCylinderStacked:        f.drawBaseChart,
+		Bar3DCylinderPercentStacked: f.drawBaseChart,
+		Col:                         f.drawBaseChart,
+		ColStacked:                  f.drawBaseChart,
+		ColPercentStacked:           f.drawBaseChart,
+		Col3D:                       f.drawBaseChart,
+		Col3DClustered:              f.drawBaseChart,
+		Col3DStacked:                f.drawBaseChart,
+		Col3DPercentStacked:         f.drawBaseChart,
+		Col3DCone:                   f.drawBaseChart,
+		Col3DConeClustered:          f.drawBaseChart,
+		Col3DConeStacked:            f.drawBaseChart,
+		Col3DConePercentStacked:     f.drawBaseChart,
+		Col3DPyramid:                f.drawBaseChart,
+		Col3DPyramidClustered:       f.drawBaseChart,
+		Col3DPyramidStacked:         f.drawBaseChart,
+		Col3DPyramidPercentStacked:  f.drawBaseChart,
+		Col3DCylinder:               f.drawBaseChart,
+		Col3DCylinderClustered:      f.drawBaseChart,
+		Col3DCylinderStacked:        f.drawBaseChart,
+		Col3DCylinderPercentStacked: f.drawBaseChart,
+		Doughnut:                    f.drawDoughnutChart,
+		Line:                        f.drawLineChart,
+		Pie3D:                       f.drawPie3DChart,
+		Pie:                         f.drawPieChart,
+		Radar:                       f.drawRadarChart,
+		Scatter:                     f.drawScatterChart,
 	}
 	xlsxChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
 
@@ -678,6 +913,7 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			Val: true,
 		},
 		Ser:   f.drawChartSeries(formatSet),
+		Shape: f.drawChartShape(formatSet),
 		DLbls: f.drawChartDLbls(formatSet),
 		AxID: []*attrValInt{
 			{Val: 754001152},
@@ -756,6 +992,51 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
+		"bar3DConeClustered": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DConeStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DConePercentStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DPyramidClustered": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DPyramidStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DPyramidPercentStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DCylinderClustered": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DCylinderStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"bar3DCylinderPercentStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
 		"col": {
 			BarChart: &c,
 			CatAx:    catAx,
@@ -771,12 +1052,12 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"col3DClustered": {
+		"col3D": {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3D": {
+		"col3DClustered": {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
@@ -787,6 +1068,66 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			ValAx:      valAx,
 		},
 		"col3DPercentStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DCone": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DConeClustered": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DConeStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DConePercentStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DPyramid": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DPyramidClustered": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DPyramidStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DPyramidPercentStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DCylinder": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DCylinderClustered": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DCylinderStacked": {
+			Bar3DChart: &c,
+			CatAx:      catAx,
+			ValAx:      valAx,
+		},
+		"col3DCylinderPercentStacked": {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
@@ -907,6 +1248,38 @@ func (f *File) drawScatterChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
+func (f *File) drawChartShape(formatSet *formatChart) *attrValString {
+	shapes := map[string]string{
+		Bar3DConeClustered:          "cone",
+		Bar3DConeStacked:            "cone",
+		Bar3DConePercentStacked:     "cone",
+		Bar3DPyramidClustered:       "pyramid",
+		Bar3DPyramidStacked:         "pyramid",
+		Bar3DPyramidPercentStacked:  "pyramid",
+		Bar3DCylinderClustered:      "cylinder",
+		Bar3DCylinderStacked:        "cylinder",
+		Bar3DCylinderPercentStacked: "cylinder",
+		Col3DCone:                   "cone",
+		Col3DConeClustered:          "cone",
+		Col3DConeStacked:            "cone",
+		Col3DConePercentStacked:     "cone",
+		Col3DPyramid:                "pyramid",
+		Col3DPyramidClustered:       "pyramid",
+		Col3DPyramidStacked:         "pyramid",
+		Col3DPyramidPercentStacked:  "pyramid",
+		Col3DCylinder:               "cylinder",
+		Col3DCylinderClustered:      "cylinder",
+		Col3DCylinderStacked:        "cylinder",
+		Col3DCylinderPercentStacked: "cylinder",
+	}
+	if shape, ok := shapes[formatSet.Type]; ok {
+		return &attrValString{
+			Val: shape,
+		}
+	}
+	return nil
+}
+
 // drawChartSeries provides a function to draw the c:ser element by given
 // format sets.
 func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
@@ -953,7 +1326,7 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
 		}
 	}
-	chartSeriesSpPr := map[string]*cSpPr{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: spPrLine, Pie: nil, Pie3D: nil, Radar: nil, Scatter: spPrScatter}
+	chartSeriesSpPr := map[string]*cSpPr{Line: spPrLine, Scatter: spPrScatter}
 	return chartSeriesSpPr[formatSet.Type]
 }
 
@@ -982,7 +1355,7 @@ func (f *File) drawChartSeriesDPt(i int, formatSet *formatChart) []*cDPt {
 			},
 		},
 	}}
-	chartSeriesDPt := map[string][]*cDPt{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: nil, Pie: dpt, Pie3D: dpt, Radar: nil, Scatter: nil}
+	chartSeriesDPt := map[string][]*cDPt{Pie: dpt, Pie3D: dpt}
 	return chartSeriesDPt[formatSet.Type]
 }
 
@@ -994,8 +1367,11 @@ func (f *File) drawChartSeriesCat(v formatChartSeries, formatSet *formatChart) *
 			F: v.Categories,
 		},
 	}
-	chartSeriesCat := map[string]*cCat{Area: cat, AreaStacked: cat, AreaPercentStacked: cat, Area3D: cat, Area3DStacked: cat, Area3DPercentStacked: cat, Bar: cat, BarStacked: cat, BarPercentStacked: cat, Bar3DClustered: cat, Bar3DStacked: cat, Bar3DPercentStacked: cat, Col: cat, ColStacked: cat, ColPercentStacked: cat, Col3DClustered: cat, Col3D: cat, Col3DStacked: cat, Col3DPercentStacked: cat, Doughnut: cat, Line: cat, Pie: cat, Pie3D: cat, Radar: cat, Scatter: nil}
-	return chartSeriesCat[formatSet.Type]
+	chartSeriesCat := map[string]*cCat{Scatter: nil}
+	if _, ok := chartSeriesCat[formatSet.Type]; ok {
+		return nil
+	}
+	return cat
 }
 
 // drawChartSeriesVal provides a function to draw the c:val element by given
@@ -1006,8 +1382,11 @@ func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *
 			F: v.Values,
 		},
 	}
-	chartSeriesVal := map[string]*cVal{Area: val, AreaStacked: val, AreaPercentStacked: val, Area3D: val, Area3DStacked: val, Area3DPercentStacked: val, Bar: val, BarStacked: val, BarPercentStacked: val, Bar3DClustered: val, Bar3DStacked: val, Bar3DPercentStacked: val, Col: val, ColStacked: val, ColPercentStacked: val, Col3DClustered: val, Col3D: val, Col3DStacked: val, Col3DPercentStacked: val, Doughnut: val, Line: val, Pie: val, Pie3D: val, Radar: val, Scatter: nil}
-	return chartSeriesVal[formatSet.Type]
+	chartSeriesVal := map[string]*cVal{Scatter: nil}
+	if _, ok := chartSeriesVal[formatSet.Type]; ok {
+		return nil
+	}
+	return val
 }
 
 // drawChartSeriesMarker provides a function to draw the c:marker element by
@@ -1034,7 +1413,7 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 			},
 		}
 	}
-	chartSeriesMarker := map[string]*cMarker{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: marker}
+	chartSeriesMarker := map[string]*cMarker{Scatter: marker}
 	return chartSeriesMarker[formatSet.Type]
 }
 
@@ -1046,7 +1425,7 @@ func (f *File) drawChartSeriesXVal(v formatChartSeries, formatSet *formatChart) 
 			F: v.Categories,
 		},
 	}
-	chartSeriesXVal := map[string]*cCat{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: cat}
+	chartSeriesXVal := map[string]*cCat{Scatter: cat}
 	return chartSeriesXVal[formatSet.Type]
 }
 
@@ -1058,7 +1437,7 @@ func (f *File) drawChartSeriesYVal(v formatChartSeries, formatSet *formatChart) 
 			F: v.Values,
 		},
 	}
-	chartSeriesYVal := map[string]*cVal{Area: nil, AreaStacked: nil, AreaPercentStacked: nil, Area3D: nil, Area3DStacked: nil, Area3DPercentStacked: nil, Bar: nil, BarStacked: nil, BarPercentStacked: nil, Bar3DClustered: nil, Bar3DStacked: nil, Bar3DPercentStacked: nil, Col: nil, ColStacked: nil, ColPercentStacked: nil, Col3DClustered: nil, Col3D: nil, Col3DStacked: nil, Col3DPercentStacked: nil, Doughnut: nil, Line: nil, Pie: nil, Pie3D: nil, Radar: nil, Scatter: val}
+	chartSeriesYVal := map[string]*cVal{Scatter: val}
 	return chartSeriesYVal[formatSet.Type]
 }
 
@@ -1080,8 +1459,11 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 // given format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
-	chartSeriesDLbls := map[string]*cDLbls{Area: dLbls, AreaStacked: dLbls, AreaPercentStacked: dLbls, Area3D: dLbls, Area3DStacked: dLbls, Area3DPercentStacked: dLbls, Bar: dLbls, BarStacked: dLbls, BarPercentStacked: dLbls, Bar3DClustered: dLbls, Bar3DStacked: dLbls, Bar3DPercentStacked: dLbls, Col: dLbls, ColStacked: dLbls, ColPercentStacked: dLbls, Col3DClustered: dLbls, Col3D: dLbls, Col3DStacked: dLbls, Col3DPercentStacked: dLbls, Doughnut: dLbls, Line: dLbls, Pie: dLbls, Pie3D: dLbls, Radar: dLbls, Scatter: nil}
-	return chartSeriesDLbls[formatSet.Type]
+	chartSeriesDLbls := map[string]*cDLbls{Scatter: nil}
+	if _, ok := chartSeriesDLbls[formatSet.Type]; ok {
+		return nil
+	}
+	return dLbls
 }
 
 // drawPlotAreaCatAx provides a function to draw the c:catAx element.
