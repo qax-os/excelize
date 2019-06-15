@@ -65,6 +65,10 @@ const (
 	Pie3D                       = "pie3D"
 	Radar                       = "radar"
 	Scatter                     = "scatter"
+	Surface3D                   = "surface3D"
+	WireframeSurface3D          = "wireframeSurface3D"
+	Contour                     = "contour"
+	WireframeContour            = "wireframeContour"
 )
 
 // This section defines the default value of chart properties.
@@ -116,6 +120,10 @@ var (
 		Pie3D:                       30,
 		Radar:                       0,
 		Scatter:                     0,
+		Surface3D:                   15,
+		WireframeSurface3D:          15,
+		Contour:                     90,
+		WireframeContour:            90,
 	}
 	chartView3DRotY = map[string]int{
 		Area:                        0,
@@ -164,6 +172,10 @@ var (
 		Pie3D:                       0,
 		Radar:                       0,
 		Scatter:                     0,
+		Surface3D:                   20,
+		WireframeSurface3D:          20,
+		Contour:                     0,
+		WireframeContour:            0,
 	}
 	chartView3DDepthPercent = map[string]int{
 		Area:                        100,
@@ -212,6 +224,14 @@ var (
 		Pie3D:                       100,
 		Radar:                       100,
 		Scatter:                     100,
+		Surface3D:                   100,
+		WireframeSurface3D:          100,
+		Contour:                     100,
+		WireframeContour:            100,
+	}
+	chartView3DPerspective = map[string]int{
+		Contour:          0,
+		WireframeContour: 0,
 	}
 	chartView3DRAngAx = map[string]int{
 		Area:                        0,
@@ -260,6 +280,9 @@ var (
 		Pie3D:                       0,
 		Radar:                       0,
 		Scatter:                     0,
+		Surface3D:                   0,
+		WireframeSurface3D:          0,
+		Contour:                     0,
 	}
 	chartLegendPosition = map[string]string{
 		"bottom":    "b",
@@ -315,6 +338,10 @@ var (
 		Pie3D:                       "General",
 		Radar:                       "General",
 		Scatter:                     "General",
+		Surface3D:                   "General",
+		WireframeSurface3D:          "General",
+		Contour:                     "General",
+		WireframeContour:            "General",
 	}
 	chartValAxCrossBetween = map[string]string{
 		Area:                        "midCat",
@@ -363,6 +390,10 @@ var (
 		Pie3D:                       "between",
 		Radar:                       "between",
 		Scatter:                     "between",
+		Surface3D:                   "midCat",
+		WireframeSurface3D:          "midCat",
+		Contour:                     "midCat",
+		WireframeContour:            "midCat",
 	}
 	plotAreaChartGrouping = map[string]string{
 		Area:                        "standard",
@@ -455,6 +486,10 @@ var (
 	valAxPos = map[bool]string{
 		true:  "r",
 		false: "l",
+	}
+	valTickLblPos = map[string]string{
+		Contour:          "none",
+		WireframeContour: "none",
 	}
 )
 
@@ -573,6 +608,10 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //     pie3D                       | 3D pie chart
 //     radar                       | radar chart
 //     scatter                     | scatter chart
+//     surface3D                   | 3D surface chart
+//     wireframeSurface3D          | 3D wireframe surface chart
+//     contour                     | contour chart
+//     wireframeContour            | wireframe contour
 //
 // In Excel a chart series is a collection of information that defines which data is plotted such as values, axis labels and formatting.
 //
@@ -791,6 +830,7 @@ func (f *File) addChart(formatSet *formatChart) {
 				RotX:         &attrValInt{Val: chartView3DRotX[formatSet.Type]},
 				RotY:         &attrValInt{Val: chartView3DRotY[formatSet.Type]},
 				DepthPercent: &attrValInt{Val: chartView3DDepthPercent[formatSet.Type]},
+				Perspective:  &attrValInt{Val: chartView3DPerspective[formatSet.Type]},
 				RAngAx:       &attrValInt{Val: chartView3DRAngAx[formatSet.Type]},
 			},
 			Floor: &cThicknessSpPr{
@@ -891,6 +931,10 @@ func (f *File) addChart(formatSet *formatChart) {
 		Pie:                         f.drawPieChart,
 		Radar:                       f.drawRadarChart,
 		Scatter:                     f.drawScatterChart,
+		Surface3D:                   f.drawSurface3DChart,
+		WireframeSurface3D:          f.drawSurface3DChart,
+		Contour:                     f.drawSurfaceChart,
+		WireframeContour:            f.drawSurfaceChart,
 	}
 	xlsxChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
 
@@ -1248,6 +1292,52 @@ func (f *File) drawScatterChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
+// drawSurface3DChart provides a function to draw the c:surface3DChart element by
+// given format sets.
+func (f *File) drawSurface3DChart(formatSet *formatChart) *cPlotArea {
+	plotArea := &cPlotArea{
+		Surface3DChart: &cCharts{
+			Ser: f.drawChartSeries(formatSet),
+			AxID: []*attrValInt{
+				{Val: 754001152},
+				{Val: 753999904},
+				{Val: 832256642},
+			},
+		},
+		CatAx: f.drawPlotAreaCatAx(formatSet),
+		ValAx: f.drawPlotAreaValAx(formatSet),
+		SerAx: f.drawPlotAreaSerAx(formatSet),
+	}
+	if formatSet.Type == WireframeSurface3D {
+		plotArea.Surface3DChart.Wireframe = &attrValBool{Val: true}
+	}
+	return plotArea
+}
+
+// drawSurfaceChart provides a function to draw the c:surfaceChart element by
+// given format sets.
+func (f *File) drawSurfaceChart(formatSet *formatChart) *cPlotArea {
+	plotArea := &cPlotArea{
+		SurfaceChart: &cCharts{
+			Ser: f.drawChartSeries(formatSet),
+			AxID: []*attrValInt{
+				{Val: 754001152},
+				{Val: 753999904},
+				{Val: 832256642},
+			},
+		},
+		CatAx: f.drawPlotAreaCatAx(formatSet),
+		ValAx: f.drawPlotAreaValAx(formatSet),
+		SerAx: f.drawPlotAreaSerAx(formatSet),
+	}
+	if formatSet.Type == WireframeContour {
+		plotArea.SurfaceChart.Wireframe = &attrValBool{Val: true}
+	}
+	return plotArea
+}
+
+// drawChartShape provides a function to draw the c:shape element by given
+// format sets.
 func (f *File) drawChartShape(formatSet *formatChart) *attrValString {
 	shapes := map[string]string{
 		Bar3DConeClustered:          "cone",
@@ -1273,9 +1363,7 @@ func (f *File) drawChartShape(formatSet *formatChart) *attrValString {
 		Col3DCylinderPercentStacked: "cylinder",
 	}
 	if shape, ok := shapes[formatSet.Type]; ok {
-		return &attrValString{
-			Val: shape,
-		}
+		return &attrValString{Val: shape}
 	}
 	return nil
 }
@@ -1459,7 +1547,7 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 // given format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
-	chartSeriesDLbls := map[string]*cDLbls{Scatter: nil}
+	chartSeriesDLbls := map[string]*cDLbls{Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil}
 	if _, ok := chartSeriesDLbls[formatSet.Type]; ok {
 		return nil
 	}
@@ -1476,7 +1564,7 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 	if formatSet.XAxis.Maximum == 0 {
 		max = nil
 	}
-	return []*cAxs{
+	axs := []*cAxs{
 		{
 			AxID: &attrValInt{Val: 754001152},
 			Scaling: &cScaling{
@@ -1503,6 +1591,10 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 			NoMultiLvlLbl: &attrValBool{Val: false},
 		},
 	}
+	if formatSet.XAxis.MajorGridlines {
+		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+	}
+	return axs
 }
 
 // drawPlotAreaValAx provides a function to draw the c:valAx element.
@@ -1515,7 +1607,7 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 	if formatSet.YAxis.Maximum == 0 {
 		max = nil
 	}
-	return []*cAxs{
+	axs := []*cAxs{
 		{
 			AxID: &attrValInt{Val: 753999904},
 			Scaling: &cScaling{
@@ -1537,6 +1629,41 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 			CrossAx:       &attrValInt{Val: 754001152},
 			Crosses:       &attrValString{Val: "autoZero"},
 			CrossBetween:  &attrValString{Val: chartValAxCrossBetween[formatSet.Type]},
+		},
+	}
+	if formatSet.YAxis.MajorGridlines {
+		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+	}
+	if pos, ok := valTickLblPos[formatSet.Type]; ok {
+		axs[0].TickLblPos.Val = pos
+	}
+	return axs
+}
+
+// drawPlotAreaSerAx provides a function to draw the c:serAx element.
+func (f *File) drawPlotAreaSerAx(formatSet *formatChart) []*cAxs {
+	min := &attrValFloat{Val: formatSet.YAxis.Minimum}
+	max := &attrValFloat{Val: formatSet.YAxis.Maximum}
+	if formatSet.YAxis.Minimum == 0 {
+		min = nil
+	}
+	if formatSet.YAxis.Maximum == 0 {
+		max = nil
+	}
+	return []*cAxs{
+		{
+			AxID: &attrValInt{Val: 832256642},
+			Scaling: &cScaling{
+				Orientation: &attrValString{Val: orientation[formatSet.YAxis.ReverseOrder]},
+				Max:         max,
+				Min:         min,
+			},
+			Delete:     &attrValBool{Val: false},
+			AxPos:      &attrValString{Val: catAxPos[formatSet.XAxis.ReverseOrder]},
+			TickLblPos: &attrValString{Val: "nextTo"},
+			SpPr:       f.drawPlotAreaSpPr(),
+			TxPr:       f.drawPlotAreaTxPr(),
+			CrossAx:    &attrValInt{Val: 753999904},
 		},
 	}
 }

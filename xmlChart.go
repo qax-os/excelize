@@ -294,26 +294,30 @@ type cView3D struct {
 	RotX         *attrValInt `xml:"rotX"`
 	RotY         *attrValInt `xml:"rotY"`
 	DepthPercent *attrValInt `xml:"depthPercent"`
+	Perspective  *attrValInt `xml:"perspective"`
 	RAngAx       *attrValInt `xml:"rAngAx"`
 }
 
 // cPlotArea directly maps the plotArea element. This element specifies the
 // plot area of the chart.
 type cPlotArea struct {
-	Layout        *string  `xml:"layout"`
-	AreaChart     *cCharts `xml:"areaChart"`
-	Area3DChart   *cCharts `xml:"area3DChart"`
-	BarChart      *cCharts `xml:"barChart"`
-	Bar3DChart    *cCharts `xml:"bar3DChart"`
-	DoughnutChart *cCharts `xml:"doughnutChart"`
-	LineChart     *cCharts `xml:"lineChart"`
-	PieChart      *cCharts `xml:"pieChart"`
-	Pie3DChart    *cCharts `xml:"pie3DChart"`
-	RadarChart    *cCharts `xml:"radarChart"`
-	ScatterChart  *cCharts `xml:"scatterChart"`
-	CatAx         []*cAxs  `xml:"catAx"`
-	ValAx         []*cAxs  `xml:"valAx"`
-	SpPr          *cSpPr   `xml:"spPr"`
+	Layout         *string  `xml:"layout"`
+	AreaChart      *cCharts `xml:"areaChart"`
+	Area3DChart    *cCharts `xml:"area3DChart"`
+	BarChart       *cCharts `xml:"barChart"`
+	Bar3DChart     *cCharts `xml:"bar3DChart"`
+	DoughnutChart  *cCharts `xml:"doughnutChart"`
+	LineChart      *cCharts `xml:"lineChart"`
+	PieChart       *cCharts `xml:"pieChart"`
+	Pie3DChart     *cCharts `xml:"pie3DChart"`
+	RadarChart     *cCharts `xml:"radarChart"`
+	ScatterChart   *cCharts `xml:"scatterChart"`
+	Surface3DChart *cCharts `xml:"surface3DChart"`
+	SurfaceChart   *cCharts `xml:"surfaceChart"`
+	CatAx          []*cAxs  `xml:"catAx"`
+	ValAx          []*cAxs  `xml:"valAx"`
+	SerAx          []*cAxs  `xml:"serAx"`
+	SpPr           *cSpPr   `xml:"spPr"`
 }
 
 // cCharts specifies the common element of the chart.
@@ -323,6 +327,7 @@ type cCharts struct {
 	RadarStyle   *attrValString `xml:"radarStyle"`
 	ScatterStyle *attrValString `xml:"scatterStyle"`
 	VaryColors   *attrValBool   `xml:"varyColors"`
+	Wireframe    *attrValBool   `xml:"wireframe"`
 	Ser          *[]cSer        `xml:"ser"`
 	Shape        *attrValString `xml:"shape"`
 	DLbls        *cDLbls        `xml:"dLbls"`
@@ -334,23 +339,29 @@ type cCharts struct {
 
 // cAxs directly maps the catAx and valAx element.
 type cAxs struct {
-	AxID          *attrValInt    `xml:"axId"`
-	Scaling       *cScaling      `xml:"scaling"`
-	Delete        *attrValBool   `xml:"delete"`
-	AxPos         *attrValString `xml:"axPos"`
-	NumFmt        *cNumFmt       `xml:"numFmt"`
-	MajorTickMark *attrValString `xml:"majorTickMark"`
-	MinorTickMark *attrValString `xml:"minorTickMark"`
-	TickLblPos    *attrValString `xml:"tickLblPos"`
-	SpPr          *cSpPr         `xml:"spPr"`
-	TxPr          *cTxPr         `xml:"txPr"`
-	CrossAx       *attrValInt    `xml:"crossAx"`
-	Crosses       *attrValString `xml:"crosses"`
-	CrossBetween  *attrValString `xml:"crossBetween"`
-	Auto          *attrValBool   `xml:"auto"`
-	LblAlgn       *attrValString `xml:"lblAlgn"`
-	LblOffset     *attrValInt    `xml:"lblOffset"`
-	NoMultiLvlLbl *attrValBool   `xml:"noMultiLvlLbl"`
+	AxID           *attrValInt    `xml:"axId"`
+	Scaling        *cScaling      `xml:"scaling"`
+	Delete         *attrValBool   `xml:"delete"`
+	AxPos          *attrValString `xml:"axPos"`
+	MajorGridlines *cChartLines   `xml:"majorGridlines"`
+	NumFmt         *cNumFmt       `xml:"numFmt"`
+	MajorTickMark  *attrValString `xml:"majorTickMark"`
+	MinorTickMark  *attrValString `xml:"minorTickMark"`
+	TickLblPos     *attrValString `xml:"tickLblPos"`
+	SpPr           *cSpPr         `xml:"spPr"`
+	TxPr           *cTxPr         `xml:"txPr"`
+	CrossAx        *attrValInt    `xml:"crossAx"`
+	Crosses        *attrValString `xml:"crosses"`
+	CrossBetween   *attrValString `xml:"crossBetween"`
+	Auto           *attrValBool   `xml:"auto"`
+	LblAlgn        *attrValString `xml:"lblAlgn"`
+	LblOffset      *attrValInt    `xml:"lblOffset"`
+	NoMultiLvlLbl  *attrValBool   `xml:"noMultiLvlLbl"`
+}
+
+// cChartLines directly maps the chart lines content model.
+type cChartLines struct {
+	SpPr *cSpPr `xml:"spPr"`
 }
 
 // cScaling directly maps the scaling element. This element contains
@@ -497,6 +508,7 @@ type cPageMargins struct {
 // formatChartAxis directly maps the format settings of the chart axis.
 type formatChartAxis struct {
 	Crossing            string  `json:"crossing"`
+	MajorGridlines      bool    `json:"major_grid_lines"`
 	MajorTickMark       string  `json:"major_tick_mark"`
 	MinorTickMark       string  `json:"minor_tick_mark"`
 	MinorUnitType       string  `json:"minor_unit_type"`
