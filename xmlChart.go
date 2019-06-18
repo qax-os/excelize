@@ -306,6 +306,7 @@ type cPlotArea struct {
 	Area3DChart    *cCharts `xml:"area3DChart"`
 	BarChart       *cCharts `xml:"barChart"`
 	Bar3DChart     *cCharts `xml:"bar3DChart"`
+	BubbleChart    *cCharts `xml:"bubbleChart"`
 	DoughnutChart  *cCharts `xml:"doughnutChart"`
 	LineChart      *cCharts `xml:"lineChart"`
 	PieChart       *cCharts `xml:"pieChart"`
@@ -323,6 +324,7 @@ type cPlotArea struct {
 // cCharts specifies the common element of the chart.
 type cCharts struct {
 	BarDir       *attrValString `xml:"barDir"`
+	BubbleScale  *attrValFloat  `xml:"bubbleScale"`
 	Grouping     *attrValString `xml:"grouping"`
 	RadarStyle   *attrValString `xml:"radarStyle"`
 	ScatterStyle *attrValString `xml:"scatterStyle"`
@@ -395,6 +397,8 @@ type cSer struct {
 	XVal             *cCat        `xml:"xVal"`
 	YVal             *cVal        `xml:"yVal"`
 	Smooth           *attrValBool `xml:"smooth"`
+	BubbleSize       *cVal        `xml:"bubbleSize"`
+	Bubble3D         *attrValBool `xml:"bubble3D"`
 }
 
 // cMarker (Marker) directly maps the marker element. This element specifies a

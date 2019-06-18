@@ -69,6 +69,8 @@ const (
 	WireframeSurface3D          = "wireframeSurface3D"
 	Contour                     = "contour"
 	WireframeContour            = "wireframeContour"
+	Bubble                      = "bubble"
+	Bubble3D                    = "bubble3D"
 )
 
 // This section defines the default value of chart properties.
@@ -228,6 +230,8 @@ var (
 		WireframeSurface3D:          100,
 		Contour:                     100,
 		WireframeContour:            100,
+		Bubble:                      100,
+		Bubble3D:                    100,
 	}
 	chartView3DPerspective = map[string]int{
 		Contour:          0,
@@ -283,6 +287,8 @@ var (
 		Surface3D:                   0,
 		WireframeSurface3D:          0,
 		Contour:                     0,
+		Bubble:                      0,
+		Bubble3D:                    0,
 	}
 	chartLegendPosition = map[string]string{
 		"bottom":    "b",
@@ -342,6 +348,8 @@ var (
 		WireframeSurface3D:          "General",
 		Contour:                     "General",
 		WireframeContour:            "General",
+		Bubble:                      "General",
+		Bubble3D:                    "General",
 	}
 	chartValAxCrossBetween = map[string]string{
 		Area:                        "midCat",
@@ -394,6 +402,8 @@ var (
 		WireframeSurface3D:          "midCat",
 		Contour:                     "midCat",
 		WireframeContour:            "midCat",
+		Bubble:                      "midCat",
+		Bubble3D:                    "midCat",
 	}
 	plotAreaChartGrouping = map[string]string{
 		Area:                        "standard",
@@ -611,7 +621,9 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //     surface3D                   | 3D surface chart
 //     wireframeSurface3D          | 3D wireframe surface chart
 //     contour                     | contour chart
-//     wireframeContour            | wireframe contour
+//     wireframeContour            | wireframe contour chart
+//     bubble                      | bubble chart
+//     bubble3D                    | 3D bubble chart
 //
 // In Excel a chart series is a collection of information that defines which data is plotted such as values, axis labels and formatting.
 //
@@ -935,6 +947,8 @@ func (f *File) addChart(formatSet *formatChart) {
 		WireframeSurface3D:          f.drawSurface3DChart,
 		Contour:                     f.drawSurfaceChart,
 		WireframeContour:            f.drawSurfaceChart,
+		Bubble:                      f.drawBaseChart,
+		Bubble3D:                    f.drawBaseChart,
 	}
 	xlsxChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
 
@@ -965,12 +979,13 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 		},
 	}
 	var ok bool
-	c.BarDir.Val, ok = plotAreaChartBarDir[formatSet.Type]
-	if !ok {
+	if c.BarDir.Val, ok = plotAreaChartBarDir[formatSet.Type]; !ok {
 		c.BarDir = nil
 	}
-	c.Grouping.Val = plotAreaChartGrouping[formatSet.Type]
-	if formatSet.Type == "colStacked" || formatSet.Type == "barStacked" || formatSet.Type == "barPercentStacked" || formatSet.Type == "colPercentStacked" || formatSet.Type == "areaPercentStacked" {
+	if c.Grouping.Val, ok = plotAreaChartGrouping[formatSet.Type]; !ok {
+		c.Grouping = nil
+	}
+	if strings.HasSuffix(formatSet.Type, "Stacked") {
 		c.Overlap = &attrValInt{Val: 100}
 	}
 	catAx := f.drawPlotAreaCatAx(formatSet)
@@ -1175,6 +1190,16 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
+		},
+		"bubble": {
+			BubbleChart: &c,
+			CatAx:       catAx,
+			ValAx:       valAx,
+		},
+		"bubble3D": {
+			BubbleChart: &c,
+			CatAx:       catAx,
+			ValAx:       valAx,
 		},
 	}
 	return charts[formatSet.Type]
@@ -1381,14 +1406,16 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 					F: formatSet.Series[k].Name,
 				},
 			},
-			SpPr:   f.drawChartSeriesSpPr(k, formatSet),
-			Marker: f.drawChartSeriesMarker(k, formatSet),
-			DPt:    f.drawChartSeriesDPt(k, formatSet),
-			DLbls:  f.drawChartSeriesDLbls(formatSet),
-			Cat:    f.drawChartSeriesCat(formatSet.Series[k], formatSet),
-			Val:    f.drawChartSeriesVal(formatSet.Series[k], formatSet),
-			XVal:   f.drawChartSeriesXVal(formatSet.Series[k], formatSet),
-			YVal:   f.drawChartSeriesYVal(formatSet.Series[k], formatSet),
+			SpPr:       f.drawChartSeriesSpPr(k, formatSet),
+			Marker:     f.drawChartSeriesMarker(k, formatSet),
+			DPt:        f.drawChartSeriesDPt(k, formatSet),
+			DLbls:      f.drawChartSeriesDLbls(formatSet),
+			Cat:        f.drawChartSeriesCat(formatSet.Series[k], formatSet),
+			Val:        f.drawChartSeriesVal(formatSet.Series[k], formatSet),
+			XVal:       f.drawChartSeriesXVal(formatSet.Series[k], formatSet),
+			YVal:       f.drawChartSeriesYVal(formatSet.Series[k], formatSet),
+			BubbleSize: f.drawCharSeriesBubbleSize(formatSet.Series[k], formatSet),
+			Bubble3D:   f.drawCharSeriesBubble3D(formatSet),
 		})
 	}
 	return &ser
@@ -1525,8 +1552,30 @@ func (f *File) drawChartSeriesYVal(v formatChartSeries, formatSet *formatChart) 
 			F: v.Values,
 		},
 	}
-	chartSeriesYVal := map[string]*cVal{Scatter: val}
+	chartSeriesYVal := map[string]*cVal{Scatter: val, Bubble: val, Bubble3D: val}
 	return chartSeriesYVal[formatSet.Type]
+}
+
+// drawCharSeriesBubbleSize provides a function to draw the c:bubbleSize
+// element by given chart series and format sets.
+func (f *File) drawCharSeriesBubbleSize(v formatChartSeries, formatSet *formatChart) *cVal {
+	if _, ok := map[string]bool{Bubble: true, Bubble3D: true}[formatSet.Type]; !ok {
+		return nil
+	}
+	return &cVal{
+		NumRef: &cNumRef{
+			F: v.Values,
+		},
+	}
+}
+
+// drawCharSeriesBubble3D provides a function to draw the c:bubble3D element
+// by given format sets.
+func (f *File) drawCharSeriesBubble3D(formatSet *formatChart) *attrValBool {
+	if _, ok := map[string]bool{Bubble3D: true}[formatSet.Type]; !ok {
+		return nil
+	}
+	return &attrValBool{Val: true}
 }
 
 // drawChartDLbls provides a function to draw the c:dLbls element by given
@@ -1547,7 +1596,7 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 // given format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
-	chartSeriesDLbls := map[string]*cDLbls{Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil}
+	chartSeriesDLbls := map[string]*cDLbls{Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil}
 	if _, ok := chartSeriesDLbls[formatSet.Type]; ok {
 		return nil
 	}
