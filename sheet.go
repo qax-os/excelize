@@ -704,18 +704,14 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	var (
 		regSearch bool
 		result    []string
-		inElement string
-		r         xlsxRow
 	)
 	for _, r := range reg {
 		regSearch = r
 	}
-
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return result, err
 	}
-
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return result, nil
@@ -724,6 +720,17 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
+	return f.searchSheet(name, value, regSearch)
+}
+
+// searchSheet provides a function to get coordinates by given worksheet name,
+// cell value, and regular expression.
+func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error) {
+	var (
+		inElement string
+		result    []string
+		r         xlsxRow
+	)
 	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
 	d := f.sharedStringsReader()
 
@@ -1211,6 +1218,71 @@ func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 		opt.getPageLayout(ps)
 	}
 	return err
+}
+
+// SetDefinedName provides a function to set the defined names of the workbook
+// or worksheet. If not specified scopr, the default scope is workbook.
+// For example:
+//
+//    f.SetDefinedName(&excelize.DefinedName{
+//        Name:     "Amount",
+//        RefersTo: "Sheet1!$A$2:$D$5",
+//        Comment:  "defined name comment",
+//        Scope:    "Sheet2",
+//    })
+//
+func (f *File) SetDefinedName(definedName *DefinedName) error {
+	wb := f.workbookReader()
+	d := xlsxDefinedName{
+		Name:    definedName.Name,
+		Comment: definedName.Comment,
+		Data:    definedName.RefersTo,
+	}
+	if definedName.Scope != "" {
+		if sheetID := f.GetSheetIndex(definedName.Scope); sheetID != 0 {
+			sheetID--
+			d.LocalSheetID = &sheetID
+		}
+	}
+	if wb.DefinedNames != nil {
+		for _, dn := range wb.DefinedNames.DefinedName {
+			var scope string
+			if dn.LocalSheetID != nil {
+				scope = f.GetSheetName(*dn.LocalSheetID + 1)
+			}
+			if scope == definedName.Scope && dn.Name == definedName.Name {
+				return errors.New("the same name already exists on scope")
+			}
+		}
+		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
+		return nil
+	}
+	wb.DefinedNames = &xlsxDefinedNames{
+		DefinedName: []xlsxDefinedName{d},
+	}
+	return nil
+}
+
+// GetDefinedName provides a function to get the defined names of the workbook
+// or worksheet.
+func (f *File) GetDefinedName() []DefinedName {
+	var definedNames []DefinedName
+	wb := f.workbookReader()
+	if wb.DefinedNames != nil {
+		for _, dn := range wb.DefinedNames.DefinedName {
+			definedName := DefinedName{
+				Name:     dn.Name,
+				Comment:  dn.Comment,
+				RefersTo: dn.Data,
+				Scope:    "Workbook",
+			}
+			if dn.LocalSheetID != nil {
+				definedName.Scope = f.GetSheetName(*dn.LocalSheetID + 1)
+			}
+			definedNames = append(definedNames, definedName)
+		}
+	}
+	return definedNames
 }
 
 // workSheetRelsReader provides a function to get the pointer to the structure

@@ -182,6 +182,11 @@ func TestSaveAsWrongPath(t *testing.T) {
 	}
 }
 
+func TestOpenReader(t *testing.T) {
+	_, err := OpenReader(strings.NewReader(""))
+	assert.EqualError(t, err, "zip: not a valid zip file")
+}
+
 func TestBrokenFile(t *testing.T) {
 	// Test write file with broken file struct.
 	f := File{}
@@ -1031,22 +1036,6 @@ func TestHSL(t *testing.T) {
 	t.Log(RGBToHSL(250, 100, 50))
 	t.Log(RGBToHSL(50, 100, 250))
 	t.Log(RGBToHSL(250, 50, 100))
-}
-
-func TestSearchSheet(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	// Test search in a not exists worksheet.
-	t.Log(f.SearchSheet("Sheet4", ""))
-	// Test search a not exists value.
-	t.Log(f.SearchSheet("Sheet1", "X"))
-	t.Log(f.SearchSheet("Sheet1", "A"))
-	// Test search the coordinates where the numerical value in the range of
-	// "0-9" of Sheet1 is described by regular expression:
-	t.Log(f.SearchSheet("Sheet1", "[0-9]", true))
 }
 
 func TestProtectSheet(t *testing.T) {

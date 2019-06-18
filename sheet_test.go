@@ -108,6 +108,29 @@ func TestPageLayoutOption(t *testing.T) {
 	}
 }
 
+func TestSearchSheet(t *testing.T) {
+	f, err := excelize.OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	// Test search in a not exists worksheet.
+	_, err = f.SearchSheet("Sheet4", "")
+	assert.EqualError(t, err, "sheet Sheet4 is not exist")
+	var expected []string
+	// Test search a not exists value.
+	result, err := f.SearchSheet("Sheet1", "X")
+	assert.NoError(t, err)
+	assert.EqualValues(t, expected, result)
+	result, err = f.SearchSheet("Sheet1", "A")
+	assert.NoError(t, err)
+	assert.EqualValues(t, []string{"A1"}, result)
+	// Test search the coordinates where the numerical value in the range of
+	// "0-9" of Sheet1 is described by regular expression:
+	result, err = f.SearchSheet("Sheet1", "[0-9]", true)
+	assert.NoError(t, err)
+	assert.EqualValues(t, expected, result)
+}
+
 func TestSetPageLayout(t *testing.T) {
 	f := excelize.NewFile()
 	// Test set page layout on not exists worksheet.
@@ -141,4 +164,26 @@ func TestSetHeaderFooter(t *testing.T) {
 		FirstHeader:      `&CCenter &"-,Bold"Bold&"-,Regular"HeaderU+000A&D`,
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetHeaderFooter.xlsx")))
+}
+
+func TestDefinedName(t *testing.T) {
+	f := excelize.NewFile()
+	assert.NoError(t, f.SetDefinedName(&excelize.DefinedName{
+		Name:     "Amount",
+		RefersTo: "Sheet1!$A$2:$D$5",
+		Comment:  "defined name comment",
+		Scope:    "Sheet1",
+	}))
+	assert.NoError(t, f.SetDefinedName(&excelize.DefinedName{
+		Name:     "Amount",
+		RefersTo: "Sheet1!$A$2:$D$5",
+		Comment:  "defined name comment",
+	}))
+	assert.EqualError(t, f.SetDefinedName(&excelize.DefinedName{
+		Name:     "Amount",
+		RefersTo: "Sheet1!$A$2:$D$5",
+		Comment:  "defined name comment",
+	}), "the same name already exists on scope")
+	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[1].RefersTo)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDefinedName.xlsx")))
 }

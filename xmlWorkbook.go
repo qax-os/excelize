@@ -288,3 +288,12 @@ type xlsxCustomWorkbookView struct {
 	XWindow              *int    `xml:"xWindow,attr"`
 	YWindow              *int    `xml:"yWindow,attr"`
 }
+
+// DefinedName directly maps the name for a cell or cell range on a
+// worksheet.
+type DefinedName struct {
+	Name     string
+	Comment  string
+	RefersTo string
+	Scope    string
+}
