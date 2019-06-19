@@ -21,7 +21,7 @@ import (
 // GetRows return all the rows in a sheet by given worksheet name (case
 // sensitive). For example:
 //
-//	  rows, err := f.GetRows("Sheet1")
+//    rows, err := f.GetRows("Sheet1")
 //    for _, row := range rows {
 //        for _, colCell := range row {
 //            fmt.Print(colCell, "\t")
@@ -160,7 +160,7 @@ func (err ErrSheetNotExist) Error() string {
 //
 //    rows, err := f.Rows("Sheet1")
 //    for rows.Next() {
-//    	  row, err := rows.Columns()
+//        row, err := rows.Columns()
 //        for _, colCell := range row {
 //            fmt.Print(colCell, "\t")
 //        }
