@@ -1,8 +1,13 @@
 package excelize
 
 import (
-	"fmt"
+	_ "image/gif"
+	_ "image/jpeg"
 	_ "image/png"
+
+	_ "golang.org/x/image/tiff"
+
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -25,37 +30,41 @@ func BenchmarkAddPictureFromBytes(b *testing.B) {
 }
 
 func TestAddPicture(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with offset and location hyperlink.
-	err = xlsx.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
+	err = f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
 		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
-	err = xlsx.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
+	err = f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
+	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet from bytes.
-	assert.NoError(t, xlsx.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".jpg", file))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
 	// Test add picture to worksheet from bytes with illegal cell coordinates.
-	assert.EqualError(t, xlsx.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".jpg", file), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".png", file), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q15", filepath.Join("test", "images", "excel.jpg"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), ""))
 
 	// Test write file to given path.
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
 }
 
 func TestAddPictureErrors(t *testing.T) {

@@ -385,7 +385,7 @@ func (f *File) addMedia(file []byte, ext string) string {
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
-	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false}
+	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
 	content := f.contentTypesReader()
 	for _, v := range content.Defaults {
 		_, ok := imageTypes[v.Extension]

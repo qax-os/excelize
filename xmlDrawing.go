@@ -42,7 +42,7 @@ const (
 	NameSpaceDublinCoreMetadataIntiative = "http://purl.org/dc/dcmitype/"
 )
 
-var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png"}
+var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff"}
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional
