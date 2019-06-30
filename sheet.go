@@ -1221,7 +1221,7 @@ func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 }
 
 // SetDefinedName provides a function to set the defined names of the workbook
-// or worksheet. If not specified scopr, the default scope is workbook.
+// or worksheet. If not specified scope, the default scope is workbook.
 // For example:
 //
 //    f.SetDefinedName(&excelize.DefinedName{

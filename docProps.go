@@ -31,7 +31,7 @@ import (
 //     Description    | An explanation of the content of the resource.
 //                    |
 //     LastModifiedBy | The user who performed the last modification. The identification is
-//                    |  environment-specific.
+//                    | environment-specific.
 //                    |
 //     Language       | The language of the intellectual content of the resource.
 //                    |
@@ -40,7 +40,7 @@ import (
 //     Revision       | The topic of the content of the resource.
 //                    |
 //     ContentStatus  | The status of the content. For example: Values might include "Draft",
-//                    | "Reviewed", and "Final"
+//                    | "Reviewed" and "Final"
 //                    |
 //     Category       | A categorization of the content of this package.
 //                    |
