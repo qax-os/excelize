@@ -275,12 +275,19 @@ func (f *File) SetActiveSheet(index int) {
 // GetActiveSheetIndex provides a function to get active sheet index of the
 // XLSX. If not found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() int {
-	for idx, name := range f.GetSheetMap() {
-		xlsx, _ := f.workSheetReader(name)
-		for _, sheetView := range xlsx.SheetViews.SheetView {
-			if sheetView.TabSelected {
-				return idx
+	wb := f.workbookReader()
+	if wb != nil {
+		view := wb.BookViews.WorkBookView
+		sheets := wb.Sheets.Sheet
+		var activeTab int
+		if len(view) > 0 {
+			activeTab = view[0].ActiveTab
+			if len(sheets) > activeTab && sheets[activeTab].SheetID != 0 {
+				return sheets[activeTab].SheetID
 			}
+		}
+		if len(wb.Sheets.Sheet) == 1 {
+			return wb.Sheets.Sheet[0].SheetID
 		}
 	}
 	return 0
@@ -308,34 +315,26 @@ func (f *File) SetSheetName(oldName, newName string) {
 // worksheet index. If given sheet index is invalid, will return an empty
 // string.
 func (f *File) GetSheetName(index int) string {
-	content := f.workbookReader()
-	rels := f.workbookRelsReader()
-	for _, rel := range rels.Relationships {
-		rID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(rel.Target, "worksheets/sheet"), ".xml"))
-		if rID == index {
-			for _, v := range content.Sheets.Sheet {
-				if v.ID == rel.ID {
-					return v.Name
-				}
+	wb := f.workbookReader()
+	if wb != nil {
+		for _, sheet := range wb.Sheets.Sheet {
+			if sheet.SheetID == index {
+				return sheet.Name
 			}
 		}
 	}
 	return ""
 }
 
-// GetSheetIndex provides a function to get worksheet index of XLSX by given sheet
-// name. If given worksheet name is invalid, will return an integer type value
-// 0.
+// GetSheetIndex provides a function to get worksheet index of XLSX by given
+// sheet name. If given worksheet name is invalid, will return an integer type
+// value 0.
 func (f *File) GetSheetIndex(name string) int {
-	content := f.workbookReader()
-	rels := f.workbookRelsReader()
-	for _, v := range content.Sheets.Sheet {
-		if v.Name == name {
-			for _, rel := range rels.Relationships {
-				if v.ID == rel.ID {
-					rID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(rel.Target, "worksheets/sheet"), ".xml"))
-					return rID
-				}
+	wb := f.workbookReader()
+	if wb != nil {
+		for _, sheet := range wb.Sheets.Sheet {
+			if sheet.Name == trimSheetName(name) {
+				return sheet.SheetID
 			}
 		}
 	}
@@ -354,16 +353,11 @@ func (f *File) GetSheetIndex(name string) int {
 //    }
 //
 func (f *File) GetSheetMap() map[int]string {
-	content := f.workbookReader()
-	rels := f.workbookRelsReader()
+	wb := f.workbookReader()
 	sheetMap := map[int]string{}
-	for _, v := range content.Sheets.Sheet {
-		for _, rel := range rels.Relationships {
-			relStr := strings.SplitN(rel.Target, "worksheets/sheet", 2)
-			if rel.ID == v.ID && len(relStr) == 2 {
-				rID, _ := strconv.Atoi(strings.TrimSuffix(relStr[1], ".xml"))
-				sheetMap[rID] = v.Name
-			}
+	if wb != nil {
+		for _, sheet := range wb.Sheets.Sheet {
+			sheetMap[sheet.SheetID] = sheet.Name
 		}
 	}
 	return sheetMap
@@ -411,19 +405,31 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 // value of the deleted worksheet, it will cause a file error when you open it.
 // This function will be invalid when only the one worksheet is left.
 func (f *File) DeleteSheet(name string) {
-	content := f.workbookReader()
-	for k, v := range content.Sheets.Sheet {
-		if v.Name == trimSheetName(name) && len(content.Sheets.Sheet) > 1 {
-			content.Sheets.Sheet = append(content.Sheets.Sheet[:k], content.Sheets.Sheet[k+1:]...)
-			sheet := "xl/worksheets/sheet" + strconv.Itoa(v.SheetID) + ".xml"
-			rels := "xl/worksheets/_rels/sheet" + strconv.Itoa(v.SheetID) + ".xml.rels"
-			target := f.deleteSheetFromWorkbookRels(v.ID)
+	if f.SheetCount == 1 || f.GetSheetIndex(name) == 0 {
+		return
+	}
+	sheetName := trimSheetName(name)
+	wb := f.workbookReader()
+	wbRels := f.workbookRelsReader()
+	for idx, sheet := range wb.Sheets.Sheet {
+		if sheet.Name == sheetName {
+			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
+			var sheetXML, rels string
+			if wbRels != nil {
+				for _, rel := range wbRels.Relationships {
+					if rel.ID == sheet.ID {
+						sheetXML = fmt.Sprintf("xl/%s", rel.Target)
+						rels = strings.Replace(fmt.Sprintf("xl/%s.rels", rel.Target), "xl/worksheets/", "xl/worksheets/_rels/", -1)
+					}
+				}
+			}
+			target := f.deleteSheetFromWorkbookRels(sheet.ID)
 			f.deleteSheetFromContentTypes(target)
-			f.deleteCalcChain(v.SheetID, "") // Delete CalcChain
-			delete(f.sheetMap, name)
-			delete(f.XLSX, sheet)
+			f.deleteCalcChain(sheet.SheetID, "") // Delete CalcChain
+			delete(f.sheetMap, sheetName)
+			delete(f.XLSX, sheetXML)
 			delete(f.XLSX, rels)
-			delete(f.Sheet, sheet)
+			delete(f.Sheet, sheetXML)
 			f.SheetCount--
 		}
 	}
@@ -1283,6 +1289,63 @@ func (f *File) GetDefinedName() []DefinedName {
 		}
 	}
 	return definedNames
+}
+
+// GroupSheets provides a function to group worksheets by given worksheets
+// name. Group worksheets must contain an active worksheet.
+func (f *File) GroupSheets(sheets []string) error {
+	// check an active worksheet in group worksheets
+	var inActiveSheet bool
+	activeSheet := f.GetActiveSheetIndex()
+	sheetMap := f.GetSheetMap()
+	for idx, sheetName := range sheetMap {
+		for _, s := range sheets {
+			if s == sheetName && idx == activeSheet {
+				inActiveSheet = true
+			}
+		}
+	}
+	if !inActiveSheet {
+		return errors.New("group worksheet must contain an active worksheet")
+	}
+	// check worksheet exists
+	ws := []*xlsxWorksheet{}
+	for _, sheet := range sheets {
+		xlsx, err := f.workSheetReader(sheet)
+		if err != nil {
+			return err
+		}
+		ws = append(ws, xlsx)
+	}
+	for _, s := range ws {
+		sheetViews := s.SheetViews.SheetView
+		if len(sheetViews) > 0 {
+			for idx := range sheetViews {
+				s.SheetViews.SheetView[idx].TabSelected = true
+			}
+			continue
+		}
+	}
+	return nil
+}
+
+// UngroupSheets provides a function to ungroup worksheets.
+func (f *File) UngroupSheets() error {
+	activeSheet := f.GetActiveSheetIndex()
+	sheetMap := f.GetSheetMap()
+	for sheetID, sheet := range sheetMap {
+		if activeSheet == sheetID {
+			continue
+		}
+		xlsx, _ := f.workSheetReader(sheet)
+		sheetViews := xlsx.SheetViews.SheetView
+		if len(sheetViews) > 0 {
+			for idx := range sheetViews {
+				xlsx.SheetViews.SheetView[idx].TabSelected = false
+			}
+		}
+	}
+	return nil
 }
 
 // workSheetRelsReader provides a function to get the pointer to the structure
