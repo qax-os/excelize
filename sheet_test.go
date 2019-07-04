@@ -187,3 +187,24 @@ func TestDefinedName(t *testing.T) {
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[1].RefersTo)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDefinedName.xlsx")))
 }
+
+func TestGroupSheets(t *testing.T) {
+	f := excelize.NewFile()
+	sheets := []string{"Sheet2", "Sheet3"}
+	for _, sheet := range sheets {
+		f.NewSheet(sheet)
+	}
+	assert.EqualError(t, f.GroupSheets([]string{"Sheet1", "SheetN"}), "sheet SheetN is not exist")
+	assert.EqualError(t, f.GroupSheets([]string{"Sheet2", "Sheet3"}), "group worksheet must contain an active worksheet")
+	assert.NoError(t, f.GroupSheets([]string{"Sheet1", "Sheet2"}))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGroupSheets.xlsx")))
+}
+
+func TestUngroupSheets(t *testing.T) {
+	f := excelize.NewFile()
+	sheets := []string{"Sheet2", "Sheet3", "Sheet4", "Sheet5"}
+	for _, sheet := range sheets {
+		f.NewSheet(sheet)
+	}
+	assert.NoError(t, f.UngroupSheets())
+}
