@@ -90,7 +90,7 @@ type xlsxPageSetUp struct {
 	Draft              bool    `xml:"draft,attr,omitempty"`
 	Errors             string  `xml:"errors,attr,omitempty"`
 	FirstPageNumber    int     `xml:"firstPageNumber,attr,omitempty"`
-	FitToHeight        *int    `xml:"fitToHeight,attr"`
+	FitToHeight        int     `xml:"fitToHeight,attr,omitempty"`
 	FitToWidth         int     `xml:"fitToWidth,attr,omitempty"`
 	HorizontalDPI      float32 `xml:"horizontalDpi,attr,omitempty"`
 	RID                string  `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
