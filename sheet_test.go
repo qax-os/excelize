@@ -23,6 +23,8 @@ func ExampleFile_SetPageLayout() {
 	if err := f.SetPageLayout(
 		"Sheet1",
 		excelize.PageLayoutPaperSize(10),
+		excelize.FitToHeight(2),
+		excelize.FitToWidth(2),
 	); err != nil {
 		panic(err)
 	}
@@ -34,6 +36,8 @@ func ExampleFile_GetPageLayout() {
 	var (
 		orientation excelize.PageLayoutOrientation
 		paperSize   excelize.PageLayoutPaperSize
+		fitToHeight excelize.FitToHeight
+		fitToWidth  excelize.FitToWidth
 	)
 	if err := f.GetPageLayout("Sheet1", &orientation); err != nil {
 		panic(err)
@@ -41,13 +45,24 @@ func ExampleFile_GetPageLayout() {
 	if err := f.GetPageLayout("Sheet1", &paperSize); err != nil {
 		panic(err)
 	}
+	if err := f.GetPageLayout("Sheet1", &fitToHeight); err != nil {
+		panic(err)
+	}
+
+	if err := f.GetPageLayout("Sheet1", &fitToWidth); err != nil {
+		panic(err)
+	}
 	fmt.Println("Defaults:")
 	fmt.Printf("- orientation: %q\n", orientation)
 	fmt.Printf("- paper size: %d\n", paperSize)
+	fmt.Printf("- fit to height: %d\n", fitToHeight)
+	fmt.Printf("- fit to width: %d\n", fitToWidth)
 	// Output:
 	// Defaults:
 	// - orientation: "portrait"
 	// - paper size: 1
+	// - fit to height: 1
+	// - fit to width: 1
 }
 
 func TestPageLayoutOption(t *testing.T) {
@@ -59,6 +74,8 @@ func TestPageLayoutOption(t *testing.T) {
 	}{
 		{new(excelize.PageLayoutOrientation), excelize.PageLayoutOrientation(excelize.OrientationLandscape)},
 		{new(excelize.PageLayoutPaperSize), excelize.PageLayoutPaperSize(10)},
+		{new(excelize.FitToHeight), excelize.FitToHeight(2)},
+		{new(excelize.FitToWidth), excelize.FitToWidth(2)},
 	}
 
 	for i, test := range testData {
