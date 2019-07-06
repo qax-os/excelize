@@ -1025,6 +1025,10 @@ type (
 	PageLayoutOrientation string
 	// PageLayoutPaperSize defines the paper size of the worksheet
 	PageLayoutPaperSize int
+	// FitToHeight specified number of vertical pages to fit on
+	FitToHeight int
+	// FitToWidth specified number of horizontal pages to fit on
+	FitToWidth int
 )
 
 const (
@@ -1062,6 +1066,38 @@ func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
 		return
 	}
 	*p = PageLayoutPaperSize(ps.PaperSize)
+}
+
+// setPageLayout provides a method to set the fit to height for the worksheet.
+func (p FitToHeight) setPageLayout(ps *xlsxPageSetUp) {
+	if int(p) > 0 {
+		ps.FitToHeight = int(p)
+	}
+}
+
+// getPageLayout provides a method to get the fit to height for the worksheet.
+func (p *FitToHeight) getPageLayout(ps *xlsxPageSetUp) {
+	if ps == nil || ps.FitToHeight == 0 {
+		*p = 1
+		return
+	}
+	*p = FitToHeight(ps.FitToHeight)
+}
+
+// setPageLayout provides a method to set the fit to width for the worksheet.
+func (p FitToWidth) setPageLayout(ps *xlsxPageSetUp) {
+	if int(p) > 0 {
+		ps.FitToWidth = int(p)
+	}
+}
+
+// getPageLayout provides a method to get the fit to width for the worksheet.
+func (p *FitToWidth) getPageLayout(ps *xlsxPageSetUp) {
+	if ps == nil || ps.FitToWidth == 0 {
+		*p = 1
+		return
+	}
+	*p = FitToWidth(ps.FitToWidth)
 }
 
 // SetPageLayout provides a function to sets worksheet page layout.
@@ -1213,6 +1249,8 @@ func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
 // Available options:
 //   PageLayoutOrientation(string)
 //   PageLayoutPaperSize(int)
+//   FitToHeight(int)
+//   FitToWidth(int)
 func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
