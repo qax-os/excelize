@@ -23,22 +23,36 @@ type SheetViewOptionPtr interface {
 }
 
 type (
-	// DefaultGridColor is a SheetViewOption.
+	// DefaultGridColor specified a flag indicating that the consuming
+	// application should use the default grid lines color (system dependent).
+	// Overrides any color specified in colorId.
 	DefaultGridColor bool
-	// RightToLeft is a SheetViewOption.
+	// RightToLeft specified a flag indicating whether the sheet is in 'right to
+	// left' display mode. When in this mode, Column A is on the far right,
+	// Column B ;is one column left of Column A, and so on. Also, information in
+	// cells is displayed in the Right to Left format.
 	RightToLeft bool
-	// ShowFormulas is a SheetViewOption.
+	// ShowFormulas specified a flag indicating whether this sheet should display
+	// formulas.
 	ShowFormulas bool
-	// ShowGridLines is a SheetViewOption.
+	// ShowGridLines specified a flag indicating whether this sheet should
+	// display gridlines.
 	ShowGridLines bool
-	// ShowRowColHeaders is a SheetViewOption.
+	// ShowRowColHeaders specified a flag indicating whether the sheet should
+	// display row and column headings.
 	ShowRowColHeaders bool
-	// ZoomScale is a SheetViewOption.
+	// ZoomScale specified a window zoom magnification for current view
+	// representing percent values. This attribute is restricted to values
+	// ranging from 10 to 400. Horizontal & Vertical scale together.
 	ZoomScale float64
-	// TopLeftCell is a SheetViewOption.
+	// TopLeftCell specified a location of the top left visible cell Location of
+	// the top left visible cell in the bottom right pane (when in Left-to-Right
+	// mode).
 	TopLeftCell string
 	/* TODO
-	// ShowWhiteSpace is a SheetViewOption.
+	// ShowWhiteSpace specified flag indicating whether page layout view shall
+	// display margins. False means do not display left, right, top (header), and
+	// bottom (footer) margins (even when there is data in the header or footer).
 	ShowWhiteSpace bool
 	// ShowZeros is a SheetViewOption.
 	ShowZeros bool
@@ -98,7 +112,7 @@ func (o *ShowRowColHeaders) getSheetViewOption(view *xlsxSheetView) {
 }
 
 func (o ZoomScale) setSheetViewOption(view *xlsxSheetView) {
-	//This attribute is restricted to values ranging from 10 to 400.
+	// This attribute is restricted to values ranging from 10 to 400.
 	if float64(o) >= 10 && float64(o) <= 400 {
 		view.ZoomScale = float64(o)
 	}
@@ -135,6 +149,8 @@ func (f *File) getSheetView(sheetName string, viewIndex int) (*xlsxSheetView, er
 //    ShowFormulas(bool)
 //    ShowGridLines(bool)
 //    ShowRowColHeaders(bool)
+//    ZoomScale(float64)
+//    TopLeftCell(string)
 // Example:
 //    err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
 func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOption) error {
@@ -158,6 +174,8 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 //    ShowFormulas(bool)
 //    ShowGridLines(bool)
 //    ShowRowColHeaders(bool)
+//    ZoomScale(float64)
+//    TopLeftCell(string)
 // Example:
 //    var showGridLines excelize.ShowGridLines
 //    err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
