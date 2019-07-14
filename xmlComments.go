@@ -54,7 +54,20 @@ type xlsxComment struct {
 // spreadsheet application implementation detail. A recommended guideline is
 // 32767 chars.
 type xlsxText struct {
-	R []xlsxR `xml:"r"`
+	T          *string          `xml:"t"`
+	R          []xlsxR          `xml:"r"`
+	RPh        *xlsxPhoneticRun `xml:"rPh"`
+	PhoneticPr *xlsxPhoneticPr  `xml:"phoneticPr"`
+}
+
+// xlsxPhoneticRun element represents a run of text which displays a phonetic
+// hint for this String Item (si). Phonetic hints are used to give information
+// about the pronunciation of an East Asian language. The hints are displayed
+// as text within the spreadsheet cells across the top portion of the cell.
+type xlsxPhoneticRun struct {
+	Sb uint32 `xml:"sb,attr"`
+	Eb uint32 `xml:"eb,attr"`
+	T  string `xml:"t,attr"`
 }
 
 // formatComment directly maps the format settings of the comment.
