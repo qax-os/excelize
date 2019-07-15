@@ -42,6 +42,9 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 				}
 				sheetComment.Ref = comment.Ref
 				sheetComment.AuthorID = comment.AuthorID
+				if comment.Text.T != nil {
+					sheetComment.Text += *comment.Text.T
+				}
 				for _, text := range comment.Text.R {
 					sheetComment.Text += text.T
 				}
