@@ -231,7 +231,8 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 		return nil
 	}
 
-	for i, areaData := range xlsx.MergeCells.Cells {
+	for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+		areaData := xlsx.MergeCells.Cells[i]
 		coordinates, err := f.areaRefToCoordinates(areaData.Ref)
 		if err != nil {
 			return err
@@ -240,18 +241,21 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 		if dir == rows {
 			if y1 == num && y2 == num && offset < 0 {
 				f.deleteMergeCell(xlsx, i)
+				i--
 			}
 			y1 = f.adjustMergeCellsHelper(y1, num, offset)
 			y2 = f.adjustMergeCellsHelper(y2, num, offset)
 		} else {
 			if x1 == num && x2 == num && offset < 0 {
 				f.deleteMergeCell(xlsx, i)
+				i--
 			}
 			x1 = f.adjustMergeCellsHelper(x1, num, offset)
 			x2 = f.adjustMergeCellsHelper(x2, num, offset)
 		}
 		if x1 == x2 && y1 == y2 {
 			f.deleteMergeCell(xlsx, i)
+			i--
 		}
 		if areaData.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
 			return err
@@ -276,7 +280,7 @@ func (f *File) adjustMergeCellsHelper(pivot, num, offset int) int {
 
 // deleteMergeCell provides a function to delete merged cell by given index.
 func (f *File) deleteMergeCell(sheet *xlsxWorksheet, idx int) {
-	if len(sheet.MergeCells.Cells) > 1 {
+	if len(sheet.MergeCells.Cells) > idx {
 		sheet.MergeCells.Cells = append(sheet.MergeCells.Cells[:idx], sheet.MergeCells.Cells[idx+1:]...)
 		sheet.MergeCells.Count = len(sheet.MergeCells.Cells)
 	} else {
