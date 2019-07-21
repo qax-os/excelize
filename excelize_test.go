@@ -1078,6 +1078,17 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN is not exist")
 }
 
+func TestAddVBAProject(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetPrOptions("Sheet1", CodeName("Sheet1")))
+	assert.EqualError(t, f.AddVBAProject("macros.bin"), "stat macros.bin: no such file or directory")
+	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "Book1.xlsx")), "unsupported VBA project extension")
+	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
+	// Test add VBA project twice.
+	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
+}
+
 func prepareTestBook1() (*File, error) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if err != nil {

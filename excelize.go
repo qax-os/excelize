@@ -19,7 +19,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
+	"strings"
 )
 
 // File define a populated XLSX file struct.
@@ -225,4 +227,79 @@ func (f *File) UpdateLinkedValue() error {
 		}
 	}
 	return nil
+}
+
+// AddVBAProject provides the method to add vbaProject.bin file which contains
+// functions and/or macros. The file extension should be .xlsm. For example:
+//
+//    err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1"))
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    err = f.AddVBAProject("vbaProject.bin")
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//    err = f.SaveAs("macros.xlsm")
+//    if err != nil {
+//        fmt.Println(err)
+//    }
+//
+func (f *File) AddVBAProject(bin string) error {
+	var err error
+	// Check vbaProject.bin exists first.
+	if _, err = os.Stat(bin); os.IsNotExist(err) {
+		return err
+	}
+	if path.Ext(bin) != ".bin" {
+		return errors.New("unsupported VBA project extension")
+	}
+	f.setContentTypePartVBAProjectExtensions()
+	wb := f.workbookRelsReader()
+	var rID int
+	var ok bool
+	for _, rel := range wb.Relationships {
+		if rel.Target == "vbaProject.bin" && rel.Type == SourceRelationshipVBAProject {
+			ok = true
+			continue
+		}
+		t, _ := strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
+		if t > rID {
+			rID = t
+		}
+	}
+	rID++
+	if !ok {
+		wb.Relationships = append(wb.Relationships, xlsxWorkbookRelation{
+			ID:     "rId" + strconv.Itoa(rID),
+			Target: "vbaProject.bin",
+			Type:   SourceRelationshipVBAProject,
+		})
+	}
+	file, _ := ioutil.ReadFile(bin)
+	f.XLSX["xl/vbaProject.bin"] = file
+	return err
+}
+
+// setContentTypePartVBAProjectExtensions provides a function to set the
+// content type for relationship parts and the main document part.
+func (f *File) setContentTypePartVBAProjectExtensions() {
+	var ok bool
+	content := f.contentTypesReader()
+	for _, v := range content.Defaults {
+		if v.Extension == "bin" {
+			ok = true
+		}
+	}
+	for idx, o := range content.Overrides {
+		if o.PartName == "/xl/workbook.xml" {
+			content.Overrides[idx].ContentType = "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
+		}
+	}
+	if !ok {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   "bin",
+			ContentType: "application/vnd.ms-office.vbaProject",
+		})
+	}
 }
