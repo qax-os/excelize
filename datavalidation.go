@@ -141,12 +141,12 @@ func (dd *DataValidation) SetRange(f1, f2 int, t DataValidationType, o DataValid
 //
 //     dvRange := excelize.NewDataValidation(true)
 //     dvRange.Sqref = "A7:B8"
-//     dvRange.SetSqrefDropList("E1:E3", true)
+//     dvRange.SetSqrefDropList("$E$1:$E$3", true)
 //     f.AddDataValidation("Sheet1", dvRange)
 //
 func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
 	if isCurrentSheet {
-		dd.Formula1 = sqref
+		dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
 		dd.Type = convDataValidationType(typeList)
 		return nil
 	}
