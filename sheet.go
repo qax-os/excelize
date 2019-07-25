@@ -372,7 +372,12 @@ func (f *File) getSheetMap() map[string]string {
 	for _, v := range content.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
 			if rel.ID == v.ID {
-				maps[v.Name] = fmt.Sprintf("xl/%s", rel.Target)
+				// Construct a target XML as xl/worksheets/sheet%d by split path, compatible with different types of relative paths in workbook.xml.rels, for example: worksheets/sheet%d.xml and /xl/worksheets/sheet%d.xml
+				pathInfo := strings.Split(rel.Target, "/")
+				pathInfoLen := len(pathInfo)
+				if pathInfoLen > 0 {
+					maps[v.Name] = fmt.Sprintf("xl/worksheets/%s", pathInfo[pathInfoLen-1])
+				}
 			}
 		}
 	}
