@@ -110,6 +110,7 @@ func (f *File) workSheetWriter() {
 			f.saveFileList(p, replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(output)))
 			ok := f.checked[p]
 			if ok {
+				delete(f.Sheet, p)
 				f.checked[p] = false
 			}
 		}
