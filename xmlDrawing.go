@@ -31,6 +31,8 @@ const (
 	NameSpaceDrawingMLChart              = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 	NameSpaceDrawingMLSpreadSheet        = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
 	NameSpaceSpreadSheet                 = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+	NameSpaceSpreadSheetX14              = "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"
+	NameSpaceSpreadSheetExcel2006Main    = "http://schemas.microsoft.com/office/excel/2006/main"
 	NameSpaceXML                         = "http://www.w3.org/XML/1998/namespace"
 	NameSpaceXMLSchemaInstance           = "http://www.w3.org/2001/XMLSchema-instance"
 	StrictSourceRelationship             = "http://purl.oclc.org/ooxml/officeDocument/relationships"
@@ -41,6 +43,19 @@ const (
 	NameSpaceDublinCore                  = "http://purl.org/dc/elements/1.1/"
 	NameSpaceDublinCoreTerms             = "http://purl.org/dc/terms/"
 	NameSpaceDublinCoreMetadataIntiative = "http://purl.org/dc/dcmitype/"
+	// The extLst child element ([ISO/IEC29500-1:2016] section 18.2.10) of the
+	// worksheet element ([ISO/IEC29500-1:2016] section 18.3.1.99) is extended by
+	// the addition of new child ext elements ([ISO/IEC29500-1:2016] section
+	// 18.2.7)
+	ExtURIConditionalFormattings = "{78C0D931-6437-407D-A8EE-F0AAD7539E65}"
+	ExtURIDataValidations        = "{CCE6A557-97BC-4B89-ADB6-D9C93CAAB3DF}"
+	ExtURISparklineGroups        = "{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"
+	ExtURISlicerList             = "{A8765BA9-456A-4DAB-B4F3-ACF838C121DE}"
+	ExtURIProtectedRanges        = "{FC87AEE6-9EDD-4A0A-B7FB-166176984837}"
+	ExtURIIgnoredErrors          = "{01252117-D84E-4E92-8308-4BE1C098FCBB}"
+	ExtURIWebExtensions          = "{F7C9EE02-42E1-4005-9D12-6889AFFD525C}"
+	ExtURITimelineRefs           = "{7E03D99C-DC04-49d9-9315-930204A7B6E9}"
+	ExtURIDrawingBlip            = "{28A0092B-C50C-407E-A947-70E740481C1C}"
 )
 
 var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff"}
