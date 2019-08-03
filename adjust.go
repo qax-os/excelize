@@ -54,6 +54,11 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	}
 	checkSheet(xlsx)
 	checkRow(xlsx)
+
+	if xlsx.MergeCells != nil && len(xlsx.MergeCells.Cells) == 0 {
+		xlsx.MergeCells = nil
+	}
+
 	return nil
 }
 
@@ -283,8 +288,6 @@ func (f *File) deleteMergeCell(sheet *xlsxWorksheet, idx int) {
 	if len(sheet.MergeCells.Cells) > idx {
 		sheet.MergeCells.Cells = append(sheet.MergeCells.Cells[:idx], sheet.MergeCells.Cells[idx+1:]...)
 		sheet.MergeCells.Count = len(sheet.MergeCells.Cells)
-	} else {
-		sheet.MergeCells = nil
 	}
 }
 
