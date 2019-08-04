@@ -39,9 +39,6 @@ func TestRows(t *testing.T) {
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
-
-	r := Rows{}
-	r.Columns()
 }
 
 func TestRowsError(t *testing.T) {
@@ -668,6 +665,21 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 				}
 				assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, name)))
 			})
+		}
+	}
+}
+
+func BenchmarkRows(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
+		rows, _ := f.Rows("Sheet2")
+		for rows.Next() {
+			row, _ := rows.Columns()
+			for i := range row {
+				if i >= 0 {
+					continue
+				}
+			}
 		}
 	}
 }

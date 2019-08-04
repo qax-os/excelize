@@ -10,10 +10,8 @@
 package excelize
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"math"
 	"strconv"
 )
@@ -30,95 +28,35 @@ import (
 //    }
 //
 func (f *File) GetRows(sheet string) ([][]string, error) {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
-	if !ok {
-		return nil, nil
-	}
-
-	xlsx, err := f.workSheetReader(sheet)
+	rows, err := f.Rows(sheet)
 	if err != nil {
 		return nil, err
 	}
-	if xlsx != nil {
-		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
-	}
-
-	xml.NewDecoder(bytes.NewReader(f.readXML(name)))
-	d := f.sharedStringsReader()
-	var (
-		inElement string
-		rowData   xlsxRow
-	)
-
-	rowCount, colCount, err := f.getTotalRowsCols(name)
-	if err != nil {
-		return nil, nil
-	}
-	rows := make([][]string, rowCount)
-	for i := range rows {
-		rows[i] = make([]string, colCount)
-	}
-
-	var row int
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
-	for {
-		token, _ := decoder.Token()
-		if token == nil {
+	results := make([][]string, 0, 64)
+	for rows.Next() {
+		if rows.Error() != nil {
 			break
 		}
-		switch startElement := token.(type) {
-		case xml.StartElement:
-			inElement = startElement.Name.Local
-			if inElement == "row" {
-				rowData = xlsxRow{}
-				_ = decoder.DecodeElement(&rowData, &startElement)
-				cr := rowData.R - 1
-				for _, colCell := range rowData.C {
-					col, _, err := CellNameToCoordinates(colCell.R)
-					if err != nil {
-						return nil, err
-					}
-					val, _ := colCell.getValueFrom(f, d)
-					rows[cr][col-1] = val
-					if val != "" {
-						row = rowData.R
-					}
-				}
-			}
-		default:
+		row, err := rows.Columns()
+		if err != nil {
+			break
 		}
+		results = append(results, row)
 	}
-	return rows[:row], nil
+	return results, nil
 }
 
 // Rows defines an iterator to a sheet
 type Rows struct {
-	decoder *xml.Decoder
-	token   xml.Token
-	err     error
-	f       *File
+	err    error
+	f      *File
+	rows   []xlsxRow
+	curRow int
 }
 
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
-	for {
-		rows.token, rows.err = rows.decoder.Token()
-		if rows.err == io.EOF {
-			rows.err = nil
-		}
-		if rows.token == nil {
-			return false
-		}
-
-		switch startElement := rows.token.(type) {
-		case xml.StartElement:
-			inElement := startElement.Name.Local
-			if inElement == "row" {
-				return true
-			}
-		}
-	}
+	return rows.curRow < len(rows.rows)
 }
 
 // Error will return the error when the find next row element
@@ -128,15 +66,12 @@ func (rows *Rows) Error() error {
 
 // Columns return the current row's column values
 func (rows *Rows) Columns() ([]string, error) {
-	if rows.token == nil {
-		return []string{}, nil
-	}
-	startElement := rows.token.(xml.StartElement)
-	r := xlsxRow{}
-	_ = rows.decoder.DecodeElement(&r, &startElement)
+	curRow := rows.rows[rows.curRow]
+	rows.curRow++
+
+	columns := make([]string, len(curRow.C))
 	d := rows.f.sharedStringsReader()
-	columns := make([]string, len(r.C))
-	for _, colCell := range r.C {
+	for _, colCell := range curRow.C {
 		col, _, err := CellNameToCoordinates(colCell.R)
 		if err != nil {
 			return columns, err
@@ -181,44 +116,9 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
 	return &Rows{
-		f:       f,
-		decoder: xml.NewDecoder(bytes.NewReader(f.readXML(name))),
+		f:    f,
+		rows: xlsx.SheetData.Row,
 	}, nil
-}
-
-// getTotalRowsCols provides a function to get total columns and rows in a
-// worksheet.
-func (f *File) getTotalRowsCols(name string) (int, int, error) {
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
-	var inElement string
-	var r xlsxRow
-	var tr, tc int
-	for {
-		token, _ := decoder.Token()
-		if token == nil {
-			break
-		}
-		switch startElement := token.(type) {
-		case xml.StartElement:
-			inElement = startElement.Name.Local
-			if inElement == "row" {
-				r = xlsxRow{}
-				_ = decoder.DecodeElement(&r, &startElement)
-				tr = r.R
-				for _, colCell := range r.C {
-					col, _, err := CellNameToCoordinates(colCell.R)
-					if err != nil {
-						return tr, tc, err
-					}
-					if col > tc {
-						tc = col
-					}
-				}
-			}
-		default:
-		}
-	}
-	return tr, tc, nil
 }
 
 // SetRowHeight provides a function to set the height of a single row. For
