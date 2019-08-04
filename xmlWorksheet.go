@@ -238,6 +238,7 @@ type xlsxPageSetUpPr struct {
 // xlsxTabColor directly maps the tabColor element in the namespace currently I
 // have not checked it for completeness - it does as much as I need.
 type xlsxTabColor struct {
+	RGB   string  `xml:"rgb,attr,omitempty"`
 	Theme int     `xml:"theme,attr,omitempty"`
 	Tint  float64 `xml:"tint,attr,omitempty"`
 }
@@ -336,7 +337,7 @@ type xlsxCustomSheetView struct {
 	PageSetup      *xlsxPageSetUp    `xml:"pageSetup"`
 	HeaderFooter   *xlsxHeaderFooter `xml:"headerFooter"`
 	AutoFilter     *xlsxAutoFilter   `xml:"autoFilter"`
-	ExtLst         *xlsxExt          `xml:"extLst"`
+	ExtLst         *xlsxExtLst       `xml:"extLst"`
 	GUID           string            `xml:"guid,attr"`
 	Scale          int               `xml:"scale,attr,omitempty"`
 	ColorID        int               `xml:"colorId,attr,omitempty"`
@@ -630,6 +631,111 @@ type xlsxPicture struct {
 // something special about the cell.
 type xlsxLegacyDrawing struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxWorksheetExt directly maps the ext element in the worksheet.
+type xlsxWorksheetExt struct {
+	XMLName  xml.Name `xml:"ext"`
+	XMLNSX14 string   `xml:"xmlns:x14,attr,omitempty"`
+	XMLNSX15 string   `xml:"xmlns:x15,attr,omitempty"`
+	X14      string   `xml:"x14,attr,omitempty"`
+	X15      string   `xml:"x15,attr,omitempty"`
+	URI      string   `xml:"uri,attr"`
+	Content  string   `xml:",innerxml"`
+}
+
+// decodeWorksheetExt directly maps the ext element.
+type decodeWorksheetExt struct {
+	XMLName xml.Name            `xml:"extLst"`
+	Ext     []*xlsxWorksheetExt `xml:"ext"`
+}
+
+// decodeX14SparklineGroups directly maps the sparklineGroups element.
+type decodeX14SparklineGroups struct {
+	XMLName xml.Name `xml:"sparklineGroups"`
+	XMLNSXM string   `xml:"xmlns:xm,attr"`
+	Content string   `xml:",innerxml"`
+}
+
+// xlsxX14SparklineGroups directly maps the sparklineGroups element.
+type xlsxX14SparklineGroups struct {
+	XMLName         xml.Name                 `xml:"x14:sparklineGroups"`
+	XMLNSXM         string                   `xml:"xmlns:xm,attr"`
+	SparklineGroups []*xlsxX14SparklineGroup `xml:"x14:sparklineGroup"`
+	Content         string                   `xml:",innerxml"`
+}
+
+// xlsxX14SparklineGroup directly maps the sparklineGroup element.
+type xlsxX14SparklineGroup struct {
+	XMLName             xml.Name          `xml:"x14:sparklineGroup"`
+	ManualMax           int               `xml:"manualMax,attr,omitempty"`
+	ManualMin           int               `xml:"manualMin,attr,omitempty"`
+	LineWeight          float64           `xml:"lineWeight,attr,omitempty"`
+	Type                string            `xml:"type,attr,omitempty"`
+	DateAxis            bool              `xml:"dateAxis,attr,omitempty"`
+	DisplayEmptyCellsAs string            `xml:"displayEmptyCellsAs,attr,omitempty"`
+	Markers             bool              `xml:"markers,attr,omitempty"`
+	High                bool              `xml:"high,attr,omitempty"`
+	Low                 bool              `xml:"low,attr,omitempty"`
+	First               bool              `xml:"first,attr,omitempty"`
+	Last                bool              `xml:"last,attr,omitempty"`
+	Negative            bool              `xml:"negative,attr,omitempty"`
+	DisplayXAxis        bool              `xml:"displayXAxis,attr,omitempty"`
+	DisplayHidden       bool              `xml:"displayHidden,attr,omitempty"`
+	MinAxisType         string            `xml:"minAxisType,attr,omitempty"`
+	MaxAxisType         string            `xml:"maxAxisType,attr,omitempty"`
+	RightToLeft         bool              `xml:"rightToLeft,attr,omitempty"`
+	ColorSeries         *xlsxTabColor     `xml:"x14:colorSeries"`
+	ColorNegative       *xlsxTabColor     `xml:"x14:colorNegative"`
+	ColorAxis           *xlsxColor        `xml:"x14:colorAxis"`
+	ColorMarkers        *xlsxTabColor     `xml:"x14:colorMarkers"`
+	ColorFirst          *xlsxTabColor     `xml:"x14:colorFirst"`
+	ColorLast           *xlsxTabColor     `xml:"x14:colorLast"`
+	ColorHigh           *xlsxTabColor     `xml:"x14:colorHigh"`
+	ColorLow            *xlsxTabColor     `xml:"x14:colorLow"`
+	Sparklines          xlsxX14Sparklines `xml:"x14:sparklines"`
+}
+
+// xlsxX14Sparklines directly maps the sparklines element.
+type xlsxX14Sparklines struct {
+	Sparkline []*xlsxX14Sparkline `xml:"x14:sparkline"`
+}
+
+// xlsxX14Sparkline directly maps the sparkline element.
+type xlsxX14Sparkline struct {
+	F     string `xml:"xm:f"`
+	Sqref string `xml:"xm:sqref"`
+}
+
+// SparklineOption directly maps the settings of the sparkline.
+type SparklineOption struct {
+	Location      []string
+	Range         []string
+	Max           int
+	CustMax       int
+	Min           int
+	CustMin       int
+	Type          string
+	Weight        float64
+	DateAxis      bool
+	Markers       bool
+	High          bool
+	Low           bool
+	First         bool
+	Last          bool
+	Negative      bool
+	Axis          bool
+	Hidden        bool
+	Reverse       bool
+	Style         int
+	SeriesColor   string
+	NegativeColor string
+	MarkersColor  string
+	FirstColor    string
+	LastColor     string
+	HightColor    string
+	LowColor      string
+	EmptyCells    string
 }
 
 // formatPanes directly maps the settings of the panes.
