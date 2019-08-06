@@ -454,22 +454,22 @@ type xlsxSheetProtection struct {
 	HashValue           string `xml:"hashValue,attr,omitempty"`
 	SaltValue           string `xml:"saltValue,attr,omitempty"`
 	SpinCount           int    `xml:"spinCount,attr,omitempty"`
-	Sheet               bool   `xml:"sheet,attr,omitempty"`
-	Objects             bool   `xml:"objects,attr,omitempty"`
-	Scenarios           bool   `xml:"scenarios,attr,omitempty"`
-	FormatCells         bool   `xml:"formatCells,attr,omitempty"`
-	FormatColumns       bool   `xml:"formatColumns,attr,omitempty"`
-	FormatRows          bool   `xml:"formatRows,attr,omitempty"`
-	InsertColumns       bool   `xml:"insertColumns,attr,omitempty"`
-	InsertRows          bool   `xml:"insertRows,attr,omitempty"`
-	InsertHyperlinks    bool   `xml:"insertHyperlinks,attr,omitempty"`
-	DeleteColumns       bool   `xml:"deleteColumns,attr,omitempty"`
-	DeleteRows          bool   `xml:"deleteRows,attr,omitempty"`
-	SelectLockedCells   bool   `xml:"selectLockedCells,attr,omitempty"`
-	Sort                bool   `xml:"sort,attr,omitempty"`
-	AutoFilter          bool   `xml:"autoFilter,attr,omitempty"`
-	PivotTables         bool   `xml:"pivotTables,attr,omitempty"`
-	SelectUnlockedCells bool   `xml:"selectUnlockedCells,attr,omitempty"`
+	Sheet               bool   `xml:"sheet,attr"`
+	Objects             bool   `xml:"objects,attr"`
+	Scenarios           bool   `xml:"scenarios,attr"`
+	FormatCells         bool   `xml:"formatCells,attr"`
+	FormatColumns       bool   `xml:"formatColumns,attr"`
+	FormatRows          bool   `xml:"formatRows,attr"`
+	InsertColumns       bool   `xml:"insertColumns,attr"`
+	InsertRows          bool   `xml:"insertRows,attr"`
+	InsertHyperlinks    bool   `xml:"insertHyperlinks,attr"`
+	DeleteColumns       bool   `xml:"deleteColumns,attr"`
+	DeleteRows          bool   `xml:"deleteRows,attr"`
+	SelectLockedCells   bool   `xml:"selectLockedCells,attr"`
+	Sort                bool   `xml:"sort,attr"`
+	AutoFilter          bool   `xml:"autoFilter,attr"`
+	PivotTables         bool   `xml:"pivotTables,attr"`
+	SelectUnlockedCells bool   `xml:"selectUnlockedCells,attr"`
 }
 
 // xlsxPhoneticPr (Phonetic Properties) represents a collection of phonetic
