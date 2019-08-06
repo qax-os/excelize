@@ -11,48 +11,51 @@ package excelize
 
 import "fmt"
 
-// SheetViewOption is an option of a view of a worksheet. See SetSheetViewOptions().
+// SheetViewOption is an option of a view of a worksheet. See
+// SetSheetViewOptions().
 type SheetViewOption interface {
 	setSheetViewOption(view *xlsxSheetView)
 }
 
-// SheetViewOptionPtr is a writable SheetViewOption. See GetSheetViewOptions().
+// SheetViewOptionPtr is a writable SheetViewOption. See
+// GetSheetViewOptions().
 type SheetViewOptionPtr interface {
 	SheetViewOption
 	getSheetViewOption(view *xlsxSheetView)
 }
 
 type (
-	// DefaultGridColor specified a flag indicating that the consuming
-	// application should use the default grid lines color (system dependent).
-	// Overrides any color specified in colorId.
+	// DefaultGridColor is a SheetViewOption. It specifies a flag indicating that
+	// the consuming application should use the default grid lines color (system
+	// dependent). Overrides any color specified in colorId.
 	DefaultGridColor bool
-	// RightToLeft specified a flag indicating whether the sheet is in 'right to
-	// left' display mode. When in this mode, Column A is on the far right,
-	// Column B ;is one column left of Column A, and so on. Also, information in
-	// cells is displayed in the Right to Left format.
+	// RightToLeft is a SheetViewOption. It specifies a flag indicating whether
+	// the sheet is in 'right to left' display mode. When in this mode, Column A
+	// is on the far right, Column B ;is one column left of Column A, and so on.
+	// Also, information in cells is displayed in the Right to Left format.
 	RightToLeft bool
-	// ShowFormulas specified a flag indicating whether this sheet should display
-	// formulas.
+	// ShowFormulas is a SheetViewOption. It specifies a flag indicating whether
+	// this sheet should display formulas.
 	ShowFormulas bool
-	// ShowGridLines specified a flag indicating whether this sheet should
-	// display gridlines.
+	// ShowGridLines is a SheetViewOption. It specifies a flag indicating whether
+	// this sheet should display gridlines.
 	ShowGridLines bool
-	// ShowRowColHeaders specified a flag indicating whether the sheet should
-	// display row and column headings.
+	// ShowRowColHeaders is a SheetViewOption. It specifies a flag indicating
+	// whether the sheet should display row and column headings.
 	ShowRowColHeaders bool
-	// ZoomScale specified a window zoom magnification for current view
-	// representing percent values. This attribute is restricted to values
-	// ranging from 10 to 400. Horizontal & Vertical scale together.
+	// ZoomScale is a SheetViewOption. It specifies a window zoom magnification
+	// for current view representing percent values. This attribute is restricted
+	// to values ranging from 10 to 400. Horizontal & Vertical scale together.
 	ZoomScale float64
-	// TopLeftCell specified a location of the top left visible cell Location of
-	// the top left visible cell in the bottom right pane (when in Left-to-Right
-	// mode).
+	// TopLeftCell is a SheetViewOption. It specifies a location of the top left
+	// visible cell Location of the top left visible cell in the bottom right
+	// pane (when in Left-to-Right mode).
 	TopLeftCell string
 	/* TODO
-	// ShowWhiteSpace specified flag indicating whether page layout view shall
-	// display margins. False means do not display left, right, top (header), and
-	// bottom (footer) margins (even when there is data in the header or footer).
+	// ShowWhiteSpace is a SheetViewOption. It specifies a flag indicating
+	// whether page layout view shall display margins. False means do not display
+	// left, right, top (header), and bottom (footer) margins (even when there is
+	// data in the header or footer).
 	ShowWhiteSpace bool
 	// ShowZeros is a SheetViewOption.
 	ShowZeros bool
@@ -140,10 +143,11 @@ func (f *File) getSheetView(sheetName string, viewIndex int) (*xlsxSheetView, er
 	return &(xlsx.SheetViews.SheetView[viewIndex]), err
 }
 
-// SetSheetViewOptions sets sheet view options.
-// The viewIndex may be negative and if so is counted backward (-1 is the last view).
+// SetSheetViewOptions sets sheet view options. The viewIndex may be negative
+// and if so is counted backward (-1 is the last view).
 //
 // Available options:
+//
 //    DefaultGridColor(bool)
 //    RightToLeft(bool)
 //    ShowFormulas(bool)
@@ -151,8 +155,11 @@ func (f *File) getSheetView(sheetName string, viewIndex int) (*xlsxSheetView, er
 //    ShowRowColHeaders(bool)
 //    ZoomScale(float64)
 //    TopLeftCell(string)
+//
 // Example:
+//
 //    err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
+//
 func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOption) error {
 	view, err := f.getSheetView(name, viewIndex)
 	if err != nil {
@@ -165,10 +172,11 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 	return nil
 }
 
-// GetSheetViewOptions gets the value of sheet view options.
-// The viewIndex may be negative and if so is counted backward (-1 is the last view).
+// GetSheetViewOptions gets the value of sheet view options. The viewIndex may
+// be negative and if so is counted backward (-1 is the last view).
 //
 // Available options:
+//
 //    DefaultGridColor(bool)
 //    RightToLeft(bool)
 //    ShowFormulas(bool)
@@ -176,9 +184,12 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 //    ShowRowColHeaders(bool)
 //    ZoomScale(float64)
 //    TopLeftCell(string)
+//
 // Example:
+//
 //    var showGridLines excelize.ShowGridLines
 //    err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
+//
 func (f *File) GetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOptionPtr) error {
 	view, err := f.getSheetView(name, viewIndex)
 	if err != nil {
