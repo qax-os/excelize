@@ -9,7 +9,9 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 // xlsxWorksheet directly maps the worksheet element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
@@ -424,16 +426,8 @@ type xlsxC struct {
 	T        string   `xml:"t,attr,omitempty"` // Type.
 	F        *xlsxF   `xml:"f,omitempty"`      // Formula
 	V        string   `xml:"v,omitempty"`      // Value
-	IS       *xlsxIS  `xml:"is"`
+	IS       *xlsxSI  `xml:"is"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
-}
-
-// xlsxIS directly maps the t element. Cell containing an (inline) rich
-// string, i.e., one not in the shared string table. If this cell type is
-// used, then the cell value is in the is element rather than the v element in
-// the cell (c element).
-type xlsxIS struct {
-	T string `xml:"t"`
 }
 
 // xlsxF directly maps the f element in the namespace

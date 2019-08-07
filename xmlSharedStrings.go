@@ -9,7 +9,10 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"strings"
+)
 
 // xlsxSST directly maps the sst element from the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main. String values may
@@ -31,6 +34,17 @@ type xlsxSST struct {
 type xlsxSI struct {
 	T string  `xml:"t"`
 	R []xlsxR `xml:"r"`
+}
+
+func (x xlsxSI) String() string {
+	if len(x.R) > 0 {
+		var rows strings.Builder
+		for _, s := range x.R {
+			rows.WriteString(s.T)
+		}
+		return rows.String()
+	}
+	return x.T
 }
 
 // xlsxR directly maps the r element from the namespace
