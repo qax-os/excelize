@@ -390,7 +390,20 @@ func TestSetCellStyleAlignment(t *testing.T) {
 	}
 
 	var style int
-	style, err = f.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"top","wrap_text":true}}`)
+	fs := &FormatStyle{
+		Alignment: &Alignment{
+			Horizontal:      "center",
+			Indent:          1,
+			JustifyLastLine: true,
+			ReadingOrder:    0,
+			RelativeIndent:  1,
+			ShrinkToFit:     true,
+			TextRotation:    45,
+			Vertical:        "top",
+			WrapText:        true,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -418,26 +431,82 @@ func TestSetCellStyleBorder(t *testing.T) {
 	var style int
 
 	// Test set border on overlapping area with vertical variants shading styles gradient fill.
-	style, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":12},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+	fs := &FormatStyle{
+		Border: []Border{
+			Border{Type: "left", Color: "0000FF", Style: 2},
+			Border{Type: "top", Color: "00FF00", Style: 12},
+			Border{Type: "bottom", Color: "FFFF00", Style: 5},
+			Border{Type: "right", Color: "FF0000", Style: 6},
+			Border{Type: "diagonalDown", Color: "A020F0", Style: 9},
+			Border{Type: "diagonalUp", Color: "A020F0", Style: 8},
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SetCellStyle("Sheet1", "J21", "L25", style))
 
-	style, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":3},{"type":"bottom","color":"FFFF00","style":4},{"type":"right","color":"FF0000","style":5},{"type":"diagonalDown","color":"A020F0","style":6},{"type":"diagonalUp","color":"A020F0","style":7}],"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
+	fs = &FormatStyle{
+		Border: []Border{
+			Border{Type: "left", Color: "0000FF", Style: 2},
+			Border{Type: "top", Color: "00FF00", Style: 3},
+			Border{Type: "bottom", Color: "FFFF00", Style: 4},
+			Border{Type: "right", Color: "FF0000", Style: 5},
+			Border{Type: "diagonalDown", Color: "A020F0", Style: 6},
+			Border{Type: "diagonalUp", Color: "A020F0", Style: 7},
+		},
+		Fill: Fill{
+			Type:    "gradient",
+			Color:   []string{"#FFFFFF", "#E0EBF5"},
+			Shading: 1,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SetCellStyle("Sheet1", "M28", "K24", style))
 
-	style, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":3},{"type":"bottom","color":"FFFF00","style":4},{"type":"right","color":"FF0000","style":5},{"type":"diagonalDown","color":"A020F0","style":6},{"type":"diagonalUp","color":"A020F0","style":7}],"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":4}}`)
+	fs = &FormatStyle{
+		Border: []Border{
+			Border{Type: "left", Color: "0000FF", Style: 2},
+			Border{Type: "top", Color: "00FF00", Style: 3},
+			Border{Type: "bottom", Color: "FFFF00", Style: 4},
+			Border{Type: "right", Color: "FF0000", Style: 5},
+			Border{Type: "diagonalDown", Color: "A020F0", Style: 6},
+			Border{Type: "diagonalUp", Color: "A020F0", Style: 7},
+		},
+		Fill: Fill{
+			Type:    "gradient",
+			Color:   []string{"#FFFFFF", "#E0EBF5"},
+			Shading: 4,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SetCellStyle("Sheet1", "M28", "K24", style))
 
 	// Test set border and solid style pattern fill for a single cell.
-	style, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":8},{"type":"top","color":"00FF00","style":9},{"type":"bottom","color":"FFFF00","style":10},{"type":"right","color":"FF0000","style":11},{"type":"diagonalDown","color":"A020F0","style":12},{"type":"diagonalUp","color":"A020F0","style":13}],"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	// `{"border":[{"type":"left","color":"0000FF","style":8},{"type":"top","color":"00FF00","style":9},{"type":"bottom","color":"FFFF00","style":10},{"type":"right","color":"FF0000","style":11},{"type":"diagonalDown","color":"A020F0","style":12},{"type":"diagonalUp","color":"A020F0","style":13}],"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`
+	fs = &FormatStyle{
+		Border: []Border{
+			Border{Type: "left", Color: "0000FF", Style: 8},
+			Border{Type: "top", Color: "00FF00", Style: 9},
+			Border{Type: "bottom", Color: "FFFF00", Style: 10},
+			Border{Type: "right", Color: "FF0000", Style: 11},
+			Border{Type: "diagonalDown", Color: "A020F0", Style: 12},
+			Border{Type: "diagonalUp", Color: "A020F0", Style: 13},
+		},
+		Fill: Fill{
+			Type:    "pattern",
+			Color:   []string{"#E0EBF5"},
+			Shading: 1,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -453,14 +522,17 @@ func TestSetCellStyleBorderErrors(t *testing.T) {
 		t.FailNow()
 	}
 
-	// Set border with invalid style parameter.
-	_, err = f.NewStyle("")
-	if !assert.EqualError(t, err, "unexpected end of JSON input") {
-		t.FailNow()
-	}
-
 	// Set border with invalid style index number.
-	_, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":-1},{"type":"top","color":"00FF00","style":14},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+	fs := &FormatStyle{
+		Border: []Border{
+			Border{
+				Type:  "left",
+				Color: "0000FF",
+				Style: -1,
+			},
+		},
+	}
+	_, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

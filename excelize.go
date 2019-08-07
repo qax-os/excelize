@@ -18,7 +18,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 )
 
 // File define a populated XLSX file struct.
@@ -104,7 +103,8 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 		return err
 	}
 	if s == 0 {
-		style, _ := f.NewStyle(`{"number_format": ` + strconv.Itoa(format) + `}`)
+		fs := &FormatStyle{NumFmt: format}
+		style, _ := f.NewStyle(fs)
 		f.SetCellStyle(sheet, axis, axis, style)
 	}
 	return err

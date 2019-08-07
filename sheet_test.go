@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/mohae/deepcopy"
 	"github.com/stretchr/testify/assert"
+	"github.com/trende-jp/excelize"
 )
 
 func ExampleFile_SetPageLayout() {

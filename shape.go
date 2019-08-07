@@ -377,7 +377,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	if len(formatSet.Paragraph) < 1 {
 		formatSet.Paragraph = []formatShapeParagraph{
 			{
-				Font: formatFont{
+				Font: FormatFont{
 					Bold:      false,
 					Italic:    false,
 					Underline: "none",
