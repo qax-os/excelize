@@ -90,7 +90,15 @@ func TestOutlineLevel(t *testing.T) {
 
 func TestSetColStyle(t *testing.T) {
 	f := NewFile()
-	style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
+	fs := &FormatStyle{
+		Fill: Fill{
+			Type:    "pattern",
+			Color:   []string{"#94d3a2"},
+			Pattern: 1,
+		},
+	}
+	//style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
+	style, err := f.NewStyle(fs)
 	assert.NoError(t, err)
 	// Test set column style on not exists worksheet.
 	assert.EqualError(t, f.SetColStyle("SheetN", "E", style), "sheet SheetN is not exist")

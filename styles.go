@@ -1016,8 +1016,8 @@ func (f *File) styleSheetWriter() {
 
 // parseFormatStyleSet provides a function to parse the format settings of the
 // cells and conditional formats.
-func parseFormatStyleSet(style string) (*formatStyle, error) {
-	format := formatStyle{
+func parseFormatStyleSet(style string) (*FormatStyle, error) {
+	format := FormatStyle{
 		DecimalPlaces: 2,
 	}
 	err := json.Unmarshal([]byte(style), &format)
@@ -1885,13 +1885,9 @@ func parseFormatStyleSet(style string) (*formatStyle, error) {
 //
 // Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
 //
-func (f *File) NewStyle(style string) (int, error) {
+func (f *File) NewStyle(fs *FormatStyle) (int, error) {
 	var cellXfsID, fontID, borderID, fillID int
 	s := f.stylesReader()
-	fs, err := parseFormatStyleSet(style)
-	if err != nil {
-		return cellXfsID, err
-	}
 	numFmtID := setNumFmt(s, fs)
 
 	if fs.Font != nil {
@@ -1970,7 +1966,7 @@ func (f *File) readDefaultFont() *xlsxFont {
 
 // setFont provides a function to add font style by given cell format
 // settings.
-func (f *File) setFont(formatStyle *formatStyle) *xlsxFont {
+func (f *File) setFont(formatStyle *FormatStyle) *xlsxFont {
 	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
 	if formatStyle.Font.Size < 1 {
 		formatStyle.Font.Size = 11
@@ -2002,7 +1998,7 @@ func (f *File) setFont(formatStyle *formatStyle) *xlsxFont {
 
 // setNumFmt provides a function to check if number format code in the range
 // of built-in values.
-func setNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
+func setNumFmt(style *xlsxStyleSheet, formatStyle *FormatStyle) int {
 	dp := "0."
 	numFmtID := 164 // Default custom number format code from 164.
 	if formatStyle.DecimalPlaces < 0 || formatStyle.DecimalPlaces > 30 {
@@ -2049,7 +2045,7 @@ func setNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 }
 
 // setCustomNumFmt provides a function to set custom number format code.
-func setCustomNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
+func setCustomNumFmt(style *xlsxStyleSheet, formatStyle *FormatStyle) int {
 	nf := xlsxNumFmt{FormatCode: *formatStyle.CustomNumFmt}
 	if style.NumFmts != nil {
 		nf.NumFmtID = style.NumFmts.NumFmt[len(style.NumFmts.NumFmt)-1].NumFmtID + 1
@@ -2067,7 +2063,7 @@ func setCustomNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 }
 
 // setLangNumFmt provides a function to set number format code with language.
-func setLangNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
+func setLangNumFmt(style *xlsxStyleSheet, formatStyle *FormatStyle) int {
 	numFmts, ok := langNumFmt[formatStyle.Lang]
 	if !ok {
 		return 0
@@ -2095,7 +2091,7 @@ func setLangNumFmt(style *xlsxStyleSheet, formatStyle *formatStyle) int {
 
 // setFills provides a function to add fill elements in the styles.xml by
 // given cell format settings.
-func setFills(formatStyle *formatStyle, fg bool) *xlsxFill {
+func setFills(formatStyle *FormatStyle, fg bool) *xlsxFill {
 	var patterns = []string{
 		"none",
 		"solid",
@@ -2180,7 +2176,7 @@ func setFills(formatStyle *formatStyle, fg bool) *xlsxFill {
 // text alignment in cells. There are a variety of choices for how text is
 // aligned both horizontally and vertically, as well as indentation settings,
 // and so on.
-func setAlignment(formatStyle *formatStyle) *xlsxAlignment {
+func setAlignment(formatStyle *FormatStyle) *xlsxAlignment {
 	var alignment xlsxAlignment
 	if formatStyle.Alignment != nil {
 		alignment.Horizontal = formatStyle.Alignment.Horizontal
@@ -2198,7 +2194,7 @@ func setAlignment(formatStyle *formatStyle) *xlsxAlignment {
 
 // setProtection provides a function to set protection properties associated
 // with the cell.
-func setProtection(formatStyle *formatStyle) *xlsxProtection {
+func setProtection(formatStyle *FormatStyle) *xlsxProtection {
 	var protection xlsxProtection
 	if formatStyle.Protection != nil {
 		protection.Hidden = formatStyle.Protection.Hidden
@@ -2209,7 +2205,7 @@ func setProtection(formatStyle *formatStyle) *xlsxProtection {
 
 // setBorders provides a function to add border elements in the styles.xml by
 // given borders format settings.
-func setBorders(formatStyle *formatStyle) *xlsxBorder {
+func setBorders(formatStyle *FormatStyle) *xlsxBorder {
 	var styles = []string{
 		"none",
 		"thin",
