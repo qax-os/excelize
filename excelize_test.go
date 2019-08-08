@@ -1003,7 +1003,11 @@ func TestSharedStrings(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	f.GetRows("Sheet1")
+	rows, err := f.GetRows("Sheet1")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	assert.Equal(t, "A", rows[0][0])
 }
 
 func TestSetSheetRow(t *testing.T) {

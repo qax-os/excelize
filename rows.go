@@ -112,8 +112,8 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		return nil, ErrSheetNotExist{sheet}
 	}
 	if xlsx != nil {
-		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+		data := f.readXML(name)
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(namespaceStrictToTransitional(data)))
 	}
 	return &Rows{
 		f:    f,
