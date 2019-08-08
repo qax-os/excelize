@@ -109,10 +109,12 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {
+			zw.Close()
 			return buf, err
 		}
 		_, err = fi.Write(content)
 		if err != nil {
+			zw.Close()
 			return buf, err
 		}
 	}
