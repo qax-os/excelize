@@ -572,7 +572,15 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 			} else {
 				f.SetCellValue("Sheet2", c, val)
 			}
-			style, err := f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":5},"number_format": ` + strconv.Itoa(d) + `}`)
+			fs := &FormatStyle{
+				Fill: Fill{
+					Type:    "gradient",
+					Color:   []string{"#FFFFFF", "#E0EBF5"},
+					Shading: 5,
+				},
+				NumFmt: d,
+			}
+			style, err := f.NewStyle(fs)
 			if !assert.NoError(t, err) {
 				t.FailNow()
 			}
@@ -581,7 +589,8 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 		}
 	}
 	var style int
-	style, err = f.NewStyle(`{"number_format":-1}`)
+	fs := &FormatStyle{NumFmt: -1}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -600,13 +609,15 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		f.SetCellValue("Sheet1", "A1", 56)
 		f.SetCellValue("Sheet1", "A2", -32.3)
 		var style int
-		style, err = f.NewStyle(`{"number_format": 188, "decimal_places": -1}`)
+		fs := &FormatStyle{NumFmt: 188, DecimalPlaces: -1}
+		style, err = f.NewStyle(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-		style, err = f.NewStyle(`{"number_format": 188, "decimal_places": 31, "negred": true}`)
+		fs = &FormatStyle{NumFmt: 188, DecimalPlaces: 31, NegRed: true}
+		style, err = f.NewStyle(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -624,25 +635,30 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		f.SetCellValue("Sheet1", "A1", 42920.5)
 		f.SetCellValue("Sheet1", "A2", 42920.5)
 
-		_, err = f.NewStyle(`{"number_format": 26, "lang": "zh-tw"}`)
+		fs := &FormatStyle{NumFmt: 26, Lang: "zh-tw"}
+		_, err = f.NewStyle(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
 
-		style, err := f.NewStyle(`{"number_format": 27}`)
+		fs = &FormatStyle{NumFmt: 27}
+		style, err := f.NewStyle(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-		style, err = f.NewStyle(`{"number_format": 31, "lang": "ko-kr"}`)
+
+		fs = &FormatStyle{NumFmt: 31, Lang: "ko-kr"}
+		style, err = f.NewStyle(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))
 
-		style, err = f.NewStyle(`{"number_format": 71, "lang": "th-th"}`)
+		fs = &FormatStyle{NumFmt: 71, Lang: "th-th"}
+		style, err = f.NewStyle(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -656,12 +672,19 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 	f := NewFile()
 	f.SetCellValue("Sheet1", "A1", 42920.5)
 	f.SetCellValue("Sheet1", "A2", 42920.5)
-	style, err := f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+
+	s := "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"
+	fs := &FormatStyle{CustomNumFmt: &s}
+	style, err := f.NewStyle(fs)
 	if err != nil {
 		t.Log(err)
 	}
+
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-	style, err = f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
+
+	s = "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"
+	fs = &FormatStyle{CustomNumFmt: &s}
+	style, err = f.NewStyle(fs)
 	if err != nil {
 		t.Log(err)
 	}
@@ -678,25 +701,53 @@ func TestSetCellStyleFill(t *testing.T) {
 
 	var style int
 	// Test set fill for cell with invalid parameter.
-	style, err = f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":6}}`)
+	fs := &FormatStyle{
+		Fill: Fill{
+			Type:    "gradient",
+			Color:   []string{"#FFFFFF", "#E0EBF5"},
+			Shading: 6,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
-	style, err = f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF"],"shading":1}}`)
+	fs = &FormatStyle{
+		Fill: Fill{
+			Type:    "gradient",
+			Color:   []string{"#FFFFFF"},
+			Shading: 1,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
-	style, err = f.NewStyle(`{"fill":{"type":"pattern","color":[],"pattern":1}}`)
+	fs = &FormatStyle{
+		Fill: Fill{
+			Type:    "pattern",
+			Color:   []string{},
+			Shading: 1,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
-	style, err = f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":19}}`)
+	fs = &FormatStyle{
+		Fill: Fill{
+			Type:    "pattern",
+			Color:   []string{"#E0EBF5"},
+			Shading: 19,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -712,35 +763,70 @@ func TestSetCellStyleFont(t *testing.T) {
 	}
 
 	var style int
-	style, err = f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}`)
+	fs := &FormatStyle{
+		Font: &FormatFont{
+			Bold:      true,
+			Italic:    true,
+			Family:    "Berlin Sans FB Demi",
+			Size:      36,
+			Color:     "#777777",
+			Underline: "single",
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A1", "A1", style))
 
-	style, err = f.NewStyle(`{"font":{"italic":true,"underline":"double"}}`)
+	fs = &FormatStyle{
+		Font: &FormatFont{
+			Italic:    true,
+			Underline: "double",
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A2", "A2", style))
 
-	style, err = f.NewStyle(`{"font":{"bold":true}}`)
+	fs = &FormatStyle{
+		Font: &FormatFont{
+			Bold: true,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A3", "A3", style))
 
-	style, err = f.NewStyle(`{"font":{"bold":true,"family":"","size":0,"color":"","underline":""}}`)
+	fs = &FormatStyle{
+		Font: &FormatFont{
+			Bold:      true,
+			Family:    "",
+			Size:      0,
+			Color:     "",
+			Underline: "",
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A4", "A4", style))
 
-	style, err = f.NewStyle(`{"font":{"color":"#777777"}}`)
+	fs = &FormatStyle{
+		Font: &FormatFont{
+			Color: "#777777",
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -757,7 +843,13 @@ func TestSetCellStyleProtection(t *testing.T) {
 	}
 
 	var style int
-	style, err = f.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
+	fs := &FormatStyle{
+		Protection: &Protection{
+			Hidden: true,
+			Locked: true,
+		},
+	}
+	style, err = f.NewStyle(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

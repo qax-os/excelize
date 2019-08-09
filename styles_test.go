@@ -9,15 +9,15 @@ import (
 func TestStyleFill(t *testing.T) {
 	cases := []struct {
 		label      string
-		format     string
+		format     *FormatStyle
 		expectFill bool
 	}{{
 		label:      "no_fill",
-		format:     `{"alignment":{"wrap_text":true}}`,
+		format:     &FormatStyle{Alignment: &Alignment{WrapText: true}},
 		expectFill: false,
 	}, {
 		label:      "fill",
-		format:     `{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`,
+		format:     &FormatStyle{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}},
 		expectFill: true,
 	}}
 
@@ -168,7 +168,16 @@ func TestSetConditionalFormat(t *testing.T) {
 
 func TestNewStyle(t *testing.T) {
 	f := NewFile()
-	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+	fs := &FormatStyle{
+		Font: &FormatFont{
+			Bold:   true,
+			Italic: true,
+			Family: "Berlin Sans FB Demi",
+			Size:   36,
+			Color:  "#777777",
+		},
+	}
+	styleID, err := f.NewStyle(fs)
 	if err != nil {
 		t.Fatal(err)
 	}
