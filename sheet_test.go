@@ -225,3 +225,24 @@ func TestUngroupSheets(t *testing.T) {
 	}
 	assert.NoError(t, f.UngroupSheets())
 }
+
+func TestGetSheetName(t *testing.T) {
+	f, _ := excelize.OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.Equal(t, "Sheet1", f.GetSheetName(1))
+	assert.Equal(t, "Sheet2", f.GetSheetName(2))
+	assert.Equal(t, "", f.GetSheetName(0))
+	assert.Equal(t, "", f.GetSheetName(3))
+}
+
+func TestGetSheetMap(t *testing.T) {
+	expectedMap := map[int]string{
+		1: "Sheet1",
+		2: "Sheet2",
+	}
+	f, _ := excelize.OpenFile(filepath.Join("test", "Book1.xlsx"))
+	sheetMap := f.GetSheetMap()
+	for idx, name := range sheetMap {
+		assert.Equal(t, expectedMap[idx], name)
+	}
+	assert.Equal(t, len(sheetMap), 2)
+}

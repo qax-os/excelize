@@ -317,14 +317,11 @@ func (f *File) SetSheetName(oldName, newName string) {
 // string.
 func (f *File) GetSheetName(index int) string {
 	wb := f.workbookReader()
-	if wb != nil {
-		for _, sheet := range wb.Sheets.Sheet {
-			if sheet.SheetID == index {
-				return sheet.Name
-			}
-		}
+	realIdx := index - 1 // sheets are 1 based index, but we're checking against an array
+	if wb == nil || realIdx < 0 || realIdx >= len(wb.Sheets.Sheet) {
+		return ""
 	}
-	return ""
+	return wb.Sheets.Sheet[realIdx].Name
 }
 
 // GetSheetIndex provides a function to get worksheet index of XLSX by given
@@ -357,8 +354,8 @@ func (f *File) GetSheetMap() map[int]string {
 	wb := f.workbookReader()
 	sheetMap := map[int]string{}
 	if wb != nil {
-		for _, sheet := range wb.Sheets.Sheet {
-			sheetMap[sheet.SheetID] = sheet.Name
+		for i, sheet := range wb.Sheets.Sheet {
+			sheetMap[i+1] = sheet.Name
 		}
 	}
 	return sheetMap
