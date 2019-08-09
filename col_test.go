@@ -97,7 +97,6 @@ func TestSetColStyle(t *testing.T) {
 			Pattern: 1,
 		},
 	}
-	//style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
 	style, err := f.NewStyle(fs)
 	assert.NoError(t, err)
 	// Test set column style on not exists worksheet.
