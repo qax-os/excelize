@@ -206,18 +206,11 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	case "s":
 		xlsxSI := 0
 		xlsxSI, _ = strconv.Atoi(xlsx.V)
-		if len(d.SI[xlsxSI].R) > 0 {
-			value := ""
-			for _, v := range d.SI[xlsxSI].R {
-				value += v.T
-			}
-			return value, nil
-		}
-		return f.formattedValue(xlsx.S, d.SI[xlsxSI].T), nil
+		return f.formattedValue(xlsx.S, d.SI[xlsxSI].String()), nil
 	case "str":
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	case "inlineStr":
-		return f.formattedValue(xlsx.S, xlsx.IS.T), nil
+		return f.formattedValue(xlsx.S, xlsx.IS.String()), nil
 	default:
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
