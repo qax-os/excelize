@@ -417,7 +417,7 @@ func TestSetCellStyleAlignment(t *testing.T) {
 			WrapText:        true,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -455,7 +455,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 			Border{Type: "diagonalUp", Color: "A020F0", Style: 8},
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -476,7 +476,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 			Shading: 1,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -497,7 +497,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 			Shading: 4,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -520,7 +520,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 			Shading: 1,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -546,7 +546,7 @@ func TestSetCellStyleBorderErrors(t *testing.T) {
 			},
 		},
 	}
-	_, err = f.NewStyle(fs)
+	_, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -580,7 +580,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 				},
 				NumFmt: d,
 			}
-			style, err := f.NewStyle(fs)
+			style, err := f.NewStyleFromStruct(fs)
 			if !assert.NoError(t, err) {
 				t.FailNow()
 			}
@@ -590,7 +590,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	}
 	var style int
 	fs := &FormatStyle{NumFmt: -1}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -610,14 +610,14 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		f.SetCellValue("Sheet1", "A2", -32.3)
 		var style int
 		fs := &FormatStyle{NumFmt: 188, DecimalPlaces: -1}
-		style, err = f.NewStyle(fs)
+		style, err = f.NewStyleFromStruct(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
 		fs = &FormatStyle{NumFmt: 188, DecimalPlaces: 31, NegRed: true}
-		style, err = f.NewStyle(fs)
+		style, err = f.NewStyleFromStruct(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -636,13 +636,13 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		f.SetCellValue("Sheet1", "A2", 42920.5)
 
 		fs := &FormatStyle{NumFmt: 26, Lang: "zh-tw"}
-		_, err = f.NewStyle(fs)
+		_, err = f.NewStyleFromStruct(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
 
 		fs = &FormatStyle{NumFmt: 27}
-		style, err := f.NewStyle(fs)
+		style, err := f.NewStyleFromStruct(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -650,7 +650,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
 
 		fs = &FormatStyle{NumFmt: 31, Lang: "ko-kr"}
-		style, err = f.NewStyle(fs)
+		style, err = f.NewStyleFromStruct(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -658,7 +658,7 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))
 
 		fs = &FormatStyle{NumFmt: 71, Lang: "th-th"}
-		style, err = f.NewStyle(fs)
+		style, err = f.NewStyleFromStruct(fs)
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -675,7 +675,7 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 
 	s := "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"
 	fs := &FormatStyle{CustomNumFmt: &s}
-	style, err := f.NewStyle(fs)
+	style, err := f.NewStyleFromStruct(fs)
 	if err != nil {
 		t.Log(err)
 	}
@@ -684,7 +684,7 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 
 	s = "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"
 	fs = &FormatStyle{CustomNumFmt: &s}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if err != nil {
 		t.Log(err)
 	}
@@ -708,7 +708,7 @@ func TestSetCellStyleFill(t *testing.T) {
 			Shading: 6,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -721,7 +721,7 @@ func TestSetCellStyleFill(t *testing.T) {
 			Shading: 1,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -734,7 +734,7 @@ func TestSetCellStyleFill(t *testing.T) {
 			Shading: 1,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -747,7 +747,7 @@ func TestSetCellStyleFill(t *testing.T) {
 			Shading: 19,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -773,7 +773,7 @@ func TestSetCellStyleFont(t *testing.T) {
 			Underline: "single",
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -786,7 +786,7 @@ func TestSetCellStyleFont(t *testing.T) {
 			Underline: "double",
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -798,7 +798,7 @@ func TestSetCellStyleFont(t *testing.T) {
 			Bold: true,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -814,7 +814,7 @@ func TestSetCellStyleFont(t *testing.T) {
 			Underline: "",
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -826,7 +826,7 @@ func TestSetCellStyleFont(t *testing.T) {
 			Color: "#777777",
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -849,7 +849,7 @@ func TestSetCellStyleProtection(t *testing.T) {
 			Locked: true,
 		},
 	}
-	style, err = f.NewStyle(fs)
+	style, err = f.NewStyleFromStruct(fs)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

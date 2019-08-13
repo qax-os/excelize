@@ -1885,7 +1885,15 @@ func parseFormatStyleSet(style string) (*FormatStyle, error) {
 //
 // Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
 //
-func (f *File) NewStyle(fs *FormatStyle) (int, error) {
+func (f *File) NewStyle(style string) (int, error) {
+	fs := &FormatStyle{}
+	if err := json.Unmarshal([]byte(style), fs); err != nil {
+		return 0, err
+	}
+	return f.NewStyleFromStruct(fs)
+}
+
+func (f *File) NewStyleFromStruct(fs *FormatStyle) (int, error) {
 	var cellXfsID, fontID, borderID, fillID int
 	s := f.stylesReader()
 	numFmtID := setNumFmt(s, fs)

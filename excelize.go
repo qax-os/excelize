@@ -119,7 +119,7 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 	}
 	if s == 0 {
 		fs := &FormatStyle{NumFmt: format}
-		style, _ := f.NewStyle(fs)
+		style, _ := f.NewStyleFromStruct(fs)
 		f.SetCellStyle(sheet, axis, axis, style)
 	}
 	return err

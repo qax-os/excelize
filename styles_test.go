@@ -23,7 +23,7 @@ func TestStyleFill(t *testing.T) {
 
 	for _, testCase := range cases {
 		xl := NewFile()
-		styleID, err := xl.NewStyle(testCase.format)
+		styleID, err := xl.NewStyleFromStruct(testCase.format)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -177,7 +177,7 @@ func TestNewStyle(t *testing.T) {
 			Color:  "#777777",
 		},
 	}
-	styleID, err := f.NewStyle(fs)
+	styleID, err := f.NewStyleFromStruct(fs)
 	if err != nil {
 		t.Fatal(err)
 	}

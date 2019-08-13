@@ -97,7 +97,7 @@ func TestSetColStyle(t *testing.T) {
 			Pattern: 1,
 		},
 	}
-	style, err := f.NewStyle(fs)
+	style, err := f.NewStyleFromStruct(fs)
 	assert.NoError(t, err)
 	// Test set column style on not exists worksheet.
 	assert.EqualError(t, f.SetColStyle("SheetN", "E", style), "sheet SheetN is not exist")
