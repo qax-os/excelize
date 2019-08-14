@@ -94,7 +94,7 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	case nil:
 		err = f.SetCellStr(sheet, axis, "")
 	default:
-		err = f.SetCellStr(sheet, axis, fmt.Sprintf("%v", value))
+		err = f.SetCellStr(sheet, axis, fmt.Sprint(value))
 	}
 	return err
 }
