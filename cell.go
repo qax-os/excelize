@@ -471,12 +471,14 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 
 	for i := 0; i < v.Len(); i++ {
 		cell, err := CoordinatesToCellName(col+i, row)
-		// Error should never happens here. But keep ckecking to early detect regresions
-		// if it will be introduced in furure
+		// Error should never happens here. But keep checking to early detect regresions
+		// if it will be introduced in future.
 		if err != nil {
 			return err
 		}
-		f.SetCellValue(sheet, cell, v.Index(i).Interface())
+		if err := f.SetCellValue(sheet, cell, v.Index(i).Interface()); err != nil {
+			return err
+		}
 	}
 	return err
 }
