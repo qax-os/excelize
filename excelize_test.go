@@ -640,7 +640,7 @@ func TestSetCellStyleFont(t *testing.T) {
 	}
 
 	var style int
-	style, err = f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}`)
+	style, err = f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777","underline":"single"}}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -809,7 +809,7 @@ func TestAddShape(t *testing.T) {
 	f.AddShape("Sheet1", "A30", `{"type":"rect","paragraph":[{"text":"Rectangle","font":{"color":"CD5C5C"}},{"text":"Shape","font":{"bold":true,"color":"2980B9"}}]}`)
 	f.AddShape("Sheet1", "B30", `{"type":"rect","paragraph":[{"text":"Rectangle"},{}]}`)
 	f.AddShape("Sheet1", "C30", `{"type":"rect","paragraph":[]}`)
-	f.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777","underline":"single"}}], "height": 90}`)
+	f.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777","underline":"single"}}], "height": 90}`)
 	f.AddShape("Sheet3", "H1", "")
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape.xlsx")))

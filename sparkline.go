@@ -374,15 +374,15 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 //     Parameter | Description
 //    -----------+--------------------------------------------
 //     Location  | Required, must have the same number with 'Range' parameter
-//     Range      |Required, must have the same number with 'Location' parameter
+//     Range     | Required, must have the same number with 'Location' parameter
 //     Type      | Enumeration value: line, column, win_loss
 //     Style     | Value range: 0 - 35
-//     Hight     | Toggle sparkine high points
-//     Low       | Toggle sparkine low points
-//     First     | Toggle sparkine first points
-//     Last      | Toggle sparkine last points
-//     Negative  | Toggle sparkine negative points
-//     Markers   | Toggle sparkine markers
+//     Hight     | Toggle sparkline high points
+//     Low       | Toggle sparkline low points
+//     First     | Toggle sparkline first points
+//     Last      | Toggle sparkline last points
+//     Negative  | Toggle sparkline negative points
+//     Markers   | Toggle sparkline markers
 //     ColorAxis | An RGB Color is specified as RRGGBB
 //     Axis      | Show sparkline axis
 //

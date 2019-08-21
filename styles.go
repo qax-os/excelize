@@ -2351,7 +2351,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // Set font style for cell H9 on Sheet1:
 //
-//    style, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+//    style, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
 //    if err != nil {
 //        fmt.Println(err)
 //    }

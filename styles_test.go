@@ -168,14 +168,14 @@ func TestSetConditionalFormat(t *testing.T) {
 
 func TestNewStyle(t *testing.T) {
 	f := NewFile()
-	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Berlin Sans FB Demi","size":36,"color":"#777777"}}`)
+	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	styles := f.stylesReader()
 	fontID := styles.CellXfs.Xf[styleID].FontID
 	font := styles.Fonts.Font[fontID]
-	assert.Contains(t, font.Name.Val, "Berlin Sans FB Demi", "Stored font should contain font name")
+	assert.Contains(t, font.Name.Val, "Times New Roman", "Stored font should contain font name")
 	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
 }
 
