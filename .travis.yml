@@ -16,6 +16,22 @@ env:
   matrix:
     - GOARCH=amd64
     - GOARCH=386
+  global:
+    # FUZZIT_API_KEY
+    secure: "FEm1wF/Ttd5RIvDPg5I/aSAhBWuvkvjmkInFxlVKP4BfLsR1B1ogXV4zKFQiZugyppBta+qP4qP+tSbThSvP9JOCr+/ivnTyYLg/DH1RfQnC7rJmAaZwHGHB+NwblRzU621uIZ4RVvaE391YVJf5519gc+M+bxZ6DO0ScdpbIAVV/7JR9c7Tuvoyi57/MEwAS39k7h83ms8JgRYwuvzpVH9nb6AfYs+CzXuRlsG5mHqFnmzLyG0ewnqh18OoWbyKQwBmM+EoIGmckM8NQZaXWBhEuDP7qdl+QatNfZtK3YwBx2plahBXXMee3NpOAEHOkWxNw1uMb1B8ILDrzrx8oX1A4fF/ZeJl7JLZS/fQUMhDnLG5soA0xaEoAvwhQIHFi3e207rsq9UJsnQlRGhRWzMvx85UR5z+yiur8nVUkogu1DGpH/BPdWbTs+d8behSr7t6Sepo7enjJOPJLz6U67JlP31HvnaLICMEXxJy54BAbdu/47vqFp15lcIMHyDzPltHHWi6uGuRFQPYz8pM5ZAKQ945dO/ZELyEHbjUiLTMFeVoANzahuY56BX6hvsygcOlBWB6ukoJANvxgvM/QYkbh9dMBajYsZqHCWOKRVbBakkqPAUqkBNPOADTp5ZgUwmRySIGzX2X+Efl7cFYZVu+IJl968F8hqYajvS/VCs="
+
+jobs:
+  include:
+    - stage: Fuzz regression
+      go: 1.12.x
+      dist: bionic
+      script: ./fuzzit.sh local-regression
+
+    - stage: Fuzz
+      if: branch = master AND type IN (push)
+      go: 1.12.x
+      dist: bionic
+      script: ./fuzzit.sh fuzzing
 
 script:
   - go vet ./...
