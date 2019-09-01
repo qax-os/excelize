@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,4 +94,16 @@ func BenchmarkSetCellValue(b *testing.B) {
 			f.SetCellValue("Sheet1", fmt.Sprint(cols[j], i), values[j])
 		}
 	}
+}
+
+func TestOverflowNumericCell(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "OverflowNumericCell.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	// source of xlsx file is Russia, don`t touch it, elsewhere bug not reproduced
+	val, err := f.GetCellValue("Лист1", "A1")
+	assert.NoError(t, err)
+	// GOARCH=amd64 - all ok; GOARCH=386 - actual  : "-2147483648"
+	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
 }
