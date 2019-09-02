@@ -543,7 +543,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/360EntSecGroup-Skylar/excelize"
 //    )
 //
 //    func main() {

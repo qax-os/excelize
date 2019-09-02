@@ -101,9 +101,8 @@ func TestOverflowNumericCell(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	// source of xlsx file is Russia, don`t touch it, elsewhere bug not reproduced
-	val, err := f.GetCellValue("Лист1", "A1")
+	val, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
-	// GOARCH=amd64 - all ok; GOARCH=386 - actual  : "-2147483648"
+	// GOARCH=amd64 - all ok; GOARCH=386 - actual: "-2147483648"
 	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
 }
