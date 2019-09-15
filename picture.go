@@ -155,14 +155,15 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	mediaStr := ".." + strings.TrimPrefix(f.addMedia(file, ext), "xl")
-	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipImage, mediaStr, hyperlinkType)
+	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
 	// Add picture with hyperlink.
 	if formatSet.Hyperlink != "" && formatSet.HyperlinkType != "" {
 		if formatSet.HyperlinkType == "External" {
 			hyperlinkType = formatSet.HyperlinkType
 		}
-		drawingHyperlinkRID = f.addDrawingRelationships(drawingID, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
+		drawingHyperlinkRID = f.addRels(drawingRels, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
 	err = f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
 	if err != nil {
@@ -170,37 +171,6 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	}
 	f.addContentTypePart(drawingID, "drawings")
 	return err
-}
-
-// addSheetRelationships provides a function to add
-// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name, relationship
-// type and target.
-func (f *File) addSheetRelationships(sheet, relType, target, targetMode string) int {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
-	if !ok {
-		name = strings.ToLower(sheet) + ".xml"
-	}
-	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.workSheetRelsReader(rels)
-	if sheetRels == nil {
-		sheetRels = &xlsxWorkbookRels{}
-	}
-	var rID = 1
-	var ID bytes.Buffer
-	ID.WriteString("rId")
-	ID.WriteString(strconv.Itoa(rID))
-	ID.Reset()
-	rID = len(sheetRels.Relationships) + 1
-	ID.WriteString("rId")
-	ID.WriteString(strconv.Itoa(rID))
-	sheetRels.Relationships = append(sheetRels.Relationships, xlsxWorkbookRelation{
-		ID:         ID.String(),
-		Type:       relType,
-		Target:     target,
-		TargetMode: targetMode,
-	})
-	f.WorkSheetRels[rels] = sheetRels
-	return rID
 }
 
 // deleteSheetRelationships provides a function to delete relationships in
@@ -212,16 +182,16 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.workSheetRelsReader(rels)
+	sheetRels := f.relsReader(rels)
 	if sheetRels == nil {
-		sheetRels = &xlsxWorkbookRels{}
+		sheetRels = &xlsxRelationships{}
 	}
 	for k, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
-	f.WorkSheetRels[rels] = sheetRels
+	f.Relationships[rels] = sheetRels
 }
 
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
@@ -325,33 +295,6 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	return err
 }
 
-// addDrawingRelationships provides a function to add image part relationships
-// in the file xl/drawings/_rels/drawing%d.xml.rels by given drawing index,
-// relationship type and target.
-func (f *File) addDrawingRelationships(index int, relType, target, targetMode string) int {
-	var rels = "xl/drawings/_rels/drawing" + strconv.Itoa(index) + ".xml.rels"
-	var rID = 1
-	var ID bytes.Buffer
-	ID.WriteString("rId")
-	ID.WriteString(strconv.Itoa(rID))
-	drawingRels := f.drawingRelsReader(rels)
-	if drawingRels == nil {
-		drawingRels = &xlsxWorkbookRels{}
-	}
-	ID.Reset()
-	rID = len(drawingRels.Relationships) + 1
-	ID.WriteString("rId")
-	ID.WriteString(strconv.Itoa(rID))
-	drawingRels.Relationships = append(drawingRels.Relationships, xlsxWorkbookRelation{
-		ID:         ID.String(),
-		Type:       relType,
-		Target:     target,
-		TargetMode: targetMode,
-	})
-	f.DrawingRels[rels] = drawingRels
-	return rID
-}
-
 // countMedia provides a function to get media files count storage in the
 // folder xl/media/image.
 func (f *File) countMedia() int {
@@ -429,16 +372,20 @@ func (f *File) addContentTypePart(index int, contentType string) {
 		"drawings": f.setContentTypePartImageExtensions,
 	}
 	partNames := map[string]string{
-		"chart":    "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
-		"comments": "/xl/comments" + strconv.Itoa(index) + ".xml",
-		"drawings": "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
-		"table":    "/xl/tables/table" + strconv.Itoa(index) + ".xml",
+		"chart":      "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
+		"comments":   "/xl/comments" + strconv.Itoa(index) + ".xml",
+		"drawings":   "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
+		"table":      "/xl/tables/table" + strconv.Itoa(index) + ".xml",
+		"pivotTable": "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
+		"pivotCache": "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
 	}
 	contentTypes := map[string]string{
-		"chart":    "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
-		"comments": "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml",
-		"drawings": "application/vnd.openxmlformats-officedocument.drawing+xml",
-		"table":    "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml",
+		"chart":      "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
+		"comments":   "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml",
+		"drawings":   "application/vnd.openxmlformats-officedocument.drawing+xml",
+		"table":      "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml",
+		"pivotTable": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml",
+		"pivotCache": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml",
 	}
 	s, ok := setContentType[contentType]
 	if ok {
@@ -465,9 +412,9 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.workSheetRelsReader(rels)
+	sheetRels := f.relsReader(rels)
 	if sheetRels == nil {
-		sheetRels = &xlsxWorkbookRels{}
+		sheetRels = &xlsxRelationships{}
 	}
 	for _, v := range sheetRels.Relationships {
 		if v.ID == rID {
@@ -529,12 +476,12 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	for _, anchor := range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
-				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships,
+				xlsxRelationship := f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed)
-				_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
+				_, ok := supportImageTypes[filepath.Ext(xlsxRelationship.Target)]
 				if ok {
-					return filepath.Base(xlsxWorkbookRelation.Target),
-						[]byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target,
+					return filepath.Base(xlsxRelationship.Target),
+						[]byte(f.XLSX[strings.Replace(xlsxRelationship.Target,
 							"..", "xl", -1)]), nil
 				}
 			}
@@ -548,10 +495,10 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		_ = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
 		if decodeTwoCellAnchor.From != nil && decodeTwoCellAnchor.Pic != nil {
 			if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
-				xlsxWorkbookRelation := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
-				_, ok := supportImageTypes[filepath.Ext(xlsxWorkbookRelation.Target)]
+				xlsxRelationship := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+				_, ok := supportImageTypes[filepath.Ext(xlsxRelationship.Target)]
 				if ok {
-					return filepath.Base(xlsxWorkbookRelation.Target), []byte(f.XLSX[strings.Replace(xlsxWorkbookRelation.Target, "..", "xl", -1)]), nil
+					return filepath.Base(xlsxRelationship.Target), []byte(f.XLSX[strings.Replace(xlsxRelationship.Target, "..", "xl", -1)]), nil
 				}
 			}
 		}
@@ -562,8 +509,8 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 // getDrawingRelationships provides a function to get drawing relationships
 // from xl/drawings/_rels/drawing%s.xml.rels by given file name and
 // relationship ID.
-func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
-	if drawingRels := f.drawingRelsReader(rels); drawingRels != nil {
+func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
+	if drawingRels := f.relsReader(rels); drawingRels != nil {
 		for _, v := range drawingRels.Relationships {
 			if v.ID == rID {
 				return &v
@@ -571,31 +518,6 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxWorkbookRelation {
 		}
 	}
 	return nil
-}
-
-// drawingRelsReader provides a function to get the pointer to the structure
-// after deserialization of xl/drawings/_rels/drawing%d.xml.rels.
-func (f *File) drawingRelsReader(rel string) *xlsxWorkbookRels {
-	if f.DrawingRels[rel] == nil {
-		_, ok := f.XLSX[rel]
-		if ok {
-			d := xlsxWorkbookRels{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(rel)), &d)
-			f.DrawingRels[rel] = &d
-		}
-	}
-	return f.DrawingRels[rel]
-}
-
-// drawingRelsWriter provides a function to save
-// xl/drawings/_rels/drawing%d.xml.rels after serialize structure.
-func (f *File) drawingRelsWriter() {
-	for path, d := range f.DrawingRels {
-		if d != nil {
-			v, _ := xml.Marshal(d)
-			f.saveFileList(path, v)
-		}
-	}
 }
 
 // drawingsWriter provides a function to save xl/drawings/drawing%d.xml after

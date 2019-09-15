@@ -1,4 +1,4 @@
-<p align="center"><img width="650" src="./excelize.png" alt="Excelize logo"></p>
+<p align="center"><img width="650" src="./excelize.svg" alt="Excelize logo"></p>
 
 <p align="center">
     <a href="https://travis-ci.org/360EntSecGroup-Skylar/excelize"><img src="https://travis-ci.org/360EntSecGroup-Skylar/excelize.svg?branch=master" alt="Build Status"></a>

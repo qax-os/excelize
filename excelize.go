@@ -31,7 +31,6 @@ type File struct {
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
-	DrawingRels      map[string]*xlsxWorkbookRels
 	Drawings         map[string]*xlsxWsDr
 	Path             string
 	SharedStrings    *xlsxSST
@@ -42,8 +41,7 @@ type File struct {
 	DecodeVMLDrawing map[string]*decodeVmlDrawing
 	VMLDrawing       map[string]*vmlDrawing
 	WorkBook         *xlsxWorkbook
-	WorkBookRels     *xlsxWorkbookRels
-	WorkSheetRels    map[string]*xlsxWorkbookRels
+	Relationships    map[string]*xlsxRelationships
 	XLSX             map[string][]byte
 }
 
@@ -93,13 +91,12 @@ func OpenReader(r io.Reader) (*File, error) {
 	f := &File{
 		checked:          make(map[string]bool),
 		Comments:         make(map[string]*xlsxComments),
-		DrawingRels:      make(map[string]*xlsxWorkbookRels),
 		Drawings:         make(map[string]*xlsxWsDr),
 		Sheet:            make(map[string]*xlsxWorksheet),
 		SheetCount:       sheetCount,
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
 		VMLDrawing:       make(map[string]*vmlDrawing),
-		WorkSheetRels:    make(map[string]*xlsxWorkbookRels),
+		Relationships:    make(map[string]*xlsxRelationships),
 		XLSX:             file,
 	}
 	f.CalcChain = f.calcChainReader()
@@ -174,6 +171,28 @@ func checkSheet(xlsx *xlsxWorksheet) {
 		}
 	}
 	xlsx.SheetData = sheetData
+}
+
+// addRels provides a function to add relationships by given XML path,
+// relationship type, target and target mode.
+func (f *File) addRels(relPath, relType, target, targetMode string) int {
+	rels := f.relsReader(relPath)
+	rID := 0
+	if rels == nil {
+		rels = &xlsxRelationships{}
+	}
+	rID = len(rels.Relationships) + 1
+	var ID bytes.Buffer
+	ID.WriteString("rId")
+	ID.WriteString(strconv.Itoa(rID))
+	rels.Relationships = append(rels.Relationships, xlsxRelationship{
+		ID:         ID.String(),
+		Type:       relType,
+		Target:     target,
+		TargetMode: targetMode,
+	})
+	f.Relationships[relPath] = rels
+	return rID
 }
 
 // replaceWorkSheetsRelationshipsNameSpaceBytes provides a function to replace
@@ -265,7 +284,7 @@ func (f *File) AddVBAProject(bin string) error {
 		return errors.New("unsupported VBA project extension")
 	}
 	f.setContentTypePartVBAProjectExtensions()
-	wb := f.workbookRelsReader()
+	wb := f.relsReader("xl/_rels/workbook.xml.rels")
 	var rID int
 	var ok bool
 	for _, rel := range wb.Relationships {
@@ -280,7 +299,7 @@ func (f *File) AddVBAProject(bin string) error {
 	}
 	rID++
 	if !ok {
-		wb.Relationships = append(wb.Relationships, xlsxWorkbookRelation{
+		wb.Relationships = append(wb.Relationships, xlsxRelationship{
 			ID:     "rId" + strconv.Itoa(rID),
 			Target: "vbaProject.bin",
 			Type:   SourceRelationshipVBAProject,

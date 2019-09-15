@@ -22,6 +22,8 @@ const (
 	SourceRelationshipDrawingVML         = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing"
 	SourceRelationshipHyperLink          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	SourceRelationshipWorkSheet          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
+	SourceRelationshipPivotTable         = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
+	SourceRelationshipPivotCache         = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
 	SourceRelationshipVBAProject         = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
 	SourceRelationshipChart201506        = "http://schemas.microsoft.com/office/drawing/2015/06/chart"
 	SourceRelationshipChart20070802      = "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"

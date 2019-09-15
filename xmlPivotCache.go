@@ -2,11 +2,11 @@ package excelize
 
 import "encoding/xml"
 
-// pivotCacheDefinition represents the pivotCacheDefinition part. This part
+// xlsxPivotCacheDefinition represents the pivotCacheDefinition part. This part
 // defines each field in the source data, including the name, the string
 // resources of the instance data (for shared items), and information about
 // the type of data that appears in the field.
-type xmlPivotCacheDefinition struct {
+type xlsxPivotCacheDefinition struct {
 	XMLName               xml.Name               `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main pivotCacheDefinition"`
 	RID                   string                 `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Invalid               bool                   `xml:"invalid,attr,omitempty"`

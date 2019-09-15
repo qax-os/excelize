@@ -52,7 +52,7 @@ func (f *File) NewSheet(name string) int {
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(sheetID, name)
 	// Update xl/_rels/workbook.xml.rels
-	rID := f.addXlsxWorkbookRels(sheetID)
+	rID := f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipWorkSheet, fmt.Sprintf("worksheets/sheet%d.xml", sheetID), "")
 	// Update xl/workbook.xml
 	f.setWorkbook(name, sheetID, rID)
 	return sheetID
@@ -163,50 +163,18 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 	})
 }
 
-// workbookRelsReader provides a function to read and unmarshal workbook
-// relationships of XLSX file.
-func (f *File) workbookRelsReader() *xlsxWorkbookRels {
-	if f.WorkBookRels == nil {
-		var content xlsxWorkbookRels
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/_rels/workbook.xml.rels")), &content)
-		f.WorkBookRels = &content
-	}
-	return f.WorkBookRels
-}
-
-// workBookRelsWriter provides a function to save xl/_rels/workbook.xml.rels after
+// relsWriter provides a function to save relationships after
 // serialize structure.
-func (f *File) workBookRelsWriter() {
-	if f.WorkBookRels != nil {
-		output, _ := xml.Marshal(f.WorkBookRels)
-		f.saveFileList("xl/_rels/workbook.xml.rels", output)
-	}
-}
-
-// addXlsxWorkbookRels update workbook relationships property of XLSX.
-func (f *File) addXlsxWorkbookRels(sheet int) int {
-	content := f.workbookRelsReader()
-	rID := 0
-	for _, v := range content.Relationships {
-		t, _ := strconv.Atoi(strings.TrimPrefix(v.ID, "rId"))
-		if t > rID {
-			rID = t
+func (f *File) relsWriter() {
+	for path, rel := range f.Relationships {
+		if rel != nil {
+			output, _ := xml.Marshal(rel)
+			if strings.HasPrefix(path, "xl/worksheets/sheet/rels/sheet") {
+				output = replaceWorkSheetsRelationshipsNameSpaceBytes(output)
+			}
+			f.saveFileList(path, replaceRelationshipsBytes(output))
 		}
 	}
-	rID++
-	ID := bytes.Buffer{}
-	ID.WriteString("rId")
-	ID.WriteString(strconv.Itoa(rID))
-	target := bytes.Buffer{}
-	target.WriteString("worksheets/sheet")
-	target.WriteString(strconv.Itoa(sheet))
-	target.WriteString(".xml")
-	content.Relationships = append(content.Relationships, xlsxWorkbookRelation{
-		ID:     ID.String(),
-		Target: target.String(),
-		Type:   SourceRelationshipWorkSheet,
-	})
-	return rID
 }
 
 // setAppXML update docProps/app.xml file of XML.
@@ -365,7 +333,7 @@ func (f *File) GetSheetMap() map[int]string {
 // of XLSX.
 func (f *File) getSheetMap() map[string]string {
 	content := f.workbookReader()
-	rels := f.workbookRelsReader()
+	rels := f.relsReader("xl/_rels/workbook.xml.rels")
 	maps := map[string]string{}
 	for _, v := range content.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
@@ -396,7 +364,9 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	}
 	file, _ := ioutil.ReadFile(picture)
 	name := f.addMedia(file, ext)
-	rID := f.addSheetRelationships(sheet, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
+	sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
 	f.addSheetPicture(sheet, rID)
 	f.setContentTypePartImageExtensions()
 	return err
@@ -413,7 +383,7 @@ func (f *File) DeleteSheet(name string) {
 	}
 	sheetName := trimSheetName(name)
 	wb := f.workbookReader()
-	wbRels := f.workbookRelsReader()
+	wbRels := f.relsReader("xl/_rels/workbook.xml.rels")
 	for idx, sheet := range wb.Sheets.Sheet {
 		if sheet.Name == sheetName {
 			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
@@ -443,7 +413,7 @@ func (f *File) DeleteSheet(name string) {
 // relationships by given relationships ID in the file
 // xl/_rels/workbook.xml.rels.
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
-	content := f.workbookRelsReader()
+	content := f.relsReader("xl/_rels/workbook.xml.rels")
 	for k, v := range content.Relationships {
 		if v.ID == rID {
 			content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
@@ -1387,29 +1357,18 @@ func (f *File) UngroupSheets() error {
 	return nil
 }
 
-// workSheetRelsReader provides a function to get the pointer to the structure
+// relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
-func (f *File) workSheetRelsReader(path string) *xlsxWorkbookRels {
-	if f.WorkSheetRels[path] == nil {
+func (f *File) relsReader(path string) *xlsxRelationships {
+	if f.Relationships[path] == nil {
 		_, ok := f.XLSX[path]
 		if ok {
-			c := xlsxWorkbookRels{}
+			c := xlsxRelationships{}
 			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &c)
-			f.WorkSheetRels[path] = &c
+			f.Relationships[path] = &c
 		}
 	}
-	return f.WorkSheetRels[path]
-}
-
-// workSheetRelsWriter provides a function to save
-// xl/worksheets/_rels/sheet%d.xml.rels after serialize structure.
-func (f *File) workSheetRelsWriter() {
-	for p, r := range f.WorkSheetRels {
-		if r != nil {
-			v, _ := xml.Marshal(r)
-			f.saveFileList(p, v)
-		}
-	}
+	return f.Relationships[path]
 }
 
 // fillSheetData ensures there are enough rows, and columns in the chosen

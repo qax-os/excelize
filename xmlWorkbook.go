@@ -11,14 +11,14 @@ package excelize
 
 import "encoding/xml"
 
-// xmlxWorkbookRels contains xmlxWorkbookRelations which maps sheet id and sheet XML.
-type xlsxWorkbookRels struct {
-	XMLName       xml.Name               `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`
-	Relationships []xlsxWorkbookRelation `xml:"Relationship"`
+// xlsxRelationships describe references from parts to other internal resources in the package or to external resources.
+type xlsxRelationships struct {
+	XMLName       xml.Name           `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`
+	Relationships []xlsxRelationship `xml:"Relationship"`
 }
 
-// xmlxWorkbookRelation maps sheet id and xl/worksheets/_rels/sheet%d.xml.rels
-type xlsxWorkbookRelation struct {
+// xlsxRelationship contains relations which maps id and XML.
+type xlsxRelationship struct {
 	ID         string `xml:"Id,attr"`
 	Target     string `xml:",attr"`
 	Type       string `xml:",attr"`

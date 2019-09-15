@@ -727,7 +727,8 @@ func (f *File) AddChart(sheet, cell, format string) error {
 	chartID := f.countCharts() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
-	drawingRID := f.addDrawingRelationships(drawingID, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
+	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
+	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
 	err = f.addDrawingChart(sheet, drawingXML, cell, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
 	if err != nil {
 		return err
@@ -761,7 +762,9 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
 		// Add first picture for given sheet.
-		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 	}
 	return drawingID, drawingXML

@@ -60,7 +60,7 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 // given worksheet index.
 func (f *File) getSheetComments(sheetID int) string {
 	var rels = "xl/worksheets/_rels/sheet" + strconv.Itoa(sheetID) + ".xml.rels"
-	if sheetRels := f.workSheetRelsReader(rels); sheetRels != nil {
+	if sheetRels := f.relsReader(rels); sheetRels != nil {
 		for _, v := range sheetRels.Relationships {
 			if v.Type == SourceRelationshipComments {
 				return v.Target
@@ -98,8 +98,10 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		drawingVML = strings.Replace(sheetRelationshipsDrawingVML, "..", "xl", -1)
 	} else {
 		// Add first comment for given sheet.
-		rID := f.addSheetRelationships(sheet, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
-		f.addSheetRelationships(sheet, SourceRelationshipComments, sheetRelationshipsComments, "")
+		sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
+		f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		f.addSheetLegacyDrawing(sheet, rID)
 	}
 	commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
