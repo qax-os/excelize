@@ -85,6 +85,10 @@ func (f *File) workbookReader() *xlsxWorkbook {
 		var content xlsxWorkbook
 		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")), &content)
 		f.WorkBook = &content
+		//rebuild sheetID
+		for i, _ := range f.WorkBook.Sheets.Sheet {
+			f.WorkBook.Sheets.Sheet[i].SheetID = i + 1
+		}
 	}
 	return f.WorkBook
 }
