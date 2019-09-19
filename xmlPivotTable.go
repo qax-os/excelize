@@ -36,8 +36,8 @@ type xlsxPivotTableDefinition struct {
 	PivotTableStyle         string                   `xml:"pivotTableStyle,attr,omitempty"`
 	VacatedStyle            string                   `xml:"vacatedStyle,attr,omitempty"`
 	Tag                     string                   `xml:"tag,attr,omitempty"`
-	UpdatedVersion          int                      `xml:"updatedVersion,attr"`
-	MinRefreshableVersion   int                      `xml:"minRefreshableVersion,attr"`
+	UpdatedVersion          int                      `xml:"updatedVersion,attr,omitempty"`
+	MinRefreshableVersion   int                      `xml:"minRefreshableVersion,attr,omitempty"`
 	AsteriskTotals          bool                     `xml:"asteriskTotals,attr,omitempty"`
 	ShowItems               bool                     `xml:"showItems,attr,omitempty"`
 	EditData                bool                     `xml:"editData,attr,omitempty"`
@@ -54,27 +54,27 @@ type xlsxPivotTableDefinition struct {
 	EnableDrill             bool                     `xml:"enableDrill,attr,omitempty"`
 	EnableFieldProperties   bool                     `xml:"enableFieldProperties,attr,omitempty"`
 	PreserveFormatting      bool                     `xml:"preserveFormatting,attr,omitempty"`
-	UseAutoFormatting       bool                     `xml:"useAutoFormatting,attr"`
+	UseAutoFormatting       bool                     `xml:"useAutoFormatting,attr,omitempty"`
 	PageWrap                int                      `xml:"pageWrap,attr,omitempty"`
 	PageOverThenDown        bool                     `xml:"pageOverThenDown,attr,omitempty"`
 	SubtotalHiddenItems     bool                     `xml:"subtotalHiddenItems,attr,omitempty"`
 	RowGrandTotals          bool                     `xml:"rowGrandTotals,attr,omitempty"`
 	ColGrandTotals          bool                     `xml:"colGrandTotals,attr,omitempty"`
 	FieldPrintTitles        bool                     `xml:"fieldPrintTitles,attr,omitempty"`
-	ItemPrintTitles         bool                     `xml:"itemPrintTitles,attr"`
+	ItemPrintTitles         bool                     `xml:"itemPrintTitles,attr,omitempty"`
 	MergeItem               bool                     `xml:"mergeItem,attr,omitempty"`
 	ShowDropZones           bool                     `xml:"showDropZones,attr,omitempty"`
-	CreatedVersion          int                      `xml:"createdVersion,attr"`
+	CreatedVersion          int                      `xml:"createdVersion,attr,omitempty"`
 	Indent                  int                      `xml:"indent,attr,omitempty"`
 	ShowEmptyRow            bool                     `xml:"showEmptyRow,attr,omitempty"`
 	ShowEmptyCol            bool                     `xml:"showEmptyCol,attr,omitempty"`
 	ShowHeaders             bool                     `xml:"showHeaders,attr,omitempty"`
-	Compact                 bool                     `xml:"compact,attr,omitempty"`
-	Outline                 bool                     `xml:"outline,attr,omitempty"`
+	Compact                 bool                     `xml:"compact,attr"`
+	Outline                 bool                     `xml:"outline,attr"`
 	OutlineData             bool                     `xml:"outlineData,attr,omitempty"`
 	CompactData             bool                     `xml:"compactData,attr,omitempty"`
 	Published               bool                     `xml:"published,attr,omitempty"`
-	GridDropZones           bool                     `xml:"gridDropZones,attr"`
+	GridDropZones           bool                     `xml:"gridDropZones,attr,omitempty"`
 	Immersive               bool                     `xml:"immersive,attr,omitempty"`
 	MultipleFieldFilters    bool                     `xml:"multipleFieldFilters,attr,omitempty"`
 	ChartFormat             int                      `xml:"chartFormat,attr,omitempty"`
@@ -101,8 +101,8 @@ type xlsxLocation struct {
 	FirstHeaderRow int    `xml:"firstHeaderRow,attr"`
 	FirstDataRow   int    `xml:"firstDataRow,attr"`
 	FirstDataCol   int    `xml:"firstDataCol,attr"`
-	RowPageCount   int    `xml:"rowPageCount,attr"`
-	ColPageCount   int    `xml:"colPageCount,attr"`
+	RowPageCount   int    `xml:"rowPageCount,attr,omitempty"`
+	ColPageCount   int    `xml:"colPageCount,attr,omitempty"`
 }
 
 // xlsxPivotFields represents the collection of fields that appear on the
@@ -116,50 +116,50 @@ type xlsxPivotFields struct {
 // contains information about the field, including the collection of items in
 // the field.
 type xlsxPivotField struct {
-	Name                         string             `xml:"name,attr"`
+	Name                         string             `xml:"name,attr,omitempty"`
 	Axis                         string             `xml:"axis,attr,omitempty"`
-	DataField                    bool               `xml:"dataField,attr"`
-	SubtotalCaption              string             `xml:"subtotalCaption,attr"`
-	ShowDropDowns                bool               `xml:"showDropDowns,attr"`
-	HiddenLevel                  bool               `xml:"hiddenLevel,attr"`
-	UniqueMemberProperty         string             `xml:"uniqueMemberProperty,attr"`
+	DataField                    bool               `xml:"dataField,attr,omitempty"`
+	SubtotalCaption              string             `xml:"subtotalCaption,attr,omitempty"`
+	ShowDropDowns                bool               `xml:"showDropDowns,attr,omitempty"`
+	HiddenLevel                  bool               `xml:"hiddenLevel,attr,omitempty"`
+	UniqueMemberProperty         string             `xml:"uniqueMemberProperty,attr,omitempty"`
 	Compact                      bool               `xml:"compact,attr"`
-	AllDrilled                   bool               `xml:"allDrilled,attr"`
+	AllDrilled                   bool               `xml:"allDrilled,attr,omitempty"`
 	NumFmtId                     string             `xml:"numFmtId,attr,omitempty"`
 	Outline                      bool               `xml:"outline,attr"`
-	SubtotalTop                  bool               `xml:"subtotalTop,attr"`
-	DragToRow                    bool               `xml:"dragToRow,attr"`
-	DragToCol                    bool               `xml:"dragToCol,attr"`
-	MultipleItemSelectionAllowed bool               `xml:"multipleItemSelectionAllowed,attr"`
-	DragToPage                   bool               `xml:"dragToPage,attr"`
-	DragToData                   bool               `xml:"dragToData,attr"`
-	DragOff                      bool               `xml:"dragOff,attr"`
+	SubtotalTop                  bool               `xml:"subtotalTop,attr,omitempty"`
+	DragToRow                    bool               `xml:"dragToRow,attr,omitempty"`
+	DragToCol                    bool               `xml:"dragToCol,attr,omitempty"`
+	MultipleItemSelectionAllowed bool               `xml:"multipleItemSelectionAllowed,attr,omitempty"`
+	DragToPage                   bool               `xml:"dragToPage,attr,omitempty"`
+	DragToData                   bool               `xml:"dragToData,attr,omitempty"`
+	DragOff                      bool               `xml:"dragOff,attr,omitempty"`
 	ShowAll                      bool               `xml:"showAll,attr"`
-	InsertBlankRow               bool               `xml:"insertBlankRow,attr"`
-	ServerField                  bool               `xml:"serverField,attr"`
-	InsertPageBreak              bool               `xml:"insertPageBreak,attr"`
-	AutoShow                     bool               `xml:"autoShow,attr"`
-	TopAutoShow                  bool               `xml:"topAutoShow,attr"`
-	HideNewItems                 bool               `xml:"hideNewItems,attr"`
-	MeasureFilter                bool               `xml:"measureFilter,attr"`
-	IncludeNewItemsInFilter      bool               `xml:"includeNewItemsInFilter,attr"`
-	ItemPageCount                int                `xml:"itemPageCount,attr"`
-	SortType                     string             `xml:"sortType,attr"`
+	InsertBlankRow               bool               `xml:"insertBlankRow,attr,omitempty"`
+	ServerField                  bool               `xml:"serverField,attr,omitempty"`
+	InsertPageBreak              bool               `xml:"insertPageBreak,attr,omitempty"`
+	AutoShow                     bool               `xml:"autoShow,attr,omitempty"`
+	TopAutoShow                  bool               `xml:"topAutoShow,attr,omitempty"`
+	HideNewItems                 bool               `xml:"hideNewItems,attr,omitempty"`
+	MeasureFilter                bool               `xml:"measureFilter,attr,omitempty"`
+	IncludeNewItemsInFilter      bool               `xml:"includeNewItemsInFilter,attr,omitempty"`
+	ItemPageCount                int                `xml:"itemPageCount,attr,omitempty"`
+	SortType                     string             `xml:"sortType,attr,omitempty"`
 	DataSourceSort               bool               `xml:"dataSourceSort,attr,omitempty"`
-	NonAutoSortDefault           bool               `xml:"nonAutoSortDefault,attr"`
+	NonAutoSortDefault           bool               `xml:"nonAutoSortDefault,attr,omitempty"`
 	RankBy                       int                `xml:"rankBy,attr,omitempty"`
-	DefaultSubtotal              bool               `xml:"defaultSubtotal,attr"`
-	SumSubtotal                  bool               `xml:"sumSubtotal,attr"`
-	CountASubtotal               bool               `xml:"countASubtotal,attr"`
-	AvgSubtotal                  bool               `xml:"avgSubtotal,attr"`
-	MaxSubtotal                  bool               `xml:"maxSubtotal,attr"`
-	MinSubtotal                  bool               `xml:"minSubtotal,attr"`
-	ProductSubtotal              bool               `xml:"productSubtotal,attr"`
-	CountSubtotal                bool               `xml:"countSubtotal,attr"`
-	StdDevSubtotal               bool               `xml:"stdDevSubtotal,attr"`
-	StdDevPSubtotal              bool               `xml:"stdDevPSubtotal,attr"`
-	VarSubtotal                  bool               `xml:"varSubtotal,attr"`
-	VarPSubtotal                 bool               `xml:"varPSubtotal,attr"`
+	DefaultSubtotal              bool               `xml:"defaultSubtotal,attr,omitempty"`
+	SumSubtotal                  bool               `xml:"sumSubtotal,attr,omitempty"`
+	CountASubtotal               bool               `xml:"countASubtotal,attr,omitempty"`
+	AvgSubtotal                  bool               `xml:"avgSubtotal,attr,omitempty"`
+	MaxSubtotal                  bool               `xml:"maxSubtotal,attr,omitempty"`
+	MinSubtotal                  bool               `xml:"minSubtotal,attr,omitempty"`
+	ProductSubtotal              bool               `xml:"productSubtotal,attr,omitempty"`
+	CountSubtotal                bool               `xml:"countSubtotal,attr,omitempty"`
+	StdDevSubtotal               bool               `xml:"stdDevSubtotal,attr,omitempty"`
+	StdDevPSubtotal              bool               `xml:"stdDevPSubtotal,attr,omitempty"`
+	VarSubtotal                  bool               `xml:"varSubtotal,attr,omitempty"`
+	VarPSubtotal                 bool               `xml:"varPSubtotal,attr,omitempty"`
 	ShowPropCell                 bool               `xml:"showPropCell,attr,omitempty"`
 	ShowPropTip                  bool               `xml:"showPropTip,attr,omitempty"`
 	ShowPropAsCaption            bool               `xml:"showPropAsCaption,attr,omitempty"`
@@ -179,17 +179,17 @@ type xlsxItems struct {
 
 // xlsxItem represents a single item in PivotTable field.
 type xlsxItem struct {
-	N  string `xml:"n,attr"`
-	T  string `xml:"t,attr"`
-	H  bool   `xml:"h,attr"`
-	S  bool   `xml:"s,attr"`
-	SD bool   `xml:"sd,attr"`
-	F  bool   `xml:"f,attr"`
-	M  bool   `xml:"m,attr"`
-	C  bool   `xml:"c,attr"`
-	X  int    `xml:"x,attr,omitempty"`
-	D  bool   `xml:"d,attr"`
-	E  bool   `xml:"e,attr"`
+	N  string `xml:"n,attr,omitempty"`
+	T  string `xml:"t,attr,omitempty"`
+	H  bool   `xml:"h,attr,omitempty"`
+	S  bool   `xml:"s,attr,omitempty"`
+	SD bool   `xml:"sd,attr,omitempty"`
+	F  bool   `xml:"f,attr,omitempty"`
+	M  bool   `xml:"m,attr,omitempty"`
+	C  bool   `xml:"c,attr,omitempty"`
+	X  int    `xml:"x,attr,omitempty,omitempty"`
+	D  bool   `xml:"d,attr,omitempty"`
+	E  bool   `xml:"e,attr,omitempty"`
 }
 
 // xlsxAutoSortScope represents the sorting scope for the PivotTable.
@@ -198,8 +198,8 @@ type xlsxAutoSortScope struct {
 
 // xlsxRowFields represents the collection of row fields for the PivotTable.
 type xlsxRowFields struct {
-	Count  int          `xml:"count,attr"`
-	Fields []*xlsxField `xml:"fields"`
+	Count int          `xml:"count,attr"`
+	Field []*xlsxField `xml:"field"`
 }
 
 // xlsxField represents a generic field that can appear either on the column
@@ -224,14 +224,13 @@ type xlsxI struct {
 
 // xlsxX represents an array of indexes to cached shared item values.
 type xlsxX struct {
-	XMLName xml.Name `xml:"x"`
 }
 
 // xlsxColFields represents the collection of fields that are on the column
 // axis of the PivotTable.
 type xlsxColFields struct {
-	Count  int          `xml:"count,attr"`
-	Fields []*xlsxField `xml:"fields"`
+	Count int          `xml:"count,attr"`
+	Field []*xlsxField `xml:"field"`
 }
 
 // xlsxColItems represents the collection of column items of the PivotTable.
@@ -261,8 +260,8 @@ type xlsxPageField struct {
 // xlsxDataFields represents the collection of items in the data region of the
 // PivotTable.
 type xlsxDataFields struct {
-	Count     int            `xml:"count,attr"`
-	DataField *xlsxDataField `xml:"dataField"`
+	Count     int              `xml:"count,attr"`
+	DataField []*xlsxDataField `xml:"dataField"`
 }
 
 // xlsxDataField represents a field from a source list, table, or database
@@ -270,10 +269,10 @@ type xlsxDataFields struct {
 type xlsxDataField struct {
 	Name       string      `xml:"name,attr,omitempty"`
 	Fld        int         `xml:"fld,attr"`
-	Subtotal   string      `xml:"subtotal,attr"`
-	ShowDataAs string      `xml:"showDataAs,attr"`
-	BaseField  int         `xml:"baseField,attr"`
-	BaseItem   int64       `xml:"baseItem,attr"`
+	Subtotal   string      `xml:"subtotal,attr,omitempty"`
+	ShowDataAs string      `xml:"showDataAs,attr,omitempty"`
+	BaseField  int         `xml:"baseField,attr,omitempty"`
+	BaseItem   int64       `xml:"baseItem,attr,omitempty"`
 	NumFmtId   string      `xml:"numFmtId,attr,omitempty"`
 	ExtLst     *xlsxExtLst `xml:"extLst"`
 }
@@ -289,7 +288,7 @@ type xlsxPivotTableStyleInfo struct {
 	Name           string `xml:"name,attr"`
 	ShowRowHeaders bool   `xml:"showRowHeaders,attr"`
 	ShowColHeaders bool   `xml:"showColHeaders,attr"`
-	ShowRowStripes bool   `xml:"showRowStripes,attr"`
-	ShowColStripes bool   `xml:"showColStripes,attr"`
+	ShowRowStripes bool   `xml:"showRowStripes,attr,omitempty"`
+	ShowColStripes bool   `xml:"showColStripes,attr,omitempty"`
 	ShowLastColumn bool   `xml:"showLastColumn,attr,omitempty"`
 }

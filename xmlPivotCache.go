@@ -10,7 +10,7 @@ type xlsxPivotCacheDefinition struct {
 	XMLName               xml.Name               `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main pivotCacheDefinition"`
 	RID                   string                 `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Invalid               bool                   `xml:"invalid,attr,omitempty"`
-	SaveData              bool                   `xml:"saveData,attr,omitempty"`
+	SaveData              bool                   `xml:"saveData,attr"`
 	RefreshOnLoad         bool                   `xml:"refreshOnLoad,attr,omitempty"`
 	OptimizeMemory        bool                   `xml:"optimizeMemory,attr,omitempty"`
 	EnableRefresh         bool                   `xml:"enableRefresh,attr,omitempty"`
@@ -47,6 +47,28 @@ type xlsxPivotCacheDefinition struct {
 // (including OLAP cubes), multiple SpreadsheetML worksheets, or another
 // PivotTable.
 type xlsxCacheSource struct {
+	Type            string               `xml:"type,attr"`
+	ConnectionId    int                  `xml:"connectionId,attr,omitempty"`
+	WorksheetSource *xlsxWorksheetSource `xml:"worksheetSource"`
+	Consolidation   *xlsxConsolidation   `xml:"consolidation"`
+	ExtLst          *xlsxExtLst          `xml:"extLst"`
+}
+
+// xlsxWorksheetSource represents the location of the source of the data that
+// is stored in the cache.
+type xlsxWorksheetSource struct {
+	RID   string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+	Ref   string `xml:"ref,attr,omitempty"`
+	Name  string `xml:"name,attr,omitempty"`
+	Sheet string `xml:"sheet,attr,omitempty"`
+}
+
+// xlsxConsolidation represents the description of the PivotCache source using
+// multiple consolidation ranges. This element is used when the source of the
+// PivotTable is a collection of ranges in the workbook. The ranges are
+// specified in the rangeSets collection. The logic for how the application
+// consolidates the data in the ranges is application- defined.
+type xlsxConsolidation struct {
 }
 
 // xlsxCacheFields represents the collection of field definitions in the
@@ -67,18 +89,18 @@ type xlsxCacheField struct {
 	PropertyName        string           `xml:"propertyName,attr,omitempty"`
 	ServerField         bool             `xml:"serverField,attr,omitempty"`
 	UniqueList          bool             `xml:"uniqueList,attr,omitempty"`
-	NumFmtId            string           `xml:"numFmtId,attr,omitempty"`
+	NumFmtId            int              `xml:"numFmtId,attr"`
 	Formula             string           `xml:"formula,attr,omitempty"`
 	SQLType             int              `xml:"sqlType,attr,omitempty"`
 	Hierarchy           int              `xml:"hierarchy,attr,omitempty"`
 	Level               int              `xml:"level,attr,omitempty"`
-	DatabaseField       bool             `xml:"databaseField,attr"`
+	DatabaseField       bool             `xml:"databaseField,attr,omitempty"`
 	MappingCount        int              `xml:"mappingCount,attr,omitempty"`
 	MemberPropertyField bool             `xml:"memberPropertyField,attr,omitempty"`
 	SharedItems         *xlsxSharedItems `xml:"sharedItems"`
 	FieldGroup          *xlsxFieldGroup  `xml:"fieldGroup"`
-	MpMap               *xlsxX           `xml:"map"`
-	ExtLst              *xlsxExtLst      `xml:"exrLst"`
+	MpMap               *xlsxX           `xml:"mpMap"`
+	ExtLst              *xlsxExtLst      `xml:"extLst"`
 }
 
 // xlsxSharedItems represents the collection of unique items for a field in
@@ -100,7 +122,7 @@ type xlsxSharedItems struct {
 	MaxValue               float64       `xml:"maxValue,attr,omitempty"`
 	MinDate                string        `xml:"minDate,attr,omitempty"`
 	MaxDate                string        `xml:"maxDate,attr,omitempty"`
-	Count                  int           `xml:"count,attr,omitempty"`
+	Count                  int           `xml:"count,attr"`
 	LongText               bool          `xml:"longText,attr,omitempty"`
 	M                      *xlsxMissing  `xml:"m"`
 	N                      *xlsxNumber   `xml:"n"`
