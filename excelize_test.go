@@ -8,6 +8,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -395,6 +396,112 @@ func TestMergeCell(t *testing.T) {
 	f.GetCellFormula("Sheet1", "G12")
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
+}
+
+// TestWriteArrayFormula tests the extended options of SetCellFormula by writing an array function
+// to a workbook. In the resulting file, the lines 2 and 3 as well as 4 and 5 should have matching
+// contents.
+func TestWriteArrayFormula(t *testing.T) {
+	cell := func(col, row int) string {
+		c, err := CoordinatesToCellName(col, row)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return c
+	}
+
+	f := NewFile()
+
+	sample := []string{"Sample 1", "Sample 2", "Sample 3"}
+	values := []int{1855, 1709, 1462, 1115, 1524, 625, 773, 126, 1027, 1696, 1078, 1917, 1109, 1753, 1884, 659, 994, 1911, 1925, 899, 196, 244, 1488, 1056, 1986, 66, 784, 725, 767, 1722, 1541, 1026, 1455, 264, 1538, 877, 1581, 1098, 383, 762, 237, 493, 29, 1923, 474, 430, 585, 688, 308, 200, 1259, 622, 798, 1048, 996, 601, 582, 332, 377, 805, 250, 1860, 1360, 840, 911, 1346, 1651, 1651, 665, 584, 1057, 1145, 925, 1752, 202, 149, 1917, 1398, 1894, 818, 714, 624, 1085, 1566, 635, 78, 313, 1686, 1820, 494, 614, 1913, 271, 1016, 338, 1301, 489, 1733, 1483, 1141}
+	assoc := []int{2, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0, 1, 0, 2, 0, 2, 1, 2, 2, 2, 1, 0, 1, 0, 1, 1, 2, 0, 2, 1, 0, 2, 1, 0, 1, 0, 0, 2, 0, 2, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 1, 1, 0, 1, 0, 2, 0, 0, 1, 2, 1, 0, 1, 0, 0, 2, 1, 1, 2, 0, 2, 1, 0, 2, 2, 2, 1, 0, 0, 1, 1, 1, 2, 0, 2, 0, 1, 1}
+	if len(values) != len(assoc) {
+		t.Fatal("values and assoc must be of same length")
+	}
+
+	// Average calculates the average of the n-th sample (0 <= n < len(sample)).
+	average := func(n int) int {
+		sum := 0
+		count := 0
+		for i := 0; i != len(values); i++ {
+			if assoc[i] == n {
+				sum += values[i]
+				count++
+			}
+		}
+
+		return int(math.Round(float64(sum) / float64(count)))
+	}
+
+	// Stdev calculates the standard deviation of the n-th sample (0 <= n < len(sample)).
+	stdev := func(n int) int {
+		avg := average(n)
+
+		sum := 0
+		count := 0
+		for i := 0; i != len(values); i++ {
+			if assoc[i] == n {
+				sum += (values[i] - avg) * (values[i] - avg)
+				count++
+			}
+		}
+
+		return int(math.Round(math.Sqrt(float64(sum) / float64(count))))
+	}
+
+	// Line 2 contains the results of AVERAGEIF
+	f.SetCellStr("Sheet1", "A2", "Average")
+
+	// Line 3 contains the average that was calculated in Go
+	f.SetCellStr("Sheet1", "A3", "Average (calculated)")
+
+	// Line 4 contains the results of the array function that calculates the standard deviation
+	f.SetCellStr("Sheet1", "A4", "Std. deviation")
+
+	// Line 5 contains the standard deviations calculated in Go
+	f.SetCellStr("Sheet1", "A5", "Std. deviation (calculated)")
+
+	f.SetCellStr("Sheet1", "B1", sample[0])
+	f.SetCellStr("Sheet1", "C1", sample[1])
+	f.SetCellStr("Sheet1", "D1", sample[2])
+
+	firstResLine := 8
+	f.SetCellStr("Sheet1", cell(1, firstResLine-1), "Result Values")
+	f.SetCellStr("Sheet1", cell(2, firstResLine-1), "Sample")
+
+	for i := 0; i != len(values); i++ {
+		valCell := cell(1, i+firstResLine)
+		assocCell := cell(2, i+firstResLine)
+
+		f.SetCellInt("Sheet1", valCell, values[i])
+		f.SetCellStr("Sheet1", assocCell, sample[assoc[i]])
+	}
+
+	valRange := fmt.Sprintf("$A$%d:$A$%d", firstResLine, len(values)+firstResLine-1)
+	assocRange := fmt.Sprintf("$B$%d:$B$%d", firstResLine, len(values)+firstResLine-1)
+
+	for i := 0; i != len(sample); i++ {
+		nameCell := cell(i+2, 1)
+		avgCell := cell(i+2, 2)
+		calcAvgCell := cell(i+2, 3)
+		stdevCell := cell(i+2, 4)
+		calcStdevCell := cell(i+2, 5)
+
+		f.SetCellInt("Sheet1", calcAvgCell, average(i))
+		f.SetCellInt("Sheet1", calcStdevCell, stdev(i))
+
+		// Average can be done with AVERAGEIF
+		f.SetCellFormula("Sheet1", avgCell, fmt.Sprintf("ROUND(AVERAGEIF(%s,%s,%s),0)", assocRange, nameCell, valRange))
+
+		ref := stdevCell + ":" + stdevCell
+		t := STCellFormulaTypeArray
+		// Use an array formula for standard deviation
+		f.SetCellFormula("Sheet1", stdevCell, fmt.Sprintf("ROUND(STDEVP(IF(%s=%s,%s)),0)", assocRange, nameCell, valRange),
+			FormulaOpts{}, FormulaOpts{Type: &t}, FormulaOpts{Ref: &ref})
+	}
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestWriteArrayFormula.xlsx")))
 }
 
 func TestSetCellStyleAlignment(t *testing.T) {
