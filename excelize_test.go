@@ -775,7 +775,7 @@ func TestSetCellStyleFont(t *testing.T) {
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A4", "A4", style))
 
-	style, err = f.NewStyle(`{"font":{"color":"#777777"}}`)
+	style, err = f.NewStyle(`{"font":{"color":"#777777","strike":true}}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

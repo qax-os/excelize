@@ -1993,6 +1993,10 @@ func (f *File) setFont(formatStyle *formatStyle) *xlsxFont {
 	if fnt.Name.Val == "" {
 		fnt.Name.Val = f.GetDefaultFont()
 	}
+	if formatStyle.Font.Strike {
+		strike := true
+		fnt.Strike = &strike
+	}
 	val, ok := fontUnderlineType[formatStyle.Font.Underline]
 	if ok {
 		fnt.U = &attrValString{Val: val}
