@@ -11,6 +11,7 @@ package excelize
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -257,14 +258,17 @@ func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 }
 
 // SetRowOutlineLevel provides a function to set outline level number of a
-// single row by given worksheet name and Excel row number. For example,
-// outline row 2 in Sheet1 to level 1:
+// single row by given worksheet name and Excel row number. The value of
+// parameter 'level' is 1-7. For example, outline row 2 in Sheet1 to level 1:
 //
 //    err := f.SetRowOutlineLevel("Sheet1", 2, 1)
 //
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
+	}
+	if level > 7 || level < 1 {
+		return errors.New("invalid outline level")
 	}
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {

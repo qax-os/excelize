@@ -272,7 +272,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	twoCellAnchor.To = &to
 	pic := xlsxPic{}
 	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = formatSet.NoChangeAspect
-	pic.NvPicPr.CNvPr.ID = f.countCharts() + f.countMedia() + 1
+	pic.NvPicPr.CNvPr.ID = len(content.OneCellAnchor) + len(content.TwoCellAnchor) + 2
 	pic.NvPicPr.CNvPr.Descr = file
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
 	if hyperlinkRID != 0 {

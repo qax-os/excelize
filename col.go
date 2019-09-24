@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"errors"
 	"math"
 	"strings"
 )
@@ -112,19 +113,22 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 	for c := range xlsx.Cols.Col {
 		colData := &xlsx.Cols.Col[c]
 		if colData.Min <= colNum && colNum <= colData.Max {
-			level = colData.OutlineLevel
+			level = colData.OutlineLevel + 1
 		}
 	}
 	return level, err
 }
 
 // SetColOutlineLevel provides a function to set outline level of a single
-// column by given worksheet name and column name. For example, set outline
-// level of column D in Sheet1 to 2:
+// column by given worksheet name and column name. The value of parameter
+// 'level' is 1-7. For example, set outline level of column D in Sheet1 to 2:
 //
 //    err := f.SetColOutlineLevel("Sheet1", "D", 2)
 //
 func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
+	if level > 7 || level < 1 {
+		return errors.New("invalid outline level")
+	}
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {
 		return err

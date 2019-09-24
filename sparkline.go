@@ -429,11 +429,6 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) error {
 			return err
 		}
 		for idx, ext := range decodeExtLst.Ext {
-			// hack: add back missing namespace
-			decodeExtLst.Ext[idx].XMLNSX14 = decodeExtLst.Ext[idx].X14
-			decodeExtLst.Ext[idx].XMLNSX15 = decodeExtLst.Ext[idx].X15
-			decodeExtLst.Ext[idx].XMLNSX14 = ""
-			decodeExtLst.Ext[idx].XMLNSX15 = ""
 			if ext.URI == ExtURISparklineGroups {
 				decodeSparklineGroups := decodeX14SparklineGroups{}
 				_ = xml.Unmarshal([]byte(ext.Content), &decodeSparklineGroups)
@@ -458,9 +453,8 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) error {
 		}
 		sparklineGroupsBytes, _ := xml.Marshal(groups)
 		extLst := xlsxWorksheetExt{
-			XMLNSX14: NameSpaceSpreadSheetX14,
-			URI:      ExtURISparklineGroups,
-			Content:  string(sparklineGroupsBytes),
+			URI:     ExtURISparklineGroups,
+			Content: string(sparklineGroupsBytes),
 		}
 		extBytes, _ := xml.Marshal(extLst)
 		ws.ExtLst.Ext = string(extBytes)

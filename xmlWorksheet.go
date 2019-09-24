@@ -629,13 +629,9 @@ type xlsxLegacyDrawing struct {
 
 // xlsxWorksheetExt directly maps the ext element in the worksheet.
 type xlsxWorksheetExt struct {
-	XMLName  xml.Name `xml:"ext"`
-	XMLNSX14 string   `xml:"xmlns:x14,attr,omitempty"`
-	XMLNSX15 string   `xml:"xmlns:x15,attr,omitempty"`
-	X14      string   `xml:"x14,attr,omitempty"`
-	X15      string   `xml:"x15,attr,omitempty"`
-	URI      string   `xml:"uri,attr"`
-	Content  string   `xml:",innerxml"`
+	XMLName xml.Name `xml:"ext"`
+	URI     string   `xml:"uri,attr"`
+	Content string   `xml:",innerxml"`
 }
 
 // decodeWorksheetExt directly maps the ext element.

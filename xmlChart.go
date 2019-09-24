@@ -293,9 +293,10 @@ type cAutoTitleDeleted struct {
 type cView3D struct {
 	RotX         *attrValInt `xml:"rotX"`
 	RotY         *attrValInt `xml:"rotY"`
+	RAngAx       *attrValInt `xml:"rAngAx"`
 	DepthPercent *attrValInt `xml:"depthPercent"`
 	Perspective  *attrValInt `xml:"perspective"`
-	RAngAx       *attrValInt `xml:"rAngAx"`
+	ExtLst       *xlsxExtLst `xml:"extLst"`
 }
 
 // cPlotArea directly maps the plotArea element. This element specifies the

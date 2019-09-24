@@ -10,9 +10,7 @@ import (
 func TestColumnVisibility(t *testing.T) {
 	t.Run("TestBook1", func(t *testing.T) {
 		f, err := prepareTestBook1()
-		if !assert.NoError(t, err) {
-			t.FailNow()
-		}
+		assert.NoError(t, err)
 
 		assert.NoError(t, f.SetColVisible("Sheet1", "F", false))
 		assert.NoError(t, f.SetColVisible("Sheet1", "F", true))
@@ -38,9 +36,7 @@ func TestColumnVisibility(t *testing.T) {
 
 	t.Run("TestBook3", func(t *testing.T) {
 		f, err := prepareTestBook3()
-		if !assert.NoError(t, err) {
-			t.FailNow()
-		}
+		assert.NoError(t, err)
 		f.GetColVisible("Sheet1", "B")
 	})
 }
@@ -49,12 +45,14 @@ func TestOutlineLevel(t *testing.T) {
 	f := NewFile()
 	f.GetColOutlineLevel("Sheet1", "D")
 	f.NewSheet("Sheet2")
-	f.SetColOutlineLevel("Sheet1", "D", 4)
+	assert.NoError(t, f.SetColOutlineLevel("Sheet1", "D", 4))
 	f.GetColOutlineLevel("Sheet1", "D")
 	f.GetColOutlineLevel("Shee2", "A")
-	f.SetColWidth("Sheet2", "A", "D", 13)
-	f.SetColOutlineLevel("Sheet2", "B", 2)
-	f.SetRowOutlineLevel("Sheet1", 2, 250)
+	assert.NoError(t, f.SetColWidth("Sheet2", "A", "D", 13))
+	assert.NoError(t, f.SetColOutlineLevel("Sheet2", "B", 2))
+	assert.NoError(t, f.SetRowOutlineLevel("Sheet1", 2, 7))
+	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "D", 8), "invalid outline level")
+	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 2, 8), "invalid outline level")
 
 	// Test set and get column outline level with illegal cell coordinates.
 	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "*", 1), `invalid column name "*"`)
@@ -67,7 +65,7 @@ func TestOutlineLevel(t *testing.T) {
 	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 0, 1), "invalid row number 0")
 	level, err := f.GetRowOutlineLevel("Sheet1", 2)
 	assert.NoError(t, err)
-	assert.Equal(t, uint8(250), level)
+	assert.Equal(t, uint8(7), level)
 
 	_, err = f.GetRowOutlineLevel("Sheet1", 0)
 	assert.EqualError(t, err, `invalid row number 0`)
@@ -76,15 +74,10 @@ func TestOutlineLevel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint8(0), level)
 
-	err = f.SaveAs(filepath.Join("test", "TestOutlineLevel.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestOutlineLevel.xlsx")))
 
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 	f.SetColOutlineLevel("Sheet2", "B", 2)
 }
 
@@ -138,11 +131,7 @@ func TestInsertCol(t *testing.T) {
 	f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 	f.MergeCell(sheet1, "A1", "C3")
 
-	err := f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
+	assert.NoError(t, f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`))
 	assert.NoError(t, f.InsertCol(sheet1, "A"))
 
 	// Test insert column with illegal cell coordinates.

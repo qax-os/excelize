@@ -1845,7 +1845,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	graphicFrame := xlsxGraphicFrame{
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
-				ID:   f.countCharts() + f.countMedia() + 1,
+				ID:   len(content.OneCellAnchor) + len(content.TwoCellAnchor) + 2,
 				Name: "Chart " + strconv.Itoa(cNvPrID),
 			},
 		},
