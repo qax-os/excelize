@@ -9,7 +9,9 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 // xlsxWorksheet directly maps the worksheet element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
@@ -57,10 +59,113 @@ type xlsxWorksheet struct {
 	ExtLst                *xlsxExtLst                  `xml:"extLst"`
 }
 
+// MarshalXML implements xml.Marshaler
+func (x xlsxWorksheet) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	x2 := struct {
+		XMLName               xml.Name                     `xml:"worksheet"`
+		SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
+		Dimension             xlsxDimension                `xml:"dimension"`
+		SheetViews            xlsxSheetViews               `xml:"sheetViews,omitempty"`
+		SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
+		Cols                  *xlsxCols                    `xml:"cols,omitempty"`
+		SheetData             xlsxSheetData                `xml:"sheetData"`
+		SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
+		AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
+		CustomSheetViews      *xlsxCustomSheetViews        `xml:"customSheetViews"`
+		MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
+		PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
+		ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
+		DataValidations       *xlsxDataValidations         `xml:"dataValidations,omitempty"`
+		Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
+		PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
+		PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
+		PageSetUp             *xlsxPageSetUp               `xml:"pageSetup"`
+		HeaderFooter          *xlsxHeaderFooter            `xml:"headerFooter"`
+		RowBreaks             *xlsxBreaks                  `xml:"rowBreaks"`
+		ColBreaks             *xlsxBreaks                  `xml:"colBreaks"`
+		Drawing               *xlsxDrawing                 `xml:"drawing"`
+		LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
+		Picture               *xlsxPicture                 `xml:"picture"`
+		TableParts            *xlsxTableParts              `xml:"tableParts"`
+		ExtLst                *xlsxExtLst                  `xml:"extLst"`
+		XrUID                 string                       `xml:"xr:uid,attr"`
+		XmlnsXr               string                       `xml:"xmlns:xr,attr"`
+		XmlnsXr2              string                       `xml:"xmlns:xr2,attr"`
+		XmlnsXr3              string                       `xml:"xmlns:xr3,attr"`
+		XmlnsXr6              string                       `xml:"xmlns:xr6,attr"`
+		XmlnsXr10             string                       `xml:"xmlns:xr10,attr"`
+		XmlnsXr14             string                       `xml:"xmlns:xr14,attr"`
+		XmlnsXr14ac           string                       `xml:"xmlns:xr14ac,attr"`
+		XmlnsXr15             string                       `xml:"xmlns:xr15,attr"`
+		McIgnorable           string                       `xml:"mc:Ignorable,attr"`
+		XmlnsMc               string                       `xml:"xmlns:mc,attr"`
+		XmlnsMx               string                       `xml:"xmlns:mx,attr"`
+		XmlnsMv               string                       `xml:"xmlns:mv,attr"`
+		XmlnsR                string                       `xml:"xmlns:r,attr"`
+		Xmlns                 string                       `xml:"xmlns,attr"`
+	}{
+		XMLName:               x.XMLName,
+		SheetPr:               x.SheetPr,
+		Dimension:             x.Dimension,
+		SheetViews:            x.SheetViews,
+		SheetFormatPr:         x.SheetFormatPr,
+		Cols:                  x.Cols,
+		SheetData:             x.SheetData,
+		SheetProtection:       x.SheetProtection,
+		AutoFilter:            x.AutoFilter,
+		CustomSheetViews:      x.CustomSheetViews,
+		MergeCells:            x.MergeCells,
+		PhoneticPr:            x.PhoneticPr,
+		ConditionalFormatting: x.ConditionalFormatting,
+		DataValidations:       x.DataValidations,
+		Hyperlinks:            x.Hyperlinks,
+		PrintOptions:          x.PrintOptions,
+		PageMargins:           x.PageMargins,
+		PageSetUp:             x.PageSetUp,
+		HeaderFooter:          x.HeaderFooter,
+		RowBreaks:             x.RowBreaks,
+		ColBreaks:             x.ColBreaks,
+		Drawing:               x.Drawing,
+		LegacyDrawing:         x.LegacyDrawing,
+		Picture:               x.Picture,
+		TableParts:            x.TableParts,
+		ExtLst:                x.ExtLst,
+		XrUID:                 "{00000000-0001-0000-0000-000000000000}",
+		XmlnsXr:               "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+		XmlnsXr2:              "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2",
+		XmlnsXr3:              "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3",
+		XmlnsXr6:              "http://schemas.microsoft.com/office/spreadsheetml/2016/revision6",
+		XmlnsXr10:             "http://schemas.microsoft.com/office/spreadsheetml/2016/revision10",
+		XmlnsXr14:             "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main",
+		XmlnsXr14ac:           "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac",
+		XmlnsXr15:             "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main",
+		McIgnorable:           "x14ac xr xr2 xr3 xr6 xr10 x15",
+		XmlnsMc:               "http://schemas.openxmlformats.org/markup-compatibility/2006",
+		XmlnsMx:               "http://schemas.microsoft.com/office/mac/excel/2008/main",
+		XmlnsMv:               "urn:schemas-microsoft-com:mac:vml",
+		XmlnsR:                "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+		Xmlns:                 "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+	}
+	return e.Encode(x2)
+}
+
 // xlsxDrawing change r:id to rid in the namespace.
 type xlsxDrawing struct {
 	XMLName xml.Name `xml:"drawing"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// tmpXlsxDrawing is temp struct for marshal xlsxDrawing to xml
+type tmpXlsxDrawing struct {
+	XMLName xml.Name `xml:"drawing"`
+	RID     string   `xml:"r:id,attr,omitempty"`
+}
+
+// MarshalXML implements xml.Marshaler
+func (drawing *xlsxDrawing) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.Encode(tmpXlsxDrawing{
+		RID: drawing.RID,
+	})
 }
 
 // xlsxHeaderFooter directly maps the headerFooter element in the namespace
@@ -120,6 +225,55 @@ type xlsxPageSetUp struct {
 	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
 	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
 	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`
+}
+
+// tmpXlsxDrawing is temp struct for marshal xlsxDrawing to xml
+type tmpXlsxPageSetUp struct {
+	XMLName            xml.Name `xml:"pageSetup"`
+	RID                string   `xml:"r:id,attr,omitempty"`
+	BlackAndWhite      bool     `xml:"blackAndWhite,attr,omitempty"`
+	CellComments       string   `xml:"cellComments,attr,omitempty"`
+	Copies             int      `xml:"copies,attr,omitempty"`
+	Draft              bool     `xml:"draft,attr,omitempty"`
+	Errors             string   `xml:"errors,attr,omitempty"`
+	FirstPageNumber    int      `xml:"firstPageNumber,attr,omitempty"`
+	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
+	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
+	HorizontalDPI      float32  `xml:"horizontalDpi,attr,omitempty"`
+	Orientation        string   `xml:"orientation,attr,omitempty"`
+	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
+	PaperHeight        string   `xml:"paperHeight,attr,omitempty"`
+	PaperSize          int      `xml:"paperSize,attr,omitempty"`
+	PaperWidth         string   `xml:"paperWidth,attr,omitempty"`
+	Scale              int      `xml:"scale,attr,omitempty"`
+	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
+	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
+	VerticalDPI        float32  `xml:"verticalDpi,attr,omitempty"`
+}
+
+// MarshalXML implements xml.Marshaler
+func (setUp *xlsxPageSetUp) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.Encode(tmpXlsxPageSetUp{
+		RID:                setUp.RID,
+		BlackAndWhite:      setUp.BlackAndWhite,
+		CellComments:       setUp.CellComments,
+		Copies:             setUp.Copies,
+		Draft:              setUp.Draft,
+		Errors:             setUp.Errors,
+		FirstPageNumber:    setUp.FirstPageNumber,
+		FitToHeight:        setUp.FitToHeight,
+		FitToWidth:         setUp.FitToWidth,
+		HorizontalDPI:      setUp.HorizontalDPI,
+		Orientation:        setUp.Orientation,
+		PageOrder:          setUp.PageOrder,
+		PaperHeight:        setUp.PaperHeight,
+		PaperSize:          setUp.PaperSize,
+		PaperWidth:         setUp.PaperWidth,
+		Scale:              setUp.Scale,
+		UseFirstPageNumber: setUp.UseFirstPageNumber,
+		UsePrinterDefaults: setUp.UsePrinterDefaults,
+		VerticalDPI:        setUp.VerticalDPI,
+	})
 }
 
 // xlsxPrintOptions directly maps the printOptions element in the namespace
@@ -607,6 +761,25 @@ type xlsxHyperlink struct {
 	RID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
+// tmpXlsxHyperlink is temp struct for marshal xlsxHyperlink to xml
+type tmpXlsxHyperlink struct {
+	XMLName  xml.Name `xml:"hyperlink"`
+	RID      string   `xml:"r:id,attr,omitempty"`
+	Ref      string   `xml:"ref,attr"`
+	Location string   `xml:"location,attr,omitempty"`
+	Display  string   `xml:"display,attr,omitempty"`
+}
+
+// MarshalXML implements xml.Marshaler
+func (hyperlink *xlsxHyperlink) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.Encode(tmpXlsxHyperlink{
+		RID:      hyperlink.RID,
+		Ref:      hyperlink.Ref,
+		Location: hyperlink.Location,
+		Display:  hyperlink.Display,
+	})
+}
+
 // xlsxTableParts directly maps the tableParts element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - The table element
 // has several attributes applied to identify the table and the data range it
@@ -650,6 +823,19 @@ type xlsxTablePart struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
+// tmpXlsxTablePart is temp struct for marshal xlsxTablePart to xml
+type tmpXlsxTablePart struct {
+	XMLName xml.Name `xml:"tablePart"`
+	RID     string   `xml:"r:id,attr,omitempty"`
+}
+
+// MarshalXML implements xml.Marshaler
+func (p *xlsxTablePart) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.Encode(tmpXlsxTablePart{
+		RID: p.RID,
+	})
+}
+
 // xlsxPicture directly maps the picture element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - Background sheet
 // image. For example:
@@ -659,6 +845,19 @@ type xlsxTablePart struct {
 type xlsxPicture struct {
 	XMLName xml.Name `xml:"picture"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// tmpXlsxPicture is temp struct for marshal xlsxPicture to xml
+type tmpXlsxPicture struct {
+	XMLName xml.Name `xml:"picture"`
+	RID     string   `xml:"r:id,attr,omitempty"`
+}
+
+// MarshalXML implements xml.Marshaler
+func (picture *xlsxPicture) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.Encode(tmpXlsxPicture{
+		RID: picture.RID,
+	})
 }
 
 // xlsxLegacyDrawing directly maps the legacyDrawing element in the namespace
@@ -685,6 +884,19 @@ type xlsxLegacyDrawingHF struct {
 
 type xlsxInnerXML struct {
 	Content string `xml:",innerxml"`
+}
+
+// tmpXlsxTablePart is temp struct for marshal xlsxLegacyDrawing to xml
+type tmpXlsxLegacyDrawing struct {
+	XMLName xml.Name `xml:"legacyDrawing"`
+	RID     string   `xml:"r:id,attr,omitempty"`
+}
+
+// MarshalXML implements xml.Marshaler
+func (p *xlsxLegacyDrawing) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.Encode(tmpXlsxLegacyDrawing{
+		RID: p.RID,
+	})
 }
 
 // xlsxWorksheetExt directly maps the ext element in the worksheet.

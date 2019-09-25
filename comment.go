@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
@@ -322,13 +323,16 @@ func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
 
 // vmlDrawingWriter provides a function to save xl/drawings/vmlDrawing%d.xml
 // after serialize structure.
-func (f *File) vmlDrawingWriter() {
+func (f *File) vmlDrawingWriter(zw *zip.Writer) error {
 	for path, vml := range f.VMLDrawing {
-		if vml != nil {
-			v, _ := xml.Marshal(vml)
-			f.XLSX[path] = v
+		if vml == nil {
+			continue
+		}
+		if err := writeXMLToZipWriter(zw, path, vml); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 // commentsReader provides a function to get the pointer to the structure
@@ -351,11 +355,14 @@ func (f *File) commentsReader(path string) *xlsxComments {
 
 // commentsWriter provides a function to save xl/comments%d.xml after
 // serialize structure.
-func (f *File) commentsWriter() {
+func (f *File) commentsWriter(zw *zip.Writer) error {
 	for path, c := range f.Comments {
-		if c != nil {
-			v, _ := xml.Marshal(c)
-			f.saveFileList(path, v)
+		if c == nil {
+			continue
+		}
+		if err := writeXMLToZipWriter(zw, path, c); err != nil {
+			return err
 		}
 	}
+	return nil
 }

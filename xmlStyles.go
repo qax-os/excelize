@@ -29,6 +29,67 @@ type xlsxStyleSheet struct {
 	ExtLst       *xlsxExtLst       `xml:"extLst"`
 }
 
+// MarshalXML implements xml.Marshaler
+func (sheet xlsxStyleSheet) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
+	sheet2 := struct {
+		XMLName      xml.Name          `xml:"styleSheet"`
+		NumFmts      *xlsxNumFmts      `xml:"numFmts,omitempty"`
+		Fonts        *xlsxFonts        `xml:"fonts,omitempty"`
+		Fills        *xlsxFills        `xml:"fills,omitempty"`
+		Borders      *xlsxBorders      `xml:"borders,omitempty"`
+		CellStyleXfs *xlsxCellStyleXfs `xml:"cellStyleXfs,omitempty"`
+		CellXfs      *xlsxCellXfs      `xml:"cellXfs,omitempty"`
+		CellStyles   *xlsxCellStyles   `xml:"cellStyles,omitempty"`
+		Dxfs         *xlsxDxfs         `xml:"dxfs,omitempty"`
+		TableStyles  *xlsxTableStyles  `xml:"tableStyles,omitempty"`
+		Colors       *xlsxStyleColors  `xml:"colors,omitempty"`
+		ExtLst       *xlsxExtLst       `xml:"extLst"`
+		XrUID        string            `xml:"xr:uid,attr"`
+		XmlnsXr      string            `xml:"xmlns:xr,attr"`
+		XmlnsXr2     string            `xml:"xmlns:xr2,attr"`
+		XmlnsXr3     string            `xml:"xmlns:xr3,attr"`
+		XmlnsXr6     string            `xml:"xmlns:xr6,attr"`
+		XmlnsXr10    string            `xml:"xmlns:xr10,attr"`
+		XmlnsXr14    string            `xml:"xmlns:xr14,attr"`
+		XmlnsXr14ac  string            `xml:"xmlns:xr14ac,attr"`
+		XmlnsXr15    string            `xml:"xmlns:xr15,attr"`
+		McIgnorable  string            `xml:"mc:Ignorable,attr"`
+		XmlnsMc      string            `xml:"xmlns:mc,attr"`
+		XmlnsMx      string            `xml:"xmlns:mx,attr"`
+		XmlnsMv      string            `xml:"xmlns:mv,attr"`
+		XmlnsR       string            `xml:"xmlns:r,attr"`
+		Xmlns        string            `xml:"xmlns,attr"`
+	}{
+		XMLName:      sheet.XMLName,
+		NumFmts:      sheet.NumFmts,
+		Fonts:        sheet.Fonts,
+		Fills:        sheet.Fills,
+		Borders:      sheet.Borders,
+		CellStyleXfs: sheet.CellStyleXfs,
+		CellXfs:      sheet.CellXfs,
+		Dxfs:         sheet.Dxfs,
+		TableStyles:  sheet.TableStyles,
+		Colors:       sheet.Colors,
+		ExtLst:       sheet.ExtLst,
+		XrUID:        "{00000000-0001-0000-0000-000000000000}",
+		XmlnsXr:      "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
+		XmlnsXr2:     "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2",
+		XmlnsXr3:     "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3",
+		XmlnsXr6:     "http://schemas.microsoft.com/office/spreadsheetml/2016/revision6",
+		XmlnsXr10:    "http://schemas.microsoft.com/office/spreadsheetml/2016/revision10",
+		XmlnsXr14:    "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main",
+		XmlnsXr14ac:  "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac",
+		XmlnsXr15:    "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main",
+		McIgnorable:  "x14ac xr xr2 xr3 xr6 xr10 x15",
+		XmlnsMc:      "http://schemas.openxmlformats.org/markup-compatibility/2006",
+		XmlnsMx:      "http://schemas.microsoft.com/office/mac/excel/2008/main",
+		XmlnsMv:      "urn:schemas-microsoft-com:mac:vml",
+		XmlnsR:       "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+		Xmlns:        "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+	}
+	return encoder.Encode(sheet2)
+}
+
 // xlsxAlignment formatting information pertaining to text alignment in cells.
 // There are a variety of choices for how text is aligned both horizontally and
 // vertically, as well as indentation settings, and so on.

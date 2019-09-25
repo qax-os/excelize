@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
@@ -544,11 +545,14 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
 
 // drawingsWriter provides a function to save xl/drawings/drawing%d.xml after
 // serialize structure.
-func (f *File) drawingsWriter() {
+func (f *File) drawingsWriter(zw *zip.Writer) error {
 	for path, d := range f.Drawings {
-		if d != nil {
-			v, _ := xml.Marshal(d)
-			f.saveFileList(path, v)
+		if d == nil {
+			continue
+		}
+		if err := writeXMLToZipWriter(zw, path, d); err != nil {
+			return err
 		}
 	}
+	return nil
 }

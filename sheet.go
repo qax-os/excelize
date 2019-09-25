@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
@@ -78,11 +79,11 @@ func (f *File) contentTypesReader() *xlsxTypes {
 
 // contentTypesWriter provides a function to save [Content_Types].xml after
 // serialize structure.
-func (f *File) contentTypesWriter() {
+func (f *File) contentTypesWriter(zw *zip.Writer) error {
 	if f.ContentTypes != nil {
-		output, _ := xml.Marshal(f.ContentTypes)
-		f.saveFileList("[Content_Types].xml", output)
+		return writeXMLToZipWriter(zw, "[Content_Types].xml", f.ContentTypes)
 	}
+	return writeStringToZipWriter(zw, "[Content_Types].xml", templateContentTypes)
 }
 
 // workbookReader provides a function to get the pointer to the xl/workbook.xml
@@ -103,30 +104,29 @@ func (f *File) workbookReader() *xlsxWorkbook {
 
 // workBookWriter provides a function to save xl/workbook.xml after serialize
 // structure.
-func (f *File) workBookWriter() {
+func (f *File) workBookWriter(zw *zip.Writer) error {
 	if f.WorkBook != nil {
-		output, _ := xml.Marshal(f.WorkBook)
-		f.saveFileList("xl/workbook.xml", replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(output)))
+		return writeXMLToZipWriter(zw, "xl/workbook.xml", f.WorkBook)
 	}
+	return writeStringToZipWriter(zw, "xl/workbook.xml", templateWorkbook)
 }
 
 // workSheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
-func (f *File) workSheetWriter() {
+func (f *File) workSheetWriter(zw *zip.Writer) error {
 	for p, sheet := range f.Sheet {
-		if sheet != nil {
-			for k, v := range sheet.SheetData.Row {
-				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
-			}
-			output, _ := xml.Marshal(sheet)
-			f.saveFileList(p, replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(output)))
-			ok := f.checked[p]
-			if ok {
-				delete(f.Sheet, p)
-				f.checked[p] = false
-			}
+		if sheet == nil {
+			continue
+		}
+		for k, v := range sheet.SheetData.Row {
+			f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
+		}
+		err := writeXMLToZipWriter(zw, p, sheet)
+		if err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 // trimCell provides a function to trim blank cells which created by fillColumns.
@@ -185,16 +185,16 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 
 // relsWriter provides a function to save relationships after
 // serialize structure.
-func (f *File) relsWriter() {
+func (f *File) relsWriter(zw *zip.Writer) error {
 	for path, rel := range f.Relationships {
-		if rel != nil {
-			output, _ := xml.Marshal(rel)
-			if strings.HasPrefix(path, "xl/worksheets/sheet/rels/sheet") {
-				output = replaceWorkSheetsRelationshipsNameSpaceBytes(output)
-			}
-			f.saveFileList(path, replaceRelationshipsBytes(output))
+		if rel == nil {
+			continue
+		}
+		if err := writeXMLToZipWriter(zw, path, rel); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 // setAppXML update docProps/app.xml file of XML.

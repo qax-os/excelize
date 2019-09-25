@@ -11,7 +11,6 @@ package excelize
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -72,44 +71,64 @@ func (f *File) SaveAs(name string) error {
 
 // Write provides a function to write to an io.Writer.
 func (f *File) Write(w io.Writer) error {
-	_, err := f.WriteTo(w)
-	return err
-}
-
-// WriteTo implements io.WriterTo to write the file.
-func (f *File) WriteTo(w io.Writer) (int64, error) {
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
-// WriteToBuffer provides a function to get bytes.Buffer from the saved file.
-func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
-	buf := new(bytes.Buffer)
-	zw := zip.NewWriter(buf)
-	f.calcChainWriter()
-	f.commentsWriter()
-	f.contentTypesWriter()
-	f.drawingsWriter()
-	f.vmlDrawingWriter()
-	f.workBookWriter()
-	f.workSheetWriter()
-	f.relsWriter()
-	f.styleSheetWriter()
+	var err error
+	zw := zip.NewWriter(w)
+	isZipWriterClosed := false
+	defer func() {
+		if !isZipWriterClosed {
+			zw.Close()
+		}
+	}()
 
 	for path, content := range f.XLSX {
+		if path == "xl/styles.xml" || path == "xl/workbook.xml" || path == "[Content_Types].xml" {
+			continue
+		}
 		fi, err := zw.Create(path)
 		if err != nil {
-			zw.Close()
-			return buf, err
+			return err
 		}
 		_, err = fi.Write(content)
 		if err != nil {
-			zw.Close()
-			return buf, err
+			return err
 		}
 	}
-	return buf, zw.Close()
+	err = f.calcChainWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.commentsWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.contentTypesWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.drawingsWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.vmlDrawingWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.workBookWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.workSheetWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.relsWriter(zw)
+	if err != nil {
+		return err
+	}
+	err = f.styleSheetWriter(zw)
+	if err != nil {
+		return err
+	}
+	isZipWriterClosed = true
+	return zw.Close()
 }

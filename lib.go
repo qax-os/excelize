@@ -12,6 +12,7 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
@@ -48,6 +49,30 @@ func (f *File) saveFileList(name string, content []byte) {
 	newContent = append(newContent, []byte(XMLHeader)...)
 	newContent = append(newContent, content...)
 	f.XLSX[name] = newContent
+}
+
+// writeXMLToZipWriter writes data obj in form of XML to zip,Writer
+func writeXMLToZipWriter(zw *zip.Writer, name string, data interface{}) error {
+	w, err := zw.Create(name)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write([]byte(XMLHeader))
+	if err != nil {
+		return err
+	}
+	encoder := xml.NewEncoder(w)
+	return encoder.Encode(data)
+}
+
+// writeStringToZipWriter writes string to zip,Writer
+func writeStringToZipWriter(zw *zip.Writer, name string, data string) error {
+	w, err := zw.Create(name)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write([]byte(XMLHeader + data))
+	return err
 }
 
 // Read file content as string in a archive file.

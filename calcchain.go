@@ -10,8 +10,8 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
-	"encoding/xml"
 	"io"
 	"log"
 )
@@ -34,11 +34,11 @@ func (f *File) calcChainReader() *xlsxCalcChain {
 
 // calcChainWriter provides a function to save xl/calcChain.xml after
 // serialize structure.
-func (f *File) calcChainWriter() {
+func (f File) calcChainWriter(zw *zip.Writer) error {
 	if f.CalcChain != nil && f.CalcChain.C != nil {
-		output, _ := xml.Marshal(f.CalcChain)
-		f.saveFileList("xl/calcChain.xml", output)
+		return writeXMLToZipWriter(zw, "xl/calcChain.xml", f.CalcChain)
 	}
+	return nil
 }
 
 // deleteCalcChain provides a function to remove cell reference on the
