@@ -411,17 +411,20 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 					U:       u,
 					Sz:      p.Font.Size * 100,
 					Latin:   &aLatin{Typeface: p.Font.Family},
-					SolidFill: &aSolidFill{
-						SrgbClr: &attrValString{
-							Val: strings.Replace(strings.ToUpper(p.Font.Color), "#", "", -1),
-						},
-					},
 				},
 				T: text,
 			},
 			EndParaRPr: &aEndParaRPr{
 				Lang: "en-US",
 			},
+		}
+		srgbClr := strings.Replace(strings.ToUpper(p.Font.Color), "#", "", -1)
+		if len(srgbClr) == 6 {
+			paragraph.R.RPr.SolidFill = &aSolidFill{
+				SrgbClr: &attrValString{
+					Val: srgbClr,
+				},
+			}
 		}
 		shape.TxBody.P = append(shape.TxBody.P, paragraph)
 	}

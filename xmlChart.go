@@ -332,8 +332,8 @@ type cCharts struct {
 	VaryColors   *attrValBool   `xml:"varyColors"`
 	Wireframe    *attrValBool   `xml:"wireframe"`
 	Ser          *[]cSer        `xml:"ser"`
-	Shape        *attrValString `xml:"shape"`
 	DLbls        *cDLbls        `xml:"dLbls"`
+	Shape        *attrValString `xml:"shape"`
 	HoleSize     *attrValInt    `xml:"holeSize"`
 	Smooth       *attrValBool   `xml:"smooth"`
 	Overlap      *attrValInt    `xml:"overlap"`

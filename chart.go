@@ -179,59 +179,11 @@ var (
 		Contour:                     0,
 		WireframeContour:            0,
 	}
-	chartView3DDepthPercent = map[string]int{
-		Area:                        100,
-		AreaStacked:                 100,
-		AreaPercentStacked:          100,
-		Area3D:                      100,
-		Area3DStacked:               100,
-		Area3DPercentStacked:        100,
-		Bar:                         100,
-		BarStacked:                  100,
-		BarPercentStacked:           100,
-		Bar3DClustered:              100,
-		Bar3DStacked:                100,
-		Bar3DPercentStacked:         100,
-		Bar3DConeClustered:          100,
-		Bar3DConeStacked:            100,
-		Bar3DConePercentStacked:     100,
-		Bar3DPyramidClustered:       100,
-		Bar3DPyramidStacked:         100,
-		Bar3DPyramidPercentStacked:  100,
-		Bar3DCylinderClustered:      100,
-		Bar3DCylinderStacked:        100,
-		Bar3DCylinderPercentStacked: 100,
-		Col:                         100,
-		ColStacked:                  100,
-		ColPercentStacked:           100,
-		Col3D:                       100,
-		Col3DClustered:              100,
-		Col3DStacked:                100,
-		Col3DPercentStacked:         100,
-		Col3DCone:                   100,
-		Col3DConeClustered:          100,
-		Col3DConeStacked:            100,
-		Col3DConePercentStacked:     100,
-		Col3DPyramid:                100,
-		Col3DPyramidClustered:       100,
-		Col3DPyramidStacked:         100,
-		Col3DPyramidPercentStacked:  100,
-		Col3DCylinder:               100,
-		Col3DCylinderClustered:      100,
-		Col3DCylinderStacked:        100,
-		Col3DCylinderPercentStacked: 100,
-		Doughnut:                    100,
-		Line:                        100,
-		Pie:                         100,
-		Pie3D:                       100,
-		Radar:                       100,
-		Scatter:                     100,
-		Surface3D:                   100,
-		WireframeSurface3D:          100,
-		Contour:                     100,
-		WireframeContour:            100,
-		Bubble:                      100,
-		Bubble3D:                    100,
+	plotAreaChartOverlap = map[string]int{
+		BarStacked:        100,
+		BarPercentStacked: 100,
+		ColStacked:        100,
+		ColPercentStacked: 100,
 	}
 	chartView3DPerspective = map[string]int{
 		Contour:          0,
@@ -842,11 +794,10 @@ func (f *File) addChart(formatSet *formatChart) {
 				},
 			},
 			View3D: &cView3D{
-				RotX:         &attrValInt{Val: chartView3DRotX[formatSet.Type]},
-				RotY:         &attrValInt{Val: chartView3DRotY[formatSet.Type]},
-				DepthPercent: &attrValInt{Val: chartView3DDepthPercent[formatSet.Type]},
-				Perspective:  &attrValInt{Val: chartView3DPerspective[formatSet.Type]},
-				RAngAx:       &attrValInt{Val: chartView3DRAngAx[formatSet.Type]},
+				RotX:        &attrValInt{Val: chartView3DRotX[formatSet.Type]},
+				RotY:        &attrValInt{Val: chartView3DRotY[formatSet.Type]},
+				Perspective: &attrValInt{Val: chartView3DPerspective[formatSet.Type]},
+				RAngAx:      &attrValInt{Val: chartView3DRAngAx[formatSet.Type]},
 			},
 			Floor: &cThicknessSpPr{
 				Thickness: &attrValInt{Val: 0},
@@ -980,6 +931,7 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			{Val: 754001152},
 			{Val: 753999904},
 		},
+		Overlap: &attrValInt{Val: 100},
 	}
 	var ok bool
 	if c.BarDir.Val, ok = plotAreaChartBarDir[formatSet.Type]; !ok {
@@ -988,8 +940,8 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 	if c.Grouping.Val, ok = plotAreaChartGrouping[formatSet.Type]; !ok {
 		c.Grouping = nil
 	}
-	if strings.HasSuffix(formatSet.Type, "Stacked") {
-		c.Overlap = &attrValInt{Val: 100}
+	if c.Overlap.Val, ok = plotAreaChartOverlap[formatSet.Type]; !ok {
+		c.Overlap = nil
 	}
 	catAx := f.drawPlotAreaCatAx(formatSet)
 	valAx := f.drawPlotAreaValAx(formatSet)
@@ -1485,7 +1437,7 @@ func (f *File) drawChartSeriesCat(v formatChartSeries, formatSet *formatChart) *
 			F: v.Categories,
 		},
 	}
-	chartSeriesCat := map[string]*cCat{Scatter: nil}
+	chartSeriesCat := map[string]*cCat{Scatter: nil, Bubble: nil, Bubble3D: nil}
 	if _, ok := chartSeriesCat[formatSet.Type]; ok {
 		return nil
 	}
@@ -1500,7 +1452,7 @@ func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *
 			F: v.Values,
 		},
 	}
-	chartSeriesVal := map[string]*cVal{Scatter: nil}
+	chartSeriesVal := map[string]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
 	if _, ok := chartSeriesVal[formatSet.Type]; ok {
 		return nil
 	}
@@ -1783,7 +1735,6 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
 func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
-	cNvPrID := 1
 	if f.Drawings[path] == nil {
 		content := xlsxWsDr{}
 		content.A = NameSpaceDrawingML
@@ -1793,7 +1744,6 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 			decodeWsDr := decodeWsDr{}
 			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &decodeWsDr)
 			content.R = decodeWsDr.R
-			cNvPrID = len(decodeWsDr.OneCellAnchor) + len(decodeWsDr.TwoCellAnchor) + 1
 			for _, v := range decodeWsDr.OneCellAnchor {
 				content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
 					EditAs:       v.EditAs,
@@ -1809,7 +1759,8 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 		}
 		f.Drawings[path] = &content
 	}
-	return f.Drawings[path], cNvPrID
+	wsDr := f.Drawings[path]
+	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2
 }
 
 // addDrawingChart provides a function to add chart graphic frame by given
@@ -1845,7 +1796,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	graphicFrame := xlsxGraphicFrame{
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
-				ID:   len(content.OneCellAnchor) + len(content.TwoCellAnchor) + 2,
+				ID:   cNvPrID,
 				Name: "Chart " + strconv.Itoa(cNvPrID),
 			},
 		},

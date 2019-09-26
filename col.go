@@ -113,7 +113,7 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 	for c := range xlsx.Cols.Col {
 		colData := &xlsx.Cols.Col[c]
 		if colData.Min <= colNum && colNum <= colData.Max {
-			level = colData.OutlineLevel + 1
+			level = colData.OutlineLevel
 		}
 	}
 	return level, err
