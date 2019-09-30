@@ -51,14 +51,18 @@ type (
 	// visible cell Location of the top left visible cell in the bottom right
 	// pane (when in Left-to-Right mode).
 	TopLeftCell string
+	// ShowZeros is a SheetViewOption. It specifies a flag indicating
+	// whether to "show a zero in cells that have zero value".
+	// When using a formula to reference another cell which is empty, the referenced value becomes 0
+	// when the flag is true. (Default setting is true.)
+	ShowZeros bool
+
 	/* TODO
 	// ShowWhiteSpace is a SheetViewOption. It specifies a flag indicating
 	// whether page layout view shall display margins. False means do not display
 	// left, right, top (header), and bottom (footer) margins (even when there is
 	// data in the header or footer).
 	ShowWhiteSpace bool
-	// ShowZeros is a SheetViewOption.
-	ShowZeros bool
 	// WindowProtection is a SheetViewOption.
 	WindowProtection bool
 	*/
@@ -104,6 +108,14 @@ func (o ShowGridLines) setSheetViewOption(view *xlsxSheetView) {
 
 func (o *ShowGridLines) getSheetViewOption(view *xlsxSheetView) {
 	*o = ShowGridLines(defaultTrue(view.ShowGridLines)) // Excel default: true
+}
+
+func (o ShowZeros) setSheetViewOption(view *xlsxSheetView) {
+	view.ShowZeros = boolPtr(bool(o))
+}
+
+func (o *ShowZeros) getSheetViewOption(view *xlsxSheetView) {
+	*o = ShowZeros(defaultTrue(view.ShowZeros)) // Excel default: true
 }
 
 func (o ShowRowColHeaders) setSheetViewOption(view *xlsxSheetView) {
