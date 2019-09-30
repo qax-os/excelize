@@ -167,7 +167,7 @@ type xlsxSheetView struct {
 	ShowFormulas             bool             `xml:"showFormulas,attr,omitempty"`
 	ShowGridLines            *bool            `xml:"showGridLines,attr"`
 	ShowRowColHeaders        *bool            `xml:"showRowColHeaders,attr"`
-	ShowZeros                bool             `xml:"showZeros,attr,omitempty"`
+	ShowZeros                *bool            `xml:"showZeros,attr,omitempty"`
 	RightToLeft              bool             `xml:"rightToLeft,attr,omitempty"`
 	TabSelected              bool             `xml:"tabSelected,attr,omitempty"`
 	ShowWhiteSpace           *bool            `xml:"showWhiteSpace,attr"`

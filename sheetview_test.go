@@ -95,6 +95,7 @@ func ExampleFile_GetSheetViewOptions() {
 		rightToLeft       excelize.RightToLeft
 		showFormulas      excelize.ShowFormulas
 		showGridLines     excelize.ShowGridLines
+		showZeros         excelize.ShowZeros
 		showRowColHeaders excelize.ShowRowColHeaders
 		zoomScale         excelize.ZoomScale
 		topLeftCell       excelize.TopLeftCell
@@ -105,6 +106,7 @@ func ExampleFile_GetSheetViewOptions() {
 		&rightToLeft,
 		&showFormulas,
 		&showGridLines,
+		&showZeros,
 		&showRowColHeaders,
 		&zoomScale,
 		&topLeftCell,
@@ -117,6 +119,7 @@ func ExampleFile_GetSheetViewOptions() {
 	fmt.Println("- rightToLeft:", rightToLeft)
 	fmt.Println("- showFormulas:", showFormulas)
 	fmt.Println("- showGridLines:", showGridLines)
+	fmt.Println("- showZeros:", showZeros)
 	fmt.Println("- showRowColHeaders:", showRowColHeaders)
 	fmt.Println("- zoomScale:", zoomScale)
 	fmt.Println("- topLeftCell:", `"`+topLeftCell+`"`)
@@ -137,8 +140,17 @@ func ExampleFile_GetSheetViewOptions() {
 		panic(err)
 	}
 
+	if err := f.SetSheetViewOptions(sheet, 0, excelize.ShowZeros(false)); err != nil {
+		panic(err)
+	}
+
+	if err := f.GetSheetViewOptions(sheet, 0, &showZeros); err != nil {
+		panic(err)
+	}
+
 	fmt.Println("After change:")
 	fmt.Println("- showGridLines:", showGridLines)
+	fmt.Println("- showZeros:", showZeros)
 	fmt.Println("- topLeftCell:", topLeftCell)
 
 	// Output:
@@ -147,11 +159,13 @@ func ExampleFile_GetSheetViewOptions() {
 	// - rightToLeft: false
 	// - showFormulas: false
 	// - showGridLines: true
+	// - showZeros: true
 	// - showRowColHeaders: true
 	// - zoomScale: 0
 	// - topLeftCell: ""
 	// After change:
 	// - showGridLines: false
+	// - showZeros: false
 	// - topLeftCell: B2
 }
 
