@@ -801,3 +801,12 @@ type FormatHeaderFooter struct {
 	FirstFooter      string
 	FirstHeader      string
 }
+
+type FormatPageMargins struct {
+	Bottom string
+	Footer string
+	Header string
+	Left   string
+	Right  string
+	Top    string
+}

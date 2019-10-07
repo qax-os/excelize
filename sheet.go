@@ -869,6 +869,10 @@ func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error)
 //
 // - No footer on the first page
 //
+
+
+
+
 func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error {
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -901,6 +905,7 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 	}
 	return err
 }
+
 
 // ProtectSheet provides a function to prevent other users from accidentally
 // or deliberately changing, moving, or deleting data in a worksheet. For
@@ -1401,3 +1406,94 @@ func makeContiguousColumns(xlsx *xlsxWorksheet, fromRow, toRow, colCount int) {
 		fillColumns(rowData, colCount, fromRow)
 	}
 }
+
+
+
+type (
+	PageMarginBottom float64
+	PageMarginFooter float64
+	PageMarginHeader float64
+	PageMarginLeft float64
+	PageMarginRight float64
+	PageMarginTop float64
+)
+
+func (p PageMarginBottom) setPageMargins(ps *xlsxPageMargins) {
+	ps.Bottom = float64(p)
+}
+func (p PageMarginFooter) setPageMargins(ps *xlsxPageMargins) {
+	ps.Footer = float64(p)
+}
+func (p PageMarginHeader) setPageMargins(ps *xlsxPageMargins) {
+	ps.Header = float64(p)
+}
+func (p PageMarginLeft) setPageMargins(ps *xlsxPageMargins) {
+	ps.Left = float64(p)
+}
+func (p PageMarginRight) setPageMargins(ps *xlsxPageMargins) {
+	ps.Right = float64(p)
+}
+func (p PageMarginTop) setPageMargins(ps *xlsxPageMargins) {
+	ps.Top = float64(p)
+}
+
+// PageMarginsOptions is an option of a page margin of a worksheet. See
+// SetPageMargins().
+type PageMarginsOptions interface {
+	setPageMargins(layout *xlsxPageMargins)
+}
+
+// PageMarginsOptionsPtr is a writable PageMarginsOptions. See GetPageMargins().
+type PageMarginsOptionsPtr interface {
+	PageMarginsOptions
+	getPageMargins(layout *xlsxPageMargins)
+}
+
+// SetPageMargins provides a function to set worksheet page lmargins.
+//
+// Available options:
+//   PageMarginBotom(float64)
+//   PageMarginFooter(float64)
+//   PageMarginHeader(float64)
+//   PageMarginLeft(float64)
+//   PageMarginRightfloat64)
+//   PageMarginTop(float64)
+func (f *File) SetPageMargins(sheet string, opts ...PageMarginsOptions) error {
+	s, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	ps := s.PageMargins
+	if ps == nil {
+		ps = new(xlsxPageMargins)
+		s.PageMargins = ps
+	}
+
+	for _, opt := range opts {
+		opt.setPageMargins(ps)
+	}
+	return err
+}
+
+// GetPageMargins provides a function to get worksheet page margins.
+//
+// Available options:
+//   PageMarginBotom(float64)
+//   PageMarginFooter(float64)
+//   PageMarginHeader(float64)
+//   PageMarginLeft(float64)
+//   PageMarginRightfloat64)
+//   PageMarginTop(float64)
+func (f *File) GetPageMargins(sheet string, opts ...PageMarginsOptionsPtr) error {
+	s, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	ps := s.PageMargins
+
+	for _, opt := range opts {
+		opt.getPageMargins(ps)
+	}
+	return err
+}
+
