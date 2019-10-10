@@ -229,7 +229,7 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 		value = value[0:32767]
 	}
 	// Leading space(s) character detection.
-	if len(value) > 0 && value[0] == 32 {
+	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
 		cellData.XMLSpace = xml.Attr{
 			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
 			Value: "preserve",
