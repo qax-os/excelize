@@ -802,6 +802,7 @@ type FormatHeaderFooter struct {
 	FirstHeader      string
 }
 
+// FormatPageMargins directly maps the settings of page margins
 type FormatPageMargins struct {
 	Bottom string
 	Footer string

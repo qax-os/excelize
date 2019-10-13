@@ -869,10 +869,6 @@ func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error)
 //
 // - No footer on the first page
 //
-
-
-
-
 func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error {
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -905,7 +901,6 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 	}
 	return err
 }
-
 
 // ProtectSheet provides a function to prevent other users from accidentally
 // or deliberately changing, moving, or deleting data in a worksheet. For
@@ -1407,34 +1402,103 @@ func makeContiguousColumns(xlsx *xlsxWorksheet, fromRow, toRow, colCount int) {
 	}
 }
 
-
-
 type (
 	PageMarginBottom float64
 	PageMarginFooter float64
 	PageMarginHeader float64
-	PageMarginLeft float64
-	PageMarginRight float64
-	PageMarginTop float64
+	PageMarginLeft   float64
+	PageMarginRight  float64
+	PageMarginTop    float64
 )
 
+// setPageMargins provides a method to set the bottom margin for the worksheet.
 func (p PageMarginBottom) setPageMargins(ps *xlsxPageMargins) {
 	ps.Bottom = float64(p)
 }
+
+// setPageMargins provides a method to get the bottom margin for the worksheet.
+func (o *PageMarginBottom) getPageMargins(ps *xlsxPageMargins) {
+	// Excel default: portrait
+	if ps == nil || ps.Bottom == 0 {
+		*o = 0.75
+		return
+	}
+	*o = PageMarginBottom(ps.Bottom)
+}
+
+// setPageMargins provides a method to set the Footer margin for the worksheet.
 func (p PageMarginFooter) setPageMargins(ps *xlsxPageMargins) {
 	ps.Footer = float64(p)
 }
+
+// setPageMargins provides a method to get the Footer margin for the worksheet.
+func (o *PageMarginFooter) getPageMargins(ps *xlsxPageMargins) {
+	// Excel default: portrait
+	if ps == nil || ps.Footer == 0 {
+		*o = 0.3
+		return
+	}
+	*o = PageMarginFooter(ps.Footer)
+}
+
+// setPageMargins provides a method to set the Header margin for the worksheet.
 func (p PageMarginHeader) setPageMargins(ps *xlsxPageMargins) {
 	ps.Header = float64(p)
 }
+
+// setPageMargins provides a method to get the Header margin for the worksheet.
+func (o *PageMarginHeader) getPageMargins(ps *xlsxPageMargins) {
+	// Excel default: portrait
+	if ps == nil || ps.Header == 0 {
+		*o = 0.3
+		return
+	}
+	*o = PageMarginHeader(ps.Header)
+}
+
+// setPageMargins provides a method to set the left margin for the worksheet.
 func (p PageMarginLeft) setPageMargins(ps *xlsxPageMargins) {
 	ps.Left = float64(p)
 }
+
+// setPageMargins provides a method to get the left margin for the worksheet.
+func (o *PageMarginLeft) getPageMargins(ps *xlsxPageMargins) {
+	// Excel default: portrait
+	if ps == nil || ps.Left == 0 {
+		*o = 0.7
+		return
+	}
+	*o = PageMarginLeft(ps.Left)
+}
+
+// setPageMargins provides a method to set the right margin for the worksheet.
 func (p PageMarginRight) setPageMargins(ps *xlsxPageMargins) {
 	ps.Right = float64(p)
 }
+
+// setPageMargins provides a method to get the right margin for the worksheet.
+func (o *PageMarginRight) getPageMargins(ps *xlsxPageMargins) {
+	// Excel default: portrait
+	if ps == nil || ps.Right == 0 {
+		*o = 0.7
+		return
+	}
+	*o = PageMarginRight(ps.Right)
+}
+
+// setPageMargins provides a method to set the top margin for the worksheet.
 func (p PageMarginTop) setPageMargins(ps *xlsxPageMargins) {
 	ps.Top = float64(p)
+}
+
+// setPageMargins provides a method to get the top margin for the worksheet.
+func (o *PageMarginTop) getPageMargins(ps *xlsxPageMargins) {
+	// Excel default: portrait
+	if ps == nil || ps.Top == 0 {
+		*o = 0.75
+		return
+	}
+	*o = PageMarginTop(ps.Top)
 }
 
 // PageMarginsOptions is an option of a page margin of a worksheet. See
@@ -1496,4 +1560,3 @@ func (f *File) GetPageMargins(sheet string, opts ...PageMarginsOptionsPtr) error
 	}
 	return err
 }
-
