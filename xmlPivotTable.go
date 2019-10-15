@@ -125,7 +125,7 @@ type xlsxPivotField struct {
 	UniqueMemberProperty         string             `xml:"uniqueMemberProperty,attr,omitempty"`
 	Compact                      bool               `xml:"compact,attr"`
 	AllDrilled                   bool               `xml:"allDrilled,attr,omitempty"`
-	NumFmtId                     string             `xml:"numFmtId,attr,omitempty"`
+	NumFmtID                     string             `xml:"numFmtId,attr,omitempty"`
 	Outline                      bool               `xml:"outline,attr"`
 	SubtotalTop                  bool               `xml:"subtotalTop,attr,omitempty"`
 	DragToRow                    bool               `xml:"dragToRow,attr,omitempty"`
@@ -273,7 +273,7 @@ type xlsxDataField struct {
 	ShowDataAs string      `xml:"showDataAs,attr,omitempty"`
 	BaseField  int         `xml:"baseField,attr,omitempty"`
 	BaseItem   int64       `xml:"baseItem,attr,omitempty"`
-	NumFmtId   string      `xml:"numFmtId,attr,omitempty"`
+	NumFmtID   string      `xml:"numFmtId,attr,omitempty"`
 	ExtLst     *xlsxExtLst `xml:"extLst"`
 }
 

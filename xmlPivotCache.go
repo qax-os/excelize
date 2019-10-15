@@ -48,7 +48,7 @@ type xlsxPivotCacheDefinition struct {
 // PivotTable.
 type xlsxCacheSource struct {
 	Type            string               `xml:"type,attr"`
-	ConnectionId    int                  `xml:"connectionId,attr,omitempty"`
+	ConnectionID    int                  `xml:"connectionId,attr,omitempty"`
 	WorksheetSource *xlsxWorksheetSource `xml:"worksheetSource"`
 	Consolidation   *xlsxConsolidation   `xml:"consolidation"`
 	ExtLst          *xlsxExtLst          `xml:"extLst"`
@@ -89,7 +89,7 @@ type xlsxCacheField struct {
 	PropertyName        string           `xml:"propertyName,attr,omitempty"`
 	ServerField         bool             `xml:"serverField,attr,omitempty"`
 	UniqueList          bool             `xml:"uniqueList,attr,omitempty"`
-	NumFmtId            int              `xml:"numFmtId,attr"`
+	NumFmtID            int              `xml:"numFmtId,attr"`
 	Formula             string           `xml:"formula,attr,omitempty"`
 	SQLType             int              `xml:"sqlType,attr,omitempty"`
 	Hierarchy           int              `xml:"hierarchy,attr,omitempty"`

@@ -669,6 +669,11 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 	}
 }
 
+func TestErrSheetNotExistError(t *testing.T) {
+	err := ErrSheetNotExist{SheetName: "Sheet1"}
+	assert.EqualValues(t, err.Error(), "Sheet Sheet1 is not exist")
+}
+
 func BenchmarkRows(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
