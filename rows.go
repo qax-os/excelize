@@ -57,7 +57,8 @@ type Rows struct {
 
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
-	return rows.curRow < len(rows.rows)
+	rows.curRow++
+	return rows.curRow <= len(rows.rows)
 }
 
 // Error will return the error when the find next row element
@@ -67,8 +68,7 @@ func (rows *Rows) Error() error {
 
 // Columns return the current row's column values
 func (rows *Rows) Columns() ([]string, error) {
-	curRow := rows.rows[rows.curRow]
-	rows.curRow++
+	curRow := rows.rows[rows.curRow-1]
 
 	columns := make([]string, len(curRow.C))
 	d := rows.f.sharedStringsReader()
