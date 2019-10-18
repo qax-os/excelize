@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRows(t *testing.T) {
@@ -39,6 +40,25 @@ func TestRows(t *testing.T) {
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
+}
+
+// test bug https://github.com/360EntSecGroup-Skylar/excelize/issues/502
+func TestRowsIterator(t *testing.T) {
+	const (
+		sheet2         = "Sheet2"
+		expectedNumRow = 11
+	)
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	require.NoError(t, err)
+
+	rows, err := xlsx.Rows(sheet2)
+	require.NoError(t, err)
+	var rowCount int
+	for rows.Next() {
+		rowCount++
+		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
+	}
+	assert.Equal(t, expectedNumRow, rowCount)
 }
 
 func TestRowsError(t *testing.T) {
