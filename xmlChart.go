@@ -606,8 +606,9 @@ type formatChartSeries struct {
 	Categories string `json:"categories"`
 	Values     string `json:"values"`
 	Line       struct {
-		None  bool   `json:"none"`
-		Color string `json:"color"`
+		None  bool    `json:"none"`
+		Color string  `json:"color"`
+		Width float64 `json:"width"`
 	} `json:"line"`
 	Marker struct {
 		Type   string  `json:"type"`

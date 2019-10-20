@@ -584,12 +584,15 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //    name
 //    categories
 //    values
+//    line
 //
 // name: Set the name for the series. The name is displayed in the chart legend and in the formula bar. The name property is optional and if it isn't supplied it will default to Series 1..n. The name can also be a formula such as Sheet1!$A$1
 //
 // categories: This sets the chart category labels. The category is more or less the same as the X axis. In most chart types the categories property is optional and the chart will just assume a sequential series from 1..n.
 //
 // values: This is the most important property of a series and is the only mandatory option for every chart object. This option links the chart with the worksheet data that it displays.
+//
+// line: This sets the line format of the line chart. The line property is optional and if it isn't supplied it will default style. The options that can be set is width. The range of width is 0.25pt - 999pt. If the value of width is outside the range, the default width of the line is 2pt.
 //
 // Set properties of the chart legend. The options that can be set are:
 //
@@ -1387,7 +1390,7 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 	}
 	spPrLine := &cSpPr{
 		Ln: &aLn{
-			W:   25400,
+			W:   f.ptToEMUs(formatSet.Series[i].Line.Width),
 			Cap: "rnd", // rnd, sq, flat
 		},
 	}
@@ -1438,7 +1441,7 @@ func (f *File) drawChartSeriesCat(v formatChartSeries, formatSet *formatChart) *
 		},
 	}
 	chartSeriesCat := map[string]*cCat{Scatter: nil, Bubble: nil, Bubble3D: nil}
-	if _, ok := chartSeriesCat[formatSet.Type]; ok {
+	if _, ok := chartSeriesCat[formatSet.Type]; ok || v.Categories == "" {
 		return nil
 	}
 	return cat
@@ -1820,4 +1823,14 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings[drawingXML] = content
 	return err
+}
+
+// ptToEMUs provides a function to convert pt to EMUs, 1 pt = 12700 EMUs. The
+// range of pt is 0.25pt - 999pt. If the value of pt is outside the range, the
+// default EMUs will be returned.
+func (f *File) ptToEMUs(pt float64) int {
+	if 0.25 > pt || pt > 999 {
+		return 25400
+	}
+	return int(12700 * pt)
 }
