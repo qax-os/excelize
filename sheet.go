@@ -406,6 +406,11 @@ func (f *File) DeleteSheet(name string) {
 			f.SheetCount--
 		}
 	}
+	for idx, bookView := range wb.BookViews.WorkBookView {
+		if bookView.ActiveTab >= f.SheetCount {
+			wb.BookViews.WorkBookView[idx].ActiveTab--
+		}
+	}
 	f.SetActiveSheet(len(f.GetSheetMap()))
 }
 
