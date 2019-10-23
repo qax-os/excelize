@@ -695,8 +695,8 @@ func TestErrSheetNotExistError(t *testing.T) {
 }
 
 func BenchmarkRows(b *testing.B) {
+	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {
-		f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 		rows, _ := f.Rows("Sheet2")
 		for rows.Next() {
 			row, _ := rows.Columns()
