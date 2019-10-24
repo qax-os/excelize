@@ -22,14 +22,12 @@ import (
 // ReadZipReader can be used to read an XLSX in memory without touching the
 // filesystem.
 func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
-	fileList := make(map[string][]byte)
+	fileList := make(map[string][]byte, len(r.File))
 	worksheets := 0
 	for _, v := range r.File {
 		fileList[v.Name] = readFile(v)
-		if len(v.Name) > 18 {
-			if v.Name[0:19] == "xl/worksheets/sheet" {
-				worksheets++
-			}
+		if strings.HasPrefix(v.Name, "xl/worksheets/sheet") {
+			worksheets++
 		}
 	}
 	return fileList, worksheets, nil
@@ -58,7 +56,8 @@ func readFile(file *zip.File) []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	buff := bytes.NewBuffer(nil)
+	dat := make([]byte, 0, file.FileInfo().Size())
+	buff := bytes.NewBuffer(dat)
 	_, _ = io.Copy(buff, rc)
 	rc.Close()
 	return buff.Bytes()
