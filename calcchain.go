@@ -56,7 +56,7 @@ type xlsxCalcChainCollection []xlsxCalcChainC
 
 // Filter provides a function to filter calculation chain.
 func (c xlsxCalcChainCollection) Filter(fn func(v xlsxCalcChainC) bool) []xlsxCalcChainC {
-	results := make([]xlsxCalcChainC, 0)
+	var results []xlsxCalcChainC
 	for _, v := range c {
 		if fn(v) {
 			results = append(results, v)

@@ -22,7 +22,7 @@ func TestRows(t *testing.T) {
 		t.FailNow()
 	}
 
-	collectedRows := make([][]string, 0)
+	var collectedRows [][]string
 	for rows.Next() {
 		columns, err := rows.Columns()
 		assert.NoError(t, err)

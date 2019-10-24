@@ -253,7 +253,10 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 				},
 			},
 		},
-		ColFields:  &xlsxColFields{},
+		ColItems: &xlsxColItems{
+			Count: 1,
+			I:     []*xlsxI{{}},
+		},
 		DataFields: &xlsxDataFields{},
 		PivotTableStyleInfo: &xlsxPivotTableStyleInfo{
 			Name:           "PivotStyleLight16",
@@ -286,19 +289,10 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	// count row fields
 	pt.RowFields.Count = len(pt.RowFields.Field)
 
-	// col fields
-	colFieldsIndex, err := f.getPivotFieldsIndex(opt.Columns, opt)
+	err = f.addPivotColFields(&pt, opt)
 	if err != nil {
 		return err
 	}
-	for _, filedIdx := range colFieldsIndex {
-		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
-			X: filedIdx,
-		})
-	}
-
-	// count col fields
-	pt.ColFields.Count = len(pt.ColFields.Field)
 
 	// data fields
 	dataFieldsIndex, err := f.getPivotFieldsIndex(opt.Data, opt)
@@ -328,6 +322,31 @@ func inStrSlice(a []string, x string) int {
 		}
 	}
 	return -1
+}
+
+// addPivotColFields create pivot column fields by given pivot table
+// definition and option.
+func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
+	if len(opt.Columns) == 0 {
+		return nil
+	}
+
+	pt.ColFields = &xlsxColFields{}
+
+	// col fields
+	colFieldsIndex, err := f.getPivotFieldsIndex(opt.Columns, opt)
+	if err != nil {
+		return err
+	}
+	for _, filedIdx := range colFieldsIndex {
+		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
+			X: filedIdx,
+		})
+	}
+
+	// count col fields
+	pt.ColFields.Count = len(pt.ColFields.Field)
+	return err
 }
 
 // addPivotFields create pivot fields based on the column order of the first

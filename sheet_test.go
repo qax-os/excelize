@@ -66,6 +66,15 @@ func ExampleFile_GetPageLayout() {
 	// - fit to width: 1
 }
 
+func TestNewSheet(t *testing.T) {
+	f := excelize.NewFile()
+	sheetID := f.NewSheet("Sheet2")
+	f.SetActiveSheet(sheetID)
+	// delete original sheet
+	f.DeleteSheet(f.GetSheetName(f.GetSheetIndex("Sheet1")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
+}
+
 func TestPageLayoutOption(t *testing.T) {
 	const sheet = "Sheet1"
 

@@ -47,10 +47,10 @@ const (
 	NameSpaceDublinCore                  = "http://purl.org/dc/elements/1.1/"
 	NameSpaceDublinCoreTerms             = "http://purl.org/dc/terms/"
 	NameSpaceDublinCoreMetadataIntiative = "http://purl.org/dc/dcmitype/"
-	// The extLst child element ([ISO/IEC29500-1:2016] section 18.2.10) of the
-	// worksheet element ([ISO/IEC29500-1:2016] section 18.3.1.99) is extended by
-	// the addition of new child ext elements ([ISO/IEC29500-1:2016] section
-	// 18.2.7)
+	// ExtURIConditionalFormattings is the extLst child element
+	// ([ISO/IEC29500-1:2016] section 18.2.10) of the worksheet element
+	// ([ISO/IEC29500-1:2016] section 18.3.1.99) is extended by the addition of
+	// new child ext elements ([ISO/IEC29500-1:2016] section 18.2.7)
 	ExtURIConditionalFormattings = "{78C0D931-6437-407D-A8EE-F0AAD7539E65}"
 	ExtURIDataValidations        = "{CCE6A557-97BC-4B89-ADB6-D9C93CAAB3DF}"
 	ExtURISparklineGroups        = "{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"

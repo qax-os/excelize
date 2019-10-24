@@ -54,6 +54,12 @@ func TestAddPivotTable(t *testing.T) {
 		Columns:         []string{"Region", "Year"},
 		Data:            []string{"Sales"},
 	}))
+	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+		DataRange:       "Sheet1!$A$1:$E$31",
+		PivotTableRange: "Sheet1!$AE$2:$AG$33",
+		Rows:            []string{"Month", "Year"},
+		Data:            []string{"Sales"},
+	}))
 	f.NewSheet("Sheet2")
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$E$31",
