@@ -88,45 +88,35 @@ func (f *File) Write(w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		_, err = fi.Write(content)
-		if err != nil {
+		if _, err = fi.Write(content); err != nil {
 			return err
 		}
 	}
-	err = f.calcChainWriter(zw)
-	if err != nil {
+	if err = f.calcChainWriter(zw); err != nil {
 		return err
 	}
-	err = f.commentsWriter(zw)
-	if err != nil {
+	if err = f.commentsWriter(zw); err != nil {
 		return err
 	}
-	err = f.contentTypesWriter(zw)
-	if err != nil {
+	if err = f.contentTypesWriter(zw); err != nil {
 		return err
 	}
-	err = f.drawingsWriter(zw)
-	if err != nil {
+	if err = f.drawingsWriter(zw); err != nil {
 		return err
 	}
-	err = f.vmlDrawingWriter(zw)
-	if err != nil {
+	if err = f.vmlDrawingWriter(zw); err != nil {
 		return err
 	}
-	err = f.workBookWriter(zw)
-	if err != nil {
+	if err = f.workBookWriter(zw); err != nil {
 		return err
 	}
-	err = f.workSheetWriter(zw)
-	if err != nil {
+	if err = f.workSheetWriter(zw); err != nil {
 		return err
 	}
-	err = f.relsWriter(zw)
-	if err != nil {
+	if err = f.relsWriter(zw); err != nil {
 		return err
 	}
-	err = f.styleSheetWriter(zw)
-	if err != nil {
+	if err = f.styleSheetWriter(zw); err != nil {
 		return err
 	}
 	isZipWriterClosed = true

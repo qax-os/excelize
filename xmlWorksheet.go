@@ -59,7 +59,8 @@ type xlsxWorksheet struct {
 	ExtLst                *xlsxExtLst                  `xml:"extLst"`
 }
 
-// MarshalXML implements xml.Marshaler
+// MarshalXML implements xml.Marshaler and allow strict requirements about the structure of the input XML
+// This function is used to replace https://github.com/360EntSecGroup-Skylar/excelize/blob/e7581eb/sheet.go#L110
 func (x xlsxWorksheet) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	x2 := struct {
 		XMLName               xml.Name                     `xml:"worksheet"`
@@ -162,6 +163,8 @@ type tmpXlsxDrawing struct {
 }
 
 // MarshalXML implements xml.Marshaler
+// This will allow strict requirements about the structure of the input XML
+// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (drawing *xlsxDrawing) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.Encode(tmpXlsxDrawing{
 		RID: drawing.RID,
@@ -252,6 +255,8 @@ type tmpXlsxPageSetUp struct {
 }
 
 // MarshalXML implements xml.Marshaler
+// This will allow strict requirements about the structure of the input XML
+// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (setUp *xlsxPageSetUp) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.Encode(tmpXlsxPageSetUp{
 		RID:                setUp.RID,
@@ -770,7 +775,8 @@ type tmpXlsxHyperlink struct {
 	Display  string   `xml:"display,attr,omitempty"`
 }
 
-// MarshalXML implements xml.Marshaler
+// MarshalXML implements xml.Marshaler and allow strict requirements about the structure of the input XML
+// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (hyperlink *xlsxHyperlink) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.Encode(tmpXlsxHyperlink{
 		RID:      hyperlink.RID,

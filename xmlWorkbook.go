@@ -45,6 +45,12 @@ type xlsxWorkbook struct {
 }
 
 // MarshalXML implements xml.Marshaler
+// this function is used to replace https://github.com/360EntSecGroup-Skylar/excelize/blob/e7581eb/sheet.go#L97
+// Original Note:Some tools that read XLSX files have
+// very strict requirements about the structure of the input XML. In
+// particular both Numbers on the Mac and SAS dislike inline XML namespace
+// declarations, or namespace prefixes that don't match the ones that Excel
+// itself uses.
 func (x xlsxWorkbook) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	x2 := struct {
 		XMLName             xml.Name                 `xml:"workbook"`
@@ -229,6 +235,8 @@ type tmpXlsxSheet struct {
 }
 
 // MarshalXML implements xml.Marshaler
+// This will allow strict requirements about the structure of the input XML
+// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (x *xlsxSheet) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.Encode(tmpXlsxSheet{
 		Name:    x.Name,
@@ -270,6 +278,8 @@ type tmpXlsxPivotCache struct {
 }
 
 // MarshalXML implements xml.Marshaler
+// This will allow strict requirements about the structure of the input XML
+// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (x *xlsxPivotCache) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.Encode(tmpXlsxPivotCache{
 		RID:     x.RID,

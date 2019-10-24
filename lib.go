@@ -65,7 +65,7 @@ func writeXMLToZipWriter(zw *zip.Writer, name string, data interface{}) error {
 	return encoder.Encode(data)
 }
 
-// writeStringToZipWriter writes string to zip,Writer
+// writeStringToZipWriter writes string to zip.Writer
 func writeStringToZipWriter(zw *zip.Writer, name string, data string) error {
 	w, err := zw.Create(name)
 	if err != nil {

@@ -29,7 +29,8 @@ type xlsxStyleSheet struct {
 	ExtLst       *xlsxExtLst       `xml:"extLst"`
 }
 
-// MarshalXML implements xml.Marshaler
+// MarshalXML implements xml.Marshaler and allow strict requirements about the structure of the input XML
+// This function is used to replace https://github.com/360EntSecGroup-Skylar/excelize/blob/e7581ebf3e14f096b6e2d56ed34d381b4af6d310/styles.go#L1013
 func (sheet xlsxStyleSheet) MarshalXML(encoder *xml.Encoder, start xml.StartElement) error {
 	sheet2 := struct {
 		XMLName      xml.Name          `xml:"styleSheet"`
