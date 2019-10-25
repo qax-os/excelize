@@ -11,6 +11,7 @@ package excelize
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -121,4 +122,13 @@ func (f *File) Write(w io.Writer) error {
 	}
 	isZipWriterClosed = true
 	return zw.Close()
+}
+
+// WriteTo implements io.WriterTo to write the file.
+func (f *File) WriteTo(w io.Writer) (int64, error) {
+	buf := new(bytes.Buffer)
+	if err := f.Write(buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
 }
