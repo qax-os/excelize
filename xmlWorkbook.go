@@ -9,7 +9,9 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 // xlsxRelationships describe references from parts to other internal resources in the package or to external resources.
 type xlsxRelationships struct {
@@ -225,25 +227,21 @@ type xlsxSheet struct {
 	State   string `xml:"state,attr,omitempty"`
 }
 
-// tmpXlsxSheet is struct for custom marshal xlsxSheet
-type tmpXlsxSheet struct {
-	XMLName xml.Name `xml:"sheet"`
-	Name    string   `xml:"name,attr,omitempty"`
-	SheetID int      `xml:"sheetId,attr,omitempty"`
-	ID      string   `xml:"r:id,attr,omitempty"`
-	State   string   `xml:"state,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler
 // This will allow strict requirements about the structure of the input XML
 // replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (x *xlsxSheet) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxSheet{
+	return e.EncodeElement(struct {
+		Name    string `xml:"name,attr,omitempty"`
+		SheetID int    `xml:"sheetId,attr,omitempty"`
+		ID      string `xml:"r:id,attr,omitempty"`
+		State   string `xml:"state,attr,omitempty"`
+	}{
 		Name:    x.Name,
 		SheetID: x.SheetID,
 		ID:      x.ID,
 		State:   x.State,
-	})
+	}, start)
 }
 
 // xlsxExternalReferences directly maps the externalReferences element of the
@@ -270,21 +268,17 @@ type xlsxPivotCache struct {
 	RID     string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// tmpXlsxPivotCache is struct for custom marshal xlsxPivotCache
-type tmpXlsxPivotCache struct {
-	XMLName xml.Name `xml:"pivotCache"`
-	RID     string   `xml:"r:id,attr,omitempty"`
-	CacheID int      `xml:"cacheId,attr"`
-}
-
 // MarshalXML implements xml.Marshaler
 // This will allow strict requirements about the structure of the input XML
 // replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (x *xlsxPivotCache) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxPivotCache{
+	return e.EncodeElement(struct {
+		RID     string `xml:"r:id,attr,omitempty"`
+		CacheID int    `xml:"cacheId,attr"`
+	}{
 		RID:     x.RID,
 		CacheID: x.CacheID,
-	})
+	}, start)
 }
 
 // extLst element provides a convention for extending spreadsheetML in

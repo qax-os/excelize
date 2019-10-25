@@ -156,17 +156,13 @@ type xlsxDrawing struct {
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// tmpXlsxDrawing is temp struct for marshal xlsxDrawing to xml
-type tmpXlsxDrawing struct {
-	XMLName xml.Name `xml:"drawing"`
-	RID     string   `xml:"r:id,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler
 // This will allow strict requirements about the structure of the input XML
 // replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (drawing *xlsxDrawing) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxDrawing{
+	return e.Encode(struct {
+		RID string `xml:"r:id,attr,omitempty"`
+	}{
 		RID: drawing.RID,
 	})
 }
@@ -230,35 +226,31 @@ type xlsxPageSetUp struct {
 	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`
 }
 
-// tmpXlsxDrawing is temp struct for marshal xlsxDrawing to xml
-type tmpXlsxPageSetUp struct {
-	XMLName            xml.Name `xml:"pageSetup"`
-	RID                string   `xml:"r:id,attr,omitempty"`
-	BlackAndWhite      bool     `xml:"blackAndWhite,attr,omitempty"`
-	CellComments       string   `xml:"cellComments,attr,omitempty"`
-	Copies             int      `xml:"copies,attr,omitempty"`
-	Draft              bool     `xml:"draft,attr,omitempty"`
-	Errors             string   `xml:"errors,attr,omitempty"`
-	FirstPageNumber    int      `xml:"firstPageNumber,attr,omitempty"`
-	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
-	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
-	HorizontalDPI      float32  `xml:"horizontalDpi,attr,omitempty"`
-	Orientation        string   `xml:"orientation,attr,omitempty"`
-	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
-	PaperHeight        string   `xml:"paperHeight,attr,omitempty"`
-	PaperSize          int      `xml:"paperSize,attr,omitempty"`
-	PaperWidth         string   `xml:"paperWidth,attr,omitempty"`
-	Scale              int      `xml:"scale,attr,omitempty"`
-	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
-	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
-	VerticalDPI        float32  `xml:"verticalDpi,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler
 // This will allow strict requirements about the structure of the input XML
 // replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (setUp *xlsxPageSetUp) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxPageSetUp{
+	return e.EncodeElement(struct {
+		RID                string  `xml:"r:id,attr,omitempty"`
+		BlackAndWhite      bool    `xml:"blackAndWhite,attr,omitempty"`
+		CellComments       string  `xml:"cellComments,attr,omitempty"`
+		Copies             int     `xml:"copies,attr,omitempty"`
+		Draft              bool    `xml:"draft,attr,omitempty"`
+		Errors             string  `xml:"errors,attr,omitempty"`
+		FirstPageNumber    int     `xml:"firstPageNumber,attr,omitempty"`
+		FitToHeight        int     `xml:"fitToHeight,attr,omitempty"`
+		FitToWidth         int     `xml:"fitToWidth,attr,omitempty"`
+		HorizontalDPI      float32 `xml:"horizontalDpi,attr,omitempty"`
+		Orientation        string  `xml:"orientation,attr,omitempty"`
+		PageOrder          string  `xml:"pageOrder,attr,omitempty"`
+		PaperHeight        string  `xml:"paperHeight,attr,omitempty"`
+		PaperSize          int     `xml:"paperSize,attr,omitempty"`
+		PaperWidth         string  `xml:"paperWidth,attr,omitempty"`
+		Scale              int     `xml:"scale,attr,omitempty"`
+		UseFirstPageNumber bool    `xml:"useFirstPageNumber,attr,omitempty"`
+		UsePrinterDefaults bool    `xml:"usePrinterDefaults,attr,omitempty"`
+		VerticalDPI        float32 `xml:"verticalDpi,attr,omitempty"`
+	}{
 		RID:                setUp.RID,
 		BlackAndWhite:      setUp.BlackAndWhite,
 		CellComments:       setUp.CellComments,
@@ -278,7 +270,7 @@ func (setUp *xlsxPageSetUp) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 		UseFirstPageNumber: setUp.UseFirstPageNumber,
 		UsePrinterDefaults: setUp.UsePrinterDefaults,
 		VerticalDPI:        setUp.VerticalDPI,
-	})
+	}, start)
 }
 
 // xlsxPrintOptions directly maps the printOptions element in the namespace
@@ -766,24 +758,20 @@ type xlsxHyperlink struct {
 	RID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// tmpXlsxHyperlink is temp struct for marshal xlsxHyperlink to xml
-type tmpXlsxHyperlink struct {
-	XMLName  xml.Name `xml:"hyperlink"`
-	RID      string   `xml:"r:id,attr,omitempty"`
-	Ref      string   `xml:"ref,attr"`
-	Location string   `xml:"location,attr,omitempty"`
-	Display  string   `xml:"display,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler and allow strict requirements about the structure of the input XML
 // replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
 func (hyperlink *xlsxHyperlink) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxHyperlink{
+	return e.EncodeElement(struct {
+		RID      string `xml:"r:id,attr,omitempty"`
+		Ref      string `xml:"ref,attr"`
+		Location string `xml:"location,attr,omitempty"`
+		Display  string `xml:"display,attr,omitempty"`
+	}{
 		RID:      hyperlink.RID,
 		Ref:      hyperlink.Ref,
 		Location: hyperlink.Location,
 		Display:  hyperlink.Display,
-	})
+	}, start)
 }
 
 // xlsxTableParts directly maps the tableParts element in the namespace
@@ -829,17 +817,13 @@ type xlsxTablePart struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// tmpXlsxTablePart is temp struct for marshal xlsxTablePart to xml
-type tmpXlsxTablePart struct {
-	XMLName xml.Name `xml:"tablePart"`
-	RID     string   `xml:"r:id,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler
 func (p *xlsxTablePart) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxTablePart{
+	return e.EncodeElement(struct {
+		RID string `xml:"r:id,attr,omitempty"`
+	}{
 		RID: p.RID,
-	})
+	}, start)
 }
 
 // xlsxPicture directly maps the picture element in the namespace
@@ -853,17 +837,13 @@ type xlsxPicture struct {
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// tmpXlsxPicture is temp struct for marshal xlsxPicture to xml
-type tmpXlsxPicture struct {
-	XMLName xml.Name `xml:"picture"`
-	RID     string   `xml:"r:id,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler
 func (picture *xlsxPicture) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxPicture{
+	return e.EncodeElement(struct {
+		RID string `xml:"r:id,attr,omitempty"`
+	}{
 		RID: picture.RID,
-	})
+	}, start)
 }
 
 // xlsxLegacyDrawing directly maps the legacyDrawing element in the namespace
@@ -892,17 +872,13 @@ type xlsxInnerXML struct {
 	Content string `xml:",innerxml"`
 }
 
-// tmpXlsxTablePart is temp struct for marshal xlsxLegacyDrawing to xml
-type tmpXlsxLegacyDrawing struct {
-	XMLName xml.Name `xml:"legacyDrawing"`
-	RID     string   `xml:"r:id,attr,omitempty"`
-}
-
 // MarshalXML implements xml.Marshaler
 func (p *xlsxLegacyDrawing) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.Encode(tmpXlsxLegacyDrawing{
+	return e.EncodeElement(struct {
+		RID string `xml:"r:id,attr,omitempty"`
+	}{
 		RID: p.RID,
-	})
+	}, start)
 }
 
 // xlsxWorksheetExt directly maps the ext element in the worksheet.
