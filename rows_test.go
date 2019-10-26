@@ -42,7 +42,6 @@ func TestRows(t *testing.T) {
 	}
 }
 
-// test bug https://github.com/360EntSecGroup-Skylar/excelize/issues/502
 func TestRowsIterator(t *testing.T) {
 	const (
 		sheet2         = "Sheet2"
@@ -59,6 +58,10 @@ func TestRowsIterator(t *testing.T) {
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
+
+	rows = &Rows{f: xlsx, rows: []xlsxRow{{C: []xlsxC{{R: "A"}}}}, curRow: 1}
+	_, err = rows.Columns()
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
 func TestRowsError(t *testing.T) {
@@ -113,22 +116,25 @@ func TestRowHeight(t *testing.T) {
 }
 
 func TestRowVisibility(t *testing.T) {
-	xlsx, err := prepareTestBook1()
+	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	xlsx.NewSheet("Sheet3")
-	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, false))
-	assert.NoError(t, xlsx.SetRowVisible("Sheet3", 2, true))
-	xlsx.GetRowVisible("Sheet3", 2)
-	xlsx.GetRowVisible("Sheet3", 25)
-	assert.EqualError(t, xlsx.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
+	f.NewSheet("Sheet3")
+	assert.NoError(t, f.SetRowVisible("Sheet3", 2, false))
+	assert.NoError(t, f.SetRowVisible("Sheet3", 2, true))
+	f.GetRowVisible("Sheet3", 2)
+	f.GetRowVisible("Sheet3", 25)
+	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
+	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN is not exist")
 
-	visible, err := xlsx.GetRowVisible("Sheet3", 0)
+	visible, err := f.GetRowVisible("Sheet3", 0)
 	assert.Equal(t, false, visible)
 	assert.EqualError(t, err, "invalid row number 0")
+	_, err = f.GetRowVisible("SheetN", 1)
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
 }
 
 func TestRemoveRow(t *testing.T) {

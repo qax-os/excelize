@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -73,6 +74,50 @@ func TestSetCellFloat(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "123.42", val, "A1 should be 123.42")
 	})
+	f := NewFile()
+	assert.EqualError(t, f.SetCellFloat(sheet, "A", 123.42, -1, 64), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestSetCellValue(t *testing.T) {
+	f := NewFile()
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestSetCellBool(t *testing.T) {
+	f := NewFile()
+	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestGetCellFormula(t *testing.T) {
+	f := NewFile()
+	f.GetCellFormula("Sheet", "A1")
+}
+
+func TestMergeCell(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	assert.EqualError(t, f.MergeCell("Sheet1", "A", "B"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	f.MergeCell("Sheet1", "D9", "D9")
+	f.MergeCell("Sheet1", "D9", "E9")
+	f.MergeCell("Sheet1", "H14", "G13")
+	f.MergeCell("Sheet1", "C9", "D8")
+	f.MergeCell("Sheet1", "F11", "G13")
+	f.MergeCell("Sheet1", "H7", "B15")
+	f.MergeCell("Sheet1", "D11", "F13")
+	f.MergeCell("Sheet1", "G10", "K12")
+	f.SetCellValue("Sheet1", "G11", "set value in merged cell")
+	f.SetCellInt("Sheet1", "H11", 100)
+	f.SetCellValue("Sheet1", "I11", float64(0.5))
+	f.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	f.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)")
+	f.GetCellValue("Sheet1", "H11")
+	f.GetCellValue("Sheet2", "A6") // Merged cell ref is single coordinate.
+	f.GetCellFormula("Sheet1", "G12")
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
 }
 
 func ExampleFile_SetCellFloat() {

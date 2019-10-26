@@ -372,32 +372,6 @@ func TestSetSheetBackgroundErrors(t *testing.T) {
 	assert.EqualError(t, err, "unsupported image extension")
 }
 
-func TestMergeCell(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	f.MergeCell("Sheet1", "D9", "D9")
-	f.MergeCell("Sheet1", "D9", "E9")
-	f.MergeCell("Sheet1", "H14", "G13")
-	f.MergeCell("Sheet1", "C9", "D8")
-	f.MergeCell("Sheet1", "F11", "G13")
-	f.MergeCell("Sheet1", "H7", "B15")
-	f.MergeCell("Sheet1", "D11", "F13")
-	f.MergeCell("Sheet1", "G10", "K12")
-	f.SetCellValue("Sheet1", "G11", "set value in merged cell")
-	f.SetCellInt("Sheet1", "H11", 100)
-	f.SetCellValue("Sheet1", "I11", float64(0.5))
-	f.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
-	f.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)")
-	f.GetCellValue("Sheet1", "H11")
-	f.GetCellValue("Sheet2", "A6") // Merged cell ref is single coordinate.
-	f.GetCellFormula("Sheet1", "G12")
-
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
-}
-
 // TestWriteArrayFormula tests the extended options of SetCellFormula by writing an array function
 // to a workbook. In the resulting file, the lines 2 and 3 as well as 4 and 5 should have matching
 // contents.
@@ -913,13 +887,18 @@ func TestAddShape(t *testing.T) {
 		t.FailNow()
 	}
 
-	f.AddShape("Sheet1", "A30", `{"type":"rect","paragraph":[{"text":"Rectangle","font":{"color":"CD5C5C"}},{"text":"Shape","font":{"bold":true,"color":"2980B9"}}]}`)
-	f.AddShape("Sheet1", "B30", `{"type":"rect","paragraph":[{"text":"Rectangle"},{}]}`)
-	f.AddShape("Sheet1", "C30", `{"type":"rect","paragraph":[]}`)
-	f.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777","underline":"single"}}], "height": 90}`)
-	f.AddShape("Sheet3", "H1", "")
+	assert.NoError(t, f.AddShape("Sheet1", "A30", `{"type":"rect","paragraph":[{"text":"Rectangle","font":{"color":"CD5C5C"}},{"text":"Shape","font":{"bold":true,"color":"2980B9"}}]}`))
+	assert.NoError(t, f.AddShape("Sheet1", "B30", `{"type":"rect","paragraph":[{"text":"Rectangle"},{}]}`))
+	assert.NoError(t, f.AddShape("Sheet1", "C30", `{"type":"rect","paragraph":[]}`))
+	assert.EqualError(t, f.AddShape("Sheet3", "H1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777","underline":"single"}}], "height": 90}`), "sheet Sheet3 is not exist")
+	assert.EqualError(t, f.AddShape("Sheet3", "H1", ""), "unexpected end of JSON input")
+	assert.EqualError(t, f.AddShape("Sheet1", "A", `{"type":"rect","paragraph":[{"text":"Rectangle","font":{"color":"CD5C5C"}},{"text":"Shape","font":{"bold":true,"color":"2980B9"}}]}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape1.xlsx")))
 
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape.xlsx")))
+	// Test add first shape for given sheet.
+	f = NewFile()
+	assert.NoError(t, f.AddShape("Sheet1", "A1", `{"type":"ellipseRibbon", "color":{"line":"#4286f4","fill":"#8eb9ff"}, "paragraph":[{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777","underline":"single"}}], "height": 90}`))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
 }
 
 func TestAddComments(t *testing.T) {

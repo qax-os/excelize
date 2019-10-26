@@ -210,8 +210,16 @@ func TestDefinedName(t *testing.T) {
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
-	}), "the same name already exists on scope")
+	}), "the same name already exists on the scope")
+	assert.EqualError(t, f.DeleteDefinedName(&excelize.DefinedName{
+		Name: "No Exist Defined Name",
+	}), "no defined name on the scope")
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[1].RefersTo)
+	assert.NoError(t, f.DeleteDefinedName(&excelize.DefinedName{
+		Name: "Amount",
+	}))
+	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[0].RefersTo)
+	assert.Exactly(t, 1, len(f.GetDefinedName()))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDefinedName.xlsx")))
 }
 

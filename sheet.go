@@ -1271,7 +1271,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 				scope = f.GetSheetName(*dn.LocalSheetID + 1)
 			}
 			if scope == definedName.Scope && dn.Name == definedName.Name {
-				return errors.New("the same name already exists on scope")
+				return errors.New("the same name already exists on the scope")
 			}
 		}
 		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
@@ -1281,6 +1281,32 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 		DefinedName: []xlsxDefinedName{d},
 	}
 	return nil
+}
+
+// DeleteDefinedName provides a function to delete the defined names of the
+// workbook or worksheet. If not specified scope, the default scope is
+// workbook. For example:
+//
+//    f.DeleteDefinedName(&excelize.DefinedName{
+//        Name:     "Amount",
+//        Scope:    "Sheet2",
+//    })
+//
+func (f *File) DeleteDefinedName(definedName *DefinedName) error {
+	wb := f.workbookReader()
+	if wb.DefinedNames != nil {
+		for idx, dn := range wb.DefinedNames.DefinedName {
+			var scope string
+			if dn.LocalSheetID != nil {
+				scope = f.GetSheetName(*dn.LocalSheetID + 1)
+			}
+			if scope == definedName.Scope && dn.Name == definedName.Name {
+				wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
+				return nil
+			}
+		}
+	}
+	return errors.New("no defined name on the scope")
 }
 
 // GetDefinedName provides a function to get the defined names of the workbook

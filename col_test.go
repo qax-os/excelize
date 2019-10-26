@@ -53,10 +53,15 @@ func TestOutlineLevel(t *testing.T) {
 	assert.NoError(t, f.SetRowOutlineLevel("Sheet1", 2, 7))
 	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "D", 8), "invalid outline level")
 	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 2, 8), "invalid outline level")
+	// Test set row outline level on not exists worksheet.
+	assert.EqualError(t, f.SetRowOutlineLevel("SheetN", 1, 4), "sheet SheetN is not exist")
+	// Test get row outline level on not exists worksheet.
+	_, err := f.GetRowOutlineLevel("SheetN", 1)
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	// Test set and get column outline level with illegal cell coordinates.
 	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "*", 1), `invalid column name "*"`)
-	_, err := f.GetColOutlineLevel("Sheet1", "*")
+	_, err = f.GetColOutlineLevel("Sheet1", "*")
 	assert.EqualError(t, err, `invalid column name "*"`)
 
 	// Test set column outline level on not exists worksheet.
