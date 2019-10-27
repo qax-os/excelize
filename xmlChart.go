@@ -347,6 +347,7 @@ type cAxs struct {
 	Delete         *attrValBool   `xml:"delete"`
 	AxPos          *attrValString `xml:"axPos"`
 	MajorGridlines *cChartLines   `xml:"majorGridlines"`
+	MinorGridlines *cChartLines   `xml:"minorGridlines"`
 	NumFmt         *cNumFmt       `xml:"numFmt"`
 	MajorTickMark  *attrValString `xml:"majorTickMark"`
 	MinorTickMark  *attrValString `xml:"minorTickMark"`
@@ -514,6 +515,7 @@ type cPageMargins struct {
 type formatChartAxis struct {
 	Crossing            string  `json:"crossing"`
 	MajorGridlines      bool    `json:"major_grid_lines"`
+	MinorGridlines      bool    `json:"minor_grid_lines"`
 	MajorTickMark       string  `json:"major_tick_mark"`
 	MinorTickMark       string  `json:"minor_tick_mark"`
 	MinorUnitType       string  `json:"minor_unit_type"`

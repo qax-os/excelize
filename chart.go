@@ -652,9 +652,15 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties that can be set are:
 //
+//    major_grid_lines
+//    minor_grid_lines
 //    reverse_order
 //    maximum
 //    minimum
+//
+// major_grid_lines: Specifies major gridlines.
+//
+// minor_grid_lines: Specifies minor gridlines.
 //
 // reverse_order: Specifies that the categories or values on reverse order (orientation of the chart). The reverse_order property is optional. The default value is false.
 //
@@ -1601,6 +1607,9 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 	if formatSet.XAxis.MajorGridlines {
 		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
+	if formatSet.XAxis.MinorGridlines {
+		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+	}
 	return axs
 }
 
@@ -1640,6 +1649,9 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 	}
 	if formatSet.YAxis.MajorGridlines {
 		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+	}
+	if formatSet.YAxis.MinorGridlines {
+		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if pos, ok := valTickLblPos[formatSet.Type]; ok {
 		axs[0].TickLblPos.Val = pos
