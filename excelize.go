@@ -155,20 +155,12 @@ func checkSheet(xlsx *xlsxWorksheet) {
 			row = lastRow
 		}
 	}
-	sheetData := xlsxSheetData{}
-	existsRows := map[int]int{}
-	for k := range xlsx.SheetData.Row {
-		existsRows[xlsx.SheetData.Row[k].R] = k
+	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
+	for _, r := range xlsx.SheetData.Row {
+		sheetData.Row[r.R-1] = r
 	}
-	for i := 0; i < row; i++ {
-		_, ok := existsRows[i+1]
-		if ok {
-			sheetData.Row = append(sheetData.Row, xlsx.SheetData.Row[existsRows[i+1]])
-		} else {
-			sheetData.Row = append(sheetData.Row, xlsxRow{
-				R: i + 1,
-			})
-		}
+	for i := 1; i <= row; i++ {
+		sheetData.Row[i-1].R = i
 	}
 	xlsx.SheetData = sheetData
 }
