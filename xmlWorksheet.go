@@ -430,6 +430,10 @@ type xlsxC struct {
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
 }
 
+func (c *xlsxC) hasValue() bool {
+	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
+}
+
 // xlsxF directly maps the f element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.

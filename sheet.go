@@ -117,12 +117,19 @@ func (f *File) workSheetWriter() {
 	}
 }
 
-// trimCell provides a function to trim blank cells which created by completeCol.
+// trimCell provides a function to trim blank cells which created by fillColumns.
 func trimCell(column []xlsxC) []xlsxC {
+	rowFull := true
+	for i := range column {
+		rowFull = column[i].hasValue() && rowFull
+	}
+	if rowFull {
+		return column
+	}
 	col := make([]xlsxC, len(column))
 	i := 0
 	for _, c := range column {
-		if c.S != 0 || c.V != "" || c.F != nil || c.T != "" {
+		if c.hasValue() {
 			col[i] = c
 			i++
 		}
@@ -1404,12 +1411,17 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 
 // fillSheetData ensures there are enough rows, and columns in the chosen
 // row to accept data. Missing rows are backfilled and given their row number
+// Uses the last populated row as a hint for the size of the next row to add
 func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
 	rowCount := len(xlsx.SheetData.Row)
+	sizeHint := 0
+	if rowCount > 0 {
+		sizeHint = len(xlsx.SheetData.Row[rowCount-1].C)
+	}
 	if rowCount < row {
 		// append missing rows
 		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1})
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1, C: make([]xlsxC, 0, sizeHint)})
 		}
 	}
 	rowData := &xlsx.SheetData.Row[row-1]
