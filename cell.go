@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,6 +30,8 @@ const (
 	// STCellFormulaTypeShared defined the formula is part of a shared formula.
 	STCellFormulaTypeShared = "shared"
 )
+
+var rwMutex sync.RWMutex
 
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in XLSX file. If it is possible to apply a format
@@ -155,6 +158,8 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) error {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -172,6 +177,8 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 // SetCellBool provides a function to set bool type value of a cell by given
 // worksheet name, cell name and cell value.
 func (f *File) SetCellBool(sheet, axis string, value bool) error {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -200,6 +207,8 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 //    f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 //
 func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int) error {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -217,6 +226,8 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int
 // SetCellStr provides a function to set string type value of a cell. Total
 // number of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) error {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -276,6 +287,8 @@ func (f *File) GetCellFormula(sheet, axis string) (string, error) {
 // SetCellFormula provides a function to set cell formula by given string and
 // worksheet name.
 func (f *File) SetCellFormula(sheet, axis, formula string) error {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
