@@ -47,10 +47,10 @@ func TestRowsIterator(t *testing.T) {
 		sheet2         = "Sheet2"
 		expectedNumRow = 11
 	)
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	require.NoError(t, err)
 
-	rows, err := xlsx.Rows(sheet2)
+	rows, err := f.Rows(sheet2)
 	require.NoError(t, err)
 	var rowCount int
 	for rows.Next() {
@@ -59,9 +59,20 @@ func TestRowsIterator(t *testing.T) {
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
 
-	rows = &Rows{f: xlsx, rows: []xlsxRow{{C: []xlsxC{{R: "A"}}}}, curRow: 1}
-	_, err = rows.Columns()
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	// Valued cell sparse distribution test
+	f = NewFile()
+	cells := []string{"C1", "E1", "A3", "B3", "C3", "D3", "E3"}
+	for _, cell := range cells {
+		f.SetCellValue("Sheet1", cell, 1)
+	}
+	rows, err = f.Rows("Sheet1")
+	require.NoError(t, err)
+	rowCount = 0
+	for rows.Next() {
+		rowCount++
+		require.True(t, rowCount <= 3, "rowCount is greater than expected")
+	}
+	assert.Equal(t, 3, rowCount)
 }
 
 func TestRowsError(t *testing.T) {
@@ -697,7 +708,7 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 
 func TestErrSheetNotExistError(t *testing.T) {
 	err := ErrSheetNotExist{SheetName: "Sheet1"}
-	assert.EqualValues(t, err.Error(), "Sheet Sheet1 is not exist")
+	assert.EqualValues(t, err.Error(), "sheet Sheet1 is not exist")
 }
 
 func BenchmarkRows(b *testing.B) {

@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -49,16 +50,19 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 
 // Rows defines an iterator to a sheet
 type Rows struct {
-	err    error
-	f      *File
-	rows   []xlsxRow
-	curRow int
+	err      error
+	f        *File
+	rows     []xlsxRow
+	sheet    string
+	curRow   int
+	totalRow int
+	decoder  *xml.Decoder
 }
 
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
 	rows.curRow++
-	return rows.curRow <= len(rows.rows)
+	return rows.curRow <= rows.totalRow
 }
 
 // Error will return the error when the find next row element
@@ -68,19 +72,57 @@ func (rows *Rows) Error() error {
 
 // Columns return the current row's column values
 func (rows *Rows) Columns() ([]string, error) {
-	curRow := rows.rows[rows.curRow-1]
-
-	columns := make([]string, len(curRow.C))
+	var (
+		err          error
+		inElement    string
+		row, cellCol int
+		columns      []string
+	)
 	d := rows.f.sharedStringsReader()
-	for _, colCell := range curRow.C {
-		col, _, err := CellNameToCoordinates(colCell.R)
-		if err != nil {
-			return columns, err
+	for {
+		token, _ := rows.decoder.Token()
+		if token == nil {
+			break
 		}
-		val, _ := colCell.getValueFrom(rows.f, d)
-		columns[col-1] = val
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "r" {
+						row, err = strconv.Atoi(attr.Value)
+						if err != nil {
+							return columns, err
+						}
+						if row > rows.curRow {
+							return columns, err
+						}
+					}
+				}
+			}
+			if inElement == "c" {
+				colCell := xlsxC{}
+				_ = rows.decoder.DecodeElement(&colCell, &startElement)
+				cellCol, _, err = CellNameToCoordinates(colCell.R)
+				if err != nil {
+					return columns, err
+				}
+				blank := cellCol - len(columns)
+				for i := 1; i < blank; i++ {
+					columns = append(columns, "")
+				}
+				val, _ := colCell.getValueFrom(rows.f, d)
+				columns = append(columns, val)
+			}
+		case xml.EndElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				return columns, err
+			}
+		default:
+		}
 	}
-	return columns, nil
+	return columns, err
 }
 
 // ErrSheetNotExist defines an error of sheet is not exist
@@ -89,7 +131,7 @@ type ErrSheetNotExist struct {
 }
 
 func (err ErrSheetNotExist) Error() string {
-	return fmt.Sprintf("Sheet %s is not exist", string(err.SheetName))
+	return fmt.Sprintf("sheet %s is not exist", string(err.SheetName))
 }
 
 // Rows return a rows iterator. For example:
@@ -104,22 +146,48 @@ func (err ErrSheetNotExist) Error() string {
 //    }
 //
 func (f *File) Rows(sheet string) (*Rows, error) {
-	xlsx, err := f.workSheetReader(sheet)
-	if err != nil {
-		return nil, err
-	}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
-	if xlsx != nil {
-		data := f.readXML(name)
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(namespaceStrictToTransitional(data)))
+	if f.Sheet[name] != nil {
+		// flush data
+		output, _ := xml.Marshal(f.Sheet[name])
+		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
-	return &Rows{
-		f:    f,
-		rows: xlsx.SheetData.Row,
-	}, nil
+	var (
+		err       error
+		inElement string
+		row       int
+		rows      Rows
+	)
+	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "row" {
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "r" {
+						row, err = strconv.Atoi(attr.Value)
+						if err != nil {
+							return &rows, err
+						}
+					}
+				}
+				rows.totalRow = row
+			}
+		default:
+		}
+	}
+	rows.f = f
+	rows.sheet = name
+	rows.decoder = xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	return &rows, nil
 }
 
 // SetRowHeight provides a function to set the height of a single row. For

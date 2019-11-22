@@ -699,15 +699,12 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	for _, r := range reg {
 		regSearch = r
 	}
-	xlsx, err := f.workSheetReader(sheet)
-	if err != nil {
-		return result, err
-	}
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
-		return result, nil
+		return result, ErrSheetNotExist{sheet}
 	}
-	if xlsx != nil {
+	if f.Sheet[name] != nil {
+		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
@@ -718,9 +715,10 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 // cell value, and regular expression.
 func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error) {
 	var (
-		inElement string
-		result    []string
-		r         xlsxRow
+		err                 error
+		cellName, inElement string
+		result              []string
+		cellCol, row        int
 	)
 	d := f.sharedStringsReader()
 	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
@@ -733,31 +731,38 @@ func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error)
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				r = xlsxRow{}
-				_ = decoder.DecodeElement(&r, &startElement)
-				for _, colCell := range r.C {
-					val, _ := colCell.getValueFrom(f, d)
-					if regSearch {
-						regex := regexp.MustCompile(value)
-						if !regex.MatchString(val) {
-							continue
-						}
-					} else {
-						if val != value {
-							continue
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "r" {
+						row, err = strconv.Atoi(attr.Value)
+						if err != nil {
+							return result, err
 						}
 					}
-
-					cellCol, _, err := CellNameToCoordinates(colCell.R)
-					if err != nil {
-						return result, err
-					}
-					cellName, err := CoordinatesToCellName(cellCol, r.R)
-					if err != nil {
-						return result, err
-					}
-					result = append(result, cellName)
 				}
+			}
+			if inElement == "c" {
+				colCell := xlsxC{}
+				_ = decoder.DecodeElement(&colCell, &startElement)
+				val, _ := colCell.getValueFrom(f, d)
+				if regSearch {
+					regex := regexp.MustCompile(value)
+					if !regex.MatchString(val) {
+						continue
+					}
+				} else {
+					if val != value {
+						continue
+					}
+				}
+				cellCol, _, err = CellNameToCoordinates(colCell.R)
+				if err != nil {
+					return result, err
+				}
+				cellName, err = CoordinatesToCellName(cellCol, row)
+				if err != nil {
+					return result, err
+				}
+				result = append(result, cellName)
 			}
 		default:
 		}
