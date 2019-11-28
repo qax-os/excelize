@@ -22,8 +22,13 @@ type xlsxWorksheet struct {
 	SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
 	Cols                  *xlsxCols                    `xml:"cols,omitempty"`
 	SheetData             xlsxSheetData                `xml:"sheetData"`
+	SheetCalcPr           *xlsxInnerXML                `xml:"sheetCalcPr"`
 	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
+	ProtectedRanges       *xlsxInnerXML                `xml:"protectedRanges"`
+	Scenarios             *xlsxInnerXML                `xml:"scenarios"`
 	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
+	SortState             *xlsxInnerXML                `xml:"sortState"`
+	DataConsolidate       *xlsxInnerXML                `xml:"dataConsolidate"`
 	CustomSheetViews      *xlsxCustomSheetViews        `xml:"customSheetViews"`
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
 	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
@@ -36,9 +41,18 @@ type xlsxWorksheet struct {
 	HeaderFooter          *xlsxHeaderFooter            `xml:"headerFooter"`
 	RowBreaks             *xlsxBreaks                  `xml:"rowBreaks"`
 	ColBreaks             *xlsxBreaks                  `xml:"colBreaks"`
+	CustomProperties      *xlsxInnerXML                `xml:"customProperties"`
+	CellWatches           *xlsxInnerXML                `xml:"cellWatches"`
+	IgnoredErrors         *xlsxInnerXML                `xml:"ignoredErrors"`
+	SmartTags             *xlsxInnerXML                `xml:"smartTags"`
 	Drawing               *xlsxDrawing                 `xml:"drawing"`
 	LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
+	LegacyDrawingHF       *xlsxInnerXML                `xml:"legacyDrawingHF"`
+	DrawingHF             *xlsxDrawingHF               `xml:"drawingHF"`
 	Picture               *xlsxPicture                 `xml:"picture"`
+	OleObjects            *xlsxInnerXML                `xml:"oleObjects"`
+	Controls              *xlsxInnerXML                `xml:"controls"`
+	WebPublishItems       *xlsxInnerXML                `xml:"webPublishItems"`
 	TableParts            *xlsxTableParts              `xml:"tableParts"`
 	ExtLst                *xlsxExtLst                  `xml:"extLst"`
 }
@@ -629,6 +643,10 @@ type xlsxPicture struct {
 // something special about the cell.
 type xlsxLegacyDrawing struct {
 	RID string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+type xlsxInnerXML struct {
+	Content string `xml:",innerxml"`
 }
 
 // xlsxWorksheetExt directly maps the ext element in the worksheet.
