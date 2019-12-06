@@ -52,3 +52,39 @@ func TestGetMergeCells(t *testing.T) {
 	_, err = f.GetMergeCells("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
+
+func TestUnmergeCell(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "MergeCell.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	sheet1 := f.GetSheetName(1)
+
+	xlsx, err := f.workSheetReader(sheet1)
+	assert.NoError(t, err)
+
+	mergeCellNum := len(xlsx.MergeCells.Cells)
+
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	// unmerge the mergecell that contains A1
+	err = f.UnmergeCell(sheet1, "A1", "A1")
+	assert.NoError(t, err)
+
+	if len(xlsx.MergeCells.Cells) != mergeCellNum-1 {
+		t.FailNow()
+	}
+
+	// unmerge area A7:D3(A3:D7)
+	// this will unmerge all since this area overlaps with all others
+	err = f.UnmergeCell(sheet1, "D7", "A3")
+	assert.NoError(t, err)
+
+	if len(xlsx.MergeCells.Cells) != 0 {
+		t.FailNow()
+	}
+
+	// Test unmerged area on not exists worksheet.
+	err = f.UnmergeCell("SheetN", "A1", "A1")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+}
