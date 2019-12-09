@@ -17,6 +17,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"time"
 )
 
 // StreamWriter defined the type of stream writer.
@@ -26,6 +27,7 @@ type StreamWriter struct {
 	Sheet     string
 	SheetID   int
 	SheetData bytes.Buffer
+	Encoder   *xml.Encoder
 }
 
 // NewStreamWriter return stream writer struct by given worksheet name for
@@ -67,6 +69,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		Sheet:   sheet,
 		SheetID: sheetID,
 	}
+	rsw.Encoder = xml.NewEncoder(&rsw.SheetData)
 	rsw.SheetData.WriteString("<sheetData>")
 	return rsw, nil
 }
@@ -74,12 +77,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // SetRow writes an array to streaming row by given worksheet name, starting
 // coordinate and a pointer to array type 'slice'. Note that, cell settings
 // with styles are not supported currently and after set rows, you must call the
-// 'Flush' method to end the streaming writing process. The following
-// shows the supported data types:
-//
-//    int
-//    string
-//
+// 'Flush' method to end the streaming writing process.
 func (sw *StreamWriter) SetRow(axis string, slice interface{}) error {
 	col, row, err := CellNameToCoordinates(axis)
 	if err != nil {
@@ -97,14 +95,48 @@ func (sw *StreamWriter) SetRow(axis string, slice interface{}) error {
 		if err != nil {
 			return err
 		}
+		c := xlsxC{R: axis}
 		switch val := v.Index(i).Interface().(type) {
 		case int:
-			sw.SheetData.WriteString(fmt.Sprintf(`<c r="%s"><v>%d</v></c>`, axis, val))
+			c.T, c.V = setCellInt(val)
+		case int8:
+			c.T, c.V = setCellInt(int(val))
+		case int16:
+			c.T, c.V = setCellInt(int(val))
+		case int32:
+			c.T, c.V = setCellInt(int(val))
+		case int64:
+			c.T, c.V = setCellInt(int(val))
+		case uint:
+			c.T, c.V = setCellInt(int(val))
+		case uint8:
+			c.T, c.V = setCellInt(int(val))
+		case uint16:
+			c.T, c.V = setCellInt(int(val))
+		case uint32:
+			c.T, c.V = setCellInt(int(val))
+		case uint64:
+			c.T, c.V = setCellInt(int(val))
+		case float32:
+			c.T, c.V = setCellFloat(float64(val), -1, 32)
+		case float64:
+			c.T, c.V = setCellFloat(val, -1, 64)
 		case string:
-			sw.SheetData.WriteString(sw.setCellStr(axis, val))
+			c.T, c.V, c.XMLSpace = setCellStr(val)
+		case []byte:
+			c.T, c.V, c.XMLSpace = setCellStr(string(val))
+		case time.Duration:
+			c.T, c.V = setCellDuration(val)
+		case time.Time:
+			c.T, c.V, _, err = setCellTime(val)
+		case bool:
+			c.T, c.V = setCellBool(val)
+		case nil:
+			c.T, c.V, c.XMLSpace = setCellStr("")
 		default:
-			sw.SheetData.WriteString(sw.setCellStr(axis, fmt.Sprint(val)))
+			c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 		}
+		sw.Encoder.Encode(c)
 	}
 	sw.SheetData.WriteString(`</row>`)
 	// Try to use local storage
