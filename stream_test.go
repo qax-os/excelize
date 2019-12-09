@@ -17,16 +17,16 @@ func TestStreamWriter(t *testing.T) {
 	// Test max characters in a cell.
 	row := make([]interface{}, 1)
 	row[0] = strings.Repeat("c", 32769)
-	assert.NoError(t, streamWriter.SetRow("A1", &row))
+	assert.NoError(t, streamWriter.SetRow("A1", row, nil))
 
 	// Test leading and ending space(s) character characters in a cell.
 	row = make([]interface{}, 1)
 	row[0] = " characters"
-	assert.NoError(t, streamWriter.SetRow("A2", &row))
+	assert.NoError(t, streamWriter.SetRow("A2", row, nil))
 
 	row = make([]interface{}, 1)
 	row[0] = []byte("Word")
-	assert.NoError(t, streamWriter.SetRow("A3", &row))
+	assert.NoError(t, streamWriter.SetRow("A3", row, nil))
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
@@ -34,7 +34,7 @@ func TestStreamWriter(t *testing.T) {
 			row[colID] = rand.Intn(640000)
 		}
 		cell, _ := CoordinatesToCellName(1, rowID)
-		assert.NoError(t, streamWriter.SetRow(cell, &row))
+		assert.NoError(t, streamWriter.SetRow(cell, row, nil))
 	}
 
 	err = streamWriter.Flush()
@@ -61,6 +61,5 @@ func TestSetRow(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
-	assert.EqualError(t, streamWriter.SetRow("A", &[]interface{}{}), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, streamWriter.SetRow("A1", []interface{}{}), `pointer to slice expected`)
+	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}, nil), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }

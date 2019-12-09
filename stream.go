@@ -27,7 +27,7 @@ type StreamWriter struct {
 	Sheet     string
 	SheetID   int
 	SheetData bytes.Buffer
-	Encoder   *xml.Encoder
+	encoder   *xml.Encoder
 }
 
 // NewStreamWriter return stream writer struct by given worksheet name for
@@ -69,34 +69,35 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		Sheet:   sheet,
 		SheetID: sheetID,
 	}
-	rsw.Encoder = xml.NewEncoder(&rsw.SheetData)
+	rsw.encoder = xml.NewEncoder(&rsw.SheetData)
 	rsw.SheetData.WriteString("<sheetData>")
 	return rsw, nil
 }
 
-// SetRow writes an array to streaming row by given worksheet name, starting
-// coordinate and a pointer to array type 'slice'. Note that, cell settings
-// with styles are not supported currently and after set rows, you must call the
-// 'Flush' method to end the streaming writing process.
-func (sw *StreamWriter) SetRow(axis string, slice interface{}) error {
+// SetRow writes an array to stream rows by giving a worksheet name, starting
+// coordinate and a pointer to an array of values. If styles is non-nil, then
+// the styles must be the same size as the values and will be applied to each
+// corresponding cell. Note that you must call the 'Flush' method to end the
+// streaming writing process.
+func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) error {
 	col, row, err := CellNameToCoordinates(axis)
 	if err != nil {
 		return err
 	}
-	// Make sure 'slice' is a Ptr to Slice
-	v := reflect.ValueOf(slice)
-	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
-		return errors.New("pointer to slice expected")
+	if styles == nil {
+		styles = make([]int, len(values))
 	}
-	v = v.Elem()
+	if len(styles) != len(values) {
+		return errors.New("incorrect number of styles for this row")
+	}
 	sw.SheetData.WriteString(fmt.Sprintf(`<row r="%d">`, row))
-	for i := 0; i < v.Len(); i++ {
+	for i, val := range values {
 		axis, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: axis}
-		switch val := v.Index(i).Interface().(type) {
+		c := xlsxC{R: axis, S: styles[i]}
+		switch val := val.(type) {
 		case int:
 			c.T, c.V = setCellInt(val)
 		case int8:
@@ -136,7 +137,7 @@ func (sw *StreamWriter) SetRow(axis string, slice interface{}) error {
 		default:
 			c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 		}
-		sw.Encoder.Encode(c)
+		sw.encoder.Encode(c)
 	}
 	sw.SheetData.WriteString(`</row>`)
 	// Try to use local storage
