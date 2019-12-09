@@ -44,6 +44,7 @@ type xlsxTable struct {
 // applied column by column to a table of data in the worksheet. This collection
 // expresses AutoFilter settings.
 type xlsxAutoFilter struct {
+	XMLName      xml.Name          `xml:"autoFilter"`
 	Ref          string            `xml:"ref,attr"`
 	FilterColumn *xlsxFilterColumn `xml:"filterColumn"`
 }
