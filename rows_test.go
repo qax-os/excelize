@@ -706,6 +706,15 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 	}
 }
 
+func TestGetValueFrom(t *testing.T) {
+	c := &xlsxC{T: "inlineStr"}
+	f := NewFile()
+	d := &xlsxSST{}
+	val, err := c.getValueFrom(f, d)
+	assert.NoError(t, err)
+	assert.Equal(t, "", val)
+}
+
 func TestErrSheetNotExistError(t *testing.T) {
 	err := ErrSheetNotExist{SheetName: "Sheet1"}
 	assert.EqualValues(t, err.Error(), "sheet Sheet1 is not exist")

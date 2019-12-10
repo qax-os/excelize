@@ -279,7 +279,10 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	case "str":
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	case "inlineStr":
-		return f.formattedValue(xlsx.S, xlsx.IS.String()), nil
+		if xlsx.IS != nil {
+			return f.formattedValue(xlsx.S, xlsx.IS.String()), nil
+		}
+		return f.formattedValue(xlsx.S, xlsx.V), nil
 	default:
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
