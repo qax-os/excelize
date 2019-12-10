@@ -17,17 +17,21 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
-	tmpFile   *os.File
-	File      *File
-	Sheet     string
-	SheetID   int
-	SheetData bytes.Buffer
-	encoder   *xml.Encoder
+	tmpFile    *os.File
+	File       *File
+	Sheet      string
+	SheetID    int
+	SheetData  bytes.Buffer
+	encoder    *xml.Encoder
+	table      *xlsxTable
+	replaceMap map[string][]byte
 }
 
 // NewStreamWriter return stream writer struct by given worksheet name for
@@ -48,7 +52,7 @@ type StreamWriter struct {
 //            row[colID] = rand.Intn(640000)
 //        }
 //        cell, _ := excelize.CoordinatesToCellName(1, rowID)
-//        if err := streamWriter.SetRow(cell, &row); err != nil {
+//        if err := streamWriter.SetRow(cell, row, nil); err != nil {
 //            panic(err)
 //        }
 //    }
@@ -68,10 +72,47 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		File:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
+		replaceMap: map[string][]byte{
+			"XMLName": []byte{},
+		},
 	}
 	rsw.encoder = xml.NewEncoder(&rsw.SheetData)
 	rsw.SheetData.WriteString("<sheetData>")
 	return rsw, nil
+}
+
+// SetTable creates an Excel table for the StreamWriter. This function must be
+// called before the first SetRow.
+//
+// The first SetRow will create the column names. These Column names must be
+// strings or an error will be returned.
+func (sw *StreamWriter) SetTable(format string) error {
+	formatSet, err := parseFormatTableSet(format)
+	if err != nil {
+		return err
+	}
+
+	tableID := sw.File.countTables() + 1
+
+	name := formatSet.TableName
+	if name == "" {
+		name = "Table" + strconv.Itoa(tableID)
+	}
+
+	sw.table = &xlsxTable{
+		XMLNS:       NameSpaceSpreadSheet,
+		ID:          tableID,
+		Name:        name,
+		DisplayName: name,
+		TableStyleInfo: &xlsxTableStyleInfo{
+			Name:              formatSet.TableStyle,
+			ShowFirstColumn:   formatSet.ShowFirstColumn,
+			ShowLastColumn:    formatSet.ShowLastColumn,
+			ShowRowStripes:    formatSet.ShowRowStripes,
+			ShowColumnStripes: formatSet.ShowColumnStripes,
+		},
+	}
+	return nil
 }
 
 // SetRow writes an array to stream rows by giving a worksheet name, starting
@@ -84,12 +125,81 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 	if err != nil {
 		return err
 	}
+
 	if styles == nil {
 		styles = make([]int, len(values))
 	}
 	if len(styles) != len(values) {
 		return errors.New("incorrect number of styles for this row")
 	}
+
+	if sw.table != nil {
+		if sw.table.TableColumns == nil {
+			// create table columns using the first row
+			tableColumn := make([]*xlsxTableColumn, len(values))
+			sw.table.TableColumns = &xlsxTableColumns{
+				Count:       len(tableColumn),
+				TableColumn: tableColumn,
+			}
+
+			nameUsed := map[string]bool{}
+			for i, v := range values {
+				v, ok := v.(string)
+				if !ok {
+					return fmt.Errorf("column header %d is not a string", i+1)
+				}
+
+				// if column names are duplicated, do the same thing that Excel
+				// does and append a number
+				name := v
+				if name != "" {
+					for count := 1; nameUsed[name]; count++ {
+						name = fmt.Sprintf("%s%d", name, count+1)
+					}
+					nameUsed[name] = true
+				}
+
+				tableColumn[i] = &xlsxTableColumn{
+					ID:   i + 1,
+					Name: name,
+				}
+			}
+			idx := 1
+			for _, c := range tableColumn {
+				if c.Name == "" {
+					c.Name = fmt.Sprintf("Column%d", idx)
+					for ; nameUsed[c.Name]; idx++ {
+						c.Name = fmt.Sprintf("Column%d", idx)
+					}
+					nameUsed[c.Name] = true
+				}
+			}
+
+			ref, err := sw.File.coordinatesToAreaRef([]int{col, row, col + len(values) - 1, row})
+			if err != nil {
+				return err
+			}
+			sw.table.Ref = ref
+			sw.table.AutoFilter = &xlsxAutoFilter{Ref: ref}
+		} else {
+			c, err := sw.File.areaRefToCoordinates(sw.table.Ref)
+			if err != nil {
+				return err
+			}
+			if col != c[0] || col+sw.table.TableColumns.Count != c[2]+1 || row <= c[3] {
+				return fmt.Errorf("row %d is outside the table bounds", row+1)
+			}
+			c[3] = row
+
+			ref, err := sw.File.coordinatesToAreaRef(c)
+			if err != nil {
+				return err
+			}
+			sw.table.Ref = ref
+			sw.table.AutoFilter.Ref = ref
+		}
+	}
+
 	sw.SheetData.WriteString(fmt.Sprintf(`<row r="%d">`, row))
 	for i, val := range values {
 		axis, err := CoordinatesToCellName(col+i, row)
@@ -199,13 +309,30 @@ func (sw *StreamWriter) Flush() error {
 	}
 
 	sheetDataByte = append(sheetDataByte, sw.SheetData.Bytes()...)
-	replaceMap := map[string][]byte{
-		"XMLName":   []byte{},
-		"SheetData": sheetDataByte,
-	}
+	sw.replaceMap["SheetData"] = sheetDataByte
 	sw.SheetData.Reset()
+
+	if sw.table != nil {
+		tableID := sw.File.countTables() + 1
+		sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
+		tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
+
+		// Add first table for given sheet.
+		sheetPath, _ := sw.File.sheetMap[trimSheetName(sw.Sheet)]
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		rID := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+
+		tableParts := fmt.Sprintf(`<tableParts count="1"><tablePart r:id="rId%d"></tablePart></tableParts>`, rID)
+		sw.replaceMap["TableParts"] = []byte(tableParts)
+
+		sw.File.addContentTypePart(tableID, "table")
+
+		table, _ := xml.Marshal(sw.table)
+		sw.File.saveFileList(tableXML, table)
+	}
+
 	sw.File.XLSX[fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)] =
-		StreamMarshalSheet(ws, replaceMap)
+		bulkUpdateSheet(ws, sw.replaceMap)
 	return err
 }
 
@@ -216,9 +343,8 @@ func (sw *StreamWriter) createTmp() (err error) {
 	return err
 }
 
-// StreamMarshalSheet provides method to serialization worksheets by field as
-// streaming.
-func StreamMarshalSheet(ws *xlsxWorksheet, replaceMap map[string][]byte) []byte {
+// bulkUpdateSheet provides method to bulk-replace fields in a worksheet.
+func bulkUpdateSheet(ws *xlsxWorksheet, replaceMap map[string][]byte) []byte {
 	s := reflect.ValueOf(ws).Elem()
 	typeOfT := s.Type()
 	var marshalResult []byte
@@ -235,18 +361,4 @@ func StreamMarshalSheet(ws *xlsxWorksheet, replaceMap map[string][]byte) []byte 
 	}
 	marshalResult = append(marshalResult, []byte(`</worksheet>`)...)
 	return marshalResult
-}
-
-// setCellStr provides a function to set string type value of a cell as
-// streaming. Total number of characters that a cell can contain 32767
-// characters.
-func (sw *StreamWriter) setCellStr(axis, value string) string {
-	if len(value) > 32767 {
-		value = value[0:32767]
-	}
-	// Leading and ending space(s) character detection.
-	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
-		return fmt.Sprintf(`<c xml:space="preserve" r="%s" t="str"><v>%s</v></c>`, axis, value)
-	}
-	return fmt.Sprintf(`<c r="%s" t="str"><v>%s</v></c>`, axis, value)
 }
