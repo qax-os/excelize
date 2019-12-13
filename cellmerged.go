@@ -33,6 +33,56 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	return mergeCells, err
 }
 
+// UnmergeCell provides a function to unmerge a given coordinate area.
+// For example unmerge area D3:E9 on Sheet1:
+//
+//    err := f.UnmergeCell("Sheet1", "D3", "E9")
+//
+// Attention: overlapped areas will also be unmerged.
+func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	coordinates, err := f.areaRefToCoordinates(hcell + ":" + vcell)
+	if err != nil {
+		return err
+	}
+	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+
+	if x2 < x1 {
+		x1, x2 = x2, x1
+	}
+	if y2 < y1 {
+		y1, y2 = y2, y1
+	}
+	hcell, _ = CoordinatesToCellName(x1, y1)
+	vcell, _ = CoordinatesToCellName(x2, y2)
+
+	// return nil since no MergeCells in the sheet
+	if xlsx.MergeCells == nil {
+		return nil
+	}
+
+	ref := hcell + ":" + vcell
+	i := 0
+	for _, cellData := range xlsx.MergeCells.Cells {
+		cc := strings.Split(cellData.Ref, ":")
+		c1, _ := checkCellInArea(hcell, cellData.Ref)
+		c2, _ := checkCellInArea(vcell, cellData.Ref)
+		c3, _ := checkCellInArea(cc[0], ref)
+		c4, _ := checkCellInArea(cc[1], ref)
+		// skip the overlapped mergecell
+		if c1 || c2 || c3 || c4 {
+			continue
+		}
+		xlsx.MergeCells.Cells[i] = cellData
+		i++
+	}
+	xlsx.MergeCells.Cells = xlsx.MergeCells.Cells[:i]
+	return nil
+}
+
 // MergeCell define a merged cell data.
 // It consists of the following structure.
 // example: []string{"D4:E10", "cell value"}
