@@ -109,7 +109,7 @@ type xlsxPageSetUp struct {
 	FirstPageNumber    int      `xml:"firstPageNumber,attr,omitempty"`
 	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
 	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
-	HorizontalDPI      float32  `xml:"horizontalDpi,attr,omitempty"`
+	HorizontalDPI      int      `xml:"horizontalDpi,attr,omitempty"`
 	RID                string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Orientation        string   `xml:"orientation,attr,omitempty"`
 	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
@@ -119,7 +119,7 @@ type xlsxPageSetUp struct {
 	Scale              int      `xml:"scale,attr,omitempty"`
 	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
 	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
-	VerticalDPI        float32  `xml:"verticalDpi,attr,omitempty"`
+	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`
 }
 
 // xlsxPrintOptions directly maps the printOptions element in the namespace

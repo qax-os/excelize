@@ -206,9 +206,6 @@ func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
 		return coordinates, err
 	}
 	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
-	if err != nil {
-		return coordinates, err
-	}
 	return coordinates, err
 }
 

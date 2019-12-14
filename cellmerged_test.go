@@ -7,6 +7,74 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMergeCell(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	assert.EqualError(t, f.MergeCell("Sheet1", "A", "B"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.NoError(t, f.MergeCell("Sheet1", "D9", "D9"))
+	assert.NoError(t, f.MergeCell("Sheet1", "D9", "E9"))
+	assert.NoError(t, f.MergeCell("Sheet1", "H14", "G13"))
+	assert.NoError(t, f.MergeCell("Sheet1", "C9", "D8"))
+	assert.NoError(t, f.MergeCell("Sheet1", "F11", "G13"))
+	assert.NoError(t, f.MergeCell("Sheet1", "H7", "B15"))
+	assert.NoError(t, f.MergeCell("Sheet1", "D11", "F13"))
+	assert.NoError(t, f.MergeCell("Sheet1", "G10", "K12"))
+	f.SetCellValue("Sheet1", "G11", "set value in merged cell")
+	f.SetCellInt("Sheet1", "H11", 100)
+	f.SetCellValue("Sheet1", "I11", float64(0.5))
+	f.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	f.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)")
+	f.GetCellValue("Sheet1", "H11")
+	f.GetCellValue("Sheet2", "A6") // Merged cell ref is single coordinate.
+	f.GetCellFormula("Sheet1", "G12")
+
+	f.NewSheet("Sheet3")
+	assert.NoError(t, f.MergeCell("Sheet3", "D11", "F13"))
+	assert.NoError(t, f.MergeCell("Sheet3", "G10", "K12"))
+
+	assert.NoError(t, f.MergeCell("Sheet3", "B1", "D5")) // B1:D5
+	assert.NoError(t, f.MergeCell("Sheet3", "E1", "F5")) // E1:F5
+
+	assert.NoError(t, f.MergeCell("Sheet3", "H2", "I5"))
+	assert.NoError(t, f.MergeCell("Sheet3", "I4", "J6")) // H2:J6
+
+	assert.NoError(t, f.MergeCell("Sheet3", "M2", "N5"))
+	assert.NoError(t, f.MergeCell("Sheet3", "L4", "M6")) // L2:N6
+
+	assert.NoError(t, f.MergeCell("Sheet3", "P4", "Q7"))
+	assert.NoError(t, f.MergeCell("Sheet3", "O2", "P5")) // O2:Q7
+
+	assert.NoError(t, f.MergeCell("Sheet3", "A9", "B12"))
+	assert.NoError(t, f.MergeCell("Sheet3", "B7", "C9")) // A7:C12
+
+	assert.NoError(t, f.MergeCell("Sheet3", "E9", "F10"))
+	assert.NoError(t, f.MergeCell("Sheet3", "D8", "G12"))
+
+	assert.NoError(t, f.MergeCell("Sheet3", "I8", "I12"))
+	assert.NoError(t, f.MergeCell("Sheet3", "I10", "K10"))
+
+	assert.NoError(t, f.MergeCell("Sheet3", "M8", "Q13"))
+	assert.NoError(t, f.MergeCell("Sheet3", "N10", "O11"))
+
+	// Test get merged cells on not exists worksheet.
+	assert.EqualError(t, f.MergeCell("SheetN", "N10", "O11"), "sheet SheetN is not exist")
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
+
+	f = NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{nil, nil}}
+	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
+	assert.EqualError(t, f.MergeCell("Sheet1", "A2", "B3"), `invalid area "A1"`)
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	assert.EqualError(t, f.MergeCell("Sheet1", "A2", "B3"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
 func TestGetMergeCells(t *testing.T) {
 	wants := []struct {
 		value string
@@ -68,23 +136,28 @@ func TestUnmergeCell(t *testing.T) {
 	assert.EqualError(t, f.UnmergeCell("Sheet1", "A", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// unmerge the mergecell that contains A1
-	err = f.UnmergeCell(sheet1, "A1", "A1")
-	assert.NoError(t, err)
-
+	assert.NoError(t, f.UnmergeCell(sheet1, "A1", "A1"))
 	if len(xlsx.MergeCells.Cells) != mergeCellNum-1 {
 		t.FailNow()
 	}
 
-	// unmerge area A7:D3(A3:D7)
-	// this will unmerge all since this area overlaps with all others
-	err = f.UnmergeCell(sheet1, "D7", "A3")
-	assert.NoError(t, err)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnmergeCell.xlsx")))
 
-	if len(xlsx.MergeCells.Cells) != 0 {
-		t.FailNow()
-	}
-
+	f = NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
 	// Test unmerged area on not exists worksheet.
-	err = f.UnmergeCell("SheetN", "A1", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, f.UnmergeCell("SheetN", "A1", "A1"), "sheet SheetN is not exist")
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = nil
+	assert.NoError(t, f.UnmergeCell("Sheet1", "H7", "B15"))
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{nil, nil}}
+	assert.NoError(t, f.UnmergeCell("Sheet1", "H15", "B7"))
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), `invalid area "A1"`)
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
 }

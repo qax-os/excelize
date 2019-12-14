@@ -290,6 +290,12 @@ func TestSetCellHyperLink(t *testing.T) {
 		assert.NoError(t, file.SetCellHyperLink("Sheet1", cell, "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
 	}
 	assert.EqualError(t, file.SetCellHyperLink("Sheet1", "A65531", "https://github.com/360EntSecGroup-Skylar/excelize", "External"), "over maximum limit hyperlinks in a worksheet")
+
+	f = NewFile()
+	f.workSheetReader("Sheet1")
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	err = f.SetCellHyperLink("Sheet1", "A1", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
 func TestGetCellHyperLink(t *testing.T) {
@@ -310,6 +316,23 @@ func TestGetCellHyperLink(t *testing.T) {
 	link, target, err = f.GetCellHyperLink("Sheet3", "H3")
 	assert.EqualError(t, err, "sheet Sheet3 is not exist")
 	t.Log(link, target)
+
+	f = NewFile()
+	f.workSheetReader("Sheet1")
+	f.Sheet["xl/worksheets/sheet1.xml"].Hyperlinks = &xlsxHyperlinks{
+		Hyperlink: []xlsxHyperlink{{Ref: "A1"}},
+	}
+	link, target, err = f.GetCellHyperLink("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, link, true)
+	assert.Equal(t, target, "")
+
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	link, target, err = f.GetCellHyperLink("Sheet1", "A1")
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.Equal(t, link, false)
+	assert.Equal(t, target, "")
+
 }
 
 func TestSetCellFormula(t *testing.T) {
