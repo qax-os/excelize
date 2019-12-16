@@ -149,11 +149,12 @@ func (f *File) setContentTypes(index int) {
 
 // setSheet provides a function to update sheet property by given index.
 func (f *File) setSheet(index int, name string) {
-	var xlsx xlsxWorksheet
-	xlsx.Dimension.Ref = "A1"
-	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
-		WorkbookViewID: 0,
-	})
+	xlsx := xlsxWorksheet{
+		Dimension: &xlsxDimension{Ref: "A1"},
+		SheetViews: xlsxSheetViews{
+			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+		},
+	}
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = path
 	f.Sheet[path] = &xlsx
@@ -222,6 +223,9 @@ func (f *File) SetActiveSheet(index int) {
 	wb := f.workbookReader()
 	for activeTab, sheet := range wb.Sheets.Sheet {
 		if sheet.SheetID == index {
+			if wb.BookViews == nil {
+				wb.BookViews = &xlsxBookViews{}
+			}
 			if len(wb.BookViews.WorkBookView) > 0 {
 				wb.BookViews.WorkBookView[0].ActiveTab = activeTab
 			} else {
@@ -253,16 +257,13 @@ func (f *File) SetActiveSheet(index int) {
 func (f *File) GetActiveSheetIndex() int {
 	wb := f.workbookReader()
 	if wb != nil {
-		view := wb.BookViews.WorkBookView
-		sheets := wb.Sheets.Sheet
-		var activeTab int
-		if len(view) > 0 {
-			activeTab = view[0].ActiveTab
-			if len(sheets) > activeTab && sheets[activeTab].SheetID != 0 {
-				return sheets[activeTab].SheetID
+		if wb.BookViews != nil && len(wb.BookViews.WorkBookView) > 0 {
+			activeTab := wb.BookViews.WorkBookView[0].ActiveTab
+			if len(wb.Sheets.Sheet) > activeTab && wb.Sheets.Sheet[activeTab].SheetID != 0 {
+				return wb.Sheets.Sheet[activeTab].SheetID
 			}
 		}
-		if len(wb.Sheets.Sheet) == 1 {
+		if len(wb.Sheets.Sheet) >= 1 {
 			return wb.Sheets.Sheet[0].SheetID
 		}
 	}
@@ -413,9 +414,11 @@ func (f *File) DeleteSheet(name string) {
 			f.SheetCount--
 		}
 	}
-	for idx, bookView := range wb.BookViews.WorkBookView {
-		if bookView.ActiveTab >= f.SheetCount {
-			wb.BookViews.WorkBookView[idx].ActiveTab--
+	if wb.BookViews != nil {
+		for idx, bookView := range wb.BookViews.WorkBookView {
+			if bookView.ActiveTab >= f.SheetCount {
+				wb.BookViews.WorkBookView[idx].ActiveTab--
+			}
 		}
 	}
 	f.SetActiveSheet(len(f.GetSheetMap()))

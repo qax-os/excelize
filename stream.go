@@ -191,13 +191,12 @@ func StreamMarshalSheet(ws *xlsxWorksheet, replaceMap map[string][]byte) []byte 
 	var marshalResult []byte
 	marshalResult = append(marshalResult, []byte(XMLHeader+`<worksheet`+templateNamespaceIDMap)...)
 	for i := 0; i < s.NumField(); i++ {
-		f := s.Field(i)
 		content, ok := replaceMap[typeOfT.Field(i).Name]
 		if ok {
 			marshalResult = append(marshalResult, content...)
 			continue
 		}
-		out, _ := xml.Marshal(f.Interface())
+		out, _ := xml.Marshal(s.Field(i).Interface())
 		marshalResult = append(marshalResult, out...)
 	}
 	marshalResult = append(marshalResult, []byte(`</worksheet>`)...)

@@ -33,7 +33,7 @@ type xlsxWorkbook struct {
 	FileVersion         *xlsxFileVersion         `xml:"fileVersion"`
 	WorkbookPr          *xlsxWorkbookPr          `xml:"workbookPr"`
 	WorkbookProtection  *xlsxWorkbookProtection  `xml:"workbookProtection"`
-	BookViews           xlsxBookViews            `xml:"bookViews"`
+	BookViews           *xlsxBookViews           `xml:"bookViews"`
 	Sheets              xlsxSheets               `xml:"sheets"`
 	ExternalReferences  *xlsxExternalReferences  `xml:"externalReferences"`
 	DefinedNames        *xlsxDefinedNames        `xml:"definedNames"`

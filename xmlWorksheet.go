@@ -17,10 +17,10 @@ import "encoding/xml"
 type xlsxWorksheet struct {
 	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
-	Dimension             xlsxDimension                `xml:"dimension"`
-	SheetViews            xlsxSheetViews               `xml:"sheetViews,omitempty"`
+	Dimension             *xlsxDimension               `xml:"dimension"`
+	SheetViews            xlsxSheetViews               `xml:"sheetViews"`
 	SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
-	Cols                  *xlsxCols                    `xml:"cols,omitempty"`
+	Cols                  *xlsxCols                    `xml:"cols"`
 	SheetData             xlsxSheetData                `xml:"sheetData"`
 	SheetCalcPr           *xlsxInnerXML                `xml:"sheetCalcPr"`
 	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
@@ -33,7 +33,7 @@ type xlsxWorksheet struct {
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
 	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	DataValidations       *xlsxDataValidations         `xml:"dataValidations,omitempty"`
+	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
 	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
 	PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
 	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
