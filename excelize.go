@@ -125,8 +125,8 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 // after deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 	var (
-		name string
-		ok bool
+		name    string
+		ok      bool
 		decoder *xml.Decoder
 	)
 
@@ -139,7 +139,7 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 		decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
 		decoder.CharsetReader = CharsetReader
 		if err = decoder.Decode(xlsx); err != nil {
-			return xlsx, err
+			return
 		}
 		if f.checked == nil {
 			f.checked = make(map[string]bool)
