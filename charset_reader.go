@@ -1,7 +1,5 @@
 package excelize
 
-//import "gopkg.in/webnice/debug.v1"
-//import "gopkg.in/webnice/log.v2"
 import (
 	"fmt"
 	"io"
@@ -23,9 +21,11 @@ func CharsetReader(charset string, input io.Reader) (rdr io.Reader, err error) {
 
 	sm = rexReplaceCharsetName.ReplaceAllString(strings.ToLower(charset), ``)
 	for i = range charmap.All {
-		item, nm = charmap.All[i], rexReplaceCharsetName.ReplaceAllString(strings.ToLower(fmt.Sprintf("%s", item)), ``)
+		item = charmap.All[i]
+		nm = rexReplaceCharsetName.ReplaceAllString(strings.ToLower(fmt.Sprintf("%s", item)), ``)
 		if strings.EqualFold(sm, nm) {
 			enc = item
+			break
 		}
 	}
 	if enc == nil {
