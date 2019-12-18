@@ -10,9 +10,11 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 )
@@ -187,13 +189,22 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 // sharedStringsReader provides a function to get the pointer to the structure
 // after deserialization of xl/sharedStrings.xml.
 func (f *File) sharedStringsReader() *xlsxSST {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
 		if len(ss) == 0 {
 			ss = f.readXML("xl/SharedStrings.xml")
 		}
-		_ = xml.Unmarshal(namespaceStrictToTransitional(ss), &sharedStrings)
+		decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss)))
+		decoder.CharsetReader = CharsetReader
+		if err = decoder.Decode(&sharedStrings); err != nil {
+			log.Printf("xml decode error: %s", err)
+		}
 		f.SharedStrings = &sharedStrings
 	}
 	return f.SharedStrings

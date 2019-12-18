@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"reflect"
@@ -61,11 +62,20 @@ func (f *File) NewSheet(name string) int {
 // contentTypesReader provides a function to get the pointer to the
 // [Content_Types].xml structure after deserialization.
 func (f *File) contentTypesReader() *xlsxTypes {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	if f.ContentTypes == nil {
-		var content xlsxTypes
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")), &content)
-		f.ContentTypes = &content
+		f.ContentTypes = new(xlsxTypes)
+		decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("[Content_Types].xml"))))
+		decoder.CharsetReader = CharsetReader
+		if err = decoder.Decode(f.ContentTypes); err != nil {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.ContentTypes
 }
 
@@ -81,11 +91,20 @@ func (f *File) contentTypesWriter() {
 // workbookReader provides a function to get the pointer to the xl/workbook.xml
 // structure after deserialization.
 func (f *File) workbookReader() *xlsxWorkbook {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	if f.WorkBook == nil {
-		var content xlsxWorkbook
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")), &content)
-		f.WorkBook = &content
+		f.WorkBook = new(xlsxWorkbook)
+		decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/workbook.xml"))))
+		decoder.CharsetReader = CharsetReader
+		if err = decoder.Decode(f.WorkBook); err != nil {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.WorkBook
 }
 
@@ -1360,11 +1379,20 @@ func (f *File) UngroupSheets() error {
 // relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
 func (f *File) relsReader(path string) *xlsxRelationships {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	if f.Relationships[path] == nil {
 		_, ok := f.XLSX[path]
 		if ok {
 			c := xlsxRelationships{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &c)
+			decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path))))
+			decoder.CharsetReader = CharsetReader
+			if err = decoder.Decode(&c); err != nil {
+				log.Printf("xml decode error: %s", err)
+			}
 			f.Relationships[path] = &c
 		}
 	}

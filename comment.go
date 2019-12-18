@@ -10,9 +10,11 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -303,12 +305,20 @@ func (f *File) countComments() int {
 // decodeVMLDrawingReader provides a function to get the pointer to the
 // structure after deserialization of xl/drawings/vmlDrawing%d.xml.
 func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	if f.DecodeVMLDrawing[path] == nil {
 		c, ok := f.XLSX[path]
 		if ok {
-			d := decodeVmlDrawing{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
-			f.DecodeVMLDrawing[path] = &d
+			f.DecodeVMLDrawing[path] = new(decodeVmlDrawing)
+			decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(c)))
+			decoder.CharsetReader = CharsetReader
+			if err = decoder.Decode(f.DecodeVMLDrawing[path]); err != nil {
+				log.Printf("xml decode error: %s", err)
+			}
 		}
 	}
 	return f.DecodeVMLDrawing[path]
@@ -328,12 +338,20 @@ func (f *File) vmlDrawingWriter() {
 // commentsReader provides a function to get the pointer to the structure
 // after deserialization of xl/comments%d.xml.
 func (f *File) commentsReader(path string) *xlsxComments {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	if f.Comments[path] == nil {
 		content, ok := f.XLSX[path]
 		if ok {
-			c := xlsxComments{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(content), &c)
-			f.Comments[path] = &c
+			f.Comments[path] = new(xlsxComments)
+			decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(content)))
+			decoder.CharsetReader = CharsetReader
+			if err = decoder.Decode(f.Comments[path]); err != nil {
+				log.Printf("xml decode error: %s", err)
+			}
 		}
 	}
 	return f.Comments[path]

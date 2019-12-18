@@ -123,26 +123,35 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) workSheetReader(sheet string) (*xlsxWorksheet, error) {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
-	if !ok {
-		return nil, fmt.Errorf("sheet %s is not exist", sheet)
+func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
+	var (
+		name string
+		ok bool
+		decoder *xml.Decoder
+	)
+
+	if name, ok = f.sheetMap[trimSheetName(sheet)]; !ok {
+		err = fmt.Errorf("sheet %s is not exist", sheet)
+		return
 	}
-	if f.Sheet[name] == nil {
-		var xlsx xlsxWorksheet
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(name)), &xlsx)
+	if xlsx = f.Sheet[name]; f.Sheet[name] == nil {
+		xlsx = new(xlsxWorksheet)
+		decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
+		decoder.CharsetReader = CharsetReader
+		if err = decoder.Decode(xlsx); err != nil {
+			return xlsx, err
+		}
 		if f.checked == nil {
 			f.checked = make(map[string]bool)
 		}
-		ok := f.checked[name]
-		if !ok {
-			checkSheet(&xlsx)
-			checkRow(&xlsx)
+		if ok = f.checked[name]; !ok {
+			checkSheet(xlsx)
+			checkRow(xlsx)
 			f.checked[name] = true
 		}
-		f.Sheet[name] = &xlsx
+		f.Sheet[name] = xlsx
 	}
-	return f.Sheet[name], nil
+	return
 }
 
 // checkSheet provides a function to fill each row element and make that is

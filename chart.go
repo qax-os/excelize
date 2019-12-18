@@ -10,9 +10,11 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -1735,14 +1737,23 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
 func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
+	var (
+		err     error
+		decoder *xml.Decoder
+		ok      bool
+	)
+
 	if f.Drawings[path] == nil {
 		content := xlsxWsDr{}
 		content.A = NameSpaceDrawingML
 		content.Xdr = NameSpaceDrawingMLSpreadSheet
-		_, ok := f.XLSX[path]
-		if ok { // Append Model
+		if _, ok = f.XLSX[path]; ok { // Append Model
 			decodeWsDr := decodeWsDr{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &decodeWsDr)
+			decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path))))
+			decoder.CharsetReader = CharsetReader
+			if err = decoder.Decode(&decodeWsDr); err != nil {
+				log.Printf("xml decode error: %s", err)
+			}
 			content.R = decodeWsDr.R
 			for _, v := range decodeWsDr.OneCellAnchor {
 				content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{

@@ -16,6 +16,7 @@ import (
 	"errors"
 	"image"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -472,6 +473,11 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 // getPicture provides a function to get picture base name and raw content
 // embed in XLSX by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (string, []byte, error) {
+	var (
+		err     error
+		decoder *xml.Decoder
+	)
+
 	wsDr, _ := f.drawingParser(drawingXML)
 	for _, anchor := range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
@@ -489,10 +495,18 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	}
 
 	decodeWsDr := decodeWsDr{}
-	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(drawingXML)), &decodeWsDr)
+	decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML))))
+	decoder.CharsetReader = CharsetReader
+	if err = decoder.Decode(&decodeWsDr); err != nil {
+		log.Printf("xml decode error: %s", err)
+	}
 	for _, anchor := range decodeWsDr.TwoCellAnchor {
 		decodeTwoCellAnchor := decodeTwoCellAnchor{}
-		_ = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
+		decoder = xml.NewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")))
+		decoder.CharsetReader = CharsetReader
+		if err = decoder.Decode(&decodeTwoCellAnchor); err != nil {
+			log.Printf("xml decode error: %s", err)
+		}
 		if decodeTwoCellAnchor.From != nil && decodeTwoCellAnchor.Pic != nil {
 			if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
 				xlsxRelationship := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)

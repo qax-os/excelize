@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"strings"
@@ -387,6 +388,8 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 //     Axis      | Show sparkline axis
 //
 func (f *File) AddSparkline(sheet string, opt *SparklineOption) error {
+	var decoder *xml.Decoder
+
 	// parameter validation
 	ws, err := f.parseFormatAddSparklineSet(sheet, opt)
 	if err != nil {
@@ -424,14 +427,17 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) error {
 	f.addSparkline(opt, group)
 	if ws.ExtLst.Ext != "" { // append mode ext
 		decodeExtLst := decodeWorksheetExt{}
-		err = xml.Unmarshal([]byte("<extLst>"+ws.ExtLst.Ext+"</extLst>"), &decodeExtLst)
-		if err != nil {
+		decoder = xml.NewDecoder(bytes.NewReader([]byte("<extLst>" + ws.ExtLst.Ext + "</extLst>")))
+		decoder.CharsetReader = CharsetReader
+		if err = decoder.Decode(&decodeExtLst); err != nil {
 			return err
 		}
 		for idx, ext := range decodeExtLst.Ext {
 			if ext.URI == ExtURISparklineGroups {
 				decodeSparklineGroups := decodeX14SparklineGroups{}
-				_ = xml.Unmarshal([]byte(ext.Content), &decodeSparklineGroups)
+				decoder = xml.NewDecoder(bytes.NewReader([]byte(ext.Content)))
+				decoder.CharsetReader = CharsetReader
+				_ = decoder.Decode(&decodeSparklineGroups)
 				sparklineGroupBytes, _ := xml.Marshal(group)
 				groups := xlsxX14SparklineGroups{
 					XMLNSXM: NameSpaceSpreadSheetExcel2006Main,
