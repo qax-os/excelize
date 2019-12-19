@@ -182,6 +182,4 @@ This program is under the terms of the BSD 3-Clause License. See [https://openso
 
 The Excel logo is a trademark of [Microsoft Corporation](https://aka.ms/trademarks-usage). This artwork is an adaptation.
 
-Some struct of XML originally by [tealeg/xlsx](https://github.com/tealeg/xlsx). Licensed under the [BSD 3-Clause License](https://github.com/tealeg/xlsx/blob/master/LICENSE).
-
 gopher.{ai,svg,png} was created by [Takuya Ueda](https://twitter.com/tenntenn). Licensed under the [Creative Commons 3.0 Attributions license](http://creativecommons.org/licenses/by/3.0/).

@@ -15,7 +15,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"reflect"
@@ -61,11 +63,16 @@ func (f *File) NewSheet(name string) int {
 // contentTypesReader provides a function to get the pointer to the
 // [Content_Types].xml structure after deserialization.
 func (f *File) contentTypesReader() *xlsxTypes {
+	var err error
+
 	if f.ContentTypes == nil {
-		var content xlsxTypes
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")), &content)
-		f.ContentTypes = &content
+		f.ContentTypes = new(xlsxTypes)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")))).
+			Decode(f.ContentTypes); err != nil && err != io.EOF {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.ContentTypes
 }
 
@@ -81,11 +88,16 @@ func (f *File) contentTypesWriter() {
 // workbookReader provides a function to get the pointer to the xl/workbook.xml
 // structure after deserialization.
 func (f *File) workbookReader() *xlsxWorkbook {
+	var err error
+
 	if f.WorkBook == nil {
-		var content xlsxWorkbook
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")), &content)
-		f.WorkBook = &content
+		f.WorkBook = new(xlsxWorkbook)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")))).
+			Decode(f.WorkBook); err != nil && err != io.EOF {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.WorkBook
 }
 
@@ -716,18 +728,21 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 
 // searchSheet provides a function to get coordinates by given worksheet name,
 // cell value, and regular expression.
-func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error) {
+func (f *File) searchSheet(name, value string, regSearch bool) (result []string, err error) {
 	var (
-		err                 error
 		cellName, inElement string
-		result              []string
 		cellCol, row        int
+		d                   *xlsxSST
 	)
-	d := f.sharedStringsReader()
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+
+	d = f.sharedStringsReader()
+	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
-		token, _ := decoder.Token()
-		if token == nil {
+		token, err := decoder.Token()
+		if err != nil || token == nil {
+			if err == io.EOF {
+				err = nil
+			}
 			break
 		}
 		switch startElement := token.(type) {
@@ -770,7 +785,8 @@ func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error)
 		default:
 		}
 	}
-	return result, nil
+
+	return
 }
 
 // SetHeaderFooter provides a function to set headers and footers by given
@@ -1406,14 +1422,20 @@ func (f *File) UngroupSheets() error {
 // relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
 func (f *File) relsReader(path string) *xlsxRelationships {
+	var err error
+
 	if f.Relationships[path] == nil {
 		_, ok := f.XLSX[path]
 		if ok {
 			c := xlsxRelationships{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &c)
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
+				Decode(&c); err != nil && err != io.EOF {
+				log.Printf("xml decode error: %s", err)
+			}
 			f.Relationships[path] = &c
 		}
 	}
+
 	return f.Relationships[path]
 }
 

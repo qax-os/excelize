@@ -14,6 +14,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"math"
 	"strconv"
 )
@@ -161,7 +163,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		row       int
 		rows      Rows
 	)
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -186,7 +188,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	}
 	rows.f = f
 	rows.sheet = name
-	rows.decoder = xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	return &rows, nil
 }
 
@@ -255,15 +257,21 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 // sharedStringsReader provides a function to get the pointer to the structure
 // after deserialization of xl/sharedStrings.xml.
 func (f *File) sharedStringsReader() *xlsxSST {
+	var err error
+
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
 		if len(ss) == 0 {
 			ss = f.readXML("xl/SharedStrings.xml")
 		}
-		_ = xml.Unmarshal(namespaceStrictToTransitional(ss), &sharedStrings)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
+			Decode(&sharedStrings); err != nil && err != io.EOF {
+			log.Printf("xml decode error: %s", err)
+		}
 		f.SharedStrings = &sharedStrings
 	}
+
 	return f.SharedStrings
 }
 

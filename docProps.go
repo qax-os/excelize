@@ -10,7 +10,10 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
+	"fmt"
+	"io"
 	"reflect"
 )
 
@@ -65,13 +68,23 @@ import (
 //        Version:        "1.0.0",
 //    })
 //
-func (f *File) SetDocProps(docProperties *DocProperties) error {
-	core := decodeCoreProperties{}
-	err := xml.Unmarshal(namespaceStrictToTransitional(f.readXML("docProps/core.xml")), &core)
-	if err != nil {
-		return err
+func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
+	var (
+		core               *decodeCoreProperties
+		newProps           *xlsxCoreProperties
+		fields             []string
+		output             []byte
+		immutable, mutable reflect.Value
+		field, val         string
+	)
+
+	core = new(decodeCoreProperties)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+		Decode(core); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
 	}
-	newProps := xlsxCoreProperties{
+	newProps, err = &xlsxCoreProperties{
 		Dc:             NameSpaceDublinCore,
 		Dcterms:        NameSpaceDublinCoreTerms,
 		Dcmitype:       NameSpaceDublinCoreMetadataIntiative,
@@ -88,18 +101,16 @@ func (f *File) SetDocProps(docProperties *DocProperties) error {
 		ContentStatus:  core.ContentStatus,
 		Category:       core.Category,
 		Version:        core.Version,
+	}, nil
+	newProps.Created.Text, newProps.Created.Type, newProps.Modified.Text, newProps.Modified.Type =
+		core.Created.Text, core.Created.Type, core.Modified.Text, core.Modified.Type
+	fields = []string{
+		"Category", "ContentStatus", "Creator", "Description", "Identifier", "Keywords",
+		"LastModifiedBy", "Revision", "Subject", "Title", "Language", "Version",
 	}
-	newProps.Created.Text = core.Created.Text
-	newProps.Created.Type = core.Created.Type
-	newProps.Modified.Text = core.Modified.Text
-	newProps.Modified.Type = core.Modified.Type
-
-	fields := []string{"Category", "ContentStatus", "Creator", "Description", "Identifier", "Keywords", "LastModifiedBy", "Revision", "Subject", "Title", "Language", "Version"}
-	immutable := reflect.ValueOf(*docProperties)
-	mutable := reflect.ValueOf(&newProps).Elem()
-	for _, field := range fields {
-		val := immutable.FieldByName(field).String()
-		if val != "" {
+	immutable, mutable = reflect.ValueOf(*docProperties), reflect.ValueOf(newProps).Elem()
+	for _, field = range fields {
+		if val = immutable.FieldByName(field).String(); val != "" {
 			mutable.FieldByName(field).SetString(val)
 		}
 	}
@@ -109,19 +120,22 @@ func (f *File) SetDocProps(docProperties *DocProperties) error {
 	if docProperties.Modified != "" {
 		newProps.Modified.Text = docProperties.Modified
 	}
-	output, err := xml.Marshal(&newProps)
+	output, err = xml.Marshal(newProps)
 	f.saveFileList("docProps/core.xml", output)
-	return err
+
+	return
 }
 
 // GetDocProps provides a function to get document core properties.
-func (f *File) GetDocProps() (*DocProperties, error) {
-	core := decodeCoreProperties{}
-	err := xml.Unmarshal(namespaceStrictToTransitional(f.readXML("docProps/core.xml")), &core)
-	if err != nil {
-		return nil, err
+func (f *File) GetDocProps() (ret *DocProperties, err error) {
+	var core = new(decodeCoreProperties)
+
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+		Decode(core); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
 	}
-	return &DocProperties{
+	ret, err = &DocProperties{
 		Category:       core.Category,
 		ContentStatus:  core.ContentStatus,
 		Created:        core.Created.Text,
@@ -137,4 +151,6 @@ func (f *File) GetDocProps() (*DocProperties, error) {
 		Language:       core.Language,
 		Version:        core.Version,
 	}, nil
+
+	return
 }

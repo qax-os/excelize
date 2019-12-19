@@ -22,6 +22,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"golang.org/x/net/html/charset"
 )
 
 // File define a populated XLSX file struct.
@@ -43,7 +45,10 @@ type File struct {
 	WorkBook         *xlsxWorkbook
 	Relationships    map[string]*xlsxRelationships
 	XLSX             map[string][]byte
+	CharsetReader    charsetTranscoderFn
 }
+
+type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
 // OpenFile take the name of an XLSX file and returns a populated XLSX file
 // struct for it.
@@ -59,6 +64,21 @@ func OpenFile(filename string) (*File, error) {
 	}
 	f.Path = filename
 	return f, nil
+}
+
+// object builder
+func newFile() *File {
+	return &File{
+		checked:          make(map[string]bool),
+		sheetMap:         make(map[string]string),
+		Comments:         make(map[string]*xlsxComments),
+		Drawings:         make(map[string]*xlsxWsDr),
+		Sheet:            make(map[string]*xlsxWorksheet),
+		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
+		VMLDrawing:       make(map[string]*vmlDrawing),
+		Relationships:    make(map[string]*xlsxRelationships),
+		CharsetReader:    charset.NewReaderLabel,
+	}
 }
 
 // OpenReader take an io.Reader and return a populated XLSX file.
@@ -88,22 +108,23 @@ func OpenReader(r io.Reader) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := &File{
-		checked:          make(map[string]bool),
-		Comments:         make(map[string]*xlsxComments),
-		Drawings:         make(map[string]*xlsxWsDr),
-		Sheet:            make(map[string]*xlsxWorksheet),
-		SheetCount:       sheetCount,
-		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
-		VMLDrawing:       make(map[string]*vmlDrawing),
-		Relationships:    make(map[string]*xlsxRelationships),
-		XLSX:             file,
-	}
+	f := newFile()
+	f.SheetCount, f.XLSX = sheetCount, file
 	f.CalcChain = f.calcChainReader()
 	f.sheetMap = f.getSheetMap()
 	f.Styles = f.stylesReader()
 	f.Theme = f.themeReader()
 	return f, nil
+}
+
+// CharsetTranscoder Set user defined codepage transcoder function for open XLSX from non UTF-8 encoding
+func (f *File) CharsetTranscoder(fn charsetTranscoderFn) *File { f.CharsetReader = fn; return f }
+
+// Creates new XML decoder with charset reader
+func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {
+	ret = xml.NewDecoder(rdr)
+	ret.CharsetReader = f.CharsetReader
+	return
 }
 
 // setDefaultTimeStyle provides a function to set default numbers format for
@@ -123,26 +144,38 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) workSheetReader(sheet string) (*xlsxWorksheet, error) {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
-	if !ok {
-		return nil, fmt.Errorf("sheet %s is not exist", sheet)
+func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
+	var (
+		name string
+		ok   bool
+	)
+
+	if name, ok = f.sheetMap[trimSheetName(sheet)]; !ok {
+		err = fmt.Errorf("sheet %s is not exist", sheet)
+		return
 	}
-	if f.Sheet[name] == nil {
-		var xlsx xlsxWorksheet
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(name)), &xlsx)
+	if xlsx = f.Sheet[name]; f.Sheet[name] == nil {
+		xlsx = new(xlsxWorksheet)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
+			Decode(xlsx); err != nil && err != io.EOF {
+			err = fmt.Errorf("xml decode error: %s", err)
+			return
+		}
+		err = nil
 		if f.checked == nil {
 			f.checked = make(map[string]bool)
 		}
-		ok := f.checked[name]
-		if !ok {
-			checkSheet(&xlsx)
-			checkRow(&xlsx)
+		if ok = f.checked[name]; !ok {
+			checkSheet(xlsx)
+			if err = checkRow(xlsx); err != nil {
+				return
+			}
 			f.checked[name] = true
 		}
-		f.Sheet[name] = &xlsx
+		f.Sheet[name] = xlsx
 	}
-	return f.Sheet[name], nil
+
+	return
 }
 
 // checkSheet provides a function to fill each row element and make that is
