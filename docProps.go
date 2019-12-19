@@ -12,6 +12,8 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
+	"io"
 	"reflect"
 )
 
@@ -68,7 +70,6 @@ import (
 //
 func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	var (
-		decoder            *xml.Decoder
 		core               *decodeCoreProperties
 		newProps           *xlsxCoreProperties
 		fields             []string
@@ -77,12 +78,13 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		field, val         string
 	)
 
-	decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml"))))
-	decoder.CharsetReader, core = CharsetReader, new(decodeCoreProperties)
-	if err = decoder.Decode(core); err != nil {
+	core = new(decodeCoreProperties)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+		Decode(core); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
 		return
 	}
-	newProps = &xlsxCoreProperties{
+	newProps, err = &xlsxCoreProperties{
 		Dc:             NameSpaceDublinCore,
 		Dcterms:        NameSpaceDublinCoreTerms,
 		Dcmitype:       NameSpaceDublinCoreMetadataIntiative,
@@ -99,7 +101,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		ContentStatus:  core.ContentStatus,
 		Category:       core.Category,
 		Version:        core.Version,
-	}
+	}, nil
 	newProps.Created.Text, newProps.Created.Type, newProps.Modified.Text, newProps.Modified.Type =
 		core.Created.Text, core.Created.Type, core.Modified.Text, core.Modified.Type
 	fields = []string{
@@ -126,17 +128,14 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 
 // GetDocProps provides a function to get document core properties.
 func (f *File) GetDocProps() (ret *DocProperties, err error) {
-	var (
-		decoder *xml.Decoder
-		core    *decodeCoreProperties
-	)
+	var core = new(decodeCoreProperties)
 
-	decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml"))))
-	decoder.CharsetReader, core = CharsetReader, new(decodeCoreProperties)
-	if err = decoder.Decode(core); err != nil {
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+		Decode(core); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
 		return
 	}
-	ret = &DocProperties{
+	ret, err = &DocProperties{
 		Category:       core.Category,
 		ContentStatus:  core.ContentStatus,
 		Created:        core.Created.Text,
@@ -151,7 +150,7 @@ func (f *File) GetDocProps() (ret *DocProperties, err error) {
 		Title:          core.Title,
 		Language:       core.Language,
 		Version:        core.Version,
-	}
+	}, nil
 
 	return
 }

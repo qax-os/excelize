@@ -1000,19 +1000,16 @@ func is12HourTime(format string) bool {
 // stylesReader provides a function to get the pointer to the structure after
 // deserialization of xl/styles.xml.
 func (f *File) stylesReader() *xlsxStyleSheet {
-	var (
-		err     error
-		decoder *xml.Decoder
-	)
+	var err error
 
 	if f.Styles == nil {
 		f.Styles = new(xlsxStyleSheet)
-		decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/styles.xml"))))
-		decoder.CharsetReader = CharsetReader
-		if err = decoder.Decode(f.Styles); err != nil {
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/styles.xml")))).
+			Decode(f.Styles); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
 	}
+
 	return f.Styles
 }
 
@@ -2815,16 +2812,15 @@ func getPaletteColor(color string) string {
 // structure after deserialization.
 func (f *File) themeReader() *xlsxTheme {
 	var (
-		err     error
-		decoder *xml.Decoder
-		theme   xlsxTheme
+		err   error
+		theme xlsxTheme
 	)
 
-	decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml"))))
-	decoder.CharsetReader = CharsetReader
-	if err = decoder.Decode(&theme); err != nil && err != io.EOF {
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")))).
+		Decode(&theme); err != nil && err != io.EOF {
 		log.Printf("xml decoder error: %s", err)
 	}
+
 	return &theme
 }
 

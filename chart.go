@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"io"
 	"log"
 	"strconv"
 	"strings"
@@ -1738,9 +1739,8 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 // defined.
 func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 	var (
-		err     error
-		decoder *xml.Decoder
-		ok      bool
+		err error
+		ok  bool
 	)
 
 	if f.Drawings[path] == nil {
@@ -1749,9 +1749,8 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 		content.Xdr = NameSpaceDrawingMLSpreadSheet
 		if _, ok = f.XLSX[path]; ok { // Append Model
 			decodeWsDr := decodeWsDr{}
-			decoder = xml.NewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path))))
-			decoder.CharsetReader = CharsetReader
-			if err = decoder.Decode(&decodeWsDr); err != nil {
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
+				Decode(&decodeWsDr); err != nil && err != io.EOF {
 				log.Printf("xml decode error: %s", err)
 			}
 			content.R = decodeWsDr.R

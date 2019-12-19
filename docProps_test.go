@@ -39,7 +39,7 @@ func TestSetDocProps(t *testing.T) {
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocProps.xlsx")))
 	f.XLSX["docProps/core.xml"] = nil
-	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "EOF")
+	assert.NoError(t, f.SetDocProps(&DocProperties{}))
 }
 
 func TestGetDocProps(t *testing.T) {
@@ -52,5 +52,5 @@ func TestGetDocProps(t *testing.T) {
 	assert.Equal(t, props.Creator, "Microsoft Office User")
 	f.XLSX["docProps/core.xml"] = nil
 	_, err = f.GetDocProps()
-	assert.EqualError(t, err, "EOF")
+	assert.NoError(t, err)
 }
