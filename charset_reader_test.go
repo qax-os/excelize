@@ -1,6 +1,5 @@
 package excelize
 
-//import "gopkg.in/webnice/log.v2"
 import (
 	"bytes"
 	"io"

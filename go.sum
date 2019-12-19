@@ -13,5 +13,3 @@ golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a h1:gHevYm0pO4QUbwy8Dmdr01R
 golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
-gopkg.in/webnice/debug.v1 v1.0.0 h1:vslbCq7qIWgCwW2Ryxfefb5NuM3dwY1zuRx2a220U2s=
-gopkg.in/webnice/debug.v1 v1.0.0/go.mod h1:YJnufE3IA7M5YQblj2k23QNBBYmtrw9o5XE48VS9CHU=
