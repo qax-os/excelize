@@ -14,7 +14,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"image"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -471,39 +473,55 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 
 // getPicture provides a function to get picture base name and raw content
 // embed in XLSX by given coordinates and drawing relationships.
-func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (string, []byte, error) {
-	wsDr, _ := f.drawingParser(drawingXML)
-	for _, anchor := range wsDr.TwoCellAnchor {
+func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (ret string, buf []byte, err error) {
+	var (
+		wsDr            *xlsxWsDr
+		ok              bool
+		anchor          *xdrCellAnchor
+		deWsDr          *decodeWsDr
+		xxRelationship  *xlsxRelationship
+		deTwoCellAnchor *decodeTwoCellAnchor
+	)
+
+	wsDr, _ = f.drawingParser(drawingXML)
+	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
-				xlsxRelationship := f.getDrawingRelationships(drawingRelationships,
+				xxRelationship = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed)
-				_, ok := supportImageTypes[filepath.Ext(xlsxRelationship.Target)]
-				if ok {
-					return filepath.Base(xlsxRelationship.Target),
-						[]byte(f.XLSX[strings.Replace(xlsxRelationship.Target,
-							"..", "xl", -1)]), nil
+				if _, ok = supportImageTypes[filepath.Ext(xxRelationship.Target)]; ok {
+					ret, buf = filepath.Base(xxRelationship.Target), []byte(f.XLSX[strings.Replace(xxRelationship.Target, "..", "xl", -1)])
+					return
+				}
+			}
+		}
+	}
+	deWsDr = new(decodeWsDr)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
+		Decode(deWsDr); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
+	}
+	err = nil
+	for _, anchor := range deWsDr.TwoCellAnchor {
+		deTwoCellAnchor = new(decodeTwoCellAnchor)
+		if err = f.xmlNewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>"))).
+			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
+			err = fmt.Errorf("xml decode error: %s", err)
+			return
+		}
+		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
+			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
+				xxRelationship = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+				if _, ok = supportImageTypes[filepath.Ext(xxRelationship.Target)]; ok {
+					ret, buf = filepath.Base(xxRelationship.Target), []byte(f.XLSX[strings.Replace(xxRelationship.Target, "..", "xl", -1)])
+					return
 				}
 			}
 		}
 	}
 
-	decodeWsDr := decodeWsDr{}
-	_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(drawingXML)), &decodeWsDr)
-	for _, anchor := range decodeWsDr.TwoCellAnchor {
-		decodeTwoCellAnchor := decodeTwoCellAnchor{}
-		_ = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+anchor.Content+"</decodeTwoCellAnchor>"), &decodeTwoCellAnchor)
-		if decodeTwoCellAnchor.From != nil && decodeTwoCellAnchor.Pic != nil {
-			if decodeTwoCellAnchor.From.Col == col && decodeTwoCellAnchor.From.Row == row {
-				xlsxRelationship := f.getDrawingRelationships(drawingRelationships, decodeTwoCellAnchor.Pic.BlipFill.Blip.Embed)
-				_, ok := supportImageTypes[filepath.Ext(xlsxRelationship.Target)]
-				if ok {
-					return filepath.Base(xlsxRelationship.Target), []byte(f.XLSX[strings.Replace(xlsxRelationship.Target, "..", "xl", -1)]), nil
-				}
-			}
-		}
-	}
-	return "", nil, nil
+	return
 }
 
 // getDrawingRelationships provides a function to get drawing relationships

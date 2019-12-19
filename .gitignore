@@ -2,3 +2,4 @@
 test/Test*.xlsx
 *.out
 *.test
+.idea
