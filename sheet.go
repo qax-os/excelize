@@ -163,7 +163,7 @@ func (f *File) setContentTypes(index int) {
 func (f *File) setSheet(index int, name string) {
 	xlsx := xlsxWorksheet{
 		Dimension: &xlsxDimension{Ref: "A1"},
-		SheetViews: xlsxSheetViews{
+		SheetViews: &xlsxSheetViews{
 			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
 		},
 	}

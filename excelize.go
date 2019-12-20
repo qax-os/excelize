@@ -66,7 +66,7 @@ func OpenFile(filename string) (*File, error) {
 	return f, nil
 }
 
-// object builder
+// newFile is object builder
 func newFile() *File {
 	return &File{
 		checked:          make(map[string]bool),
@@ -117,10 +117,11 @@ func OpenReader(r io.Reader) (*File, error) {
 	return f, nil
 }
 
-// CharsetTranscoder Set user defined codepage transcoder function for open XLSX from non UTF-8 encoding
+// CharsetTranscoder Set user defined codepage transcoder function for open
+// XLSX from non UTF-8 encoding.
 func (f *File) CharsetTranscoder(fn charsetTranscoderFn) *File { f.CharsetReader = fn; return f }
 
-// Creates new XML decoder with charset reader
+// Creates new XML decoder with charset reader.
 func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {
 	ret = xml.NewDecoder(rdr)
 	ret.CharsetReader = f.CharsetReader
