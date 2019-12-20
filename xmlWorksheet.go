@@ -18,7 +18,7 @@ type xlsxWorksheet struct {
 	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
 	Dimension             *xlsxDimension               `xml:"dimension"`
-	SheetViews            xlsxSheetViews               `xml:"sheetViews"`
+	SheetViews            *xlsxSheetViews              `xml:"sheetViews"`
 	SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
 	Cols                  *xlsxCols                    `xml:"cols"`
 	SheetData             xlsxSheetData                `xml:"sheetData"`

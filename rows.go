@@ -283,7 +283,10 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	case "s":
 		xlsxSI := 0
 		xlsxSI, _ = strconv.Atoi(xlsx.V)
-		return f.formattedValue(xlsx.S, d.SI[xlsxSI].String()), nil
+		if len(d.SI) > xlsxSI {
+			return f.formattedValue(xlsx.S, d.SI[xlsxSI].String()), nil
+		}
+		return f.formattedValue(xlsx.S, xlsx.V), nil
 	case "str":
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	case "inlineStr":
