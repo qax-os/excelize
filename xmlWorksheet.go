@@ -182,7 +182,7 @@ type xlsxSheetViews struct {
 // last sheetView definition is loaded, and the others are discarded. When
 // multiple windows are viewing the same sheet, multiple sheetView elements
 // (with corresponding workbookView entries) are saved.
-// See https://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetview.aspx
+// See https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetview
 type xlsxSheetView struct {
 	WindowProtection         bool             `xml:"windowProtection,attr,omitempty"`
 	ShowFormulas             bool             `xml:"showFormulas,attr,omitempty"`

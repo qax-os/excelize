@@ -95,8 +95,15 @@ func TestSetCellBool(t *testing.T) {
 }
 
 func TestGetCellFormula(t *testing.T) {
+	// Test get cell formula on not exist worksheet.
 	f := NewFile()
-	f.GetCellFormula("Sheet", "A1")
+	_, err := f.GetCellFormula("SheetN", "A1")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+
+	// Test get cell formula on no formula cell.
+	f.SetCellValue("Sheet1", "A1", true)
+	_, err = f.GetCellFormula("Sheet1", "A1")
+	assert.NoError(t, err)
 }
 
 func ExampleFile_SetCellFloat() {

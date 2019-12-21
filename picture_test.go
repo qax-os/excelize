@@ -92,12 +92,12 @@ func TestAddPictureErrors(t *testing.T) {
 }
 
 func TestGetPicture(t *testing.T) {
-	xlsx, err := prepareTestBook1()
+	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	file, raw, err := xlsx.GetPicture("Sheet1", "F21")
+	file, raw, err := f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
@@ -106,37 +106,37 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	// Try to get picture from a worksheet with illegal cell coordinates.
-	_, _, err = xlsx.GetPicture("Sheet1", "A")
+	_, _, err = f.GetPicture("Sheet1", "A")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// Try to get picture from a worksheet that doesn't contain any images.
-	file, raw, err = xlsx.GetPicture("Sheet3", "I9")
+	file, raw, err = f.GetPicture("Sheet3", "I9")
 	assert.EqualError(t, err, "sheet Sheet3 is not exist")
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
 	// Try to get picture from a cell that doesn't contain an image.
-	file, raw, err = xlsx.GetPicture("Sheet2", "A2")
+	file, raw, err = f.GetPicture("Sheet2", "A2")
 	assert.NoError(t, err)
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
-	xlsx.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
-	xlsx.getDrawingRelationships("", "")
-	xlsx.getSheetRelationshipsTargetByID("", "")
-	xlsx.deleteSheetRelationships("", "")
+	f.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
+	f.getDrawingRelationships("", "")
+	f.getSheetRelationshipsTargetByID("", "")
+	f.deleteSheetRelationships("", "")
 
 	// Try to get picture from a local storage file.
-	if !assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestGetPicture.xlsx"))) {
+	if !assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetPicture.xlsx"))) {
 		t.FailNow()
 	}
 
-	xlsx, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
+	f, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	file, raw, err = xlsx.GetPicture("Sheet1", "F21")
+	file, raw, err = f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
@@ -145,7 +145,14 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	// Try to get picture from a local storage file that doesn't contain an image.
-	file, raw, err = xlsx.GetPicture("Sheet1", "F22")
+	file, raw, err = f.GetPicture("Sheet1", "F22")
+	assert.NoError(t, err)
+	assert.Empty(t, file)
+	assert.Empty(t, raw)
+
+	// Test get picture from none drawing worksheet.
+	f = NewFile()
+	file, raw, err = f.GetPicture("Sheet1", "F22")
 	assert.NoError(t, err)
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
@@ -160,11 +167,9 @@ func TestAddDrawingPicture(t *testing.T) {
 func TestAddPictureFromBytes(t *testing.T) {
 	f := NewFile()
 	imgFile, err := ioutil.ReadFile("logo.png")
-	if err != nil {
-		t.Error("Unable to load logo for test")
-	}
-	f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile)
-	f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile)
+	assert.NoError(t, err, "Unable to load logo for test")
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile))
 	imageCount := 0
 	for fileName := range f.XLSX {
 		if strings.Contains(fileName, "media/image") {
@@ -172,4 +177,5 @@ func TestAddPictureFromBytes(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
+	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN is not exist")
 }

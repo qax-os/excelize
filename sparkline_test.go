@@ -269,6 +269,15 @@ func TestAddSparkline(t *testing.T) {
 	}), "XML syntax error on line 6: element <sparklineGroup> closed by </sparklines>")
 }
 
+func TestAppendSparkline(t *testing.T) {
+	// Test unsupport charset.
+	f := NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.ExtLst = &xlsxExtLst{Ext: string(MacintoshCyrillicCharset)}
+	assert.EqualError(t, f.appendSparkline(ws, &xlsxX14SparklineGroup{}, &xlsxX14SparklineGroups{}), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func prepareSparklineDataset() *File {
 	f := NewFile()
 	sheet2 := [][]int{

@@ -37,8 +37,7 @@ func TestStreamWriter(t *testing.T) {
 		assert.NoError(t, streamWriter.SetRow(cell, &row))
 	}
 
-	err = streamWriter.Flush()
-	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.Flush())
 	// Save xlsx file by the given path.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
@@ -54,6 +53,21 @@ func TestFlush(t *testing.T) {
 	assert.NoError(t, err)
 	streamWriter.Sheet = "SheetN"
 	assert.EqualError(t, streamWriter.Flush(), "sheet SheetN is not exist")
+
+	// Test close temporary file error
+	file = NewFile()
+	streamWriter, err = file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	for rowID := 10; rowID <= 51200; rowID++ {
+		row := make([]interface{}, 50)
+		for colID := 0; colID < 50; colID++ {
+			row[colID] = rand.Intn(640000)
+		}
+		cell, _ := CoordinatesToCellName(1, rowID)
+		assert.NoError(t, streamWriter.SetRow(cell, &row))
+	}
+	assert.NoError(t, streamWriter.tmpFile.Close())
+	assert.Error(t, streamWriter.Flush())
 }
 
 func TestSetRow(t *testing.T) {

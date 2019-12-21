@@ -477,24 +477,14 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	var (
 		wsDr            *xlsxWsDr
 		ok              bool
-		anchor          *xdrCellAnchor
 		deWsDr          *decodeWsDr
 		drawRel         *xlsxRelationship
 		deTwoCellAnchor *decodeTwoCellAnchor
 	)
 
 	wsDr, _ = f.drawingParser(drawingXML)
-	for _, anchor = range wsDr.TwoCellAnchor {
-		if anchor.From != nil && anchor.Pic != nil {
-			if anchor.From.Col == col && anchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships,
-					anchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret, buf = filepath.Base(drawRel.Target), []byte(f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)])
-					return
-				}
-			}
-		}
+	if ret, buf = f.getPictureFromWsDr(row, col, drawingRelationships, wsDr); len(buf) > 0 {
+		return
 	}
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
@@ -514,13 +504,36 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret, buf = filepath.Base(drawRel.Target), []byte(f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)])
+					ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
 					return
 				}
 			}
 		}
 	}
+	return
+}
 
+// getPictureFromWsDr provides a function to get picture base name and raw
+// content in worksheet drawing by given coordinates and drawing
+// relationships.
+func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsDr *xlsxWsDr) (ret string, buf []byte) {
+	var (
+		ok      bool
+		anchor  *xdrCellAnchor
+		drawRel *xlsxRelationship
+	)
+	for _, anchor = range wsDr.TwoCellAnchor {
+		if anchor.From != nil && anchor.Pic != nil {
+			if anchor.From.Col == col && anchor.From.Row == row {
+				drawRel = f.getDrawingRelationships(drawingRelationships,
+					anchor.Pic.BlipFill.Blip.Embed)
+				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
+					ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+					return
+				}
+			}
+		}
+	}
 	return
 }
 

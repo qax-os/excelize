@@ -505,7 +505,7 @@ func (f *File) copySheet(from, to int) error {
 // SetSheetVisible provides a function to set worksheet visible by given worksheet
 // name. A workbook must contain at least one visible worksheet. If the given
 // worksheet has been activated, this setting will be invalidated. Sheet state
-// values as defined by http://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
+// values as defined by https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetstatevalues
 //
 //    visible
 //    hidden
@@ -738,7 +738,8 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 	d = f.sharedStringsReader()
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
-		token, err := decoder.Token()
+		var token xml.Token
+		token, err = decoder.Token()
 		if err != nil || token == nil {
 			if err == io.EOF {
 				err = nil
@@ -749,13 +750,9 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "r" {
-						row, err = strconv.Atoi(attr.Value)
-						if err != nil {
-							return result, err
-						}
-					}
+				row, err = attrValToInt("r", startElement.Attr)
+				if err != nil {
+					return
 				}
 			}
 			if inElement == "c" {
@@ -785,7 +782,20 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 		default:
 		}
 	}
+	return
+}
 
+// attrValToInt provides a function to convert the local names to an integer
+// by given XML attributes and specified names.
+func attrValToInt(name string, attrs []xml.Attr) (val int, err error) {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			val, err = strconv.Atoi(attr.Value)
+			if err != nil {
+				return
+			}
+		}
+	}
 	return
 }
 

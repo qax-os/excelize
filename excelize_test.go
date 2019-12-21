@@ -2,6 +2,8 @@ package excelize
 
 import (
 	"bytes"
+	"compress/gzip"
+	"encoding/xml"
 	"fmt"
 	"image/color"
 	_ "image/gif"
@@ -184,6 +186,11 @@ func TestSaveAsWrongPath(t *testing.T) {
 	}
 }
 
+func TestCharsetTranscoder(t *testing.T) {
+	f := NewFile()
+	f.CharsetTranscoder(*new(charsetTranscoderFn))
+}
+
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
@@ -195,6 +202,18 @@ func TestOpenReader(t *testing.T) {
 		0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
 	}))
 	assert.EqualError(t, err, "not support encrypted file currently")
+
+	// Test unexpected EOF.
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	defer w.Close()
+	w.Flush()
+
+	r, _ := gzip.NewReader(&b)
+	defer r.Close()
+
+	_, err = OpenReader(r)
+	assert.EqualError(t, err, "unexpected EOF")
 }
 
 func TestBrokenFile(t *testing.T) {
@@ -924,24 +943,6 @@ func TestAddShape(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
 }
 
-func TestAddComments(t *testing.T) {
-	f, err := prepareTestBook1()
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	s := strings.Repeat("c", 32768)
-	assert.NoError(t, f.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`))
-	assert.NoError(t, f.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`))
-
-	// Test add comment on not exists worksheet.
-	assert.EqualError(t, f.AddComment("SheetN", "B7", `{"author":"Excelize: ","text":"This is a comment."}`), "sheet SheetN is not exist")
-
-	if assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
-		assert.Len(t, f.GetComments(), 2)
-	}
-}
-
 func TestGetSheetComments(t *testing.T) {
 	f := NewFile()
 	assert.Equal(t, "", f.getSheetComments(0))
@@ -1005,18 +1006,37 @@ func TestAutoFilterError(t *testing.T) {
 	}
 }
 
-func TestSetPane(t *testing.T) {
+func TestSetActiveSheet(t *testing.T) {
 	f := NewFile()
-	f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
-	f.NewSheet("Panes 2")
-	f.SetPanes("Panes 2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
-	f.NewSheet("Panes 3")
-	f.SetPanes("Panes 3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
-	f.NewSheet("Panes 4")
-	f.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
-	f.SetPanes("Panes 4", "")
+	f.WorkBook.BookViews = nil
+	f.SetActiveSheet(1)
+	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
+	f.SetActiveSheet(1)
+}
 
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
+func TestSetSheetVisible(t *testing.T) {
+	f := NewFile()
+	f.WorkBook.Sheets.Sheet[0].Name = "SheetN"
+	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "sheet SheetN is not exist")
+}
+
+func TestGetActiveSheetIndex(t *testing.T) {
+	f := NewFile()
+	f.WorkBook.BookViews = nil
+	assert.Equal(t, 1, f.GetActiveSheetIndex())
+}
+
+func TestRelsWriter(t *testing.T) {
+	f := NewFile()
+	f.Relationships["xl/worksheets/sheet/rels/sheet1.xml.rel"] = &xlsxRelationships{}
+	f.relsWriter()
+}
+
+func TestGetSheetView(t *testing.T) {
+	f := NewFile()
+	_, err := f.getSheetView("SheetN", 0)
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
 func TestConditionalFormat(t *testing.T) {
@@ -1205,6 +1225,61 @@ func TestAddVBAProject(t *testing.T) {
 	// Test add VBA project twice.
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
+}
+
+func TestContentTypesReader(t *testing.T) {
+	// Test unsupport charset.
+	f := NewFile()
+	f.ContentTypes = nil
+	f.XLSX["[Content_Types].xml"] = MacintoshCyrillicCharset
+	f.contentTypesReader()
+}
+
+func TestWorkbookReader(t *testing.T) {
+	// Test unsupport charset.
+	f := NewFile()
+	f.WorkBook = nil
+	f.XLSX["xl/workbook.xml"] = MacintoshCyrillicCharset
+	f.workbookReader()
+}
+
+func TestWorkSheetReader(t *testing.T) {
+	// Test unsupport charset.
+	f := NewFile()
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
+	_, err := f.workSheetReader("Sheet1")
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+
+	// Test on no checked worksheet.
+	f = NewFile()
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`)
+	f.checked = nil
+	_, err = f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+}
+
+func TestRelsReader(t *testing.T) {
+	// Test unsupport charset.
+	f := NewFile()
+	rels := "xl/_rels/workbook.xml.rels"
+	f.Relationships[rels] = nil
+	f.XLSX[rels] = MacintoshCyrillicCharset
+	f.relsReader(rels)
+}
+
+func TestDeleteSheetFromWorkbookRels(t *testing.T) {
+	f := NewFile()
+	rels := "xl/_rels/workbook.xml.rels"
+	f.Relationships[rels] = nil
+	assert.Equal(t, f.deleteSheetFromWorkbookRels("rID"), "")
+}
+
+func TestAttrValToInt(t *testing.T) {
+	_, err := attrValToInt("r", []xml.Attr{
+		{Name: xml.Name{Local: "r"}, Value: "s"}})
+	assert.EqualError(t, err, `strconv.Atoi: parsing "s": invalid syntax`)
 }
 
 func prepareTestBook1() (*File, error) {

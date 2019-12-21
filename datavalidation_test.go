@@ -11,6 +11,7 @@ package excelize
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -85,4 +86,12 @@ func TestDataValidationError(t *testing.T) {
 	if !assert.NoError(t, f.SaveAs(resultFile)) {
 		t.FailNow()
 	}
+
+	// Test width invalid data validation formula.
+	dvRange.Formula1 = strings.Repeat("s", dataValidationFormulaStrLen+22)
+	assert.EqualError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan), "data validation must be 0-255 characters")
+
+	// Test add data validation on no exists worksheet.
+	f = NewFile()
+	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN is not exist")
 }

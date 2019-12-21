@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -12,12 +13,12 @@ import (
 func TestRows(t *testing.T) {
 	const sheet2 = "Sheet2"
 
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	rows, err := xlsx.Rows(sheet2)
+	rows, err := f.Rows(sheet2)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -32,7 +33,7 @@ func TestRows(t *testing.T) {
 		t.FailNow()
 	}
 
-	returnedRows, err := xlsx.GetRows(sheet2)
+	returnedRows, err := f.GetRows(sheet2)
 	assert.NoError(t, err)
 	for i := range returnedRows {
 		returnedRows[i] = trimSliceSpace(returnedRows[i])
@@ -40,6 +41,11 @@ func TestRows(t *testing.T) {
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
+
+	f = NewFile()
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	_, err = f.Rows("Sheet1")
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 }
 
 func TestRowsIterator(t *testing.T) {
@@ -126,6 +132,35 @@ func TestRowHeight(t *testing.T) {
 	convertColWidthToPixels(0)
 }
 
+func TestColumns(t *testing.T) {
+	f := NewFile()
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="A"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
+
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.NoError(t, err)
+
+	rows.curRow = 3
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	// Test token is nil
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
+	_, err = rows.Columns()
+	assert.NoError(t, err)
+}
+
+func TestSharedStringsReader(t *testing.T) {
+	f := NewFile()
+	f.XLSX["xl/sharedStrings.xml"] = MacintoshCyrillicCharset
+	f.sharedStringsReader()
+}
+
 func TestRowVisibility(t *testing.T) {
 	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
@@ -149,61 +184,64 @@ func TestRowVisibility(t *testing.T) {
 }
 
 func TestRemoveRow(t *testing.T) {
-	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(1)
-	r, err := xlsx.workSheetReader(sheet1)
+	f := NewFile()
+	sheet1 := f.GetSheetName(1)
+	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
 	const (
 		colCount = 10
 		rowCount = 10
 	)
-	fillCells(xlsx, sheet1, colCount, rowCount)
+	fillCells(f, sheet1, colCount, rowCount)
 
-	xlsx.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
 
-	assert.EqualError(t, xlsx.RemoveRow(sheet1, -1), "invalid row number -1")
+	assert.EqualError(t, f.RemoveRow(sheet1, -1), "invalid row number -1")
 
-	assert.EqualError(t, xlsx.RemoveRow(sheet1, 0), "invalid row number 0")
+	assert.EqualError(t, f.RemoveRow(sheet1, 0), "invalid row number 0")
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 4))
+	assert.NoError(t, f.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-1) {
 		t.FailNow()
 	}
 
-	xlsx.MergeCell(sheet1, "B3", "B5")
+	f.MergeCell(sheet1, "B3", "B5")
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 2))
+	assert.NoError(t, f.RemoveRow(sheet1, 2))
 	if !assert.Len(t, r.SheetData.Row, rowCount-2) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 4))
+	assert.NoError(t, f.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-3) {
 		t.FailNow()
 	}
 
-	err = xlsx.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
+	err = f.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 1))
+	assert.NoError(t, f.RemoveRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount-4) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 2))
+	assert.NoError(t, f.RemoveRow(sheet1, 2))
 	if !assert.Len(t, r.SheetData.Row, rowCount-5) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 1))
+	assert.NoError(t, f.RemoveRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount-6) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 10))
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
+	assert.NoError(t, f.RemoveRow(sheet1, 10))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
+
+	// Test remove row on not exist worksheet
+	assert.EqualError(t, f.RemoveRow("SheetN", 1), `sheet SheetN is not exist`)
 }
 
 func TestInsertRow(t *testing.T) {
