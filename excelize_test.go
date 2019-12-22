@@ -48,7 +48,7 @@ func TestOpenFile(t *testing.T) {
 	assert.EqualError(t, f.SetCellDefault("Sheet2", "A", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64)),
 		`cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
-	f.SetCellInt("Sheet2", "A1", 100)
+	assert.NoError(t, f.SetCellInt("Sheet2", "A1", 100))
 
 	// Test set cell integer value with illegal row number.
 	assert.EqualError(t, f.SetCellInt("Sheet2", "A", 100), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
@@ -80,8 +80,10 @@ func TestOpenFile(t *testing.T) {
 	_, err = f.GetCellFormula("Sheet1", "B")
 	assert.EqualError(t, err, `cannot convert cell "B" to coordinates: invalid cell name "B"`)
 	// Test get shared cell formula
-	f.GetCellFormula("Sheet2", "H11")
-	f.GetCellFormula("Sheet2", "I11")
+	_, err = f.GetCellFormula("Sheet2", "H11")
+	assert.NoError(t, err)
+	_, err = f.GetCellFormula("Sheet2", "I11")
+	assert.NoError(t, err)
 	getSharedForumula(&xlsxWorksheet{}, "")
 
 	// Test read cell value with given illegal rows number.
@@ -91,10 +93,14 @@ func TestOpenFile(t *testing.T) {
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// Test read cell value with given lowercase column number.
-	f.GetCellValue("Sheet2", "a5")
-	f.GetCellValue("Sheet2", "C11")
-	f.GetCellValue("Sheet2", "D11")
-	f.GetCellValue("Sheet2", "D12")
+	_, err = f.GetCellValue("Sheet2", "a5")
+	assert.NoError(t, err)
+	_, err = f.GetCellValue("Sheet2", "C11")
+	assert.NoError(t, err)
+	_, err = f.GetCellValue("Sheet2", "D11")
+	assert.NoError(t, err)
+	_, err = f.GetCellValue("Sheet2", "D12")
+	assert.NoError(t, err)
 	// Test SetCellValue function.
 	assert.NoError(t, f.SetCellValue("Sheet2", "F1", " Hello"))
 	assert.NoError(t, f.SetCellValue("Sheet2", "G1", []byte("World")))
@@ -147,7 +153,8 @@ func TestOpenFile(t *testing.T) {
 	// Test completion column.
 	f.SetCellValue("Sheet2", "M2", nil)
 	// Test read cell value with given axis large than exists row.
-	f.GetCellValue("Sheet2", "E231")
+	_, err = f.GetCellValue("Sheet2", "E231")
+	assert.NoError(t, err)
 	// Test get active worksheet of XLSX and get worksheet name of XLSX by given worksheet index.
 	f.GetSheetName(f.GetActiveSheetIndex())
 	// Test get worksheet index of XLSX by given worksheet name.
@@ -302,13 +309,10 @@ func TestSetCellHyperLink(t *testing.T) {
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellHyperLink.xlsx")))
 
-	file := NewFile()
-	for row := 1; row <= 65530; row++ {
-		cell, err := CoordinatesToCellName(1, row)
-		assert.NoError(t, err)
-		assert.NoError(t, file.SetCellHyperLink("Sheet1", cell, "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
-	}
-	assert.EqualError(t, file.SetCellHyperLink("Sheet1", "A65531", "https://github.com/360EntSecGroup-Skylar/excelize", "External"), "over maximum limit hyperlinks in a worksheet")
+	f = NewFile()
+	f.workSheetReader("Sheet1")
+	f.Sheet["xl/worksheets/sheet1.xml"].Hyperlinks = &xlsxHyperlinks{Hyperlink: make([]xlsxHyperlink, 65530)}
+	assert.EqualError(t, f.SetCellHyperLink("Sheet1", "A65531", "https://github.com/360EntSecGroup-Skylar/excelize", "External"), "over maximum limit hyperlinks in a worksheet")
 
 	f = NewFile()
 	f.workSheetReader("Sheet1")
@@ -1012,6 +1016,8 @@ func TestSetActiveSheet(t *testing.T) {
 	f.SetActiveSheet(1)
 	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
 	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
+	f.SetActiveSheet(1)
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = nil
 	f.SetActiveSheet(1)
 }
 

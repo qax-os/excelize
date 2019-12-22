@@ -249,6 +249,11 @@ func (f *File) SetActiveSheet(index int) {
 	}
 	for idx, name := range f.GetSheetMap() {
 		xlsx, _ := f.workSheetReader(name)
+		if xlsx.SheetViews == nil {
+			xlsx.SheetViews = &xlsxSheetViews{
+				SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+			}
+		}
 		if len(xlsx.SheetViews.SheetView) > 0 {
 			xlsx.SheetViews.SheetView[0].TabSelected = false
 		}
@@ -305,11 +310,15 @@ func (f *File) SetSheetName(oldName, newName string) {
 // string.
 func (f *File) GetSheetName(index int) string {
 	wb := f.workbookReader()
-	realIdx := index - 1 // sheets are 1 based index, but we're checking against an array
-	if wb == nil || realIdx < 0 || realIdx >= len(wb.Sheets.Sheet) {
+	if wb == nil || index < 1 {
 		return ""
 	}
-	return wb.Sheets.Sheet[realIdx].Name
+	for _, sheet := range wb.Sheets.Sheet {
+		if index == sheet.SheetID {
+			return sheet.Name
+		}
+	}
+	return ""
 }
 
 // GetSheetIndex provides a function to get worksheet index of XLSX by given
@@ -342,8 +351,8 @@ func (f *File) GetSheetMap() map[int]string {
 	wb := f.workbookReader()
 	sheetMap := map[int]string{}
 	if wb != nil {
-		for i, sheet := range wb.Sheets.Sheet {
-			sheetMap[i+1] = sheet.Name
+		for _, sheet := range wb.Sheets.Sheet {
+			sheetMap[sheet.SheetID] = sheet.Name
 		}
 	}
 	return sheetMap
@@ -384,8 +393,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	}
 	file, _ := ioutil.ReadFile(picture)
 	name := f.addMedia(file, ext)
-	sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
-	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
 	f.addSheetPicture(sheet, rID)
 	f.setContentTypePartImageExtensions()

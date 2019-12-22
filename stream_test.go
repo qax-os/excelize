@@ -42,7 +42,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
 	// Test error exceptions
-	streamWriter, err = file.NewStreamWriter("SheetN")
+	_, err = file.NewStreamWriter("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 

@@ -203,11 +203,17 @@ func checkSheet(xlsx *xlsxWorksheet) {
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	rels := f.relsReader(relPath)
-	rID := 0
 	if rels == nil {
 		rels = &xlsxRelationships{}
 	}
-	rID = len(rels.Relationships) + 1
+	var rID int
+	for _, rel := range rels.Relationships {
+		ID, _ := strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
+		if ID > rID {
+			rID = ID
+		}
+	}
+	rID++
 	var ID bytes.Buffer
 	ID.WriteString("rId")
 	ID.WriteString(strconv.Itoa(rID))

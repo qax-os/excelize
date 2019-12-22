@@ -395,7 +395,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 		linkData = xlsxHyperlink{
 			Ref: axis,
 		}
-		sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
+		sheetPath := f.sheetMap[trimSheetName(sheet)]
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipHyperLink, link, linkType)
 		linkData.RID = "rId" + strconv.Itoa(rID)

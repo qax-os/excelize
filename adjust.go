@@ -53,7 +53,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	checkSheet(xlsx)
-	checkRow(xlsx)
+	_ = checkRow(xlsx)
 
 	if xlsx.MergeCells != nil && len(xlsx.MergeCells.Cells) == 0 {
 		xlsx.MergeCells = nil

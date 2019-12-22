@@ -27,7 +27,7 @@ type xlsxWorksheet struct {
 	ProtectedRanges       *xlsxInnerXML                `xml:"protectedRanges"`
 	Scenarios             *xlsxInnerXML                `xml:"scenarios"`
 	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
-	SortState             *xlsxInnerXML                `xml:"sortState"`
+	SortState             *xlsxSortState               `xml:"sortState"`
 	DataConsolidate       *xlsxInnerXML                `xml:"dataConsolidate"`
 	CustomSheetViews      *xlsxCustomSheetViews        `xml:"customSheetViews"`
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
@@ -47,7 +47,7 @@ type xlsxWorksheet struct {
 	SmartTags             *xlsxInnerXML                `xml:"smartTags"`
 	Drawing               *xlsxDrawing                 `xml:"drawing"`
 	LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
-	LegacyDrawingHF       *xlsxInnerXML                `xml:"legacyDrawingHF"`
+	LegacyDrawingHF       *xlsxLegacyDrawingHF         `xml:"legacyDrawingHF"`
 	DrawingHF             *xlsxDrawingHF               `xml:"drawingHF"`
 	Picture               *xlsxPicture                 `xml:"picture"`
 	OleObjects            *xlsxInnerXML                `xml:"oleObjects"`
@@ -328,6 +328,16 @@ type xlsxRow struct {
 	C            []xlsxC `xml:"c"`
 }
 
+// xlsxSortState directly maps the sortState element. This collection
+// preserves the AutoFilter sort state.
+type xlsxSortState struct {
+	ColumnSort    bool   `xml:"columnSort,attr,omitempty"`
+	CaseSensitive bool   `xml:"caseSensitive,attr,omitempty"`
+	SortMethod    string `xml:"sortMethod,attr,omitempty"`
+	Ref           string `xml:"ref,attr"`
+	Content       string `xml:",innerxml"`
+}
+
 // xlsxCustomSheetViews directly maps the customSheetViews element. This is a
 // collection of custom sheet views.
 type xlsxCustomSheetViews struct {
@@ -424,7 +434,7 @@ type DataValidation struct {
 	ShowErrorMessage bool    `xml:"showErrorMessage,attr,omitempty"`
 	ShowInputMessage bool    `xml:"showInputMessage,attr,omitempty"`
 	Sqref            string  `xml:"sqref,attr"`
-	Type             string  `xml:"type,attr"`
+	Type             string  `xml:"type,attr,omitempty"`
 	Formula1         string  `xml:",innerxml"`
 	Formula2         string  `xml:",innerxml"`
 }
@@ -448,7 +458,7 @@ type DataValidation struct {
 type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
-	R        string   `xml:"r,attr"`           // Cell ID, e.g. A1
+	R        string   `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
 	S        int      `xml:"s,attr,omitempty"` // Style reference.
 	// Str string `xml:"str,attr,omitempty"` // Style reference.
 	T  string  `xml:"t,attr,omitempty"` // Type.
@@ -662,6 +672,14 @@ type xlsxPicture struct {
 // something special about the cell.
 type xlsxLegacyDrawing struct {
 	XMLName xml.Name `xml:"legacyDrawing"`
+	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxLegacyDrawingHF specifies the explicit relationship to the part
+// containing the VML defining pictures rendered in the header / footer of the
+// sheet.
+type xlsxLegacyDrawingHF struct {
+	XMLName xml.Name `xml:"legacyDrawingHF"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 

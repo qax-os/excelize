@@ -141,25 +141,25 @@ type aSchemeClr struct {
 // attrValInt directly maps the val element with integer data type as an
 // attribute。
 type attrValInt struct {
-	Val int `xml:"val,attr"`
+	Val *int `xml:"val,attr"`
 }
 
 // attrValFloat directly maps the val element with float64 data type as an
 // attribute。
 type attrValFloat struct {
-	Val float64 `xml:"val,attr"`
+	Val *float64 `xml:"val,attr"`
 }
 
 // attrValBool directly maps the val element with boolean data type as an
 // attribute。
 type attrValBool struct {
-	Val bool `xml:"val,attr"`
+	Val *bool `xml:"val,attr"`
 }
 
 // attrValString directly maps the val element with string data type as an
 // attribute。
 type attrValString struct {
-	Val string `xml:"val,attr"`
+	Val *string `xml:"val,attr"`
 }
 
 // aCs directly maps the a:cs element.

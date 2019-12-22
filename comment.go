@@ -101,8 +101,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		drawingVML = strings.Replace(sheetRelationshipsDrawingVML, "..", "xl", -1)
 	} else {
 		// Add first comment for given sheet.
-		sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
 		f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		f.addSheetLegacyDrawing(sheet, rID)
@@ -256,23 +255,23 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 				{
 					RPr: &xlsxRPr{
 						B:  " ",
-						Sz: &attrValFloat{Val: 9},
+						Sz: &attrValFloat{Val: float64Ptr(9)},
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
-						RFont:  &attrValString{Val: defaultFont},
-						Family: &attrValInt{Val: 2},
+						RFont:  &attrValString{Val: stringPtr(defaultFont)},
+						Family: &attrValInt{Val: intPtr(2)},
 					},
 					T: a,
 				},
 				{
 					RPr: &xlsxRPr{
-						Sz: &attrValFloat{Val: 9},
+						Sz: &attrValFloat{Val: float64Ptr(9)},
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
-						RFont:  &attrValString{Val: defaultFont},
-						Family: &attrValInt{Val: 2},
+						RFont:  &attrValString{Val: stringPtr(defaultFont)},
+						Family: &attrValInt{Val: intPtr(2)},
 					},
 					T: t,
 				},

@@ -175,7 +175,7 @@ func TestNewStyle(t *testing.T) {
 	styles := f.stylesReader()
 	fontID := styles.CellXfs.Xf[styleID].FontID
 	font := styles.Fonts.Font[fontID]
-	assert.Contains(t, font.Name.Val, "Times New Roman", "Stored font should contain font name")
+	assert.Contains(t, *font.Name.Val, "Times New Roman", "Stored font should contain font name")
 	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
 }
 

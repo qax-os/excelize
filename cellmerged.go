@@ -129,8 +129,6 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 	if rect1[3] < rect1[1] {
 		rect1[1], rect1[3] = rect1[3], rect1[1]
 	}
-	hcell, _ = CoordinatesToCellName(rect1[0], rect1[1])
-	vcell, _ = CoordinatesToCellName(rect1[2], rect1[3])
 
 	// return nil since no MergeCells in the sheet
 	if xlsx.MergeCells == nil {
