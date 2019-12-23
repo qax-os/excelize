@@ -139,7 +139,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 		}
 		name, _ := f.GetCellValue(sheet, cell)
 		if _, err := strconv.Atoi(name); err == nil {
-			f.SetCellStr(sheet, cell, name)
+			_ = f.SetCellStr(sheet, cell, name)
 		}
 		if name == "" {
 			name = "Column" + strconv.Itoa(idx)

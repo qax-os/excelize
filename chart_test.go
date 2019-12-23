@@ -22,7 +22,7 @@ func TestChartSize(t *testing.T) {
 		"D1": "Pear",
 	}
 	for cell, v := range categories {
-		xlsx.SetCellValue(sheet1, cell, v)
+		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
 	}
 
 	values := map[string]int{
@@ -37,29 +37,22 @@ func TestChartSize(t *testing.T) {
 		"D4": 8,
 	}
 	for cell, v := range values {
-		xlsx.SetCellValue(sheet1, cell, v)
+		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
 	}
 
-	xlsx.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},`+
+	assert.NoError(t, xlsx.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},`+
 		`"series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},`+
 		`{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},`+
 		`{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],`+
-		`"title":{"name":"3D Clustered Column Chart"}}`)
+		`"title":{"name":"3D Clustered Column Chart"}}`))
 
-	var (
-		buffer bytes.Buffer
-	)
+	var buffer bytes.Buffer
 
 	// Save xlsx file by the given path.
-	err := xlsx.Write(&buffer)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, xlsx.Write(&buffer))
 
 	newFile, err := OpenReader(&buffer)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	chartsNum := newFile.countCharts()
 	if !assert.Equal(t, 1, chartsNum, "Expected 1 chart, actual %d", chartsNum) {

@@ -25,7 +25,9 @@ func BenchmarkAddPictureFromBytes(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
-		f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", i), "", "excel", ".png", imgFile)
+		if err := f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", i), "", "excel", ".png", imgFile); err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -36,23 +38,14 @@ func TestAddPicture(t *testing.T) {
 	}
 
 	// Test add picture to worksheet with offset and location hyperlink.
-	err = f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
+	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
+		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`))
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
-	err = f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
+		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 
 	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	// Test add picture to worksheet from bytes.
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
@@ -69,9 +62,7 @@ func TestAddPicture(t *testing.T) {
 
 func TestAddPictureErrors(t *testing.T) {
 	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	// Test add picture to worksheet with invalid file path.
 	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), "")
@@ -127,14 +118,10 @@ func TestGetPicture(t *testing.T) {
 	f.deleteSheetRelationships("", "")
 
 	// Try to get picture from a local storage file.
-	if !assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetPicture.xlsx"))) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetPicture.xlsx")))
 
 	f, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	file, raw, err = f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)

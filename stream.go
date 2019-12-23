@@ -167,7 +167,7 @@ func (sw *StreamWriter) Flush() error {
 
 	sheetDataByte = append(sheetDataByte, sw.SheetData.Bytes()...)
 	replaceMap := map[string][]byte{
-		"XMLName":   []byte{},
+		"XMLName":   {},
 		"SheetData": sheetDataByte,
 	}
 	sw.SheetData.Reset()

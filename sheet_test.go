@@ -192,7 +192,7 @@ func TestGetPageLayout(t *testing.T) {
 
 func TestSetHeaderFooter(t *testing.T) {
 	f := excelize.NewFile()
-	f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter")
+	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet.
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN is not exist")
 	// Test set header and footer with illegal setting.

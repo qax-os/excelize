@@ -54,8 +54,8 @@ func TestSetCellFloat(t *testing.T) {
 	sheet := "Sheet1"
 	t.Run("with no decimal", func(t *testing.T) {
 		f := NewFile()
-		f.SetCellFloat(sheet, "A1", 123.0, -1, 64)
-		f.SetCellFloat(sheet, "A2", 123.0, 1, 64)
+		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.0, -1, 64))
+		assert.NoError(t, f.SetCellFloat(sheet, "A2", 123.0, 1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123", val, "A1 should be 123")
@@ -66,7 +66,7 @@ func TestSetCellFloat(t *testing.T) {
 
 	t.Run("with a decimal and precision limit", func(t *testing.T) {
 		f := NewFile()
-		f.SetCellFloat(sheet, "A1", 123.42, 1, 64)
+		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.42, 1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123.4", val, "A1 should be 123.4")
@@ -74,7 +74,7 @@ func TestSetCellFloat(t *testing.T) {
 
 	t.Run("with a decimal and no limit", func(t *testing.T) {
 		f := NewFile()
-		f.SetCellFloat(sheet, "A1", 123.42, -1, 64)
+		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.42, -1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123.42", val, "A1 should be 123.42")
@@ -101,7 +101,7 @@ func TestGetCellFormula(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	// Test get cell formula on no formula cell.
-	f.SetCellValue("Sheet1", "A1", true)
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
 	_, err = f.GetCellFormula("Sheet1", "A1")
 	assert.NoError(t, err)
 }
@@ -109,7 +109,9 @@ func TestGetCellFormula(t *testing.T) {
 func ExampleFile_SetCellFloat() {
 	f := NewFile()
 	var x = 3.14159265
-	f.SetCellFloat("Sheet1", "A1", x, 2, 64)
+	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
+		fmt.Println(err)
+	}
 	val, _ := f.GetCellValue("Sheet1", "A1")
 	fmt.Println(val)
 	// Output: 3.14
@@ -122,7 +124,9 @@ func BenchmarkSetCellValue(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < len(values); j++ {
-			f.SetCellValue("Sheet1", fmt.Sprint(cols[j], i), values[j])
+			if err := f.SetCellValue("Sheet1", fmt.Sprint(cols[j], i), values[j]); err != nil {
+				b.Error(err)
+			}
 		}
 	}
 }
