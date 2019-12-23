@@ -29,7 +29,6 @@ type StreamWriter struct {
 	Sheet      string
 	SheetID    int
 	SheetData  bytes.Buffer
-	encoder    *xml.Encoder
 	table      *xlsxTable
 	replaceMap map[string][]byte
 }
@@ -76,7 +75,6 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 			"XMLName": []byte{},
 		},
 	}
-	rsw.encoder = xml.NewEncoder(&rsw.SheetData)
 	rsw.SheetData.WriteString("<sheetData>")
 	return rsw, nil
 }
@@ -200,7 +198,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 		}
 	}
 
-	sw.SheetData.WriteString(fmt.Sprintf(`<row r="%d">`, row))
+	fmt.Fprintf(&sw.SheetData, `<row r="%d">`, row)
 	for i, val := range values {
 		axis, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
@@ -247,7 +245,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 		default:
 			c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 		}
-		sw.encoder.Encode(c)
+		writeCell(&sw.SheetData, c)
 	}
 	sw.SheetData.WriteString(`</row>`)
 	// Try to use local storage
@@ -268,6 +266,27 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 		sw.SheetData.Reset()
 	}
 	return err
+}
+
+func writeCell(buf *bytes.Buffer, c xlsxC) {
+	buf.WriteString(`<c`)
+	if c.XMLSpace.Value != "" {
+		fmt.Fprintf(buf, ` xml:%s="%s"`, c.XMLSpace.Name.Local, c.XMLSpace.Value)
+	}
+	fmt.Fprintf(buf, ` r="%s"`, c.R)
+	if c.S != 0 {
+		fmt.Fprintf(buf, ` s="%d"`, c.S)
+	}
+	if c.T != "" {
+		fmt.Fprintf(buf, ` t="%s"`, c.T)
+	}
+	buf.WriteString(`>`)
+	if c.V != "" {
+		buf.WriteString(`<v>`)
+		xml.EscapeText(buf, []byte(c.V))
+		buf.WriteString(`</v>`)
+	}
+	buf.WriteString(`</c>`)
 }
 
 // Flush ending the streaming writing process.

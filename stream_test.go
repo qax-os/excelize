@@ -9,6 +9,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func BenchmarkStreamWriter(b *testing.B) {
+	file := NewFile()
+
+	row := make([]interface{}, 10)
+	for colID := 0; colID < 10; colID++ {
+		row[colID] = colID
+	}
+
+	for n := 0; n < b.N; n++ {
+		streamWriter, _ := file.NewStreamWriter("Sheet1")
+		for rowID := 10; rowID <= 110; rowID++ {
+			cell, _ := CoordinatesToCellName(1, rowID)
+			streamWriter.SetRow(cell, row, nil)
+		}
+	}
+
+	b.ReportAllocs()
+}
+
 func TestStreamWriter(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
