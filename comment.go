@@ -10,9 +10,12 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -98,8 +101,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		drawingVML = strings.Replace(sheetRelationshipsDrawingVML, "..", "xl", -1)
 	} else {
 		// Add first comment for given sheet.
-		sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
 		f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		f.addSheetLegacyDrawing(sheet, rID)
@@ -253,23 +255,23 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 				{
 					RPr: &xlsxRPr{
 						B:  " ",
-						Sz: &attrValFloat{Val: 9},
+						Sz: &attrValFloat{Val: float64Ptr(9)},
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
-						RFont:  &attrValString{Val: defaultFont},
-						Family: &attrValInt{Val: 2},
+						RFont:  &attrValString{Val: stringPtr(defaultFont)},
+						Family: &attrValInt{Val: intPtr(2)},
 					},
 					T: a,
 				},
 				{
 					RPr: &xlsxRPr{
-						Sz: &attrValFloat{Val: 9},
+						Sz: &attrValFloat{Val: float64Ptr(9)},
 						Color: &xlsxColor{
 							Indexed: 81,
 						},
-						RFont:  &attrValString{Val: defaultFont},
-						Family: &attrValInt{Val: 2},
+						RFont:  &attrValString{Val: stringPtr(defaultFont)},
+						Family: &attrValInt{Val: intPtr(2)},
 					},
 					T: t,
 				},
@@ -303,12 +305,16 @@ func (f *File) countComments() int {
 // decodeVMLDrawingReader provides a function to get the pointer to the
 // structure after deserialization of xl/drawings/vmlDrawing%d.xml.
 func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
+	var err error
+
 	if f.DecodeVMLDrawing[path] == nil {
 		c, ok := f.XLSX[path]
 		if ok {
-			d := decodeVmlDrawing{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(c), &d)
-			f.DecodeVMLDrawing[path] = &d
+			f.DecodeVMLDrawing[path] = new(decodeVmlDrawing)
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c))).
+				Decode(f.DecodeVMLDrawing[path]); err != nil && err != io.EOF {
+				log.Printf("xml decode error: %s", err)
+			}
 		}
 	}
 	return f.DecodeVMLDrawing[path]
@@ -328,12 +334,16 @@ func (f *File) vmlDrawingWriter() {
 // commentsReader provides a function to get the pointer to the structure
 // after deserialization of xl/comments%d.xml.
 func (f *File) commentsReader(path string) *xlsxComments {
+	var err error
+
 	if f.Comments[path] == nil {
 		content, ok := f.XLSX[path]
 		if ok {
-			c := xlsxComments{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(content), &c)
-			f.Comments[path] = &c
+			f.Comments[path] = new(xlsxComments)
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content))).
+				Decode(f.Comments[path]); err != nil && err != io.EOF {
+				log.Printf("xml decode error: %s", err)
+			}
 		}
 	}
 	return f.Comments[path]

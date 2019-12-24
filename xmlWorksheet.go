@@ -17,23 +17,23 @@ import "encoding/xml"
 type xlsxWorksheet struct {
 	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
-	Dimension             xlsxDimension                `xml:"dimension"`
-	SheetViews            xlsxSheetViews               `xml:"sheetViews,omitempty"`
+	Dimension             *xlsxDimension               `xml:"dimension"`
+	SheetViews            *xlsxSheetViews              `xml:"sheetViews"`
 	SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
-	Cols                  *xlsxCols                    `xml:"cols,omitempty"`
+	Cols                  *xlsxCols                    `xml:"cols"`
 	SheetData             xlsxSheetData                `xml:"sheetData"`
 	SheetCalcPr           *xlsxInnerXML                `xml:"sheetCalcPr"`
 	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
 	ProtectedRanges       *xlsxInnerXML                `xml:"protectedRanges"`
 	Scenarios             *xlsxInnerXML                `xml:"scenarios"`
 	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
-	SortState             *xlsxInnerXML                `xml:"sortState"`
+	SortState             *xlsxSortState               `xml:"sortState"`
 	DataConsolidate       *xlsxInnerXML                `xml:"dataConsolidate"`
 	CustomSheetViews      *xlsxCustomSheetViews        `xml:"customSheetViews"`
 	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
 	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
 	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	DataValidations       *xlsxDataValidations         `xml:"dataValidations,omitempty"`
+	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
 	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
 	PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
 	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
@@ -47,7 +47,7 @@ type xlsxWorksheet struct {
 	SmartTags             *xlsxInnerXML                `xml:"smartTags"`
 	Drawing               *xlsxDrawing                 `xml:"drawing"`
 	LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
-	LegacyDrawingHF       *xlsxInnerXML                `xml:"legacyDrawingHF"`
+	LegacyDrawingHF       *xlsxLegacyDrawingHF         `xml:"legacyDrawingHF"`
 	DrawingHF             *xlsxDrawingHF               `xml:"drawingHF"`
 	Picture               *xlsxPicture                 `xml:"picture"`
 	OleObjects            *xlsxInnerXML                `xml:"oleObjects"`
@@ -109,7 +109,7 @@ type xlsxPageSetUp struct {
 	FirstPageNumber    int      `xml:"firstPageNumber,attr,omitempty"`
 	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
 	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
-	HorizontalDPI      float32  `xml:"horizontalDpi,attr,omitempty"`
+	HorizontalDPI      int      `xml:"horizontalDpi,attr,omitempty"`
 	RID                string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Orientation        string   `xml:"orientation,attr,omitempty"`
 	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
@@ -119,7 +119,7 @@ type xlsxPageSetUp struct {
 	Scale              int      `xml:"scale,attr,omitempty"`
 	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
 	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
-	VerticalDPI        float32  `xml:"verticalDpi,attr,omitempty"`
+	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`
 }
 
 // xlsxPrintOptions directly maps the printOptions element in the namespace
@@ -182,7 +182,7 @@ type xlsxSheetViews struct {
 // last sheetView definition is loaded, and the others are discarded. When
 // multiple windows are viewing the same sheet, multiple sheetView elements
 // (with corresponding workbookView entries) are saved.
-// See https://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetview.aspx
+// See https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetview
 type xlsxSheetView struct {
 	WindowProtection         bool             `xml:"windowProtection,attr,omitempty"`
 	ShowFormulas             bool             `xml:"showFormulas,attr,omitempty"`
@@ -328,6 +328,16 @@ type xlsxRow struct {
 	C            []xlsxC `xml:"c"`
 }
 
+// xlsxSortState directly maps the sortState element. This collection
+// preserves the AutoFilter sort state.
+type xlsxSortState struct {
+	ColumnSort    bool   `xml:"columnSort,attr,omitempty"`
+	CaseSensitive bool   `xml:"caseSensitive,attr,omitempty"`
+	SortMethod    string `xml:"sortMethod,attr,omitempty"`
+	Ref           string `xml:"ref,attr"`
+	Content       string `xml:",innerxml"`
+}
+
 // xlsxCustomSheetViews directly maps the customSheetViews element. This is a
 // collection of custom sheet views.
 type xlsxCustomSheetViews struct {
@@ -424,7 +434,7 @@ type DataValidation struct {
 	ShowErrorMessage bool    `xml:"showErrorMessage,attr,omitempty"`
 	ShowInputMessage bool    `xml:"showInputMessage,attr,omitempty"`
 	Sqref            string  `xml:"sqref,attr"`
-	Type             string  `xml:"type,attr"`
+	Type             string  `xml:"type,attr,omitempty"`
 	Formula1         string  `xml:",innerxml"`
 	Formula2         string  `xml:",innerxml"`
 }
@@ -448,7 +458,7 @@ type DataValidation struct {
 type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
-	R        string   `xml:"r,attr"`           // Cell ID, e.g. A1
+	R        string   `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
 	S        int      `xml:"s,attr,omitempty"` // Style reference.
 	// Str string `xml:"str,attr,omitempty"` // Style reference.
 	T  string  `xml:"t,attr,omitempty"` // Type.
@@ -662,6 +672,14 @@ type xlsxPicture struct {
 // something special about the cell.
 type xlsxLegacyDrawing struct {
 	XMLName xml.Name `xml:"legacyDrawing"`
+	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxLegacyDrawingHF specifies the explicit relationship to the part
+// containing the VML defining pictures rendered in the header / footer of the
+// sheet.
+type xlsxLegacyDrawingHF struct {
+	XMLName xml.Name `xml:"legacyDrawingHF"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 

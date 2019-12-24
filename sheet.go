@@ -15,7 +15,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"reflect"
@@ -61,11 +63,16 @@ func (f *File) NewSheet(name string) int {
 // contentTypesReader provides a function to get the pointer to the
 // [Content_Types].xml structure after deserialization.
 func (f *File) contentTypesReader() *xlsxTypes {
+	var err error
+
 	if f.ContentTypes == nil {
-		var content xlsxTypes
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")), &content)
-		f.ContentTypes = &content
+		f.ContentTypes = new(xlsxTypes)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")))).
+			Decode(f.ContentTypes); err != nil && err != io.EOF {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.ContentTypes
 }
 
@@ -81,11 +88,16 @@ func (f *File) contentTypesWriter() {
 // workbookReader provides a function to get the pointer to the xl/workbook.xml
 // structure after deserialization.
 func (f *File) workbookReader() *xlsxWorkbook {
+	var err error
+
 	if f.WorkBook == nil {
-		var content xlsxWorkbook
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")), &content)
-		f.WorkBook = &content
+		f.WorkBook = new(xlsxWorkbook)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")))).
+			Decode(f.WorkBook); err != nil && err != io.EOF {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.WorkBook
 }
 
@@ -149,11 +161,12 @@ func (f *File) setContentTypes(index int) {
 
 // setSheet provides a function to update sheet property by given index.
 func (f *File) setSheet(index int, name string) {
-	var xlsx xlsxWorksheet
-	xlsx.Dimension.Ref = "A1"
-	xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
-		WorkbookViewID: 0,
-	})
+	xlsx := xlsxWorksheet{
+		Dimension: &xlsxDimension{Ref: "A1"},
+		SheetViews: &xlsxSheetViews{
+			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+		},
+	}
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = path
 	f.Sheet[path] = &xlsx
@@ -222,6 +235,9 @@ func (f *File) SetActiveSheet(index int) {
 	wb := f.workbookReader()
 	for activeTab, sheet := range wb.Sheets.Sheet {
 		if sheet.SheetID == index {
+			if wb.BookViews == nil {
+				wb.BookViews = &xlsxBookViews{}
+			}
 			if len(wb.BookViews.WorkBookView) > 0 {
 				wb.BookViews.WorkBookView[0].ActiveTab = activeTab
 			} else {
@@ -233,6 +249,11 @@ func (f *File) SetActiveSheet(index int) {
 	}
 	for idx, name := range f.GetSheetMap() {
 		xlsx, _ := f.workSheetReader(name)
+		if xlsx.SheetViews == nil {
+			xlsx.SheetViews = &xlsxSheetViews{
+				SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+			}
+		}
 		if len(xlsx.SheetViews.SheetView) > 0 {
 			xlsx.SheetViews.SheetView[0].TabSelected = false
 		}
@@ -253,16 +274,13 @@ func (f *File) SetActiveSheet(index int) {
 func (f *File) GetActiveSheetIndex() int {
 	wb := f.workbookReader()
 	if wb != nil {
-		view := wb.BookViews.WorkBookView
-		sheets := wb.Sheets.Sheet
-		var activeTab int
-		if len(view) > 0 {
-			activeTab = view[0].ActiveTab
-			if len(sheets) > activeTab && sheets[activeTab].SheetID != 0 {
-				return sheets[activeTab].SheetID
+		if wb.BookViews != nil && len(wb.BookViews.WorkBookView) > 0 {
+			activeTab := wb.BookViews.WorkBookView[0].ActiveTab
+			if len(wb.Sheets.Sheet) > activeTab && wb.Sheets.Sheet[activeTab].SheetID != 0 {
+				return wb.Sheets.Sheet[activeTab].SheetID
 			}
 		}
-		if len(wb.Sheets.Sheet) == 1 {
+		if len(wb.Sheets.Sheet) >= 1 {
 			return wb.Sheets.Sheet[0].SheetID
 		}
 	}
@@ -292,11 +310,15 @@ func (f *File) SetSheetName(oldName, newName string) {
 // string.
 func (f *File) GetSheetName(index int) string {
 	wb := f.workbookReader()
-	realIdx := index - 1 // sheets are 1 based index, but we're checking against an array
-	if wb == nil || realIdx < 0 || realIdx >= len(wb.Sheets.Sheet) {
+	if wb == nil || index < 1 {
 		return ""
 	}
-	return wb.Sheets.Sheet[realIdx].Name
+	for _, sheet := range wb.Sheets.Sheet {
+		if index == sheet.SheetID {
+			return sheet.Name
+		}
+	}
+	return ""
 }
 
 // GetSheetIndex provides a function to get worksheet index of XLSX by given
@@ -329,8 +351,8 @@ func (f *File) GetSheetMap() map[int]string {
 	wb := f.workbookReader()
 	sheetMap := map[int]string{}
 	if wb != nil {
-		for i, sheet := range wb.Sheets.Sheet {
-			sheetMap[i+1] = sheet.Name
+		for _, sheet := range wb.Sheets.Sheet {
+			sheetMap[sheet.SheetID] = sheet.Name
 		}
 	}
 	return sheetMap
@@ -371,8 +393,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	}
 	file, _ := ioutil.ReadFile(picture)
 	name := f.addMedia(file, ext)
-	sheetPath, _ := f.sheetMap[trimSheetName(sheet)]
-	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
 	f.addSheetPicture(sheet, rID)
 	f.setContentTypePartImageExtensions()
@@ -413,9 +434,11 @@ func (f *File) DeleteSheet(name string) {
 			f.SheetCount--
 		}
 	}
-	for idx, bookView := range wb.BookViews.WorkBookView {
-		if bookView.ActiveTab >= f.SheetCount {
-			wb.BookViews.WorkBookView[idx].ActiveTab--
+	if wb.BookViews != nil {
+		for idx, bookView := range wb.BookViews.WorkBookView {
+			if bookView.ActiveTab >= f.SheetCount {
+				wb.BookViews.WorkBookView[idx].ActiveTab--
+			}
 		}
 	}
 	f.SetActiveSheet(len(f.GetSheetMap()))
@@ -490,7 +513,7 @@ func (f *File) copySheet(from, to int) error {
 // SetSheetVisible provides a function to set worksheet visible by given worksheet
 // name. A workbook must contain at least one visible worksheet. If the given
 // worksheet has been activated, this setting will be invalidated. Sheet state
-// values as defined by http://msdn.microsoft.com/en-us/library/office/documentformat.openxml.spreadsheet.sheetstatevalues.aspx
+// values as defined by https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetstatevalues
 //
 //    visible
 //    hidden
@@ -713,31 +736,31 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 
 // searchSheet provides a function to get coordinates by given worksheet name,
 // cell value, and regular expression.
-func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error) {
+func (f *File) searchSheet(name, value string, regSearch bool) (result []string, err error) {
 	var (
-		err                 error
 		cellName, inElement string
-		result              []string
 		cellCol, row        int
+		d                   *xlsxSST
 	)
-	d := f.sharedStringsReader()
-	decoder := xml.NewDecoder(bytes.NewReader(f.readXML(name)))
+
+	d = f.sharedStringsReader()
+	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
-		token, _ := decoder.Token()
-		if token == nil {
+		var token xml.Token
+		token, err = decoder.Token()
+		if err != nil || token == nil {
+			if err == io.EOF {
+				err = nil
+			}
 			break
 		}
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "r" {
-						row, err = strconv.Atoi(attr.Value)
-						if err != nil {
-							return result, err
-						}
-					}
+				row, err = attrValToInt("r", startElement.Attr)
+				if err != nil {
+					return
 				}
 			}
 			if inElement == "c" {
@@ -767,7 +790,21 @@ func (f *File) searchSheet(name, value string, regSearch bool) ([]string, error)
 		default:
 		}
 	}
-	return result, nil
+	return
+}
+
+// attrValToInt provides a function to convert the local names to an integer
+// by given XML attributes and specified names.
+func attrValToInt(name string, attrs []xml.Attr) (val int, err error) {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			val, err = strconv.Atoi(attr.Value)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
 }
 
 // SetHeaderFooter provides a function to set headers and footers by given
@@ -1403,14 +1440,20 @@ func (f *File) UngroupSheets() error {
 // relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
 func (f *File) relsReader(path string) *xlsxRelationships {
+	var err error
+
 	if f.Relationships[path] == nil {
 		_, ok := f.XLSX[path]
 		if ok {
 			c := xlsxRelationships{}
-			_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML(path)), &c)
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
+				Decode(&c); err != nil && err != io.EOF {
+				log.Printf("xml decode error: %s", err)
+			}
 			f.Relationships[path] = &c
 		}
 	}
+
 	return f.Relationships[path]
 }
 

@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var MacintoshCyrillicCharset = []byte{0x8F, 0xF0, 0xE8, 0xE2, 0xE5, 0xF2, 0x20, 0xEC, 0xE8, 0xF0}
+
 func TestSetDocProps(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
@@ -39,7 +41,12 @@ func TestSetDocProps(t *testing.T) {
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocProps.xlsx")))
 	f.XLSX["docProps/core.xml"] = nil
-	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "EOF")
+	assert.NoError(t, f.SetDocProps(&DocProperties{}))
+
+	// Test unsupport charset
+	f = NewFile()
+	f.XLSX["docProps/core.xml"] = MacintoshCyrillicCharset
+	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetDocProps(t *testing.T) {
@@ -52,5 +59,11 @@ func TestGetDocProps(t *testing.T) {
 	assert.Equal(t, props.Creator, "Microsoft Office User")
 	f.XLSX["docProps/core.xml"] = nil
 	_, err = f.GetDocProps()
-	assert.EqualError(t, err, "EOF")
+	assert.NoError(t, err)
+
+	// Test unsupport charset
+	f = NewFile()
+	f.XLSX["docProps/core.xml"] = MacintoshCyrillicCharset
+	_, err = f.GetDocProps()
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }

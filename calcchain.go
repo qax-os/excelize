@@ -9,16 +9,26 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"bytes"
+	"encoding/xml"
+	"io"
+	"log"
+)
 
 // calcChainReader provides a function to get the pointer to the structure
 // after deserialization of xl/calcChain.xml.
 func (f *File) calcChainReader() *xlsxCalcChain {
+	var err error
+
 	if f.CalcChain == nil {
-		var c xlsxCalcChain
-		_ = xml.Unmarshal(namespaceStrictToTransitional(f.readXML("xl/calcChain.xml")), &c)
-		f.CalcChain = &c
+		f.CalcChain = new(xlsxCalcChain)
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/calcChain.xml")))).
+			Decode(f.CalcChain); err != nil && err != io.EOF {
+			log.Printf("xml decode error: %s", err)
+		}
 	}
+
 	return f.CalcChain
 }
 

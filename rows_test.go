@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -12,12 +13,12 @@ import (
 func TestRows(t *testing.T) {
 	const sheet2 = "Sheet2"
 
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	rows, err := xlsx.Rows(sheet2)
+	rows, err := f.Rows(sheet2)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -32,7 +33,7 @@ func TestRows(t *testing.T) {
 		t.FailNow()
 	}
 
-	returnedRows, err := xlsx.GetRows(sheet2)
+	returnedRows, err := f.GetRows(sheet2)
 	assert.NoError(t, err)
 	for i := range returnedRows {
 		returnedRows[i] = trimSliceSpace(returnedRows[i])
@@ -40,6 +41,11 @@ func TestRows(t *testing.T) {
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
+
+	f = NewFile()
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	_, err = f.Rows("Sheet1")
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 }
 
 func TestRowsIterator(t *testing.T) {
@@ -63,7 +69,7 @@ func TestRowsIterator(t *testing.T) {
 	f = NewFile()
 	cells := []string{"C1", "E1", "A3", "B3", "C3", "D3", "E3"}
 	for _, cell := range cells {
-		f.SetCellValue("Sheet1", cell, 1)
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
 	}
 	rows, err = f.Rows("Sheet1")
 	require.NoError(t, err)
@@ -126,6 +132,35 @@ func TestRowHeight(t *testing.T) {
 	convertColWidthToPixels(0)
 }
 
+func TestColumns(t *testing.T) {
+	f := NewFile()
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="A"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
+
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.NoError(t, err)
+
+	rows.curRow = 3
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	// Test token is nil
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
+	_, err = rows.Columns()
+	assert.NoError(t, err)
+}
+
+func TestSharedStringsReader(t *testing.T) {
+	f := NewFile()
+	f.XLSX["xl/sharedStrings.xml"] = MacintoshCyrillicCharset
+	f.sharedStringsReader()
+}
+
 func TestRowVisibility(t *testing.T) {
 	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
@@ -134,8 +169,12 @@ func TestRowVisibility(t *testing.T) {
 	f.NewSheet("Sheet3")
 	assert.NoError(t, f.SetRowVisible("Sheet3", 2, false))
 	assert.NoError(t, f.SetRowVisible("Sheet3", 2, true))
-	f.GetRowVisible("Sheet3", 2)
-	f.GetRowVisible("Sheet3", 25)
+	visiable, err := f.GetRowVisible("Sheet3", 2)
+	assert.Equal(t, true, visiable)
+	assert.NoError(t, err)
+	visiable, err = f.GetRowVisible("Sheet3", 25)
+	assert.Equal(t, false, visiable)
+	assert.NoError(t, err)
 	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
 	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN is not exist")
 
@@ -149,61 +188,64 @@ func TestRowVisibility(t *testing.T) {
 }
 
 func TestRemoveRow(t *testing.T) {
-	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(1)
-	r, err := xlsx.workSheetReader(sheet1)
+	f := NewFile()
+	sheet1 := f.GetSheetName(1)
+	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
 	const (
 		colCount = 10
 		rowCount = 10
 	)
-	fillCells(xlsx, sheet1, colCount, rowCount)
+	fillCells(f, sheet1, colCount, rowCount)
 
-	xlsx.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
 
-	assert.EqualError(t, xlsx.RemoveRow(sheet1, -1), "invalid row number -1")
+	assert.EqualError(t, f.RemoveRow(sheet1, -1), "invalid row number -1")
 
-	assert.EqualError(t, xlsx.RemoveRow(sheet1, 0), "invalid row number 0")
+	assert.EqualError(t, f.RemoveRow(sheet1, 0), "invalid row number 0")
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 4))
+	assert.NoError(t, f.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-1) {
 		t.FailNow()
 	}
 
-	xlsx.MergeCell(sheet1, "B3", "B5")
+	assert.NoError(t, f.MergeCell(sheet1, "B3", "B5"))
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 2))
+	assert.NoError(t, f.RemoveRow(sheet1, 2))
 	if !assert.Len(t, r.SheetData.Row, rowCount-2) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 4))
+	assert.NoError(t, f.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-3) {
 		t.FailNow()
 	}
 
-	err = xlsx.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
+	err = f.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 1))
+	assert.NoError(t, f.RemoveRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount-4) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 2))
+	assert.NoError(t, f.RemoveRow(sheet1, 2))
 	if !assert.Len(t, r.SheetData.Row, rowCount-5) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 1))
+	assert.NoError(t, f.RemoveRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount-6) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, xlsx.RemoveRow(sheet1, 10))
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
+	assert.NoError(t, f.RemoveRow(sheet1, 10))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
+
+	// Test remove row on not exist worksheet
+	assert.EqualError(t, f.RemoveRow("SheetN", 1), `sheet SheetN is not exist`)
 }
 
 func TestInsertRow(t *testing.T) {
@@ -217,7 +259,7 @@ func TestInsertRow(t *testing.T) {
 	)
 	fillCells(xlsx, sheet1, colCount, rowCount)
 
-	xlsx.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	assert.NoError(t, xlsx.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
 
 	assert.EqualError(t, xlsx.InsertRow(sheet1, -1), "invalid row number -1")
 
@@ -267,8 +309,8 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 
 	t.Run("FromSingleRow", func(t *testing.T) {
 		xlsx := NewFile()
-		xlsx.SetCellStr(sheet, "A1", cells["A1"])
-		xlsx.SetCellStr(sheet, "B1", cells["B1"])
+		assert.NoError(t, xlsx.SetCellStr(sheet, "A1", cells["A1"]))
+		assert.NoError(t, xlsx.SetCellStr(sheet, "B1", cells["B1"]))
 
 		assert.NoError(t, xlsx.DuplicateRow(sheet, 1))
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.FromSingleRow_1"))) {
@@ -320,13 +362,13 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 
 	t.Run("UpdateDuplicatedRows", func(t *testing.T) {
 		xlsx := NewFile()
-		xlsx.SetCellStr(sheet, "A1", cells["A1"])
-		xlsx.SetCellStr(sheet, "B1", cells["B1"])
+		assert.NoError(t, xlsx.SetCellStr(sheet, "A1", cells["A1"]))
+		assert.NoError(t, xlsx.SetCellStr(sheet, "B1", cells["B1"]))
 
 		assert.NoError(t, xlsx.DuplicateRow(sheet, 1))
 
-		xlsx.SetCellStr(sheet, "A2", cells["A2"])
-		xlsx.SetCellStr(sheet, "B2", cells["B2"])
+		assert.NoError(t, xlsx.SetCellStr(sheet, "A2", cells["A2"]))
+		assert.NoError(t, xlsx.SetCellStr(sheet, "B2", cells["B2"]))
 
 		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.UpdateDuplicatedRows"))) {
 			t.FailNow()
@@ -361,8 +403,7 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 	newFileWithDefaults := func() *File {
 		f := NewFile()
 		for cell, val := range cells {
-			f.SetCellStr(sheet, cell, val)
-
+			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
 		return f
 	}
@@ -476,8 +517,7 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 	newFileWithDefaults := func() *File {
 		f := NewFile()
 		for cell, val := range cells {
-			f.SetCellStr(sheet, cell, val)
-
+			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
 		return f
 	}
@@ -522,8 +562,7 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 	newFileWithDefaults := func() *File {
 		f := NewFile()
 		for cell, val := range cells {
-			f.SetCellStr(sheet, cell, val)
-
+			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
 		return f
 	}
@@ -568,8 +607,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 	newFileWithDefaults := func() *File {
 		f := NewFile()
 		for cell, val := range cells {
-			f.SetCellStr(sheet, cell, val)
-
+			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
 		return f
 	}
@@ -615,8 +653,7 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 	newFileWithDefaults := func() *File {
 		f := NewFile()
 		for cell, val := range cells {
-			f.SetCellStr(sheet, cell, val)
-
+			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
 		return f
 	}
@@ -666,7 +703,7 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			xlsx := NewFile()
 			for col, val := range cells {
-				xlsx.SetCellStr(sheet, col, val)
+				assert.NoError(t, xlsx.SetCellStr(sheet, col, val))
 			}
 
 			assert.EqualError(t, xlsx.DuplicateRow(sheet, row), fmt.Sprintf("invalid row number %d", row))
@@ -688,7 +725,7 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				xlsx := NewFile()
 				for col, val := range cells {
-					xlsx.SetCellStr(sheet, col, val)
+					assert.NoError(t, xlsx.SetCellStr(sheet, col, val))
 				}
 
 				assert.EqualError(t, xlsx.DuplicateRowTo(sheet, row1, row2), fmt.Sprintf("invalid row number %d", row1))
@@ -704,6 +741,15 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestGetValueFrom(t *testing.T) {
+	c := &xlsxC{T: "inlineStr"}
+	f := NewFile()
+	d := &xlsxSST{}
+	val, err := c.getValueFrom(f, d)
+	assert.NoError(t, err)
+	assert.Equal(t, "", val)
 }
 
 func TestErrSheetNotExistError(t *testing.T) {

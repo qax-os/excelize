@@ -33,12 +33,8 @@ func NewFile() *File {
 	file["xl/styles.xml"] = []byte(XMLHeader + templateStyles)
 	file["xl/workbook.xml"] = []byte(XMLHeader + templateWorkbook)
 	file["[Content_Types].xml"] = []byte(XMLHeader + templateContentTypes)
-	f := &File{
-		sheetMap:   make(map[string]string),
-		Sheet:      make(map[string]*xlsxWorksheet),
-		SheetCount: 1,
-		XLSX:       file,
-	}
+	f := newFile()
+	f.SheetCount, f.XLSX = 1, file
 	f.CalcChain = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes = f.contentTypesReader()

@@ -37,17 +37,29 @@ func TestColumnVisibility(t *testing.T) {
 	t.Run("TestBook3", func(t *testing.T) {
 		f, err := prepareTestBook3()
 		assert.NoError(t, err)
-		f.GetColVisible("Sheet1", "B")
+		visible, err := f.GetColVisible("Sheet1", "B")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
 	})
 }
 
 func TestOutlineLevel(t *testing.T) {
 	f := NewFile()
-	f.GetColOutlineLevel("Sheet1", "D")
+	level, err := f.GetColOutlineLevel("Sheet1", "D")
+	assert.Equal(t, uint8(0), level)
+	assert.NoError(t, err)
+
 	f.NewSheet("Sheet2")
 	assert.NoError(t, f.SetColOutlineLevel("Sheet1", "D", 4))
-	f.GetColOutlineLevel("Sheet1", "D")
-	f.GetColOutlineLevel("Shee2", "A")
+
+	level, err = f.GetColOutlineLevel("Sheet1", "D")
+	assert.Equal(t, uint8(4), level)
+	assert.NoError(t, err)
+
+	level, err = f.GetColOutlineLevel("Shee2", "A")
+	assert.Equal(t, uint8(0), level)
+	assert.EqualError(t, err, "sheet Shee2 is not exist")
+
 	assert.NoError(t, f.SetColWidth("Sheet2", "A", "D", 13))
 	assert.NoError(t, f.SetColOutlineLevel("Sheet2", "B", 2))
 	assert.NoError(t, f.SetRowOutlineLevel("Sheet1", 2, 7))
@@ -56,7 +68,7 @@ func TestOutlineLevel(t *testing.T) {
 	// Test set row outline level on not exists worksheet.
 	assert.EqualError(t, f.SetRowOutlineLevel("SheetN", 1, 4), "sheet SheetN is not exist")
 	// Test get row outline level on not exists worksheet.
-	_, err := f.GetRowOutlineLevel("SheetN", 1)
+	_, err = f.GetRowOutlineLevel("SheetN", 1)
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	// Test set and get column outline level with illegal cell coordinates.
@@ -68,7 +80,7 @@ func TestOutlineLevel(t *testing.T) {
 	assert.EqualError(t, f.SetColOutlineLevel("SheetN", "E", 2), "sheet SheetN is not exist")
 
 	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 0, 1), "invalid row number 0")
-	level, err := f.GetRowOutlineLevel("Sheet1", 2)
+	level, err = f.GetRowOutlineLevel("Sheet1", 2)
 	assert.NoError(t, err)
 	assert.Equal(t, uint8(7), level)
 
@@ -83,7 +95,7 @@ func TestOutlineLevel(t *testing.T) {
 
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
-	f.SetColOutlineLevel("Sheet2", "B", 2)
+	assert.NoError(t, f.SetColOutlineLevel("Sheet2", "B", 2))
 }
 
 func TestSetColStyle(t *testing.T) {
@@ -105,13 +117,18 @@ func TestSetColStyle(t *testing.T) {
 
 func TestColWidth(t *testing.T) {
 	f := NewFile()
-	f.SetColWidth("Sheet1", "B", "A", 12)
-	f.SetColWidth("Sheet1", "A", "B", 12)
-	f.GetColWidth("Sheet1", "A")
-	f.GetColWidth("Sheet1", "C")
+	assert.NoError(t, f.SetColWidth("Sheet1", "B", "A", 12))
+	assert.NoError(t, f.SetColWidth("Sheet1", "A", "B", 12))
+	width, err := f.GetColWidth("Sheet1", "A")
+	assert.Equal(t, float64(12), width)
+	assert.NoError(t, err)
+	width, err = f.GetColWidth("Sheet1", "C")
+	assert.Equal(t, float64(64), width)
+	assert.NoError(t, err)
 
 	// Test set and get column width with illegal cell coordinates.
-	_, err := f.GetColWidth("Sheet1", "*")
+	width, err = f.GetColWidth("Sheet1", "*")
+	assert.Equal(t, float64(64), width)
 	assert.EqualError(t, err, `invalid column name "*"`)
 	assert.EqualError(t, f.SetColWidth("Sheet1", "*", "B", 1), `invalid column name "*"`)
 	assert.EqualError(t, f.SetColWidth("Sheet1", "A", "*", 1), `invalid column name "*"`)
@@ -133,8 +150,8 @@ func TestInsertCol(t *testing.T) {
 
 	fillCells(f, sheet1, 10, 10)
 
-	f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
-	f.MergeCell(sheet1, "A1", "C3")
+	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.MergeCell(sheet1, "A1", "C3"))
 
 	assert.NoError(t, f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`))
 	assert.NoError(t, f.InsertCol(sheet1, "A"))
@@ -151,11 +168,11 @@ func TestRemoveCol(t *testing.T) {
 
 	fillCells(f, sheet1, 10, 15)
 
-	f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
-	f.SetCellHyperLink(sheet1, "C5", "https://github.com", "External")
+	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.SetCellHyperLink(sheet1, "C5", "https://github.com", "External"))
 
-	f.MergeCell(sheet1, "A1", "B1")
-	f.MergeCell(sheet1, "A2", "B2")
+	assert.NoError(t, f.MergeCell(sheet1, "A1", "B1"))
+	assert.NoError(t, f.MergeCell(sheet1, "A2", "B2"))
 
 	assert.NoError(t, f.RemoveCol(sheet1, "A"))
 	assert.NoError(t, f.RemoveCol(sheet1, "A"))

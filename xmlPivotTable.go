@@ -187,7 +187,7 @@ type xlsxItem struct {
 	F  bool   `xml:"f,attr,omitempty"`
 	M  bool   `xml:"m,attr,omitempty"`
 	C  bool   `xml:"c,attr,omitempty"`
-	X  int    `xml:"x,attr,omitempty,omitempty"`
+	X  int    `xml:"x,attr,omitempty"`
 	D  bool   `xml:"d,attr,omitempty"`
 	E  bool   `xml:"e,attr,omitempty"`
 }

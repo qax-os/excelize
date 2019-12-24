@@ -275,8 +275,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
 		// Add first shape for given sheet.
-		name, _ := f.sheetMap[trimSheetName(sheet)]
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 	}
@@ -362,7 +361,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 			FontRef: &aFontRef{
 				Idx: "minor",
 				SchemeClr: &attrValString{
-					Val: "tx1",
+					Val: stringPtr("tx1"),
 				},
 			},
 		},
@@ -422,7 +421,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		if len(srgbClr) == 6 {
 			paragraph.R.RPr.SolidFill = &aSolidFill{
 				SrgbClr: &attrValString{
-					Val: srgbClr,
+					Val: stringPtr(srgbClr),
 				},
 			}
 		}
@@ -454,7 +453,7 @@ func setShapeRef(color string, i int) *aRef {
 	return &aRef{
 		Idx: i,
 		SrgbClr: &attrValString{
-			Val: strings.Replace(strings.ToUpper(color), "#", "", -1),
+			Val: stringPtr(strings.Replace(strings.ToUpper(color), "#", "", -1)),
 		},
 	}
 }

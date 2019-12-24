@@ -53,7 +53,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	checkSheet(xlsx)
-	checkRow(xlsx)
+	_ = checkRow(xlsx)
 
 	if xlsx.MergeCells != nil && len(xlsx.MergeCells.Cells) == 0 {
 		xlsx.MergeCells = nil
@@ -210,9 +210,6 @@ func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
 		return coordinates, err
 	}
 	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
-	if err != nil {
-		return coordinates, err
-	}
 	return coordinates, err
 }
 

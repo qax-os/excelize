@@ -22,7 +22,7 @@ func TestChartSize(t *testing.T) {
 		"D1": "Pear",
 	}
 	for cell, v := range categories {
-		xlsx.SetCellValue(sheet1, cell, v)
+		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
 	}
 
 	values := map[string]int{
@@ -37,29 +37,22 @@ func TestChartSize(t *testing.T) {
 		"D4": 8,
 	}
 	for cell, v := range values {
-		xlsx.SetCellValue(sheet1, cell, v)
+		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
 	}
 
-	xlsx.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},`+
+	assert.NoError(t, xlsx.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},`+
 		`"series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},`+
 		`{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},`+
 		`{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],`+
-		`"title":{"name":"3D Clustered Column Chart"}}`)
+		`"title":{"name":"3D Clustered Column Chart"}}`))
 
-	var (
-		buffer bytes.Buffer
-	)
+	var buffer bytes.Buffer
 
 	// Save xlsx file by the given path.
-	err := xlsx.Write(&buffer)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, xlsx.Write(&buffer))
 
 	newFile, err := OpenReader(&buffer)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	chartsNum := newFile.countCharts()
 	if !assert.Equal(t, 1, chartsNum, "Expected 1 chart, actual %d", chartsNum) {
@@ -144,7 +137,7 @@ func TestAddChart(t *testing.T) {
 	assert.NoError(t, f.AddChart("Sheet2", "P1", `{"type":"radar","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top_right","show_legend_key":false},"title":{"name":"Radar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"span"}`))
 	assert.NoError(t, f.AddChart("Sheet2", "X1", `{"type":"scatter","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Scatter Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`))
 	assert.NoError(t, f.AddChart("Sheet2", "P16", `{"type":"doughnut","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"right","show_legend_key":false},"title":{"name":"Doughnut Chart"},"plotarea":{"show_bubble_size":false,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"zero"}`))
-	assert.NoError(t, f.AddChart("Sheet2", "X16", `{"type":"line","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37","line":{"width":0.25}}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top","show_legend_key":false},"title":{"name":"Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"major_grid_lines":true,"minor_grid_lines":true},"y_axis":{"major_grid_lines":true,"minor_grid_lines":true}}`))
+	assert.NoError(t, f.AddChart("Sheet2", "X16", `{"type":"line","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37","line":{"width":0.25}}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"top","show_legend_key":false},"title":{"name":"Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"major_grid_lines":true,"minor_grid_lines":true,"major_unit":1,"tick_label_skip":1},"y_axis":{"major_grid_lines":true,"minor_grid_lines":true,"major_unit":1}}`))
 	assert.NoError(t, f.AddChart("Sheet2", "P32", `{"type":"pie3D","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"3D Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"zero"}`))
 	assert.NoError(t, f.AddChart("Sheet2", "X32", `{"type":"pie","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":false,"show_val":false},"show_blanks_as":"gap"}`))
 	assert.NoError(t, f.AddChart("Sheet2", "P48", `{"type":"bar","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"2D Clustered Bar Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`))

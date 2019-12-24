@@ -58,10 +58,24 @@ func TestStreamWriter(t *testing.T) {
 		assert.NoError(t, streamWriter.SetRow(cell, row, nil))
 	}
 
-	err = streamWriter.Flush()
-	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.Flush())
 	// Save xlsx file by the given path.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
+
+	// Test close temporary file error
+	file = NewFile()
+	streamWriter, err = file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	for rowID := 10; rowID <= 51200; rowID++ {
+		row := make([]interface{}, 50)
+		for colID := 0; colID < 50; colID++ {
+			row[colID] = rand.Intn(640000)
+		}
+		cell, _ := CoordinatesToCellName(1, rowID)
+		assert.NoError(t, streamWriter.SetRow(cell, row, nil))
+	}
+	assert.NoError(t, streamWriter.rawData.Close())
+	assert.Error(t, streamWriter.Flush())
 }
 
 func TestStreamTable(t *testing.T) {

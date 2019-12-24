@@ -14,7 +14,9 @@ func BenchmarkWrite(b *testing.B) {
 				if err != nil {
 					panic(err)
 				}
-				f.SetCellDefault("Sheet1", val, s)
+				if err := f.SetCellDefault("Sheet1", val, s); err != nil {
+					panic(err)
+				}
 			}
 		}
 		// Save xlsx file by the given path.

@@ -75,6 +75,20 @@ func TestNewSheet(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
 }
 
+func TestSetPane(t *testing.T) {
+	f := excelize.NewFile()
+	assert.NoError(t, f.SetPanes("Sheet1", `{"freeze":false,"split":false}`))
+	f.NewSheet("Panes 2")
+	assert.NoError(t, f.SetPanes("Panes 2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`))
+	f.NewSheet("Panes 3")
+	assert.NoError(t, f.SetPanes("Panes 3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`))
+	f.NewSheet("Panes 4")
+	assert.NoError(t, f.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`))
+	assert.NoError(t, f.SetPanes("Panes 4", ""))
+	assert.EqualError(t, f.SetPanes("SheetN", ""), "sheet SheetN is not exist")
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
+}
+
 func TestPageLayoutOption(t *testing.T) {
 	const sheet = "Sheet1"
 
@@ -156,6 +170,12 @@ func TestSearchSheet(t *testing.T) {
 	result, err = f.SearchSheet("Sheet1", "[0-9]", true)
 	assert.NoError(t, err)
 	assert.EqualValues(t, expected, result)
+
+	// Test search worksheet data after set cell value
+	f = excelize.NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
+	_, err = f.SearchSheet("Sheet1", "")
+	assert.NoError(t, err)
 }
 
 func TestSetPageLayout(t *testing.T) {
@@ -172,7 +192,7 @@ func TestGetPageLayout(t *testing.T) {
 
 func TestSetHeaderFooter(t *testing.T) {
 	f := excelize.NewFile()
-	f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter")
+	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet.
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN is not exist")
 	// Test set header and footer with illegal setting.

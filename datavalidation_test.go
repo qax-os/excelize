@@ -11,6 +11,7 @@ package excelize
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,53 +24,45 @@ func TestDataValidation(t *testing.T) {
 
 	dvRange := NewDataValidation(true)
 	dvRange.Sqref = "A1:B2"
-	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorBetween)
+	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorBetween))
 	dvRange.SetError(DataValidationErrorStyleStop, "error title", "error body")
 	dvRange.SetError(DataValidationErrorStyleWarning, "error title", "error body")
 	dvRange.SetError(DataValidationErrorStyleInformation, "error title", "error body")
-	f.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, f.SaveAs(resultFile)) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.SaveAs(resultFile))
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A3:B4"
-	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 	dvRange.SetInput("input title", "input body")
-	f.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, f.SaveAs(resultFile)) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.SaveAs(resultFile))
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
-	dvRange.SetDropList([]string{"1", "2", "3"})
-	f.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, f.SaveAs(resultFile)) {
-		t.FailNow()
-	}
+	assert.NoError(t, dvRange.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.SaveAs(resultFile))
 }
 
 func TestDataValidationError(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidationError.xlsx")
 
 	f := NewFile()
-	f.SetCellStr("Sheet1", "E1", "E1")
-	f.SetCellStr("Sheet1", "E2", "E2")
-	f.SetCellStr("Sheet1", "E3", "E3")
+	assert.NoError(t, f.SetCellStr("Sheet1", "E1", "E1"))
+	assert.NoError(t, f.SetCellStr("Sheet1", "E2", "E2"))
+	assert.NoError(t, f.SetCellStr("Sheet1", "E3", "E3"))
 
 	dvRange := NewDataValidation(true)
 	dvRange.SetSqref("A7:B8")
 	dvRange.SetSqref("A7:B8")
-	dvRange.SetSqrefDropList("$E$1:$E$3", true)
+	assert.NoError(t, dvRange.SetSqrefDropList("$E$1:$E$3", true))
 
 	err := dvRange.SetSqrefDropList("$E$1:$E$3", false)
 	assert.EqualError(t, err, "cross-sheet sqref cell are not supported")
 
-	f.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, f.SaveAs(resultFile)) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.SaveAs(resultFile))
 
 	dvRange = NewDataValidation(true)
 	err = dvRange.SetDropList(make([]string, 258))
@@ -78,11 +71,17 @@ func TestDataValidationError(t *testing.T) {
 		return
 	}
 	assert.EqualError(t, err, "data validation must be 0-255 characters")
-	dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 	dvRange.SetSqref("A9:B10")
 
-	f.AddDataValidation("Sheet1", dvRange)
-	if !assert.NoError(t, f.SaveAs(resultFile)) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.SaveAs(resultFile))
+
+	// Test width invalid data validation formula.
+	dvRange.Formula1 = strings.Repeat("s", dataValidationFormulaStrLen+22)
+	assert.EqualError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan), "data validation must be 0-255 characters")
+
+	// Test add data validation on no exists worksheet.
+	f = NewFile()
+	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN is not exist")
 }
