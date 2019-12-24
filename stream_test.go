@@ -23,7 +23,7 @@ func BenchmarkStreamWriter(b *testing.B) {
 		streamWriter, _ := file.NewStreamWriter("Sheet1")
 		for rowID := 10; rowID <= 110; rowID++ {
 			cell, _ := CoordinatesToCellName(1, rowID)
-			streamWriter.SetRow(cell, row, nil)
+			streamWriter.SetRow(cell, row)
 		}
 	}
 
@@ -38,16 +38,16 @@ func TestStreamWriter(t *testing.T) {
 	// Test max characters in a cell.
 	row := make([]interface{}, 1)
 	row[0] = strings.Repeat("c", 32769)
-	assert.NoError(t, streamWriter.SetRow("A1", row, nil))
+	assert.NoError(t, streamWriter.SetRow("A1", row))
 
 	// Test leading and ending space(s) character characters in a cell.
 	row = make([]interface{}, 1)
 	row[0] = " characters"
-	assert.NoError(t, streamWriter.SetRow("A2", row, nil))
+	assert.NoError(t, streamWriter.SetRow("A2", row))
 
 	row = make([]interface{}, 1)
 	row[0] = []byte("Word")
-	assert.NoError(t, streamWriter.SetRow("A3", row, nil))
+	assert.NoError(t, streamWriter.SetRow("A3", row))
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
@@ -55,7 +55,7 @@ func TestStreamWriter(t *testing.T) {
 			row[colID] = rand.Intn(640000)
 		}
 		cell, _ := CoordinatesToCellName(1, rowID)
-		assert.NoError(t, streamWriter.SetRow(cell, row, nil))
+		assert.NoError(t, streamWriter.SetRow(cell, row))
 	}
 
 	assert.NoError(t, streamWriter.Flush())
@@ -72,7 +72,7 @@ func TestStreamWriter(t *testing.T) {
 			row[colID] = rand.Intn(640000)
 		}
 		cell, _ := CoordinatesToCellName(1, rowID)
-		assert.NoError(t, streamWriter.SetRow(cell, row, nil))
+		assert.NoError(t, streamWriter.SetRow(cell, row))
 	}
 	assert.NoError(t, streamWriter.rawData.Close())
 	assert.Error(t, streamWriter.Flush())
@@ -84,10 +84,10 @@ func TestStreamTable(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Write some rows. We want enough rows to force a temp file (>16MB).
-	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}, nil))
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
 	row := []interface{}{1, 2, 3}
 	for r := 2; r < 10000; r++ {
-		assert.NoError(t, streamWriter.SetRow(fmt.Sprintf("A%d", r), row, nil))
+		assert.NoError(t, streamWriter.SetRow(fmt.Sprintf("A%d", r), row))
 	}
 
 	// Write a table.
@@ -116,5 +116,5 @@ func TestSetRow(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
-	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}, nil), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }

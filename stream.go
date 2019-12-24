@@ -12,7 +12,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -245,22 +244,23 @@ func getRowElement(token xml.Token, hrow int) (startElement xml.StartElement, ok
 	return
 }
 
+// Cell can be used directly in StreamWriter.SetRow to specify a style and
+// a value.
+type Cell struct {
+	StyleID int
+	Value interface{}
+}
+
 // SetRow writes an array to stream rows by giving a worksheet name, starting
-// coordinate and a pointer to an array of values. If styles is non-nil, then
-// the styles must be the same size as the values and will be applied to each
-// corresponding cell. Note that you must call the 'Flush' method to end the
-// streaming writing process.
-func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) error {
+// coordinate and a pointer to an array of values. Note that you must call the
+// 'Flush' method to end the streaming writing process.
+//
+// As a special case, if Cell is used as a value, then the Cell.StyleID will be
+// applied to that cell.
+func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	col, row, err := CellNameToCoordinates(axis)
 	if err != nil {
 		return err
-	}
-
-	if styles == nil {
-		styles = make([]int, len(values))
-	}
-	if len(styles) != len(values) {
-		return errors.New("incorrect number of styles for this row")
 	}
 
 	fmt.Fprintf(&sw.rawData, `<row r="%d">`, row)
@@ -269,7 +269,14 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: axis, S: styles[i]}
+		c := xlsxC{R: axis}
+		if v, ok := val.(Cell); ok {
+			c.S = v.StyleID
+			val = v.Value
+		} else if v, ok := val.(*Cell); ok && v != nil {
+			c.S = v.StyleID
+			val = v.Value
+		}
 		switch val := val.(type) {
 		case int:
 			c.T, c.V = setCellInt(val)
