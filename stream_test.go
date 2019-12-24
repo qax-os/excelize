@@ -1,6 +1,8 @@
 package excelize
 
 import (
+	"encoding/xml"
+	"fmt"
 	"math/rand"
 	"path/filepath"
 	"strings"
@@ -60,19 +62,39 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, err)
 	// Save xlsx file by the given path.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
-
-	// Test error exceptions
-	streamWriter, err = file.NewStreamWriter("SheetN")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
-func TestFlush(t *testing.T) {
-	// Test error exceptions
+func TestStreamTable(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
-	streamWriter.Sheet = "SheetN"
-	assert.EqualError(t, streamWriter.Flush(), "sheet SheetN is not exist")
+
+	// Write some rows. We want enough rows to force a temp file (>16MB).
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}, nil))
+	row := []interface{}{1, 2, 3}
+	for r := 2; r < 10000; r++ {
+		assert.NoError(t, streamWriter.SetRow(fmt.Sprintf("A%d", r), row, nil))
+	}
+
+	// Write a table.
+	assert.NoError(t, streamWriter.AddTable("A1", "C2", ``))
+	assert.NoError(t, streamWriter.Flush())
+
+	// Verify the table has names.
+	var table xlsxTable
+	assert.NoError(t, xml.Unmarshal(file.XLSX["xl/tables/table1.xml"], &table))
+	assert.Equal(t, "A", table.TableColumns.TableColumn[0].Name)
+	assert.Equal(t, "B", table.TableColumns.TableColumn[1].Name)
+	assert.Equal(t, "C", table.TableColumns.TableColumn[2].Name)
+}
+
+func TestNewStreamWriter(t *testing.T) {
+	// Test error exceptions
+	file := NewFile()
+	_, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	_, err = file.NewStreamWriter("SheetN")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
 func TestSetRow(t *testing.T) {

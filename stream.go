@@ -14,6 +14,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -24,13 +25,11 @@ import (
 
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
-	tmpFile    *os.File
 	File       *File
 	Sheet      string
 	SheetID    int
-	SheetData  bytes.Buffer
-	table      *xlsxTable
-	replaceMap map[string][]byte
+	rawData    bufferedWriter
+	tableParts string
 }
 
 // NewStreamWriter return stream writer struct by given worksheet name for
@@ -67,27 +66,72 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if sheetID == 0 {
 		return nil, fmt.Errorf("sheet %s is not exist", sheet)
 	}
-	rsw := &StreamWriter{
+	sw := &StreamWriter{
 		File:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
-		replaceMap: map[string][]byte{
-			"XMLName": []byte{},
-		},
 	}
-	rsw.SheetData.WriteString("<sheetData>")
-	return rsw, nil
+
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return nil, err
+	}
+	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
+	bulkAppendOtherFields(&sw.rawData, ws, "XMLName", "SheetData", "TableParts")
+	sw.rawData.WriteString(`<sheetData>`)
+	return sw, nil
 }
 
-// SetTable creates an Excel table for the StreamWriter. This function must be
-// called before the first SetRow.
+// AddTable creates an Excel table for the StreamWriter using the given
+// coordinate area and format set. For example, create a table of A1:D5:
 //
-// The first SetRow will create the column names. These Column names must be
-// strings or an error will be returned.
-func (sw *StreamWriter) SetTable(format string) error {
+//    err := sw.AddTable("A1", "D5", ``)
+//
+// Create a table of F2:H6 with format set:
+//
+//    err := sw.AddTable("F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2","show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+//
+// Note that the table must be at least two lines including the header. The
+// header cells must contain strings and must be unique.
+//
+// Currently only one table is allowed for a StreamWriter. AddTable must be
+// called after the rows are written but before Flush.
+//
+// See File.AddTable for details on the table format.
+func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
 	formatSet, err := parseFormatTableSet(format)
 	if err != nil {
 		return err
+	}
+
+	coordinates, err := areaRangeToCoordinates(hcell, vcell)
+	if err != nil {
+		return err
+	}
+	sortCoordinates(coordinates)
+
+	// Correct the minimum number of rows, the table at least two lines.
+	if coordinates[1] == coordinates[3] {
+		coordinates[3]++
+	}
+
+	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
+	ref, err := sw.File.coordinatesToAreaRef(coordinates)
+	if err != nil {
+		return err
+	}
+
+	// create table columns using the first row
+	tableHeaders, err := sw.getRowValues(coordinates[1], coordinates[0], coordinates[2])
+	if err != nil {
+		return err
+	}
+	tableColumn := make([]*xlsxTableColumn, len(tableHeaders))
+	for i, name := range tableHeaders {
+		tableColumn[i] = &xlsxTableColumn{
+			ID:   i + 1,
+			Name: name,
+		}
 	}
 
 	tableID := sw.File.countTables() + 1
@@ -97,11 +141,19 @@ func (sw *StreamWriter) SetTable(format string) error {
 		name = "Table" + strconv.Itoa(tableID)
 	}
 
-	sw.table = &xlsxTable{
+	table := xlsxTable{
 		XMLNS:       NameSpaceSpreadSheet,
 		ID:          tableID,
 		Name:        name,
 		DisplayName: name,
+		Ref:         ref,
+		AutoFilter: &xlsxAutoFilter{
+			Ref: ref,
+		},
+		TableColumns: &xlsxTableColumns{
+			Count:       len(tableColumn),
+			TableColumn: tableColumn,
+		},
 		TableStyleInfo: &xlsxTableStyleInfo{
 			Name:              formatSet.TableStyle,
 			ShowFirstColumn:   formatSet.ShowFirstColumn,
@@ -110,7 +162,87 @@ func (sw *StreamWriter) SetTable(format string) error {
 			ShowColumnStripes: formatSet.ShowColumnStripes,
 		},
 	}
+
+	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
+	tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
+
+	// Add first table for given sheet.
+	sheetPath, _ := sw.File.sheetMap[trimSheetName(sw.Sheet)]
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+	rID := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+
+	sw.tableParts = fmt.Sprintf(`<tableParts count="1"><tablePart r:id="rId%d"></tablePart></tableParts>`, rID)
+
+	sw.File.addContentTypePart(tableID, "table")
+
+	b, _ := xml.Marshal(table)
+	sw.File.saveFileList(tableXML, b)
 	return nil
+}
+
+// Extract values from a row in the StreamWriter.
+func (sw *StreamWriter) getRowValues(hrow, hcol, vcol int) (res []string, err error) {
+	res = make([]string, vcol-hcol+1)
+
+	r, err := sw.rawData.Reader()
+	if err != nil {
+		return nil, err
+	}
+
+	dec := xml.NewDecoder(r)
+	for {
+		token, err := dec.Token()
+		if err == io.EOF {
+			return res, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		startElement, ok := getRowElement(token, hrow)
+		if !ok {
+			continue
+		}
+		// decode cells
+		var row xlsxRow
+		if err := dec.DecodeElement(&row, &startElement); err != nil {
+			return nil, err
+		}
+		for _, c := range row.C {
+			col, _, err := CellNameToCoordinates(c.R)
+			if err != nil {
+				return nil, err
+			}
+			if col < hcol || col > vcol {
+				continue
+			}
+			res[col-hcol] = c.V
+		}
+		return res, nil
+	}
+}
+
+// Check if the token is an XLSX row with the matching row number.
+func getRowElement(token xml.Token, hrow int) (startElement xml.StartElement, ok bool) {
+	startElement, ok = token.(xml.StartElement)
+	if !ok {
+		return
+	}
+	ok = startElement.Name.Local == "row"
+	if !ok {
+		return
+	}
+	ok = false
+	for _, attr := range startElement.Attr {
+		if attr.Name.Local != "r" {
+			continue
+		}
+		row, _ := strconv.Atoi(attr.Value)
+		if row == hrow {
+			ok = true
+			return
+		}
+	}
+	return
 }
 
 // SetRow writes an array to stream rows by giving a worksheet name, starting
@@ -131,74 +263,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 		return errors.New("incorrect number of styles for this row")
 	}
 
-	if sw.table != nil {
-		if sw.table.TableColumns == nil {
-			// create table columns using the first row
-			tableColumn := make([]*xlsxTableColumn, len(values))
-			sw.table.TableColumns = &xlsxTableColumns{
-				Count:       len(tableColumn),
-				TableColumn: tableColumn,
-			}
-
-			nameUsed := map[string]bool{}
-			for i, v := range values {
-				v, ok := v.(string)
-				if !ok {
-					return fmt.Errorf("column header %d is not a string", i+1)
-				}
-
-				// if column names are duplicated, do the same thing that Excel
-				// does and append a number
-				name := v
-				if name != "" {
-					for count := 1; nameUsed[name]; count++ {
-						name = fmt.Sprintf("%s%d", name, count+1)
-					}
-					nameUsed[name] = true
-				}
-
-				tableColumn[i] = &xlsxTableColumn{
-					ID:   i + 1,
-					Name: name,
-				}
-			}
-			idx := 1
-			for _, c := range tableColumn {
-				if c.Name == "" {
-					c.Name = fmt.Sprintf("Column%d", idx)
-					for ; nameUsed[c.Name]; idx++ {
-						c.Name = fmt.Sprintf("Column%d", idx)
-					}
-					nameUsed[c.Name] = true
-				}
-			}
-
-			ref, err := sw.File.coordinatesToAreaRef([]int{col, row, col + len(values) - 1, row})
-			if err != nil {
-				return err
-			}
-			sw.table.Ref = ref
-			sw.table.AutoFilter = &xlsxAutoFilter{Ref: ref}
-		} else {
-			c, err := sw.File.areaRefToCoordinates(sw.table.Ref)
-			if err != nil {
-				return err
-			}
-			if col != c[0] || col+sw.table.TableColumns.Count != c[2]+1 || row <= c[3] {
-				return fmt.Errorf("row %d is outside the table bounds", row+1)
-			}
-			c[3] = row
-
-			ref, err := sw.File.coordinatesToAreaRef(c)
-			if err != nil {
-				return err
-			}
-			sw.table.Ref = ref
-			sw.table.AutoFilter.Ref = ref
-		}
-	}
-
-	fmt.Fprintf(&sw.SheetData, `<row r="%d">`, row)
+	fmt.Fprintf(&sw.rawData, `<row r="%d">`, row)
 	for i, val := range values {
 		axis, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
@@ -245,30 +310,16 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, styles []int) 
 		default:
 			c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 		}
-		writeCell(&sw.SheetData, c)
-	}
-	sw.SheetData.WriteString(`</row>`)
-	// Try to use local storage
-	chunk := 1 << 24
-	if sw.SheetData.Len() >= chunk {
-		if sw.tmpFile == nil {
-			err := sw.createTmp()
-			if err != nil {
-				// can not use local storage
-				return nil
-			}
-		}
-		// use local storage
-		_, err := sw.tmpFile.Write(sw.SheetData.Bytes())
 		if err != nil {
-			return nil
+			return err
 		}
-		sw.SheetData.Reset()
+		writeCell(&sw.rawData, c)
 	}
-	return err
+	sw.rawData.WriteString(`</row>`)
+	return sw.rawData.Sync()
 }
 
-func writeCell(buf *bytes.Buffer, c xlsxC) {
+func writeCell(buf *bufferedWriter, c xlsxC) {
 	buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
 		fmt.Fprintf(buf, ` xml:%s="%s"`, c.XMLSpace.Name.Local, c.XMLSpace.Value)
@@ -291,93 +342,149 @@ func writeCell(buf *bytes.Buffer, c xlsxC) {
 
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
-	sw.SheetData.WriteString(`</sheetData>`)
-
-	ws, err := sw.File.workSheetReader(sw.Sheet)
-	if err != nil {
+	sw.rawData.WriteString(`</sheetData>`)
+	sw.rawData.WriteString(sw.tableParts)
+	sw.rawData.WriteString(`</worksheet>`)
+	if err := sw.rawData.Flush(); err != nil {
 		return err
 	}
+
 	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
 	delete(sw.File.Sheet, sheetXML)
 	delete(sw.File.checked, sheetXML)
-	var sheetDataByte []byte
-	if sw.tmpFile != nil {
-		// close the local storage file
-		if err = sw.tmpFile.Close(); err != nil {
-			return err
-		}
 
-		file, err := os.Open(sw.tmpFile.Name())
-		if err != nil {
-			return err
-		}
-
-		sheetDataByte, err = ioutil.ReadAll(file)
-		if err != nil {
-			return err
-		}
-
-		if err := file.Close(); err != nil {
-			return err
-		}
-
-		err = os.Remove(sw.tmpFile.Name())
-		if err != nil {
-			return err
-		}
+	defer sw.rawData.Close()
+	b, err := sw.rawData.Bytes()
+	if err != nil {
+		return err
 	}
-
-	sheetDataByte = append(sheetDataByte, sw.SheetData.Bytes()...)
-	sw.replaceMap["SheetData"] = sheetDataByte
-	sw.SheetData.Reset()
-
-	if sw.table != nil {
-		tableID := sw.File.countTables() + 1
-		sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
-		tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
-
-		// Add first table for given sheet.
-		sheetPath, _ := sw.File.sheetMap[trimSheetName(sw.Sheet)]
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
-		rID := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
-
-		tableParts := fmt.Sprintf(`<tableParts count="1"><tablePart r:id="rId%d"></tablePart></tableParts>`, rID)
-		sw.replaceMap["TableParts"] = []byte(tableParts)
-
-		sw.File.addContentTypePart(tableID, "table")
-
-		table, _ := xml.Marshal(sw.table)
-		sw.File.saveFileList(tableXML, table)
-	}
-
-	sw.File.XLSX[fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)] =
-		bulkUpdateSheet(ws, sw.replaceMap)
-	return err
+	sw.File.XLSX[sheetXML] = b
+	return nil
 }
 
-// createTmp creates a temporary file in the operating system default
-// temporary directory.
-func (sw *StreamWriter) createTmp() (err error) {
-	sw.tmpFile, err = ioutil.TempFile(os.TempDir(), "excelize-")
-	return err
-}
+// bulkAppendOtherFields bulk-appends fields in a worksheet, skipping the
+// specified field names.
+func bulkAppendOtherFields(w io.Writer, ws *xlsxWorksheet, skip ...string) {
+	skipMap := make(map[string]struct{})
+	for _, name := range skip {
+		skipMap[name] = struct{}{}
+	}
 
-// bulkUpdateSheet provides method to bulk-replace fields in a worksheet.
-func bulkUpdateSheet(ws *xlsxWorksheet, replaceMap map[string][]byte) []byte {
 	s := reflect.ValueOf(ws).Elem()
 	typeOfT := s.Type()
-	var marshalResult []byte
-	marshalResult = append(marshalResult, []byte(XMLHeader+`<worksheet`+templateNamespaceIDMap)...)
+	enc := xml.NewEncoder(w)
 	for i := 0; i < s.NumField(); i++ {
 		f := s.Field(i)
-		content, ok := replaceMap[typeOfT.Field(i).Name]
-		if ok {
-			marshalResult = append(marshalResult, content...)
+		if _, ok := skipMap[typeOfT.Field(i).Name]; ok {
 			continue
 		}
-		out, _ := xml.Marshal(f.Interface())
-		marshalResult = append(marshalResult, out...)
+		enc.Encode(f.Interface())
 	}
-	marshalResult = append(marshalResult, []byte(`</worksheet>`)...)
-	return marshalResult
+}
+
+// bufferedWriter uses a temp file to store an extended buffer. Writes are
+// always made to an in-memory buffer, which will always succeed. The buffer
+// is written to the temp file with Sync, which may return an error. Therefore,
+// Sync should be periodically called and the error checked.
+type bufferedWriter struct {
+	tmp *os.File
+	buf bytes.Buffer
+}
+
+// Write to the in-memory buffer. The err is always nil.
+func (bw *bufferedWriter) Write(p []byte) (n int, err error) {
+	return bw.buf.Write(p)
+}
+
+// WriteString wites to the in-memory buffer. The err is always nil.
+func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
+	return bw.buf.WriteString(p)
+}
+
+// Reader provides read-access to the underlying buffer/file.
+func (bw *bufferedWriter) Reader() (io.Reader, error) {
+	if bw.tmp == nil {
+		return bytes.NewReader(bw.buf.Bytes()), nil
+	}
+	if err := bw.Flush(); err != nil {
+		return nil, err
+	}
+	fi, err := bw.tmp.Stat()
+	if err != nil {
+		return nil, err
+	}
+	// os.File.ReadAt does not affect the cursor position and is safe to use here
+	return io.NewSectionReader(bw.tmp, 0, fi.Size()), nil
+}
+
+// Bytes returns the entire content of the bufferedWriter. If a temp file is
+// used, Bytes will efficiently allocate a buffer to prevent re-allocations.
+func (bw *bufferedWriter) Bytes() ([]byte, error) {
+	if bw.tmp == nil {
+		return bw.buf.Bytes(), nil
+	}
+
+	if err := bw.Flush(); err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if fi, err := bw.tmp.Stat(); err == nil {
+		if size := fi.Size() + bytes.MinRead; size > bytes.MinRead {
+			if int64(int(size)) == size {
+				buf.Grow(int(size))
+			} else {
+				return nil, bytes.ErrTooLarge
+			}
+		}
+	}
+
+	if _, err := bw.tmp.Seek(0, 0); err != nil {
+		return nil, err
+	}
+
+	_, err := buf.ReadFrom(bw.tmp)
+	return buf.Bytes(), err
+}
+
+// Sync will write the in-memory buffer to a temp file, if the in-memory buffer
+// has grown large enough. Any error will be returned.
+func (bw *bufferedWriter) Sync() (err error) {
+	// Try to use local storage
+	const chunk = 1 << 24
+	if bw.buf.Len() < chunk {
+		return nil
+	}
+	if bw.tmp == nil {
+		bw.tmp, err = ioutil.TempFile(os.TempDir(), "excelize-")
+		if err != nil {
+			// can not use local storage
+			return nil
+		}
+	}
+	return bw.Flush()
+}
+
+// Flush the entire in-memory buffer to the temp file, if a temp file is being
+// used.
+func (bw *bufferedWriter) Flush() error {
+	if bw.tmp == nil {
+		return nil
+	}
+	_, err := bw.buf.WriteTo(bw.tmp)
+	if err != nil {
+		return err
+	}
+	bw.buf.Reset()
+	return nil
+}
+
+// Close the underlying temp file and reset the in-memory buffer.
+func (bw *bufferedWriter) Close() error {
+	bw.buf.Reset()
+	if bw.tmp == nil {
+		return nil
+	}
+	defer os.Remove(bw.tmp.Name())
+	return bw.tmp.Close()
 }
