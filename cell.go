@@ -44,7 +44,8 @@ func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	})
 }
 
-// SetCellValue provides a function to set value of a cell. The following
+// SetCellValue provides a function to set value of a cell. The specified
+// coordinates should not be in the first row of the table. The following
 // shows the supported data types:
 //
 //    int

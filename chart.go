@@ -653,10 +653,21 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // show_val: Specifies that the value shall be shown in a data label. The show_val property is optional. The default value is false.
 //
-// Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties that can be set are:
+// Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties of x_axis that can be set are:
 //
 //    major_grid_lines
 //    minor_grid_lines
+//    major_unit
+//    reverse_order
+//    maximum
+//    minimum
+//
+// The properties of y_axis that can be set are:
+//
+//    major_grid_lines
+//    minor_grid_lines
+//    major_unit
+//    tick_label_skip
 //    reverse_order
 //    maximum
 //    minimum
@@ -664,6 +675,10 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 // major_grid_lines: Specifies major gridlines.
 //
 // minor_grid_lines: Specifies minor gridlines.
+//
+// major_unit: Specifies the distance between major ticks. Shall contain a positive floating-point number. The major_unit property is optional. The default value is auto.
+//
+// tick_label_skip: Specifies how many tick labels to skip between label that is drawn. The tick_label_skip property is optional. The default value is auto.
 //
 // reverse_order: Specifies that the categories or values on reverse order (orientation of the chart). The reverse_order property is optional. The default value is false.
 //
@@ -1612,6 +1627,12 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 	if formatSet.XAxis.MinorGridlines {
 		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
+	if formatSet.XAxis.MajorUnit != 0 {
+		axs[0].MajorUnit = &attrValFloat{Val: float64Ptr(formatSet.XAxis.MajorUnit)}
+	}
+	if formatSet.XAxis.TickLabelSkip != 0 {
+		axs[0].TickLblSkip = &attrValInt{Val: intPtr(formatSet.XAxis.TickLabelSkip)}
+	}
 	return axs
 }
 
@@ -1657,6 +1678,9 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 	}
 	if pos, ok := valTickLblPos[formatSet.Type]; ok {
 		axs[0].TickLblPos.Val = stringPtr(pos)
+	}
+	if formatSet.YAxis.MajorUnit != 0 {
+		axs[0].MajorUnit = &attrValFloat{Val: float64Ptr(formatSet.YAxis.MajorUnit)}
 	}
 	return axs
 }

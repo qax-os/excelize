@@ -357,9 +357,13 @@ type cAxs struct {
 	CrossAx        *attrValInt    `xml:"crossAx"`
 	Crosses        *attrValString `xml:"crosses"`
 	CrossBetween   *attrValString `xml:"crossBetween"`
+	MajorUnit      *attrValFloat  `xml:"majorUnit"`
+	MinorUnit      *attrValFloat  `xml:"minorUnit"`
 	Auto           *attrValBool   `xml:"auto"`
 	LblAlgn        *attrValString `xml:"lblAlgn"`
 	LblOffset      *attrValInt    `xml:"lblOffset"`
+	TickLblSkip    *attrValInt    `xml:"tickLblSkip"`
+	TickMarkSkip   *attrValInt    `xml:"tickMarkSkip"`
 	NoMultiLvlLbl  *attrValBool   `xml:"noMultiLvlLbl"`
 }
 
@@ -519,8 +523,9 @@ type formatChartAxis struct {
 	MajorTickMark       string  `json:"major_tick_mark"`
 	MinorTickMark       string  `json:"minor_tick_mark"`
 	MinorUnitType       string  `json:"minor_unit_type"`
-	MajorUnit           int     `json:"major_unit"`
+	MajorUnit           float64 `json:"major_unit"`
 	MajorUnitType       string  `json:"major_unit_type"`
+	TickLabelSkip       int     `json:"tick_label_skip"`
 	DisplayUnits        string  `json:"display_units"`
 	DisplayUnitsVisible bool    `json:"display_units_visible"`
 	DateAxis            bool    `json:"date_axis"`
