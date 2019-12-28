@@ -56,11 +56,11 @@ type cChart struct {
 // cTitle (Title) directly maps the title element. This element specifies a
 // title.
 type cTitle struct {
-	Tx      cTx         `xml:"tx,omitempty"`
-	Layout  string      `xml:"layout,omitempty"`
-	Overlay attrValBool `xml:"overlay,omitempty"`
-	SpPr    cSpPr       `xml:"spPr,omitempty"`
-	TxPr    cTxPr       `xml:"txPr,omitempty"`
+	Tx      cTx          `xml:"tx,omitempty"`
+	Layout  string       `xml:"layout,omitempty"`
+	Overlay *attrValBool `xml:"overlay"`
+	SpPr    cSpPr        `xml:"spPr,omitempty"`
+	TxPr    cTxPr        `xml:"txPr,omitempty"`
 }
 
 // cTx (Chart Text) directly maps the tx element. This element specifies text

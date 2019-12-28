@@ -657,7 +657,6 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 //    major_grid_lines
 //    minor_grid_lines
-//    major_unit
 //    reverse_order
 //    maximum
 //    minimum
@@ -818,6 +817,7 @@ func (f *File) addChart(formatSet *formatChart) {
 						},
 					},
 				},
+				Overlay: &attrValBool{Val: boolPtr(false)},
 			},
 			View3D: &cView3D{
 				RotX:        &attrValInt{Val: intPtr(chartView3DRotX[formatSet.Type])},
@@ -1626,9 +1626,6 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 	}
 	if formatSet.XAxis.MinorGridlines {
 		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
-	}
-	if formatSet.XAxis.MajorUnit != 0 {
-		axs[0].MajorUnit = &attrValFloat{Val: float64Ptr(formatSet.XAxis.MajorUnit)}
 	}
 	if formatSet.XAxis.TickLabelSkip != 0 {
 		axs[0].TickLblSkip = &attrValInt{Val: intPtr(formatSet.XAxis.TickLabelSkip)}
