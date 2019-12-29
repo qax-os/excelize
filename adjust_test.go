@@ -114,3 +114,7 @@ func TestCoordinatesToAreaRef(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, ref, "A1:A1")
 }
+
+func TestSortCoordinates(t *testing.T) {
+	assert.EqualError(t, sortCoordinates(make([]int, 3)), "coordinates length must be 4")
+}

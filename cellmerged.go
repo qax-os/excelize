@@ -1,4 +1,4 @@
-// Copyright 2016 - 2019 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -43,13 +43,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 		return err
 	}
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	if rect1[2] < rect1[0] {
-		rect1[0], rect1[2] = rect1[2], rect1[0]
-	}
-
-	if rect1[3] < rect1[1] {
-		rect1[1], rect1[3] = rect1[3], rect1[1]
-	}
+	_ = sortCoordinates(rect1)
 
 	hcell, _ = CoordinatesToCellName(rect1[0], rect1[1])
 	vcell, _ = CoordinatesToCellName(rect1[2], rect1[3])
@@ -123,12 +117,8 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 		return err
 	}
 
-	if rect1[2] < rect1[0] {
-		rect1[0], rect1[2] = rect1[2], rect1[0]
-	}
-	if rect1[3] < rect1[1] {
-		rect1[1], rect1[3] = rect1[3], rect1[1]
-	}
+	// Correct the coordinate area, such correct C1:B3 to B1:C3.
+	_ = sortCoordinates(rect1)
 
 	// return nil since no MergeCells in the sheet
 	if xlsx.MergeCells == nil {

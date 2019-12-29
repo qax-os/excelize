@@ -3,10 +3,13 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -49,6 +52,13 @@ func TestStreamWriter(t *testing.T) {
 	row[0] = []byte("Word")
 	assert.NoError(t, streamWriter.SetRow("A3", row))
 
+	// Test set cell with style.
+	styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}}))
+	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}}))
+	assert.EqualError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}), "only UTC time expected")
+
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
 		for colID := 0; colID < 50; colID++ {
@@ -62,7 +72,7 @@ func TestStreamWriter(t *testing.T) {
 	// Save xlsx file by the given path.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
-	// Test close temporary file error
+	// Test close temporary file error.
 	file = NewFile()
 	streamWriter, err = file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
@@ -76,6 +86,12 @@ func TestStreamWriter(t *testing.T) {
 	}
 	assert.NoError(t, streamWriter.rawData.Close())
 	assert.Error(t, streamWriter.Flush())
+
+	streamWriter.rawData.tmp, err = ioutil.TempFile(os.TempDir(), "excelize-")
+	assert.NoError(t, err)
+	_, err = streamWriter.rawData.Reader()
+	assert.NoError(t, err)
+	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
 }
 
 func TestStreamTable(t *testing.T) {
@@ -100,6 +116,14 @@ func TestStreamTable(t *testing.T) {
 	assert.Equal(t, "A", table.TableColumns.TableColumn[0].Name)
 	assert.Equal(t, "B", table.TableColumns.TableColumn[1].Name)
 	assert.Equal(t, "C", table.TableColumns.TableColumn[2].Name)
+
+	assert.NoError(t, streamWriter.AddTable("A1", "C1", ``))
+
+	// Test add table with illegal formatset.
+	assert.EqualError(t, streamWriter.AddTable("B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
+	// Test add table with illegal cell coordinates.
+	assert.EqualError(t, streamWriter.AddTable("A", "B1", `{}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, streamWriter.AddTable("A1", "B", `{}`), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
 }
 
 func TestNewStreamWriter(t *testing.T) {
@@ -117,4 +141,27 @@ func TestSetRow(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestSetCellValFunc(t *testing.T) {
+	c := &xlsxC{}
+	assert.NoError(t, setCellValFunc(c, 128))
+	assert.NoError(t, setCellValFunc(c, int8(-128)))
+	assert.NoError(t, setCellValFunc(c, int16(-32768)))
+	assert.NoError(t, setCellValFunc(c, int32(-2147483648)))
+	assert.NoError(t, setCellValFunc(c, int64(-9223372036854775808)))
+	assert.NoError(t, setCellValFunc(c, uint(128)))
+	assert.NoError(t, setCellValFunc(c, uint8(255)))
+	assert.NoError(t, setCellValFunc(c, uint16(65535)))
+	assert.NoError(t, setCellValFunc(c, uint32(4294967295)))
+	assert.NoError(t, setCellValFunc(c, uint64(18446744073709551615)))
+	assert.NoError(t, setCellValFunc(c, float32(100.1588)))
+	assert.NoError(t, setCellValFunc(c, float64(100.1588)))
+	assert.NoError(t, setCellValFunc(c, " Hello"))
+	assert.NoError(t, setCellValFunc(c, []byte(" Hello")))
+	assert.NoError(t, setCellValFunc(c, time.Now().UTC()))
+	assert.NoError(t, setCellValFunc(c, time.Duration(1e13)))
+	assert.NoError(t, setCellValFunc(c, true))
+	assert.NoError(t, setCellValFunc(c, nil))
+	assert.NoError(t, setCellValFunc(c, complex64(5+10i)))
 }

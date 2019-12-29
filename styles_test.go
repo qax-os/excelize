@@ -169,9 +169,7 @@ func TestSetConditionalFormat(t *testing.T) {
 func TestNewStyle(t *testing.T) {
 	f := NewFile()
 	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	styles := f.stylesReader()
 	fontID := styles.CellXfs.Xf[styleID].FontID
 	font := styles.Fonts.Font[fontID]

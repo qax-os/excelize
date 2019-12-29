@@ -1,4 +1,4 @@
-// Copyright 2016 - 2019 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -36,20 +36,27 @@ type StreamWriter struct {
 // rows, you must call the 'Flush' method to end the streaming writing
 // process and ensure that the order of line numbers is ascending. For
 // example, set data for worksheet of size 102400 rows x 50 columns with
-// numbers:
+// numbers and style:
 //
 //    file := excelize.NewFile()
 //    streamWriter, err := file.NewStreamWriter("Sheet1")
 //    if err != nil {
 //        panic(err)
 //    }
-//    for rowID := 1; rowID <= 102400; rowID++ {
+//    styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
+//    if err != nil {
+//        panic(err)
+//    }
+//    if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Data"}}); err != nil {
+//        panic(err)
+//    }
+//    for rowID := 2; rowID <= 102400; rowID++ {
 //        row := make([]interface{}, 50)
 //        for colID := 0; colID < 50; colID++ {
 //            row[colID] = rand.Intn(640000)
 //        }
 //        cell, _ := excelize.CoordinatesToCellName(1, rowID)
-//        if err := streamWriter.SetRow(cell, row, nil); err != nil {
+//        if err := streamWriter.SetRow(cell, row); err != nil {
 //            panic(err)
 //        }
 //    }
@@ -107,7 +114,7 @@ func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
 	if err != nil {
 		return err
 	}
-	sortCoordinates(coordinates)
+	_ = sortCoordinates(coordinates)
 
 	// Correct the minimum number of rows, the table at least two lines.
 	if coordinates[1] == coordinates[3] {
@@ -188,7 +195,7 @@ func (sw *StreamWriter) getRowValues(hrow, hcol, vcol int) (res []string, err er
 		return nil, err
 	}
 
-	dec := xml.NewDecoder(r)
+	dec := sw.File.xmlNewDecoder(r)
 	for {
 		token, err := dec.Token()
 		if err == io.EOF {
@@ -248,7 +255,7 @@ func getRowElement(token xml.Token, hrow int) (startElement xml.StartElement, ok
 // a value.
 type Cell struct {
 	StyleID int
-	Value interface{}
+	Value   interface{}
 }
 
 // SetRow writes an array to stream rows by giving a worksheet name, starting
@@ -277,53 +284,69 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 			c.S = v.StyleID
 			val = v.Value
 		}
-		switch val := val.(type) {
-		case int:
-			c.T, c.V = setCellInt(val)
-		case int8:
-			c.T, c.V = setCellInt(int(val))
-		case int16:
-			c.T, c.V = setCellInt(int(val))
-		case int32:
-			c.T, c.V = setCellInt(int(val))
-		case int64:
-			c.T, c.V = setCellInt(int(val))
-		case uint:
-			c.T, c.V = setCellInt(int(val))
-		case uint8:
-			c.T, c.V = setCellInt(int(val))
-		case uint16:
-			c.T, c.V = setCellInt(int(val))
-		case uint32:
-			c.T, c.V = setCellInt(int(val))
-		case uint64:
-			c.T, c.V = setCellInt(int(val))
-		case float32:
-			c.T, c.V = setCellFloat(float64(val), -1, 32)
-		case float64:
-			c.T, c.V = setCellFloat(val, -1, 64)
-		case string:
-			c.T, c.V, c.XMLSpace = setCellStr(val)
-		case []byte:
-			c.T, c.V, c.XMLSpace = setCellStr(string(val))
-		case time.Duration:
-			c.T, c.V = setCellDuration(val)
-		case time.Time:
-			c.T, c.V, _, err = setCellTime(val)
-		case bool:
-			c.T, c.V = setCellBool(val)
-		case nil:
-			c.T, c.V, c.XMLSpace = setCellStr("")
-		default:
-			c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
-		}
-		if err != nil {
+		if err = setCellValFunc(&c, val); err != nil {
+			sw.rawData.WriteString(`</row>`)
 			return err
 		}
 		writeCell(&sw.rawData, c)
 	}
 	sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
+}
+
+// setCellValFunc provides a function to set value of a cell.
+func setCellValFunc(c *xlsxC, val interface{}) (err error) {
+	switch val := val.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		err = setCellIntFunc(c, val)
+	case float32:
+		c.T, c.V = setCellFloat(float64(val), -1, 32)
+	case float64:
+		c.T, c.V = setCellFloat(val, -1, 64)
+	case string:
+		c.T, c.V, c.XMLSpace = setCellStr(val)
+	case []byte:
+		c.T, c.V, c.XMLSpace = setCellStr(string(val))
+	case time.Duration:
+		c.T, c.V = setCellDuration(val)
+	case time.Time:
+		c.T, c.V, _, err = setCellTime(val)
+	case bool:
+		c.T, c.V = setCellBool(val)
+	case nil:
+		c.T, c.V, c.XMLSpace = setCellStr("")
+	default:
+		c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
+	}
+	return err
+}
+
+// setCellIntFunc is a wrapper of SetCellInt.
+func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
+	switch val := val.(type) {
+	case int:
+		c.T, c.V = setCellInt(val)
+	case int8:
+		c.T, c.V = setCellInt(int(val))
+	case int16:
+		c.T, c.V = setCellInt(int(val))
+	case int32:
+		c.T, c.V = setCellInt(int(val))
+	case int64:
+		c.T, c.V = setCellInt(int(val))
+	case uint:
+		c.T, c.V = setCellInt(int(val))
+	case uint8:
+		c.T, c.V = setCellInt(int(val))
+	case uint16:
+		c.T, c.V = setCellInt(int(val))
+	case uint32:
+		c.T, c.V = setCellInt(int(val))
+	case uint64:
+		c.T, c.V = setCellInt(int(val))
+	default:
+	}
+	return
 }
 
 func writeCell(buf *bufferedWriter, c xlsxC) {
@@ -391,8 +414,8 @@ func bulkAppendOtherFields(w io.Writer, ws *xlsxWorksheet, skip ...string) {
 
 // bufferedWriter uses a temp file to store an extended buffer. Writes are
 // always made to an in-memory buffer, which will always succeed. The buffer
-// is written to the temp file with Sync, which may return an error. Therefore,
-// Sync should be periodically called and the error checked.
+// is written to the temp file with Sync, which may return an error.
+// Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
 	tmp *os.File
 	buf bytes.Buffer
@@ -454,8 +477,8 @@ func (bw *bufferedWriter) Bytes() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// Sync will write the in-memory buffer to a temp file, if the in-memory buffer
-// has grown large enough. Any error will be returned.
+// Sync will write the in-memory buffer to a temp file, if the in-memory
+// buffer has grown large enough. Any error will be returned.
 func (bw *bufferedWriter) Sync() (err error) {
 	// Try to use local storage
 	const chunk = 1 << 24

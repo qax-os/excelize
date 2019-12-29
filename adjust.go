@@ -1,4 +1,4 @@
-// Copyright 2016 - 2019 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -213,6 +213,8 @@ func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
 	return coordinates, err
 }
 
+// sortCoordinates provides a function to correct the coordinate area, such
+// correct C1:B3 to B1:C3.
 func sortCoordinates(coordinates []int) error {
 	if len(coordinates) != 4 {
 		return errors.New("coordinates length must be 4")
