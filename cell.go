@@ -83,7 +83,8 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	case []byte:
 		err = f.SetCellStr(sheet, axis, string(v))
 	case time.Duration:
-		err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(v.Seconds()/86400.0, 'f', -1, 32))
+		_, d := setCellDuration(v)
+		err = f.SetCellDefault(sheet, axis, d)
 		if err != nil {
 			return err
 		}
@@ -131,26 +132,48 @@ func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
 // setCellTimeFunc provides a method to process time type of value for
 // SetCellValue.
 func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
-	excelTime, err := timeToExcelTime(value)
+	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if excelTime > 0 {
-		err = f.SetCellDefault(sheet, axis, strconv.FormatFloat(excelTime, 'f', -1, 64))
-		if err != nil {
-			return err
-		}
+	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
+	if err != nil {
+		return err
+	}
+	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
+
+	var isNum bool
+	cellData.T, cellData.V, isNum, err = setCellTime(value)
+	if err != nil {
+		return err
+	}
+	if isNum {
 		err = f.setDefaultTimeStyle(sheet, axis, 22)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = f.SetCellStr(sheet, axis, value.Format(time.RFC3339Nano))
 		if err != nil {
 			return err
 		}
 	}
 	return err
+}
+
+func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
+	var excelTime float64
+	excelTime, err = timeToExcelTime(value)
+	if err != nil {
+		return
+	}
+	isNum = excelTime > 0
+	if isNum {
+		t, b = setCellDefault(strconv.FormatFloat(excelTime, 'f', -1, 64))
+	} else {
+		t, b = setCellDefault(value.Format(time.RFC3339Nano))
+	}
+	return
+}
+
+func setCellDuration(value time.Duration) (t string, v string) {
+	v = strconv.FormatFloat(value.Seconds()/86400.0, 'f', -1, 32)
+	return
 }
 
 // SetCellInt provides a function to set int type value of a cell by given
@@ -165,9 +188,13 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 		return err
 	}
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T = ""
-	cellData.V = strconv.Itoa(value)
+	cellData.T, cellData.V = setCellInt(value)
 	return err
+}
+
+func setCellInt(value int) (t string, v string) {
+	v = strconv.Itoa(value)
+	return
 }
 
 // SetCellBool provides a function to set bool type value of a cell by given
@@ -182,13 +209,18 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 		return err
 	}
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T = "b"
-	if value {
-		cellData.V = "1"
-	} else {
-		cellData.V = "0"
-	}
+	cellData.T, cellData.V = setCellBool(value)
 	return err
+}
+
+func setCellBool(value bool) (t string, v string) {
+	t = "b"
+	if value {
+		v = "1"
+	} else {
+		v = "0"
+	}
+	return
 }
 
 // SetCellFloat sets a floating point value into a cell. The prec parameter
@@ -210,9 +242,13 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int
 		return err
 	}
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T = ""
-	cellData.V = strconv.FormatFloat(value, 'f', prec, bitSize)
+	cellData.T, cellData.V = setCellFloat(value, prec, bitSize)
 	return err
+}
+
+func setCellFloat(value float64, prec, bitSize int) (t string, v string) {
+	v = strconv.FormatFloat(value, 'f', prec, bitSize)
+	return
 }
 
 // SetCellStr provides a function to set string type value of a cell. Total
@@ -226,21 +262,25 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
+	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
+	cellData.T, cellData.V, cellData.XMLSpace = setCellStr(value)
+	return err
+}
+
+func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > 32767 {
 		value = value[0:32767]
 	}
 	// Leading and ending space(s) character detection.
 	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
-		cellData.XMLSpace = xml.Attr{
+		ns = xml.Attr{
 			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
 			Value: "preserve",
 		}
 	}
-
-	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T = "str"
-	cellData.V = value
-	return err
+	t = "str"
+	v = value
+	return
 }
 
 // SetCellDefault provides a function to set string type value of a cell as
@@ -255,9 +295,13 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 		return err
 	}
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T = ""
-	cellData.V = value
+	cellData.T, cellData.V = setCellDefault(value)
 	return err
+}
+
+func setCellDefault(value string) (t string, v string) {
+	v = value
+	return
 }
 
 // GetCellFormula provides a function to get formula from cell by given

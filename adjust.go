@@ -196,10 +196,14 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 // areaRefToCoordinates provides a function to convert area reference to a
 // pair of coordinates.
 func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
-	coordinates := make([]int, 4)
 	rng := strings.Split(ref, ":")
-	firstCell := rng[0]
-	lastCell := rng[1]
+	return areaRangeToCoordinates(rng[0], rng[1])
+}
+
+// areaRangeToCoordinates provides a function to convert cell range to a
+// pair of coordinates.
+func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
+	coordinates := make([]int, 4)
 	var err error
 	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
 	if err != nil {
@@ -207,6 +211,19 @@ func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
 	}
 	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
 	return coordinates, err
+}
+
+func sortCoordinates(coordinates []int) error {
+	if len(coordinates) != 4 {
+		return errors.New("coordinates length must be 4")
+	}
+	if coordinates[2] < coordinates[0] {
+		coordinates[2], coordinates[0] = coordinates[0], coordinates[2]
+	}
+	if coordinates[3] < coordinates[1] {
+		coordinates[3], coordinates[1] = coordinates[1], coordinates[3]
+	}
+	return nil
 }
 
 // coordinatesToAreaRef provides a function to convert a pair of coordinates
