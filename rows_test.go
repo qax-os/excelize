@@ -136,7 +136,16 @@ func TestColumns(t *testing.T) {
 	f := NewFile()
 	rows, err := f.Rows("Sheet1")
 	assert.NoError(t, err)
+
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="2"><c r="A1" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
+	_, err = rows.Columns()
+	assert.NoError(t, err)
+	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="2"><c r="A1" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
+	rows.curRow = 1
+	_, err = rows.Columns()
+
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="A"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
+	rows.stashRow, rows.curRow = 0, 1
 	_, err = rows.Columns()
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 

@@ -23,12 +23,20 @@ import (
 // GetRows return all the rows in a sheet by given worksheet name (case
 // sensitive). For example:
 //
-//    rows, err := f.GetRows("Sheet1")
-//    for _, row := range rows {
-//        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
+//    rows, err := f.Rows("Sheet1")
+//    if err != nil {
+//        println(err.Error())
+//        return
+//    }
+//    for rows.Next() {
+//        row, err := rows.Columns()
+//        if err != nil {
+//            println(err.Error())
 //        }
-//        fmt.Println()
+//        for _, colCell := range row {
+//            print(colCell, "\t")
+//        }
+//        println()
 //    }
 //
 func (f *File) GetRows(sheet string) ([][]string, error) {
@@ -52,13 +60,13 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 
 // Rows defines an iterator to a sheet
 type Rows struct {
-	err      error
-	f        *File
-	rows     []xlsxRow
-	sheet    string
-	curRow   int
-	totalRow int
-	decoder  *xml.Decoder
+	err                        error
+	curRow, totalRow, stashRow int
+	sheet                      string
+	stashColumn                []string
+	rows                       []xlsxRow
+	f                          *File
+	decoder                    *xml.Decoder
 }
 
 // Next will return true if find the next row element.
@@ -80,6 +88,11 @@ func (rows *Rows) Columns() ([]string, error) {
 		row, cellCol int
 		columns      []string
 	)
+
+	if rows.stashRow >= rows.curRow {
+		return columns, err
+	}
+
 	d := rows.f.sharedStringsReader()
 	for {
 		token, _ := rows.decoder.Token()
@@ -97,6 +110,8 @@ func (rows *Rows) Columns() ([]string, error) {
 							return columns, err
 						}
 						if row > rows.curRow {
+							rows.stashRow = row - 1
+							rows.stashColumn = columns
 							return columns, err
 						}
 					}
@@ -121,7 +136,6 @@ func (rows *Rows) Columns() ([]string, error) {
 			if inElement == "row" {
 				return columns, err
 			}
-		default:
 		}
 	}
 	return columns, err

@@ -56,19 +56,17 @@ type PivotTableOption struct {
 //            f.SetCellValue("Sheet1", fmt.Sprintf("D%d", i+2), rand.Intn(5000))
 //            f.SetCellValue("Sheet1", fmt.Sprintf("E%d", i+2), region[rand.Intn(4)])
 //        }
-//        err := f.AddPivotTable(&excelize.PivotTableOption{
+//        if err := f.AddPivotTable(&excelize.PivotTableOption{
 //            DataRange:       "Sheet1!$A$1:$E$31",
 //            PivotTableRange: "Sheet1!$G$2:$M$34",
 //            Rows:            []string{"Month", "Year"},
 //            Columns:         []string{"Type"},
 //            Data:            []string{"Sales"},
-//        })
-//        if err != nil {
-//            fmt.Println(err)
+//        }); err != nil {
+//            println(err.Error())
 //        }
-//        err = f.SaveAs("Book1.xlsx")
-//        if err != nil {
-//            fmt.Println(err)
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            println(err.Error())
 //        }
 //    }
 //

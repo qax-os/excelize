@@ -2321,7 +2321,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 //    style, err := f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2330,7 +2330,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 //    style, err := f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2338,7 +2338,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 //    style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2346,7 +2346,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 //    style, err := f.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2357,7 +2357,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //    f.SetCellValue("Sheet1", "H9", 42920.5)
 //    style, err := f.NewStyle(`{"number_format": 22}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2365,7 +2365,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 //    style, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2373,7 +2373,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 //    style, err := f.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
@@ -2507,7 +2507,7 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 //
 //    format, err = f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
 //    if err != nil {
-//        fmt.Println(err)
+//        println(err.Error())
 //    }
 //    f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
 //
