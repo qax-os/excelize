@@ -110,7 +110,7 @@ func ExampleFile_SetCellFloat() {
 	f := NewFile()
 	var x = 3.14159265
 	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
-		fmt.Println(err)
+		println(err.Error())
 	}
 	val, _ := f.GetCellValue("Sheet1", "A1")
 	fmt.Println(val)

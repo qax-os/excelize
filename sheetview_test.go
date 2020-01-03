@@ -47,7 +47,7 @@ func ExampleFile_SetSheetViewOptions() {
 		excelize.ZoomScale(80),
 		excelize.TopLeftCell("C3"),
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	var zoomScale excelize.ZoomScale
@@ -55,22 +55,22 @@ func ExampleFile_SetSheetViewOptions() {
 	fmt.Println("- zoomScale: 80")
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ZoomScale(500)); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &zoomScale); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	fmt.Println("Used out of range value:")
 	fmt.Println("- zoomScale:", zoomScale)
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ZoomScale(123)); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &zoomScale); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	fmt.Println("Used correct value:")
@@ -111,7 +111,7 @@ func ExampleFile_GetSheetViewOptions() {
 		&zoomScale,
 		&topLeftCell,
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	fmt.Println("Default:")
@@ -125,27 +125,27 @@ func ExampleFile_GetSheetViewOptions() {
 	fmt.Println("- topLeftCell:", `"`+topLeftCell+`"`)
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.TopLeftCell("B2")); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &topLeftCell); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ShowGridLines(false)); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &showGridLines); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ShowZeros(false)); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &showZeros); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	fmt.Println("After change:")

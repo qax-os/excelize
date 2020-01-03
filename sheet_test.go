@@ -19,7 +19,7 @@ func ExampleFile_SetPageLayout() {
 		"Sheet1",
 		excelize.PageLayoutOrientation(excelize.OrientationLandscape),
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	if err := f.SetPageLayout(
 		"Sheet1",
@@ -27,7 +27,7 @@ func ExampleFile_SetPageLayout() {
 		excelize.FitToHeight(2),
 		excelize.FitToWidth(2),
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	// Output:
 }
@@ -41,17 +41,17 @@ func ExampleFile_GetPageLayout() {
 		fitToWidth  excelize.FitToWidth
 	)
 	if err := f.GetPageLayout("Sheet1", &orientation); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	if err := f.GetPageLayout("Sheet1", &paperSize); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	if err := f.GetPageLayout("Sheet1", &fitToHeight); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 
 	if err := f.GetPageLayout("Sheet1", &fitToWidth); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	fmt.Println("Defaults:")
 	fmt.Printf("- orientation: %q\n", orientation)

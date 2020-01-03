@@ -12,18 +12,17 @@ func BenchmarkWrite(b *testing.B) {
 			for col := 1; col <= 20; col++ {
 				val, err := CoordinatesToCellName(col, row)
 				if err != nil {
-					panic(err)
+					b.Error(err)
 				}
 				if err := f.SetCellDefault("Sheet1", val, s); err != nil {
-					panic(err)
+					b.Error(err)
 				}
 			}
 		}
 		// Save xlsx file by the given path.
 		err := f.SaveAs("./test.xlsx")
 		if err != nil {
-			panic(err)
+			b.Error(err)
 		}
 	}
-
 }

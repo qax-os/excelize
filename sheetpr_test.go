@@ -40,7 +40,7 @@ func ExampleFile_SetSheetPrOptions() {
 		excelize.AutoPageBreaks(true),
 		excelize.OutlineSummaryBelow(false),
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	// Output:
 }
@@ -66,7 +66,7 @@ func ExampleFile_GetSheetPrOptions() {
 		&autoPageBreaks,
 		&outlineSummaryBelow,
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	fmt.Println("Defaults:")
 	fmt.Printf("- codeName: %q\n", codeName)
@@ -189,7 +189,7 @@ func ExampleFile_SetPageMargins() {
 		excelize.PageMarginRight(1.0),
 		excelize.PageMarginTop(1.0),
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	// Output:
 }
@@ -215,7 +215,7 @@ func ExampleFile_GetPageMargins() {
 		&marginRight,
 		&marginTop,
 	); err != nil {
-		panic(err)
+		println(err.Error())
 	}
 	fmt.Println("Defaults:")
 	fmt.Println("- marginBottom:", marginBottom)

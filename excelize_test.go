@@ -1259,7 +1259,7 @@ func fillCells(f *File, sheet string, colCount, rowCount int) {
 		for row := 1; row <= rowCount; row++ {
 			cell, _ := CoordinatesToCellName(col, row)
 			if err := f.SetCellStr(sheet, cell, cell); err != nil {
-				panic(err)
+				println(err.Error())
 			}
 		}
 	}

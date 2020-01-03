@@ -339,12 +339,12 @@ func (f *File) GetSheetIndex(name string) int {
 // GetSheetMap provides a function to get worksheet name and index map of XLSX.
 // For example:
 //
-//    f, err := excelize.OpenFile("./Book1.xlsx")
+//    f, err := excelize.OpenFile("Book1.xlsx")
 //    if err != nil {
 //        return
 //    }
 //    for index, name := range f.GetSheetMap() {
-//        fmt.Println(index, name)
+//        println(index, name)
 //    }
 //
 func (f *File) GetSheetMap() map[int]string {

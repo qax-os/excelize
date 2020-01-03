@@ -143,6 +143,7 @@ func TestColumns(t *testing.T) {
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="2"><c r="A1" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
 	rows.curRow = 1
 	_, err = rows.Columns()
+	assert.NoError(t, err)
 
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="A"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
 	rows.stashRow, rows.curRow = 0, 1

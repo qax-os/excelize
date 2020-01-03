@@ -63,7 +63,6 @@ type Rows struct {
 	err                        error
 	curRow, totalRow, stashRow int
 	sheet                      string
-	stashColumn                []string
 	rows                       []xlsxRow
 	f                          *File
 	decoder                    *xml.Decoder
@@ -111,7 +110,6 @@ func (rows *Rows) Columns() ([]string, error) {
 						}
 						if row > rows.curRow {
 							rows.stashRow = row - 1
-							rows.stashColumn = columns
 							return columns, err
 						}
 					}
@@ -153,12 +151,19 @@ func (err ErrSheetNotExist) Error() string {
 // Rows return a rows iterator. For example:
 //
 //    rows, err := f.Rows("Sheet1")
+//    if err != nil {
+//        println(err.Error())
+//        return
+//    }
 //    for rows.Next() {
 //        row, err := rows.Columns()
-//        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
+//        if err != nil {
+//            println(err.Error())
 //        }
-//        fmt.Println()
+//        for _, colCell := range row {
+//            print(colCell, "\t")
+//        }
+//        println()
 //    }
 //
 func (f *File) Rows(sheet string) (*Rows, error) {
