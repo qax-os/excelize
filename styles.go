@@ -1018,6 +1018,7 @@ func (f *File) stylesReader() *xlsxStyleSheet {
 // structure.
 func (f *File) styleSheetWriter(zw *zip.Writer) error {
 	if f.Styles != nil {
+		f.Styles.BaseAttr = getDefaultAttrs()
 		return writeXMLToZipWriter(zw, "xl/styles.xml", f.Styles)
 	}
 	return writeStringToZipWriter(zw, "xl/styles.xml", templateStyles)

@@ -385,7 +385,7 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	if xlsx.Hyperlinks != nil {
 		for _, link := range xlsx.Hyperlinks.Hyperlink {
 			if link.Ref == axis {
-				if link.RID != "" {
+				if len(link.RID) != 0 {
 					return true, f.getSheetRelationshipsTargetByID(sheet, link.RID), err
 				}
 				return true, link.Location, err
@@ -443,7 +443,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 		sheetPath := f.sheetMap[trimSheetName(sheet)]
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipHyperLink, link, linkType)
-		linkData.RID = "rId" + strconv.Itoa(rID)
+		linkData.RID = relationship("rId" + strconv.Itoa(rID))
 	case "Location":
 		linkData = xlsxHyperlink{
 			Ref:      axis,

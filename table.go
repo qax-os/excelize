@@ -105,7 +105,7 @@ func (f *File) countTables() int {
 func (f *File) addSheetTable(sheet string, rID int) {
 	xlsx, _ := f.workSheetReader(sheet)
 	table := &xlsxTablePart{
-		RID: "rId" + strconv.Itoa(rID),
+		RID: relationship("rId" + strconv.Itoa(rID)),
 	}
 	if xlsx.TableParts == nil {
 		xlsx.TableParts = &xlsxTableParts{}

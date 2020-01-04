@@ -13,7 +13,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"image"
@@ -171,7 +170,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 // deleteSheetRelationships provides a function to delete relationships in
 // xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
-func (f *File) deleteSheetRelationships(sheet, rID string) {
+func (f *File) deleteSheetRelationships(sheet string, rID relationship) {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
@@ -182,7 +181,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 		sheetRels = &xlsxRelationships{}
 	}
 	for k, v := range sheetRels.Relationships {
-		if v.ID == rID {
+		if v.ID == string(rID) {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
@@ -194,7 +193,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 	xlsx, _ := f.workSheetReader(sheet)
 	xlsx.LegacyDrawing = &xlsxLegacyDrawing{
-		RID: "rId" + strconv.Itoa(rID),
+		RID: relationship("rId" + strconv.Itoa(rID)),
 	}
 }
 
@@ -203,7 +202,7 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 func (f *File) addSheetDrawing(sheet string, rID int) {
 	xlsx, _ := f.workSheetReader(sheet)
 	xlsx.Drawing = &xlsxDrawing{
-		RID: "rId" + strconv.Itoa(rID),
+		RID: relationship("rId" + strconv.Itoa(rID)),
 	}
 }
 
@@ -212,7 +211,7 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 func (f *File) addSheetPicture(sheet string, rID int) {
 	xlsx, _ := f.workSheetReader(sheet)
 	xlsx.Picture = &xlsxPicture{
-		RID: "rId" + strconv.Itoa(rID),
+		RID: relationship("rId" + strconv.Itoa(rID)),
 	}
 }
 
@@ -401,7 +400,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 // getSheetRelationshipsTargetByID provides a function to get Target attribute
 // value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
-func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
+func (f *File) getSheetRelationshipsTargetByID(sheet string, rID relationship) string {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
@@ -412,7 +411,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 		sheetRels = &xlsxRelationships{}
 	}
 	for _, v := range sheetRels.Relationships {
-		if v.ID == rID {
+		if v.ID == string(rID) {
 			return v.Target
 		}
 	}

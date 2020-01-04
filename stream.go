@@ -82,7 +82,8 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
+	sw.rawData.WriteString(XMLHeader + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` +
+		templateNamespaceIDMap + ">")
 	bulkAppendOtherFields(&sw.rawData, ws, "XMLName", "SheetData", "TableParts")
 	sw.rawData.WriteString(`<sheetData>`)
 	return sw, nil

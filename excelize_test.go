@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/xml"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -925,7 +926,7 @@ func TestGetActiveSheetIndex(t *testing.T) {
 func TestRelsWriter(t *testing.T) {
 	f := NewFile()
 	f.Relationships["xl/worksheets/sheet/rels/sheet1.xml.rel"] = &xlsxRelationships{}
-	f.relsWriter()
+	require.NoError(t, f.SaveAs("test/RelsWriter.xlsx"))
 }
 
 func TestGetSheetView(t *testing.T) {

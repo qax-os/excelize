@@ -29,11 +29,12 @@ func TestXmlWorkBook_MarshalXML(t *testing.T) {
 			},
 		},
 	}
-
 	b, err := xml.Marshal(workBook)
 	require.NoError(t, err)
-
-	b2 := replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(b))
+	b = replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(b))
+	workBook.BaseAttr = getDefaultAttrs()
+	b2, err := xml.Marshal(workBook)
+	require.NoError(t, err)
 	t.Log(string(b2))
 	require.Equal(t, string(b), string(b2))
 }

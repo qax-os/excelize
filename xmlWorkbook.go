@@ -31,6 +31,7 @@ type xlsxRelationship struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
 type xlsxWorkbook struct {
+	BaseAttr            []xml.Attr               `xml:"attrs,attr,omitempty"`
 	XMLName             xml.Name                 `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
 	FileVersion         *xlsxFileVersion         `xml:"fileVersion"`
 	WorkbookPr          *xlsxWorkbookPr          `xml:"workbookPr"`
@@ -44,76 +45,6 @@ type xlsxWorkbook struct {
 	PivotCaches         *xlsxPivotCaches         `xml:"pivotCaches"`
 	ExtLst              *xlsxExtLst              `xml:"extLst"`
 	FileRecoveryPr      *xlsxFileRecoveryPr      `xml:"fileRecoveryPr"`
-}
-
-// MarshalXML implements xml.Marshaler
-// this function is used to replace https://github.com/360EntSecGroup-Skylar/excelize/blob/e7581eb/sheet.go#L97
-// Original Note:Some tools that read XLSX files have
-// very strict requirements about the structure of the input XML. In
-// particular both Numbers on the Mac and SAS dislike inline XML namespace
-// declarations, or namespace prefixes that don't match the ones that Excel
-// itself uses.
-func (x xlsxWorkbook) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	x2 := struct {
-		XMLName             xml.Name                 `xml:"workbook"`
-		FileVersion         *xlsxFileVersion         `xml:"fileVersion"`
-		WorkbookPr          *xlsxWorkbookPr          `xml:"workbookPr"`
-		WorkbookProtection  *xlsxWorkbookProtection  `xml:"workbookProtection"`
-		BookViews           xlsxBookViews            `xml:"bookViews"`
-		Sheets              xlsxSheets               `xml:"sheets"`
-		ExternalReferences  *xlsxExternalReferences  `xml:"externalReferences"`
-		DefinedNames        *xlsxDefinedNames        `xml:"definedNames"`
-		CalcPr              *xlsxCalcPr              `xml:"calcPr"`
-		CustomWorkbookViews *xlsxCustomWorkbookViews `xml:"customWorkbookViews"`
-		PivotCaches         *xlsxPivotCaches         `xml:"pivotCaches"`
-		ExtLst              *xlsxExtLst              `xml:"extLst"`
-		FileRecoveryPr      *xlsxFileRecoveryPr      `xml:"fileRecoveryPr"`
-		XrUID               string                   `xml:"xr:uid,attr"`
-		XmlnsXr             string                   `xml:"xmlns:xr,attr"`
-		XmlnsXr2            string                   `xml:"xmlns:xr2,attr"`
-		XmlnsXr3            string                   `xml:"xmlns:xr3,attr"`
-		XmlnsXr6            string                   `xml:"xmlns:xr6,attr"`
-		XmlnsXr10           string                   `xml:"xmlns:xr10,attr"`
-		XmlnsXr14           string                   `xml:"xmlns:xr14,attr"`
-		XmlnsXr14ac         string                   `xml:"xmlns:xr14ac,attr"`
-		XmlnsXr15           string                   `xml:"xmlns:xr15,attr"`
-		McIgnorable         string                   `xml:"mc:Ignorable,attr"`
-		XmlnsMc             string                   `xml:"xmlns:mc,attr"`
-		XmlnsMx             string                   `xml:"xmlns:mx,attr"`
-		XmlnsMv             string                   `xml:"xmlns:mv,attr"`
-		XmlnsR              string                   `xml:"xmlns:r,attr"`
-		Xmlns               string                   `xml:"xmlns,attr"`
-	}{
-		XMLName:             x.XMLName,
-		FileVersion:         x.FileVersion,
-		WorkbookPr:          x.WorkbookPr,
-		WorkbookProtection:  x.WorkbookProtection,
-		BookViews:           x.BookViews,
-		Sheets:              x.Sheets,
-		ExternalReferences:  x.ExternalReferences,
-		DefinedNames:        x.DefinedNames,
-		CalcPr:              x.CalcPr,
-		CustomWorkbookViews: x.CustomWorkbookViews,
-		PivotCaches:         x.PivotCaches,
-		ExtLst:              x.ExtLst,
-		FileRecoveryPr:      x.FileRecoveryPr,
-		XrUID:               "{00000000-0001-0000-0000-000000000000}",
-		XmlnsXr:             "http://schemas.microsoft.com/office/spreadsheetml/2014/revision",
-		XmlnsXr2:            "http://schemas.microsoft.com/office/spreadsheetml/2015/revision2",
-		XmlnsXr3:            "http://schemas.microsoft.com/office/spreadsheetml/2016/revision3",
-		XmlnsXr6:            "http://schemas.microsoft.com/office/spreadsheetml/2016/revision6",
-		XmlnsXr10:           "http://schemas.microsoft.com/office/spreadsheetml/2016/revision10",
-		XmlnsXr14:           "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main",
-		XmlnsXr14ac:         "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac",
-		XmlnsXr15:           "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main",
-		McIgnorable:         "x14ac xr xr2 xr3 xr6 xr10 x15",
-		XmlnsMc:             "http://schemas.openxmlformats.org/markup-compatibility/2006",
-		XmlnsMx:             "http://schemas.microsoft.com/office/mac/excel/2008/main",
-		XmlnsMv:             "urn:schemas-microsoft-com:mac:vml",
-		XmlnsR:              "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-		Xmlns:               "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
-	}
-	return e.Encode(x2)
 }
 
 // xlsxFileRecoveryPr maps sheet recovery information. This element defines
@@ -221,27 +152,10 @@ type xlsxSheets struct {
 // xlsxSheet defines a sheet in this workbook. Sheet data is stored in a
 // separate part.
 type xlsxSheet struct {
-	Name    string `xml:"name,attr,omitempty"`
-	SheetID int    `xml:"sheetId,attr,omitempty"`
-	ID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
-	State   string `xml:"state,attr,omitempty"`
-}
-
-// MarshalXML implements xml.Marshaler
-// This will allow strict requirements about the structure of the input XML
-// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
-func (x *xlsxSheet) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.EncodeElement(struct {
-		Name    string `xml:"name,attr,omitempty"`
-		SheetID int    `xml:"sheetId,attr,omitempty"`
-		ID      string `xml:"r:id,attr,omitempty"`
-		State   string `xml:"state,attr,omitempty"`
-	}{
-		Name:    x.Name,
-		SheetID: x.SheetID,
-		ID:      x.ID,
-		State:   x.State,
-	}, start)
+	Name    string       `xml:"name,attr,omitempty"`
+	SheetID int          `xml:"sheetId,attr,omitempty"`
+	ID      relationship `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+	State   string       `xml:"state,attr,omitempty"`
 }
 
 // xlsxExternalReferences directly maps the externalReferences element of the
@@ -264,21 +178,8 @@ type xlsxPivotCaches struct {
 
 // xlsxPivotCache directly maps the pivotCache element.
 type xlsxPivotCache struct {
-	CacheID int    `xml:"cacheId,attr"`
-	RID     string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
-}
-
-// MarshalXML implements xml.Marshaler
-// This will allow strict requirements about the structure of the input XML
-// replace `xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships` -> `r`
-func (x *xlsxPivotCache) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.EncodeElement(struct {
-		RID     string `xml:"r:id,attr,omitempty"`
-		CacheID int    `xml:"cacheId,attr"`
-	}{
-		RID:     x.RID,
-		CacheID: x.CacheID,
-	}, start)
+	CacheID int          `xml:"cacheId,attr"`
+	RID     relationship `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
 // extLst element provides a convention for extending spreadsheetML in

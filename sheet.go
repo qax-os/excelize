@@ -106,6 +106,7 @@ func (f *File) workbookReader() *xlsxWorkbook {
 // structure.
 func (f *File) workBookWriter(zw *zip.Writer) error {
 	if f.WorkBook != nil {
+		f.WorkBook.BaseAttr = getDefaultAttrs()
 		return writeXMLToZipWriter(zw, "xl/workbook.xml", f.WorkBook)
 	}
 	return writeStringToZipWriter(zw, "xl/workbook.xml", templateWorkbook)
@@ -118,6 +119,7 @@ func (f *File) workSheetWriter(zw *zip.Writer) error {
 		if sheet == nil {
 			continue
 		}
+		sheet.BaseAtrr = getDefaultAttrs()
 		for k, v := range sheet.SheetData.Row {
 			f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 		}
@@ -179,7 +181,7 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    trimSheetName(name),
 		SheetID: sheetID,
-		ID:      "rId" + strconv.Itoa(rid),
+		ID:      relationship("rId" + strconv.Itoa(rid)),
 	})
 }
 
@@ -220,7 +222,7 @@ func replaceRelationshipsBytes(content []byte) []byte {
 // a horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
 	oldXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	newXmlns := []byte(`<workbook` + templateNamespaceIDMap)
+	newXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` + templateNamespaceIDMap+">")
 	return bytes.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
@@ -366,7 +368,7 @@ func (f *File) getSheetMap() map[string]string {
 	maps := map[string]string{}
 	for _, v := range content.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
-			if rel.ID == v.ID {
+			if rel.ID == string(v.ID) {
 				// Construct a target XML as xl/worksheets/sheet%d by split path, compatible with different types of relative paths in workbook.xml.rels, for example: worksheets/sheet%d.xml and /xl/worksheets/sheet%d.xml
 				pathInfo := strings.Split(rel.Target, "/")
 				pathInfoLen := len(pathInfo)
@@ -418,13 +420,13 @@ func (f *File) DeleteSheet(name string) {
 			var sheetXML, rels string
 			if wbRels != nil {
 				for _, rel := range wbRels.Relationships {
-					if rel.ID == sheet.ID {
+					if rel.ID == string(sheet.ID) {
 						sheetXML = fmt.Sprintf("xl/%s", rel.Target)
 						rels = strings.Replace(fmt.Sprintf("xl/%s.rels", rel.Target), "xl/worksheets/", "xl/worksheets/_rels/", -1)
 					}
 				}
 			}
-			target := f.deleteSheetFromWorkbookRels(sheet.ID)
+			target := f.deleteSheetFromWorkbookRels(string(sheet.ID))
 			f.deleteSheetFromContentTypes(target)
 			f.deleteCalcChain(sheet.SheetID, "") // Delete CalcChain
 			delete(f.sheetMap, sheetName)

@@ -35,10 +35,15 @@ func TestXmlWorksheet_MarshalXML(t *testing.T) {
 			RID: "eeee",
 		},
 	}
+	// check integration with old version
 	b, err := xml.Marshal(worksheet)
 	require.NoError(t, err)
+	b = replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(b))
 
-	b2 := replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(b))
+	worksheet.BaseAtrr = getDefaultAttrs()
+	b2, err := xml.Marshal(worksheet)
+	require.NoError(t, err)
+
 	t.Log(string(b))
 	require.Equal(t, string(b), string(b2))
 }

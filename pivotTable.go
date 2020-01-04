@@ -445,7 +445,7 @@ func (f *File) addWorkbookPivotCache(RID int) int {
 	cacheID++
 	wb.PivotCaches.PivotCache = append(wb.PivotCaches.PivotCache, xlsxPivotCache{
 		CacheID: cacheID,
-		RID:     fmt.Sprintf("rId%d", RID),
+		RID:     relationship(fmt.Sprintf("rId%d", RID)),
 	})
 	return cacheID
 }

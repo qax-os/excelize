@@ -232,7 +232,7 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 // Office Excel 2007.
 func replaceWorkSheetsRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
 	var oldXmlns = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	var newXmlns = []byte(`<worksheet` + templateNamespaceIDMap)
+	var newXmlns = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` + templateNamespaceIDMap+">")
 	workbookMarshal = bytes.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 	return workbookMarshal
 }
@@ -242,7 +242,7 @@ func replaceWorkSheetsRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte
 // Excel 2007.
 func replaceStyleRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
 	var oldXmlns = []byte(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	var newXmlns = []byte(`<styleSheet` + templateNamespaceIDMap)
+	var newXmlns = []byte(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` + templateNamespaceIDMap+">")
 	contentMarshal = bytes.Replace(contentMarshal, oldXmlns, newXmlns, -1)
 	return contentMarshal
 }
