@@ -312,6 +312,7 @@ type cPlotArea struct {
 	LineChart      *cCharts `xml:"lineChart"`
 	PieChart       *cCharts `xml:"pieChart"`
 	Pie3DChart     *cCharts `xml:"pie3DChart"`
+	OfPieChart     *cCharts `xml:"ofPieChart"`
 	RadarChart     *cCharts `xml:"radarChart"`
 	ScatterChart   *cCharts `xml:"scatterChart"`
 	Surface3DChart *cCharts `xml:"surface3DChart"`
@@ -329,6 +330,8 @@ type cCharts struct {
 	Grouping     *attrValString `xml:"grouping"`
 	RadarStyle   *attrValString `xml:"radarStyle"`
 	ScatterStyle *attrValString `xml:"scatterStyle"`
+	OfPieType    *attrValString `xml:"ofPieType"`
+	SerLines     *attrValString `xml:"serLines"`
 	VaryColors   *attrValBool   `xml:"varyColors"`
 	Wireframe    *attrValBool   `xml:"wireframe"`
 	Ser          *[]cSer        `xml:"ser"`
@@ -590,10 +593,11 @@ type formatChart struct {
 		} `json:"fill"`
 		Layout formatLayout `json:"layout"`
 	} `json:"plotarea"`
-	ShowBlanksAs   string `json:"show_blanks_as"`
-	ShowHiddenData bool   `json:"show_hidden_data"`
-	SetRotation    int    `json:"set_rotation"`
-	SetHoleSize    int    `json:"set_hole_size"`
+	ShowBlanksAs   string       `json:"show_blanks_as"`
+	ShowHiddenData bool         `json:"show_hidden_data"`
+	SetRotation    int          `json:"set_rotation"`
+	SetHoleSize    int          `json:"set_hole_size"`
+	Combo          *formatChart `json:"combo"`
 }
 
 // formatChartLegend directly maps the format settings of the chart legend.

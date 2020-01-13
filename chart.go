@@ -16,6 +16,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -66,6 +67,8 @@ const (
 	Line                        = "line"
 	Pie                         = "pie"
 	Pie3D                       = "pie3D"
+	PieOfPieChart               = "pieOfPie"
+	BarOfPieChart               = "barOfPie"
 	Radar                       = "radar"
 	Scatter                     = "scatter"
 	Surface3D                   = "surface3D"
@@ -123,6 +126,8 @@ var (
 		Line:                        0,
 		Pie:                         0,
 		Pie3D:                       30,
+		PieOfPieChart:               0,
+		BarOfPieChart:               0,
 		Radar:                       0,
 		Scatter:                     0,
 		Surface3D:                   15,
@@ -175,6 +180,8 @@ var (
 		Line:                        0,
 		Pie:                         0,
 		Pie3D:                       0,
+		PieOfPieChart:               0,
+		BarOfPieChart:               0,
 		Radar:                       0,
 		Scatter:                     0,
 		Surface3D:                   20,
@@ -237,6 +244,8 @@ var (
 		Line:                        0,
 		Pie:                         0,
 		Pie3D:                       0,
+		PieOfPieChart:               0,
+		BarOfPieChart:               0,
 		Radar:                       0,
 		Scatter:                     0,
 		Surface3D:                   0,
@@ -297,6 +306,8 @@ var (
 		Line:                        "General",
 		Pie:                         "General",
 		Pie3D:                       "General",
+		PieOfPieChart:               "General",
+		BarOfPieChart:               "General",
 		Radar:                       "General",
 		Scatter:                     "General",
 		Surface3D:                   "General",
@@ -351,6 +362,8 @@ var (
 		Line:                        "between",
 		Pie:                         "between",
 		Pie3D:                       "between",
+		PieOfPieChart:               "between",
+		BarOfPieChart:               "between",
 		Radar:                       "between",
 		Scatter:                     "between",
 		Surface3D:                   "midCat",
@@ -491,7 +504,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 // AddChart provides the method to add chart in a sheet by given chart format
 // set (such as offset, scale, aspect ratio setting and print settings) and
 // properties set. For example, create 3D clustered column chart with data
-// Sheet1!$A$29:$D$32:
+// Sheet1!$E$1:$L$15:
 //
 //    package main
 //
@@ -507,12 +520,12 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //        for k, v := range values {
 //            f.SetCellValue("Sheet1", k, v)
 //        }
-//        if err := f.AddChart("Sheet1", "E1", `{"type":"col3DClustered","dimension":{"width":640,"height":480},"series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"bottom","show_legend_key":false},"title":{"name":"Fruit 3D Clustered Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"reverse_order":true},"y_axis":{"maximum":7.5,"minimum":0.5}}`); err != nil {
+//        if err := f.AddChart("Sheet1", "E1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"reverse_order":true},"y_axis":{"maximum":7.5,"minimum":0.5}}`); err != nil {
 //            println(err.Error())
 //            return
 //        }
 //        // Save xlsx file by the given path.
-//        if err := xlsx.SaveAs("Book1.xlsx"); err != nil {
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
 //            println(err.Error())
 //        }
 //    }
@@ -565,6 +578,8 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //     line                        | line chart
 //     pie                         | pie chart
 //     pie3D                       | 3D pie chart
+//     pieOfPie                    | pie of pie chart
+//     barOfPie                    | bar of pie chart
 //     radar                       | radar chart
 //     scatter                     | scatter chart
 //     surface3D                   | 3D surface chart
@@ -680,6 +695,34 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 // minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.
+//
+// combo: Specifies tha create a chart that combines two art types in a single
+// chart. For example, create a clustered column - line chart with data
+// Sheet1!$E$1:$L$15:
+//
+//    package main
+//
+//    import "github.com/360EntSecGroup-Skylar/excelize"
+//
+//    func main() {
+//        categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
+//        values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
+//        f := excelize.NewFile()
+//        for k, v := range categories {
+//            f.SetCellValue("Sheet1", k, v)
+//        }
+//        for k, v := range values {
+//            f.SetCellValue("Sheet1", k, v)
+//        }
+//        if err := f.AddChart("Sheet1", "E1", `{"type":"col","series":[{"name":"Sheet1!$A$2","categories":"","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Clustered Column - Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"combo":{"type":"line","series":[{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true}}}`); err != nil {
+//            println(err.Error())
+//            return
+//        }
+//        // Save xlsx file by the given path.
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            println(err.Error())
+//        }
+//    }
 //
 func (f *File) AddChart(sheet, cell, format string) error {
 	formatSet, err := parseFormatChartSet(format)
@@ -915,6 +958,8 @@ func (f *File) addChart(formatSet *formatChart) {
 		Line:                        f.drawLineChart,
 		Pie3D:                       f.drawPie3DChart,
 		Pie:                         f.drawPieChart,
+		PieOfPieChart:               f.drawPieOfPieChart,
+		BarOfPieChart:               f.drawBarOfPieChart,
 		Radar:                       f.drawRadarChart,
 		Scatter:                     f.drawScatterChart,
 		Surface3D:                   f.drawSurface3DChart,
@@ -924,8 +969,20 @@ func (f *File) addChart(formatSet *formatChart) {
 		Bubble:                      f.drawBaseChart,
 		Bubble3D:                    f.drawBaseChart,
 	}
-	xlsxChartSpace.Chart.PlotArea = plotAreaFunc[formatSet.Type](formatSet)
-
+	addChart := func(c, p *cPlotArea) {
+		immutable, mutable := reflect.ValueOf(c).Elem(), reflect.ValueOf(p).Elem()
+		for i := 0; i < mutable.NumField(); i++ {
+			field := mutable.Field(i)
+			if field.IsNil() {
+				continue
+			}
+			immutable.FieldByName(mutable.Type().Field(i).Name).Set(field)
+		}
+	}
+	addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[formatSet.Type](formatSet))
+	if formatSet.Combo != nil {
+		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[formatSet.Combo.Type](formatSet.Combo))
+	}
 	chart, _ := xml.Marshal(xlsxChartSpace)
 	media := "xl/charts/chart" + strconv.Itoa(count+1) + ".xml"
 	f.saveFileList(media, chart)
@@ -1246,6 +1303,40 @@ func (f *File) drawPie3DChart(formatSet *formatChart) *cPlotArea {
 	}
 }
 
+// drawPieOfPieChart provides a function to draw the c:plotArea element for
+// pie chart by given format sets.
+func (f *File) drawPieOfPieChart(formatSet *formatChart) *cPlotArea {
+	return &cPlotArea{
+		PieChart: &cCharts{
+			OfPieType: &attrValString{
+				Val: stringPtr("pie"),
+			},
+			VaryColors: &attrValBool{
+				Val: boolPtr(true),
+			},
+			Ser:      f.drawChartSeries(formatSet),
+			SerLines: &attrValString{},
+		},
+	}
+}
+
+// drawBarOfPieChart provides a function to draw the c:plotArea element for
+// pie chart by given format sets.
+func (f *File) drawBarOfPieChart(formatSet *formatChart) *cPlotArea {
+	return &cPlotArea{
+		PieChart: &cCharts{
+			OfPieType: &attrValString{
+				Val: stringPtr("bar"),
+			},
+			VaryColors: &attrValBool{
+				Val: boolPtr(true),
+			},
+			Ser:      f.drawChartSeries(formatSet),
+			SerLines: &attrValString{},
+		},
+	}
+}
+
 // drawRadarChart provides a function to draw the c:plotArea element for radar
 // chart by given format sets.
 func (f *File) drawRadarChart(formatSet *formatChart) *cPlotArea {
@@ -1371,11 +1462,15 @@ func (f *File) drawChartShape(formatSet *formatChart) *attrValString {
 // drawChartSeries provides a function to draw the c:ser element by given
 // format sets.
 func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
+	var baseIdx int
+	if formatSet.Combo != nil {
+		baseIdx = len(formatSet.Combo.Series)
+	}
 	ser := []cSer{}
 	for k := range formatSet.Series {
 		ser = append(ser, cSer{
-			IDx:   &attrValInt{Val: intPtr(k)},
-			Order: &attrValInt{Val: intPtr(k)},
+			IDx:   &attrValInt{Val: intPtr(k + baseIdx)},
+			Order: &attrValInt{Val: intPtr(k + baseIdx)},
 			Tx: &cTx{
 				StrRef: &cStrRef{
 					F: formatSet.Series[k].Name,
