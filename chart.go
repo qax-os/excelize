@@ -1842,7 +1842,7 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 					Baseline: 0,
 					SolidFill: &aSolidFill{
 						SchemeClr: &aSchemeClr{
-							Val:    "tx1",
+							Val:    "t1",
 							LumMod: &attrValInt{Val: intPtr(15000)},
 							LumOff: &attrValInt{Val: intPtr(85000)},
 						},
