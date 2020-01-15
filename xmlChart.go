@@ -593,11 +593,11 @@ type formatChart struct {
 		} `json:"fill"`
 		Layout formatLayout `json:"layout"`
 	} `json:"plotarea"`
-	ShowBlanksAs   string       `json:"show_blanks_as"`
-	ShowHiddenData bool         `json:"show_hidden_data"`
-	SetRotation    int          `json:"set_rotation"`
-	SetHoleSize    int          `json:"set_hole_size"`
-	Combo          *formatChart `json:"combo"`
+	ShowBlanksAs   string `json:"show_blanks_as"`
+	ShowHiddenData bool   `json:"show_hidden_data"`
+	SetRotation    int    `json:"set_rotation"`
+	SetHoleSize    int    `json:"set_hole_size"`
+	order          int
 }
 
 // formatChartLegend directly maps the format settings of the chart legend.

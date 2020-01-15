@@ -696,7 +696,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.
 //
-// combo: Specifies tha create a chart that combines two art types in a single
+// combo: Specifies the create a chart that combines two art types in a single
 // chart. For example, create a clustered column - line chart with data
 // Sheet1!$E$1:$L$15:
 //
@@ -714,7 +714,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //        for k, v := range values {
 //            f.SetCellValue("Sheet1", k, v)
 //        }
-//        if err := f.AddChart("Sheet1", "E1", `{"type":"col","series":[{"name":"Sheet1!$A$2","categories":"","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Clustered Column - Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"combo":{"type":"line","series":[{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true}}}`); err != nil {
+//        if err := f.AddChart("Sheet1", "E1", `{"type":"col","series":[{"name":"Sheet1!$A$2","categories":"","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Clustered Column - Line Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true}}`, `{"type":"line","series":[{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true}}`); err != nil {
 //            println(err.Error())
 //            return
 //        }
@@ -724,10 +724,21 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //        }
 //    }
 //
-func (f *File) AddChart(sheet, cell, format string) error {
+func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	formatSet, err := parseFormatChartSet(format)
 	if err != nil {
 		return err
+	}
+	comboCharts := []*formatChart{}
+	for _, comboFormat := range combo {
+		comboChart, err := parseFormatChartSet(comboFormat)
+		if err != nil {
+			return err
+		}
+		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
+			return errors.New("unsupported chart type " + comboChart.Type)
+		}
+		comboCharts = append(comboCharts, comboChart)
 	}
 	// Read sheet data.
 	xlsx, err := f.workSheetReader(sheet)
@@ -748,7 +759,7 @@ func (f *File) AddChart(sheet, cell, format string) error {
 	if err != nil {
 		return err
 	}
-	f.addChart(formatSet)
+	f.addChart(formatSet, comboCharts)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
 	return err
@@ -786,7 +797,7 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 
 // addChart provides a function to create chart as xl/charts/chart%d.xml by
 // given format sets.
-func (f *File) addChart(formatSet *formatChart) {
+func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
 		XMLNSc:         NameSpaceDrawingMLChart,
@@ -980,8 +991,11 @@ func (f *File) addChart(formatSet *formatChart) {
 		}
 	}
 	addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[formatSet.Type](formatSet))
-	if formatSet.Combo != nil {
-		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[formatSet.Combo.Type](formatSet.Combo))
+	order := len(formatSet.Series)
+	for idx := range comboCharts {
+		comboCharts[idx].order = order
+		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[comboCharts[idx].Type](comboCharts[idx]))
+		order += len(comboCharts[idx].Series)
 	}
 	chart, _ := xml.Marshal(xlsxChartSpace)
 	media := "xl/charts/chart" + strconv.Itoa(count+1) + ".xml"
@@ -1462,15 +1476,11 @@ func (f *File) drawChartShape(formatSet *formatChart) *attrValString {
 // drawChartSeries provides a function to draw the c:ser element by given
 // format sets.
 func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
-	var baseIdx int
-	if formatSet.Combo != nil {
-		baseIdx = len(formatSet.Combo.Series)
-	}
 	ser := []cSer{}
 	for k := range formatSet.Series {
 		ser = append(ser, cSer{
-			IDx:   &attrValInt{Val: intPtr(k + baseIdx)},
-			Order: &attrValInt{Val: intPtr(k + baseIdx)},
+			IDx:   &attrValInt{Val: intPtr(k + formatSet.order)},
+			Order: &attrValInt{Val: intPtr(k + formatSet.order)},
 			Tx: &cTx{
 				StrRef: &cStrRef{
 					F: formatSet.Series[k].Name,
@@ -1506,9 +1516,9 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 			Cap: "rnd", // rnd, sq, flat
 		},
 	}
-	if i < 6 {
+	if i+formatSet.order < 6 {
 		spPrLine.Ln.SolidFill = &aSolidFill{
-			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
+			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+formatSet.order+1)},
 		}
 	}
 	chartSeriesSpPr := map[string]*cSpPr{Line: spPrLine, Scatter: spPrScatter}
