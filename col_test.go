@@ -18,11 +18,20 @@ func TestColumnVisibility(t *testing.T) {
 		assert.Equal(t, true, visible)
 		assert.NoError(t, err)
 
-		// Test get column visiable on not exists worksheet.
+		assert.NoError(t, f.SetColsVisibleFrom("Sheet1", "F", false))
+		assert.NoError(t, f.SetColsVisibleFrom("Sheet1", "F", true))
+		visible, err := f.GetColVisible("Sheet1", "F")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
+		visible, err = f.GetColVisible("Sheet1", "G")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
+
+		// Test get column visible on not exists worksheet.
 		_, err = f.GetColVisible("SheetN", "F")
 		assert.EqualError(t, err, "sheet SheetN is not exist")
 
-		// Test get column visiable with illegal cell coordinates.
+		// Test get column visible with illegal cell coordinates.
 		_, err = f.GetColVisible("Sheet1", "*")
 		assert.EqualError(t, err, `invalid column name "*"`)
 		assert.EqualError(t, f.SetColVisible("Sheet1", "*", false), `invalid column name "*"`)

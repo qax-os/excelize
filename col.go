@@ -26,7 +26,7 @@ const (
 // worksheet name and column name. For example, get visible state of column D
 // in Sheet1:
 //
-//    visiable, err := f.GetColVisible("Sheet1", "D")
+//    visible, err := f.GetColVisible("Sheet1", "D")
 //
 func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	visible := true
@@ -85,6 +85,46 @@ func (f *File) SetColVisible(sheet, col string, visible bool) error {
 	}
 	colData.Min = colNum
 	colData.Max = colNum
+	colData.Hidden = !visible
+	colData.CustomWidth = true
+	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
+	return err
+}
+
+// SetColsVisibleFrom provides a function to set visible of all the columns
+// after a given one in a worksheet. For example, hide column D in Sheet1:
+//
+//    err := f.SetColsVisibleFrom("Sheet1", "D", false)
+//
+func (f *File) SetColsVisibleFrom(sheet, col string, visible bool) error {
+	const maxColums := 16384 // max Excel rows
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return err
+	}
+	colData := xlsxCol{
+		Min:         colNum,
+		Max:         maxColums,
+		Hidden:      !visible,
+		CustomWidth: true,
+	}
+	xlsx, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	if xlsx.Cols == nil {
+		cols := xlsxCols{}
+		cols.Col = append(cols.Col, colData)
+		xlsx.Cols = &cols
+		return err
+	}
+	for v := range xlsx.Cols.Col {
+		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
+			colData = xlsx.Cols.Col[v]
+		}
+	}
+	colData.Min = colNum
+	colData.Max = maxColums
 	colData.Hidden = !visible
 	colData.CustomWidth = true
 	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
