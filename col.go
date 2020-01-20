@@ -26,7 +26,7 @@ const (
 // worksheet name and column name. For example, get visible state of column D
 // in Sheet1:
 //
-//    visiable, err := f.GetColVisible("Sheet1", "D")
+//    visible, err := f.GetColVisible("Sheet1", "D")
 //
 func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	visible := true
@@ -52,25 +52,50 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	return visible, err
 }
 
-// SetColVisible provides a function to set visible of a single column by given
-// worksheet name and column name. For example, hide column D in Sheet1:
+// SetColVisible provides a function to set visible columns by given worksheet
+// name, columns range and visibility.
+//
+// For example hide column D on Sheet1:
 //
 //    err := f.SetColVisible("Sheet1", "D", false)
 //
-func (f *File) SetColVisible(sheet, col string, visible bool) error {
-	colNum, err := ColumnNameToNumber(col)
+//    Hide the columns from D to F (included)
+//
+//    err := f.SetColVisible("Sheet1", "D:F", false)
+//
+func (f *File) SetColVisible(sheet, columns string, visible bool) error {
+	var c1, c2 string
+	var min, max int
+	cols := strings.Split(columns, ":")
+	c1 = cols[0]
+	min, err := ColumnNameToNumber(c1)
 	if err != nil {
 		return err
 	}
-	colData := xlsxCol{
-		Min:         colNum,
-		Max:         colNum,
-		Hidden:      !visible,
-		CustomWidth: true,
+	if len(cols) == 2 {
+		c2 = cols[1]
+		max, err = ColumnNameToNumber(c2)
+		if err != nil {
+			return err
+		}
+	} else {
+		max = min
+	}
+	if max < min {
+		min, max = max, min
 	}
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
+	}
+	if xlsx.Cols == nil {
+		xlsx.Cols = &xlsxCols{}
+	}
+	colData := xlsxCol{
+		Min:         min,
+		Max:         max,
+		Hidden:      !visible,
+		CustomWidth: true,
 	}
 	if xlsx.Cols == nil {
 		cols := xlsxCols{}
@@ -78,18 +103,19 @@ func (f *File) SetColVisible(sheet, col string, visible bool) error {
 		xlsx.Cols = &cols
 		return err
 	}
-	for v := range xlsx.Cols.Col {
-		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
-			colData = xlsx.Cols.Col[v]
+	var find bool
+	for idx, col := range xlsx.Cols.Col {
+		if col.Min == min && col.Max == max {
+			colData = xlsx.Cols.Col[idx]
+			find = true
 		}
 	}
-	colData.Min = colNum
-	colData.Max = colNum
-	colData.Hidden = !visible
-	colData.CustomWidth = true
-	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
-	return err
+	if !find {
+		xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
+	}
+	return nil
 }
+
 
 // GetColOutlineLevel provides a function to get outline level of a single
 // column by given worksheet name and column name. For example, get outline
