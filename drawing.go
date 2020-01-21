@@ -563,7 +563,7 @@ func (f *File) drawPie3DChart(formatSet *formatChart) *cPlotArea {
 // pie chart by given format sets.
 func (f *File) drawPieOfPieChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
-		PieChart: &cCharts{
+		OfPieChart: &cCharts{
 			OfPieType: &attrValString{
 				Val: stringPtr("pie"),
 			},
@@ -580,7 +580,7 @@ func (f *File) drawPieOfPieChart(formatSet *formatChart) *cPlotArea {
 // pie chart by given format sets.
 func (f *File) drawBarOfPieChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
-		PieChart: &cCharts{
+		OfPieChart: &cCharts{
 			OfPieType: &attrValString{
 				Val: stringPtr("bar"),
 			},

@@ -331,10 +331,10 @@ type cCharts struct {
 	RadarStyle   *attrValString `xml:"radarStyle"`
 	ScatterStyle *attrValString `xml:"scatterStyle"`
 	OfPieType    *attrValString `xml:"ofPieType"`
-	SerLines     *attrValString `xml:"serLines"`
 	VaryColors   *attrValBool   `xml:"varyColors"`
 	Wireframe    *attrValBool   `xml:"wireframe"`
 	Ser          *[]cSer        `xml:"ser"`
+	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
 	Shape        *attrValString `xml:"shape"`
 	HoleSize     *attrValInt    `xml:"holeSize"`

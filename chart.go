@@ -694,9 +694,9 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.
 //
-// combo: Specifies the create a chart that combines two art types in a single
-// chart. For example, create a clustered column - line chart with data
-// Sheet1!$E$1:$L$15:
+// combo: Specifies the create a chart that combines two or more chart types
+// in a single chart. For example, create a clustered column - line chart with
+// data Sheet1!$E$1:$L$15:
 //
 //    package main
 //
@@ -782,10 +782,11 @@ func (f *File) DeleteChart(sheet, cell string) (err error) {
 	}
 	drawingXML := strings.Replace(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl", -1)
 	wsDr, _ = f.drawingParser(drawingXML)
-	for idx, anchor := range wsDr.TwoCellAnchor {
-		if err = nil; anchor.From != nil && anchor.Pic == nil {
-			if anchor.From.Col == col && anchor.From.Row == row {
+	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
+		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && wsDr.TwoCellAnchor[idx].Pic == nil {
+			if wsDr.TwoCellAnchor[idx].From.Col == col && wsDr.TwoCellAnchor[idx].From.Row == row {
 				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
+				idx--
 			}
 		}
 	}
@@ -795,26 +796,18 @@ func (f *File) DeleteChart(sheet, cell string) (err error) {
 // deleteChart provides a function to delete chart graphic frame by given by
 // given coordinates.
 func (f *File) deleteChart(col, row int, drawingXML string, wsDr *xlsxWsDr) (err error) {
-	var (
-		deWsDr          *decodeWsDr
-		deTwoCellAnchor *decodeTwoCellAnchor
-	)
-	deWsDr = new(decodeWsDr)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
-		Decode(deWsDr); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
-		return
-	}
-	for idx, anchor := range deWsDr.TwoCellAnchor {
+	var deTwoCellAnchor *decodeTwoCellAnchor
+	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>"))).
+		if err = f.xmlNewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>"))).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
 			err = fmt.Errorf("xml decode error: %s", err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic == nil {
-			if anchor.From.Col == col && anchor.From.Row == row {
+			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
+				idx--
 			}
 		}
 	}
