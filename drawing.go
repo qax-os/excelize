@@ -12,6 +12,7 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"log"
 	"reflect"
@@ -1205,5 +1206,47 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings[drawingXML] = content
+	return err
+}
+
+// deleteDrawing provides a function to delete chart graphic frame by given by
+// given coordinates and graphic type.
+func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err error) {
+	var (
+		wsDr            *xlsxWsDr
+		deTwoCellAnchor *decodeTwoCellAnchor
+	)
+	xdrCellAnchorFuncs := map[string]func(anchor *xdrCellAnchor) bool{
+		"Chart": func(anchor *xdrCellAnchor) bool { return anchor.Pic == nil },
+		"Pic":   func(anchor *xdrCellAnchor) bool { return anchor.Pic != nil },
+	}
+	decodeTwoCellAnchorFuncs := map[string]func(anchor *decodeTwoCellAnchor) bool{
+		"Chart": func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic == nil },
+		"Pic":   func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic != nil },
+	}
+	wsDr, _ = f.drawingParser(drawingXML)
+	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
+		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && xdrCellAnchorFuncs[drawingType](wsDr.TwoCellAnchor[idx]) {
+			if wsDr.TwoCellAnchor[idx].From.Col == col && wsDr.TwoCellAnchor[idx].From.Row == row {
+				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
+				idx--
+			}
+		}
+	}
+	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
+		deTwoCellAnchor = new(decodeTwoCellAnchor)
+		if err = f.xmlNewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>"))).
+			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
+			err = fmt.Errorf("xml decode error: %s", err)
+			return
+		}
+		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {
+			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
+				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
+				idx--
+			}
+		}
+	}
+	f.Drawings[drawingXML] = wsDr
 	return err
 }

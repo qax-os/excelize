@@ -10,11 +10,8 @@
 package excelize
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"strconv"
 	"strings"
 )
@@ -766,7 +763,6 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 // DeleteChart provides a function to delete chart in XLSX by given worksheet
 // and cell name.
 func (f *File) DeleteChart(sheet, cell string) (err error) {
-	var wsDr *xlsxWsDr
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return
@@ -781,38 +777,7 @@ func (f *File) DeleteChart(sheet, cell string) (err error) {
 		return
 	}
 	drawingXML := strings.Replace(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl", -1)
-	wsDr, _ = f.drawingParser(drawingXML)
-	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && wsDr.TwoCellAnchor[idx].Pic == nil {
-			if wsDr.TwoCellAnchor[idx].From.Col == col && wsDr.TwoCellAnchor[idx].From.Row == row {
-				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
-				idx--
-			}
-		}
-	}
-	return f.deleteChart(col, row, drawingXML, wsDr)
-}
-
-// deleteChart provides a function to delete chart graphic frame by given by
-// given coordinates.
-func (f *File) deleteChart(col, row int, drawingXML string, wsDr *xlsxWsDr) (err error) {
-	var deTwoCellAnchor *decodeTwoCellAnchor
-	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>"))).
-			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
-			return
-		}
-		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic == nil {
-			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
-				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
-				idx--
-			}
-		}
-	}
-	f.Drawings[drawingXML] = wsDr
-	return err
+	return f.deleteDrawing(col, row, drawingXML, "Chart")
 }
 
 // countCharts provides a function to get chart files count storage in the

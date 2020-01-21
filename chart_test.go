@@ -217,12 +217,6 @@ func TestDeleteChart(t *testing.T) {
 	assert.EqualError(t, f.DeleteChart("SheetN", "A1"), "sheet SheetN is not exist")
 	// Test delete chart with invalid coordinates.
 	assert.EqualError(t, f.DeleteChart("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
-	// Test delete chart with unsupport charset.
-	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
-	assert.NoError(t, err)
-	delete(f.Sheet, "xl/drawings/drawing1.xml")
-	f.XLSX["xl/drawings/drawing1.xml"] = MacintoshCyrillicCharset
-	assert.EqualError(t, f.DeleteChart("Sheet1", "A1"), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 	// Test delete chart on no chart worksheet.
 	assert.NoError(t, NewFile().DeleteChart("Sheet1", "A1"))
 }

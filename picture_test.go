@@ -166,3 +166,18 @@ func TestAddPictureFromBytes(t *testing.T) {
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
 	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN is not exist")
 }
+
+func TestDeletePicture(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.DeletePicture("Sheet1", "A1"))
+	assert.NoError(t, f.AddPicture("Sheet1", "P1", filepath.Join("test", "images", "excel.jpg"), ""))
+	assert.NoError(t, f.DeletePicture("Sheet1", "P1"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture.xlsx")))
+	// Test delete picture on not exists worksheet.
+	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN is not exist")
+	// Test delete picture with invalid coordinates.
+	assert.EqualError(t, f.DeletePicture("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
+	// Test delete picture on no chart worksheet.
+	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
+}
