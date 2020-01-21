@@ -12,17 +12,41 @@ func TestColumnVisibility(t *testing.T) {
 		f, err := prepareTestBook1()
 		assert.NoError(t, err)
 
+		// Hide/display a column with SetColVisible
 		assert.NoError(t, f.SetColVisible("Sheet1", "F", false))
 		assert.NoError(t, f.SetColVisible("Sheet1", "F", true))
 		visible, err := f.GetColVisible("Sheet1", "F")
 		assert.Equal(t, true, visible)
 		assert.NoError(t, err)
 
-		// Test get column visiable on not exists worksheet.
+		// Test hiding a few columns SetColVisible(...false)...
+		assert.NoError(t, f.SetColVisible("Sheet1", "F:V", false))
+		visible, err = f.GetColVisible("Sheet1", "F")
+		assert.Equal(t, false, visible)
+		assert.NoError(t, err)
+		visible, err = f.GetColVisible("Sheet1", "U")
+		assert.Equal(t, false, visible)
+		assert.NoError(t, err)
+		visible, err = f.GetColVisible("Sheet1", "V")
+		assert.Equal(t, false, visible)
+		assert.NoError(t, err)
+		// ...and displaying them back SetColVisible(...true)
+		assert.NoError(t, f.SetColVisible("Sheet1", "F:V", true))
+		visible, err = f.GetColVisible("Sheet1", "F")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
+		visible, err = f.GetColVisible("Sheet1", "U")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
+		visible, err = f.GetColVisible("Sheet1", "G")
+		assert.Equal(t, true, visible)
+		assert.NoError(t, err)
+
+		// Test get column visible on an inexistent worksheet.
 		_, err = f.GetColVisible("SheetN", "F")
 		assert.EqualError(t, err, "sheet SheetN is not exist")
 
-		// Test get column visiable with illegal cell coordinates.
+		// Test get column visible with illegal cell coordinates.
 		_, err = f.GetColVisible("Sheet1", "*")
 		assert.EqualError(t, err, `invalid column name "*"`)
 		assert.EqualError(t, f.SetColVisible("Sheet1", "*", false), `invalid column name "*"`)
