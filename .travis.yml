@@ -14,7 +14,7 @@ os:
   - osx
 
 env:
-  matrix:
+  jobs:
     - GOARCH=amd64
     - GOARCH=386
 

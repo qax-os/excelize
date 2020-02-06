@@ -13,6 +13,8 @@ import (
 	"errors"
 	"math"
 	"strings"
+
+	"github.com/mohae/deepcopy"
 )
 
 // Define the default cell size and EMU unit of measurement.
@@ -59,7 +61,7 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 //
 //    err := f.SetColVisible("Sheet1", "D", false)
 //
-//    Hide the columns from D to F (included)
+// Hide the columns from D to F (included):
 //
 //    err := f.SetColVisible("Sheet1", "D:F", false)
 //
@@ -87,22 +89,30 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 		return err
 	}
 	colData := xlsxCol{
-		Min:		min,
-		Max:		max,
-		Width:		9, // default width
-		Hidden:		!visible,
+		Min:         min,
+		Max:         max,
+		Width:       9, // default width
+		Hidden:      !visible,
 		CustomWidth: true,
 	}
-	if xlsx.Cols != nil {
-		xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
-	} else {
+	if xlsx.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
 		xlsx.Cols = &cols
+		return nil
 	}
+	xlsx.Cols.Col = flatCols(colData, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+		fc.BestFit = c.BestFit
+		fc.Collapsed = c.Collapsed
+		fc.CustomWidth = c.CustomWidth
+		fc.OutlineLevel = c.OutlineLevel
+		fc.Phonetic = c.Phonetic
+		fc.Style = c.Style
+		fc.Width = c.Width
+		return fc
+	})
 	return nil
 }
-
 
 // GetColOutlineLevel provides a function to get outline level of a single
 // column by given worksheet name and column name. For example, get outline
@@ -162,16 +172,16 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 		xlsx.Cols = &cols
 		return err
 	}
-	for v := range xlsx.Cols.Col {
-		if xlsx.Cols.Col[v].Min <= colNum && colNum <= xlsx.Cols.Col[v].Max {
-			colData = xlsx.Cols.Col[v]
-		}
-	}
-	colData.Min = colNum
-	colData.Max = colNum
-	colData.OutlineLevel = level
-	colData.CustomWidth = true
-	xlsx.Cols.Col = append(xlsx.Cols.Col, colData)
+	xlsx.Cols.Col = flatCols(colData, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+		fc.BestFit = c.BestFit
+		fc.Collapsed = c.Collapsed
+		fc.CustomWidth = c.CustomWidth
+		fc.Hidden = c.Hidden
+		fc.Phonetic = c.Phonetic
+		fc.Style = c.Style
+		fc.Width = c.Width
+		return fc
+	})
 	return err
 }
 
@@ -214,21 +224,21 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if xlsx.Cols == nil {
 		xlsx.Cols = &xlsxCols{}
 	}
-	var find bool
-	for idx, col := range xlsx.Cols.Col {
-		if col.Min == min && col.Max == max {
-			xlsx.Cols.Col[idx].Style = styleID
-			find = true
-		}
-	}
-	if !find {
-		xlsx.Cols.Col = append(xlsx.Cols.Col, xlsxCol{
-			Min:   min,
-			Max:   max,
-			Width: 9,
-			Style: styleID,
-		})
-	}
+	xlsx.Cols.Col = flatCols(xlsxCol{
+		Min:   min,
+		Max:   max,
+		Width: 9,
+		Style: styleID,
+	}, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+		fc.BestFit = c.BestFit
+		fc.Collapsed = c.Collapsed
+		fc.CustomWidth = c.CustomWidth
+		fc.Hidden = c.Hidden
+		fc.OutlineLevel = c.OutlineLevel
+		fc.Phonetic = c.Phonetic
+		fc.Width = c.Width
+		return fc
+	})
 	return nil
 }
 
@@ -261,14 +271,53 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 		Width:       width,
 		CustomWidth: true,
 	}
-	if xlsx.Cols != nil {
-		xlsx.Cols.Col = append(xlsx.Cols.Col, col)
-	} else {
+	if xlsx.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, col)
 		xlsx.Cols = &cols
+		return err
 	}
+	xlsx.Cols.Col = flatCols(col, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+		fc.BestFit = c.BestFit
+		fc.Collapsed = c.Collapsed
+		fc.Hidden = c.Hidden
+		fc.OutlineLevel = c.OutlineLevel
+		fc.Phonetic = c.Phonetic
+		fc.Style = c.Style
+		return fc
+	})
 	return err
+}
+
+// flatCols provides a method for the column's operation functions to flatten
+// and check the worksheet columns.
+func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
+	fc := []xlsxCol{}
+	for i := col.Min; i <= col.Max; i++ {
+		c := deepcopy.Copy(col).(xlsxCol)
+		c.Min, c.Max = i, i
+		fc = append(fc, c)
+	}
+	inFlat := func(colID int, cols []xlsxCol) (int, bool) {
+		for idx, c := range cols {
+			if c.Max == colID && c.Min == colID {
+				return idx, true
+			}
+		}
+		return -1, false
+	}
+	for _, column := range cols {
+		for i := column.Min; i <= column.Max; i++ {
+			if idx, ok := inFlat(i, fc); ok {
+				fc[idx] = replacer(fc[idx], column)
+				continue
+			}
+			c := deepcopy.Copy(column).(xlsxCol)
+			c.Min, c.Max = i, i
+			fc = append(fc, c)
+		}
+	}
+	return fc
 }
 
 // positionObjectPixels calculate the vertices that define the position of a

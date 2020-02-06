@@ -31,7 +31,7 @@ func TestColumnVisibility(t *testing.T) {
 		assert.Equal(t, false, visible)
 		assert.NoError(t, err)
 		// ...and displaying them back SetColVisible(...true)
-		assert.NoError(t, f.SetColVisible("Sheet1", "F:V", true))
+		assert.NoError(t, f.SetColVisible("Sheet1", "V:F", true))
 		visible, err = f.GetColVisible("Sheet1", "F")
 		assert.Equal(t, true, visible)
 		assert.NoError(t, err)
@@ -53,7 +53,7 @@ func TestColumnVisibility(t *testing.T) {
 
 		f.NewSheet("Sheet3")
 		assert.NoError(t, f.SetColVisible("Sheet3", "E", false))
-
+		assert.EqualError(t, f.SetColVisible("Sheet1", "A:-1", true), "invalid column name \"-1\"")
 		assert.EqualError(t, f.SetColVisible("SheetN", "E", false), "sheet SheetN is not exist")
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestColumnVisibility.xlsx")))
 	})

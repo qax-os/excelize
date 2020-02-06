@@ -287,8 +287,8 @@ func (f *File) GetActiveSheetIndex() int {
 	return 0
 }
 
-// SetSheetName provides a function to set the worksheet name be given old and
-// new worksheet name. Maximum 31 characters are allowed in sheet title and
+// SetSheetName provides a function to set the worksheet name by given old and
+// new worksheet names. Maximum 31 characters are allowed in sheet title and
 // this function only changes the name of the sheet and will not update the
 // sheet name in the formula or reference associated with the cell. So there
 // may be problem formula error or reference missing.

@@ -39,8 +39,10 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 //
 //    err := f.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
 //
-// Note that the table at least two lines include string type header. Multiple
-// tables coordinate areas can't have an intersection.
+// Note that the table must be at least two lines including the header. The
+// header cells must contain strings and must be unique, and must set the
+// header row data of the table before calling the AddTable function. Multiple
+// tables coordinate areas that can't have an intersection.
 //
 // table_name: The name of the table, in the same worksheet name of the table should be unique
 //

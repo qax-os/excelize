@@ -22,20 +22,17 @@ import (
 // If you create a merged cell that overlaps with another existing merged cell,
 // those merged cells that already exist will be removed.
 //
-//                 B1(x1,y1)              D1(x2,y1)
-//                +--------------------------------+
-//                |                                |
-//                |                                |
-//     A4(x3,y3)  |        C4(x4,y3)               |
-//    +-----------------------------+              |
-//    |           |                 |              |
-//    |           |                 |              |
-//    |           |B5(x1,y2)        |     D5(x2,y2)|
-//    |           +--------------------------------+
-//    |                             |
-//    |                             |
-//    |A8(x3,y4)           C8(x4,y4)|
-//    +-----------------------------+
+//                 B1(x1,y1)      D1(x2,y1)
+//               +------------------------+
+//               |                        |
+//     A4(x3,y3) |    C4(x4,y3)           |
+//    +------------------------+          |
+//    |          |             |          |
+//    |          |B5(x1,y2)    | D5(x2,y2)|
+//    |          +------------------------+
+//    |                        |
+//    |A8(x3,y4)      C8(x4,y4)|
+//    +------------------------+
 //
 func (f *File) MergeCell(sheet, hcell, vcell string) error {
 	rect1, err := f.areaRefToCoordinates(hcell + ":" + vcell)

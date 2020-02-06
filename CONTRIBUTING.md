@@ -234,7 +234,9 @@ By making a contribution to this project, I certify that:
 
 Then you just add a line to every git commit message:
 
-    Signed-off-by: Ri Xu https://xuri.me
+```text
+Signed-off-by: Ri Xu https://xuri.me
+```
 
 Use your real name (sorry, no pseudonyms or anonymous contributions.)
 
@@ -460,4 +462,4 @@ Do not use package math/rand to generate keys, even
 throwaway ones. Unseeded, the generator is completely predictable.
 Seeded with time.Nanoseconds(), there are just a few bits of entropy.
 Instead, use crypto/rand's Reader, and if you need text, print to
-hexadecimal or base64
+hexadecimal or base64.
