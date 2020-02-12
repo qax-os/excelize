@@ -92,6 +92,13 @@ func TestStreamWriter(t *testing.T) {
 	_, err = streamWriter.rawData.Reader()
 	assert.NoError(t, err)
 	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
+
+	// Test unsupport charset
+	file = NewFile()
+	delete(file.Sheet, "xl/worksheets/sheet1.xml")
+	file.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
+	streamWriter, err = file.NewStreamWriter("Sheet1")
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestStreamTable(t *testing.T) {

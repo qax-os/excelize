@@ -27,6 +27,7 @@ type StreamWriter struct {
 	File       *File
 	Sheet      string
 	SheetID    int
+	worksheet  *xlsxWorksheet
 	rawData    bufferedWriter
 	tableParts string
 }
@@ -77,15 +78,15 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		Sheet:   sheet,
 		SheetID: sheetID,
 	}
-
-	ws, err := f.workSheetReader(sheet)
+	var err error
+	sw.worksheet, err = f.workSheetReader(sheet)
 	if err != nil {
 		return nil, err
 	}
 	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendOtherFields(&sw.rawData, ws, "XMLName", "SheetData", "TableParts")
+	bulkAppendFields(&sw.rawData, sw.worksheet, 1, 5)
 	sw.rawData.WriteString(`<sheetData>`)
-	return sw, nil
+	return sw, err
 }
 
 // AddTable creates an Excel table for the StreamWriter using the given
@@ -373,7 +374,9 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
 	sw.rawData.WriteString(`</sheetData>`)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 7, 37)
 	sw.rawData.WriteString(sw.tableParts)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 39, 39)
 	sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err
@@ -392,23 +395,15 @@ func (sw *StreamWriter) Flush() error {
 	return nil
 }
 
-// bulkAppendOtherFields bulk-appends fields in a worksheet, skipping the
-// specified field names.
-func bulkAppendOtherFields(w io.Writer, ws *xlsxWorksheet, skip ...string) {
-	skipMap := make(map[string]struct{})
-	for _, name := range skip {
-		skipMap[name] = struct{}{}
-	}
-
+// bulkAppendFields bulk-appends fields in a worksheet by specified field
+// names order range.
+func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 	s := reflect.ValueOf(ws).Elem()
-	typeOfT := s.Type()
 	enc := xml.NewEncoder(w)
 	for i := 0; i < s.NumField(); i++ {
-		f := s.Field(i)
-		if _, ok := skipMap[typeOfT.Field(i).Name]; ok {
-			continue
+		if from <= i && i <= to {
+			enc.Encode(s.Field(i).Interface())
 		}
-		enc.Encode(f.Interface())
 	}
 }
 
