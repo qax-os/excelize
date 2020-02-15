@@ -475,7 +475,7 @@ func (c *xlsxC) hasValue() bool {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
 // not checked it for completeness - it does as much as I need.
 type xlsxF struct {
-	Content string `xml:",innerxml"`
+	Content string `xml:",chardata"`
 	T       string `xml:"t,attr,omitempty"`   // Formula type
 	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
 	Si      string `xml:"si,attr,omitempty"`  // Shared formula index
