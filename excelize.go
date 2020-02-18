@@ -294,13 +294,13 @@ func (f *File) UpdateLinkedValue() error {
 // functions and/or macros. The file extension should be .xlsm. For example:
 //
 //    if err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1")); err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //    if err := f.AddVBAProject("vbaProject.bin"); err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //    if err := f.SaveAs("macros.xlsm"); err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //
 func (f *File) AddVBAProject(bin string) error {

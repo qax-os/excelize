@@ -63,10 +63,10 @@ type PivotTableOption struct {
 //            Columns:         []string{"Type"},
 //            Data:            []string{"Sales"},
 //        }); err != nil {
-//            println(err.Error())
+//            fmt.Println(err)
 //        }
 //        if err := f.SaveAs("Book1.xlsx"); err != nil {
-//            println(err.Error())
+//            fmt.Println(err)
 //        }
 //    }
 //

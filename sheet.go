@@ -344,7 +344,7 @@ func (f *File) GetSheetIndex(name string) int {
 //        return
 //    }
 //    for index, name := range f.GetSheetMap() {
-//        println(index, name)
+//        fmt.Println(index, name)
 //    }
 //
 func (f *File) GetSheetMap() map[int]string {

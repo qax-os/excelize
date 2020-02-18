@@ -47,7 +47,7 @@ func ExampleFile_SetSheetViewOptions() {
 		excelize.ZoomScale(80),
 		excelize.TopLeftCell("C3"),
 	); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	var zoomScale excelize.ZoomScale
@@ -55,22 +55,22 @@ func ExampleFile_SetSheetViewOptions() {
 	fmt.Println("- zoomScale: 80")
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ZoomScale(500)); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &zoomScale); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	fmt.Println("Used out of range value:")
 	fmt.Println("- zoomScale:", zoomScale)
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ZoomScale(123)); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &zoomScale); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	fmt.Println("Used correct value:")
@@ -111,7 +111,7 @@ func ExampleFile_GetSheetViewOptions() {
 		&zoomScale,
 		&topLeftCell,
 	); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	fmt.Println("Default:")
@@ -125,27 +125,27 @@ func ExampleFile_GetSheetViewOptions() {
 	fmt.Println("- topLeftCell:", `"`+topLeftCell+`"`)
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.TopLeftCell("B2")); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &topLeftCell); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ShowGridLines(false)); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &showGridLines); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.SetSheetViewOptions(sheet, 0, excelize.ShowZeros(false)); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	if err := f.GetSheetViewOptions(sheet, 0, &showZeros); err != nil {
-		println(err.Error())
+		fmt.Println(err)
 	}
 
 	fmt.Println("After change:")

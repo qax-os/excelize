@@ -25,18 +25,18 @@ import (
 //
 //    rows, err := f.Rows("Sheet1")
 //    if err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //        return
 //    }
 //    for rows.Next() {
 //        row, err := rows.Columns()
 //        if err != nil {
-//            println(err.Error())
+//            fmt.Println(err)
 //        }
 //        for _, colCell := range row {
-//            print(colCell, "\t")
+//            fmt.Print(colCell, "\t")
 //        }
-//        println()
+//        fmt.Println()
 //    }
 //
 func (f *File) GetRows(sheet string) ([][]string, error) {
@@ -152,18 +152,18 @@ func (err ErrSheetNotExist) Error() string {
 //
 //    rows, err := f.Rows("Sheet1")
 //    if err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //        return
 //    }
 //    for rows.Next() {
 //        row, err := rows.Columns()
 //        if err != nil {
-//            println(err.Error())
+//            fmt.Println(err)
 //        }
 //        for _, colCell := range row {
-//            print(colCell, "\t")
+//            fmt.Print(colCell, "\t")
 //        }
-//        println()
+//        fmt.Println()
 //    }
 //
 func (f *File) Rows(sheet string) (*Rows, error) {

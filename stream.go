@@ -42,14 +42,14 @@ type StreamWriter struct {
 //    file := excelize.NewFile()
 //    streamWriter, err := file.NewStreamWriter("Sheet1")
 //    if err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //    styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
 //    if err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //    if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Data"}}); err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //    for rowID := 2; rowID <= 102400; rowID++ {
 //        row := make([]interface{}, 50)
@@ -58,14 +58,14 @@ type StreamWriter struct {
 //        }
 //        cell, _ := excelize.CoordinatesToCellName(1, rowID)
 //        if err := streamWriter.SetRow(cell, row); err != nil {
-//            println(err.Error())
+//            fmt.Println(err)
 //        }
 //    }
 //    if err := streamWriter.Flush(); err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //    if err := file.SaveAs("Book1.xlsx"); err != nil {
-//        println(err.Error())
+//        fmt.Println(err)
 //    }
 //
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {

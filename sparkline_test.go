@@ -298,12 +298,12 @@ func prepareSparklineDataset() *File {
 	f.NewSheet("Sheet3")
 	for row, data := range sheet2 {
 		if err := f.SetSheetRow("Sheet2", fmt.Sprintf("A%d", row+1), &data); err != nil {
-			println(err.Error())
+			fmt.Println(err)
 		}
 	}
 	for row, data := range sheet3 {
 		if err := f.SetSheetRow("Sheet3", fmt.Sprintf("A%d", row+1), &data); err != nil {
-			println(err.Error())
+			fmt.Println(err)
 		}
 	}
 	return f
