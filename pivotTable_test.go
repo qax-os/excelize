@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,8 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []string{"Month", "Year"},
 		Columns:         []string{"Type"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "Sum",
+		DataFieldName:   "Summarize by Sum",
 	}))
 	// Use different order of coordinate tests
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
@@ -38,6 +41,8 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []string{"Month", "Year"},
 		Columns:         []string{"Type"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "Average",
+		DataFieldName:   "Summarize by Average",
 	}))
 
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
@@ -46,6 +51,8 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []string{"Month", "Year"},
 		Columns:         []string{"Region"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "Count",
+		DataFieldName:   "Summarize by Count",
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$E$31",
@@ -53,12 +60,16 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []string{"Month"},
 		Columns:         []string{"Region", "Year"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "CountNums",
+		DataFieldName:   "Summarize by CountNums",
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$AE$2:$AG$33",
 		Rows:            []string{"Month", "Year"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "Max",
+		DataFieldName:   "Summarize by Max",
 	}))
 	f.NewSheet("Sheet2")
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
@@ -67,6 +78,8 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []string{"Month"},
 		Columns:         []string{"Region", "Type", "Year"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "Min",
+		DataFieldName:   "Summarize by Min",
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$E$31",
@@ -74,6 +87,8 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []string{"Month", "Type"},
 		Columns:         []string{"Region", "Year"},
 		Data:            []string{"Sales"},
+		DataSubtotal:    "Product",
+		DataFieldName:   "Summarize by Product",
 	}))
 
 	// Test empty pivot table options
@@ -135,6 +150,16 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []string{"Sales"},
 	}), `parameter 'DataRange' parsing error: cannot convert cell "A0" to coordinates: invalid cell name "A0"`)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable1.xlsx")))
+	// Test with field names that exceed the length limit and invalid subtotal
+	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+		DataRange:       "Sheet1!$A$1:$E$31",
+		PivotTableRange: "Sheet1!$G$2:$M$34",
+		Rows:            []string{"Month", "Year"},
+		Columns:         []string{"Type"},
+		Data:            []string{"Sales"},
+		DataSubtotal:    "-",
+		DataFieldName:   strings.Repeat("s", 256),
+	}))
 
 	// Test adjust range with invalid range
 	_, _, err := f.adjustRange("")

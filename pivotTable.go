@@ -20,6 +20,8 @@ import (
 // PivotTableOption directly maps the format settings of the pivot table.
 type PivotTableOption struct {
 	DataRange       string
+	DataSubtotal    string
+	DataFieldName   string
 	PivotTableRange string
 	Rows            []string
 	Columns         []string
@@ -28,9 +30,29 @@ type PivotTableOption struct {
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
-// options. For example, create a pivot table on the Sheet1!$G$2:$M$34 area
-// with the region Sheet1!$A$1:$E$31 as the data source, summarize by sum for
-// sales:
+// options.
+//
+// DataSubtotal specifies the aggregation function that applies to this data
+// field. The default value is sum. The possible values for this attribute
+// are:
+//
+//     Average
+//     Count
+//     CountNums
+//     Max
+//     Min
+//     Product
+//     StdDev
+//     StdDevp
+//     Sum
+//     Var
+//     Varp
+//
+// DataFieldName specifies the name of the data field. Maximum 255 characters
+// are allowed in data field name, excess characters will be truncated.
+//
+// For example, create a pivot table on the Sheet1!$G$2:$M$34 area with the
+// region Sheet1!$A$1:$E$31 as the data source, summarize by sum for sales:
 //
 //    package main
 //
@@ -62,6 +84,8 @@ type PivotTableOption struct {
 //            Rows:            []string{"Month", "Year"},
 //            Columns:         []string{"Type"},
 //            Data:            []string{"Sales"},
+//            DataSubtotal:    "Sum",
+//            DataFieldName:   "Summarize as Sum",
 //        }); err != nil {
 //            fmt.Println(err)
 //        }
@@ -278,9 +302,9 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	if err != nil {
 		return err
 	}
-	for _, filedIdx := range rowFieldsIndex {
+	for _, fieldIdx := range rowFieldsIndex {
 		pt.RowFields.Field = append(pt.RowFields.Field, &xlsxField{
-			X: filedIdx,
+			X: fieldIdx,
 		})
 	}
 
@@ -297,9 +321,15 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	if err != nil {
 		return err
 	}
+	dataFieldName := opt.DataFieldName
+	if len(dataFieldName) > 255 {
+		dataFieldName = dataFieldName[0:255]
+	}
 	for _, dataField := range dataFieldsIndex {
 		pt.DataFields.DataField = append(pt.DataFields.DataField, &xlsxDataField{
-			Fld: dataField,
+			Name:     dataFieldName,
+			Fld:      dataField,
+			Subtotal: f.getFieldsSubtotal(opt),
 		})
 	}
 
@@ -336,9 +366,9 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 	if err != nil {
 		return err
 	}
-	for _, filedIdx := range colFieldsIndex {
+	for _, fieldIdx := range colFieldsIndex {
 		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
-			X: filedIdx,
+			X: fieldIdx,
 		})
 	}
 
@@ -428,6 +458,18 @@ func (f *File) getPivotFieldsIndex(fields []string, opt *PivotTableOption) ([]in
 		}
 	}
 	return pivotFieldsIndex, nil
+}
+
+// getFieldsSubtotal prepare data subtotal by given fields and pivot option.
+func (f *File) getFieldsSubtotal(opt *PivotTableOption) (subtotal string) {
+	subtotal = "sum"
+	for _, enum := range []string{"average", "count", "countNums", "max", "min", "product", "stdDev", "stdDevp", "sum", "var", "varp"} {
+		if strings.ToLower(enum) == strings.ToLower(opt.DataSubtotal) {
+			subtotal = enum
+			return
+		}
+	}
+	return
 }
 
 // addWorkbookPivotCache add the association ID of the pivot cache in xl/workbook.xml.
