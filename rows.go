@@ -519,6 +519,40 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	} else {
 		xlsx.SheetData.Row = append(xlsx.SheetData.Row, rowCopy)
 	}
+	return f.duplicateMergeCells(sheet, xlsx, row, row2)
+}
+
+// duplicateMergeCells merge cells in the destination row if there are single
+// row merged cells in the copied row.
+func (f *File) duplicateMergeCells(sheet string, xlsx *xlsxWorksheet, row, row2 int) error {
+	if xlsx.MergeCells == nil {
+		return nil
+	}
+	if row > row2 {
+		row++
+	}
+	for _, rng := range xlsx.MergeCells.Cells {
+		coordinates, err := f.areaRefToCoordinates(rng.Ref)
+		if err != nil {
+			return err
+		}
+		if coordinates[1] < row2 && row2 < coordinates[3] {
+			return nil
+		}
+	}
+	for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
+		areaData := xlsx.MergeCells.Cells[i]
+		coordinates, _ := f.areaRefToCoordinates(areaData.Ref)
+		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+		if y1 == y2 && y1 == row {
+			from, _ := CoordinatesToCellName(x1, row2)
+			to, _ := CoordinatesToCellName(x2, row2)
+			if err := f.MergeCell(sheet, from, to); err != nil {
+				return err
+			}
+			i++
+		}
+	}
 	return nil
 }
 

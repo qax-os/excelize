@@ -693,6 +693,55 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 	})
 }
 
+func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
+	const sheet = "Sheet1"
+	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+
+	cells := map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	}
+
+	newFileWithDefaults := func() *File {
+		f := NewFile()
+		for cell, val := range cells {
+			assert.NoError(t, f.SetCellStr(sheet, cell, val))
+		}
+		assert.NoError(t, f.MergeCell(sheet, "B2", "C2"))
+		assert.NoError(t, f.MergeCell(sheet, "C6", "C8"))
+		return f
+	}
+
+	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
+		xlsx := newFileWithDefaults()
+
+		assert.NoError(t, xlsx.DuplicateRowTo(sheet, 2, 1))
+		assert.NoError(t, xlsx.DuplicateRowTo(sheet, 1, 8))
+
+		if !assert.NoError(t, xlsx.SaveAs(fmt.Sprintf(outFile, "TestDuplicateRow.InsertBeforeWithMergeCells"))) {
+			t.FailNow()
+		}
+
+		expect := []MergeCell{
+			{"B3:C3", "B2 Value"},
+			{"C7:C10", ""},
+			{"B1:C1", "B2 Value"},
+		}
+
+		mergeCells, err := xlsx.GetMergeCells(sheet)
+		assert.NoError(t, err)
+		for idx, val := range expect {
+			if !assert.Equal(t, val, mergeCells[idx]) {
+				t.FailNow()
+			}
+		}
+	})
+}
+
 func TestDuplicateRowInvalidRownum(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRowInvalidRownum.%s.xlsx")
@@ -751,6 +800,21 @@ func TestDuplicateRowInvalidRownum(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestDuplicateRowTo(t *testing.T) {
+	f := File{}
+	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN is not exist")
+}
+
+func TestDuplicateMergeCells(t *testing.T) {
+	f := File{}
+	xlsx := &xlsxWorksheet{MergeCells: &xlsxMergeCells{
+		Cells: []*xlsxMergeCell{&xlsxMergeCell{Ref: "A1:-"}},
+	}}
+	assert.EqualError(t, f.duplicateMergeCells("Sheet1", xlsx, 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+	xlsx.MergeCells.Cells[0].Ref = "A1:B1"
+	assert.EqualError(t, f.duplicateMergeCells("SheetN", xlsx, 1, 2), "sheet SheetN is not exist")
 }
 
 func TestGetValueFrom(t *testing.T) {
