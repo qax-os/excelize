@@ -810,7 +810,7 @@ func TestDuplicateRowTo(t *testing.T) {
 func TestDuplicateMergeCells(t *testing.T) {
 	f := File{}
 	xlsx := &xlsxWorksheet{MergeCells: &xlsxMergeCells{
-		Cells: []*xlsxMergeCell{&xlsxMergeCell{Ref: "A1:-"}},
+		Cells: []*xlsxMergeCell{{Ref: "A1:-"}},
 	}}
 	assert.EqualError(t, f.duplicateMergeCells("Sheet1", xlsx, 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 	xlsx.MergeCells.Cells[0].Ref = "A1:B1"

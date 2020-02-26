@@ -20,19 +20,15 @@ import (
 // PivotTableOption directly maps the format settings of the pivot table.
 type PivotTableOption struct {
 	DataRange       string
-	DataSubtotal    string
-	DataFieldName   string
 	PivotTableRange string
-	Rows            []string
-	Columns         []string
-	Data            []string
-	Page            []string
+	Page            []PivotTableField
+	Rows            []PivotTableField
+	Columns         []PivotTableField
+	Data            []PivotTableField
 }
 
-// AddPivotTable provides the method to add pivot table by given pivot table
-// options.
-//
-// DataSubtotal specifies the aggregation function that applies to this data
+// PivotTableField directly maps the field settings of the pivot table.
+// Subtotal specifies the aggregation function that applies to this data
 // field. The default value is sum. The possible values for this attribute
 // are:
 //
@@ -48,8 +44,16 @@ type PivotTableOption struct {
 //     Var
 //     Varp
 //
-// DataFieldName specifies the name of the data field. Maximum 255 characters
+// Name specifies the name of the data field. Maximum 255 characters
 // are allowed in data field name, excess characters will be truncated.
+type PivotTableField struct {
+	Data     string
+	Name     string
+	Subtotal string
+}
+
+// AddPivotTable provides the method to add pivot table by given pivot table
+// options.
 //
 // For example, create a pivot table on the Sheet1!$G$2:$M$34 area with the
 // region Sheet1!$A$1:$E$31 as the data source, summarize by sum for sales:
@@ -81,11 +85,9 @@ type PivotTableOption struct {
 //        if err := f.AddPivotTable(&excelize.PivotTableOption{
 //            DataRange:       "Sheet1!$A$1:$E$31",
 //            PivotTableRange: "Sheet1!$G$2:$M$34",
-//            Rows:            []string{"Month", "Year"},
-//            Columns:         []string{"Type"},
-//            Data:            []string{"Sales"},
-//            DataSubtotal:    "Sum",
-//            DataFieldName:   "Summarize as Sum",
+//            Rows:            []excelize.PivotTableField{{Data: "Month"}, {Data: "Year"}},
+//            Columns:         []excelize.PivotTableField{{Data: "Type"}},
+//            Data:            []excelize.PivotTableField{{Data: "Sales", Name: "Summarize", Subtotal: "Sum"}},
 //        }); err != nil {
 //            fmt.Println(err)
 //        }
@@ -186,6 +188,8 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 	return rng[0], []int{x1, y1, x2, y2}, nil
 }
 
+// getPivotFieldsOrder provides a function to get order list of pivot table
+// fields.
 func (f *File) getPivotFieldsOrder(dataRange string) ([]string, error) {
 	order := []string{}
 	// data range has been checked
@@ -321,15 +325,13 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	if err != nil {
 		return err
 	}
-	dataFieldName := opt.DataFieldName
-	if len(dataFieldName) > 255 {
-		dataFieldName = dataFieldName[0:255]
-	}
-	for _, dataField := range dataFieldsIndex {
+	dataFieldsSubtotals := f.getPivotTableFieldsSubtotal(opt.Data)
+	dataFieldsName := f.getPivotTableFieldsName(opt.Data)
+	for idx, dataField := range dataFieldsIndex {
 		pt.DataFields.DataField = append(pt.DataFields.DataField, &xlsxDataField{
-			Name:     dataFieldName,
+			Name:     dataFieldsName[idx],
 			Fld:      dataField,
-			Subtotal: f.getFieldsSubtotal(opt),
+			Subtotal: dataFieldsSubtotals[idx],
 		})
 	}
 
@@ -346,6 +348,18 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 func inStrSlice(a []string, x string) int {
 	for idx, n := range a {
 		if x == n {
+			return idx
+		}
+	}
+	return -1
+}
+
+// inPivotTableField provides a method to check if an element is present in
+// pivot table fields list, and return the index of its location, otherwise
+// return -1.
+func inPivotTableField(a []PivotTableField, x string) int {
+	for idx, n := range a {
+		if x == n.Data {
 			return idx
 		}
 	}
@@ -385,9 +399,10 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 		return err
 	}
 	for _, name := range order {
-		if inStrSlice(opt.Rows, name) != -1 {
+		if inPivotTableField(opt.Rows, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Axis: "axisRow",
+				Name: f.getPivotTableFieldName(name, opt.Rows),
 				Items: &xlsxItems{
 					Count: 1,
 					Item: []*xlsxItem{
@@ -397,9 +412,10 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			})
 			continue
 		}
-		if inStrSlice(opt.Columns, name) != -1 {
+		if inPivotTableField(opt.Columns, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Axis: "axisCol",
+				Name: f.getPivotTableFieldName(name, opt.Columns),
 				Items: &xlsxItems{
 					Count: 1,
 					Item: []*xlsxItem{
@@ -409,7 +425,7 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			})
 			continue
 		}
-		if inStrSlice(opt.Data, name) != -1 {
+		if inPivotTableField(opt.Data, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				DataField: true,
 			})
@@ -446,30 +462,61 @@ func (f *File) countPivotCache() int {
 
 // getPivotFieldsIndex convert the column of the first row in the data region
 // to a sequential index by given fields and pivot option.
-func (f *File) getPivotFieldsIndex(fields []string, opt *PivotTableOption) ([]int, error) {
+func (f *File) getPivotFieldsIndex(fields []PivotTableField, opt *PivotTableOption) ([]int, error) {
 	pivotFieldsIndex := []int{}
 	orders, err := f.getPivotFieldsOrder(opt.DataRange)
 	if err != nil {
 		return pivotFieldsIndex, err
 	}
 	for _, field := range fields {
-		if pos := inStrSlice(orders, field); pos != -1 {
+		if pos := inStrSlice(orders, field.Data); pos != -1 {
 			pivotFieldsIndex = append(pivotFieldsIndex, pos)
 		}
 	}
 	return pivotFieldsIndex, nil
 }
 
-// getFieldsSubtotal prepare data subtotal by given fields and pivot option.
-func (f *File) getFieldsSubtotal(opt *PivotTableOption) (subtotal string) {
-	subtotal = "sum"
-	for _, enum := range []string{"average", "count", "countNums", "max", "min", "product", "stdDev", "stdDevp", "sum", "var", "varp"} {
-		if strings.ToLower(enum) == strings.ToLower(opt.DataSubtotal) {
-			subtotal = enum
-			return
+// getPivotTableFieldsSubtotal prepare fields subtotal by given pivot table fields.
+func (f *File) getPivotTableFieldsSubtotal(fields []PivotTableField) []string {
+	field := make([]string, len(fields))
+	enums := []string{"average", "count", "countNums", "max", "min", "product", "stdDev", "stdDevp", "sum", "var", "varp"}
+	inEnums := func(enums []string, val string) string {
+		for _, enum := range enums {
+			if strings.ToLower(enum) == strings.ToLower(val) {
+				return enum
+			}
+		}
+		return "sum"
+	}
+	for idx, fld := range fields {
+		field[idx] = inEnums(enums, fld.Subtotal)
+	}
+	return field
+}
+
+// getPivotTableFieldsName prepare fields name list by given pivot table
+// fields.
+func (f *File) getPivotTableFieldsName(fields []PivotTableField) []string {
+	field := make([]string, len(fields))
+	for idx, fld := range fields {
+		if len(fld.Name) > 255 {
+			field[idx] = fld.Name[0:255]
+			continue
+		}
+		field[idx] = fld.Name
+	}
+	return field
+}
+
+// getPivotTableFieldName prepare field name by given pivot table fields.
+func (f *File) getPivotTableFieldName(name string, fields []PivotTableField) string {
+	fieldsName := f.getPivotTableFieldsName(fields)
+	for idx, field := range fields {
+		if field.Data == name {
+			return fieldsName[idx]
 		}
 	}
-	return
+	return ""
 }
 
 // addWorkbookPivotCache add the association ID of the pivot cache in xl/workbook.xml.
