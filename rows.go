@@ -238,7 +238,8 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 // name and row index.
 func (f *File) getRowHeight(sheet string, row int) int {
 	xlsx, _ := f.workSheetReader(sheet)
-	for _, v := range xlsx.SheetData.Row {
+	for i := range xlsx.SheetData.Row {
+		v := &xlsx.SheetData.Row[i]
 		if v.R == row+1 && v.Ht != 0 {
 			return int(convertRowHeightToPixels(v.Ht))
 		}
