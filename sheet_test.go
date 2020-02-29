@@ -264,6 +264,43 @@ func TestUngroupSheets(t *testing.T) {
 	assert.NoError(t, f.UngroupSheets())
 }
 
+func TestInsertPageBreak(t *testing.T) {
+	f := excelize.NewFile()
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "A1"))
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "B2"))
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
+	assert.EqualError(t, f.InsertPageBreak("Sheet1", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.InsertPageBreak("SheetN", "C3"), "sheet SheetN is not exist")
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertPageBreak.xlsx")))
+}
+
+func TestRemovePageBreak(t *testing.T) {
+	f := excelize.NewFile()
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "A2"))
+
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "A2"))
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "B2"))
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "A1"))
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "B2"))
+
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "C3"))
+
+	assert.NoError(t, f.InsertPageBreak("Sheet1", "A3"))
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "B3"))
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "A3"))
+
+	f.NewSheet("Sheet2")
+	assert.NoError(t, f.InsertPageBreak("Sheet2", "B2"))
+	assert.NoError(t, f.InsertPageBreak("Sheet2", "C2"))
+	assert.NoError(t, f.RemovePageBreak("Sheet2", "B2"))
+
+	assert.EqualError(t, f.RemovePageBreak("Sheet1", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.RemovePageBreak("SheetN", "C3"), "sheet SheetN is not exist")
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemovePageBreak.xlsx")))
+}
+
 func TestGetSheetName(t *testing.T) {
 	f, _ := excelize.OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.Equal(t, "Sheet1", f.GetSheetName(1))

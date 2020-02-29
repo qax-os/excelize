@@ -1437,6 +1437,115 @@ func (f *File) UngroupSheets() error {
 	return nil
 }
 
+// InsertPageBreak create a page break to determine where the printed page
+// ends and where begins the next one by given worksheet name and axis, so the
+// content before the page break will be printed on one page and after the
+// page break on another.
+func (f *File) InsertPageBreak(sheet, cell string) (err error) {
+	var ws *xlsxWorksheet
+	var row, col int
+	var rowBrk, colBrk = -1, -1
+	if ws, err = f.workSheetReader(sheet); err != nil {
+		return
+	}
+	if col, row, err = CellNameToCoordinates(cell); err != nil {
+		return
+	}
+	col--
+	row--
+	if col == row && col == 0 {
+		return
+	}
+	if ws.RowBreaks == nil {
+		ws.RowBreaks = &xlsxBreaks{}
+	}
+	if ws.ColBreaks == nil {
+		ws.ColBreaks = &xlsxBreaks{}
+	}
+
+	for idx, brk := range ws.RowBreaks.Brk {
+		if brk.ID == row {
+			rowBrk = idx
+		}
+	}
+	for idx, brk := range ws.ColBreaks.Brk {
+		if brk.ID == col {
+			colBrk = idx
+		}
+	}
+
+	if row != 0 && rowBrk == -1 {
+		ws.RowBreaks.Brk = append(ws.RowBreaks.Brk, &xlsxBrk{
+			ID:  row,
+			Max: 16383,
+			Man: true,
+		})
+		ws.RowBreaks.ManualBreakCount++
+	}
+	if col != 0 && colBrk == -1 {
+		ws.ColBreaks.Brk = append(ws.ColBreaks.Brk, &xlsxBrk{
+			ID:  col,
+			Max: 1048575,
+			Man: true,
+		})
+		ws.ColBreaks.ManualBreakCount++
+	}
+	ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
+	ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
+	return
+}
+
+// RemovePageBreak remove a page break by given worksheet name and axis.
+func (f *File) RemovePageBreak(sheet, cell string) (err error) {
+	var ws *xlsxWorksheet
+	var row, col int
+	if ws, err = f.workSheetReader(sheet); err != nil {
+		return
+	}
+	if col, row, err = CellNameToCoordinates(cell); err != nil {
+		return
+	}
+	col--
+	row--
+	if col == row && col == 0 {
+		return
+	}
+	removeBrk := func(ID int, brks []*xlsxBrk) []*xlsxBrk {
+		for i, brk := range brks {
+			if brk.ID == ID {
+				brks = append(brks[:i], brks[i+1:]...)
+			}
+		}
+		return brks
+	}
+	if ws.RowBreaks == nil || ws.ColBreaks == nil {
+		return
+	}
+	rowBrks := len(ws.RowBreaks.Brk)
+	colBrks := len(ws.ColBreaks.Brk)
+	if rowBrks > 0 && rowBrks == colBrks {
+		ws.RowBreaks.Brk = removeBrk(row, ws.RowBreaks.Brk)
+		ws.ColBreaks.Brk = removeBrk(col, ws.ColBreaks.Brk)
+		ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
+		ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
+		ws.RowBreaks.ManualBreakCount--
+		ws.ColBreaks.ManualBreakCount--
+		return
+	}
+	if rowBrks > 0 && rowBrks > colBrks {
+		ws.RowBreaks.Brk = removeBrk(row, ws.RowBreaks.Brk)
+		ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
+		ws.RowBreaks.ManualBreakCount--
+		return
+	}
+	if colBrks > 0 && colBrks > rowBrks {
+		ws.ColBreaks.Brk = removeBrk(col, ws.ColBreaks.Brk)
+		ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
+		ws.ColBreaks.ManualBreakCount--
+	}
+	return
+}
+
 // relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
 func (f *File) relsReader(path string) *xlsxRelationships {

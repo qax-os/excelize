@@ -357,9 +357,9 @@ type xlsxBrk struct {
 
 // xlsxBreaks directly maps a collection of the row or column breaks.
 type xlsxBreaks struct {
-	Brk              *xlsxBrk `xml:"brk"`
-	Count            int      `xml:"count,attr,omitempty"`
-	ManualBreakCount int      `xml:"manualBreakCount,attr,omitempty"`
+	Brk              []*xlsxBrk `xml:"brk"`
+	Count            int        `xml:"count,attr,omitempty"`
+	ManualBreakCount int        `xml:"manualBreakCount,attr,omitempty"`
 }
 
 // xlsxCustomSheetView directly maps the customSheetView element.
