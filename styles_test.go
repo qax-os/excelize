@@ -1,6 +1,8 @@
 package excelize
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -164,6 +166,20 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.Equal(t, cellRange, cf[0].SQRef, testCase.label)
 		assert.EqualValues(t, testCase.rules, cf[0].CfRule, testCase.label)
 	}
+}
+
+func TestUnsetConditionalFormat(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
+	format, err := f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format)))
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
+	// Test unset conditional format on not exists worksheet.
+	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN is not exist")
+	// Save xlsx file by the given path.
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }
 
 func TestNewStyle(t *testing.T) {

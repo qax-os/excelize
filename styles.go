@@ -2676,6 +2676,22 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	return err
 }
 
+// UnsetConditionalFormat provides a function to unset the conditional format
+// by given worksheet name and range.
+func (f *File) UnsetConditionalFormat(sheet, area string) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	for i, cf := range ws.ConditionalFormatting {
+		if cf.SQRef == area {
+			ws.ConditionalFormatting = append(ws.ConditionalFormatting[:i], ws.ConditionalFormatting[i+1:]...)
+			return nil
+		}
+	}
+	return nil
+}
+
 // drawCondFmtCellIs provides a function to create conditional formatting rule
 // for cell value (include between, not between, equal, not equal, greater
 // than and less than) by given priority, criteria type and format settings.
