@@ -172,3 +172,11 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 	durationPart := time.Duration(dayNanoSeconds * floatPart)
 	return date.Add(durationDays).Add(durationPart)
 }
+
+// ExcelDateToTime converts a float-based excel date representation to a time.Time.
+func ExcelDateToTime(excelDate float64, use1904Format bool) (time.Time, error) {
+	if excelDate < 0 {
+		return time.Time{}, newInvalidExcelDateError(excelDate)
+	}
+	return timeFromExcelTime(excelDate, use1904Format), nil
+}
