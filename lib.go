@@ -22,10 +22,13 @@ import (
 // ReadZipReader can be used to read an XLSX in memory without touching the
 // filesystem.
 func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
+	var err error
 	fileList := make(map[string][]byte, len(r.File))
 	worksheets := 0
 	for _, v := range r.File {
-		fileList[v.Name] = readFile(v)
+		if fileList[v.Name], err = readFile(v); err != nil {
+			return nil, 0, err
+		}
 		if strings.HasPrefix(v.Name, "xl/worksheets/sheet") {
 			worksheets++
 		}
@@ -51,16 +54,17 @@ func (f *File) saveFileList(name string, content []byte) {
 }
 
 // Read file content as string in a archive file.
-func readFile(file *zip.File) []byte {
+func readFile(file *zip.File) ([]byte, error) {
 	rc, err := file.Open()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
 	dat := make([]byte, 0, file.FileInfo().Size())
 	buff := bytes.NewBuffer(dat)
 	_, _ = io.Copy(buff, rc)
 	rc.Close()
-	return buff.Bytes()
+	return buff.Bytes(), nil
 }
 
 // SplitCellName splits cell name to column name and row number.
