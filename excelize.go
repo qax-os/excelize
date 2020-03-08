@@ -273,6 +273,9 @@ func replaceStyleRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
 //    </row>
 //
 func (f *File) UpdateLinkedValue() error {
+	wb := f.workbookReader()
+	// recalculate formulas
+	wb.CalcPr = nil
 	for _, name := range f.GetSheetMap() {
 		xlsx, err := f.workSheetReader(name)
 		if err != nil {
