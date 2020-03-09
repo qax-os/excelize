@@ -191,6 +191,8 @@ func TestNewStyle(t *testing.T) {
 	font := styles.Fonts.Font[fontID]
 	assert.Contains(t, *font.Name.Val, "Times New Roman", "Stored font should contain font name")
 	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
+	_, err = f.NewStyle(&Style{})
+	assert.NoError(t, err)
 }
 
 func TestGetDefaultFont(t *testing.T) {
@@ -206,4 +208,25 @@ func TestSetDefaultFont(t *testing.T) {
 	s := f.GetDefaultFont()
 	assert.Equal(t, s, "Ariel", "Default font should change to Ariel")
 	assert.Equal(t, *styles.CellStyles.CellStyle[0].CustomBuiltIn, true)
+}
+
+func TestStylesReader(t *testing.T) {
+	f := NewFile()
+	// Test read styles with unsupport charset.
+	f.Styles = nil
+	f.XLSX["xl/styles.xml"] = MacintoshCyrillicCharset
+	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
+}
+
+func TestThemeReader(t *testing.T) {
+	f := NewFile()
+	// Test read theme with unsupport charset.
+	f.XLSX["xl/theme/theme1.xml"] = MacintoshCyrillicCharset
+	assert.EqualValues(t, new(xlsxTheme), f.themeReader())
+}
+
+func TestSetCellStyle(t *testing.T) {
+	f := NewFile()
+	// Test set cell style on not exists worksheet.
+	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN is not exist")
 }

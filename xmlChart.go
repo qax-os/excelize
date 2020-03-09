@@ -604,7 +604,7 @@ type formatChart struct {
 type formatChartLegend struct {
 	None            bool         `json:"none"`
 	DeleteSeries    []int        `json:"delete_series"`
-	Font            formatFont   `json:"font"`
+	Font            Font         `json:"font"`
 	Layout          formatLayout `json:"layout"`
 	Position        string       `json:"position"`
 	ShowLegendEntry bool         `json:"show_legend_entry"`

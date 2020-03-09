@@ -580,7 +580,45 @@ func TestSetCellStyleBorder(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "M28", "K24", style))
 
 	// Test set border and solid style pattern fill for a single cell.
-	style, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":8},{"type":"top","color":"00FF00","style":9},{"type":"bottom","color":"FFFF00","style":10},{"type":"right","color":"FF0000","style":11},{"type":"diagonalDown","color":"A020F0","style":12},{"type":"diagonalUp","color":"A020F0","style":13}],"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	style, err = f.NewStyle(&Style{
+		Border: []Border{
+			{
+				Type:  "left",
+				Color: "0000FF",
+				Style: 8,
+			},
+			{
+				Type:  "top",
+				Color: "00FF00",
+				Style: 9,
+			},
+			{
+				Type:  "bottom",
+				Color: "FFFF00",
+				Style: 10,
+			},
+			{
+				Type:  "right",
+				Color: "FF0000",
+				Style: 11,
+			},
+			{
+				Type:  "diagonalDown",
+				Color: "A020F0",
+				Style: 12,
+			},
+			{
+				Type:  "diagonalUp",
+				Color: "A020F0",
+				Style: 13,
+			},
+		},
+		Fill: Fill{
+			Type:    "pattern",
+			Color:   []string{"#E0EBF5"},
+			Pattern: 1,
+		},
+	})
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

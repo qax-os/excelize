@@ -417,8 +417,8 @@ type formatShape struct {
 // formatShapeParagraph directly maps the format settings of the paragraph in
 // the shape.
 type formatShapeParagraph struct {
-	Font formatFont `json:"font"`
-	Text string     `json:"text"`
+	Font Font   `json:"font"`
+	Text string `json:"text"`
 }
 
 // formatShapeColor directly maps the color settings of the shape.

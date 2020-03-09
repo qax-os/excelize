@@ -137,7 +137,7 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 		return err
 	}
 	if s == 0 {
-		style, _ := f.NewStyle(`{"number_format": ` + strconv.Itoa(format) + `}`)
+		style, _ := f.NewStyle(&Style{NumFmt: format})
 		_ = f.SetCellStyle(sheet, axis, axis, style)
 	}
 	return err
