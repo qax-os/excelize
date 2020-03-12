@@ -85,3 +85,20 @@ func TestDataValidationError(t *testing.T) {
 	f = NewFile()
 	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN is not exist")
 }
+
+func TestDeleteDataValidation(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.DeleteDataValidation("Sheet1", "A1:B2"))
+
+	dvRange := NewDataValidation(true)
+	dvRange.Sqref = "A1:B2"
+	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorBetween))
+	dvRange.SetInput("input title", "input body")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+
+	assert.NoError(t, f.DeleteDataValidation("Sheet1", "A1:B2"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteDataValidation.xlsx")))
+
+	// Test delete data validation on no exists worksheet.
+	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN is not exist")
+}

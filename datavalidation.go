@@ -228,14 +228,38 @@ func convDataValidationOperatior(o DataValidationOperator) string {
 //     err = f.AddDataValidation("Sheet1", dvRange)
 //
 func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if nil == xlsx.DataValidations {
-		xlsx.DataValidations = new(xlsxDataValidations)
+	if nil == ws.DataValidations {
+		ws.DataValidations = new(xlsxDataValidations)
 	}
-	xlsx.DataValidations.DataValidation = append(xlsx.DataValidations.DataValidation, dv)
-	xlsx.DataValidations.Count = len(xlsx.DataValidations.DataValidation)
+	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dv)
+	ws.DataValidations.Count = len(ws.DataValidations.DataValidation)
 	return err
+}
+
+// DeleteDataValidation delete data validation by given worksheet name and
+// reference sequence.
+func (f *File) DeleteDataValidation(sheet, sqref string) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	if ws.DataValidations == nil {
+		return nil
+	}
+	dv := ws.DataValidations
+	for i := 0; i < len(dv.DataValidation); i++ {
+		if dv.DataValidation[i].Sqref == sqref {
+			dv.DataValidation = append(dv.DataValidation[:i], dv.DataValidation[i+1:]...)
+			i--
+		}
+	}
+	dv.Count = len(dv.DataValidation)
+	if dv.Count == 0 {
+		ws.DataValidations = nil
+	}
+	return nil
 }
