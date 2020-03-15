@@ -1943,9 +1943,13 @@ func (f *File) NewConditionalStyle(style string) (int, error) {
 		return 0, err
 	}
 	dxf := dxf{
-		Fill:      setFills(fs, false),
-		Alignment: setAlignment(fs),
-		Border:    setBorders(fs),
+		Fill: setFills(fs, false),
+	}
+	if fs.Alignment != nil {
+		dxf.Alignment = setAlignment(fs)
+	}
+	if len(fs.Border) > 0 {
+		dxf.Border = setBorders(fs)
 	}
 	if fs.Font != nil {
 		dxf.Font = f.setFont(fs)

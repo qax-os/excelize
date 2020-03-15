@@ -978,7 +978,7 @@ func TestConditionalFormat(t *testing.T) {
 
 	fillCells(f, sheet1, 10, 15)
 
-	var format1, format2, format3 int
+	var format1, format2, format3, format4 int
 	var err error
 	// Rose format for bad conditional.
 	format1, err = f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
@@ -994,6 +994,12 @@ func TestConditionalFormat(t *testing.T) {
 
 	// Light green format for good conditional.
 	format3, err = f.NewConditionalStyle(`{"font":{"color":"#09600B"},"fill":{"type":"pattern","color":["#C7EECF"],"pattern":1}}`)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	// conditional style with align and left border.
+	format4, err = f.NewConditionalStyle(`{"alignment":{"wrap_text":true},"border":[{"type":"left","color":"#000000","style":1}]}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -1022,8 +1028,13 @@ func TestConditionalFormat(t *testing.T) {
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`))
 	// Use a formula to determine which cells to format.
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "L1:L10", fmt.Sprintf(`[{"type":"formula", "criteria":"L2<3", "format":%d}]`, format1)))
-	// Test set invalid format set in conditional format
+	// Alignment/Border cells rules.
+	assert.NoError(t, f.SetConditionalFormat(sheet1, "M1:M10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"0"}]`, format4)))
+
+	// Test set invalid format set in conditional format.
 	assert.EqualError(t, f.SetConditionalFormat(sheet1, "L1:L10", ""), "unexpected end of JSON input")
+	// Set conditional format on not exists worksheet.
+	assert.EqualError(t, f.SetConditionalFormat("SheetN", "L1:L10", "[]"), "sheet SheetN is not exist")
 
 	err = f.SaveAs(filepath.Join("test", "TestConditionalFormat.xlsx"))
 	if !assert.NoError(t, err) {
@@ -1053,7 +1064,7 @@ func TestConditionalFormatError(t *testing.T) {
 
 	fillCells(f, sheet1, 10, 15)
 
-	// Set conditional format with illegal JSON string should return error
+	// Set conditional format with illegal JSON string should return error.
 	_, err := f.NewConditionalStyle("")
 	if !assert.EqualError(t, err, "unexpected end of JSON input") {
 		t.FailNow()
