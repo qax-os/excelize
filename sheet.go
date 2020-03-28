@@ -50,7 +50,7 @@ func (f *File) NewSheet(name string) int {
 	// Update docProps/app.xml
 	f.setAppXML()
 	// Update [Content_Types].xml
-	f.setContentTypes(sheetID)
+	f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(sheetID, name)
 	// Update xl/_rels/workbook.xml.rels
@@ -151,11 +151,11 @@ func trimCell(column []xlsxC) []xlsxC {
 
 // setContentTypes provides a function to read and update property of contents
 // type of XLSX.
-func (f *File) setContentTypes(index int) {
+func (f *File) setContentTypes(partName, contentType string) {
 	content := f.contentTypesReader()
 	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    "/xl/worksheets/sheet" + strconv.Itoa(index) + ".xml",
-		ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml",
+		PartName:    partName,
+		ContentType: contentType,
 	})
 }
 
@@ -336,8 +336,8 @@ func (f *File) GetSheetIndex(name string) int {
 	return 0
 }
 
-// GetSheetMap provides a function to get worksheet name and index map of XLSX.
-// For example:
+// GetSheetMap provides a function to get worksheet and chartsheet name and
+// index map of XLSX. For example:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx")
 //    if err != nil {
@@ -358,8 +358,8 @@ func (f *File) GetSheetMap() map[int]string {
 	return sheetMap
 }
 
-// getSheetMap provides a function to get worksheet name and XML file path map
-// of XLSX.
+// getSheetMap provides a function to get worksheet and chartsheet name and
+// XML file path map of XLSX.
 func (f *File) getSheetMap() map[string]string {
 	content := f.workbookReader()
 	rels := f.relsReader("xl/_rels/workbook.xml.rels")

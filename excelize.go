@@ -228,21 +228,10 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 }
 
 // replaceWorkSheetsRelationshipsNameSpaceBytes provides a function to replace
-// xl/worksheets/sheet%d.xml XML tags to self-closing for compatible Microsoft
-// Office Excel 2007.
-func replaceWorkSheetsRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
-	var oldXmlns = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	var newXmlns = []byte(`<worksheet` + templateNamespaceIDMap)
-	workbookMarshal = bytes.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
-	return workbookMarshal
-}
-
-// replaceStyleRelationshipsNameSpaceBytes provides a function to replace
-// xl/styles.xml XML tags to self-closing for compatible Microsoft Office
-// Excel 2007.
-func replaceStyleRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
-	var oldXmlns = []byte(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	var newXmlns = []byte(`<styleSheet` + templateNamespaceIDMap)
+// XML tags to self-closing for compatible Microsoft Office Excel 2007.
+func replaceWorkSheetsRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
+	var oldXmlns = []byte(` xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	var newXmlns = []byte(templateNamespaceIDMap)
 	contentMarshal = bytes.Replace(contentMarshal, oldXmlns, newXmlns, -1)
 	return contentMarshal
 }
@@ -354,13 +343,13 @@ func (f *File) setContentTypePartVBAProjectExtensions() {
 	}
 	for idx, o := range content.Overrides {
 		if o.PartName == "/xl/workbook.xml" {
-			content.Overrides[idx].ContentType = "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
+			content.Overrides[idx].ContentType = ContentTypeMacro
 		}
 	}
 	if !ok {
 		content.Defaults = append(content.Defaults, xlsxDefault{
 			Extension:   "bin",
-			ContentType: "application/vnd.ms-office.vbaProject",
+			ContentType: ContentTypeVBA,
 		})
 	}
 }

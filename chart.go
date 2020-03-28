@@ -11,7 +11,9 @@ package excelize
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -765,6 +767,72 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	f.addChart(formatSet, comboCharts)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
+	return err
+}
+
+// AddChartSheet provides the method to create a chartsheet by given chart
+// format set (such as offset, scale, aspect ratio setting and print settings)
+// and properties set. In Excel a chartsheet is a worksheet that only contains
+// a chart.
+func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
+	// Check if the worksheet already exists
+	if f.GetSheetIndex(sheet) != 0 {
+		return errors.New("already existing name worksheet")
+	}
+	formatSet, err := parseFormatChartSet(format)
+	if err != nil {
+		return err
+	}
+	comboCharts := []*formatChart{}
+	for _, comboFormat := range combo {
+		comboChart, err := parseFormatChartSet(comboFormat)
+		if err != nil {
+			return err
+		}
+		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
+			return errors.New("unsupported chart type " + comboChart.Type)
+		}
+		comboCharts = append(comboCharts, comboChart)
+	}
+	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
+		return errors.New("unsupported chart type " + formatSet.Type)
+	}
+	cs := xlsxChartsheet{
+		SheetViews: []*xlsxChartsheetViews{{
+			SheetView: []*xlsxChartsheetView{{ZoomScaleAttr: 100, ZoomToFitAttr: true}}},
+		},
+	}
+	wb := f.workbookReader()
+	sheetID := 0
+	for _, v := range wb.Sheets.Sheet {
+		if v.SheetID > sheetID {
+			sheetID = v.SheetID
+		}
+	}
+	sheetID++
+	path := "xl/chartsheets/sheet" + strconv.Itoa(sheetID) + ".xml"
+	f.sheetMap[trimSheetName(sheet)] = path
+	f.Sheet[path] = nil
+	drawingID := f.countDrawings() + 1
+	chartID := f.countCharts() + 1
+	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
+	drawingID, drawingXML = f.prepareChartSheetDrawing(&cs, drawingID, sheet, drawingXML)
+	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
+	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
+	err = f.addSheetDrawingChart(sheet, drawingXML, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
+	if err != nil {
+		return err
+	}
+	f.addChart(formatSet, comboCharts)
+	f.addContentTypePart(chartID, "chart")
+	f.addContentTypePart(sheetID, "chartsheet")
+	f.addContentTypePart(drawingID, "drawings")
+	// Update xl/_rels/workbook.xml.rels
+	rID := f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipChartsheet, fmt.Sprintf("chartsheets/sheet%d.xml", sheetID), "")
+	// Update xl/workbook.xml
+	f.setWorkbook(sheet, sheetID, rID)
+	v, _ := xml.Marshal(cs)
+	f.saveFileList(path, replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(v)))
 	return err
 }
 

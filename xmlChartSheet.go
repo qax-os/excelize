@@ -24,7 +24,7 @@ type xlsxChartsheet struct {
 	PageMargins      *xlsxPageMargins             `xml:"pageMargins"`
 	PageSetup        []*xlsxPageSetUp             `xml:"pageSetup"`
 	HeaderFooter     *xlsxHeaderFooter            `xml:"headerFooter"`
-	Drawing          []*xlsxDrawing               `xml:"drawing"`
+	Drawing          *xlsxDrawing                 `xml:"drawing"`
 	DrawingHF        []*xlsxDrawingHF             `xml:"drawingHF"`
 	Picture          []*xlsxPicture               `xml:"picture"`
 	WebPublishItems  []*xlsxInnerXML              `xml:"webPublishItems"`

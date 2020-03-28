@@ -38,6 +38,26 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 	return drawingID, drawingXML
 }
 
+// prepareChartSheetDrawing provides a function to prepare drawing ID and XML
+// by given drawingID, worksheet name and default drawingXML.
+func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, sheet, drawingXML string) (int, string) {
+	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
+	if xlsx.Drawing != nil {
+		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
+		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
+		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
+	} else {
+		// Add first picture for given sheet.
+		sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
+		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		xlsx.Drawing = &xlsxDrawing{
+			RID: "rId" + strconv.Itoa(rID),
+		}
+	}
+	return drawingID, drawingXML
+}
+
 // addChart provides a function to create chart as xl/charts/chart%d.xml by
 // given format sets.
 func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
@@ -1205,6 +1225,49 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
+	f.Drawings[drawingXML] = content
+	return err
+}
+
+// addSheetDrawingChart provides a function to add chart graphic frame for
+// chartsheet by given sheet, drawingXML, width, height, relationship index
+// and format sets.
+func (f *File) addSheetDrawingChart(sheet, drawingXML string, width, height, rID int, formatSet *formatPicture) (err error) {
+	width = int(float64(width) * formatSet.XScale)
+	height = int(float64(height) * formatSet.YScale)
+
+	content, cNvPrID := f.drawingParser(drawingXML)
+	absoluteAnchor := xdrCellAnchor{
+		EditAs: formatSet.Positioning,
+		Pos:    &xlsxPoint2D{},
+		Ext:    &xlsxExt{},
+	}
+
+	graphicFrame := xlsxGraphicFrame{
+		NvGraphicFramePr: xlsxNvGraphicFramePr{
+			CNvPr: &xlsxCNvPr{
+				ID:   cNvPrID,
+				Name: "Chart " + strconv.Itoa(cNvPrID),
+			},
+		},
+		Graphic: &xlsxGraphic{
+			GraphicData: &xlsxGraphicData{
+				URI: NameSpaceDrawingMLChart,
+				Chart: &xlsxChart{
+					C:   NameSpaceDrawingMLChart,
+					R:   SourceRelationship,
+					RID: "rId" + strconv.Itoa(rID),
+				},
+			},
+		},
+	}
+	graphic, _ := xml.Marshal(graphicFrame)
+	absoluteAnchor.GraphicFrame = string(graphic)
+	absoluteAnchor.ClientData = &xdrClientData{
+		FLocksWithSheet:  formatSet.FLocksWithSheet,
+		FPrintsWithSheet: formatSet.FPrintsWithSheet,
+	}
+	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
 	f.Drawings[drawingXML] = content
 	return err
 }

@@ -1018,7 +1018,7 @@ func (f *File) stylesReader() *xlsxStyleSheet {
 func (f *File) styleSheetWriter() {
 	if f.Styles != nil {
 		output, _ := xml.Marshal(f.Styles)
-		f.saveFileList("xl/styles.xml", replaceStyleRelationshipsNameSpaceBytes(output))
+		f.saveFileList("xl/styles.xml", replaceWorkSheetsRelationshipsNameSpaceBytes(output))
 	}
 }
 
