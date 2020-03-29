@@ -174,7 +174,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if f.Sheet[name] != nil {
 		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	var (
 		err       error

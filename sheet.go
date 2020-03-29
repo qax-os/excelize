@@ -119,7 +119,7 @@ func (f *File) workSheetWriter() {
 				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 			}
 			output, _ := xml.Marshal(sheet)
-			f.saveFileList(p, replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(output)))
+			f.saveFileList(p, replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(output)))
 			ok := f.checked[p]
 			if ok {
 				delete(f.Sheet, p)
@@ -190,7 +190,7 @@ func (f *File) relsWriter() {
 		if rel != nil {
 			output, _ := xml.Marshal(rel)
 			if strings.HasPrefix(path, "xl/worksheets/sheet/rels/sheet") {
-				output = replaceWorkSheetsRelationshipsNameSpaceBytes(output)
+				output = replaceRelationshipsNameSpaceBytes(output)
 			}
 			f.saveFileList(path, replaceRelationshipsBytes(output))
 		}
@@ -209,19 +209,6 @@ func replaceRelationshipsBytes(content []byte) []byte {
 	oldXmlns := []byte(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
 	newXmlns := []byte("r")
 	return bytes.Replace(content, oldXmlns, newXmlns, -1)
-}
-
-// replaceRelationshipsNameSpaceBytes; Some tools that read XLSX files have
-// very strict requirements about the structure of the input XML. In
-// particular both Numbers on the Mac and SAS dislike inline XML namespace
-// declarations, or namespace prefixes that don't match the ones that Excel
-// itself uses. This is a problem because the Go XML library doesn't multiple
-// namespace declarations in a single element of a document. This function is
-// a horrible hack to fix that after the XML marshalling is completed.
-func replaceRelationshipsNameSpaceBytes(workbookMarshal []byte) []byte {
-	oldXmlns := []byte(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	newXmlns := []byte(`<workbook` + templateNamespaceIDMap)
-	return bytes.Replace(workbookMarshal, oldXmlns, newXmlns, -1)
 }
 
 // SetActiveSheet provides function to set default active worksheet of XLSX by
@@ -248,7 +235,11 @@ func (f *File) SetActiveSheet(index int) {
 		}
 	}
 	for idx, name := range f.GetSheetMap() {
-		xlsx, _ := f.workSheetReader(name)
+		xlsx, err := f.workSheetReader(name)
+		if err != nil {
+			// Chartsheet
+			return
+		}
 		if xlsx.SheetViews == nil {
 			xlsx.SheetViews = &xlsxSheetViews{
 				SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
@@ -370,8 +361,8 @@ func (f *File) getSheetMap() map[string]string {
 				// Construct a target XML as xl/worksheets/sheet%d by split path, compatible with different types of relative paths in workbook.xml.rels, for example: worksheets/sheet%d.xml and /xl/worksheets/sheet%d.xml
 				pathInfo := strings.Split(rel.Target, "/")
 				pathInfoLen := len(pathInfo)
-				if pathInfoLen > 0 {
-					maps[v.Name] = fmt.Sprintf("xl/worksheets/%s", pathInfo[pathInfoLen-1])
+				if pathInfoLen > 1 {
+					maps[v.Name] = fmt.Sprintf("xl/%s", strings.Join(pathInfo[pathInfoLen-2:], "/"))
 				}
 			}
 		}
@@ -420,7 +411,10 @@ func (f *File) DeleteSheet(name string) {
 				for _, rel := range wbRels.Relationships {
 					if rel.ID == sheet.ID {
 						sheetXML = fmt.Sprintf("xl/%s", rel.Target)
-						rels = strings.Replace(fmt.Sprintf("xl/%s.rels", rel.Target), "xl/worksheets/", "xl/worksheets/_rels/", -1)
+						pathInfo := strings.Split(rel.Target, "/")
+						if len(pathInfo) == 2 {
+							rels = fmt.Sprintf("xl/%s/_rels/%s.rels", pathInfo[0], pathInfo[1])
+						}
 					}
 				}
 			}
@@ -430,6 +424,7 @@ func (f *File) DeleteSheet(name string) {
 			delete(f.sheetMap, sheetName)
 			delete(f.XLSX, sheetXML)
 			delete(f.XLSX, rels)
+			delete(f.Relationships, rels)
 			delete(f.Sheet, sheetXML)
 			f.SheetCount--
 		}
@@ -729,7 +724,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	if f.Sheet[name] != nil {
 		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceWorkSheetsRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	return f.searchSheet(name, value, regSearch)
 }

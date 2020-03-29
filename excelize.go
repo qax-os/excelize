@@ -156,6 +156,10 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 		return
 	}
 	if xlsx = f.Sheet[name]; f.Sheet[name] == nil {
+		if strings.HasPrefix(name, "xl/chartsheets") {
+			err = fmt.Errorf("sheet %s is chart sheet", sheet)
+			return
+		}
 		xlsx = new(xlsxWorksheet)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
 			Decode(xlsx); err != nil && err != io.EOF {
@@ -227,9 +231,9 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	return rID
 }
 
-// replaceWorkSheetsRelationshipsNameSpaceBytes provides a function to replace
+// replaceRelationshipsNameSpaceBytes provides a function to replace
 // XML tags to self-closing for compatible Microsoft Office Excel 2007.
-func replaceWorkSheetsRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
+func replaceRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
 	var oldXmlns = []byte(` xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	var newXmlns = []byte(templateNamespaceIDMap)
 	contentMarshal = bytes.Replace(contentMarshal, oldXmlns, newXmlns, -1)

@@ -1232,10 +1232,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 // addSheetDrawingChart provides a function to add chart graphic frame for
 // chartsheet by given sheet, drawingXML, width, height, relationship index
 // and format sets.
-func (f *File) addSheetDrawingChart(sheet, drawingXML string, width, height, rID int, formatSet *formatPicture) (err error) {
-	width = int(float64(width) * formatSet.XScale)
-	height = int(float64(height) * formatSet.YScale)
-
+func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *formatPicture) {
 	content, cNvPrID := f.drawingParser(drawingXML)
 	absoluteAnchor := xdrCellAnchor{
 		EditAs: formatSet.Positioning,
@@ -1269,7 +1266,7 @@ func (f *File) addSheetDrawingChart(sheet, drawingXML string, width, height, rID
 	}
 	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
 	f.Drawings[drawingXML] = content
-	return err
+	return
 }
 
 // deleteDrawing provides a function to delete chart graphic frame by given by

@@ -730,28 +730,14 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //    }
 //
 func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
-	formatSet, err := parseFormatChartSet(format)
-	if err != nil {
-		return err
-	}
-	comboCharts := []*formatChart{}
-	for _, comboFormat := range combo {
-		comboChart, err := parseFormatChartSet(comboFormat)
-		if err != nil {
-			return err
-		}
-		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
-			return errors.New("unsupported chart type " + comboChart.Type)
-		}
-		comboCharts = append(comboCharts, comboChart)
-	}
 	// Read sheet data.
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
-		return errors.New("unsupported chart type " + formatSet.Type)
+	formatSet, comboCharts, err := f.getFormatChart(format, combo)
+	if err != nil {
+		return err
 	}
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
@@ -777,31 +763,18 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	// Check if the worksheet already exists
 	if f.GetSheetIndex(sheet) != 0 {
-		return errors.New("already existing name worksheet")
+		return errors.New("the same name worksheet already exists")
 	}
-	formatSet, err := parseFormatChartSet(format)
+	formatSet, comboCharts, err := f.getFormatChart(format, combo)
 	if err != nil {
 		return err
-	}
-	comboCharts := []*formatChart{}
-	for _, comboFormat := range combo {
-		comboChart, err := parseFormatChartSet(comboFormat)
-		if err != nil {
-			return err
-		}
-		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
-			return errors.New("unsupported chart type " + comboChart.Type)
-		}
-		comboCharts = append(comboCharts, comboChart)
-	}
-	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
-		return errors.New("unsupported chart type " + formatSet.Type)
 	}
 	cs := xlsxChartsheet{
 		SheetViews: []*xlsxChartsheetViews{{
 			SheetView: []*xlsxChartsheetView{{ZoomScaleAttr: 100, ZoomToFitAttr: true}}},
 		},
 	}
+	f.SheetCount++
 	wb := f.workbookReader()
 	sheetID := 0
 	for _, v := range wb.Sheets.Sheet {
@@ -819,10 +792,7 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	drawingID, drawingXML = f.prepareChartSheetDrawing(&cs, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	err = f.addSheetDrawingChart(sheet, drawingXML, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
-	if err != nil {
-		return err
-	}
+	f.addSheetDrawingChart(drawingXML, drawingRID, &formatSet.Format)
 	f.addChart(formatSet, comboCharts)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(sheetID, "chartsheet")
@@ -831,9 +801,33 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	rID := f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipChartsheet, fmt.Sprintf("chartsheets/sheet%d.xml", sheetID), "")
 	// Update xl/workbook.xml
 	f.setWorkbook(sheet, sheetID, rID)
-	v, _ := xml.Marshal(cs)
-	f.saveFileList(path, replaceRelationshipsBytes(replaceWorkSheetsRelationshipsNameSpaceBytes(v)))
+	chartsheet, _ := xml.Marshal(cs)
+	f.saveFileList(path, replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(chartsheet)))
 	return err
+}
+
+// getFormatChart provides a function to check format set of the chart and
+// create chart format.
+func (f *File) getFormatChart(format string, combo []string) (*formatChart, []*formatChart, error) {
+	comboCharts := []*formatChart{}
+	formatSet, err := parseFormatChartSet(format)
+	if err != nil {
+		return formatSet, comboCharts, err
+	}
+	for _, comboFormat := range combo {
+		comboChart, err := parseFormatChartSet(comboFormat)
+		if err != nil {
+			return formatSet, comboCharts, err
+		}
+		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
+			return formatSet, comboCharts, errors.New("unsupported chart type " + comboChart.Type)
+		}
+		comboCharts = append(comboCharts, comboChart)
+	}
+	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
+		return formatSet, comboCharts, errors.New("unsupported chart type " + formatSet.Type)
+	}
+	return formatSet, comboCharts, err
 }
 
 // DeleteChart provides a function to delete chart in XLSX by given worksheet
