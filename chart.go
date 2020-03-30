@@ -789,7 +789,7 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	drawingID := f.countDrawings() + 1
 	chartID := f.countCharts() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	drawingID, drawingXML = f.prepareChartSheetDrawing(&cs, drawingID, sheet, drawingXML)
+	f.prepareChartSheetDrawing(&cs, drawingID, sheet)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
 	f.addSheetDrawingChart(drawingXML, drawingRID, &formatSet.Format)

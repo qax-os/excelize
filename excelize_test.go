@@ -934,7 +934,7 @@ func TestCopySheetError(t *testing.T) {
 
 func TestGetSheetComments(t *testing.T) {
 	f := NewFile()
-	assert.Equal(t, "", f.getSheetComments(0))
+	assert.Equal(t, "", f.getSheetComments("sheet0"))
 }
 
 func TestSetActiveSheet(t *testing.T) {
