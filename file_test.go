@@ -1,7 +1,12 @@
 package excelize
 
 import (
+	"bufio"
+	"bytes"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkWrite(b *testing.B) {
@@ -25,4 +30,19 @@ func BenchmarkWrite(b *testing.B) {
 			b.Error(err)
 		}
 	}
+}
+
+func TestWriteTo(t *testing.T) {
+	f := File{}
+	buf := bytes.Buffer{}
+	f.XLSX = make(map[string][]byte, 0)
+	f.XLSX["/d/"] = []byte("s")
+	_, err := f.WriteTo(bufio.NewWriter(&buf))
+	assert.EqualError(t, err, "zip: write to directory")
+	delete(f.XLSX, "/d/")
+	// Test file path overflow
+	const maxUint16 = 1<<16 - 1
+	f.XLSX[strings.Repeat("s", maxUint16+1)] = nil
+	_, err = f.WriteTo(bufio.NewWriter(&buf))
+	assert.EqualError(t, err, "zip: FileHeader.Name too long")
 }

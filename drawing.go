@@ -38,6 +38,19 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 	return drawingID, drawingXML
 }
 
+// prepareChartSheetDrawing provides a function to prepare drawing ID and XML
+// by given drawingID, worksheet name and default drawingXML.
+func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, sheet string) {
+	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
+	// Only allow one chart in a chartsheet.
+	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
+	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+	xlsx.Drawing = &xlsxDrawing{
+		RID: "rId" + strconv.Itoa(rID),
+	}
+	return
+}
+
 // addChart provides a function to create chart as xl/charts/chart%d.xml by
 // given format sets.
 func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
@@ -1207,6 +1220,46 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings[drawingXML] = content
 	return err
+}
+
+// addSheetDrawingChart provides a function to add chart graphic frame for
+// chartsheet by given sheet, drawingXML, width, height, relationship index
+// and format sets.
+func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *formatPicture) {
+	content, cNvPrID := f.drawingParser(drawingXML)
+	absoluteAnchor := xdrCellAnchor{
+		EditAs: formatSet.Positioning,
+		Pos:    &xlsxPoint2D{},
+		Ext:    &xlsxExt{},
+	}
+
+	graphicFrame := xlsxGraphicFrame{
+		NvGraphicFramePr: xlsxNvGraphicFramePr{
+			CNvPr: &xlsxCNvPr{
+				ID:   cNvPrID,
+				Name: "Chart " + strconv.Itoa(cNvPrID),
+			},
+		},
+		Graphic: &xlsxGraphic{
+			GraphicData: &xlsxGraphicData{
+				URI: NameSpaceDrawingMLChart,
+				Chart: &xlsxChart{
+					C:   NameSpaceDrawingMLChart,
+					R:   SourceRelationship,
+					RID: "rId" + strconv.Itoa(rID),
+				},
+			},
+		},
+	}
+	graphic, _ := xml.Marshal(graphicFrame)
+	absoluteAnchor.GraphicFrame = string(graphic)
+	absoluteAnchor.ClientData = &xdrClientData{
+		FLocksWithSheet:  formatSet.FLocksWithSheet,
+		FPrintsWithSheet: formatSet.FPrintsWithSheet,
+	}
+	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
+	f.Drawings[drawingXML] = content
+	return
 }
 
 // deleteDrawing provides a function to delete chart graphic frame by given by

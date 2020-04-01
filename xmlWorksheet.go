@@ -12,8 +12,7 @@ package excelize
 import "encoding/xml"
 
 // xlsxWorksheet directly maps the worksheet element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main.
 type xlsxWorksheet struct {
 	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`

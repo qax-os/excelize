@@ -354,7 +354,7 @@ func (f *File) setContentTypePartVMLExtensions() {
 	if !vml {
 		content.Defaults = append(content.Defaults, xlsxDefault{
 			Extension:   "vml",
-			ContentType: "application/vnd.openxmlformats-officedocument.vmlDrawing",
+			ContentType: ContentTypeVML,
 		})
 	}
 }
@@ -368,6 +368,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 	}
 	partNames := map[string]string{
 		"chart":      "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
+		"chartsheet": "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
 		"comments":   "/xl/comments" + strconv.Itoa(index) + ".xml",
 		"drawings":   "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
 		"table":      "/xl/tables/table" + strconv.Itoa(index) + ".xml",
@@ -375,12 +376,13 @@ func (f *File) addContentTypePart(index int, contentType string) {
 		"pivotCache": "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
 	}
 	contentTypes := map[string]string{
-		"chart":      "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
-		"comments":   "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml",
-		"drawings":   "application/vnd.openxmlformats-officedocument.drawing+xml",
-		"table":      "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml",
-		"pivotTable": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml",
-		"pivotCache": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml",
+		"chart":      ContentTypeDrawingML,
+		"chartsheet": ContentTypeSpreadSheetMLChartsheet,
+		"comments":   ContentTypeSpreadSheetMLComments,
+		"drawings":   ContentTypeDrawing,
+		"table":      ContentTypeSpreadSheetMLTable,
+		"pivotTable": ContentTypeSpreadSheetMLPivotTable,
+		"pivotCache": ContentTypeSpreadSheetMLPivotCacheDefinition,
 	}
 	s, ok := setContentType[contentType]
 	if ok {

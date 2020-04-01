@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -35,8 +36,8 @@ func parseFormatCommentsSet(formatSet string) (*formatComment, error) {
 // the worksheet comments.
 func (f *File) GetComments() (comments map[string][]Comment) {
 	comments = map[string][]Comment{}
-	for n := range f.sheetMap {
-		if d := f.commentsReader("xl" + strings.TrimPrefix(f.getSheetComments(f.GetSheetIndex(n)), "..")); d != nil {
+	for n, path := range f.sheetMap {
+		if d := f.commentsReader("xl" + strings.TrimPrefix(f.getSheetComments(filepath.Base(path)), "..")); d != nil {
 			sheetComments := []Comment{}
 			for _, comment := range d.CommentList.Comment {
 				sheetComment := Comment{}
@@ -60,9 +61,9 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 }
 
 // getSheetComments provides the method to get the target comment reference by
-// given worksheet index.
-func (f *File) getSheetComments(sheetID int) string {
-	var rels = "xl/worksheets/_rels/sheet" + strconv.Itoa(sheetID) + ".xml.rels"
+// given worksheet file path.
+func (f *File) getSheetComments(sheetFile string) string {
+	var rels = "xl/worksheets/_rels/" + sheetFile + ".rels"
 	if sheetRels := f.relsReader(rels); sheetRels != nil {
 		for _, v := range sheetRels.Relationships {
 			if v.Type == SourceRelationshipComments {
@@ -107,7 +108,6 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		f.addSheetLegacyDrawing(sheet, rID)
 	}
 	commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
-	f.addComment(commentsXML, cell, formatSet)
 	var colCount int
 	for i, l := range strings.Split(formatSet.Text, "\n") {
 		if ll := len(l); ll > colCount {
@@ -121,6 +121,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 	if err != nil {
 		return err
 	}
+	f.addComment(commentsXML, cell, formatSet)
 	f.addContentTypePart(commentID, "comments")
 	return err
 }
