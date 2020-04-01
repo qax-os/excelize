@@ -301,10 +301,12 @@ func (f *File) sharedStringsReader() *xlsxSST {
 func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	switch xlsx.T {
 	case "s":
-		xlsxSI := 0
-		xlsxSI, _ = strconv.Atoi(xlsx.V)
-		if len(d.SI) > xlsxSI {
-			return f.formattedValue(xlsx.S, d.SI[xlsxSI].String()), nil
+		if xlsx.V != "" {
+			xlsxSI := 0
+			xlsxSI, _ = strconv.Atoi(xlsx.V)
+			if len(d.SI) > xlsxSI {
+				return f.formattedValue(xlsx.S, d.SI[xlsxSI].String()), nil
+			}
 		}
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	case "str":
