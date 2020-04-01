@@ -17,6 +17,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 // ReadZipReader can be used to read an XLSX in memory without touching the
@@ -103,7 +104,7 @@ func JoinCellName(col string, row int) (string, error) {
 	if row < 1 {
 		return "", newInvalidRowNumberError(row)
 	}
-	return fmt.Sprintf("%s%d", normCol, row), nil
+	return normCol + strconv.Itoa(row), nil
 }
 
 // ColumnNameToNumber provides a function to convert Excel sheet column name
@@ -190,6 +191,7 @@ func CoordinatesToCellName(col, row int) (string, error) {
 	}
 	colname, err := ColumnNumberToName(col)
 	if err != nil {
+		// Error should never happens here.
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]: %v", col, row, err)
 	}
 	return fmt.Sprintf("%s%d", colname, row), nil
@@ -235,9 +237,45 @@ func namespaceStrictToTransitional(content []byte) []byte {
 		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet,
 	}
 	for s, n := range namespaceTranslationDic {
-		content = bytes.Replace(content, []byte(s), []byte(n), -1)
+		content = bytesReplace(content, stringToBytes(s), stringToBytes(n), -1)
 	}
 	return content
+}
+
+// stringToBytes cast a string to bytes pointer and assign the value of this
+// pointer.
+func stringToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s))
+}
+
+// bytesReplace replace old bytes with given new.
+func bytesReplace(s, old, new []byte, n int) []byte {
+	if n == 0 {
+		return s
+	}
+
+	if len(old) < len(new) {
+		return bytes.Replace(s, old, new, n)
+	}
+
+	if n < 0 {
+		n = len(s)
+	}
+
+	var wid, i, j, w int
+	for i, j = 0, 0; i < len(s) && j < n; j++ {
+		wid = bytes.Index(s[i:], old)
+		if wid < 0 {
+			break
+		}
+
+		w += copy(s[w:], s[i:i+wid])
+		w += copy(s[w:], new)
+		i += wid + len(old)
+	}
+
+	w += copy(s[w:], s[i:])
+	return s[0:w]
 }
 
 // genSheetPasswd provides a method to generate password for worksheet

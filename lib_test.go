@@ -203,3 +203,8 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 		}
 	}
 }
+
+func TestBytesReplace(t *testing.T) {
+	s := []byte{0x01}
+	assert.EqualValues(t, s, bytesReplace(s, []byte{}, []byte{}, 0))
+}

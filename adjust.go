@@ -80,9 +80,10 @@ func (f *File) adjustColDimensions(xlsx *xlsxWorksheet, col, offset int) {
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
 func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, row, offset int) {
-	for i, r := range xlsx.SheetData.Row {
+	for i := range xlsx.SheetData.Row {
+		r := &xlsx.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			f.ajustSingleRowDimensions(&xlsx.SheetData.Row[i], newRow)
+			f.ajustSingleRowDimensions(r, newRow)
 		}
 	}
 }

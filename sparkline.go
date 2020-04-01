@@ -516,7 +516,7 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 	for idx, ext = range decodeExtLst.Ext {
 		if ext.URI == ExtURISparklineGroups {
 			decodeSparklineGroups = new(decodeX14SparklineGroups)
-			if err = f.xmlNewDecoder(bytes.NewReader([]byte(ext.Content))).
+			if err = f.xmlNewDecoder(bytes.NewReader(stringToBytes(ext.Content))).
 				Decode(decodeSparklineGroups); err != nil && err != io.EOF {
 				return
 			}

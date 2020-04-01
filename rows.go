@@ -424,14 +424,16 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	if row > len(xlsx.SheetData.Row) {
 		return f.adjustHelper(sheet, rows, row, -1)
 	}
-	for rowIdx := range xlsx.SheetData.Row {
-		if xlsx.SheetData.Row[rowIdx].R == row {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row[:rowIdx],
-				xlsx.SheetData.Row[rowIdx+1:]...)[:len(xlsx.SheetData.Row)-1]
-			return f.adjustHelper(sheet, rows, row, -1)
+	keep := 0
+	for rowIdx := 0; rowIdx < len(xlsx.SheetData.Row); rowIdx++ {
+		v := &xlsx.SheetData.Row[rowIdx]
+		if v.R != row {
+			xlsx.SheetData.Row[keep] = *v
+			keep++
 		}
 	}
-	return nil
+	xlsx.SheetData.Row = xlsx.SheetData.Row[:keep]
+	return f.adjustHelper(sheet, rows, row, -1)
 }
 
 // InsertRow provides a function to insert a new row after given Excel row

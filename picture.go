@@ -510,7 +510,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	err = nil
 	for _, anchor := range deWsDr.TwoCellAnchor {
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(bytes.NewReader([]byte("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>"))).
+		if err = f.xmlNewDecoder(bytes.NewReader(stringToBytes("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>"))).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
 			err = fmt.Errorf("xml decode error: %s", err)
 			return
