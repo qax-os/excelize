@@ -234,10 +234,9 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 // replaceRelationshipsNameSpaceBytes provides a function to replace
 // XML tags to self-closing for compatible Microsoft Office Excel 2007.
 func replaceRelationshipsNameSpaceBytes(contentMarshal []byte) []byte {
-	var oldXmlns = []byte(` xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	var oldXmlns = stringToBytes(` xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	var newXmlns = []byte(templateNamespaceIDMap)
-	contentMarshal = bytes.Replace(contentMarshal, oldXmlns, newXmlns, -1)
-	return contentMarshal
+	return bytesReplace(contentMarshal, oldXmlns, newXmlns, -1)
 }
 
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
