@@ -206,9 +206,9 @@ func (f *File) setAppXML() {
 // requirements about the structure of the input XML. This function is a
 // horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsBytes(content []byte) []byte {
-	oldXmlns := []byte(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
-	newXmlns := []byte("r")
-	return bytes.Replace(content, oldXmlns, newXmlns, -1)
+	oldXmlns := stringToBytes(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
+	newXmlns := stringToBytes("r")
+	return bytesReplace(content, oldXmlns, newXmlns, -1)
 }
 
 // SetActiveSheet provides function to set default active worksheet of XLSX by
