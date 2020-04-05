@@ -367,22 +367,24 @@ func (f *File) addContentTypePart(index int, contentType string) {
 		"drawings": f.setContentTypePartImageExtensions,
 	}
 	partNames := map[string]string{
-		"chart":      "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
-		"chartsheet": "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
-		"comments":   "/xl/comments" + strconv.Itoa(index) + ".xml",
-		"drawings":   "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
-		"table":      "/xl/tables/table" + strconv.Itoa(index) + ".xml",
-		"pivotTable": "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
-		"pivotCache": "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
+		"chart":         "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
+		"chartsheet":    "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
+		"comments":      "/xl/comments" + strconv.Itoa(index) + ".xml",
+		"drawings":      "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
+		"table":         "/xl/tables/table" + strconv.Itoa(index) + ".xml",
+		"pivotTable":    "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
+		"pivotCache":    "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
+		"sharedStrings": "/xl/sharedStrings.xml",
 	}
 	contentTypes := map[string]string{
-		"chart":      ContentTypeDrawingML,
-		"chartsheet": ContentTypeSpreadSheetMLChartsheet,
-		"comments":   ContentTypeSpreadSheetMLComments,
-		"drawings":   ContentTypeDrawing,
-		"table":      ContentTypeSpreadSheetMLTable,
-		"pivotTable": ContentTypeSpreadSheetMLPivotTable,
-		"pivotCache": ContentTypeSpreadSheetMLPivotCacheDefinition,
+		"chart":         ContentTypeDrawingML,
+		"chartsheet":    ContentTypeSpreadSheetMLChartsheet,
+		"comments":      ContentTypeSpreadSheetMLComments,
+		"drawings":      ContentTypeDrawing,
+		"table":         ContentTypeSpreadSheetMLTable,
+		"pivotTable":    ContentTypeSpreadSheetMLPivotTable,
+		"pivotCache":    ContentTypeSpreadSheetMLPivotCacheDefinition,
+		"sharedStrings": ContentTypeSpreadSheetMLSharedStrings,
 	}
 	s, ok := setContentType[contentType]
 	if ok {

@@ -28,31 +28,46 @@ type xlsxSST struct {
 	SI          []xlsxSI `xml:"si"`
 }
 
-// xlsxSI directly maps the si element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked this for completeness - it does as much as I need.
+// xlsxSI (String Item) is the representation of an individual string in the
+// Shared String table. If the string is just a simple string with formatting
+// applied at the cell level, then the String Item (si) should contain a
+// single text element used to express the string. However, if the string in
+// the cell is more complex - i.e., has formatting applied at the character
+// level - then the string item shall consist of multiple rich text runs which
+// collectively are used to express the string.
 type xlsxSI struct {
-	T string  `xml:"t"`
+	T string  `xml:"t,omitempty"`
 	R []xlsxR `xml:"r"`
 }
 
+// String extracts characters from a string item.
 func (x xlsxSI) String() string {
 	if len(x.R) > 0 {
 		var rows strings.Builder
 		for _, s := range x.R {
-			rows.WriteString(s.T)
+			if s.T != nil {
+				rows.WriteString(s.T.Val)
+			}
 		}
 		return rows.String()
 	}
 	return x.T
 }
 
-// xlsxR directly maps the r element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked this for completeness - it does as much as I need.
+// xlsxR represents a run of rich text. A rich text run is a region of text
+// that share a common set of properties, such as formatting properties. The
+// properties are defined in the rPr element, and the text displayed to the
+// user is defined in the Text (t) element.
 type xlsxR struct {
 	RPr *xlsxRPr `xml:"rPr"`
-	T   string   `xml:"t"`
+	T   *xlsxT   `xml:"t"`
+}
+
+// xlsxT directly maps the t element in the run properties.
+type xlsxT struct {
+	XMLName xml.Name `xml:"t"`
+	Space   string   `xml:"xml:space,attr,omitempty"`
+	Val     string   `xml:",innerxml"`
 }
 
 // xlsxRPr (Run Properties) specifies a set of run properties which shall be
@@ -61,9 +76,25 @@ type xlsxR struct {
 // they are directly applied to the run and supersede any formatting from
 // styles.
 type xlsxRPr struct {
-	B      string         `xml:"b,omitempty"`
-	Sz     *attrValFloat  `xml:"sz"`
-	Color  *xlsxColor     `xml:"color"`
-	RFont  *attrValString `xml:"rFont"`
-	Family *attrValInt    `xml:"family"`
+	RFont     *attrValString `xml:"rFont"`
+	Charset   *attrValInt    `xml:"charset"`
+	Family    *attrValInt    `xml:"family"`
+	B         string         `xml:"b,omitempty"`
+	I         string         `xml:"i,omitempty"`
+	Strike    string         `xml:"strike,omitempty"`
+	Outline   string         `xml:"outline,omitempty"`
+	Shadow    string         `xml:"shadow,omitempty"`
+	Condense  string         `xml:"condense,omitempty"`
+	Extend    string         `xml:"extend,omitempty"`
+	Color     *xlsxColor     `xml:"color"`
+	Sz        *attrValFloat  `xml:"sz"`
+	U         *attrValString `xml:"u"`
+	VertAlign *attrValString `xml:"vertAlign"`
+	Scheme    *attrValString `xml:"scheme"`
+}
+
+// RichTextRun directly maps the settings of the rich text run.
+type RichTextRun struct {
+	Font *Font
+	Text string
 }

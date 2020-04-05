@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -1022,6 +1023,15 @@ func (f *File) styleSheetWriter() {
 	}
 }
 
+// sharedStringsWriter provides a function to save xl/sharedStrings.xml after
+// serialize structure.
+func (f *File) sharedStringsWriter() {
+	if f.SharedStrings != nil {
+		output, _ := xml.Marshal(f.SharedStrings)
+		f.saveFileList("xl/sharedStrings.xml", replaceRelationshipsNameSpaceBytes(output))
+	}
+}
+
 // parseFormatStyleSet provides a function to parse the format settings of the
 // cells and conditional formats.
 func parseFormatStyleSet(style string) (*Style, error) {
@@ -1033,7 +1043,7 @@ func parseFormatStyleSet(style string) (*Style, error) {
 }
 
 // NewStyle provides a function to create the style for cells by given JSON or
-// structure. Note that the color field uses RGB color code.
+// structure pointer. Note that the color field uses RGB color code.
 //
 // The following shows the border styles sorted by excelize index number:
 //
@@ -1906,6 +1916,8 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 		}
 	case *Style:
 		fs = v
+	default:
+		return cellXfsID, errors.New("invalid parameter type")
 	}
 	s := f.stylesReader()
 	numFmtID := setNumFmt(s, fs)

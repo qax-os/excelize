@@ -141,3 +141,84 @@ func TestOverflowNumericCell(t *testing.T) {
 	// GOARCH=amd64 - all ok; GOARCH=386 - actual: "-2147483648"
 	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
 }
+
+func TestSetCellRichText(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))
+	assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 44))
+	richTextRun := []RichTextRun{
+		{
+			Text: "blod",
+			Font: &Font{
+				Bold:   true,
+				Color:  "2354e8",
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: " and ",
+			Font: &Font{
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: "italic ",
+			Font: &Font{
+				Bold:   true,
+				Color:  "e83723",
+				Italic: true,
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: "text with color and font-family,",
+			Font: &Font{
+				Bold:   true,
+				Color:  "2354e8",
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: "\r\nlarge text with ",
+			Font: &Font{
+				Size:  14,
+				Color: "ad23e8",
+			},
+		},
+		{
+			Text: "strike",
+			Font: &Font{
+				Color:  "e89923",
+				Strike: true,
+			},
+		},
+		{
+			Text: " and ",
+			Font: &Font{
+				Size:  14,
+				Color: "ad23e8",
+			},
+		},
+		{
+			Text: "underline.",
+			Font: &Font{
+				Color:     "23e833",
+				Underline: "single",
+			},
+		},
+	}
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", richTextRun))
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A2", richTextRun))
+	style, err := f.NewStyle(&Style{
+		Alignment: &Alignment{
+			WrapText: true,
+		},
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
+	// Test set cell rich text on not exists worksheet
+	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
+	// Test set cell rich text with illegal cell coordinates
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}

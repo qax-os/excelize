@@ -50,7 +50,9 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 					sheetComment.Text += *comment.Text.T
 				}
 				for _, text := range comment.Text.R {
-					sheetComment.Text += text.T
+					if text.T != nil {
+						sheetComment.Text += text.T.Val
+					}
 				}
 				sheetComments = append(sheetComments, sheetComment)
 			}
@@ -263,7 +265,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 						RFont:  &attrValString{Val: stringPtr(defaultFont)},
 						Family: &attrValInt{Val: intPtr(2)},
 					},
-					T: a,
+					T: &xlsxT{Val: a},
 				},
 				{
 					RPr: &xlsxRPr{
@@ -274,7 +276,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 						RFont:  &attrValString{Val: stringPtr(defaultFont)},
 						Family: &attrValInt{Val: intPtr(2)},
 					},
-					T: t,
+					T: &xlsxT{Val: t},
 				},
 			},
 		},

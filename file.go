@@ -97,6 +97,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	f.workBookWriter()
 	f.workSheetWriter()
 	f.relsWriter()
+	f.sharedStringsWriter()
 	f.styleSheetWriter()
 
 	for path, content := range f.XLSX {

@@ -457,6 +457,172 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 	return nil
 }
 
+// SetCellRichText provides a function to set cell with rich text by given
+// worksheet. For example:
+//
+//    package main
+//
+//    import (
+//        "fmt"
+//
+//        "github.com/360EntSecGroup-Skylar/excelize"
+//    )
+//
+//    func main() {
+//        f := excelize.NewFile()
+//        if err := f.SetRowHeight("Sheet1", 1, 35); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SetColWidth("Sheet1", "A", "A", 44); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SetCellRichText("Sheet1", "A1", []excelize.RichTextRun{
+//            {
+//                Text: "blod",
+//                Font: &excelize.Font{
+//                    Bold:   true,
+//                    Color:  "2354e8",
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: " and ",
+//                Font: &excelize.Font{
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: " italic",
+//                Font: &excelize.Font{
+//                    Bold:   true,
+//                    Color:  "e83723",
+//                    Italic: true,
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: "text with color and font-family,",
+//                Font: &excelize.Font{
+//                    Bold:   true,
+//                    Color:  "2354e8",
+//                    Family: "Times New Roman",
+//                },
+//            },
+//            {
+//                Text: "\r\nlarge text with ",
+//                Font: &excelize.Font{
+//                    Size:  14,
+//                    Color: "ad23e8",
+//                },
+//            },
+//            {
+//                Text: "strike",
+//                Font: &excelize.Font{
+//                    Color:  "e89923",
+//                    Strike: true,
+//                },
+//            },
+//            {
+//                Text: " and ",
+//                Font: &excelize.Font{
+//                    Size:  14,
+//                    Color: "ad23e8",
+//                },
+//            },
+//            {
+//                Text: "underline.",
+//                Font: &excelize.Font{
+//                    Color:     "23e833",
+//                    Underline: "single",
+//                },
+//            },
+//        }); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        style, err := f.NewStyle(&excelize.Style{
+//            Alignment: &excelize.Alignment{
+//                WrapText: true,
+//            },
+//        })
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SetCellStyle("Sheet1", "A1", "A1", style); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
+//
+func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	cellData, col, _, err := f.prepareCell(ws, sheet, cell)
+	if err != nil {
+		return err
+	}
+	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	si := xlsxSI{}
+	sst := f.sharedStringsReader()
+	textRuns := []xlsxR{}
+	for _, textRun := range runs {
+		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
+		if strings.ContainsAny(textRun.Text, "\r\n ") {
+			run.T.Space = "preserve"
+		}
+		fnt := textRun.Font
+		if fnt != nil {
+			rpr := xlsxRPr{}
+			if fnt.Bold {
+				rpr.B = " "
+			}
+			if fnt.Italic {
+				rpr.I = " "
+			}
+			if fnt.Strike {
+				rpr.Strike = " "
+			}
+			if fnt.Underline != "" {
+				rpr.U = &attrValString{Val: &fnt.Underline}
+			}
+			if fnt.Family != "" {
+				rpr.RFont = &attrValString{Val: &fnt.Family}
+			}
+			if fnt.Size > 0.0 {
+				rpr.Sz = &attrValFloat{Val: &fnt.Size}
+			}
+			if fnt.Color != "" {
+				rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
+			}
+			run.RPr = &rpr
+		}
+		textRuns = append(textRuns, run)
+	}
+	si.R = textRuns
+	sst.SI = append(sst.SI, si)
+	sst.Count++
+	sst.UniqueCount++
+	cellData.T, cellData.V = "s", strconv.Itoa(len(sst.SI)-1)
+	f.addContentTypePart(0, "sharedStrings")
+	rels := f.relsReader("xl/_rels/workbook.xml.rels")
+	for _, rel := range rels.Relationships {
+		if rel.Target == "sharedStrings.xml" {
+			return err
+		}
+	}
+	// Update xl/_rels/workbook.xml.rels
+	f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipSharedStrings, "sharedStrings.xml", "")
+	return err
+}
+
 // SetSheetRow writes an array to row by given worksheet name, starting
 // coordinate and a pointer to array type 'slice'. For example, writes an
 // array to row 6 start with the cell B6 on Sheet1:

@@ -193,6 +193,8 @@ func TestNewStyle(t *testing.T) {
 	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
 	_, err = f.NewStyle(&Style{})
 	assert.NoError(t, err)
+	_, err = f.NewStyle(Style{})
+	assert.EqualError(t, err, "invalid parameter type")
 }
 
 func TestGetDefaultFont(t *testing.T) {
