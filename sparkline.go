@@ -10,7 +10,6 @@
 package excelize
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -509,14 +508,14 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 		sparklineGroupsBytes, sparklineGroupBytes, extLstBytes []byte
 	)
 	decodeExtLst = new(decodeWorksheetExt)
-	if err = f.xmlNewDecoder(bytes.NewReader([]byte("<extLst>" + ws.ExtLst.Ext + "</extLst>"))).
+	if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
 		Decode(decodeExtLst); err != nil && err != io.EOF {
 		return
 	}
 	for idx, ext = range decodeExtLst.Ext {
 		if ext.URI == ExtURISparklineGroups {
 			decodeSparklineGroups = new(decodeX14SparklineGroups)
-			if err = f.xmlNewDecoder(bytes.NewReader(stringToBytes(ext.Content))).
+			if err = f.xmlNewDecoder(strings.NewReader(ext.Content)).
 				Decode(decodeSparklineGroups); err != nil && err != io.EOF {
 				return
 			}
