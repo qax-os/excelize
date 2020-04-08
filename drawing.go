@@ -1288,7 +1288,7 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 	}
 	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(bytes.NewReader(stringToBytes("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>"))).
+		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
 			err = fmt.Errorf("xml decode error: %s", err)
 			return
