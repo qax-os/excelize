@@ -2732,7 +2732,7 @@ func drawCondFmtCellIs(p int, ct string, format *formatConditional) *xlsxCfRule 
 		c.Formula = append(c.Formula, format.Minimum)
 		c.Formula = append(c.Formula, format.Maximum)
 	}
-	_, ok = map[string]bool{"equal": true, "notEqual": true, "greaterThan": true, "lessThan": true}[ct]
+	_, ok = map[string]bool{"equal": true, "notEqual": true, "greaterThan": true, "lessThan": true, "greaterThanOrEqual": true, "lessThanOrEqual": true, "containsText": true, "notContains": true, "beginsWith": true, "endsWith": true}[ct]
 	if ok {
 		c.Formula = append(c.Formula, format.Value)
 	}
