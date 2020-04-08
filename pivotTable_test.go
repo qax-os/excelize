@@ -29,6 +29,7 @@ func TestAddPivotTable(t *testing.T) {
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$G$2:$M$34",
 		Rows:            []PivotTableField{{Data: "Month"}, {Data: "Year"}},
+		Filter:          []PivotTableField{{Data: "Region"}},
 		Columns:         []PivotTableField{{Data: "Type"}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Summarize by Sum"}},
 	}))

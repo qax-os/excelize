@@ -25,6 +25,7 @@ type PivotTableOption struct {
 	Rows            []PivotTableField
 	Columns         []PivotTableField
 	Data            []PivotTableField
+	Filter          []PivotTableField
 }
 
 // PivotTableField directly maps the field settings of the pivot table.
@@ -86,6 +87,7 @@ type PivotTableField struct {
 //            DataRange:       "Sheet1!$A$1:$E$31",
 //            PivotTableRange: "Sheet1!$G$2:$M$34",
 //            Rows:            []excelize.PivotTableField{{Data: "Month"}, {Data: "Year"}},
+//            Filter:          []excelize.PivotTableField{{Data: "Region"}},
 //            Columns:         []excelize.PivotTableField{{Data: "Type"}},
 //            Data:            []excelize.PivotTableField{{Data: "Sales", Name: "Summarize", Subtotal: "Sum"}},
 //        }); err != nil {
@@ -283,6 +285,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 			Count: 1,
 			I:     []*xlsxI{{}},
 		},
+		PageFields: &xlsxPageFields{},
 		DataFields: &xlsxDataFields{},
 		PivotTableStyleInfo: &xlsxPivotTableStyleInfo{
 			Name:           "PivotStyleLight16",
@@ -318,6 +321,19 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	err = f.addPivotColFields(&pt, opt)
 	if err != nil {
 		return err
+	}
+
+	// page fields
+	pageFieldsIndex, err := f.getPivotFieldsIndex(opt.Filter, opt)
+	if err != nil {
+		return err
+	}
+	pageFieldsName := f.getPivotTableFieldsName(opt.Filter)
+	for idx, pageField := range pageFieldsIndex {
+		pt.PageFields.PageField = append(pt.PageFields.PageField, &xlsxPageField{
+			Name: pageFieldsName[idx],
+			Fld:  pageField,
+		})
 	}
 
 	// data fields
@@ -403,6 +419,19 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Axis: "axisRow",
 				Name: f.getPivotTableFieldName(name, opt.Rows),
+				Items: &xlsxItems{
+					Count: 1,
+					Item: []*xlsxItem{
+						{T: "default"},
+					},
+				},
+			})
+			continue
+		}
+		if inPivotTableField(opt.Filter, name) != -1 {
+			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
+				Axis: "axisPage",
+				Name: f.getPivotTableFieldName(name, opt.Columns),
 				Items: &xlsxItems{
 					Count: 1,
 					Item: []*xlsxItem{

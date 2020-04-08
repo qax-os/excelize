@@ -251,9 +251,9 @@ type xlsxPageFields struct {
 type xlsxPageField struct {
 	Fld    int         `xml:"fld,attr"`
 	Item   int         `xml:"item,attr,omitempty"`
-	Hier   int         `xml:"hier,attr"`
-	Name   string      `xml:"name,attr"`
-	Cap    string      `xml:"cap,attr"`
+	Hier   int         `xml:"hier,attr,omitempty"`
+	Name   string      `xml:"name,attr,omitempty"`
+	Cap    string      `xml:"cap,attr,omitempty"`
 	ExtLst *xlsxExtLst `xml:"extLst"`
 }
 

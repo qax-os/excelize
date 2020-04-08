@@ -458,7 +458,8 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 }
 
 // SetCellRichText provides a function to set cell with rich text by given
-// worksheet. For example:
+// worksheet. For example, set rich text on the A1 cell of the worksheet named
+// Sheet1:
 //
 //    package main
 //
