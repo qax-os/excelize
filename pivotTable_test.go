@@ -179,6 +179,46 @@ func TestAddPivotTable(t *testing.T) {
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 }
 
+func TestAddPivotRowFields(t *testing.T) {
+	f := NewFile()
+	// Test invalid data range
+	assert.EqualError(t, f.addPivotRowFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+		DataRange: "Sheet1!$A$1:$A$1",
+	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+}
+
+func TestAddPivotPageFields(t *testing.T) {
+	f := NewFile()
+	// Test invalid data range
+	assert.EqualError(t, f.addPivotPageFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+		DataRange: "Sheet1!$A$1:$A$1",
+	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+}
+
+func TestAddPivotDataFields(t *testing.T) {
+	f := NewFile()
+	// Test invalid data range
+	assert.EqualError(t, f.addPivotDataFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+		DataRange: "Sheet1!$A$1:$A$1",
+	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+}
+
+func TestAddPivotColFields(t *testing.T) {
+	f := NewFile()
+	// Test invalid data range
+	assert.EqualError(t, f.addPivotColFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+		DataRange: "Sheet1!$A$1:$A$1",
+		Columns:   []PivotTableField{{Data: "Type"}},
+	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+}
+
+func TestGetPivotFieldsOrder(t *testing.T) {
+	f := NewFile()
+	// Test get pivot fields order with not exist worksheet
+	_, err := f.getPivotFieldsOrder("SheetN!$A$1:$E$31")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+}
+
 func TestInStrSlice(t *testing.T) {
 	assert.EqualValues(t, -1, inStrSlice([]string{}, ""))
 }

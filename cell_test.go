@@ -3,6 +3,7 @@ package excelize
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -122,9 +123,9 @@ func BenchmarkSetCellValue(b *testing.B) {
 	cols := []string{"A", "B", "C", "D", "E", "F"}
 	f := NewFile()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 1; i <= b.N; i++ {
 		for j := 0; j < len(values); j++ {
-			if err := f.SetCellValue("Sheet1", fmt.Sprint(cols[j], i), values[j]); err != nil {
+			if err := f.SetCellValue("Sheet1", cols[j]+strconv.Itoa(i), values[j]); err != nil {
 				b.Error(err)
 			}
 		}
