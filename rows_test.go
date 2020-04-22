@@ -92,7 +92,7 @@ func TestRowsError(t *testing.T) {
 
 func TestRowHeight(t *testing.T) {
 	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(1)
+	sheet1 := xlsx.GetSheetName(0)
 
 	assert.EqualError(t, xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
 
@@ -199,7 +199,7 @@ func TestRowVisibility(t *testing.T) {
 
 func TestRemoveRow(t *testing.T) {
 	f := NewFile()
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
 	const (
@@ -260,7 +260,7 @@ func TestRemoveRow(t *testing.T) {
 
 func TestInsertRow(t *testing.T) {
 	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(1)
+	sheet1 := xlsx.GetSheetName(0)
 	r, err := xlsx.workSheetReader(sheet1)
 	assert.NoError(t, err)
 	const (
@@ -292,7 +292,7 @@ func TestInsertRow(t *testing.T) {
 // It is important for insert workflow to be constant to avoid side effect with functions related to internal structure.
 func TestInsertRowInEmptyFile(t *testing.T) {
 	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(1)
+	sheet1 := xlsx.GetSheetName(0)
 	r, err := xlsx.workSheetReader(sheet1)
 	assert.NoError(t, err)
 	assert.NoError(t, xlsx.InsertRow(sheet1, 1))

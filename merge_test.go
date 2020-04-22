@@ -108,7 +108,7 @@ func TestGetMergeCells(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 
 	mergeCells, err := f.GetMergeCells(sheet1)
 	if !assert.Len(t, mergeCells, len(wants)) {
@@ -132,7 +132,7 @@ func TestUnmergeCell(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 
 	xlsx, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)

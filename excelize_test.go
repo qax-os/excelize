@@ -239,7 +239,7 @@ func TestBrokenFile(t *testing.T) {
 		// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
 		f3, err := OpenFile(filepath.Join("test", "BadWorkbook.xlsx"))
 		f3.GetActiveSheetIndex()
-		f3.SetActiveSheet(2)
+		f3.SetActiveSheet(1)
 		assert.NoError(t, err)
 	})
 
@@ -908,7 +908,7 @@ func TestCopySheet(t *testing.T) {
 	}
 
 	idx := f.NewSheet("CopySheet")
-	assert.NoError(t, f.CopySheet(1, idx))
+	assert.NoError(t, f.CopySheet(0, idx))
 
 	assert.NoError(t, f.SetCellValue("CopySheet", "F1", "Hello"))
 	val, err := f.GetCellValue("Sheet1", "F1")
@@ -924,8 +924,8 @@ func TestCopySheetError(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.EqualError(t, f.copySheet(0, -1), "sheet  is not exist")
-	if !assert.EqualError(t, f.CopySheet(0, -1), "invalid worksheet index") {
+	assert.EqualError(t, f.copySheet(-1, -2), "sheet  is not exist")
+	if !assert.EqualError(t, f.CopySheet(-1, -2), "invalid worksheet index") {
 		t.FailNow()
 	}
 
@@ -957,7 +957,7 @@ func TestSetSheetVisible(t *testing.T) {
 func TestGetActiveSheetIndex(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.BookViews = nil
-	assert.Equal(t, 1, f.GetActiveSheetIndex())
+	assert.Equal(t, 0, f.GetActiveSheetIndex())
 }
 
 func TestRelsWriter(t *testing.T) {
@@ -974,7 +974,7 @@ func TestGetSheetView(t *testing.T) {
 
 func TestConditionalFormat(t *testing.T) {
 	f := NewFile()
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 
 	fillCells(f, sheet1, 10, 15)
 
@@ -1060,7 +1060,7 @@ func TestConditionalFormat(t *testing.T) {
 
 func TestConditionalFormatError(t *testing.T) {
 	f := NewFile()
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 
 	fillCells(f, sheet1, 10, 15)
 

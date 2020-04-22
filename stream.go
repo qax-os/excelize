@@ -69,7 +69,7 @@ type StreamWriter struct {
 //    }
 //
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
-	sheetID := f.GetSheetIndex(sheet)
+	sheetID := f.getSheetID(sheet)
 	if sheetID == 0 {
 		return nil, fmt.Errorf("sheet %s is not exist", sheet)
 	}

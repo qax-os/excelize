@@ -170,7 +170,7 @@ func TestColWidth(t *testing.T) {
 
 func TestInsertCol(t *testing.T) {
 	f := NewFile()
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 
 	fillCells(f, sheet1, 10, 10)
 
@@ -188,7 +188,7 @@ func TestInsertCol(t *testing.T) {
 
 func TestRemoveCol(t *testing.T) {
 	f := NewFile()
-	sheet1 := f.GetSheetName(1)
+	sheet1 := f.GetSheetName(0)
 
 	fillCells(f, sheet1, 10, 15)
 

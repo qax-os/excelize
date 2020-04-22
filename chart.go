@@ -762,7 +762,7 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 // a chart.
 func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	// Check if the worksheet already exists
-	if f.GetSheetIndex(sheet) != 0 {
+	if f.GetSheetIndex(sheet) != -1 {
 		return errors.New("the same name worksheet already exists")
 	}
 	formatSet, comboCharts, err := f.getFormatChart(format, combo)

@@ -268,7 +268,7 @@ func (f *File) UpdateLinkedValue() error {
 	wb := f.workbookReader()
 	// recalculate formulas
 	wb.CalcPr = nil
-	for _, name := range f.GetSheetMap() {
+	for _, name := range f.GetSheetList() {
 		xlsx, err := f.workSheetReader(name)
 		if err != nil {
 			return err

@@ -337,7 +337,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 	}
 	if formula == "" {
 		cellData.F = nil
-		f.deleteCalcChain(f.GetSheetIndex(sheet), axis)
+		f.deleteCalcChain(f.getSheetID(sheet), axis)
 		return err
 	}
 

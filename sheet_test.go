@@ -303,10 +303,10 @@ func TestRemovePageBreak(t *testing.T) {
 
 func TestGetSheetName(t *testing.T) {
 	f, _ := excelize.OpenFile(filepath.Join("test", "Book1.xlsx"))
-	assert.Equal(t, "Sheet1", f.GetSheetName(1))
-	assert.Equal(t, "Sheet2", f.GetSheetName(2))
-	assert.Equal(t, "", f.GetSheetName(0))
-	assert.Equal(t, "", f.GetSheetName(3))
+	assert.Equal(t, "Sheet1", f.GetSheetName(0))
+	assert.Equal(t, "Sheet2", f.GetSheetName(1))
+	assert.Equal(t, "", f.GetSheetName(-1))
+	assert.Equal(t, "", f.GetSheetName(2))
 }
 
 func TestGetSheetMap(t *testing.T) {

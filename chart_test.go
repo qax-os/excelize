@@ -12,7 +12,7 @@ import (
 
 func TestChartSize(t *testing.T) {
 	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(1)
+	sheet1 := xlsx.GetSheetName(0)
 
 	categories := map[string]string{
 		"A2": "Small",
@@ -220,14 +220,14 @@ func TestAddChartSheet(t *testing.T) {
 	}
 	assert.NoError(t, f.AddChartSheet("Chart1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`))
 	// Test set the chartsheet as active sheet
-	var sheetID int
-	for idx, sheetName := range f.GetSheetMap() {
+	var sheetIdx int
+	for idx, sheetName := range f.GetSheetList() {
 		if sheetName != "Chart1" {
 			continue
 		}
-		sheetID = idx
+		sheetIdx = idx
 	}
-	f.SetActiveSheet(sheetID)
+	f.SetActiveSheet(sheetIdx)
 
 	// Test cell value on chartsheet
 	assert.EqualError(t, f.SetCellValue("Chart1", "A1", true), "sheet Chart1 is chart sheet")
