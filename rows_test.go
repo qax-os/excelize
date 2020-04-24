@@ -831,6 +831,17 @@ func TestErrSheetNotExistError(t *testing.T) {
 	assert.EqualValues(t, err.Error(), "sheet Sheet1 is not exist")
 }
 
+func TestCheckRow(t *testing.T) {
+	f := NewFile()
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`)
+	_, err := f.GetRows("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", false))
+	f = NewFile()
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+}
+
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {

@@ -237,7 +237,7 @@ func (f *File) SetActiveSheet(index int) {
 	for idx, name := range f.GetSheetList() {
 		xlsx, err := f.workSheetReader(name)
 		if err != nil {
-			// Chartsheet
+			// Chartsheet or dialogsheet
 			return
 		}
 		if xlsx.SheetViews == nil {
@@ -365,8 +365,8 @@ func (f *File) GetSheetIndex(name string) int {
 	return idx
 }
 
-// GetSheetMap provides a function to get worksheet and chartsheet name and
-// ID map of XLSX. For example:
+// GetSheetMap provides a function to get worksheet, chartsheet and
+// dialogsheet ID and name map of XLSX. For example:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx")
 //    if err != nil {
@@ -387,8 +387,8 @@ func (f *File) GetSheetMap() map[int]string {
 	return sheetMap
 }
 
-// GetSheetList provides a function to get worksheet and chartsheet name list
-// of workbook.
+// GetSheetList provides a function to get worksheet, chartsheet and
+// dialogsheet name list of workbook.
 func (f *File) GetSheetList() (list []string) {
 	wb := f.workbookReader()
 	if wb != nil {

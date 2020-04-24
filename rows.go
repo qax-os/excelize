@@ -593,6 +593,22 @@ func checkRow(xlsx *xlsxWorksheet) error {
 		if colCount == 0 {
 			continue
 		}
+		// check and fill the cell without r attribute in a row element
+		rCount := 0
+		for idx, cell := range rowData.C {
+			rCount++
+			if cell.R != "" {
+				lastR, _, err := CellNameToCoordinates(cell.R)
+				if err != nil {
+					return err
+				}
+				if lastR > rCount {
+					rCount = lastR
+				}
+				continue
+			}
+			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
+		}
 		lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
 		if err != nil {
 			return err
