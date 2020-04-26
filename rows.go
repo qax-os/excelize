@@ -76,15 +76,22 @@ func (rows *Rows) Error() error {
 
 // Columns return the current row's column values.
 func (rows *Rows) Columns() ([]string, error) {
+	_, columns, err := rows.RawColumns(false)
+	return columns, err
+}
+
+// RawColumns return the current row's column raw, unformatted values
+func (rows *Rows) RawColumns(noFormatted bool) ([]xlsxC, []string, error) {
 	var (
 		err          error
 		inElement    string
 		row, cellCol int
 		columns      []string
+		cells        []xlsxC
 	)
 
 	if rows.stashRow >= rows.curRow {
-		return columns, err
+		return cells, columns, err
 	}
 
 	d := rows.f.sharedStringsReader()
@@ -101,11 +108,11 @@ func (rows *Rows) Columns() ([]string, error) {
 					if attr.Name.Local == "r" {
 						row, err = strconv.Atoi(attr.Value)
 						if err != nil {
-							return columns, err
+							return cells, columns, err
 						}
 						if row > rows.curRow {
 							rows.stashRow = row - 1
-							return columns, err
+							return cells, columns, err
 						}
 					}
 				}
@@ -117,21 +124,30 @@ func (rows *Rows) Columns() ([]string, error) {
 				if colCell.R != "" {
 					cellCol, _, err = CellNameToCoordinates(colCell.R)
 					if err != nil {
-						return columns, err
+						return cells, columns, err
 					}
 				}
 				blank := cellCol - len(columns)
-				val, _ := colCell.getValueFrom(rows.f, d)
-				columns = append(appendSpace(blank, columns), val)
+				for i := 1; i < blank; i++ {
+					cells = append(cells, xlsxC{})
+					if !noFormatted {
+						columns = append(columns, "")
+					}
+				}
+				cells = append(cells, colCell)
+				if !noFormatted {
+					val, _ := colCell.getValueFrom(rows.f, d)
+					columns = append(columns, val)
+				}
 			}
 		case xml.EndElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				return columns, err
+				return cells, columns, err
 			}
 		}
 	}
-	return columns, err
+	return cells, columns, err
 }
 
 // appendSpace append blank characters to slice by given length and source slice.
