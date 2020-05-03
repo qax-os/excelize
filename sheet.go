@@ -211,10 +211,10 @@ func replaceRelationshipsBytes(content []byte) []byte {
 	return bytesReplace(content, oldXmlns, newXmlns, -1)
 }
 
-// SetActiveSheet provides function to set default active worksheet of XLSX by
-// given index. Note that active index is different from the index returned by
-// function GetSheetMap(). It should be greater or equal to 0 and less than
-// total worksheet numbers.
+// SetActiveSheet provides a function to set the default active sheet of the
+// workbook by a given index. Note that the active index is different from the
+// ID returned by function GetSheetMap(). It should be greater or equal to 0
+// and less than the total worksheet numbers.
 func (f *File) SetActiveSheet(index int) {
 	if index < 0 {
 		index = 0
@@ -327,9 +327,9 @@ func (f *File) getSheetNameByID(ID int) string {
 	return ""
 }
 
-// GetSheetName provides a function to get worksheet name of XLSX by given
-// worksheet index. If given sheet index is invalid, will return an empty
-// string.
+// GetSheetName provides a function to get the sheet name of the workbook by
+// the given sheet index. If the given sheet index is invalid, it will return
+// an empty string.
 func (f *File) GetSheetName(index int) (name string) {
 	for idx, sheet := range f.GetSheetList() {
 		if idx == index {
@@ -352,9 +352,9 @@ func (f *File) getSheetID(name string) int {
 	return ID
 }
 
-// GetSheetIndex provides a function to get worksheet index of XLSX by given
-// sheet name. If given worksheet name is invalid, will return an integer type
-// value -1.
+// GetSheetIndex provides a function to get a sheet index of the workbook by
+// the given sheet name. If the given sheet name is invalid, it will return an
+// integer type value -1.
 func (f *File) GetSheetIndex(name string) int {
 	var idx = -1
 	for index, sheet := range f.GetSheetList() {
@@ -365,8 +365,8 @@ func (f *File) GetSheetIndex(name string) int {
 	return idx
 }
 
-// GetSheetMap provides a function to get worksheet, chartsheet and
-// dialogsheet ID and name map of XLSX. For example:
+// GetSheetMap provides a function to get worksheets, chart sheets, dialog
+// sheets ID and name map of the workbook. For example:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx")
 //    if err != nil {
@@ -387,8 +387,8 @@ func (f *File) GetSheetMap() map[int]string {
 	return sheetMap
 }
 
-// GetSheetList provides a function to get worksheet, chartsheet and
-// dialogsheet name list of workbook.
+// GetSheetList provides a function to get worksheets, chart sheets, and
+// dialog sheets name list of the workbook.
 func (f *File) GetSheetList() (list []string) {
 	wb := f.workbookReader()
 	if wb != nil {

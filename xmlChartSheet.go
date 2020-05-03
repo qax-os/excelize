@@ -51,7 +51,7 @@ type xlsxChartsheetView struct {
 	XMLName            xml.Name      `xml:"sheetView"`
 	TabSelectedAttr    bool          `xml:"tabSelected,attr,omitempty"`
 	ZoomScaleAttr      uint32        `xml:"zoomScale,attr,omitempty"`
-	WorkbookViewIdAttr uint32        `xml:"workbookViewId,attr"`
+	WorkbookViewIDAttr uint32        `xml:"workbookViewId,attr"`
 	ZoomToFitAttr      bool          `xml:"zoomToFit,attr,omitempty"`
 	ExtLst             []*xlsxExtLst `xml:"extLst"`
 }
@@ -78,7 +78,7 @@ type xlsxCustomChartsheetViews struct {
 // xlsxCustomChartsheetView defines custom view properties for chart sheets.
 type xlsxCustomChartsheetView struct {
 	XMLName       xml.Name            `xml:"customChartsheetView"`
-	GuidAttr      string              `xml:"guid,attr"`
+	GUIDAttr      string              `xml:"guid,attr"`
 	ScaleAttr     uint32              `xml:"scale,attr,omitempty"`
 	StateAttr     string              `xml:"state,attr,omitempty"`
 	ZoomToFitAttr bool                `xml:"zoomToFit,attr,omitempty"`
