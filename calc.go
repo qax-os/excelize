@@ -220,7 +220,9 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					argsList.PushBack(opfdStack.Pop())
 				}
 				// call formula function to evaluate
-				result, err := callFuncByName(&formulaFuncs{}, strings.ReplaceAll(opfStack.Peek().(efp.Token).TValue, "_xlfn.", ""), []reflect.Value{reflect.ValueOf(argsList)})
+				result, err := callFuncByName(&formulaFuncs{}, strings.NewReplacer(
+					"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
+					[]reflect.Value{reflect.ValueOf(argsList)})
 				if err != nil {
 					return efp.Token{}, err
 				}
@@ -798,6 +800,103 @@ func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
 		result = strings.Repeat("0", minLength-len(result)) + result
 	}
 	result = strings.ToUpper(result)
+	return
+}
+
+// CEILING function rounds a supplied number away from zero, to the nearest
+// multiple of a given number. The syntax of the function is:
+//
+//   CEILING(number,significance)
+//
+func (fn *formulaFuncs) CEILING(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("CEILING requires at least 1 argument")
+		return
+	}
+	if argsList.Len() > 2 {
+		err = errors.New("CEILING allows at most 2 arguments")
+		return
+	}
+	var number, significance float64
+	number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	significance = 1
+	if number < 0 {
+		significance = -1
+	}
+	if argsList.Len() > 1 {
+		significance, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
+		if err != nil {
+			return
+		}
+	}
+	if significance < 0 && number > 0 {
+		err = errors.New("negative sig to CEILING invalid")
+		return
+	}
+	if argsList.Len() == 1 {
+		result = fmt.Sprintf("%g", math.Ceil(number))
+		return
+	}
+	number, res := math.Modf(number / significance)
+	if res > 0 {
+		number++
+	}
+	result = fmt.Sprintf("%g", number*significance)
+	return
+}
+
+// CEILINGMATH function rounds a supplied number up to a supplied multiple of
+// significance. The syntax of the function is:
+//
+//   CEILING.MATH(number,[significance],[mode])
+//
+func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("CEILING.MATH requires at least 1 argument")
+		return
+	}
+	if argsList.Len() > 3 {
+		err = errors.New("CEILING.MATH allows at most 3 arguments")
+		return
+	}
+	var number, significance, mode float64 = 0, 1, 1
+	number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	if number < 0 {
+		significance = -1
+	}
+	if argsList.Len() > 1 {
+		significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(efp.Token).TValue, 64)
+		if err != nil {
+			return
+		}
+	}
+	if argsList.Len() == 1 {
+		result = fmt.Sprintf("%g", math.Ceil(number))
+		return
+	}
+	if argsList.Len() > 2 {
+		mode, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
+		if err != nil {
+			return
+		}
+	}
+	val, res := math.Modf(number / significance)
+	_, _ = res, mode
+	if res != 0 {
+		if number > 0 {
+			val++
+		} else if mode < 0 {
+			val--
+		}
+	}
+
+	result = fmt.Sprintf("%g", val*significance)
 	return
 }
 

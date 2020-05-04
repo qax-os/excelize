@@ -67,6 +67,22 @@ func TestCalcCellValue(t *testing.T) {
 		"=BASE(12,2)":      "1100",
 		"=BASE(12,2,8)":    "00001100",
 		"=BASE(100000,16)": "186A0",
+		// CEILING
+		"=CEILING(22.25,0.1)":   "22.3",
+		"=CEILING(22.25,0.5)":   "22.5",
+		"=CEILING(22.25,1)":     "23",
+		"=CEILING(22.25,10)":    "30",
+		"=CEILING(22.25,20)":    "40",
+		"=CEILING(-22.25,-0.1)": "-22.3",
+		"=CEILING(-22.25,-1)":   "-23",
+		"=CEILING(-22.25,-5)":   "-25",
+		// _xlfn.CEILING.MATH
+		"=_xlfn.CEILING.MATH(15.25,1)":    "16",
+		"=_xlfn.CEILING.MATH(15.25,0.1)":  "15.3",
+		"=_xlfn.CEILING.MATH(15.25,5)":    "20",
+		"=_xlfn.CEILING.MATH(-15.25,1)":   "-15",
+		"=_xlfn.CEILING.MATH(-15.25,1,1)": "-15", // should be 16
+		"=_xlfn.CEILING.MATH(-15.25,10)":  "-10",
 		// GCD
 		"=GCD(1,5)":      "1",
 		"=GCD(15,10,25)": "5",
@@ -123,11 +139,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=ACOS()": "ACOS requires 1 numeric arguments",
 		// ACOSH
 		"=ACOSH()": "ACOSH requires 1 numeric arguments",
-		// ACOT
+		// _xlfn.ACOT
 		"=_xlfn.ACOT()": "ACOT requires 1 numeric arguments",
-		// ACOTH
+		// _xlfn.ACOTH
 		"=_xlfn.ACOTH()": "ACOTH requires 1 numeric arguments",
-		// ARABIC
+		// _xlfn.ARABIC
 		"_xlfn.ARABIC()": "ARABIC requires 1 numeric arguments",
 		// ASIN
 		"=ASIN()": "ASIN requires 1 numeric arguments",
@@ -143,6 +159,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=BASE()":        "BASE requires at least 2 arguments",
 		"=BASE(1,2,3,4)": "BASE allows at most 3 arguments",
 		"=BASE(1,1)":     "radix must be an integer ≥ 2 and ≤ 36",
+		// CEILING
+		"=CEILING()":      "CEILING requires at least 1 argument",
+		"=CEILING(1,2,3)": "CEILING allows at most 2 arguments",
+		"=CEILING(1,-1)":  "negative sig to CEILING invalid",
+		// _xlfn.CEILING.MATH
+		"=_xlfn.CEILING.MATH()":        "CEILING.MATH requires at least 1 argument",
+		"=_xlfn.CEILING.MATH(1,2,3,4)": "CEILING.MATH allows at most 3 arguments",
 		// GCD
 		"=GCD()":     "GCD requires at least 1 argument",
 		"=GCD(-1)":   "GCD only accepts positive arguments",
