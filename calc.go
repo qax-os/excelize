@@ -102,11 +102,17 @@ func getPriority(token efp.Token) (pri int) {
 //    opf  - Operation formula
 //    opfd - Operand of the operation formula
 //    opft - Operator of the operation formula
+//
+// Evaluate arguments of the operation formula by list:
+//
 //    args - Arguments of the operation formula
+//
+// TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 //
 func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error) {
 	var err error
-	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
+	opdStack, optStack, opfStack, opfdStack, opftStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
+	argsList := list.New()
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 
@@ -155,7 +161,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 						return efp.Token{TValue: formulaErrorNAME}, err
 					}
 					for _, val := range result {
-						argsStack.Push(efp.Token{
+						argsList.PushBack(efp.Token{
 							TType:    efp.TokenTypeOperand,
 							TSubType: efp.TokenSubTypeNumber,
 							TValue:   val,
@@ -184,9 +190,18 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					opftStack.Pop()
 				}
 				if !opfdStack.Empty() {
-					argsStack.Push(opfdStack.Pop())
+					argsList.PushBack(opfdStack.Pop())
 				}
 				continue
+			}
+
+			// current token is logical
+			if token.TType == efp.OperatorsInfix && token.TSubType == efp.TokenSubTypeLogical {
+			}
+
+			// current token is text
+			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
+				argsList.PushBack(token)
 			}
 
 			// current token is function stop
@@ -202,13 +217,14 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 
 				// push opfd to args
 				if opfdStack.Len() > 0 {
-					argsStack.Push(opfdStack.Pop())
+					argsList.PushBack(opfdStack.Pop())
 				}
 				// call formula function to evaluate
-				result, err := callFuncByName(&formulaFuncs{}, opfStack.Peek().(efp.Token).TValue, []reflect.Value{reflect.ValueOf(argsStack)})
+				result, err := callFuncByName(&formulaFuncs{}, strings.ReplaceAll(opfStack.Peek().(efp.Token).TValue, "_xlfn.", ""), []reflect.Value{reflect.ValueOf(argsList)})
 				if err != nil {
 					return efp.Token{}, err
 				}
+				argsList.Init()
 				opfStack.Pop()
 				if opfStack.Len() > 0 { // still in function stack
 					opfdStack.Push(efp.Token{TValue: result, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
@@ -480,17 +496,247 @@ func callFuncByName(receiver interface{}, name string, params []reflect.Value) (
 //
 //   ABS(number)
 //
-func (fn *formulaFuncs) ABS(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() != 1 {
+func (fn *formulaFuncs) ABS(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
 		err = errors.New("ABS requires 1 numeric arguments")
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Abs(val))
+	return
+}
+
+// ACOS function calculates the arccosine (i.e. the inverse cosine) of a given
+// number, and returns an angle, in radians, between 0 and π. The syntax of
+// the function is:
+//
+//   ACOS(number)
+//
+func (fn *formulaFuncs) ACOS(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ACOS requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Acos(val))
+	return
+}
+
+// ACOSH function calculates the inverse hyperbolic cosine of a supplied number.
+// of the function is:
+//
+//   ACOSH(number)
+//
+func (fn *formulaFuncs) ACOSH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ACOSH requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Acosh(val))
+	return
+}
+
+// ACOT function calculates the arccotangent (i.e. the inverse cotangent) of a
+// given number, and returns an angle, in radians, between 0 and π. The syntax
+// of the function is:
+//
+//   ACOT(number)
+//
+func (fn *formulaFuncs) ACOT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ACOT requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Pi/2-math.Atan(val))
+	return
+}
+
+// ACOTH function calculates the hyperbolic arccotangent (coth) of a supplied
+// value. The syntax of the function is:
+//
+//   ACOTH(number)
+//
+func (fn *formulaFuncs) ACOTH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ACOTH requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Atanh(1/val))
+	return
+}
+
+// ARABIC function converts a Roman numeral into an Arabic numeral. The syntax
+// of the function is:
+//
+//   ARABIC(text)
+//
+func (fn *formulaFuncs) ARABIC(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ARABIC requires 1 numeric arguments")
+		return
+	}
+	val, last, prefix := 0.0, 0.0, 1.0
+	for _, char := range argsList.Front().Value.(efp.Token).TValue {
+		digit := 0.0
+		switch char {
+		case '-':
+			prefix = -1
+			continue
+		case 'I':
+			digit = 1
+		case 'V':
+			digit = 5
+		case 'X':
+			digit = 10
+		case 'L':
+			digit = 50
+		case 'C':
+			digit = 100
+		case 'D':
+			digit = 500
+		case 'M':
+			digit = 1000
+		}
+		val += digit
+		switch {
+		case last == digit && (last == 5 || last == 50 || last == 500):
+			result = formulaErrorVALUE
+			return
+		case 2*last == digit:
+			result = formulaErrorVALUE
+			return
+		}
+		if last < digit {
+			val -= 2 * last
+		}
+		last = digit
+	}
+	result = fmt.Sprintf("%g", prefix*val)
+	return
+}
+
+// ASIN function calculates the arcsine (i.e. the inverse sine) of a given
+// number, and returns an angle, in radians, between -π/2 and π/2. The syntax
+// of the function is:
+//
+//   ASIN(number)
+//
+func (fn *formulaFuncs) ASIN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ASIN requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Asin(val))
+	return
+}
+
+// ASINH function calculates the inverse hyperbolic sine of a supplied number.
+// The syntax of the function is:
+//
+//   ASINH(number)
+//
+func (fn *formulaFuncs) ASINH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ASINH requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Asinh(val))
+	return
+}
+
+// ATAN function calculates the arctangent (i.e. the inverse tangent) of a
+// given number, and returns an angle, in radians, between -π/2 and +π/2. The
+// syntax of the function is:
+//
+//   ATAN(number)
+//
+func (fn *formulaFuncs) ATAN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ATAN requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Atan(val))
+	return
+}
+
+// ATANH function calculates the inverse hyperbolic tangent of a supplied
+// number. The syntax of the function is:
+//
+//   ATANH(number)
+//
+func (fn *formulaFuncs) ATANH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ATANH requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Atanh(val))
+	return
+}
+
+// ATAN2 function calculates the arctangent (i.e. the inverse tangent) of a
+// given set of x and y coordinates, and returns an angle, in radians, between
+// -π/2 and +π/2. The syntax of the function is:
+//
+//   ATAN2(x_num,y_num)
+//
+func (fn *formulaFuncs) ATAN2(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("ATAN2 requires 2 numeric arguments")
+		return
+	}
+	var x, y float64
+	x, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	y, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Atan2(x, y))
 	return
 }
 
@@ -513,13 +759,55 @@ func gcd(x, y float64) float64 {
 	return x
 }
 
+// BASE function converts a number into a supplied base (radix), and returns a
+// text representation of the calculated value. The syntax of the function is:
+//
+//   BASE(number,radix,[min_length])
+//
+func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
+	if argsList.Len() < 2 {
+		err = errors.New("BASE requires at least 2 arguments")
+		return
+	}
+	if argsList.Len() > 3 {
+		err = errors.New("BASE allows at most 3 arguments")
+		return
+	}
+	var number float64
+	var radix, minLength int
+	number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	radix, err = strconv.Atoi(argsList.Front().Next().Value.(efp.Token).TValue)
+	if err != nil {
+		return
+	}
+	if radix < 2 || radix > 36 {
+		err = errors.New("radix must be an integer ≥ 2 and ≤ 36")
+		return
+	}
+	if argsList.Len() > 2 {
+		minLength, err = strconv.Atoi(argsList.Back().Value.(efp.Token).TValue)
+		if err != nil {
+			return
+		}
+	}
+	result = strconv.FormatInt(int64(number), radix)
+	if len(result) < minLength {
+		result = strings.Repeat("0", minLength-len(result)) + result
+	}
+	result = strings.ToUpper(result)
+	return
+}
+
 // GCD function returns the greatest common divisor of two or more supplied
-// integers.The syntax of the function is:
+// integers. The syntax of the function is:
 //
 //   GCD(number1,[number2],...)
 //
-func (fn *formulaFuncs) GCD(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() == 0 {
+func (fn *formulaFuncs) GCD(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
 		err = errors.New("GCD requires at least 1 argument")
 		return
 	}
@@ -527,8 +815,8 @@ func (fn *formulaFuncs) GCD(argsStack *Stack) (result string, err error) {
 		val  float64
 		nums = []float64{}
 	)
-	for !argsStack.Empty() {
-		token := argsStack.Pop().(efp.Token)
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(efp.Token)
 		if token.TValue == "" {
 			continue
 		}
@@ -573,8 +861,8 @@ func lcm(a, b float64) float64 {
 //
 //   LCM(number1,[number2],...)
 //
-func (fn *formulaFuncs) LCM(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() == 0 {
+func (fn *formulaFuncs) LCM(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
 		err = errors.New("LCM requires at least 1 argument")
 		return
 	}
@@ -582,8 +870,8 @@ func (fn *formulaFuncs) LCM(argsStack *Stack) (result string, err error) {
 		val  float64
 		nums = []float64{}
 	)
-	for !argsStack.Empty() {
-		token := argsStack.Pop().(efp.Token)
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(efp.Token)
 		if token.TValue == "" {
 			continue
 		}
@@ -618,17 +906,17 @@ func (fn *formulaFuncs) LCM(argsStack *Stack) (result string, err error) {
 //
 //    POWER(number,power)
 //
-func (fn *formulaFuncs) POWER(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() != 2 {
+func (fn *formulaFuncs) POWER(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
 		err = errors.New("POWER requires 2 numeric arguments")
 		return
 	}
 	var x, y float64
-	y, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	x, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}
-	x, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	y, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}
@@ -649,13 +937,13 @@ func (fn *formulaFuncs) POWER(argsStack *Stack) (result string, err error) {
 //
 //    PRODUCT(number1,[number2],...)
 //
-func (fn *formulaFuncs) PRODUCT(argsStack *Stack) (result string, err error) {
+func (fn *formulaFuncs) PRODUCT(argsList *list.List) (result string, err error) {
 	var (
 		val     float64
 		product float64 = 1
 	)
-	for !argsStack.Empty() {
-		token := argsStack.Pop().(efp.Token)
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(efp.Token)
 		if token.TValue == "" {
 			continue
 		}
@@ -676,13 +964,13 @@ func (fn *formulaFuncs) PRODUCT(argsStack *Stack) (result string, err error) {
 //
 //   SIGN(number)
 //
-func (fn *formulaFuncs) SIGN(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() != 1 {
+func (fn *formulaFuncs) SIGN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
 		err = errors.New("SIGN requires 1 numeric arguments")
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}
@@ -703,13 +991,13 @@ func (fn *formulaFuncs) SIGN(argsStack *Stack) (result string, err error) {
 //
 //    SQRT(number)
 //
-func (fn *formulaFuncs) SQRT(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() != 1 {
+func (fn *formulaFuncs) SQRT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
 		err = errors.New("SQRT requires 1 numeric arguments")
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}
@@ -726,11 +1014,11 @@ func (fn *formulaFuncs) SQRT(argsStack *Stack) (result string, err error) {
 //
 //    SUM(number1,[number2],...)
 //
-func (fn *formulaFuncs) SUM(argsStack *Stack) (result string, err error) {
+func (fn *formulaFuncs) SUM(argsList *list.List) (result string, err error) {
 	var val float64
 	var sum float64
-	for !argsStack.Empty() {
-		token := argsStack.Pop().(efp.Token)
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(efp.Token)
 		if token.TValue == "" {
 			continue
 		}
@@ -749,17 +1037,17 @@ func (fn *formulaFuncs) SUM(argsStack *Stack) (result string, err error) {
 //
 //   QUOTIENT(numerator,denominator)
 //
-func (fn *formulaFuncs) QUOTIENT(argsStack *Stack) (result string, err error) {
-	if argsStack.Len() != 2 {
+func (fn *formulaFuncs) QUOTIENT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
 		err = errors.New("QUOTIENT requires 2 numeric arguments")
 		return
 	}
 	var x, y float64
-	y, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	x, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}
-	x, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	y, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
 	if err != nil {
 		return
 	}

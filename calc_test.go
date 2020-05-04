@@ -24,6 +24,49 @@ func TestCalcCellValue(t *testing.T) {
 		"=ABS(6.5)":   "6.5",
 		"=ABS(0)":     "0",
 		"=ABS(2-4.5)": "2.5",
+		// ACOS
+		"=ACOS(-1)": "3.141592653589793",
+		"=ACOS(0)":  "1.5707963267948966",
+		// ACOSH
+		"=ACOSH(1)":   "0",
+		"=ACOSH(2.5)": "1.566799236972411",
+		"=ACOSH(5)":   "2.2924316695611777",
+		// ACOT
+		"=_xlfn.ACOT(1)":  "0.7853981633974483",
+		"=_xlfn.ACOT(-2)": "2.677945044588987",
+		"=_xlfn.ACOT(0)":  "1.5707963267948966",
+		// ACOTH
+		"=_xlfn.ACOTH(-5)":  "-0.2027325540540822",
+		"=_xlfn.ACOTH(1.1)": "1.5222612188617113",
+		"=_xlfn.ACOTH(2)":   "0.5493061443340548",
+		// ARABIC
+		`=_xlfn.ARABIC("IV")`:   "4",
+		`=_xlfn.ARABIC("-IV")`:  "-4",
+		`=_xlfn.ARABIC("MCXX")`: "1120",
+		`=_xlfn.ARABIC("")`:     "0",
+		// ASIN
+		"=ASIN(-1)": "-1.5707963267948966",
+		"=ASIN(0)":  "0",
+		// ASINH
+		"=ASINH(0)":    "0",
+		"=ASINH(-0.5)": "-0.48121182505960347",
+		"=ASINH(2)":    "1.4436354751788103",
+		// ATAN
+		"=ATAN(-1)": "-0.7853981633974483",
+		"=ATAN(0)":  "0",
+		"=ATAN(1)":  "0.7853981633974483",
+		// ATANH
+		"=ATANH(-0.8)": "-1.0986122886681098",
+		"=ATANH(0)":    "0",
+		"=ATANH(0.5)":  "0.5493061443340548",
+		// ATAN2
+		"=ATAN2(1,1)":  "0.7853981633974483",
+		"=ATAN2(1,-1)": "-0.7853981633974483",
+		"=ATAN2(4,0)":  "0",
+		// BASE
+		"=BASE(12,2)":      "1100",
+		"=BASE(12,2,8)":    "00001100",
+		"=BASE(100000,16)": "186A0",
 		// GCD
 		"=GCD(1,5)":      "1",
 		"=GCD(15,10,25)": "5",
@@ -74,8 +117,32 @@ func TestCalcCellValue(t *testing.T) {
 	}
 	mathCalcError := map[string]string{
 		// ABS
-		"=ABS(1,2)": "ABS requires 1 numeric arguments",
-		"=ABS(~)":   `cannot convert cell "~" to coordinates: invalid cell name "~"`,
+		"=ABS()":  "ABS requires 1 numeric arguments",
+		"=ABS(~)": `cannot convert cell "~" to coordinates: invalid cell name "~"`,
+		// ACOS
+		"=ACOS()": "ACOS requires 1 numeric arguments",
+		// ACOSH
+		"=ACOSH()": "ACOSH requires 1 numeric arguments",
+		// ACOT
+		"=_xlfn.ACOT()": "ACOT requires 1 numeric arguments",
+		// ACOTH
+		"=_xlfn.ACOTH()": "ACOTH requires 1 numeric arguments",
+		// ARABIC
+		"_xlfn.ARABIC()": "ARABIC requires 1 numeric arguments",
+		// ASIN
+		"=ASIN()": "ASIN requires 1 numeric arguments",
+		// ASINH
+		"=ASINH()": "ASINH requires 1 numeric arguments",
+		// ATAN
+		"=ATAN()": "ATAN requires 1 numeric arguments",
+		// ATANH
+		"=ATANH()": "ATANH requires 1 numeric arguments",
+		// ATAN2
+		"=ATAN2()": "ATAN2 requires 2 numeric arguments",
+		// BASE
+		"=BASE()":        "BASE requires at least 2 arguments",
+		"=BASE(1,2,3,4)": "BASE allows at most 3 arguments",
+		"=BASE(1,1)":     "radix must be an integer ≥ 2 and ≤ 36",
 		// GCD
 		"=GCD()":     "GCD requires at least 1 argument",
 		"=GCD(-1)":   "GCD only accepts positive arguments",
