@@ -412,7 +412,7 @@ func (f *File) parseReference(sheet, reference string) (result []string, err err
 // rangeResolver extract value as string from given reference and range list.
 // This function will not ignore the empty cell. Note that the result of 3D
 // range references may be different from Excel in some cases, for example,
-// A1:A2:A2:B3 in Excel will include B2, but we wont.
+// A1:A2:A2:B3 in Excel will include B1, but we wont.
 func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (result []string, err error) {
 	filter := map[string]string{}
 	// extract value from ranges
@@ -475,38 +475,57 @@ func callFuncByName(receiver interface{}, name string, params []reflect.Value) (
 
 // Math and Trigonometric functions
 
-// SUM function adds together a supplied set of numbers and returns the sum of
-// these values. The syntax of the function is:
+// ABS function returns the absolute value of any supplied number. The syntax
+// of the function is:
 //
-//    SUM(number1,[number2],...)
+//   ABS(number)
 //
-func (fn *formulaFuncs) SUM(argsStack *Stack) (result string, err error) {
-	var val float64
-	var sum float64
-	for !argsStack.Empty() {
-		token := argsStack.Pop().(efp.Token)
-		if token.TValue == "" {
-			continue
-		}
-		val, err = strconv.ParseFloat(token.TValue, 64)
-		if err != nil {
-			return
-		}
-		sum += val
+func (fn *formulaFuncs) ABS(argsStack *Stack) (result string, err error) {
+	if argsStack.Len() != 1 {
+		err = errors.New("ABS requires 1 numeric arguments")
+		return
 	}
-	result = fmt.Sprintf("%g", sum)
+	var val float64
+	val, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Abs(val))
 	return
 }
 
-// PRODUCT function returns the product (multiplication) of a supplied set of numerical values.
-// The syntax of the function is:
+// gcd returns the greatest common divisor of two supplied integers.
+func gcd(x, y float64) float64 {
+	x, y = math.Trunc(x), math.Trunc(y)
+	if x == 0 {
+		return y
+	}
+	if y == 0 {
+		return x
+	}
+	for x != y {
+		if x > y {
+			x = x - y
+		} else {
+			y = y - x
+		}
+	}
+	return x
+}
+
+// GCD function returns the greatest common divisor of two or more supplied
+// integers.The syntax of the function is:
 //
-//    PRODUCT(number1,[number2],...)
+//   GCD(number1,[number2],...)
 //
-func (fn *formulaFuncs) PRODUCT(argsStack *Stack) (result string, err error) {
+func (fn *formulaFuncs) GCD(argsStack *Stack) (result string, err error) {
+	if argsStack.Len() == 0 {
+		err = errors.New("GCD requires at least 1 argument")
+		return
+	}
 	var (
-		val     float64
-		product float64 = 1
+		val  float64
+		nums = []float64{}
 	)
 	for !argsStack.Empty() {
 		token := argsStack.Pop().(efp.Token)
@@ -517,13 +536,84 @@ func (fn *formulaFuncs) PRODUCT(argsStack *Stack) (result string, err error) {
 		if err != nil {
 			return
 		}
-		product = product * val
+		nums = append(nums, val)
 	}
-	result = fmt.Sprintf("%g", product)
+	if nums[0] < 0 {
+		err = errors.New("GCD only accepts positive arguments")
+		return
+	}
+	if len(nums) == 1 {
+		result = fmt.Sprintf("%g", nums[0])
+		return
+	}
+	cd := nums[0]
+	for i := 1; i < len(nums); i++ {
+		if nums[i] < 0 {
+			err = errors.New("GCD only accepts positive arguments")
+			return
+		}
+		cd = gcd(cd, nums[i])
+	}
+	result = fmt.Sprintf("%g", cd)
 	return
 }
 
-// PRODUCT function calculates a given number, raised to a supplied power.
+// lcm returns the least common multiple of two supplied integers.
+func lcm(a, b float64) float64 {
+	a = math.Trunc(a)
+	b = math.Trunc(b)
+	if a == 0 && b == 0 {
+		return 0
+	}
+	return a * b / gcd(a, b)
+}
+
+// LCM function returns the least common multiple of two or more supplied
+// integers. The syntax of the function is:
+//
+//   LCM(number1,[number2],...)
+//
+func (fn *formulaFuncs) LCM(argsStack *Stack) (result string, err error) {
+	if argsStack.Len() == 0 {
+		err = errors.New("LCM requires at least 1 argument")
+		return
+	}
+	var (
+		val  float64
+		nums = []float64{}
+	)
+	for !argsStack.Empty() {
+		token := argsStack.Pop().(efp.Token)
+		if token.TValue == "" {
+			continue
+		}
+		val, err = strconv.ParseFloat(token.TValue, 64)
+		if err != nil {
+			return
+		}
+		nums = append(nums, val)
+	}
+	if nums[0] < 0 {
+		err = errors.New("LCM only accepts positive arguments")
+		return
+	}
+	if len(nums) == 1 {
+		result = fmt.Sprintf("%g", nums[0])
+		return
+	}
+	cm := nums[0]
+	for i := 1; i < len(nums); i++ {
+		if nums[i] < 0 {
+			err = errors.New("LCM only accepts positive arguments")
+			return
+		}
+		cm = lcm(cm, nums[i])
+	}
+	result = fmt.Sprintf("%g", cm)
+	return
+}
+
+// POWER function calculates a given number, raised to a supplied power.
 // The syntax of the function is:
 //
 //    POWER(number,power)
@@ -554,8 +644,62 @@ func (fn *formulaFuncs) POWER(argsStack *Stack) (result string, err error) {
 	return
 }
 
-// SQRT function calculates the positive square root of a supplied number.
-// The syntax of the function is:
+// PRODUCT function returns the product (multiplication) of a supplied set of
+// numerical values. The syntax of the function is:
+//
+//    PRODUCT(number1,[number2],...)
+//
+func (fn *formulaFuncs) PRODUCT(argsStack *Stack) (result string, err error) {
+	var (
+		val     float64
+		product float64 = 1
+	)
+	for !argsStack.Empty() {
+		token := argsStack.Pop().(efp.Token)
+		if token.TValue == "" {
+			continue
+		}
+		val, err = strconv.ParseFloat(token.TValue, 64)
+		if err != nil {
+			return
+		}
+		product = product * val
+	}
+	result = fmt.Sprintf("%g", product)
+	return
+}
+
+// SIGN function returns the arithmetic sign (+1, -1 or 0) of a supplied
+// number. I.e. if the number is positive, the Sign function returns +1, if
+// the number is negative, the function returns -1 and if the number is 0
+// (zero), the function returns 0. The syntax of the function is:
+//
+//   SIGN(number)
+//
+func (fn *formulaFuncs) SIGN(argsStack *Stack) (result string, err error) {
+	if argsStack.Len() != 1 {
+		err = errors.New("SIGN requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	val, err = strconv.ParseFloat(argsStack.Pop().(efp.Token).TValue, 64)
+	if err != nil {
+		return
+	}
+	if val < 0 {
+		result = "-1"
+		return
+	}
+	if val > 0 {
+		result = "1"
+		return
+	}
+	result = "0"
+	return
+}
+
+// SQRT function calculates the positive square root of a supplied number. The
+// syntax of the function is:
 //
 //    SQRT(number)
 //
@@ -577,8 +721,31 @@ func (fn *formulaFuncs) SQRT(argsStack *Stack) (result string, err error) {
 	return
 }
 
-// QUOTIENT function returns the integer portion of a division between two supplied numbers.
-// The syntax of the function is:
+// SUM function adds together a supplied set of numbers and returns the sum of
+// these values. The syntax of the function is:
+//
+//    SUM(number1,[number2],...)
+//
+func (fn *formulaFuncs) SUM(argsStack *Stack) (result string, err error) {
+	var val float64
+	var sum float64
+	for !argsStack.Empty() {
+		token := argsStack.Pop().(efp.Token)
+		if token.TValue == "" {
+			continue
+		}
+		val, err = strconv.ParseFloat(token.TValue, 64)
+		if err != nil {
+			return
+		}
+		sum += val
+	}
+	result = fmt.Sprintf("%g", sum)
+	return
+}
+
+// QUOTIENT function returns the integer portion of a division between two
+// supplied numbers. The syntax of the function is:
 //
 //   QUOTIENT(numerator,denominator)
 //
