@@ -14,6 +14,7 @@ func TestCalcCellValue(t *testing.T) {
 		f.SetCellValue("Sheet1", "A3", 3)
 		f.SetCellValue("Sheet1", "A4", 0)
 		f.SetCellValue("Sheet1", "B1", 4)
+		f.SetCellValue("Sheet1", "B2", 5)
 		return f
 	}
 
@@ -115,22 +116,108 @@ func TestCalcCellValue(t *testing.T) {
 		"=COSH(0.5)": "1.1276259652063807",
 		"=COSH(-2)":  "3.7621956910836314",
 		// _xlfn.COT
-		"_xlfn.COT(0.785398163397448)": "0.9999999999999992",
+		"=_xlfn.COT(0.785398163397448)": "0.9999999999999992",
 		// _xlfn.COTH
-		"_xlfn.COTH(-3.14159265358979)": "-0.9962720762207499",
+		"=_xlfn.COTH(-3.14159265358979)": "-0.9962720762207499",
 		// _xlfn.CSC
-		"_xlfn.CSC(-6)":              "3.5788995472544056",
-		"_xlfn.CSC(1.5707963267949)": "1",
+		"=_xlfn.CSC(-6)":              "3.5788995472544056",
+		"=_xlfn.CSC(1.5707963267949)": "1",
+		// _xlfn.CSCH
+		"=_xlfn.CSCH(-3.14159265358979)": "-0.08658953753004724",
+		// _xlfn.DECIMAL
+		`=_xlfn.DECIMAL("1100",2)`:   "12",
+		`=_xlfn.DECIMAL("186A0",16)`: "100000",
+		`=_xlfn.DECIMAL("31L0",32)`:  "100000",
+		`=_xlfn.DECIMAL("70122",8)`:  "28754",
+		// DEGREES
+		"=DEGREES(1)":   "57.29577951308232",
+		"=DEGREES(2.5)": "143.2394487827058",
+		// EVEN
+		"=EVEN(23)":   "24",
+		"=EVEN(2.22)": "4",
+		"=EVEN(0)":    "0",
+		"=EVEN(-0.3)": "-2",
+		"=EVEN(-11)":  "-12",
+		"=EVEN(-4)":   "-4",
+		// EXP
+		"=EXP(100)": "2.6881171418161356E+43",
+		"=EXP(0.1)": "1.1051709180756477",
+		"=EXP(0)":   "1",
+		"=EXP(-5)":  "0.006737946999085467",
+		// FACT
+		"=FACT(3)":  "6",
+		"=FACT(6)":  "720",
+		"=FACT(10)": "3.6288E+06",
+		// FACTDOUBLE
+		"=FACTDOUBLE(5)":  "15",
+		"=FACTDOUBLE(8)":  "384",
+		"=FACTDOUBLE(13)": "135135",
+		// FLOOR
+		"=FLOOR(26.75,0.1)":   "26.700000000000003",
+		"=FLOOR(26.75,0.5)":   "26.5",
+		"=FLOOR(26.75,1)":     "26",
+		"=FLOOR(26.75,10)":    "20",
+		"=FLOOR(26.75,20)":    "20",
+		"=FLOOR(-26.75,-0.1)": "-26.700000000000003",
+		"=FLOOR(-26.75,-1)":   "-26",
+		"=FLOOR(-26.75,-5)":   "-25",
+		// _xlfn.FLOOR.MATH
+		"=_xlfn.FLOOR.MATH(58.55)":       "58",
+		"=_xlfn.FLOOR.MATH(58.55,0.1)":   "58.5",
+		"=_xlfn.FLOOR.MATH(58.55,5)":     "55",
+		"=_xlfn.FLOOR.MATH(58.55,1,1)":   "58",
+		"=_xlfn.FLOOR.MATH(-58.55,1)":    "-59",
+		"=_xlfn.FLOOR.MATH(-58.55,1,-1)": "-58",
+		"=_xlfn.FLOOR.MATH(-58.55,1,1)":  "-59", // should be -58
+		"=_xlfn.FLOOR.MATH(-58.55,10)":   "-60",
+		// _xlfn.FLOOR.PRECISE
+		"=_xlfn.FLOOR.PRECISE(26.75,0.1)": "26.700000000000003",
+		"=_xlfn.FLOOR.PRECISE(26.75,0.5)": "26.5",
+		"=_xlfn.FLOOR.PRECISE(26.75,1)":   "26",
+		"=_xlfn.FLOOR.PRECISE(26.75)":     "26",
+		"=_xlfn.FLOOR.PRECISE(26.75,10)":  "20",
+		"=_xlfn.FLOOR.PRECISE(26.75,0)":   "0",
+		"=_xlfn.FLOOR.PRECISE(-26.75,1)":  "-27",
+		"=_xlfn.FLOOR.PRECISE(-26.75,-1)": "-27",
+		"=_xlfn.FLOOR.PRECISE(-26.75,-5)": "-30",
 		// GCD
 		"=GCD(1,5)":      "1",
 		"=GCD(15,10,25)": "5",
 		"=GCD(0,8,12)":   "4",
 		"=GCD(7,2)":      "1",
+		// INT
+		"=INT(100.9)":  "100",
+		"=INT(5.22)":   "5",
+		"=INT(5.99)":   "5",
+		"=INT(-6.1)":   "-7",
+		"=INT(-100.9)": "-101",
+		// ISO.CEILING
+		"=ISO.CEILING(22.25)":      "23",
+		"=ISO.CEILING(22.25,1)":    "23",
+		"=ISO.CEILING(22.25,0.1)":  "22.3",
+		"=ISO.CEILING(22.25,10)":   "30",
+		"=ISO.CEILING(-22.25,1)":   "-22",
+		"=ISO.CEILING(-22.25,0.1)": "-22.200000000000003",
+		"=ISO.CEILING(-22.25,5)":   "-20",
 		// LCM
 		"=LCM(1,5)":      "5",
 		"=LCM(15,10,25)": "150",
 		"=LCM(1,8,12)":   "24",
 		"=LCM(7,2)":      "14",
+		// LN
+		"=LN(1)":   "0",
+		"=LN(100)": "4.605170185988092",
+		"=LN(0.5)": "-0.6931471805599453",
+		// LOG
+		"=LOG(64,2)":  "6",
+		"=LOG(100)":   "2",
+		"=LOG(4,0.5)": "-2",
+		"=LOG(500)":   "2.6989700043360183",
+		// LOG10
+		"=LOG10(100)":   "2",
+		"=LOG10(1000)":  "3",
+		"=LOG10(0.001)": "-3",
+		"=LOG10(25)":    "1.3979400086720375",
 		// POWER
 		"=POWER(4,2)": "16",
 		// PRODUCT
@@ -171,26 +258,26 @@ func TestCalcCellValue(t *testing.T) {
 	}
 	mathCalcError := map[string]string{
 		// ABS
-		"=ABS()":  "ABS requires 1 numeric arguments",
+		"=ABS()":  "ABS requires 1 numeric argument",
 		"=ABS(~)": `cannot convert cell "~" to coordinates: invalid cell name "~"`,
 		// ACOS
-		"=ACOS()": "ACOS requires 1 numeric arguments",
+		"=ACOS()": "ACOS requires 1 numeric argument",
 		// ACOSH
-		"=ACOSH()": "ACOSH requires 1 numeric arguments",
+		"=ACOSH()": "ACOSH requires 1 numeric argument",
 		// _xlfn.ACOT
-		"=_xlfn.ACOT()": "ACOT requires 1 numeric arguments",
+		"=_xlfn.ACOT()": "ACOT requires 1 numeric argument",
 		// _xlfn.ACOTH
-		"=_xlfn.ACOTH()": "ACOTH requires 1 numeric arguments",
+		"=_xlfn.ACOTH()": "ACOTH requires 1 numeric argument",
 		// _xlfn.ARABIC
-		"=_xlfn.ARABIC()": "ARABIC requires 1 numeric arguments",
+		"=_xlfn.ARABIC()": "ARABIC requires 1 numeric argument",
 		// ASIN
-		"=ASIN()": "ASIN requires 1 numeric arguments",
+		"=ASIN()": "ASIN requires 1 numeric argument",
 		// ASINH
-		"=ASINH()": "ASINH requires 1 numeric arguments",
+		"=ASINH()": "ASINH requires 1 numeric argument",
 		// ATAN
-		"=ATAN()": "ATAN requires 1 numeric arguments",
+		"=ATAN()": "ATAN requires 1 numeric argument",
 		// ATANH
-		"=ATANH()": "ATANH requires 1 numeric arguments",
+		"=ATANH()": "ATANH requires 1 numeric argument",
 		// ATAN2
 		"=ATAN2()": "ATAN2 requires 2 numeric arguments",
 		// BASE
@@ -215,33 +302,75 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.COMBINA(-1,1)":  "COMBINA requires number > number_chosen",
 		"=_xlfn.COMBINA(-1,-1)": "COMBIN requires number >= number_chosen",
 		// COS
-		"=COS()": "COS requires 1 numeric arguments",
+		"=COS()": "COS requires 1 numeric argument",
 		// COSH
-		"=COSH()": "COSH requires 1 numeric arguments",
+		"=COSH()": "COSH requires 1 numeric argument",
 		// _xlfn.COT
-		"=COT()": "COT requires 1 numeric arguments",
+		"=COT()": "COT requires 1 numeric argument",
 		// _xlfn.COTH
-		"=COTH()": "COTH requires 1 numeric arguments",
+		"=COTH()": "COTH requires 1 numeric argument",
 		// _xlfn.CSC
-		"_xlfn.CSC()":  "CSC requires 1 numeric arguments",
-		"_xlfn.CSC(0)": "#NAME?",
+		"=_xlfn.CSC()":  "CSC requires 1 numeric argument",
+		"=_xlfn.CSC(0)": "#NAME?",
+		// _xlfn.CSCH
+		"=_xlfn.CSCH()":  "CSCH requires 1 numeric argument",
+		"=_xlfn.CSCH(0)": "#NAME?",
+		// _xlfn.DECIMAL
+		"=_xlfn.DECIMAL()":          "DECIMAL requires 2 numeric arguments",
+		`=_xlfn.DECIMAL("2000", 2)`: "#NUM!",
+		// DEGREES
+		"=DEGREES()": "DEGREES requires 1 numeric argument",
+		// EVEN
+		"=EVEN()": "EVEN requires 1 numeric argument",
+		// EXP
+		"=EXP()": "EXP requires 1 numeric argument",
+		// FACT
+		"=FACT()":   "FACT requires 1 numeric argument",
+		"=FACT(-1)": "#NUM!",
+		// FACTDOUBLE
+		"=FACTDOUBLE()":   "FACTDOUBLE requires 1 numeric argument",
+		"=FACTDOUBLE(-1)": "#NUM!",
+		// FLOOR
+		"=FLOOR()":     "FLOOR requires 2 numeric arguments",
+		"=FLOOR(1,-1)": "#NUM!",
+		// _xlfn.FLOOR.MATH
+		"=_xlfn.FLOOR.MATH()":        "FLOOR.MATH requires at least 1 argument",
+		"=_xlfn.FLOOR.MATH(1,2,3,4)": "FLOOR.MATH allows at most 3 arguments",
+		// _xlfn.FLOOR.PRECISE
+		"=_xlfn.FLOOR.PRECISE()":      "FLOOR.PRECISE requires at least 1 argument",
+		"=_xlfn.FLOOR.PRECISE(1,2,3)": "FLOOR.PRECISE allows at most 2 arguments",
 		// GCD
 		"=GCD()":     "GCD requires at least 1 argument",
 		"=GCD(-1)":   "GCD only accepts positive arguments",
 		"=GCD(1,-1)": "GCD only accepts positive arguments",
+		// INT
+		"=INT()": "INT requires 1 numeric argument",
+		// ISO.CEILING
+		"=ISO.CEILING()":      "ISO.CEILING requires at least 1 argument",
+		"=ISO.CEILING(1,2,3)": "ISO.CEILING allows at most 2 arguments",
 		// LCM
 		"=LCM()":     "LCM requires at least 1 argument",
 		"=LCM(-1)":   "LCM only accepts positive arguments",
 		"=LCM(1,-1)": "LCM only accepts positive arguments",
+		// LN
+		"=LN()": "LN requires 1 numeric argument",
+		// LOG
+		"=LOG()":      "LOG requires at least 1 argument",
+		"=LOG(1,2,3)": "LOG allows at most 2 arguments",
+		"=LOG(0,0)":   "#NUM!",
+		"=LOG(1,0)":   "#NUM!",
+		"=LOG(1,1)":   "#DIV/0!",
+		// LOG10
+		"=LOG10()": "LOG10 requires 1 numeric argument",
 		// POWER
 		"=POWER(0,0)":  "#NUM!",
 		"=POWER(0,-1)": "#DIV/0!",
 		"=POWER(1)":    "POWER requires 2 numeric arguments",
 		// SIGN
-		"=SIGN()": "SIGN requires 1 numeric arguments",
+		"=SIGN()": "SIGN requires 1 numeric argument",
 		// SQRT
 		"=SQRT(-1)":  "#NUM!",
-		"=SQRT(1,2)": "SQRT requires 1 numeric arguments",
+		"=SQRT(1,2)": "SQRT requires 1 numeric argument",
 		// QUOTIENT
 		"=QUOTIENT(1,0)": "#DIV/0!",
 		"=QUOTIENT(1)":   "QUOTIENT requires 2 numeric arguments",
@@ -255,6 +384,8 @@ func TestCalcCellValue(t *testing.T) {
 	}
 
 	referenceCalc := map[string]string{
+		// MDETERM
+		"=MDETERM(A1:B2)": "-3",
 		// PRODUCT
 		"=PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// SUM
@@ -277,6 +408,9 @@ func TestCalcCellValue(t *testing.T) {
 	}
 
 	referenceCalcError := map[string]string{
+		// MDETERM
+		"=MDETERM(A1:B3)": "#VALUE!",
+		// SUM
 		"=1+SUM(SUM(A1+A2/A4)*(2-3),2)": "#DIV/0!",
 	}
 	for formula, expected := range referenceCalcError {
