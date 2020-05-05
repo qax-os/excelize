@@ -83,6 +83,44 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.CEILING.MATH(-15.25,1)":   "-15",
 		"=_xlfn.CEILING.MATH(-15.25,1,1)": "-15", // should be 16
 		"=_xlfn.CEILING.MATH(-15.25,10)":  "-10",
+		// _xlfn.CEILING.PRECISE
+		"=_xlfn.CEILING.PRECISE(22.25,0.1)": "22.3",
+		"=_xlfn.CEILING.PRECISE(22.25,0.5)": "22.5",
+		"=_xlfn.CEILING.PRECISE(22.25,1)":   "23",
+		"=_xlfn.CEILING.PRECISE(22.25)":     "23",
+		"=_xlfn.CEILING.PRECISE(22.25,10)":  "30",
+		"=_xlfn.CEILING.PRECISE(22.25,0)":   "0",
+		"=_xlfn.CEILING.PRECISE(-22.25,1)":  "-22",
+		"=_xlfn.CEILING.PRECISE(-22.25,-1)": "-22",
+		"=_xlfn.CEILING.PRECISE(-22.25,5)":  "-20",
+		// COMBIN
+		"=COMBIN(6,1)": "6",
+		"=COMBIN(6,2)": "15",
+		"=COMBIN(6,3)": "20",
+		"=COMBIN(6,4)": "15",
+		"=COMBIN(6,5)": "6",
+		"=COMBIN(6,6)": "1",
+		// _xlfn.COMBINA
+		"=_xlfn.COMBINA(6,1)": "6",
+		"=_xlfn.COMBINA(6,2)": "21",
+		"=_xlfn.COMBINA(6,3)": "56",
+		"=_xlfn.COMBINA(6,4)": "126",
+		"=_xlfn.COMBINA(6,5)": "252",
+		"=_xlfn.COMBINA(6,6)": "462",
+		// COS
+		"=COS(0.785398163)": "0.707106781467586",
+		"=COS(0)":           "1",
+		// COSH
+		"=COSH(0)":   "1",
+		"=COSH(0.5)": "1.1276259652063807",
+		"=COSH(-2)":  "3.7621956910836314",
+		// _xlfn.COT
+		"_xlfn.COT(0.785398163397448)": "0.9999999999999992",
+		// _xlfn.COTH
+		"_xlfn.COTH(-3.14159265358979)": "-0.9962720762207499",
+		// _xlfn.CSC
+		"_xlfn.CSC(-6)":              "3.5788995472544056",
+		"_xlfn.CSC(1.5707963267949)": "1",
 		// GCD
 		"=GCD(1,5)":      "1",
 		"=GCD(15,10,25)": "5",
@@ -144,7 +182,7 @@ func TestCalcCellValue(t *testing.T) {
 		// _xlfn.ACOTH
 		"=_xlfn.ACOTH()": "ACOTH requires 1 numeric arguments",
 		// _xlfn.ARABIC
-		"_xlfn.ARABIC()": "ARABIC requires 1 numeric arguments",
+		"=_xlfn.ARABIC()": "ARABIC requires 1 numeric arguments",
 		// ASIN
 		"=ASIN()": "ASIN requires 1 numeric arguments",
 		// ASINH
@@ -166,6 +204,27 @@ func TestCalcCellValue(t *testing.T) {
 		// _xlfn.CEILING.MATH
 		"=_xlfn.CEILING.MATH()":        "CEILING.MATH requires at least 1 argument",
 		"=_xlfn.CEILING.MATH(1,2,3,4)": "CEILING.MATH allows at most 3 arguments",
+		// _xlfn.CEILING.PRECISE
+		"=_xlfn.CEILING.PRECISE()":      "CEILING.PRECISE requires at least 1 argument",
+		"=_xlfn.CEILING.PRECISE(1,2,3)": "CEILING.PRECISE allows at most 2 arguments",
+		// COMBIN
+		"=COMBIN()":     "COMBIN requires 2 argument",
+		"=COMBIN(-1,1)": "COMBIN requires number >= number_chosen",
+		// _xlfn.COMBINA
+		"=_xlfn.COMBINA()":      "COMBINA requires 2 argument",
+		"=_xlfn.COMBINA(-1,1)":  "COMBINA requires number > number_chosen",
+		"=_xlfn.COMBINA(-1,-1)": "COMBIN requires number >= number_chosen",
+		// COS
+		"=COS()": "COS requires 1 numeric arguments",
+		// COSH
+		"=COSH()": "COSH requires 1 numeric arguments",
+		// _xlfn.COT
+		"=COT()": "COT requires 1 numeric arguments",
+		// _xlfn.COTH
+		"=COTH()": "COTH requires 1 numeric arguments",
+		// _xlfn.CSC
+		"_xlfn.CSC()":  "CSC requires 1 numeric arguments",
+		"_xlfn.CSC(0)": "#NAME?",
 		// GCD
 		"=GCD()":     "GCD requires at least 1 argument",
 		"=GCD(-1)":   "GCD only accepts positive arguments",

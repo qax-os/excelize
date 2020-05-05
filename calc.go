@@ -504,8 +504,7 @@ func (fn *formulaFuncs) ABS(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Abs(val))
@@ -524,8 +523,7 @@ func (fn *formulaFuncs) ACOS(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Acos(val))
@@ -543,8 +541,7 @@ func (fn *formulaFuncs) ACOSH(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Acosh(val))
@@ -563,8 +560,7 @@ func (fn *formulaFuncs) ACOT(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Pi/2-math.Atan(val))
@@ -582,8 +578,7 @@ func (fn *formulaFuncs) ACOTH(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atanh(1/val))
@@ -652,8 +647,7 @@ func (fn *formulaFuncs) ASIN(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Asin(val))
@@ -671,8 +665,7 @@ func (fn *formulaFuncs) ASINH(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Asinh(val))
@@ -691,8 +684,7 @@ func (fn *formulaFuncs) ATAN(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atan(val))
@@ -710,8 +702,7 @@ func (fn *formulaFuncs) ATANH(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atanh(val))
@@ -730,12 +721,10 @@ func (fn *formulaFuncs) ATAN2(argsList *list.List) (result string, err error) {
 		return
 	}
 	var x, y float64
-	x, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if x, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
-	y, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if y, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atan2(x, y))
@@ -777,12 +766,10 @@ func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	var radix, minLength int
-	number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
-	radix, err = strconv.Atoi(argsList.Front().Next().Value.(efp.Token).TValue)
-	if err != nil {
+	if radix, err = strconv.Atoi(argsList.Front().Next().Value.(efp.Token).TValue); err != nil {
 		return
 	}
 	if radix < 2 || radix > 36 {
@@ -790,8 +777,7 @@ func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
 		return
 	}
 	if argsList.Len() > 2 {
-		minLength, err = strconv.Atoi(argsList.Back().Value.(efp.Token).TValue)
-		if err != nil {
+		if minLength, err = strconv.Atoi(argsList.Back().Value.(efp.Token).TValue); err != nil {
 			return
 		}
 	}
@@ -817,18 +803,15 @@ func (fn *formulaFuncs) CEILING(argsList *list.List) (result string, err error) 
 		err = errors.New("CEILING allows at most 2 arguments")
 		return
 	}
-	var number, significance float64
-	number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	var number, significance float64 = 0, 1
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
-	significance = 1
 	if number < 0 {
 		significance = -1
 	}
 	if argsList.Len() > 1 {
-		significance, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
-		if err != nil {
+		if significance, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
 			return
 		}
 	}
@@ -863,16 +846,14 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err err
 		return
 	}
 	var number, significance, mode float64 = 0, 1, 1
-	number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	if number < 0 {
 		significance = -1
 	}
 	if argsList.Len() > 1 {
-		significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(efp.Token).TValue, 64)
-		if err != nil {
+		if significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(efp.Token).TValue, 64); err != nil {
 			return
 		}
 	}
@@ -881,13 +862,11 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err err
 		return
 	}
 	if argsList.Len() > 2 {
-		mode, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
-		if err != nil {
+		if mode, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
 			return
 		}
 	}
 	val, res := math.Modf(number / significance)
-	_, _ = res, mode
 	if res != 0 {
 		if number > 0 {
 			val++
@@ -895,8 +874,228 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err err
 			val--
 		}
 	}
-
 	result = fmt.Sprintf("%g", val*significance)
+	return
+}
+
+// CEILINGPRECISE function rounds a supplied number up (regardless of the
+// number's sign), to the nearest multiple of a given number. The syntax of
+// the function is:
+//
+//   CEILING.PRECISE(number,[significance])
+//
+func (fn *formulaFuncs) CEILINGPRECISE(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("CEILING.PRECISE requires at least 1 argument")
+		return
+	}
+	if argsList.Len() > 2 {
+		err = errors.New("CEILING.PRECISE allows at most 2 arguments")
+		return
+	}
+	var number, significance float64 = 0, 1
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	if number < 0 {
+		significance = -1
+	}
+	if argsList.Len() == 1 {
+		result = fmt.Sprintf("%g", math.Ceil(number))
+		return
+	}
+	if argsList.Len() > 1 {
+		if significance, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
+			return
+		}
+		significance = math.Abs(significance)
+		if significance == 0 {
+			result = "0"
+			return
+		}
+	}
+	val, res := math.Modf(number / significance)
+	if res != 0 {
+		if number > 0 {
+			val++
+		}
+	}
+	result = fmt.Sprintf("%g", val*significance)
+	return
+}
+
+// COMBIN function calculates the number of combinations (in any order) of a
+// given number objects from a set. The syntax of the function is:
+//
+//   COMBIN(number,number_chosen)
+//
+func (fn *formulaFuncs) COMBIN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("COMBIN requires 2 argument")
+		return
+	}
+	var number, chosen, val float64 = 0, 0, 1
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	if chosen, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	number, chosen = math.Trunc(number), math.Trunc(chosen)
+	if chosen > number {
+		err = errors.New("COMBIN requires number >= number_chosen")
+		return
+	}
+	if chosen == number || chosen == 0 {
+		result = "1"
+		return
+	}
+	for c := float64(1); c <= chosen; c++ {
+		val *= (number + 1 - c) / c
+	}
+	result = fmt.Sprintf("%g", math.Ceil(val))
+	return
+}
+
+// COMBINA function calculates the number of combinations, with repetitions,
+// of a given number objects from a set. The syntax of the function is:
+//
+//   COMBINA(number,number_chosen)
+//
+func (fn *formulaFuncs) COMBINA(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("COMBINA requires 2 argument")
+		return
+	}
+	var number, chosen float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	if chosen, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	number, chosen = math.Trunc(number), math.Trunc(chosen)
+	if number < chosen {
+		err = errors.New("COMBINA requires number > number_chosen")
+		return
+	}
+	if number == 0 {
+		result = "0"
+		return
+	}
+	args := list.New()
+	args.PushBack(efp.Token{
+		TValue:   fmt.Sprintf("%g", number+chosen-1),
+		TType:    efp.TokenTypeOperand,
+		TSubType: efp.TokenSubTypeNumber,
+	})
+	args.PushBack(efp.Token{
+		TValue:   fmt.Sprintf("%g", number-1),
+		TType:    efp.TokenTypeOperand,
+		TSubType: efp.TokenSubTypeNumber,
+	})
+	return fn.COMBIN(args)
+}
+
+// COS function calculates the cosine of a given angle. The syntax of the
+// function is:
+//
+//   COS(number)
+//
+func (fn *formulaFuncs) COS(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("COS requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Cos(val))
+	return
+}
+
+// COSH function calculates the hyperbolic cosine (cosh) of a supplied number.
+// The syntax of the function is:
+//
+//   COSH(number)
+//
+func (fn *formulaFuncs) COSH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("COSH requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Cosh(val))
+	return
+}
+
+// COT function calculates the cotangent of a given angle. The syntax of the
+// function is:
+//
+//   COT(number)
+//
+func (fn *formulaFuncs) COT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("COT requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	if val == 0 {
+		err = errors.New(formulaErrorNAME)
+		return
+	}
+	result = fmt.Sprintf("%g", math.Tan(val))
+	return
+}
+
+// COTH function calculates the hyperbolic cotangent (coth) of a supplied
+// angle. The syntax of the function is:
+//
+//   COTH(number)
+//
+func (fn *formulaFuncs) COTH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("COTH requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	if val == 0 {
+		err = errors.New(formulaErrorNAME)
+		return
+	}
+	result = fmt.Sprintf("%g", math.Tanh(val))
+	return
+}
+
+// CSC function calculates the cosecant of a given angle. The syntax of the
+// function is:
+//
+//   CSC(number)
+//
+func (fn *formulaFuncs) CSC(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("CSC requires 1 numeric arguments")
+		return
+	}
+	var val float64
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
+		return
+	}
+	if val == 0 {
+		err = errors.New(formulaErrorNAME)
+		return
+	}
+	result = fmt.Sprintf("%g", 1/math.Sin(val))
 	return
 }
 
@@ -919,8 +1118,7 @@ func (fn *formulaFuncs) GCD(argsList *list.List) (result string, err error) {
 		if token.TValue == "" {
 			continue
 		}
-		val, err = strconv.ParseFloat(token.TValue, 64)
-		if err != nil {
+		if val, err = strconv.ParseFloat(token.TValue, 64); err != nil {
 			return
 		}
 		nums = append(nums, val)
@@ -974,8 +1172,7 @@ func (fn *formulaFuncs) LCM(argsList *list.List) (result string, err error) {
 		if token.TValue == "" {
 			continue
 		}
-		val, err = strconv.ParseFloat(token.TValue, 64)
-		if err != nil {
+		if val, err = strconv.ParseFloat(token.TValue, 64); err != nil {
 			return
 		}
 		nums = append(nums, val)
@@ -1011,12 +1208,10 @@ func (fn *formulaFuncs) POWER(argsList *list.List) (result string, err error) {
 		return
 	}
 	var x, y float64
-	x, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if x, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
-	y, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if y, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	if x == 0 && y == 0 {
@@ -1037,17 +1232,13 @@ func (fn *formulaFuncs) POWER(argsList *list.List) (result string, err error) {
 //    PRODUCT(number1,[number2],...)
 //
 func (fn *formulaFuncs) PRODUCT(argsList *list.List) (result string, err error) {
-	var (
-		val     float64
-		product float64 = 1
-	)
+	var val, product float64 = 0, 1
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(efp.Token)
 		if token.TValue == "" {
 			continue
 		}
-		val, err = strconv.ParseFloat(token.TValue, 64)
-		if err != nil {
+		if val, err = strconv.ParseFloat(token.TValue, 64); err != nil {
 			return
 		}
 		product = product * val
@@ -1069,8 +1260,7 @@ func (fn *formulaFuncs) SIGN(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	if val < 0 {
@@ -1096,8 +1286,7 @@ func (fn *formulaFuncs) SQRT(argsList *list.List) (result string, err error) {
 		return
 	}
 	var val float64
-	val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if val, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	if val < 0 {
@@ -1114,15 +1303,13 @@ func (fn *formulaFuncs) SQRT(argsList *list.List) (result string, err error) {
 //    SUM(number1,[number2],...)
 //
 func (fn *formulaFuncs) SUM(argsList *list.List) (result string, err error) {
-	var val float64
-	var sum float64
+	var val, sum float64
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(efp.Token)
 		if token.TValue == "" {
 			continue
 		}
-		val, err = strconv.ParseFloat(token.TValue, 64)
-		if err != nil {
+		if val, err = strconv.ParseFloat(token.TValue, 64); err != nil {
 			return
 		}
 		sum += val
@@ -1142,12 +1329,10 @@ func (fn *formulaFuncs) QUOTIENT(argsList *list.List) (result string, err error)
 		return
 	}
 	var x, y float64
-	x, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if x, err = strconv.ParseFloat(argsList.Front().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
-	y, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64)
-	if err != nil {
+	if y, err = strconv.ParseFloat(argsList.Back().Value.(efp.Token).TValue, 64); err != nil {
 		return
 	}
 	if y == 0 {
