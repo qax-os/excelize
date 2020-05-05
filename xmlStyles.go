@@ -186,12 +186,12 @@ type xlsxCellStyles struct {
 // workbook.
 type xlsxCellStyle struct {
 	XMLName       xml.Name `xml:"cellStyle"`
-	BuiltInID     *int     `xml:"builtinId,attr,omitempty"`
-	CustomBuiltIn *bool    `xml:"customBuiltin,attr,omitempty"`
-	Hidden        *bool    `xml:"hidden,attr,omitempty"`
-	ILevel        *bool    `xml:"iLevel,attr,omitempty"`
 	Name          string   `xml:"name,attr"`
 	XfID          int      `xml:"xfId,attr"`
+	BuiltInID     *int     `xml:"builtinId,attr,omitempty"`
+	ILevel        *int     `xml:"iLevel,attr,omitempty"`
+	Hidden        *bool    `xml:"hidden,attr,omitempty"`
+	CustomBuiltIn *bool    `xml:"customBuiltin,attr,omitempty"`
 }
 
 // xlsxCellStyleXfs directly maps the cellStyleXfs element. This element
@@ -209,19 +209,19 @@ type xlsxCellStyleXfs struct {
 // xlsxXf directly maps the xf element. A single xf element describes all of the
 // formatting for a cell.
 type xlsxXf struct {
-	ApplyAlignment    bool            `xml:"applyAlignment,attr"`
-	ApplyBorder       bool            `xml:"applyBorder,attr"`
-	ApplyFill         bool            `xml:"applyFill,attr"`
-	ApplyFont         bool            `xml:"applyFont,attr"`
-	ApplyNumberFormat bool            `xml:"applyNumberFormat,attr"`
-	ApplyProtection   bool            `xml:"applyProtection,attr"`
-	BorderID          int             `xml:"borderId,attr"`
-	FillID            int             `xml:"fillId,attr"`
-	FontID            int             `xml:"fontId,attr"`
-	NumFmtID          int             `xml:"numFmtId,attr"`
-	PivotButton       bool            `xml:"pivotButton,attr,omitempty"`
+	NumFmtID          int             `xml:"numFmtId,attr,omitempty"`
+	FontID            int             `xml:"fontId,attr,omitempty"`
+	FillID            int             `xml:"fillId,attr,omitempty"`
+	BorderID          int             `xml:"borderId,attr,omitempty"`
+	XfID              *int            `xml:"xfId,attr,omitempty"`
 	QuotePrefix       bool            `xml:"quotePrefix,attr,omitempty"`
-	XfID              *int            `xml:"xfId,attr"`
+	PivotButton       bool            `xml:"pivotButton,attr,omitempty"`
+	ApplyNumberFormat bool            `xml:"applyNumberFormat,attr,omitempty"`
+	ApplyFont         bool            `xml:"applyFont,attr,omitempty"`
+	ApplyFill         bool            `xml:"applyFill,attr,omitempty"`
+	ApplyBorder       bool            `xml:"applyBorder,attr,omitempty"`
+	ApplyAlignment    bool            `xml:"applyAlignment,attr,omitempty"`
+	ApplyProtection   bool            `xml:"applyProtection,attr,omitempty"`
 	Alignment         *xlsxAlignment  `xml:"alignment"`
 	Protection        *xlsxProtection `xml:"protection"`
 }
