@@ -12,13 +12,16 @@
 package excelize
 
 import (
+	"bytes"
 	"container/list"
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/xuri/efp"
 )
@@ -1715,6 +1718,168 @@ func (fn *formulaFuncs) MDETERM(argsList *list.List) (result string, err error) 
 	return
 }
 
+// MOD function returns the remainder of a division between two supplied
+// numbers. The syntax of the function is:
+//
+//   MOD(number,divisor)
+//
+func (fn *formulaFuncs) MOD(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("MOD requires 2 numeric arguments")
+		return
+	}
+	var number, divisor float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if divisor, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if divisor == 0 {
+		err = errors.New(formulaErrorDIV)
+		return
+	}
+	trunc, rem := math.Modf(number / divisor)
+	if rem < 0 {
+		trunc--
+	}
+	result = fmt.Sprintf("%g", number-divisor*trunc)
+	return
+}
+
+// MROUND function rounds a supplied number up or down to the nearest multiple
+// of a given number. The syntax of the function is:
+//
+//   MOD(number,multiple)
+//
+func (fn *formulaFuncs) MROUND(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("MROUND requires 2 numeric arguments")
+		return
+	}
+	var number, multiple float64 = 0, 1
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if multiple, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if multiple == 0 {
+		err = errors.New(formulaErrorNUM)
+		return
+	}
+	if multiple < 0 && number > 0 ||
+		multiple > 0 && number < 0 {
+		err = errors.New(formulaErrorNUM)
+		return
+	}
+	number, res := math.Modf(number / multiple)
+	if math.Trunc(res+0.5) > 0 {
+		number++
+	}
+	result = fmt.Sprintf("%g", number*multiple)
+	return
+}
+
+// MULTINOMIAL function calculates the ratio of the factorial of a sum of
+// supplied values to the product of factorials of those values. The syntax of
+// the function is:
+//
+//    MULTINOMIAL(number1,[number2],...)
+//
+func (fn *formulaFuncs) MULTINOMIAL(argsList *list.List) (result string, err error) {
+	var val, num, denom float64 = 0, 0, 1
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		if token.Value == "" {
+			continue
+		}
+		if val, err = strconv.ParseFloat(token.Value, 64); err != nil {
+			return
+		}
+		num += val
+		denom *= fact(val)
+	}
+	result = fmt.Sprintf("%g", fact(num)/denom)
+	return
+}
+
+// MUNIT function returns the unit matrix for a specified dimension. The
+// syntax of the function is:
+//
+//   MUNIT(dimension)
+//
+func (fn *formulaFuncs) MUNIT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("MUNIT requires 1 numeric argument")
+		return
+	}
+	var dimension int
+	if dimension, err = strconv.Atoi(argsList.Front().Value.(formulaArg).Value); err != nil {
+		return
+	}
+	matrix := make([][]float64, 0, dimension)
+	for i := 0; i < dimension; i++ {
+		row := make([]float64, dimension)
+		for j := 0; j < dimension; j++ {
+			if i == j {
+				row[j] = float64(1.0)
+			} else {
+				row[j] = float64(0.0)
+			}
+		}
+		matrix = append(matrix, row)
+	}
+	return
+}
+
+// ODD function ounds a supplied number away from zero (i.e. rounds a positive
+// number up and a negative number down), to the next odd number. The syntax
+// of the function is:
+//
+//   ODD(number)
+//
+func (fn *formulaFuncs) ODD(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ODD requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if number == 0 {
+		result = "1"
+		return
+	}
+	sign := math.Signbit(number)
+	m, frac := math.Modf((number - 1) / 2)
+	val := m*2 + 1
+	if frac != 0 {
+		if !sign {
+			val += 2
+		} else {
+			val -= 2
+		}
+	}
+	result = fmt.Sprintf("%g", val)
+	return
+}
+
+// PI function returns the value of the mathematical constant π (pi), accurate
+// to 15 digits (14 decimal places). The syntax of the function is:
+//
+//   PI()
+//
+func (fn *formulaFuncs) PI(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 0 {
+		err = errors.New("PI accepts no arguments")
+		return
+	}
+	result = fmt.Sprintf("%g", math.Pi)
+	return
+}
+
 // POWER function calculates a given number, raised to a supplied power.
 // The syntax of the function is:
 //
@@ -1762,6 +1927,154 @@ func (fn *formulaFuncs) PRODUCT(argsList *list.List) (result string, err error) 
 		product = product * val
 	}
 	result = fmt.Sprintf("%g", product)
+	return
+}
+
+// QUOTIENT function returns the integer portion of a division between two
+// supplied numbers. The syntax of the function is:
+//
+//   QUOTIENT(numerator,denominator)
+//
+func (fn *formulaFuncs) QUOTIENT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("QUOTIENT requires 2 numeric arguments")
+		return
+	}
+	var x, y float64
+	if x, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if y, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if y == 0 {
+		err = errors.New(formulaErrorDIV)
+		return
+	}
+	result = fmt.Sprintf("%g", math.Trunc(x/y))
+	return
+}
+
+// RADIANS function converts radians into degrees. The syntax of the function is:
+//
+//   RADIANS(angle)
+//
+func (fn *formulaFuncs) RADIANS(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("RADIANS requires 1 numeric argument")
+		return
+	}
+	var angle float64
+	if angle, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Pi/180.0*angle)
+	return
+}
+
+// RAND function generates a random real number between 0 and 1. The syntax of
+// the function is:
+//
+//   RAND()
+//
+func (fn *formulaFuncs) RAND(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 0 {
+		err = errors.New("RAND accepts no arguments")
+		return
+	}
+	result = fmt.Sprintf("%g", rand.New(rand.NewSource(time.Now().UnixNano())).Float64())
+	return
+}
+
+// RANDBETWEEN function generates a random integer between two supplied
+// integers. The syntax of the function is:
+//
+//   RANDBETWEEN(bottom,top)
+//
+func (fn *formulaFuncs) RANDBETWEEN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("RANDBETWEEN requires 2 numeric arguments")
+		return
+	}
+	var bottom, top int64
+	if bottom, err = strconv.ParseInt(argsList.Front().Value.(formulaArg).Value, 10, 64); err != nil {
+		return
+	}
+	if top, err = strconv.ParseInt(argsList.Back().Value.(formulaArg).Value, 10, 64); err != nil {
+		return
+	}
+	if top < bottom {
+		err = errors.New(formulaErrorNUM)
+		return
+	}
+	result = fmt.Sprintf("%g", float64(rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(top-bottom+1)+bottom))
+	return
+}
+
+// romanNumerals defined a numeral system that originated in ancient Rome and
+// remained the usual way of writing numbers throughout Europe well into the
+// Late Middle Ages.
+type romanNumerals struct {
+	n float64
+	s string
+}
+
+var romanTable = [][]romanNumerals{{{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"}, {100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
+	{{1000, "M"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {95, "VC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
+	{{1000, "M"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
+	{{1000, "M"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
+	{{1000, "M"}, {999, "IM"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {499, "ID"}, {495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}}}
+
+// ROMAN function converts an arabic number to Roman. I.e. for a supplied
+// integer, the function returns a text string depicting the roman numeral
+// form of the number. The syntax of the function is:
+//
+//   ROMAN(number,[form])
+//
+func (fn *formulaFuncs) ROMAN(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("ROMAN requires at least 1 argument")
+		return
+	}
+	if argsList.Len() > 2 {
+		err = errors.New("ROMAN allows at most 2 arguments")
+		return
+	}
+	var number float64
+	var form int
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if argsList.Len() > 1 {
+		if form, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value); err != nil {
+			return
+		}
+		if form < 0 {
+			form = 0
+		} else if form > 4 {
+			form = 4
+		}
+	}
+	decimalTable := romanTable[0]
+	switch form {
+	case 1:
+		decimalTable = romanTable[1]
+	case 2:
+		decimalTable = romanTable[2]
+	case 3:
+		decimalTable = romanTable[3]
+	case 4:
+		decimalTable = romanTable[4]
+	}
+	val := math.Trunc(number)
+	buf := bytes.Buffer{}
+	for _, r := range decimalTable {
+		for val >= r.n {
+			buf.WriteString(r.s)
+			val -= r.n
+		}
+	}
+	result = buf.String()
 	return
 }
 
@@ -1838,30 +2151,5 @@ func (fn *formulaFuncs) SUM(argsList *list.List) (result string, err error) {
 		sum += val
 	}
 	result = fmt.Sprintf("%g", sum)
-	return
-}
-
-// QUOTIENT function returns the integer portion of a division between two
-// supplied numbers. The syntax of the function is:
-//
-//   QUOTIENT(numerator,denominator)
-//
-func (fn *formulaFuncs) QUOTIENT(argsList *list.List) (result string, err error) {
-	if argsList.Len() != 2 {
-		err = errors.New("QUOTIENT requires 2 numeric arguments")
-		return
-	}
-	var x, y float64
-	if x, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
-		return
-	}
-	if y, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
-		return
-	}
-	if y == 0 {
-		err = errors.New(formulaErrorDIV)
-		return
-	}
-	result = fmt.Sprintf("%g", math.Trunc(x/y))
 	return
 }

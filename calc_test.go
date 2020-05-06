@@ -218,10 +218,54 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOG10(1000)":  "3",
 		"=LOG10(0.001)": "-3",
 		"=LOG10(25)":    "1.3979400086720375",
+		// MOD
+		"=MOD(6,4)":     "2",
+		"=MOD(6,3)":     "0",
+		"=MOD(6,2.5)":   "1",
+		"=MOD(6,1.333)": "0.6680000000000001",
+		// MROUND
+		"=MROUND(333.7,0.5)":   "333.5",
+		"=MROUND(333.8,1)":     "334",
+		"=MROUND(333.3,2)":     "334",
+		"=MROUND(555.3,400)":   "400",
+		"=MROUND(555,1000)":    "1000",
+		"=MROUND(-555.7,-1)":   "-556",
+		"=MROUND(-555.4,-1)":   "-555",
+		"=MROUND(-1555,-1000)": "-2000",
+		// MULTINOMIAL
+		"=MULTINOMIAL(3,1,2,5)": "27720",
+		// _xlfn.MUNIT
+		"=_xlfn.MUNIT(4)": "", // not support currently
+		// ODD
+		"=ODD(22)":     "23",
+		"=ODD(1.22)":   "3",
+		"=ODD(1.22+4)": "7",
+		"=ODD(0)":      "1",
+		"=ODD(-1.3)":   "-3",
+		"=ODD(-10)":    "-11",
+		"=ODD(-3)":     "-3",
+		// PI
+		"=PI()": "3.141592653589793",
 		// POWER
 		"=POWER(4,2)": "16",
 		// PRODUCT
 		"=PRODUCT(3,6)": "18",
+		// QUOTIENT
+		"=QUOTIENT(5,2)":     "2",
+		"=QUOTIENT(4.5,3.1)": "1",
+		"=QUOTIENT(-10,3)":   "-3",
+		// RADIANS
+		"=RADIANS(50)":   "0.8726646259971648",
+		"=RADIANS(-180)": "-3.141592653589793",
+		"=RADIANS(180)":  "3.141592653589793",
+		"=RADIANS(360)":  "6.283185307179586",
+		// ROMAN
+		"=ROMAN(499,0)":  "CDXCIX",
+		"=ROMAN(1999,0)": "MCMXCIX",
+		"=ROMAN(1999,1)": "MLMVLIV",
+		"=ROMAN(1999,2)": "MXMIX",
+		"=ROMAN(1999,3)": "MVMIV",
+		"=ROMAN(1999,4)": "MIM",
 		// SIGN
 		"=SIGN(9.5)":        "1",
 		"=SIGN(-9.5)":       "-1",
@@ -244,10 +288,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=((3+5*2)+3)/5+(-6)/4*2+3":           "3.2",
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
-		// QUOTIENT
-		"=QUOTIENT(5, 2)":     "2",
-		"=QUOTIENT(4.5, 3.1)": "1",
-		"=QUOTIENT(-10, 3)":   "-3",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -362,18 +402,40 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOG(1,1)":   "#DIV/0!",
 		// LOG10
 		"=LOG10()": "LOG10 requires 1 numeric argument",
+		// MOD
+		"=MOD()":    "MOD requires 2 numeric arguments",
+		"=MOD(6,0)": "#DIV/0!",
+		// MROUND
+		"=MROUND()":    "MROUND requires 2 numeric arguments",
+		"=MROUND(1,0)": "#NUM!",
+		// _xlfn.MUNIT
+		"=_xlfn.MUNIT()": "MUNIT requires 1 numeric argument", // not support currently
+		// ODD
+		"=ODD()": "ODD requires 1 numeric argument",
+		// PI
+		"=PI(1)": "PI accepts no arguments",
 		// POWER
 		"=POWER(0,0)":  "#NUM!",
 		"=POWER(0,-1)": "#DIV/0!",
 		"=POWER(1)":    "POWER requires 2 numeric arguments",
+		// QUOTIENT
+		"=QUOTIENT(1,0)": "#DIV/0!",
+		"=QUOTIENT(1)":   "QUOTIENT requires 2 numeric arguments",
+		// RADIANS
+		"=RADIANS()": "RADIANS requires 1 numeric argument",
+		// RAND
+		"=RAND(1)": "RAND accepts no arguments",
+		// RANDBETWEEN
+		"=RANDBETWEEN()":    "RANDBETWEEN requires 2 numeric arguments",
+		"=RANDBETWEEN(2,1)": "#NUM!",
+		// ROMAN
+		"=ROMAN()":      "ROMAN requires at least 1 argument",
+		"=ROMAN(1,2,3)": "ROMAN allows at most 2 arguments",
 		// SIGN
 		"=SIGN()": "SIGN requires 1 numeric argument",
 		// SQRT
 		"=SQRT(-1)":  "#NUM!",
 		"=SQRT(1,2)": "SQRT requires 1 numeric argument",
-		// QUOTIENT
-		"=QUOTIENT(1,0)": "#DIV/0!",
-		"=QUOTIENT(1)":   "QUOTIENT requires 2 numeric arguments",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()
