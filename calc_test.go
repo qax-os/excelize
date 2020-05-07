@@ -266,14 +266,55 @@ func TestCalcCellValue(t *testing.T) {
 		"=ROMAN(1999,2)": "MXMIX",
 		"=ROMAN(1999,3)": "MVMIV",
 		"=ROMAN(1999,4)": "MIM",
+		// ROUND
+		"=ROUND(100.319,1)": "100.30000000000001",
+		"=ROUND(5.28,1)":    "5.300000000000001",
+		"=ROUND(5.9999,3)":  "6.000000000000002",
+		"=ROUND(99.5,0)":    "100",
+		"=ROUND(-6.3,0)":    "-6",
+		"=ROUND(-100.5,0)":  "-101",
+		"=ROUND(-22.45,1)":  "-22.5",
+		"=ROUND(999,-1)":    "1000",
+		"=ROUND(991,-1)":    "990",
+		// ROUNDDOWN
+		"=ROUNDDOWN(99.999,1)":   "99.9",
+		"=ROUNDDOWN(99.999,2)":   "99.99000000000002",
+		"=ROUNDDOWN(99.999,0)":   "99",
+		"=ROUNDDOWN(99.999,-1)":  "90",
+		"=ROUNDDOWN(-99.999,2)":  "-99.99000000000002",
+		"=ROUNDDOWN(-99.999,-1)": "-90",
+		// ROUNDUP
+		"=ROUNDUP(11.111,1)":   "11.200000000000001",
+		"=ROUNDUP(11.111,2)":   "11.120000000000003",
+		"=ROUNDUP(11.111,0)":   "12",
+		"=ROUNDUP(11.111,-1)":  "20",
+		"=ROUNDUP(-11.111,2)":  "-11.120000000000003",
+		"=ROUNDUP(-11.111,-1)": "-20",
+		// SEC
+		"=_xlfn.SEC(-3.14159265358979)": "-1",
+		"=_xlfn.SEC(0)":                 "1",
+		// SECH
+		"=_xlfn.SECH(-3.14159265358979)": "0.0862667383340547",
+		"=_xlfn.SECH(0)":                 "1",
 		// SIGN
 		"=SIGN(9.5)":        "1",
 		"=SIGN(-9.5)":       "-1",
 		"=SIGN(0)":          "0",
 		"=SIGN(0.00000001)": "1",
 		"=SIGN(6-7)":        "-1",
+		// SIN
+		"=SIN(0.785398163)": "0.7071067809055092",
+		// SINH
+		"=SINH(0)":   "0",
+		"=SINH(0.5)": "0.5210953054937474",
+		"=SINH(-2)":  "-3.626860407847019",
 		// SQRT
 		"=SQRT(4)": "2",
+		// SQRTPI
+		"=SQRTPI(5)":   "3.963327297606011",
+		"=SQRTPI(0.2)": "0.7926654595212022",
+		"=SQRTPI(100)": "17.72453850905516",
+		"=SQRTPI(0)":   "0",
 		// SUM
 		"=SUM(1,2)":                           "3",
 		"=SUM(1,2+3)":                         "6",
@@ -288,6 +329,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=((3+5*2)+3)/5+(-6)/4*2+3":           "3.2",
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
+		// TAN
+		"=TAN(1.047197551)": "1.732050806782486",
+		"=TAN(0)":           "0",
+		// TANH
+		"=TANH(0)":   "0",
+		"=TANH(0.5)": "0.46211715726000974",
+		"=TANH(-2)":  "-0.9640275800758169",
+		// TRUNC
+		"=TRUNC(99.999,1)":   "99.9",
+		"=TRUNC(99.999,2)":   "99.99",
+		"=TRUNC(99.999)":     "99",
+		"=TRUNC(99.999,-1)":  "90",
+		"=TRUNC(-99.999,2)":  "-99.99",
+		"=TRUNC(-99.999,-1)": "-90",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -431,11 +486,33 @@ func TestCalcCellValue(t *testing.T) {
 		// ROMAN
 		"=ROMAN()":      "ROMAN requires at least 1 argument",
 		"=ROMAN(1,2,3)": "ROMAN allows at most 2 arguments",
+		// ROUND
+		"=ROUND()": "ROUND requires 2 numeric arguments",
+		// ROUNDDOWN
+		"=ROUNDDOWN()": "ROUNDDOWN requires 2 numeric arguments",
+		// ROUNDUP
+		"=ROUNDUP()": "ROUNDUP requires 2 numeric arguments",
+		// SEC
+		"=_xlfn.SEC()": "SEC requires 1 numeric argument",
+		// _xlfn.SECH
+		"=_xlfn.SECH()": "SECH requires 1 numeric argument",
 		// SIGN
 		"=SIGN()": "SIGN requires 1 numeric argument",
+		// SIN
+		"=SIN()": "SIN requires 1 numeric argument",
+		// SINH
+		"=SINH()": "SINH requires 1 numeric argument",
 		// SQRT
-		"=SQRT(-1)":  "#NUM!",
-		"=SQRT(1,2)": "SQRT requires 1 numeric argument",
+		"=SQRT()":   "SQRT requires 1 numeric argument",
+		"=SQRT(-1)": "#NUM!",
+		// SQRTPI
+		"=SQRTPI()": "SQRTPI requires 1 numeric argument",
+		// TAN
+		"=TAN()": "TAN requires 1 numeric argument",
+		// TANH
+		"=TANH()": "TANH requires 1 numeric argument",
+		// TRUNC
+		"=TRUNC()": "TRUNC requires at least 1 argument",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()

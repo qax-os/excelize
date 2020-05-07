@@ -2078,6 +2078,141 @@ func (fn *formulaFuncs) ROMAN(argsList *list.List) (result string, err error) {
 	return
 }
 
+type roundMode byte
+
+const (
+	closest roundMode = iota
+	down
+	up
+)
+
+// round rounds a supplied number up or down.
+func (fn *formulaFuncs) round(number, digits float64, mode roundMode) float64 {
+	significance := 1.0
+	if digits > 0 {
+		significance = math.Pow(1/10.0, digits)
+	} else {
+		significance = math.Pow(10.0, -digits)
+	}
+	val, res := math.Modf(number / significance)
+	switch mode {
+	case closest:
+		const eps = 0.499999999
+		if res >= eps {
+			val++
+		} else if res <= -eps {
+			val--
+		}
+	case down:
+	case up:
+		if res > 0 {
+			val++
+		} else if res < 0 {
+			val--
+		}
+	}
+	return val * significance
+}
+
+// ROUND function rounds a supplied number up or down, to a specified number
+// of decimal places. The syntax of the function is:
+//
+//   ROUND(number,num_digits)
+//
+func (fn *formulaFuncs) ROUND(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("ROUND requires 2 numeric arguments")
+		return
+	}
+	var number, digits float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", fn.round(number, digits, closest))
+	return
+}
+
+// ROUNDDOWN function rounds a supplied number down towards zero, to a
+// specified number of decimal places. The syntax of the function is:
+//
+//   ROUNDDOWN(number,num_digits)
+//
+func (fn *formulaFuncs) ROUNDDOWN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("ROUNDDOWN requires 2 numeric arguments")
+		return
+	}
+	var number, digits float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", fn.round(number, digits, down))
+	return
+}
+
+// ROUNDUP function rounds a supplied number up, away from zero, to a
+// specified number of decimal places. The syntax of the function is:
+//
+//   ROUNDUP(number,num_digits)
+//
+func (fn *formulaFuncs) ROUNDUP(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 2 {
+		err = errors.New("ROUNDUP requires 2 numeric arguments")
+		return
+	}
+	var number, digits float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", fn.round(number, digits, up))
+	return
+}
+
+// SEC function calculates the secant of a given angle. The syntax of the
+// function is:
+//
+//    SEC(number)
+//
+func (fn *formulaFuncs) SEC(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("SEC requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Cos(number))
+	return
+}
+
+// SECH function calculates the hyperbolic secant (sech) of a supplied angle.
+// The syntax of the function is:
+//
+//    SECH(number)
+//
+func (fn *formulaFuncs) SECH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("SECH requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", 1/math.Cosh(number))
+	return
+}
+
 // SIGN function returns the arithmetic sign (+1, -1 or 0) of a supplied
 // number. I.e. if the number is positive, the Sign function returns +1, if
 // the number is negative, the function returns -1 and if the number is 0
@@ -2103,6 +2238,42 @@ func (fn *formulaFuncs) SIGN(argsList *list.List) (result string, err error) {
 		return
 	}
 	result = "0"
+	return
+}
+
+// SIN function calculates the sine of a given angle. The syntax of the
+// function is:
+//
+//    SIN(number)
+//
+func (fn *formulaFuncs) SIN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("SIN requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Sin(number))
+	return
+}
+
+// SINH function calculates the hyperbolic sine (sinh) of a supplied number.
+// The syntax of the function is:
+//
+//    SINH(number)
+//
+func (fn *formulaFuncs) SINH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("SINH requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Sinh(number))
 	return
 }
 
@@ -2133,6 +2304,24 @@ func (fn *formulaFuncs) SQRT(argsList *list.List) (result string, err error) {
 	return
 }
 
+// SQRTPI function returns the square root of a supplied number multiplied by
+// the mathematical constant, π. The syntax of the function is:
+//
+//    SQRTPI(number)
+//
+func (fn *formulaFuncs) SQRTPI(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("SQRTPI requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Sqrt(number*math.Pi))
+	return
+}
+
 // SUM function adds together a supplied set of numbers and returns the sum of
 // these values. The syntax of the function is:
 //
@@ -2151,5 +2340,76 @@ func (fn *formulaFuncs) SUM(argsList *list.List) (result string, err error) {
 		sum += val
 	}
 	result = fmt.Sprintf("%g", sum)
+	return
+}
+
+// TAN function calculates the tangent of a given angle. The syntax of the
+// function is:
+//
+//    TAN(number)
+//
+func (fn *formulaFuncs) TAN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("TAN requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Tan(number))
+	return
+}
+
+// TANH function calculates the hyperbolic tangent (tanh) of a supplied
+// number. The syntax of the function is:
+//
+//    TANH(number)
+//
+func (fn *formulaFuncs) TANH(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("TANH requires 1 numeric argument")
+		return
+	}
+	var number float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Tanh(number))
+	return
+}
+
+// TRUNC function truncates a supplied number to a specified number of decimal
+// places. The syntax of the function is:
+//
+//   TRUNC(number,[number_digits])
+//
+func (fn *formulaFuncs) TRUNC(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("TRUNC requires at least 1 argument")
+		return
+	}
+	var number, digits, adjust, rtrim float64
+	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		return
+	}
+	if argsList.Len() > 1 {
+		if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			return
+		}
+		digits = math.Floor(digits)
+	}
+	adjust = math.Pow(10, digits)
+	x := int((math.Abs(number) - math.Abs(float64(int(number)))) * adjust)
+	if x != 0 {
+		if rtrim, err = strconv.ParseFloat(strings.TrimRight(strconv.Itoa(x), "0"), 64); err != nil {
+			return
+		}
+	}
+	if (digits > 0) && (rtrim < adjust/10) {
+		result = fmt.Sprintf("%g", number)
+		return
+	}
+	result = fmt.Sprintf("%g", float64(int(number*adjust))/adjust)
 	return
 }
