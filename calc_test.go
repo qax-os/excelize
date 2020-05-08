@@ -329,6 +329,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=((3+5*2)+3)/5+(-6)/4*2+3":           "3.2",
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
+		// SUMSQ
+		"=SUMSQ(A1:A4)":         "14",
+		"=SUMSQ(A1,B1,A2,B2,6)": "82",
 		// TAN
 		"=TAN(1.047197551)": "1.732050806782486",
 		"=TAN(0)":           "0",
@@ -349,7 +352,7 @@ func TestCalcCellValue(t *testing.T) {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string]string{
 		// ABS
@@ -507,6 +510,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=SQRT(-1)": "#NUM!",
 		// SQRTPI
 		"=SQRTPI()": "SQRTPI requires 1 numeric argument",
+		// SUM
+		"=SUM((":   "formula not valid",
+		"=SUM(-)":  "formula not valid",
+		"=SUM(1+)": "formula not valid",
+		"=SUM(1-)": "formula not valid",
+		"=SUM(1*)": "formula not valid",
+		"=SUM(1/)": "formula not valid",
 		// TAN
 		"=TAN()": "TAN requires 1 numeric argument",
 		// TANH
@@ -519,7 +529,7 @@ func TestCalcCellValue(t *testing.T) {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, expected)
-		assert.Equal(t, "", result)
+		assert.Equal(t, "", result, formula)
 	}
 
 	referenceCalc := map[string]string{
@@ -535,15 +545,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUM(Sheet1!A1:Sheet1!A1:A2,A2)": "5",
 		"=SUM(A1,A2,A3)*SUM(2,3)":         "30",
 		"=1+SUM(SUM(A1+A2/A3)*(2-3),2)":   "1.3333333333333335",
-		"=A1/A2/SUM(A1:A2:B1)":            "0.07142857142857142",
-		"=A1/A2/SUM(A1:A2:B1)*A3":         "0.21428571428571427",
+		"=A1/A2/SUM(A1:A2:B1)":            "0.041666666666666664",
+		"=A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
 	}
 	for formula, expected := range referenceCalc {
 		f := prepareData()
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		assert.Equal(t, expected, result, formula)
 	}
 
 	referenceCalcError := map[string]string{
@@ -557,7 +567,7 @@ func TestCalcCellValue(t *testing.T) {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, expected)
-		assert.Equal(t, "", result)
+		assert.Equal(t, "", result, formula)
 	}
 
 	// Test get calculated cell value on not formula cell.
