@@ -644,6 +644,7 @@ func (fn *formulaFuncs) ABS(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Abs(val))
@@ -663,6 +664,7 @@ func (fn *formulaFuncs) ACOS(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Acos(val))
@@ -681,6 +683,7 @@ func (fn *formulaFuncs) ACOSH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Acosh(val))
@@ -700,6 +703,7 @@ func (fn *formulaFuncs) ACOT(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Pi/2-math.Atan(val))
@@ -718,6 +722,7 @@ func (fn *formulaFuncs) ACOTH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atanh(1/val))
@@ -774,6 +779,7 @@ func (fn *formulaFuncs) ASIN(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Asin(val))
@@ -792,6 +798,7 @@ func (fn *formulaFuncs) ASINH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Asinh(val))
@@ -811,6 +818,7 @@ func (fn *formulaFuncs) ATAN(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atan(val))
@@ -829,6 +837,7 @@ func (fn *formulaFuncs) ATANH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atanh(val))
@@ -848,32 +857,15 @@ func (fn *formulaFuncs) ATAN2(argsList *list.List) (result string, err error) {
 	}
 	var x, y float64
 	if x, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if y, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Atan2(x, y))
 	return
-}
-
-// gcd returns the greatest common divisor of two supplied integers.
-func gcd(x, y float64) float64 {
-	x, y = math.Trunc(x), math.Trunc(y)
-	if x == 0 {
-		return y
-	}
-	if y == 0 {
-		return x
-	}
-	for x != y {
-		if x > y {
-			x = x - y
-		} else {
-			y = y - x
-		}
-	}
-	return x
 }
 
 // BASE function converts a number into a supplied base (radix), and returns a
@@ -893,9 +885,11 @@ func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
 	var number float64
 	var radix, minLength int
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if radix, err = strconv.Atoi(argsList.Front().Next().Value.(formulaArg).Value); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if radix < 2 || radix > 36 {
@@ -904,6 +898,7 @@ func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
 	}
 	if argsList.Len() > 2 {
 		if minLength, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -931,6 +926,7 @@ func (fn *formulaFuncs) CEILING(argsList *list.List) (result string, err error) 
 	}
 	number, significance, res := 0.0, 1.0, 0.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -938,6 +934,7 @@ func (fn *formulaFuncs) CEILING(argsList *list.List) (result string, err error) 
 	}
 	if argsList.Len() > 1 {
 		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -973,6 +970,7 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err err
 	}
 	number, significance, mode := 0.0, 1.0, 1.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -980,6 +978,7 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err err
 	}
 	if argsList.Len() > 1 {
 		if significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -989,6 +988,7 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) (result string, err err
 	}
 	if argsList.Len() > 2 {
 		if mode, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -1021,6 +1021,7 @@ func (fn *formulaFuncs) CEILINGPRECISE(argsList *list.List) (result string, err 
 	}
 	number, significance := 0.0, 1.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -1032,6 +1033,7 @@ func (fn *formulaFuncs) CEILINGPRECISE(argsList *list.List) (result string, err 
 	}
 	if argsList.Len() > 1 {
 		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		significance = math.Abs(significance)
@@ -1062,9 +1064,11 @@ func (fn *formulaFuncs) COMBIN(argsList *list.List) (result string, err error) {
 	}
 	number, chosen, val := 0.0, 0.0, 1.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if chosen, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	number, chosen = math.Trunc(number), math.Trunc(chosen)
@@ -1095,9 +1099,11 @@ func (fn *formulaFuncs) COMBINA(argsList *list.List) (result string, err error) 
 	}
 	var number, chosen float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if chosen, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	number, chosen = math.Trunc(number), math.Trunc(chosen)
@@ -1131,6 +1137,7 @@ func (fn *formulaFuncs) COS(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Cos(val))
@@ -1149,6 +1156,7 @@ func (fn *formulaFuncs) COSH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Cosh(val))
@@ -1167,10 +1175,11 @@ func (fn *formulaFuncs) COT(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if val == 0 {
-		err = errors.New(formulaErrorNAME)
+		err = errors.New(formulaErrorDIV)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Tan(val))
@@ -1189,10 +1198,11 @@ func (fn *formulaFuncs) COTH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if val == 0 {
-		err = errors.New(formulaErrorNAME)
+		err = errors.New(formulaErrorDIV)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Tanh(val))
@@ -1211,10 +1221,11 @@ func (fn *formulaFuncs) CSC(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if val == 0 {
-		err = errors.New(formulaErrorNAME)
+		err = errors.New(formulaErrorDIV)
 		return
 	}
 	result = fmt.Sprintf("%g", 1/math.Sin(val))
@@ -1233,10 +1244,11 @@ func (fn *formulaFuncs) CSCH(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if val == 0 {
-		err = errors.New(formulaErrorNAME)
+		err = errors.New(formulaErrorDIV)
 		return
 	}
 	result = fmt.Sprintf("%g", 1/math.Sinh(val))
@@ -1256,6 +1268,7 @@ func (fn *formulaFuncs) DECIMAL(argsList *list.List) (result string, err error) 
 	var text = argsList.Front().Value.(formulaArg).Value
 	var radix int
 	if radix, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if len(text) > 2 && (strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X")) {
@@ -1263,7 +1276,7 @@ func (fn *formulaFuncs) DECIMAL(argsList *list.List) (result string, err error) 
 	}
 	val, err := strconv.ParseInt(text, radix, 64)
 	if err != nil {
-		err = errors.New(formulaErrorNUM)
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", float64(val))
@@ -1282,10 +1295,11 @@ func (fn *formulaFuncs) DEGREES(argsList *list.List) (result string, err error) 
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if val == 0 {
-		err = errors.New(formulaErrorNAME)
+		err = errors.New(formulaErrorDIV)
 		return
 	}
 	result = fmt.Sprintf("%g", 180.0/math.Pi*val)
@@ -1305,6 +1319,7 @@ func (fn *formulaFuncs) EVEN(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	sign := math.Signbit(number)
@@ -1333,6 +1348,7 @@ func (fn *formulaFuncs) EXP(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = strings.ToUpper(fmt.Sprintf("%g", math.Exp(number)))
@@ -1360,6 +1376,7 @@ func (fn *formulaFuncs) FACT(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -1381,10 +1398,12 @@ func (fn *formulaFuncs) FACTDOUBLE(argsList *list.List) (result string, err erro
 	}
 	number, val := 0.0, 1.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
 		err = errors.New(formulaErrorNUM)
+		return
 	}
 	for i := math.Trunc(number); i > 1; i -= 2 {
 		val *= i
@@ -1405,13 +1424,16 @@ func (fn *formulaFuncs) FLOOR(argsList *list.List) (result string, err error) {
 	}
 	var number, significance float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if significance < 0 && number >= 0 {
 		err = errors.New(formulaErrorNUM)
+		return
 	}
 	val := number
 	val, res := math.Modf(val / significance)
@@ -1440,6 +1462,7 @@ func (fn *formulaFuncs) FLOORMATH(argsList *list.List) (result string, err error
 	}
 	number, significance, mode := 0.0, 1.0, 1.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -1447,6 +1470,7 @@ func (fn *formulaFuncs) FLOORMATH(argsList *list.List) (result string, err error
 	}
 	if argsList.Len() > 1 {
 		if significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -1456,6 +1480,7 @@ func (fn *formulaFuncs) FLOORMATH(argsList *list.List) (result string, err error
 	}
 	if argsList.Len() > 2 {
 		if mode, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -1483,6 +1508,7 @@ func (fn *formulaFuncs) FLOORPRECISE(argsList *list.List) (result string, err er
 	}
 	var number, significance float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -1494,6 +1520,7 @@ func (fn *formulaFuncs) FLOORPRECISE(argsList *list.List) (result string, err er
 	}
 	if argsList.Len() > 1 {
 		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		significance = math.Abs(significance)
@@ -1510,6 +1537,25 @@ func (fn *formulaFuncs) FLOORPRECISE(argsList *list.List) (result string, err er
 	}
 	result = fmt.Sprintf("%g", val*significance)
 	return
+}
+
+// gcd returns the greatest common divisor of two supplied integers.
+func gcd(x, y float64) float64 {
+	x, y = math.Trunc(x), math.Trunc(y)
+	if x == 0 {
+		return y
+	}
+	if y == 0 {
+		return x
+	}
+	for x != y {
+		if x > y {
+			x = x - y
+		} else {
+			y = y - x
+		}
+	}
+	return x
 }
 
 // GCD function returns the greatest common divisor of two or more supplied
@@ -1532,6 +1578,7 @@ func (fn *formulaFuncs) GCD(argsList *list.List) (result string, err error) {
 			continue
 		}
 		if val, err = strconv.ParseFloat(token, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		nums = append(nums, val)
@@ -1568,6 +1615,7 @@ func (fn *formulaFuncs) INT(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	val, frac := math.Modf(number)
@@ -1595,6 +1643,7 @@ func (fn *formulaFuncs) ISOCEILING(argsList *list.List) (result string, err erro
 	}
 	var number, significance float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number < 0 {
@@ -1606,6 +1655,7 @@ func (fn *formulaFuncs) ISOCEILING(argsList *list.List) (result string, err erro
 	}
 	if argsList.Len() > 1 {
 		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		significance = math.Abs(significance)
@@ -1654,6 +1704,7 @@ func (fn *formulaFuncs) LCM(argsList *list.List) (result string, err error) {
 			continue
 		}
 		if val, err = strconv.ParseFloat(token, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		nums = append(nums, val)
@@ -1690,6 +1741,7 @@ func (fn *formulaFuncs) LN(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Log(number))
@@ -1712,10 +1764,12 @@ func (fn *formulaFuncs) LOG(argsList *list.List) (result string, err error) {
 	}
 	number, base := 0.0, 10.0
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if argsList.Len() > 1 {
 		if base, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 	}
@@ -1747,6 +1801,7 @@ func (fn *formulaFuncs) LOG10(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Log10(number))
@@ -1835,9 +1890,11 @@ func (fn *formulaFuncs) MOD(argsList *list.List) (result string, err error) {
 	}
 	var number, divisor float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if divisor, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if divisor == 0 {
@@ -1864,9 +1921,11 @@ func (fn *formulaFuncs) MROUND(argsList *list.List) (result string, err error) {
 	}
 	var number, multiple float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if multiple, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if multiple == 0 {
@@ -1900,6 +1959,7 @@ func (fn *formulaFuncs) MULTINOMIAL(argsList *list.List) (result string, err err
 			continue
 		}
 		if val, err = strconv.ParseFloat(token.Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		num += val
@@ -1921,6 +1981,7 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result string, err error) {
 	}
 	var dimension int
 	if dimension, err = strconv.Atoi(argsList.Front().Value.(formulaArg).Value); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	matrix := make([][]float64, 0, dimension)
@@ -1951,6 +2012,7 @@ func (fn *formulaFuncs) ODD(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if number == 0 {
@@ -1997,9 +2059,11 @@ func (fn *formulaFuncs) POWER(argsList *list.List) (result string, err error) {
 	}
 	var x, y float64
 	if x, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if y, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if x == 0 && y == 0 {
@@ -2027,6 +2091,7 @@ func (fn *formulaFuncs) PRODUCT(argsList *list.List) (result string, err error) 
 			continue
 		}
 		if val, err = strconv.ParseFloat(token.Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		product = product * val
@@ -2047,9 +2112,11 @@ func (fn *formulaFuncs) QUOTIENT(argsList *list.List) (result string, err error)
 	}
 	var x, y float64
 	if x, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if y, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if y == 0 {
@@ -2071,6 +2138,7 @@ func (fn *formulaFuncs) RADIANS(argsList *list.List) (result string, err error) 
 	}
 	var angle float64
 	if angle, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Pi/180.0*angle)
@@ -2103,9 +2171,11 @@ func (fn *formulaFuncs) RANDBETWEEN(argsList *list.List) (result string, err err
 	}
 	var bottom, top int64
 	if bottom, err = strconv.ParseInt(argsList.Front().Value.(formulaArg).Value, 10, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if top, err = strconv.ParseInt(argsList.Back().Value.(formulaArg).Value, 10, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if top < bottom {
@@ -2148,10 +2218,12 @@ func (fn *formulaFuncs) ROMAN(argsList *list.List) (result string, err error) {
 	var number float64
 	var form int
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if argsList.Len() > 1 {
 		if form, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		if form < 0 {
@@ -2231,9 +2303,11 @@ func (fn *formulaFuncs) ROUND(argsList *list.List) (result string, err error) {
 	}
 	var number, digits float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", fn.round(number, digits, closest))
@@ -2252,9 +2326,11 @@ func (fn *formulaFuncs) ROUNDDOWN(argsList *list.List) (result string, err error
 	}
 	var number, digits float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", fn.round(number, digits, down))
@@ -2273,9 +2349,11 @@ func (fn *formulaFuncs) ROUNDUP(argsList *list.List) (result string, err error) 
 	}
 	var number, digits float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", fn.round(number, digits, up))
@@ -2294,6 +2372,7 @@ func (fn *formulaFuncs) SEC(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Cos(number))
@@ -2312,6 +2391,7 @@ func (fn *formulaFuncs) SECH(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", 1/math.Cosh(number))
@@ -2332,6 +2412,7 @@ func (fn *formulaFuncs) SIGN(argsList *list.List) (result string, err error) {
 	}
 	var val float64
 	if val, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if val < 0 {
@@ -2358,6 +2439,7 @@ func (fn *formulaFuncs) SIN(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Sin(number))
@@ -2376,6 +2458,7 @@ func (fn *formulaFuncs) SINH(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Sinh(number))
@@ -2399,6 +2482,7 @@ func (fn *formulaFuncs) SQRT(argsList *list.List) (result string, err error) {
 		return
 	}
 	if res, err = strconv.ParseFloat(value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if res < 0 {
@@ -2421,6 +2505,7 @@ func (fn *formulaFuncs) SQRTPI(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Sqrt(number*math.Pi))
@@ -2440,6 +2525,7 @@ func (fn *formulaFuncs) SUM(argsList *list.List) (result string, err error) {
 			continue
 		}
 		if val, err = strconv.ParseFloat(token.Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		sum += val
@@ -2461,6 +2547,7 @@ func (fn *formulaFuncs) SUMSQ(argsList *list.List) (result string, err error) {
 			continue
 		}
 		if val, err = strconv.ParseFloat(token.Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		sq += val * val
@@ -2481,6 +2568,7 @@ func (fn *formulaFuncs) TAN(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Tan(number))
@@ -2499,6 +2587,7 @@ func (fn *formulaFuncs) TANH(argsList *list.List) (result string, err error) {
 	}
 	var number float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	result = fmt.Sprintf("%g", math.Tanh(number))
@@ -2517,10 +2606,12 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) (result string, err error) {
 	}
 	var number, digits, adjust, rtrim float64
 	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).Value, 64); err != nil {
+		err = errors.New(formulaErrorVALUE)
 		return
 	}
 	if argsList.Len() > 1 {
 		if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).Value, 64); err != nil {
+			err = errors.New(formulaErrorVALUE)
 			return
 		}
 		digits = math.Floor(digits)
