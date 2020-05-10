@@ -33,9 +33,9 @@ func TestStyleFill(t *testing.T) {
 		styles := xl.stylesReader()
 		style := styles.CellXfs.Xf[styleID]
 		if testCase.expectFill {
-			assert.NotEqual(t, style.FillID, 0, testCase.label)
+			assert.NotEqual(t, *style.FillID, 0, testCase.label)
 		} else {
-			assert.Equal(t, style.FillID, 0, testCase.label)
+			assert.Equal(t, *style.FillID, 0, testCase.label)
 		}
 	}
 }
@@ -188,7 +188,7 @@ func TestNewStyle(t *testing.T) {
 	assert.NoError(t, err)
 	styles := f.stylesReader()
 	fontID := styles.CellXfs.Xf[styleID].FontID
-	font := styles.Fonts.Font[fontID]
+	font := styles.Fonts.Font[*fontID]
 	assert.Contains(t, *font.Name.Val, "Times New Roman", "Stored font should contain font name")
 	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
 	_, err = f.NewStyle(&Style{})

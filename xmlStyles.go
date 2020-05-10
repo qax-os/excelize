@@ -209,19 +209,19 @@ type xlsxCellStyleXfs struct {
 // xlsxXf directly maps the xf element. A single xf element describes all of the
 // formatting for a cell.
 type xlsxXf struct {
-	NumFmtID          int             `xml:"numFmtId,attr,omitempty"`
-	FontID            int             `xml:"fontId,attr,omitempty"`
-	FillID            int             `xml:"fillId,attr,omitempty"`
-	BorderID          int             `xml:"borderId,attr,omitempty"`
-	XfID              *int            `xml:"xfId,attr,omitempty"`
-	QuotePrefix       bool            `xml:"quotePrefix,attr,omitempty"`
-	PivotButton       bool            `xml:"pivotButton,attr,omitempty"`
-	ApplyNumberFormat bool            `xml:"applyNumberFormat,attr,omitempty"`
-	ApplyFont         bool            `xml:"applyFont,attr,omitempty"`
-	ApplyFill         bool            `xml:"applyFill,attr,omitempty"`
-	ApplyBorder       bool            `xml:"applyBorder,attr,omitempty"`
-	ApplyAlignment    bool            `xml:"applyAlignment,attr,omitempty"`
-	ApplyProtection   bool            `xml:"applyProtection,attr,omitempty"`
+	NumFmtID          *int            `xml:"numFmtId,attr"`
+	FontID            *int            `xml:"fontId,attr"`
+	FillID            *int            `xml:"fillId,attr"`
+	BorderID          *int            `xml:"borderId,attr"`
+	XfID              *int            `xml:"xfId,attr"`
+	QuotePrefix       *bool           `xml:"quotePrefix,attr"`
+	PivotButton       *bool           `xml:"pivotButton,attr"`
+	ApplyNumberFormat *bool           `xml:"applyNumberFormat,attr"`
+	ApplyFont         *bool           `xml:"applyFont,attr"`
+	ApplyFill         *bool           `xml:"applyFill,attr"`
+	ApplyBorder       *bool           `xml:"applyBorder,attr"`
+	ApplyAlignment    *bool           `xml:"applyAlignment,attr"`
+	ApplyProtection   *bool           `xml:"applyProtection,attr"`
 	Alignment         *xlsxAlignment  `xml:"alignment"`
 	Protection        *xlsxProtection `xml:"protection"`
 }

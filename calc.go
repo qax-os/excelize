@@ -63,8 +63,8 @@ type formulaArg struct {
 type formulaFuncs struct{}
 
 // CalcCellValue provides a function to get calculated cell value. This
-// feature is currently in beta. Array formula, table formula and some other
-// formulas are not supported currently.
+// feature is currently in working processing. Array formula, table formula
+// and some other formulas are not supported currently.
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
 		formula string
@@ -265,6 +265,89 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 	return opdStack.Peek().(efp.Token), err
 }
 
+// calcAdd evaluate addition arithmetic operations.
+func calcAdd(opdStack *Stack) error {
+	if opdStack.Len() < 2 {
+		return errors.New("formula not valid")
+	}
+	rOpd := opdStack.Pop().(efp.Token)
+	lOpd := opdStack.Pop().(efp.Token)
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	result := lOpdVal + rOpdVal
+	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	return nil
+}
+
+// calcAdd evaluate subtraction arithmetic operations.
+func calcSubtract(opdStack *Stack) error {
+	if opdStack.Len() < 2 {
+		return errors.New("formula not valid")
+	}
+	rOpd := opdStack.Pop().(efp.Token)
+	lOpd := opdStack.Pop().(efp.Token)
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	result := lOpdVal - rOpdVal
+	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	return nil
+}
+
+// calcAdd evaluate multiplication arithmetic operations.
+func calcMultiply(opdStack *Stack) error {
+	if opdStack.Len() < 2 {
+		return errors.New("formula not valid")
+	}
+	rOpd := opdStack.Pop().(efp.Token)
+	lOpd := opdStack.Pop().(efp.Token)
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	result := lOpdVal * rOpdVal
+	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	return nil
+}
+
+// calcAdd evaluate division arithmetic operations.
+func calcDivide(opdStack *Stack) error {
+	if opdStack.Len() < 2 {
+		return errors.New("formula not valid")
+	}
+	rOpd := opdStack.Pop().(efp.Token)
+	lOpd := opdStack.Pop().(efp.Token)
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
+	if err != nil {
+		return err
+	}
+	result := lOpdVal / rOpdVal
+	if rOpdVal == 0 {
+		return errors.New(formulaErrorDIV)
+	}
+	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	return nil
+}
+
 // calculate evaluate basic arithmetic operations.
 func calculate(opdStack *Stack, opt efp.Token) error {
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorPrefix {
@@ -279,78 +362,67 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		result := 0 - opdVal
 		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
+
 	if opt.TValue == "+" {
-		if opdStack.Len() < 2 {
-			return errors.New("formula not valid")
-		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
-		lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-		if err != nil {
+		if err := calcAdd(opdStack); err != nil {
 			return err
 		}
-		rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-		if err != nil {
-			return err
-		}
-		result := lOpdVal + rOpdVal
-		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
-		if opdStack.Len() < 2 {
-			return errors.New("formula not valid")
-		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
-		lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-		if err != nil {
+		if err := calcSubtract(opdStack); err != nil {
 			return err
 		}
-		rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-		if err != nil {
-			return err
-		}
-		result := lOpdVal - rOpdVal
-		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
 	if opt.TValue == "*" {
-		if opdStack.Len() < 2 {
-			return errors.New("formula not valid")
-		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
-		lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-		if err != nil {
+		if err := calcMultiply(opdStack); err != nil {
 			return err
 		}
-		rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-		if err != nil {
-			return err
-		}
-		result := lOpdVal * rOpdVal
-		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
 	if opt.TValue == "/" {
-		if opdStack.Len() < 2 {
-			return errors.New("formula not valid")
-		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
-		lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-		if err != nil {
+		if err := calcDivide(opdStack); err != nil {
 			return err
 		}
-		rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-		if err != nil {
-			return err
-		}
-		result := lOpdVal / rOpdVal
-		if rOpdVal == 0 {
-			return errors.New(formulaErrorDIV)
-		}
-		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
 	return nil
+}
+
+// parseOperatorPrefixToken parse operator prefix token.
+func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Token) (err error) {
+	if optStack.Len() == 0 {
+		optStack.Push(token)
+	} else {
+		tokenPriority := getPriority(token)
+		topOpt := optStack.Peek().(efp.Token)
+		topOptPriority := getPriority(topOpt)
+		if tokenPriority > topOptPriority {
+			optStack.Push(token)
+		} else {
+			for tokenPriority <= topOptPriority {
+				optStack.Pop()
+				if err = calculate(opdStack, topOpt); err != nil {
+					return
+				}
+				if optStack.Len() > 0 {
+					topOpt = optStack.Peek().(efp.Token)
+					topOptPriority = getPriority(topOpt)
+					continue
+				}
+				break
+			}
+			optStack.Push(token)
+		}
+	}
+	return
+}
+
+// isOperatorPrefixToken determine if the token is parse operator prefix
+// token.
+func isOperatorPrefixToken(token efp.Token) bool {
+	if (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) ||
+		token.TValue == "+" || token.TValue == "-" || token.TValue == "*" || token.TValue == "/" {
+		return true
+	}
+	return false
 }
 
 // parseToken parse basic arithmetic operator priority and evaluate based on
@@ -369,30 +441,9 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 		token.TType = efp.TokenTypeOperand
 		token.TSubType = efp.TokenSubTypeNumber
 	}
-	if (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || token.TValue == "+" || token.TValue == "-" || token.TValue == "*" || token.TValue == "/" {
-		if optStack.Len() == 0 {
-			optStack.Push(token)
-		} else {
-			tokenPriority := getPriority(token)
-			topOpt := optStack.Peek().(efp.Token)
-			topOptPriority := getPriority(topOpt)
-			if tokenPriority > topOptPriority {
-				optStack.Push(token)
-			} else {
-				for tokenPriority <= topOptPriority {
-					optStack.Pop()
-					if err := calculate(opdStack, topOpt); err != nil {
-						return err
-					}
-					if optStack.Len() > 0 {
-						topOpt = optStack.Peek().(efp.Token)
-						topOptPriority = getPriority(topOpt)
-						continue
-					}
-					break
-				}
-				optStack.Push(token)
-			}
+	if isOperatorPrefixToken(token) {
+		if err := f.parseOperatorPrefixToken(optStack, opdStack, token); err != nil {
+			return err
 		}
 	}
 	if token.TType == efp.TokenTypeSubexpression && token.TSubType == efp.TokenSubTypeStart { // (
@@ -461,11 +512,44 @@ func (f *File) parseReference(sheet, reference string) (result []string, matrix 
 	return
 }
 
+// prepareValueRange prepare value range.
+func prepareValueRange(cr cellRange, valueRange []int) {
+	if cr.From.Row < valueRange[0] {
+		valueRange[0] = cr.From.Row
+	}
+	if cr.From.Col < valueRange[2] {
+		valueRange[2] = cr.From.Col
+	}
+	if cr.To.Row > valueRange[0] {
+		valueRange[1] = cr.To.Row
+	}
+	if cr.To.Col > valueRange[3] {
+		valueRange[3] = cr.To.Col
+	}
+}
+
+// prepareValueRef prepare value reference.
+func prepareValueRef(cr cellRef, valueRange []int) {
+	if cr.Row < valueRange[0] {
+		valueRange[0] = cr.Row
+	}
+	if cr.Col < valueRange[2] {
+		valueRange[2] = cr.Col
+	}
+	if cr.Row > valueRange[0] {
+		valueRange[1] = cr.Row
+	}
+	if cr.Col > valueRange[3] {
+		valueRange[3] = cr.Col
+	}
+}
+
 // rangeResolver extract value as string from given reference and range list.
-// This function will not ignore the empty cell. For example,
-// A1:A2:A2:B3 will be reference A1:B3.
+// This function will not ignore the empty cell. For example, A1:A2:A2:B3 will
+// be reference A1:B3.
 func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (result []string, matrix [][]string, err error) {
-	var fromRow, toRow, fromCol, toCol int = 1, 1, 1, 1
+	// value range order: from row, to row, from column, to column
+	valueRange := []int{1, 1, 1, 1}
 	var sheet string
 	filter := map[string]string{}
 	// prepare value range
@@ -476,18 +560,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (result []string, 
 		}
 		rng := []int{cr.From.Col, cr.From.Row, cr.To.Col, cr.To.Row}
 		sortCoordinates(rng)
-		if cr.From.Row < fromRow {
-			fromRow = cr.From.Row
-		}
-		if cr.From.Col < fromCol {
-			fromCol = cr.From.Col
-		}
-		if cr.To.Row > fromRow {
-			toRow = cr.To.Row
-		}
-		if cr.To.Col > toCol {
-			toCol = cr.To.Col
-		}
+		prepareValueRange(cr, valueRange)
 		if cr.From.Sheet != "" {
 			sheet = cr.From.Sheet
 		}
@@ -497,24 +570,13 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (result []string, 
 		if cr.Sheet != "" {
 			sheet = cr.Sheet
 		}
-		if cr.Row < fromRow {
-			fromRow = cr.Row
-		}
-		if cr.Col < fromCol {
-			fromCol = cr.Col
-		}
-		if cr.Row > fromRow {
-			toRow = cr.Row
-		}
-		if cr.Col > toCol {
-			toCol = cr.Col
-		}
+		prepareValueRef(cr, valueRange)
 	}
 	// extract value from ranges
 	if cellRanges.Len() > 0 {
-		for row := fromRow; row <= toRow; row++ {
+		for row := valueRange[0]; row <= valueRange[1]; row++ {
 			var matrixRow = []string{}
-			for col := fromCol; col <= toCol; col++ {
+			for col := valueRange[2]; col <= valueRange[3]; col++ {
 				var cell, value string
 				if cell, err = CoordinatesToCellName(col, row); err != nil {
 					return
@@ -672,28 +734,15 @@ func (fn *formulaFuncs) ARABIC(argsList *list.List) (result string, err error) {
 		err = errors.New("ARABIC requires 1 numeric argument")
 		return
 	}
+	charMap := map[rune]float64{'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
 	val, last, prefix := 0.0, 0.0, 1.0
 	for _, char := range argsList.Front().Value.(formulaArg).Value {
 		digit := 0.0
-		switch char {
-		case '-':
+		if char == '-' {
 			prefix = -1
 			continue
-		case 'I':
-			digit = 1
-		case 'V':
-			digit = 5
-		case 'X':
-			digit = 10
-		case 'L':
-			digit = 50
-		case 'C':
-			digit = 100
-		case 'D':
-			digit = 500
-		case 'M':
-			digit = 1000
 		}
+		digit, _ = charMap[char]
 		val += digit
 		switch {
 		case last == digit && (last == 5 || last == 50 || last == 500):
@@ -850,7 +899,7 @@ func (fn *formulaFuncs) BASE(argsList *list.List) (result string, err error) {
 		return
 	}
 	if radix < 2 || radix > 36 {
-		err = errors.New("radix must be an integer ≥ 2 and ≤ 36")
+		err = errors.New("radix must be an integer >= 2 and <= 36")
 		return
 	}
 	if argsList.Len() > 2 {

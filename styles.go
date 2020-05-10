@@ -2299,21 +2299,21 @@ func setBorders(style *Style) *xlsxBorder {
 // cell.
 func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment, applyProtection bool, alignment *xlsxAlignment, protection *xlsxProtection) int {
 	var xf xlsxXf
-	xf.FontID = fontID
+	xf.FontID = intPtr(fontID)
 	if fontID != 0 {
-		xf.ApplyFont = true
+		xf.ApplyFont = boolPtr(true)
 	}
-	xf.NumFmtID = numFmtID
+	xf.NumFmtID = intPtr(numFmtID)
 	if numFmtID != 0 {
-		xf.ApplyNumberFormat = true
+		xf.ApplyNumberFormat = boolPtr(true)
 	}
-	xf.FillID = fillID
-	xf.BorderID = borderID
+	xf.FillID = intPtr(fillID)
+	xf.BorderID = intPtr(borderID)
 	style.CellXfs.Count++
 	xf.Alignment = alignment
-	xf.ApplyAlignment = applyAlignment
+	xf.ApplyAlignment = boolPtr(applyAlignment)
 	if applyProtection {
-		xf.ApplyProtection = applyProtection
+		xf.ApplyProtection = boolPtr(applyProtection)
 		xf.Protection = protection
 	}
 	xfID := 0

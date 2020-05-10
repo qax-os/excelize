@@ -381,7 +381,7 @@ func TestCalcCellValue(t *testing.T) {
 		// BASE
 		"=BASE()":        "BASE requires at least 2 arguments",
 		"=BASE(1,2,3,4)": "BASE allows at most 3 arguments",
-		"=BASE(1,1)":     "radix must be an integer ≥ 2 and ≤ 36",
+		"=BASE(1,1)":     "radix must be an integer >= 2 and <= 36",
 		// CEILING
 		"=CEILING()":      "CEILING requires at least 1 argument",
 		"=CEILING(1,2,3)": "CEILING allows at most 2 arguments",
