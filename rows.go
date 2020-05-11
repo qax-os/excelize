@@ -321,6 +321,27 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 	}
 }
 
+// SetRowsVisibility provides a function to set visibility to multiple rows
+// by given worksheet name and Excel row numbers. For example, hide rows
+// 2, 3 and 4 in Sheet1:
+//
+//    err := f.SetRowsVisibility("Sheet1", false, 2, 3, 4)
+//
+func (f *File) SetRowsVisibility(sheet string, visible bool, rows ...int) error {
+	if len(rows) == 0 {
+		return newInvalidRowNumbersError()
+	}
+
+	for _, row := range rows {
+		err := f.SetRowVisible(sheet, row, visible)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SetRowVisible provides a function to set visible of a single row by given
 // worksheet name and Excel row number. For example, hide row 2 in Sheet1:
 //

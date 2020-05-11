@@ -188,6 +188,26 @@ func TestRowVisibility(t *testing.T) {
 	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
 	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN is not exist")
 
+	assert.Error(t, f.SetRowsVisibility("Sheet3", true))
+
+	err = f.SetRowsVisibility("Sheet3", true, 3, 4)
+	assert.NoError(t, err)
+	visiable, err = f.GetRowVisible("Sheet3", 3)
+	assert.NoError(t, err)
+	assert.Equal(t, true, visiable)
+	visiable, err = f.GetRowVisible("Sheet3", 4)
+	assert.NoError(t, err)
+	assert.Equal(t, true, visiable)
+
+	err = f.SetRowsVisibility("Sheet3", false, 3, 4)
+	assert.NoError(t, err)
+	visiable, err = f.GetRowVisible("Sheet3", 3)
+	assert.NoError(t, err)
+	assert.Equal(t, false, visiable)
+	visiable, err = f.GetRowVisible("Sheet3", 4)
+	assert.NoError(t, err)
+	assert.Equal(t, false, visiable)
+
 	visible, err := f.GetRowVisible("Sheet3", 0)
 	assert.Equal(t, false, visible)
 	assert.EqualError(t, err, "invalid row number 0")

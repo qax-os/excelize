@@ -26,3 +26,7 @@ func newInvalidCellNameError(cell string) error {
 func newInvalidExcelDateError(dateValue float64) error {
 	return fmt.Errorf("invalid date value %f, negative values are not supported supported", dateValue)
 }
+
+func newInvalidRowNumbersError() error {
+	return fmt.Errorf("invalid rows value, no rows to process")
+}
