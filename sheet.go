@@ -354,7 +354,7 @@ func (f *File) getSheetID(name string) int {
 
 // GetSheetIndex provides a function to get a sheet index of the workbook by
 // the given sheet name. If the given sheet name is invalid, it will return an
-// integer type value -1.
+// integer type value 0.
 func (f *File) GetSheetIndex(name string) int {
 	var idx = -1
 	for index, sheet := range f.GetSheetList() {

@@ -307,3 +307,163 @@ func TestGetPageMargins(t *testing.T) {
 	// Test get page margins on not exists worksheet.
 	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
+
+func ExampleFile_SetSheetFormatPr() {
+	f := excelize.NewFile()
+	const sheet = "Sheet1"
+
+	if err := f.SetSheetFormatPr(sheet,
+		excelize.BaseColWidth(1.0),
+		excelize.DefaultColWidth(1.0),
+		excelize.DefaultRowHeight(1.0),
+		excelize.CustomHeight(true),
+		excelize.ZeroHeight(true),
+		excelize.ThickTop(true),
+		excelize.ThickBottom(true),
+	); err != nil {
+		fmt.Println(err)
+	}
+	// Output:
+}
+
+func ExampleFile_GetSheetFormatPr() {
+	f := excelize.NewFile()
+	const sheet = "Sheet1"
+
+	var (
+		baseColWidth     excelize.BaseColWidth
+		defaultColWidth  excelize.DefaultColWidth
+		defaultRowHeight excelize.DefaultRowHeight
+		customHeight     excelize.CustomHeight
+		zeroHeight       excelize.ZeroHeight
+		thickTop         excelize.ThickTop
+		thickBottom      excelize.ThickBottom
+	)
+
+	if err := f.GetSheetFormatPr(sheet,
+		&baseColWidth,
+		&defaultColWidth,
+		&defaultRowHeight,
+		&customHeight,
+		&zeroHeight,
+		&thickTop,
+		&thickBottom,
+	); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Defaults:")
+	fmt.Println("- baseColWidth:", baseColWidth)
+	fmt.Println("- defaultColWidth:", defaultColWidth)
+	fmt.Println("- defaultRowHeight:", defaultRowHeight)
+	fmt.Println("- customHeight:", customHeight)
+	fmt.Println("- zeroHeight:", zeroHeight)
+	fmt.Println("- thickTop:", thickTop)
+	fmt.Println("- thickBottom:", thickBottom)
+	// Output:
+	// Defaults:
+	// - baseColWidth: 0
+	// - defaultColWidth: 0
+	// - defaultRowHeight: 15
+	// - customHeight: false
+	// - zeroHeight: false
+	// - thickTop: false
+	// - thickBottom: false
+}
+
+func TestSheetFormatPrOptions(t *testing.T) {
+	const sheet = "Sheet1"
+
+	testData := []struct {
+		container  excelize.SheetFormatPrOptionsPtr
+		nonDefault excelize.SheetFormatPrOptions
+	}{
+		{new(excelize.BaseColWidth), excelize.BaseColWidth(1.0)},
+		{new(excelize.DefaultColWidth), excelize.DefaultColWidth(1.0)},
+		{new(excelize.DefaultRowHeight), excelize.DefaultRowHeight(1.0)},
+		{new(excelize.CustomHeight), excelize.CustomHeight(true)},
+		{new(excelize.ZeroHeight), excelize.ZeroHeight(true)},
+		{new(excelize.ThickTop), excelize.ThickTop(true)},
+		{new(excelize.ThickBottom), excelize.ThickBottom(true)},
+	}
+
+	for i, test := range testData {
+		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
+
+			opt := test.nonDefault
+			t.Logf("option %T", opt)
+
+			def := deepcopy.Copy(test.container).(excelize.SheetFormatPrOptionsPtr)
+			val1 := deepcopy.Copy(def).(excelize.SheetFormatPrOptionsPtr)
+			val2 := deepcopy.Copy(def).(excelize.SheetFormatPrOptionsPtr)
+
+			f := excelize.NewFile()
+			// Get the default value
+			assert.NoError(t, f.GetSheetFormatPr(sheet, def), opt)
+			// Get again and check
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
+			if !assert.Equal(t, val1, def, opt) {
+				t.FailNow()
+			}
+			// Set the same value
+			assert.NoError(t, f.SetSheetFormatPr(sheet, val1), opt)
+			// Get again and check
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
+			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
+				t.FailNow()
+			}
+			// Set a different value
+			assert.NoError(t, f.SetSheetFormatPr(sheet, test.nonDefault), opt)
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
+			// Get again and compare
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val2), opt)
+			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
+				t.FailNow()
+			}
+			// Value should not be the same as the default
+			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opt) {
+				t.FailNow()
+			}
+			// Restore the default value
+			assert.NoError(t, f.SetSheetFormatPr(sheet, def), opt)
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
+			if !assert.Equal(t, def, val1) {
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestSetSheetFormatPr(t *testing.T) {
+	f := excelize.NewFile()
+	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetFormatPr = nil
+	assert.NoError(t, f.SetSheetFormatPr("Sheet1", excelize.BaseColWidth(1.0)))
+	// Test set formatting properties on not exists worksheet.
+	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
+}
+
+func TestGetSheetFormatPr(t *testing.T) {
+	f := excelize.NewFile()
+	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetFormatPr = nil
+	var (
+		baseColWidth     excelize.BaseColWidth
+		defaultColWidth  excelize.DefaultColWidth
+		defaultRowHeight excelize.DefaultRowHeight
+		customHeight     excelize.CustomHeight
+		zeroHeight       excelize.ZeroHeight
+		thickTop         excelize.ThickTop
+		thickBottom      excelize.ThickBottom
+	)
+	assert.NoError(t, f.GetSheetFormatPr("Sheet1",
+		&baseColWidth,
+		&defaultColWidth,
+		&defaultRowHeight,
+		&customHeight,
+		&zeroHeight,
+		&thickTop,
+		&thickBottom,
+	))
+	// Test get formatting properties on not exists worksheet.
+	assert.EqualError(t, f.GetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
+}

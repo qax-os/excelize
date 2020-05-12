@@ -313,7 +313,7 @@ type PageMarginsOptionsPtr interface {
 // SetPageMargins provides a function to set worksheet page margins.
 //
 // Available options:
-//   PageMarginBotom(float64)
+//   PageMarginBottom(float64)
 //   PageMarginFooter(float64)
 //   PageMarginHeader(float64)
 //   PageMarginLeft(float64)
@@ -339,7 +339,7 @@ func (f *File) SetPageMargins(sheet string, opts ...PageMarginsOptions) error {
 // GetPageMargins provides a function to get worksheet page margins.
 //
 // Available options:
-//   PageMarginBotom(float64)
+//   PageMarginBottom(float64)
 //   PageMarginFooter(float64)
 //   PageMarginHeader(float64)
 //   PageMarginLeft(float64)
@@ -354,6 +354,199 @@ func (f *File) GetPageMargins(sheet string, opts ...PageMarginsOptionsPtr) error
 
 	for _, opt := range opts {
 		opt.getPageMargins(pm)
+	}
+	return err
+}
+
+// SheetFormatPrOptions is an option of the formatting properties of a
+// worksheet. See SetSheetFormatPr().
+type SheetFormatPrOptions interface {
+	setSheetFormatPr(formatPr *xlsxSheetFormatPr)
+}
+
+// SheetFormatPrOptionsPtr is a writable SheetFormatPrOptions. See
+// GetSheetFormatPr().
+type SheetFormatPrOptionsPtr interface {
+	SheetFormatPrOptions
+	getSheetFormatPr(formatPr *xlsxSheetFormatPr)
+}
+
+type (
+	// BaseColWidth specifies the number of characters of the maximum digit width
+	// of the normal style's font. This value does not include margin padding or
+	// extra padding for gridlines. It is only the number of characters.
+	BaseColWidth uint8
+	// DefaultColWidth specifies the default column width measured as the number
+	// of characters of the maximum digit width of the normal style's font.
+	DefaultColWidth float64
+	// DefaultRowHeight specifies the default row height measured in point size.
+	// Optimization so we don't have to write the height on all rows. This can be
+	// written out if most rows have custom height, to achieve the optimization.
+	DefaultRowHeight float64
+	// CustomHeight specifies the custom height.
+	CustomHeight bool
+	// ZeroHeight specifies if rows are hidden.
+	ZeroHeight bool
+	// ThickTop specifies if rows have a thick top border by default.
+	ThickTop bool
+	// ThickBottom specifies if rows have a thick bottom border by default.
+	ThickBottom bool
+)
+
+// setSheetFormatPr provides a method to set the number of characters of the
+// maximum digit width of the normal style's font.
+func (p BaseColWidth) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.BaseColWidth = uint8(p)
+}
+
+// setSheetFormatPr provides a method to set the number of characters of the
+// maximum digit width of the normal style's font.
+func (p *BaseColWidth) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = 0
+		return
+	}
+	*p = BaseColWidth(fp.BaseColWidth)
+}
+
+// setSheetFormatPr provides a method to set the default column width measured
+// as the number of characters of the maximum digit width of the normal
+// style's font.
+func (p DefaultColWidth) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.DefaultColWidth = float64(p)
+}
+
+// getSheetFormatPr provides a method to get the default column width measured
+// as the number of characters of the maximum digit width of the normal
+// style's font.
+func (p *DefaultColWidth) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = 0
+		return
+	}
+	*p = DefaultColWidth(fp.DefaultColWidth)
+}
+
+// setSheetFormatPr provides a method to set the default row height measured
+// in point size.
+func (p DefaultRowHeight) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.DefaultRowHeight = float64(p)
+}
+
+// getSheetFormatPr provides a method to get the default row height measured
+// in point size.
+func (p *DefaultRowHeight) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = 15
+		return
+	}
+	*p = DefaultRowHeight(fp.DefaultRowHeight)
+}
+
+// setSheetFormatPr provides a method to set the custom height.
+func (p CustomHeight) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.CustomHeight = bool(p)
+}
+
+// getSheetFormatPr provides a method to get the custom height.
+func (p *CustomHeight) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = false
+		return
+	}
+	*p = CustomHeight(fp.CustomHeight)
+}
+
+// setSheetFormatPr provides a method to set if rows are hidden.
+func (p ZeroHeight) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.ZeroHeight = bool(p)
+}
+
+// getSheetFormatPr provides a method to get if rows are hidden.
+func (p *ZeroHeight) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = false
+		return
+	}
+	*p = ZeroHeight(fp.ZeroHeight)
+}
+
+// setSheetFormatPr provides a method to set if rows have a thick top border
+// by default.
+func (p ThickTop) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.ThickTop = bool(p)
+}
+
+// getSheetFormatPr provides a method to get if rows have a thick top border
+// by default.
+func (p *ThickTop) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = false
+		return
+	}
+	*p = ThickTop(fp.ThickTop)
+}
+
+// setSheetFormatPr provides a method to set if rows have a thick bottom
+// border by default.
+func (p ThickBottom) setSheetFormatPr(fp *xlsxSheetFormatPr) {
+	fp.ThickBottom = bool(p)
+}
+
+// setSheetFormatPr provides a method to set if rows have a thick bottom
+// border by default.
+func (p *ThickBottom) getSheetFormatPr(fp *xlsxSheetFormatPr) {
+	if fp == nil {
+		*p = false
+		return
+	}
+	*p = ThickBottom(fp.ThickBottom)
+}
+
+// SetSheetFormatPr provides a function to set worksheet formatting properties.
+//
+// Available options:
+//   BaseColWidth(uint8)
+//   DefaultColWidth(float64)
+//   DefaultRowHeight(float64)
+//   CustomHeight(bool)
+//   ZeroHeight(bool)
+//   ThickTop(bool)
+//   ThickBottom(bool)
+func (f *File) SetSheetFormatPr(sheet string, opts ...SheetFormatPrOptions) error {
+	s, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	fp := s.SheetFormatPr
+	if fp == nil {
+		fp = new(xlsxSheetFormatPr)
+		s.SheetFormatPr = fp
+	}
+	for _, opt := range opts {
+		opt.setSheetFormatPr(fp)
+	}
+	return err
+}
+
+// GetSheetFormatPr provides a function to get worksheet formatting properties.
+//
+// Available options:
+//   BaseColWidth(uint8)
+//   DefaultColWidth(float64)
+//   DefaultRowHeight(float64)
+//   CustomHeight(bool)
+//   ZeroHeight(bool)
+//   ThickTop(bool)
+//   ThickBottom(bool)
+func (f *File) GetSheetFormatPr(sheet string, opts ...SheetFormatPrOptionsPtr) error {
+	s, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	fp := s.SheetFormatPr
+	for _, opt := range opts {
+		opt.getSheetFormatPr(fp)
 	}
 	return err
 }
