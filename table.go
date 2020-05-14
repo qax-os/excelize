@@ -290,6 +290,20 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 		return err
 	}
 	ref := cellStart + ":" + cellEnd
+	wb := f.workbookReader()
+	d := xlsxDefinedName{
+		Name:         "_xlnm._FilterDatabase",
+		Hidden:       true,
+		LocalSheetID: intPtr(f.GetSheetIndex(sheet)),
+		Data:         fmt.Sprintf("%s!%s", sheet, ref),
+	}
+	if wb.DefinedNames != nil {
+		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
+	} else {
+		wb.DefinedNames = &xlsxDefinedNames{
+			DefinedName: []xlsxDefinedName{d},
+		}
+	}
 	refRange := vcol - hcol
 	return f.autoFilter(sheet, ref, refRange, hcol, formatSet)
 }
