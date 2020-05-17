@@ -47,6 +47,15 @@ func TestAddPicture(t *testing.T) {
 	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)
 
+	// Test add picture to worksheet with autofit.
+	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
+	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), `{"x_offset": 10, "y_offset": 10, "autofit": true}`))
+	f.NewSheet("AddPicture")
+	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
+	assert.NoError(t, f.MergeCell("AddPicture", "B3", "D9"))
+	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
+	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
+
 	// Test add picture to worksheet from bytes.
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
 	// Test add picture to worksheet from bytes with illegal cell coordinates.
@@ -180,4 +189,16 @@ func TestDeletePicture(t *testing.T) {
 	assert.EqualError(t, f.DeletePicture("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
 	// Test delete picture on no chart worksheet.
 	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
+}
+
+func TestDrawingResize(t *testing.T) {
+	f := NewFile()
+	// Test calculate drawing resize on not exists worksheet.
+	_, _, _, _, err := f.drawingResize("SheetN", "A1", 1, 1, nil)
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+	// Test calculate drawing resize with invalid coordinates.
+	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
+	assert.EqualError(t, err, `cannot convert cell "" to coordinates: invalid cell name ""`)
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }

@@ -32,6 +32,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 		FPrintsWithSheet: true,
 		FLocksWithSheet:  false,
 		NoChangeAspect:   false,
+		Autofit:          false,
 		OffsetX:          0,
 		OffsetY:          0,
 		XScale:           1.0,
@@ -244,8 +245,12 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	if err != nil {
 		return err
 	}
-	width = int(float64(width) * formatSet.XScale)
-	height = int(float64(height) * formatSet.YScale)
+	if formatSet.Autofit {
+		width, height, col, row, err = f.drawingResize(sheet, cell, float64(width), float64(height), formatSet)
+		if err != nil {
+			return err
+		}
+	}
 	col--
 	row--
 	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
@@ -577,4 +582,48 @@ func (f *File) drawingsWriter() {
 			f.saveFileList(path, v)
 		}
 	}
+}
+
+// drawingResize calculate the height and width after resizing.
+func (f *File) drawingResize(sheet string, cell string, width, height float64, formatSet *formatPicture) (w, h, c, r int, err error) {
+	var mergeCells []MergeCell
+	mergeCells, err = f.GetMergeCells(sheet)
+	if err != nil {
+		return
+	}
+	var rng []int
+	var inMergeCell bool
+	if c, r, err = CellNameToCoordinates(cell); err != nil {
+		return
+	}
+	cellWidth, cellHeight := f.getColWidth(sheet, c), f.getRowHeight(sheet, r)
+	for _, mergeCell := range mergeCells {
+		if inMergeCell, err = f.checkCellInArea(cell, mergeCell[0]); err != nil {
+			return
+		}
+		if inMergeCell {
+			rng, _ = areaRangeToCoordinates(mergeCell.GetStartAxis(), mergeCell.GetEndAxis())
+			sortCoordinates(rng)
+		}
+	}
+	if inMergeCell {
+		c, r = rng[0], rng[1]
+		for col := rng[0] - 1; col < rng[2]; col++ {
+			cellWidth += f.getColWidth(sheet, col)
+		}
+		for row := rng[1] - 1; row < rng[3]; row++ {
+			cellHeight += f.getRowHeight(sheet, row)
+		}
+	}
+	if float64(cellWidth) < width {
+		asp := float64(cellWidth) / width
+		width, height = float64(cellWidth), height*asp
+	}
+	if float64(cellHeight) < height {
+		asp := float64(cellHeight) / height
+		height, width = float64(cellHeight), width*asp
+	}
+	width, height = width-float64(formatSet.OffsetX), height-float64(formatSet.OffsetY)
+	w, h = int(width*formatSet.XScale), int(height*formatSet.YScale)
+	return
 }

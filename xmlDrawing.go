@@ -419,6 +419,7 @@ type formatPicture struct {
 	FPrintsWithSheet bool    `json:"print_obj"`
 	FLocksWithSheet  bool    `json:"locked"`
 	NoChangeAspect   bool    `json:"lock_aspect_ratio"`
+	Autofit          bool    `json:"autofit"`
 	OffsetX          int     `json:"x_offset"`
 	OffsetY          int     `json:"y_offset"`
 	XScale           float64 `json:"x_scale"`
