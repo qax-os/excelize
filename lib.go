@@ -21,7 +21,7 @@ import (
 	"unsafe"
 )
 
-// ReadZipReader can be used to read an XLSX in memory without touching the
+// ReadZipReader can be used to read the spreadsheet in memory without touching the
 // filesystem.
 func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	fileList := make(map[string][]byte, len(r.File))
@@ -160,8 +160,8 @@ func ColumnNumberToName(num int) (string, error) {
 //
 // Example:
 //
-//    CellCoordinates("A1") // returns 1, 1, nil
-//    CellCoordinates("Z3") // returns 26, 3, nil
+//    excelize.CellNameToCoordinates("A1") // returns 1, 1, nil
+//    excelize.CellNameToCoordinates("Z3") // returns 26, 3, nil
 //
 func CellNameToCoordinates(cell string) (int, int, error) {
 	const msg = "cannot convert cell %q to coordinates: %v"
@@ -184,7 +184,7 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 //
 // Example:
 //
-//    CoordinatesToCellName(1, 1) // returns "A1", nil
+//    excelize.CoordinatesToCellName(1, 1) // returns "A1", nil
 //
 func CoordinatesToCellName(col, row int) (string, error) {
 	if col < 1 || row < 1 {

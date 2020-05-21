@@ -56,7 +56,7 @@ type cellRange struct {
 // formulaArg is the argument of a formula or function.
 type formulaArg struct {
 	Value  string
-	Matrix []string
+	Matrix [][]string
 }
 
 // formulaFuncs is the type of the formula functions.
@@ -172,8 +172,8 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					}
 					for idx, val := range result {
 						arg := formulaArg{Value: val}
-						if idx < len(matrix) {
-							arg.Matrix = matrix[idx]
+						if idx == 0 {
+							arg.Matrix = matrix
 						}
 						argsList.PushBack(arg)
 					}
@@ -1850,17 +1850,13 @@ func det(sqMtx [][]float64) float64 {
 //
 func (fn *formulaFuncs) MDETERM(argsList *list.List) (result string, err error) {
 	var num float64
-	var rows int
 	var numMtx = [][]float64{}
-	var strMtx = [][]string{}
-	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		if len(arg.Value.(formulaArg).Matrix) == 0 {
-			break
-		}
-		strMtx = append(strMtx, arg.Value.(formulaArg).Matrix)
-		rows++
+	var strMtx = argsList.Front().Value.(formulaArg).Matrix
+	if argsList.Len() < 1 {
+		return
 	}
-	for _, row := range strMtx {
+	var rows = len(strMtx)
+	for _, row := range argsList.Front().Value.(formulaArg).Matrix {
 		if len(row) != rows {
 			err = errors.New(formulaErrorVALUE)
 			return
@@ -2630,3 +2626,5 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) (result string, err error) {
 	result = fmt.Sprintf("%g", float64(int(number*adjust))/adjust)
 	return
 }
+
+// Statistical functions

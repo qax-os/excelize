@@ -607,6 +607,7 @@ func (f *File) drawingResize(sheet string, cell string, width, height float64, f
 		}
 	}
 	if inMergeCell {
+		cellWidth, cellHeight = 0, 0
 		c, r = rng[0], rng[1]
 		for col := rng[0] - 1; col < rng[2]; col++ {
 			cellWidth += f.getColWidth(sheet, col)
