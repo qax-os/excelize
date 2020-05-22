@@ -13,6 +13,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"container/list"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,7 +28,11 @@ func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	fileList := make(map[string][]byte, len(r.File))
 	worksheets := 0
 	for _, v := range r.File {
-		fileList[v.Name] = readFile(v)
+		bs := readFile(v)
+		if bs == nil {
+			return nil, 0, errors.New("read file occur an error")
+		}
+		fileList[v.Name] = bs
 		if strings.HasPrefix(v.Name, "xl/worksheets/sheet") {
 			worksheets++
 		}
@@ -56,7 +61,8 @@ func (f *File) saveFileList(name string, content []byte) {
 func readFile(file *zip.File) []byte {
 	rc, err := file.Open()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil
 	}
 	dat := make([]byte, 0, file.FileInfo().Size())
 	buff := bytes.NewBuffer(dat)
