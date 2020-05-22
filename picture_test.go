@@ -1,8 +1,13 @@
 package excelize
 
 import (
-	"fmt"
+	_ "image/gif"
+	_ "image/jpeg"
 	_ "image/png"
+
+	_ "golang.org/x/image/tiff"
+
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -20,49 +25,53 @@ func BenchmarkAddPictureFromBytes(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
-		f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", i), "", "excel", ".png", imgFile)
+		if err := f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", i), "", "excel", ".png", imgFile); err != nil {
+			b.Error(err)
+		}
 	}
 }
 
 func TestAddPicture(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
 	// Test add picture to worksheet with offset and location hyperlink.
-	err = xlsx.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
+	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
+		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`))
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
-	err = xlsx.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
+		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 
-	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
+	assert.NoError(t, err)
+
+	// Test add picture to worksheet with autofit.
+	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
+	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), `{"x_offset": 10, "y_offset": 10, "autofit": true}`))
+	f.NewSheet("AddPicture")
+	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
+	assert.NoError(t, f.MergeCell("AddPicture", "B3", "D9"))
+	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
+	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
 
 	// Test add picture to worksheet from bytes.
-	assert.NoError(t, xlsx.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".jpg", file))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
 	// Test add picture to worksheet from bytes with illegal cell coordinates.
-	assert.EqualError(t, xlsx.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".jpg", file), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".png", file), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q15", filepath.Join("test", "images", "excel.jpg"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), ""))
 
 	// Test write file to given path.
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
 }
 
 func TestAddPictureErrors(t *testing.T) {
 	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	// Test add picture to worksheet with invalid file path.
 	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), "")
@@ -83,12 +92,12 @@ func TestAddPictureErrors(t *testing.T) {
 }
 
 func TestGetPicture(t *testing.T) {
-	xlsx, err := prepareTestBook1()
+	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	file, raw, err := xlsx.GetPicture("Sheet1", "F21")
+	file, raw, err := f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
@@ -97,37 +106,33 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	// Try to get picture from a worksheet with illegal cell coordinates.
-	_, _, err = xlsx.GetPicture("Sheet1", "A")
+	_, _, err = f.GetPicture("Sheet1", "A")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// Try to get picture from a worksheet that doesn't contain any images.
-	file, raw, err = xlsx.GetPicture("Sheet3", "I9")
+	file, raw, err = f.GetPicture("Sheet3", "I9")
 	assert.EqualError(t, err, "sheet Sheet3 is not exist")
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
 	// Try to get picture from a cell that doesn't contain an image.
-	file, raw, err = xlsx.GetPicture("Sheet2", "A2")
+	file, raw, err = f.GetPicture("Sheet2", "A2")
 	assert.NoError(t, err)
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
-	xlsx.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
-	xlsx.getDrawingRelationships("", "")
-	xlsx.getSheetRelationshipsTargetByID("", "")
-	xlsx.deleteSheetRelationships("", "")
+	f.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
+	f.getDrawingRelationships("", "")
+	f.getSheetRelationshipsTargetByID("", "")
+	f.deleteSheetRelationships("", "")
 
 	// Try to get picture from a local storage file.
-	if !assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestGetPicture.xlsx"))) {
-		t.FailNow()
-	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetPicture.xlsx")))
 
-	xlsx, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	f, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
+	assert.NoError(t, err)
 
-	file, raw, err = xlsx.GetPicture("Sheet1", "F21")
+	file, raw, err = f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
@@ -136,7 +141,14 @@ func TestGetPicture(t *testing.T) {
 	}
 
 	// Try to get picture from a local storage file that doesn't contain an image.
-	file, raw, err = xlsx.GetPicture("Sheet1", "F22")
+	file, raw, err = f.GetPicture("Sheet1", "F22")
+	assert.NoError(t, err)
+	assert.Empty(t, file)
+	assert.Empty(t, raw)
+
+	// Test get picture from none drawing worksheet.
+	f = NewFile()
+	file, raw, err = f.GetPicture("Sheet1", "F22")
 	assert.NoError(t, err)
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
@@ -151,11 +163,9 @@ func TestAddDrawingPicture(t *testing.T) {
 func TestAddPictureFromBytes(t *testing.T) {
 	f := NewFile()
 	imgFile, err := ioutil.ReadFile("logo.png")
-	if err != nil {
-		t.Error("Unable to load logo for test")
-	}
-	f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile)
-	f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile)
+	assert.NoError(t, err, "Unable to load logo for test")
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile))
 	imageCount := 0
 	for fileName := range f.XLSX {
 		if strings.Contains(fileName, "media/image") {
@@ -163,4 +173,32 @@ func TestAddPictureFromBytes(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
+	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN is not exist")
+}
+
+func TestDeletePicture(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.DeletePicture("Sheet1", "A1"))
+	assert.NoError(t, f.AddPicture("Sheet1", "P1", filepath.Join("test", "images", "excel.jpg"), ""))
+	assert.NoError(t, f.DeletePicture("Sheet1", "P1"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture.xlsx")))
+	// Test delete picture on not exists worksheet.
+	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN is not exist")
+	// Test delete picture with invalid coordinates.
+	assert.EqualError(t, f.DeletePicture("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
+	// Test delete picture on no chart worksheet.
+	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
+}
+
+func TestDrawingResize(t *testing.T) {
+	f := NewFile()
+	// Test calculate drawing resize on not exists worksheet.
+	_, _, _, _, err := f.drawingResize("SheetN", "A1", 1, 1, nil)
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+	// Test calculate drawing resize with invalid coordinates.
+	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
+	assert.EqualError(t, err, `cannot convert cell "" to coordinates: invalid cell name ""`)
+	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }

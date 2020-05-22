@@ -1,10 +1,10 @@
-<p align="center"><img width="650" src="./excelize.png" alt="Excelize logo"></p>
+<p align="center"><img width="650" src="./excelize.svg" alt="Excelize logo"></p>
 
 <p align="center">
     <a href="https://travis-ci.org/360EntSecGroup-Skylar/excelize"><img src="https://travis-ci.org/360EntSecGroup-Skylar/excelize.svg?branch=master" alt="Build Status"></a>
     <a href="https://codecov.io/gh/360EntSecGroup-Skylar/excelize"><img src="https://codecov.io/gh/360EntSecGroup-Skylar/excelize/branch/master/graph/badge.svg" alt="Code Coverage"></a>
     <a href="https://goreportcard.com/report/github.com/360EntSecGroup-Skylar/excelize"><img src="https://goreportcard.com/badge/github.com/360EntSecGroup-Skylar/excelize" alt="Go Report Card"></a>
-    <a href="https://godoc.org/github.com/360EntSecGroup-Skylar/excelize"><img src="https://godoc.org/github.com/360EntSecGroup-Skylar/excelize?status.svg" alt="GoDoc"></a>
+    <a href="https://pkg.go.dev/github.com/360EntSecGroup-Skylar/excelize/v2?tab=doc"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white" alt="go.dev"></a>
     <a href="https://opensource.org/licenses/BSD-3-Clause"><img src="https://img.shields.io/badge/license-bsd-orange.svg" alt="Licenses"></a>
     <a href="https://www.paypal.me/xuri"><img src="https://img.shields.io/badge/Donate-PayPal-green.svg" alt="Donate"></a>
 </p>
@@ -13,7 +13,7 @@
 
 ## 简介
 
-Excelize 是 Go 语言编写的用于操作 Office Excel 文档类库，基于 ECMA-376 Office OpenXML 标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的 XLSX 文档。相比较其他的开源类库，Excelize 支持写入原本带有图片(表)、透视表和切片器等复杂样式的文档，还支持向 Excel 文档中插入图片与图表，并且在保存后不会丢失文档原有样式，可以应用于各类报表系统中。使用本类库要求使用的 Go 语言为 1.8 或更高版本，完整的 API 使用文档请访问 [godoc.org](https://godoc.org/github.com/360EntSecGroup-Skylar/excelize) 或查看 [参考文档](https://xuri.me/excelize/)。
+Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLSX / XLSM / XLTM 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写 API，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.10 或更高版本，完整的 API 使用文档请访问 [go.dev](https://pkg.go.dev/github.com/360EntSecGroup-Skylar/excelize/v2?tab=doc) 或查看 [参考文档](https://xuri.me/excelize/)。
 
 ## 快速上手
 
@@ -21,6 +21,12 @@ Excelize 是 Go 语言编写的用于操作 Office Excel 文档类库，基于 E
 
 ```bash
 go get github.com/360EntSecGroup-Skylar/excelize
+```
+
+- 如果您使用 [Go Modules](https://blog.golang.org/using-go-modules) 管理软件包，请使用下面的命令来安装最新版本。
+
+```bash
+go get github.com/360EntSecGroup-Skylar/excelize/v2
 ```
 
 ### 创建 Excel 文档
@@ -46,8 +52,7 @@ func main() {
     // 设置工作簿的默认工作表
     f.SetActiveSheet(index)
     // 根据指定路径保存文件
-    err := f.SaveAs("./Book1.xlsx")
-    if err != nil {
+    if err := f.SaveAs("Book1.xlsx"); err != nil {
         fmt.Println(err)
     }
 }
@@ -67,7 +72,7 @@ import (
 )
 
 func main() {
-    f, err := excelize.OpenFile("./Book1.xlsx")
+    f, err := excelize.OpenFile("Book1.xlsx")
     if err != nil {
         fmt.Println(err)
         return
@@ -115,18 +120,15 @@ func main() {
     for k, v := range values {
         f.SetCellValue("Sheet1", k, v)
     }
-    err := f.AddChart("Sheet1", "E1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`)
-    if err != nil {
+    if err := f.AddChart("Sheet1", "E1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`); err != nil {
         fmt.Println(err)
         return
     }
     // 根据指定路径保存文件
-    err = f.SaveAs("./Book1.xlsx")
-    if err != nil {
+    if err := f.SaveAs("Book1.xlsx"); err != nil {
         fmt.Println(err)
     }
 }
-
 ```
 
 ### 向 Excel 文档中插入图片
@@ -144,29 +146,25 @@ import (
 )
 
 func main() {
-    f, err := excelize.OpenFile("./Book1.xlsx")
+    f, err := excelize.OpenFile("Book1.xlsx")
     if err != nil {
         fmt.Println(err)
         return
     }
     // 插入图片
-    err = f.AddPicture("Sheet1", "A2", "./image1.png", "")
-    if err != nil {
+    if err := f.AddPicture("Sheet1", "A2", "image.png", ""); err != nil {
         fmt.Println(err)
     }
     // 在工作表中插入图片，并设置图片的缩放比例
-    err = f.AddPicture("Sheet1", "D2", "./image2.jpg", `{"x_scale": 0.5, "y_scale": 0.5}`)
-    if err != nil {
+    if err := f.AddPicture("Sheet1", "D2", "image.jpg", `{"x_scale": 0.5, "y_scale": 0.5}`); err != nil {
         fmt.Println(err)
     }
     // 在工作表中插入图片，并设置图片的打印属性
-    err = f.AddPicture("Sheet1", "H2", "./image3.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`)
-    if err != nil {
+    if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`); err != nil {
         fmt.Println(err)
     }
     // 保存文件
-    err = f.Save()
-    if err != nil {
+    if err = f.Save(); err != nil {
         fmt.Println(err)
     }
 }
@@ -181,7 +179,5 @@ func main() {
 本项目遵循 BSD 3-Clause 开源许可协议，访问 [https://opensource.org/licenses/BSD-3-Clause](https://opensource.org/licenses/BSD-3-Clause) 查看许可协议文件。
 
 Excel 徽标是 [Microsoft Corporation](https://aka.ms/trademarks-usage) 的商标，项目的图片是一种改编。
-
-本类库中部分 XML 结构体的定义参考了开源项目：[tealeg/xlsx](https://github.com/tealeg/xlsx)，遵循 [BSD 3-Clause License](https://github.com/tealeg/xlsx/blob/master/LICENSE) 开源许可协议。
 
 gopher.{ai,svg,png} 由 [Takuya Ueda](https://twitter.com/tenntenn) 创作，遵循 [Creative Commons 3.0 Attributions license](http://creativecommons.org/licenses/by/3.0/) 创作共用授权条款。

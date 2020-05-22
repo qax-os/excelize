@@ -1,6 +1,8 @@
 package excelize
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,15 +27,15 @@ func TestStyleFill(t *testing.T) {
 		xl := NewFile()
 		styleID, err := xl.NewStyle(testCase.format)
 		if err != nil {
-			t.Fatalf("%v", err)
+			t.Fatal(err)
 		}
 
 		styles := xl.stylesReader()
 		style := styles.CellXfs.Xf[styleID]
 		if testCase.expectFill {
-			assert.NotEqual(t, style.FillID, 0, testCase.label)
+			assert.NotEqual(t, *style.FillID, 0, testCase.label)
 		} else {
-			assert.Equal(t, style.FillID, 0, testCase.label)
+			assert.Equal(t, *style.FillID, 0, testCase.label)
 		}
 	}
 }
@@ -164,4 +166,69 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.Equal(t, cellRange, cf[0].SQRef, testCase.label)
 		assert.EqualValues(t, testCase.rules, cf[0].CfRule, testCase.label)
 	}
+}
+
+func TestUnsetConditionalFormat(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
+	format, err := f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format)))
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
+	// Test unset conditional format on not exists worksheet.
+	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN is not exist")
+	// Save xlsx file by the given path.
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
+}
+
+func TestNewStyle(t *testing.T) {
+	f := NewFile()
+	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
+	assert.NoError(t, err)
+	styles := f.stylesReader()
+	fontID := styles.CellXfs.Xf[styleID].FontID
+	font := styles.Fonts.Font[*fontID]
+	assert.Contains(t, *font.Name.Val, "Times New Roman", "Stored font should contain font name")
+	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
+	_, err = f.NewStyle(&Style{})
+	assert.NoError(t, err)
+	_, err = f.NewStyle(Style{})
+	assert.EqualError(t, err, "invalid parameter type")
+}
+
+func TestGetDefaultFont(t *testing.T) {
+	f := NewFile()
+	s := f.GetDefaultFont()
+	assert.Equal(t, s, "Calibri", "Default font should be Calibri")
+}
+
+func TestSetDefaultFont(t *testing.T) {
+	f := NewFile()
+	f.SetDefaultFont("Ariel")
+	styles := f.stylesReader()
+	s := f.GetDefaultFont()
+	assert.Equal(t, s, "Ariel", "Default font should change to Ariel")
+	assert.Equal(t, *styles.CellStyles.CellStyle[0].CustomBuiltIn, true)
+}
+
+func TestStylesReader(t *testing.T) {
+	f := NewFile()
+	// Test read styles with unsupport charset.
+	f.Styles = nil
+	f.XLSX["xl/styles.xml"] = MacintoshCyrillicCharset
+	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
+}
+
+func TestThemeReader(t *testing.T) {
+	f := NewFile()
+	// Test read theme with unsupport charset.
+	f.XLSX["xl/theme/theme1.xml"] = MacintoshCyrillicCharset
+	assert.EqualValues(t, new(xlsxTheme), f.themeReader())
+}
+
+func TestSetCellStyle(t *testing.T) {
+	f := NewFile()
+	// Test set cell style on not exists worksheet.
+	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN is not exist")
 }

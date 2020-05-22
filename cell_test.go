@@ -2,12 +2,16 @@ package excelize
 
 import (
 	"fmt"
+	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCheckCellInArea(t *testing.T) {
+	f := NewFile()
 	expectedTrueCellInAreaList := [][2]string{
 		{"c2", "A1:AAZ32"},
 		{"B9", "A1:B9"},
@@ -17,7 +21,7 @@ func TestCheckCellInArea(t *testing.T) {
 	for _, expectedTrueCellInArea := range expectedTrueCellInAreaList {
 		cell := expectedTrueCellInArea[0]
 		area := expectedTrueCellInArea[1]
-		ok, err := checkCellInArea(cell, area)
+		ok, err := f.checkCellInArea(cell, area)
 		assert.NoError(t, err)
 		assert.Truef(t, ok,
 			"Expected cell %v to be in area %v, got false\n", cell, area)
@@ -32,13 +36,17 @@ func TestCheckCellInArea(t *testing.T) {
 	for _, expectedFalseCellInArea := range expectedFalseCellInAreaList {
 		cell := expectedFalseCellInArea[0]
 		area := expectedFalseCellInArea[1]
-		ok, err := checkCellInArea(cell, area)
+		ok, err := f.checkCellInArea(cell, area)
 		assert.NoError(t, err)
 		assert.Falsef(t, ok,
 			"Expected cell %v not to be inside of area %v, but got true\n", cell, area)
 	}
 
-	ok, err := checkCellInArea("AA0", "Z0:AB1")
+	ok, err := f.checkCellInArea("A1", "A:B")
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.False(t, ok)
+
+	ok, err = f.checkCellInArea("AA0", "Z0:AB1")
 	assert.EqualError(t, err, `cannot convert cell "AA0" to coordinates: invalid cell name "AA0"`)
 	assert.False(t, ok)
 }
@@ -47,8 +55,8 @@ func TestSetCellFloat(t *testing.T) {
 	sheet := "Sheet1"
 	t.Run("with no decimal", func(t *testing.T) {
 		f := NewFile()
-		f.SetCellFloat(sheet, "A1", 123.0, -1, 64)
-		f.SetCellFloat(sheet, "A2", 123.0, 1, 64)
+		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.0, -1, 64))
+		assert.NoError(t, f.SetCellFloat(sheet, "A2", 123.0, 1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123", val, "A1 should be 123")
@@ -59,7 +67,7 @@ func TestSetCellFloat(t *testing.T) {
 
 	t.Run("with a decimal and precision limit", func(t *testing.T) {
 		f := NewFile()
-		f.SetCellFloat(sheet, "A1", 123.42, 1, 64)
+		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.42, 1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123.4", val, "A1 should be 123.4")
@@ -67,17 +75,44 @@ func TestSetCellFloat(t *testing.T) {
 
 	t.Run("with a decimal and no limit", func(t *testing.T) {
 		f := NewFile()
-		f.SetCellFloat(sheet, "A1", 123.42, -1, 64)
+		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.42, -1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123.42", val, "A1 should be 123.42")
 	})
+	f := NewFile()
+	assert.EqualError(t, f.SetCellFloat(sheet, "A", 123.42, -1, 64), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestSetCellValue(t *testing.T) {
+	f := NewFile()
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestSetCellBool(t *testing.T) {
+	f := NewFile()
+	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestGetCellFormula(t *testing.T) {
+	// Test get cell formula on not exist worksheet.
+	f := NewFile()
+	_, err := f.GetCellFormula("SheetN", "A1")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+
+	// Test get cell formula on no formula cell.
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
+	_, err = f.GetCellFormula("Sheet1", "A1")
+	assert.NoError(t, err)
 }
 
 func ExampleFile_SetCellFloat() {
 	f := NewFile()
 	var x = 3.14159265
-	f.SetCellFloat("Sheet1", "A1", x, 2, 64)
+	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
+		fmt.Println(err)
+	}
 	val, _ := f.GetCellValue("Sheet1", "A1")
 	fmt.Println(val)
 	// Output: 3.14
@@ -88,9 +123,103 @@ func BenchmarkSetCellValue(b *testing.B) {
 	cols := []string{"A", "B", "C", "D", "E", "F"}
 	f := NewFile()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 1; i <= b.N; i++ {
 		for j := 0; j < len(values); j++ {
-			f.SetCellValue("Sheet1", fmt.Sprint(cols[j], i), values[j])
+			if err := f.SetCellValue("Sheet1", cols[j]+strconv.Itoa(i), values[j]); err != nil {
+				b.Error(err)
+			}
 		}
 	}
+}
+
+func TestOverflowNumericCell(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "OverflowNumericCell.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	// GOARCH=amd64 - all ok; GOARCH=386 - actual: "-2147483648"
+	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
+}
+
+func TestSetCellRichText(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))
+	assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 44))
+	richTextRun := []RichTextRun{
+		{
+			Text: "blod",
+			Font: &Font{
+				Bold:   true,
+				Color:  "2354e8",
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: " and ",
+			Font: &Font{
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: "italic ",
+			Font: &Font{
+				Bold:   true,
+				Color:  "e83723",
+				Italic: true,
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: "text with color and font-family,",
+			Font: &Font{
+				Bold:   true,
+				Color:  "2354e8",
+				Family: "Times New Roman",
+			},
+		},
+		{
+			Text: "\r\nlarge text with ",
+			Font: &Font{
+				Size:  14,
+				Color: "ad23e8",
+			},
+		},
+		{
+			Text: "strike",
+			Font: &Font{
+				Color:  "e89923",
+				Strike: true,
+			},
+		},
+		{
+			Text: " and ",
+			Font: &Font{
+				Size:  14,
+				Color: "ad23e8",
+			},
+		},
+		{
+			Text: "underline.",
+			Font: &Font{
+				Color:     "23e833",
+				Underline: "single",
+			},
+		},
+	}
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", richTextRun))
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A2", richTextRun))
+	style, err := f.NewStyle(&Style{
+		Alignment: &Alignment{
+			WrapText: true,
+		},
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
+	// Test set cell rich text on not exists worksheet
+	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
+	// Test set cell rich text with illegal cell coordinates
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }

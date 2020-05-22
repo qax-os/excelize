@@ -28,6 +28,14 @@ var trueExpectedDateList = []dateTest{
 	{401769.00000000000, time.Date(3000, time.January, 1, 0, 0, 0, 0, time.UTC)},
 }
 
+var excelTimeInputList = []dateTest{
+	{0.0, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)},
+	{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC)},
+	{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC)},
+	{41275.0, time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC)},
+	{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
+}
+
 func TestTimeToExcelTime(t *testing.T) {
 	for i, test := range trueExpectedDateList {
 		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
@@ -53,15 +61,7 @@ func TestTimeToExcelTime_Timezone(t *testing.T) {
 }
 
 func TestTimeFromExcelTime(t *testing.T) {
-	trueExpectedInputList := []dateTest{
-		{0.0, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)},
-		{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC)},
-		{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC)},
-		{41275.0, time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
-	}
-
-	for i, test := range trueExpectedInputList {
+	for i, test := range excelTimeInputList {
 		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
 			assert.Equal(t, test.GoValue, timeFromExcelTime(test.ExcelValue, false))
 		})
@@ -72,4 +72,18 @@ func TestTimeFromExcelTime_1904(t *testing.T) {
 	_, _ = shiftJulianToNoon(1, -0.6)
 	timeFromExcelTime(61, true)
 	timeFromExcelTime(62, true)
+}
+
+func TestExcelDateToTime(t *testing.T) {
+	// Check normal case
+	for i, test := range excelTimeInputList {
+		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
+			timeValue, err := ExcelDateToTime(test.ExcelValue, false)
+			assert.Equal(t, test.GoValue, timeValue)
+			assert.NoError(t, err)
+		})
+	}
+	// Check error case
+	_, err := ExcelDateToTime(-1, false)
+	assert.EqualError(t, err, "invalid date value -1.000000, negative values are not supported supported")
 }
