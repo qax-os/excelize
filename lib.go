@@ -15,7 +15,6 @@ import (
 	"container/list"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -59,7 +58,6 @@ func (f *File) saveFileList(name string, content []byte) {
 func readFile(file *zip.File) ([]byte, error) {
 	rc, err := file.Open()
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	dat := make([]byte, 0, file.FileInfo().Size())
@@ -176,11 +174,7 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 	}
 
 	col, err := ColumnNameToNumber(colname)
-	if err != nil {
-		return -1, -1, fmt.Errorf(msg, cell, err)
-	}
-
-	return col, row, nil
+	return col, row, err
 }
 
 // CoordinatesToCellName converts [X, Y] coordinates to alpha-numeric cell
@@ -195,11 +189,7 @@ func CoordinatesToCellName(col, row int) (string, error) {
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
 	}
 	colname, err := ColumnNumberToName(col)
-	if err != nil {
-		// Error should never happens here.
-		return "", fmt.Errorf("invalid cell coordinates [%d, %d]: %v", col, row, err)
-	}
-	return fmt.Sprintf("%s%d", colname, row), nil
+	return fmt.Sprintf("%s%d", colname, row), err
 }
 
 // boolPtr returns a pointer to a bool with the given value.

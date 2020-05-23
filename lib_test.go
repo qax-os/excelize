@@ -208,3 +208,9 @@ func TestBytesReplace(t *testing.T) {
 	s := []byte{0x01}
 	assert.EqualValues(t, s, bytesReplace(s, []byte{}, []byte{}, 0))
 }
+
+func TestStack(t *testing.T) {
+	s := NewStack()
+	assert.Equal(t, s.Peek(), nil)
+	assert.Equal(t, s.Pop(), nil)
+}
