@@ -768,16 +768,14 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 42920.5))
 	assert.NoError(t, f.SetCellValue("Sheet1", "A2", 42920.5))
 	style, err := f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
-	if err != nil {
-		t.Log(err)
-	}
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-	style, err = f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"}`)
-	if err != nil {
-		t.Log(err)
-	}
+	style, err = f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@","font":{"color":"#9A0511"}}`)
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))
 
+	_, err = f.NewStyle(`{"custom_number_format": "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yy;@"}`)
+	assert.NoError(t, err)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellStyleCustomNumberFormat.xlsx")))
 }
 
@@ -790,21 +788,15 @@ func TestSetCellStyleFill(t *testing.T) {
 	var style int
 	// Test set fill for cell with invalid parameter.
 	style, err = f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":6}}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
 	style, err = f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF"],"shading":1}}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
 	style, err = f.NewStyle(`{"fill":{"type":"pattern","color":[],"pattern":1}}`)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
 	style, err = f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":19}}`)

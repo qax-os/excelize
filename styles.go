@@ -18,6 +18,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -1920,28 +1921,108 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 		return cellXfsID, errors.New("invalid parameter type")
 	}
 	s := f.stylesReader()
-	numFmtID := setNumFmt(s, fs)
+	// check given style already exist.
+	if cellXfsID = f.getStyleID(s, fs); cellXfsID != -1 {
+		return cellXfsID, err
+	}
+
+	numFmtID := newNumFmt(s, fs)
 
 	if fs.Font != nil {
-		s.Fonts.Count++
-		s.Fonts.Font = append(s.Fonts.Font, f.setFont(fs))
-		fontID = s.Fonts.Count - 1
+		fontID = f.getFontID(s, fs)
+		if fontID == -1 {
+			s.Fonts.Count++
+			s.Fonts.Font = append(s.Fonts.Font, f.newFont(fs))
+			fontID = s.Fonts.Count - 1
+		}
 	}
 
-	s.Borders.Count++
-	s.Borders.Border = append(s.Borders.Border, setBorders(fs))
-	borderID = s.Borders.Count - 1
-
-	if fill := setFills(fs, true); fill != nil {
-		s.Fills.Count++
-		s.Fills.Fill = append(s.Fills.Fill, fill)
-		fillID = s.Fills.Count - 1
+	borderID = getBorderID(s, fs)
+	if borderID == -1 {
+		if len(fs.Border) == 0 {
+			borderID = 0
+		} else {
+			s.Borders.Count++
+			s.Borders.Border = append(s.Borders.Border, newBorders(fs))
+			borderID = s.Borders.Count - 1
+		}
 	}
 
-	applyAlignment, alignment := fs.Alignment != nil, setAlignment(fs)
-	applyProtection, protection := fs.Protection != nil, setProtection(fs)
+	if fillID = getFillID(s, fs); fillID == -1 {
+		if fill := newFills(fs, true); fill != nil {
+			s.Fills.Count++
+			s.Fills.Fill = append(s.Fills.Fill, fill)
+			fillID = s.Fills.Count - 1
+		} else {
+			fillID = 0
+		}
+	}
+
+	applyAlignment, alignment := fs.Alignment != nil, newAlignment(fs)
+	applyProtection, protection := fs.Protection != nil, newProtection(fs)
 	cellXfsID = setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 	return cellXfsID, nil
+}
+
+var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
+	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
+		return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
+	},
+	"font": func(fontID int, xf xlsxXf, style *Style) bool {
+		if style.Font == nil {
+			return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || *xf.ApplyFont == false)
+		}
+		return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont == true
+	},
+	"fill": func(fillID int, xf xlsxXf, style *Style) bool {
+		if style.Fill.Type == "" {
+			return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || *xf.ApplyFill == false)
+		}
+		return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill == true
+	},
+	"border": func(borderID int, xf xlsxXf, style *Style) bool {
+		if len(style.Border) == 0 {
+			return (xf.BorderID == nil || *xf.BorderID == 0) && (xf.ApplyBorder == nil || *xf.ApplyBorder == false)
+		}
+		return xf.BorderID != nil && *xf.BorderID == borderID && xf.ApplyBorder != nil && *xf.ApplyBorder == true
+	},
+	"alignment": func(ID int, xf xlsxXf, style *Style) bool {
+		if style.Alignment == nil {
+			return xf.ApplyAlignment == nil || *xf.ApplyAlignment == false
+		}
+		return reflect.DeepEqual(xf.Alignment, newAlignment(style)) && xf.ApplyBorder != nil && *xf.ApplyBorder == true
+	},
+	"protection": func(ID int, xf xlsxXf, style *Style) bool {
+		if style.Protection == nil {
+			return xf.ApplyProtection == nil || *xf.ApplyProtection == false
+		}
+		return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection == true
+	},
+}
+
+// getStyleID provides a function to get styleID by given style. If given
+// style is not exist, will return -1.
+func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (styleID int) {
+	styleID = -1
+	if ss.CellXfs == nil {
+		return
+	}
+	numFmtID, borderID, fillID, fontID := style.NumFmt, getBorderID(ss, style), getFillID(ss, style), f.getFontID(ss, style)
+	if style.CustomNumFmt != nil {
+		numFmtID = getCustomNumFmtID(ss, style)
+	}
+	for xfID, xf := range ss.CellXfs.Xf {
+		if getXfIDFuncs["numFmt"](numFmtID, xf, style) &&
+			getXfIDFuncs["font"](fontID, xf, style) &&
+			getXfIDFuncs["fill"](fillID, xf, style) &&
+			getXfIDFuncs["border"](borderID, xf, style) &&
+			getXfIDFuncs["alignment"](0, xf, style) &&
+			getXfIDFuncs["protection"](0, xf, style) {
+			styleID = xfID
+			return
+		}
+	}
+	return
 }
 
 // NewConditionalStyle provides a function to create style for conditional
@@ -1955,16 +2036,16 @@ func (f *File) NewConditionalStyle(style string) (int, error) {
 		return 0, err
 	}
 	dxf := dxf{
-		Fill: setFills(fs, false),
+		Fill: newFills(fs, false),
 	}
 	if fs.Alignment != nil {
-		dxf.Alignment = setAlignment(fs)
+		dxf.Alignment = newAlignment(fs)
 	}
 	if len(fs.Border) > 0 {
-		dxf.Border = setBorders(fs)
+		dxf.Border = newBorders(fs)
 	}
 	if fs.Font != nil {
-		dxf.Font = f.setFont(fs)
+		dxf.Font = f.newFont(fs)
 	}
 	dxfStr, _ := xml.Marshal(dxf)
 	if s.Dxfs == nil {
@@ -2000,9 +2081,25 @@ func (f *File) readDefaultFont() *xlsxFont {
 	return s.Fonts.Font[0]
 }
 
-// setFont provides a function to add font style by given cell format
+// getFontID provides a function to get font ID.
+// If given font is not exist, will return -1.
+func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) (fontID int) {
+	fontID = -1
+	if styleSheet.Fonts == nil || style.Font == nil {
+		return
+	}
+	for idx, fnt := range styleSheet.Fonts.Font {
+		if reflect.DeepEqual(*fnt, *f.newFont(style)) {
+			fontID = idx
+			return
+		}
+	}
+	return
+}
+
+// newFont provides a function to add font style by given cell format
 // settings.
-func (f *File) setFont(style *Style) *xlsxFont {
+func (f *File) newFont(style *Style) *xlsxFont {
 	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
 	if style.Font.Size < 1 {
 		style.Font.Size = 11
@@ -2036,9 +2133,9 @@ func (f *File) setFont(style *Style) *xlsxFont {
 	return &fnt
 }
 
-// setNumFmt provides a function to check if number format code in the range
+// newNumFmt provides a function to check if number format code in the range
 // of built-in values.
-func setNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
+func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	dp := "0."
 	numFmtID := 164 // Default custom number format code from 164.
 	if style.DecimalPlaces < 0 || style.DecimalPlaces > 30 {
@@ -2048,6 +2145,9 @@ func setNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 		dp += "0"
 	}
 	if style.CustomNumFmt != nil {
+		if customNumFmtID := getCustomNumFmtID(styleSheet, style); customNumFmtID != -1 {
+			return customNumFmtID
+		}
 		return setCustomNumFmt(styleSheet, style)
 	}
 	_, ok := builtInNumFmt[style.NumFmt]
@@ -2102,6 +2202,22 @@ func setCustomNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	return nf.NumFmtID
 }
 
+// getCustomNumFmtID provides a function to get custom number format code ID.
+// If given custom number format code is not exist, will return -1.
+func getCustomNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (customNumFmtID int) {
+	customNumFmtID = -1
+	if styleSheet.NumFmts == nil {
+		return
+	}
+	for _, numFmt := range styleSheet.NumFmts.NumFmt {
+		if style.CustomNumFmt != nil && numFmt.FormatCode == *style.CustomNumFmt {
+			customNumFmtID = numFmt.NumFmtID
+			return
+		}
+	}
+	return
+}
+
 // setLangNumFmt provides a function to set number format code with language.
 func setLangNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	numFmts, ok := langNumFmt[style.Lang]
@@ -2129,9 +2245,29 @@ func setLangNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	return nf.NumFmtID
 }
 
-// setFills provides a function to add fill elements in the styles.xml by
+// getFillID provides a function to get fill ID. If given fill is not
+// exist, will return -1.
+func getFillID(styleSheet *xlsxStyleSheet, style *Style) (fillID int) {
+	fillID = -1
+	if styleSheet.Fills == nil || style.Fill.Type == "" {
+		return
+	}
+	fills := newFills(style, true)
+	if fills == nil {
+		return
+	}
+	for idx, fill := range styleSheet.Fills.Fill {
+		if reflect.DeepEqual(fill, fills) {
+			fillID = idx
+			return
+		}
+	}
+	return
+}
+
+// newFills provides a function to add fill elements in the styles.xml by
 // given cell format settings.
-func setFills(style *Style, fg bool) *xlsxFill {
+func newFills(style *Style, fg bool) *xlsxFill {
 	var patterns = []string{
 		"none",
 		"solid",
@@ -2212,11 +2348,11 @@ func setFills(style *Style, fg bool) *xlsxFill {
 	return &fill
 }
 
-// setAlignment provides a function to formatting information pertaining to
+// newAlignment provides a function to formatting information pertaining to
 // text alignment in cells. There are a variety of choices for how text is
 // aligned both horizontally and vertically, as well as indentation settings,
 // and so on.
-func setAlignment(style *Style) *xlsxAlignment {
+func newAlignment(style *Style) *xlsxAlignment {
 	var alignment xlsxAlignment
 	if style.Alignment != nil {
 		alignment.Horizontal = style.Alignment.Horizontal
@@ -2232,9 +2368,9 @@ func setAlignment(style *Style) *xlsxAlignment {
 	return &alignment
 }
 
-// setProtection provides a function to set protection properties associated
+// newProtection provides a function to set protection properties associated
 // with the cell.
-func setProtection(style *Style) *xlsxProtection {
+func newProtection(style *Style) *xlsxProtection {
 	var protection xlsxProtection
 	if style.Protection != nil {
 		protection.Hidden = style.Protection.Hidden
@@ -2243,9 +2379,25 @@ func setProtection(style *Style) *xlsxProtection {
 	return &protection
 }
 
-// setBorders provides a function to add border elements in the styles.xml by
+// getBorderID provides a function to get border ID. If given border is not
+// exist, will return -1.
+func getBorderID(styleSheet *xlsxStyleSheet, style *Style) (borderID int) {
+	borderID = -1
+	if styleSheet.Borders == nil || len(style.Border) == 0 {
+		return
+	}
+	for idx, border := range styleSheet.Borders.Border {
+		if reflect.DeepEqual(*border, *newBorders(style)) {
+			borderID = idx
+			return
+		}
+	}
+	return
+}
+
+// newBorders provides a function to add border elements in the styles.xml by
 // given borders format settings.
-func setBorders(style *Style) *xlsxBorder {
+func newBorders(style *Style) *xlsxBorder {
 	var styles = []string{
 		"none",
 		"thin",
@@ -2308,10 +2460,18 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 		xf.ApplyNumberFormat = boolPtr(true)
 	}
 	xf.FillID = intPtr(fillID)
+	if fillID != 0 {
+		xf.ApplyFill = boolPtr(true)
+	}
 	xf.BorderID = intPtr(borderID)
+	if borderID != 0 {
+		xf.ApplyBorder = boolPtr(true)
+	}
 	style.CellXfs.Count++
 	xf.Alignment = alignment
-	xf.ApplyAlignment = boolPtr(applyAlignment)
+	if alignment != nil {
+		xf.ApplyAlignment = boolPtr(applyAlignment)
+	}
 	if applyProtection {
 		xf.ApplyProtection = boolPtr(applyProtection)
 		xf.Protection = protection

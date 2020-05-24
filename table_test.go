@@ -93,7 +93,7 @@ func TestAutoFilterError(t *testing.T) {
 	}
 	for i, format := range formats {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
-			err = f.AutoFilter("Sheet3", "D4", "B1", format)
+			err = f.AutoFilter("Sheet2", "D4", "B1", format)
 			if assert.Error(t, err) {
 				assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, i+1)))
 			}
