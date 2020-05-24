@@ -1036,9 +1036,7 @@ func (f *File) sharedStringsWriter() {
 // parseFormatStyleSet provides a function to parse the format settings of the
 // cells and conditional formats.
 func parseFormatStyleSet(style string) (*Style, error) {
-	format := Style{
-		DecimalPlaces: 2,
-	}
+	format := Style{}
 	err := json.Unmarshal([]byte(style), &format)
 	return &format, err
 }
@@ -1920,6 +1918,9 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 	default:
 		return cellXfsID, errors.New("invalid parameter type")
 	}
+	if fs.DecimalPlaces == 0 {
+		fs.DecimalPlaces = 2
+	}
 	s := f.stylesReader()
 	// check given style already exist.
 	if cellXfsID = f.getStyleID(s, fs); cellXfsID != -1 {
@@ -1966,6 +1967,12 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
+		if style.NumFmt == 0 && style.CustomNumFmt == nil && numFmtID == -1 {
+			return xf.NumFmtID != nil || *xf.NumFmtID == 0
+		}
+		if style.NegRed || style.Lang != "" || style.DecimalPlaces != 2 {
+			return false
+		}
 		return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
 	},
 	"font": func(fontID int, xf xlsxXf, style *Style) bool {
@@ -2007,7 +2014,7 @@ func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (styleID int) {
 	if ss.CellXfs == nil {
 		return
 	}
-	numFmtID, borderID, fillID, fontID := style.NumFmt, getBorderID(ss, style), getFillID(ss, style), f.getFontID(ss, style)
+	numFmtID, borderID, fillID, fontID := getNumFmtID(ss, style), getBorderID(ss, style), getFillID(ss, style), f.getFontID(ss, style)
 	if style.CustomNumFmt != nil {
 		numFmtID = getCustomNumFmtID(ss, style)
 	}
@@ -2131,6 +2138,27 @@ func (f *File) newFont(style *Style) *xlsxFont {
 		fnt.U = &attrValString{Val: stringPtr(val)}
 	}
 	return &fnt
+}
+
+// getNumFmtID provides a function to get number format code ID.
+// If given number format code is not exist, will return -1.
+func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (numFmtID int) {
+	numFmtID = -1
+	if styleSheet.NumFmts == nil {
+		return
+	}
+	if _, ok := builtInNumFmt[style.NumFmt]; ok {
+		return style.NumFmt
+	}
+	if fmtCode, ok := currencyNumFmt[style.NumFmt]; ok {
+		for _, numFmt := range styleSheet.NumFmts.NumFmt {
+			if numFmt.FormatCode == fmtCode {
+				numFmtID = numFmt.NumFmtID
+				return
+			}
+		}
+	}
+	return
 }
 
 // newNumFmt provides a function to check if number format code in the range
