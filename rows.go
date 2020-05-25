@@ -285,12 +285,22 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		ss := f.readXML("xl/sharedStrings.xml")
 		if len(ss) == 0 {
 			ss = f.readXML("xl/SharedStrings.xml")
+			delete(f.XLSX, "xl/SharedStrings.xml")
 		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
 		f.SharedStrings = &sharedStrings
+		f.addContentTypePart(0, "sharedStrings")
+		rels := f.relsReader("xl/_rels/workbook.xml.rels")
+		for _, rel := range rels.Relationships {
+			if rel.Target == "sharedStrings.xml" {
+				return f.SharedStrings
+			}
+		}
+		// Update xl/_rels/workbook.xml.rels
+		f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipSharedStrings, "sharedStrings.xml", "")
 	}
 
 	return f.SharedStrings

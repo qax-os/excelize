@@ -66,7 +66,7 @@ type xlsxR struct {
 // xlsxT directly maps the t element in the run properties.
 type xlsxT struct {
 	XMLName xml.Name `xml:"t"`
-	Space   string   `xml:"xml:space,attr,omitempty"`
+	Space   xml.Attr `xml:"space,attr,omitempty"`
 	Val     string   `xml:",innerxml"`
 }
 

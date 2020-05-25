@@ -274,10 +274,43 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 		return err
 	}
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T, cellData.V, cellData.XMLSpace = setCellStr(value)
+	cellData.T, cellData.V, cellData.XMLSpace = f.setCellString(value)
 	return err
 }
 
+// setCellString provides a function to set string type to shared string
+// table.
+func (f *File) setCellString(value string) (t string, v string, ns xml.Attr) {
+	if len(value) > 32767 {
+		value = value[0:32767]
+	}
+	// Leading and ending space(s) character detection.
+	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
+		ns = xml.Attr{
+			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+			Value: "preserve",
+		}
+	}
+	t = "s"
+	v = strconv.Itoa(f.setSharedString(value))
+	return
+}
+
+// setSharedString provides a function to add string to the share string table.
+func (f *File) setSharedString(val string) int {
+	sst := f.sharedStringsReader()
+	for i, si := range sst.SI {
+		if si.T == val {
+			return i
+		}
+	}
+	sst.Count++
+	sst.UniqueCount++
+	sst.SI = append(sst.SI, xlsxSI{T: val})
+	return sst.UniqueCount - 1
+}
+
+// setCellStr provides a function to set string type to cell.
 func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > 32767 {
 		value = value[0:32767]
@@ -590,7 +623,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	for _, textRun := range runs {
 		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
 		if strings.ContainsAny(textRun.Text, "\r\n ") {
-			run.T.Space = "preserve"
+			run.T.Space = xml.Attr{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"}
 		}
 		fnt := textRun.Font
 		if fnt != nil {
@@ -625,15 +658,6 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	sst.Count++
 	sst.UniqueCount++
 	cellData.T, cellData.V = "s", strconv.Itoa(len(sst.SI)-1)
-	f.addContentTypePart(0, "sharedStrings")
-	rels := f.relsReader("xl/_rels/workbook.xml.rels")
-	for _, rel := range rels.Relationships {
-		if rel.Target == "sharedStrings.xml" {
-			return err
-		}
-	}
-	// Update xl/_rels/workbook.xml.rels
-	f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipSharedStrings, "sharedStrings.xml", "")
 	return err
 }
 
