@@ -38,6 +38,7 @@ type File struct {
 	Drawings         map[string]*xlsxWsDr
 	Path             string
 	SharedStrings    *xlsxSST
+	sharedStringsMap map[string]int
 	Sheet            map[string]*xlsxWorksheet
 	SheetCount       int
 	Styles           *xlsxStyleSheet
@@ -75,6 +76,7 @@ func newFile() *File {
 		sheetMap:         make(map[string]string),
 		Comments:         make(map[string]*xlsxComments),
 		Drawings:         make(map[string]*xlsxWsDr),
+		sharedStringsMap: make(map[string]int),
 		Sheet:            make(map[string]*xlsxWorksheet),
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
 		VMLDrawing:       make(map[string]*vmlDrawing),

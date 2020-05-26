@@ -292,6 +292,11 @@ func (f *File) sharedStringsReader() *xlsxSST {
 			log.Printf("xml decode error: %s", err)
 		}
 		f.SharedStrings = &sharedStrings
+		for i := range sharedStrings.SI {
+			if sharedStrings.SI[i].T != "" {
+				f.sharedStringsMap[sharedStrings.SI[i].T] = i
+			}
+		}
 		f.addContentTypePart(0, "sharedStrings")
 		rels := f.relsReader("xl/_rels/workbook.xml.rels")
 		for _, rel := range rels.Relationships {

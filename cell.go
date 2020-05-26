@@ -299,14 +299,13 @@ func (f *File) setCellString(value string) (t string, v string, ns xml.Attr) {
 // setSharedString provides a function to add string to the share string table.
 func (f *File) setSharedString(val string) int {
 	sst := f.sharedStringsReader()
-	for i, si := range sst.SI {
-		if si.T == val {
-			return i
-		}
+	if i, ok := f.sharedStringsMap[val]; ok {
+		return i
 	}
 	sst.Count++
 	sst.UniqueCount++
 	sst.SI = append(sst.SI, xlsxSI{T: val})
+	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1
 }
 
