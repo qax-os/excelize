@@ -281,8 +281,8 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 // setCellString provides a function to set string type to shared string
 // table.
 func (f *File) setCellString(value string) (t string, v string, ns xml.Attr) {
-	if len(value) > 32767 {
-		value = value[0:32767]
+	if len(value) > TotalCellChars {
+		value = value[0:TotalCellChars]
 	}
 	// Leading and ending space(s) character detection.
 	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
@@ -311,8 +311,8 @@ func (f *File) setSharedString(val string) int {
 
 // setCellStr provides a function to set string type to cell.
 func setCellStr(value string) (t string, v string, ns xml.Attr) {
-	if len(value) > 32767 {
-		value = value[0:32767]
+	if len(value) > TotalCellChars {
+		value = value[0:TotalCellChars]
 	}
 	// Leading and ending space(s) character detection.
 	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
@@ -476,7 +476,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 		xlsx.Hyperlinks = new(xlsxHyperlinks)
 	}
 
-	if len(xlsx.Hyperlinks.Hyperlink) > 65529 {
+	if len(xlsx.Hyperlinks.Hyperlink) > TotalSheetHyperlinks {
 		return errors.New("over maximum limit hyperlinks in a worksheet")
 	}
 

@@ -135,6 +135,9 @@ func ColumnNameToNumber(name string) (int, error) {
 		}
 		multi *= 26
 	}
+	if col > TotalColumns {
+		return -1, fmt.Errorf("column number exceeds maximum limit")
+	}
 	return col, nil
 }
 
@@ -172,7 +175,9 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 	if err != nil {
 		return -1, -1, fmt.Errorf(msg, cell, err)
 	}
-
+	if row > TotalRows {
+		return -1, -1, fmt.Errorf("row number exceeds maximum limit")
+	}
 	col, err := ColumnNameToNumber(colname)
 	return col, row, err
 }
