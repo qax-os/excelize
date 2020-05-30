@@ -1,20 +1,32 @@
 package excelize
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCalcCellValue(t *testing.T) {
+	cellData := [][]interface{}{
+		{1, 4, nil, "Month", "Team", "Sales"},
+		{2, 5, nil, "Jan", "North 1", 36693},
+		{3, nil, nil, "Jan", "North 2", 22100},
+		{0, nil, nil, "Jan", "South 1", 53321},
+		{nil, nil, nil, "Jan", "South 2", 34440},
+		{nil, nil, nil, "Feb", "North 1", 29889},
+		{nil, nil, nil, "Feb", "North 2", 50090},
+		{nil, nil, nil, "Feb", "South 1", 32080},
+		{nil, nil, nil, "Feb", "South 2", 45500},
+	}
 	prepareData := func() *File {
 		f := NewFile()
-		f.SetCellValue("Sheet1", "A1", 1)
-		f.SetCellValue("Sheet1", "A2", 2)
-		f.SetCellValue("Sheet1", "A3", 3)
-		f.SetCellValue("Sheet1", "A4", 0)
-		f.SetCellValue("Sheet1", "B1", 4)
-		f.SetCellValue("Sheet1", "B2", 5)
+		for r, row := range cellData {
+			for c, value := range row {
+				cell, _ := CoordinatesToCellName(c+1, r+1)
+				assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+			}
+		}
 		return f
 	}
 
@@ -348,6 +360,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=((3+5*2)+3)/5+(-6)/4*2+3":           "3.2",
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
+		// SUMIF
+		`=SUMIF(F1:F5, ">100")`:         "146554",
+		`=SUMIF(D3:D7,"Jan",F2:F5)`:     "112114",
+		`=SUMIF(D2:D9,"Feb",F2:F9)`:     "157559",
+		`=SUMIF(E2:E9,"North 1",F2:F9)`: "66582",
+		`=SUMIF(E2:E9,"North*",F2:F9)`:  "138772",
 		// SUMSQ
 		"=SUMSQ(A1:A4)":            "14",
 		"=SUMSQ(A1,B1,A2,B2,6)":    "82",
@@ -627,6 +645,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUM(1*)":  "formula not valid",
 		"=SUM(1/)":  "formula not valid",
 		`=SUM("X")`: "#VALUE!",
+		// SUMIF
+		"=SUMIF()": "SUMIF requires at least 2 argument",
 		// SUMSQ
 		`=SUMSQ("X")`: "#VALUE!",
 		// TAN
@@ -711,4 +731,5 @@ func TestCalcCellValue(t *testing.T) {
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=UNSUPPORT(A1)"))
 	_, err = f.CalcCellValue("Sheet1", "A1")
 	assert.EqualError(t, err, "not support UNSUPPORT function")
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCalcCellValue.xlsx")))
 }
