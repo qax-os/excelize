@@ -384,6 +384,32 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(99.999,-1)":  "90",
 		"=TRUNC(-99.999,2)":  "-99.99",
 		"=TRUNC(-99.999,-1)": "-90",
+		// Information functions
+		// ISBLANK
+		"=ISBLANK(A1)": "FALSE",
+		"=ISBLANK(A5)": "TRUE",
+		// ISERR
+		"=ISERR(A1)":   "FALSE",
+		"=ISERR(NA())": "FALSE",
+		// ISERROR
+		"=ISERROR(A1)":   "FALSE",
+		"=ISERROR(NA())": "TRUE",
+		// ISEVEN
+		"=ISEVEN(A1)": "FALSE",
+		"=ISEVEN(A2)": "TRUE",
+		// ISNA
+		"=ISNA(A1)":   "FALSE",
+		"=ISNA(NA())": "TRUE",
+		// ISNONTEXT
+		"=ISNONTEXT(A1)":         "FALSE",
+		"=ISNONTEXT(A5)":         "TRUE",
+		`=ISNONTEXT("Excelize")`: "FALSE",
+		"=ISNONTEXT(NA())":       "FALSE",
+		// ISODD
+		"=ISODD(A1)": "TRUE",
+		"=ISODD(A2)": "FALSE",
+		// NA
+		"=NA()": "#N/A",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -659,6 +685,23 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC()":      "TRUNC requires at least 1 argument",
 		`=TRUNC("X")`:   "#VALUE!",
 		`=TRUNC(1,"X")`: "#VALUE!",
+		// Information functions
+		// ISBLANK
+		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
+		// ISERR
+		"=ISERR()": "ISERR requires 1 argument",
+		// ISERROR
+		"=ISERROR()": "ISERROR requires 1 argument",
+		// ISEVEN
+		"=ISEVEN()": "ISEVEN requires 1 argument",
+		// ISNA
+		"=ISNA()": "ISNA requires 1 argument",
+		// ISNONTEXT
+		"=ISNONTEXT()": "ISNONTEXT requires 1 argument",
+		// ISODD
+		"=ISODD()": "ISODD requires 1 argument",
+		// NA
+		"=NA(1)": "NA accepts no arguments",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()

@@ -2840,3 +2840,181 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) (result string, err error) {
 // Statistical functions
 
 // Information functions
+
+// ISBLANK function tests if a specified cell is blank (empty) and if so,
+// returns TRUE; Otherwise the function returns FALSE. The syntax of the
+// function is:
+//
+//   ISBLANK(value)
+//
+func (fn *formulaFuncs) ISBLANK(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISBLANK requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	switch token.Type {
+	case ArgUnknown:
+		result = "TRUE"
+	case ArgString:
+		if token.String == "" {
+			result = "TRUE"
+		}
+	}
+	return
+}
+
+// ISERR function tests if an initial supplied expression (or value) returns
+// any Excel Error, except the #N/A error. If so, the function returns the
+// logical value TRUE; If the supplied value is not an error or is the #N/A
+// error, the ISERR function returns FALSE. The syntax of the function is:
+//
+//   ISERR(value)
+//
+func (fn *formulaFuncs) ISERR(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISERR requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	if token.Type == ArgString {
+		for _, errType := range []string{formulaErrorDIV, formulaErrorNAME, formulaErrorNUM, formulaErrorVALUE, formulaErrorREF, formulaErrorNULL, formulaErrorSPILL, formulaErrorCALC, formulaErrorGETTINGDATA} {
+			if errType == token.String {
+				result = "TRUE"
+			}
+		}
+	}
+	return
+}
+
+// ISERROR function tests if an initial supplied expression (or value) returns
+// an Excel Error, and if so, returns the logical value TRUE; Otherwise the
+// function returns FALSE. The syntax of the function is:
+//
+//   ISERROR(value)
+//
+func (fn *formulaFuncs) ISERROR(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISERROR requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	if token.Type == ArgString {
+		for _, errType := range []string{formulaErrorDIV, formulaErrorNAME, formulaErrorNA, formulaErrorNUM, formulaErrorVALUE, formulaErrorREF, formulaErrorNULL, formulaErrorSPILL, formulaErrorCALC, formulaErrorGETTINGDATA} {
+			if errType == token.String {
+				result = "TRUE"
+			}
+		}
+	}
+	return
+}
+
+// ISEVEN function tests if a supplied number (or numeric expression)
+// evaluates to an even number, and if so, returns TRUE; Otherwise, the
+// function returns FALSE. The syntax of the function is:
+//
+//   ISEVEN(value)
+//
+func (fn *formulaFuncs) ISEVEN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISEVEN requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	var numeric int
+	if token.Type == ArgString {
+		if numeric, err = strconv.Atoi(token.String); err != nil {
+			err = errors.New(formulaErrorVALUE)
+			return
+		}
+		if numeric == numeric/2*2 {
+			result = "TRUE"
+			return
+		}
+	}
+	return
+}
+
+// ISNA function tests if an initial supplied expression (or value) returns
+// the Excel #N/A Error, and if so, returns TRUE; Otherwise the function
+// returns FALSE. The syntax of the function is:
+//
+//   ISNA(value)
+//
+func (fn *formulaFuncs) ISNA(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISNA requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	if token.Type == ArgString && token.String == formulaErrorNA {
+		result = "TRUE"
+	}
+	return
+}
+
+// ISNONTEXT function function tests if a supplied value is text. If not, the
+// function returns TRUE; If the supplied value is text, the function returns
+// FALSE. The syntax of the function is:
+//
+//   ISNONTEXT(value)
+//
+func (fn *formulaFuncs) ISNONTEXT(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISNONTEXT requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "TRUE"
+	if token.Type == ArgString && token.String != "" {
+		result = "FALSE"
+	}
+	return
+}
+
+// ISODD function tests if a supplied number (or numeric expression) evaluates
+// to an odd number, and if so, returns TRUE; Otherwise, the function returns
+// FALSE. The syntax of the function is:
+//
+//   ISODD(value)
+//
+func (fn *formulaFuncs) ISODD(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISODD requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	var numeric int
+	if token.Type == ArgString {
+		if numeric, err = strconv.Atoi(token.String); err != nil {
+			err = errors.New(formulaErrorVALUE)
+			return
+		}
+		if numeric != numeric/2*2 {
+			result = "TRUE"
+			return
+		}
+	}
+	return
+}
+
+// NA function returns the Excel #N/A error. This error message has the
+// meaning 'value not available' and is produced when an Excel Formula is
+// unable to find a value that it needs. The syntax of the function is:
+//
+//   NA()
+//
+func (fn *formulaFuncs) NA(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 0 {
+		err = errors.New("NA accepts no arguments")
+		return
+	}
+	result = formulaErrorNA
+	return
+}
