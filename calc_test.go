@@ -384,6 +384,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(99.999,-1)":  "90",
 		"=TRUNC(-99.999,2)":  "-99.99",
 		"=TRUNC(-99.999,-1)": "-90",
+		// Statistical functions
+		// MEDIAN
+		"=MEDIAN(A1:A5,12)": "2",
+		"=MEDIAN(A1:A5)":    "1.5",
 		// Information functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
@@ -405,6 +409,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISNONTEXT(A5)":         "TRUE",
 		`=ISNONTEXT("Excelize")`: "FALSE",
 		"=ISNONTEXT(NA())":       "FALSE",
+		// ISNUMBER
+		"=ISNUMBER(A1)": "TRUE",
+		"=ISNUMBER(D1)": "FALSE",
 		// ISODD
 		"=ISODD(A1)": "TRUE",
 		"=ISODD(A2)": "FALSE",
@@ -685,6 +692,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC()":      "TRUNC requires at least 1 argument",
 		`=TRUNC("X")`:   "#VALUE!",
 		`=TRUNC(1,"X")`: "#VALUE!",
+		// Statistical functions
+		// MEDIAN
+		"=MEDIAN()": "MEDIAN requires at least 1 argument",
 		// Information functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
@@ -698,6 +708,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISNA()": "ISNA requires 1 argument",
 		// ISNONTEXT
 		"=ISNONTEXT()": "ISNONTEXT requires 1 argument",
+		// ISNUMBER
+		"=ISNUMBER()": "ISNUMBER requires 1 argument",
 		// ISODD
 		"=ISODD()": "ISODD requires 1 argument",
 		// NA

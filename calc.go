@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -2839,6 +2840,52 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) (result string, err error) {
 
 // Statistical functions
 
+// MEDIAN function returns the statistical median (the middle value) of a list
+// of supplied numbers. The syntax of the function is:
+//
+//   MEDIAN(number1,[number2],...)
+//
+func (fn *formulaFuncs) MEDIAN(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("MEDIAN requires at least 1 argument")
+		return
+	}
+	values := []float64{}
+	var median, digits float64
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		arg := token.Value.(formulaArg)
+		switch arg.Type {
+		case ArgString:
+			if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
+				err = errors.New(formulaErrorVALUE)
+				return
+			}
+			values = append(values, digits)
+		case ArgMatrix:
+			for _, row := range arg.Matrix {
+				for _, value := range row {
+					if value.String == "" {
+						continue
+					}
+					if digits, err = strconv.ParseFloat(value.String, 64); err != nil {
+						err = errors.New(formulaErrorVALUE)
+						return
+					}
+					values = append(values, digits)
+				}
+			}
+		}
+	}
+	sort.Float64s(values)
+	if len(values)%2 == 0 {
+		median = (values[len(values)/2-1] + values[len(values)/2]) / 2
+	} else {
+		median = values[len(values)/2]
+	}
+	result = fmt.Sprintf("%g", median)
+	return
+}
+
 // Information functions
 
 // ISBLANK function tests if a specified cell is blank (empty) and if so,
@@ -2973,6 +3020,28 @@ func (fn *formulaFuncs) ISNONTEXT(argsList *list.List) (result string, err error
 	result = "TRUE"
 	if token.Type == ArgString && token.String != "" {
 		result = "FALSE"
+	}
+	return
+}
+
+// ISNUMBER function function tests if a supplied value is a number. If so,
+// the function returns TRUE; Otherwise it returns FALSE. The syntax of the
+// function is:
+//
+//   ISNUMBER(value)
+//
+func (fn *formulaFuncs) ISNUMBER(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("ISNUMBER requires 1 argument")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	result = "FALSE"
+	if token.Type == ArgString && token.String != "" {
+		if _, err = strconv.Atoi(token.String); err == nil {
+			result = "TRUE"
+		}
+		err = nil
 	}
 	return
 }
