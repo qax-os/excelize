@@ -313,7 +313,7 @@ func calcAdd(opdStack *Stack) error {
 	return nil
 }
 
-// calcAdd evaluate subtraction arithmetic operations.
+// calcSubtract evaluate subtraction arithmetic operations.
 func calcSubtract(opdStack *Stack) error {
 	if opdStack.Len() < 2 {
 		return errors.New("formula not valid")
@@ -333,7 +333,7 @@ func calcSubtract(opdStack *Stack) error {
 	return nil
 }
 
-// calcAdd evaluate multiplication arithmetic operations.
+// calcMultiply evaluate multiplication arithmetic operations.
 func calcMultiply(opdStack *Stack) error {
 	if opdStack.Len() < 2 {
 		return errors.New("formula not valid")
@@ -353,7 +353,7 @@ func calcMultiply(opdStack *Stack) error {
 	return nil
 }
 
-// calcAdd evaluate division arithmetic operations.
+// calcDivide evaluate division arithmetic operations.
 func calcDivide(opdStack *Stack) error {
 	if opdStack.Len() < 2 {
 		return errors.New("formula not valid")
@@ -2839,6 +2839,34 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) (result string, err error) {
 }
 
 // Statistical functions
+
+// COUNTA function returns the number of non-blanks within a supplied set of
+// cells or values. The syntax of the function is:
+//
+//   COUNTA(value1,[value2],...)
+//
+func (fn *formulaFuncs) COUNTA(argsList *list.List) (result string, err error) {
+	var count int
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		arg := token.Value.(formulaArg)
+		switch arg.Type {
+		case ArgString:
+			if arg.String != "" {
+				count++
+			}
+		case ArgMatrix:
+			for _, row := range arg.Matrix {
+				for _, value := range row {
+					if value.String != "" {
+						count++
+					}
+				}
+			}
+		}
+	}
+	result = fmt.Sprintf("%d", count)
+	return
+}
 
 // MEDIAN function returns the statistical median (the middle value) of a list
 // of supplied numbers. The syntax of the function is:

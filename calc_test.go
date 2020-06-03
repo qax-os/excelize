@@ -385,6 +385,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(-99.999,2)":  "-99.99",
 		"=TRUNC(-99.999,-1)": "-90",
 		// Statistical functions
+		// COUNTA
+		`=COUNTA()`:                       "0",
+		`=COUNTA(A1:A5,B2:B5,"text",1,2)`: "8",
 		// MEDIAN
 		"=MEDIAN(A1:A5,12)": "2",
 		"=MEDIAN(A1:A5)":    "1.5",
