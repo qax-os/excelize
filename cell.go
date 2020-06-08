@@ -13,6 +13,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"html"
 	"reflect"
 	"strconv"
 	"strings"
@@ -620,7 +621,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	sst := f.sharedStringsReader()
 	textRuns := []xlsxR{}
 	for _, textRun := range runs {
-		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
+		run := xlsxR{T: &xlsxT{Val: html.EscapeString(textRun.Text)}}
 		if strings.ContainsAny(textRun.Text, "\r\n ") {
 			run.T.Space = xml.Attr{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"}
 		}
