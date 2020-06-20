@@ -1,11 +1,135 @@
 package excelize
 
 import (
+	"bytes"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestCols(t *testing.T) {
+	const sheet2 = "Sheet2"
+
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	cols, err := f.Cols(sheet2)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	var collectedRows [][]string
+	for cols.Next() {
+		rows, err := cols.Rows()
+		assert.NoError(t, err)
+		collectedRows = append(collectedRows, trimSliceSpace(rows))
+	}
+	if !assert.NoError(t, cols.Error()) {
+		t.FailNow()
+	}
+
+	returnedColumns, err := f.GetCols(sheet2)
+	assert.NoError(t, err)
+	for i := range returnedColumns {
+		returnedColumns[i] = trimSliceSpace(returnedColumns[i])
+	}
+	if !assert.Equal(t, collectedRows, returnedColumns) {
+		t.FailNow()
+	}
+
+	f = NewFile()
+	cells := []string{"C2", "C3", "C4"}
+	for _, cell := range cells {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
+	}
+	_, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
+
+	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
+		Dimension: &xlsxDimension{
+			Ref: "C2:C4",
+		},
+	}
+	_, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
+}
+
+func TestColumnsIterator(t *testing.T) {
+	const (
+		sheet2         = "Sheet2"
+		expectedNumCol = 4
+	)
+
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	require.NoError(t, err)
+
+	cols, err := f.Cols(sheet2)
+	require.NoError(t, err)
+
+	var colCount int
+	for cols.Next() {
+		colCount++
+		require.True(t, colCount <= expectedNumCol, "colCount is greater than expected")
+	}
+	assert.Equal(t, expectedNumCol, colCount)
+
+	f = NewFile()
+	cells := []string{"C2", "C3", "C4", "D2", "D3", "D4"}
+	for _, cell := range cells {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
+	}
+	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
+		Dimension: &xlsxDimension{
+			Ref: "C2:D4",
+		},
+	}
+	cols, err = f.Cols("Sheet1")
+	require.NoError(t, err)
+
+	colCount = 0
+	for cols.Next() {
+		colCount++
+		require.True(t, colCount <= 2, "colCount is greater than expected")
+	}
+	assert.Equal(t, 2, colCount)
+}
+
+func TestColsError(t *testing.T) {
+	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	_, err = xlsx.Cols("SheetN")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+}
+
+func TestColsRows(t *testing.T) {
+	f := NewFile()
+	f.NewSheet("Sheet1")
+
+	cols, err := f.Cols("Sheet1")
+	assert.EqualError(t, err, `Sheet coordinates are wrong`)
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
+		Dimension: &xlsxDimension{
+			Ref: "A1:A1",
+		},
+	}
+
+	cols.stashCol, cols.curCol = 0, 1
+	cols, err = f.Cols("Sheet1")
+	assert.NoError(t, err)
+
+	// Test if token is nil
+	cols.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
+	_, err = cols.Rows()
+	assert.NoError(t, err)
+}
 
 func TestColumnVisibility(t *testing.T) {
 	t.Run("TestBook1", func(t *testing.T) {
