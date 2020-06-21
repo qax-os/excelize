@@ -152,6 +152,9 @@ func ColumnNumberToName(num int) (string, error) {
 	if num < 1 {
 		return "", fmt.Errorf("incorrect column number %d", num)
 	}
+	if num > TotalColumns {
+		return "", fmt.Errorf("column number exceeds maximum limit")
+	}
 	var col string
 	for num > 0 {
 		col = string((num-1)%26+65) + col

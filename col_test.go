@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"bytes"
 	"path/filepath"
 	"testing"
 
@@ -61,7 +60,7 @@ func TestCols(t *testing.T) {
 func TestColumnsIterator(t *testing.T) {
 	const (
 		sheet2         = "Sheet2"
-		expectedNumCol = 4
+		expectedNumCol = 9
 	)
 
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
@@ -82,29 +81,57 @@ func TestColumnsIterator(t *testing.T) {
 	for _, cell := range cells {
 		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
 	}
-	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
-		Dimension: &xlsxDimension{
-			Ref: "C2:D4",
-		},
-	}
 	cols, err = f.Cols("Sheet1")
 	require.NoError(t, err)
 
 	colCount = 0
 	for cols.Next() {
 		colCount++
-		require.True(t, colCount <= 2, "colCount is greater than expected")
+		require.True(t, colCount <= 4, "colCount is greater than expected")
 	}
-	assert.Equal(t, 2, colCount)
+	assert.Equal(t, 4, colCount)
 }
 
 func TestColsError(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	_, err = xlsx.Cols("SheetN")
+	_, err = f.Cols("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
+}
+
+func TestGetColsError(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	_, err = f.GetCols("SheetN")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+
+	f = NewFile()
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	f.checked = nil
+	_, err = f.GetCols("Sheet1")
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
+
+	f = NewFile()
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	f.checked = nil
+	_, err = f.GetCols("Sheet1")
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	f = NewFile()
+	cols, err := f.Cols("Sheet1")
+	assert.NoError(t, err)
+	cols.totalRow = 2
+	cols.totalCol = 2
+	cols.curCol = 1
+	cols.decoder = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`)
+	_, err = cols.Rows()
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
 func TestColsRows(t *testing.T) {
@@ -112,7 +139,7 @@ func TestColsRows(t *testing.T) {
 	f.NewSheet("Sheet1")
 
 	cols, err := f.Cols("Sheet1")
-	assert.EqualError(t, err, `Sheet coordinates are wrong`)
+	assert.NoError(t, err)
 
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
 	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
@@ -126,7 +153,7 @@ func TestColsRows(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test if token is nil
-	cols.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
+	cols.decoder = nil
 	_, err = cols.Rows()
 	assert.NoError(t, err)
 }

@@ -46,9 +46,6 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 	}
 	results := make([][]string, 0, 64)
 	for rows.Next() {
-		if rows.Error() != nil {
-			break
-		}
 		row, err := rows.Columns()
 		if err != nil {
 			break

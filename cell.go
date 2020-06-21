@@ -41,9 +41,6 @@ var rwMutex sync.RWMutex
 func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader())
-		if err != nil {
-			return val, false, err
-		}
 		return val, true, err
 	})
 }

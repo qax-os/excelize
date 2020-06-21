@@ -13,8 +13,8 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/mohae/deepcopy"
@@ -34,10 +34,11 @@ type Cols struct {
 	sheet                                string
 	cols                                 []xlsxCols
 	f                                    *File
-	decoder                              *xml.Decoder
+	sheetXML                             []byte
 }
 
-// GetCols return all the columns in a sheet by given worksheet name (case sensitive). For example:
+// GetCols return all the columns in a sheet by given worksheet name (case
+// sensitive). For example:
 //
 //    cols, err := f.Cols("Sheet1")
 //    if err != nil {
@@ -60,29 +61,17 @@ func (f *File) GetCols(sheet string) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	results := make([][]string, 0, 64)
-
 	for cols.Next() {
-		if cols.Error() != nil {
-			break
-		}
-
-		col, err := cols.Rows()
-		if err != nil {
-			break
-		}
-
+		col, _ := cols.Rows()
 		results = append(results, col)
 	}
-
 	return results, nil
 }
 
 // Next will return true if the next col element is found.
 func (cols *Cols) Next() bool {
 	cols.curCol++
-
 	return cols.curCol <= cols.totalCol
 }
 
@@ -91,27 +80,53 @@ func (cols *Cols) Error() error {
 	return cols.err
 }
 
-// Rows return the current column's row values
+// Rows return the current column's row values.
 func (cols *Cols) Rows() ([]string, error) {
 	var (
-		err  error
-		rows []string
+		err              error
+		inElement        string
+		cellCol, cellRow int
+		rows             []string
 	)
-
 	if cols.stashCol >= cols.curCol {
 		return rows, err
 	}
-
-	for i := 1; i <= cols.totalRow; i++ {
-		colName, _ := ColumnNumberToName(cols.curCol)
-		val, _ := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
-		rows = append(rows, val)
+	d := cols.f.sharedStringsReader()
+	decoder := cols.f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			if inElement == "c" {
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "r" {
+						if cellCol, cellRow, err = CellNameToCoordinates(attr.Value); err != nil {
+							return rows, err
+						}
+						blank := cellRow - len(rows)
+						for i := 1; i < blank; i++ {
+							rows = append(rows, "")
+						}
+						if cellCol == cols.curCol {
+							colCell := xlsxC{}
+							_ = decoder.DecodeElement(&colCell, &startElement)
+							val, _ := colCell.getValueFrom(cols.f, d)
+							rows = append(rows, val)
+						}
+					}
+				}
+			}
+		}
 	}
-
 	return rows, nil
 }
 
-// Cols returns a columns iterator, used for streaming/reading data for a worksheet with a large data. For example:
+// Cols returns a columns iterator, used for streaming/reading data for a
+// worksheet with a large data. For example:
 //
 //    cols, err := f.Cols("Sheet1")
 //    if err != nil {
@@ -134,60 +149,51 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
-
 	if f.Sheet[name] != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
-
 	var (
-		inElement        string
-		cols             Cols
-		colsNum, rowsNum []int
+		inElement string
+		cols      Cols
+		cellCol   int
+		err       error
 	)
-	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
-
+	cols.sheetXML = f.readXML(name)
+	decoder := f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
 			break
 		}
-
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
-			if inElement == "dimension" {
-				colsNum = make([]int, 0)
-				rowsNum = make([]int, 0)
-
+			if inElement == "row" {
 				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "ref" {
-						sheetCoordinates := attr.Value
-						if i := strings.Index(sheetCoordinates, ":"); i <= -1 {
-							return &cols, errors.New("Sheet coordinates are wrong")
-						}
-
-						coordinates := strings.Split(sheetCoordinates, ":")
-						for _, coordinate := range coordinates {
-							c, r, _ := SplitCellName(coordinate)
-							columnNum, _ := ColumnNameToNumber(c)
-							colsNum = append(colsNum, columnNum)
-							rowsNum = append(rowsNum, r)
+					if attr.Name.Local == "r" {
+						if cols.totalRow, err = strconv.Atoi(attr.Value); err != nil {
+							return &cols, err
 						}
 					}
 				}
-
-				cols.totalCol = colsNum[1] - (colsNum[0] - 1)
-				cols.totalRow = rowsNum[1] - (rowsNum[0] - 1)
 			}
-		default:
+			if inElement == "c" {
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "r" {
+						if cellCol, _, err = CellNameToCoordinates(attr.Value); err != nil {
+							return &cols, err
+						}
+						if cellCol > cols.totalCol {
+							cols.totalCol = cellCol
+						}
+					}
+				}
+			}
 		}
 	}
-
 	cols.f = f
 	cols.sheet = trimSheetName(sheet)
-	cols.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
-
 	return &cols, nil
 }
 
