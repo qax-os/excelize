@@ -129,7 +129,7 @@ func TestGetColsError(t *testing.T) {
 	cols.totalRow = 2
 	cols.totalCol = 2
 	cols.curCol = 1
-	cols.decoder = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`)
+	cols.sheetXML = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`)
 	_, err = cols.Rows()
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
@@ -153,7 +153,7 @@ func TestColsRows(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test if token is nil
-	cols.decoder = nil
+	cols.sheetXML = nil
 	_, err = cols.Rows()
 	assert.NoError(t, err)
 }
