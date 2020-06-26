@@ -42,18 +42,14 @@ type Cols struct {
 // GetCols return all the columns in a sheet by given worksheet name (case
 // sensitive). For example:
 //
-//    cols, err := f.Cols("Sheet1")
+//    cols, err := f.GetCols("Sheet1")
 //    if err != nil {
 //        fmt.Println(err)
 //        return
 //    }
-//    for cols.Next() {
-//        col, err := cols.Rows()
-//        if err != nil {
-//            fmt.Println(err)
-//        }
-//        for _, rowCell := range col {
-//            fmt.Print(rowCell, "\t")
+//    for _, col := range cols {
+//        for _, colCell := range col {
+//            fmt.Println(colCell, "\t")
 //        }
 //        fmt.Println()
 //    }
@@ -71,13 +67,13 @@ func (f *File) GetCols(sheet string) ([][]string, error) {
 	return results, nil
 }
 
-// Next will return true if the next col element is found.
+// Next will return true if the next column is found.
 func (cols *Cols) Next() bool {
 	cols.curCol++
 	return cols.curCol <= cols.totalCol
 }
 
-// Error will return an error when the next col element is found.
+// Error will return an error when the error occurs.
 func (cols *Cols) Error() error {
 	return cols.err
 }
@@ -127,7 +123,7 @@ func (cols *Cols) Rows() ([]string, error) {
 	return rows, nil
 }
 
-// Cols returns a columns iterator, used for streaming/reading data for a
+// Cols returns a columns iterator, used for streaming reading data for a
 // worksheet with a large data. For example:
 //
 //    cols, err := f.Cols("Sheet1")

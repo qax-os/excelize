@@ -25,18 +25,14 @@ import (
 // GetRows return all the rows in a sheet by given worksheet name (case
 // sensitive). For example:
 //
-//    rows, err := f.Rows("Sheet1")
+//    rows, err := f.GetRows("Sheet1")
 //    if err != nil {
 //        fmt.Println(err)
 //        return
 //    }
-//    for rows.Next() {
-//        row, err := rows.Columns()
-//        if err != nil {
-//            fmt.Println(err)
-//        }
+//    for _, row := range rows {
 //        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
+//            fmt.Println(colCell, "\t")
 //        }
 //        fmt.Println()
 //    }
@@ -57,7 +53,7 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 	return results, nil
 }
 
-// Rows defines an iterator to a sheet
+// Rows defines an iterator to a sheet.
 type Rows struct {
 	err                        error
 	curRow, totalRow, stashRow int
@@ -73,12 +69,12 @@ func (rows *Rows) Next() bool {
 	return rows.curRow <= rows.totalRow
 }
 
-// Error will return the error when the find next row element
+// Error will return the error when the error occurs.
 func (rows *Rows) Error() error {
 	return rows.err
 }
 
-// Columns return the current row's column values
+// Columns return the current row's column values.
 func (rows *Rows) Columns() ([]string, error) {
 	var (
 		err          error
@@ -117,9 +113,13 @@ func (rows *Rows) Columns() ([]string, error) {
 			if inElement == "c" {
 				colCell := xlsxC{}
 				_ = rows.decoder.DecodeElement(&colCell, &startElement)
-				cellCol, _, err = CellNameToCoordinates(colCell.R)
-				if err != nil {
-					return columns, err
+				if colCell.R != "" {
+					cellCol, _, err = CellNameToCoordinates(colCell.R)
+					if err != nil {
+						return columns, err
+					}
+				} else {
+					cellCol++
 				}
 				blank := cellCol - len(columns)
 				for i := 1; i < blank; i++ {
@@ -177,10 +177,10 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	var (
-		err       error
-		inElement string
-		row       int
-		rows      Rows
+		err         error
+		inElement   string
+		row, curRow int
+		rows        Rows
 	)
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
@@ -194,11 +194,15 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 			if inElement == "row" {
 				for _, attr := range startElement.Attr {
 					if attr.Name.Local == "r" {
-						row, err = strconv.Atoi(attr.Value)
+						curRow, err = strconv.Atoi(attr.Value)
 						if err != nil {
 							return &rows, err
 						}
+						row = curRow
 					}
+				}
+				if len(startElement.Attr) == 0 {
+					row++
 				}
 				rows.totalRow = row
 			}

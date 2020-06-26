@@ -95,6 +95,23 @@ func TestSetCellBool(t *testing.T) {
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
+func TestGetCellValue(t *testing.T) {
+	// Test get cell value without r attribute of the row.
+	f := NewFile()
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row></sheetData></worksheet>`)
+	f.checked = nil
+	cells := []string{"A3", "A4", "B4", "A7", "B7"}
+	rows, err := f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{nil, nil, {"A3"}, {"A4", "B4"}, nil, nil, {"A7", "B7"}, {"A8", "B8"}}, rows)
+	assert.NoError(t, err)
+	for _, cell := range cells {
+		value, err := f.GetCellValue("Sheet1", cell)
+		assert.Equal(t, cell, value)
+		assert.NoError(t, err)
+	}
+}
+
 func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
 	f := NewFile()

@@ -191,16 +191,25 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 // checkSheet provides a function to fill each row element and make that is
 // continuous in a worksheet of XML.
 func checkSheet(xlsx *xlsxWorksheet) {
-	row := len(xlsx.SheetData.Row)
-	if row >= 1 {
-		lastRow := xlsx.SheetData.Row[row-1].R
-		if lastRow >= row {
-			row = lastRow
+	var row int
+	for _, r := range xlsx.SheetData.Row {
+		if r.R != 0 && r.R > row {
+			row = r.R
+			continue
 		}
+		row++
 	}
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
+	row = 0
 	for _, r := range xlsx.SheetData.Row {
-		sheetData.Row[r.R-1] = r
+		if r.R != 0 {
+			sheetData.Row[r.R-1] = r
+			row = r.R
+			continue
+		}
+		row++
+		r.R = row
+		sheetData.Row[row-1] = r
 	}
 	for i := 1; i <= row; i++ {
 		sheetData.Row[i-1].R = i
