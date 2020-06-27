@@ -48,8 +48,8 @@ type Cols struct {
 //        return
 //    }
 //    for _, col := range cols {
-//        for _, colCell := range col {
-//            fmt.Println(colCell, "\t")
+//        for _, rowCell := range col {
+//            fmt.Print(rowCell, "\t")
 //        }
 //        fmt.Println()
 //    }
@@ -99,23 +99,33 @@ func (cols *Cols) Rows() ([]string, error) {
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
+			if inElement == "row" {
+				cellCol = 0
+				cellRow++
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "r" {
+						cellRow, _ = strconv.Atoi(attr.Value)
+					}
+				}
+			}
 			if inElement == "c" {
+				cellCol++
 				for _, attr := range startElement.Attr {
 					if attr.Name.Local == "r" {
 						if cellCol, cellRow, err = CellNameToCoordinates(attr.Value); err != nil {
 							return rows, err
 						}
-						blank := cellRow - len(rows)
-						for i := 1; i < blank; i++ {
-							rows = append(rows, "")
-						}
-						if cellCol == cols.curCol {
-							colCell := xlsxC{}
-							_ = decoder.DecodeElement(&colCell, &startElement)
-							val, _ := colCell.getValueFrom(cols.f, d)
-							rows = append(rows, val)
-						}
 					}
+				}
+				blank := cellRow - len(rows)
+				for i := 1; i < blank; i++ {
+					rows = append(rows, "")
+				}
+				if cellCol == cols.curCol {
+					colCell := xlsxC{}
+					_ = decoder.DecodeElement(&colCell, &startElement)
+					val, _ := colCell.getValueFrom(cols.f, d)
+					rows = append(rows, val)
 				}
 			}
 		}
@@ -152,10 +162,10 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	var (
-		inElement string
-		cols      Cols
-		cellCol   int
-		err       error
+		inElement            string
+		cols                 Cols
+		cellCol, curRow, row int
+		err                  error
 	)
 	cols.sheetXML = f.readXML(name)
 	decoder := f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
@@ -168,24 +178,29 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
+				row++
 				for _, attr := range startElement.Attr {
 					if attr.Name.Local == "r" {
-						if cols.totalRow, err = strconv.Atoi(attr.Value); err != nil {
+						if curRow, err = strconv.Atoi(attr.Value); err != nil {
 							return &cols, err
 						}
+						row = curRow
 					}
 				}
+				cols.totalRow = row
+				cellCol = 0
 			}
 			if inElement == "c" {
+				cellCol++
 				for _, attr := range startElement.Attr {
 					if attr.Name.Local == "r" {
 						if cellCol, _, err = CellNameToCoordinates(attr.Value); err != nil {
 							return &cols, err
 						}
-						if cellCol > cols.totalCol {
-							cols.totalCol = cellCol
-						}
 					}
+				}
+				if cellCol > cols.totalCol {
+					cols.totalCol = cellCol
 				}
 			}
 		}

@@ -110,6 +110,9 @@ func TestGetCellValue(t *testing.T) {
 		assert.Equal(t, cell, value)
 		assert.NoError(t, err)
 	}
+	cols, err := f.GetCols("Sheet1")
+	assert.Equal(t, [][]string{{"", "", "A3", "A4", "", "", "A7", "A8"}, {"", "", "", "B4", "", "", "B7", "B8"}}, cols)
+	assert.NoError(t, err)
 }
 
 func TestGetCellFormula(t *testing.T) {

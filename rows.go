@@ -32,7 +32,7 @@ import (
 //    }
 //    for _, row := range rows {
 //        for _, colCell := range row {
-//            fmt.Println(colCell, "\t")
+//            fmt.Print(colCell, "\t")
 //        }
 //        fmt.Println()
 //    }
@@ -111,6 +111,7 @@ func (rows *Rows) Columns() ([]string, error) {
 				}
 			}
 			if inElement == "c" {
+				cellCol++
 				colCell := xlsxC{}
 				_ = rows.decoder.DecodeElement(&colCell, &startElement)
 				if colCell.R != "" {
@@ -118,8 +119,6 @@ func (rows *Rows) Columns() ([]string, error) {
 					if err != nil {
 						return columns, err
 					}
-				} else {
-					cellCol++
 				}
 				blank := cellCol - len(columns)
 				for i := 1; i < blank; i++ {
@@ -177,10 +176,10 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	var (
-		err         error
-		inElement   string
-		row, curRow int
-		rows        Rows
+		err       error
+		inElement string
+		row       int
+		rows      Rows
 	)
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
@@ -192,17 +191,14 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
+				row++
 				for _, attr := range startElement.Attr {
 					if attr.Name.Local == "r" {
-						curRow, err = strconv.Atoi(attr.Value)
+						row, err = strconv.Atoi(attr.Value)
 						if err != nil {
 							return &rows, err
 						}
-						row = curRow
 					}
-				}
-				if len(startElement.Attr) == 0 {
-					row++
 				}
 				rows.totalRow = row
 			}
