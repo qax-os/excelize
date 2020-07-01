@@ -38,7 +38,7 @@ type xlsxSST struct {
 // level - then the string item shall consist of multiple rich text runs which
 // collectively are used to express the string.
 type xlsxSI struct {
-	T string  `xml:"t,omitempty"`
+	T *xlsxT  `xml:"t,omitempty"`
 	R []xlsxR `xml:"r"`
 }
 
@@ -53,7 +53,10 @@ func (x xlsxSI) String() string {
 		}
 		return rows.String()
 	}
-	return x.T
+	if x.T != nil {
+		return x.T.Val
+	}
+	return ""
 }
 
 // xlsxR represents a run of rich text. A rich text run is a region of text
@@ -69,7 +72,7 @@ type xlsxR struct {
 type xlsxT struct {
 	XMLName xml.Name `xml:"t"`
 	Space   xml.Attr `xml:"space,attr,omitempty"`
-	Val     string   `xml:",innerxml"`
+	Val     string   `xml:",chardata"`
 }
 
 // xlsxRPr (Run Properties) specifies a set of run properties which shall be

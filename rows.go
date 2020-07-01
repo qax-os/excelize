@@ -292,8 +292,8 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		}
 		f.SharedStrings = &sharedStrings
 		for i := range sharedStrings.SI {
-			if sharedStrings.SI[i].T != "" {
-				f.sharedStringsMap[sharedStrings.SI[i].T] = i
+			if sharedStrings.SI[i].T != nil {
+				f.sharedStringsMap[sharedStrings.SI[i].T.Val] = i
 			}
 		}
 		f.addContentTypePart(0, "sharedStrings")

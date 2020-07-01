@@ -15,7 +15,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"html"
 	"reflect"
 	"strconv"
 	"strings"
@@ -274,22 +273,15 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 		return err
 	}
 	cellData.S = f.prepareCellStyle(xlsx, col, cellData.S)
-	cellData.T, cellData.V, cellData.XMLSpace = f.setCellString(value)
+	cellData.T, cellData.V = f.setCellString(value)
 	return err
 }
 
 // setCellString provides a function to set string type to shared string
 // table.
-func (f *File) setCellString(value string) (t string, v string, ns xml.Attr) {
+func (f *File) setCellString(value string) (t string, v string) {
 	if len(value) > TotalCellChars {
 		value = value[0:TotalCellChars]
-	}
-	// Leading and ending space(s) character detection.
-	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
-		ns = xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
-		}
 	}
 	t = "s"
 	v = strconv.Itoa(f.setSharedString(value))
@@ -304,7 +296,16 @@ func (f *File) setSharedString(val string) int {
 	}
 	sst.Count++
 	sst.UniqueCount++
-	sst.SI = append(sst.SI, xlsxSI{T: val})
+	t := xlsxT{Val: val}
+	// Leading and ending space(s) character detection.
+	if len(val) > 0 && (val[0] == 32 || val[len(val)-1] == 32) {
+		ns := xml.Attr{
+			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+			Value: "preserve",
+		}
+		t.Space = ns
+	}
+	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1
 }
@@ -620,7 +621,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	sst := f.sharedStringsReader()
 	textRuns := []xlsxR{}
 	for _, textRun := range runs {
-		run := xlsxR{T: &xlsxT{Val: html.EscapeString(textRun.Text)}}
+		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
 		if strings.ContainsAny(textRun.Text, "\r\n ") {
 			run.T.Space = xml.Attr{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"}
 		}
