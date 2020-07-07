@@ -87,6 +87,9 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	}
 
 	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
+	if f.streams == nil {
+		f.streams = make(map[string]*StreamWriter)
+	}
 	f.streams[sheetXML] = sw
 
 	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
