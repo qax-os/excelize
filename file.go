@@ -114,16 +114,17 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 			zw.Close()
 			return buf, err
 		}
+		var from io.Reader
 		from, err = stream.rawData.Reader()
 		if err != nil {
 			stream.rawData.Close()
-			xzap.Sugar().Debugf("stream.rawData.Reader() error: %v", err)
+			xzap.Sugar(nil).Debugf("stream.rawData.Reader() error: %v", err)
 			return buf, err
 		}
 		_, err = io.Copy(fi, from)
 		if err != nil {
 			zw.Close()
-			xzap.Sugar().Debugf("io.Copy(fi, from) error: %v", err)
+			xzap.Sugar(nil).Debugf("io.Copy(fi, from) error: %v", err)
 			return buf, err
 		}
 		stream.rawData.Close()
