@@ -106,6 +106,20 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 
+	for path, stream := range f.streams {
+		fi, err := zw.Create(path)
+		if err != nil {
+			zw.Close()
+			return buf, err
+		}
+		_, err = io.Copy(fi, stream.rawData.tmp)
+		if err != nil {
+			zw.Close()
+			return buf, err
+		}
+		stream.rawData.Close()
+	}
+
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {

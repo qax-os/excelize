@@ -85,6 +85,10 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
+	f.streams[sheetXML] = sw
+
 	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 1, 5)
 	sw.rawData.WriteString(`<sheetData>`)
@@ -388,12 +392,12 @@ func (sw *StreamWriter) Flush() error {
 	delete(sw.File.Sheet, sheetXML)
 	delete(sw.File.checked, sheetXML)
 
-	defer sw.rawData.Close()
-	b, err := sw.rawData.Bytes()
-	if err != nil {
-		return err
-	}
-	sw.File.XLSX[sheetXML] = b
+	// defer sw.rawData.Close()
+	// b, err := sw.rawData.Bytes()
+	// if err != nil {
+	// 	return err
+	// }
+	// sw.File.XLSX[sheetXML] = b
 	return nil
 }
 
