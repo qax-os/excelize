@@ -395,12 +395,6 @@ func (sw *StreamWriter) Flush() error {
 	delete(sw.File.Sheet, sheetXML)
 	delete(sw.File.checked, sheetXML)
 
-	// defer sw.rawData.Close()
-	// b, err := sw.rawData.Bytes()
-	// if err != nil {
-	// 	return err
-	// }
-	// sw.File.XLSX[sheetXML] = b
 	return nil
 }
 

@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"gitlab.com/laiye-backend-repos/go-utils/xzap"
 )
 
 // NewFile provides a function to create new file by default template. For
@@ -118,13 +116,11 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		from, err = stream.rawData.Reader()
 		if err != nil {
 			stream.rawData.Close()
-			xzap.Sugar(nil).Debugf("stream.rawData.Reader() error: %v", err)
 			return buf, err
 		}
 		_, err = io.Copy(fi, from)
 		if err != nil {
 			zw.Close()
-			xzap.Sugar(nil).Debugf("io.Copy(fi, from) error: %v", err)
 			return buf, err
 		}
 		stream.rawData.Close()
