@@ -394,6 +394,7 @@ func (sw *StreamWriter) Flush() error {
 	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
 	delete(sw.File.Sheet, sheetXML)
 	delete(sw.File.checked, sheetXML)
+	delete(sw.File.XLSX, sheetXML)
 
 	return nil
 }

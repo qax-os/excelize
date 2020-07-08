@@ -32,6 +32,7 @@ import (
 type File struct {
 	checked          map[string]bool
 	sheetMap         map[string]string
+	streams          map[string]*StreamWriter
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
@@ -49,7 +50,6 @@ type File struct {
 	Relationships    map[string]*xlsxRelationships
 	XLSX             map[string][]byte
 	CharsetReader    charsetTranscoderFn
-	streams          map[string]*StreamWriter
 }
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
