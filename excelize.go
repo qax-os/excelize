@@ -220,15 +220,24 @@ func checkSheet(xlsx *xlsxWorksheet) {
 // addRels provides a function to add relationships by given XML path,
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {
+	var uniqPart = map[string]string{
+		SourceRelationshipSharedStrings: "/xl/sharedStrings.xml",
+	}
 	rels := f.relsReader(relPath)
 	if rels == nil {
 		rels = &xlsxRelationships{}
 	}
 	var rID int
-	for _, rel := range rels.Relationships {
+	for idx, rel := range rels.Relationships {
 		ID, _ := strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
 		if ID > rID {
 			rID = ID
+		}
+		if relType == rel.Type {
+			if partName, ok := uniqPart[rel.Type]; ok {
+				rels.Relationships[idx].Target = partName
+				return rID
+			}
 		}
 	}
 	rID++

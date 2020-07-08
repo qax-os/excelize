@@ -474,7 +474,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
 
-// DeletePicture provides a function to delete charts in XLSX by given
+// DeletePicture provides a function to delete charts in spreadsheet by given
 // worksheet and cell name. Note that the image file won't be deleted from the
 // document currently.
 func (f *File) DeletePicture(sheet, cell string) (err error) {
@@ -496,7 +496,7 @@ func (f *File) DeletePicture(sheet, cell string) (err error) {
 }
 
 // getPicture provides a function to get picture base name and raw content
-// embed in XLSX by given coordinates and drawing relationships.
+// embed in spreadsheet by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (ret string, buf []byte, err error) {
 	var (
 		wsDr            *xlsxWsDr

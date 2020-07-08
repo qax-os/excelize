@@ -282,10 +282,6 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
-		if len(ss) == 0 {
-			ss = f.readXML("xl/SharedStrings.xml")
-			delete(f.XLSX, "xl/SharedStrings.xml")
-		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)

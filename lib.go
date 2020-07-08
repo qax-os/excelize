@@ -26,10 +26,18 @@ import (
 // filesystem.
 func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	var err error
+	var docPart = map[string]string{
+		"[content_types].xml":  "[Content_Types].xml",
+		"xl/sharedstrings.xml": "xl/sharedStrings.xml",
+	}
 	fileList := make(map[string][]byte, len(r.File))
 	worksheets := 0
 	for _, v := range r.File {
-		if fileList[v.Name], err = readFile(v); err != nil {
+		fileName := v.Name
+		if partName, ok := docPart[strings.ToLower(v.Name)]; ok {
+			fileName = partName
+		}
+		if fileList[fileName], err = readFile(v); err != nil {
 			return nil, 0, err
 		}
 		if strings.HasPrefix(v.Name, "xl/worksheets/sheet") {
