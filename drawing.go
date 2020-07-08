@@ -1000,10 +1000,15 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 	if formatSet.YAxis.Maximum == 0 {
 		max = nil
 	}
+	var logBase *attrValString
+	if formatSet.YAxis.Scaling.LogBase != "" {
+		logBase = &attrValString{Val: stringPtr(formatSet.YAxis.Scaling.LogBase)}
+	}
 	axs := []*cAxs{
 		{
 			AxID: &attrValInt{Val: intPtr(753999904)},
 			Scaling: &cScaling{
+				LogBase:     logBase,
 				Orientation: &attrValString{Val: stringPtr(orientation[formatSet.YAxis.ReverseOrder])},
 				Max:         max,
 				Min:         min,

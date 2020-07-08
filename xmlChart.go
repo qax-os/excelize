@@ -380,6 +380,7 @@ type cChartLines struct {
 // cScaling directly maps the scaling element. This element contains
 // additional axis settings.
 type cScaling struct {
+	LogBase     *attrValString `xml:"logBase"`
 	Orientation *attrValString `xml:"orientation"`
 	Max         *attrValFloat  `xml:"max"`
 	Min         *attrValFloat  `xml:"min"`
@@ -544,6 +545,9 @@ type formatChartAxis struct {
 		Italic    bool   `json:"italic"`
 		Underline bool   `json:"underline"`
 	} `json:"num_font"`
+	Scaling struct {
+		LogBase string `json:"logbase"`
+	} `json:"scaling"`
 	NameLayout formatLayout `json:"name_layout"`
 }
 
