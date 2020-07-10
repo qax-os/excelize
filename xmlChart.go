@@ -545,9 +545,7 @@ type formatChartAxis struct {
 		Italic    bool   `json:"italic"`
 		Underline bool   `json:"underline"`
 	} `json:"num_font"`
-	Scaling struct {
-		LogBase float64 `json:"logbase"`
-	} `json:"scaling"`
+	LogBase    float64      `json:"logbase"`
 	NameLayout formatLayout `json:"name_layout"`
 }
 

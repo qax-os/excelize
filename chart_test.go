@@ -292,27 +292,27 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 	assert.NoError(t, xlsx.AddChart(sheet1, "M1",
 		`{"type":"line","dimension":{"width":640, "height":480},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
-			`"y_axis":{"scaling":{"logbase":10.5}},`+
+			`"y_axis":{"logbase":10.5},`+
 			`"title":{"name":"Line chart with log 10 scaling"}}`))
 	assert.NoError(t, xlsx.AddChart(sheet1, "A25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
-			`"y_axis":{"scaling":{"logbase":1.9}},`+
+			`"y_axis":{"logbase":1.9},`+
 			`"title":{"name":"Line chart with log 1.9 scaling"}}`))
 	assert.NoError(t, xlsx.AddChart(sheet1, "F25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
-			`"y_axis":{"scaling":{"logbase":2}},`+
+			`"y_axis":{"logbase":2},`+
 			`"title":{"name":"Line chart with log 2 scaling"}}`))
 	assert.NoError(t, xlsx.AddChart(sheet1, "K25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
-			`"y_axis":{"scaling":{"logbase":1000.1}},`+
+			`"y_axis":{"logbase":1000.1},`+
 			`"title":{"name":"Line chart with log 1000.1 scaling"}}`))
 	assert.NoError(t, xlsx.AddChart(sheet1, "P25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
-			`"y_axis":{"scaling":{"logbase":1000}},`+
+			`"y_axis":{"logbase":1000},`+
 			`"title":{"name":"Line chart with log 1000 scaling"}}`))
 
 	// Export XLSX file for human confirmation
@@ -356,6 +356,9 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 				t.FailNow()
 			}
 		} else {
+			if !assert.NotNil(t, chartLogBasePtr, "LogBase is nil") {
+				t.FailNow()
+			}
 			if !assert.Equal(t, expectedChartsLogBase[i], *(chartLogBasePtr.Val),
 				"Expected log base to %f, actual %f", expectedChartsLogBase[i], *(chartLogBasePtr.Val)) {
 				t.FailNow()
