@@ -549,11 +549,12 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships,
-					anchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
-					return
+				if drawRel = f.getDrawingRelationships(drawingRelationships,
+					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
+					if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
+						ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+						return
+					}
 				}
 			}
 		}

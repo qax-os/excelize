@@ -13,9 +13,7 @@ package excelize
 
 import "encoding/xml"
 
-// xlsxStyleSheet directly maps the stylesheet element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxStyleSheet is the root element of the Styles part.
 type xlsxStyleSheet struct {
 	XMLName      xml.Name          `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main styleSheet"`
 	NumFmts      *xlsxNumFmts      `xml:"numFmts,omitempty"`
@@ -55,9 +53,7 @@ type xlsxProtection struct {
 	Locked bool `xml:"locked,attr"`
 }
 
-// xlsxLine directly maps the line style element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxLine expresses a single set of cell border.
 type xlsxLine struct {
 	Style string     `xml:"style,attr,omitempty"`
 	Color *xlsxColor `xml:"color,omitempty"`
@@ -119,13 +115,10 @@ type xlsxFill struct {
 	GradientFill *xlsxGradientFill `xml:"gradientFill,omitempty"`
 }
 
-// xlsxPatternFill directly maps the patternFill element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need. This element is
-// used to specify cell fill information for pattern and solid color cell fills.
-// For solid cell fills (no pattern), fgColor is used. For cell fills with
-// patterns specified, then the cell fill color is specified by the bgColor
-// element.
+// xlsxPatternFill is used to specify cell fill information for pattern and
+// solid color cell fills. For solid cell fills (no pattern), fgColor is used.
+// For cell fills with patterns specified, then the cell fill color is
+// specified by the bgColor element.
 type xlsxPatternFill struct {
 	PatternType string    `xml:"patternType,attr,omitempty"`
 	FgColor     xlsxColor `xml:"fgColor,omitempty"`
@@ -303,7 +296,7 @@ type xlsxNumFmts struct {
 // format properties which indicate how to format and render the numeric value
 // of a cell.
 type xlsxNumFmt struct {
-	NumFmtID   int    `xml:"numFmtId,attr,omitempty"`
+	NumFmtID   int    `xml:"numFmtId,attr"`
 	FormatCode string `xml:"formatCode,attr,omitempty"`
 }
 

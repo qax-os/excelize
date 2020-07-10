@@ -1001,8 +1001,6 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 		max = nil
 	}
 	var logBase *attrValFloat
-	// Follow OOXML requirements on
-	// [https://github.com/sc34wg4/OOXMLSchemas/blob/2b074ca2c5df38b18ac118646b329b508b5bdecc/Part1/OfficeOpenXML-XMLSchema-Strict/dml-chart.xsd#L1142-L1147]
 	if formatSet.YAxis.LogBase >= 2 && formatSet.YAxis.LogBase <= 1000 {
 		logBase = &attrValFloat{Val: float64Ptr(formatSet.YAxis.LogBase)}
 	}

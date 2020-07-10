@@ -165,25 +165,20 @@ type xlsxSheetFormatPr struct {
 	OutlineLevelCol  uint8    `xml:"outlineLevelCol,attr,omitempty"`
 }
 
-// xlsxSheetViews directly maps the sheetViews element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - Worksheet views
-// collection.
+// xlsxSheetViews represents worksheet views collection.
 type xlsxSheetViews struct {
 	XMLName   xml.Name        `xml:"sheetViews"`
 	SheetView []xlsxSheetView `xml:"sheetView"`
 }
 
-// xlsxSheetView directly maps the sheetView element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need. A single sheet
-// view definition. When more than one sheet view is defined in the file, it
-// means that when opening the workbook, each sheet view corresponds to a
-// separate window within the spreadsheet application, where each window is
-// showing the particular sheet containing the same workbookViewId value, the
-// last sheetView definition is loaded, and the others are discarded. When
-// multiple windows are viewing the same sheet, multiple sheetView elements
-// (with corresponding workbookView entries) are saved.
-// See https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetview
+// xlsxSheetView represents a single sheet view definition. When more than one
+// sheet view is defined in the file, it means that when opening the workbook,
+// each sheet view corresponds to a separate window within the spreadsheet
+// application, where each window is showing the particular sheet containing
+// the same workbookViewId value, the last sheetView definition is loaded, and
+// the others are discarded. When multiple windows are viewing the same sheet,
+// multiple sheetView elements (with corresponding workbookView entries) are
+// saved.
 type xlsxSheetView struct {
 	WindowProtection         bool             `xml:"windowProtection,attr,omitempty"`
 	ShowFormulas             bool             `xml:"showFormulas,attr,omitempty"`
@@ -245,31 +240,27 @@ type xlsxSheetPr struct {
 	PageSetUpPr                       *xlsxPageSetUpPr `xml:"pageSetUpPr,omitempty"`
 }
 
-// xlsxOutlinePr maps to the outlinePr element
-// SummaryBelow allows you to adjust the direction of grouper controls
+// xlsxOutlinePr maps to the outlinePr element. SummaryBelow allows you to
+// adjust the direction of grouper controls.
 type xlsxOutlinePr struct {
 	SummaryBelow bool `xml:"summaryBelow,attr"`
 }
 
-// xlsxPageSetUpPr directly maps the pageSetupPr element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - Page setup
-// properties of the worksheet.
+// xlsxPageSetUpPr expresses page setup properties of the worksheet.
 type xlsxPageSetUpPr struct {
 	AutoPageBreaks bool `xml:"autoPageBreaks,attr,omitempty"`
-	FitToPage      bool `xml:"fitToPage,attr,omitempty"` // Flag indicating whether the Fit to Page print option is enabled.
+	FitToPage      bool `xml:"fitToPage,attr,omitempty"`
 }
 
-// xlsxTabColor directly maps the tabColor element in the namespace currently I
-// have not checked it for completeness - it does as much as I need.
+// xlsxTabColor represents background color of the sheet tab.
 type xlsxTabColor struct {
 	RGB   string  `xml:"rgb,attr,omitempty"`
 	Theme int     `xml:"theme,attr,omitempty"`
 	Tint  float64 `xml:"tint,attr,omitempty"`
 }
 
-// xlsxCols directly maps the cols element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxCols defines column width and column formatting for one or more columns
+// of the worksheet.
 type xlsxCols struct {
 	XMLName xml.Name  `xml:"cols"`
 	Col     []xlsxCol `xml:"col"`
@@ -293,18 +284,18 @@ type xlsxCol struct {
 // xlsxDimension directly maps the dimension element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - This element
 // specifies the used range of the worksheet. It specifies the row and column
-// bounds of used cells in the worksheet. This is optional and is not required.
-// Used cells include cells with formulas, text content, and cell formatting.
-// When an entire column is formatted, only the first cell in that column is
-// considered used.
+// bounds of used cells in the worksheet. This is optional and is not
+// required. Used cells include cells with formulas, text content, and cell
+// formatting. When an entire column is formatted, only the first cell in that
+// column is considered used.
 type xlsxDimension struct {
 	XMLName xml.Name `xml:"dimension"`
 	Ref     string   `xml:"ref,attr"`
 }
 
-// xlsxSheetData directly maps the sheetData element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxSheetData collection represents the cell table itself. This collection
+// expresses information about each cell, grouped together by rows in the
+// worksheet.
 type xlsxSheetData struct {
 	XMLName xml.Name  `xml:"sheetData"`
 	Row     []xlsxRow `xml:"row"`
@@ -440,9 +431,9 @@ type DataValidation struct {
 	Formula2         string  `xml:",innerxml"`
 }
 
-// xlsxC directly maps the c element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxC collection represents a cell in the worksheet. Information about the
+// cell's location (reference), value, data type, formatting, and formula is
+// expressed here.
 //
 // This simple type is restricted to the values listed in the following table:
 //
@@ -472,9 +463,8 @@ func (c *xlsxC) hasValue() bool {
 	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
-// xlsxF directly maps the f element in the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxF represents a formula for the cell. The formula expression is
+// contained in the character node of this element.
 type xlsxF struct {
 	Content string `xml:",chardata"`
 	T       string `xml:"t,attr,omitempty"`   // Formula type
