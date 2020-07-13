@@ -2,7 +2,6 @@ package excelize
 
 import (
 	"path/filepath"
-	//"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
