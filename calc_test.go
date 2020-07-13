@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"path/filepath"
+	//"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -790,4 +791,26 @@ func TestCalcCellValue(t *testing.T) {
 	_, err = f.CalcCellValue("Sheet1", "A1")
 	assert.EqualError(t, err, "not support UNSUPPORT function")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCalcCellValue.xlsx")))
+
+}
+
+func TestCalcCellValueWithDefinedName(t *testing.T) {
+	cellData := [][]interface{}{
+		{1, 4, nil, "Month", "Team", "Sales"},
+	}
+	prepareData := func() *File {
+		f := NewFile()
+		for r, row := range cellData {
+			for c, value := range row {
+				cell, _ := CoordinatesToCellName(c+1, r+1)
+				assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+			}
+		}
+		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "ref_to_sheet1_a1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
+		return f
+	}
+	f := prepareData()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=ref_to_sheet1_a1"))
+	_, err := f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
 }

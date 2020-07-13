@@ -458,6 +458,12 @@ func isOperatorPrefixToken(token efp.Token) bool {
 func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Stack) error {
 	// parse reference: must reference at here
 	if token.TSubType == efp.TokenSubTypeRange {
+		for _, definedName := range f.GetDefinedName() {
+			if definedName.Name == token.TValue {
+				token.TValue = definedName.RefersTo
+				break
+			}
+		}
 		result, err := f.parseReference(sheet, token.TValue)
 		if err != nil {
 			return errors.New(formulaErrorNAME)
