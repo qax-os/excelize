@@ -795,7 +795,7 @@ func TestCalcCellValue(t *testing.T) {
 
 func TestCalcCellValueWithDefinedName(t *testing.T) {
 	cellData := [][]interface{}{
-		{1, 4, nil, "Month", "Team", "Sales"},
+		{"A1 value", "B1 value", nil},
 	}
 	prepareData := func() *File {
 		f := NewFile()
@@ -805,11 +805,15 @@ func TestCalcCellValueWithDefinedName(t *testing.T) {
 				assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
 			}
 		}
-		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "ref_to_sheet1_a1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
+
 		return f
 	}
 	f := prepareData()
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=ref_to_sheet1_a1"))
-	_, err := f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=defined_name1"))
+	result, err := f.CalcCellValue("Sheet1", "C1")
 	assert.NoError(t, err)
+	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
+	assert.Equal(t, "B1 value", result, "=defined_name1")
 }
