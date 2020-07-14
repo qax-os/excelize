@@ -453,11 +453,28 @@ func isOperatorPrefixToken(token efp.Token) bool {
 	return false
 }
 
+func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
+	for _, definedName := range f.GetDefinedName() {
+		if definedName.Name == definedNameName {
+			refTo = definedName.RefersTo
+			// worksheet scope takes precedence over scope workbook when both definedNames exist
+			if definedName.Scope == currentSheet {
+				break
+			}
+		}
+	}
+	return refTo
+}
+
 // parseToken parse basic arithmetic operator priority and evaluate based on
 // operators and operands.
 func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Stack) error {
 	// parse reference: must reference at here
 	if token.TSubType == efp.TokenSubTypeRange {
+		refTo := f.getDefinedNameRefTo(token.TValue, sheet)
+		if refTo != "" {
+			token.TValue = refTo
+		}
 		result, err := f.parseReference(sheet, token.TValue)
 		if err != nil {
 			return errors.New(formulaErrorNAME)

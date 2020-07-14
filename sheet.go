@@ -1421,7 +1421,7 @@ func (f *File) GetDefinedName() []DefinedName {
 				RefersTo: dn.Data,
 				Scope:    "Workbook",
 			}
-			if dn.LocalSheetID != nil {
+			if dn.LocalSheetID != nil && *dn.LocalSheetID >= 0 {
 				definedName.Scope = f.getSheetNameByID(*dn.LocalSheetID + 1)
 			}
 			definedNames = append(definedNames, definedName)
