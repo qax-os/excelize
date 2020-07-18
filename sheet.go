@@ -92,15 +92,18 @@ func (f *File) contentTypesWriter() {
 // structure after deserialization.
 func (f *File) workbookReader() *xlsxWorkbook {
 	var err error
-
 	if f.WorkBook == nil {
 		f.WorkBook = new(xlsxWorkbook)
+		if _, ok := f.xmlAttr["xl/workbook.xml"]; !ok {
+			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/workbook.xml"))))
+			f.xmlAttr["xl/workbook.xml"] = append(f.xmlAttr["xl/workbook.xml"], getRootElement(d)...)
+			f.addNameSpaces("xl/workbook.xml", SourceRelationship)
+		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/workbook.xml")))).
 			Decode(f.WorkBook); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
 	}
-
 	return f.WorkBook
 }
 
@@ -109,7 +112,7 @@ func (f *File) workbookReader() *xlsxWorkbook {
 func (f *File) workBookWriter() {
 	if f.WorkBook != nil {
 		output, _ := xml.Marshal(f.WorkBook)
-		f.saveFileList("xl/workbook.xml", replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(output)))
+		f.saveFileList("xl/workbook.xml", replaceRelationshipsBytes(f.replaceNameSpaceBytes("xl/workbook.xml", output)))
 	}
 }
 
@@ -122,7 +125,7 @@ func (f *File) workSheetWriter() {
 				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 			}
 			output, _ := xml.Marshal(sheet)
-			f.saveFileList(p, replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(output)))
+			f.saveFileList(p, replaceRelationshipsBytes(f.replaceNameSpaceBytes(p, output)))
 			ok := f.checked[p]
 			if ok {
 				delete(f.Sheet, p)
@@ -173,6 +176,7 @@ func (f *File) setSheet(index int, name string) {
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = path
 	f.Sheet[path] = &xlsx
+	f.xmlAttr[path] = append(f.xmlAttr[path], NameSpaceSpreadSheet)
 }
 
 // setWorkbook update workbook property of the spreadsheet. Maximum 31
@@ -193,7 +197,7 @@ func (f *File) relsWriter() {
 		if rel != nil {
 			output, _ := xml.Marshal(rel)
 			if strings.HasPrefix(path, "xl/worksheets/sheet/rels/sheet") {
-				output = replaceRelationshipsNameSpaceBytes(output)
+				output = f.replaceNameSpaceBytes(path, output)
 			}
 			f.saveFileList(path, replaceRelationshipsBytes(output))
 		}
@@ -440,6 +444,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
 	f.addSheetPicture(sheet, rID)
+	f.addSheetNameSpace(sheet, SourceRelationship)
 	f.setContentTypePartImageExtensions()
 	return err
 }
@@ -479,6 +484,7 @@ func (f *File) DeleteSheet(name string) {
 			delete(f.XLSX, rels)
 			delete(f.Relationships, rels)
 			delete(f.Sheet, sheetXML)
+			delete(f.xmlAttr, sheetXML)
 			f.SheetCount--
 		}
 	}
@@ -557,6 +563,9 @@ func (f *File) copySheet(from, to int) error {
 	if ok {
 		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
+	fromSheetXMLPath, _ := f.sheetMap[trimSheetName(fromSheet)]
+	fromSheetAttr, _ := f.xmlAttr[fromSheetXMLPath]
+	f.xmlAttr[path] = fromSheetAttr
 	return err
 }
 
@@ -779,7 +788,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	if f.Sheet[name] != nil {
 		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	return f.searchSheet(name, value, regSearch)
 }

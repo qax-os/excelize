@@ -47,6 +47,7 @@ func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, she
 	// Only allow one chart in a chartsheet.
 	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+	f.addSheetNameSpace(sheet, SourceRelationship)
 	xlsx.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
@@ -60,7 +61,7 @@ func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 	xlsxChartSpace := xlsxChartSpace{
 		XMLNSc:         NameSpaceDrawingMLChart,
 		XMLNSa:         NameSpaceDrawingML,
-		XMLNSr:         SourceRelationship,
+		XMLNSr:         SourceRelationship.Value,
 		XMLNSc16r2:     SourceRelationshipChart201506,
 		Date1904:       &attrValBool{Val: boolPtr(false)},
 		Lang:           &attrValString{Val: stringPtr("en-US")},
@@ -1212,7 +1213,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 				URI: NameSpaceDrawingMLChart,
 				Chart: &xlsxChart{
 					C:   NameSpaceDrawingMLChart,
-					R:   SourceRelationship,
+					R:   SourceRelationship.Value,
 					RID: "rId" + strconv.Itoa(rID),
 				},
 			},
@@ -1252,7 +1253,7 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *forma
 				URI: NameSpaceDrawingMLChart,
 				Chart: &xlsxChart{
 					C:   NameSpaceDrawingMLChart,
-					R:   SourceRelationship,
+					R:   SourceRelationship.Value,
 					RID: "rId" + strconv.Itoa(rID),
 				},
 			},

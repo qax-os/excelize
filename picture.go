@@ -168,6 +168,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		return err
 	}
 	f.addContentTypePart(drawingID, "drawings")
+	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
 }
 
@@ -279,11 +280,11 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
 	if hyperlinkRID != 0 {
 		pic.NvPicPr.CNvPr.HlinkClick = &xlsxHlinkClick{
-			R:   SourceRelationship,
+			R:   SourceRelationship.Value,
 			RID: "rId" + strconv.Itoa(hyperlinkRID),
 		}
 	}
-	pic.BlipFill.Blip.R = SourceRelationship
+	pic.BlipFill.Blip.R = SourceRelationship.Value
 	pic.BlipFill.Blip.Embed = "rId" + strconv.Itoa(rID)
 	pic.SpPr.PrstGeom.Prst = "rect"
 

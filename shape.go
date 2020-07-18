@@ -280,6 +280,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
+		f.addSheetNameSpace(sheet, SourceRelationship)
 	}
 	err = f.addDrawingShape(sheet, drawingXML, cell, formatSet)
 	if err != nil {

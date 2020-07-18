@@ -15,6 +15,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"container/list"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"strconv"
@@ -243,11 +244,11 @@ func parseFormatSet(formatSet string) []byte {
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
 	var namespaceTranslationDic = map[string]string{
-		StrictSourceRelationship:         SourceRelationship,
+		StrictSourceRelationship:         SourceRelationship.Value,
 		StrictSourceRelationshipChart:    SourceRelationshipChart,
 		StrictSourceRelationshipComments: SourceRelationshipComments,
 		StrictSourceRelationshipImage:    SourceRelationshipImage,
-		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet,
+		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet.Value,
 	}
 	for s, n := range namespaceTranslationDic {
 		content = bytesReplace(content, stringToBytes(s), stringToBytes(n), -1)
@@ -317,6 +318,102 @@ func genSheetPasswd(plaintext string) string {
 	password ^= int64(len(plaintext))
 	password ^= 0xCE4B
 	return strings.ToUpper(strconv.FormatInt(password, 16))
+}
+
+// getRootElement extract root element attributes by given XML decoder.
+func getRootElement(d *xml.Decoder) []xml.Attr {
+	tokenIdx := 0
+	for {
+		token, _ := d.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			tokenIdx++
+			if tokenIdx == 1 {
+				return startElement.Attr
+			}
+		}
+	}
+	return nil
+}
+
+// genXMLNamespace generate serialized XML attributes with a multi namespace
+// by given element attributes.
+func genXMLNamespace(attr []xml.Attr) string {
+	var rootElement string
+	for _, v := range attr {
+		if lastSpace := getXMLNamespace(v.Name.Space, attr); lastSpace != "" {
+			rootElement += fmt.Sprintf("%s:%s=\"%s\" ", lastSpace, v.Name.Local, v.Value)
+			continue
+		}
+		rootElement += fmt.Sprintf("%s=\"%s\" ", v.Name.Local, v.Value)
+	}
+	return strings.TrimSpace(rootElement) + ">"
+}
+
+// getXMLNamespace extract XML namespace from specified element name and attributes.
+func getXMLNamespace(space string, attr []xml.Attr) string {
+	for _, attribute := range attr {
+		if attribute.Value == space {
+			return attribute.Name.Local
+		}
+	}
+	return space
+}
+
+// replaceNameSpaceBytes provides a function to replace the XML root element
+// attribute by the given component part path and XML content.
+func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
+	var oldXmlns = stringToBytes(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	var newXmlns = []byte(templateNamespaceIDMap)
+	if attr, ok := f.xmlAttr[path]; ok {
+		newXmlns = []byte(genXMLNamespace(attr))
+	}
+	return bytesReplace(contentMarshal, oldXmlns, newXmlns, -1)
+}
+
+// addNameSpaces provides a function to add a XML attribute by the given
+// component part path.
+func (f *File) addNameSpaces(path string, ns xml.Attr) {
+	exist := false
+	mc := false
+	ignore := false
+	if attr, ok := f.xmlAttr[path]; ok {
+		for _, attribute := range attr {
+			if attribute.Name.Local == ns.Name.Local && attribute.Name.Space == ns.Name.Space {
+				exist = true
+			}
+			if attribute.Name.Local == "Ignorable" && attribute.Name.Space == "mc" {
+				ignore = true
+			}
+			if attribute.Name.Local == "mc" && attribute.Name.Space == "xmlns" {
+				mc = true
+			}
+		}
+	}
+	if !exist {
+		f.xmlAttr[path] = append(f.xmlAttr[path], ns)
+		if !mc {
+			f.xmlAttr[path] = append(f.xmlAttr[path], xml.Attr{
+				Name:  xml.Name{Local: "mc", Space: "xmlns"},
+				Value: SourceRelationshipCompatibility,
+			})
+		}
+		if !ignore {
+			f.xmlAttr[path] = append(f.xmlAttr[path], xml.Attr{
+				Name:  xml.Name{Local: "Ignorable", Space: "mc"},
+				Value: ns.Name.Local,
+			})
+		}
+	}
+}
+
+// addSheetNameSpace add XML attribute for worksheet.
+func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
+	name, _ := f.sheetMap[trimSheetName(sheet)]
+	f.addNameSpaces(name, ns)
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

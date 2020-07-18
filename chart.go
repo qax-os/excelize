@@ -755,6 +755,7 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	f.addChart(formatSet, comboCharts)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
+	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
 }
 
@@ -804,7 +805,8 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	// Update xl/workbook.xml
 	f.setWorkbook(sheet, sheetID, rID)
 	chartsheet, _ := xml.Marshal(cs)
-	f.saveFileList(path, replaceRelationshipsBytes(replaceRelationshipsNameSpaceBytes(chartsheet)))
+	f.addSheetNameSpace(sheet, NameSpaceSpreadSheet)
+	f.saveFileList(path, replaceRelationshipsBytes(f.replaceNameSpaceBytes(path, chartsheet)))
 	return err
 }
 

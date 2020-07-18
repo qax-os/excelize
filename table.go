@@ -83,9 +83,11 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 	// Add first table for given sheet.
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
-	f.addSheetTable(sheet, rID)
-	err = f.addTable(sheet, tableXML, hcol, hrow, vcol, vrow, tableID, formatSet)
-	if err != nil {
+	if err = f.addSheetTable(sheet, rID); err != nil {
+		return err
+	}
+	f.addSheetNameSpace(sheet, SourceRelationship)
+	if err = f.addTable(sheet, tableXML, hcol, hrow, vcol, vrow, tableID, formatSet); err != nil {
 		return err
 	}
 	f.addContentTypePart(tableID, "table")
@@ -106,16 +108,20 @@ func (f *File) countTables() int {
 
 // addSheetTable provides a function to add tablePart element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
-func (f *File) addSheetTable(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
+func (f *File) addSheetTable(sheet string, rID int) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	table := &xlsxTablePart{
 		RID: "rId" + strconv.Itoa(rID),
 	}
-	if xlsx.TableParts == nil {
-		xlsx.TableParts = &xlsxTableParts{}
+	if ws.TableParts == nil {
+		ws.TableParts = &xlsxTableParts{}
 	}
-	xlsx.TableParts.Count++
-	xlsx.TableParts.TableParts = append(xlsx.TableParts.TableParts, table)
+	ws.TableParts.Count++
+	ws.TableParts.TableParts = append(ws.TableParts.TableParts, table)
+	return err
 }
 
 // addTable provides a function to add table by given worksheet name,
@@ -159,7 +165,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 		name = "Table" + strconv.Itoa(i)
 	}
 	t := xlsxTable{
-		XMLNS:       NameSpaceSpreadSheet,
+		XMLNS:       NameSpaceSpreadSheet.Value,
 		ID:          i,
 		Name:        name,
 		DisplayName: name,

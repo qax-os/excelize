@@ -455,7 +455,7 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
 		}
 		ws.ExtLst.Ext = string(extBytes)
 	}
-
+	f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
 	return
 }
 

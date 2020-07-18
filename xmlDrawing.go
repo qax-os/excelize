@@ -14,8 +14,14 @@ package excelize
 import "encoding/xml"
 
 // Source relationship and namespace.
+var (
+	SourceRelationship      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+	NameSpaceSpreadSheet    = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+	NameSpaceSpreadSheetX14 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+)
+
+// Source relationship and namespace.
 const (
-	SourceRelationship                           = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 	SourceRelationshipChart                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 	SourceRelationshipComments                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
 	SourceRelationshipImage                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
@@ -37,8 +43,6 @@ const (
 	NameSpaceDrawingML                           = "http://schemas.openxmlformats.org/drawingml/2006/main"
 	NameSpaceDrawingMLChart                      = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 	NameSpaceDrawingMLSpreadSheet                = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
-	NameSpaceSpreadSheet                         = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-	NameSpaceSpreadSheetX14                      = "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"
 	NameSpaceSpreadSheetX15                      = "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"
 	NameSpaceSpreadSheetExcel2006Main            = "http://schemas.microsoft.com/office/excel/2006/main"
 	NameSpaceMacExcel2008Main                    = "http://schemas.microsoft.com/office/mac/excel/2008/main"

@@ -1022,7 +1022,7 @@ func (f *File) stylesReader() *xlsxStyleSheet {
 func (f *File) styleSheetWriter() {
 	if f.Styles != nil {
 		output, _ := xml.Marshal(f.Styles)
-		f.saveFileList("xl/styles.xml", replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList("xl/styles.xml", f.replaceNameSpaceBytes("xl/styles.xml", output))
 	}
 }
 
@@ -1031,7 +1031,7 @@ func (f *File) styleSheetWriter() {
 func (f *File) sharedStringsWriter() {
 	if f.SharedStrings != nil {
 		output, _ := xml.Marshal(f.SharedStrings)
-		f.saveFileList("xl/sharedStrings.xml", replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList("xl/sharedStrings.xml", f.replaceNameSpaceBytes("xl/sharedStrings.xml", output))
 	}
 }
 

@@ -151,7 +151,7 @@ func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
 	}
 
 	table := xlsxTable{
-		XMLNS:       NameSpaceSpreadSheet,
+		XMLNS:       NameSpaceSpreadSheet.Value,
 		ID:          tableID,
 		Name:        name,
 		DisplayName: name,

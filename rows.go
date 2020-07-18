@@ -121,11 +121,8 @@ func (rows *Rows) Columns() ([]string, error) {
 					}
 				}
 				blank := cellCol - len(columns)
-				for i := 1; i < blank; i++ {
-					columns = append(columns, "")
-				}
 				val, _ := colCell.getValueFrom(rows.f, d)
-				columns = append(columns, val)
+				columns = append(appendSpace(blank, columns), val)
 			}
 		case xml.EndElement:
 			inElement = startElement.Name.Local
@@ -135,6 +132,14 @@ func (rows *Rows) Columns() ([]string, error) {
 		}
 	}
 	return columns, err
+}
+
+// appendSpace append blank characters to slice by given length and source slice.
+func appendSpace(l int, s []string) []string {
+	for i := 1; i < l; i++ {
+		s = append(s, "")
+	}
+	return s
 }
 
 // ErrSheetNotExist defines an error of sheet is not exist
@@ -173,7 +178,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if f.Sheet[name] != nil {
 		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var (
 		err       error
