@@ -15,9 +15,10 @@ import "encoding/xml"
 
 // Source relationship and namespace.
 var (
-	SourceRelationship      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
-	NameSpaceSpreadSheet    = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-	NameSpaceSpreadSheetX14 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	SourceRelationship              = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+	SourceRelationshipCompatibility = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
+	NameSpaceSpreadSheet            = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+	NameSpaceSpreadSheetX14         = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
 )
 
 // Source relationship and namespace.
@@ -39,7 +40,6 @@ const (
 	SourceRelationshipChart201506                = "http://schemas.microsoft.com/office/drawing/2015/06/chart"
 	SourceRelationshipChart20070802              = "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"
 	SourceRelationshipChart2014                  = "http://schemas.microsoft.com/office/drawing/2014/chart"
-	SourceRelationshipCompatibility              = "http://schemas.openxmlformats.org/markup-compatibility/2006"
 	NameSpaceDrawingML                           = "http://schemas.openxmlformats.org/drawingml/2006/main"
 	NameSpaceDrawingMLChart                      = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 	NameSpaceDrawingMLSpreadSheet                = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"

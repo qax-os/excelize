@@ -287,14 +287,8 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 	}
 
 	formatSet, _ := parseAutoFilterSet(format)
-
-	var cellStart, cellEnd string
-	if cellStart, err = CoordinatesToCellName(hcol, hrow); err != nil {
-		return err
-	}
-	if cellEnd, err = CoordinatesToCellName(vcol, vrow); err != nil {
-		return err
-	}
+	cellStart, _ := CoordinatesToCellName(hcol, hrow)
+	cellEnd, _ := CoordinatesToCellName(vcol, vrow)
 	ref, filterDB := cellStart+":"+cellEnd, "_xlnm._FilterDatabase"
 	wb := f.workbookReader()
 	sheetID := f.GetSheetIndex(sheet)
