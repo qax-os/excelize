@@ -164,7 +164,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 				},
 				VPath: &vPath{
 					Gradientshapeok: "t",
-					Connecttype:     "miter",
+					Connecttype:     "rect",
 				},
 			},
 		}
