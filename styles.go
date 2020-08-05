@@ -909,7 +909,7 @@ func formatToC(i int, v string) string {
 		return v
 	}
 	f = f * 100
-	return fmt.Sprintf("%d%%", int(f))
+	return fmt.Sprintf("%.f%%", f)
 }
 
 // formatToD provides a function to convert original string to special format
