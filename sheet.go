@@ -213,8 +213,8 @@ func (f *File) setAppXML() {
 // strict requirements about the structure of the input XML. This function is
 // a horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsBytes(content []byte) []byte {
-	oldXmlns := stringToBytes(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
-	newXmlns := stringToBytes("r")
+	oldXmlns := []byte(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
+	newXmlns := []byte("r")
 	return bytesReplace(content, oldXmlns, newXmlns, -1)
 }
 

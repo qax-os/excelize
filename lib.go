@@ -20,7 +20,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"unsafe"
 )
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
@@ -251,15 +250,9 @@ func namespaceStrictToTransitional(content []byte) []byte {
 		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet.Value,
 	}
 	for s, n := range namespaceTranslationDic {
-		content = bytesReplace(content, stringToBytes(s), stringToBytes(n), -1)
+		content = bytesReplace(content, []byte(s), []byte(n), -1)
 	}
 	return content
-}
-
-// stringToBytes cast a string to bytes pointer and assign the value of this
-// pointer.
-func stringToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
 }
 
 // bytesReplace replace old bytes with given new.
@@ -366,7 +359,7 @@ func getXMLNamespace(space string, attr []xml.Attr) string {
 // replaceNameSpaceBytes provides a function to replace the XML root element
 // attribute by the given component part path and XML content.
 func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
-	var oldXmlns = stringToBytes(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	var oldXmlns = []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	var newXmlns = []byte(templateNamespaceIDMap)
 	if attr, ok := f.xmlAttr[path]; ok {
 		newXmlns = []byte(genXMLNamespace(attr))
