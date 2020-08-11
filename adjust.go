@@ -115,8 +115,10 @@ func (f *File) adjustHyperlinks(xlsx *xlsxWorksheet, sheet string, dir adjustDir
 			if (dir == rows && num == rowNum) || (dir == columns && num == colNum) {
 				f.deleteSheetRelationships(sheet, linkData.RID)
 				if len(xlsx.Hyperlinks.Hyperlink) > 1 {
-					xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink[:rowIdx],
-						xlsx.Hyperlinks.Hyperlink[rowIdx+1:]...)
+					if rowIdx<len(xlsx.Hyperlinks.Hyperlink){
+						xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink[:rowIdx],
+										   xlsx.Hyperlinks.Hyperlink[rowIdx+1:]...)
+					}
 				} else {
 					xlsx.Hyperlinks = nil
 				}
