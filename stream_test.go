@@ -91,6 +91,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = streamWriter.rawData.Reader()
 	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.rawData.tmp.Close())
 	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
 
 	// Test unsupport charset

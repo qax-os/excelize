@@ -21,7 +21,7 @@ env:
 
 script:
   - env GO111MODULE=on go vet ./...
-  - env GO111MODULE=on go test ./... -v -coverprofile=coverage.txt -covermode=atomic
+  - env GO111MODULE=on go test -v -race ./... -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

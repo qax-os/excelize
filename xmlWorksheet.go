@@ -11,11 +11,15 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sync"
+)
 
 // xlsxWorksheet directly maps the worksheet element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main.
 type xlsxWorksheet struct {
+	sync.RWMutex
 	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
 	Dimension             *xlsxDimension               `xml:"dimension"`

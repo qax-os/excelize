@@ -284,6 +284,8 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
 
+	f.Lock()
+	defer f.Unlock()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
@@ -318,6 +320,8 @@ func (f *File) sharedStringsReader() *xlsxSST {
 // inteded to be used with for range on rows an argument with the xlsx opened
 // file.
 func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
+	f.Lock()
+	defer f.Unlock()
 	switch xlsx.T {
 	case "s":
 		if xlsx.V != "" {

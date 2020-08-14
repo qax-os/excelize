@@ -167,7 +167,7 @@ func ColumnNumberToName(num int) (string, error) {
 	}
 	var col string
 	for num > 0 {
-		col = string((num-1)%26+65) + col
+		col = string(rune((num-1)%26+65)) + col
 		num = (num - 1) / 26
 	}
 	return col, nil

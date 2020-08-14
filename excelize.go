@@ -24,12 +24,14 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/html/charset"
 )
 
 // File define a populated spreadsheet file struct.
 type File struct {
+	sync.RWMutex
 	xmlAttr          map[string][]xml.Attr
 	checked          map[string]bool
 	sheetMap         map[string]string
@@ -153,6 +155,8 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
+	f.Lock()
+	defer f.Unlock()
 	var (
 		name string
 		ok   bool
@@ -323,7 +327,7 @@ func (f *File) AddVBAProject(bin string) error {
 	var err error
 	// Check vbaProject.bin exists first.
 	if _, err = os.Stat(bin); os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("stat %s: no such file or directory", bin)
 	}
 	if path.Ext(bin) != ".bin" {
 		return errors.New("unsupported VBA project extension")
