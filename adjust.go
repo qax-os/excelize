@@ -109,15 +109,16 @@ func (f *File) adjustHyperlinks(xlsx *xlsxWorksheet, sheet string, dir adjustDir
 
 	// order is important
 	if offset < 0 {
-		for i := len(xlsx.Hyperlinks.Hyperlink)-1; i >= 0; i-- {
-			linkData := range xlsx.Hyperlinks.Hyperlink[i]
+		for i := 0; i < len(xlsx.Hyperlinks.Hyperlink); i++ {
+			linkData := xlsx.Hyperlinks.Hyperlink[i]
 			colNum, rowNum, _ := CellNameToCoordinates(linkData.Ref)
 
 			if (dir == rows && num == rowNum) || (dir == columns && num == colNum) {
 				f.deleteSheetRelationships(sheet, linkData.RID)
 				if len(xlsx.Hyperlinks.Hyperlink) > 1 {
 					xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink[:i],
-									   xlsx.Hyperlinks.Hyperlink[i+1:]...)
+						xlsx.Hyperlinks.Hyperlink[i+1:]...)
+					i--
 				} else {
 					xlsx.Hyperlinks = nil
 				}
