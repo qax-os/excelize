@@ -86,7 +86,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		return nil, err
 	}
 	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 1, 5)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 6)
 	sw.rawData.WriteString(`<sheetData>`)
 	return sw, err
 }
@@ -376,9 +376,9 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
 	sw.rawData.WriteString(`</sheetData>`)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 7, 37)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 38)
 	sw.rawData.WriteString(sw.tableParts)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 39, 39)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
 	sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err
