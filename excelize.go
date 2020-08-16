@@ -31,7 +31,7 @@ import (
 
 // File define a populated spreadsheet file struct.
 type File struct {
-	sync.RWMutex
+	sync.Mutex
 	xmlAttr          map[string][]xml.Attr
 	checked          map[string]bool
 	sheetMap         map[string]string
