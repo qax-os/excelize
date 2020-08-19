@@ -182,6 +182,20 @@ type xlsxError struct {
 
 // xlsxString represents a character value in a PivotTable.
 type xlsxString struct {
+	V    string      `xml:"v,attr"`
+	U    bool        `xml:"u,attr,omitempty"`
+	F    bool        `xml:"f,attr,omitempty"`
+	C    string      `xml:"c,attr,omitempty"`
+	Cp   int         `xml:"cp,attr,omitempty"`
+	In   int         `xml:"in,attr,omitempty"`
+	Bc   string      `xml:"bc,attr,omitempty"`
+	Fc   string      `xml:"fc,attr,omitempty"`
+	I    bool        `xml:"i,attr,omitempty"`
+	Un   bool        `xml:"un,attr,omitempty"`
+	St   bool        `xml:"st,attr,omitempty"`
+	B    bool        `xml:"b,attr,omitempty"`
+	Tpls *xlsxTuples `xml:"tpls"`
+	X    *attrValInt `xml:"x"`
 }
 
 // xlsxDateTime represents a date-time value in the PivotTable.
