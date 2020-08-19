@@ -407,15 +407,19 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if max < min {
 		min, max = max, min
 	}
-	if xlsx.Cols == nil {
-		xlsx.Cols = &xlsxCols{}
-	}
-	xlsx.Cols.Col = flatCols(xlsxCol{
+	col := xlsxCol{
 		Min:   min,
 		Max:   max,
 		Width: 9,
 		Style: styleID,
-	}, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+	}
+	if xlsx.Cols == nil {
+		cols := xlsxCols{}
+		cols.Col = append(cols.Col, col)
+		xlsx.Cols = &cols
+		return err
+	}
+	xlsx.Cols.Col = flatCols(col, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
 		fc.Collapsed = c.Collapsed
 		fc.CustomWidth = c.CustomWidth
