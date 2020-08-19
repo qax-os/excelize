@@ -27,9 +27,9 @@ type xlsxRelationship struct {
 	TargetMode string `xml:",attr,omitempty"`
 }
 
-// xlsxWorkbook directly maps the workbook element from the namespace
-// http://schemas.openxmlformats.org/spreadsheetml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxWorkbook contains elements and attributes that encompass the data
+// content of the workbook. The workbook's child elements each have their own
+// subclause references.
 type xlsxWorkbook struct {
 	XMLName             xml.Name                 `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
 	FileVersion         *xlsxFileVersion         `xml:"fileVersion"`
@@ -153,7 +153,7 @@ type xlsxSheets struct {
 type xlsxSheet struct {
 	Name    string `xml:"name,attr,omitempty"`
 	SheetID int    `xml:"sheetId,attr,omitempty"`
-	ID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+	ID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr"`
 	State   string `xml:"state,attr,omitempty"`
 }
 

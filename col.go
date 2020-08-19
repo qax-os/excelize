@@ -159,7 +159,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 	}
 	if f.Sheet[name] != nil {
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var (
 		inElement            string

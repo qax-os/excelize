@@ -168,6 +168,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		return err
 	}
 	f.addContentTypePart(drawingID, "drawings")
+	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
 }
 
@@ -252,6 +253,9 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 		if err != nil {
 			return err
 		}
+	} else {
+		width = int(float64(width) * formatSet.XScale)
+		height = int(float64(height) * formatSet.YScale)
 	}
 	col--
 	row--
@@ -279,11 +283,11 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
 	if hyperlinkRID != 0 {
 		pic.NvPicPr.CNvPr.HlinkClick = &xlsxHlinkClick{
-			R:   SourceRelationship,
+			R:   SourceRelationship.Value,
 			RID: "rId" + strconv.Itoa(hyperlinkRID),
 		}
 	}
-	pic.BlipFill.Blip.R = SourceRelationship
+	pic.BlipFill.Blip.R = SourceRelationship.Value
 	pic.BlipFill.Blip.Embed = "rId" + strconv.Itoa(rID)
 	pic.SpPr.PrstGeom.Prst = "rect"
 
@@ -474,7 +478,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
 
-// DeletePicture provides a function to delete charts in XLSX by given
+// DeletePicture provides a function to delete charts in spreadsheet by given
 // worksheet and cell name. Note that the image file won't be deleted from the
 // document currently.
 func (f *File) DeletePicture(sheet, cell string) (err error) {
@@ -496,7 +500,7 @@ func (f *File) DeletePicture(sheet, cell string) (err error) {
 }
 
 // getPicture provides a function to get picture base name and raw content
-// embed in XLSX by given coordinates and drawing relationships.
+// embed in spreadsheet by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (ret string, buf []byte, err error) {
 	var (
 		wsDr            *xlsxWsDr
@@ -549,11 +553,12 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships,
-					anchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
-					return
+				if drawRel = f.getDrawingRelationships(drawingRelationships,
+					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
+					if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
+						ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+						return
+					}
 				}
 			}
 		}

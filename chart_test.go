@@ -253,3 +253,116 @@ func TestDeleteChart(t *testing.T) {
 	// Test delete chart on no chart worksheet.
 	assert.NoError(t, NewFile().DeleteChart("Sheet1", "A1"))
 }
+
+func TestChartWithLogarithmicBase(t *testing.T) {
+	// Create test XLSX file with data
+	xlsx := NewFile()
+	sheet1 := xlsx.GetSheetName(0)
+	categories := map[string]float64{
+		"A1":  1,
+		"A2":  2,
+		"A3":  3,
+		"A4":  4,
+		"A5":  5,
+		"A6":  6,
+		"A7":  7,
+		"A8":  8,
+		"A9":  9,
+		"A10": 10,
+		"B1":  0.1,
+		"B2":  1,
+		"B3":  2,
+		"B4":  3,
+		"B5":  20,
+		"B6":  30,
+		"B7":  100,
+		"B8":  500,
+		"B9":  700,
+		"B10": 5000,
+	}
+	for cell, v := range categories {
+		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
+	}
+
+	// Add two chart, one without and one with log scaling
+	assert.NoError(t, xlsx.AddChart(sheet1, "C1",
+		`{"type":"line","dimension":{"width":640, "height":480},`+
+			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
+			`"title":{"name":"Line chart without log scaling"}}`))
+	assert.NoError(t, xlsx.AddChart(sheet1, "M1",
+		`{"type":"line","dimension":{"width":640, "height":480},`+
+			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
+			`"y_axis":{"logbase":10.5},`+
+			`"title":{"name":"Line chart with log 10 scaling"}}`))
+	assert.NoError(t, xlsx.AddChart(sheet1, "A25",
+		`{"type":"line","dimension":{"width":320, "height":240},`+
+			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
+			`"y_axis":{"logbase":1.9},`+
+			`"title":{"name":"Line chart with log 1.9 scaling"}}`))
+	assert.NoError(t, xlsx.AddChart(sheet1, "F25",
+		`{"type":"line","dimension":{"width":320, "height":240},`+
+			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
+			`"y_axis":{"logbase":2},`+
+			`"title":{"name":"Line chart with log 2 scaling"}}`))
+	assert.NoError(t, xlsx.AddChart(sheet1, "K25",
+		`{"type":"line","dimension":{"width":320, "height":240},`+
+			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
+			`"y_axis":{"logbase":1000.1},`+
+			`"title":{"name":"Line chart with log 1000.1 scaling"}}`))
+	assert.NoError(t, xlsx.AddChart(sheet1, "P25",
+		`{"type":"line","dimension":{"width":320, "height":240},`+
+			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
+			`"y_axis":{"logbase":1000},`+
+			`"title":{"name":"Line chart with log 1000 scaling"}}`))
+
+	// Export XLSX file for human confirmation
+	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestChartWithLogarithmicBase10.xlsx")))
+
+	// Write the XLSX file to a buffer
+	var buffer bytes.Buffer
+	assert.NoError(t, xlsx.Write(&buffer))
+
+	// Read back the XLSX file from the buffer
+	newFile, err := OpenReader(&buffer)
+	assert.NoError(t, err)
+
+	// Check the number of charts
+	expectedChartsCount := 6
+	chartsNum := newFile.countCharts()
+	if !assert.Equal(t, expectedChartsCount, chartsNum,
+		"Expected %d charts, actual %d", expectedChartsCount, chartsNum) {
+		t.FailNow()
+	}
+
+	chartSpaces := make([]xlsxChartSpace, expectedChartsCount)
+	type xmlChartContent []byte
+	xmlCharts := make([]xmlChartContent, expectedChartsCount)
+	expectedChartsLogBase := []float64{0, 10.5, 0, 2, 0, 1000}
+	var ok bool
+
+	for i := 0; i < expectedChartsCount; i++ {
+		chartPath := fmt.Sprintf("xl/charts/chart%d.xml", i+1)
+		xmlCharts[i], ok = newFile.XLSX[chartPath]
+		assert.True(t, ok, "Can't open the %s", chartPath)
+
+		err = xml.Unmarshal([]byte(xmlCharts[i]), &chartSpaces[i])
+		if !assert.NoError(t, err) {
+			t.FailNow()
+		}
+
+		chartLogBasePtr := chartSpaces[i].Chart.PlotArea.ValAx[0].Scaling.LogBase
+		if expectedChartsLogBase[i] == 0 {
+			if !assert.Nil(t, chartLogBasePtr, "LogBase is not nil") {
+				t.FailNow()
+			}
+		} else {
+			if !assert.NotNil(t, chartLogBasePtr, "LogBase is nil") {
+				t.FailNow()
+			}
+			if !assert.Equal(t, expectedChartsLogBase[i], *(chartLogBasePtr.Val),
+				"Expected log base to %f, actual %f", expectedChartsLogBase[i], *(chartLogBasePtr.Val)) {
+				t.FailNow()
+			}
+		}
+	}
+}

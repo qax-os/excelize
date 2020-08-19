@@ -790,4 +790,30 @@ func TestCalcCellValue(t *testing.T) {
 	_, err = f.CalcCellValue("Sheet1", "A1")
 	assert.EqualError(t, err, "not support UNSUPPORT function")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCalcCellValue.xlsx")))
+
+}
+
+func TestCalcCellValueWithDefinedName(t *testing.T) {
+	cellData := [][]interface{}{
+		{"A1 value", "B1 value", nil},
+	}
+	prepareData := func() *File {
+		f := NewFile()
+		for r, row := range cellData {
+			for c, value := range row {
+				cell, _ := CoordinatesToCellName(c+1, r+1)
+				assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+			}
+		}
+		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
+
+		return f
+	}
+	f := prepareData()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=defined_name1"))
+	result, err := f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
+	assert.Equal(t, "B1 value", result, "=defined_name1")
 }

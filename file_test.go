@@ -19,7 +19,7 @@ func BenchmarkWrite(b *testing.B) {
 				if err != nil {
 					b.Error(err)
 				}
-				if err := f.SetCellDefault("Sheet1", val, s); err != nil {
+				if err := f.SetCellValue("Sheet1", val, s); err != nil {
 					b.Error(err)
 				}
 			}

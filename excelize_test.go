@@ -22,7 +22,7 @@ import (
 )
 
 func TestOpenFile(t *testing.T) {
-	// Test update a XLSX file.
+	// Test update the spreadsheet file.
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 
@@ -154,11 +154,11 @@ func TestOpenFile(t *testing.T) {
 	// Test read cell value with given axis large than exists row.
 	_, err = f.GetCellValue("Sheet2", "E231")
 	assert.NoError(t, err)
-	// Test get active worksheet of XLSX and get worksheet name of XLSX by given worksheet index.
+	// Test get active worksheet of spreadsheet and get worksheet name of spreadsheet by given worksheet index.
 	f.GetSheetName(f.GetActiveSheetIndex())
-	// Test get worksheet index of XLSX by given worksheet name.
+	// Test get worksheet index of spreadsheet by given worksheet name.
 	f.GetSheetIndex("Sheet1")
-	// Test get worksheet name of XLSX by given invalid worksheet index.
+	// Test get worksheet name of spreadsheet by given invalid worksheet index.
 	f.GetSheetName(4)
 	// Test get worksheet map of workbook.
 	f.GetSheetMap()
@@ -261,7 +261,7 @@ func TestBrokenFile(t *testing.T) {
 	})
 
 	t.Run("OpenNotExistsFile", func(t *testing.T) {
-		// Test open a XLSX file with given illegal path.
+		// Test open a spreadsheet file with given illegal path.
 		_, err := OpenFile(filepath.Join("test", "NotExistsFile.xlsx"))
 		if assert.Error(t, err) {
 			assert.True(t, os.IsNotExist(err), "Expected os.IsNotExists(err) == true")
@@ -270,7 +270,7 @@ func TestBrokenFile(t *testing.T) {
 }
 
 func TestNewFile(t *testing.T) {
-	// Test create a XLSX file.
+	// Test create a spreadsheet file.
 	f := NewFile()
 	f.NewSheet("Sheet1")
 	f.NewSheet("XLSXSheet2")

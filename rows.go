@@ -121,11 +121,8 @@ func (rows *Rows) Columns() ([]string, error) {
 					}
 				}
 				blank := cellCol - len(columns)
-				for i := 1; i < blank; i++ {
-					columns = append(columns, "")
-				}
 				val, _ := colCell.getValueFrom(rows.f, d)
-				columns = append(columns, val)
+				columns = append(appendSpace(blank, columns), val)
 			}
 		case xml.EndElement:
 			inElement = startElement.Name.Local
@@ -135,6 +132,14 @@ func (rows *Rows) Columns() ([]string, error) {
 		}
 	}
 	return columns, err
+}
+
+// appendSpace append blank characters to slice by given length and source slice.
+func appendSpace(l int, s []string) []string {
+	for i := 1; i < l; i++ {
+		s = append(s, "")
+	}
+	return s
 }
 
 // ErrSheetNotExist defines an error of sheet is not exist
@@ -173,7 +178,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if f.Sheet[name] != nil {
 		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var (
 		err       error
@@ -279,21 +284,22 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
 
+	f.Lock()
+	defer f.Unlock()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
-		if len(ss) == 0 {
-			ss = f.readXML("xl/SharedStrings.xml")
-			delete(f.XLSX, "xl/SharedStrings.xml")
-		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
+		if sharedStrings.UniqueCount == 0 {
+			sharedStrings.UniqueCount = sharedStrings.Count
+		}
 		f.SharedStrings = &sharedStrings
 		for i := range sharedStrings.SI {
-			if sharedStrings.SI[i].T != "" {
-				f.sharedStringsMap[sharedStrings.SI[i].T] = i
+			if sharedStrings.SI[i].T != nil {
+				f.sharedStringsMap[sharedStrings.SI[i].T.Val] = i
 			}
 		}
 		f.addContentTypePart(0, "sharedStrings")
@@ -314,6 +320,8 @@ func (f *File) sharedStringsReader() *xlsxSST {
 // inteded to be used with for range on rows an argument with the xlsx opened
 // file.
 func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
+	f.Lock()
+	defer f.Unlock()
 	switch xlsx.T {
 	case "s":
 		if xlsx.V != "" {

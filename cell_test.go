@@ -4,11 +4,32 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestConcurrency(t *testing.T) {
+	f := NewFile()
+	wg := new(sync.WaitGroup)
+	for i := 1; i <= 5; i++ {
+		wg.Add(1)
+		go func(val int) {
+			f.SetCellValue("Sheet1", fmt.Sprintf("A%d", val), val)
+			f.SetCellValue("Sheet1", fmt.Sprintf("B%d", val), strconv.Itoa(val))
+			f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	val, err := f.GetCellValue("Sheet1", "A1")
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, "1", val)
+}
 
 func TestCheckCellInArea(t *testing.T) {
 	f := NewFile()
