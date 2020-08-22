@@ -262,21 +262,24 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
 	}
-
-	xlsx, err := f.workSheetReader(sheet)
+	var ht = defaultRowHeight
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return defaultRowHeightPixels, err
+		return ht, err
 	}
-	if row > len(xlsx.SheetData.Row) {
-		return defaultRowHeightPixels, nil // it will be better to use 0, but we take care with BC
+	if ws.SheetFormatPr != nil {
+		ht = ws.SheetFormatPr.DefaultRowHeight
 	}
-	for _, v := range xlsx.SheetData.Row {
+	if row > len(ws.SheetData.Row) {
+		return ht, nil // it will be better to use 0, but we take care with BC
+	}
+	for _, v := range ws.SheetData.Row {
 		if v.R == row && v.Ht != 0 {
 			return v.Ht, nil
 		}
 	}
 	// Optimisation for when the row heights haven't changed.
-	return defaultRowHeightPixels, nil
+	return ht, nil
 }
 
 // sharedStringsReader provides a function to get the pointer to the structure

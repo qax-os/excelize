@@ -112,12 +112,12 @@ func TestRowHeight(t *testing.T) {
 	// Test get row height that rows index over exists rows.
 	height, err = xlsx.GetRowHeight(sheet1, 5)
 	assert.NoError(t, err)
-	assert.Equal(t, defaultRowHeightPixels, height)
+	assert.Equal(t, defaultRowHeight, height)
 
 	// Test get row height that rows heights haven't changed.
 	height, err = xlsx.GetRowHeight(sheet1, 3)
 	assert.NoError(t, err)
-	assert.Equal(t, defaultRowHeightPixels, height)
+	assert.Equal(t, defaultRowHeight, height)
 
 	// Test set and get row height on not exists worksheet.
 	assert.EqualError(t, xlsx.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")

@@ -25,6 +25,7 @@ import (
 // Define the default cell size and EMU unit of measurement.
 const (
 	defaultColWidthPixels  float64 = 64
+	defaultRowHeight       float64 = 15
 	defaultRowHeightPixels float64 = 20
 	EMU                    int     = 9525
 )

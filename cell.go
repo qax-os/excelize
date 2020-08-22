@@ -517,7 +517,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 //        }
 //        if err := f.SetCellRichText("Sheet1", "A1", []excelize.RichTextRun{
 //            {
-//                Text: "blod",
+//                Text: "bold",
 //                Font: &excelize.Font{
 //                    Bold:   true,
 //                    Color:  "2354e8",

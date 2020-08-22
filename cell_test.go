@@ -190,7 +190,7 @@ func TestSetCellRichText(t *testing.T) {
 	assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 44))
 	richTextRun := []RichTextRun{
 		{
-			Text: "blod",
+			Text: "bold",
 			Font: &Font{
 				Bold:   true,
 				Color:  "2354e8",

@@ -1630,13 +1630,19 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
 	rowCount := len(xlsx.SheetData.Row)
 	sizeHint := 0
+	var ht float64
+	var customHeight bool
+	if xlsx.SheetFormatPr != nil {
+		ht = xlsx.SheetFormatPr.DefaultRowHeight
+		customHeight = true
+	}
 	if rowCount > 0 {
 		sizeHint = len(xlsx.SheetData.Row[rowCount-1].C)
 	}
 	if rowCount < row {
 		// append missing rows
 		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1, C: make([]xlsxC, 0, sizeHint)})
+			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1, CustomHeight: customHeight, Ht: ht, C: make([]xlsxC, 0, sizeHint)})
 		}
 	}
 	rowData := &xlsx.SheetData.Row[row-1]
