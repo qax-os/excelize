@@ -59,10 +59,7 @@ func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, she
 func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
-		XMLNSc:         NameSpaceDrawingMLChart.Value,
 		XMLNSa:         NameSpaceDrawingML.Value,
-		XMLNSr:         SourceRelationship.Value,
-		XMLNSc16r2:     SourceRelationshipChart201506.Value,
 		Date1904:       &attrValBool{Val: boolPtr(false)},
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},

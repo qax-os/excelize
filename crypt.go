@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/xml"
+	"errors"
 	"hash"
 	"strings"
 
@@ -33,12 +34,16 @@ var (
 	blockKey                   = []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6} // Block keys used for encryption
 	packageOffset              = 8                                                      // First 8 bytes are the size of the stream
 	packageEncryptionChunkSize = 4096
+	iterCount                  = 50000
 	cryptoIdentifier           = []byte{ // checking protect workbook by [MS-OFFCRYPTO] - v20181211 3.1 FeatureIdentifier
 		0x3c, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x69, 0x00, 0x63, 0x00, 0x72, 0x00, 0x6f, 0x00, 0x73, 0x00,
 		0x6f, 0x00, 0x66, 0x00, 0x74, 0x00, 0x2e, 0x00, 0x43, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x74, 0x00,
 		0x61, 0x00, 0x69, 0x00, 0x6e, 0x00, 0x65, 0x00, 0x72, 0x00, 0x2e, 0x00, 0x44, 0x00, 0x61, 0x00,
 		0x74, 0x00, 0x61, 0x00, 0x53, 0x00, 0x70, 0x00, 0x61, 0x00, 0x63, 0x00, 0x65, 0x00, 0x73, 0x00,
 		0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	}
+	oleIdentifier = []byte{
+		0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1,
 	}
 )
 
@@ -93,37 +98,56 @@ type EncryptedKey struct {
 	KeyData
 }
 
-// Decrypt API decrypt the CFB file format with Agile Encryption. Support
-// cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256, SHA384 and
-// SHA512.
+// StandardEncryptionHeader structure is used by ECMA-376 document encryption
+// [ECMA-376] and Office binary document RC4 CryptoAPI encryption, to specify
+// encryption properties for an encrypted stream.
+type StandardEncryptionHeader struct {
+	Flags        uint32
+	SizeExtra    uint32
+	AlgID        uint32
+	AlgIDHash    uint32
+	KeySize      uint32
+	ProviderType uint32
+	Reserved1    uint32
+	Reserved2    uint32
+	CspName      string
+}
+
+// StandardEncryptionVerifier structure is used by Office Binary Document RC4
+// CryptoAPI Encryption and ECMA-376 Document Encryption. Every usage of this
+// structure MUST specify the hashing algorithm and encryption algorithm used
+// in the EncryptionVerifier structure.
+type StandardEncryptionVerifier struct {
+	SaltSize              uint32
+	Salt                  []byte
+	EncryptedVerifier     []byte
+	VerifierHashSize      uint32
+	EncryptedVerifierHash []byte
+}
+
+// Decrypt API decrypt the CFB file format with ECMA-376 agile encryption and
+// standard encryption. Support cryptographic algorithm: MD4, MD5, RIPEMD-160,
+// SHA1, SHA256, SHA384 and SHA512 currently.
 func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 	doc, err := mscfb.New(bytes.NewReader(raw))
 	if err != nil {
 		return
 	}
 	encryptionInfoBuf, encryptedPackageBuf := extractPart(doc)
-	var encryptionInfo Encryption
-	if encryptionInfo, err = parseEncryptionInfo(encryptionInfoBuf[8:]); err != nil {
+	mechanism, err := encryptionMechanism(encryptionInfoBuf)
+	if err != nil || mechanism == "extensible" {
 		return
 	}
-	// Convert the password into an encryption key.
-	key, err := convertPasswdToKey(opt.Password, encryptionInfo)
-	if err != nil {
-		return
+	switch mechanism {
+	case "agile":
+		return agileDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
+	case "standard":
+		return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
+	default:
+		err = errors.New("unsupport encryption mechanism")
+		break
 	}
-	// Use the key to decrypt the package key.
-	encryptedKey := encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey
-	saltValue, err := base64.StdEncoding.DecodeString(encryptedKey.SaltValue)
-	if err != nil {
-		return
-	}
-	encryptedKeyValue, err := base64.StdEncoding.DecodeString(encryptedKey.EncryptedKeyValue)
-	if err != nil {
-		return
-	}
-	packageKey, err := crypt(false, encryptedKey.CipherAlgorithm, encryptedKey.CipherChaining, key, saltValue, encryptedKeyValue)
-	// Use the package key to decrypt the package.
-	return cryptPackage(false, packageKey, encryptedPackageBuf, encryptionInfo)
+	return
 }
 
 // extractPart extract data from storage by specified part name.
@@ -147,6 +171,159 @@ func extractPart(doc *mscfb.Reader) (encryptionInfoBuf, encryptedPackageBuf []by
 		}
 	}
 	return
+}
+
+// encryptionMechanism parse password-protected documents created mechanism.
+func encryptionMechanism(buffer []byte) (mechanism string, err error) {
+	if len(buffer) < 4 {
+		err = errors.New("unknown encryption mechanism")
+		return
+	}
+	versionMajor, versionMinor := binary.LittleEndian.Uint16(buffer[0:2]), binary.LittleEndian.Uint16(buffer[2:4])
+	if versionMajor == 4 && versionMinor == 4 {
+		mechanism = "agile"
+		return
+	} else if (2 <= versionMajor && versionMajor <= 4) && versionMinor == 2 {
+		mechanism = "standard"
+		return
+	} else if (versionMajor == 3 || versionMajor == 4) && versionMinor == 3 {
+		mechanism = "extensible"
+	}
+	err = errors.New("unsupport encryption mechanism")
+	return
+}
+
+// ECMA-376 Standard Encryption
+
+// standardDecrypt decrypt the CFB file format with ECMA-376 standard encryption.
+func standardDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) ([]byte, error) {
+	encryptionHeaderSize := binary.LittleEndian.Uint32(encryptionInfoBuf[8:12])
+	block := encryptionInfoBuf[12 : 12+encryptionHeaderSize]
+	header := StandardEncryptionHeader{
+		Flags:        binary.LittleEndian.Uint32(block[:4]),
+		SizeExtra:    binary.LittleEndian.Uint32(block[4:8]),
+		AlgID:        binary.LittleEndian.Uint32(block[8:12]),
+		AlgIDHash:    binary.LittleEndian.Uint32(block[12:16]),
+		KeySize:      binary.LittleEndian.Uint32(block[16:20]),
+		ProviderType: binary.LittleEndian.Uint32(block[20:24]),
+		Reserved1:    binary.LittleEndian.Uint32(block[24:28]),
+		Reserved2:    binary.LittleEndian.Uint32(block[28:32]),
+		CspName:      string(block[32:]),
+	}
+	block = encryptionInfoBuf[12+encryptionHeaderSize:]
+	algIDMap := map[uint32]string{
+		0x0000660E: "AES-128",
+		0x0000660F: "AES-192",
+		0x00006610: "AES-256",
+	}
+	algorithm := "AES"
+	_, ok := algIDMap[header.AlgID]
+	if !ok {
+		algorithm = "RC4"
+	}
+	verifier := standardEncryptionVerifier(algorithm, block)
+	secretKey, err := standardConvertPasswdToKey(header, verifier, opt)
+	if err != nil {
+		return nil, err
+	}
+	// decrypted data
+	x := encryptedPackageBuf[8:]
+	blob, err := aes.NewCipher(secretKey)
+	if err != nil {
+		return nil, err
+	}
+	decrypted := make([]byte, len(x))
+	size := 16
+	for bs, be := 0, size; bs < len(x); bs, be = bs+size, be+size {
+		blob.Decrypt(decrypted[bs:be], x[bs:be])
+	}
+	return decrypted, err
+}
+
+// standardEncryptionVerifier extract ECMA-376 standard encryption verifier.
+func standardEncryptionVerifier(algorithm string, blob []byte) StandardEncryptionVerifier {
+	verifier := StandardEncryptionVerifier{
+		SaltSize:          binary.LittleEndian.Uint32(blob[:4]),
+		Salt:              blob[4:20],
+		EncryptedVerifier: blob[20:36],
+		VerifierHashSize:  binary.LittleEndian.Uint32(blob[36:40]),
+	}
+	if algorithm == "RC4" {
+		verifier.EncryptedVerifierHash = blob[40:60]
+	} else if algorithm == "AES" {
+		verifier.EncryptedVerifierHash = blob[40:72]
+	}
+	return verifier
+}
+
+// standardConvertPasswdToKey generate intermediate key from given password.
+func standardConvertPasswdToKey(header StandardEncryptionHeader, verifier StandardEncryptionVerifier, opt *Options) ([]byte, error) {
+	encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
+	passwordBuffer, err := encoder.Bytes([]byte(opt.Password))
+	if err != nil {
+		return nil, err
+	}
+	key := hashing("sha1", verifier.Salt, passwordBuffer)
+	for i := 0; i < iterCount; i++ {
+		iterator := createUInt32LEBuffer(i)
+		key = hashing("sha1", iterator, key)
+	}
+	var block int
+	hfinal := hashing("sha1", key, createUInt32LEBuffer(block))
+	cbRequiredKeyLength := int(header.KeySize) / 8
+	cbHash := sha1.Size
+	buf1 := bytes.Repeat([]byte{0x36}, 64)
+	buf1 = append(standardXORBytes(hfinal, buf1[:cbHash]), buf1[cbHash:]...)
+	x1 := hashing("sha1", buf1)
+	buf2 := bytes.Repeat([]byte{0x5c}, 64)
+	buf2 = append(standardXORBytes(hfinal, buf2[:cbHash]), buf2[cbHash:]...)
+	x2 := hashing("sha1", buf2)
+	x3 := append(x1, x2...)
+	keyDerived := x3[:cbRequiredKeyLength]
+	return keyDerived, err
+}
+
+// standardXORBytes perform XOR operations for two bytes slice.
+func standardXORBytes(a, b []byte) []byte {
+	r := make([][2]byte, len(a), len(a))
+	for i, e := range a {
+		r[i] = [2]byte{e, b[i]}
+	}
+	buf := make([]byte, len(a))
+	for p, q := range r {
+		buf[p] = q[0] ^ q[1]
+	}
+	return buf
+}
+
+// ECMA-376 Agile Encryption
+
+// agileDecrypt decrypt the CFB file format with ECMA-376 agile encryption.
+// Support cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256, SHA384
+// and SHA512.
+func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (packageBuf []byte, err error) {
+	var encryptionInfo Encryption
+	if encryptionInfo, err = parseEncryptionInfo(encryptionInfoBuf[8:]); err != nil {
+		return
+	}
+	// Convert the password into an encryption key.
+	key, err := convertPasswdToKey(opt.Password, encryptionInfo)
+	if err != nil {
+		return
+	}
+	// Use the key to decrypt the package key.
+	encryptedKey := encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey
+	saltValue, err := base64.StdEncoding.DecodeString(encryptedKey.SaltValue)
+	if err != nil {
+		return
+	}
+	encryptedKeyValue, err := base64.StdEncoding.DecodeString(encryptedKey.EncryptedKeyValue)
+	if err != nil {
+		return
+	}
+	packageKey, err := crypt(false, encryptedKey.CipherAlgorithm, encryptedKey.CipherChaining, key, saltValue, encryptedKeyValue)
+	// Use the package key to decrypt the package.
+	return cryptPackage(false, packageKey, encryptedPackageBuf, encryptionInfo)
 }
 
 // convertPasswdToKey convert the password into an encryption key.

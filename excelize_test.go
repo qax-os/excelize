@@ -201,12 +201,20 @@ func TestCharsetTranscoder(t *testing.T) {
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
-	_, err = OpenReader(bytes.NewReader(cryptoIdentifier))
+	_, err = OpenReader(bytes.NewReader(oleIdentifier))
 	assert.EqualError(t, err, "decrypted file failed")
 
+	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
 	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", val)
+
+	// Test open password protected spreadsheet created by LibreOffice 7.0.0.3.
+	f, err = OpenFile(filepath.Join("test", "encryptAES.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	val, err = f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", val)
 

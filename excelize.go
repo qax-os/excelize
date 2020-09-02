@@ -111,7 +111,7 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	if bytes.Contains(b, cryptoIdentifier) {
+	if bytes.Contains(b, oleIdentifier) {
 		var option Options
 		for _, o := range opt {
 			option = o
