@@ -234,11 +234,11 @@ type xlsxSheetPr struct {
 	SyncVertical                      bool             `xml:"syncVertical,attr,omitempty"`
 	SyncRef                           string           `xml:"syncRef,attr,omitempty"`
 	TransitionEvaluation              bool             `xml:"transitionEvaluation,attr,omitempty"`
+	TransitionEntry                   bool             `xml:"transitionEntry,attr,omitempty"`
 	Published                         *bool            `xml:"published,attr"`
 	CodeName                          string           `xml:"codeName,attr,omitempty"`
 	FilterMode                        bool             `xml:"filterMode,attr,omitempty"`
 	EnableFormatConditionsCalculation *bool            `xml:"enableFormatConditionsCalculation,attr"`
-	TransitionEntry                   bool             `xml:"transitionEntry,attr,omitempty"`
 	TabColor                          *xlsxTabColor    `xml:"tabColor,omitempty"`
 	OutlinePr                         *xlsxOutlinePr   `xml:"outlinePr,omitempty"`
 	PageSetUpPr                       *xlsxPageSetUpPr `xml:"pageSetUpPr,omitempty"`
@@ -247,7 +247,10 @@ type xlsxSheetPr struct {
 // xlsxOutlinePr maps to the outlinePr element. SummaryBelow allows you to
 // adjust the direction of grouper controls.
 type xlsxOutlinePr struct {
-	SummaryBelow bool `xml:"summaryBelow,attr"`
+	ApplyStyles        *bool `xml:"applyStyles,attr"`
+	SummaryBelow       bool  `xml:"summaryBelow,attr,omitempty"`
+	SummaryRight       bool  `xml:"summaryRight,attr,omitempty"`
+	ShowOutlineSymbols bool  `xml:"showOutlineSymbols,attr,omitempty"`
 }
 
 // xlsxPageSetUpPr expresses page setup properties of the worksheet.
@@ -258,9 +261,11 @@ type xlsxPageSetUpPr struct {
 
 // xlsxTabColor represents background color of the sheet tab.
 type xlsxTabColor struct {
-	RGB   string  `xml:"rgb,attr,omitempty"`
-	Theme int     `xml:"theme,attr,omitempty"`
-	Tint  float64 `xml:"tint,attr,omitempty"`
+	Auto    bool    `xml:"auto,attr,omitempty"`
+	Indexed int     `xml:"indexed,attr,omitempty"`
+	RGB     string  `xml:"rgb,attr,omitempty"`
+	Theme   int     `xml:"theme,attr,omitempty"`
+	Tint    float64 `xml:"tint,attr,omitempty"`
 }
 
 // xlsxCols defines column width and column formatting for one or more columns
