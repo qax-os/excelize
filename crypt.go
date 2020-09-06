@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -22,6 +23,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"hash"
+	"math/rand"
+	"reflect"
 	"strings"
 
 	"github.com/richardlehane/mscfb"
@@ -32,7 +35,11 @@ import (
 
 var (
 	blockKey                   = []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6} // Block keys used for encryption
-	packageOffset              = 8                                                      // First 8 bytes are the size of the stream
+	blockKeyHmacKey            = []byte{0x5f, 0xb2, 0xad, 0x01, 0x0c, 0xb9, 0xe1, 0xf6}
+	blockKeyHmacValue          = []byte{0xa0, 0x67, 0x7f, 0x02, 0xb2, 0x2c, 0x84, 0x33}
+	blockKeyVerifierHashInput  = []byte{0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79}
+	blockKeyVerifierHashValue  = []byte{0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e}
+	packageOffset              = 8 // First 8 bytes are the size of the stream
 	packageEncryptionChunkSize = 4096
 	iterCount                  = 50000
 	cryptoIdentifier           = []byte{ // checking protect workbook by [MS-OFFCRYPTO] - v20181211 3.1 FeatureIdentifier
@@ -50,6 +57,7 @@ var (
 // Encryption specifies the encryption structure, streams, and storages are
 // required when encrypting ECMA-376 documents.
 type Encryption struct {
+	XMLName       xml.Name      `xml:"encryption"`
 	KeyData       KeyData       `xml:"keyData"`
 	DataIntegrity DataIntegrity `xml:"dataIntegrity"`
 	KeyEncryptors KeyEncryptors `xml:"keyEncryptors"`
@@ -147,6 +155,125 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 		err = errors.New("unsupport encryption mechanism")
 		break
 	}
+	return
+}
+
+// Encrypt API encrypt data with the password.
+func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
+	// Generate a random key to use to encrypt the document. Excel uses 32 bytes. We'll use the password to encrypt this key.
+	packageKey, _ := randomBytes(32)
+	keyDataSaltValue, _ := randomBytes(16)
+	keyEncryptors, _ := randomBytes(16)
+	encryptionInfo := Encryption{
+		KeyData: KeyData{
+			BlockSize:       16,
+			KeyBits:         len(packageKey) * 8,
+			HashSize:        64,
+			CipherAlgorithm: "AES",
+			CipherChaining:  "ChainingModeCBC",
+			HashAlgorithm:   "SHA512",
+			SaltValue:       base64.StdEncoding.EncodeToString(keyDataSaltValue),
+		},
+		KeyEncryptors: KeyEncryptors{KeyEncryptor: []KeyEncryptor{{
+			EncryptedKey: EncryptedKey{SpinCount: 100000, KeyData: KeyData{
+				CipherAlgorithm: "AES",
+				CipherChaining:  "ChainingModeCBC",
+				HashAlgorithm:   "SHA512",
+				HashSize:        64,
+				BlockSize:       16,
+				KeyBits:         256,
+				SaltValue:       base64.StdEncoding.EncodeToString(keyEncryptors)},
+			}}},
+		},
+	}
+
+	// Package Encryption
+
+	// Encrypt package using the package key.
+	encryptedPackage, err := cryptPackage(true, packageKey, raw, encryptionInfo)
+	if err != nil {
+		return
+	}
+
+	// Data Integrity
+
+	// Create the data integrity fields used by clients for integrity checks.
+	// Generate a random array of bytes to use in HMAC. The docs say to use the same length as the key salt, but Excel seems to use 64.
+	hmacKey, _ := randomBytes(64)
+	if err != nil {
+		return
+	}
+	// Create an initialization vector using the package encryption info and the appropriate block key.
+	hmacKeyIV, err := createIV(blockKeyHmacKey, encryptionInfo)
+	if err != nil {
+		return
+	}
+	// Use the package key and the IV to encrypt the HMAC key.
+	encryptedHmacKey, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacKeyIV, hmacKey)
+	// Create the HMAC.
+	h := hmac.New(sha512.New, append(hmacKey, encryptedPackage...))
+	for _, buf := range [][]byte{hmacKey, encryptedPackage} {
+		h.Write(buf)
+	}
+	hmacValue := h.Sum(nil)
+	// Generate an initialization vector for encrypting the resulting HMAC value.
+	hmacValueIV, err := createIV(blockKeyHmacValue, encryptionInfo)
+	if err != nil {
+		return
+	}
+	// Encrypt the value.
+	encryptedHmacValue, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacValueIV, hmacValue)
+	// Put the encrypted key and value on the encryption info.
+	encryptionInfo.DataIntegrity.EncryptedHmacKey = base64.StdEncoding.EncodeToString(encryptedHmacKey)
+	encryptionInfo.DataIntegrity.EncryptedHmacValue = base64.StdEncoding.EncodeToString(encryptedHmacValue)
+
+	// Key Encryption
+
+	// Convert the password to an encryption key.
+	key, err := convertPasswdToKey(opt.Password, blockKey, encryptionInfo)
+	if err != nil {
+		return
+	}
+	// Encrypt the package key with the encryption key.
+	encryptedKeyValue, err := crypt(true, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherAlgorithm, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherChaining, key, keyEncryptors, packageKey)
+	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedKeyValue = base64.StdEncoding.EncodeToString(encryptedKeyValue)
+
+	// Verifier hash
+
+	// Create a random byte array for hashing.
+	verifierHashInput, _ := randomBytes(16)
+	// Create an encryption key from the password for the input.
+	verifierHashInputKey, err := convertPasswdToKey(opt.Password, blockKeyVerifierHashInput, encryptionInfo)
+	if err != nil {
+		return
+	}
+	// Use the key to encrypt the verifier input.
+	encryptedVerifierHashInput, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, verifierHashInputKey, keyEncryptors, verifierHashInput)
+	if err != nil {
+		return
+	}
+	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedVerifierHashInput = base64.StdEncoding.EncodeToString(encryptedVerifierHashInput)
+	// Create a hash of the input.
+	verifierHashValue := hashing(encryptionInfo.KeyData.HashAlgorithm, verifierHashInput)
+	// Create an encryption key from the password for the hash.
+	verifierHashValueKey, err := convertPasswdToKey(opt.Password, blockKeyVerifierHashValue, encryptionInfo)
+	if err != nil {
+		return
+	}
+	// Use the key to encrypt the hash value.
+	encryptedVerifierHashValue, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, verifierHashValueKey, keyEncryptors, verifierHashValue)
+	if err != nil {
+		return
+	}
+	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedVerifierHashValue = base64.StdEncoding.EncodeToString(encryptedVerifierHashValue)
+	// Marshal the encryption info buffer.
+	encryptionInfoBuffer, err := xml.Marshal(encryptionInfo)
+	if err != nil {
+		return
+	}
+	// TODO: Create a new CFB.
+	_, _ = encryptedPackage, encryptionInfoBuffer
+	err = errors.New("not support encryption currently")
 	return
 }
 
@@ -265,11 +392,11 @@ func standardConvertPasswdToKey(header StandardEncryptionHeader, verifier Standa
 	}
 	key := hashing("sha1", verifier.Salt, passwordBuffer)
 	for i := 0; i < iterCount; i++ {
-		iterator := createUInt32LEBuffer(i)
+		iterator := createUInt32LEBuffer(i, 4)
 		key = hashing("sha1", iterator, key)
 	}
 	var block int
-	hfinal := hashing("sha1", key, createUInt32LEBuffer(block))
+	hfinal := hashing("sha1", key, createUInt32LEBuffer(block, 4))
 	cbRequiredKeyLength := int(header.KeySize) / 8
 	cbHash := sha1.Size
 	buf1 := bytes.Repeat([]byte{0x36}, 64)
@@ -299,15 +426,14 @@ func standardXORBytes(a, b []byte) []byte {
 // ECMA-376 Agile Encryption
 
 // agileDecrypt decrypt the CFB file format with ECMA-376 agile encryption.
-// Support cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256, SHA384
-// and SHA512.
+// Support cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256, SHA384 and SHA512.
 func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (packageBuf []byte, err error) {
 	var encryptionInfo Encryption
 	if encryptionInfo, err = parseEncryptionInfo(encryptionInfoBuf[8:]); err != nil {
 		return
 	}
 	// Convert the password into an encryption key.
-	key, err := convertPasswdToKey(opt.Password, encryptionInfo)
+	key, err := convertPasswdToKey(opt.Password, blockKey, encryptionInfo)
 	if err != nil {
 		return
 	}
@@ -327,7 +453,7 @@ func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (
 }
 
 // convertPasswdToKey convert the password into an encryption key.
-func convertPasswdToKey(passwd string, encryption Encryption) (key []byte, err error) {
+func convertPasswdToKey(passwd string, blockKey []byte, encryption Encryption) (key []byte, err error) {
 	var b bytes.Buffer
 	saltValue, err := base64.StdEncoding.DecodeString(encryption.KeyEncryptors.KeyEncryptor[0].EncryptedKey.SaltValue)
 	if err != nil {
@@ -344,7 +470,7 @@ func convertPasswdToKey(passwd string, encryption Encryption) (key []byte, err e
 	key = hashing(encryption.KeyData.HashAlgorithm, b.Bytes())
 	// Now regenerate until spin count.
 	for i := 0; i < encryption.KeyEncryptors.KeyEncryptor[0].EncryptedKey.SpinCount; i++ {
-		iterator := createUInt32LEBuffer(i)
+		iterator := createUInt32LEBuffer(i, 4)
 		key = hashing(encryption.KeyData.HashAlgorithm, iterator, key)
 	}
 	// Now generate the final hash.
@@ -385,8 +511,8 @@ func hashing(hashAlgorithm string, buffer ...[]byte) (key []byte) {
 
 // createUInt32LEBuffer create buffer with little endian 32-bit unsigned
 // integer.
-func createUInt32LEBuffer(value int) []byte {
-	buf := make([]byte, 4)
+func createUInt32LEBuffer(value int, bufferSize int) []byte {
+	buf := make([]byte, bufferSize)
 	binary.LittleEndian.PutUint32(buf, uint32(value))
 	return buf
 }
@@ -404,7 +530,12 @@ func crypt(encrypt bool, cipherAlgorithm, cipherChaining string, key, iv, input 
 	if err != nil {
 		return input, err
 	}
-	stream := cipher.NewCBCDecrypter(block, iv)
+	var stream cipher.BlockMode
+	if encrypt {
+		stream = cipher.NewCBCEncrypter(block, iv)
+	} else {
+		stream = cipher.NewCBCDecrypter(block, iv)
+	}
 	stream.CryptBlocks(input, input)
 	return input, nil
 }
@@ -440,7 +571,7 @@ func cryptPackage(encrypt bool, packageKey, input []byte, encryption Encryption)
 			inputChunk = append(inputChunk, make([]byte, encryptedKey.BlockSize-remainder)...)
 		}
 		// Create the initialization vector
-		iv, err = createIV(encrypt, i, encryption)
+		iv, err = createIV(i, encryption)
 		if err != nil {
 			return
 		}
@@ -452,24 +583,29 @@ func cryptPackage(encrypt bool, packageKey, input []byte, encryption Encryption)
 		outputChunks = append(outputChunks, outputChunk...)
 		i++
 	}
+	if encrypt {
+		outputChunks = append(createUInt32LEBuffer(len(input), 8), outputChunks...)
+	}
 	return
 }
 
 // createIV create an initialization vector (IV).
-func createIV(encrypt bool, blockKey int, encryption Encryption) ([]byte, error) {
+func createIV(blockKey interface{}, encryption Encryption) ([]byte, error) {
 	encryptedKey := encryption.KeyData
 	// Create the block key from the current index
-	blockKeyBuf := createUInt32LEBuffer(blockKey)
-	var b bytes.Buffer
+	var blockKeyBuf []byte
+	if reflect.TypeOf(blockKey).Kind() == reflect.Int {
+		blockKeyBuf = createUInt32LEBuffer(blockKey.(int), 4)
+	} else {
+		blockKeyBuf = blockKey.([]byte)
+	}
 	saltValue, err := base64.StdEncoding.DecodeString(encryptedKey.SaltValue)
 	if err != nil {
 		return nil, err
 	}
-	b.Write(saltValue)
-	b.Write(blockKeyBuf)
 	// Create the initialization vector by hashing the salt with the block key.
 	// Truncate or pad as needed to meet the block size.
-	iv := hashing(encryptedKey.HashAlgorithm, b.Bytes())
+	iv := hashing(encryptedKey.HashAlgorithm, append(saltValue, blockKeyBuf...))
 	if len(iv) < encryptedKey.BlockSize {
 		tmp := make([]byte, 0x36)
 		iv = append(iv, tmp...)
@@ -478,4 +614,13 @@ func createIV(encrypt bool, blockKey int, encryption Encryption) ([]byte, error)
 		iv = iv[0:encryptedKey.BlockSize]
 	}
 	return iv, nil
+}
+
+// randomBytes returns securely generated random bytes. It will return an error if the system's
+// secure random number generator fails to function correctly, in which case the caller should not
+// continue.
+func randomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	return b, err
 }

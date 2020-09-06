@@ -32,6 +32,7 @@ import (
 // File define a populated spreadsheet file struct.
 type File struct {
 	sync.Mutex
+	options          *Options
 	xmlAttr          map[string][]xml.Attr
 	checked          map[string]bool
 	sheetMap         map[string]string
@@ -75,11 +76,7 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 		return nil, err
 	}
 	defer file.Close()
-	var option Options
-	for _, o := range opt {
-		option = o
-	}
-	f, err := OpenReader(file, option)
+	f, err := OpenReader(file, opt...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,12 +108,12 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
+	f := newFile()
 	if bytes.Contains(b, oleIdentifier) {
-		var option Options
 		for _, o := range opt {
-			option = o
+			f.options = &o
 		}
-		b, err = Decrypt(b, &option)
+		b, err = Decrypt(b, f.options)
 		if err != nil {
 			return nil, fmt.Errorf("decrypted file failed")
 		}
@@ -130,7 +127,6 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := newFile()
 	f.SheetCount, f.XLSX = sheetCount, file
 	f.CalcChain = f.calcChainReader()
 	f.sheetMap = f.getSheetMap()

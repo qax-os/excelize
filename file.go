@@ -64,7 +64,7 @@ func (f *File) Save() error {
 
 // SaveAs provides a function to create or update to an xlsx file at the
 // provided path.
-func (f *File) SaveAs(name string) error {
+func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > FileNameLength {
 		return errors.New("file name length exceeds maximum limit")
 	}
@@ -73,6 +73,9 @@ func (f *File) SaveAs(name string) error {
 		return err
 	}
 	defer file.Close()
+	for _, o := range opt {
+		f.options = &o
+	}
 	return f.Write(file)
 }
 
@@ -117,6 +120,19 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 			zw.Close()
 			return buf, err
 		}
+	}
+
+	if f.options != nil {
+		if err := zw.Close(); err != nil {
+			return buf, err
+		}
+		b, err := Encrypt(buf.Bytes(), f.options)
+		if err != nil {
+			return buf, err
+		}
+		buf.Reset()
+		buf.Write(b)
+		return buf, nil
 	}
 	return buf, zw.Close()
 }
