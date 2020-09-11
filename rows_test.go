@@ -842,24 +842,18 @@ func TestCheckRow(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 }
 
-func TestDateFormats(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "DateFormats.xlsx"))
+func TestNumberFormats(t *testing.T) {
+	xlsx, err := OpenFile(filepath.Join("test", "NumberFormats.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	dt1, err := xlsx.GetCellValue("test", "C2")
-	assert.NoError(t, err)
-	assert.Equal(t, "08/05/2019", dt1)
-
-	dt2, err := xlsx.GetCellValue("test", "D2")
-	assert.NoError(t, err)
-	assert.Equal(t, "2019-03-04", dt2)
-
 	cells := make([][]string, 0)
+	rows, err := xlsx.Rows("numbers") // nuprod20200726062152
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
 
-	rows, err := xlsx.Rows("test")
-	assert.NoError(t, err)
 	for rows.Next() {
 		row, err := rows.Columns()
 		assert.NoError(t, err)
@@ -870,9 +864,7 @@ func TestDateFormats(t *testing.T) {
 		cells = append(cells, row)
 	}
 
-	assert.Equal(t, []string{"1", "abc", "08/05/2019", "2019-03-04", "04/03/2019", "1", "4"}, cells[1])
-	assert.Equal(t, []string{"2", "ddd hhh", "08/06/2019", "2019-03-05", "05/03/2019", "2", "5"}, cells[2])
-
+	assert.Equal(t, []string{"BKR", "4.69", "0", "0.01", "1.6", "19.2"}, cells[6])
 }
 
 func BenchmarkRows(b *testing.B) {

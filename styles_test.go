@@ -250,3 +250,12 @@ func TestGetStyleID(t *testing.T) {
 func TestGetFillID(t *testing.T) {
 	assert.Equal(t, -1, getFillID(NewFile().stylesReader(), &Style{Fill: Fill{Type: "unknown"}}))
 }
+
+func TestParseTime(t *testing.T) {
+	assert.Equal(t, "2019", parseTime("43528", "YYYY"))
+	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss"))
+	assert.Equal(t, "3/4/2019 5:5:42", parseTime("43528.2123", "M/D/YYYY h:m:s"))
+	assert.Equal(t, "March", parseTime("43528", "mmmm"))
+	assert.Equal(t, "Monday", parseTime("43528", "dddd"))
+
+}

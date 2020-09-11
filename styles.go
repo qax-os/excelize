@@ -964,7 +964,6 @@ func parseTime(v string, format string) string {
 	}
 
 	goFmt, found := dateTimeFormatsCache[format]
-
 	if found {
 		return val.Format(goFmt)
 	}
@@ -992,8 +991,11 @@ func parseTime(v string, format string) string {
 		{"mmm", "Jan"},
 		{"mmss", "0405"},
 		{"ss", "05"},
+		{"s", "5"},
 		{"mm:", "04:"},
 		{":mm", ":04"},
+		{"m:", "4:"},
+		{":m", ":4"},
 		{"mm", "01"},
 		{"am/pm", "pm"},
 		{"m/", "1/"},
@@ -1007,17 +1009,17 @@ func parseTime(v string, format string) string {
 	// It is the presence of the "am/pm" indicator that determines if this is
 	// a 12 hour or 24 hours time format, not the number of 'h' characters.
 	if is12HourTime(format) {
-		goFmt = strings.Replace(goFmt, "hh", "03", 1)
+		goFmt = strings.Replace(goFmt, "hh", "3", 1)
 		goFmt = strings.Replace(goFmt, "h", "3", 1)
-		goFmt = strings.Replace(goFmt, "HH", "03", 1)
+		goFmt = strings.Replace(goFmt, "HH", "3", 1)
 		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	} else {
 		goFmt = strings.Replace(goFmt, "hh", "15", 1)
-		goFmt = strings.Replace(goFmt, "h", "15", 1)
+		goFmt = strings.Replace(goFmt, "h", "3", 1)
 		goFmt = strings.Replace(goFmt, "HH", "15", 1)
-		goFmt = strings.Replace(goFmt, "H", "15", 1)
-
+		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	}
+
 	for _, repl := range replacements {
 		goFmt = strings.Replace(goFmt, repl.xltime, repl.gotime, 1)
 	}
