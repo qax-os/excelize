@@ -264,3 +264,18 @@ func TestSetCellRichText(t *testing.T) {
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
+
+func TestFormattedValue(t *testing.T) {
+	f := NewFile()
+	v := f.formattedValue(0, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(15, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(2, "43528")
+	assert.Equal(t, "03/04/2019", v)
+}

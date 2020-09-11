@@ -817,13 +817,27 @@ func TestDuplicateMergeCells(t *testing.T) {
 	assert.EqualError(t, f.duplicateMergeCells("SheetN", xlsx, 1, 2), "sheet SheetN is not exist")
 }
 
-func TestGetValueFrom(t *testing.T) {
+func TestGetValueFromInlineStr(t *testing.T) {
 	c := &xlsxC{T: "inlineStr"}
 	f := NewFile()
 	d := &xlsxSST{}
 	val, err := c.getValueFrom(f, d)
 	assert.NoError(t, err)
 	assert.Equal(t, "", val)
+}
+
+func TestGetValueFromNumber(t *testing.T) {
+	c := &xlsxC{T: "n", V: "2.2200000000000002"}
+	f := NewFile()
+	d := &xlsxSST{}
+	val, err := c.getValueFrom(f, d)
+	assert.NoError(t, err)
+	assert.Equal(t, "2.22", val)
+
+	c = &xlsxC{T: "n", V: "2.220000ddsf0000000002-r"}
+	val, err = c.getValueFrom(f, d)
+	assert.NotNil(t, err)
+	assert.Equal(t, "strconv.ParseFloat: parsing \"2.220000ddsf0000000002-r\": invalid syntax", err.Error())
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
