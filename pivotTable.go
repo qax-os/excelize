@@ -101,10 +101,16 @@ type PivotTableField struct {
 //        if err := f.AddPivotTable(&excelize.PivotTableOption{
 //            DataRange:       "Sheet1!$A$1:$E$31",
 //            PivotTableRange: "Sheet1!$G$2:$M$34",
-//            Rows:            []excelize.PivotTableField{{Data: "Month"}, {Data: "Year"}},
+//            Rows:            []excelize.PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 //            Filter:          []excelize.PivotTableField{{Data: "Region"}},
-//            Columns:         []excelize.PivotTableField{{Data: "Type"}},
+//            Columns:         []excelize.PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 //            Data:            []excelize.PivotTableField{{Data: "Sales", Name: "Summarize", Subtotal: "Sum"}},
+//            RowGrandTotals:  true,
+//            ColGrandTotals:  true,
+//            ShowDrill:       true,
+//            ShowRowHeaders:  true,
+//            ShowColHeaders:  true,
+//            ShowLastColumn:  true,
 //        }); err != nil {
 //            fmt.Println(err)
 //        }
@@ -289,9 +295,8 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	pivotTableStyle := func() string {
 		if opt.PivotTableStyleName == "" {
 			return "PivotStyleLight16"
-		} else {
-			return opt.PivotTableStyleName
 		}
+		return opt.PivotTableStyleName
 	}
 	pt := xlsxPivotTableDefinition{
 		Name:              fmt.Sprintf("Pivot Table%d", pivotTableID),
