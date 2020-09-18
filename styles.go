@@ -1037,10 +1037,26 @@ func (f *File) sharedStringsWriter() {
 
 // parseFormatStyleSet provides a function to parse the format settings of the
 // cells and conditional formats.
-func parseFormatStyleSet(style string) (*Style, error) {
-	format := Style{}
-	err := json.Unmarshal([]byte(style), &format)
-	return &format, err
+func parseFormatStyleSet(style interface{}) (*Style, error) {
+	fs := Style{}
+	var err error
+	switch v := style.(type) {
+	case string:
+		err = json.Unmarshal([]byte(v), &fs)
+	case *Style:
+		fs = *v
+	default:
+		err = errors.New("invalid parameter type")
+	}
+	if fs.Font != nil {
+		if len(fs.Font.Family) > MaxFontFamilyLength {
+			return &fs, errors.New("the length of the font family name must be smaller than or equal to 31")
+		}
+		if fs.Font.Size > MaxFontSize {
+			return &fs, errors.New("font size must be between 1 and 409 points")
+		}
+	}
+	return &fs, err
 }
 
 // NewStyle provides a function to create the style for cells by given JSON or
@@ -1909,16 +1925,9 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 	var fs *Style
 	var err error
 	var cellXfsID, fontID, borderID, fillID int
-	switch v := style.(type) {
-	case string:
-		fs, err = parseFormatStyleSet(v)
-		if err != nil {
-			return cellXfsID, err
-		}
-	case *Style:
-		fs = v
-	default:
-		return cellXfsID, errors.New("invalid parameter type")
+	fs, err = parseFormatStyleSet(style)
+	if err != nil {
+		return cellXfsID, err
 	}
 	if fs.DecimalPlaces == 0 {
 		fs.DecimalPlaces = 2

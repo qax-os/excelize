@@ -225,7 +225,9 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-
+	if height > MaxRowHeight {
+		return errors.New("the height of the row must be smaller than or equal to 409 points")
+	}
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
