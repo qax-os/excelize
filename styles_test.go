@@ -3,6 +3,7 @@ package excelize
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -200,6 +201,10 @@ func TestNewStyle(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.NewStyle(Style{})
 	assert.EqualError(t, err, "invalid parameter type")
+	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
+	assert.EqualError(t, err, "the length of the font family name must be smaller than or equal to 31")
+	_, err = f.NewStyle(&Style{Font: &Font{Size: MaxFontSize + 1}})
+	assert.EqualError(t, err, "font size must be between 1 and 409 points")
 }
 
 func TestGetDefaultFont(t *testing.T) {

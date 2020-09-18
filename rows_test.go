@@ -91,40 +91,38 @@ func TestRowsError(t *testing.T) {
 }
 
 func TestRowHeight(t *testing.T) {
-	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(0)
+	f := NewFile()
+	sheet1 := f.GetSheetName(0)
 
-	assert.EqualError(t, xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
+	assert.EqualError(t, f.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
 
-	_, err := xlsx.GetRowHeight("Sheet1", 0)
+	_, err := f.GetRowHeight("Sheet1", 0)
 	assert.EqualError(t, err, "invalid row number 0")
 
-	assert.NoError(t, xlsx.SetRowHeight(sheet1, 1, 111.0))
-	height, err := xlsx.GetRowHeight(sheet1, 1)
+	assert.NoError(t, f.SetRowHeight(sheet1, 1, 111.0))
+	height, err := f.GetRowHeight(sheet1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 111.0, height)
 
-	assert.NoError(t, xlsx.SetRowHeight(sheet1, 4, 444.0))
-	height, err = xlsx.GetRowHeight(sheet1, 4)
-	assert.NoError(t, err)
-	assert.Equal(t, 444.0, height)
+	// Test set row height overflow max row height limit.
+	assert.EqualError(t, f.SetRowHeight(sheet1, 4, MaxRowHeight+1), "the height of the row must be smaller than or equal to 409 points")
 
 	// Test get row height that rows index over exists rows.
-	height, err = xlsx.GetRowHeight(sheet1, 5)
+	height, err = f.GetRowHeight(sheet1, 5)
 	assert.NoError(t, err)
 	assert.Equal(t, defaultRowHeight, height)
 
 	// Test get row height that rows heights haven't changed.
-	height, err = xlsx.GetRowHeight(sheet1, 3)
+	height, err = f.GetRowHeight(sheet1, 3)
 	assert.NoError(t, err)
 	assert.Equal(t, defaultRowHeight, height)
 
 	// Test set and get row height on not exists worksheet.
-	assert.EqualError(t, xlsx.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")
-	_, err = xlsx.GetRowHeight("SheetN", 3)
+	assert.EqualError(t, f.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")
+	_, err = f.GetRowHeight("SheetN", 3)
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
-	err = xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
+	err = f.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

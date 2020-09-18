@@ -444,6 +444,9 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 	if err != nil {
 		return err
 	}
+	if width > MaxColumnWidth {
+		return errors.New("the width of the column must be smaller than or equal to 255 characters")
+	}
 	if min > max {
 		min, max = max, min
 	}

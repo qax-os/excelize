@@ -89,7 +89,11 @@ const (
 
 // Excel specifications and limits
 const (
-	FileNameLength       = 207
+	MaxFontFamilyLength  = 31
+	MaxFontSize          = 409
+	MaxFileNameLength    = 207
+	MaxColumnWidth       = 255
+	MaxRowHeight         = 409
 	TotalRows            = 1048576
 	TotalColumns         = 16384
 	TotalSheetHyperlinks = 65529
