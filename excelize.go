@@ -70,6 +70,8 @@ type Options struct {
 //        return
 //    }
 //
+// Note that the excelize just support decrypt and not support encrypt currently, the spreadsheet
+// saved by Save and SaveAs will be without password unprotected.
 func OpenFile(filename string, opt ...Options) (*File, error) {
 	file, err := os.Open(filename)
 	if err != nil {
