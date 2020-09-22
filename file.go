@@ -73,6 +73,7 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		return err
 	}
 	defer file.Close()
+	f.options = nil
 	for _, o := range opt {
 		f.options = &o
 	}
