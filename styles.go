@@ -975,6 +975,11 @@ func parseTime(v string, format string) string {
 		goFmt = re.ReplaceAllLiteralString(goFmt, "")
 	}
 
+	// use only first variant
+	if strings.Contains(goFmt, ";") {
+		goFmt = goFmt[:strings.IndexByte(goFmt, ';')]
+	}
+
 	replacements := []struct{ xltime, gotime string }{
 		{"YYYY", "2006"},
 		{"YY", "06"},
@@ -1005,6 +1010,9 @@ func parseTime(v string, format string) string {
 
 	replacementsGlobal := []struct{ xltime, gotime string }{
 		{"\\-", "-"},
+		{"\\ ", " "},
+		{"\\.", "."},
+		{"\\", ""},
 	}
 	// It is the presence of the "am/pm" indicator that determines if this is
 	// a 12 hour or 24 hours time format, not the number of 'h' characters.

@@ -863,7 +863,7 @@ func TestNumberFormats(t *testing.T) {
 	}
 
 	cells := make([][]string, 0)
-	rows, err := xlsx.Rows("numbers") // nuprod20200726062152
+	rows, err := xlsx.Rows("numbers")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
