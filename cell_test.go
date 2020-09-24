@@ -111,6 +111,23 @@ func TestSetCellValue(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
+func TestSetCellValues(t *testing.T) {
+	f := NewFile()
+	err := f.SetCellValue("Sheet1", "A1", time.Date(2010, time.December, 31, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	v, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, v, "12/31/10 12:00")
+
+	// test date value lower than min date supported by Excel
+	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	_, err = f.GetCellValue("Sheet1", "A1")
+	assert.EqualError(t, err, `strconv.ParseFloat: parsing "1600-12-31T00:00:00Z": invalid syntax`)
+}
+
 func TestSetCellBool(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)

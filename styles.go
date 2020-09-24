@@ -2281,6 +2281,7 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 // setCustomNumFmt provides a function to set custom number format code.
 func setCustomNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	nf := xlsxNumFmt{FormatCode: *style.CustomNumFmt}
+
 	if styleSheet.NumFmts != nil {
 		nf.NumFmtID = styleSheet.NumFmts.NumFmt[len(styleSheet.NumFmts.NumFmt)-1].NumFmtID + 1
 		styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)

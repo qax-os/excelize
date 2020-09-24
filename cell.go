@@ -161,7 +161,10 @@ func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	if err != nil {
 		return
 	}
+
 	isNum = excelTime > 0
+	fmt.Println("setCellTime", value, excelTime, isNum)
+
 	if isNum {
 		t, b = setCellDefault(strconv.FormatFloat(excelTime, 'f', -1, 64))
 	} else {

@@ -123,7 +123,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		}
 	}
 
-	if f.options != nil {
+	if f.options != nil && f.options.Password != "" {
 		if err := zw.Close(); err != nil {
 			return buf, err
 		}
