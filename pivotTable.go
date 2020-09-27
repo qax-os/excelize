@@ -460,6 +460,15 @@ func inPivotTableField(a []PivotTableField, x string) int {
 // definition and option.
 func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
 	if len(opt.Columns) == 0 {
+		if len(opt.Data) <= 1 {
+			return nil
+		}
+		pt.ColFields = &xlsxColFields{}
+		// in order to create pivot table in case there is no input from Columns
+		pt.ColFields.Count = 1
+		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
+			X: -2,
+		})
 		return nil
 	}
 
