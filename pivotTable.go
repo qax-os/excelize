@@ -485,6 +485,13 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 		})
 	}
 
+	//in order to create pivot in case there is many Columns and Many Datas
+	if len(opt.Data) > 1 {
+		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
+			X: -2,
+		})
+	}
+
 	// count col fields
 	pt.ColFields.Count = len(pt.ColFields.Field)
 	return err
