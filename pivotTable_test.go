@@ -135,6 +135,20 @@ func TestAddPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
+	//Test Pivot table with many data, many rows, many cols
+	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+		DataRange:       "Sheet1!$A$1:$E$31",
+		PivotTableRange: "Sheet2!$A$56:$AG$90",
+		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Sum of Sales"}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales"}},
+		RowGrandTotals:  true,
+		ColGrandTotals:  true,
+		ShowDrill:       true,
+		ShowRowHeaders:  true,
+		ShowColHeaders:  true,
+		ShowLastColumn:  true,
+	}))
 
 	// Test empty pivot table options
 	assert.EqualError(t, f.AddPivotTable(nil), "parameter is required")
