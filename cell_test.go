@@ -292,7 +292,11 @@ func TestFormattedValue(t *testing.T) {
 
 	v = f.formattedValue(1, "43528")
 	assert.Equal(t, "43528", v)
-
-	v = f.formattedValue(2, "43528")
+	customNumFmt := "[$-409]MM/DD/YYYY"
+	_, err := f.NewStyle(&Style{
+		CustomNumFmt: &customNumFmt,
+	})
+	assert.NoError(t, err)
+	v = f.formattedValue(1, "43528")
 	assert.Equal(t, "03/04/2019", v)
 }

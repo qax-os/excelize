@@ -857,50 +857,30 @@ func TestCheckRow(t *testing.T) {
 }
 
 func TestNumberFormats(t *testing.T) {
-	xlsx, err := OpenFile(filepath.Join("test", "NumberFormats.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-
 	cells := make([][]string, 0)
-	rows, err := xlsx.Rows("numbers")
+	cols, err := f.Cols("Sheet2")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-
-	for rows.Next() {
-		row, err := rows.Columns()
+	for cols.Next() {
+		col, err := cols.Rows()
 		assert.NoError(t, err)
 		if err != nil {
 			break
 		}
-
-		cells = append(cells, row)
+		cells = append(cells, col)
 	}
-
-	assert.Equal(t, []string{"BKR", "4.69", "0", "0.01", "1.6", "19.2"}, cells[6])
+	assert.Equal(t, []string{"", "200", "450", "200", "510", "315", "127", "89", "348", "53", "37"}, cells[3])
 }
 
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {
 		rows, _ := f.Rows("Sheet2")
-		for rows.Next() {
-			row, _ := rows.Columns()
-			for i := range row {
-				if i >= 0 {
-					continue
-				}
-			}
-		}
-	}
-}
-
-func BenchmarkDateFormats(b *testing.B) {
-	f, _ := OpenFile(filepath.Join("test", "DateFormats.xlsx"))
-	for i := 0; i < b.N; i++ {
-		rows, err := f.Rows("test")
-		assert.NoError(b, err)
 		for rows.Next() {
 			row, _ := rows.Columns()
 			for i := range row {

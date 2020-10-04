@@ -196,7 +196,7 @@ func TestNewStyle(t *testing.T) {
 	fontID := styles.CellXfs.Xf[styleID].FontID
 	font := styles.Fonts.Font[*fontID]
 	assert.Contains(t, *font.Name.Val, "Times New Roman", "Stored font should contain font name")
-	assert.Equal(t, 4, styles.CellXfs.Count, "Should have 4 styles")
+	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
 	_, err = f.NewStyle(&Style{})
 	assert.NoError(t, err)
 	_, err = f.NewStyle(Style{})
@@ -214,7 +214,7 @@ func TestNewStyle(t *testing.T) {
 		CustomNumFmt: &fmt,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 4, styleID)
+	assert.Equal(t, 2, styleID)
 
 	assert.NotNil(t, f.Styles)
 	assert.NotNil(t, f.Styles.CellXfs)
@@ -231,7 +231,7 @@ func TestNewStyle(t *testing.T) {
 
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 5, styleID)
+	assert.Equal(t, 3, styleID)
 
 	assert.NotNil(t, f.Styles)
 	assert.NotNil(t, f.Styles.CellXfs)
@@ -290,6 +290,7 @@ func TestParseTime(t *testing.T) {
 	assert.Equal(t, "43528", parseTime("43528", ""))
 
 	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss"))
+	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss;YYYY-MM-DD hh:mm:ss"))
 	assert.Equal(t, "3/4/2019 5:5:42", parseTime("43528.2123", "M/D/YYYY h:m:s"))
 	assert.Equal(t, "March", parseTime("43528", "mmmm"))
 	assert.Equal(t, "Monday", parseTime("43528", "dddd"))
