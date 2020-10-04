@@ -762,9 +762,23 @@ func (f *File) formattedValue(s int, v string) string {
 		return v
 	}
 	styleSheet := f.stylesReader()
-	ok := builtInNumFmtFunc[*styleSheet.CellXfs.Xf[s].NumFmtID]
+	if s >= len(styleSheet.CellXfs.Xf) {
+		return v
+	}
+	numFmtId := *styleSheet.CellXfs.Xf[s].NumFmtID
+	ok := builtInNumFmtFunc[numFmtId]
 	if ok != nil {
-		return ok(*styleSheet.CellXfs.Xf[s].NumFmtID, v)
+		return ok(v, builtInNumFmt[numFmtId])
+	}
+	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
+		if xlsxFmt.NumFmtID == numFmtId {
+			format := strings.ToLower(xlsxFmt.FormatCode)
+			if strings.Contains(format, "y") || strings.Contains(format, "m") || strings.Contains(format, "d") || strings.Contains(format, "h") {
+				return parseTime(v, format)
+			}
+
+			return v
+		}
 	}
 	return v
 }

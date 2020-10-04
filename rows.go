@@ -345,6 +345,25 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		}
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	default:
+		// correct numeric values as legacy Excel app
+		// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel
+		// In the top figure the fraction 1/9000 in Excel is displayed.
+		// Although this number has a decimal representation that is an infinite string of ones,
+		// Excel displays only the leading 15 figures. In the second line, the number one is added to the fraction, and again Excel displays only 15 figures.
+		const precision = 1000000000000000
+		if len(xlsx.V) > 16 {
+			num, err := strconv.ParseFloat(xlsx.V, 64)
+			if err != nil {
+				return "", err
+			}
+
+			num = math.Round(num*precision) / precision
+			val := fmt.Sprintf("%g", num)
+			if val != xlsx.V {
+				return f.formattedValue(xlsx.S, val), nil
+			}
+		}
+
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
 }

@@ -257,7 +257,7 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
 		// Test write file with broken file struct with given path.
-		assert.NoError(t, f.SaveAs(filepath.Join("test", "BrokenFile.SaveAsEmptyStruct.xlsx")))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")))
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
@@ -1175,6 +1175,9 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 	f := NewFile()
 	// Test set default time style on not exists worksheet.
 	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN is not exist")
+
+	// Test set default time style on invalid cell
+	assert.EqualError(t, f.setDefaultTimeStyle("Sheet1", "", 42), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
 }
 
 func TestAddVBAProject(t *testing.T) {
