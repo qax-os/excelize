@@ -257,7 +257,7 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
 		// Test write file with broken file struct with given path.
-		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestBrokenFile.SaveAsEmptyStruct.xlsx")))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")))
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
