@@ -111,6 +111,23 @@ func TestSetCellValue(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
+func TestSetCellValues(t *testing.T) {
+	f := NewFile()
+	err := f.SetCellValue("Sheet1", "A1", time.Date(2010, time.December, 31, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	v, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, v, "12/31/10 12:00")
+
+	// test date value lower than min date supported by Excel
+	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	_, err = f.GetCellValue("Sheet1", "A1")
+	assert.EqualError(t, err, `strconv.ParseFloat: parsing "1600-12-31T00:00:00Z": invalid syntax`)
+}
+
 func TestSetCellBool(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
@@ -263,4 +280,23 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestFormattedValue(t *testing.T) {
+	f := NewFile()
+	v := f.formattedValue(0, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(15, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "43528", v)
+	customNumFmt := "[$-409]MM/DD/YYYY"
+	_, err := f.NewStyle(&Style{
+		CustomNumFmt: &customNumFmt,
+	})
+	assert.NoError(t, err)
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "03/04/2019", v)
 }

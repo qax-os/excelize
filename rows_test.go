@@ -817,13 +817,27 @@ func TestDuplicateMergeCells(t *testing.T) {
 	assert.EqualError(t, f.duplicateMergeCells("SheetN", xlsx, 1, 2), "sheet SheetN is not exist")
 }
 
-func TestGetValueFrom(t *testing.T) {
+func TestGetValueFromInlineStr(t *testing.T) {
 	c := &xlsxC{T: "inlineStr"}
 	f := NewFile()
 	d := &xlsxSST{}
 	val, err := c.getValueFrom(f, d)
 	assert.NoError(t, err)
 	assert.Equal(t, "", val)
+}
+
+func TestGetValueFromNumber(t *testing.T) {
+	c := &xlsxC{T: "n", V: "2.2200000000000002"}
+	f := NewFile()
+	d := &xlsxSST{}
+	val, err := c.getValueFrom(f, d)
+	assert.NoError(t, err)
+	assert.Equal(t, "2.22", val)
+
+	c = &xlsxC{T: "n", V: "2.220000ddsf0000000002-r"}
+	val, err = c.getValueFrom(f, d)
+	assert.NotNil(t, err)
+	assert.Equal(t, "strconv.ParseFloat: parsing \"2.220000ddsf0000000002-r\": invalid syntax", err.Error())
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
@@ -840,6 +854,27 @@ func TestCheckRow(t *testing.T) {
 	f = NewFile()
 	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`)
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+}
+
+func TestNumberFormats(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	cells := make([][]string, 0)
+	cols, err := f.Cols("Sheet2")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	for cols.Next() {
+		col, err := cols.Rows()
+		assert.NoError(t, err)
+		if err != nil {
+			break
+		}
+		cells = append(cells, col)
+	}
+	assert.Equal(t, []string{"", "200", "450", "200", "510", "315", "127", "89", "348", "53", "37"}, cells[3])
 }
 
 func BenchmarkRows(b *testing.B) {

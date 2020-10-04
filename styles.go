@@ -21,6 +21,7 @@ import (
 	"log"
 	"math"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -755,7 +756,7 @@ var currencyNumFmt = map[int]string{
 
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
 // code doesn't support currently and will return original string.
-var builtInNumFmtFunc = map[int]func(i int, v string) string{
+var builtInNumFmtFunc = map[int]func(v string, format string) string{
 	0:  formatToString,
 	1:  formatToInt,
 	2:  formatToFloat,
@@ -847,14 +848,14 @@ var criteriaType = map[string]string{
 
 // formatToString provides a function to return original string by given
 // built-in number formats code and cell string.
-func formatToString(i int, v string) string {
+func formatToString(v string, format string) string {
 	return v
 }
 
 // formatToInt provides a function to convert original string to integer
 // format as string type by given built-in number formats code and cell
 // string.
-func formatToInt(i int, v string) string {
+func formatToInt(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -865,7 +866,7 @@ func formatToInt(i int, v string) string {
 // formatToFloat provides a function to convert original string to float
 // format as string type by given built-in number formats code and cell
 // string.
-func formatToFloat(i int, v string) string {
+func formatToFloat(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -875,7 +876,7 @@ func formatToFloat(i int, v string) string {
 
 // formatToA provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToA(i int, v string) string {
+func formatToA(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -890,7 +891,7 @@ func formatToA(i int, v string) string {
 
 // formatToB provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToB(i int, v string) string {
+func formatToB(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -903,7 +904,7 @@ func formatToB(i int, v string) string {
 
 // formatToC provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToC(i int, v string) string {
+func formatToC(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -914,7 +915,7 @@ func formatToC(i int, v string) string {
 
 // formatToD provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToD(i int, v string) string {
+func formatToD(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -925,13 +926,15 @@ func formatToD(i int, v string) string {
 
 // formatToE provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToE(i int, v string) string {
+func formatToE(v string, format string) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
 	}
 	return fmt.Sprintf("%.e", f)
 }
+
+var dateTimeFormatsCache = map[string]string{}
 
 // parseTime provides a function to returns a string parsed using time.Time.
 // Replace Excel placeholders with Go time placeholders. For example, replace
@@ -944,15 +947,46 @@ func formatToE(i int, v string) string {
 // arbitrary characters unused in Excel Date formats, and then at the end,
 // turn them to what they should actually be. Based off:
 // http://www.ozgrid.com/Excel/CustomFormats.htm
-func parseTime(i int, v string) string {
-	f, err := strconv.ParseFloat(v, 64)
+func parseTime(v string, format string) string {
+	var (
+		f     float64
+		err   error
+		goFmt string
+	)
+	f, err = strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
 	}
 	val := timeFromExcelTime(f, false)
-	format := builtInNumFmt[i]
+
+	if format == "" {
+		return v
+	}
+
+	goFmt, found := dateTimeFormatsCache[format]
+	if found {
+		return val.Format(goFmt)
+	}
+
+	goFmt = format
+
+	if strings.Contains(goFmt, "[") {
+		var re = regexp.MustCompile(`\[.+\]`)
+		goFmt = re.ReplaceAllLiteralString(goFmt, "")
+	}
+
+	// use only first variant
+	if strings.Contains(goFmt, ";") {
+		goFmt = goFmt[:strings.IndexByte(goFmt, ';')]
+	}
 
 	replacements := []struct{ xltime, gotime string }{
+		{"YYYY", "2006"},
+		{"YY", "06"},
+		{"MM", "01"},
+		{"M", "1"},
+		{"DD", "02"},
+		{"D", "2"},
 		{"yyyy", "2006"},
 		{"yy", "06"},
 		{"mmmm", "%%%%"},
@@ -962,38 +996,59 @@ func parseTime(i int, v string) string {
 		{"mmm", "Jan"},
 		{"mmss", "0405"},
 		{"ss", "05"},
+		{"s", "5"},
 		{"mm:", "04:"},
 		{":mm", ":04"},
+		{"m:", "4:"},
+		{":m", ":4"},
 		{"mm", "01"},
 		{"am/pm", "pm"},
 		{"m/", "1/"},
 		{"%%%%", "January"},
 		{"&&&&", "Monday"},
 	}
+
+	replacementsGlobal := []struct{ xltime, gotime string }{
+		{"\\-", "-"},
+		{"\\ ", " "},
+		{"\\.", "."},
+		{"\\", ""},
+	}
 	// It is the presence of the "am/pm" indicator that determines if this is
 	// a 12 hour or 24 hours time format, not the number of 'h' characters.
 	if is12HourTime(format) {
-		format = strings.Replace(format, "hh", "03", 1)
-		format = strings.Replace(format, "h", "3", 1)
+		goFmt = strings.Replace(goFmt, "hh", "3", 1)
+		goFmt = strings.Replace(goFmt, "h", "3", 1)
+		goFmt = strings.Replace(goFmt, "HH", "3", 1)
+		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	} else {
-		format = strings.Replace(format, "hh", "15", 1)
-		format = strings.Replace(format, "h", "15", 1)
+		goFmt = strings.Replace(goFmt, "hh", "15", 1)
+		goFmt = strings.Replace(goFmt, "h", "3", 1)
+		goFmt = strings.Replace(goFmt, "HH", "15", 1)
+		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	}
+
 	for _, repl := range replacements {
-		format = strings.Replace(format, repl.xltime, repl.gotime, 1)
+		goFmt = strings.Replace(goFmt, repl.xltime, repl.gotime, 1)
+	}
+	for _, repl := range replacementsGlobal {
+		goFmt = strings.Replace(goFmt, repl.xltime, repl.gotime, -1)
 	}
 	// If the hour is optional, strip it out, along with the possible dangling
 	// colon that would remain.
 	if val.Hour() < 1 {
-		format = strings.Replace(format, "]:", "]", 1)
-		format = strings.Replace(format, "[03]", "", 1)
-		format = strings.Replace(format, "[3]", "", 1)
-		format = strings.Replace(format, "[15]", "", 1)
+		goFmt = strings.Replace(goFmt, "]:", "]", 1)
+		goFmt = strings.Replace(goFmt, "[03]", "", 1)
+		goFmt = strings.Replace(goFmt, "[3]", "", 1)
+		goFmt = strings.Replace(goFmt, "[15]", "", 1)
 	} else {
-		format = strings.Replace(format, "[3]", "3", 1)
-		format = strings.Replace(format, "[15]", "15", 1)
+		goFmt = strings.Replace(goFmt, "[3]", "3", 1)
+		goFmt = strings.Replace(goFmt, "[15]", "15", 1)
 	}
-	return val.Format(format)
+
+	dateTimeFormatsCache[format] = goFmt
+
+	return val.Format(goFmt)
 }
 
 // is12HourTime checks whether an Excel time format string is a 12 hours form.
@@ -2226,6 +2281,7 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 // setCustomNumFmt provides a function to set custom number format code.
 func setCustomNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	nf := xlsxNumFmt{FormatCode: *style.CustomNumFmt}
+
 	if styleSheet.NumFmts != nil {
 		nf.NumFmtID = styleSheet.NumFmts.NumFmt[len(styleSheet.NumFmts.NumFmt)-1].NumFmtID + 1
 		styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)

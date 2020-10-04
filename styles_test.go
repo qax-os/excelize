@@ -201,10 +201,44 @@ func TestNewStyle(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.NewStyle(Style{})
 	assert.EqualError(t, err, "invalid parameter type")
+
 	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
 	assert.EqualError(t, err, "the length of the font family name must be smaller than or equal to 31")
 	_, err = f.NewStyle(&Style{Font: &Font{Size: MaxFontSize + 1}})
 	assert.EqualError(t, err, "font size must be between 1 and 409 points")
+
+	// new numeric custom style
+	fmt := "####;####"
+	f.Styles.NumFmts = nil
+	styleID, err = f.NewStyle(&Style{
+		CustomNumFmt: &fmt,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, styleID)
+
+	assert.NotNil(t, f.Styles)
+	assert.NotNil(t, f.Styles.CellXfs)
+	assert.NotNil(t, f.Styles.CellXfs.Xf)
+
+	nf := f.Styles.CellXfs.Xf[styleID]
+	assert.Equal(t, 164, *nf.NumFmtID)
+
+	// new currency custom style
+	f.Styles.NumFmts = nil
+	styleID, err = f.NewStyle(&Style{
+		Lang:   "ko-kr",
+		NumFmt: 32, // must not be in currencyNumFmt
+
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, styleID)
+
+	assert.NotNil(t, f.Styles)
+	assert.NotNil(t, f.Styles.CellXfs)
+	assert.NotNil(t, f.Styles.CellXfs.Xf)
+
+	nf = f.Styles.CellXfs.Xf[styleID]
+	assert.Equal(t, 32, *nf.NumFmtID)
 }
 
 func TestGetDefaultFont(t *testing.T) {
@@ -249,4 +283,16 @@ func TestGetStyleID(t *testing.T) {
 
 func TestGetFillID(t *testing.T) {
 	assert.Equal(t, -1, getFillID(NewFile().stylesReader(), &Style{Fill: Fill{Type: "unknown"}}))
+}
+
+func TestParseTime(t *testing.T) {
+	assert.Equal(t, "2019", parseTime("43528", "YYYY"))
+	assert.Equal(t, "43528", parseTime("43528", ""))
+
+	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss"))
+	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss;YYYY-MM-DD hh:mm:ss"))
+	assert.Equal(t, "3/4/2019 5:5:42", parseTime("43528.2123", "M/D/YYYY h:m:s"))
+	assert.Equal(t, "March", parseTime("43528", "mmmm"))
+	assert.Equal(t, "Monday", parseTime("43528", "dddd"))
+
 }
