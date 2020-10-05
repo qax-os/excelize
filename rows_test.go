@@ -91,40 +91,38 @@ func TestRowsError(t *testing.T) {
 }
 
 func TestRowHeight(t *testing.T) {
-	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(0)
+	f := NewFile()
+	sheet1 := f.GetSheetName(0)
 
-	assert.EqualError(t, xlsx.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
+	assert.EqualError(t, f.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
 
-	_, err := xlsx.GetRowHeight("Sheet1", 0)
+	_, err := f.GetRowHeight("Sheet1", 0)
 	assert.EqualError(t, err, "invalid row number 0")
 
-	assert.NoError(t, xlsx.SetRowHeight(sheet1, 1, 111.0))
-	height, err := xlsx.GetRowHeight(sheet1, 1)
+	assert.NoError(t, f.SetRowHeight(sheet1, 1, 111.0))
+	height, err := f.GetRowHeight(sheet1, 1)
 	assert.NoError(t, err)
 	assert.Equal(t, 111.0, height)
 
-	assert.NoError(t, xlsx.SetRowHeight(sheet1, 4, 444.0))
-	height, err = xlsx.GetRowHeight(sheet1, 4)
-	assert.NoError(t, err)
-	assert.Equal(t, 444.0, height)
+	// Test set row height overflow max row height limit.
+	assert.EqualError(t, f.SetRowHeight(sheet1, 4, MaxRowHeight+1), "the height of the row must be smaller than or equal to 409 points")
 
 	// Test get row height that rows index over exists rows.
-	height, err = xlsx.GetRowHeight(sheet1, 5)
+	height, err = f.GetRowHeight(sheet1, 5)
 	assert.NoError(t, err)
-	assert.Equal(t, defaultRowHeightPixels, height)
+	assert.Equal(t, defaultRowHeight, height)
 
 	// Test get row height that rows heights haven't changed.
-	height, err = xlsx.GetRowHeight(sheet1, 3)
+	height, err = f.GetRowHeight(sheet1, 3)
 	assert.NoError(t, err)
-	assert.Equal(t, defaultRowHeightPixels, height)
+	assert.Equal(t, defaultRowHeight, height)
 
 	// Test set and get row height on not exists worksheet.
-	assert.EqualError(t, xlsx.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")
-	_, err = xlsx.GetRowHeight("SheetN", 3)
+	assert.EqualError(t, f.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN is not exist")
+	_, err = f.GetRowHeight("SheetN", 3)
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
-	err = xlsx.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
+	err = f.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -169,6 +167,8 @@ func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
 	f.XLSX["xl/sharedStrings.xml"] = MacintoshCyrillicCharset
 	f.sharedStringsReader()
+	si := xlsxSI{}
+	assert.EqualValues(t, "", si.String())
 }
 
 func TestRowVisibility(t *testing.T) {
@@ -817,13 +817,27 @@ func TestDuplicateMergeCells(t *testing.T) {
 	assert.EqualError(t, f.duplicateMergeCells("SheetN", xlsx, 1, 2), "sheet SheetN is not exist")
 }
 
-func TestGetValueFrom(t *testing.T) {
+func TestGetValueFromInlineStr(t *testing.T) {
 	c := &xlsxC{T: "inlineStr"}
 	f := NewFile()
 	d := &xlsxSST{}
 	val, err := c.getValueFrom(f, d)
 	assert.NoError(t, err)
 	assert.Equal(t, "", val)
+}
+
+func TestGetValueFromNumber(t *testing.T) {
+	c := &xlsxC{T: "n", V: "2.2200000000000002"}
+	f := NewFile()
+	d := &xlsxSST{}
+	val, err := c.getValueFrom(f, d)
+	assert.NoError(t, err)
+	assert.Equal(t, "2.22", val)
+
+	c = &xlsxC{T: "n", V: "2.220000ddsf0000000002-r"}
+	val, err = c.getValueFrom(f, d)
+	assert.NotNil(t, err)
+	assert.Equal(t, "strconv.ParseFloat: parsing \"2.220000ddsf0000000002-r\": invalid syntax", err.Error())
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
@@ -840,6 +854,27 @@ func TestCheckRow(t *testing.T) {
 	f = NewFile()
 	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`)
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+}
+
+func TestNumberFormats(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	cells := make([][]string, 0)
+	cols, err := f.Cols("Sheet2")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	for cols.Next() {
+		col, err := cols.Rows()
+		assert.NoError(t, err)
+		if err != nil {
+			break
+		}
+		cells = append(cells, col)
+	}
+	assert.Equal(t, []string{"", "200", "450", "200", "510", "315", "127", "89", "348", "53", "37"}, cells[3])
 }
 
 func BenchmarkRows(b *testing.B) {

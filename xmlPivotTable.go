@@ -48,7 +48,7 @@ type xlsxPivotTableDefinition struct {
 	VisualTotals            bool                     `xml:"visualTotals,attr,omitempty"`
 	ShowMultipleLabel       bool                     `xml:"showMultipleLabel,attr,omitempty"`
 	ShowDataDropDown        bool                     `xml:"showDataDropDown,attr,omitempty"`
-	ShowDrill               bool                     `xml:"showDrill,attr,omitempty"`
+	ShowDrill               *bool                    `xml:"showDrill,attr,omitempty"`
 	PrintDrill              bool                     `xml:"printDrill,attr,omitempty"`
 	ShowMemberPropertyTips  bool                     `xml:"showMemberPropertyTips,attr,omitempty"`
 	ShowDataTips            bool                     `xml:"showDataTips,attr,omitempty"`
@@ -56,15 +56,15 @@ type xlsxPivotTableDefinition struct {
 	EnableDrill             bool                     `xml:"enableDrill,attr,omitempty"`
 	EnableFieldProperties   bool                     `xml:"enableFieldProperties,attr,omitempty"`
 	PreserveFormatting      bool                     `xml:"preserveFormatting,attr,omitempty"`
-	UseAutoFormatting       bool                     `xml:"useAutoFormatting,attr,omitempty"`
+	UseAutoFormatting       *bool                    `xml:"useAutoFormatting,attr,omitempty"`
 	PageWrap                int                      `xml:"pageWrap,attr,omitempty"`
-	PageOverThenDown        bool                     `xml:"pageOverThenDown,attr,omitempty"`
+	PageOverThenDown        *bool                    `xml:"pageOverThenDown,attr,omitempty"`
 	SubtotalHiddenItems     bool                     `xml:"subtotalHiddenItems,attr,omitempty"`
-	RowGrandTotals          bool                     `xml:"rowGrandTotals,attr,omitempty"`
-	ColGrandTotals          bool                     `xml:"colGrandTotals,attr,omitempty"`
+	RowGrandTotals          *bool                    `xml:"rowGrandTotals,attr,omitempty"`
+	ColGrandTotals          *bool                    `xml:"colGrandTotals,attr,omitempty"`
 	FieldPrintTitles        bool                     `xml:"fieldPrintTitles,attr,omitempty"`
 	ItemPrintTitles         bool                     `xml:"itemPrintTitles,attr,omitempty"`
-	MergeItem               bool                     `xml:"mergeItem,attr,omitempty"`
+	MergeItem               *bool                    `xml:"mergeItem,attr,omitempty"`
 	ShowDropZones           bool                     `xml:"showDropZones,attr,omitempty"`
 	CreatedVersion          int                      `xml:"createdVersion,attr,omitempty"`
 	Indent                  int                      `xml:"indent,attr,omitempty"`
@@ -74,7 +74,7 @@ type xlsxPivotTableDefinition struct {
 	Compact                 bool                     `xml:"compact,attr"`
 	Outline                 bool                     `xml:"outline,attr"`
 	OutlineData             bool                     `xml:"outlineData,attr,omitempty"`
-	CompactData             bool                     `xml:"compactData,attr,omitempty"`
+	CompactData             *bool                    `xml:"compactData,attr,omitempty"`
 	Published               bool                     `xml:"published,attr,omitempty"`
 	GridDropZones           bool                     `xml:"gridDropZones,attr,omitempty"`
 	Immersive               bool                     `xml:"immersive,attr,omitempty"`
@@ -150,7 +150,7 @@ type xlsxPivotField struct {
 	DataSourceSort               bool               `xml:"dataSourceSort,attr,omitempty"`
 	NonAutoSortDefault           bool               `xml:"nonAutoSortDefault,attr,omitempty"`
 	RankBy                       int                `xml:"rankBy,attr,omitempty"`
-	DefaultSubtotal              bool               `xml:"defaultSubtotal,attr,omitempty"`
+	DefaultSubtotal              *bool              `xml:"defaultSubtotal,attr,omitempty"`
 	SumSubtotal                  bool               `xml:"sumSubtotal,attr,omitempty"`
 	CountASubtotal               bool               `xml:"countASubtotal,attr,omitempty"`
 	AvgSubtotal                  bool               `xml:"avgSubtotal,attr,omitempty"`
@@ -189,7 +189,7 @@ type xlsxItem struct {
 	F  bool   `xml:"f,attr,omitempty"`
 	M  bool   `xml:"m,attr,omitempty"`
 	C  bool   `xml:"c,attr,omitempty"`
-	X  int    `xml:"x,attr,omitempty"`
+	X  *int   `xml:"x,attr,omitempty"`
 	D  bool   `xml:"d,attr,omitempty"`
 	E  bool   `xml:"e,attr,omitempty"`
 }

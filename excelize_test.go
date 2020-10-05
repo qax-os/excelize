@@ -22,7 +22,7 @@ import (
 )
 
 func TestOpenFile(t *testing.T) {
-	// Test update a XLSX file.
+	// Test update the spreadsheet file.
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 
@@ -154,11 +154,11 @@ func TestOpenFile(t *testing.T) {
 	// Test read cell value with given axis large than exists row.
 	_, err = f.GetCellValue("Sheet2", "E231")
 	assert.NoError(t, err)
-	// Test get active worksheet of XLSX and get worksheet name of XLSX by given worksheet index.
+	// Test get active worksheet of spreadsheet and get worksheet name of spreadsheet by given worksheet index.
 	f.GetSheetName(f.GetActiveSheetIndex())
-	// Test get worksheet index of XLSX by given worksheet name.
+	// Test get worksheet index of spreadsheet by given worksheet name.
 	f.GetSheetIndex("Sheet1")
-	// Test get worksheet name of XLSX by given invalid worksheet index.
+	// Test get worksheet name of spreadsheet by given invalid worksheet index.
 	f.GetSheetName(4)
 	// Test get worksheet map of workbook.
 	f.GetSheetMap()
@@ -201,14 +201,22 @@ func TestCharsetTranscoder(t *testing.T) {
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
-	_, err = OpenReader(bytes.NewReader([]byte{
-		0x3c, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x69, 0x00, 0x63, 0x00, 0x72, 0x00, 0x6f, 0x00, 0x73, 0x00,
-		0x6f, 0x00, 0x66, 0x00, 0x74, 0x00, 0x2e, 0x00, 0x43, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x74, 0x00,
-		0x61, 0x00, 0x69, 0x00, 0x6e, 0x00, 0x65, 0x00, 0x72, 0x00, 0x2e, 0x00, 0x44, 0x00, 0x61, 0x00,
-		0x74, 0x00, 0x61, 0x00, 0x53, 0x00, 0x70, 0x00, 0x61, 0x00, 0x63, 0x00, 0x65, 0x00, 0x73, 0x00,
-		0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-	}))
-	assert.EqualError(t, err, "not support encrypted file currently")
+	_, err = OpenReader(bytes.NewReader(oleIdentifier))
+	assert.EqualError(t, err, "decrypted file failed")
+
+	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
+	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", val)
+
+	// Test open password protected spreadsheet created by LibreOffice 7.0.0.3.
+	f, err = OpenFile(filepath.Join("test", "encryptAES.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	val, err = f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", val)
 
 	// Test unexpected EOF.
 	var b bytes.Buffer
@@ -249,7 +257,7 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
 		// Test write file with broken file struct with given path.
-		assert.NoError(t, f.SaveAs(filepath.Join("test", "BrokenFile.SaveAsEmptyStruct.xlsx")))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")))
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
@@ -261,7 +269,7 @@ func TestBrokenFile(t *testing.T) {
 	})
 
 	t.Run("OpenNotExistsFile", func(t *testing.T) {
-		// Test open a XLSX file with given illegal path.
+		// Test open a spreadsheet file with given illegal path.
 		_, err := OpenFile(filepath.Join("test", "NotExistsFile.xlsx"))
 		if assert.Error(t, err) {
 			assert.True(t, os.IsNotExist(err), "Expected os.IsNotExists(err) == true")
@@ -270,7 +278,7 @@ func TestBrokenFile(t *testing.T) {
 }
 
 func TestNewFile(t *testing.T) {
-	// Test create a XLSX file.
+	// Test create a spreadsheet file.
 	f := NewFile()
 	f.NewSheet("Sheet1")
 	f.NewSheet("XLSXSheet2")
@@ -1167,6 +1175,9 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 	f := NewFile()
 	// Test set default time style on not exists worksheet.
 	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN is not exist")
+
+	// Test set default time style on invalid cell
+	assert.EqualError(t, f.setDefaultTimeStyle("Sheet1", "", 42), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
 }
 
 func TestAddVBAProject(t *testing.T) {

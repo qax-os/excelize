@@ -38,8 +38,10 @@ type xlsxSST struct {
 // level - then the string item shall consist of multiple rich text runs which
 // collectively are used to express the string.
 type xlsxSI struct {
-	T *xlsxT  `xml:"t,omitempty"`
-	R []xlsxR `xml:"r"`
+	T          *xlsxT             `xml:"t,omitempty"`
+	R          []xlsxR            `xml:"r"`
+	RPh        []*xlsxPhoneticRun `xml:"rPh"`
+	PhoneticPr *xlsxPhoneticPr    `xml:"phoneticPr"`
 }
 
 // String extracts characters from a string item.

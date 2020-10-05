@@ -15,21 +15,29 @@ import (
 	"archive/zip"
 	"bytes"
 	"container/list"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
-	"unsafe"
 )
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
 // filesystem.
 func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	var err error
+	var docPart = map[string]string{
+		"[content_types].xml":  "[Content_Types].xml",
+		"xl/sharedstrings.xml": "xl/sharedStrings.xml",
+	}
 	fileList := make(map[string][]byte, len(r.File))
 	worksheets := 0
 	for _, v := range r.File {
-		if fileList[v.Name], err = readFile(v); err != nil {
+		fileName := v.Name
+		if partName, ok := docPart[strings.ToLower(v.Name)]; ok {
+			fileName = partName
+		}
+		if fileList[fileName], err = readFile(v); err != nil {
 			return nil, 0, err
 		}
 		if strings.HasPrefix(v.Name, "xl/worksheets/sheet") {
@@ -159,7 +167,7 @@ func ColumnNumberToName(num int) (string, error) {
 	}
 	var col string
 	for num > 0 {
-		col = string((num-1)%26+65) + col
+		col = string(rune((num-1)%26+65)) + col
 		num = (num - 1) / 26
 	}
 	return col, nil
@@ -235,22 +243,16 @@ func parseFormatSet(formatSet string) []byte {
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
 	var namespaceTranslationDic = map[string]string{
-		StrictSourceRelationship:         SourceRelationship,
+		StrictSourceRelationship:         SourceRelationship.Value,
 		StrictSourceRelationshipChart:    SourceRelationshipChart,
 		StrictSourceRelationshipComments: SourceRelationshipComments,
 		StrictSourceRelationshipImage:    SourceRelationshipImage,
-		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet,
+		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet.Value,
 	}
 	for s, n := range namespaceTranslationDic {
-		content = bytesReplace(content, stringToBytes(s), stringToBytes(n), -1)
+		content = bytesReplace(content, []byte(s), []byte(n), -1)
 	}
 	return content
-}
-
-// stringToBytes cast a string to bytes pointer and assign the value of this
-// pointer.
-func stringToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
 }
 
 // bytesReplace replace old bytes with given new.
@@ -309,6 +311,110 @@ func genSheetPasswd(plaintext string) string {
 	password ^= int64(len(plaintext))
 	password ^= 0xCE4B
 	return strings.ToUpper(strconv.FormatInt(password, 16))
+}
+
+// getRootElement extract root element attributes by given XML decoder.
+func getRootElement(d *xml.Decoder) []xml.Attr {
+	tokenIdx := 0
+	for {
+		token, _ := d.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			tokenIdx++
+			if tokenIdx == 1 {
+				return startElement.Attr
+			}
+		}
+	}
+	return nil
+}
+
+// genXMLNamespace generate serialized XML attributes with a multi namespace
+// by given element attributes.
+func genXMLNamespace(attr []xml.Attr) string {
+	var rootElement string
+	for _, v := range attr {
+		if lastSpace := getXMLNamespace(v.Name.Space, attr); lastSpace != "" {
+			rootElement += fmt.Sprintf("%s:%s=\"%s\" ", lastSpace, v.Name.Local, v.Value)
+			continue
+		}
+		rootElement += fmt.Sprintf("%s=\"%s\" ", v.Name.Local, v.Value)
+	}
+	return strings.TrimSpace(rootElement) + ">"
+}
+
+// getXMLNamespace extract XML namespace from specified element name and attributes.
+func getXMLNamespace(space string, attr []xml.Attr) string {
+	for _, attribute := range attr {
+		if attribute.Value == space {
+			return attribute.Name.Local
+		}
+	}
+	return space
+}
+
+// replaceNameSpaceBytes provides a function to replace the XML root element
+// attribute by the given component part path and XML content.
+func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
+	var oldXmlns = []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	var newXmlns = []byte(templateNamespaceIDMap)
+	if attr, ok := f.xmlAttr[path]; ok {
+		newXmlns = []byte(genXMLNamespace(attr))
+	}
+	return bytesReplace(contentMarshal, oldXmlns, newXmlns, -1)
+}
+
+// addNameSpaces provides a function to add a XML attribute by the given
+// component part path.
+func (f *File) addNameSpaces(path string, ns xml.Attr) {
+	exist := false
+	mc := false
+	ignore := -1
+	if attr, ok := f.xmlAttr[path]; ok {
+		for i, attribute := range attr {
+			if attribute.Name.Local == ns.Name.Local && attribute.Name.Space == ns.Name.Space {
+				exist = true
+			}
+			if attribute.Name.Local == "Ignorable" && getXMLNamespace(attribute.Name.Space, attr) == "mc" {
+				ignore = i
+			}
+			if attribute.Name.Local == "mc" && attribute.Name.Space == "xmlns" {
+				mc = true
+			}
+		}
+	}
+	if !exist {
+		f.xmlAttr[path] = append(f.xmlAttr[path], ns)
+		if !mc {
+			f.xmlAttr[path] = append(f.xmlAttr[path], SourceRelationshipCompatibility)
+		}
+		if ignore == -1 {
+			f.xmlAttr[path] = append(f.xmlAttr[path], xml.Attr{
+				Name:  xml.Name{Local: "Ignorable", Space: "mc"},
+				Value: ns.Name.Local,
+			})
+			return
+		}
+		f.setIgnorableNameSpace(path, ignore, ns)
+	}
+}
+
+// setIgnorableNameSpace provides a function to set XML namespace as ignorable by the given
+// attribute.
+func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
+	ignorableNS := []string{"c14", "cdr14", "a14", "pic14", "x14", "xdr14", "x14ac", "dsp", "mso14", "dgm14", "x15", "x12ac", "x15ac", "xr", "xr2", "xr3", "xr4", "xr5", "xr6", "xr7", "xr8", "xr9", "xr10", "xr11", "xr12", "xr13", "xr14", "xr15", "x15", "x16", "x16r2", "mo", "mx", "mv", "o", "v"}
+	if inStrSlice(strings.Fields(f.xmlAttr[path][index].Value), ns.Name.Local) == -1 && inStrSlice(ignorableNS, ns.Name.Local) != -1 {
+		f.xmlAttr[path][index].Value = strings.TrimSpace(fmt.Sprintf("%s %s", f.xmlAttr[path][index].Value, ns.Name.Local))
+	}
+}
+
+// addSheetNameSpace add XML attribute for worksheet.
+func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
+	name, _ := f.sheetMap[trimSheetName(sheet)]
+	f.addNameSpaces(name, ns)
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

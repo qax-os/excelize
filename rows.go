@@ -121,11 +121,8 @@ func (rows *Rows) Columns() ([]string, error) {
 					}
 				}
 				blank := cellCol - len(columns)
-				for i := 1; i < blank; i++ {
-					columns = append(columns, "")
-				}
 				val, _ := colCell.getValueFrom(rows.f, d)
-				columns = append(columns, val)
+				columns = append(appendSpace(blank, columns), val)
 			}
 		case xml.EndElement:
 			inElement = startElement.Name.Local
@@ -135,6 +132,14 @@ func (rows *Rows) Columns() ([]string, error) {
 		}
 	}
 	return columns, err
+}
+
+// appendSpace append blank characters to slice by given length and source slice.
+func appendSpace(l int, s []string) []string {
+	for i := 1; i < l; i++ {
+		s = append(s, "")
+	}
+	return s
 }
 
 // ErrSheetNotExist defines an error of sheet is not exist
@@ -173,7 +178,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if f.Sheet[name] != nil {
 		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
-		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
+		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var (
 		err       error
@@ -220,7 +225,9 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-
+	if height > MaxRowHeight {
+		return errors.New("the height of the row must be smaller than or equal to 409 points")
+	}
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -257,21 +264,24 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
 	}
-
-	xlsx, err := f.workSheetReader(sheet)
+	var ht = defaultRowHeight
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return defaultRowHeightPixels, err
+		return ht, err
 	}
-	if row > len(xlsx.SheetData.Row) {
-		return defaultRowHeightPixels, nil // it will be better to use 0, but we take care with BC
+	if ws.SheetFormatPr != nil {
+		ht = ws.SheetFormatPr.DefaultRowHeight
 	}
-	for _, v := range xlsx.SheetData.Row {
+	if row > len(ws.SheetData.Row) {
+		return ht, nil // it will be better to use 0, but we take care with BC
+	}
+	for _, v := range ws.SheetData.Row {
 		if v.R == row && v.Ht != 0 {
 			return v.Ht, nil
 		}
 	}
 	// Optimisation for when the row heights haven't changed.
-	return defaultRowHeightPixels, nil
+	return ht, nil
 }
 
 // sharedStringsReader provides a function to get the pointer to the structure
@@ -279,16 +289,17 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
 
+	f.Lock()
+	defer f.Unlock()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
-		if len(ss) == 0 {
-			ss = f.readXML("xl/SharedStrings.xml")
-			delete(f.XLSX, "xl/SharedStrings.xml")
-		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
+		}
+		if sharedStrings.UniqueCount == 0 {
+			sharedStrings.UniqueCount = sharedStrings.Count
 		}
 		f.SharedStrings = &sharedStrings
 		for i := range sharedStrings.SI {
@@ -314,6 +325,8 @@ func (f *File) sharedStringsReader() *xlsxSST {
 // inteded to be used with for range on rows an argument with the xlsx opened
 // file.
 func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
+	f.Lock()
+	defer f.Unlock()
 	switch xlsx.T {
 	case "s":
 		if xlsx.V != "" {
@@ -332,6 +345,25 @@ func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		}
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	default:
+		// correct numeric values as legacy Excel app
+		// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel
+		// In the top figure the fraction 1/9000 in Excel is displayed.
+		// Although this number has a decimal representation that is an infinite string of ones,
+		// Excel displays only the leading 15 figures. In the second line, the number one is added to the fraction, and again Excel displays only 15 figures.
+		const precision = 1000000000000000
+		if len(xlsx.V) > 16 {
+			num, err := strconv.ParseFloat(xlsx.V, 64)
+			if err != nil {
+				return "", err
+			}
+
+			num = math.Round(num*precision) / precision
+			val := fmt.Sprintf("%g", num)
+			if val != xlsx.V {
+				return f.formattedValue(xlsx.S, val), nil
+			}
+		}
+
 		return f.formattedValue(xlsx.S, xlsx.V), nil
 	}
 }

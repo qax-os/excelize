@@ -109,6 +109,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
 		f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
+		f.addSheetNameSpace(sheet, SourceRelationship)
 		f.addSheetLegacyDrawing(sheet, rID)
 	}
 	commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
@@ -163,7 +164,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 				},
 				VPath: &vPath{
 					Gradientshapeok: "t",
-					Connecttype:     "miter",
+					Connecttype:     "rect",
 				},
 			},
 		}

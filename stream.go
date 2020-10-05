@@ -72,7 +72,7 @@ type StreamWriter struct {
 //
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	sheetID := f.getSheetID(sheet)
-	if sheetID == 0 {
+	if sheetID == -1 {
 		return nil, fmt.Errorf("sheet %s is not exist", sheet)
 	}
 	sw := &StreamWriter{
@@ -93,7 +93,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXML] = sw
 
 	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 1, 5)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 6)
 	sw.rawData.WriteString(`<sheetData>`)
 	return sw, err
 }
@@ -158,7 +158,7 @@ func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
 	}
 
 	table := xlsxTable{
-		XMLNS:       NameSpaceSpreadSheet,
+		XMLNS:       NameSpaceSpreadSheet.Value,
 		ID:          tableID,
 		Name:        name,
 		DisplayName: name,
@@ -374,7 +374,7 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	buf.WriteString(`>`)
 	if c.V != "" {
 		buf.WriteString(`<v>`)
-		xml.EscapeText(buf, stringToBytes(c.V))
+		xml.EscapeText(buf, []byte(c.V))
 		buf.WriteString(`</v>`)
 	}
 	buf.WriteString(`</c>`)
@@ -383,9 +383,9 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
 	sw.rawData.WriteString(`</sheetData>`)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 7, 37)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 38)
 	sw.rawData.WriteString(sw.tableParts)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 39, 39)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
 	sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err
@@ -444,36 +444,6 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 	}
 	// os.File.ReadAt does not affect the cursor position and is safe to use here
 	return io.NewSectionReader(bw.tmp, 0, fi.Size()), nil
-}
-
-// Bytes returns the entire content of the bufferedWriter. If a temp file is
-// used, Bytes will efficiently allocate a buffer to prevent re-allocations.
-func (bw *bufferedWriter) Bytes() ([]byte, error) {
-	if bw.tmp == nil {
-		return bw.buf.Bytes(), nil
-	}
-
-	if err := bw.Flush(); err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	if fi, err := bw.tmp.Stat(); err == nil {
-		if size := fi.Size() + bytes.MinRead; size > bytes.MinRead {
-			if int64(int(size)) == size {
-				buf.Grow(int(size))
-			} else {
-				return nil, bytes.ErrTooLarge
-			}
-		}
-	}
-
-	if _, err := bw.tmp.Seek(0, 0); err != nil {
-		return nil, err
-	}
-
-	_, err := buf.ReadFrom(bw.tmp)
-	return buf.Bytes(), err
 }
 
 // Sync will write the in-memory buffer to a temp file, if the in-memory

@@ -123,9 +123,9 @@ type xlsxBgFillStyleLst struct {
 	BgFillStyleLst string `xml:",innerxml"`
 }
 
-// xlsxClrScheme maps to children of the clrScheme element in the namespace
-// http://schemas.openxmlformats.org/drawingml/2006/main - currently I have
-// not checked it for completeness - it does as much as I need.
+// xlsxClrScheme specifies the theme color, stored in the document's Theme
+// part to which the value of this theme color shall be mapped. This mapping
+// enables multiple theme colors to be chained together.
 type xlsxClrSchemeEl struct {
 	XMLName xml.Name
 	SysClr  *xlsxSysClr    `xml:"sysClr"`

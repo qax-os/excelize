@@ -18,10 +18,7 @@ import "encoding/xml"
 // charts, pie charts, scatter charts, or other types of charts.
 type xlsxChartSpace struct {
 	XMLName        xml.Name        `xml:"http://schemas.openxmlformats.org/drawingml/2006/chart chartSpace"`
-	XMLNSc         string          `xml:"xmlns:c,attr"`
 	XMLNSa         string          `xml:"xmlns:a,attr"`
-	XMLNSr         string          `xml:"xmlns:r,attr"`
-	XMLNSc16r2     string          `xml:"xmlns:c16r2,attr"`
 	Date1904       *attrValBool    `xml:"date1904"`
 	Lang           *attrValString  `xml:"lang"`
 	RoundedCorners *attrValBool    `xml:"roundedCorners"`
@@ -380,6 +377,7 @@ type cChartLines struct {
 // cScaling directly maps the scaling element. This element contains
 // additional axis settings.
 type cScaling struct {
+	LogBase     *attrValFloat  `xml:"logBase"`
 	Orientation *attrValString `xml:"orientation"`
 	Max         *attrValFloat  `xml:"max"`
 	Min         *attrValFloat  `xml:"min"`
@@ -544,6 +542,7 @@ type formatChartAxis struct {
 		Italic    bool   `json:"italic"`
 		Underline bool   `json:"underline"`
 	} `json:"num_font"`
+	LogBase    float64      `json:"logbase"`
 	NameLayout formatLayout `json:"name_layout"`
 }
 

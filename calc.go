@@ -96,6 +96,19 @@ type formulaFuncs struct{}
 // CalcCellValue provides a function to get calculated cell value. This
 // feature is currently in working processing. Array formula, table formula
 // and some other formulas are not supported currently.
+//
+// Supported formulas:
+//
+//    ABS, ACOS, ACOSH, ACOT, ACOTH, ARABIC, ASIN, ASINH, ATAN2, ATANH, BASE,
+//    CEILING, CEILING.MATH, CEILING.PRECISE, COMBIN, COMBINA, COS, COSH, COT,
+//    COTH, COUNTA, CSC, CSCH, DECIMAL, DEGREES, EVEN, EXP, FACT, FACTDOUBLE,
+//    FLOOR, FLOOR.MATH, FLOOR.PRECISE, GCD, INT, ISBLANK, ISERR, ISERROR,
+//    ISEVEN, ISNA, ISNONTEXT, ISNUMBER, ISO.CEILING, ISODD, LCM, LN, LOG,
+//    LOG10, MDETERM, MEDIAN, MOD, MROUND, MULTINOMIAL, MUNIT, NA, ODD, PI,
+//    POWER, PRODUCT, QUOTIENT, RADIANS, RAND, RANDBETWEEN, ROUND, ROUNDDOWN,
+//    ROUNDUP, SEC, SECH, SIGN, SIN, SINH, SQRT, SQRTPI, SUM, SUMIF, SUMSQ,
+//    TAN, TANH, TRUNC
+//
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
 		formula string
@@ -453,11 +466,28 @@ func isOperatorPrefixToken(token efp.Token) bool {
 	return false
 }
 
+func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
+	for _, definedName := range f.GetDefinedName() {
+		if definedName.Name == definedNameName {
+			refTo = definedName.RefersTo
+			// worksheet scope takes precedence over scope workbook when both definedNames exist
+			if definedName.Scope == currentSheet {
+				break
+			}
+		}
+	}
+	return refTo
+}
+
 // parseToken parse basic arithmetic operator priority and evaluate based on
 // operators and operands.
 func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Stack) error {
 	// parse reference: must reference at here
 	if token.TSubType == efp.TokenSubTypeRange {
+		refTo := f.getDefinedNameRefTo(token.TValue, sheet)
+		if refTo != "" {
+			token.TValue = refTo
+		}
 		result, err := f.parseReference(sheet, token.TValue)
 		if err != nil {
 			return errors.New(formulaErrorNAME)

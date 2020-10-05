@@ -1,5 +1,6 @@
 ~$*.xlsx
 test/Test*.xlsx
+test/Test*.xlsm
 *.out
 *.test
 .idea
