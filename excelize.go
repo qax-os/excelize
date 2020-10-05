@@ -36,6 +36,7 @@ type File struct {
 	xmlAttr          map[string][]xml.Attr
 	checked          map[string]bool
 	sheetMap         map[string]string
+	streams          map[string]*StreamWriter
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
