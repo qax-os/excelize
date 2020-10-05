@@ -85,6 +85,13 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
+	if f.streams == nil {
+		f.streams = make(map[string]*StreamWriter)
+	}
+	f.streams[sheetXML] = sw
+
 	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 6)
 	sw.rawData.WriteString(`<sheetData>`)
@@ -387,13 +394,8 @@ func (sw *StreamWriter) Flush() error {
 	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
 	delete(sw.File.Sheet, sheetXML)
 	delete(sw.File.checked, sheetXML)
+	delete(sw.File.XLSX, sheetXML)
 
-	defer sw.rawData.Close()
-	b, err := sw.rawData.Bytes()
-	if err != nil {
-		return err
-	}
-	sw.File.XLSX[sheetXML] = b
 	return nil
 }
 
@@ -442,36 +444,6 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 	}
 	// os.File.ReadAt does not affect the cursor position and is safe to use here
 	return io.NewSectionReader(bw.tmp, 0, fi.Size()), nil
-}
-
-// Bytes returns the entire content of the bufferedWriter. If a temp file is
-// used, Bytes will efficiently allocate a buffer to prevent re-allocations.
-func (bw *bufferedWriter) Bytes() ([]byte, error) {
-	if bw.tmp == nil {
-		return bw.buf.Bytes(), nil
-	}
-
-	if err := bw.Flush(); err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	if fi, err := bw.tmp.Stat(); err == nil {
-		if size := fi.Size() + bytes.MinRead; size > bytes.MinRead {
-			if int64(int(size)) == size {
-				buf.Grow(int(size))
-			} else {
-				return nil, bytes.ErrTooLarge
-			}
-		}
-	}
-
-	if _, err := bw.tmp.Seek(0, 0); err != nil {
-		return nil, err
-	}
-
-	_, err := buf.ReadFrom(bw.tmp)
-	return buf.Bytes(), err
 }
 
 // Sync will write the in-memory buffer to a temp file, if the in-memory
