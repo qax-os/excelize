@@ -2063,7 +2063,7 @@ var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 		if style.Alignment == nil {
 			return xf.ApplyAlignment == nil || *xf.ApplyAlignment == false
 		}
-		return reflect.DeepEqual(xf.Alignment, newAlignment(style)) && xf.ApplyBorder != nil && *xf.ApplyBorder == true
+		return reflect.DeepEqual(xf.Alignment, newAlignment(style))
 	},
 	"protection": func(ID int, xf xlsxXf, style *Style) bool {
 		if style.Protection == nil {
