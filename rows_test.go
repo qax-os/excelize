@@ -835,7 +835,7 @@ func TestGetValueFromNumber(t *testing.T) {
 	assert.Equal(t, "2.22", val)
 
 	c = &xlsxC{T: "n", V: "2.220000ddsf0000000002-r"}
-	val, err = c.getValueFrom(f, d)
+	_, err = c.getValueFrom(f, d)
 	assert.NotNil(t, err)
 	assert.Equal(t, "strconv.ParseFloat: parsing \"2.220000ddsf0000000002-r\": invalid syntax", err.Error())
 }

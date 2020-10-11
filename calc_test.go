@@ -339,7 +339,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=SINH(0.5)": "0.5210953054937474",
 		"=SINH(-2)":  "-3.626860407847019",
 		// SQRT
-		"=SQRT(4)": "2",
+		"=SQRT(4)":  "2",
+		`=SQRT("")`: "0",
 		// SQRTPI
 		"=SQRTPI(5)":   "3.963327297606011",
 		"=SQRTPI(0.2)": "0.7926654595212022",
@@ -361,7 +362,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
 		// SUMIF
+		`=SUMIF(F1:F5, "")`:             "0",
+		`=SUMIF(A1:A5, "3")`:            "3",
+		`=SUMIF(F1:F5, "=36693")`:       "36693",
+		`=SUMIF(F1:F5, "<100")`:         "0",
+		`=SUMIF(F1:F5, "<=36693")`:      "93233",
 		`=SUMIF(F1:F5, ">100")`:         "146554",
+		`=SUMIF(F1:F5, ">=100")`:        "146554",
+		`=SUMIF(F1:F5, ">=text")`:       "0",
+		`=SUMIF(F1:F5, "*Jan",F2:F5)`:   "0",
 		`=SUMIF(D3:D7,"Jan",F2:F5)`:     "112114",
 		`=SUMIF(D2:D9,"Feb",F2:F9)`:     "157559",
 		`=SUMIF(E2:E9,"North 1",F2:F9)`: "66582",
@@ -706,7 +715,8 @@ func TestCalcCellValue(t *testing.T) {
 		// ISERROR
 		"=ISERROR()": "ISERROR requires 1 argument",
 		// ISEVEN
-		"=ISEVEN()": "ISEVEN requires 1 argument",
+		"=ISEVEN()":       "ISEVEN requires 1 argument",
+		`=ISEVEN("text")`: "#VALUE!",
 		// ISNA
 		"=ISNA()": "ISNA requires 1 argument",
 		// ISNONTEXT
@@ -714,7 +724,8 @@ func TestCalcCellValue(t *testing.T) {
 		// ISNUMBER
 		"=ISNUMBER()": "ISNUMBER requires 1 argument",
 		// ISODD
-		"=ISODD()": "ISODD requires 1 argument",
+		"=ISODD()":       "ISODD requires 1 argument",
+		`=ISODD("text")`: "#VALUE!",
 		// NA
 		"=NA(1)": "NA accepts no arguments",
 	}
@@ -816,4 +827,13 @@ func TestCalcCellValueWithDefinedName(t *testing.T) {
 	assert.NoError(t, err)
 	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
 	assert.Equal(t, "B1 value", result, "=defined_name1")
+}
+
+func TestDet(t *testing.T) {
+	assert.Equal(t, det([][]float64{
+		{1, 2, 3, 4},
+		{2, 3, 4, 5},
+		{3, 4, 5, 6},
+		{4, 5, 6, 7},
+	}), float64(0))
 }

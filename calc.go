@@ -700,19 +700,19 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 		fc.Type, fc.Condition = criteriaEq, match[1]
 		return
 	}
-	if match := regexp.MustCompile(`^<(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
+	if match := regexp.MustCompile(`^<=(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaLe, match[1]
 		return
 	}
-	if match := regexp.MustCompile(`^>(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
+	if match := regexp.MustCompile(`^>=(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaGe, match[1]
 		return
 	}
-	if match := regexp.MustCompile(`^<=(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
+	if match := regexp.MustCompile(`^<(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaL, match[1]
 		return
 	}
-	if match := regexp.MustCompile(`^>=(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
+	if match := regexp.MustCompile(`^>(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaG, match[1]
 		return
 	}
@@ -732,8 +732,11 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 // formulaCriteriaEval evaluate formula criteria expression.
 func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, err error) {
 	var value, expected float64
+	var e error
 	var prepareValue = func(val, cond string) (value float64, expected float64, err error) {
-		value, _ = strconv.ParseFloat(val, 64)
+		if value, err = strconv.ParseFloat(val, 64); err != nil {
+			return
+		}
 		if expected, err = strconv.ParseFloat(criteria.Condition, 64); err != nil {
 			return
 		}
@@ -743,25 +746,17 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	case criteriaEq:
 		return val == criteria.Condition, err
 	case criteriaLe:
-		if value, expected, err = prepareValue(val, criteria.Condition); err != nil {
-			return
-		}
-		return value <= expected, err
+		value, expected, e = prepareValue(val, criteria.Condition)
+		return value <= expected && e == nil, err
 	case criteriaGe:
-		if value, expected, err = prepareValue(val, criteria.Condition); err != nil {
-			return
-		}
-		return value >= expected, err
+		value, expected, e = prepareValue(val, criteria.Condition)
+		return value >= expected && e == nil, err
 	case criteriaL:
-		if value, expected, err = prepareValue(val, criteria.Condition); err != nil {
-			return
-		}
-		return value < expected, err
+		value, expected, e = prepareValue(val, criteria.Condition)
+		return value < expected && e == nil, err
 	case criteriaG:
-		if value, expected, err = prepareValue(val, criteria.Condition); err != nil {
-			return
-		}
-		return value > expected, err
+		value, expected, e = prepareValue(val, criteria.Condition)
+		return value > expected && e == nil, err
 	case criteriaBeg:
 		return strings.HasPrefix(val, criteria.Condition), err
 	case criteriaEnd:
