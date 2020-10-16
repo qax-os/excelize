@@ -1,7 +1,9 @@
 package excelize
 
 import (
+	"container/list"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,6 +33,18 @@ func TestCalcCellValue(t *testing.T) {
 	}
 
 	mathCalc := map[string]string{
+		"=2^3":  "8",
+		"=1=1":  "TRUE",
+		"=1=2":  "FALSE",
+		"=1<2":  "TRUE",
+		"=3<2":  "FALSE",
+		"=2<=3": "TRUE",
+		"=2<=1": "FALSE",
+		"=2>1":  "TRUE",
+		"=2>3":  "FALSE",
+		"=2>=1": "TRUE",
+		"=2>=3": "FALSE",
+		"=1&2":  "12",
 		// ABS
 		"=ABS(-1)":    "1",
 		"=ABS(-6.5)":  "6.5",
@@ -429,6 +443,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISODD(A2)": "FALSE",
 		// NA
 		"=NA()": "#N/A",
+		// AND
+		"=AND(0)":               "FALSE",
+		"=AND(1)":               "TRUE",
+		"=AND(1,0)":             "FALSE",
+		"=AND(0,1)":             "FALSE",
+		"=AND(1=1)":             "TRUE",
+		"=AND(1<2)":             "TRUE",
+		"=AND(1>2,2<3,2>0,3>1)": "FALSE",
+		"=AND(1=1),1=1":         "TRUE",
+		// OR
+		"=OR(1)":       "TRUE",
+		"=OR(0)":       "FALSE",
+		"=OR(1=2,2=2)": "TRUE",
+		"=OR(1=2,2=3)": "FALSE",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -728,6 +756,16 @@ func TestCalcCellValue(t *testing.T) {
 		`=ISODD("text")`: "#VALUE!",
 		// NA
 		"=NA(1)": "NA accepts no arguments",
+		// AND
+		`=AND("text")`: "#VALUE!",
+		`=AND(A1:B1)`:  "#VALUE!",
+		"=AND()":       "AND requires at least 1 argument",
+		"=AND(1" + strings.Repeat(",1", 30) + ")": "AND accepts at most 30 arguments",
+		// OR
+		`=OR("text")`:                            "#VALUE!",
+		`=OR(A1:B1)`:                             "#VALUE!",
+		"=OR()":                                  "OR requires at least 1 argument",
+		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()
@@ -827,6 +865,63 @@ func TestCalcCellValueWithDefinedName(t *testing.T) {
 	assert.NoError(t, err)
 	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
 	assert.Equal(t, "B1 value", result, "=defined_name1")
+}
+
+func TestCalcPow(t *testing.T) {
+	err := `strconv.ParseFloat: parsing "text": invalid syntax`
+	assert.EqualError(t, calcPow("1", "text", nil), err)
+	assert.EqualError(t, calcPow("text", "1", nil), err)
+	assert.EqualError(t, calcL("1", "text", nil), err)
+	assert.EqualError(t, calcL("text", "1", nil), err)
+	assert.EqualError(t, calcLe("1", "text", nil), err)
+	assert.EqualError(t, calcLe("text", "1", nil), err)
+	assert.EqualError(t, calcG("1", "text", nil), err)
+	assert.EqualError(t, calcG("text", "1", nil), err)
+	assert.EqualError(t, calcGe("1", "text", nil), err)
+	assert.EqualError(t, calcGe("text", "1", nil), err)
+	assert.EqualError(t, calcAdd("1", "text", nil), err)
+	assert.EqualError(t, calcAdd("text", "1", nil), err)
+	assert.EqualError(t, calcAdd("1", "text", nil), err)
+	assert.EqualError(t, calcAdd("text", "1", nil), err)
+	assert.EqualError(t, calcSubtract("1", "text", nil), err)
+	assert.EqualError(t, calcSubtract("text", "1", nil), err)
+	assert.EqualError(t, calcMultiply("1", "text", nil), err)
+	assert.EqualError(t, calcMultiply("text", "1", nil), err)
+	assert.EqualError(t, calcDiv("1", "text", nil), err)
+	assert.EqualError(t, calcDiv("text", "1", nil), err)
+}
+
+func TestISBLANK(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgUnknown,
+	})
+	fn := formulaFuncs{}
+	result, err := fn.ISBLANK(argsList)
+	assert.Equal(t, result, "TRUE")
+	assert.NoError(t, err)
+}
+
+func TestAND(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgUnknown,
+	})
+	fn := formulaFuncs{}
+	result, err := fn.AND(argsList)
+	assert.Equal(t, result, "TRUE")
+	assert.NoError(t, err)
+}
+
+func TestOR(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgUnknown,
+	})
+	fn := formulaFuncs{}
+	result, err := fn.OR(argsList)
+	assert.Equal(t, result, "FALSE")
+	assert.NoError(t, err)
 }
 
 func TestDet(t *testing.T) {
