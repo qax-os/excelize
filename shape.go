@@ -324,7 +324,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	width := int(float64(formatSet.Width) * formatSet.Format.XScale)
 	height := int(float64(formatSet.Height) * formatSet.Format.YScale)
 
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.Format.OffsetX, formatSet.Format.OffsetY,
 			width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)

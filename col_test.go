@@ -362,3 +362,7 @@ func TestRemoveCol(t *testing.T) {
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveCol.xlsx")))
 }
+
+func TestConvertColWidthToPixels(t *testing.T) {
+	assert.Equal(t, -11.0, convertColWidthToPixels(-1))
+}

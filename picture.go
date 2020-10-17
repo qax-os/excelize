@@ -259,7 +259,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	col--
 	row--
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}

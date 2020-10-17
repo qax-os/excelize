@@ -1178,7 +1178,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
