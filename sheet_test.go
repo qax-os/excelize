@@ -300,7 +300,8 @@ func TestRemovePageBreak(t *testing.T) {
 }
 
 func TestGetSheetName(t *testing.T) {
-	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 	assert.Equal(t, "Sheet2", f.GetSheetName(1))
 	assert.Equal(t, "", f.GetSheetName(-1))
@@ -312,10 +313,32 @@ func TestGetSheetMap(t *testing.T) {
 		1: "Sheet1",
 		2: "Sheet2",
 	}
-	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
 	sheetMap := f.GetSheetMap()
 	for idx, name := range sheetMap {
 		assert.Equal(t, expectedMap[idx], name)
 	}
 	assert.Equal(t, len(sheetMap), 2)
+}
+
+func TestSetActiveSheet(t *testing.T) {
+	f := NewFile()
+	f.WorkBook.BookViews = nil
+	f.SetActiveSheet(1)
+	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
+	f.SetActiveSheet(1)
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = nil
+	f.SetActiveSheet(1)
+	f = NewFile()
+	f.SetActiveSheet(-1)
+	assert.Equal(t, f.GetActiveSheetIndex(), 0)
+}
+
+func TestSetSheetName(t *testing.T) {
+	f := NewFile()
+	// Test set workksheet with the same name.
+	f.SetSheetName("Sheet1", "Sheet1")
+	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 }

@@ -559,26 +559,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 //    width           # Width of object frame.
 //    height          # Height of object frame.
 //
-//    xAbs            # Absolute distance to left side of object.
-//    yAbs            # Absolute distance to top side of object.
-//
-func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int, int, int) {
-	xAbs := 0
-	yAbs := 0
-
-	// Calculate the absolute x offset of the top-left vertex.
-	for colID := 1; colID <= col; colID++ {
-		xAbs += f.getColWidth(sheet, colID)
-	}
-	xAbs += x1
-
-	// Calculate the absolute y offset of the top-left vertex.
-	// Store the column change to allow optimisations.
-	for rowID := 1; rowID <= row; rowID++ {
-		yAbs += f.getRowHeight(sheet, rowID)
-	}
-	yAbs += y1
-
+func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int) {
 	// Adjust start column for offsets that are greater than the col width.
 	for x1 >= f.getColWidth(sheet, col) {
 		x1 -= f.getColWidth(sheet, col)
@@ -613,7 +594,7 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 	// The end vertices are whatever is left from the width and height.
 	x2 := width
 	y2 := height
-	return col, row, xAbs, yAbs, colEnd, rowEnd, x2, y2
+	return col, row, colEnd, rowEnd, x2, y2
 }
 
 // getColWidth provides a function to get column width in pixels by given

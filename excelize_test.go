@@ -954,17 +954,6 @@ func TestGetSheetComments(t *testing.T) {
 	assert.Equal(t, "", f.getSheetComments("sheet0"))
 }
 
-func TestSetActiveSheet(t *testing.T) {
-	f := NewFile()
-	f.WorkBook.BookViews = nil
-	f.SetActiveSheet(1)
-	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
-	f.SetActiveSheet(1)
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = nil
-	f.SetActiveSheet(1)
-}
-
 func TestSetSheetVisible(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.Sheets.Sheet[0].Name = "SheetN"

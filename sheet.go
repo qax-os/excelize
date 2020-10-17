@@ -308,6 +308,9 @@ func (f *File) getActiveSheetID() int {
 func (f *File) SetSheetName(oldName, newName string) {
 	oldName = trimSheetName(oldName)
 	newName = trimSheetName(newName)
+	if newName == oldName {
+		return
+	}
 	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == oldName {
