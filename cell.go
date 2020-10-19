@@ -770,6 +770,9 @@ func (f *File) formattedValue(s int, v string) string {
 	if ok != nil {
 		return ok(v, builtInNumFmt[numFmtId])
 	}
+	if styleSheet == nil || styleSheet.NumFmts == nil {
+		return v
+	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtId {
 			format := strings.ToLower(xlsxFmt.FormatCode)
