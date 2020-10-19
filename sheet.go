@@ -37,8 +37,9 @@ import (
 // appending the new sheet.
 func (f *File) NewSheet(name string) int {
 	// Check if the worksheet already exists
-	if f.GetSheetIndex(name) != -1 {
-		return f.SheetCount
+	index := f.GetSheetIndex(name)
+	if index != -1 {
+		return index
 	}
 	f.DeleteSheet(name)
 	f.SheetCount++

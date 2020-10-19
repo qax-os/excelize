@@ -71,6 +71,8 @@ func TestNewSheet(t *testing.T) {
 	// delete original sheet
 	f.DeleteSheet(f.GetSheetName(f.GetSheetIndex("Sheet1")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
+	// create new worksheet with already exists name
+	assert.Equal(t, f.GetSheetIndex("Sheet2"), f.NewSheet("Sheet2"))
 }
 
 func TestSetPane(t *testing.T) {

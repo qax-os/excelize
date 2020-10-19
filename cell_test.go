@@ -299,4 +299,14 @@ func TestFormattedValue(t *testing.T) {
 	assert.NoError(t, err)
 	v = f.formattedValue(1, "43528")
 	assert.Equal(t, "03/04/2019", v)
+
+	// formatted value with no built-in number format ID
+	assert.NoError(t, err)
+	f.Styles.NumFmts = nil
+	numFmtID := 5
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: &numFmtID,
+	})
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "43528", v)
 }
