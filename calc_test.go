@@ -407,14 +407,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(99.999,-1)":  "90",
 		"=TRUNC(-99.999,2)":  "-99.99",
 		"=TRUNC(-99.999,-1)": "-90",
-		// Statistical functions
+		// Statistical Functions
 		// COUNTA
 		`=COUNTA()`:                       "0",
 		`=COUNTA(A1:A5,B2:B5,"text",1,2)`: "8",
 		// MEDIAN
 		"=MEDIAN(A1:A5,12)": "2",
 		"=MEDIAN(A1:A5)":    "1.5",
-		// Information functions
+		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
 		"=ISBLANK(A5)": "TRUE",
@@ -443,6 +443,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISODD(A2)": "FALSE",
 		// NA
 		"=NA()": "#N/A",
+		// Logical Functions
 		// AND
 		"=AND(0)":               "FALSE",
 		"=AND(1)":               "TRUE",
@@ -457,6 +458,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=OR(0)":       "FALSE",
 		"=OR(1=2,2=2)": "TRUE",
 		"=OR(1=2,2=3)": "FALSE",
+		// Date and Time Functions
+		// DATE
+		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
+		"=DATE(1900,1,1)":   "1899-12-31 00:00:00 +0000 UTC",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -732,10 +737,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC()":      "TRUNC requires at least 1 argument",
 		`=TRUNC("X")`:   "#VALUE!",
 		`=TRUNC(1,"X")`: "#VALUE!",
-		// Statistical functions
+		// Statistical Functions
 		// MEDIAN
 		"=MEDIAN()": "MEDIAN requires at least 1 argument",
-		// Information functions
+		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
 		// ISERR
@@ -756,6 +761,7 @@ func TestCalcCellValue(t *testing.T) {
 		`=ISODD("text")`: "#VALUE!",
 		// NA
 		"=NA(1)": "NA accepts no arguments",
+		// Logical Functions
 		// AND
 		`=AND("text")`: "#VALUE!",
 		`=AND(A1:B1)`:  "#VALUE!",
@@ -766,6 +772,12 @@ func TestCalcCellValue(t *testing.T) {
 		`=OR(A1:B1)`:                             "#VALUE!",
 		"=OR()":                                  "OR requires at least 1 argument",
 		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
+		// Date and Time Functions
+		// DATE
+		"=DATE()":               "DATE requires 3 number arguments",
+		`=DATE("text",10,21)`:   "DATE requires 3 number arguments",
+		`=DATE(2020,"text",21)`: "DATE requires 3 number arguments",
+		`=DATE(2020,10,"text")`: "DATE requires 3 number arguments",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()
