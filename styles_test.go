@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -294,5 +295,17 @@ func TestParseTime(t *testing.T) {
 	assert.Equal(t, "3/4/2019 5:5:42", parseTime("43528.2123", "M/D/YYYY h:m:s"))
 	assert.Equal(t, "March", parseTime("43528", "mmmm"))
 	assert.Equal(t, "Monday", parseTime("43528", "dddd"))
+}
 
+func TestThemeColor(t *testing.T) {
+	for _, clr := range [][]string{
+		{"FF000000", ThemeColor("000000", -0.1)},
+		{"FF000000", ThemeColor("000000", 0)},
+		{"FF33FF33", ThemeColor("00FF00", 0.2)},
+		{"FFFFFFFF", ThemeColor("000000", 1)},
+		{"FFFFFFFF", ThemeColor(strings.Repeat(string(rune(math.MaxUint8+1)), 6), 1)},
+		{"FFFFFFFF", ThemeColor(strings.Repeat(string(rune(-1)), 6), 1)},
+	} {
+		assert.Equal(t, clr[0], clr[1])
+	}
 }

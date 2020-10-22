@@ -3110,12 +3110,10 @@ func (f *File) themeReader() *xlsxTheme {
 		err   error
 		theme xlsxTheme
 	)
-
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")))).
 		Decode(&theme); err != nil && err != io.EOF {
 		log.Printf("xml decoder error: %s", err)
 	}
-
 	return &theme
 }
 
@@ -3127,7 +3125,10 @@ func ThemeColor(baseColor string, tint float64) string {
 	r, _ := strconv.ParseInt(baseColor[0:2], 16, 64)
 	g, _ := strconv.ParseInt(baseColor[2:4], 16, 64)
 	b, _ := strconv.ParseInt(baseColor[4:6], 16, 64)
-	h, s, l := RGBToHSL(uint8(r), uint8(g), uint8(b))
+	var h, s, l float64
+	if r >= 0 && r <= math.MaxUint8 && g >= 0 && g <= math.MaxUint8 && b >= 0 && b <= math.MaxUint8 {
+		h, s, l = RGBToHSL(uint8(r), uint8(g), uint8(b))
+	}
 	if tint < 0 {
 		l *= (1 + tint)
 	} else {
