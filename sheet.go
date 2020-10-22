@@ -31,10 +31,10 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
-// NewSheet provides function to create a new sheet by given worksheet name.
-// When creating a new spreadsheet file, the default worksheet will be
-// created. Returns the number of sheets in the workbook (file) after
-// appending the new sheet.
+// NewSheet provides the function to create a new sheet by given a worksheet
+// name and returns the index of the sheets in the workbook
+// (spreadsheet) after it appended. Note that when creating a new spreadsheet
+// file, the default worksheet named `Sheet1` will be created.
 func (f *File) NewSheet(name string) int {
 	// Check if the worksheet already exists
 	index := f.GetSheetIndex(name)

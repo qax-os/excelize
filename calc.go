@@ -116,11 +116,11 @@ var tokenPriority = map[string]int{
 //
 //    ABS, ACOS, ACOSH, ACOT, ACOTH, AND, ARABIC, ASIN, ASINH, ATAN2, ATANH,
 //    BASE, CEILING, CEILING.MATH, CEILING.PRECISE, COMBIN, COMBINA, COS,
-//    COSH, COT, COTH, COUNTA, CSC, CSCH, DECIMAL, DEGREES, EVEN, EXP, FACT,
-//    FACTDOUBLE, FLOOR, FLOOR.MATH, FLOOR.PRECISE, GCD, INT, ISBLANK, ISERR,
-//    ISERROR, ISEVEN, ISNA, ISNONTEXT, ISNUMBER, ISO.CEILING, ISODD, LCM,
-//    LN, LOG, LOG10, MDETERM, MEDIAN, MOD, MROUND, MULTINOMIAL, MUNIT, NA,
-//    ODD, OR, PI, POWER, PRODUCT, QUOTIENT, RADIANS, RAND, RANDBETWEEN,
+//    COSH, COT, COTH, COUNTA, CSC, CSCH, DATE, DECIMAL, DEGREES, EVEN, EXP,
+//    FACT, FACTDOUBLE, FLOOR, FLOOR.MATH, FLOOR.PRECISE, GCD, INT, ISBLANK,
+//    ISERR, ISERROR, ISEVEN, ISNA, ISNONTEXT, ISNUMBER, ISO.CEILING, ISODD,
+//    LCM, LN, LOG, LOG10, MDETERM, MEDIAN, MOD, MROUND, MULTINOMIAL, MUNIT,
+//    NA, ODD, OR, PI, POWER, PRODUCT, QUOTIENT, RADIANS, RAND, RANDBETWEEN,
 //    ROUND, ROUNDDOWN, ROUNDUP, SEC, SECH, SIGN, SIN, SINH, SQRT, SQRTPI,
 //    SUM, SUMIF, SUMSQ, TAN, TANH, TRUNC
 //
@@ -3307,4 +3307,46 @@ func (fn *formulaFuncs) OR(argsList *list.List) (result string, err error) {
 	}
 	result = strings.ToUpper(strconv.FormatBool(or))
 	return
+}
+
+// Date and Time Functions
+
+// DATE returns a date, from a user-supplied year, month and day.
+func (fn *formulaFuncs) DATE(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 3 {
+		err = errors.New("DATE requires 3 number arguments")
+		return
+	}
+	var year, month, day int
+	if year, err = strconv.Atoi(argsList.Front().Value.(formulaArg).String); err != nil {
+		err = errors.New("DATE requires 3 number arguments")
+		return
+	}
+	if month, err = strconv.Atoi(argsList.Front().Next().Value.(formulaArg).String); err != nil {
+		err = errors.New("DATE requires 3 number arguments")
+		return
+	}
+	if day, err = strconv.Atoi(argsList.Back().Value.(formulaArg).String); err != nil {
+		err = errors.New("DATE requires 3 number arguments")
+		return
+	}
+	d := makeDate(year, time.Month(month), day)
+	result = timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), d)+1, false).String()
+	return
+}
+
+// makeDate return date as a Unix time, the number of seconds elapsed since
+// January 1, 1970 UTC.
+func makeDate(y int, m time.Month, d int) int64 {
+	if y == 1900 && int(m) <= 2 {
+		d--
+	}
+	date := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	return date.Unix()
+}
+
+// daysBetween return time interval of the given start timestamp and end
+// timestamp.
+func daysBetween(startDate, endDate int64) float64 {
+	return float64(int(0.5 + float64((endDate-startDate)/86400)))
 }
