@@ -64,6 +64,19 @@ func (f *File) NewSheet(name string) int {
 	return f.GetSheetIndex(name)
 }
 
+// NewSheetWithRowNum provides the function to create a new sheet by given a worksheet and a given number of rows.
+// name and returns the index of the sheets in the workbook
+func (f *File) NewSheetWithRowNum(name string, rowNum int64) int {
+	num := f.NewSheet(name)
+
+	// pre alloc space;when we use this arr. will be not realloc mem.
+	if num > 0 {
+		xlsx, _ := f.workSheetReader(name)
+		xlsx.SheetData.Row = make([]xlsxRow, 0, rowNum)
+	}
+	return num
+}
+
 // contentTypesReader provides a function to get the pointer to the
 // [Content_Types].xml structure after deserialization.
 func (f *File) contentTypesReader() *xlsxTypes {
