@@ -346,6 +346,18 @@ func TestSetSheetName(t *testing.T) {
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 }
 
+func TestNewSheetWithRowNum(t *testing.T) {
+	f := NewFile()
+	f.NewSheetWithRowNum("sheet1", 100)
+	f.SetCellInt("sheet1", "A100", 100)
+	val,err:=f.GetCellValue("sheet1", "A100")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t,"100",val)
+}
+
+
 func BenchmarkNewSheetWithRowNum(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -388,7 +400,6 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 
 	})
 }
-
 func newSheetWithSave() {
 	file := NewFile()
 	file.NewSheet("sheet1")
