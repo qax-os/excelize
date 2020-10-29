@@ -315,18 +315,18 @@ type xlsxSheetData struct {
 // particular row in the worksheet.
 type xlsxRow struct {	// alignment word
 	C            []xlsxC `xml:"c"`
-	Spans        string  `xml:"spans,attr,omitempty"`
-	Ht           float64 `xml:"ht,attr,omitempty"`
 	R            int     `xml:"r,attr,omitempty"`
+	Spans        string  `xml:"spans,attr,omitempty"`
 	S            int     `xml:"s,attr,omitempty"`
-	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
 	CustomFormat bool    `xml:"customFormat,attr,omitempty"`
-	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
+	Ht           float64 `xml:"ht,attr,omitempty"`
 	Hidden       bool    `xml:"hidden,attr,omitempty"`
+	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
 	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
-	Ph           bool    `xml:"ph,attr,omitempty"`
-	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
+	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
 	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
+	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
+	Ph           bool    `xml:"ph,attr,omitempty"`
 }
 
 // xlsxSortState directly maps the sortState element. This collection
