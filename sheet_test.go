@@ -3,6 +3,7 @@ package excelize
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -343,4 +344,37 @@ func TestSetSheetName(t *testing.T) {
 	// Test set workksheet with the same name.
 	f.SetSheetName("Sheet1", "Sheet1")
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
+}
+
+func BenchmarkNewSheet(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			newSheetWithSet()
+		}
+	})
+}
+func newSheetWithSet() {
+	file := NewFile()
+	file.NewSheet("sheet1")
+	for i := 0; i < 1000; i++ {
+		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+	}
+	file = nil
+}
+
+func BenchmarkFile_SaveAs(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			newSheetWithSave()
+		}
+
+	})
+}
+func newSheetWithSave() {
+	file := NewFile()
+	file.NewSheet("sheet1")
+	for i := 0; i < 1000; i++ {
+		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+	}
+	file.Save()
 }

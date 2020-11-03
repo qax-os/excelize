@@ -120,18 +120,26 @@ func (f *File) workBookWriter() {
 // workSheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
 func (f *File) workSheetWriter() {
+
+	// optimize memory alloc
+	var arr []byte
+	buffer := bytes.NewBuffer(arr)
+	encoder := xml.NewEncoder(buffer)
+
 	for p, sheet := range f.Sheet {
 		if sheet != nil {
 			for k, v := range sheet.SheetData.Row {
 				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 			}
-			output, _ := xml.Marshal(sheet)
-			f.saveFileList(p, replaceRelationshipsBytes(f.replaceNameSpaceBytes(p, output)))
+			// reusing buffer
+			encoder.Encode(sheet)
+			f.saveFileList(p, replaceRelationshipsBytes(f.replaceNameSpaceBytes(p, buffer.Bytes())))
 			ok := f.checked[p]
 			if ok {
 				delete(f.Sheet, p)
 				f.checked[p] = false
 			}
+			buffer.Reset()
 		}
 	}
 }

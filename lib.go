@@ -206,8 +206,9 @@ func CoordinatesToCellName(col, row int) (string, error) {
 	if col < 1 || row < 1 {
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
 	}
+	//Using itoa will save more memory
 	colname, err := ColumnNumberToName(col)
-	return fmt.Sprintf("%s%d", colname, row), err
+	return colname + strconv.Itoa(row), err
 }
 
 // boolPtr returns a pointer to a bool with the given value.
