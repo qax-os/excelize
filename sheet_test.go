@@ -350,13 +350,12 @@ func TestNewSheetWithRowNum(t *testing.T) {
 	f := NewFile()
 	f.NewSheetWithRowNum("sheet1", 100)
 	f.SetCellInt("sheet1", "A100", 100)
-	val,err:=f.GetCellValue("sheet1", "A100")
+	val, err := f.GetCellValue("sheet1", "A100")
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t,"100",val)
+	assert.Equal(t, "100", val)
 }
-
 
 func BenchmarkNewSheetWithRowNum(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
@@ -366,10 +365,17 @@ func BenchmarkNewSheetWithRowNum(b *testing.B) {
 
 	})
 }
-func BenchmarkNewSheetWithRowNum1(b *testing.B) {
+func BenchmarkNewSheetWithOutRowNum(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			newSheetWithOutRowNum()
+		}
+	})
+}
+func BenchmarkNewSheetWithStreamWriter(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			newSheetWithStreamWriter()
 		}
 	})
 }
@@ -390,6 +396,25 @@ func newSheetWithOutRowNum() {
 		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
 	}
 	file = nil
+}
+func newSheetWithStreamWriter() {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	if err != nil {
+		fmt.Println(err)
+	}
+	for rowID := 1; rowID <= 1000; rowID++ {
+		cell, _ := CoordinatesToCellName(1, rowID)
+		if err := streamWriter.SetRow(cell, []interface{}{rowID}); err != nil {
+			fmt.Println(err)
+		}
+	}
+	if err := streamWriter.Flush(); err != nil {
+		fmt.Println(err)
+	}
+	if err := file.SaveAs("Book1.xlsx"); err != nil {
+		fmt.Println(err)
+	}
 }
 
 func BenchmarkFile_SaveAs(b *testing.B) {
