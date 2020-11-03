@@ -313,20 +313,20 @@ type xlsxSheetData struct {
 // xlsxRow directly maps the row element. The element expresses information
 // about an entire row of a worksheet, and contains all cell definitions for a
 // particular row in the worksheet.
-type xlsxRow struct {
-	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
-	CustomFormat bool    `xml:"customFormat,attr,omitempty"`
-	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
-	Hidden       bool    `xml:"hidden,attr,omitempty"`
-	Ht           float64 `xml:"ht,attr,omitempty"`
-	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
-	Ph           bool    `xml:"ph,attr,omitempty"`
-	R            int     `xml:"r,attr,omitempty"`
-	S            int     `xml:"s,attr,omitempty"`
-	Spans        string  `xml:"spans,attr,omitempty"`
-	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
-	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
+type xlsxRow struct {	// alignment word
 	C            []xlsxC `xml:"c"`
+	R            int     `xml:"r,attr,omitempty"`
+	Spans        string  `xml:"spans,attr,omitempty"`
+	S            int     `xml:"s,attr,omitempty"`
+	CustomFormat bool    `xml:"customFormat,attr,omitempty"`
+	Ht           float64 `xml:"ht,attr,omitempty"`
+	Hidden       bool    `xml:"hidden,attr,omitempty"`
+	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
+	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
+	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
+	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
+	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
+	Ph           bool    `xml:"ph,attr,omitempty"`
 }
 
 // xlsxSortState directly maps the sortState element. This collection
@@ -456,6 +456,7 @@ type DataValidation struct {
 //      s (Shared String)         | Cell containing a shared string.
 //      str (String)              | Cell containing a formula string.
 //
+// fixme: how to make this structure smaller; cur size is 152 bytes. it's be too bigger.
 type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
