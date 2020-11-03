@@ -33,6 +33,7 @@ var (
 
 // Source relationship and namespace.
 const (
+	SourceRelationshipOfficeDocument             = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
 	SourceRelationshipChart                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 	SourceRelationshipComments                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
 	SourceRelationshipImage                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
@@ -50,6 +51,7 @@ const (
 	NameSpaceXML                                 = "http://www.w3.org/XML/1998/namespace"
 	NameSpaceXMLSchemaInstance                   = "http://www.w3.org/2001/XMLSchema-instance"
 	StrictSourceRelationship                     = "http://purl.oclc.org/ooxml/officeDocument/relationships"
+	StrictSourceRelationshipOfficeDocument       = "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
 	StrictSourceRelationshipChart                = "http://purl.oclc.org/ooxml/officeDocument/relationships/chart"
 	StrictSourceRelationshipComments             = "http://purl.oclc.org/ooxml/officeDocument/relationships/comments"
 	StrictSourceRelationshipImage                = "http://purl.oclc.org/ooxml/officeDocument/relationships/image"

@@ -313,7 +313,7 @@ type xlsxSheetData struct {
 // xlsxRow directly maps the row element. The element expresses information
 // about an entire row of a worksheet, and contains all cell definitions for a
 // particular row in the worksheet.
-type xlsxRow struct {	// alignment word
+type xlsxRow struct { // alignment word
 	C            []xlsxC `xml:"c"`
 	R            int     `xml:"r,attr,omitempty"`
 	Spans        string  `xml:"spans,attr,omitempty"`
@@ -456,7 +456,6 @@ type DataValidation struct {
 //      s (Shared String)         | Cell containing a shared string.
 //      str (String)              | Cell containing a formula string.
 //
-// fixme: how to make this structure smaller; cur size is 152 bytes. it's be too bigger.
 type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`

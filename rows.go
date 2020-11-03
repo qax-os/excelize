@@ -19,7 +19,9 @@ import (
 	"io"
 	"log"
 	"math"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // GetRows return all the rows in a sheet by given worksheet name (case
@@ -288,7 +290,8 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 // after deserialization of xl/sharedStrings.xml.
 func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
-
+	wbPath := f.getWorkbookPath()
+	relPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
 	f.Lock()
 	defer f.Unlock()
 	if f.SharedStrings == nil {
@@ -308,14 +311,14 @@ func (f *File) sharedStringsReader() *xlsxSST {
 			}
 		}
 		f.addContentTypePart(0, "sharedStrings")
-		rels := f.relsReader("xl/_rels/workbook.xml.rels")
+		rels := f.relsReader(relPath)
 		for _, rel := range rels.Relationships {
-			if rel.Target == "sharedStrings.xml" {
+			if rel.Target == "/xl/sharedStrings.xml" {
 				return f.SharedStrings
 			}
 		}
-		// Update xl/_rels/workbook.xml.rels
-		f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipSharedStrings, "sharedStrings.xml", "")
+		// Update workbook.xml.rels
+		f.addRels(relPath, SourceRelationshipSharedStrings, "/xl/sharedStrings.xml", "")
 	}
 
 	return f.SharedStrings
