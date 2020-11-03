@@ -206,7 +206,6 @@ func CoordinatesToCellName(col, row int) (string, error) {
 	if col < 1 || row < 1 {
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
 	}
-	//Using itoa will save more memory
 	colname, err := ColumnNumberToName(col)
 	return colname + strconv.Itoa(row), err
 }
@@ -244,11 +243,12 @@ func parseFormatSet(formatSet string) []byte {
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
 	var namespaceTranslationDic = map[string]string{
-		StrictSourceRelationship:         SourceRelationship.Value,
-		StrictSourceRelationshipChart:    SourceRelationshipChart,
-		StrictSourceRelationshipComments: SourceRelationshipComments,
-		StrictSourceRelationshipImage:    SourceRelationshipImage,
-		StrictNameSpaceSpreadSheet:       NameSpaceSpreadSheet.Value,
+		StrictSourceRelationship:               SourceRelationship.Value,
+		StrictSourceRelationshipOfficeDocument: SourceRelationshipOfficeDocument,
+		StrictSourceRelationshipChart:          SourceRelationshipChart,
+		StrictSourceRelationshipComments:       SourceRelationshipComments,
+		StrictSourceRelationshipImage:          SourceRelationshipImage,
+		StrictNameSpaceSpreadSheet:             NameSpaceSpreadSheet.Value,
 	}
 	for s, n := range namespaceTranslationDic {
 		content = bytesReplace(content, []byte(s), []byte(n), -1)
