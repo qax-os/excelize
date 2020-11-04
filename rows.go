@@ -290,10 +290,10 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 // after deserialization of xl/sharedStrings.xml.
 func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
-	wbPath := f.getWorkbookPath()
-	relPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
 	f.Lock()
 	defer f.Unlock()
+	wbPath := f.getWorkbookPath()
+	relPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
