@@ -313,7 +313,7 @@ type xlsxSheetData struct {
 // xlsxRow directly maps the row element. The element expresses information
 // about an entire row of a worksheet, and contains all cell definitions for a
 // particular row in the worksheet.
-type xlsxRow struct { // alignment word
+type xlsxRow struct {
 	C            []xlsxC `xml:"c"`
 	R            int     `xml:"r,attr,omitempty"`
 	Spans        string  `xml:"spans,attr,omitempty"`
