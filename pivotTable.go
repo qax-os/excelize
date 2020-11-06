@@ -15,7 +15,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -139,9 +138,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	}
 
 	// workbook pivot cache
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	workBookPivotCacheRID := f.addRels(wbRelsPath, SourceRelationshipPivotCache, fmt.Sprintf("/xl/pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	workBookPivotCacheRID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipPivotCache, fmt.Sprintf("/xl/pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
 	cacheID := f.addWorkbookPivotCache(workBookPivotCacheRID)
 
 	pivotCacheRels := "xl/pivotTables/_rels/pivotTable" + strconv.Itoa(pivotTableID) + ".xml.rels"
