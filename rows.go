@@ -19,9 +19,7 @@ import (
 	"io"
 	"log"
 	"math"
-	"path/filepath"
 	"strconv"
-	"strings"
 )
 
 // GetRows return all the rows in a sheet by given worksheet name (case
@@ -292,8 +290,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
 	f.Lock()
 	defer f.Unlock()
-	wbPath := f.getWorkbookPath()
-	relPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
+	relPath := f.getWorkbookRelsPath()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")

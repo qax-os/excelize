@@ -16,7 +16,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -802,9 +801,7 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	f.addContentTypePart(sheetID, "chartsheet")
 	f.addContentTypePart(drawingID, "drawings")
 	// Update workbook.xml.rels
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	rID := f.addRels(wbRelsPath, SourceRelationshipChartsheet, fmt.Sprintf("/xl/chartsheets/sheet%d.xml", sheetID), "")
+	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipChartsheet, fmt.Sprintf("/xl/chartsheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
 	f.setWorkbook(sheet, sheetID, rID)
 	chartsheet, _ := xml.Marshal(cs)

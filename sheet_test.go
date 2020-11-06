@@ -346,6 +346,19 @@ func TestSetSheetName(t *testing.T) {
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 }
 
+func TestGetWorkbookPath(t *testing.T) {
+	f := NewFile()
+	delete(f.XLSX, "_rels/.rels")
+	assert.Equal(t, "", f.getWorkbookPath())
+}
+
+func TestGetWorkbookRelsPath(t *testing.T) {
+	f := NewFile()
+	delete(f.XLSX, "xl/_rels/.rels")
+	f.XLSX["_rels/.rels"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`)
+	assert.Equal(t, "_rels/workbook.xml.rels", f.getWorkbookRelsPath())
+}
+
 func BenchmarkNewSheet(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

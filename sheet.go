@@ -59,9 +59,7 @@ func (f *File) NewSheet(name string) int {
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(sheetID, name)
 	// Update workbook.xml.rels
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	rID := f.addRels(wbRelsPath, SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
+	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
 	f.setWorkbook(name, sheetID, rID)
 	return f.GetSheetIndex(name)
@@ -98,11 +96,24 @@ func (f *File) getWorkbookPath() (path string) {
 	if rels := f.relsReader("_rels/.rels"); rels != nil {
 		for _, rel := range rels.Relationships {
 			if rel.Type == SourceRelationshipOfficeDocument {
-				path = strings.TrimPrefix(rel.Target, string(filepath.Separator))
+				path = strings.TrimPrefix(rel.Target, "/")
 				return
 			}
 		}
 	}
+	return
+}
+
+// getWorkbookRelsPath provides a function to get the path of the workbook.xml.rels
+// in the spreadsheet.
+func (f *File) getWorkbookRelsPath() (path string) {
+	wbPath := f.getWorkbookPath()
+	wbDir := filepath.Dir(wbPath)
+	if wbDir == "." {
+		path = "_rels/" + filepath.Base(wbPath) + ".rels"
+		return
+	}
+	path = strings.TrimPrefix(filepath.Dir(wbPath)+"/_rels/"+filepath.Base(wbPath)+".rels", "/")
 	return
 }
 
@@ -437,9 +448,7 @@ func (f *File) GetSheetList() (list []string) {
 // of the spreadsheet.
 func (f *File) getSheetMap() map[string]string {
 	content := f.workbookReader()
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	rels := f.relsReader(wbRelsPath)
+	rels := f.relsReader(f.getWorkbookRelsPath())
 	maps := map[string]string{}
 	for _, v := range content.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
@@ -489,9 +498,7 @@ func (f *File) DeleteSheet(name string) {
 	}
 	sheetName := trimSheetName(name)
 	wb := f.workbookReader()
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	wbRels := f.relsReader(wbRelsPath)
+	wbRels := f.relsReader(f.getWorkbookRelsPath())
 	for idx, sheet := range wb.Sheets.Sheet {
 		if sheet.Name == sheetName {
 			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
@@ -532,9 +539,7 @@ func (f *File) DeleteSheet(name string) {
 // deleteSheetFromWorkbookRels provides a function to remove worksheet
 // relationships by given relationships ID in the file workbook.xml.rels.
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	content := f.relsReader(wbRelsPath)
+	content := f.relsReader(f.getWorkbookRelsPath())
 	for k, v := range content.Relationships {
 		if v.ID == rID {
 			content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)

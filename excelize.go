@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -346,9 +345,7 @@ func (f *File) AddVBAProject(bin string) error {
 		return errors.New("unsupported VBA project extension")
 	}
 	f.setContentTypePartVBAProjectExtensions()
-	wbPath := f.getWorkbookPath()
-	wbRelsPath := strings.TrimPrefix(filepath.Join(filepath.Dir(wbPath), "_rels", filepath.Base(wbPath)+".rels"), string(filepath.Separator))
-	wb := f.relsReader(wbRelsPath)
+	wb := f.relsReader(f.getWorkbookRelsPath())
 	var rID int
 	var ok bool
 	for _, rel := range wb.Relationships {
