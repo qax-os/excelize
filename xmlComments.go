@@ -69,7 +69,7 @@ type xlsxText struct {
 type xlsxPhoneticRun struct {
 	Sb uint32 `xml:"sb,attr"`
 	Eb uint32 `xml:"eb,attr"`
-	T  string `xml:"t,attr"`
+	T  string `xml:"t"`
 }
 
 // formatComment directly maps the format settings of the comment.

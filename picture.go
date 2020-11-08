@@ -253,6 +253,9 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 		if err != nil {
 			return err
 		}
+	} else {
+		width = int(float64(width) * formatSet.XScale)
+		height = int(float64(height) * formatSet.YScale)
 	}
 	col--
 	row--

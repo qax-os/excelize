@@ -25,6 +25,7 @@ import (
 // Define the default cell size and EMU unit of measurement.
 const (
 	defaultColWidthPixels  float64 = 64
+	defaultRowHeight       float64 = 15
 	defaultRowHeightPixels float64 = 20
 	EMU                    int     = 9525
 )
@@ -442,6 +443,9 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 	max, err := ColumnNameToNumber(endcol)
 	if err != nil {
 		return err
+	}
+	if width > MaxColumnWidth {
+		return errors.New("the width of the column must be smaller than or equal to 255 characters")
 	}
 	if min > max {
 		min, max = max, min

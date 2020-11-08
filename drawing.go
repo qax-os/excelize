@@ -59,10 +59,7 @@ func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, she
 func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
-		XMLNSc:         NameSpaceDrawingMLChart,
-		XMLNSa:         NameSpaceDrawingML,
-		XMLNSr:         SourceRelationship.Value,
-		XMLNSc16r2:     SourceRelationshipChart201506,
+		XMLNSa:         NameSpaceDrawingML.Value,
 		Date1904:       &attrValBool{Val: boolPtr(false)},
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},
@@ -1143,8 +1140,8 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 
 	if f.Drawings[path] == nil {
 		content := xlsxWsDr{}
-		content.A = NameSpaceDrawingML
-		content.Xdr = NameSpaceDrawingMLSpreadSheet
+		content.A = NameSpaceDrawingML.Value
+		content.Xdr = NameSpaceDrawingMLSpreadSheet.Value
 		if _, ok = f.XLSX[path]; ok { // Append Model
 			decodeWsDr := decodeWsDr{}
 			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
@@ -1210,9 +1207,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 		},
 		Graphic: &xlsxGraphic{
 			GraphicData: &xlsxGraphicData{
-				URI: NameSpaceDrawingMLChart,
+				URI: NameSpaceDrawingMLChart.Value,
 				Chart: &xlsxChart{
-					C:   NameSpaceDrawingMLChart,
+					C:   NameSpaceDrawingMLChart.Value,
 					R:   SourceRelationship.Value,
 					RID: "rId" + strconv.Itoa(rID),
 				},
@@ -1250,9 +1247,9 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *forma
 		},
 		Graphic: &xlsxGraphic{
 			GraphicData: &xlsxGraphicData{
-				URI: NameSpaceDrawingMLChart,
+				URI: NameSpaceDrawingMLChart.Value,
 				Chart: &xlsxChart{
-					C:   NameSpaceDrawingMLChart,
+					C:   NameSpaceDrawingMLChart.Value,
 					R:   SourceRelationship.Value,
 					RID: "rId" + strconv.Itoa(rID),
 				},

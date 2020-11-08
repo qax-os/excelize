@@ -21,12 +21,25 @@ import (
 
 // PivotTableOption directly maps the format settings of the pivot table.
 type PivotTableOption struct {
-	DataRange       string
-	PivotTableRange string
-	Rows            []PivotTableField
-	Columns         []PivotTableField
-	Data            []PivotTableField
-	Filter          []PivotTableField
+	DataRange           string
+	PivotTableRange     string
+	Rows                []PivotTableField
+	Columns             []PivotTableField
+	Data                []PivotTableField
+	Filter              []PivotTableField
+	RowGrandTotals      bool
+	ColGrandTotals      bool
+	ShowDrill           bool
+	UseAutoFormatting   bool
+	PageOverThenDown    bool
+	MergeItem           bool
+	CompactData         bool
+	ShowRowHeaders      bool
+	ShowColHeaders      bool
+	ShowRowStripes      bool
+	ShowColStripes      bool
+	ShowLastColumn      bool
+	PivotTableStyleName string
 }
 
 // PivotTableField directly maps the field settings of the pivot table.
@@ -49,9 +62,10 @@ type PivotTableOption struct {
 // Name specifies the name of the data field. Maximum 255 characters
 // are allowed in data field name, excess characters will be truncated.
 type PivotTableField struct {
-	Data     string
-	Name     string
-	Subtotal string
+	Data            string
+	Name            string
+	Subtotal        string
+	DefaultSubtotal bool
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
@@ -87,10 +101,16 @@ type PivotTableField struct {
 //        if err := f.AddPivotTable(&excelize.PivotTableOption{
 //            DataRange:       "Sheet1!$A$1:$E$31",
 //            PivotTableRange: "Sheet1!$G$2:$M$34",
-//            Rows:            []excelize.PivotTableField{{Data: "Month"}, {Data: "Year"}},
+//            Rows:            []excelize.PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 //            Filter:          []excelize.PivotTableField{{Data: "Region"}},
-//            Columns:         []excelize.PivotTableField{{Data: "Type"}},
+//            Columns:         []excelize.PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 //            Data:            []excelize.PivotTableField{{Data: "Sales", Name: "Summarize", Subtotal: "Sum"}},
+//            RowGrandTotals:  true,
+//            ColGrandTotals:  true,
+//            ShowDrill:       true,
+//            ShowRowHeaders:  true,
+//            ShowColHeaders:  true,
+//            ShowLastColumn:  true,
 //        }); err != nil {
 //            fmt.Println(err)
 //        }
@@ -233,12 +253,25 @@ func (f *File) addPivotCache(pivotCacheID int, pivotCacheXML string, opt *PivotT
 		},
 		CacheFields: &xlsxCacheFields{},
 	}
+
 	for _, name := range order {
+		defaultRowsSubtotal, rowOk := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Rows)
+		defaultColumnsSubtotal, colOk := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Columns)
+		sharedItems := xlsxSharedItems{
+			Count: 0,
+		}
+		s := xlsxString{}
+		if (rowOk && !defaultRowsSubtotal) || (colOk && !defaultColumnsSubtotal) {
+			s = xlsxString{
+				V: "",
+			}
+			sharedItems.Count++
+			sharedItems.S = &s
+		}
+
 		pc.CacheFields.CacheField = append(pc.CacheFields.CacheField, &xlsxCacheField{
-			Name: name,
-			SharedItems: &xlsxSharedItems{
-				Count: 0,
-			},
+			Name:        name,
+			SharedItems: &sharedItems,
 		})
 	}
 	pc.CacheFields.Count = len(pc.CacheFields.CacheField)
@@ -259,10 +292,23 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	hcell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	vcell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 
+	pivotTableStyle := func() string {
+		if opt.PivotTableStyleName == "" {
+			return "PivotStyleLight16"
+		}
+		return opt.PivotTableStyleName
+	}
 	pt := xlsxPivotTableDefinition{
-		Name:        fmt.Sprintf("Pivot Table%d", pivotTableID),
-		CacheID:     cacheID,
-		DataCaption: "Values",
+		Name:              fmt.Sprintf("Pivot Table%d", pivotTableID),
+		CacheID:           cacheID,
+		RowGrandTotals:    &opt.RowGrandTotals,
+		ColGrandTotals:    &opt.ColGrandTotals,
+		ShowDrill:         &opt.ShowDrill,
+		UseAutoFormatting: &opt.UseAutoFormatting,
+		PageOverThenDown:  &opt.PageOverThenDown,
+		MergeItem:         &opt.MergeItem,
+		CompactData:       &opt.CompactData,
+		DataCaption:       "Values",
 		Location: &xlsxLocation{
 			Ref:            hcell + ":" + vcell,
 			FirstDataCol:   1,
@@ -283,10 +329,12 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 			I:     []*xlsxI{{}},
 		},
 		PivotTableStyleInfo: &xlsxPivotTableStyleInfo{
-			Name:           "PivotStyleLight16",
-			ShowRowHeaders: true,
-			ShowColHeaders: true,
-			ShowLastColumn: true,
+			Name:           pivotTableStyle(),
+			ShowRowHeaders: opt.ShowRowHeaders,
+			ShowColHeaders: opt.ShowColHeaders,
+			ShowRowStripes: opt.ShowRowStripes,
+			ShowColStripes: opt.ShowColStripes,
+			ShowLastColumn: opt.ShowLastColumn,
 		},
 	}
 
@@ -440,17 +488,25 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 	if err != nil {
 		return err
 	}
+	x := 0
 	for _, name := range order {
 		if inPivotTableField(opt.Rows, name) != -1 {
+			defaultSubtotal, ok := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Rows)
+			var items []*xlsxItem
+			if !ok || !defaultSubtotal {
+				items = append(items, &xlsxItem{X: &x})
+			} else {
+				items = append(items, &xlsxItem{T: "default"})
+			}
+
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Axis: "axisRow",
 				Name: f.getPivotTableFieldName(name, opt.Rows),
 				Items: &xlsxItems{
-					Count: 1,
-					Item: []*xlsxItem{
-						{T: "default"},
-					},
+					Count: len(items),
+					Item:  items,
 				},
+				DefaultSubtotal: &defaultSubtotal,
 			})
 			continue
 		}
@@ -468,15 +524,21 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			continue
 		}
 		if inPivotTableField(opt.Columns, name) != -1 {
+			defaultSubtotal, ok := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Columns)
+			var items []*xlsxItem
+			if !ok || !defaultSubtotal {
+				items = append(items, &xlsxItem{X: &x})
+			} else {
+				items = append(items, &xlsxItem{T: "default"})
+			}
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Axis: "axisCol",
 				Name: f.getPivotTableFieldName(name, opt.Columns),
 				Items: &xlsxItems{
-					Count: 1,
-					Item: []*xlsxItem{
-						{T: "default"},
-					},
+					Count: len(items),
+					Item:  items,
 				},
+				DefaultSubtotal: &defaultSubtotal,
 			})
 			continue
 		}
@@ -572,6 +634,15 @@ func (f *File) getPivotTableFieldName(name string, fields []PivotTableField) str
 		}
 	}
 	return ""
+}
+
+func (f *File) getPivotTableFieldNameDefaultSubtotal(name string, fields []PivotTableField) (bool, bool) {
+	for _, field := range fields {
+		if field.Data == name {
+			return field.DefaultSubtotal, true
+		}
+	}
+	return false, false
 }
 
 // addWorkbookPivotCache add the association ID of the pivot cache in xl/workbook.xml.

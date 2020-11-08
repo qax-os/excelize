@@ -241,7 +241,9 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-
+	if height > MaxRowHeight {
+		return errors.New("the height of the row must be smaller than or equal to 409 points")
+	}
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -278,21 +280,24 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
 	}
-
-	xlsx, err := f.workSheetReader(sheet)
+	var ht = defaultRowHeight
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return defaultRowHeightPixels, err
+		return ht, err
 	}
-	if row > len(xlsx.SheetData.Row) {
-		return defaultRowHeightPixels, nil // it will be better to use 0, but we take care with BC
+	if ws.SheetFormatPr != nil {
+		ht = ws.SheetFormatPr.DefaultRowHeight
 	}
-	for _, v := range xlsx.SheetData.Row {
+	if row > len(ws.SheetData.Row) {
+		return ht, nil // it will be better to use 0, but we take care with BC
+	}
+	for _, v := range ws.SheetData.Row {
 		if v.R == row && v.Ht != 0 {
 			return v.Ht, nil
 		}
 	}
 	// Optimisation for when the row heights haven't changed.
-	return defaultRowHeightPixels, nil
+	return ht, nil
 }
 
 // sharedStringsReader provides a function to get the pointer to the structure
@@ -300,6 +305,8 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 func (f *File) sharedStringsReader() *xlsxSST {
 	var err error
 
+	f.Lock()
+	defer f.Unlock()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML("xl/sharedStrings.xml")
@@ -334,6 +341,8 @@ func (f *File) sharedStringsReader() *xlsxSST {
 // inteded to be used with for range on rows an argument with the xlsx opened
 // file.
 func (xlsx *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
+	f.Lock()
+	defer f.Unlock()
 	switch xlsx.T {
 	case "s":
 		if xlsx.V != "" {

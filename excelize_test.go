@@ -201,14 +201,22 @@ func TestCharsetTranscoder(t *testing.T) {
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
-	_, err = OpenReader(bytes.NewReader([]byte{
-		0x3c, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x69, 0x00, 0x63, 0x00, 0x72, 0x00, 0x6f, 0x00, 0x73, 0x00,
-		0x6f, 0x00, 0x66, 0x00, 0x74, 0x00, 0x2e, 0x00, 0x43, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x74, 0x00,
-		0x61, 0x00, 0x69, 0x00, 0x6e, 0x00, 0x65, 0x00, 0x72, 0x00, 0x2e, 0x00, 0x44, 0x00, 0x61, 0x00,
-		0x74, 0x00, 0x61, 0x00, 0x53, 0x00, 0x70, 0x00, 0x61, 0x00, 0x63, 0x00, 0x65, 0x00, 0x73, 0x00,
-		0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-	}))
-	assert.EqualError(t, err, "not support encrypted file currently")
+	_, err = OpenReader(bytes.NewReader(oleIdentifier))
+	assert.EqualError(t, err, "decrypted file failed")
+
+	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
+	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", val)
+
+	// Test open password protected spreadsheet created by LibreOffice 7.0.0.3.
+	f, err = OpenFile(filepath.Join("test", "encryptAES.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	val, err = f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", val)
 
 	// Test unexpected EOF.
 	var b bytes.Buffer

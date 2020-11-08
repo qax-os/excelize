@@ -441,7 +441,7 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
 		}
 	} else {
 		groups = &xlsxX14SparklineGroups{
-			XMLNSXM:         NameSpaceSpreadSheetExcel2006Main,
+			XMLNSXM:         NameSpaceSpreadSheetExcel2006Main.Value,
 			SparklineGroups: []*xlsxX14SparklineGroup{group},
 		}
 		if sparklineGroupsBytes, err = xml.Marshal(groups); err != nil {
@@ -525,7 +525,7 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 				return
 			}
 			groups = &xlsxX14SparklineGroups{
-				XMLNSXM: NameSpaceSpreadSheetExcel2006Main,
+				XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value,
 				Content: decodeSparklineGroups.Content + string(sparklineGroupBytes),
 			}
 			if sparklineGroupsBytes, err = xml.Marshal(groups); err != nil {

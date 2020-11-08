@@ -13,12 +13,22 @@ package excelize
 
 import "encoding/xml"
 
-// Source relationship and namespace.
+// Source relationship and namespace list, associated prefixes and schema in which it was
+// introduced.
 var (
-	SourceRelationship              = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
-	SourceRelationshipCompatibility = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
-	NameSpaceSpreadSheet            = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-	NameSpaceSpreadSheetX14         = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	SourceRelationship                = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+	SourceRelationshipCompatibility   = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
+	SourceRelationshipChart20070802   = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
+	SourceRelationshipChart2014       = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
+	SourceRelationshipChart201506     = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
+	NameSpaceSpreadSheet              = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+	NameSpaceSpreadSheetX14           = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	NameSpaceDrawingML                = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
+	NameSpaceDrawingMLChart           = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
+	NameSpaceDrawingMLSpreadSheet     = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
+	NameSpaceSpreadSheetX15           = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
+	NameSpaceSpreadSheetExcel2006Main = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
+	NameSpaceMacExcel2008Main         = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
 )
 
 // Source relationship and namespace.
@@ -37,15 +47,6 @@ const (
 	SourceRelationshipPivotCache                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
 	SourceRelationshipSharedStrings              = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
 	SourceRelationshipVBAProject                 = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
-	SourceRelationshipChart201506                = "http://schemas.microsoft.com/office/drawing/2015/06/chart"
-	SourceRelationshipChart20070802              = "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"
-	SourceRelationshipChart2014                  = "http://schemas.microsoft.com/office/drawing/2014/chart"
-	NameSpaceDrawingML                           = "http://schemas.openxmlformats.org/drawingml/2006/main"
-	NameSpaceDrawingMLChart                      = "http://schemas.openxmlformats.org/drawingml/2006/chart"
-	NameSpaceDrawingMLSpreadSheet                = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
-	NameSpaceSpreadSheetX15                      = "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"
-	NameSpaceSpreadSheetExcel2006Main            = "http://schemas.microsoft.com/office/excel/2006/main"
-	NameSpaceMacExcel2008Main                    = "http://schemas.microsoft.com/office/mac/excel/2008/main"
 	NameSpaceXML                                 = "http://www.w3.org/XML/1998/namespace"
 	NameSpaceXMLSchemaInstance                   = "http://www.w3.org/2001/XMLSchema-instance"
 	StrictSourceRelationship                     = "http://purl.oclc.org/ooxml/officeDocument/relationships"
@@ -88,7 +89,11 @@ const (
 
 // Excel specifications and limits
 const (
-	FileNameLength       = 207
+	MaxFontFamilyLength  = 31
+	MaxFontSize          = 409
+	MaxFileNameLength    = 207
+	MaxColumnWidth       = 255
+	MaxRowHeight         = 409
 	TotalRows            = 1048576
 	TotalColumns         = 16384
 	TotalSheetHyperlinks = 65529

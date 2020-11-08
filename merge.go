@@ -97,6 +97,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 	} else {
 		xlsx.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ref}}}
 	}
+	xlsx.MergeCells.Count = len(xlsx.MergeCells.Cells)
 	return err
 }
 
@@ -146,6 +147,7 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 		i++
 	}
 	xlsx.MergeCells.Cells = xlsx.MergeCells.Cells[:i]
+	xlsx.MergeCells.Count = len(xlsx.MergeCells.Cells)
 	return nil
 }
 

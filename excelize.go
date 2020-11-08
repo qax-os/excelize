@@ -24,12 +24,15 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/html/charset"
 )
 
 // File define a populated spreadsheet file struct.
 type File struct {
+	sync.Mutex
+	options          *Options
 	xmlAttr          map[string][]xml.Attr
 	checked          map[string]bool
 	sheetMap         map[string]string
@@ -54,15 +57,28 @@ type File struct {
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
-// OpenFile take the name of an spreadsheet file and returns a populated
-// spreadsheet file struct for it.
-func OpenFile(filename string) (*File, error) {
+// Options define the options for open spreadsheet.
+type Options struct {
+	Password string
+}
+
+// OpenFile take the name of an spreadsheet file and returns a populated spreadsheet file struct
+// for it. For example, open spreadsheet with password protection:
+//
+//    f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
+//    if err != nil {
+//        return
+//    }
+//
+// Note that the excelize just support decrypt and not support encrypt currently, the spreadsheet
+// saved by Save and SaveAs will be without password unprotected.
+func OpenFile(filename string, opt ...Options) (*File, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	f, err := OpenReader(file)
+	f, err := OpenReader(file, opt...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,25 +105,23 @@ func newFile() *File {
 
 // OpenReader read data stream from io.Reader and return a populated
 // spreadsheet file.
-func OpenReader(r io.Reader) (*File, error) {
+func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-
+	f := newFile()
+	if bytes.Contains(b, oleIdentifier) {
+		for _, o := range opt {
+			f.options = &o
+		}
+		b, err = Decrypt(b, f.options)
+		if err != nil {
+			return nil, fmt.Errorf("decrypted file failed")
+		}
+	}
 	zr, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if err != nil {
-		identifier := []byte{
-			// checking protect workbook by [MS-OFFCRYPTO] - v20181211 3.1 FeatureIdentifier
-			0x3c, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x69, 0x00, 0x63, 0x00, 0x72, 0x00, 0x6f, 0x00, 0x73, 0x00,
-			0x6f, 0x00, 0x66, 0x00, 0x74, 0x00, 0x2e, 0x00, 0x43, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x74, 0x00,
-			0x61, 0x00, 0x69, 0x00, 0x6e, 0x00, 0x65, 0x00, 0x72, 0x00, 0x2e, 0x00, 0x44, 0x00, 0x61, 0x00,
-			0x74, 0x00, 0x61, 0x00, 0x53, 0x00, 0x70, 0x00, 0x61, 0x00, 0x63, 0x00, 0x65, 0x00, 0x73, 0x00,
-			0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-		}
-		if bytes.Contains(b, identifier) {
-			return nil, errors.New("not support encrypted file currently")
-		}
 		return nil, err
 	}
 
@@ -115,7 +129,6 @@ func OpenReader(r io.Reader) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := newFile()
 	f.SheetCount, f.XLSX = sheetCount, file
 	f.CalcChain = f.calcChainReader()
 	f.sheetMap = f.getSheetMap()
@@ -153,6 +166,8 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
+	f.Lock()
+	defer f.Unlock()
 	var (
 		name string
 		ok   bool
@@ -323,7 +338,7 @@ func (f *File) AddVBAProject(bin string) error {
 	var err error
 	// Check vbaProject.bin exists first.
 	if _, err = os.Stat(bin); os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("stat %s: no such file or directory", bin)
 	}
 	if path.Ext(bin) != ".bin" {
 		return errors.New("unsupported VBA project extension")

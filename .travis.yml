@@ -8,6 +8,7 @@ go:
   - 1.12.x
   - 1.13.x
   - 1.14.x
+  - 1.15.x
 
 os:
   - linux
@@ -20,7 +21,7 @@ env:
 
 script:
   - env GO111MODULE=on go vet ./...
-  - env GO111MODULE=on go test ./... -v -coverprofile=coverage.txt -covermode=atomic
+  - env GO111MODULE=on go test -v -race ./... -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

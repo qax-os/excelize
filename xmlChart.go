@@ -18,10 +18,7 @@ import "encoding/xml"
 // charts, pie charts, scatter charts, or other types of charts.
 type xlsxChartSpace struct {
 	XMLName        xml.Name        `xml:"http://schemas.openxmlformats.org/drawingml/2006/chart chartSpace"`
-	XMLNSc         string          `xml:"xmlns:c,attr"`
 	XMLNSa         string          `xml:"xmlns:a,attr"`
-	XMLNSr         string          `xml:"xmlns:r,attr"`
-	XMLNSc16r2     string          `xml:"xmlns:c16r2,attr"`
 	Date1904       *attrValBool    `xml:"date1904"`
 	Lang           *attrValString  `xml:"lang"`
 	RoundedCorners *attrValBool    `xml:"roundedCorners"`

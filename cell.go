@@ -18,7 +18,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -32,8 +31,6 @@ const (
 	// STCellFormulaTypeShared defined the formula is part of a shared formula.
 	STCellFormulaTypeShared = "shared"
 )
-
-var rwMutex sync.RWMutex
 
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in XLSX file. If it is possible to apply a format
@@ -181,8 +178,6 @@ func setCellDuration(value time.Duration) (t string, v string) {
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) error {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -204,8 +199,6 @@ func setCellInt(value int) (t string, v string) {
 // SetCellBool provides a function to set bool type value of a cell by given
 // worksheet name, cell name and cell value.
 func (f *File) SetCellBool(sheet, axis string, value bool) error {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -239,8 +232,6 @@ func setCellBool(value bool) (t string, v string) {
 //    f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 //
 func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int) error {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -262,8 +253,6 @@ func setCellFloat(value float64, prec, bitSize int) (t string, v string) {
 // SetCellStr provides a function to set string type value of a cell. Total
 // number of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) error {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -291,6 +280,8 @@ func (f *File) setCellString(value string) (t string, v string) {
 // setSharedString provides a function to add string to the share string table.
 func (f *File) setSharedString(val string) int {
 	sst := f.sharedStringsReader()
+	f.Lock()
+	defer f.Unlock()
 	if i, ok := f.sharedStringsMap[val]; ok {
 		return i
 	}
@@ -371,8 +362,6 @@ type FormulaOpts struct {
 // SetCellFormula provides a function to set cell formula by given string and
 // worksheet name.
 func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) error {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
 	xlsx, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -528,7 +517,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 //        }
 //        if err := f.SetCellRichText("Sheet1", "A1", []excelize.RichTextRun{
 //            {
-//                Text: "blod",
+//                Text: "bold",
 //                Font: &excelize.Font{
 //                    Bold:   true,
 //                    Color:  "2354e8",
@@ -697,6 +686,8 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 
 // getCellInfo does common preparation for all SetCell* methods.
 func (f *File) prepareCell(xlsx *xlsxWorksheet, sheet, cell string) (*xlsxC, int, int, error) {
+	xlsx.Lock()
+	defer xlsx.Unlock()
 	var err error
 	cell, err = f.mergeCellsParser(xlsx, cell)
 	if err != nil {
@@ -727,6 +718,9 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 	if err != nil {
 		return "", err
 	}
+
+	xlsx.Lock()
+	defer xlsx.Unlock()
 
 	lastRowNum := 0
 	if l := len(xlsx.SheetData.Row); l > 0 {
