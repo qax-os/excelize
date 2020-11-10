@@ -24,7 +24,7 @@ func BenchmarkWrite(b *testing.B) {
 				}
 			}
 		}
-		// Save xlsx file by the given path.
+		// Save spreadsheet by the given path.
 		err := f.SaveAs("./test.xlsx")
 		if err != nil {
 			b.Error(err)

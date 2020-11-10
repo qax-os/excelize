@@ -11,8 +11,8 @@ import (
 )
 
 func TestChartSize(t *testing.T) {
-	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(0)
+	f := NewFile()
+	sheet1 := f.GetSheetName(0)
 
 	categories := map[string]string{
 		"A2": "Small",
@@ -23,7 +23,7 @@ func TestChartSize(t *testing.T) {
 		"D1": "Pear",
 	}
 	for cell, v := range categories {
-		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
+		assert.NoError(t, f.SetCellValue(sheet1, cell, v))
 	}
 
 	values := map[string]int{
@@ -38,10 +38,10 @@ func TestChartSize(t *testing.T) {
 		"D4": 8,
 	}
 	for cell, v := range values {
-		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
+		assert.NoError(t, f.SetCellValue(sheet1, cell, v))
 	}
 
-	assert.NoError(t, xlsx.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},`+
+	assert.NoError(t, f.AddChart("Sheet1", "E4", `{"type":"col3DClustered","dimension":{"width":640, "height":480},`+
 		`"series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},`+
 		`{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},`+
 		`{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],`+
@@ -49,8 +49,8 @@ func TestChartSize(t *testing.T) {
 
 	var buffer bytes.Buffer
 
-	// Save xlsx file by the given path.
-	assert.NoError(t, xlsx.Write(&buffer))
+	// Save spreadsheet by the given path.
+	assert.NoError(t, f.Write(&buffer))
 
 	newFile, err := OpenReader(&buffer)
 	assert.NoError(t, err)
@@ -256,8 +256,8 @@ func TestDeleteChart(t *testing.T) {
 
 func TestChartWithLogarithmicBase(t *testing.T) {
 	// Create test XLSX file with data
-	xlsx := NewFile()
-	sheet1 := xlsx.GetSheetName(0)
+	f := NewFile()
+	sheet1 := f.GetSheetName(0)
 	categories := map[string]float64{
 		"A1":  1,
 		"A2":  2,
@@ -281,46 +281,46 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		"B10": 5000,
 	}
 	for cell, v := range categories {
-		assert.NoError(t, xlsx.SetCellValue(sheet1, cell, v))
+		assert.NoError(t, f.SetCellValue(sheet1, cell, v))
 	}
 
 	// Add two chart, one without and one with log scaling
-	assert.NoError(t, xlsx.AddChart(sheet1, "C1",
+	assert.NoError(t, f.AddChart(sheet1, "C1",
 		`{"type":"line","dimension":{"width":640, "height":480},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
 			`"title":{"name":"Line chart without log scaling"}}`))
-	assert.NoError(t, xlsx.AddChart(sheet1, "M1",
+	assert.NoError(t, f.AddChart(sheet1, "M1",
 		`{"type":"line","dimension":{"width":640, "height":480},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
 			`"y_axis":{"logbase":10.5},`+
 			`"title":{"name":"Line chart with log 10 scaling"}}`))
-	assert.NoError(t, xlsx.AddChart(sheet1, "A25",
+	assert.NoError(t, f.AddChart(sheet1, "A25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
 			`"y_axis":{"logbase":1.9},`+
 			`"title":{"name":"Line chart with log 1.9 scaling"}}`))
-	assert.NoError(t, xlsx.AddChart(sheet1, "F25",
+	assert.NoError(t, f.AddChart(sheet1, "F25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
 			`"y_axis":{"logbase":2},`+
 			`"title":{"name":"Line chart with log 2 scaling"}}`))
-	assert.NoError(t, xlsx.AddChart(sheet1, "K25",
+	assert.NoError(t, f.AddChart(sheet1, "K25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
 			`"y_axis":{"logbase":1000.1},`+
 			`"title":{"name":"Line chart with log 1000.1 scaling"}}`))
-	assert.NoError(t, xlsx.AddChart(sheet1, "P25",
+	assert.NoError(t, f.AddChart(sheet1, "P25",
 		`{"type":"line","dimension":{"width":320, "height":240},`+
 			`"series":[{"name":"value","categories":"Sheet1!$A$1:$A$19","values":"Sheet1!$B$1:$B$10"}],`+
 			`"y_axis":{"logbase":1000},`+
 			`"title":{"name":"Line chart with log 1000 scaling"}}`))
 
 	// Export XLSX file for human confirmation
-	assert.NoError(t, xlsx.SaveAs(filepath.Join("test", "TestChartWithLogarithmicBase10.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestChartWithLogarithmicBase10.xlsx")))
 
 	// Write the XLSX file to a buffer
 	var buffer bytes.Buffer
-	assert.NoError(t, xlsx.Write(&buffer))
+	assert.NoError(t, f.Write(&buffer))
 
 	// Read back the XLSX file from the buffer
 	newFile, err := OpenReader(&buffer)

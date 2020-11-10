@@ -527,7 +527,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //            fmt.Println(err)
 //            return
 //        }
-//        // Save xlsx file by the given path.
+//        // Save spreadsheet by the given path.
 //        if err := f.SaveAs("Book1.xlsx"); err != nil {
 //            fmt.Println(err)
 //        }
@@ -725,7 +725,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //            fmt.Println(err)
 //            return
 //        }
-//        // Save xlsx file by the given path.
+//        // Save spreadsheet file by the given path.
 //        if err := f.SaveAs("Book1.xlsx"); err != nil {
 //            fmt.Println(err)
 //        }
@@ -733,7 +733,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	// Read sheet data.
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -745,7 +745,7 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	drawingID := f.countDrawings() + 1
 	chartID := f.countCharts() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
 	err = f.addDrawingChart(sheet, drawingXML, cell, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)

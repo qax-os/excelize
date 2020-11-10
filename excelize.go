@@ -166,7 +166,7 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
+func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	f.Lock()
 	defer f.Unlock()
 	var (
@@ -178,18 +178,18 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 		err = fmt.Errorf("sheet %s is not exist", sheet)
 		return
 	}
-	if xlsx = f.Sheet[name]; f.Sheet[name] == nil {
+	if ws = f.Sheet[name]; f.Sheet[name] == nil {
 		if strings.HasPrefix(name, "xl/chartsheets") {
 			err = fmt.Errorf("sheet %s is chart sheet", sheet)
 			return
 		}
-		xlsx = new(xlsxWorksheet)
+		ws = new(xlsxWorksheet)
 		if _, ok := f.xmlAttr[name]; !ok {
 			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
 			f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
 		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
-			Decode(xlsx); err != nil && err != io.EOF {
+			Decode(ws); err != nil && err != io.EOF {
 			err = fmt.Errorf("xml decode error: %s", err)
 			return
 		}
@@ -198,13 +198,13 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 			f.checked = make(map[string]bool)
 		}
 		if ok = f.checked[name]; !ok {
-			checkSheet(xlsx)
-			if err = checkRow(xlsx); err != nil {
+			checkSheet(ws)
+			if err = checkRow(ws); err != nil {
 				return
 			}
 			f.checked[name] = true
 		}
-		f.Sheet[name] = xlsx
+		f.Sheet[name] = ws
 	}
 
 	return
@@ -212,9 +212,9 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 
 // checkSheet provides a function to fill each row element and make that is
 // continuous in a worksheet of XML.
-func checkSheet(xlsx *xlsxWorksheet) {
+func checkSheet(ws *xlsxWorksheet) {
 	var row int
-	for _, r := range xlsx.SheetData.Row {
+	for _, r := range ws.SheetData.Row {
 		if r.R != 0 && r.R > row {
 			row = r.R
 			continue
@@ -223,7 +223,7 @@ func checkSheet(xlsx *xlsxWorksheet) {
 	}
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
 	row = 0
-	for _, r := range xlsx.SheetData.Row {
+	for _, r := range ws.SheetData.Row {
 		if r.R != 0 {
 			sheetData.Row[r.R-1] = r
 			row = r.R
@@ -236,7 +236,7 @@ func checkSheet(xlsx *xlsxWorksheet) {
 	for i := 1; i <= row; i++ {
 		sheetData.Row[i-1].R = i
 	}
-	xlsx.SheetData = sheetData
+	ws.SheetData = sheetData
 }
 
 // addRels provides a function to add relationships by given XML path,

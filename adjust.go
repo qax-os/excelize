@@ -35,30 +35,30 @@ const (
 // TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
 //
 func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	if dir == rows {
-		f.adjustRowDimensions(xlsx, num, offset)
+		f.adjustRowDimensions(ws, num, offset)
 	} else {
-		f.adjustColDimensions(xlsx, num, offset)
+		f.adjustColDimensions(ws, num, offset)
 	}
-	f.adjustHyperlinks(xlsx, sheet, dir, num, offset)
-	if err = f.adjustMergeCells(xlsx, dir, num, offset); err != nil {
+	f.adjustHyperlinks(ws, sheet, dir, num, offset)
+	if err = f.adjustMergeCells(ws, dir, num, offset); err != nil {
 		return err
 	}
-	if err = f.adjustAutoFilter(xlsx, dir, num, offset); err != nil {
+	if err = f.adjustAutoFilter(ws, dir, num, offset); err != nil {
 		return err
 	}
 	if err = f.adjustCalcChain(dir, num, offset); err != nil {
 		return err
 	}
-	checkSheet(xlsx)
-	_ = checkRow(xlsx)
+	checkSheet(ws)
+	_ = checkRow(ws)
 
-	if xlsx.MergeCells != nil && len(xlsx.MergeCells.Cells) == 0 {
-		xlsx.MergeCells = nil
+	if ws.MergeCells != nil && len(ws.MergeCells.Cells) == 0 {
+		ws.MergeCells = nil
 	}
 
 	return nil
@@ -66,13 +66,13 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 
 // adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustColDimensions(xlsx *xlsxWorksheet, col, offset int) {
-	for rowIdx := range xlsx.SheetData.Row {
-		for colIdx, v := range xlsx.SheetData.Row[rowIdx].C {
+func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) {
+	for rowIdx := range ws.SheetData.Row {
+		for colIdx, v := range ws.SheetData.Row[rowIdx].C {
 			cellCol, cellRow, _ := CellNameToCoordinates(v.R)
 			if col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
-					xlsx.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
+					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
 				}
 			}
 		}
@@ -81,9 +81,9 @@ func (f *File) adjustColDimensions(xlsx *xlsxWorksheet, col, offset int) {
 
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustRowDimensions(xlsx *xlsxWorksheet, row, offset int) {
-	for i := range xlsx.SheetData.Row {
-		r := &xlsx.SheetData.Row[i]
+func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) {
+	for i := range ws.SheetData.Row {
+		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
 			f.ajustSingleRowDimensions(r, newRow)
 		}
@@ -101,38 +101,35 @@ func (f *File) ajustSingleRowDimensions(r *xlsxRow, num int) {
 
 // adjustHyperlinks provides a function to update hyperlinks when inserting or
 // deleting rows or columns.
-func (f *File) adjustHyperlinks(xlsx *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) {
+func (f *File) adjustHyperlinks(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) {
 	// short path
-	if xlsx.Hyperlinks == nil || len(xlsx.Hyperlinks.Hyperlink) == 0 {
+	if ws.Hyperlinks == nil || len(ws.Hyperlinks.Hyperlink) == 0 {
 		return
 	}
 
 	// order is important
 	if offset < 0 {
-		for i := len(xlsx.Hyperlinks.Hyperlink) - 1; i >= 0; i-- {
-			linkData := xlsx.Hyperlinks.Hyperlink[i]
+		for i := len(ws.Hyperlinks.Hyperlink) - 1; i >= 0; i-- {
+			linkData := ws.Hyperlinks.Hyperlink[i]
 			colNum, rowNum, _ := CellNameToCoordinates(linkData.Ref)
 
 			if (dir == rows && num == rowNum) || (dir == columns && num == colNum) {
 				f.deleteSheetRelationships(sheet, linkData.RID)
-				if len(xlsx.Hyperlinks.Hyperlink) > 1 {
-					xlsx.Hyperlinks.Hyperlink = append(xlsx.Hyperlinks.Hyperlink[:i],
-						xlsx.Hyperlinks.Hyperlink[i+1:]...)
+				if len(ws.Hyperlinks.Hyperlink) > 1 {
+					ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink[:i],
+						ws.Hyperlinks.Hyperlink[i+1:]...)
 				} else {
-					xlsx.Hyperlinks = nil
+					ws.Hyperlinks = nil
 				}
 			}
 		}
 	}
-
-	if xlsx.Hyperlinks == nil {
+	if ws.Hyperlinks == nil {
 		return
 	}
-
-	for i := range xlsx.Hyperlinks.Hyperlink {
-		link := &xlsx.Hyperlinks.Hyperlink[i] // get reference
+	for i := range ws.Hyperlinks.Hyperlink {
+		link := &ws.Hyperlinks.Hyperlink[i] // get reference
 		colNum, rowNum, _ := CellNameToCoordinates(link.Ref)
-
 		if dir == rows {
 			if rowNum >= num {
 				link.Ref, _ = CoordinatesToCellName(colNum, rowNum+offset)
@@ -147,21 +144,21 @@ func (f *File) adjustHyperlinks(xlsx *xlsxWorksheet, sheet string, dir adjustDir
 
 // adjustAutoFilter provides a function to update the auto filter when
 // inserting or deleting rows or columns.
-func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, offset int) error {
-	if xlsx.AutoFilter == nil {
+func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
+	if ws.AutoFilter == nil {
 		return nil
 	}
 
-	coordinates, err := f.areaRefToCoordinates(xlsx.AutoFilter.Ref)
+	coordinates, err := f.areaRefToCoordinates(ws.AutoFilter.Ref)
 	if err != nil {
 		return err
 	}
 	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
 	if (dir == rows && y1 == num && offset < 0) || (dir == columns && x1 == num && x2 == num) {
-		xlsx.AutoFilter = nil
-		for rowIdx := range xlsx.SheetData.Row {
-			rowData := &xlsx.SheetData.Row[rowIdx]
+		ws.AutoFilter = nil
+		for rowIdx := range ws.SheetData.Row {
+			rowData := &ws.SheetData.Row[rowIdx]
 			if rowData.R > y1 && rowData.R <= y2 {
 				rowData.Hidden = false
 			}
@@ -172,7 +169,7 @@ func (f *File) adjustAutoFilter(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 	coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
 	x1, y1, x2, y2 = coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
-	if xlsx.AutoFilter.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
+	if ws.AutoFilter.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
 		return err
 	}
 	return nil
@@ -251,13 +248,13 @@ func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
 
 // adjustMergeCells provides a function to update merged cells when inserting
 // or deleting rows or columns.
-func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, offset int) error {
-	if xlsx.MergeCells == nil {
+func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
+	if ws.MergeCells == nil {
 		return nil
 	}
 
-	for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-		areaData := xlsx.MergeCells.Cells[i]
+	for i := 0; i < len(ws.MergeCells.Cells); i++ {
+		areaData := ws.MergeCells.Cells[i]
 		coordinates, err := f.areaRefToCoordinates(areaData.Ref)
 		if err != nil {
 			return err
@@ -265,21 +262,21 @@ func (f *File) adjustMergeCells(xlsx *xlsxWorksheet, dir adjustDirection, num, o
 		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 		if dir == rows {
 			if y1 == num && y2 == num && offset < 0 {
-				f.deleteMergeCell(xlsx, i)
+				f.deleteMergeCell(ws, i)
 				i--
 			}
 			y1 = f.adjustMergeCellsHelper(y1, num, offset)
 			y2 = f.adjustMergeCellsHelper(y2, num, offset)
 		} else {
 			if x1 == num && x2 == num && offset < 0 {
-				f.deleteMergeCell(xlsx, i)
+				f.deleteMergeCell(ws, i)
 				i--
 			}
 			x1 = f.adjustMergeCellsHelper(x1, num, offset)
 			x2 = f.adjustMergeCellsHelper(x2, num, offset)
 		}
 		if x1 == x2 && y1 == y2 {
-			f.deleteMergeCell(xlsx, i)
+			f.deleteMergeCell(ws, i)
 			i--
 		}
 		if areaData.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
@@ -304,10 +301,10 @@ func (f *File) adjustMergeCellsHelper(pivot, num, offset int) int {
 }
 
 // deleteMergeCell provides a function to delete merged cell by given index.
-func (f *File) deleteMergeCell(sheet *xlsxWorksheet, idx int) {
-	if len(sheet.MergeCells.Cells) > idx {
-		sheet.MergeCells.Cells = append(sheet.MergeCells.Cells[:idx], sheet.MergeCells.Cells[idx+1:]...)
-		sheet.MergeCells.Count = len(sheet.MergeCells.Cells)
+func (f *File) deleteMergeCell(ws *xlsxWorksheet, idx int) {
+	if len(ws.MergeCells.Cells) > idx {
+		ws.MergeCells.Cells = append(ws.MergeCells.Cells[:idx], ws.MergeCells.Cells[idx+1:]...)
+		ws.MergeCells.Count = len(ws.MergeCells.Cells)
 	}
 }
 

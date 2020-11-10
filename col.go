@@ -224,16 +224,16 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 		return visible, err
 	}
 
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return false, err
 	}
-	if xlsx.Cols == nil {
+	if ws.Cols == nil {
 		return visible, err
 	}
 
-	for c := range xlsx.Cols.Col {
-		colData := &xlsx.Cols.Col[c]
+	for c := range ws.Cols.Col {
+		colData := &ws.Cols.Col[c]
 		if colData.Min <= colNum && colNum <= colData.Max {
 			visible = !colData.Hidden
 		}
@@ -271,7 +271,7 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	if max < min {
 		min, max = max, min
 	}
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -282,13 +282,13 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 		Hidden:      !visible,
 		CustomWidth: true,
 	}
-	if xlsx.Cols == nil {
+	if ws.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
-		xlsx.Cols = &cols
+		ws.Cols = &cols
 		return nil
 	}
-	xlsx.Cols.Col = flatCols(colData, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+	ws.Cols.Col = flatCols(colData, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
 		fc.Collapsed = c.Collapsed
 		fc.CustomWidth = c.CustomWidth
@@ -313,15 +313,15 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 	if err != nil {
 		return level, err
 	}
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return 0, err
 	}
-	if xlsx.Cols == nil {
+	if ws.Cols == nil {
 		return level, err
 	}
-	for c := range xlsx.Cols.Col {
-		colData := &xlsx.Cols.Col[c]
+	for c := range ws.Cols.Col {
+		colData := &ws.Cols.Col[c]
 		if colData.Min <= colNum && colNum <= colData.Max {
 			level = colData.OutlineLevel
 		}
@@ -349,17 +349,17 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 		OutlineLevel: level,
 		CustomWidth:  true,
 	}
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if xlsx.Cols == nil {
+	if ws.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
-		xlsx.Cols = &cols
+		ws.Cols = &cols
 		return err
 	}
-	xlsx.Cols.Col = flatCols(colData, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+	ws.Cols.Col = flatCols(colData, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
 		fc.Collapsed = c.Collapsed
 		fc.CustomWidth = c.CustomWidth
@@ -384,7 +384,7 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 //    err = f.SetColStyle("Sheet1", "C:F", style)
 //
 func (f *File) SetColStyle(sheet, columns string, styleID int) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -408,15 +408,15 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if max < min {
 		min, max = max, min
 	}
-	if xlsx.Cols == nil {
-		xlsx.Cols = &xlsxCols{}
+	if ws.Cols == nil {
+		ws.Cols = &xlsxCols{}
 	}
-	xlsx.Cols.Col = flatCols(xlsxCol{
+	ws.Cols.Col = flatCols(xlsxCol{
 		Min:   min,
 		Max:   max,
 		Width: 9,
 		Style: styleID,
-	}, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+	}, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
 		fc.Collapsed = c.Collapsed
 		fc.CustomWidth = c.CustomWidth
@@ -451,7 +451,7 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 		min, max = max, min
 	}
 
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -461,13 +461,13 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 		Width:       width,
 		CustomWidth: true,
 	}
-	if xlsx.Cols == nil {
+	if ws.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, col)
-		xlsx.Cols = &cols
+		ws.Cols = &cols
 		return err
 	}
-	xlsx.Cols.Col = flatCols(col, xlsx.Cols.Col, func(fc, c xlsxCol) xlsxCol {
+	ws.Cols.Col = flatCols(col, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
 		fc.Collapsed = c.Collapsed
 		fc.Hidden = c.Hidden
@@ -623,13 +623,13 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	if err != nil {
 		return defaultColWidthPixels, err
 	}
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return defaultColWidthPixels, err
 	}
-	if xlsx.Cols != nil {
+	if ws.Cols != nil {
 		var width float64
-		for _, v := range xlsx.Cols.Col {
+		for _, v := range ws.Cols.Col {
 			if v.Min <= colNum && colNum <= v.Max {
 				width = v.Width
 			}
@@ -670,12 +670,12 @@ func (f *File) RemoveCol(sheet, col string) error {
 		return err
 	}
 
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	for rowIdx := range xlsx.SheetData.Row {
-		rowData := &xlsx.SheetData.Row[rowIdx]
+	for rowIdx := range ws.SheetData.Row {
+		rowData := &ws.SheetData.Row[rowIdx]
 		for colIdx := range rowData.C {
 			colName, _, _ := SplitCellName(rowData.C[colIdx].R)
 			if colName == col {

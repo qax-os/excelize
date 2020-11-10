@@ -323,18 +323,18 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 // autoFilter provides a function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
 func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *formatAutoFilter) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if xlsx.SheetPr != nil {
-		xlsx.SheetPr.FilterMode = true
+	if ws.SheetPr != nil {
+		ws.SheetPr.FilterMode = true
 	}
-	xlsx.SheetPr = &xlsxSheetPr{FilterMode: true}
+	ws.SheetPr = &xlsxSheetPr{FilterMode: true}
 	filter := &xlsxAutoFilter{
 		Ref: ref,
 	}
-	xlsx.AutoFilter = filter
+	ws.AutoFilter = filter
 	if formatSet.Column == "" || formatSet.Expression == "" {
 		return nil
 	}
@@ -361,7 +361,7 @@ func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *forma
 		return err
 	}
 	f.writeAutoFilter(filter, expressions, tokens)
-	xlsx.AutoFilter = filter
+	ws.AutoFilter = filter
 	return nil
 }
 

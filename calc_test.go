@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/xuri/efp"
 )
 
 func TestCalcCellValue(t *testing.T) {
@@ -852,6 +853,18 @@ func TestCalcCellValue(t *testing.T) {
 	assert.EqualError(t, err, "not support UNSUPPORT function")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCalcCellValue.xlsx")))
 
+}
+
+func TestCalculate(t *testing.T) {
+	err := `strconv.ParseFloat: parsing "string": invalid syntax`
+	opd := NewStack()
+	opd.Push(efp.Token{TValue: "string"})
+	opt := efp.Token{TValue: "-", TType: efp.TokenTypeOperatorPrefix}
+	assert.EqualError(t, calculate(opd, opt), err)
+	opd.Push(efp.Token{TValue: "string"})
+	opd.Push(efp.Token{TValue: "string"})
+	opt = efp.Token{TValue: "-", TType: efp.TokenTypeOperatorInfix}
+	assert.EqualError(t, calculate(opd, opt), err)
 }
 
 func TestCalcCellValueWithDefinedName(t *testing.T) {

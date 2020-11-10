@@ -91,7 +91,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		return err
 	}
 	// Read sheet data.
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -99,9 +99,9 @@ func (f *File) AddComment(sheet, cell, format string) error {
 	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(commentID) + ".vml"
 	sheetRelationshipsComments := "../comments" + strconv.Itoa(commentID) + ".xml"
 	sheetRelationshipsDrawingVML := "../drawings/vmlDrawing" + strconv.Itoa(commentID) + ".vml"
-	if xlsx.LegacyDrawing != nil {
+	if ws.LegacyDrawing != nil {
 		// The worksheet already has a comments relationships, use the relationships drawing ../drawings/vmlDrawing%d.vml.
-		sheetRelationshipsDrawingVML = f.getSheetRelationshipsTargetByID(sheet, xlsx.LegacyDrawing.RID)
+		sheetRelationshipsDrawingVML = f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
 		commentID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
 		drawingVML = strings.Replace(sheetRelationshipsDrawingVML, "..", "xl", -1)
 	} else {

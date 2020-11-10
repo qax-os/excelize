@@ -24,11 +24,11 @@ import (
 
 // prepareDrawing provides a function to prepare drawing ID and XML by given
 // drawingID, worksheet name and default drawingXML.
-func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
+func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	if xlsx.Drawing != nil {
+	if ws.Drawing != nil {
 		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
-		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
 		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
@@ -42,13 +42,13 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 
 // prepareChartSheetDrawing provides a function to prepare drawing ID and XML
 // by given drawingID, worksheet name and default drawingXML.
-func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, sheet string) {
+func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	// Only allow one chart in a chartsheet.
 	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 	f.addSheetNameSpace(sheet, SourceRelationship)
-	xlsx.Drawing = &xlsxDrawing{
+	cs.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 	return

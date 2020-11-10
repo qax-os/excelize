@@ -21,14 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCurrency(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	assert.NoError(t, err)
-	// f.NewSheet("Sheet3")
-	go f.SetCellValue("Sheet1", "A1", "value")
-	go f.SetCellValue("Sheet2", "A1", "value")
-}
-
 func TestOpenFile(t *testing.T) {
 	// Test update the spreadsheet file.
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
