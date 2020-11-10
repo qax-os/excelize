@@ -51,7 +51,7 @@ func main() {
     f.SetCellValue("Sheet1", "B2", 100)
     // Set active sheet of the workbook.
     f.SetActiveSheet(index)
-    // Save xlsx file by the given path.
+    // Save spreadsheet by the given path.
     if err := f.SaveAs("Book1.xlsx"); err != nil {
         fmt.Println(err)
     }
@@ -124,7 +124,7 @@ func main() {
         fmt.Println(err)
         return
     }
-    // Save xlsx file by the given path.
+    // Save spreadsheet by the given path.
     if err := f.SaveAs("Book1.xlsx"); err != nil {
         fmt.Println(err)
     }
@@ -163,7 +163,7 @@ func main() {
     if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "print_obj": true, "lock_aspect_ratio": false, "locked": false}`); err != nil {
         fmt.Println(err)
     }
-    // Save the xlsx file with the origin path.
+    // Save the spreadsheet with the origin path.
     if err = f.Save(); err != nil {
         fmt.Println(err)
     }

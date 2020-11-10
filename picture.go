@@ -145,14 +145,14 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		return err
 	}
 	// Read sheet data.
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	mediaStr := ".." + strings.TrimPrefix(f.addMedia(file, ext), "xl")
 	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
@@ -459,14 +459,14 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	}
 	col--
 	row--
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return "", nil, err
 	}
-	if xlsx.Drawing == nil {
+	if ws.Drawing == nil {
 		return "", nil, err
 	}
-	target := f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.Replace(target, "..", "xl", -1)
 	_, ok := f.XLSX[drawingXML]
 	if !ok {

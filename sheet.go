@@ -202,7 +202,7 @@ func (f *File) setContentTypes(partName, contentType string) {
 
 // setSheet provides a function to update sheet property by given index.
 func (f *File) setSheet(index int, name string) {
-	xlsx := xlsxWorksheet{
+	ws := xlsxWorksheet{
 		Dimension: &xlsxDimension{Ref: "A1"},
 		SheetViews: &xlsxSheetViews{
 			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
@@ -210,7 +210,7 @@ func (f *File) setSheet(index int, name string) {
 	}
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = path
-	f.Sheet[path] = &xlsx
+	f.Sheet[path] = &ws
 	f.xmlAttr[path] = append(f.xmlAttr[path], NameSpaceSpreadSheet)
 }
 
@@ -277,24 +277,24 @@ func (f *File) SetActiveSheet(index int) {
 		}
 	}
 	for idx, name := range f.GetSheetList() {
-		xlsx, err := f.workSheetReader(name)
+		ws, err := f.workSheetReader(name)
 		if err != nil {
 			// Chartsheet or dialogsheet
 			return
 		}
-		if xlsx.SheetViews == nil {
-			xlsx.SheetViews = &xlsxSheetViews{
+		if ws.SheetViews == nil {
+			ws.SheetViews = &xlsxSheetViews{
 				SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
 			}
 		}
-		if len(xlsx.SheetViews.SheetView) > 0 {
-			xlsx.SheetViews.SheetView[0].TabSelected = false
+		if len(ws.SheetViews.SheetView) > 0 {
+			ws.SheetViews.SheetView[0].TabSelected = false
 		}
 		if index == idx {
-			if len(xlsx.SheetViews.SheetView) > 0 {
-				xlsx.SheetViews.SheetView[0].TabSelected = true
+			if len(ws.SheetViews.SheetView) > 0 {
+				ws.SheetViews.SheetView[0].TabSelected = true
 			} else {
-				xlsx.SheetViews.SheetView = append(xlsx.SheetViews.SheetView, xlsxSheetView{
+				ws.SheetViews.SheetView = append(ws.SheetViews.SheetView, xlsxSheetView{
 					TabSelected: true,
 				})
 			}
@@ -746,7 +746,7 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 //
 func (f *File) SetPanes(sheet, panes string) error {
 	fs, _ := parseFormatPanesSet(panes)
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -759,10 +759,10 @@ func (f *File) SetPanes(sheet, panes string) error {
 	if fs.Freeze {
 		p.State = "frozen"
 	}
-	xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Pane = p
+	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = p
 	if !(fs.Freeze) && !(fs.Split) {
-		if len(xlsx.SheetViews.SheetView) > 0 {
-			xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Pane = nil
+		if len(ws.SheetViews.SheetView) > 0 {
+			ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = nil
 		}
 	}
 	s := []*xlsxSelection{}
@@ -773,7 +773,7 @@ func (f *File) SetPanes(sheet, panes string) error {
 			SQRef:      p.SQRef,
 		})
 	}
-	xlsx.SheetViews.SheetView[len(xlsx.SheetViews.SheetView)-1].Selection = s
+	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Selection = s
 	return err
 }
 
@@ -1020,12 +1020,12 @@ func attrValToInt(name string, attrs []xml.Attr) (val int, err error) {
 // - No footer on the first page
 //
 func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	if settings == nil {
-		xlsx.HeaderFooter = nil
+		ws.HeaderFooter = nil
 		return err
 	}
 
@@ -1037,7 +1037,7 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 			return fmt.Errorf("field %s must be less than 255 characters", v.Type().Field(i).Name)
 		}
 	}
-	xlsx.HeaderFooter = &xlsxHeaderFooter{
+	ws.HeaderFooter = &xlsxHeaderFooter{
 		AlignWithMargins: settings.AlignWithMargins,
 		DifferentFirst:   settings.DifferentFirst,
 		DifferentOddEven: settings.DifferentOddEven,
@@ -1062,7 +1062,7 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 //    })
 //
 func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -1073,7 +1073,7 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error
 			SelectLockedCells: true,
 		}
 	}
-	xlsx.SheetProtection = &xlsxSheetProtection{
+	ws.SheetProtection = &xlsxSheetProtection{
 		AutoFilter:          settings.AutoFilter,
 		DeleteColumns:       settings.DeleteColumns,
 		DeleteRows:          settings.DeleteRows,
@@ -1092,18 +1092,18 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error
 		Sort:                settings.Sort,
 	}
 	if settings.Password != "" {
-		xlsx.SheetProtection.Password = genSheetPasswd(settings.Password)
+		ws.SheetProtection.Password = genSheetPasswd(settings.Password)
 	}
 	return err
 }
 
 // UnprotectSheet provides a function to unprotect an Excel worksheet.
 func (f *File) UnprotectSheet(sheet string) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	xlsx.SheetProtection = nil
+	ws.SheetProtection = nil
 	return err
 }
 
@@ -1494,19 +1494,19 @@ func (f *File) GroupSheets(sheets []string) error {
 		return errors.New("group worksheet must contain an active worksheet")
 	}
 	// check worksheet exists
-	ws := []*xlsxWorksheet{}
+	wss := []*xlsxWorksheet{}
 	for _, sheet := range sheets {
-		xlsx, err := f.workSheetReader(sheet)
+		worksheet, err := f.workSheetReader(sheet)
 		if err != nil {
 			return err
 		}
-		ws = append(ws, xlsx)
+		wss = append(wss, worksheet)
 	}
-	for _, s := range ws {
-		sheetViews := s.SheetViews.SheetView
+	for _, ws := range wss {
+		sheetViews := ws.SheetViews.SheetView
 		if len(sheetViews) > 0 {
 			for idx := range sheetViews {
-				s.SheetViews.SheetView[idx].TabSelected = true
+				ws.SheetViews.SheetView[idx].TabSelected = true
 			}
 			continue
 		}
@@ -1664,25 +1664,25 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 // fillSheetData ensures there are enough rows, and columns in the chosen
 // row to accept data. Missing rows are backfilled and given their row number
 // Uses the last populated row as a hint for the size of the next row to add
-func prepareSheetXML(xlsx *xlsxWorksheet, col int, row int) {
-	rowCount := len(xlsx.SheetData.Row)
+func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
+	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
 	var ht float64
 	var customHeight bool
-	if xlsx.SheetFormatPr != nil {
-		ht = xlsx.SheetFormatPr.DefaultRowHeight
+	if ws.SheetFormatPr != nil {
+		ht = ws.SheetFormatPr.DefaultRowHeight
 		customHeight = true
 	}
 	if rowCount > 0 {
-		sizeHint = len(xlsx.SheetData.Row[rowCount-1].C)
+		sizeHint = len(ws.SheetData.Row[rowCount-1].C)
 	}
 	if rowCount < row {
 		// append missing rows
 		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
-			xlsx.SheetData.Row = append(xlsx.SheetData.Row, xlsxRow{R: rowIdx + 1, CustomHeight: customHeight, Ht: ht, C: make([]xlsxC, 0, sizeHint)})
+			ws.SheetData.Row = append(ws.SheetData.Row, xlsxRow{R: rowIdx + 1, CustomHeight: customHeight, Ht: ht, C: make([]xlsxC, 0, sizeHint)})
 		}
 	}
-	rowData := &xlsx.SheetData.Row[row-1]
+	rowData := &ws.SheetData.Row[row-1]
 	fillColumns(rowData, col, row)
 }
 
@@ -1696,9 +1696,9 @@ func fillColumns(rowData *xlsxRow, col, row int) {
 	}
 }
 
-func makeContiguousColumns(xlsx *xlsxWorksheet, fromRow, toRow, colCount int) {
+func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
 	for ; fromRow < toRow; fromRow++ {
-		rowData := &xlsx.SheetData.Row[fromRow-1]
+		rowData := &ws.SheetData.Row[fromRow-1]
 		fillColumns(rowData, colCount, fromRow)
 	}
 }

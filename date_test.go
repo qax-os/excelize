@@ -17,7 +17,7 @@ var trueExpectedDateList = []dateTest{
 	{0.0000000000000000, time.Date(1899, time.December, 30, 0, 0, 0, 0, time.UTC)},
 	{25569.000000000000, time.Unix(0, 0).UTC()},
 
-	// Expected values extracted from real xlsx file
+	// Expected values extracted from real spreadsheet
 	{1.0000000000000000, time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)},
 	{1.0000115740740740, time.Date(1900, time.January, 1, 0, 0, 1, 0, time.UTC)},
 	{1.0006944444444446, time.Date(1900, time.January, 1, 0, 1, 0, 0, time.UTC)},

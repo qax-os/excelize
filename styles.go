@@ -27,8 +27,8 @@ import (
 )
 
 // Excel styles can reference number formats that are built-in, all of which
-// have an id less than 164. This is a possibly incomplete list comprised of
-// as many of them as I could find.
+// have an id less than 164. Note that this number format code list is under
+// English localization.
 var builtInNumFmt = map[int]string{
 	0:  "general",
 	1:  "0",
@@ -2580,15 +2580,15 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 // GetCellStyle provides a function to get cell style index by given worksheet
 // name and cell coordinates.
 func (f *File) GetCellStyle(sheet, axis string) (int, error) {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return 0, err
 	}
-	cellData, col, _, err := f.prepareCell(xlsx, sheet, axis)
+	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return 0, err
 	}
-	return f.prepareCellStyle(xlsx, col, cellData.S), err
+	return f.prepareCellStyle(ws, col, cellData.S), err
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given
@@ -2682,16 +2682,16 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 	vcolIdx := vcol - 1
 	vrowIdx := vrow - 1
 
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(xlsx, vcol, vrow)
-	makeContiguousColumns(xlsx, hrow, vrow, vcol)
+	prepareSheetXML(ws, vcol, vrow)
+	makeContiguousColumns(ws, hrow, vrow, vcol)
 
 	for r := hrowIdx; r <= vrowIdx; r++ {
 		for k := hcolIdx; k <= vcolIdx; k++ {
-			xlsx.SheetData.Row[r].C[k].S = styleID
+			ws.SheetData.Row[r].C[k].S = styleID
 		}
 	}
 	return err
@@ -2926,7 +2926,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 		"expression":      drawConfFmtExp,
 	}
 
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -2948,7 +2948,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 		}
 	}
 
-	xlsx.ConditionalFormatting = append(xlsx.ConditionalFormatting, &xlsxConditionalFormatting{
+	ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
 		SQRef:  area,
 		CfRule: cfRule,
 	})

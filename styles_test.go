@@ -156,18 +156,18 @@ func TestSetConditionalFormat(t *testing.T) {
 	}}
 
 	for _, testCase := range cases {
-		xl := NewFile()
+		f := NewFile()
 		const sheet = "Sheet1"
 		const cellRange = "A1:A1"
 
-		err := xl.SetConditionalFormat(sheet, cellRange, testCase.format)
+		err := f.SetConditionalFormat(sheet, cellRange, testCase.format)
 		if err != nil {
 			t.Fatalf("%s", err)
 		}
 
-		xlsx, err := xl.workSheetReader(sheet)
+		ws, err := f.workSheetReader(sheet)
 		assert.NoError(t, err)
-		cf := xlsx.ConditionalFormatting
+		cf := ws.ConditionalFormatting
 		assert.Len(t, cf, 1, testCase.label)
 		assert.Len(t, cf[0].CfRule, 1, testCase.label)
 		assert.Equal(t, cellRange, cf[0].SQRef, testCase.label)
@@ -185,7 +185,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	// Test unset conditional format on not exists worksheet.
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN is not exist")
-	// Save xlsx file by the given path.
+	// Save spreadsheet by the given path.
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }
 
