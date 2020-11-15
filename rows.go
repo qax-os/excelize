@@ -20,6 +20,8 @@ import (
 	"log"
 	"math"
 	"strconv"
+
+	"github.com/mohae/deepcopy"
 )
 
 // GetRows return all the rows in a sheet by given worksheet name (case
@@ -538,7 +540,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 
 	for i, r := range ws.SheetData.Row {
 		if r.R == row {
-			rowCopy = ws.SheetData.Row[i]
+			rowCopy = deepcopy.Copy(ws.SheetData.Row[i]).(xlsxRow)
 			ok = true
 			break
 		}
