@@ -40,6 +40,8 @@ import (
     "fmt"
 
     "github.com/360EntSecGroup-Skylar/excelize"
+    //     "github.com/360EntSecGroup-Skylar/excelize/v2" // use this if you are using modules
+
 )
 
 func main() {
