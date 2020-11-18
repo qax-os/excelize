@@ -79,10 +79,10 @@ func (rows *Rows) Error() error {
 // Columns return the current row's column values.
 func (rows *Rows) Columns() ([]string, error) {
 	var (
-		err          error
-		inElement    string
-		row, cellCol int
-		columns      []string
+		err                 error
+		inElement           string
+		attrR, cellCol, row int
+		columns             []string
 	)
 
 	if rows.stashRow >= rows.curRow {
@@ -99,17 +99,13 @@ func (rows *Rows) Columns() ([]string, error) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "row" {
-				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "r" {
-						row, err = strconv.Atoi(attr.Value)
-						if err != nil {
-							return columns, err
-						}
-						if row > rows.curRow {
-							rows.stashRow = row - 1
-							return columns, err
-						}
-					}
+				row++
+				if attrR, err = attrValToInt("r", startElement.Attr); attrR != 0 {
+					row = attrR
+				}
+				if row > rows.curRow {
+					rows.stashRow = row - 1
+					return columns, err
 				}
 			}
 			if inElement == "c" {
@@ -117,8 +113,7 @@ func (rows *Rows) Columns() ([]string, error) {
 				colCell := xlsxC{}
 				_ = rows.decoder.DecodeElement(&colCell, &startElement)
 				if colCell.R != "" {
-					cellCol, _, err = CellNameToCoordinates(colCell.R)
-					if err != nil {
+					if cellCol, _, err = CellNameToCoordinates(colCell.R); err != nil {
 						return columns, err
 					}
 				}
@@ -128,7 +123,10 @@ func (rows *Rows) Columns() ([]string, error) {
 			}
 		case xml.EndElement:
 			inElement = startElement.Name.Local
-			if inElement == "row" {
+			if row == 0 {
+				row = rows.curRow
+			}
+			if inElement == "row" && row+1 < rows.curRow {
 				return columns, err
 			}
 		}

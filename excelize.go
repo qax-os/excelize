@@ -219,11 +219,17 @@ func checkSheet(ws *xlsxWorksheet) {
 			row = r.R
 			continue
 		}
-		row++
+		if r.R != row {
+			row++
+		}
 	}
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
 	row = 0
 	for _, r := range ws.SheetData.Row {
+		if r.R == row {
+			sheetData.Row[r.R-1].C = append(sheetData.Row[r.R-1].C, r.C...)
+			continue
+		}
 		if r.R != 0 {
 			sheetData.Row[r.R-1] = r
 			row = r.R

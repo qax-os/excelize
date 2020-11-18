@@ -136,8 +136,9 @@ func TestSetCellBool(t *testing.T) {
 func TestGetCellValue(t *testing.T) {
 	// Test get cell value without r attribute of the row.
 	f := NewFile()
+	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
 	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row></sheetData></worksheet>`)
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`))
 	f.checked = nil
 	cells := []string{"A3", "A4", "B4", "A7", "B7"}
 	rows, err := f.GetRows("Sheet1")
@@ -150,6 +151,24 @@ func TestGetCellValue(t *testing.T) {
 	}
 	cols, err := f.GetCols("Sheet1")
 	assert.Equal(t, [][]string{{"", "", "A3", "A4", "", "", "A7", "A8"}, {"", "", "", "B4", "", "", "B7", "B8"}}, cols)
+	assert.NoError(t, err)
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`))
+	f.checked = nil
+	cell, err := f.GetCellValue("Sheet1", "A2")
+	assert.Equal(t, "A2", cell)
+	assert.NoError(t, err)
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`))
+	f.checked = nil
+	rows, err = f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{nil, {"A2", "B2"}}, rows)
+	assert.NoError(t, err)
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="str"><v>A1</v></c></row><row r="1"><c r="B1" t="str"><v>B1</v></c></row>`))
+	f.checked = nil
+	rows, err = f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{{"A1", "B1"}}, rows)
 	assert.NoError(t, err)
 }
 

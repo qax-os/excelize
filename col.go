@@ -103,10 +103,9 @@ func (cols *Cols) Rows() ([]string, error) {
 			if inElement == "row" {
 				cellCol = 0
 				cellRow++
-				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "r" {
-						cellRow, _ = strconv.Atoi(attr.Value)
-					}
+				attrR, _ := attrValToInt("r", startElement.Attr)
+				if attrR != 0 {
+					cellRow = attrR
 				}
 			}
 			if inElement == "c" {
