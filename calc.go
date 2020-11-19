@@ -42,6 +42,14 @@ const (
 	formulaErrorGETTINGDATA = "#GETTING_DATA"
 )
 
+// Numeric precision correct numeric values as legacy Excel application
+// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel In the
+// top figure the fraction 1/9000 in Excel is displayed. Although this number
+// has a decimal representation that is an infinite string of ones, Excel
+// displays only the leading 15 figures. In the second line, the number one
+// is added to the fraction, and again Excel displays only 15 figures.
+const numericPrecision = 1000000000000000
+
 // cellRef defines the structure of a cell reference.
 type cellRef struct {
 	Col   int
@@ -141,6 +149,13 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 		return
 	}
 	result = token.TValue
+	if len(result) > 16 {
+		num, e := roundPrecision(result)
+		if e != nil {
+			return result, err
+		}
+		result = strings.ToUpper(num)
+	}
 	return
 }
 

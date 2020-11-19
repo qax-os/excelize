@@ -345,26 +345,27 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		}
 		return f.formattedValue(c.S, c.V), nil
 	default:
-		// correct numeric values as legacy Excel app
-		// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel
-		// In the top figure the fraction 1/9000 in Excel is displayed.
-		// Although this number has a decimal representation that is an infinite string of ones,
-		// Excel displays only the leading 15 figures. In the second line, the number one is added to the fraction, and again Excel displays only 15 figures.
-		const precision = 1000000000000000
 		if len(c.V) > 16 {
-			num, err := strconv.ParseFloat(c.V, 64)
+			val, err := roundPrecision(c.V)
 			if err != nil {
 				return "", err
 			}
-
-			num = math.Round(num*precision) / precision
-			val := fmt.Sprintf("%g", num)
 			if val != c.V {
 				return f.formattedValue(c.S, val), nil
 			}
 		}
 		return f.formattedValue(c.S, c.V), nil
 	}
+}
+
+// roundPrecision round precision for numeric.
+func roundPrecision(value string) (result string, err error) {
+	var num float64
+	if num, err = strconv.ParseFloat(value, 64); err != nil {
+		return
+	}
+	result = fmt.Sprintf("%g", math.Round(num*numericPrecision)/numericPrecision)
+	return
 }
 
 // SetRowVisible provides a function to set visible of a single row by given
