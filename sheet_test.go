@@ -359,6 +359,15 @@ func TestGetWorkbookRelsPath(t *testing.T) {
 	assert.Equal(t, "_rels/workbook.xml.rels", f.getWorkbookRelsPath())
 }
 
+func TestDeleteSheet(t *testing.T) {
+	f := NewFile()
+	f.SetActiveSheet(f.NewSheet("Sheet2"))
+	f.NewSheet("Sheet3")
+	f.DeleteSheet("Sheet1")
+	assert.Equal(t, "Sheet2", f.GetSheetName(f.GetActiveSheetIndex()))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet.xlsx")))
+}
+
 func BenchmarkNewSheet(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -380,9 +389,9 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 		for pb.Next() {
 			newSheetWithSave()
 		}
-
 	})
 }
+
 func newSheetWithSave() {
 	file := NewFile()
 	file.NewSheet("sheet1")

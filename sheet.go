@@ -317,7 +317,7 @@ func (f *File) GetActiveSheetIndex() (index int) {
 	return
 }
 
-// getActiveSheetID provides a function to get active sheet index of the
+// getActiveSheetID provides a function to get active sheet ID of the
 // spreadsheet. If not found the active sheet will be return integer 0.
 func (f *File) getActiveSheetID() int {
 	wb := f.workbookReader()
@@ -499,6 +499,7 @@ func (f *File) DeleteSheet(name string) {
 	sheetName := trimSheetName(name)
 	wb := f.workbookReader()
 	wbRels := f.relsReader(f.getWorkbookRelsPath())
+	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	for idx, sheet := range wb.Sheets.Sheet {
 		if sheet.Name == sheetName {
 			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
@@ -526,14 +527,7 @@ func (f *File) DeleteSheet(name string) {
 			f.SheetCount--
 		}
 	}
-	if wb.BookViews != nil {
-		for idx, bookView := range wb.BookViews.WorkBookView {
-			if bookView.ActiveTab >= f.SheetCount {
-				wb.BookViews.WorkBookView[idx].ActiveTab--
-			}
-		}
-	}
-	f.SetActiveSheet(len(f.GetSheetMap()))
+	f.SetActiveSheet(f.GetSheetIndex(activeSheetName))
 }
 
 // deleteSheetFromWorkbookRels provides a function to remove worksheet
