@@ -321,11 +321,39 @@ func TestFormattedValue(t *testing.T) {
 
 	// formatted value with no built-in number format ID
 	assert.NoError(t, err)
-	f.Styles.NumFmts = nil
 	numFmtID := 5
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	v = f.formattedValue(1, "43528")
+	v = f.formattedValue(2, "43528")
 	assert.Equal(t, "43528", v)
+
+	// formatted value with invalid number format ID
+	assert.NoError(t, err)
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: nil,
+	})
+	v = f.formattedValue(3, "43528")
+	assert.Equal(t, "43528", v)
+}
+func TestInvalidNumberFormatsLoad(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Items.xlsx"))
+	assert.NoError(t, err)
+
+	rows, err := f.Rows("Sheet 1")
+	assert.NoError(t, err)
+
+	var rowCount int
+	for rows.Next() {
+		rowCount++
+		row, err := rows.Columns()
+		assert.NoError(t, err)
+
+		if rowCount > 1 {
+			assert.Equal(t, "0.5", row[13])
+			assert.Equal(t, "12/08/2020", row[14])
+		}
+	}
+
+	assert.Equal(t, 20, rowCount)
 }
