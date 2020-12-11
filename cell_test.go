@@ -301,7 +301,7 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
-func TestFormattedValue(t *testing.T) {
+func TestFormattedValue2(t *testing.T) {
 	f := NewFile()
 	v := f.formattedValue(0, "43528")
 	assert.Equal(t, "43528", v)
@@ -320,7 +320,6 @@ func TestFormattedValue(t *testing.T) {
 	assert.Equal(t, "03/04/2019", v)
 
 	// formatted value with no built-in number format ID
-	assert.NoError(t, err)
 	numFmtID := 5
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
@@ -329,31 +328,16 @@ func TestFormattedValue(t *testing.T) {
 	assert.Equal(t, "43528", v)
 
 	// formatted value with invalid number format ID
-	assert.NoError(t, err)
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: nil,
 	})
 	v = f.formattedValue(3, "43528")
+
+	// formatted value with empty number format
+	f.Styles.NumFmts = nil
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: &numFmtID,
+	})
+	v = f.formattedValue(1, "43528")
 	assert.Equal(t, "43528", v)
-}
-func TestInvalidNumberFormatsLoad(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "Items.xlsx"))
-	assert.NoError(t, err)
-
-	rows, err := f.Rows("Sheet 1")
-	assert.NoError(t, err)
-
-	var rowCount int
-	for rows.Next() {
-		rowCount++
-		row, err := rows.Columns()
-		assert.NoError(t, err)
-
-		if rowCount > 1 {
-			assert.Equal(t, "0.5", row[13])
-			assert.Equal(t, "12/08/2020", row[14])
-		}
-	}
-
-	assert.Equal(t, 20, rowCount)
 }
