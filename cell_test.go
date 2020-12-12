@@ -301,7 +301,7 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
-func TestFormattedValue(t *testing.T) {
+func TestFormattedValue2(t *testing.T) {
 	f := NewFile()
 	v := f.formattedValue(0, "43528")
 	assert.Equal(t, "43528", v)
@@ -320,9 +320,21 @@ func TestFormattedValue(t *testing.T) {
 	assert.Equal(t, "03/04/2019", v)
 
 	// formatted value with no built-in number format ID
-	assert.NoError(t, err)
-	f.Styles.NumFmts = nil
 	numFmtID := 5
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: &numFmtID,
+	})
+	v = f.formattedValue(2, "43528")
+	assert.Equal(t, "43528", v)
+
+	// formatted value with invalid number format ID
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: nil,
+	})
+	v = f.formattedValue(3, "43528")
+
+	// formatted value with empty number format
+	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})

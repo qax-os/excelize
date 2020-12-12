@@ -762,10 +762,15 @@ func (f *File) formattedValue(s int, v string) string {
 		return v
 	}
 	styleSheet := f.stylesReader()
+
 	if s >= len(styleSheet.CellXfs.Xf) {
 		return v
 	}
-	numFmtID := *styleSheet.CellXfs.Xf[s].NumFmtID
+	var numFmtID int
+	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
+		numFmtID = *styleSheet.CellXfs.Xf[s].NumFmtID
+	}
+
 	ok := builtInNumFmtFunc[numFmtID]
 	if ok != nil {
 		return ok(v, builtInNumFmt[numFmtID])
