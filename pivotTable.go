@@ -80,7 +80,7 @@ type PivotTableField struct {
 //        "fmt"
 //        "math/rand"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {

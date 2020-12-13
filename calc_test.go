@@ -463,6 +463,13 @@ func TestCalcCellValue(t *testing.T) {
 		// DATE
 		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
 		"=DATE(1900,1,1)":   "1899-12-31 00:00:00 +0000 UTC",
+		// Text Functions
+		// CLEAN
+		"=CLEAN(\"\u0009clean text\")": "clean text",
+		"=CLEAN(0)":                    "0",
+		// TRIM
+		"=TRIM(\" trim text \")": "trim text",
+		"=TRIM(0)":               "0",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -779,6 +786,13 @@ func TestCalcCellValue(t *testing.T) {
 		`=DATE("text",10,21)`:   "DATE requires 3 number arguments",
 		`=DATE(2020,"text",21)`: "DATE requires 3 number arguments",
 		`=DATE(2020,10,"text")`: "DATE requires 3 number arguments",
+		// Text Functions
+		// CLEAN
+		"=CLEAN()":    "CLEAN requires 1 argument",
+		"=CLEAN(1,2)": "CLEAN requires 1 argument",
+		// TRIM
+		"=TRIM()":    "TRIM requires 1 argument",
+		"=TRIM(1,2)": "TRIM requires 1 argument",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()

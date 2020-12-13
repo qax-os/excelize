@@ -502,7 +502,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {
