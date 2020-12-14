@@ -3365,3 +3365,32 @@ func makeDate(y int, m time.Month, d int) int64 {
 func daysBetween(startDate, endDate int64) float64 {
 	return float64(int(0.5 + float64((endDate-startDate)/86400)))
 }
+
+// Text Functions
+
+// CLEAN removes all non-printable characters from a supplied text string.
+func (fn *formulaFuncs) CLEAN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("CLEAN requires 1 argument")
+		return
+	}
+	b := bytes.Buffer{}
+	for _, c := range argsList.Front().Value.(formulaArg).String {
+		if c > 31 {
+			b.WriteRune(c)
+		}
+	}
+	result = b.String()
+	return
+}
+
+// TRIM removes extra spaces (i.e. all spaces except for single spaces between
+// words or characters) from a supplied text string.
+func (fn *formulaFuncs) TRIM(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("TRIM requires 1 argument")
+		return
+	}
+	result = strings.TrimSpace(argsList.Front().Value.(formulaArg).String)
+	return
+}

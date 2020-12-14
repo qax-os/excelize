@@ -510,7 +510,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {
@@ -708,7 +708,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {
