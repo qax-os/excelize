@@ -841,9 +841,16 @@ func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *
 // drawChartSeriesMarker provides a function to draw the c:marker element by
 // given data index and format sets.
 func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
+	defaultSymbol := map[string]*attrValString{Scatter: &attrValString{Val: stringPtr("circle")}}
 	marker := &cMarker{
-		Symbol: &attrValString{Val: stringPtr("circle")},
+		Symbol: defaultSymbol[formatSet.Type],
 		Size:   &attrValInt{Val: intPtr(5)},
+	}
+	if symbol := stringPtr(formatSet.Series[i].Marker.Symbol); *symbol != "" {
+		marker.Symbol = &attrValString{Val: symbol}
+	}
+	if size := intPtr(formatSet.Series[i].Marker.Size); *size != 0 {
+		marker.Size = &attrValInt{Val: size}
 	}
 	if i < 6 {
 		marker.SpPr = &cSpPr{
@@ -862,7 +869,7 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 			},
 		}
 	}
-	chartSeriesMarker := map[string]*cMarker{Scatter: marker}
+	chartSeriesMarker := map[string]*cMarker{Scatter: marker, Line: marker}
 	return chartSeriesMarker[formatSet.Type]
 }
 

@@ -605,6 +605,9 @@ func (f *File) drawingResize(sheet string, cell string, width, height float64, f
 	}
 	cellWidth, cellHeight := f.getColWidth(sheet, c), f.getRowHeight(sheet, r)
 	for _, mergeCell := range mergeCells {
+		if inMergeCell {
+			continue
+		}
 		if inMergeCell, err = f.checkCellInArea(cell, mergeCell[0]); err != nil {
 			return
 		}

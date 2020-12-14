@@ -53,6 +53,7 @@ func TestAddPicture(t *testing.T) {
 	f.NewSheet("AddPicture")
 	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
 	assert.NoError(t, f.MergeCell("AddPicture", "B3", "D9"))
+	assert.NoError(t, f.MergeCell("AddPicture", "B1", "D1"))
 	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
 	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
 
