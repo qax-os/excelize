@@ -470,6 +470,21 @@ func TestCalcCellValue(t *testing.T) {
 		// TRIM
 		"=TRIM(\" trim text \")": "trim text",
 		"=TRIM(0)":               "0",
+		// LOWER
+		"=LOWER(\"test\")":     "test",
+		"=LOWER(\"TEST\")":     "test",
+		"=LOWER(\"Test\")":     "test",
+		"=LOWER(\"TEST 123\")": "test 123",
+		// PROPER
+		"=PROPER(\"this is a test sentence\")": "This Is A Test Sentence",
+		"=PROPER(\"THIS IS A TEST SENTENCE\")": "This Is A Test Sentence",
+		"=PROPER(\"123tEST teXT\")":            "123Test Text",
+		"=PROPER(\"Mr. SMITH's address\")":     "Mr. Smith'S Address",
+		// UPPER
+		"=UPPER(\"test\")":     "TEST",
+		"=UPPER(\"TEST\")":     "TEST",
+		"=UPPER(\"Test\")":     "TEST",
+		"=UPPER(\"TEST 123\")": "TEST 123",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -793,6 +808,15 @@ func TestCalcCellValue(t *testing.T) {
 		// TRIM
 		"=TRIM()":    "TRIM requires 1 argument",
 		"=TRIM(1,2)": "TRIM requires 1 argument",
+		// LOWER
+		"=LOWER()":    "LOWER requires 1 argument",
+		"=LOWER(1,2)": "LOWER requires 1 argument",
+		// UPPER
+		"=UPPER()":    "UPPER requires 1 argument",
+		"=UPPER(1,2)": "UPPER requires 1 argument",
+		// PROPER
+		"=PROPER()":    "PROPER requires 1 argument",
+		"=PROPER(1,2)": "PROPER requires 1 argument",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()

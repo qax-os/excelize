@@ -602,7 +602,6 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 			if err := f.MergeCell(sheet, from, to); err != nil {
 				return err
 			}
-			i++
 		}
 	}
 	return nil
