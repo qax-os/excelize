@@ -236,6 +236,9 @@ func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 		Bubble:                      f.drawBaseChart,
 		Bubble3D:                    f.drawBaseChart,
 	}
+	if formatSet.Legend.None {
+		xlsxChartSpace.Chart.Legend = nil
+	}
 	addChart := func(c, p *cPlotArea) {
 		immutable, mutable := reflect.ValueOf(c).Elem(), reflect.ValueOf(p).Elem()
 		for i := 0; i < mutable.NumField(); i++ {
