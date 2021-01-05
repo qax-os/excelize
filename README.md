@@ -23,7 +23,7 @@ Excelize is a library written in pure Go providing a set of functions that allow
 go get github.com/360EntSecGroup-Skylar/excelize
 ```
 
-- If your package management with [Go Modules](https://blog.golang.org/using-go-modules), please install with following command.
+- If your packages are managed using [Go Modules](https://blog.golang.org/using-go-modules), please install with following command.
 
 ```bash
 go get github.com/360EntSecGroup-Skylar/excelize/v2
