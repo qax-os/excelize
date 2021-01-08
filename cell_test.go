@@ -331,7 +331,7 @@ func TestFormattedValue2(t *testing.T) {
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: nil,
 	})
-	v = f.formattedValue(3, "43528")
+	_ = f.formattedValue(3, "43528")
 
 	// formatted value with empty number format
 	f.Styles.NumFmts = nil

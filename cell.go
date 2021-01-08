@@ -93,7 +93,7 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	case bool:
 		err = f.SetCellBool(sheet, axis, v)
 	case nil:
-		err = f.SetCellStr(sheet, axis, "")
+		break
 	default:
 		err = f.SetCellStr(sheet, axis, fmt.Sprint(value))
 	}
