@@ -25,6 +25,7 @@ func ExampleFile_SetPageLayout() {
 		PageLayoutPaperSize(10),
 		FitToHeight(2),
 		FitToWidth(2),
+		PageLayoutScale(50),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -38,6 +39,7 @@ func ExampleFile_GetPageLayout() {
 		paperSize   PageLayoutPaperSize
 		fitToHeight FitToHeight
 		fitToWidth  FitToWidth
+		scale       PageLayoutScale
 	)
 	if err := f.GetPageLayout("Sheet1", &orientation); err != nil {
 		fmt.Println(err)
@@ -48,8 +50,10 @@ func ExampleFile_GetPageLayout() {
 	if err := f.GetPageLayout("Sheet1", &fitToHeight); err != nil {
 		fmt.Println(err)
 	}
-
 	if err := f.GetPageLayout("Sheet1", &fitToWidth); err != nil {
+		fmt.Println(err)
+	}
+	if err := f.GetPageLayout("Sheet1", &scale); err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("Defaults:")
@@ -57,12 +61,14 @@ func ExampleFile_GetPageLayout() {
 	fmt.Printf("- paper size: %d\n", paperSize)
 	fmt.Printf("- fit to height: %d\n", fitToHeight)
 	fmt.Printf("- fit to width: %d\n", fitToWidth)
+	fmt.Printf("- scale: %d\n", scale)
 	// Output:
 	// Defaults:
 	// - orientation: "portrait"
 	// - paper size: 1
 	// - fit to height: 1
 	// - fit to width: 1
+	// - scale: 100
 }
 
 func TestNewSheet(t *testing.T) {
@@ -101,6 +107,7 @@ func TestPageLayoutOption(t *testing.T) {
 		{new(PageLayoutPaperSize), PageLayoutPaperSize(10)},
 		{new(FitToHeight), FitToHeight(2)},
 		{new(FitToWidth), FitToWidth(2)},
+		{new(PageLayoutScale), PageLayoutScale(50)},
 	}
 
 	for i, test := range testData {

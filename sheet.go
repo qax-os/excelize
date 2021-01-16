@@ -1144,6 +1144,10 @@ type (
 	FitToHeight int
 	// FitToWidth specified number of horizontal pages to fit on
 	FitToWidth int
+	// PageLayoutScale defines the print scaling. This attribute is restricted
+	// to values ranging from 10 (10%) to 400 (400%). This setting is
+	// overridden when fitToWidth and/or fitToHeight are in use.
+	PageLayoutScale uint
 )
 
 const (
@@ -1213,6 +1217,22 @@ func (p *FitToWidth) getPageLayout(ps *xlsxPageSetUp) {
 		return
 	}
 	*p = FitToWidth(ps.FitToWidth)
+}
+
+// setPageLayout provides a method to set the scale for the worksheet.
+func (p PageLayoutScale) setPageLayout(ps *xlsxPageSetUp) {
+	if 10 <= uint(p) && uint(p) <= 400 {
+		ps.Scale = uint(p)
+	}
+}
+
+// getPageLayout provides a method to get the scale for the worksheet.
+func (p *PageLayoutScale) getPageLayout(ps *xlsxPageSetUp) {
+	if ps == nil || ps.Scale < 10 || ps.Scale > 400 {
+		*p = 100
+		return
+	}
+	*p = PageLayoutScale(ps.Scale)
 }
 
 // SetPageLayout provides a function to sets worksheet page layout.
