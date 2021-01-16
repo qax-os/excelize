@@ -13,15 +13,11 @@ import (
 
 func ExampleFile_SetPageLayout() {
 	f := NewFile()
-
 	if err := f.SetPageLayout(
 		"Sheet1",
+		BlackAndWhite(true),
+		FirstPageNumber(2),
 		PageLayoutOrientation(OrientationLandscape),
-	); err != nil {
-		fmt.Println(err)
-	}
-	if err := f.SetPageLayout(
-		"Sheet1",
 		PageLayoutPaperSize(10),
 		FitToHeight(2),
 		FitToWidth(2),
@@ -35,12 +31,20 @@ func ExampleFile_SetPageLayout() {
 func ExampleFile_GetPageLayout() {
 	f := NewFile()
 	var (
-		orientation PageLayoutOrientation
-		paperSize   PageLayoutPaperSize
-		fitToHeight FitToHeight
-		fitToWidth  FitToWidth
-		scale       PageLayoutScale
+		blackAndWhite   BlackAndWhite
+		firstPageNumber FirstPageNumber
+		orientation     PageLayoutOrientation
+		paperSize       PageLayoutPaperSize
+		fitToHeight     FitToHeight
+		fitToWidth      FitToWidth
+		scale           PageLayoutScale
 	)
+	if err := f.GetPageLayout("Sheet1", &blackAndWhite); err != nil {
+		fmt.Println(err)
+	}
+	if err := f.GetPageLayout("Sheet1", &firstPageNumber); err != nil {
+		fmt.Println(err)
+	}
 	if err := f.GetPageLayout("Sheet1", &orientation); err != nil {
 		fmt.Println(err)
 	}
@@ -57,6 +61,8 @@ func ExampleFile_GetPageLayout() {
 		fmt.Println(err)
 	}
 	fmt.Println("Defaults:")
+	fmt.Printf("- print black and white: %t\n", blackAndWhite)
+	fmt.Printf("- page number for first printed page: %d\n", firstPageNumber)
 	fmt.Printf("- orientation: %q\n", orientation)
 	fmt.Printf("- paper size: %d\n", paperSize)
 	fmt.Printf("- fit to height: %d\n", fitToHeight)
@@ -64,6 +70,8 @@ func ExampleFile_GetPageLayout() {
 	fmt.Printf("- scale: %d\n", scale)
 	// Output:
 	// Defaults:
+	// - print black and white: false
+	// - page number for first printed page: 1
 	// - orientation: "portrait"
 	// - paper size: 1
 	// - fit to height: 1
@@ -103,6 +111,8 @@ func TestPageLayoutOption(t *testing.T) {
 		container  PageLayoutOptionPtr
 		nonDefault PageLayoutOption
 	}{
+		{new(BlackAndWhite), BlackAndWhite(true)},
+		{new(FirstPageNumber), FirstPageNumber(2)},
 		{new(PageLayoutOrientation), PageLayoutOrientation(OrientationLandscape)},
 		{new(PageLayoutPaperSize), PageLayoutPaperSize(10)},
 		{new(FitToHeight), FitToHeight(2)},

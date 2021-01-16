@@ -1135,14 +1135,19 @@ type PageLayoutOptionPtr interface {
 }
 
 type (
+	// BlackAndWhite specified print black and white.
+	BlackAndWhite bool
+	// FirstPageNumber specified first printed page number. If no value is
+	// specified, then 'automatic' is assumed.
+	FirstPageNumber uint
 	// PageLayoutOrientation defines the orientation of page layout for a
 	// worksheet.
 	PageLayoutOrientation string
-	// PageLayoutPaperSize defines the paper size of the worksheet
+	// PageLayoutPaperSize defines the paper size of the worksheet.
 	PageLayoutPaperSize int
-	// FitToHeight specified number of vertical pages to fit on
+	// FitToHeight specified number of vertical pages to fit on.
 	FitToHeight int
-	// FitToWidth specified number of horizontal pages to fit on
+	// FitToWidth specified number of horizontal pages to fit on.
 	FitToWidth int
 	// PageLayoutScale defines the print scaling. This attribute is restricted
 	// to values ranging from 10 (10%) to 400 (400%). This setting is
@@ -1156,6 +1161,41 @@ const (
 	// OrientationLandscape indicates page layout orientation id landscape.
 	OrientationLandscape = "landscape"
 )
+
+// setPageLayout provides a method to set the print black and white for the
+// worksheet.
+func (p BlackAndWhite) setPageLayout(ps *xlsxPageSetUp) {
+	ps.BlackAndWhite = bool(p)
+}
+
+// getPageLayout provides a method to get the print black and white for the
+// worksheet.
+func (p *BlackAndWhite) getPageLayout(ps *xlsxPageSetUp) {
+	if ps == nil {
+		*p = false
+		return
+	}
+	*p = BlackAndWhite(ps.BlackAndWhite)
+}
+
+// setPageLayout provides a method to set the first printed page number for
+// the worksheet.
+func (p FirstPageNumber) setPageLayout(ps *xlsxPageSetUp) {
+	if 0 < uint(p) {
+		ps.FirstPageNumber = uint(p)
+		ps.UseFirstPageNumber = true
+	}
+}
+
+// getPageLayout provides a method to get the first printed page number for
+// the worksheet.
+func (p *FirstPageNumber) getPageLayout(ps *xlsxPageSetUp) {
+	if ps == nil || ps.FirstPageNumber == 0 || !ps.UseFirstPageNumber {
+		*p = 1
+		return
+	}
+	*p = FirstPageNumber(ps.FirstPageNumber)
+}
 
 // setPageLayout provides a method to set the orientation for the worksheet.
 func (o PageLayoutOrientation) setPageLayout(ps *xlsxPageSetUp) {
@@ -1238,8 +1278,14 @@ func (p *PageLayoutScale) getPageLayout(ps *xlsxPageSetUp) {
 // SetPageLayout provides a function to sets worksheet page layout.
 //
 // Available options:
-//   PageLayoutOrientation(string)
-//   PageLayoutPaperSize(int)
+//
+//    BlackAndWhite(bool)
+//    FirstPageNumber(uint)
+//    PageLayoutOrientation(string)
+//    PageLayoutPaperSize(int)
+//    FitToHeight(int)
+//    FitToWidth(int)
+//    PageLayoutScale(uint)
 //
 // The following shows the paper size sorted by excelize index number:
 //
