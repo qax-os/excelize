@@ -1137,7 +1137,7 @@ type PageLayoutOptionPtr interface {
 type (
 	// BlackAndWhite specified print black and white.
 	BlackAndWhite bool
-	// FirstPageNumber specified first printed page number. If no value is
+	// FirstPageNumber specified the first printed page number. If no value is
 	// specified, then 'automatic' is assumed.
 	FirstPageNumber uint
 	// PageLayoutOrientation defines the orientation of page layout for a
@@ -1145,9 +1145,9 @@ type (
 	PageLayoutOrientation string
 	// PageLayoutPaperSize defines the paper size of the worksheet.
 	PageLayoutPaperSize int
-	// FitToHeight specified number of vertical pages to fit on.
+	// FitToHeight specified the number of vertical pages to fit on.
 	FitToHeight int
-	// FitToWidth specified number of horizontal pages to fit on.
+	// FitToWidth specified the number of horizontal pages to fit on.
 	FitToWidth int
 	// PageLayoutScale defines the print scaling. This attribute is restricted
 	// to values ranging from 10 (10%) to 400 (400%). This setting is
