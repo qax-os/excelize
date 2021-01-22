@@ -32,18 +32,26 @@ type xlsxRelationship struct {
 // subclause references.
 type xlsxWorkbook struct {
 	XMLName             xml.Name                 `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
+	Conformance         string                   `xml:"conformance,attr,omitempty"`
 	FileVersion         *xlsxFileVersion         `xml:"fileVersion"`
+	FileSharing         *xlsxExtLst              `xml:"fileSharing"`
 	WorkbookPr          *xlsxWorkbookPr          `xml:"workbookPr"`
 	WorkbookProtection  *xlsxWorkbookProtection  `xml:"workbookProtection"`
 	BookViews           *xlsxBookViews           `xml:"bookViews"`
 	Sheets              xlsxSheets               `xml:"sheets"`
+	FunctionGroups      *xlsxExtLst              `xml:"functionGroups"`
 	ExternalReferences  *xlsxExternalReferences  `xml:"externalReferences"`
 	DefinedNames        *xlsxDefinedNames        `xml:"definedNames"`
 	CalcPr              *xlsxCalcPr              `xml:"calcPr"`
+	OleSize             *xlsxExtLst              `xml:"oleSize"`
 	CustomWorkbookViews *xlsxCustomWorkbookViews `xml:"customWorkbookViews"`
 	PivotCaches         *xlsxPivotCaches         `xml:"pivotCaches"`
-	ExtLst              *xlsxExtLst              `xml:"extLst"`
+	SmartTagPr          *xlsxExtLst              `xml:"smartTagPr"`
+	SmartTagTypes       *xlsxExtLst              `xml:"smartTagTypes"`
+	WebPublishing       *xlsxExtLst              `xml:"webPublishing"`
 	FileRecoveryPr      *xlsxFileRecoveryPr      `xml:"fileRecoveryPr"`
+	WebPublishObjects   *xlsxExtLst              `xml:"webPublishObjects"`
+	ExtLst              *xlsxExtLst              `xml:"extLst"`
 }
 
 // xlsxFileRecoveryPr maps sheet recovery information. This element defines
