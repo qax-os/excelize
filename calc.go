@@ -110,6 +110,7 @@ var tokenPriority = map[string]int{
 	"+":  3,
 	"-":  3,
 	"=":  2,
+	"<>": 2,
 	"<":  2,
 	"<=": 2,
 	">":  2,
@@ -151,11 +152,9 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 		return
 	}
 	result = token.TValue
-	if len(result) > 16 {
-		num, e := roundPrecision(result)
-		if e != nil {
-			return result, err
-		}
+	isNum, precision := isNumeric(result)
+	if isNum && precision > 15 {
+		num, _ := roundPrecision(result)
 		result = strings.ToUpper(num)
 	}
 	return
@@ -353,6 +352,12 @@ func calcEq(rOpd, lOpd string, opdStack *Stack) error {
 	return nil
 }
 
+// calcNEq evaluate not equal arithmetic operations.
+func calcNEq(rOpd, lOpd string, opdStack *Stack) error {
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd != lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	return nil
+}
+
 // calcL evaluate less than arithmetic operations.
 func calcL(rOpd, lOpd string, opdStack *Stack) error {
 	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
@@ -498,6 +503,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		"/":  calcDiv,
 		"+":  calcAdd,
 		"=":  calcEq,
+		"<>": calcNEq,
 		"<":  calcL,
 		"<=": calcLe,
 		">":  calcG,
@@ -3400,6 +3406,20 @@ func (fn *formulaFuncs) CLEAN(argsList *list.List) (result string, err error) {
 	return
 }
 
+// LEN returns the length of a supplied text string. The syntax of the
+// function is:
+//
+//    LEN(text)
+//
+func (fn *formulaFuncs) LEN(argsList *list.List) (result string, err error) {
+	if argsList.Len() != 1 {
+		err = errors.New("LEN requires 1 string argument")
+		return
+	}
+	result = strconv.Itoa(len(argsList.Front().Value.(formulaArg).String))
+	return
+}
+
 // TRIM removes extra spaces (i.e. all spaces except for single spaces between
 // words or characters) from a supplied text string. The syntax of the
 // function is:
@@ -3467,5 +3487,45 @@ func (fn *formulaFuncs) UPPER(argsList *list.List) (result string, err error) {
 		return
 	}
 	result = strings.ToUpper(argsList.Front().Value.(formulaArg).String)
+	return
+}
+
+// Conditional Functions
+
+// IF function tests a supplied condition and returns one result if the
+// condition evaluates to TRUE, and another result if the condition evaluates
+// to FALSE. The syntax of the function is:
+//
+//    IF( logical_test, value_if_true, value_if_false )
+//
+func (fn *formulaFuncs) IF(argsList *list.List) (result string, err error) {
+	if argsList.Len() == 0 {
+		err = errors.New("IF requires at least 1 argument")
+		return
+	}
+	if argsList.Len() > 3 {
+		err = errors.New("IF accepts at most 3 arguments")
+		return
+	}
+	token := argsList.Front().Value.(formulaArg)
+	var cond bool
+	switch token.Type {
+	case ArgString:
+		if cond, err = strconv.ParseBool(token.String); err != nil {
+			err = errors.New(formulaErrorVALUE)
+			return
+		}
+		if argsList.Len() == 1 {
+			result = strings.ToUpper(strconv.FormatBool(cond))
+			return
+		}
+		if cond {
+			result = argsList.Front().Next().Value.(formulaArg).String
+			return
+		}
+		if argsList.Len() == 3 {
+			result = argsList.Back().Value.(formulaArg).String
+		}
+	}
 	return
 }

@@ -20,7 +20,6 @@ import (
 	"log"
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/mohae/deepcopy"
 )
@@ -346,12 +345,9 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		}
 		return f.formattedValue(c.S, c.V), nil
 	default:
-		splited := strings.Split(c.V, ".")
-		if len(splited) == 2 && len(splited[1]) > 15 {
-			val, err := roundPrecision(c.V)
-			if err != nil {
-				return "", err
-			}
+		isNum, precision := isNumeric(c.V)
+		if isNum && precision > 15 {
+			val, _ := roundPrecision(c.V)
 			if val != c.V {
 				return f.formattedValue(c.S, val), nil
 			}

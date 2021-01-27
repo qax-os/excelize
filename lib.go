@@ -403,8 +403,8 @@ func (f *File) addNameSpaces(path string, ns xml.Attr) {
 	}
 }
 
-// setIgnorableNameSpace provides a function to set XML namespace as ignorable by the given
-// attribute.
+// setIgnorableNameSpace provides a function to set XML namespace as ignorable
+// by the given attribute.
 func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 	ignorableNS := []string{"c14", "cdr14", "a14", "pic14", "x14", "xdr14", "x14ac", "dsp", "mso14", "dgm14", "x15", "x12ac", "x15ac", "xr", "xr2", "xr3", "xr4", "xr5", "xr6", "xr7", "xr8", "xr9", "xr10", "xr11", "xr12", "xr13", "xr14", "xr15", "x15", "x16", "x16r2", "mo", "mx", "mv", "o", "v"}
 	if inStrSlice(strings.Fields(f.xmlAttr[path][index].Value), ns.Name.Local) == -1 && inStrSlice(ignorableNS, ns.Name.Local) != -1 {
@@ -416,6 +416,29 @@ func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
 	name, _ := f.sheetMap[trimSheetName(sheet)]
 	f.addNameSpaces(name, ns)
+}
+
+// isNumeric determines whether an expression is a valid numeric type and get
+// the precision for the numeric.
+func isNumeric(s string) (bool, int) {
+	dot := false
+	p := 0
+	for i, v := range s {
+		if v == '.' {
+			if dot {
+				return false, 0
+			}
+			dot = true
+		} else if v < '0' || v > '9' {
+			if i == 0 && v == '-' {
+				continue
+			}
+			return false, 0
+		} else if dot {
+			p++
+		}
+	}
+	return true, p
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

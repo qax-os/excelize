@@ -323,13 +323,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=ROUND(991,-1)":    "990",
 		// ROUNDDOWN
 		"=ROUNDDOWN(99.999,1)":   "99.9",
-		"=ROUNDDOWN(99.999,2)":   "99.99000000000001",
+		"=ROUNDDOWN(99.999,2)":   "99.99000000000002",
 		"=ROUNDDOWN(99.999,0)":   "99",
 		"=ROUNDDOWN(99.999,-1)":  "90",
-		"=ROUNDDOWN(-99.999,2)":  "-99.99000000000001",
+		"=ROUNDDOWN(-99.999,2)":  "-99.99000000000002",
 		"=ROUNDDOWN(-99.999,-1)": "-90",
-		// ROUNDUP
-		"=ROUNDUP(11.111,1)":   "11.200000000000003",
+		// ROUNDUP`
+		"=ROUNDUP(11.111,1)":   "11.200000000000001",
 		"=ROUNDUP(11.111,2)":   "11.120000000000003",
 		"=ROUNDUP(11.111,0)":   "12",
 		"=ROUNDUP(11.111,-1)":  "20",
@@ -467,6 +467,9 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN(\"\u0009clean text\")": "clean text",
 		"=CLEAN(0)":                    "0",
+		// LEN
+		"=LEN(\"\")": "0",
+		"=LEN(D1)":   "5",
 		// TRIM
 		"=TRIM(\" trim text \")": "trim text",
 		"=TRIM(0)":               "0",
@@ -485,6 +488,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=UPPER(\"TEST\")":     "TEST",
 		"=UPPER(\"Test\")":     "TEST",
 		"=UPPER(\"TEST 123\")": "TEST 123",
+		// Conditional Functions
+		// IF
+		"=IF(1=1)":                              "TRUE",
+		"=IF(1<>1)":                             "FALSE",
+		"=IF(5<0, \"negative\", \"positive\")":  "positive",
+		"=IF(-2<0, \"negative\", \"positive\")": "negative",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -805,6 +814,8 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN()":    "CLEAN requires 1 argument",
 		"=CLEAN(1,2)": "CLEAN requires 1 argument",
+		// LEN
+		"=LEN()": "LEN requires 1 string argument",
 		// TRIM
 		"=TRIM()":    "TRIM requires 1 argument",
 		"=TRIM(1,2)": "TRIM requires 1 argument",
@@ -817,6 +828,11 @@ func TestCalcCellValue(t *testing.T) {
 		// PROPER
 		"=PROPER()":    "PROPER requires 1 argument",
 		"=PROPER(1,2)": "PROPER requires 1 argument",
+		// Conditional Functions
+		// IF
+		"=IF()":        "IF requires at least 1 argument",
+		"=IF(0,1,2,3)": "IF accepts at most 3 arguments",
+		"=IF(D1,1,2)":  "#VALUE!",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()
