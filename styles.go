@@ -2432,8 +2432,14 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		var pattern xlsxPatternFill
 		pattern.PatternType = patterns[style.Fill.Pattern]
 		if fg {
+			if pattern.FgColor == nil {
+				pattern.FgColor = new(xlsxColor)
+			}
 			pattern.FgColor.RGB = getPaletteColor(style.Fill.Color[0])
 		} else {
+			if pattern.BgColor == nil {
+				pattern.BgColor = new(xlsxColor)
+			}
 			pattern.BgColor.RGB = getPaletteColor(style.Fill.Color[0])
 		}
 		fill.PatternFill = &pattern
