@@ -261,7 +261,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		return err
 	}
 	// Read sheet data.
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -270,9 +270,9 @@ func (f *File) AddShape(sheet, cell, format string) error {
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 
-	if xlsx.Drawing != nil {
+	if ws.Drawing != nil {
 		// The worksheet already has a shape or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
-		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
 		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
@@ -324,7 +324,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	width := int(float64(formatSet.Width) * formatSet.Format.XScale)
 	height := int(float64(formatSet.Height) * formatSet.Format.YScale)
 
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.Format.OffsetX, formatSet.Format.OffsetY,
 			width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)

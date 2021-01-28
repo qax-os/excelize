@@ -55,7 +55,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //        _ "image/jpeg"
 //        _ "image/png"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {
@@ -111,7 +111,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //        _ "image/jpeg"
 //        "io/ioutil"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {
@@ -145,14 +145,14 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		return err
 	}
 	// Read sheet data.
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	drawingID, drawingXML = f.prepareDrawing(xlsx, drawingID, sheet, drawingXML)
+	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	mediaStr := ".." + strings.TrimPrefix(f.addMedia(file, ext), "xl")
 	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
@@ -259,7 +259,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	col--
 	row--
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
@@ -459,14 +459,14 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	}
 	col--
 	row--
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return "", nil, err
 	}
-	if xlsx.Drawing == nil {
+	if ws.Drawing == nil {
 		return "", nil, err
 	}
-	target := f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.Replace(target, "..", "xl", -1)
 	_, ok := f.XLSX[drawingXML]
 	if !ok {
@@ -605,6 +605,9 @@ func (f *File) drawingResize(sheet string, cell string, width, height float64, f
 	}
 	cellWidth, cellHeight := f.getColWidth(sheet, c), f.getRowHeight(sheet, r)
 	for _, mergeCell := range mergeCells {
+		if inMergeCell {
+			continue
+		}
 		if inMergeCell, err = f.checkCellInArea(cell, mergeCell[0]); err != nil {
 			return
 		}

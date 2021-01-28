@@ -1,31 +1,30 @@
-package excelize_test
+package excelize
 
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 
 	"github.com/mohae/deepcopy"
 	"github.com/stretchr/testify/assert"
 )
 
 func ExampleFile_SetPageLayout() {
-	f := excelize.NewFile()
+	f := NewFile()
 
 	if err := f.SetPageLayout(
 		"Sheet1",
-		excelize.PageLayoutOrientation(excelize.OrientationLandscape),
+		PageLayoutOrientation(OrientationLandscape),
 	); err != nil {
 		fmt.Println(err)
 	}
 	if err := f.SetPageLayout(
 		"Sheet1",
-		excelize.PageLayoutPaperSize(10),
-		excelize.FitToHeight(2),
-		excelize.FitToWidth(2),
+		PageLayoutPaperSize(10),
+		FitToHeight(2),
+		FitToWidth(2),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -33,12 +32,12 @@ func ExampleFile_SetPageLayout() {
 }
 
 func ExampleFile_GetPageLayout() {
-	f := excelize.NewFile()
+	f := NewFile()
 	var (
-		orientation excelize.PageLayoutOrientation
-		paperSize   excelize.PageLayoutPaperSize
-		fitToHeight excelize.FitToHeight
-		fitToWidth  excelize.FitToWidth
+		orientation PageLayoutOrientation
+		paperSize   PageLayoutPaperSize
+		fitToHeight FitToHeight
+		fitToWidth  FitToWidth
 	)
 	if err := f.GetPageLayout("Sheet1", &orientation); err != nil {
 		fmt.Println(err)
@@ -67,16 +66,18 @@ func ExampleFile_GetPageLayout() {
 }
 
 func TestNewSheet(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	sheetID := f.NewSheet("Sheet2")
 	f.SetActiveSheet(sheetID)
 	// delete original sheet
 	f.DeleteSheet(f.GetSheetName(f.GetSheetIndex("Sheet1")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
+	// create new worksheet with already exists name
+	assert.Equal(t, f.GetSheetIndex("Sheet2"), f.NewSheet("Sheet2"))
 }
 
 func TestSetPane(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	assert.NoError(t, f.SetPanes("Sheet1", `{"freeze":false,"split":false}`))
 	f.NewSheet("Panes 2")
 	assert.NoError(t, f.SetPanes("Panes 2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`))
@@ -93,13 +94,13 @@ func TestPageLayoutOption(t *testing.T) {
 	const sheet = "Sheet1"
 
 	testData := []struct {
-		container  excelize.PageLayoutOptionPtr
-		nonDefault excelize.PageLayoutOption
+		container  PageLayoutOptionPtr
+		nonDefault PageLayoutOption
 	}{
-		{new(excelize.PageLayoutOrientation), excelize.PageLayoutOrientation(excelize.OrientationLandscape)},
-		{new(excelize.PageLayoutPaperSize), excelize.PageLayoutPaperSize(10)},
-		{new(excelize.FitToHeight), excelize.FitToHeight(2)},
-		{new(excelize.FitToWidth), excelize.FitToWidth(2)},
+		{new(PageLayoutOrientation), PageLayoutOrientation(OrientationLandscape)},
+		{new(PageLayoutPaperSize), PageLayoutPaperSize(10)},
+		{new(FitToHeight), FitToHeight(2)},
+		{new(FitToWidth), FitToWidth(2)},
 	}
 
 	for i, test := range testData {
@@ -108,11 +109,11 @@ func TestPageLayoutOption(t *testing.T) {
 			opt := test.nonDefault
 			t.Logf("option %T", opt)
 
-			def := deepcopy.Copy(test.container).(excelize.PageLayoutOptionPtr)
-			val1 := deepcopy.Copy(def).(excelize.PageLayoutOptionPtr)
-			val2 := deepcopy.Copy(def).(excelize.PageLayoutOptionPtr)
+			def := deepcopy.Copy(test.container).(PageLayoutOptionPtr)
+			val1 := deepcopy.Copy(def).(PageLayoutOptionPtr)
+			val2 := deepcopy.Copy(def).(PageLayoutOptionPtr)
 
-			f := excelize.NewFile()
+			f := NewFile()
 			// Get the default value
 			assert.NoError(t, f.GetPageLayout(sheet, def), opt)
 			// Get again and check
@@ -150,7 +151,7 @@ func TestPageLayoutOption(t *testing.T) {
 }
 
 func TestSearchSheet(t *testing.T) {
-	f, err := excelize.OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -172,36 +173,36 @@ func TestSearchSheet(t *testing.T) {
 	assert.EqualValues(t, expected, result)
 
 	// Test search worksheet data after set cell value
-	f = excelize.NewFile()
+	f = NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
 	_, err = f.SearchSheet("Sheet1", "")
 	assert.NoError(t, err)
 }
 
 func TestSetPageLayout(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	// Test set page layout on not exists worksheet.
 	assert.EqualError(t, f.SetPageLayout("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetPageLayout(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	// Test get page layout on not exists worksheet.
 	assert.EqualError(t, f.GetPageLayout("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestSetHeaderFooter(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet.
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN is not exist")
 	// Test set header and footer with illegal setting.
-	assert.EqualError(t, f.SetHeaderFooter("Sheet1", &excelize.FormatHeaderFooter{
+	assert.EqualError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
 		OddHeader: strings.Repeat("c", 256),
 	}), "field OddHeader must be less than 255 characters")
 
 	assert.NoError(t, f.SetHeaderFooter("Sheet1", nil))
-	assert.NoError(t, f.SetHeaderFooter("Sheet1", &excelize.FormatHeaderFooter{
+	assert.NoError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
 		DifferentFirst:   true,
 		DifferentOddEven: true,
 		OddHeader:        "&R&P",
@@ -214,28 +215,28 @@ func TestSetHeaderFooter(t *testing.T) {
 }
 
 func TestDefinedName(t *testing.T) {
-	f := excelize.NewFile()
-	assert.NoError(t, f.SetDefinedName(&excelize.DefinedName{
+	f := NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
 		Scope:    "Sheet1",
 	}))
-	assert.NoError(t, f.SetDefinedName(&excelize.DefinedName{
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
 	}))
-	assert.EqualError(t, f.SetDefinedName(&excelize.DefinedName{
+	assert.EqualError(t, f.SetDefinedName(&DefinedName{
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
 	}), "the same name already exists on the scope")
-	assert.EqualError(t, f.DeleteDefinedName(&excelize.DefinedName{
+	assert.EqualError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "No Exist Defined Name",
 	}), "no defined name on the scope")
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[1].RefersTo)
-	assert.NoError(t, f.DeleteDefinedName(&excelize.DefinedName{
+	assert.NoError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "Amount",
 	}))
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[0].RefersTo)
@@ -244,7 +245,7 @@ func TestDefinedName(t *testing.T) {
 }
 
 func TestGroupSheets(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	sheets := []string{"Sheet2", "Sheet3"}
 	for _, sheet := range sheets {
 		f.NewSheet(sheet)
@@ -256,7 +257,7 @@ func TestGroupSheets(t *testing.T) {
 }
 
 func TestUngroupSheets(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	sheets := []string{"Sheet2", "Sheet3", "Sheet4", "Sheet5"}
 	for _, sheet := range sheets {
 		f.NewSheet(sheet)
@@ -265,7 +266,7 @@ func TestUngroupSheets(t *testing.T) {
 }
 
 func TestInsertPageBreak(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "A1"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "B2"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
@@ -276,7 +277,7 @@ func TestInsertPageBreak(t *testing.T) {
 }
 
 func TestRemovePageBreak(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	assert.NoError(t, f.RemovePageBreak("Sheet1", "A2"))
 
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "A2"))
@@ -302,7 +303,8 @@ func TestRemovePageBreak(t *testing.T) {
 }
 
 func TestGetSheetName(t *testing.T) {
-	f, _ := excelize.OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 	assert.Equal(t, "Sheet2", f.GetSheetName(1))
 	assert.Equal(t, "", f.GetSheetName(-1))
@@ -314,10 +316,87 @@ func TestGetSheetMap(t *testing.T) {
 		1: "Sheet1",
 		2: "Sheet2",
 	}
-	f, _ := excelize.OpenFile(filepath.Join("test", "Book1.xlsx"))
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
 	sheetMap := f.GetSheetMap()
 	for idx, name := range sheetMap {
 		assert.Equal(t, expectedMap[idx], name)
 	}
 	assert.Equal(t, len(sheetMap), 2)
+}
+
+func TestSetActiveSheet(t *testing.T) {
+	f := NewFile()
+	f.WorkBook.BookViews = nil
+	f.SetActiveSheet(1)
+	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
+	f.SetActiveSheet(1)
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = nil
+	f.SetActiveSheet(1)
+	f = NewFile()
+	f.SetActiveSheet(-1)
+	assert.Equal(t, f.GetActiveSheetIndex(), 0)
+}
+
+func TestSetSheetName(t *testing.T) {
+	f := NewFile()
+	// Test set workksheet with the same name.
+	f.SetSheetName("Sheet1", "Sheet1")
+	assert.Equal(t, "Sheet1", f.GetSheetName(0))
+}
+
+func TestGetWorkbookPath(t *testing.T) {
+	f := NewFile()
+	delete(f.XLSX, "_rels/.rels")
+	assert.Equal(t, "", f.getWorkbookPath())
+}
+
+func TestGetWorkbookRelsPath(t *testing.T) {
+	f := NewFile()
+	delete(f.XLSX, "xl/_rels/.rels")
+	f.XLSX["_rels/.rels"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`)
+	assert.Equal(t, "_rels/workbook.xml.rels", f.getWorkbookRelsPath())
+}
+
+func TestDeleteSheet(t *testing.T) {
+	f := NewFile()
+	f.SetActiveSheet(f.NewSheet("Sheet2"))
+	f.NewSheet("Sheet3")
+	f.DeleteSheet("Sheet1")
+	assert.Equal(t, "Sheet2", f.GetSheetName(f.GetActiveSheetIndex()))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet.xlsx")))
+}
+
+func BenchmarkNewSheet(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			newSheetWithSet()
+		}
+	})
+}
+func newSheetWithSet() {
+	file := NewFile()
+	file.NewSheet("sheet1")
+	for i := 0; i < 1000; i++ {
+		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+	}
+	file = nil
+}
+
+func BenchmarkFile_SaveAs(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			newSheetWithSave()
+		}
+	})
+}
+
+func newSheetWithSave() {
+	file := NewFile()
+	file.NewSheet("sheet1")
+	for i := 0; i < 1000; i++ {
+		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+	}
+	file.Save()
 }

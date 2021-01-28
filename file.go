@@ -23,7 +23,7 @@ import (
 // NewFile provides a function to create new file by default template. For
 // example:
 //
-//    xlsx := NewFile()
+//    f := NewFile()
 //
 func NewFile() *File {
 	file := make(map[string][]byte)
@@ -54,7 +54,7 @@ func NewFile() *File {
 	return f
 }
 
-// Save provides a function to override the xlsx file with origin path.
+// Save provides a function to override the spreadsheet with origin path.
 func (f *File) Save() error {
 	if f.Path == "" {
 		return fmt.Errorf("no path defined for file, consider File.WriteTo or File.Write")
@@ -62,7 +62,7 @@ func (f *File) Save() error {
 	return f.SaveAs(f.Path)
 }
 
-// SaveAs provides a function to create or update to an xlsx file at the
+// SaveAs provides a function to create or update to an spreadsheet at the
 // provided path.
 func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFileNameLength {
@@ -110,6 +110,26 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 
+	for path, stream := range f.streams {
+		fi, err := zw.Create(path)
+		if err != nil {
+			zw.Close()
+			return buf, err
+		}
+		var from io.Reader
+		from, err = stream.rawData.Reader()
+		if err != nil {
+			stream.rawData.Close()
+			return buf, err
+		}
+		_, err = io.Copy(fi, from)
+		if err != nil {
+			zw.Close()
+			return buf, err
+		}
+		stream.rawData.Close()
+	}
+
 	for path, content := range f.XLSX {
 		fi, err := zw.Create(path)
 		if err != nil {
@@ -123,7 +143,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		}
 	}
 
-	if f.options != nil {
+	if f.options != nil && f.options.Password != "" {
 		if err := zw.Close(); err != nil {
 			return buf, err
 		}

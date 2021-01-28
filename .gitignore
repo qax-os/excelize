@@ -1,5 +1,10 @@
 ~$*.xlsx
 test/Test*.xlsx
+test/Test*.xlsm
+# generated files
+test/BadEncrypt.xlsx
+test/BadWorkbook.SaveAsEmptyStruct.xlsx
+test/*.png
 *.out
 *.test
 .idea

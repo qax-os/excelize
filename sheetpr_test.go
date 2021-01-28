@@ -1,4 +1,4 @@
-package excelize_test
+package excelize
 
 import (
 	"fmt"
@@ -6,39 +6,37 @@ import (
 
 	"github.com/mohae/deepcopy"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-var _ = []excelize.SheetPrOption{
-	excelize.CodeName("hello"),
-	excelize.EnableFormatConditionsCalculation(false),
-	excelize.Published(false),
-	excelize.FitToPage(true),
-	excelize.AutoPageBreaks(true),
-	excelize.OutlineSummaryBelow(true),
+var _ = []SheetPrOption{
+	CodeName("hello"),
+	EnableFormatConditionsCalculation(false),
+	Published(false),
+	FitToPage(true),
+	AutoPageBreaks(true),
+	OutlineSummaryBelow(true),
 }
 
-var _ = []excelize.SheetPrOptionPtr{
-	(*excelize.CodeName)(nil),
-	(*excelize.EnableFormatConditionsCalculation)(nil),
-	(*excelize.Published)(nil),
-	(*excelize.FitToPage)(nil),
-	(*excelize.AutoPageBreaks)(nil),
-	(*excelize.OutlineSummaryBelow)(nil),
+var _ = []SheetPrOptionPtr{
+	(*CodeName)(nil),
+	(*EnableFormatConditionsCalculation)(nil),
+	(*Published)(nil),
+	(*FitToPage)(nil),
+	(*AutoPageBreaks)(nil),
+	(*OutlineSummaryBelow)(nil),
 }
 
 func ExampleFile_SetSheetPrOptions() {
-	f := excelize.NewFile()
+	f := NewFile()
 	const sheet = "Sheet1"
 
 	if err := f.SetSheetPrOptions(sheet,
-		excelize.CodeName("code"),
-		excelize.EnableFormatConditionsCalculation(false),
-		excelize.Published(false),
-		excelize.FitToPage(true),
-		excelize.AutoPageBreaks(true),
-		excelize.OutlineSummaryBelow(false),
+		CodeName("code"),
+		EnableFormatConditionsCalculation(false),
+		Published(false),
+		FitToPage(true),
+		AutoPageBreaks(true),
+		OutlineSummaryBelow(false),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -46,16 +44,16 @@ func ExampleFile_SetSheetPrOptions() {
 }
 
 func ExampleFile_GetSheetPrOptions() {
-	f := excelize.NewFile()
+	f := NewFile()
 	const sheet = "Sheet1"
 
 	var (
-		codeName                          excelize.CodeName
-		enableFormatConditionsCalculation excelize.EnableFormatConditionsCalculation
-		published                         excelize.Published
-		fitToPage                         excelize.FitToPage
-		autoPageBreaks                    excelize.AutoPageBreaks
-		outlineSummaryBelow               excelize.OutlineSummaryBelow
+		codeName                          CodeName
+		enableFormatConditionsCalculation EnableFormatConditionsCalculation
+		published                         Published
+		fitToPage                         FitToPage
+		autoPageBreaks                    AutoPageBreaks
+		outlineSummaryBelow               OutlineSummaryBelow
 	)
 
 	if err := f.GetSheetPrOptions(sheet,
@@ -89,15 +87,15 @@ func TestSheetPrOptions(t *testing.T) {
 	const sheet = "Sheet1"
 
 	testData := []struct {
-		container  excelize.SheetPrOptionPtr
-		nonDefault excelize.SheetPrOption
+		container  SheetPrOptionPtr
+		nonDefault SheetPrOption
 	}{
-		{new(excelize.CodeName), excelize.CodeName("xx")},
-		{new(excelize.EnableFormatConditionsCalculation), excelize.EnableFormatConditionsCalculation(false)},
-		{new(excelize.Published), excelize.Published(false)},
-		{new(excelize.FitToPage), excelize.FitToPage(true)},
-		{new(excelize.AutoPageBreaks), excelize.AutoPageBreaks(true)},
-		{new(excelize.OutlineSummaryBelow), excelize.OutlineSummaryBelow(false)},
+		{new(CodeName), CodeName("xx")},
+		{new(EnableFormatConditionsCalculation), EnableFormatConditionsCalculation(false)},
+		{new(Published), Published(false)},
+		{new(FitToPage), FitToPage(true)},
+		{new(AutoPageBreaks), AutoPageBreaks(true)},
+		{new(OutlineSummaryBelow), OutlineSummaryBelow(false)},
 	}
 
 	for i, test := range testData {
@@ -106,11 +104,11 @@ func TestSheetPrOptions(t *testing.T) {
 			opt := test.nonDefault
 			t.Logf("option %T", opt)
 
-			def := deepcopy.Copy(test.container).(excelize.SheetPrOptionPtr)
-			val1 := deepcopy.Copy(def).(excelize.SheetPrOptionPtr)
-			val2 := deepcopy.Copy(def).(excelize.SheetPrOptionPtr)
+			def := deepcopy.Copy(test.container).(SheetPrOptionPtr)
+			val1 := deepcopy.Copy(def).(SheetPrOptionPtr)
+			val2 := deepcopy.Copy(def).(SheetPrOptionPtr)
 
-			f := excelize.NewFile()
+			f := NewFile()
 			// Get the default value
 			assert.NoError(t, f.GetSheetPrOptions(sheet, def), opt)
 			// Get again and check
@@ -148,46 +146,46 @@ func TestSheetPrOptions(t *testing.T) {
 }
 
 func TestSetSheetrOptions(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	// Test SetSheetrOptions on not exists worksheet.
 	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetSheetPrOptions(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	// Test GetSheetPrOptions on not exists worksheet.
 	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
 
-var _ = []excelize.PageMarginsOptions{
-	excelize.PageMarginBottom(1.0),
-	excelize.PageMarginFooter(1.0),
-	excelize.PageMarginHeader(1.0),
-	excelize.PageMarginLeft(1.0),
-	excelize.PageMarginRight(1.0),
-	excelize.PageMarginTop(1.0),
+var _ = []PageMarginsOptions{
+	PageMarginBottom(1.0),
+	PageMarginFooter(1.0),
+	PageMarginHeader(1.0),
+	PageMarginLeft(1.0),
+	PageMarginRight(1.0),
+	PageMarginTop(1.0),
 }
 
-var _ = []excelize.PageMarginsOptionsPtr{
-	(*excelize.PageMarginBottom)(nil),
-	(*excelize.PageMarginFooter)(nil),
-	(*excelize.PageMarginHeader)(nil),
-	(*excelize.PageMarginLeft)(nil),
-	(*excelize.PageMarginRight)(nil),
-	(*excelize.PageMarginTop)(nil),
+var _ = []PageMarginsOptionsPtr{
+	(*PageMarginBottom)(nil),
+	(*PageMarginFooter)(nil),
+	(*PageMarginHeader)(nil),
+	(*PageMarginLeft)(nil),
+	(*PageMarginRight)(nil),
+	(*PageMarginTop)(nil),
 }
 
 func ExampleFile_SetPageMargins() {
-	f := excelize.NewFile()
+	f := NewFile()
 	const sheet = "Sheet1"
 
 	if err := f.SetPageMargins(sheet,
-		excelize.PageMarginBottom(1.0),
-		excelize.PageMarginFooter(1.0),
-		excelize.PageMarginHeader(1.0),
-		excelize.PageMarginLeft(1.0),
-		excelize.PageMarginRight(1.0),
-		excelize.PageMarginTop(1.0),
+		PageMarginBottom(1.0),
+		PageMarginFooter(1.0),
+		PageMarginHeader(1.0),
+		PageMarginLeft(1.0),
+		PageMarginRight(1.0),
+		PageMarginTop(1.0),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -195,16 +193,16 @@ func ExampleFile_SetPageMargins() {
 }
 
 func ExampleFile_GetPageMargins() {
-	f := excelize.NewFile()
+	f := NewFile()
 	const sheet = "Sheet1"
 
 	var (
-		marginBottom excelize.PageMarginBottom
-		marginFooter excelize.PageMarginFooter
-		marginHeader excelize.PageMarginHeader
-		marginLeft   excelize.PageMarginLeft
-		marginRight  excelize.PageMarginRight
-		marginTop    excelize.PageMarginTop
+		marginBottom PageMarginBottom
+		marginFooter PageMarginFooter
+		marginHeader PageMarginHeader
+		marginLeft   PageMarginLeft
+		marginRight  PageMarginRight
+		marginTop    PageMarginTop
 	)
 
 	if err := f.GetPageMargins(sheet,
@@ -238,15 +236,15 @@ func TestPageMarginsOption(t *testing.T) {
 	const sheet = "Sheet1"
 
 	testData := []struct {
-		container  excelize.PageMarginsOptionsPtr
-		nonDefault excelize.PageMarginsOptions
+		container  PageMarginsOptionsPtr
+		nonDefault PageMarginsOptions
 	}{
-		{new(excelize.PageMarginTop), excelize.PageMarginTop(1.0)},
-		{new(excelize.PageMarginBottom), excelize.PageMarginBottom(1.0)},
-		{new(excelize.PageMarginLeft), excelize.PageMarginLeft(1.0)},
-		{new(excelize.PageMarginRight), excelize.PageMarginRight(1.0)},
-		{new(excelize.PageMarginHeader), excelize.PageMarginHeader(1.0)},
-		{new(excelize.PageMarginFooter), excelize.PageMarginFooter(1.0)},
+		{new(PageMarginTop), PageMarginTop(1.0)},
+		{new(PageMarginBottom), PageMarginBottom(1.0)},
+		{new(PageMarginLeft), PageMarginLeft(1.0)},
+		{new(PageMarginRight), PageMarginRight(1.0)},
+		{new(PageMarginHeader), PageMarginHeader(1.0)},
+		{new(PageMarginFooter), PageMarginFooter(1.0)},
 	}
 
 	for i, test := range testData {
@@ -255,11 +253,11 @@ func TestPageMarginsOption(t *testing.T) {
 			opt := test.nonDefault
 			t.Logf("option %T", opt)
 
-			def := deepcopy.Copy(test.container).(excelize.PageMarginsOptionsPtr)
-			val1 := deepcopy.Copy(def).(excelize.PageMarginsOptionsPtr)
-			val2 := deepcopy.Copy(def).(excelize.PageMarginsOptionsPtr)
+			def := deepcopy.Copy(test.container).(PageMarginsOptionsPtr)
+			val1 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
+			val2 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
 
-			f := excelize.NewFile()
+			f := NewFile()
 			// Get the default value
 			assert.NoError(t, f.GetPageMargins(sheet, def), opt)
 			// Get again and check
@@ -297,29 +295,29 @@ func TestPageMarginsOption(t *testing.T) {
 }
 
 func TestSetPageMargins(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	// Test set page margins on not exists worksheet.
 	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetPageMargins(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	// Test get page margins on not exists worksheet.
 	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
 
 func ExampleFile_SetSheetFormatPr() {
-	f := excelize.NewFile()
+	f := NewFile()
 	const sheet = "Sheet1"
 
 	if err := f.SetSheetFormatPr(sheet,
-		excelize.BaseColWidth(1.0),
-		excelize.DefaultColWidth(1.0),
-		excelize.DefaultRowHeight(1.0),
-		excelize.CustomHeight(true),
-		excelize.ZeroHeight(true),
-		excelize.ThickTop(true),
-		excelize.ThickBottom(true),
+		BaseColWidth(1.0),
+		DefaultColWidth(1.0),
+		DefaultRowHeight(1.0),
+		CustomHeight(true),
+		ZeroHeight(true),
+		ThickTop(true),
+		ThickBottom(true),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -327,17 +325,17 @@ func ExampleFile_SetSheetFormatPr() {
 }
 
 func ExampleFile_GetSheetFormatPr() {
-	f := excelize.NewFile()
+	f := NewFile()
 	const sheet = "Sheet1"
 
 	var (
-		baseColWidth     excelize.BaseColWidth
-		defaultColWidth  excelize.DefaultColWidth
-		defaultRowHeight excelize.DefaultRowHeight
-		customHeight     excelize.CustomHeight
-		zeroHeight       excelize.ZeroHeight
-		thickTop         excelize.ThickTop
-		thickBottom      excelize.ThickBottom
+		baseColWidth     BaseColWidth
+		defaultColWidth  DefaultColWidth
+		defaultRowHeight DefaultRowHeight
+		customHeight     CustomHeight
+		zeroHeight       ZeroHeight
+		thickTop         ThickTop
+		thickBottom      ThickBottom
 	)
 
 	if err := f.GetSheetFormatPr(sheet,
@@ -374,16 +372,16 @@ func TestSheetFormatPrOptions(t *testing.T) {
 	const sheet = "Sheet1"
 
 	testData := []struct {
-		container  excelize.SheetFormatPrOptionsPtr
-		nonDefault excelize.SheetFormatPrOptions
+		container  SheetFormatPrOptionsPtr
+		nonDefault SheetFormatPrOptions
 	}{
-		{new(excelize.BaseColWidth), excelize.BaseColWidth(1.0)},
-		{new(excelize.DefaultColWidth), excelize.DefaultColWidth(1.0)},
-		{new(excelize.DefaultRowHeight), excelize.DefaultRowHeight(1.0)},
-		{new(excelize.CustomHeight), excelize.CustomHeight(true)},
-		{new(excelize.ZeroHeight), excelize.ZeroHeight(true)},
-		{new(excelize.ThickTop), excelize.ThickTop(true)},
-		{new(excelize.ThickBottom), excelize.ThickBottom(true)},
+		{new(BaseColWidth), BaseColWidth(1.0)},
+		{new(DefaultColWidth), DefaultColWidth(1.0)},
+		{new(DefaultRowHeight), DefaultRowHeight(1.0)},
+		{new(CustomHeight), CustomHeight(true)},
+		{new(ZeroHeight), ZeroHeight(true)},
+		{new(ThickTop), ThickTop(true)},
+		{new(ThickBottom), ThickBottom(true)},
 	}
 
 	for i, test := range testData {
@@ -392,11 +390,11 @@ func TestSheetFormatPrOptions(t *testing.T) {
 			opt := test.nonDefault
 			t.Logf("option %T", opt)
 
-			def := deepcopy.Copy(test.container).(excelize.SheetFormatPrOptionsPtr)
-			val1 := deepcopy.Copy(def).(excelize.SheetFormatPrOptionsPtr)
-			val2 := deepcopy.Copy(def).(excelize.SheetFormatPrOptionsPtr)
+			def := deepcopy.Copy(test.container).(SheetFormatPrOptionsPtr)
+			val1 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
+			val2 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
 
-			f := excelize.NewFile()
+			f := NewFile()
 			// Get the default value
 			assert.NoError(t, f.GetSheetFormatPr(sheet, def), opt)
 			// Get again and check
@@ -434,26 +432,26 @@ func TestSheetFormatPrOptions(t *testing.T) {
 }
 
 func TestSetSheetFormatPr(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
 	f.Sheet["xl/worksheets/sheet1.xml"].SheetFormatPr = nil
-	assert.NoError(t, f.SetSheetFormatPr("Sheet1", excelize.BaseColWidth(1.0)))
+	assert.NoError(t, f.SetSheetFormatPr("Sheet1", BaseColWidth(1.0)))
 	// Test set formatting properties on not exists worksheet.
 	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetSheetFormatPr(t *testing.T) {
-	f := excelize.NewFile()
+	f := NewFile()
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
 	f.Sheet["xl/worksheets/sheet1.xml"].SheetFormatPr = nil
 	var (
-		baseColWidth     excelize.BaseColWidth
-		defaultColWidth  excelize.DefaultColWidth
-		defaultRowHeight excelize.DefaultRowHeight
-		customHeight     excelize.CustomHeight
-		zeroHeight       excelize.ZeroHeight
-		thickTop         excelize.ThickTop
-		thickBottom      excelize.ThickBottom
+		baseColWidth     BaseColWidth
+		defaultColWidth  DefaultColWidth
+		defaultRowHeight DefaultRowHeight
+		customHeight     CustomHeight
+		zeroHeight       ZeroHeight
+		thickTop         ThickTop
+		thickBottom      ThickBottom
 	)
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1",
 		&baseColWidth,

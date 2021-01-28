@@ -1,10 +1,13 @@
 package excelize
 
 import (
+	"container/list"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/xuri/efp"
 )
 
 func TestCalcCellValue(t *testing.T) {
@@ -31,6 +34,18 @@ func TestCalcCellValue(t *testing.T) {
 	}
 
 	mathCalc := map[string]string{
+		"=2^3":  "8",
+		"=1=1":  "TRUE",
+		"=1=2":  "FALSE",
+		"=1<2":  "TRUE",
+		"=3<2":  "FALSE",
+		"=2<=3": "TRUE",
+		"=2<=1": "FALSE",
+		"=2>1":  "TRUE",
+		"=2>3":  "FALSE",
+		"=2>=1": "TRUE",
+		"=2>=3": "FALSE",
+		"=1&2":  "12",
 		// ABS
 		"=ABS(-1)":    "1",
 		"=ABS(-6.5)":  "6.5",
@@ -39,42 +54,42 @@ func TestCalcCellValue(t *testing.T) {
 		"=ABS(2-4.5)": "2.5",
 		// ACOS
 		"=ACOS(-1)": "3.141592653589793",
-		"=ACOS(0)":  "1.5707963267948966",
+		"=ACOS(0)":  "1.570796326794897",
 		// ACOSH
 		"=ACOSH(1)":   "0",
 		"=ACOSH(2.5)": "1.566799236972411",
-		"=ACOSH(5)":   "2.2924316695611777",
+		"=ACOSH(5)":   "2.292431669561178",
 		// ACOT
-		"=_xlfn.ACOT(1)":  "0.7853981633974483",
+		"=_xlfn.ACOT(1)":  "0.785398163397448",
 		"=_xlfn.ACOT(-2)": "2.677945044588987",
-		"=_xlfn.ACOT(0)":  "1.5707963267948966",
+		"=_xlfn.ACOT(0)":  "1.570796326794897",
 		// ACOTH
-		"=_xlfn.ACOTH(-5)":  "-0.2027325540540822",
-		"=_xlfn.ACOTH(1.1)": "1.5222612188617113",
-		"=_xlfn.ACOTH(2)":   "0.5493061443340548",
+		"=_xlfn.ACOTH(-5)":  "-0.202732554054082",
+		"=_xlfn.ACOTH(1.1)": "1.522261218861711",
+		"=_xlfn.ACOTH(2)":   "0.549306144334055",
 		// ARABIC
 		`=_xlfn.ARABIC("IV")`:   "4",
 		`=_xlfn.ARABIC("-IV")`:  "-4",
 		`=_xlfn.ARABIC("MCXX")`: "1120",
 		`=_xlfn.ARABIC("")`:     "0",
 		// ASIN
-		"=ASIN(-1)": "-1.5707963267948966",
+		"=ASIN(-1)": "-1.570796326794897",
 		"=ASIN(0)":  "0",
 		// ASINH
 		"=ASINH(0)":    "0",
-		"=ASINH(-0.5)": "-0.48121182505960347",
-		"=ASINH(2)":    "1.4436354751788103",
+		"=ASINH(-0.5)": "-0.481211825059604",
+		"=ASINH(2)":    "1.44363547517881",
 		// ATAN
-		"=ATAN(-1)": "-0.7853981633974483",
+		"=ATAN(-1)": "-0.785398163397448",
 		"=ATAN(0)":  "0",
-		"=ATAN(1)":  "0.7853981633974483",
+		"=ATAN(1)":  "0.785398163397448",
 		// ATANH
-		"=ATANH(-0.8)": "-1.0986122886681098",
+		"=ATANH(-0.8)": "-1.09861228866811",
 		"=ATANH(0)":    "0",
-		"=ATANH(0.5)":  "0.5493061443340548",
+		"=ATANH(0.5)":  "0.549306144334055",
 		// ATAN2
-		"=ATAN2(1,1)":  "0.7853981633974483",
-		"=ATAN2(1,-1)": "-0.7853981633974483",
+		"=ATAN2(1,1)":  "0.785398163397448",
+		"=ATAN2(1,-1)": "-0.785398163397448",
 		"=ATAN2(4,0)":  "0",
 		// BASE
 		"=BASE(12,2)":      "1100",
@@ -130,17 +145,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=COS(0)":           "1",
 		// COSH
 		"=COSH(0)":   "1",
-		"=COSH(0.5)": "1.1276259652063807",
-		"=COSH(-2)":  "3.7621956910836314",
+		"=COSH(0.5)": "1.127625965206381",
+		"=COSH(-2)":  "3.762195691083632",
 		// _xlfn.COT
-		"=_xlfn.COT(0.785398163397448)": "0.9999999999999992",
+		"=_xlfn.COT(0.785398163397448)": "0.999999999999999",
 		// _xlfn.COTH
-		"=_xlfn.COTH(-3.14159265358979)": "-0.9962720762207499",
+		"=_xlfn.COTH(-3.14159265358979)": "-0.99627207622075",
 		// _xlfn.CSC
-		"=_xlfn.CSC(-6)":              "3.5788995472544056",
+		"=_xlfn.CSC(-6)":              "3.578899547254406",
 		"=_xlfn.CSC(1.5707963267949)": "1",
 		// _xlfn.CSCH
-		"=_xlfn.CSCH(-3.14159265358979)": "-0.08658953753004724",
+		"=_xlfn.CSCH(-3.14159265358979)": "-0.086589537530047",
 		// _xlfn.DECIMAL
 		`=_xlfn.DECIMAL("1100",2)`:    "12",
 		`=_xlfn.DECIMAL("186A0",16)`:  "100000",
@@ -159,9 +174,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=EVEN(-4)":   "-4",
 		// EXP
 		"=EXP(100)": "2.6881171418161356E+43",
-		"=EXP(0.1)": "1.1051709180756477",
+		"=EXP(0.1)": "1.105170918075648",
 		"=EXP(0)":   "1",
-		"=EXP(-5)":  "0.006737946999085467",
+		"=EXP(-5)":  "0.006737946999085",
 		// FACT
 		"=FACT(3)":  "6",
 		"=FACT(6)":  "720",
@@ -232,23 +247,23 @@ func TestCalcCellValue(t *testing.T) {
 		// LN
 		"=LN(1)":   "0",
 		"=LN(100)": "4.605170185988092",
-		"=LN(0.5)": "-0.6931471805599453",
+		"=LN(0.5)": "-0.693147180559945",
 		// LOG
 		"=LOG(64,2)":  "6",
 		"=LOG(100)":   "2",
 		"=LOG(4,0.5)": "-2",
-		"=LOG(500)":   "2.6989700043360183",
+		"=LOG(500)":   "2.698970004336019",
 		// LOG10
 		"=LOG10(100)":   "2",
 		"=LOG10(1000)":  "3",
 		"=LOG10(0.001)": "-3",
-		"=LOG10(25)":    "1.3979400086720375",
+		"=LOG10(25)":    "1.397940008672038",
 		// MOD
 		"=MOD(6,4)":      "2",
 		"=MOD(6,3)":      "0",
 		"=MOD(6,2.5)":    "1",
-		"=MOD(6,1.333)":  "0.6680000000000001",
-		"=MOD(-10.23,1)": "0.7699999999999996",
+		"=MOD(6,1.333)":  "0.668",
+		"=MOD(-10.23,1)": "0.77",
 		// MROUND
 		"=MROUND(333.7,0.5)":   "333.5",
 		"=MROUND(333.8,1)":     "334",
@@ -283,7 +298,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=QUOTIENT(4.5,3.1)": "1",
 		"=QUOTIENT(-10,3)":   "-3",
 		// RADIANS
-		"=RADIANS(50)":   "0.8726646259971648",
+		"=RADIANS(50)":   "0.872664625997165",
 		"=RADIANS(-180)": "-3.141592653589793",
 		"=RADIANS(180)":  "3.141592653589793",
 		"=RADIANS(360)":  "6.283185307179586",
@@ -308,13 +323,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=ROUND(991,-1)":    "990",
 		// ROUNDDOWN
 		"=ROUNDDOWN(99.999,1)":   "99.9",
-		"=ROUNDDOWN(99.999,2)":   "99.99000000000002",
+		"=ROUNDDOWN(99.999,2)":   "99.99000000000001",
 		"=ROUNDDOWN(99.999,0)":   "99",
 		"=ROUNDDOWN(99.999,-1)":  "90",
-		"=ROUNDDOWN(-99.999,2)":  "-99.99000000000002",
+		"=ROUNDDOWN(-99.999,2)":  "-99.99000000000001",
 		"=ROUNDDOWN(-99.999,-1)": "-90",
 		// ROUNDUP
-		"=ROUNDUP(11.111,1)":   "11.200000000000001",
+		"=ROUNDUP(11.111,1)":   "11.200000000000003",
 		"=ROUNDUP(11.111,2)":   "11.120000000000003",
 		"=ROUNDUP(11.111,0)":   "12",
 		"=ROUNDUP(11.111,-1)":  "20",
@@ -324,7 +339,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.SEC(-3.14159265358979)": "-1",
 		"=_xlfn.SEC(0)":                 "1",
 		// SECH
-		"=_xlfn.SECH(-3.14159265358979)": "0.0862667383340547",
+		"=_xlfn.SECH(-3.14159265358979)": "0.086266738334055",
 		"=_xlfn.SECH(0)":                 "1",
 		// SIGN
 		"=SIGN(9.5)":        "1",
@@ -333,16 +348,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=SIGN(0.00000001)": "1",
 		"=SIGN(6-7)":        "-1",
 		// SIN
-		"=SIN(0.785398163)": "0.7071067809055092",
+		"=SIN(0.785398163)": "0.707106780905509",
 		// SINH
 		"=SINH(0)":   "0",
-		"=SINH(0.5)": "0.5210953054937474",
+		"=SINH(0.5)": "0.521095305493747",
 		"=SINH(-2)":  "-3.626860407847019",
 		// SQRT
-		"=SQRT(4)": "2",
+		"=SQRT(4)":  "2",
+		`=SQRT("")`: "0",
 		// SQRTPI
 		"=SQRTPI(5)":   "3.963327297606011",
-		"=SQRTPI(0.2)": "0.7926654595212022",
+		"=SQRTPI(0.2)": "0.792665459521202",
 		"=SQRTPI(100)": "17.72453850905516",
 		"=SQRTPI(0)":   "0",
 		// SUM
@@ -361,7 +377,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
 		// SUMIF
+		`=SUMIF(F1:F5, "")`:             "0",
+		`=SUMIF(A1:A5, "3")`:            "3",
+		`=SUMIF(F1:F5, "=36693")`:       "36693",
+		`=SUMIF(F1:F5, "<100")`:         "0",
+		`=SUMIF(F1:F5, "<=36693")`:      "93233",
 		`=SUMIF(F1:F5, ">100")`:         "146554",
+		`=SUMIF(F1:F5, ">=100")`:        "146554",
+		`=SUMIF(F1:F5, ">=text")`:       "0",
+		`=SUMIF(F1:F5, "*Jan",F2:F5)`:   "0",
 		`=SUMIF(D3:D7,"Jan",F2:F5)`:     "112114",
 		`=SUMIF(D2:D9,"Feb",F2:F9)`:     "157559",
 		`=SUMIF(E2:E9,"North 1",F2:F9)`: "66582",
@@ -375,8 +399,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=TAN(0)":           "0",
 		// TANH
 		"=TANH(0)":   "0",
-		"=TANH(0.5)": "0.46211715726000974",
-		"=TANH(-2)":  "-0.9640275800758169",
+		"=TANH(0.5)": "0.46211715726001",
+		"=TANH(-2)":  "-0.964027580075817",
 		// TRUNC
 		"=TRUNC(99.999,1)":   "99.9",
 		"=TRUNC(99.999,2)":   "99.99",
@@ -384,14 +408,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(99.999,-1)":  "90",
 		"=TRUNC(-99.999,2)":  "-99.99",
 		"=TRUNC(-99.999,-1)": "-90",
-		// Statistical functions
+		// Statistical Functions
 		// COUNTA
 		`=COUNTA()`:                       "0",
 		`=COUNTA(A1:A5,B2:B5,"text",1,2)`: "8",
 		// MEDIAN
 		"=MEDIAN(A1:A5,12)": "2",
 		"=MEDIAN(A1:A5)":    "1.5",
-		// Information functions
+		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
 		"=ISBLANK(A5)": "TRUE",
@@ -420,6 +444,47 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISODD(A2)": "FALSE",
 		// NA
 		"=NA()": "#N/A",
+		// Logical Functions
+		// AND
+		"=AND(0)":               "FALSE",
+		"=AND(1)":               "TRUE",
+		"=AND(1,0)":             "FALSE",
+		"=AND(0,1)":             "FALSE",
+		"=AND(1=1)":             "TRUE",
+		"=AND(1<2)":             "TRUE",
+		"=AND(1>2,2<3,2>0,3>1)": "FALSE",
+		"=AND(1=1),1=1":         "TRUE",
+		// OR
+		"=OR(1)":       "TRUE",
+		"=OR(0)":       "FALSE",
+		"=OR(1=2,2=2)": "TRUE",
+		"=OR(1=2,2=3)": "FALSE",
+		// Date and Time Functions
+		// DATE
+		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
+		"=DATE(1900,1,1)":   "1899-12-31 00:00:00 +0000 UTC",
+		// Text Functions
+		// CLEAN
+		"=CLEAN(\"\u0009clean text\")": "clean text",
+		"=CLEAN(0)":                    "0",
+		// TRIM
+		"=TRIM(\" trim text \")": "trim text",
+		"=TRIM(0)":               "0",
+		// LOWER
+		"=LOWER(\"test\")":     "test",
+		"=LOWER(\"TEST\")":     "test",
+		"=LOWER(\"Test\")":     "test",
+		"=LOWER(\"TEST 123\")": "test 123",
+		// PROPER
+		"=PROPER(\"this is a test sentence\")": "This Is A Test Sentence",
+		"=PROPER(\"THIS IS A TEST SENTENCE\")": "This Is A Test Sentence",
+		"=PROPER(\"123tEST teXT\")":            "123Test Text",
+		"=PROPER(\"Mr. SMITH's address\")":     "Mr. Smith'S Address",
+		// UPPER
+		"=UPPER(\"test\")":     "TEST",
+		"=UPPER(\"TEST\")":     "TEST",
+		"=UPPER(\"Test\")":     "TEST",
+		"=UPPER(\"TEST 123\")": "TEST 123",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -695,10 +760,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC()":      "TRUNC requires at least 1 argument",
 		`=TRUNC("X")`:   "#VALUE!",
 		`=TRUNC(1,"X")`: "#VALUE!",
-		// Statistical functions
+		// Statistical Functions
 		// MEDIAN
 		"=MEDIAN()": "MEDIAN requires at least 1 argument",
-		// Information functions
+		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
 		// ISERR
@@ -706,7 +771,8 @@ func TestCalcCellValue(t *testing.T) {
 		// ISERROR
 		"=ISERROR()": "ISERROR requires 1 argument",
 		// ISEVEN
-		"=ISEVEN()": "ISEVEN requires 1 argument",
+		"=ISEVEN()":       "ISEVEN requires 1 argument",
+		`=ISEVEN("text")`: "#VALUE!",
 		// ISNA
 		"=ISNA()": "ISNA requires 1 argument",
 		// ISNONTEXT
@@ -714,9 +780,43 @@ func TestCalcCellValue(t *testing.T) {
 		// ISNUMBER
 		"=ISNUMBER()": "ISNUMBER requires 1 argument",
 		// ISODD
-		"=ISODD()": "ISODD requires 1 argument",
+		"=ISODD()":       "ISODD requires 1 argument",
+		`=ISODD("text")`: "#VALUE!",
 		// NA
 		"=NA(1)": "NA accepts no arguments",
+		// Logical Functions
+		// AND
+		`=AND("text")`: "#VALUE!",
+		`=AND(A1:B1)`:  "#VALUE!",
+		"=AND()":       "AND requires at least 1 argument",
+		"=AND(1" + strings.Repeat(",1", 30) + ")": "AND accepts at most 30 arguments",
+		// OR
+		`=OR("text")`:                            "#VALUE!",
+		`=OR(A1:B1)`:                             "#VALUE!",
+		"=OR()":                                  "OR requires at least 1 argument",
+		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
+		// Date and Time Functions
+		// DATE
+		"=DATE()":               "DATE requires 3 number arguments",
+		`=DATE("text",10,21)`:   "DATE requires 3 number arguments",
+		`=DATE(2020,"text",21)`: "DATE requires 3 number arguments",
+		`=DATE(2020,10,"text")`: "DATE requires 3 number arguments",
+		// Text Functions
+		// CLEAN
+		"=CLEAN()":    "CLEAN requires 1 argument",
+		"=CLEAN(1,2)": "CLEAN requires 1 argument",
+		// TRIM
+		"=TRIM()":    "TRIM requires 1 argument",
+		"=TRIM(1,2)": "TRIM requires 1 argument",
+		// LOWER
+		"=LOWER()":    "LOWER requires 1 argument",
+		"=LOWER(1,2)": "LOWER requires 1 argument",
+		// UPPER
+		"=UPPER()":    "UPPER requires 1 argument",
+		"=UPPER(1,2)": "UPPER requires 1 argument",
+		// PROPER
+		"=PROPER()":    "PROPER requires 1 argument",
+		"=PROPER(1,2)": "PROPER requires 1 argument",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()
@@ -732,14 +832,14 @@ func TestCalcCellValue(t *testing.T) {
 		// PRODUCT
 		"=PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// SUM
-		"=A1/A3":                          "0.3333333333333333",
+		"=A1/A3":                          "0.333333333333333",
 		"=SUM(A1:A2)":                     "3",
 		"=SUM(Sheet1!A1,A2)":              "3",
 		"=(-2-SUM(-4+A2))*5":              "0",
 		"=SUM(Sheet1!A1:Sheet1!A1:A2,A2)": "5",
 		"=SUM(A1,A2,A3)*SUM(2,3)":         "30",
-		"=1+SUM(SUM(A1+A2/A3)*(2-3),2)":   "1.3333333333333335",
-		"=A1/A2/SUM(A1:A2:B1)":            "0.041666666666666664",
+		"=1+SUM(SUM(A1+A2/A3)*(2-3),2)":   "1.333333333333334",
+		"=A1/A2/SUM(A1:A2:B1)":            "0.041666666666667",
 		"=A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
 	}
 	for formula, expected := range referenceCalc {
@@ -793,6 +893,18 @@ func TestCalcCellValue(t *testing.T) {
 
 }
 
+func TestCalculate(t *testing.T) {
+	err := `strconv.ParseFloat: parsing "string": invalid syntax`
+	opd := NewStack()
+	opd.Push(efp.Token{TValue: "string"})
+	opt := efp.Token{TValue: "-", TType: efp.TokenTypeOperatorPrefix}
+	assert.EqualError(t, calculate(opd, opt), err)
+	opd.Push(efp.Token{TValue: "string"})
+	opd.Push(efp.Token{TValue: "string"})
+	opt = efp.Token{TValue: "-", TType: efp.TokenTypeOperatorInfix}
+	assert.EqualError(t, calculate(opd, opt), err)
+}
+
 func TestCalcCellValueWithDefinedName(t *testing.T) {
 	cellData := [][]interface{}{
 		{"A1 value", "B1 value", nil},
@@ -816,4 +928,70 @@ func TestCalcCellValueWithDefinedName(t *testing.T) {
 	assert.NoError(t, err)
 	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
 	assert.Equal(t, "B1 value", result, "=defined_name1")
+}
+
+func TestCalcPow(t *testing.T) {
+	err := `strconv.ParseFloat: parsing "text": invalid syntax`
+	assert.EqualError(t, calcPow("1", "text", nil), err)
+	assert.EqualError(t, calcPow("text", "1", nil), err)
+	assert.EqualError(t, calcL("1", "text", nil), err)
+	assert.EqualError(t, calcL("text", "1", nil), err)
+	assert.EqualError(t, calcLe("1", "text", nil), err)
+	assert.EqualError(t, calcLe("text", "1", nil), err)
+	assert.EqualError(t, calcG("1", "text", nil), err)
+	assert.EqualError(t, calcG("text", "1", nil), err)
+	assert.EqualError(t, calcGe("1", "text", nil), err)
+	assert.EqualError(t, calcGe("text", "1", nil), err)
+	assert.EqualError(t, calcAdd("1", "text", nil), err)
+	assert.EqualError(t, calcAdd("text", "1", nil), err)
+	assert.EqualError(t, calcAdd("1", "text", nil), err)
+	assert.EqualError(t, calcAdd("text", "1", nil), err)
+	assert.EqualError(t, calcSubtract("1", "text", nil), err)
+	assert.EqualError(t, calcSubtract("text", "1", nil), err)
+	assert.EqualError(t, calcMultiply("1", "text", nil), err)
+	assert.EqualError(t, calcMultiply("text", "1", nil), err)
+	assert.EqualError(t, calcDiv("1", "text", nil), err)
+	assert.EqualError(t, calcDiv("text", "1", nil), err)
+}
+
+func TestISBLANK(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgUnknown,
+	})
+	fn := formulaFuncs{}
+	result, err := fn.ISBLANK(argsList)
+	assert.Equal(t, result, "TRUE")
+	assert.NoError(t, err)
+}
+
+func TestAND(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgUnknown,
+	})
+	fn := formulaFuncs{}
+	result, err := fn.AND(argsList)
+	assert.Equal(t, result, "TRUE")
+	assert.NoError(t, err)
+}
+
+func TestOR(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgUnknown,
+	})
+	fn := formulaFuncs{}
+	result, err := fn.OR(argsList)
+	assert.Equal(t, result, "FALSE")
+	assert.NoError(t, err)
+}
+
+func TestDet(t *testing.T) {
+	assert.Equal(t, det([][]float64{
+		{1, 2, 3, 4},
+		{2, 3, 4, 5},
+		{3, 4, 5, 6},
+		{4, 5, 6, 7},
+	}), float64(0))
 }

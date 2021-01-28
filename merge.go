@@ -47,14 +47,14 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 	hcell, _ = CoordinatesToCellName(rect1[0], rect1[1])
 	vcell, _ = CoordinatesToCellName(rect1[2], rect1[3])
 
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	ref := hcell + ":" + vcell
-	if xlsx.MergeCells != nil {
-		for i := 0; i < len(xlsx.MergeCells.Cells); i++ {
-			cellData := xlsx.MergeCells.Cells[i]
+	if ws.MergeCells != nil {
+		for i := 0; i < len(ws.MergeCells.Cells); i++ {
+			cellData := ws.MergeCells.Cells[i]
 			if cellData == nil {
 				continue
 			}
@@ -70,7 +70,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 
 			// Delete the merged cells of the overlapping area.
 			if isOverlap(rect1, rect2) {
-				xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells[:i], xlsx.MergeCells.Cells[i+1:]...)
+				ws.MergeCells.Cells = append(ws.MergeCells.Cells[:i], ws.MergeCells.Cells[i+1:]...)
 				i--
 
 				if rect1[0] > rect2[0] {
@@ -93,11 +93,11 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 				ref = hcell + ":" + vcell
 			}
 		}
-		xlsx.MergeCells.Cells = append(xlsx.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
+		ws.MergeCells.Cells = append(ws.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
 	} else {
-		xlsx.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ref}}}
+		ws.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ref}}}
 	}
-	xlsx.MergeCells.Count = len(xlsx.MergeCells.Cells)
+	ws.MergeCells.Count = len(ws.MergeCells.Cells)
 	return err
 }
 
@@ -108,7 +108,7 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 //
 // Attention: overlapped areas will also be unmerged.
 func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -121,12 +121,12 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 	_ = sortCoordinates(rect1)
 
 	// return nil since no MergeCells in the sheet
-	if xlsx.MergeCells == nil {
+	if ws.MergeCells == nil {
 		return nil
 	}
 
 	i := 0
-	for _, cellData := range xlsx.MergeCells.Cells {
+	for _, cellData := range ws.MergeCells.Cells {
 		if cellData == nil {
 			continue
 		}
@@ -143,11 +143,11 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 		if isOverlap(rect1, rect2) {
 			continue
 		}
-		xlsx.MergeCells.Cells[i] = cellData
+		ws.MergeCells.Cells[i] = cellData
 		i++
 	}
-	xlsx.MergeCells.Cells = xlsx.MergeCells.Cells[:i]
-	xlsx.MergeCells.Count = len(xlsx.MergeCells.Cells)
+	ws.MergeCells.Cells = ws.MergeCells.Cells[:i]
+	ws.MergeCells.Count = len(ws.MergeCells.Cells)
 	return nil
 }
 
@@ -155,15 +155,15 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 // currently.
 func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	var mergeCells []MergeCell
-	xlsx, err := f.workSheetReader(sheet)
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return mergeCells, err
 	}
-	if xlsx.MergeCells != nil {
-		mergeCells = make([]MergeCell, 0, len(xlsx.MergeCells.Cells))
+	if ws.MergeCells != nil {
+		mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
 
-		for i := range xlsx.MergeCells.Cells {
-			ref := xlsx.MergeCells.Cells[i].Ref
+		for i := range ws.MergeCells.Cells {
+			ref := ws.MergeCells.Cells[i].Ref
 			axis := strings.Split(ref, ":")[0]
 			val, _ := f.GetCellValue(sheet, axis)
 			mergeCells = append(mergeCells, []string{ref, val})

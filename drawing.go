@@ -24,11 +24,11 @@ import (
 
 // prepareDrawing provides a function to prepare drawing ID and XML by given
 // drawingID, worksheet name and default drawingXML.
-func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
+func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	if xlsx.Drawing != nil {
+	if ws.Drawing != nil {
 		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
-		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, xlsx.Drawing.RID)
+		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
 		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
 	} else {
@@ -42,13 +42,13 @@ func (f *File) prepareDrawing(xlsx *xlsxWorksheet, drawingID int, sheet, drawing
 
 // prepareChartSheetDrawing provides a function to prepare drawing ID and XML
 // by given drawingID, worksheet name and default drawingXML.
-func (f *File) prepareChartSheetDrawing(xlsx *xlsxChartsheet, drawingID int, sheet string) {
+func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	// Only allow one chart in a chartsheet.
 	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 	f.addSheetNameSpace(sheet, SourceRelationship)
-	xlsx.Drawing = &xlsxDrawing{
+	cs.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 	return
@@ -235,6 +235,9 @@ func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 		WireframeContour:            f.drawSurfaceChart,
 		Bubble:                      f.drawBaseChart,
 		Bubble3D:                    f.drawBaseChart,
+	}
+	if formatSet.Legend.None {
+		xlsxChartSpace.Chart.Legend = nil
 	}
 	addChart := func(c, p *cPlotArea) {
 		immutable, mutable := reflect.ValueOf(c).Elem(), reflect.ValueOf(p).Elem()
@@ -770,12 +773,10 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 		Ln: &aLn{
 			W:   f.ptToEMUs(formatSet.Series[i].Line.Width),
 			Cap: "rnd", // rnd, sq, flat
+			SolidFill: &aSolidFill{
+				SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((formatSet.order+i)%6+1)},
+			},
 		},
-	}
-	if i+formatSet.order < 6 {
-		spPrLine.Ln.SolidFill = &aSolidFill{
-			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+formatSet.order+1)},
-		}
 	}
 	chartSeriesSpPr := map[string]*cSpPr{Line: spPrLine, Scatter: spPrScatter}
 	return chartSeriesSpPr[formatSet.Type]
@@ -843,9 +844,16 @@ func (f *File) drawChartSeriesVal(v formatChartSeries, formatSet *formatChart) *
 // drawChartSeriesMarker provides a function to draw the c:marker element by
 // given data index and format sets.
 func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
+	defaultSymbol := map[string]*attrValString{Scatter: &attrValString{Val: stringPtr("circle")}}
 	marker := &cMarker{
-		Symbol: &attrValString{Val: stringPtr("circle")},
+		Symbol: defaultSymbol[formatSet.Type],
 		Size:   &attrValInt{Val: intPtr(5)},
+	}
+	if symbol := stringPtr(formatSet.Series[i].Marker.Symbol); *symbol != "" {
+		marker.Symbol = &attrValString{Val: symbol}
+	}
+	if size := intPtr(formatSet.Series[i].Marker.Size); *size != 0 {
+		marker.Size = &attrValInt{Val: size}
 	}
 	if i < 6 {
 		marker.SpPr = &cSpPr{
@@ -864,7 +872,7 @@ func (f *File) drawChartSeriesMarker(i int, formatSet *formatChart) *cMarker {
 			},
 		}
 	}
-	chartSeriesMarker := map[string]*cMarker{Scatter: marker}
+	chartSeriesMarker := map[string]*cMarker{Scatter: marker, Line: marker}
 	return chartSeriesMarker[formatSet.Type]
 }
 
@@ -1180,7 +1188,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
-	colStart, rowStart, _, _, colEnd, rowEnd, x2, y2 :=
+	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
 		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}

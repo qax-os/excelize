@@ -140,21 +140,21 @@ func (o *ZoomScale) getSheetViewOption(view *xlsxSheetView) {
 }
 
 // getSheetView returns the SheetView object
-func (f *File) getSheetView(sheetName string, viewIndex int) (*xlsxSheetView, error) {
-	xlsx, err := f.workSheetReader(sheetName)
+func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error) {
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return nil, err
 	}
 	if viewIndex < 0 {
-		if viewIndex < -len(xlsx.SheetViews.SheetView) {
+		if viewIndex < -len(ws.SheetViews.SheetView) {
 			return nil, fmt.Errorf("view index %d out of range", viewIndex)
 		}
-		viewIndex = len(xlsx.SheetViews.SheetView) + viewIndex
-	} else if viewIndex >= len(xlsx.SheetViews.SheetView) {
+		viewIndex = len(ws.SheetViews.SheetView) + viewIndex
+	} else if viewIndex >= len(ws.SheetViews.SheetView) {
 		return nil, fmt.Errorf("view index %d out of range", viewIndex)
 	}
 
-	return &(xlsx.SheetViews.SheetView[viewIndex]), err
+	return &(ws.SheetViews.SheetView[viewIndex]), err
 }
 
 // SetSheetViewOptions sets sheet view options. The viewIndex may be negative

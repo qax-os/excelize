@@ -623,7 +623,7 @@ type formatChartSeries struct {
 		Width float64 `json:"width"`
 	} `json:"line"`
 	Marker struct {
-		Type   string  `json:"type"`
+		Symbol string  `json:"symbol"`
 		Size   int     `json:"size"`
 		Width  float64 `json:"width"`
 		Border struct {

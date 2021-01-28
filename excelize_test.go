@@ -201,7 +201,7 @@ func TestCharsetTranscoder(t *testing.T) {
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
-	_, err = OpenReader(bytes.NewReader(oleIdentifier))
+	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password"})
 	assert.EqualError(t, err, "decrypted file failed")
 
 	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
@@ -257,7 +257,7 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
 		// Test write file with broken file struct with given path.
-		assert.NoError(t, f.SaveAs(filepath.Join("test", "BrokenFile.SaveAsEmptyStruct.xlsx")))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")))
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
@@ -954,17 +954,6 @@ func TestGetSheetComments(t *testing.T) {
 	assert.Equal(t, "", f.getSheetComments("sheet0"))
 }
 
-func TestSetActiveSheet(t *testing.T) {
-	f := NewFile()
-	f.WorkBook.BookViews = nil
-	f.SetActiveSheet(1)
-	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
-	f.SetActiveSheet(1)
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = nil
-	f.SetActiveSheet(1)
-}
-
 func TestSetSheetVisible(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.Sheets.Sheet[0].Name = "SheetN"
@@ -1121,26 +1110,33 @@ func TestSetSheetRow(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetRow.xlsx")))
 }
 
-func TestThemeColor(t *testing.T) {
-	t.Log(ThemeColor("000000", -0.1))
-	t.Log(ThemeColor("000000", 0))
-	t.Log(ThemeColor("000000", 1))
-}
-
 func TestHSL(t *testing.T) {
 	var hsl HSL
-	t.Log(hsl.RGBA())
-	t.Log(hslModel(hsl))
-	t.Log(hslModel(color.Gray16{Y: uint16(1)}))
-	t.Log(HSLToRGB(0, 1, 0.4))
-	t.Log(HSLToRGB(0, 1, 0.6))
-	t.Log(hueToRGB(0, 0, -1))
-	t.Log(hueToRGB(0, 0, 2))
-	t.Log(hueToRGB(0, 0, 1.0/7))
-	t.Log(hueToRGB(0, 0, 0.4))
-	t.Log(hueToRGB(0, 0, 2.0/4))
+	r, g, b, a := hsl.RGBA()
+	assert.Equal(t, uint32(0), r)
+	assert.Equal(t, uint32(0), g)
+	assert.Equal(t, uint32(0), b)
+	assert.Equal(t, uint32(0xffff), a)
+	assert.Equal(t, HSL{0, 0, 0}, hslModel(hsl))
+	assert.Equal(t, HSL{0, 0, 0}, hslModel(color.Gray16{Y: uint16(1)}))
+	R, G, B := HSLToRGB(0, 1, 0.4)
+	assert.Equal(t, uint8(204), R)
+	assert.Equal(t, uint8(0), G)
+	assert.Equal(t, uint8(0), B)
+	R, G, B = HSLToRGB(0, 1, 0.6)
+	assert.Equal(t, uint8(255), R)
+	assert.Equal(t, uint8(51), G)
+	assert.Equal(t, uint8(51), B)
+	assert.Equal(t, 0.0, hueToRGB(0, 0, -1))
+	assert.Equal(t, 0.0, hueToRGB(0, 0, 2))
+	assert.Equal(t, 0.0, hueToRGB(0, 0, 1.0/7))
+	assert.Equal(t, 0.0, hueToRGB(0, 0, 0.4))
+	assert.Equal(t, 0.0, hueToRGB(0, 0, 2.0/4))
 	t.Log(RGBToHSL(255, 255, 0))
-	t.Log(RGBToHSL(0, 255, 255))
+	h, s, l := RGBToHSL(0, 255, 255)
+	assert.Equal(t, float64(0.5), h)
+	assert.Equal(t, float64(1), s)
+	assert.Equal(t, float64(0.5), l)
 	t.Log(RGBToHSL(250, 100, 50))
 	t.Log(RGBToHSL(50, 100, 250))
 	t.Log(RGBToHSL(250, 50, 100))
@@ -1175,6 +1171,9 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 	f := NewFile()
 	// Test set default time style on not exists worksheet.
 	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN is not exist")
+
+	// Test set default time style on invalid cell
+	assert.EqualError(t, f.setDefaultTimeStyle("Sheet1", "", 42), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
 }
 
 func TestAddVBAProject(t *testing.T) {

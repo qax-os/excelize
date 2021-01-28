@@ -69,7 +69,7 @@ func TestStreamWriter(t *testing.T) {
 	}
 
 	assert.NoError(t, streamWriter.Flush())
-	// Save xlsx file by the given path.
+	// Save spreadsheet by the given path.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
 	// Test close temporary file error.

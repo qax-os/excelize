@@ -80,7 +80,7 @@ type PivotTableField struct {
 //        "fmt"
 //        "math/rand"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize"
+//        "github.com/360EntSecGroup-Skylar/excelize/v2"
 //    )
 //
 //    func main() {
@@ -138,7 +138,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	}
 
 	// workbook pivot cache
-	workBookPivotCacheRID := f.addRels("xl/_rels/workbook.xml.rels", SourceRelationshipPivotCache, fmt.Sprintf("pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	workBookPivotCacheRID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipPivotCache, fmt.Sprintf("/xl/pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
 	cacheID := f.addWorkbookPivotCache(workBookPivotCacheRID)
 
 	pivotCacheRels := "xl/pivotTables/_rels/pivotTable" + strconv.Itoa(pivotTableID) + ".xml.rels"
@@ -460,6 +460,15 @@ func inPivotTableField(a []PivotTableField, x string) int {
 // definition and option.
 func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
 	if len(opt.Columns) == 0 {
+		if len(opt.Data) <= 1 {
+			return nil
+		}
+		pt.ColFields = &xlsxColFields{}
+		// in order to create pivot table in case there is no input from Columns
+		pt.ColFields.Count = 1
+		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
+			X: -2,
+		})
 		return nil
 	}
 
@@ -473,6 +482,13 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 	for _, fieldIdx := range colFieldsIndex {
 		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
 			X: fieldIdx,
+		})
+	}
+
+	//in order to create pivot in case there is many Columns and Many Datas
+	if len(opt.Data) > 1 {
+		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
+			X: -2,
 		})
 	}
 
@@ -645,7 +661,7 @@ func (f *File) getPivotTableFieldNameDefaultSubtotal(name string, fields []Pivot
 	return false, false
 }
 
-// addWorkbookPivotCache add the association ID of the pivot cache in xl/workbook.xml.
+// addWorkbookPivotCache add the association ID of the pivot cache in workbook.xml.
 func (f *File) addWorkbookPivotCache(RID int) int {
 	wb := f.workbookReader()
 	if wb.PivotCaches == nil {

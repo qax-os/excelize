@@ -13,6 +13,7 @@ go:
 os:
   - linux
   - osx
+  - windows
 
 env:
   jobs:

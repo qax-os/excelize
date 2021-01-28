@@ -111,6 +111,23 @@ func TestSetCellValue(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
+func TestSetCellValues(t *testing.T) {
+	f := NewFile()
+	err := f.SetCellValue("Sheet1", "A1", time.Date(2010, time.December, 31, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	v, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, v, "12/31/10 12:00")
+
+	// test date value lower than min date supported by Excel
+	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	_, err = f.GetCellValue("Sheet1", "A1")
+	assert.EqualError(t, err, `strconv.ParseFloat: parsing "1600-12-31T00:00:00Z": invalid syntax`)
+}
+
 func TestSetCellBool(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
@@ -119,8 +136,9 @@ func TestSetCellBool(t *testing.T) {
 func TestGetCellValue(t *testing.T) {
 	// Test get cell value without r attribute of the row.
 	f := NewFile()
+	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
 	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row></sheetData></worksheet>`)
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`))
 	f.checked = nil
 	cells := []string{"A3", "A4", "B4", "A7", "B7"}
 	rows, err := f.GetRows("Sheet1")
@@ -133,6 +151,24 @@ func TestGetCellValue(t *testing.T) {
 	}
 	cols, err := f.GetCols("Sheet1")
 	assert.Equal(t, [][]string{{"", "", "A3", "A4", "", "", "A7", "A8"}, {"", "", "", "B4", "", "", "B7", "B8"}}, cols)
+	assert.NoError(t, err)
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`))
+	f.checked = nil
+	cell, err := f.GetCellValue("Sheet1", "A2")
+	assert.Equal(t, "A2", cell)
+	assert.NoError(t, err)
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`))
+	f.checked = nil
+	rows, err = f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{nil, {"A2", "B2"}}, rows)
+	assert.NoError(t, err)
+	delete(f.Sheet, "xl/worksheets/sheet1.xml")
+	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="str"><v>A1</v></c></row><row r="1"><c r="B1" t="str"><v>B1</v></c></row>`))
+	f.checked = nil
+	rows, err = f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{{"A1", "B1"}}, rows)
 	assert.NoError(t, err)
 }
 
@@ -263,4 +299,45 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestFormattedValue2(t *testing.T) {
+	f := NewFile()
+	v := f.formattedValue(0, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(15, "43528")
+	assert.Equal(t, "43528", v)
+
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "43528", v)
+	customNumFmt := "[$-409]MM/DD/YYYY"
+	_, err := f.NewStyle(&Style{
+		CustomNumFmt: &customNumFmt,
+	})
+	assert.NoError(t, err)
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "03/04/2019", v)
+
+	// formatted value with no built-in number format ID
+	numFmtID := 5
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: &numFmtID,
+	})
+	v = f.formattedValue(2, "43528")
+	assert.Equal(t, "43528", v)
+
+	// formatted value with invalid number format ID
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: nil,
+	})
+	v = f.formattedValue(3, "43528")
+
+	// formatted value with empty number format
+	f.Styles.NumFmts = nil
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: &numFmtID,
+	})
+	v = f.formattedValue(1, "43528")
+	assert.Equal(t, "43528", v)
 }

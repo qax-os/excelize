@@ -36,6 +36,7 @@ type File struct {
 	xmlAttr          map[string][]xml.Attr
 	checked          map[string]bool
 	sheetMap         map[string]string
+	streams          map[string]*StreamWriter
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
@@ -111,7 +112,7 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 		return nil, err
 	}
 	f := newFile()
-	if bytes.Contains(b, oleIdentifier) {
+	if bytes.Contains(b, oleIdentifier) && len(opt) > 0 {
 		for _, o := range opt {
 			f.options = &o
 		}
@@ -158,14 +159,14 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 	}
 	if s == 0 {
 		style, _ := f.NewStyle(&Style{NumFmt: format})
-		_ = f.SetCellStyle(sheet, axis, axis, style)
+		err = f.SetCellStyle(sheet, axis, axis, style)
 	}
 	return err
 }
 
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
+func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	f.Lock()
 	defer f.Unlock()
 	var (
@@ -177,18 +178,18 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 		err = fmt.Errorf("sheet %s is not exist", sheet)
 		return
 	}
-	if xlsx = f.Sheet[name]; f.Sheet[name] == nil {
+	if ws = f.Sheet[name]; f.Sheet[name] == nil {
 		if strings.HasPrefix(name, "xl/chartsheets") {
 			err = fmt.Errorf("sheet %s is chart sheet", sheet)
 			return
 		}
-		xlsx = new(xlsxWorksheet)
+		ws = new(xlsxWorksheet)
 		if _, ok := f.xmlAttr[name]; !ok {
 			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
 			f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
 		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
-			Decode(xlsx); err != nil && err != io.EOF {
+			Decode(ws); err != nil && err != io.EOF {
 			err = fmt.Errorf("xml decode error: %s", err)
 			return
 		}
@@ -197,13 +198,13 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 			f.checked = make(map[string]bool)
 		}
 		if ok = f.checked[name]; !ok {
-			checkSheet(xlsx)
-			if err = checkRow(xlsx); err != nil {
+			checkSheet(ws)
+			if err = checkRow(ws); err != nil {
 				return
 			}
 			f.checked[name] = true
 		}
-		f.Sheet[name] = xlsx
+		f.Sheet[name] = ws
 	}
 
 	return
@@ -211,18 +212,24 @@ func (f *File) workSheetReader(sheet string) (xlsx *xlsxWorksheet, err error) {
 
 // checkSheet provides a function to fill each row element and make that is
 // continuous in a worksheet of XML.
-func checkSheet(xlsx *xlsxWorksheet) {
+func checkSheet(ws *xlsxWorksheet) {
 	var row int
-	for _, r := range xlsx.SheetData.Row {
+	for _, r := range ws.SheetData.Row {
 		if r.R != 0 && r.R > row {
 			row = r.R
 			continue
 		}
-		row++
+		if r.R != row {
+			row++
+		}
 	}
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
 	row = 0
-	for _, r := range xlsx.SheetData.Row {
+	for _, r := range ws.SheetData.Row {
+		if r.R == row {
+			sheetData.Row[r.R-1].C = append(sheetData.Row[r.R-1].C, r.C...)
+			continue
+		}
 		if r.R != 0 {
 			sheetData.Row[r.R-1] = r
 			row = r.R
@@ -235,7 +242,7 @@ func checkSheet(xlsx *xlsxWorksheet) {
 	for i := 1; i <= row; i++ {
 		sheetData.Row[i-1].R = i
 	}
-	xlsx.SheetData = sheetData
+	ws.SheetData = sheetData
 }
 
 // addRels provides a function to add relationships by given XML path,
@@ -344,7 +351,7 @@ func (f *File) AddVBAProject(bin string) error {
 		return errors.New("unsupported VBA project extension")
 	}
 	f.setContentTypePartVBAProjectExtensions()
-	wb := f.relsReader("xl/_rels/workbook.xml.rels")
+	wb := f.relsReader(f.getWorkbookRelsPath())
 	var rID int
 	var ok bool
 	for _, rel := range wb.Relationships {

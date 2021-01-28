@@ -211,7 +211,7 @@ func TestAddSparkline(t *testing.T) {
 		Negative: true,
 	}))
 
-	// Save xlsx file by the given path.
+	// Save spreadsheet by the given path.
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddSparkline.xlsx")))
 
 	// Test error exceptions
