@@ -121,8 +121,8 @@ type xlsxFill struct {
 // specified by the bgColor element.
 type xlsxPatternFill struct {
 	PatternType string     `xml:"patternType,attr,omitempty"`
-	FgColor     *xlsxColor `xml:"fgColor,omitempty"`
-	BgColor     *xlsxColor `xml:"bgColor,omitempty"`
+	FgColor     *xlsxColor `xml:"fgColor"`
+	BgColor     *xlsxColor `xml:"bgColor"`
 }
 
 // xlsxGradientFill defines a gradient-style cell fill. Gradient cell fills can
