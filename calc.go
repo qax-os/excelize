@@ -111,6 +111,12 @@ type formulaArg struct {
 func (fa formulaArg) Value() (value string) {
 	switch fa.Type {
 	case ArgNumber:
+		if fa.Boolean {
+			if fa.Number == 0 {
+				return "FALSE"
+			}
+			return "TRUE"
+		}
 		return fmt.Sprintf("%g", fa.Number)
 	case ArgString:
 		return fa.String
@@ -118,6 +124,22 @@ func (fa formulaArg) Value() (value string) {
 		return fa.Error
 	}
 	return
+}
+
+// ToNumber returns a formula argument with number data type.
+func (fa formulaArg) ToNumber() formulaArg {
+	var n float64
+	var err error
+	switch fa.Type {
+	case ArgString:
+		n, err = strconv.ParseFloat(fa.String, 64)
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		}
+	case ArgNumber:
+		n = fa.Number
+	}
+	return newNumberFormulaArg(n)
 }
 
 // formulaFuncs is the type of the formula functions.
@@ -274,12 +296,29 @@ func getPriority(token efp.Token) (pri int) {
 
 // newNumberFormulaArg constructs a number formula argument.
 func newNumberFormulaArg(n float64) formulaArg {
+	if math.IsNaN(n) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
 	return formulaArg{Type: ArgNumber, Number: n}
 }
 
 // newStringFormulaArg constructs a string formula argument.
 func newStringFormulaArg(s string) formulaArg {
 	return formulaArg{Type: ArgString, String: s}
+}
+
+// newMatrixFormulaArg constructs a matrix formula argument.
+func newMatrixFormulaArg(m [][]formulaArg) formulaArg {
+	return formulaArg{Type: ArgMatrix, Matrix: m}
+}
+
+// newBoolFormulaArg constructs a boolean formula argument.
+func newBoolFormulaArg(b bool) formulaArg {
+	var n float64
+	if b {
+		n = 1
+	}
+	return formulaArg{Type: ArgNumber, Number: n, Boolean: true}
 }
 
 // newErrorFormulaArg create an error formula argument of a given type with a specified error message.
@@ -426,7 +465,12 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 				argsList.Init()
 				opfStack.Pop()
 				if opfStack.Len() > 0 { // still in function stack
-					opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+					if nextToken.TType == efp.TokenTypeOperatorInfix {
+						// mathematics calculate in formula function
+						opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+					} else {
+						argsList.PushBack(arg)
+					}
 				} else {
 					opdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 				}
@@ -994,11 +1038,11 @@ func (fn *formulaFuncs) ABS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ABS requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Abs(val))
+	return newNumberFormulaArg(math.Abs(arg.Number))
 }
 
 // ACOS function calculates the arccosine (i.e. the inverse cosine) of a given
@@ -1011,11 +1055,11 @@ func (fn *formulaFuncs) ACOS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ACOS requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Acos(val))
+	return newNumberFormulaArg(math.Acos(arg.Number))
 }
 
 // ACOSH function calculates the inverse hyperbolic cosine of a supplied number.
@@ -1027,11 +1071,11 @@ func (fn *formulaFuncs) ACOSH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ACOSH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Acosh(val))
+	return newNumberFormulaArg(math.Acosh(arg.Number))
 }
 
 // ACOT function calculates the arccotangent (i.e. the inverse cotangent) of a
@@ -1044,11 +1088,11 @@ func (fn *formulaFuncs) ACOT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ACOT requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Pi/2 - math.Atan(val))
+	return newNumberFormulaArg(math.Pi/2 - math.Atan(arg.Number))
 }
 
 // ACOTH function calculates the hyperbolic arccotangent (coth) of a supplied
@@ -1060,11 +1104,11 @@ func (fn *formulaFuncs) ACOTH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ACOTH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Atanh(1 / val))
+	return newNumberFormulaArg(math.Atanh(1 / arg.Number))
 }
 
 // ARABIC function converts a Roman numeral into an Arabic numeral. The syntax
@@ -1110,11 +1154,11 @@ func (fn *formulaFuncs) ASIN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ASIN requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Asin(val))
+	return newNumberFormulaArg(math.Asin(arg.Number))
 }
 
 // ASINH function calculates the inverse hyperbolic sine of a supplied number.
@@ -1126,11 +1170,11 @@ func (fn *formulaFuncs) ASINH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ASINH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Asinh(val))
+	return newNumberFormulaArg(math.Asinh(arg.Number))
 }
 
 // ATAN function calculates the arctangent (i.e. the inverse tangent) of a
@@ -1143,11 +1187,11 @@ func (fn *formulaFuncs) ATAN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ATAN requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Atan(val))
+	return newNumberFormulaArg(math.Atan(arg.Number))
 }
 
 // ATANH function calculates the inverse hyperbolic tangent of a supplied
@@ -1159,11 +1203,11 @@ func (fn *formulaFuncs) ATANH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ATANH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type == ArgError {
+		return arg
 	}
-	return newNumberFormulaArg(math.Atanh(val))
+	return newNumberFormulaArg(math.Atanh(arg.Number))
 }
 
 // ATAN2 function calculates the arctangent (i.e. the inverse tangent) of a
@@ -2185,19 +2229,19 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result formulaArg) {
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 	}
-	matrix := make([][]float64, 0, dimension)
+	matrix := make([][]formulaArg, 0, dimension)
 	for i := 0; i < dimension; i++ {
-		row := make([]float64, dimension)
+		row := make([]formulaArg, dimension)
 		for j := 0; j < dimension; j++ {
 			if i == j {
-				row[j] = float64(1.0)
+				row[j] = newNumberFormulaArg(float64(1.0))
 			} else {
-				row[j] = float64(0.0)
+				row[j] = newNumberFormulaArg(float64(0.0))
 			}
 		}
 		matrix = append(matrix, row)
 	}
-	return
+	return newMatrixFormulaArg(matrix)
 }
 
 // ODD function ounds a supplied number away from zero (i.e. rounds a positive
@@ -2704,6 +2748,8 @@ func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 			}
 			sum += val
+		case ArgNumber:
+			sum += token.Number
 		case ArgMatrix:
 			for _, row := range token.Matrix {
 				for _, value := range row {
@@ -3173,7 +3219,7 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 	}
-	return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(and)))
+	return newBoolFormulaArg(and)
 }
 
 // OR function tests a number of supplied conditions and returns either TRUE
@@ -3380,7 +3426,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
 		if argsList.Len() == 1 {
-			return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(cond)))
+			return newBoolFormulaArg(cond)
 		}
 		if cond {
 			return newStringFormulaArg(argsList.Front().Next().Value.(formulaArg).String)
@@ -3399,7 +3445,6 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 //
 //    CHOOSE(index_num,value1,[value2],...)
 //
-// TODO: resolve range choose.
 func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "CHOOSE requires 2 arguments")
@@ -3415,5 +3460,12 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	for i := 0; i < idx; i++ {
 		arg = arg.Next()
 	}
-	return newStringFormulaArg(arg.Value.(formulaArg).String)
+	var result formulaArg
+	switch arg.Value.(formulaArg).Type {
+	case ArgString:
+		result = newStringFormulaArg(arg.Value.(formulaArg).String)
+	case ArgMatrix:
+		result = newMatrixFormulaArg(arg.Value.(formulaArg).Matrix)
+	}
+	return result
 }

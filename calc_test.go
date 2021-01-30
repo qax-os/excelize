@@ -47,46 +47,55 @@ func TestCalcCellValue(t *testing.T) {
 		"=2>=3": "FALSE",
 		"=1&2":  "12",
 		// ABS
-		"=ABS(-1)":    "1",
-		"=ABS(-6.5)":  "6.5",
-		"=ABS(6.5)":   "6.5",
-		"=ABS(0)":     "0",
-		"=ABS(2-4.5)": "2.5",
+		"=ABS(-1)":      "1",
+		"=ABS(-6.5)":    "6.5",
+		"=ABS(6.5)":     "6.5",
+		"=ABS(0)":       "0",
+		"=ABS(2-4.5)":   "2.5",
+		"=ABS(ABS(-1))": "1",
 		// ACOS
-		"=ACOS(-1)": "3.141592653589793",
-		"=ACOS(0)":  "1.570796326794897",
+		"=ACOS(-1)":     "3.141592653589793",
+		"=ACOS(0)":      "1.570796326794897",
+		"=ACOS(ABS(0))": "1.570796326794897",
 		// ACOSH
-		"=ACOSH(1)":   "0",
-		"=ACOSH(2.5)": "1.566799236972411",
-		"=ACOSH(5)":   "2.292431669561178",
+		"=ACOSH(1)":        "0",
+		"=ACOSH(2.5)":      "1.566799236972411",
+		"=ACOSH(5)":        "2.292431669561178",
+		"=ACOSH(ACOSH(5))": "1.471383321536679",
 		// ACOT
-		"=_xlfn.ACOT(1)":  "0.785398163397448",
-		"=_xlfn.ACOT(-2)": "2.677945044588987",
-		"=_xlfn.ACOT(0)":  "1.570796326794897",
+		"=_xlfn.ACOT(1)":             "0.785398163397448",
+		"=_xlfn.ACOT(-2)":            "2.677945044588987",
+		"=_xlfn.ACOT(0)":             "1.570796326794897",
+		"=_xlfn.ACOT(_xlfn.ACOT(0))": "0.566911504941009",
 		// ACOTH
-		"=_xlfn.ACOTH(-5)":  "-0.202732554054082",
-		"=_xlfn.ACOTH(1.1)": "1.522261218861711",
-		"=_xlfn.ACOTH(2)":   "0.549306144334055",
+		"=_xlfn.ACOTH(-5)":      "-0.202732554054082",
+		"=_xlfn.ACOTH(1.1)":     "1.522261218861711",
+		"=_xlfn.ACOTH(2)":       "0.549306144334055",
+		"=_xlfn.ACOTH(ABS(-2))": "0.549306144334055",
 		// ARABIC
 		`=_xlfn.ARABIC("IV")`:   "4",
 		`=_xlfn.ARABIC("-IV")`:  "-4",
 		`=_xlfn.ARABIC("MCXX")`: "1120",
 		`=_xlfn.ARABIC("")`:     "0",
 		// ASIN
-		"=ASIN(-1)": "-1.570796326794897",
-		"=ASIN(0)":  "0",
+		"=ASIN(-1)":      "-1.570796326794897",
+		"=ASIN(0)":       "0",
+		"=ASIN(ASIN(0))": "0",
 		// ASINH
-		"=ASINH(0)":    "0",
-		"=ASINH(-0.5)": "-0.481211825059604",
-		"=ASINH(2)":    "1.44363547517881",
+		"=ASINH(0)":        "0",
+		"=ASINH(-0.5)":     "-0.481211825059604",
+		"=ASINH(2)":        "1.44363547517881",
+		"=ASINH(ASINH(0))": "0",
 		// ATAN
-		"=ATAN(-1)": "-0.785398163397448",
-		"=ATAN(0)":  "0",
-		"=ATAN(1)":  "0.785398163397448",
+		"=ATAN(-1)":      "-0.785398163397448",
+		"=ATAN(0)":       "0",
+		"=ATAN(1)":       "0.785398163397448",
+		"=ATAN(ATAN(0))": "0",
 		// ATANH
-		"=ATANH(-0.8)": "-1.09861228866811",
-		"=ATANH(0)":    "0",
-		"=ATANH(0.5)":  "0.549306144334055",
+		"=ATANH(-0.8)":     "-1.09861228866811",
+		"=ATANH(0)":        "0",
+		"=ATANH(0.5)":      "0.549306144334055",
+		"=ATANH(ATANH(0))": "0",
 		// ATAN2
 		"=ATAN2(1,1)":  "0.785398163397448",
 		"=ATAN2(1,-1)": "-0.785398163397448",
@@ -277,7 +286,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=MULTINOMIAL(3,1,2,5)":    "27720",
 		`=MULTINOMIAL("",3,1,2,5)`: "27720",
 		// _xlfn.MUNIT
-		"=_xlfn.MUNIT(4)": "", // not support currently
+		"=_xlfn.MUNIT(4)": "",
 		// ODD
 		"=ODD(22)":     "23",
 		"=ODD(1.22)":   "3",
@@ -498,6 +507,7 @@ func TestCalcCellValue(t *testing.T) {
 		// CHOOSE
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
 		"=CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
+		"=SUM(CHOOSE(A2,A1,B1:B2,A1:A3,A1:A4))":           "9",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
@@ -512,8 +522,9 @@ func TestCalcCellValue(t *testing.T) {
 		`=ABS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		"=ABS(~)":   `cannot convert cell "~" to coordinates: invalid cell name "~"`,
 		// ACOS
-		"=ACOS()":    "ACOS requires 1 numeric argument",
-		`=ACOS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=ACOS()":        "ACOS requires 1 numeric argument",
+		`=ACOS("X")`:     "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=ACOS(ACOS(0))": "#NUM!",
 		// ACOSH
 		"=ACOSH()":    "ACOSH requires 1 numeric argument",
 		`=ACOSH("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -521,8 +532,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.ACOT()":    "ACOT requires 1 numeric argument",
 		`=_xlfn.ACOT("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// _xlfn.ACOTH
-		"=_xlfn.ACOTH()":    "ACOTH requires 1 numeric argument",
-		`=_xlfn.ACOTH("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=_xlfn.ACOTH()":               "ACOTH requires 1 numeric argument",
+		`=_xlfn.ACOTH("X")`:            "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=_xlfn.ACOTH(_xlfn.ACOTH(2))": "#NUM!",
 		// _xlfn.ARABIC
 		"=_xlfn.ARABIC()": "ARABIC requires 1 numeric argument",
 		// ASIN
