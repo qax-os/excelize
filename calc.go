@@ -344,8 +344,7 @@ func newErrorFormulaArg(formulaError, msg string) formulaArg {
 //
 func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error) {
 	var err error
-	opdStack, optStack, opfStack, opfdStack, opftStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
-	argsList := list.New()
+	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 
@@ -359,6 +358,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 		// function start
 		if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart {
 			opfStack.Push(token)
+			argsStack.Push(list.New().Init())
 			continue
 		}
 
@@ -396,7 +396,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					if result.Type == ArgUnknown {
 						return efp.Token{}, errors.New(formulaErrorVALUE)
 					}
-					argsList.PushBack(result)
+					argsStack.Peek().(*list.List).PushBack(result)
 					continue
 				}
 			}
@@ -417,7 +417,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					opftStack.Pop()
 				}
 				if !opfdStack.Empty() {
-					argsList.PushBack(formulaArg{
+					argsStack.Peek().(*list.List).PushBack(formulaArg{
 						String: opfdStack.Pop().(efp.Token).TValue,
 						Type:   ArgString,
 					})
@@ -431,7 +431,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 
 			// current token is text
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
-				argsList.PushBack(formulaArg{
+				argsStack.Peek().(*list.List).PushBack(formulaArg{
 					String: token.TValue,
 					Type:   ArgString,
 				})
@@ -450,26 +450,26 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 
 				// push opfd to args
 				if opfdStack.Len() > 0 {
-					argsList.PushBack(formulaArg{
+					argsStack.Peek().(*list.List).PushBack(formulaArg{
 						String: opfdStack.Pop().(efp.Token).TValue,
 						Type:   ArgString,
 					})
 				}
-				// call formula function to evaluate
+
 				arg := callFuncByName(&formulaFuncs{}, strings.NewReplacer(
 					"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
-					[]reflect.Value{reflect.ValueOf(argsList)})
+					[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 				if arg.Type == ArgError {
 					return efp.Token{}, errors.New(arg.Value())
 				}
-				argsList.Init()
+				argsStack.Pop()
 				opfStack.Pop()
 				if opfStack.Len() > 0 { // still in function stack
 					if nextToken.TType == efp.TokenTypeOperatorInfix {
 						// mathematics calculate in formula function
 						opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 					} else {
-						argsList.PushBack(arg)
+						argsStack.Peek().(*list.List).PushBack(arg)
 					}
 				} else {
 					opdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
@@ -1220,15 +1220,15 @@ func (fn *formulaFuncs) ATAN2(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ATAN2 requires 2 numeric arguments")
 	}
-	x, err := strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	x := argsList.Back().Value.(formulaArg).ToNumber()
+	if x.Type == ArgError {
+		return x
 	}
-	y, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	y := argsList.Front().Value.(formulaArg).ToNumber()
+	if y.Type == ArgError {
+		return y
 	}
-	return newNumberFormulaArg(math.Atan2(x, y))
+	return newNumberFormulaArg(math.Atan2(x.Number, y.Number))
 }
 
 // BASE function converts a number into a supplied base (radix), and returns a
@@ -1243,16 +1243,17 @@ func (fn *formulaFuncs) BASE(argsList *list.List) formulaArg {
 	if argsList.Len() > 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "BASE allows at most 3 arguments")
 	}
-	var number float64
-	var radix, minLength int
+	var minLength int
 	var err error
-	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if radix, err = strconv.Atoi(argsList.Front().Next().Value.(formulaArg).String); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	radix := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if radix.Type == ArgError {
+		return radix
 	}
-	if radix < 2 || radix > 36 {
+	if int(radix.Number) < 2 || int(radix.Number) > 36 {
 		return newErrorFormulaArg(formulaErrorVALUE, "radix must be an integer >= 2 and <= 36")
 	}
 	if argsList.Len() > 2 {
@@ -1260,7 +1261,7 @@ func (fn *formulaFuncs) BASE(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
 	}
-	result := strconv.FormatInt(int64(number), radix)
+	result := strconv.FormatInt(int64(number.Number), int(radix.Number))
 	if len(result) < minLength {
 		result = strings.Repeat("0", minLength-len(result)) + result
 	}
@@ -1280,18 +1281,20 @@ func (fn *formulaFuncs) CEILING(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "CEILING allows at most 2 arguments")
 	}
 	number, significance, res := 0.0, 1.0, 0.0
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	n := argsList.Front().Value.(formulaArg).ToNumber()
+	if n.Type == ArgError {
+		return n
 	}
+	number = n.Number
 	if number < 0 {
 		significance = -1
 	}
 	if argsList.Len() > 1 {
-		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		s := argsList.Back().Value.(formulaArg).ToNumber()
+		if s.Type == ArgError {
+			return s
 		}
+		significance = s.Number
 	}
 	if significance < 0 && number > 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "negative sig to CEILING invalid")
@@ -1319,25 +1322,30 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "CEILING.MATH allows at most 3 arguments")
 	}
 	number, significance, mode := 0.0, 1.0, 1.0
-	var err error
-	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	n := argsList.Front().Value.(formulaArg).ToNumber()
+	if n.Type == ArgError {
+		return n
 	}
+	number = n.Number
 	if number < 0 {
 		significance = -1
 	}
 	if argsList.Len() > 1 {
-		if significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		s := argsList.Front().Next().Value.(formulaArg).ToNumber()
+		if s.Type == ArgError {
+			return s
 		}
+		significance = s.Number
 	}
 	if argsList.Len() == 1 {
 		return newNumberFormulaArg(math.Ceil(number))
 	}
 	if argsList.Len() > 2 {
-		if mode, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		m := argsList.Back().Value.(formulaArg).ToNumber()
+		if m.Type == ArgError {
+			return m
 		}
+		mode = m.Number
 	}
 	val, res := math.Modf(number / significance)
 	if res != 0 {
@@ -1364,11 +1372,11 @@ func (fn *formulaFuncs) CEILINGPRECISE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "CEILING.PRECISE allows at most 2 arguments")
 	}
 	number, significance := 0.0, 1.0
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	n := argsList.Front().Value.(formulaArg).ToNumber()
+	if n.Type == ArgError {
+		return n
 	}
+	number = n.Number
 	if number < 0 {
 		significance = -1
 	}
@@ -1376,13 +1384,14 @@ func (fn *formulaFuncs) CEILINGPRECISE(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Ceil(number))
 	}
 	if argsList.Len() > 1 {
-		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			err = errors.New(formulaErrorVALUE)
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		s := argsList.Back().Value.(formulaArg).ToNumber()
+		if s.Type == ArgError {
+			return s
 		}
+		significance = s.Number
 		significance = math.Abs(significance)
 		if significance == 0 {
-			return newStringFormulaArg("0")
+			return newNumberFormulaArg(significance)
 		}
 	}
 	val, res := math.Modf(number / significance)
@@ -1404,19 +1413,22 @@ func (fn *formulaFuncs) COMBIN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "COMBIN requires 2 argument")
 	}
 	number, chosen, val := 0.0, 0.0, 1.0
-	var err error
-	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	n := argsList.Front().Value.(formulaArg).ToNumber()
+	if n.Type == ArgError {
+		return n
 	}
-	if chosen, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number = n.Number
+	c := argsList.Back().Value.(formulaArg).ToNumber()
+	if c.Type == ArgError {
+		return c
 	}
+	chosen = c.Number
 	number, chosen = math.Trunc(number), math.Trunc(chosen)
 	if chosen > number {
 		return newErrorFormulaArg(formulaErrorVALUE, "COMBIN requires number >= number_chosen")
 	}
 	if chosen == number || chosen == 0 {
-		return newStringFormulaArg("1")
+		return newNumberFormulaArg(1)
 	}
 	for c := float64(1); c <= chosen; c++ {
 		val *= (number + 1 - c) / c
@@ -1434,21 +1446,22 @@ func (fn *formulaFuncs) COMBINA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "COMBINA requires 2 argument")
 	}
 	var number, chosen float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	n := argsList.Front().Value.(formulaArg).ToNumber()
+	if n.Type == ArgError {
+		return n
 	}
-	chosen, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number = n.Number
+	c := argsList.Back().Value.(formulaArg).ToNumber()
+	if c.Type == ArgError {
+		return c
 	}
+	chosen = c.Number
 	number, chosen = math.Trunc(number), math.Trunc(chosen)
 	if number < chosen {
 		return newErrorFormulaArg(formulaErrorVALUE, "COMBINA requires number > number_chosen")
 	}
 	if number == 0 {
-		return newStringFormulaArg("0")
+		return newNumberFormulaArg(number)
 	}
 	args := list.New()
 	args.PushBack(formulaArg{
@@ -1471,11 +1484,11 @@ func (fn *formulaFuncs) COS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COS requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	return newNumberFormulaArg(math.Cos(val))
+	return newNumberFormulaArg(math.Cos(val.Number))
 }
 
 // COSH function calculates the hyperbolic cosine (cosh) of a supplied number.
@@ -1487,11 +1500,11 @@ func (fn *formulaFuncs) COSH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COSH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	return newNumberFormulaArg(math.Cosh(val))
+	return newNumberFormulaArg(math.Cosh(val.Number))
 }
 
 // COT function calculates the cotangent of a given angle. The syntax of the
@@ -1503,14 +1516,14 @@ func (fn *formulaFuncs) COT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COT requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	if val == 0 {
+	if val.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(math.Tan(val))
+	return newNumberFormulaArg(1 / math.Tan(val.Number))
 }
 
 // COTH function calculates the hyperbolic cotangent (coth) of a supplied
@@ -1522,14 +1535,14 @@ func (fn *formulaFuncs) COTH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COTH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	if val == 0 {
+	if val.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(math.Tanh(val))
+	return newNumberFormulaArg((math.Exp(val.Number) + math.Exp(-val.Number)) / (math.Exp(val.Number) - math.Exp(-val.Number)))
 }
 
 // CSC function calculates the cosecant of a given angle. The syntax of the
@@ -1541,14 +1554,14 @@ func (fn *formulaFuncs) CSC(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "CSC requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	if val == 0 {
+	if val.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(1 / math.Sin(val))
+	return newNumberFormulaArg(1 / math.Sin(val.Number))
 }
 
 // CSCH function calculates the hyperbolic cosecant (csch) of a supplied
