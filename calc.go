@@ -455,7 +455,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 						Type:   ArgString,
 					})
 				}
-
+				// call formula function to evaluate
 				arg := callFuncByName(&formulaFuncs{}, strings.NewReplacer(
 					"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
 					[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
@@ -1573,14 +1573,14 @@ func (fn *formulaFuncs) CSCH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "CSCH requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	if val == 0 {
+	if val.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(1 / math.Sinh(val))
+	return newNumberFormulaArg(1 / math.Sinh(val.Number))
 }
 
 // DECIMAL function converts a text representation of a number in a specified
@@ -1618,14 +1618,14 @@ func (fn *formulaFuncs) DEGREES(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "DEGREES requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	if val == 0 {
+	if val.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(180.0 / math.Pi * val)
+	return newNumberFormulaArg(180.0 / math.Pi * val.Number)
 }
 
 // EVEN function rounds a supplied number away from zero (i.e. rounds a
@@ -1638,12 +1638,12 @@ func (fn *formulaFuncs) EVEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "EVEN requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	sign := math.Signbit(number)
-	m, frac := math.Modf(number / 2)
+	sign := math.Signbit(number.Number)
+	m, frac := math.Modf(number.Number / 2)
 	val := m * 2
 	if frac != 0 {
 		if !sign {
@@ -1664,11 +1664,11 @@ func (fn *formulaFuncs) EXP(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "EXP requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", math.Exp(number))))
+	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", math.Exp(number.Number))))
 }
 
 // fact returns the factorial of a supplied number.
@@ -1689,14 +1689,14 @@ func (fn *formulaFuncs) FACT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "FACT requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if number < 0 {
+	if number.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", fact(number))))
+	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", fact(number.Number))))
 }
 
 // FACTDOUBLE function returns the double factorial of a supplied number. The
@@ -1709,14 +1709,14 @@ func (fn *formulaFuncs) FACTDOUBLE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "FACTDOUBLE requires 1 numeric argument")
 	}
 	val := 1.0
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if number < 0 {
+	if number.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	for i := math.Trunc(number); i > 1; i -= 2 {
+	for i := math.Trunc(number.Number); i > 1; i -= 2 {
 		val *= i
 	}
 	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", val)))
@@ -1731,27 +1731,25 @@ func (fn *formulaFuncs) FLOOR(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "FLOOR requires 2 numeric arguments")
 	}
-	var number, significance float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	significance := argsList.Back().Value.(formulaArg).ToNumber()
+	if significance.Type == ArgError {
+		return significance
 	}
-	if significance < 0 && number >= 0 {
+	if significance.Number < 0 && number.Number >= 0 {
 		return newErrorFormulaArg(formulaErrorNUM, "invalid arguments to FLOOR")
 	}
-	val := number
-	val, res := math.Modf(val / significance)
+	val := number.Number
+	val, res := math.Modf(val / significance.Number)
 	if res != 0 {
-		if number < 0 && res < 0 {
+		if number.Number < 0 && res < 0 {
 			val--
 		}
 	}
-	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", val*significance)))
+	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", val*significance.Number)))
 }
 
 // FLOORMATH function rounds a supplied number down to a supplied multiple of
@@ -1766,30 +1764,33 @@ func (fn *formulaFuncs) FLOORMATH(argsList *list.List) formulaArg {
 	if argsList.Len() > 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "FLOOR.MATH allows at most 3 arguments")
 	}
-	number, significance, mode := 0.0, 1.0, 1.0
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	significance, mode := 1.0, 1.0
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if number < 0 {
+	if number.Number < 0 {
 		significance = -1
 	}
 	if argsList.Len() > 1 {
-		if significance, err = strconv.ParseFloat(argsList.Front().Next().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		s := argsList.Front().Next().Value.(formulaArg).ToNumber()
+		if s.Type == ArgError {
+			return s
 		}
+		significance = s.Number
 	}
 	if argsList.Len() == 1 {
-		return newNumberFormulaArg(math.Floor(number))
+		return newNumberFormulaArg(math.Floor(number.Number))
 	}
 	if argsList.Len() > 2 {
-		if mode, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		m := argsList.Back().Value.(formulaArg).ToNumber()
+		if m.Type == ArgError {
+			return m
 		}
+		mode = m.Number
 	}
-	val, res := math.Modf(number / significance)
-	if res != 0 && number < 0 && mode > 0 {
+	val, res := math.Modf(number.Number / significance)
+	if res != 0 && number.Number < 0 && mode > 0 {
 		val--
 	}
 	return newNumberFormulaArg(val * significance)
@@ -1807,30 +1808,31 @@ func (fn *formulaFuncs) FLOORPRECISE(argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "FLOOR.PRECISE allows at most 2 arguments")
 	}
-	var number, significance float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	var significance float64
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if number < 0 {
+	if number.Number < 0 {
 		significance = -1
 	}
 	if argsList.Len() == 1 {
-		return newNumberFormulaArg(math.Floor(number))
+		return newNumberFormulaArg(math.Floor(number.Number))
 	}
 	if argsList.Len() > 1 {
-		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		s := argsList.Back().Value.(formulaArg).ToNumber()
+		if s.Type == ArgError {
+			return s
 		}
+		significance = s.Number
 		significance = math.Abs(significance)
 		if significance == 0 {
-			return newStringFormulaArg("0")
+			return newNumberFormulaArg(significance)
 		}
 	}
-	val, res := math.Modf(number / significance)
+	val, res := math.Modf(number.Number / significance)
 	if res != 0 {
-		if number < 0 {
+		if number.Number < 0 {
 			val--
 		}
 	}
@@ -1871,12 +1873,19 @@ func (fn *formulaFuncs) GCD(argsList *list.List) formulaArg {
 		err  error
 	)
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		token := arg.Value.(formulaArg).String
-		if token == "" {
-			continue
-		}
-		if val, err = strconv.ParseFloat(token, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgString:
+			if token.String == "" {
+				continue
+			}
+			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
+				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+			}
+			break
+		case ArgNumber:
+			val = token.Number
+			break
 		}
 		nums = append(nums, val)
 	}
@@ -1905,11 +1914,11 @@ func (fn *formulaFuncs) INT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "INT requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	val, frac := math.Modf(number)
+	val, frac := math.Modf(number.Number)
 	if frac < 0 {
 		val--
 	}
@@ -1929,29 +1938,31 @@ func (fn *formulaFuncs) ISOCEILING(argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISO.CEILING allows at most 2 arguments")
 	}
-	var number, significance float64
-	var err error
-	if number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	var significance float64
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if number < 0 {
+	if number.Number < 0 {
 		significance = -1
 	}
 	if argsList.Len() == 1 {
-		return newNumberFormulaArg(math.Ceil(number))
+		return newNumberFormulaArg(math.Ceil(number.Number))
 	}
 	if argsList.Len() > 1 {
-		if significance, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		s := argsList.Back().Value.(formulaArg).ToNumber()
+		if s.Type == ArgError {
+			return s
 		}
+		significance = s.Number
 		significance = math.Abs(significance)
 		if significance == 0 {
-			return newStringFormulaArg("0")
+			return newNumberFormulaArg(significance)
 		}
 	}
-	val, res := math.Modf(number / significance)
+	val, res := math.Modf(number.Number / significance)
 	if res != 0 {
-		if number > 0 {
+		if number.Number > 0 {
 			val++
 		}
 	}
@@ -1983,12 +1994,19 @@ func (fn *formulaFuncs) LCM(argsList *list.List) formulaArg {
 		err  error
 	)
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		token := arg.Value.(formulaArg).String
-		if token == "" {
-			continue
-		}
-		if val, err = strconv.ParseFloat(token, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgString:
+			if token.String == "" {
+				continue
+			}
+			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
+				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+			}
+			break
+		case ArgNumber:
+			val = token.Number
+			break
 		}
 		nums = append(nums, val)
 	}
@@ -2017,11 +2035,11 @@ func (fn *formulaFuncs) LN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LN requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Log(number))
+	return newNumberFormulaArg(math.Log(number.Number))
 }
 
 // LOG function calculates the logarithm of a given number, to a supplied
@@ -2036,18 +2054,19 @@ func (fn *formulaFuncs) LOG(argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOG allows at most 2 arguments")
 	}
-	number, base := 0.0, 10.0
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	base := 10.0
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
 	if argsList.Len() > 1 {
-		if base, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		b := argsList.Back().Value.(formulaArg).ToNumber()
+		if b.Type == ArgError {
+			return b
 		}
+		base = b.Number
 	}
-	if number == 0 {
+	if number.Number == 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorDIV)
 	}
 	if base == 0 {
@@ -2056,7 +2075,7 @@ func (fn *formulaFuncs) LOG(argsList *list.List) formulaArg {
 	if base == 1 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(math.Log(number) / math.Log(base))
+	return newNumberFormulaArg(math.Log(number.Number) / math.Log(base))
 }
 
 // LOG10 function calculates the base 10 logarithm of a given number. The
@@ -2068,11 +2087,11 @@ func (fn *formulaFuncs) LOG10(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOG10 requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Log10(number))
+	return newNumberFormulaArg(math.Log10(number.Number))
 }
 
 // minor function implement a minor of a matrix A is the determinant of some
@@ -2153,24 +2172,22 @@ func (fn *formulaFuncs) MOD(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MOD requires 2 numeric arguments")
 	}
-	var number, divisor float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	divisor, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	divisor := argsList.Back().Value.(formulaArg).ToNumber()
+	if divisor.Type == ArgError {
+		return divisor
 	}
-	if divisor == 0 {
+	if divisor.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, "MOD divide by zero")
 	}
-	trunc, rem := math.Modf(number / divisor)
+	trunc, rem := math.Modf(number.Number / divisor.Number)
 	if rem < 0 {
 		trunc--
 	}
-	return newNumberFormulaArg(number - divisor*trunc)
+	return newNumberFormulaArg(number.Number - divisor.Number*trunc)
 }
 
 // MROUND function rounds a supplied number up or down to the nearest multiple
@@ -2182,28 +2199,26 @@ func (fn *formulaFuncs) MROUND(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MROUND requires 2 numeric arguments")
 	}
-	var number, multiple float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	n := argsList.Front().Value.(formulaArg).ToNumber()
+	if n.Type == ArgError {
+		return n
 	}
-	multiple, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	multiple := argsList.Back().Value.(formulaArg).ToNumber()
+	if multiple.Type == ArgError {
+		return multiple
 	}
-	if multiple == 0 {
+	if multiple.Number == 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	if multiple < 0 && number > 0 ||
-		multiple > 0 && number < 0 {
+	if multiple.Number < 0 && n.Number > 0 ||
+		multiple.Number > 0 && n.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	number, res := math.Modf(number / multiple)
+	number, res := math.Modf(n.Number / multiple.Number)
 	if math.Trunc(res+0.5) > 0 {
 		number++
 	}
-	return newNumberFormulaArg(number * multiple)
+	return newNumberFormulaArg(number * multiple.Number)
 }
 
 // MULTINOMIAL function calculates the ratio of the factorial of a sum of
@@ -2217,11 +2232,18 @@ func (fn *formulaFuncs) MULTINOMIAL(argsList *list.List) formulaArg {
 	var err error
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
-		if token.String == "" {
-			continue
-		}
-		if val, err = strconv.ParseFloat(token.String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		switch token.Type {
+		case ArgString:
+			if token.String == "" {
+				continue
+			}
+			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
+				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+			}
+			break
+		case ArgNumber:
+			val = token.Number
+			break
 		}
 		num += val
 		denom *= fact(val)
@@ -2238,18 +2260,18 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result formulaArg) {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MUNIT requires 1 numeric argument")
 	}
-	dimension, err := strconv.Atoi(argsList.Front().Value.(formulaArg).String)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	dimension := argsList.Back().Value.(formulaArg).ToNumber()
+	if dimension.Type == ArgError {
+		return dimension
 	}
-	matrix := make([][]formulaArg, 0, dimension)
-	for i := 0; i < dimension; i++ {
-		row := make([]formulaArg, dimension)
-		for j := 0; j < dimension; j++ {
+	matrix := make([][]formulaArg, 0, int(dimension.Number))
+	for i := 0; i < int(dimension.Number); i++ {
+		row := make([]formulaArg, int(dimension.Number))
+		for j := 0; j < int(dimension.Number); j++ {
 			if i == j {
-				row[j] = newNumberFormulaArg(float64(1.0))
+				row[j] = newNumberFormulaArg(1.0)
 			} else {
-				row[j] = newNumberFormulaArg(float64(0.0))
+				row[j] = newNumberFormulaArg(0.0)
 			}
 		}
 		matrix = append(matrix, row)
@@ -2267,15 +2289,15 @@ func (fn *formulaFuncs) ODD(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ODD requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Back().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	if number == 0 {
-		return newStringFormulaArg("1")
+	if number.Number == 0 {
+		return newNumberFormulaArg(1)
 	}
-	sign := math.Signbit(number)
-	m, frac := math.Modf((number - 1) / 2)
+	sign := math.Signbit(number.Number)
+	m, frac := math.Modf((number.Number - 1) / 2)
 	val := m*2 + 1
 	if frac != 0 {
 		if !sign {
@@ -2308,23 +2330,21 @@ func (fn *formulaFuncs) POWER(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "POWER requires 2 numeric arguments")
 	}
-	var x, y float64
-	var err error
-	x, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type == ArgError {
+		return x
 	}
-	y, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	y := argsList.Back().Value.(formulaArg).ToNumber()
+	if y.Type == ArgError {
+		return y
 	}
-	if x == 0 && y == 0 {
+	if x.Number == 0 && y.Number == 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	if x == 0 && y < 0 {
+	if x.Number == 0 && y.Number < 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(math.Pow(x, y))
+	return newNumberFormulaArg(math.Pow(x.Number, y.Number))
 }
 
 // PRODUCT function returns the product (multiplication) of a supplied set of
@@ -2348,6 +2368,10 @@ func (fn *formulaFuncs) PRODUCT(argsList *list.List) formulaArg {
 				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 			}
 			product = product * val
+			break
+		case ArgNumber:
+			product = product * token.Number
+			break
 		case ArgMatrix:
 			for _, row := range token.Matrix {
 				for _, value := range row {
@@ -2374,20 +2398,18 @@ func (fn *formulaFuncs) QUOTIENT(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "QUOTIENT requires 2 numeric arguments")
 	}
-	var x, y float64
-	var err error
-	x, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type == ArgError {
+		return x
 	}
-	y, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	y := argsList.Back().Value.(formulaArg).ToNumber()
+	if y.Type == ArgError {
+		return y
 	}
-	if y == 0 {
+	if y.Number == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	return newNumberFormulaArg(math.Trunc(x / y))
+	return newNumberFormulaArg(math.Trunc(x.Number / y.Number))
 }
 
 // RADIANS function converts radians into degrees. The syntax of the function is:
@@ -2398,11 +2420,11 @@ func (fn *formulaFuncs) RADIANS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "RADIANS requires 1 numeric argument")
 	}
-	angle, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	angle := argsList.Front().Value.(formulaArg).ToNumber()
+	if angle.Type == ArgError {
+		return angle
 	}
-	return newNumberFormulaArg(math.Pi / 180.0 * angle)
+	return newNumberFormulaArg(math.Pi / 180.0 * angle.Number)
 }
 
 // RAND function generates a random real number between 0 and 1. The syntax of
@@ -2426,20 +2448,18 @@ func (fn *formulaFuncs) RANDBETWEEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "RANDBETWEEN requires 2 numeric arguments")
 	}
-	var bottom, top int64
-	var err error
-	bottom, err = strconv.ParseInt(argsList.Front().Value.(formulaArg).String, 10, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	bottom := argsList.Front().Value.(formulaArg).ToNumber()
+	if bottom.Type == ArgError {
+		return bottom
 	}
-	top, err = strconv.ParseInt(argsList.Back().Value.(formulaArg).String, 10, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	top := argsList.Back().Value.(formulaArg).ToNumber()
+	if top.Type == ArgError {
+		return top
 	}
-	if top < bottom {
+	if top.Number < bottom.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newNumberFormulaArg(float64(rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(top-bottom+1) + bottom))
+	return newNumberFormulaArg(float64(rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(int64(top.Number-bottom.Number+1)) + int64(bottom.Number)))
 }
 
 // romanNumerals defined a numeral system that originated in ancient Rome and
@@ -2469,17 +2489,17 @@ func (fn *formulaFuncs) ROMAN(argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROMAN allows at most 2 arguments")
 	}
-	var number float64
 	var form int
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
 	if argsList.Len() > 1 {
-		if form, err = strconv.Atoi(argsList.Back().Value.(formulaArg).String); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		f := argsList.Back().Value.(formulaArg).ToNumber()
+		if f.Type == ArgError {
+			return f
 		}
+		form = int(f.Number)
 		if form < 0 {
 			form = 0
 		} else if form > 4 {
@@ -2497,7 +2517,7 @@ func (fn *formulaFuncs) ROMAN(argsList *list.List) formulaArg {
 	case 4:
 		decimalTable = romanTable[4]
 	}
-	val := math.Trunc(number)
+	val := math.Trunc(number.Number)
 	buf := bytes.Buffer{}
 	for _, r := range decimalTable {
 		for val >= r.n {
@@ -2553,17 +2573,15 @@ func (fn *formulaFuncs) ROUND(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROUND requires 2 numeric arguments")
 	}
-	var number, digits float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	digits := argsList.Back().Value.(formulaArg).ToNumber()
+	if digits.Type == ArgError {
+		return digits
 	}
-	return newNumberFormulaArg(fn.round(number, digits, closest))
+	return newNumberFormulaArg(fn.round(number.Number, digits.Number, closest))
 }
 
 // ROUNDDOWN function rounds a supplied number down towards zero, to a
@@ -2575,17 +2593,15 @@ func (fn *formulaFuncs) ROUNDDOWN(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROUNDDOWN requires 2 numeric arguments")
 	}
-	var number, digits float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	digits := argsList.Back().Value.(formulaArg).ToNumber()
+	if digits.Type == ArgError {
+		return digits
 	}
-	return newNumberFormulaArg(fn.round(number, digits, down))
+	return newNumberFormulaArg(fn.round(number.Number, digits.Number, down))
 }
 
 // ROUNDUP function rounds a supplied number up, away from zero, to a
@@ -2597,17 +2613,15 @@ func (fn *formulaFuncs) ROUNDUP(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROUNDUP requires 2 numeric arguments")
 	}
-	var number, digits float64
-	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	digits := argsList.Back().Value.(formulaArg).ToNumber()
+	if digits.Type == ArgError {
+		return digits
 	}
-	return newNumberFormulaArg(fn.round(number, digits, up))
+	return newNumberFormulaArg(fn.round(number.Number, digits.Number, up))
 }
 
 // SEC function calculates the secant of a given angle. The syntax of the
@@ -2619,11 +2633,11 @@ func (fn *formulaFuncs) SEC(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SEC requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Cos(number))
+	return newNumberFormulaArg(math.Cos(number.Number))
 }
 
 // SECH function calculates the hyperbolic secant (sech) of a supplied angle.
@@ -2635,11 +2649,11 @@ func (fn *formulaFuncs) SECH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SECH requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(1 / math.Cosh(number))
+	return newNumberFormulaArg(1 / math.Cosh(number.Number))
 }
 
 // SIGN function returns the arithmetic sign (+1, -1 or 0) of a supplied
@@ -2653,17 +2667,17 @@ func (fn *formulaFuncs) SIGN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SIGN requires 1 numeric argument")
 	}
-	val, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	val := argsList.Front().Value.(formulaArg).ToNumber()
+	if val.Type == ArgError {
+		return val
 	}
-	if val < 0 {
-		return newStringFormulaArg("-1")
+	if val.Number < 0 {
+		return newNumberFormulaArg(-1)
 	}
-	if val > 0 {
-		return newStringFormulaArg("1")
+	if val.Number > 0 {
+		return newNumberFormulaArg(1)
 	}
-	return newStringFormulaArg("0")
+	return newNumberFormulaArg(0)
 }
 
 // SIN function calculates the sine of a given angle. The syntax of the
@@ -2675,11 +2689,11 @@ func (fn *formulaFuncs) SIN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SIN requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Sin(number))
+	return newNumberFormulaArg(math.Sin(number.Number))
 }
 
 // SINH function calculates the hyperbolic sine (sinh) of a supplied number.
@@ -2691,11 +2705,11 @@ func (fn *formulaFuncs) SINH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SINH requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Sinh(number))
+	return newNumberFormulaArg(math.Sinh(number.Number))
 }
 
 // SQRT function calculates the positive square root of a supplied number. The
@@ -2707,19 +2721,14 @@ func (fn *formulaFuncs) SQRT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SQRT requires 1 numeric argument")
 	}
-	var res float64
-	var value = argsList.Front().Value.(formulaArg).String
-	if value == "" {
-		return newStringFormulaArg("0")
+	value := argsList.Front().Value.(formulaArg).ToNumber()
+	if value.Type == ArgError {
+		return value
 	}
-	res, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-	}
-	if res < 0 {
+	if value.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newNumberFormulaArg(math.Sqrt(res))
+	return newNumberFormulaArg(math.Sqrt(value.Number))
 }
 
 // SQRTPI function returns the square root of a supplied number multiplied by
@@ -2731,11 +2740,11 @@ func (fn *formulaFuncs) SQRTPI(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SQRTPI requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Sqrt(number * math.Pi))
+	return newNumberFormulaArg(math.Sqrt(number.Number * math.Pi))
 }
 
 // SUM function adds together a supplied set of numbers and returns the sum of
@@ -2844,6 +2853,10 @@ func (fn *formulaFuncs) SUMSQ(argsList *list.List) formulaArg {
 				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 			}
 			sq += val * val
+			break
+		case ArgNumber:
+			sq += token.Number
+			break
 		case ArgMatrix:
 			for _, row := range token.Matrix {
 				for _, value := range row {
@@ -2870,11 +2883,11 @@ func (fn *formulaFuncs) TAN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TAN requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Tan(number))
+	return newNumberFormulaArg(math.Tan(number.Number))
 }
 
 // TANH function calculates the hyperbolic tangent (tanh) of a supplied
@@ -2886,11 +2899,11 @@ func (fn *formulaFuncs) TANH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TANH requires 1 numeric argument")
 	}
-	number, err := strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
-	return newNumberFormulaArg(math.Tanh(number))
+	return newNumberFormulaArg(math.Tanh(number.Number))
 }
 
 // TRUNC function truncates a supplied number to a specified number of decimal
@@ -2902,29 +2915,31 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TRUNC requires at least 1 argument")
 	}
-	var number, digits, adjust, rtrim float64
+	var digits, adjust, rtrim float64
 	var err error
-	number, err = strconv.ParseFloat(argsList.Front().Value.(formulaArg).String, 64)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type == ArgError {
+		return number
 	}
 	if argsList.Len() > 1 {
-		if digits, err = strconv.ParseFloat(argsList.Back().Value.(formulaArg).String, 64); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		d := argsList.Back().Value.(formulaArg).ToNumber()
+		if d.Type == ArgError {
+			return d
 		}
+		digits = d.Number
 		digits = math.Floor(digits)
 	}
 	adjust = math.Pow(10, digits)
-	x := int((math.Abs(number) - math.Abs(float64(int(number)))) * adjust)
+	x := int((math.Abs(number.Number) - math.Abs(float64(int(number.Number)))) * adjust)
 	if x != 0 {
 		if rtrim, err = strconv.ParseFloat(strings.TrimRight(strconv.Itoa(x), "0"), 64); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
 	}
 	if (digits > 0) && (rtrim < adjust/10) {
-		return newNumberFormulaArg(number)
+		return newNumberFormulaArg(number.Number)
 	}
-	return newNumberFormulaArg(float64(int(number*adjust)) / adjust)
+	return newNumberFormulaArg(float64(int(number.Number*adjust)) / adjust)
 }
 
 // Statistical functions
@@ -2976,6 +2991,10 @@ func (fn *formulaFuncs) MEDIAN(argsList *list.List) formulaArg {
 				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 			}
 			values = append(values, digits)
+			break
+		case ArgNumber:
+			values = append(values, arg.Number)
+			break
 		case ArgMatrix:
 			for _, row := range arg.Matrix {
 				for _, value := range row {
