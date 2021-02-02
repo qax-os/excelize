@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -201,13 +201,20 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 // Example:
 //
 //    excelize.CoordinatesToCellName(1, 1) // returns "A1", nil
+//    excelize.CoordinatesToCellName(1, 1, true) // returns "$A$1", nil
 //
-func CoordinatesToCellName(col, row int) (string, error) {
+func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if col < 1 || row < 1 {
 		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
 	}
+	sign := ""
+	for _, a := range abs {
+		if a {
+			sign = "$"
+		}
+	}
 	colname, err := ColumnNumberToName(col)
-	return colname + strconv.Itoa(row), err
+	return sign + colname + sign + strconv.Itoa(row), err
 }
 
 // boolPtr returns a pointer to a bool with the given value.

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -288,7 +288,7 @@ func getPriority(token efp.Token) (pri int) {
 	if token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix {
 		pri = 6
 	}
-	if token.TSubType == efp.TokenSubTypeStart && token.TType == efp.TokenTypeSubexpression { // (
+	if isBeginParenthesesToken(token) { // (
 		pri = 0
 	}
 	return
@@ -356,7 +356,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 		}
 
 		// function start
-		if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart {
+		if isFunctionStartToken(token) {
 			opfStack.Push(token)
 			argsStack.Push(list.New().Init())
 			continue
@@ -436,44 +436,8 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					Type:   ArgString,
 				})
 			}
-
-			// current token is function stop
-			if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStop {
-				for !opftStack.Empty() {
-					// calculate trigger
-					topOpt := opftStack.Peek().(efp.Token)
-					if err := calculate(opfdStack, topOpt); err != nil {
-						return efp.Token{}, err
-					}
-					opftStack.Pop()
-				}
-
-				// push opfd to args
-				if opfdStack.Len() > 0 {
-					argsStack.Peek().(*list.List).PushBack(formulaArg{
-						String: opfdStack.Pop().(efp.Token).TValue,
-						Type:   ArgString,
-					})
-				}
-				// call formula function to evaluate
-				arg := callFuncByName(&formulaFuncs{}, strings.NewReplacer(
-					"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
-					[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
-				if arg.Type == ArgError {
-					return efp.Token{}, errors.New(arg.Value())
-				}
-				argsStack.Pop()
-				opfStack.Pop()
-				if opfStack.Len() > 0 { // still in function stack
-					if nextToken.TType == efp.TokenTypeOperatorInfix {
-						// mathematics calculate in formula function
-						opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
-					} else {
-						argsStack.Peek().(*list.List).PushBack(arg)
-					}
-				} else {
-					opdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
-				}
+			if err = evalInfixExpFunc(token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
+				return efp.Token{}, err
 			}
 		}
 	}
@@ -488,6 +452,50 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 		return efp.Token{}, errors.New("formula not valid")
 	}
 	return opdStack.Peek().(efp.Token), err
+}
+
+// evalInfixExpFunc evaluate formula function in the infix expression.
+func evalInfixExpFunc(token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
+	if !isFunctionStopToken(token) {
+		return nil
+	}
+	// current token is function stop
+	for !opftStack.Empty() {
+		// calculate trigger
+		topOpt := opftStack.Peek().(efp.Token)
+		if err := calculate(opfdStack, topOpt); err != nil {
+			return err
+		}
+		opftStack.Pop()
+	}
+
+	// push opfd to args
+	if opfdStack.Len() > 0 {
+		argsStack.Peek().(*list.List).PushBack(formulaArg{
+			String: opfdStack.Pop().(efp.Token).TValue,
+			Type:   ArgString,
+		})
+	}
+	// call formula function to evaluate
+	arg := callFuncByName(&formulaFuncs{}, strings.NewReplacer(
+		"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
+		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
+	if arg.Type == ArgError {
+		return errors.New(arg.Value())
+	}
+	argsStack.Pop()
+	opfStack.Pop()
+	if opfStack.Len() > 0 { // still in function stack
+		if nextToken.TType == efp.TokenTypeOperatorInfix {
+			// mathematics calculate in formula function
+			opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+		} else {
+			argsStack.Peek().(*list.List).PushBack(arg)
+		}
+	} else {
+		opdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	return nil
 }
 
 // calcPow evaluate exponentiation arithmetic operations.
@@ -722,6 +730,26 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	return
 }
 
+// isFunctionStartToken determine if the token is function stop.
+func isFunctionStartToken(token efp.Token) bool {
+	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart
+}
+
+// isFunctionStopToken determine if the token is function stop.
+func isFunctionStopToken(token efp.Token) bool {
+	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStop
+}
+
+// isBeginParenthesesToken determine if the token is begin parentheses: (.
+func isBeginParenthesesToken(token efp.Token) bool {
+	return token.TType == efp.TokenTypeSubexpression && token.TSubType == efp.TokenSubTypeStart
+}
+
+// isEndParenthesesToken determine if the token is end parentheses: ).
+func isEndParenthesesToken(token efp.Token) bool {
+	return token.TType == efp.TokenTypeSubexpression && token.TSubType == efp.TokenSubTypeStop
+}
+
 // isOperatorPrefixToken determine if the token is parse operator prefix
 // token.
 func isOperatorPrefixToken(token efp.Token) bool {
@@ -771,11 +799,11 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 			return err
 		}
 	}
-	if token.TType == efp.TokenTypeSubexpression && token.TSubType == efp.TokenSubTypeStart { // (
+	if isBeginParenthesesToken(token) { // (
 		optStack.Push(token)
 	}
-	if token.TType == efp.TokenTypeSubexpression && token.TSubType == efp.TokenSubTypeStop { // )
-		for optStack.Peek().(efp.Token).TSubType != efp.TokenSubTypeStart && optStack.Peek().(efp.Token).TType != efp.TokenTypeSubexpression { // != (
+	if isEndParenthesesToken(token) { // )
+		for !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
 			topOpt := optStack.Peek().(efp.Token)
 			if err := calculate(opdStack, topOpt); err != nil {
 				return err

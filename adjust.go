@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -39,6 +39,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err != nil {
 		return err
 	}
+	sheetID := f.getSheetID(sheet)
 	if dir == rows {
 		f.adjustRowDimensions(ws, num, offset)
 	} else {
@@ -51,7 +52,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err = f.adjustAutoFilter(ws, dir, num, offset); err != nil {
 		return err
 	}
-	if err = f.adjustCalcChain(dir, num, offset); err != nil {
+	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
 		return err
 	}
 	checkSheet(ws)
@@ -197,7 +198,7 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 // areaRefToCoordinates provides a function to convert area reference to a
 // pair of coordinates.
 func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
-	rng := strings.Split(ref, ":")
+	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
 	return areaRangeToCoordinates(rng[0], rng[1])
 }
 
@@ -310,11 +311,14 @@ func (f *File) deleteMergeCell(ws *xlsxWorksheet, idx int) {
 
 // adjustCalcChain provides a function to update the calculation chain when
 // inserting or deleting rows or columns.
-func (f *File) adjustCalcChain(dir adjustDirection, num, offset int) error {
+func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) error {
 	if f.CalcChain == nil {
 		return nil
 	}
 	for index, c := range f.CalcChain.C {
+		if c.I != sheetID {
+			continue
+		}
 		colNum, rowNum, err := CellNameToCoordinates(c.R)
 		if err != nil {
 			return err

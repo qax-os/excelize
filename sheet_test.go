@@ -383,6 +383,19 @@ func TestDeleteSheet(t *testing.T) {
 	f.DeleteSheet("Sheet1")
 	assert.Equal(t, "Sheet2", f.GetSheetName(f.GetActiveSheetIndex()))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet.xlsx")))
+	// Test with auto filter defined names
+	f = NewFile()
+	f.NewSheet("Sheet2")
+	f.NewSheet("Sheet3")
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A"))
+	assert.NoError(t, f.SetCellValue("Sheet2", "A1", "A"))
+	assert.NoError(t, f.SetCellValue("Sheet3", "A1", "A"))
+	assert.NoError(t, f.AutoFilter("Sheet1", "A1", "A1", ""))
+	assert.NoError(t, f.AutoFilter("Sheet2", "A1", "A1", ""))
+	assert.NoError(t, f.AutoFilter("Sheet3", "A1", "A1", ""))
+	f.DeleteSheet("Sheet2")
+	f.DeleteSheet("Sheet1")
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet2.xlsx")))
 }
 
 func BenchmarkNewSheet(b *testing.B) {

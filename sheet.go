@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -500,6 +500,22 @@ func (f *File) DeleteSheet(name string) {
 	wb := f.workbookReader()
 	wbRels := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
+	deleteSheetID := f.getSheetID(name)
+	// Delete and adjust defined names
+	if wb.DefinedNames != nil {
+		for idx := 0; idx < len(wb.DefinedNames.DefinedName); idx++ {
+			dn := wb.DefinedNames.DefinedName[idx]
+			if dn.LocalSheetID != nil {
+				sheetID := *dn.LocalSheetID + 1
+				if sheetID == deleteSheetID {
+					wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
+					idx--
+				} else if sheetID > deleteSheetID {
+					wb.DefinedNames.DefinedName[idx].LocalSheetID = intPtr(*dn.LocalSheetID - 1)
+				}
+			}
+		}
+	}
 	for idx, sheet := range wb.Sheets.Sheet {
 		if sheet.Name == sheetName {
 			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
@@ -517,7 +533,7 @@ func (f *File) DeleteSheet(name string) {
 			}
 			target := f.deleteSheetFromWorkbookRels(sheet.ID)
 			f.deleteSheetFromContentTypes(target)
-			f.deleteCalcChain(sheet.SheetID, "") // Delete CalcChain
+			f.deleteCalcChain(sheet.SheetID, "")
 			delete(f.sheetMap, sheetName)
 			delete(f.XLSX, sheetXML)
 			delete(f.XLSX, rels)

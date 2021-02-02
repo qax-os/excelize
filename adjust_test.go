@@ -98,13 +98,13 @@ func TestAdjustCalcChain(t *testing.T) {
 	f := NewFile()
 	f.CalcChain = &xlsxCalcChain{
 		C: []xlsxCalcChainC{
-			{R: "B2"},
+			{R: "B2", I: 2}, {R: "B2", I: 1},
 		},
 	}
 	assert.NoError(t, f.InsertCol("Sheet1", "A"))
 	assert.NoError(t, f.InsertRow("Sheet1", 1))
 
-	f.CalcChain.C[0].R = "invalid coordinates"
+	f.CalcChain.C[1].R = "invalid coordinates"
 	assert.EqualError(t, f.InsertCol("Sheet1", "A"), `cannot convert cell "invalid coordinates" to coordinates: invalid cell name "invalid coordinates"`)
 	f.CalcChain = nil
 	assert.NoError(t, f.InsertCol("Sheet1", "A"))
