@@ -560,19 +560,26 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
 		"=CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
 		"=SUM(CHOOSE(A2,A1,B1:B2,A1:A3,A1:A4))":           "9",
+		// VLOOKUP
+		"=VLOOKUP(D2,D:D,1,FALSE)":           "Jan",
+		"=VLOOKUP(D2,D:D,1,TRUE)":            "Month", // should be Feb
+		"=VLOOKUP(INT(36693),F2:F2,1,FALSE)": "36693",
+		"=VLOOKUP(INT(F2),F3:F9,1)":          "32080",
+		"=VLOOKUP(MUNIT(3),MUNIT(2),1)":      "0", // should be 1
+		"=VLOOKUP(MUNIT(3),MUNIT(3),1)":      "1",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareData()
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err)
+		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string]string{
 		// ABS
 		"=ABS()":    "ABS requires 1 numeric argument",
 		`=ABS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
-		"=ABS(~)":   `cannot convert cell "~" to coordinates: invalid cell name "~"`,
+		"=ABS(~)":   `invalid column name "~"`,
 		// ACOS
 		"=ACOS()":        "ACOS requires 1 numeric argument",
 		`=ACOS("X")`:     "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -907,6 +914,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE()":                "CHOOSE requires 2 arguments",
 		"=CHOOSE(\"index_num\",0)": "CHOOSE requires first argument of type number",
 		"=CHOOSE(2,0)":             "index_num should be <= to the number of values",
+		// VLOOKUP
+		"=VLOOKUP()":                     "VLOOKUP requires at least 3 arguments",
+		"=VLOOKUP(D2,D1,1,FALSE)":        "VLOOKUP requires second argument of table array",
+		"=VLOOKUP(D2,D:D,FALSE,FALSE)":   "VLOOKUP requires numeric col argument",
+		"=VLOOKUP(D2,D:D,1,FALSE,FALSE)": "VLOOKUP requires at most 4 arguments",
+		"=VLOOKUP(D2,D:D,1,2)":           "strconv.ParseBool: parsing \"2\": invalid syntax",
+		"=VLOOKUP(D2,D10:D10,1,FALSE)":   "VLOOKUP no result found",
+		"=VLOOKUP(D2,D:D,2,FALSE)":       "VLOOKUP has invalid column index",
+		"=VLOOKUP(D2,C:C,1,FALSE)":       "VLOOKUP no result found",
+		"=VLOOKUP(ISNUMBER(1),F3:F9,1)":  "VLOOKUP no result found",
+		"=VLOOKUP(INT(1),E2:E9,1)":       "VLOOKUP no result found",
+		"=VLOOKUP(MUNIT(2),MUNIT(3),1)":  "VLOOKUP no result found",
+		"=VLOOKUP(A1:B2,B2:B3,1)":        "VLOOKUP no result found",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareData()
@@ -1084,4 +1104,25 @@ func TestDet(t *testing.T) {
 		{3, 4, 5, 6},
 		{4, 5, 6, 7},
 	}), float64(0))
+}
+
+func TestCompareFormulaArg(t *testing.T) {
+	assert.Equal(t, compareFormulaArg(newEmptyFormulaArg(), newEmptyFormulaArg(), false, false), criteriaEq)
+	lhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg()})
+	rhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg(), newEmptyFormulaArg()})
+	assert.Equal(t, compareFormulaArg(lhs, rhs, false, false), criteriaL)
+	assert.Equal(t, compareFormulaArg(rhs, lhs, false, false), criteriaG)
+
+	lhs = newListFormulaArg([]formulaArg{newBoolFormulaArg(true)})
+	rhs = newListFormulaArg([]formulaArg{newBoolFormulaArg(true)})
+	assert.Equal(t, compareFormulaArg(lhs, rhs, false, false), criteriaEq)
+
+	assert.Equal(t, compareFormulaArg(formulaArg{Type: ArgUnknown}, formulaArg{Type: ArgUnknown}, false, false), criteriaErr)
+}
+
+func TestMatchPattern(t *testing.T) {
+	assert.True(t, matchPattern("", ""))
+	assert.True(t, matchPattern("file/*", "file/abc/bcd/def"))
+	assert.True(t, matchPattern("*", ""))
+	assert.False(t, matchPattern("file/?", "file/abc/bcd/def"))
 }

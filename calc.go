@@ -74,6 +74,7 @@ const (
 	criteriaG
 	criteriaBeg
 	criteriaEnd
+	criteriaErr
 )
 
 // formulaCriteria defined formula criteria parser result.
@@ -140,6 +141,24 @@ func (fa formulaArg) ToNumber() formulaArg {
 		n = fa.Number
 	}
 	return newNumberFormulaArg(n)
+}
+
+// ToBool returns a formula argument with boolean data type.
+func (fa formulaArg) ToBool() formulaArg {
+	var b bool
+	var err error
+	switch fa.Type {
+	case ArgString:
+		b, err = strconv.ParseBool(fa.String)
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		}
+	case ArgNumber:
+		if fa.Boolean && fa.Number == 1 {
+			b = true
+		}
+	}
+	return newBoolFormulaArg(b)
 }
 
 // formulaFuncs is the type of the formula functions.
@@ -312,6 +331,11 @@ func newMatrixFormulaArg(m [][]formulaArg) formulaArg {
 	return formulaArg{Type: ArgMatrix, Matrix: m}
 }
 
+// newListFormulaArg create a list formula argument.
+func newListFormulaArg(l []formulaArg) formulaArg {
+	return formulaArg{Type: ArgList, List: l}
+}
+
 // newBoolFormulaArg constructs a boolean formula argument.
 func newBoolFormulaArg(b bool) formulaArg {
 	var n float64
@@ -321,9 +345,15 @@ func newBoolFormulaArg(b bool) formulaArg {
 	return formulaArg{Type: ArgNumber, Number: n, Boolean: true}
 }
 
-// newErrorFormulaArg create an error formula argument of a given type with a specified error message.
+// newErrorFormulaArg create an error formula argument of a given type with a
+// specified error message.
 func newErrorFormulaArg(formulaError, msg string) formulaArg {
 	return formulaArg{Type: ArgError, String: formulaError, Error: msg}
+}
+
+// newEmptyFormulaArg create an empty formula argument.
+func newEmptyFormulaArg() formulaArg {
+	return formulaArg{Type: ArgEmpty}
 }
 
 // evalInfixExp evaluate syntax analysis by given infix expression after
@@ -427,6 +457,12 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 
 			// current token is logical
 			if token.TType == efp.OperatorsInfix && token.TSubType == efp.TokenSubTypeLogical {
+			}
+			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeLogical {
+				argsStack.Peek().(*list.List).PushBack(formulaArg{
+					String: token.TValue,
+					Type:   ArgString,
+				})
 			}
 
 			// current token is text
@@ -841,6 +877,15 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 			continue
 		}
 		if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[0]); err != nil {
+			if cr.Col, err = ColumnNameToNumber(tokens[0]); err != nil {
+				return
+			}
+			cellRanges.PushBack(cellRange{
+				From: cellRef{Sheet: sheet, Col: cr.Col, Row: 1},
+				To:   cellRef{Sheet: sheet, Col: cr.Col, Row: TotalRows},
+			})
+			cellRefs.Init()
+			arg, err = f.rangeResolver(cellRefs, cellRanges)
 			return
 		}
 		e := refs.Back()
@@ -3189,14 +3234,13 @@ func (fn *formulaFuncs) ISNUMBER(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISNUMBER requires 1 argument")
 	}
-	token := argsList.Front().Value.(formulaArg)
-	result := "FALSE"
+	token, result := argsList.Front().Value.(formulaArg), false
 	if token.Type == ArgString && token.String != "" {
 		if _, err := strconv.Atoi(token.String); err == nil {
-			result = "TRUE"
+			result = true
 		}
 	}
-	return newStringFormulaArg(result)
+	return newBoolFormulaArg(result)
 }
 
 // ISODD function tests if a supplied number (or numeric expression) evaluates
@@ -3528,4 +3572,206 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 		result = newMatrixFormulaArg(arg.Value.(formulaArg).Matrix)
 	}
 	return result
+}
+
+// deepMatchRune finds whether the text deep matches/satisfies the pattern
+// string.
+func deepMatchRune(str, pattern []rune, simple bool) bool {
+	for len(pattern) > 0 {
+		switch pattern[0] {
+		default:
+			if len(str) == 0 || str[0] != pattern[0] {
+				return false
+			}
+		case '?':
+			if len(str) == 0 && !simple {
+				return false
+			}
+		case '*':
+			return deepMatchRune(str, pattern[1:], simple) ||
+				(len(str) > 0 && deepMatchRune(str[1:], pattern, simple))
+		}
+		str = str[1:]
+		pattern = pattern[1:]
+	}
+	return len(str) == 0 && len(pattern) == 0
+}
+
+// matchPattern finds whether the text matches or satisfies the pattern
+// string. The pattern supports '*' and '?' wildcards in the pattern string.
+func matchPattern(pattern, name string) (matched bool) {
+	if pattern == "" {
+		return name == pattern
+	}
+	if pattern == "*" {
+		return true
+	}
+	rname := make([]rune, 0, len(name))
+	rpattern := make([]rune, 0, len(pattern))
+	for _, r := range name {
+		rname = append(rname, r)
+	}
+	for _, r := range pattern {
+		rpattern = append(rpattern, r)
+	}
+	simple := false // Does extended wildcard '*' and '?' match.
+	return deepMatchRune(rname, rpattern, simple)
+}
+
+// compareFormulaArg compares the left-hand sides and the right-hand sides
+// formula arguments by given conditions such as case sensitive, if exact
+// match, and make compare result as formula criteria condition type.
+func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+	if lhs.Type != rhs.Type {
+		return criteriaErr
+	}
+	switch lhs.Type {
+	case ArgNumber:
+		if lhs.Number == rhs.Number {
+			return criteriaEq
+		}
+		if lhs.Number < rhs.Number {
+			return criteriaL
+		}
+		return criteriaG
+	case ArgString:
+		ls := lhs.String
+		rs := rhs.String
+		if !caseSensitive {
+			ls = strings.ToLower(ls)
+			rs = strings.ToLower(rs)
+		}
+		if exactMatch {
+			match := matchPattern(rs, ls)
+			if match {
+				return criteriaEq
+			}
+			return criteriaG
+		}
+		return byte(strings.Compare(ls, rs))
+	case ArgEmpty:
+		return criteriaEq
+	case ArgList:
+		return compareFormulaArgList(lhs, rhs, caseSensitive, exactMatch)
+	case ArgMatrix:
+		return compareFormulaArgMatrix(lhs, rhs, caseSensitive, exactMatch)
+	}
+	return criteriaErr
+}
+
+// compareFormulaArgList compares the left-hand sides and the right-hand sides
+// list type formula arguments.
+func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+	if len(lhs.List) < len(rhs.List) {
+		return criteriaL
+	}
+	if len(lhs.List) > len(rhs.List) {
+		return criteriaG
+	}
+	for arg := range lhs.List {
+		criteria := compareFormulaArg(lhs.List[arg], rhs.List[arg], caseSensitive, exactMatch)
+		if criteria != criteriaEq {
+			return criteria
+		}
+	}
+	return criteriaEq
+}
+
+// compareFormulaArgMatrix compares the left-hand sides and the right-hand sides
+// matrix type formula arguments.
+func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+	if len(lhs.Matrix) < len(rhs.Matrix) {
+		return criteriaL
+	}
+	if len(lhs.Matrix) > len(rhs.Matrix) {
+		return criteriaG
+	}
+	for i := range lhs.Matrix {
+		left := lhs.Matrix[i]
+		right := lhs.Matrix[i]
+		if len(left) < len(right) {
+			return criteriaL
+		}
+		if len(left) > len(right) {
+			return criteriaG
+		}
+		for arg := range left {
+			criteria := compareFormulaArg(left[arg], right[arg], caseSensitive, exactMatch)
+			if criteria != criteriaEq {
+				return criteria
+			}
+		}
+	}
+	return criteriaEq
+}
+
+// VLOOKUP function 'looks up' a given value in the left-hand column of a
+// data array (or table), and returns the corresponding value from another
+// column of the array. The syntax of the function is:
+//
+//    VLOOKUP(lookup_value,table_array,col_index_num,[range_lookup])
+//
+func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires at least 3 arguments")
+	}
+	if argsList.Len() > 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires at most 4 arguments")
+	}
+	lookupValue := argsList.Front().Value.(formulaArg)
+	tableArray := argsList.Front().Next().Value.(formulaArg)
+	if tableArray.Type != ArgMatrix {
+		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires second argument of table array")
+	}
+	colIdx := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if colIdx.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires numeric col argument")
+	}
+	col, matchIdx, wasExact, exactMatch := int(colIdx.Number)-1, -1, false, false
+	if argsList.Len() == 4 {
+		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
+		if rangeLookup.Type == ArgError {
+			return newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
+		}
+		if rangeLookup.Number == 0 {
+			exactMatch = true
+		}
+	}
+start:
+	for idx, mtx := range tableArray.Matrix {
+		if len(mtx) == 0 {
+			continue
+		}
+		lhs := mtx[0]
+		switch lookupValue.Type {
+		case ArgNumber:
+			if !lookupValue.Boolean {
+				lhs = mtx[0].ToNumber()
+				if lhs.Type == ArgError {
+					lhs = mtx[0]
+				}
+			}
+		case ArgMatrix:
+			lhs = tableArray
+		}
+		switch compareFormulaArg(lhs, lookupValue, false, exactMatch) {
+		case criteriaL:
+			matchIdx = idx
+		case criteriaEq:
+			matchIdx = idx
+			wasExact = true
+			break start
+		}
+	}
+	if matchIdx == -1 {
+		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
+	}
+	mtx := tableArray.Matrix[matchIdx]
+	if col < 0 || col >= len(mtx) {
+		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP has invalid column index")
+	}
+	if wasExact || !exactMatch {
+		return mtx[col]
+	}
+	return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 }
