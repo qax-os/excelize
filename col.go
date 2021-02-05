@@ -97,20 +97,20 @@ func (cols *Cols) Rows() ([]string, error) {
 		if token == nil {
 			break
 		}
-		switch startElement := token.(type) {
+		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			inElement = startElement.Name.Local
+			inElement = xmlElement.Name.Local
 			if inElement == "row" {
 				cellCol = 0
 				cellRow++
-				attrR, _ := attrValToInt("r", startElement.Attr)
+				attrR, _ := attrValToInt("r", xmlElement.Attr)
 				if attrR != 0 {
 					cellRow = attrR
 				}
 			}
 			if inElement == "c" {
 				cellCol++
-				for _, attr := range startElement.Attr {
+				for _, attr := range xmlElement.Attr {
 					if attr.Name.Local == "r" {
 						if cellCol, cellRow, err = CellNameToCoordinates(attr.Value); err != nil {
 							return rows, err
@@ -123,14 +123,59 @@ func (cols *Cols) Rows() ([]string, error) {
 				}
 				if cellCol == cols.curCol {
 					colCell := xlsxC{}
-					_ = decoder.DecodeElement(&colCell, &startElement)
+					_ = decoder.DecodeElement(&colCell, &xmlElement)
 					val, _ := colCell.getValueFrom(cols.f, d)
 					rows = append(rows, val)
 				}
 			}
+		case xml.EndElement:
+			if xmlElement.Name.Local == "sheetData" {
+				return rows, err
+			}
 		}
 	}
-	return rows, nil
+	return rows, err
+}
+
+// columnXMLIterator defined runtime use field for the worksheet column SAX parser.
+type columnXMLIterator struct {
+	err                  error
+	inElement            string
+	cols                 Cols
+	cellCol, curRow, row int
+}
+
+// columnXMLHandler parse the column XML element of the worksheet.
+func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartElement) {
+	colIterator.err = nil
+	inElement := xmlElement.Name.Local
+	if inElement == "row" {
+		colIterator.row++
+		for _, attr := range xmlElement.Attr {
+			if attr.Name.Local == "r" {
+				if colIterator.curRow, colIterator.err = strconv.Atoi(attr.Value); colIterator.err != nil {
+					return
+				}
+				colIterator.row = colIterator.curRow
+			}
+		}
+		colIterator.cols.totalRow = colIterator.row
+		colIterator.cellCol = 0
+	}
+	if inElement == "c" {
+		colIterator.cellCol++
+		for _, attr := range xmlElement.Attr {
+			if attr.Name.Local == "r" {
+				if colIterator.cellCol, _, colIterator.err = CellNameToCoordinates(attr.Value); colIterator.err != nil {
+					return
+				}
+			}
+		}
+		if colIterator.cellCol > colIterator.cols.totalCol {
+			colIterator.cols.totalCol = colIterator.cellCol
+		}
+	}
+	return
 }
 
 // Cols returns a columns iterator, used for streaming reading data for a
@@ -161,53 +206,29 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
-	var (
-		inElement            string
-		cols                 Cols
-		cellCol, curRow, row int
-		err                  error
-	)
-	cols.sheetXML = f.readXML(name)
-	decoder := f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
+	var colIterator columnXMLIterator
+	colIterator.cols.sheetXML = f.readXML(name)
+	decoder := f.xmlNewDecoder(bytes.NewReader(colIterator.cols.sheetXML))
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
 			break
 		}
-		switch startElement := token.(type) {
+		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			inElement = startElement.Name.Local
-			if inElement == "row" {
-				row++
-				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "r" {
-						if curRow, err = strconv.Atoi(attr.Value); err != nil {
-							return &cols, err
-						}
-						row = curRow
-					}
-				}
-				cols.totalRow = row
-				cellCol = 0
+			columnXMLHandler(&colIterator, &xmlElement)
+			if colIterator.err != nil {
+				return &colIterator.cols, colIterator.err
 			}
-			if inElement == "c" {
-				cellCol++
-				for _, attr := range startElement.Attr {
-					if attr.Name.Local == "r" {
-						if cellCol, _, err = CellNameToCoordinates(attr.Value); err != nil {
-							return &cols, err
-						}
-					}
-				}
-				if cellCol > cols.totalCol {
-					cols.totalCol = cellCol
-				}
+		case xml.EndElement:
+			if xmlElement.Name.Local == "sheetData" {
+				colIterator.cols.f = f
+				colIterator.cols.sheet = trimSheetName(sheet)
+				return &colIterator.cols, nil
 			}
 		}
 	}
-	cols.f = f
-	cols.sheet = trimSheetName(sheet)
-	return &cols, nil
+	return &colIterator.cols, nil
 }
 
 // GetColVisible provides a function to get visible of a single column by given

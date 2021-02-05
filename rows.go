@@ -78,60 +78,48 @@ func (rows *Rows) Error() error {
 
 // Columns return the current row's column values.
 func (rows *Rows) Columns() ([]string, error) {
-	var (
-		err                 error
-		inElement           string
-		attrR, cellCol, row int
-		columns             []string
-	)
-
+	var rowIterator rowXMLIterator
 	if rows.stashRow >= rows.curRow {
-		return columns, err
+		return rowIterator.columns, rowIterator.err
 	}
-
-	d := rows.f.sharedStringsReader()
+	rowIterator.rows = rows
+	rowIterator.d = rows.f.sharedStringsReader()
 	for {
 		token, _ := rows.decoder.Token()
 		if token == nil {
 			break
 		}
-		switch startElement := token.(type) {
+		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			inElement = startElement.Name.Local
-			if inElement == "row" {
-				row++
-				if attrR, err = attrValToInt("r", startElement.Attr); attrR != 0 {
-					row = attrR
+			rowIterator.inElement = xmlElement.Name.Local
+			if rowIterator.inElement == "row" {
+				rowIterator.row++
+				if rowIterator.attrR, rowIterator.err = attrValToInt("r", xmlElement.Attr); rowIterator.attrR != 0 {
+					rowIterator.row = rowIterator.attrR
 				}
-				if row > rows.curRow {
-					rows.stashRow = row - 1
-					return columns, err
+				if rowIterator.row > rowIterator.rows.curRow {
+					rowIterator.rows.stashRow = rowIterator.row - 1
+					return rowIterator.columns, rowIterator.err
 				}
 			}
-			if inElement == "c" {
-				cellCol++
-				colCell := xlsxC{}
-				_ = rows.decoder.DecodeElement(&colCell, &startElement)
-				if colCell.R != "" {
-					if cellCol, _, err = CellNameToCoordinates(colCell.R); err != nil {
-						return columns, err
-					}
-				}
-				blank := cellCol - len(columns)
-				val, _ := colCell.getValueFrom(rows.f, d)
-				columns = append(appendSpace(blank, columns), val)
+			rowXMLHandler(&rowIterator, &xmlElement)
+			if rowIterator.err != nil {
+				return rowIterator.columns, rowIterator.err
 			}
 		case xml.EndElement:
-			inElement = startElement.Name.Local
-			if row == 0 {
-				row = rows.curRow
+			rowIterator.inElement = xmlElement.Name.Local
+			if rowIterator.row == 0 {
+				rowIterator.row = rowIterator.rows.curRow
 			}
-			if inElement == "row" && row+1 < rows.curRow {
-				return columns, err
+			if rowIterator.inElement == "row" && rowIterator.row+1 < rowIterator.rows.curRow {
+				return rowIterator.columns, rowIterator.err
+			}
+			if rowIterator.inElement == "sheetData" {
+				return rowIterator.columns, rowIterator.err
 			}
 		}
 	}
-	return columns, err
+	return rowIterator.columns, rowIterator.err
 }
 
 // appendSpace append blank characters to slice by given length and source slice.
@@ -149,6 +137,35 @@ type ErrSheetNotExist struct {
 
 func (err ErrSheetNotExist) Error() string {
 	return fmt.Sprintf("sheet %s is not exist", string(err.SheetName))
+}
+
+// rowXMLIterator defined runtime use field for the worksheet row SAX parser.
+type rowXMLIterator struct {
+	err                 error
+	inElement           string
+	attrR, cellCol, row int
+	columns             []string
+	rows                *Rows
+	d                   *xlsxSST
+}
+
+// rowXMLHandler parse the row XML element of the worksheet.
+func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
+	rowIterator.err = nil
+	if rowIterator.inElement == "c" {
+		rowIterator.cellCol++
+		colCell := xlsxC{}
+		_ = rowIterator.rows.decoder.DecodeElement(&colCell, xmlElement)
+		if colCell.R != "" {
+			if rowIterator.cellCol, _, rowIterator.err = CellNameToCoordinates(colCell.R); rowIterator.err != nil {
+				return
+			}
+		}
+		blank := rowIterator.cellCol - len(rowIterator.columns)
+		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d)
+		rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
+	}
+	return
 }
 
 // Rows returns a rows iterator, used for streaming reading data for a
@@ -192,12 +209,12 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		if token == nil {
 			break
 		}
-		switch startElement := token.(type) {
+		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			inElement = startElement.Name.Local
+			inElement = xmlElement.Name.Local
 			if inElement == "row" {
 				row++
-				for _, attr := range startElement.Attr {
+				for _, attr := range xmlElement.Attr {
 					if attr.Name.Local == "r" {
 						row, err = strconv.Atoi(attr.Value)
 						if err != nil {
@@ -207,12 +224,16 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 				}
 				rows.totalRow = row
 			}
+		case xml.EndElement:
+			if xmlElement.Name.Local == "sheetData" {
+				rows.f = f
+				rows.sheet = name
+				rows.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+				return &rows, nil
+			}
 		default:
 		}
 	}
-	rows.f = f
-	rows.sheet = name
-	rows.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	return &rows, nil
 }
 

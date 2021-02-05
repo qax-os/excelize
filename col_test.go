@@ -148,10 +148,20 @@ func TestColsRows(t *testing.T) {
 		},
 	}
 
-	cols.stashCol, cols.curCol = 0, 1
+	f = NewFile()
+	f.XLSX["xl/worksheets/sheet1.xml"] = nil
 	cols, err = f.Cols("Sheet1")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	f = NewFile()
+	cols, err = f.Cols("Sheet1")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	_, err = cols.Rows()
 	assert.NoError(t, err)
-
+	cols.stashCol, cols.curCol = 0, 1
 	// Test if token is nil
 	cols.sheetXML = nil
 	_, err = cols.Rows()

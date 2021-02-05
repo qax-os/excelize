@@ -46,6 +46,10 @@ func TestRows(t *testing.T) {
 	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)
 	_, err = f.Rows("Sheet1")
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
+
+	f.XLSX["xl/worksheets/sheet1.xml"] = nil
+	_, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
 }
 
 func TestRowsIterator(t *testing.T) {
