@@ -169,6 +169,7 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 //    ShowRowColHeaders(bool)
 //    ZoomScale(float64)
 //    TopLeftCell(string)
+//    ShowZeros(bool)
 //
 // Example:
 //
@@ -198,6 +199,7 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 //    ShowRowColHeaders(bool)
 //    ZoomScale(float64)
 //    TopLeftCell(string)
+//    ShowZeros(bool)
 //
 // Example:
 //

@@ -290,7 +290,7 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if err != nil {
 		return ht, err
 	}
-	if ws.SheetFormatPr != nil {
+	if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
 		ht = ws.SheetFormatPr.DefaultRowHeight
 	}
 	if row > len(ws.SheetData.Row) {

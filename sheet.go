@@ -860,18 +860,18 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 			}
 			break
 		}
-		switch startElement := token.(type) {
+		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			inElement = startElement.Name.Local
+			inElement = xmlElement.Name.Local
 			if inElement == "row" {
-				row, err = attrValToInt("r", startElement.Attr)
+				row, err = attrValToInt("r", xmlElement.Attr)
 				if err != nil {
 					return
 				}
 			}
 			if inElement == "c" {
 				colCell := xlsxC{}
-				_ = decoder.DecodeElement(&colCell, &startElement)
+				_ = decoder.DecodeElement(&colCell, &xmlElement)
 				val, _ := colCell.getValueFrom(f, d)
 				if regSearch {
 					regex := regexp.MustCompile(value)
@@ -1745,7 +1745,7 @@ func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
 	sizeHint := 0
 	var ht float64
 	var customHeight bool
-	if ws.SheetFormatPr != nil {
+	if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
 		ht = ws.SheetFormatPr.DefaultRowHeight
 		customHeight = true
 	}
