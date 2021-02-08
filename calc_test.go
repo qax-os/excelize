@@ -450,6 +450,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUMSQ(A1,B1,A2,B2,6)":    "82",
 		`=SUMSQ("",A1,B1,A2,B2,6)`: "82",
 		`=SUMSQ(1,SUMSQ(1))`:       "2",
+		"=SUMSQ(MUNIT(3))":         "0",
 		// TAN
 		"=TAN(1.047197551)": "1.732050806782486",
 		"=TAN(0)":           "0",
@@ -560,6 +561,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
 		"=CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
 		"=SUM(CHOOSE(A2,A1,B1:B2,A1:A3,A1:A4))":           "9",
+		// HLOOKUP
+		"=HLOOKUP(D2,D2:D8,1,FALSE)": "Jan",
+		"=HLOOKUP(F3,F3:F8,3,FALSE)": "34440", // should be Feb
 		// VLOOKUP
 		"=VLOOKUP(D2,D:D,1,FALSE)":           "Jan",
 		"=VLOOKUP(D2,D:D,1,TRUE)":            "Month", // should be Feb
@@ -739,6 +743,8 @@ func TestCalcCellValue(t *testing.T) {
 		// LOG10
 		"=LOG10()":    "LOG10 requires 1 numeric argument",
 		`=LOG10("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		// MDETERM
+		"MDETERM()": "MDETERM requires at least 1 argument",
 		// MOD
 		"=MOD()":      "MOD requires 2 numeric arguments",
 		"=MOD(6,0)":   "MOD divide by zero",
@@ -834,7 +840,8 @@ func TestCalcCellValue(t *testing.T) {
 		// SUMIF
 		"=SUMIF()": "SUMIF requires at least 2 argument",
 		// SUMSQ
-		`=SUMSQ("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		`=SUMSQ("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=SUMSQ(C1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
 		// TAN
 		"=TAN()":    "TAN requires 1 numeric argument",
 		`=TAN("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -847,7 +854,8 @@ func TestCalcCellValue(t *testing.T) {
 		`=TRUNC(1,"X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// Statistical Functions
 		// MEDIAN
-		"=MEDIAN()": "MEDIAN requires at least 1 argument",
+		"=MEDIAN()":      "MEDIAN requires at least 1 argument",
+		"=MEDIAN(D1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
@@ -914,6 +922,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE()":                "CHOOSE requires 2 arguments",
 		"=CHOOSE(\"index_num\",0)": "CHOOSE requires first argument of type number",
 		"=CHOOSE(2,0)":             "index_num should be <= to the number of values",
+		// HLOOKUP
+		"=HLOOKUP()":                     "HLOOKUP requires at least 3 arguments",
+		"=HLOOKUP(D2,D1,1,FALSE)":        "HLOOKUP requires second argument of table array",
+		"=HLOOKUP(D2,D:D,FALSE,FALSE)":   "HLOOKUP requires numeric row argument",
+		"=HLOOKUP(D2,D:D,1,FALSE,FALSE)": "HLOOKUP requires at most 4 arguments",
+		"=HLOOKUP(D2,D:D,1,2)":           "strconv.ParseBool: parsing \"2\": invalid syntax",
+		"=HLOOKUP(D2,D10:D10,1,FALSE)":   "HLOOKUP no result found",
+		"=HLOOKUP(D2,D2:D3,4,FALSE)":     "HLOOKUP has invalid row index",
+		"=HLOOKUP(D2,C:C,1,FALSE)":       "HLOOKUP no result found",
+		"=HLOOKUP(ISNUMBER(1),F3:F9,1)":  "HLOOKUP no result found",
+		"=HLOOKUP(INT(1),E2:E9,1)":       "HLOOKUP no result found",
+		"=HLOOKUP(MUNIT(2),MUNIT(3),1)":  "HLOOKUP no result found",
+		"=HLOOKUP(A1:B2,B2:B3,1)":        "HLOOKUP no result found",
 		// VLOOKUP
 		"=VLOOKUP()":                     "VLOOKUP requires at least 3 arguments",
 		"=VLOOKUP(D2,D1,1,FALSE)":        "VLOOKUP requires second argument of table array",

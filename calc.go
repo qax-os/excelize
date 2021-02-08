@@ -2214,11 +2214,12 @@ func (fn *formulaFuncs) MDETERM(argsList *list.List) (result formulaArg) {
 		num    float64
 		numMtx = [][]float64{}
 		err    error
-		strMtx = argsList.Front().Value.(formulaArg).Matrix
+		strMtx [][]formulaArg
 	)
 	if argsList.Len() < 1 {
-		return
+		return newErrorFormulaArg(formulaErrorVALUE, "MDETERM requires at least 1 argument")
 	}
+	strMtx = argsList.Front().Value.(formulaArg).Matrix
 	var rows = len(strMtx)
 	for _, row := range argsList.Front().Value.(formulaArg).Matrix {
 		if len(row) != rows {
@@ -3703,6 +3704,63 @@ func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool
 		}
 	}
 	return criteriaEq
+}
+
+// HLOOKUP function 'looks up' a given value in the top row of a data array
+// (or table), and returns the corresponding value from another row of the
+// array. The syntax of the function is:
+//
+//    HLOOKUP(lookup_value,table_array,row_index_num,[range_lookup])
+//
+func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires at least 3 arguments")
+	}
+	if argsList.Len() > 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires at most 4 arguments")
+	}
+	lookupValue := argsList.Front().Value.(formulaArg)
+	tableArray := argsList.Front().Next().Value.(formulaArg)
+	if tableArray.Type != ArgMatrix {
+		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires second argument of table array")
+	}
+	rowArg := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if rowArg.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires numeric row argument")
+	}
+	rowIdx, matchIdx, wasExact, exactMatch := int(rowArg.Number)-1, -1, false, false
+	if argsList.Len() == 4 {
+		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
+		if rangeLookup.Type == ArgError {
+			return newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
+		}
+		if rangeLookup.Number == 0 {
+			exactMatch = true
+		}
+	}
+	row := tableArray.Matrix[0]
+start:
+	for idx, mtx := range row {
+		switch compareFormulaArg(mtx, lookupValue, false, exactMatch) {
+		case criteriaL:
+			matchIdx = idx
+		case criteriaEq:
+			matchIdx = idx
+			wasExact = true
+			break start
+		}
+	}
+	if matchIdx == -1 {
+		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
+	}
+	if rowIdx < 0 || rowIdx >= len(tableArray.Matrix) {
+		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP has invalid row index")
+	}
+	row = tableArray.Matrix[rowIdx]
+	if wasExact || !exactMatch {
+		return row[matchIdx]
+	}
+	return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
 }
 
 // VLOOKUP function 'looks up' a given value in the left-hand column of a
