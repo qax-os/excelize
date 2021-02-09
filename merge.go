@@ -148,6 +148,9 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 	}
 	ws.MergeCells.Cells = ws.MergeCells.Cells[:i]
 	ws.MergeCells.Count = len(ws.MergeCells.Cells)
+	if ws.MergeCells.Count == 0 {
+		ws.MergeCells = nil
+	}
 	return nil
 }
 
