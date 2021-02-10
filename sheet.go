@@ -447,17 +447,17 @@ func (f *File) GetSheetList() (list []string) {
 // getSheetMap provides a function to get worksheet name and XML file path map
 // of the spreadsheet.
 func (f *File) getSheetMap() map[string]string {
-	content := f.workbookReader()
-	rels := f.relsReader(f.getWorkbookRelsPath())
 	maps := map[string]string{}
-	for _, v := range content.Sheets.Sheet {
-		for _, rel := range rels.Relationships {
+	for _, v := range f.workbookReader().Sheets.Sheet {
+		for _, rel := range f.relsReader(f.getWorkbookRelsPath()).Relationships {
 			if rel.ID == v.ID {
-				// Construct a target XML as xl/worksheets/sheet%d by split path, compatible with different types of relative paths in workbook.xml.rels, for example: worksheets/sheet%d.xml and /xl/worksheets/sheet%d.xml
-				pathInfo := strings.Split(rel.Target, "/")
-				pathInfoLen := len(pathInfo)
-				if pathInfoLen > 1 {
-					maps[v.Name] = fmt.Sprintf("xl/%s", strings.Join(pathInfo[pathInfoLen-2:], "/"))
+				// Construct a target XML as xl/worksheets/sheet%d by split
+				// path, compatible with different types of relative paths in
+				// workbook.xml.rels, for example: worksheets/sheet%d.xml
+				// and /xl/worksheets/sheet%d.xml
+				path := filepath.ToSlash(strings.TrimPrefix(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), rel.Target)), "/"))
+				if _, ok := f.XLSX[path]; ok {
+					maps[v.Name] = path
 				}
 			}
 		}

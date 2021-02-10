@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -46,9 +46,9 @@ type xlsxTable struct {
 // applied column by column to a table of data in the worksheet. This collection
 // expresses AutoFilter settings.
 type xlsxAutoFilter struct {
-	XMLName      xml.Name          `xml:"autoFilter"`
-	Ref          string            `xml:"ref,attr"`
-	FilterColumn *xlsxFilterColumn `xml:"filterColumn"`
+	XMLName      xml.Name            `xml:"autoFilter"`
+	Ref          string              `xml:"ref,attr"`
+	FilterColumn []*xlsxFilterColumn `xml:"filterColumn"`
 }
 
 // xlsxFilterColumn directly maps the filterColumn element. The filterColumn

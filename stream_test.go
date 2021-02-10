@@ -76,7 +76,7 @@ func TestStreamWriter(t *testing.T) {
 	file = NewFile()
 	streamWriter, err = file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
-	for rowID := 10; rowID <= 51200; rowID++ {
+	for rowID := 10; rowID <= 25600; rowID++ {
 		row := make([]interface{}, 50)
 		for colID := 0; colID < 50; colID++ {
 			row[colID] = rand.Intn(640000)

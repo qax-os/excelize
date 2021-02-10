@@ -348,9 +348,9 @@ func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *forma
 		return fmt.Errorf("incorrect index of column '%s'", formatSet.Column)
 	}
 
-	filter.FilterColumn = &xlsxFilterColumn{
+	filter.FilterColumn = append(filter.FilterColumn, &xlsxFilterColumn{
 		ColID: offset,
-	}
+	})
 	re := regexp.MustCompile(`"(?:[^"]|"")*"|\S+`)
 	token := re.FindAllString(formatSet.Expression, -1)
 	if len(token) != 3 && len(token) != 7 {
@@ -372,14 +372,14 @@ func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []strin
 		// Single equality.
 		var filters []*xlsxFilter
 		filters = append(filters, &xlsxFilter{Val: tokens[0]})
-		filter.FilterColumn.Filters = &xlsxFilters{Filter: filters}
+		filter.FilterColumn[0].Filters = &xlsxFilters{Filter: filters}
 	} else if len(exp) == 3 && exp[0] == 2 && exp[1] == 1 && exp[2] == 2 {
 		// Double equality with "or" operator.
 		filters := []*xlsxFilter{}
 		for _, v := range tokens {
 			filters = append(filters, &xlsxFilter{Val: v})
 		}
-		filter.FilterColumn.Filters = &xlsxFilters{Filter: filters}
+		filter.FilterColumn[0].Filters = &xlsxFilters{Filter: filters}
 	} else {
 		// Non default custom filter.
 		expRel := map[int]int{0: 0, 1: 2}
@@ -387,7 +387,7 @@ func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []strin
 		for k, v := range tokens {
 			f.writeCustomFilter(filter, exp[expRel[k]], v)
 			if k == 1 {
-				filter.FilterColumn.CustomFilters.And = andRel[exp[k]]
+				filter.FilterColumn[0].CustomFilters.And = andRel[exp[k]]
 			}
 		}
 	}
@@ -408,12 +408,12 @@ func (f *File) writeCustomFilter(filter *xlsxAutoFilter, operator int, val strin
 		Operator: operators[operator],
 		Val:      val,
 	}
-	if filter.FilterColumn.CustomFilters != nil {
-		filter.FilterColumn.CustomFilters.CustomFilter = append(filter.FilterColumn.CustomFilters.CustomFilter, &customFilter)
+	if filter.FilterColumn[0].CustomFilters != nil {
+		filter.FilterColumn[0].CustomFilters.CustomFilter = append(filter.FilterColumn[0].CustomFilters.CustomFilter, &customFilter)
 	} else {
 		customFilters := []*xlsxCustomFilter{}
 		customFilters = append(customFilters, &customFilter)
-		filter.FilterColumn.CustomFilters = &xlsxCustomFilters{CustomFilter: customFilters}
+		filter.FilterColumn[0].CustomFilters = &xlsxCustomFilters{CustomFilter: customFilters}
 	}
 }
 
