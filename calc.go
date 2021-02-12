@@ -223,6 +223,7 @@ var tokenPriority = map[string]int{
 //    FLOOR.MATH
 //    FLOOR.PRECISE
 //    GCD
+//    HLOOKUP
 //    IF
 //    INT
 //    ISBLANK
@@ -239,6 +240,7 @@ var tokenPriority = map[string]int{
 //    LN
 //    LOG
 //    LOG10
+//    LOOKUP
 //    LOWER
 //    MDETERM
 //    MEDIAN
@@ -275,6 +277,7 @@ var tokenPriority = map[string]int{
 //    TRIM
 //    TRUNC
 //    UPPER
+//    VLOOKUP
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
@@ -2335,8 +2338,8 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result formulaArg) {
 		return newErrorFormulaArg(formulaErrorVALUE, "MUNIT requires 1 numeric argument")
 	}
 	dimension := argsList.Back().Value.(formulaArg).ToNumber()
-	if dimension.Type == ArgError {
-		return dimension
+	if dimension.Type == ArgError || dimension.Number < 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, dimension.Error)
 	}
 	matrix := make([][]formulaArg, 0, int(dimension.Number))
 	for i := 0; i < int(dimension.Number); i++ {
@@ -3607,8 +3610,7 @@ func matchPattern(pattern, name string) (matched bool) {
 	if pattern == "*" {
 		return true
 	}
-	rname := make([]rune, 0, len(name))
-	rpattern := make([]rune, 0, len(pattern))
+	rname, rpattern := make([]rune, 0, len(name)), make([]rune, 0, len(pattern))
 	for _, r := range name {
 		rname = append(rname, r)
 	}
@@ -3636,11 +3638,9 @@ func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte
 		}
 		return criteriaG
 	case ArgString:
-		ls := lhs.String
-		rs := rhs.String
+		ls, rs := lhs.String, rhs.String
 		if !caseSensitive {
-			ls = strings.ToLower(ls)
-			rs = strings.ToLower(rs)
+			ls, rs = strings.ToLower(ls), strings.ToLower(rs)
 		}
 		if exactMatch {
 			match := matchPattern(rs, ls)
@@ -3649,7 +3649,15 @@ func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte
 			}
 			return criteriaG
 		}
-		return byte(strings.Compare(ls, rs))
+		switch strings.Compare(ls, rs) {
+		case 1:
+			return criteriaG
+		case -1:
+			return criteriaL
+		case 0:
+			return criteriaEq
+		}
+		return criteriaErr
 	case ArgEmpty:
 		return criteriaEq
 	case ArgList:
@@ -3739,16 +3747,29 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 		}
 	}
 	row := tableArray.Matrix[0]
-start:
-	for idx, mtx := range row {
-		switch compareFormulaArg(mtx, lookupValue, false, exactMatch) {
-		case criteriaL:
-			matchIdx = idx
-		case criteriaEq:
-			matchIdx = idx
-			wasExact = true
-			break start
+	if exactMatch || len(tableArray.Matrix) == TotalRows {
+	start:
+		for idx, mtx := range row {
+			lhs := mtx
+			switch lookupValue.Type {
+			case ArgNumber:
+				if !lookupValue.Boolean {
+					lhs = mtx.ToNumber()
+					if lhs.Type == ArgError {
+						lhs = mtx
+					}
+				}
+			case ArgMatrix:
+				lhs = tableArray
+			}
+			if compareFormulaArg(lhs, lookupValue, false, exactMatch) == criteriaEq {
+				matchIdx = idx
+				wasExact = true
+				break start
+			}
 		}
+	} else {
+		matchIdx, wasExact = hlookupBinarySearch(row, lookupValue)
 	}
 	if matchIdx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
@@ -3795,31 +3816,29 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 			exactMatch = true
 		}
 	}
-start:
-	for idx, mtx := range tableArray.Matrix {
-		if len(mtx) == 0 {
-			continue
-		}
-		lhs := mtx[0]
-		switch lookupValue.Type {
-		case ArgNumber:
-			if !lookupValue.Boolean {
-				lhs = mtx[0].ToNumber()
-				if lhs.Type == ArgError {
-					lhs = mtx[0]
+	if exactMatch || len(tableArray.Matrix) == TotalRows {
+	start:
+		for idx, mtx := range tableArray.Matrix {
+			lhs := mtx[0]
+			switch lookupValue.Type {
+			case ArgNumber:
+				if !lookupValue.Boolean {
+					lhs = mtx[0].ToNumber()
+					if lhs.Type == ArgError {
+						lhs = mtx[0]
+					}
 				}
+			case ArgMatrix:
+				lhs = tableArray
 			}
-		case ArgMatrix:
-			lhs = tableArray
+			if compareFormulaArg(lhs, lookupValue, false, exactMatch) == criteriaEq {
+				matchIdx = idx
+				wasExact = true
+				break start
+			}
 		}
-		switch compareFormulaArg(lhs, lookupValue, false, exactMatch) {
-		case criteriaL:
-			matchIdx = idx
-		case criteriaEq:
-			matchIdx = idx
-			wasExact = true
-			break start
-		}
+	} else {
+		matchIdx, wasExact = vlookupBinarySearch(tableArray, lookupValue)
 	}
 	if matchIdx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
@@ -3832,4 +3851,128 @@ start:
 		return mtx[col]
 	}
 	return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
+}
+
+// vlookupBinarySearch finds the position of a target value when range lookup
+// is TRUE, if the data of table array can't guarantee be sorted, it will
+// return wrong result.
+func vlookupBinarySearch(tableArray, lookupValue formulaArg) (matchIdx int, wasExact bool) {
+	var low, high, lastMatchIdx int = 0, len(tableArray.Matrix) - 1, -1
+	for low <= high {
+		var mid int = low + (high-low)/2
+		mtx := tableArray.Matrix[mid]
+		lhs := mtx[0]
+		switch lookupValue.Type {
+		case ArgNumber:
+			if !lookupValue.Boolean {
+				lhs = mtx[0].ToNumber()
+				if lhs.Type == ArgError {
+					lhs = mtx[0]
+				}
+			}
+		case ArgMatrix:
+			lhs = tableArray
+		}
+		result := compareFormulaArg(lhs, lookupValue, false, false)
+		if result == criteriaEq {
+			matchIdx, wasExact = mid, true
+			return
+		} else if result == criteriaG {
+			high = mid - 1
+		} else if result == criteriaL {
+			matchIdx, low = mid, mid+1
+			if lhs.Value() != "" {
+				lastMatchIdx = matchIdx
+			}
+		} else {
+			return -1, false
+		}
+	}
+	matchIdx, wasExact = lastMatchIdx, true
+	return
+}
+
+// vlookupBinarySearch finds the position of a target value when range lookup
+// is TRUE, if the data of table array can't guarantee be sorted, it will
+// return wrong result.
+func hlookupBinarySearch(row []formulaArg, lookupValue formulaArg) (matchIdx int, wasExact bool) {
+	var low, high, lastMatchIdx int = 0, len(row) - 1, -1
+	for low <= high {
+		var mid int = low + (high-low)/2
+		mtx := row[mid]
+		result := compareFormulaArg(mtx, lookupValue, false, false)
+		if result == criteriaEq {
+			matchIdx, wasExact = mid, true
+			return
+		} else if result == criteriaG {
+			high = mid - 1
+		} else if result == criteriaL {
+			low, lastMatchIdx = mid+1, mid
+		} else {
+			return -1, false
+		}
+	}
+	matchIdx, wasExact = lastMatchIdx, true
+	return
+}
+
+// LOOKUP function performs an approximate match lookup in a one-column or
+// one-row range, and returns the corresponding value from another one-column
+// or one-row range. The syntax of the function is:
+//
+//    LOOKUP(lookup_value,lookup_vector,[result_vector])
+//
+func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at least 2 arguments")
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at most 3 arguments")
+	}
+	lookupValue := argsList.Front().Value.(formulaArg)
+	lookupVector := argsList.Front().Next().Value.(formulaArg)
+	if lookupVector.Type != ArgMatrix && lookupVector.Type != ArgList {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
+	}
+	cols, matchIdx := lookupCol(lookupVector), -1
+	for idx, col := range cols {
+		lhs := lookupValue
+		switch col.Type {
+		case ArgNumber:
+			lhs = lhs.ToNumber()
+			if !col.Boolean {
+				if lhs.Type == ArgError {
+					lhs = lookupValue
+				}
+			}
+		}
+		if compareFormulaArg(lhs, col, false, false) == criteriaEq {
+			matchIdx = idx
+			break
+		}
+	}
+	column := cols
+	if argsList.Len() == 3 {
+		column = lookupCol(argsList.Back().Value.(formulaArg))
+	}
+	if matchIdx < 0 || matchIdx >= len(column) {
+		return newErrorFormulaArg(formulaErrorNA, "LOOKUP no result found")
+	}
+	return column[matchIdx]
+}
+
+// lookupCol extract columns for LOOKUP.
+func lookupCol(arr formulaArg) []formulaArg {
+	col := arr.List
+	if arr.Type == ArgMatrix {
+		col = nil
+		for _, r := range arr.Matrix {
+			if len(r) > 0 {
+				col = append(col, r[0])
+				continue
+			}
+			col = append(col, newEmptyFormulaArg())
+		}
+	}
+	return col
 }

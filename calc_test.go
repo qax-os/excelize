@@ -10,6 +10,17 @@ import (
 	"github.com/xuri/efp"
 )
 
+func prepareCalcData(cellData [][]interface{}) *File {
+	f := NewFile()
+	for r, row := range cellData {
+		for c, value := range row {
+			cell, _ := CoordinatesToCellName(c+1, r+1)
+			f.SetCellValue("Sheet1", cell, value)
+		}
+	}
+	return f
+}
+
 func TestCalcCellValue(t *testing.T) {
 	cellData := [][]interface{}{
 		{1, 4, nil, "Month", "Team", "Sales"},
@@ -22,17 +33,6 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 1", 32080},
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
-	prepareData := func() *File {
-		f := NewFile()
-		for r, row := range cellData {
-			for c, value := range row {
-				cell, _ := CoordinatesToCellName(c+1, r+1)
-				assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
-			}
-		}
-		return f
-	}
-
 	mathCalc := map[string]string{
 		"=2^3":  "8",
 		"=1=1":  "TRUE",
@@ -562,18 +562,28 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
 		"=SUM(CHOOSE(A2,A1,B1:B2,A1:A3,A1:A4))":           "9",
 		// HLOOKUP
-		"=HLOOKUP(D2,D2:D8,1,FALSE)": "Jan",
-		"=HLOOKUP(F3,F3:F8,3,FALSE)": "34440", // should be Feb
+		"=HLOOKUP(D2,D2:D8,1,FALSE)":          "Jan",
+		"=HLOOKUP(F3,F3:F8,3,FALSE)":          "34440",
+		"=HLOOKUP(INT(F3),F3:F8,3,FALSE)":     "34440",
+		"=HLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
 		// VLOOKUP
-		"=VLOOKUP(D2,D:D,1,FALSE)":           "Jan",
-		"=VLOOKUP(D2,D:D,1,TRUE)":            "Month", // should be Feb
-		"=VLOOKUP(INT(36693),F2:F2,1,FALSE)": "36693",
-		"=VLOOKUP(INT(F2),F3:F9,1)":          "32080",
-		"=VLOOKUP(MUNIT(3),MUNIT(2),1)":      "0", // should be 1
-		"=VLOOKUP(MUNIT(3),MUNIT(3),1)":      "1",
+		"=VLOOKUP(D2,D:D,1,FALSE)":            "Jan",
+		"=VLOOKUP(D2,D1:D10,1)":               "Jan",
+		"=VLOOKUP(D2,D1:D11,1)":               "Feb",
+		"=VLOOKUP(D2,D1:D10,1,FALSE)":         "Jan",
+		"=VLOOKUP(INT(36693),F2:F2,1,FALSE)":  "36693",
+		"=VLOOKUP(INT(F2),F3:F9,1)":           "32080",
+		"=VLOOKUP(INT(F2),F3:F9,1,TRUE)":      "32080",
+		"=VLOOKUP(MUNIT(3),MUNIT(3),1)":       "0",
+		"=VLOOKUP(A1,A3:B5,1)":                "0",
+		"=VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
+		// LOOKUP
+		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
+		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
+		"=LOOKUP(1,MUNIT(1),MUNIT(1))": "1",
 	}
 	for formula, expected := range mathCalc {
-		f := prepareData()
+		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
@@ -759,8 +769,9 @@ func TestCalcCellValue(t *testing.T) {
 		// MULTINOMIAL
 		`=MULTINOMIAL("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// _xlfn.MUNIT
-		"=_xlfn.MUNIT()":    "MUNIT requires 1 numeric argument",                 // not support currently
-		`=_xlfn.MUNIT("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax", // not support currently
+		"=_xlfn.MUNIT()":    "MUNIT requires 1 numeric argument",
+		`=_xlfn.MUNIT("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=_xlfn.MUNIT(-1)":  "",
 		// ODD
 		"=ODD()":    "ODD requires 1 numeric argument",
 		`=ODD("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -947,10 +958,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=VLOOKUP(ISNUMBER(1),F3:F9,1)":  "VLOOKUP no result found",
 		"=VLOOKUP(INT(1),E2:E9,1)":       "VLOOKUP no result found",
 		"=VLOOKUP(MUNIT(2),MUNIT(3),1)":  "VLOOKUP no result found",
-		"=VLOOKUP(A1:B2,B2:B3,1)":        "VLOOKUP no result found",
+		"=VLOOKUP(1,G1:H2,1,FALSE)":      "VLOOKUP no result found",
+		// LOOKUP
+		"=LOOKUP()":                     "LOOKUP requires at least 2 arguments",
+		"=LOOKUP(D2,D1,D2)":             "LOOKUP requires second argument of table array",
+		"=LOOKUP(D2,D1,D2,FALSE)":       "LOOKUP requires at most 3 arguments",
+		"=LOOKUP(D1,MUNIT(1),MUNIT(1))": "LOOKUP no result found",
 	}
 	for formula, expected := range mathCalcError {
-		f := prepareData()
+		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, expected, formula)
@@ -974,7 +990,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
 	}
 	for formula, expected := range referenceCalc {
-		f := prepareData()
+		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err)
@@ -988,7 +1004,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=1+SUM(SUM(A1+A2/A4)*(2-3),2)": "#DIV/0!",
 	}
 	for formula, expected := range referenceCalcError {
-		f := prepareData()
+		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, expected)
@@ -1000,23 +1016,23 @@ func TestCalcCellValue(t *testing.T) {
 		"=RANDBETWEEN(1,2)",
 	}
 	for _, formula := range volatileFuncs {
-		f := prepareData()
+		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		_, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err)
 	}
 
 	// Test get calculated cell value on not formula cell.
-	f := prepareData()
+	f := prepareCalcData(cellData)
 	result, err := f.CalcCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "", result)
 	// Test get calculated cell value on not exists worksheet.
-	f = prepareData()
+	f = prepareCalcData(cellData)
 	_, err = f.CalcCellValue("SheetN", "A1")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test get calculated cell value with not support formula.
-	f = prepareData()
+	f = prepareCalcData(cellData)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=UNSUPPORT(A1)"))
 	_, err = f.CalcCellValue("Sheet1", "A1")
 	assert.EqualError(t, err, "not support UNSUPPORT function")
@@ -1036,24 +1052,13 @@ func TestCalculate(t *testing.T) {
 	assert.EqualError(t, calculate(opd, opt), err)
 }
 
-func TestCalcCellValueWithDefinedName(t *testing.T) {
+func TestCalcWithDefinedName(t *testing.T) {
 	cellData := [][]interface{}{
 		{"A1 value", "B1 value", nil},
 	}
-	prepareData := func() *File {
-		f := NewFile()
-		for r, row := range cellData {
-			for c, value := range row {
-				cell, _ := CoordinatesToCellName(c+1, r+1)
-				assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
-			}
-		}
-		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
-		assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
-
-		return f
-	}
-	f := prepareData()
+	f := prepareCalcData(cellData)
+	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=defined_name1"))
 	result, err := f.CalcCellValue("Sheet1", "C1")
 	assert.NoError(t, err)
@@ -1061,7 +1066,7 @@ func TestCalcCellValueWithDefinedName(t *testing.T) {
 	assert.Equal(t, "B1 value", result, "=defined_name1")
 }
 
-func TestCalcPow(t *testing.T) {
+func TestCalcArithmeticOperations(t *testing.T) {
 	err := `strconv.ParseFloat: parsing "text": invalid syntax`
 	assert.EqualError(t, calcPow("1", "text", nil), err)
 	assert.EqualError(t, calcPow("text", "1", nil), err)
@@ -1085,7 +1090,7 @@ func TestCalcPow(t *testing.T) {
 	assert.EqualError(t, calcDiv("text", "1", nil), err)
 }
 
-func TestISBLANK(t *testing.T) {
+func TestCalcISBLANK(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
 		Type: ArgUnknown,
@@ -1096,7 +1101,7 @@ func TestISBLANK(t *testing.T) {
 	assert.Empty(t, result.Error)
 }
 
-func TestAND(t *testing.T) {
+func TestCalcAND(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
 		Type: ArgUnknown,
@@ -1107,7 +1112,7 @@ func TestAND(t *testing.T) {
 	assert.Empty(t, result.Error)
 }
 
-func TestOR(t *testing.T) {
+func TestCalcOR(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
 		Type: ArgUnknown,
@@ -1118,7 +1123,7 @@ func TestOR(t *testing.T) {
 	assert.Empty(t, result.Error)
 }
 
-func TestDet(t *testing.T) {
+func TestCalcDet(t *testing.T) {
 	assert.Equal(t, det([][]float64{
 		{1, 2, 3, 4},
 		{2, 3, 4, 5},
@@ -1127,7 +1132,12 @@ func TestDet(t *testing.T) {
 	}), float64(0))
 }
 
-func TestCompareFormulaArg(t *testing.T) {
+func TestCalcToBool(t *testing.T) {
+	b := newBoolFormulaArg(true).ToBool()
+	assert.Equal(t, b.Boolean, true)
+	assert.Equal(t, b.Number, 1.0)
+}
+func TestCalcCompareFormulaArg(t *testing.T) {
 	assert.Equal(t, compareFormulaArg(newEmptyFormulaArg(), newEmptyFormulaArg(), false, false), criteriaEq)
 	lhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg()})
 	rhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg(), newEmptyFormulaArg()})
@@ -1141,9 +1151,82 @@ func TestCompareFormulaArg(t *testing.T) {
 	assert.Equal(t, compareFormulaArg(formulaArg{Type: ArgUnknown}, formulaArg{Type: ArgUnknown}, false, false), criteriaErr)
 }
 
-func TestMatchPattern(t *testing.T) {
+func TestCalcMatchPattern(t *testing.T) {
 	assert.True(t, matchPattern("", ""))
 	assert.True(t, matchPattern("file/*", "file/abc/bcd/def"))
 	assert.True(t, matchPattern("*", ""))
 	assert.False(t, matchPattern("file/?", "file/abc/bcd/def"))
+}
+
+func TestCalcVLOOKUP(t *testing.T) {
+	cellData := [][]interface{}{
+		{nil, nil, nil, nil, nil, nil},
+		{nil, "Score", "Grade", nil, nil, nil},
+		{nil, 0, "F", nil, "Score", 85},
+		{nil, 60, "D", nil, "Grade"},
+		{nil, 70, "C", nil, nil, nil},
+		{nil, 80, "b", nil, nil, nil},
+		{nil, 90, "A", nil, nil, nil},
+		{nil, 85, "B", nil, nil, nil},
+		{nil, nil, nil, nil, nil, nil},
+	}
+	f := prepareCalcData(cellData)
+	calc := map[string]string{
+		"=VLOOKUP(F3,B3:C8,2)":       "b",
+		"=VLOOKUP(F3,B3:C8,2,TRUE)":  "b",
+		"=VLOOKUP(F3,B3:C8,2,FALSE)": "B",
+	}
+	for formula, expected := range calc {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "F4", formula))
+		result, err := f.CalcCellValue("Sheet1", "F4")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=VLOOKUP(INT(1),C3:C3,1,FALSE)": "VLOOKUP no result found",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "F4", formula))
+		result, err := f.CalcCellValue("Sheet1", "F4")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcHLOOKUP(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Example Result Table"},
+		{nil, "A", "B", "C", "E", "F"},
+		{"Math", .58, .9, .67, .76, .8},
+		{"French", .61, .71, .59, .59, .76},
+		{"Physics", .75, .45, .39, .52, .69},
+		{"Biology", .39, .55, .77, .61, .45},
+		{},
+		{"Individual Student Score"},
+		{"Student:", "Biology Score:"},
+		{"E"},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=HLOOKUP(A10,A2:F6,5,FALSE)":  "0.61",
+		"=HLOOKUP(D3,D3:D3,1,TRUE)":    "0.67",
+		"=HLOOKUP(F3,D3:F3,1,TRUE)":    "0.8",
+		"=HLOOKUP(A5,A2:F2,1,TRUE)":    "F",
+		"=HLOOKUP(\"D\",A2:F2,1,TRUE)": "C",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
+		result, err := f.CalcCellValue("Sheet1", "B10")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=HLOOKUP(INT(1),A3:A3,1,FALSE)": "HLOOKUP no result found",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
+		result, err := f.CalcCellValue("Sheet1", "B10")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
 }
