@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/url"
 	"reflect"
 	"regexp"
 	"sort"
@@ -99,13 +100,15 @@ const (
 
 // formulaArg is the argument of a formula or function.
 type formulaArg struct {
-	Number  float64
-	String  string
-	List    []formulaArg
-	Matrix  [][]formulaArg
-	Boolean bool
-	Error   string
-	Type    ArgType
+	f         *File
+	SheetName string
+	Number    float64
+	String    string
+	List      []formulaArg
+	Matrix    [][]formulaArg
+	Boolean   bool
+	Error     string
+	Type      ArgType
 }
 
 // Value returns a string data type of the formula argument.
@@ -162,7 +165,10 @@ func (fa formulaArg) ToBool() formulaArg {
 }
 
 // formulaFuncs is the type of the formula functions.
-type formulaFuncs struct{}
+type formulaFuncs struct {
+	f     *File
+	sheet string
+}
 
 // tokenPriority defined basic arithmetic operator priority.
 var tokenPriority = map[string]int{
@@ -184,7 +190,7 @@ var tokenPriority = map[string]int{
 // feature is currently in working processing. Array formula, table formula
 // and some other formulas are not supported currently.
 //
-// Supported formulas:
+// Supported formula functions:
 //
 //    ABS
 //    ACOS
@@ -215,16 +221,20 @@ var tokenPriority = map[string]int{
 //    DATE
 //    DECIMAL
 //    DEGREES
+//    ENCODEURL
 //    EVEN
+//    EXACT
 //    EXP
 //    FACT
 //    FACTDOUBLE
+//    FALSE
 //    FLOOR
 //    FLOOR.MATH
 //    FLOOR.PRECISE
 //    GCD
 //    HLOOKUP
 //    IF
+//    IFERROR
 //    INT
 //    ISBLANK
 //    ISERR
@@ -234,9 +244,11 @@ var tokenPriority = map[string]int{
 //    ISNONTEXT
 //    ISNUMBER
 //    ISODD
+//    ISTEXT
 //    ISO.CEILING
 //    LCM
 //    LEN
+//    LENB
 //    LN
 //    LOG
 //    LOG10
@@ -249,6 +261,7 @@ var tokenPriority = map[string]int{
 //    MULTINOMIAL
 //    MUNIT
 //    NA
+//    NOT
 //    ODD
 //    OR
 //    PI
@@ -259,11 +272,13 @@ var tokenPriority = map[string]int{
 //    RADIANS
 //    RAND
 //    RANDBETWEEN
+//    REPT
 //    ROUND
 //    ROUNDDOWN
 //    ROUNDUP
 //    SEC
 //    SECH
+//    SHEET
 //    SIGN
 //    SIN
 //    SINH
@@ -275,6 +290,7 @@ var tokenPriority = map[string]int{
 //    TAN
 //    TANH
 //    TRIM
+//    TRUE
 //    TRUNC
 //    UPPER
 //    VLOOKUP
@@ -445,15 +461,12 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
 					if err := calculate(opfdStack, topOpt); err != nil {
-						return efp.Token{}, err
+						argsStack.Peek().(*list.List).PushFront(newErrorFormulaArg(formulaErrorVALUE, err.Error()))
 					}
 					opftStack.Pop()
 				}
 				if !opfdStack.Empty() {
-					argsStack.Peek().(*list.List).PushBack(formulaArg{
-						String: opfdStack.Pop().(efp.Token).TValue,
-						Type:   ArgString,
-					})
+					argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
 				}
 				continue
 			}
@@ -462,20 +475,14 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 			if token.TType == efp.OperatorsInfix && token.TSubType == efp.TokenSubTypeLogical {
 			}
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeLogical {
-				argsStack.Peek().(*list.List).PushBack(formulaArg{
-					String: token.TValue,
-					Type:   ArgString,
-				})
+				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
 			}
 
 			// current token is text
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
-				argsStack.Peek().(*list.List).PushBack(formulaArg{
-					String: token.TValue,
-					Type:   ArgString,
-				})
+				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
 			}
-			if err = evalInfixExpFunc(token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
+			if err = f.evalInfixExpFunc(sheet, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
 				return efp.Token{}, err
 			}
 		}
@@ -494,7 +501,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
-func evalInfixExpFunc(token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
+func (f *File) evalInfixExpFunc(sheet string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
 	if !isFunctionStopToken(token) {
 		return nil
 	}
@@ -510,16 +517,13 @@ func evalInfixExpFunc(token, nextToken efp.Token, opfStack, opdStack, opftStack,
 
 	// push opfd to args
 	if opfdStack.Len() > 0 {
-		argsStack.Peek().(*list.List).PushBack(formulaArg{
-			String: opfdStack.Pop().(efp.Token).TValue,
-			Type:   ArgString,
-		})
+		argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
 	}
 	// call formula function to evaluate
-	arg := callFuncByName(&formulaFuncs{}, strings.NewReplacer(
+	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet}, strings.NewReplacer(
 		"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
-	if arg.Type == ArgError {
+	if arg.Type == ArgError && opfStack.Len() == 1 {
 		return errors.New(arg.Value())
 	}
 	argsStack.Pop()
@@ -793,7 +797,7 @@ func isEndParenthesesToken(token efp.Token) bool {
 // token.
 func isOperatorPrefixToken(token efp.Token) bool {
 	_, ok := tokenPriority[token.TValue]
-	if (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || ok {
+	if (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || (ok && token.TType == efp.TokenTypeOperatorInfix) {
 		return true
 	}
 	return false
@@ -3274,6 +3278,22 @@ func (fn *formulaFuncs) ISODD(argsList *list.List) formulaArg {
 	return newStringFormulaArg(result)
 }
 
+// ISTEXT function tests if a supplied value is text, and if so, returns TRUE;
+// Otherwise, the function returns FALSE. The syntax of the function is:
+//
+//    ISTEXT(value)
+//
+func (fn *formulaFuncs) ISTEXT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISTEXT requires 1 argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	if token.ToNumber().Type != ArgError {
+		return newBoolFormulaArg(false)
+	}
+	return newBoolFormulaArg(token.Type == ArgString)
+}
+
 // NA function returns the Excel #N/A error. This error message has the
 // meaning 'value not available' and is produced when an Excel Formula is
 // unable to find a value that it needs. The syntax of the function is:
@@ -3285,6 +3305,18 @@ func (fn *formulaFuncs) NA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "NA accepts no arguments")
 	}
 	return newStringFormulaArg(formulaErrorNA)
+}
+
+// SHEET function returns the Sheet number for a specified reference. The
+// syntax of the function is:
+//
+//    SHEET()
+//
+func (fn *formulaFuncs) SHEET(argsList *list.List) formulaArg {
+	if argsList.Len() != 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SHEET accepts no arguments")
+	}
+	return newNumberFormulaArg(float64(fn.f.GetSheetIndex(fn.sheet) + 1))
 }
 
 // Logical Functions
@@ -3330,6 +3362,64 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 	return newBoolFormulaArg(and)
 }
 
+// FALSE function function returns the logical value FALSE. The syntax of the
+// function is:
+//
+//    FALSE()
+//
+func (fn *formulaFuncs) FALSE(argsList *list.List) formulaArg {
+	if argsList.Len() != 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FALSE takes no arguments")
+	}
+	return newBoolFormulaArg(false)
+}
+
+// IFERROR function receives two values (or expressions) and tests if the
+// first of these evaluates to an error. The syntax of the function is:
+//
+//    IFERROR(value,value_if_error)
+//
+func (fn *formulaFuncs) IFERROR(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IFERROR requires 2 arguments")
+	}
+	value := argsList.Front().Value.(formulaArg)
+	if value.Type != ArgError {
+		if value.Type == ArgEmpty {
+			return newNumberFormulaArg(0)
+		}
+		return value
+	}
+	return argsList.Back().Value.(formulaArg)
+}
+
+// NOT function returns the opposite to a supplied logical value. The syntax
+// of the function is:
+//
+//    NOT(logical)
+//
+func (fn *formulaFuncs) NOT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NOT requires 1 argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgString, ArgList:
+		if strings.ToUpper(token.String) == "TRUE" {
+			return newBoolFormulaArg(false)
+		}
+		if strings.ToUpper(token.String) == "FALSE" {
+			return newBoolFormulaArg(true)
+		}
+	case ArgNumber:
+		return newBoolFormulaArg(!(token.Number != 0))
+	case ArgError:
+
+		return token
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, "NOT expects 1 boolean or numeric argument")
+}
+
 // OR function tests a number of supplied conditions and returns either TRUE
 // or FALSE. The syntax of the function is:
 //
@@ -3370,6 +3460,18 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 		}
 	}
 	return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
+}
+
+// TRUE function returns the logical value TRUE. The syntax of the function
+// is:
+//
+//    TRUE()
+//
+func (fn *formulaFuncs) TRUE(argsList *list.List) formulaArg {
+	if argsList.Len() != 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TRUE takes no arguments")
+	}
+	return newBoolFormulaArg(true)
 }
 
 // Date and Time Functions
@@ -3434,6 +3536,21 @@ func (fn *formulaFuncs) CLEAN(argsList *list.List) formulaArg {
 	return newStringFormulaArg(b.String())
 }
 
+// EXACT function tests if two supplied text strings or values are exactly
+// equal and if so, returns TRUE; Otherwise, the function returns FALSE. The
+// function is case-sensitive. The syntax of the function is:
+//
+//    EXACT(text1,text2)
+//
+func (fn *formulaFuncs) EXACT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EXACT requires 2 arguments")
+	}
+	text1 := argsList.Front().Value.(formulaArg).Value()
+	text2 := argsList.Back().Value.(formulaArg).Value()
+	return newBoolFormulaArg(text1 == text2)
+}
+
 // LEN returns the length of a supplied text string. The syntax of the
 // function is:
 //
@@ -3442,6 +3559,22 @@ func (fn *formulaFuncs) CLEAN(argsList *list.List) formulaArg {
 func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LEN requires 1 string argument")
+	}
+	return newStringFormulaArg(strconv.Itoa(len(argsList.Front().Value.(formulaArg).String)))
+}
+
+// LENB returns the number of bytes used to represent the characters in a text
+// string. LENB counts 2 bytes per character only when a DBCS language is set
+// as the default language. Otherwise LENB behaves the same as LEN, counting
+// 1 byte per character. The syntax of the function is:
+//
+//    LENB(text)
+//
+// TODO: the languages that support DBCS include Japanese, Chinese
+// (Simplified), Chinese (Traditional), and Korean.
+func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LENB requires 1 string argument")
 	}
 	return newStringFormulaArg(strconv.Itoa(len(argsList.Front().Value.(formulaArg).String)))
 }
@@ -3491,6 +3624,36 @@ func (fn *formulaFuncs) PROPER(argsList *list.List) formulaArg {
 			buf.WriteRune(unicode.ToLower(char))
 		}
 		isLetter = unicode.IsLetter(char)
+	}
+	return newStringFormulaArg(buf.String())
+}
+
+// REPT function returns a supplied text string, repeated a specified number
+// of times. The syntax of the function is:
+//
+//    REPT(text,number_times)
+//
+func (fn *formulaFuncs) REPT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires 2 arguments")
+	}
+	text := argsList.Front().Value.(formulaArg)
+	if text.Type != ArgString {
+		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires first argument to be a string")
+	}
+	times := argsList.Back().Value.(formulaArg).ToNumber()
+	if times.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires second argument to be a number")
+	}
+	if times.Number < 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires second argument to be >= 0")
+	}
+	if times.Number == 0 {
+		return newStringFormulaArg("")
+	}
+	buf := bytes.Buffer{}
+	for i := 0; i < int(times.Number); i++ {
+		buf.WriteString(text.String)
 	}
 	return newStringFormulaArg(buf.String())
 }
@@ -3975,4 +4138,17 @@ func lookupCol(arr formulaArg) []formulaArg {
 		}
 	}
 	return col
+}
+
+// Web Functions
+
+// ENCODEURL function returns a URL-encoded string, replacing certain non-alphanumeric characters with the percentage symbol (%) and a hexadecimal number. The syntax of the function is:
+//
+//    ENCODEURL(url)
+//
+func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ENCODEURL requires 1 argument")
+	}
+	return newStringFormulaArg(strings.Replace(url.QueryEscape(argsList.Front().Value.(formulaArg).Value()), "+", "%20", -1))
 }

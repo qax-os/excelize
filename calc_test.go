@@ -504,8 +504,13 @@ func TestCalcCellValue(t *testing.T) {
 		// ISODD
 		"=ISODD(A1)": "TRUE",
 		"=ISODD(A2)": "FALSE",
+		// ISTEXT
+		"=ISTEXT(D1)": "TRUE",
+		"=ISTEXT(A1)": "FALSE",
 		// NA
 		"=NA()": "#N/A",
+		// SHEET
+		"SHEET()": "1",
 		// Logical Functions
 		// AND
 		"=AND(0)":               "FALSE",
@@ -516,11 +521,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=AND(1<2)":             "TRUE",
 		"=AND(1>2,2<3,2>0,3>1)": "FALSE",
 		"=AND(1=1),1=1":         "TRUE",
+		// FALSE
+		"=FALSE()": "FALSE",
+		// IFERROR
+		"=IFERROR(1/2,0)":       "0.5",
+		"=IFERROR(ISERROR(),0)": "0",
+		"=IFERROR(1/0,0)":       "0",
+		// NOT
+		"=NOT(FALSE())":     "TRUE",
+		"=NOT(\"false\")":   "TRUE",
+		"=NOT(\"true\")":    "FALSE",
+		"=NOT(ISBLANK(B1))": "TRUE",
 		// OR
 		"=OR(1)":       "TRUE",
 		"=OR(0)":       "FALSE",
 		"=OR(1=2,2=2)": "TRUE",
 		"=OR(1=2,2=3)": "FALSE",
+		// TRUE
+		"=TRUE()": "TRUE",
 		// Date and Time Functions
 		// DATE
 		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
@@ -529,9 +547,16 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN(\"\u0009clean text\")": "clean text",
 		"=CLEAN(0)":                    "0",
+		// EXACT
+		"=EXACT(1,\"1\")":     "TRUE",
+		"=EXACT(1,1)":         "TRUE",
+		"=EXACT(\"A\",\"a\")": "FALSE",
 		// LEN
 		"=LEN(\"\")": "0",
 		"=LEN(D1)":   "5",
+		// LENB
+		"=LENB(\"\")": "0",
+		"=LENB(D1)":   "5",
 		// TRIM
 		"=TRIM(\" trim text \")": "trim text",
 		"=TRIM(0)":               "0",
@@ -545,6 +570,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=PROPER(\"THIS IS A TEST SENTENCE\")": "This Is A Test Sentence",
 		"=PROPER(\"123tEST teXT\")":            "123Test Text",
 		"=PROPER(\"Mr. SMITH's address\")":     "Mr. Smith'S Address",
+		// REPT
+		"=REPT(\"*\",0)":  "",
+		"=REPT(\"*\",1)":  "*",
+		"=REPT(\"**\",2)": "****",
 		// UPPER
 		"=UPPER(\"test\")":     "TEST",
 		"=UPPER(\"TEST\")":     "TEST",
@@ -581,6 +610,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
 		"=LOOKUP(1,MUNIT(1),MUNIT(1))": "1",
+		// Web Functions
+		// ENCODEURL
+		"=ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareCalcData(cellData)
@@ -590,6 +622,7 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string]string{
+		"=1/0": "#DIV/0!",
 		// ABS
 		"=ABS()":    "ABS requires 1 numeric argument",
 		`=ABS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -886,19 +919,33 @@ func TestCalcCellValue(t *testing.T) {
 		// ISODD
 		"=ISODD()":       "ISODD requires 1 argument",
 		`=ISODD("text")`: "strconv.Atoi: parsing \"text\": invalid syntax",
+		// ISTEXT
+		"=ISTEXT()": "ISTEXT requires 1 argument",
 		// NA
 		"=NA(1)": "NA accepts no arguments",
+		// SHEET
+		"=SHEET(1)": "SHEET accepts no arguments",
 		// Logical Functions
 		// AND
 		`=AND("text")`: "strconv.ParseFloat: parsing \"text\": invalid syntax",
 		`=AND(A1:B1)`:  "#VALUE!",
 		"=AND()":       "AND requires at least 1 argument",
 		"=AND(1" + strings.Repeat(",1", 30) + ")": "AND accepts at most 30 arguments",
+		// FALSE
+		"=FALSE(A1)": "FALSE takes no arguments",
+		// IFERROR
+		"=IFERROR()": "IFERROR requires 2 arguments",
+		// NOT
+		"=NOT()":      "NOT requires 1 argument",
+		"=NOT(NOT())": "NOT requires 1 argument",
+		"=NOT(\"\")":  "NOT expects 1 boolean or numeric argument",
 		// OR
 		`=OR("text")`:                            "strconv.ParseFloat: parsing \"text\": invalid syntax",
 		`=OR(A1:B1)`:                             "#VALUE!",
 		"=OR()":                                  "OR requires at least 1 argument",
 		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
+		// TRUE
+		"=TRUE(A1)": "TRUE takes no arguments",
 		// Date and Time Functions
 		// DATE
 		"=DATE()":               "DATE requires 3 number arguments",
@@ -909,8 +956,13 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN()":    "CLEAN requires 1 argument",
 		"=CLEAN(1,2)": "CLEAN requires 1 argument",
+		// EXACT
+		"=EXACT()":      "EXACT requires 2 arguments",
+		"=EXACT(1,2,3)": "EXACT requires 2 arguments",
 		// LEN
 		"=LEN()": "LEN requires 1 string argument",
+		// LENB
+		"=LENB()": "LENB requires 1 string argument",
 		// TRIM
 		"=TRIM()":    "TRIM requires 1 argument",
 		"=TRIM(1,2)": "TRIM requires 1 argument",
@@ -923,6 +975,11 @@ func TestCalcCellValue(t *testing.T) {
 		// PROPER
 		"=PROPER()":    "PROPER requires 1 argument",
 		"=PROPER(1,2)": "PROPER requires 1 argument",
+		// REPT
+		"=REPT()":            "REPT requires 2 arguments",
+		"=REPT(INT(0),2)":    "REPT requires first argument to be a string",
+		"=REPT(\"*\",\"*\")": "REPT requires second argument to be a number",
+		"=REPT(\"*\",-1)":    "REPT requires second argument to be >= 0",
 		// Conditional Functions
 		// IF
 		"=IF()":        "IF requires at least 1 argument",
@@ -964,6 +1021,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOOKUP(D2,D1,D2)":             "LOOKUP requires second argument of table array",
 		"=LOOKUP(D2,D1,D2,FALSE)":       "LOOKUP requires at most 3 arguments",
 		"=LOOKUP(D1,MUNIT(1),MUNIT(1))": "LOOKUP no result found",
+		// Web Functions
+		// ENCODEURL
+		"=ENCODEURL()": "ENCODEURL requires 1 argument",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareCalcData(cellData)
