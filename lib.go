@@ -421,7 +421,7 @@ func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 
 // addSheetNameSpace add XML attribute for worksheet.
 func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
-	name, _ := f.sheetMap[trimSheetName(sheet)]
+	name := f.sheetMap[trimSheetName(sheet)]
 	f.addNameSpaces(name, ns)
 }
 

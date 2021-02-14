@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -613,7 +613,7 @@ func (f *File) drawingResize(sheet string, cell string, width, height float64, f
 		}
 		if inMergeCell {
 			rng, _ = areaRangeToCoordinates(mergeCell.GetStartAxis(), mergeCell.GetEndAxis())
-			sortCoordinates(rng)
+			_ = sortCoordinates(rng)
 		}
 	}
 	if inMergeCell {

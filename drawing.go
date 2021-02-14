@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -51,7 +51,6 @@ func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet
 	cs.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
-	return
 }
 
 // addChart provides a function to create chart as xl/charts/chart%d.xml by
@@ -1272,7 +1271,6 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *forma
 	}
 	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
 	f.Drawings[drawingXML] = content
-	return
 }
 
 // deleteDrawing provides a function to delete chart graphic frame by given by

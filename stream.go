@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -93,9 +93,9 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	}
 	f.streams[sheetXML] = sw
 
-	sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
+	_, _ = sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 6)
-	sw.rawData.WriteString(`<sheetData>`)
+	_, _ = sw.rawData.WriteString(`<sheetData>`)
 	return sw, err
 }
 
@@ -184,7 +184,7 @@ func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
 	tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
 
 	// Add first table for given sheet.
-	sheetPath, _ := sw.File.sheetMap[trimSheetName(sw.Sheet)]
+	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
 	rID := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 
@@ -296,12 +296,12 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 			val = v.Value
 		}
 		if err = setCellValFunc(&c, val); err != nil {
-			sw.rawData.WriteString(`</row>`)
+			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
 		writeCell(&sw.rawData, c)
 	}
-	sw.rawData.WriteString(`</row>`)
+	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
 }
 
@@ -361,7 +361,7 @@ func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
 }
 
 func writeCell(buf *bufferedWriter, c xlsxC) {
-	buf.WriteString(`<c`)
+	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
 		fmt.Fprintf(buf, ` xml:%s="%s"`, c.XMLSpace.Name.Local, c.XMLSpace.Value)
 	}
@@ -372,22 +372,22 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	if c.T != "" {
 		fmt.Fprintf(buf, ` t="%s"`, c.T)
 	}
-	buf.WriteString(`>`)
+	_, _ = buf.WriteString(`>`)
 	if c.V != "" {
-		buf.WriteString(`<v>`)
-		xml.EscapeText(buf, []byte(c.V))
-		buf.WriteString(`</v>`)
+		_, _ = buf.WriteString(`<v>`)
+		_ = xml.EscapeText(buf, []byte(c.V))
+		_, _ = buf.WriteString(`</v>`)
 	}
-	buf.WriteString(`</c>`)
+	_, _ = buf.WriteString(`</c>`)
 }
 
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
-	sw.rawData.WriteString(`</sheetData>`)
+	_, _ = sw.rawData.WriteString(`</sheetData>`)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 38)
-	sw.rawData.WriteString(sw.tableParts)
+	_, _ = sw.rawData.WriteString(sw.tableParts)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
-	sw.rawData.WriteString(`</worksheet>`)
+	_, _ = sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 	enc := xml.NewEncoder(w)
 	for i := 0; i < s.NumField(); i++ {
 		if from <= i && i <= to {
-			enc.Encode(s.Field(i).Interface())
+			_ = enc.Encode(s.Field(i).Interface())
 		}
 	}
 }

@@ -35,7 +35,7 @@ func BenchmarkWrite(b *testing.B) {
 func TestWriteTo(t *testing.T) {
 	f := File{}
 	buf := bytes.Buffer{}
-	f.XLSX = make(map[string][]byte, 0)
+	f.XLSX = make(map[string][]byte)
 	f.XLSX["/d/"] = []byte("s")
 	_, err := f.WriteTo(bufio.NewWriter(&buf))
 	assert.EqualError(t, err, "zip: write to directory")

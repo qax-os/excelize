@@ -2043,33 +2043,33 @@ var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	},
 	"font": func(fontID int, xf xlsxXf, style *Style) bool {
 		if style.Font == nil {
-			return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || *xf.ApplyFont == false)
+			return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || !*xf.ApplyFont)
 		}
-		return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont == true
+		return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont
 	},
 	"fill": func(fillID int, xf xlsxXf, style *Style) bool {
 		if style.Fill.Type == "" {
-			return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || *xf.ApplyFill == false)
+			return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || !*xf.ApplyFill)
 		}
-		return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill == true
+		return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill
 	},
 	"border": func(borderID int, xf xlsxXf, style *Style) bool {
 		if len(style.Border) == 0 {
-			return (xf.BorderID == nil || *xf.BorderID == 0) && (xf.ApplyBorder == nil || *xf.ApplyBorder == false)
+			return (xf.BorderID == nil || *xf.BorderID == 0) && (xf.ApplyBorder == nil || !*xf.ApplyBorder)
 		}
-		return xf.BorderID != nil && *xf.BorderID == borderID && xf.ApplyBorder != nil && *xf.ApplyBorder == true
+		return xf.BorderID != nil && *xf.BorderID == borderID && xf.ApplyBorder != nil && *xf.ApplyBorder
 	},
 	"alignment": func(ID int, xf xlsxXf, style *Style) bool {
 		if style.Alignment == nil {
-			return xf.ApplyAlignment == nil || *xf.ApplyAlignment == false
+			return xf.ApplyAlignment == nil || !*xf.ApplyAlignment
 		}
 		return reflect.DeepEqual(xf.Alignment, newAlignment(style))
 	},
 	"protection": func(ID int, xf xlsxXf, style *Style) bool {
 		if style.Protection == nil {
-			return xf.ApplyProtection == nil || *xf.ApplyProtection == false
+			return xf.ApplyProtection == nil || !*xf.ApplyProtection
 		}
-		return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection == true
+		return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection
 	},
 }
 

@@ -610,8 +610,8 @@ func (f *File) copySheet(from, to int) error {
 	if ok {
 		f.XLSX[toRels] = f.XLSX[fromRels]
 	}
-	fromSheetXMLPath, _ := f.sheetMap[trimSheetName(fromSheet)]
-	fromSheetAttr, _ := f.xmlAttr[fromSheetXMLPath]
+	fromSheetXMLPath := f.sheetMap[trimSheetName(fromSheet)]
+	fromSheetAttr := f.xmlAttr[fromSheetXMLPath]
 	f.xmlAttr[path] = fromSheetAttr
 	return err
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -35,7 +35,6 @@ type Cols struct {
 	err                                  error
 	curCol, totalCol, stashCol, totalRow int
 	sheet                                string
-	cols                                 []xlsxCols
 	f                                    *File
 	sheetXML                             []byte
 }
@@ -140,7 +139,6 @@ func (cols *Cols) Rows() ([]string, error) {
 // columnXMLIterator defined runtime use field for the worksheet column SAX parser.
 type columnXMLIterator struct {
 	err                  error
-	inElement            string
 	cols                 Cols
 	cellCol, curRow, row int
 }
@@ -175,7 +173,6 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 			colIterator.cols.totalCol = colIterator.cellCol
 		}
 	}
-	return
 }
 
 // Cols returns a columns iterator, used for streaming reading data for a

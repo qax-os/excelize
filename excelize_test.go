@@ -542,10 +542,10 @@ func TestWriteArrayFormula(t *testing.T) {
 		assert.NoError(t, f.SetCellFormula("Sheet1", avgCell, fmt.Sprintf("ROUND(AVERAGEIF(%s,%s,%s),0)", assocRange, nameCell, valRange)))
 
 		ref := stdevCell + ":" + stdevCell
-		t := STCellFormulaTypeArray
+		arr := STCellFormulaTypeArray
 		// Use an array formula for standard deviation
-		f.SetCellFormula("Sheet1", stdevCell, fmt.Sprintf("ROUND(STDEVP(IF(%s=%s,%s)),0)", assocRange, nameCell, valRange),
-			FormulaOpts{}, FormulaOpts{Type: &t}, FormulaOpts{Ref: &ref})
+		assert.NoError(t, f.SetCellFormula("Sheet1", stdevCell, fmt.Sprintf("ROUND(STDEVP(IF(%s=%s,%s)),0)", assocRange, nameCell, valRange),
+			FormulaOpts{}, FormulaOpts{Type: &arr}, FormulaOpts{Ref: &ref}))
 	}
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestWriteArrayFormula.xlsx")))

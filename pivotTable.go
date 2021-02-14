@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -615,7 +615,7 @@ func (f *File) getPivotTableFieldsSubtotal(fields []PivotTableField) []string {
 	enums := []string{"average", "count", "countNums", "max", "min", "product", "stdDev", "stdDevp", "sum", "var", "varp"}
 	inEnums := func(enums []string, val string) string {
 		for _, enum := range enums {
-			if strings.ToLower(enum) == strings.ToLower(val) {
+			if strings.EqualFold(enum, val) {
 				return enum
 			}
 		}

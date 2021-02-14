@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -60,7 +60,6 @@ type Rows struct {
 	err                        error
 	curRow, totalRow, stashRow int
 	sheet                      string
-	rows                       []xlsxRow
 	f                          *File
 	decoder                    *xml.Decoder
 }
@@ -165,7 +164,6 @@ func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
 		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d)
 		rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
 	}
-	return
 }
 
 // Rows returns a rows iterator, used for streaming reading data for a

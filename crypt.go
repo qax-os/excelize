@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -42,14 +42,7 @@ var (
 	packageOffset              = 8 // First 8 bytes are the size of the stream
 	packageEncryptionChunkSize = 4096
 	iterCount                  = 50000
-	cryptoIdentifier           = []byte{ // checking protect workbook by [MS-OFFCRYPTO] - v20181211 3.1 FeatureIdentifier
-		0x3c, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x69, 0x00, 0x63, 0x00, 0x72, 0x00, 0x6f, 0x00, 0x73, 0x00,
-		0x6f, 0x00, 0x66, 0x00, 0x74, 0x00, 0x2e, 0x00, 0x43, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x74, 0x00,
-		0x61, 0x00, 0x69, 0x00, 0x6e, 0x00, 0x65, 0x00, 0x72, 0x00, 0x2e, 0x00, 0x44, 0x00, 0x61, 0x00,
-		0x74, 0x00, 0x61, 0x00, 0x53, 0x00, 0x70, 0x00, 0x61, 0x00, 0x63, 0x00, 0x65, 0x00, 0x73, 0x00,
-		0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-	}
-	oleIdentifier = []byte{
+	oleIdentifier              = []byte{
 		0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1,
 	}
 )
@@ -153,7 +146,6 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 		return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
 	default:
 		err = errors.New("unsupport encryption mechanism")
-		break
 	}
 	return
 }
@@ -209,11 +201,11 @@ func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 		return
 	}
 	// Use the package key and the IV to encrypt the HMAC key.
-	encryptedHmacKey, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacKeyIV, hmacKey)
+	encryptedHmacKey, _ := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacKeyIV, hmacKey)
 	// Create the HMAC.
 	h := hmac.New(sha512.New, append(hmacKey, encryptedPackage...))
 	for _, buf := range [][]byte{hmacKey, encryptedPackage} {
-		h.Write(buf)
+		_, _ = h.Write(buf)
 	}
 	hmacValue := h.Sum(nil)
 	// Generate an initialization vector for encrypting the resulting HMAC value.
@@ -222,7 +214,7 @@ func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 		return
 	}
 	// Encrypt the value.
-	encryptedHmacValue, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacValueIV, hmacValue)
+	encryptedHmacValue, _ := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacValueIV, hmacValue)
 	// Put the encrypted key and value on the encryption info.
 	encryptionInfo.DataIntegrity.EncryptedHmacKey = base64.StdEncoding.EncodeToString(encryptedHmacKey)
 	encryptionInfo.DataIntegrity.EncryptedHmacValue = base64.StdEncoding.EncodeToString(encryptedHmacValue)
@@ -235,7 +227,7 @@ func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 		return
 	}
 	// Encrypt the package key with the encryption key.
-	encryptedKeyValue, err := crypt(true, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherAlgorithm, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherChaining, key, keyEncryptors, packageKey)
+	encryptedKeyValue, _ := crypt(true, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherAlgorithm, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherChaining, key, keyEncryptors, packageKey)
 	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedKeyValue = base64.StdEncoding.EncodeToString(encryptedKeyValue)
 
 	// Verifier hash
@@ -412,7 +404,7 @@ func standardConvertPasswdToKey(header StandardEncryptionHeader, verifier Standa
 
 // standardXORBytes perform XOR operations for two bytes slice.
 func standardXORBytes(a, b []byte) []byte {
-	r := make([][2]byte, len(a), len(a))
+	r := make([][2]byte, len(a))
 	for i, e := range a {
 		r[i] = [2]byte{e, b[i]}
 	}
@@ -447,7 +439,7 @@ func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (
 	if err != nil {
 		return
 	}
-	packageKey, err := crypt(false, encryptedKey.CipherAlgorithm, encryptedKey.CipherChaining, key, saltValue, encryptedKeyValue)
+	packageKey, _ := crypt(false, encryptedKey.CipherAlgorithm, encryptedKey.CipherChaining, key, saltValue, encryptedKeyValue)
 	// Use the package key to decrypt the package.
 	return cryptPackage(false, packageKey, encryptedPackageBuf, encryptionInfo)
 }
@@ -503,7 +495,7 @@ func hashing(hashAlgorithm string, buffer ...[]byte) (key []byte) {
 		return key
 	}
 	for _, buf := range buffer {
-		handler.Write(buf)
+		_, _ = handler.Write(buf)
 	}
 	key = handler.Sum(nil)
 	return key

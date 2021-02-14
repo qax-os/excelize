@@ -39,7 +39,14 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
-//    err := f.AddTable("Sheet2", "F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+//    err := f.AddTable("Sheet2", "F2", "H6", `{
+//        "table_name": "table",
+//        "table_style": "TableStyleMedium2",
+//        "show_first_column": true,
+//        "show_last_column": true,
+//        "show_row_stripes": false,
+//        "show_column_stripes": true
+//    }`)
 //
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique, and must set the
@@ -153,7 +160,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 		}
 		if name == "" {
 			name = "Column" + strconv.Itoa(idx)
-			f.SetCellStr(sheet, cell, name)
+			_ = f.SetCellStr(sheet, cell, name)
 		}
 		tableColumn = append(tableColumn, &xlsxTableColumn{
 			ID:   idx,

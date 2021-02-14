@@ -26,7 +26,7 @@ func BenchmarkStreamWriter(b *testing.B) {
 		streamWriter, _ := file.NewStreamWriter("Sheet1")
 		for rowID := 10; rowID <= 110; rowID++ {
 			cell, _ := CoordinatesToCellName(1, rowID)
-			streamWriter.SetRow(cell, row)
+			_ = streamWriter.SetRow(cell, row)
 		}
 	}
 
@@ -98,7 +98,7 @@ func TestStreamWriter(t *testing.T) {
 	file = NewFile()
 	delete(file.Sheet, "xl/worksheets/sheet1.xml")
 	file.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
-	streamWriter, err = file.NewStreamWriter("Sheet1")
+	_, err = file.NewStreamWriter("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 

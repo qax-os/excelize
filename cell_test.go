@@ -16,12 +16,13 @@ func TestConcurrency(t *testing.T) {
 	wg := new(sync.WaitGroup)
 	for i := 1; i <= 5; i++ {
 		wg.Add(1)
-		go func(val int) {
-			f.SetCellValue("Sheet1", fmt.Sprintf("A%d", val), val)
-			f.SetCellValue("Sheet1", fmt.Sprintf("B%d", val), strconv.Itoa(val))
-			f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
+		go func(val int, t *testing.T) {
+			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", val), val))
+			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", val), strconv.Itoa(val)))
+			_, err := f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
+			assert.NoError(t, err)
 			wg.Done()
-		}(i)
+		}(i, t)
 	}
 	wg.Wait()
 	val, err := f.GetCellValue("Sheet1", "A1")

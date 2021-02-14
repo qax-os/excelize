@@ -15,7 +15,7 @@ func prepareCalcData(cellData [][]interface{}) *File {
 	for r, row := range cellData {
 		for c, value := range row {
 			cell, _ := CoordinatesToCellName(c+1, r+1)
-			f.SetCellValue("Sheet1", cell, value)
+			_ = f.SetCellValue("Sheet1", cell, value)
 		}
 	}
 	return f
@@ -245,7 +245,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.FLOOR.PRECISE(_xlfn.FLOOR.PRECISE(26.75),-5)": "25",
 		// GCD
 		"=GCD(0)":        "0",
-		`=GCD("",1)`:     "1",
 		"=GCD(1,0)":      "1",
 		"=GCD(1,5)":      "1",
 		"=GCD(15,10,25)": "5",
@@ -469,10 +468,43 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(-99.999,-1)":  "-90",
 		"=TRUNC(TRUNC(1),-1)": "0",
 		// Statistical Functions
+		// AVERAGE
+		"=AVERAGE(INT(1))": "1",
+		"=AVERAGE(A1)":     "1",
+		"=AVERAGE(A1:A2)":  "1.5",
+		"=AVERAGE(D2:F9)":  "38014.125",
+		// AVERAGEA
+		"=AVERAGEA(INT(1))": "1",
+		"=AVERAGEA(A1)":     "1",
+		"=AVERAGEA(A1:A2)":  "1.5",
+		"=AVERAGEA(D2:F9)":  "12671.375",
+		// COUNT
+		"=COUNT()":                        "0",
+		"=COUNT(E1:F2,\"text\",1,INT(2))": "3",
 		// COUNTA
-		`=COUNTA()`:                       "0",
-		`=COUNTA(A1:A5,B2:B5,"text",1,2)`: "8",
-		`=COUNTA(COUNTA(1))`:              "1",
+		"=COUNTA()":                              "0",
+		"=COUNTA(A1:A5,B2:B5,\"text\",1,INT(2))": "8",
+		"=COUNTA(COUNTA(1),MUNIT(1))":            "2",
+		// COUNTBLANK
+		"=COUNTBLANK(MUNIT(1))": "0",
+		"=COUNTBLANK(1)":        "0",
+		"=COUNTBLANK(B1:C1)":    "1",
+		"=COUNTBLANK(C1)":       "1",
+		// MAX
+		"=MAX(1)":          "1",
+		"=MAX(TRUE())":     "1",
+		"=MAX(0.5,TRUE())": "1",
+		"=MAX(FALSE())":    "0",
+		"=MAX(MUNIT(2))":   "1",
+		"=MAX(INT(1))":     "1",
+		// MAXA
+		"=MAXA(1)":          "1",
+		"=MAXA(TRUE())":     "1",
+		"=MAXA(0.5,TRUE())": "1",
+		"=MAXA(FALSE())":    "0",
+		"=MAXA(MUNIT(2))":   "1",
+		"=MAXA(INT(1))":     "1",
+		"=MAXA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "36693",
 		// MEDIAN
 		"=MEDIAN(A1:A5,12)":               "2",
 		"=MEDIAN(A1:A5)":                  "1.5",
@@ -482,8 +514,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISBLANK(A1)": "FALSE",
 		"=ISBLANK(A5)": "TRUE",
 		// ISERR
-		"=ISERR(A1)":   "FALSE",
-		"=ISERR(NA())": "FALSE",
+		"=ISERR(A1)":           "FALSE",
+		"=ISERR(NA())":         "FALSE",
+		"=ISERR(POWER(0,-1)))": "TRUE",
 		// ISERROR
 		"=ISERROR(A1)":   "FALSE",
 		"=ISERROR(NA())": "TRUE",
@@ -497,7 +530,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISNONTEXT(A1)":         "FALSE",
 		"=ISNONTEXT(A5)":         "TRUE",
 		`=ISNONTEXT("Excelize")`: "FALSE",
-		"=ISNONTEXT(NA())":       "FALSE",
+		"=ISNONTEXT(NA())":       "TRUE",
 		// ISNUMBER
 		"=ISNUMBER(A1)": "TRUE",
 		"=ISNUMBER(D1)": "FALSE",
@@ -507,8 +540,6 @@ func TestCalcCellValue(t *testing.T) {
 		// ISTEXT
 		"=ISTEXT(D1)": "TRUE",
 		"=ISTEXT(A1)": "FALSE",
-		// NA
-		"=NA()": "#N/A",
 		// SHEET
 		"SHEET()": "1",
 		// Logical Functions
@@ -547,6 +578,10 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN(\"\u0009clean text\")": "clean text",
 		"=CLEAN(0)":                    "0",
+		// CONCAT
+		"=CONCAT(TRUE(),1,FALSE(),\"0\",INT(2))": "TRUE1FALSE02",
+		// CONCATENATE
+		"=CONCATENATE(TRUE(),1,FALSE(),\"0\",INT(2))": "TRUE1FALSE02",
 		// EXACT
 		"=EXACT(1,\"1\")":     "TRUE",
 		"=EXACT(1,1)":         "TRUE",
@@ -756,6 +791,7 @@ func TestCalcCellValue(t *testing.T) {
 		`=_xlfn.FLOOR.PRECISE(1,"X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// GCD
 		"=GCD()":     "GCD requires at least 1 argument",
+		"=GCD(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=GCD(-1)":   "GCD only accepts positive arguments",
 		"=GCD(1,-1)": "GCD only accepts positive arguments",
 		`=GCD("X")`:  "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -897,8 +933,22 @@ func TestCalcCellValue(t *testing.T) {
 		`=TRUNC("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		`=TRUNC(1,"X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// Statistical Functions
+		// AVERAGE
+		"=AVERAGE(H1)": "AVERAGE divide by zero",
+		// AVERAGE
+		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		// COUNTBLANK
+		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
+		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
+		// MAX
+		"=MAX()":     "MAX requires at least 1 argument",
+		"=MAX(NA())": "#N/A",
+		// MAXA
+		"=MAXA()":     "MAXA requires at least 1 argument",
+		"=MAXA(NA())": "#N/A",
 		// MEDIAN
 		"=MEDIAN()":      "MEDIAN requires at least 1 argument",
+		"=MEDIAN(\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=MEDIAN(D1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
 		// Information Functions
 		// ISBLANK
@@ -922,6 +972,7 @@ func TestCalcCellValue(t *testing.T) {
 		// ISTEXT
 		"=ISTEXT()": "ISTEXT requires 1 argument",
 		// NA
+		"=NA()":  "#N/A",
 		"=NA(1)": "NA accepts no arguments",
 		// SHEET
 		"=SHEET(1)": "SHEET accepts no arguments",
@@ -956,6 +1007,10 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN()":    "CLEAN requires 1 argument",
 		"=CLEAN(1,2)": "CLEAN requires 1 argument",
+		// CONCAT
+		"=CONCAT(MUNIT(2))": "CONCAT requires arguments to be strings",
+		// CONCATENATE
+		"=CONCATENATE(MUNIT(2))": "CONCATENATE requires arguments to be strings",
 		// EXACT
 		"=EXACT()":      "EXACT requires 2 arguments",
 		"=EXACT(1,2,3)": "EXACT requires 2 arguments",
@@ -1197,6 +1252,13 @@ func TestCalcToBool(t *testing.T) {
 	assert.Equal(t, b.Boolean, true)
 	assert.Equal(t, b.Number, 1.0)
 }
+
+func TestCalcToList(t *testing.T) {
+	assert.Equal(t, []formulaArg(nil), newEmptyFormulaArg().ToList())
+	formulaList := []formulaArg{newEmptyFormulaArg()}
+	assert.Equal(t, formulaList, newListFormulaArg(formulaList).ToList())
+}
+
 func TestCalcCompareFormulaArg(t *testing.T) {
 	assert.Equal(t, compareFormulaArg(newEmptyFormulaArg(), newEmptyFormulaArg(), false, false), criteriaEq)
 	lhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg()})
@@ -1250,6 +1312,25 @@ func TestCalcVLOOKUP(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "F4")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcMAX(t *testing.T) {
+	cellData := [][]interface{}{
+		{0.5, "TRUE"},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=MAX(0.5,B1)":  "0.5",
+		"=MAX(A1:B1)":   "0.5",
+		"=MAXA(A1:B1)":  "1",
+		"=MAXA(0.5,B1)": "1",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
+		result, err := f.CalcCellValue("Sheet1", "B10")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
 	}
 }
 

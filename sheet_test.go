@@ -409,7 +409,7 @@ func newSheetWithSet() {
 	file := NewFile()
 	file.NewSheet("sheet1")
 	for i := 0; i < 1000; i++ {
-		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+		_ = file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
 	}
 	file = nil
 }
@@ -426,7 +426,7 @@ func newSheetWithSave() {
 	file := NewFile()
 	file.NewSheet("sheet1")
 	for i := 0; i < 1000; i++ {
-		file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+		_ = file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
 	}
-	file.Save()
+	_ = file.Save()
 }

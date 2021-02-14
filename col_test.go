@@ -138,7 +138,7 @@ func TestColsRows(t *testing.T) {
 	f := NewFile()
 	f.NewSheet("Sheet1")
 
-	cols, err := f.Cols("Sheet1")
+	_, err := f.Cols("Sheet1")
 	assert.NoError(t, err)
 
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
@@ -150,12 +150,12 @@ func TestColsRows(t *testing.T) {
 
 	f = NewFile()
 	f.XLSX["xl/worksheets/sheet1.xml"] = nil
-	cols, err = f.Cols("Sheet1")
+	_, err = f.Cols("Sheet1")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	f = NewFile()
-	cols, err = f.Cols("Sheet1")
+	cols, err := f.Cols("Sheet1")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
