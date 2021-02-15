@@ -205,7 +205,7 @@ func TestCalcCellValue(t *testing.T) {
 		// FACT
 		"=FACT(3)":       "6",
 		"=FACT(6)":       "720",
-		"=FACT(10)":      "3.6288E+06",
+		"=FACT(10)":      "3.6288e+06",
 		"=FACT(FACT(3))": "720",
 		// FACTDOUBLE
 		"=FACTDOUBLE(5)":             "15",
@@ -490,6 +490,23 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTBLANK(1)":        "0",
 		"=COUNTBLANK(B1:C1)":    "1",
 		"=COUNTBLANK(C1)":       "1",
+		// FISHER
+		"=FISHER(-0.9)":   "-1.47221948958322",
+		"=FISHER(-0.25)":  "-0.255412811882995",
+		"=FISHER(0.8)":    "1.09861228866811",
+		"=FISHER(INT(0))": "0",
+		// FISHERINV
+		"=FISHERINV(-0.2)":   "-0.197375320224904",
+		"=FISHERINV(INT(0))": "0",
+		"=FISHERINV(2.8)":    "0.992631520201128",
+		// GAMMA
+		"=GAMMA(0.1)":    "9.513507698668732",
+		"=GAMMA(INT(1))": "1",
+		"=GAMMA(1.5)":    "0.886226925452758",
+		"=GAMMA(5.5)":    "52.34277778455352",
+		// GAMMALN
+		"=GAMMALN(4.5)":    "2.453736570842443",
+		"=GAMMALN(INT(1))": "0",
 		// MAX
 		"=MAX(1)":          "1",
 		"=MAX(TRUE())":     "1",
@@ -509,6 +526,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=MEDIAN(A1:A5,12)":               "2",
 		"=MEDIAN(A1:A5)":                  "1.5",
 		"=MEDIAN(A1:A5,MEDIAN(A1:A5,12))": "2",
+		// MIN
+		"=MIN(1)":           "1",
+		"=MIN(TRUE())":      "1",
+		"=MIN(0.5,FALSE())": "0",
+		"=MIN(FALSE())":     "0",
+		"=MIN(MUNIT(2))":    "0",
+		"=MIN(INT(1))":      "1",
+		// MINA
+		"=MINA(1)":           "1",
+		"=MINA(TRUE())":      "1",
+		"=MINA(0.5,FALSE())": "0",
+		"=MINA(FALSE())":     "0",
+		"=MINA(MUNIT(2))":    "0",
+		"=MINA(INT(1))":      "1",
+		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
+		// PERMUT
+		"=PERMUT(6,6)":  "720",
+		"=PERMUT(7,6)":  "5040",
+		"=PERMUT(10,6)": "151200",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
@@ -940,6 +976,24 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
+		// FISHER
+		"=FISHER()":         "FISHER requires 1 numeric argument",
+		"=FISHER(2)":        "#N/A",
+		"=FISHER(INT(-2)))": "#N/A",
+		"=FISHER(F1)":       "FISHER requires 1 numeric argument",
+		// FISHERINV
+		"=FISHERINV()":   "FISHERINV requires 1 numeric argument",
+		"=FISHERINV(F1)": "FISHERINV requires 1 numeric argument",
+		// GAMMA
+		"=GAMMA()":       "GAMMA requires 1 numeric argument",
+		"=GAMMA(F1)":     "GAMMA requires 1 numeric argument",
+		"=GAMMA(0)":      "#N/A",
+		"=GAMMA(INT(0))": "#N/A",
+		// GAMMALN
+		"=GAMMALN()":       "GAMMALN requires 1 numeric argument",
+		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
+		"=GAMMALN(0)":      "#N/A",
+		"=GAMMALN(INT(0))": "#N/A",
 		// MAX
 		"=MAX()":     "MAX requires at least 1 argument",
 		"=MAX(NA())": "#N/A",
@@ -950,6 +1004,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=MEDIAN()":      "MEDIAN requires at least 1 argument",
 		"=MEDIAN(\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=MEDIAN(D1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
+		// MIN
+		"=MIN()":     "MIN requires at least 1 argument",
+		"=MIN(NA())": "#N/A",
+		// MINA
+		"=MINA()":     "MINA requires at least 1 argument",
+		"=MINA(NA())": "#N/A",
+		// PERMUT
+		"=PERMUT()":       "PERMUT requires 2 numeric arguments",
+		"=PERMUT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERMUT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERMUT(6,8)":    "#N/A",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
@@ -1315,16 +1380,20 @@ func TestCalcVLOOKUP(t *testing.T) {
 	}
 }
 
-func TestCalcMAX(t *testing.T) {
+func TestCalcMAXMIN(t *testing.T) {
 	cellData := [][]interface{}{
-		{0.5, "TRUE"},
+		{0.5, "TRUE", -0.5, "FALSE"},
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"=MAX(0.5,B1)":  "0.5",
-		"=MAX(A1:B1)":   "0.5",
-		"=MAXA(A1:B1)":  "1",
-		"=MAXA(0.5,B1)": "1",
+		"=MAX(0.5,B1)":   "0.5",
+		"=MAX(A1:B1)":    "0.5",
+		"=MAXA(A1:B1)":   "1",
+		"=MAXA(0.5,B1)":  "1",
+		"=MIN(-0.5,D1)":  "-0.5",
+		"=MIN(C1:D1)":    "-0.5",
+		"=MINA(C1:D1)":   "-0.5",
+		"=MINA(-0.5,D1)": "-0.5",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))

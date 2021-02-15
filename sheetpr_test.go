@@ -13,6 +13,7 @@ var _ = []SheetPrOption{
 	EnableFormatConditionsCalculation(false),
 	Published(false),
 	FitToPage(true),
+	TabColor("#FFFF00"),
 	AutoPageBreaks(true),
 	OutlineSummaryBelow(true),
 }
@@ -22,6 +23,7 @@ var _ = []SheetPrOptionPtr{
 	(*EnableFormatConditionsCalculation)(nil),
 	(*Published)(nil),
 	(*FitToPage)(nil),
+	(*TabColor)(nil),
 	(*AutoPageBreaks)(nil),
 	(*OutlineSummaryBelow)(nil),
 }
@@ -35,6 +37,7 @@ func ExampleFile_SetSheetPrOptions() {
 		EnableFormatConditionsCalculation(false),
 		Published(false),
 		FitToPage(true),
+		TabColor("#FFFF00"),
 		AutoPageBreaks(true),
 		OutlineSummaryBelow(false),
 	); err != nil {
@@ -52,6 +55,7 @@ func ExampleFile_GetSheetPrOptions() {
 		enableFormatConditionsCalculation EnableFormatConditionsCalculation
 		published                         Published
 		fitToPage                         FitToPage
+		tabColor                          TabColor
 		autoPageBreaks                    AutoPageBreaks
 		outlineSummaryBelow               OutlineSummaryBelow
 	)
@@ -61,6 +65,7 @@ func ExampleFile_GetSheetPrOptions() {
 		&enableFormatConditionsCalculation,
 		&published,
 		&fitToPage,
+		&tabColor,
 		&autoPageBreaks,
 		&outlineSummaryBelow,
 	); err != nil {
@@ -71,6 +76,7 @@ func ExampleFile_GetSheetPrOptions() {
 	fmt.Println("- enableFormatConditionsCalculation:", enableFormatConditionsCalculation)
 	fmt.Println("- published:", published)
 	fmt.Println("- fitToPage:", fitToPage)
+	fmt.Printf("- tabColor: %q\n", tabColor)
 	fmt.Println("- autoPageBreaks:", autoPageBreaks)
 	fmt.Println("- outlineSummaryBelow:", outlineSummaryBelow)
 	// Output:
@@ -79,6 +85,7 @@ func ExampleFile_GetSheetPrOptions() {
 	// - enableFormatConditionsCalculation: true
 	// - published: true
 	// - fitToPage: false
+	// - tabColor: ""
 	// - autoPageBreaks: false
 	// - outlineSummaryBelow: true
 }
@@ -94,6 +101,7 @@ func TestSheetPrOptions(t *testing.T) {
 		{new(EnableFormatConditionsCalculation), EnableFormatConditionsCalculation(false)},
 		{new(Published), Published(false)},
 		{new(FitToPage), FitToPage(true)},
+		{new(TabColor), TabColor("FFFF00")},
 		{new(AutoPageBreaks), AutoPageBreaks(true)},
 		{new(OutlineSummaryBelow), OutlineSummaryBelow(false)},
 	}
@@ -147,6 +155,7 @@ func TestSheetPrOptions(t *testing.T) {
 
 func TestSetSheetrOptions(t *testing.T) {
 	f := NewFile()
+	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColor("")))
 	// Test SetSheetrOptions on not exists worksheet.
 	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }

@@ -939,7 +939,8 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 // given format sets.
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
-	chartSeriesDLbls := map[string]*cDLbls{Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil}
+	chartSeriesDLbls := map[string]*cDLbls{
+		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil}
 	if _, ok := chartSeriesDLbls[formatSet.Type]; ok {
 		return nil
 	}

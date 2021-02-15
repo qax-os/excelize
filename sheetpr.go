@@ -11,6 +11,8 @@
 
 package excelize
 
+import "strings"
+
 // SheetPrOption is an option of a view of a worksheet. See SetSheetPrOptions().
 type SheetPrOption interface {
 	setSheetPrOption(view *xlsxSheetPr)
@@ -31,6 +33,8 @@ type (
 	Published bool
 	// FitToPage is a SheetPrOption
 	FitToPage bool
+	// TabColor is a SheetPrOption
+	TabColor string
 	// AutoPageBreaks is a SheetPrOption
 	AutoPageBreaks bool
 	// OutlineSummaryBelow is an outlinePr, within SheetPr option
@@ -123,6 +127,28 @@ func (o *FitToPage) getSheetPrOption(pr *xlsxSheetPr) {
 		return
 	}
 	*o = FitToPage(pr.PageSetUpPr.FitToPage)
+}
+
+// setSheetPrOption implements the SheetPrOption interface and specifies a
+// stable name of the sheet.
+func (o TabColor) setSheetPrOption(pr *xlsxSheetPr) {
+	if pr.TabColor == nil {
+		if string(o) == "" {
+			return
+		}
+		pr.TabColor = new(xlsxTabColor)
+	}
+	pr.TabColor.RGB = getPaletteColor(string(o))
+}
+
+// getSheetPrOption implements the SheetPrOptionPtr interface and get the
+// stable name of the sheet.
+func (o *TabColor) getSheetPrOption(pr *xlsxSheetPr) {
+	if pr == nil || pr.TabColor == nil {
+		*o = ""
+		return
+	}
+	*o = TabColor(strings.TrimPrefix(pr.TabColor.RGB, "FF"))
 }
 
 // setSheetPrOption implements the SheetPrOption interface.

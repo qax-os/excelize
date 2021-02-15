@@ -249,9 +249,13 @@ var tokenPriority = map[string]int{
 //    FACT
 //    FACTDOUBLE
 //    FALSE
+//    FISHER
+//    FISHERINV
 //    FLOOR
 //    FLOOR.MATH
 //    FLOOR.PRECISE
+//    GAMMA
+//    GAMMALN
 //    GCD
 //    HLOOKUP
 //    IF
@@ -278,6 +282,8 @@ var tokenPriority = map[string]int{
 //    MAX
 //    MDETERM
 //    MEDIAN
+//    MIN
+//    MINA
 //    MOD
 //    MROUND
 //    MULTINOMIAL
@@ -286,6 +292,7 @@ var tokenPriority = map[string]int{
 //    NOT
 //    ODD
 //    OR
+//    PERMUT
 //    PI
 //    POWER
 //    PRODUCT
@@ -295,6 +302,7 @@ var tokenPriority = map[string]int{
 //    RAND
 //    RANDBETWEEN
 //    REPT
+//    ROMAN
 //    ROUND
 //    ROUNDDOWN
 //    ROUNDUP
@@ -1798,7 +1806,7 @@ func (fn *formulaFuncs) FACT(argsList *list.List) formulaArg {
 	if number.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", fact(number.Number))))
+	return newNumberFormulaArg(fact(number.Number))
 }
 
 // FACTDOUBLE function returns the double factorial of a supplied number. The
@@ -2552,7 +2560,8 @@ func (fn *formulaFuncs) RANDBETWEEN(argsList *list.List) formulaArg {
 	if top.Number < bottom.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newNumberFormulaArg(float64(rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(int64(top.Number-bottom.Number+1)) + int64(bottom.Number)))
+	num := rand.New(rand.NewSource(time.Now().UnixNano())).Int63n(int64(top.Number - bottom.Number + 1))
+	return newNumberFormulaArg(float64(num + int64(bottom.Number)))
 }
 
 // romanNumerals defined a numeral system that originated in ancient Rome and
@@ -2563,11 +2572,34 @@ type romanNumerals struct {
 	s string
 }
 
-var romanTable = [][]romanNumerals{{{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"}, {100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
-	{{1000, "M"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {95, "VC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
-	{{1000, "M"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
-	{{1000, "M"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}},
-	{{1000, "M"}, {999, "IM"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {499, "ID"}, {495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"}}}
+var romanTable = [][]romanNumerals{
+	{
+		{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"}, {100, "C"}, {90, "XC"},
+		{50, "L"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+	},
+	{
+		{1000, "M"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {450, "LD"}, {400, "CD"},
+		{100, "C"}, {95, "VC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"},
+		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+	},
+	{
+		{1000, "M"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {490, "XD"},
+		{450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"},
+		{45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+	},
+	{
+		{1000, "M"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"},
+		{495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"},
+		{90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"},
+		{5, "V"}, {4, "IV"}, {1, "I"},
+	},
+	{
+		{1000, "M"}, {999, "IM"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"},
+		{500, "D"}, {499, "ID"}, {495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"},
+		{100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"},
+		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+	},
+}
 
 // ROMAN function converts an arabic number to Roman. I.e. for a supplied
 // integer, the function returns a text string depicting the roman numeral
@@ -3191,6 +3223,112 @@ func (fn *formulaFuncs) COUNTBLANK(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(count))
 }
 
+// FISHER function calculates the Fisher Transformation for a supplied value.
+// The syntax of the function is:
+//
+//    FISHER(x)
+//
+func (fn *formulaFuncs) FISHER(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FISHER requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgString:
+		arg := token.ToNumber()
+		if arg.Type == ArgNumber {
+			if arg.Number <= -1 || arg.Number >= 1 {
+				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+			}
+			return newNumberFormulaArg(0.5 * math.Log((1+arg.Number)/(1-arg.Number)))
+		}
+	case ArgNumber:
+		if token.Number <= -1 || token.Number >= 1 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		return newNumberFormulaArg(0.5 * math.Log((1+token.Number)/(1-token.Number)))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, "FISHER requires 1 numeric argument")
+}
+
+// FISHERINV function calculates the inverse of the Fisher Transformation and
+// returns a value between -1 and +1. The syntax of the function is:
+//
+//    FISHERINV(y)
+//
+func (fn *formulaFuncs) FISHERINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FISHERINV requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgString:
+		arg := token.ToNumber()
+		if arg.Type == ArgNumber {
+			return newNumberFormulaArg((math.Exp(2*arg.Number) - 1) / (math.Exp(2*arg.Number) + 1))
+		}
+	case ArgNumber:
+		return newNumberFormulaArg((math.Exp(2*token.Number) - 1) / (math.Exp(2*token.Number) + 1))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, "FISHERINV requires 1 numeric argument")
+}
+
+// GAMMA function returns the value of the Gamma Function, Γ(n), for a
+// specified number, n. The syntax of the function is:
+//
+//    GAMMA(number)
+//
+func (fn *formulaFuncs) GAMMA(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMA requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgString:
+		arg := token.ToNumber()
+		if arg.Type == ArgNumber {
+			if arg.Number <= 0 {
+				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+			}
+			return newNumberFormulaArg(math.Gamma(arg.Number))
+		}
+	case ArgNumber:
+		if token.Number <= 0 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		return newNumberFormulaArg(math.Gamma(token.Number))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, "GAMMA requires 1 numeric argument")
+}
+
+// GAMMALN function returns the natural logarithm of the Gamma Function, Γ
+// (n). The syntax of the function is:
+//
+//    GAMMALN(x)
+//
+func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgString:
+		arg := token.ToNumber()
+		if arg.Type == ArgNumber {
+			if arg.Number <= 0 {
+				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+			}
+			return newNumberFormulaArg(math.Log(math.Gamma(arg.Number)))
+		}
+	case ArgNumber:
+		if token.Number <= 0 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+}
+
 // MAX function returns the largest value from a supplied set of numeric
 // values. The syntax of the function is:
 //
@@ -3203,7 +3341,10 @@ func (fn *formulaFuncs) MAX(argsList *list.List) formulaArg {
 	return fn.max(false, argsList)
 }
 
-// MAXA function returns the largest value from a supplied set of numeric values, while counting text and the logical value FALSE as the value 0 and counting the logical value TRUE as the value 1. The syntax of the function is:
+// MAXA function returns the largest value from a supplied set of numeric
+// values, while counting text and the logical value FALSE as the value 0 and
+// counting the logical value TRUE as the value 1. The syntax of the function
+// is:
 //
 //    MAXA(number1,[number2],...)
 //
@@ -3317,6 +3458,112 @@ func (fn *formulaFuncs) MEDIAN(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(median)
 }
 
+// MIN function returns the smallest value from a supplied set of numeric
+// values. The syntax of the function is:
+//
+//    MIN(number1,[number2],...)
+//
+func (fn *formulaFuncs) MIN(argsList *list.List) formulaArg {
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MIN requires at least 1 argument")
+	}
+	return fn.min(false, argsList)
+}
+
+// MINA function returns the smallest value from a supplied set of numeric
+// values, while counting text and the logical value FALSE as the value 0 and
+// counting the logical value TRUE as the value 1. The syntax of the function
+// is:
+//
+//    MINA(number1,[number2],...)
+//
+func (fn *formulaFuncs) MINA(argsList *list.List) formulaArg {
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MINA requires at least 1 argument")
+	}
+	return fn.min(true, argsList)
+}
+
+// min is an implementation of the formula function MIN and MINA.
+func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
+	min := math.MaxFloat64
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		arg := token.Value.(formulaArg)
+		switch arg.Type {
+		case ArgString:
+			if !mina && (arg.Value() == "TRUE" || arg.Value() == "FALSE") {
+				continue
+			} else {
+				num := arg.ToBool()
+				if num.Type == ArgNumber && num.Number < min {
+					min = num.Number
+					continue
+				}
+			}
+			num := arg.ToNumber()
+			if num.Type != ArgError && num.Number < min {
+				min = num.Number
+			}
+		case ArgNumber:
+			if arg.Number < min {
+				min = arg.Number
+			}
+		case ArgList, ArgMatrix:
+			for _, row := range arg.ToList() {
+				switch row.Type {
+				case ArgString:
+					if !mina && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+						continue
+					} else {
+						num := row.ToBool()
+						if num.Type == ArgNumber && num.Number < min {
+							min = num.Number
+							continue
+						}
+					}
+					num := row.ToNumber()
+					if num.Type != ArgError && num.Number < min {
+						min = num.Number
+					}
+				case ArgNumber:
+					if row.Number < min {
+						min = row.Number
+					}
+				}
+			}
+		case ArgError:
+			return arg
+		}
+	}
+	if min == math.MaxFloat64 {
+		min = 0
+	}
+	return newNumberFormulaArg(min)
+}
+
+// PERMUT function calculates the number of permutations of a specified number
+// of objects from a set of objects. The syntax of the function is:
+//
+//    PERMUT(number,number_chosen)
+//
+func (fn *formulaFuncs) PERMUT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PERMUT requires 2 numeric arguments")
+	}
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	chosen := argsList.Back().Value.(formulaArg).ToNumber()
+	if number.Type != ArgNumber {
+		return number
+	}
+	if chosen.Type != ArgNumber {
+		return chosen
+	}
+	if number.Number < chosen.Number {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(math.Round(fact(number.Number) / fact(number.Number-chosen.Number)))
+}
+
 // Information Functions
 
 // ISBLANK function tests if a specified cell is blank (empty) and if so,
@@ -3356,7 +3603,11 @@ func (fn *formulaFuncs) ISERR(argsList *list.List) formulaArg {
 	token := argsList.Front().Value.(formulaArg)
 	result := "FALSE"
 	if token.Type == ArgError {
-		for _, errType := range []string{formulaErrorDIV, formulaErrorNAME, formulaErrorNUM, formulaErrorVALUE, formulaErrorREF, formulaErrorNULL, formulaErrorSPILL, formulaErrorCALC, formulaErrorGETTINGDATA} {
+		for _, errType := range []string{
+			formulaErrorDIV, formulaErrorNAME, formulaErrorNUM,
+			formulaErrorVALUE, formulaErrorREF, formulaErrorNULL,
+			formulaErrorSPILL, formulaErrorCALC, formulaErrorGETTINGDATA,
+		} {
 			if errType == token.String {
 				result = "TRUE"
 			}
@@ -3378,7 +3629,11 @@ func (fn *formulaFuncs) ISERROR(argsList *list.List) formulaArg {
 	token := argsList.Front().Value.(formulaArg)
 	result := "FALSE"
 	if token.Type == ArgError {
-		for _, errType := range []string{formulaErrorDIV, formulaErrorNAME, formulaErrorNA, formulaErrorNUM, formulaErrorVALUE, formulaErrorREF, formulaErrorNULL, formulaErrorSPILL, formulaErrorCALC, formulaErrorGETTINGDATA} {
+		for _, errType := range []string{
+			formulaErrorDIV, formulaErrorNAME, formulaErrorNA, formulaErrorNUM,
+			formulaErrorVALUE, formulaErrorREF, formulaErrorNULL, formulaErrorSPILL,
+			formulaErrorCALC, formulaErrorGETTINGDATA,
+		} {
 			if errType == token.String {
 				result = "TRUE"
 			}
@@ -4413,5 +4668,6 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ENCODEURL requires 1 argument")
 	}
-	return newStringFormulaArg(strings.Replace(url.QueryEscape(argsList.Front().Value.(formulaArg).Value()), "+", "%20", -1))
+	token := argsList.Front().Value.(formulaArg).Value()
+	return newStringFormulaArg(strings.Replace(url.QueryEscape(token), "+", "%20", -1))
 }
