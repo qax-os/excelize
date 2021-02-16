@@ -415,6 +415,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=SQRTPI(100)":       "17.72453850905516",
 		"=SQRTPI(0)":         "0",
 		"=SQRTPI(SQRTPI(0))": "0",
+		// STDEV
+		"=STDEV(F2:F9)":         "10724.978287523809",
+		"=STDEV(MUNIT(2))":      "0.577350269189626",
+		"=STDEV(0,INT(0))":      "0",
+		"=STDEV(INT(1),INT(1))": "0",
+		// STDEVA
+		"=STDEVA(F2:F9)":    "10724.978287523809",
+		"=STDEVA(MUNIT(2))": "0.577350269189626",
+		"=STDEVA(0,INT(0))": "0",
 		// SUM
 		"=SUM(1,2)":                           "3",
 		`=SUM("",1,2)`:                        "3",
@@ -507,6 +516,10 @@ func TestCalcCellValue(t *testing.T) {
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.453736570842443",
 		"=GAMMALN(INT(1))": "0",
+		// KURT
+		"=KURT(F1:F9)":           "-1.033503502551368",
+		"=KURT(F1,F2:F9)":        "-1.033503502551368",
+		"=KURT(INT(1),MUNIT(2))": "-3.333333333333336",
 		// MAX
 		"=MAX(1)":          "1",
 		"=MAX(TRUE())":     "1",
@@ -945,14 +958,19 @@ func TestCalcCellValue(t *testing.T) {
 		// SQRTPI
 		"=SQRTPI()":    "SQRTPI requires 1 numeric argument",
 		`=SQRTPI("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		// STDEV
+		"=STDEV()":      "STDEV requires at least 1 argument",
+		"=STDEV(E2:E9)": "#DIV/0!",
+		// STDEVA
+		"=STDEVA()":      "STDEVA requires at least 1 argument",
+		"=STDEVA(E2:E9)": "#DIV/0!",
 		// SUM
-		"=SUM((":    "formula not valid",
-		"=SUM(-)":   "formula not valid",
-		"=SUM(1+)":  "formula not valid",
-		"=SUM(1-)":  "formula not valid",
-		"=SUM(1*)":  "formula not valid",
-		"=SUM(1/)":  "formula not valid",
-		`=SUM("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=SUM((":   "formula not valid",
+		"=SUM(-)":  "formula not valid",
+		"=SUM(1+)": "formula not valid",
+		"=SUM(1-)": "formula not valid",
+		"=SUM(1*)": "formula not valid",
+		"=SUM(1/)": "formula not valid",
 		// SUMIF
 		"=SUMIF()": "SUMIF requires at least 2 argument",
 		// SUMSQ
@@ -994,6 +1012,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(0)":      "#N/A",
 		"=GAMMALN(INT(0))": "#N/A",
+		// KURT
+		"=KURT()":          "KURT requires at least 1 argument",
+		"=KURT(F1,INT(1))": "#DIV/0!",
 		// MAX
 		"=MAX()":     "MAX requires at least 1 argument",
 		"=MAX(NA())": "#N/A",
@@ -1168,6 +1189,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=1+SUM(SUM(A1+A2/A3)*(2-3),2)":   "1.333333333333334",
 		"=A1/A2/SUM(A1:A2:B1)":            "0.041666666666667",
 		"=A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
+		"=SUM(B1:D1)":                     "4",
+		"=SUM(\"X\")":                     "0",
 	}
 	for formula, expected := range referenceCalc {
 		f := prepareCalcData(cellData)
@@ -1380,20 +1403,24 @@ func TestCalcVLOOKUP(t *testing.T) {
 	}
 }
 
-func TestCalcMAXMIN(t *testing.T) {
+func TestCalcBoolean(t *testing.T) {
 	cellData := [][]interface{}{
 		{0.5, "TRUE", -0.5, "FALSE"},
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"=MAX(0.5,B1)":   "0.5",
-		"=MAX(A1:B1)":    "0.5",
-		"=MAXA(A1:B1)":   "1",
-		"=MAXA(0.5,B1)":  "1",
-		"=MIN(-0.5,D1)":  "-0.5",
-		"=MIN(C1:D1)":    "-0.5",
-		"=MINA(C1:D1)":   "-0.5",
-		"=MINA(-0.5,D1)": "-0.5",
+		"=AVERAGEA(A1:C1)":  "0.333333333333333",
+		"=MAX(0.5,B1)":      "0.5",
+		"=MAX(A1:B1)":       "0.5",
+		"=MAXA(A1:B1)":      "1",
+		"=MAXA(0.5,B1)":     "1",
+		"=MIN(-0.5,D1)":     "-0.5",
+		"=MIN(C1:D1)":       "-0.5",
+		"=MINA(C1:D1)":      "-0.5",
+		"=MINA(-0.5,D1)":    "-0.5",
+		"=STDEV(A1:C1)":     "0.707106781186548",
+		"=STDEV(A1,B1,C1)":  "0.707106781186548",
+		"=STDEVA(A1:C1,B1)": "0.707106781186548",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))

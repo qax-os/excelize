@@ -271,6 +271,7 @@ var tokenPriority = map[string]int{
 //    ISODD
 //    ISTEXT
 //    ISO.CEILING
+//    KURT
 //    LCM
 //    LEN
 //    LENB
@@ -314,6 +315,8 @@ var tokenPriority = map[string]int{
 //    SINH
 //    SQRT
 //    SQRTPI
+//    STDEV
+//    STDEVA
 //    SUM
 //    SUMIF
 //    SUMSQ
@@ -2872,41 +2875,118 @@ func (fn *formulaFuncs) SQRTPI(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(math.Sqrt(number.Number * math.Pi))
 }
 
+// STDEV function calculates the sample standard deviation of a supplied set
+// of values. The syntax of the function is:
+//
+//    STDEV(number1,[number2],...)
+//
+func (fn *formulaFuncs) STDEV(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "STDEV requires at least 1 argument")
+	}
+	return fn.stdev(false, argsList)
+}
+
+// STDEVA function estimates standard deviation based on a sample. The
+// standard deviation is a measure of how widely values are dispersed from
+// the average value (the mean). The syntax of the function is:
+//
+//    STDEVA(number1,[number2],...)
+//
+func (fn *formulaFuncs) STDEVA(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "STDEVA requires at least 1 argument")
+	}
+	return fn.stdev(true, argsList)
+}
+
+// stdev is an implementation of the formula function STDEV and STDEVA.
+func (fn *formulaFuncs) stdev(stdeva bool, argsList *list.List) formulaArg {
+	pow := func(result, count float64, n, m formulaArg) (float64, float64) {
+		if result == -1 {
+			result = math.Pow((n.Number - m.Number), 2)
+		} else {
+			result += math.Pow((n.Number - m.Number), 2)
+		}
+		count++
+		return result, count
+	}
+	count, result := -1.0, -1.0
+	var mean formulaArg
+	if stdeva {
+		mean = fn.AVERAGEA(argsList)
+	} else {
+		mean = fn.AVERAGE(argsList)
+	}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgString, ArgNumber:
+			if !stdeva && (token.Value() == "TRUE" || token.Value() == "FALSE") {
+				continue
+			} else if stdeva && (token.Value() == "TRUE" || token.Value() == "FALSE") {
+				num := token.ToBool()
+				if num.Type == ArgNumber {
+					result, count = pow(result, count, num, mean)
+					continue
+				}
+			} else {
+				num := token.ToNumber()
+				if num.Type == ArgNumber {
+					result, count = pow(result, count, num, mean)
+				}
+			}
+		case ArgList, ArgMatrix:
+			for _, row := range token.ToList() {
+				if row.Type == ArgNumber || row.Type == ArgString {
+					if !stdeva && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+						continue
+					} else if stdeva && (row.Value() == "TRUE" || row.Value() == "FALSE") {
+						num := row.ToBool()
+						if num.Type == ArgNumber {
+							result, count = pow(result, count, num, mean)
+							continue
+						}
+					} else {
+						num := row.ToNumber()
+						if num.Type == ArgNumber {
+							result, count = pow(result, count, num, mean)
+						}
+					}
+				}
+			}
+		}
+	}
+	if count > 0 && result >= 0 {
+		return newNumberFormulaArg(math.Sqrt(result / count))
+	}
+	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
 // SUM function adds together a supplied set of numbers and returns the sum of
 // these values. The syntax of the function is:
 //
 //    SUM(number1,[number2],...)
 //
 func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
-	var (
-		val, sum float64
-		err      error
-	)
+	var sum float64
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
 		case ArgUnknown:
 			continue
 		case ArgString:
-			if token.String == "" {
-				continue
+			if num := token.ToNumber(); num.Type == ArgNumber {
+				sum += num.Number
 			}
-			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
-			sum += val
 		case ArgNumber:
 			sum += token.Number
 		case ArgMatrix:
 			for _, row := range token.Matrix {
 				for _, value := range row {
-					if value.String == "" {
-						continue
+					if num := value.ToNumber(); num.Type == ArgNumber {
+						sum += num.Number
 					}
-					if val, err = strconv.ParseFloat(value.String, 64); err != nil {
-						return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-					}
-					sum += val
 				}
 			}
 		}
@@ -3111,6 +3191,16 @@ func (fn *formulaFuncs) countSum(countText bool, args []formulaArg) (count, sum 
 				count++
 			}
 		case ArgString:
+			if !countText && (arg.Value() == "TRUE" || arg.Value() == "FALSE") {
+				continue
+			} else if countText && (arg.Value() == "TRUE" || arg.Value() == "FALSE") {
+				num := arg.ToBool()
+				if num.Type == ArgNumber {
+					count++
+					sum += num.Number
+					continue
+				}
+			}
 			num := arg.ToNumber()
 			if countText && num.Type == ArgError && arg.String != "" {
 				count++
@@ -3327,6 +3417,48 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+}
+
+// KURT function calculates the kurtosis of a supplied set of values. The
+// syntax of the function is:
+//
+//    KURT(number1,[number2],...)
+//
+func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "KURT requires at least 1 argument")
+	}
+	mean, stdev := fn.AVERAGE(argsList), fn.STDEV(argsList)
+	if stdev.Number > 0 {
+		count, summer := 0.0, 0.0
+		for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+			token := arg.Value.(formulaArg)
+			switch token.Type {
+			case ArgString, ArgNumber:
+				num := token.ToNumber()
+				if num.Type == ArgError {
+					continue
+				}
+				summer += math.Pow((num.Number-mean.Number)/stdev.Number, 4)
+				count++
+			case ArgList, ArgMatrix:
+				for _, row := range token.ToList() {
+					if row.Type == ArgNumber || row.Type == ArgString {
+						num := row.ToNumber()
+						if num.Type == ArgError {
+							continue
+						}
+						summer += math.Pow((num.Number-mean.Number)/stdev.Number, 4)
+						count++
+					}
+				}
+			}
+		}
+		if count > 3 {
+			return newNumberFormulaArg(summer*(count*(count+1)/((count-1)*(count-2)*(count-3))) - (3 * math.Pow(count-1, 2) / ((count - 2) * (count - 3))))
+		}
+	}
+	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 }
 
 // MAX function returns the largest value from a supplied set of numeric
