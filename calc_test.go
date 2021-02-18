@@ -47,6 +47,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=2>=3": "FALSE",
 		"=1&2":  "12",
 		// Engineering Functions
+		// BITAND
+		"=BITAND(13,14)": "12",
+		// BITLSHIFT
+		"=BITLSHIFT(5,2)": "20",
+		"=BITLSHIFT(3,5)": "96",
+		// BITOR
+		"=BITOR(9,12)": "13",
+		// BITRSHIFT
+		"=BITRSHIFT(20,2)": "5",
+		"=BITRSHIFT(52,4)": "3",
+		// BITXOR
+		"=BITXOR(5,6)":  "3",
+		"=BITXOR(9,12)": "5",
 		// DEC2BIN
 		"=DEC2BIN(2)":    "10",
 		"=DEC2BIN(3)":    "11",
@@ -727,6 +740,46 @@ func TestCalcCellValue(t *testing.T) {
 	mathCalcError := map[string]string{
 		"=1/0": "#DIV/0!",
 		// Engineering Functions
+		// BITAND
+		"=BITAND()":        "BITAND requires 2 numeric arguments",
+		"=BITAND(-1,2)":    "#NUM!",
+		"=BITAND(2^48,2)":  "#NUM!",
+		"=BITAND(1,-1)":    "#NUM!",
+		"=BITAND(\"\",-1)": "#NUM!",
+		"=BITAND(1,\"\")":  "#NUM!",
+		"=BITAND(1,2^48)":  "#NUM!",
+		// BITLSHIFT
+		"=BITLSHIFT()":        "BITLSHIFT requires 2 numeric arguments",
+		"=BITLSHIFT(-1,2)":    "#NUM!",
+		"=BITLSHIFT(2^48,2)":  "#NUM!",
+		"=BITLSHIFT(1,-1)":    "#NUM!",
+		"=BITLSHIFT(\"\",-1)": "#NUM!",
+		"=BITLSHIFT(1,\"\")":  "#NUM!",
+		"=BITLSHIFT(1,2^48)":  "#NUM!",
+		// BITOR
+		"=BITOR()":        "BITOR requires 2 numeric arguments",
+		"=BITOR(-1,2)":    "#NUM!",
+		"=BITOR(2^48,2)":  "#NUM!",
+		"=BITOR(1,-1)":    "#NUM!",
+		"=BITOR(\"\",-1)": "#NUM!",
+		"=BITOR(1,\"\")":  "#NUM!",
+		"=BITOR(1,2^48)":  "#NUM!",
+		// BITRSHIFT
+		"=BITRSHIFT()":        "BITRSHIFT requires 2 numeric arguments",
+		"=BITRSHIFT(-1,2)":    "#NUM!",
+		"=BITRSHIFT(2^48,2)":  "#NUM!",
+		"=BITRSHIFT(1,-1)":    "#NUM!",
+		"=BITRSHIFT(\"\",-1)": "#NUM!",
+		"=BITRSHIFT(1,\"\")":  "#NUM!",
+		"=BITRSHIFT(1,2^48)":  "#NUM!",
+		// BITXOR
+		"=BITXOR()":        "BITXOR requires 2 numeric arguments",
+		"=BITXOR(-1,2)":    "#NUM!",
+		"=BITXOR(2^48,2)":  "#NUM!",
+		"=BITXOR(1,-1)":    "#NUM!",
+		"=BITXOR(\"\",-1)": "#NUM!",
+		"=BITXOR(1,\"\")":  "#NUM!",
+		"=BITXOR(1,2^48)":  "#NUM!",
 		// DEC2BIN
 		"=DEC2BIN()":        "DEC2BIN requires at least 1 argument",
 		"=DEC2BIN(1,1,1)":   "DEC2BIN allows at most 2 arguments",

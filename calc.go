@@ -222,6 +222,11 @@ var tokenPriority = map[string]int{
 //    AVERAGE
 //    AVERAGEA
 //    BASE
+//    BITAND
+//    BITLSHIFT
+//    BITOR
+//    BITRSHIFT
+//    BITXOR
 //    CEILING
 //    CEILING.MATH
 //    CEILING.PRECISE
@@ -1146,18 +1151,82 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 
 // Engineering Functions
 
+// BITAND function returns the bitwise 'AND' for two supplied integers. The
+// syntax of the function is:
+//
+//    BITAND(number1,number2)
+//
+func (fn *formulaFuncs) BITAND(argsList *list.List) formulaArg {
+	return fn.bitwise("BITAND", argsList)
+}
+
+// BITLSHIFT function returns a supplied integer, shifted left by a specified
+// number of bits. The syntax of the function is:
+//
+//    BITLSHIFT(number1,shift_amount)
+//
+func (fn *formulaFuncs) BITLSHIFT(argsList *list.List) formulaArg {
+	return fn.bitwise("BITLSHIFT", argsList)
+}
+
+// BITOR function returns the bitwise 'OR' for two supplied integers. The
+// syntax of the function is:
+//
+//    BITOR(number1,number2)
+//
+func (fn *formulaFuncs) BITOR(argsList *list.List) formulaArg {
+	return fn.bitwise("BITOR", argsList)
+}
+
+// BITRSHIFT function returns a supplied integer, shifted right by a specified
+// number of bits. The syntax of the function is:
+//
+//    BITRSHIFT(number1,shift_amount)
+//
+func (fn *formulaFuncs) BITRSHIFT(argsList *list.List) formulaArg {
+	return fn.bitwise("BITRSHIFT", argsList)
+}
+
+// BITXOR function returns the bitwise 'XOR' (exclusive 'OR') for two supplied
+// integers. The syntax of the function is:
+//
+//    BITXOR(number1,number2)
+//
+func (fn *formulaFuncs) BITXOR(argsList *list.List) formulaArg {
+	return fn.bitwise("BITXOR", argsList)
+}
+
+// bitwise is an implementation of the formula function BITAND, BITLSHIFT,
+// BITOR, BITRSHIFT and BITXOR.
+func (fn *formulaFuncs) bitwise(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 numeric arguments", name))
+	}
+	num1, num2 := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Back().Value.(formulaArg).ToNumber()
+	if num1.Type != ArgNumber || num2.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	max := math.Pow(2, 48) - 1
+	if num1.Number < 0 || num1.Number > max || num2.Number < 0 || num2.Number > max {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	bitwiseFuncMap := map[string]func(a, b int) int{
+		"BITAND":    func(a, b int) int { return a & b },
+		"BITLSHIFT": func(a, b int) int { return a << uint(b) },
+		"BITOR":     func(a, b int) int { return a | b },
+		"BITRSHIFT": func(a, b int) int { return a >> uint(b) },
+		"BITXOR":    func(a, b int) int { return a ^ b },
+	}
+	bitwiseFunc, _ := bitwiseFuncMap[name]
+	return newNumberFormulaArg(float64(bitwiseFunc(int(num1.Number), int(num2.Number))))
+}
+
 // DEC2BIN function converts a decimal number into a Binary (Base 2) number.
 // The syntax of the function is:
 //
 //    DEC2BIN(number,[places])
 //
 func (fn *formulaFuncs) DEC2BIN(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DEC2BIN requires at least 1 argument")
-	}
-	if argsList.Len() > 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DEC2BIN allows at most 2 arguments")
-	}
 	return fn.dec2x("DEC2BIN", argsList)
 }
 
@@ -1167,12 +1236,6 @@ func (fn *formulaFuncs) DEC2BIN(argsList *list.List) formulaArg {
 //    DEC2HEX(number,[places])
 //
 func (fn *formulaFuncs) DEC2HEX(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DEC2HEX requires at least 1 argument")
-	}
-	if argsList.Len() > 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DEC2HEX allows at most 2 arguments")
-	}
 	return fn.dec2x("DEC2HEX", argsList)
 }
 
@@ -1182,17 +1245,18 @@ func (fn *formulaFuncs) DEC2HEX(argsList *list.List) formulaArg {
 //    DEC2OCT(number,[places])
 //
 func (fn *formulaFuncs) DEC2OCT(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DEC2OCT requires at least 1 argument")
-	}
-	if argsList.Len() > 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DEC2OCT allows at most 2 arguments")
-	}
 	return fn.dec2x("DEC2OCT", argsList)
 }
 
-// dec2x is an implementation of the formula function DEC2BIN, DEC2HEX and DEC2OCT.
+// dec2x is an implementation of the formula function DEC2BIN, DEC2HEX and
+// DEC2OCT.
 func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 2 arguments", name))
+	}
 	decimal := argsList.Front().Value.(formulaArg).ToNumber()
 	if decimal.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, decimal.Error)

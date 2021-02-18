@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -44,8 +44,9 @@ func (f *File) GetCellValue(sheet, axis string) (string, error) {
 }
 
 // SetCellValue provides a function to set value of a cell. The specified
-// coordinates should not be in the first row of the table. The following
-// shows the supported data types:
+// coordinates should not be in the first row of the table, a complex number
+// can be set with string text. The following shows the supported data
+// types:
 //
 //    int
 //    int8
@@ -93,7 +94,7 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	case bool:
 		err = f.SetCellBool(sheet, axis, v)
 	case nil:
-		break
+		err = f.SetCellDefault(sheet, axis, "")
 	default:
 		err = f.SetCellStr(sheet, axis, fmt.Sprint(value))
 	}
