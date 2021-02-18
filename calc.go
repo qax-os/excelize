@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unsafe"
 
 	"github.com/xuri/efp"
 )
@@ -240,6 +241,9 @@ var tokenPriority = map[string]int{
 //    CSC
 //    CSCH
 //    DATE
+//    DEC2BIN
+//    DEC2HEX
+//    DEC2OCT
 //    DECIMAL
 //    DEGREES
 //    ENCODEURL
@@ -1140,7 +1144,100 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	return
 }
 
-// Math and Trigonometric functions
+// Engineering Functions
+
+// DEC2BIN function converts a decimal number into a Binary (Base 2) number.
+// The syntax of the function is:
+//
+//    DEC2BIN(number,[places])
+//
+func (fn *formulaFuncs) DEC2BIN(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEC2BIN requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEC2BIN allows at most 2 arguments")
+	}
+	return fn.dec2x("DEC2BIN", argsList)
+}
+
+// DEC2HEX function converts a decimal number into a Hexadecimal (Base 16)
+// number. The syntax of the function is:
+//
+//    DEC2HEX(number,[places])
+//
+func (fn *formulaFuncs) DEC2HEX(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEC2HEX requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEC2HEX allows at most 2 arguments")
+	}
+	return fn.dec2x("DEC2HEX", argsList)
+}
+
+// DEC2OCT function converts a decimal number into an Octal (Base 8) number.
+// The syntax of the function is:
+//
+//    DEC2OCT(number,[places])
+//
+func (fn *formulaFuncs) DEC2OCT(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEC2OCT requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEC2OCT allows at most 2 arguments")
+	}
+	return fn.dec2x("DEC2OCT", argsList)
+}
+
+// dec2x is an implementation of the formula function DEC2BIN, DEC2HEX and DEC2OCT.
+func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
+	decimal := argsList.Front().Value.(formulaArg).ToNumber()
+	if decimal.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, decimal.Error)
+	}
+	maxLimitMap := map[string]float64{
+		"DEC2BIN": 511,
+		"DEC2HEX": 549755813887,
+		"DEC2OCT": 536870911,
+	}
+	minLimitMap := map[string]float64{
+		"DEC2BIN": -512,
+		"DEC2HEX": -549755813888,
+		"DEC2OCT": -536870912,
+	}
+	baseMap := map[string]int{
+		"DEC2BIN": 2,
+		"DEC2HEX": 16,
+		"DEC2OCT": 8,
+	}
+	maxLimit := maxLimitMap[name]
+	minLimit := minLimitMap[name]
+	base := baseMap[name]
+	if decimal.Number < minLimit || decimal.Number > maxLimit {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	n := int64(decimal.Number)
+	binary := strconv.FormatUint(*(*uint64)(unsafe.Pointer(&n)), base)
+	if argsList.Len() == 2 {
+		places := argsList.Back().Value.(formulaArg).ToNumber()
+		if places.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, places.Error)
+		}
+		binaryPlaces := len(binary)
+		if places.Number < 0 || places.Number > 10 || binaryPlaces > int(places.Number) {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%s%s", strings.Repeat("0", int(places.Number)-binaryPlaces), binary)))
+	}
+	if decimal.Number < 0 && len(binary) > 10 {
+		return newStringFormulaArg(strings.ToUpper(binary[len(binary)-10:]))
+	}
+	return newStringFormulaArg(strings.ToUpper(binary))
+}
+
+// Math and Trigonometric Functions
 
 // ABS function returns the absolute value of any supplied number. The syntax
 // of the function is:
@@ -4357,7 +4454,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 	return newStringFormulaArg(result)
 }
 
-// Excel Lookup and Reference Functions
+// Lookup and Reference Functions
 
 // CHOOSE function returns a value from an array, that corresponds to a
 // supplied index number (position). The syntax of the function is:

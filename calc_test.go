@@ -46,6 +46,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=2>=1": "TRUE",
 		"=2>=3": "FALSE",
 		"=1&2":  "12",
+		// Engineering Functions
+		// DEC2BIN
+		"=DEC2BIN(2)":    "10",
+		"=DEC2BIN(3)":    "11",
+		"=DEC2BIN(2,10)": "0000000010",
+		"=DEC2BIN(-2)":   "1111111110",
+		"=DEC2BIN(6)":    "110",
+		// DEC2HEX
+		"=DEC2HEX(10)":    "A",
+		"=DEC2HEX(31)":    "1F",
+		"=DEC2HEX(16,10)": "0000000010",
+		"=DEC2HEX(-16)":   "FFFFFFFFF0",
+		"=DEC2HEX(273)":   "111",
+		// DEC2OCT
+		"=DEC2OCT(8)":    "10",
+		"=DEC2OCT(18)":   "22",
+		"=DEC2OCT(8,10)": "0000000010",
+		"=DEC2OCT(-8)":   "7777777770",
+		"=DEC2OCT(237)":  "355",
 		// ABS
 		"=ABS(-1)":      "1",
 		"=ABS(-6.5)":    "6.5",
@@ -707,6 +726,31 @@ func TestCalcCellValue(t *testing.T) {
 	}
 	mathCalcError := map[string]string{
 		"=1/0": "#DIV/0!",
+		// Engineering Functions
+		// DEC2BIN
+		"=DEC2BIN()":        "DEC2BIN requires at least 1 argument",
+		"=DEC2BIN(1,1,1)":   "DEC2BIN allows at most 2 arguments",
+		"=DEC2BIN(\"\",1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DEC2BIN(1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DEC2BIN(-513,10)": "#NUM!",
+		"=DEC2BIN(1,-1)":    "#NUM!",
+		"=DEC2BIN(2,1)":     "#NUM!",
+		// DEC2HEX
+		"=DEC2HEX()":                 "DEC2HEX requires at least 1 argument",
+		"=DEC2HEX(1,1,1)":            "DEC2HEX allows at most 2 arguments",
+		"=DEC2HEX(\"\",1)":           "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DEC2HEX(1,\"\")":           "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DEC2HEX(-549755813888,10)": "#NUM!",
+		"=DEC2HEX(1,-1)":             "#NUM!",
+		"=DEC2HEX(31,1)":             "#NUM!",
+		// DEC2OCT
+		"=DEC2OCT()":               "DEC2OCT requires at least 1 argument",
+		"=DEC2OCT(1,1,1)":          "DEC2OCT allows at most 2 arguments",
+		"=DEC2OCT(\"\",1)":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DEC2OCT(1,\"\")":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DEC2OCT(-536870912 ,10)": "#NUM!",
+		"=DEC2OCT(1,-1)":           "#NUM!",
+		"=DEC2OCT(8,1)":            "#NUM!",
 		// ABS
 		"=ABS()":    "ABS requires 1 numeric argument",
 		`=ABS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
