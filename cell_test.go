@@ -319,6 +319,7 @@ func TestSetCellRichText2(t *testing.T) {
 		},
 	}
 	f.SetCellRichText("Sheet1", "A1", richTextRun)
+	f.SetCellRichText("Sheet1", "A1", richTextRun)
 
 	for i := 0; i < 100; i++ {
 		f2.SetCellRichText("Sheet1", "A1", richTextRun)
@@ -333,6 +334,9 @@ func TestSetCellRichText2(t *testing.T) {
 	statMultipl, _ := os.Stat(fileMultipl)
 
 	assert.Equal(t, statOne.Size(), statMultipl.Size())
+
+	assert.Equal(t, 1, f.sharedStringsReader().Count)
+	assert.Equal(t, 1, f2.sharedStringsReader().Count)
 }
 
 func TestFormattedValue2(t *testing.T) {
