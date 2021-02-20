@@ -33,9 +33,9 @@ const (
 )
 
 // GetCellValue provides a function to get formatted value from cell by given
-// worksheet name and axis in XLSX file. If it is possible to apply a format
-// to the cell value, it will do so, if not then an error will be returned,
-// along with the raw value of the cell.
+// worksheet name and axis in spreadsheet file. If it is possible to apply a
+// format to the cell value, it will do so, if not then an error will be
+// returned, along with the raw value of the cell.
 func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader())
@@ -43,7 +43,7 @@ func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	})
 }
 
-// SetCellValue provides a function to set value of a cell. The specified
+// SetCellValue provides a function to set the value of a cell. The specified
 // coordinates should not be in the first row of the table, a complex number
 // can be set with string text. The following shows the supported data
 // types:
@@ -645,6 +645,12 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		textRuns = append(textRuns, run)
 	}
 	si.R = textRuns
+	for idx, strItem := range sst.SI {
+		if reflect.DeepEqual(strItem, si) {
+			cellData.T, cellData.V = "s", strconv.Itoa(idx)
+			return err
+		}
+	}
 	sst.SI = append(sst.SI, si)
 	sst.Count++
 	sst.UniqueCount++

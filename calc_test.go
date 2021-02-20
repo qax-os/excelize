@@ -47,6 +47,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=2>=3": "FALSE",
 		"=1&2":  "12",
 		// Engineering Functions
+		// BIN2DEC
+		"=BIN2DEC(\"10\")":         "2",
+		"=BIN2DEC(\"11\")":         "3",
+		"=BIN2DEC(\"0000000010\")": "2",
+		"=BIN2DEC(\"1111111110\")": "-2",
+		"=BIN2DEC(\"110\")":        "6",
+		// BIN2HEX
+		"=BIN2HEX(\"10\")":         "2",
+		"=BIN2HEX(\"0000000001\")": "1",
+		"=BIN2HEX(\"10\",10)":      "0000000002",
+		"=BIN2HEX(\"1111111110\")": "FFFFFFFFFE",
+		"=BIN2HEX(\"11101\")":      "1D",
+		// BIN2OCT
+		"=BIN2OCT(\"101\")":        "5",
+		"=BIN2OCT(\"0000000001\")": "1",
+		"=BIN2OCT(\"10\",10)":      "0000000002",
+		"=BIN2OCT(\"1111111110\")": "7777777776",
+		"=BIN2OCT(\"1110\")":       "16",
 		// BITAND
 		"=BITAND(13,14)": "12",
 		// BITLSHIFT
@@ -78,6 +96,44 @@ func TestCalcCellValue(t *testing.T) {
 		"=DEC2OCT(8,10)": "0000000010",
 		"=DEC2OCT(-8)":   "7777777770",
 		"=DEC2OCT(237)":  "355",
+		// HEX2BIN
+		"=HEX2BIN(\"2\")":          "10",
+		"=HEX2BIN(\"0000000001\")": "1",
+		"=HEX2BIN(\"2\",10)":       "0000000010",
+		"=HEX2BIN(\"F0\")":         "11110000",
+		"=HEX2BIN(\"1D\")":         "11101",
+		// HEX2DEC
+		"=HEX2DEC(\"A\")":          "10",
+		"=HEX2DEC(\"1F\")":         "31",
+		"=HEX2DEC(\"0000000010\")": "16",
+		"=HEX2DEC(\"FFFFFFFFF0\")": "-16",
+		"=HEX2DEC(\"111\")":        "273",
+		"=HEX2DEC(\"\")":           "0",
+		// HEX2OCT
+		"=HEX2OCT(\"A\")":          "12",
+		"=HEX2OCT(\"000000000F\")": "17",
+		"=HEX2OCT(\"8\",10)":       "0000000010",
+		"=HEX2OCT(\"FFFFFFFFF8\")": "7777777770",
+		"=HEX2OCT(\"1F3\")":        "763",
+		// OCT2BIN
+		"=OCT2BIN(\"5\")":          "101",
+		"=OCT2BIN(\"0000000001\")": "1",
+		"=OCT2BIN(\"2\",10)":       "0000000010",
+		"=OCT2BIN(\"7777777770\")": "1111111000",
+		"=OCT2BIN(\"16\")":         "1110",
+		// OCT2DEC
+		"=OCT2DEC(\"10\")":         "8",
+		"=OCT2DEC(\"22\")":         "18",
+		"=OCT2DEC(\"0000000010\")": "8",
+		"=OCT2DEC(\"7777777770\")": "-8",
+		"=OCT2DEC(\"355\")":        "237",
+		// OCT2HEX
+		"=OCT2HEX(\"10\")":         "8",
+		"=OCT2HEX(\"0000000007\")": "7",
+		"=OCT2HEX(\"10\",10)":      "0000000008",
+		"=OCT2HEX(\"7777777770\")": "FFFFFFFFF8",
+		"=OCT2HEX(\"763\")":        "1F3",
+		// Math and Trigonometric Functions
 		// ABS
 		"=ABS(-1)":      "1",
 		"=ABS(-6.5)":    "6.5",
@@ -740,6 +796,25 @@ func TestCalcCellValue(t *testing.T) {
 	mathCalcError := map[string]string{
 		"=1/0": "#DIV/0!",
 		// Engineering Functions
+		// BIN2DEC
+		"=BIN2DEC()":     "BIN2DEC requires 1 numeric argument",
+		"=BIN2DEC(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// BIN2HEX
+		"=BIN2HEX()":               "BIN2HEX requires at least 1 argument",
+		"=BIN2HEX(1,1,1)":          "BIN2HEX allows at most 2 arguments",
+		"=BIN2HEX(\"\",1)":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BIN2HEX(1,\"\")":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BIN2HEX(12345678901,10)": "#NUM!",
+		"=BIN2HEX(1,-1)":           "#NUM!",
+		"=BIN2HEX(31,1)":           "#NUM!",
+		// BIN2OCT
+		"=BIN2OCT()":                 "BIN2OCT requires at least 1 argument",
+		"=BIN2OCT(1,1,1)":            "BIN2OCT allows at most 2 arguments",
+		"=BIN2OCT(\"\",1)":           "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BIN2OCT(1,\"\")":           "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BIN2OCT(-12345678901 ,10)": "#NUM!",
+		"=BIN2OCT(1,-1)":             "#NUM!",
+		"=BIN2OCT(8,1)":              "#NUM!",
 		// BITAND
 		"=BITAND()":        "BITAND requires 2 numeric arguments",
 		"=BITAND(-1,2)":    "#NUM!",
@@ -804,6 +879,42 @@ func TestCalcCellValue(t *testing.T) {
 		"=DEC2OCT(-536870912 ,10)": "#NUM!",
 		"=DEC2OCT(1,-1)":           "#NUM!",
 		"=DEC2OCT(8,1)":            "#NUM!",
+		// HEX2BIN
+		"=HEX2BIN()":        "HEX2BIN requires at least 1 argument",
+		"=HEX2BIN(1,1,1)":   "HEX2BIN allows at most 2 arguments",
+		"=HEX2BIN(\"X\",1)": "strconv.ParseInt: parsing \"X\": invalid syntax",
+		"=HEX2BIN(1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=HEX2BIN(-513,10)": "strconv.ParseInt: parsing \"-\": invalid syntax",
+		"=HEX2BIN(1,-1)":    "#NUM!",
+		"=HEX2BIN(2,1)":     "#NUM!",
+		// HEX2DEC
+		"=HEX2DEC()":      "HEX2DEC requires 1 numeric argument",
+		"=HEX2DEC(\"X\")": "strconv.ParseInt: parsing \"X\": invalid syntax",
+		// HEX2OCT
+		"=HEX2OCT()":        "HEX2OCT requires at least 1 argument",
+		"=HEX2OCT(1,1,1)":   "HEX2OCT allows at most 2 arguments",
+		"=HEX2OCT(\"X\",1)": "strconv.ParseInt: parsing \"X\": invalid syntax",
+		"=HEX2OCT(1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=HEX2OCT(-513,10)": "strconv.ParseInt: parsing \"-\": invalid syntax",
+		"=HEX2OCT(1,-1)":    "#NUM!",
+		// OCT2BIN
+		"=OCT2BIN()":               "OCT2BIN requires at least 1 argument",
+		"=OCT2BIN(1,1,1)":          "OCT2BIN allows at most 2 arguments",
+		"=OCT2BIN(\"\",1)":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=OCT2BIN(1,\"\")":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=OCT2BIN(-536870912 ,10)": "#NUM!",
+		"=OCT2BIN(1,-1)":           "#NUM!",
+		// OCT2DEC
+		"=OCT2DEC()":     "OCT2DEC requires 1 numeric argument",
+		"=OCT2DEC(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// OCT2HEX
+		"=OCT2HEX()":               "OCT2HEX requires at least 1 argument",
+		"=OCT2HEX(1,1,1)":          "OCT2HEX allows at most 2 arguments",
+		"=OCT2HEX(\"\",1)":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=OCT2HEX(1,\"\")":         "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=OCT2HEX(-536870912 ,10)": "#NUM!",
+		"=OCT2HEX(1,-1)":           "#NUM!",
+		// Math and Trigonometric Functions
 		// ABS
 		"=ABS()":    "ABS requires 1 numeric argument",
 		`=ABS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",

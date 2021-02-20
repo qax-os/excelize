@@ -222,6 +222,9 @@ var tokenPriority = map[string]int{
 //    AVERAGE
 //    AVERAGEA
 //    BASE
+//    BIN2DEC
+//    BIN2HEX
+//    BIN2OCT
 //    BITAND
 //    BITLSHIFT
 //    BITOR
@@ -266,6 +269,9 @@ var tokenPriority = map[string]int{
 //    GAMMA
 //    GAMMALN
 //    GCD
+//    HEX2BIN
+//    HEX2DEC
+//    HEX2OCT
 //    HLOOKUP
 //    IF
 //    IFERROR
@@ -300,6 +306,9 @@ var tokenPriority = map[string]int{
 //    MUNIT
 //    NA
 //    NOT
+//    OCT2BIN
+//    OCT2DEC
+//    OCT2HEX
 //    ODD
 //    OR
 //    PERMUT
@@ -1151,6 +1160,99 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 
 // Engineering Functions
 
+// BIN2DEC function converts a Binary (a base-2 number) into a decimal number.
+// The syntax of the function is:
+//
+//    BIN2DEC(number)
+//
+func (fn *formulaFuncs) BIN2DEC(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BIN2DEC requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	return fn.bin2dec(token.Value())
+}
+
+// BIN2HEX function converts a Binary (Base 2) number into a Hexadecimal
+// (Base 16) number. The syntax of the function is:
+//
+//    BIN2HEX(number,[places])
+//
+func (fn *formulaFuncs) BIN2HEX(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BIN2HEX requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BIN2HEX allows at most 2 arguments")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	decimal, newList := fn.bin2dec(token.Value()), list.New()
+	if decimal.Type != ArgNumber {
+		return decimal
+	}
+	newList.PushBack(decimal)
+	if argsList.Len() == 2 {
+		newList.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.dec2x("BIN2HEX", newList)
+}
+
+// BIN2OCT function converts a Binary (Base 2) number into an Octal (Base 8)
+// number. The syntax of the function is:
+//
+//    BIN2OCT(number,[places])
+//
+func (fn *formulaFuncs) BIN2OCT(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BIN2OCT requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BIN2OCT allows at most 2 arguments")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	decimal, newList := fn.bin2dec(token.Value()), list.New()
+	if decimal.Type != ArgNumber {
+		return decimal
+	}
+	newList.PushBack(decimal)
+	if argsList.Len() == 2 {
+		newList.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.dec2x("BIN2OCT", newList)
+}
+
+// bin2dec is an implementation of the formula function BIN2DEC.
+func (fn *formulaFuncs) bin2dec(number string) formulaArg {
+	decimal, length := 0.0, len(number)
+	for i := length; i > 0; i-- {
+		s := string(number[length-i])
+		if 10 == i && s == "1" {
+			decimal += math.Pow(-2.0, float64(i-1))
+			continue
+		}
+		if s == "1" {
+			decimal += math.Pow(2.0, float64(i-1))
+			continue
+		}
+		if s != "0" {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newNumberFormulaArg(decimal)
+}
+
 // BITAND function returns the bitwise 'AND' for two supplied integers. The
 // syntax of the function is:
 //
@@ -1263,21 +1365,38 @@ func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
 	}
 	maxLimitMap := map[string]float64{
 		"DEC2BIN": 511,
+		"HEX2BIN": 511,
+		"OCT2BIN": 511,
+		"BIN2HEX": 549755813887,
 		"DEC2HEX": 549755813887,
+		"OCT2HEX": 549755813887,
+		"BIN2OCT": 536870911,
 		"DEC2OCT": 536870911,
+		"HEX2OCT": 536870911,
 	}
 	minLimitMap := map[string]float64{
 		"DEC2BIN": -512,
+		"HEX2BIN": -512,
+		"OCT2BIN": -512,
+		"BIN2HEX": -549755813888,
 		"DEC2HEX": -549755813888,
+		"OCT2HEX": -549755813888,
+		"BIN2OCT": -536870912,
 		"DEC2OCT": -536870912,
+		"HEX2OCT": -536870912,
 	}
 	baseMap := map[string]int{
 		"DEC2BIN": 2,
+		"HEX2BIN": 2,
+		"OCT2BIN": 2,
+		"BIN2HEX": 16,
 		"DEC2HEX": 16,
+		"OCT2HEX": 16,
+		"BIN2OCT": 8,
 		"DEC2OCT": 8,
+		"HEX2OCT": 8,
 	}
-	maxLimit := maxLimitMap[name]
-	minLimit := minLimitMap[name]
+	maxLimit, minLimit := maxLimitMap[name], minLimitMap[name]
 	base := baseMap[name]
 	if decimal.Number < minLimit || decimal.Number > maxLimit {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -1299,6 +1418,162 @@ func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(strings.ToUpper(binary[len(binary)-10:]))
 	}
 	return newStringFormulaArg(strings.ToUpper(binary))
+}
+
+// HEX2BIN function converts a Hexadecimal (Base 16) number into a Binary
+// (Base 2) number. The syntax of the function is:
+//
+//    HEX2BIN(number,[places])
+//
+func (fn *formulaFuncs) HEX2BIN(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HEX2BIN requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HEX2BIN allows at most 2 arguments")
+	}
+	decimal, newList := fn.hex2dec(argsList.Front().Value.(formulaArg).Value()), list.New()
+	if decimal.Type != ArgNumber {
+		return decimal
+	}
+	newList.PushBack(decimal)
+	if argsList.Len() == 2 {
+		newList.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.dec2x("HEX2BIN", newList)
+}
+
+// HEX2DEC function converts a hexadecimal (a base-16 number) into a decimal
+// number. The syntax of the function is:
+//
+//    HEX2DEC(number)
+//
+func (fn *formulaFuncs) HEX2DEC(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HEX2DEC requires 1 numeric argument")
+	}
+	return fn.hex2dec(argsList.Front().Value.(formulaArg).Value())
+}
+
+// HEX2OCT function converts a Hexadecimal (Base 16) number into an Octal
+// (Base 8) number. The syntax of the function is:
+//
+//    HEX2OCT(number,[places])
+//
+func (fn *formulaFuncs) HEX2OCT(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HEX2OCT requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HEX2OCT allows at most 2 arguments")
+	}
+	decimal, newList := fn.hex2dec(argsList.Front().Value.(formulaArg).Value()), list.New()
+	if decimal.Type != ArgNumber {
+		return decimal
+	}
+	newList.PushBack(decimal)
+	if argsList.Len() == 2 {
+		newList.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.dec2x("HEX2OCT", newList)
+}
+
+// hex2dec is an implementation of the formula function HEX2DEC.
+func (fn *formulaFuncs) hex2dec(number string) formulaArg {
+	decimal, length := 0.0, len(number)
+	for i := length; i > 0; i-- {
+		num, err := strconv.ParseInt(string(number[length-i]), 16, 64)
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorNUM, err.Error())
+		}
+		if 10 == i && string(number[length-i]) == "F" {
+			decimal += math.Pow(-16.0, float64(i-1))
+			continue
+		}
+		decimal += float64(num) * math.Pow(16.0, float64(i-1))
+	}
+	return newNumberFormulaArg(decimal)
+}
+
+// OCT2BIN function converts an Octal (Base 8) number into a Binary (Base 2)
+// number. The syntax of the function is:
+//
+//    OCT2BIN(number,[places])
+//
+func (fn *formulaFuncs) OCT2BIN(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "OCT2BIN requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "OCT2BIN allows at most 2 arguments")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	decimal, newList := fn.oct2dec(token.Value()), list.New()
+	newList.PushBack(decimal)
+	if argsList.Len() == 2 {
+		newList.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.dec2x("OCT2BIN", newList)
+}
+
+// OCT2DEC function converts an Octal (a base-8 number) into a decimal number.
+// The syntax of the function is:
+//
+//    OCT2DEC(number)
+//
+func (fn *formulaFuncs) OCT2DEC(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "OCT2DEC requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	return fn.oct2dec(token.Value())
+}
+
+// OCT2HEX function converts an Octal (Base 8) number into a Hexadecimal
+// (Base 16) number. The syntax of the function is:
+//
+//    OCT2HEX(number,[places])
+//
+func (fn *formulaFuncs) OCT2HEX(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "OCT2HEX requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "OCT2HEX allows at most 2 arguments")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	decimal, newList := fn.oct2dec(token.Value()), list.New()
+	newList.PushBack(decimal)
+	if argsList.Len() == 2 {
+		newList.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.dec2x("OCT2HEX", newList)
+}
+
+// oct2dec is an implementation of the formula function OCT2DEC.
+func (fn *formulaFuncs) oct2dec(number string) formulaArg {
+	decimal, length := 0.0, len(number)
+	for i := length; i > 0; i-- {
+		num, _ := strconv.Atoi(string(number[length-i]))
+		if 10 == i && string(number[length-i]) == "7" {
+			decimal += math.Pow(-8.0, float64(i-1))
+			continue
+		}
+		decimal += float64(num) * math.Pow(8.0, float64(i-1))
+	}
+	return newNumberFormulaArg(decimal)
 }
 
 // Math and Trigonometric Functions
