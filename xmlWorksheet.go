@@ -462,9 +462,10 @@ type xlsxC struct {
 	R        string   `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
 	S        int      `xml:"s,attr,omitempty"` // Style reference.
 	// Str string `xml:"str,attr,omitempty"` // Style reference.
-	T  string  `xml:"t,attr,omitempty"` // Type.
-	F  *xlsxF  `xml:"f,omitempty"`      // Formula
-	V  string  `xml:"v,omitempty"`      // Value
+	T  string  `xml:"t,attr,omitempty"`  // Type.
+	T2 string  `xml:"t2,attr,omitempty"` // Type2. (richtext)
+	F  *xlsxF  `xml:"f,omitempty"`       // Formula
+	V  string  `xml:"v,omitempty"`       // Value
 	IS *xlsxSI `xml:"is"`
 }
 

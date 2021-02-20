@@ -318,12 +318,24 @@ func TestSetCellRichText2(t *testing.T) {
 			},
 		},
 	}
+	richTextRun2 := []RichTextRun{
+		{
+			Text: "test",
+			Font: &Font{
+				Bold:   true,
+				Color:  "2354e8",
+				Family: "Times New Roman",
+			},
+		},
+	}
+	f.SetCellValue("Sheet1", "A1", "")
 	f.SetCellRichText("Sheet1", "A1", richTextRun)
-	f.SetCellRichText("Sheet1", "A1", richTextRun)
-
-	for i := 0; i < 100; i++ {
+	f.SetCellRichText("Sheet1", "A1", richTextRun2)
+	f2.SetCellValue("Sheet1", "A1", "")
+	for i := 0; i < 10; i++ {
 		f2.SetCellRichText("Sheet1", "A1", richTextRun)
 	}
+	f2.SetCellRichText("Sheet1", "A1", richTextRun2)
 
 	fileOne := filepath.Join("test", "TestSetCellRichText2.one.xlsx")
 	f.SaveAs(fileOne)
@@ -335,8 +347,8 @@ func TestSetCellRichText2(t *testing.T) {
 
 	assert.Equal(t, statOne.Size(), statMultipl.Size())
 
-	assert.Equal(t, 1, f.sharedStringsReader().Count)
-	assert.Equal(t, 1, f2.sharedStringsReader().Count)
+	assert.Equal(t, 2, f.sharedStringsReader().Count)
+	assert.Equal(t, 2, f2.sharedStringsReader().Count)
 }
 
 func TestFormattedValue2(t *testing.T) {
