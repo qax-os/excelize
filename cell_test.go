@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -301,6 +302,37 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
+func TestSetCellRichText2(t *testing.T) {
+	f := NewFile()
+	f2 := NewFile()
+
+	richTextRun := []RichTextRun{
+		{
+			Text: "bold",
+			Font: &Font{
+				Bold:   true,
+				Color:  "2354e8",
+				Family: "Times New Roman",
+			},
+		},
+	}
+	f.SetCellRichText("Sheet1", "A1", richTextRun)
+
+	for i := 0; i < 100; i++ {
+		f2.SetCellRichText("Sheet1", "A1", richTextRun)
+	}
+
+	fileOne := filepath.Join("test", "TestSetCellRichText2.one.xlsx")
+	f.SaveAs(fileOne)
+	fileMultipl := filepath.Join("test", "TestSetCellRichText2.multipl.xlsx")
+	f2.SaveAs(fileMultipl)
+
+	statOne, _ := os.Stat(fileOne)
+	statMultipl, _ := os.Stat(fileMultipl)
+
+	assert.Equal(t, statOne.Size(), statMultipl.Size())
 }
 
 func TestFormattedValue2(t *testing.T) {

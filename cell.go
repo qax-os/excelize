@@ -645,10 +645,19 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		textRuns = append(textRuns, run)
 	}
 	si.R = textRuns
-	sst.SI = append(sst.SI, si)
-	sst.Count++
-	sst.UniqueCount++
-	cellData.T, cellData.V = "s", strconv.Itoa(len(sst.SI)-1)
+	if cellData.V == "" {
+		sst.SI = append(sst.SI, si)
+		sst.Count++
+		sst.UniqueCount++
+		cellData.T, cellData.V = "s", strconv.Itoa(len(sst.SI)-1)
+	} else {
+		siIndex, err := strconv.Atoi(cellData.V)
+		if nil != err {
+			return err
+		}
+
+		sst.SI[siIndex] = si
+	}
 	return err
 }
 
