@@ -237,13 +237,13 @@ func TestGetCellRichText(t *testing.T) {
 				Color:     "ff0000",
 				Bold:      true,
 				Italic:    true,
-				Family:    "宋体",
+				Family:    "Times New Roman",
 				Size:      100,
 				Strike:    true,
 			},
 		},
 	}
-	f.SetCellRichText("Sheet1", "A1", runsSource)
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", runsSource))
 
 	runs, err := f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
@@ -255,12 +255,26 @@ func TestGetCellRichText(t *testing.T) {
 	runsSource[1].Font.Color = strings.ToUpper(runsSource[1].Font.Color)
 	assert.True(t, reflect.DeepEqual(runsSource[1].Font, runs[1].Font), "should get the same font")
 
+	// Test get cell rich text when string item index overflow
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetData.Row[0].C[0].V = "2"
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(runs))
+	// Test get cell rich text when string item index is negative
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetData.Row[0].C[0].V = "-1"
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(runs))
+	// Test get cell rich text on invalid string item index
+	f.Sheet["xl/worksheets/sheet1.xml"].SheetData.Row[0].C[0].V = "x"
+	_, err = f.GetCellRichText("Sheet1", "A1")
+	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
 	// Test set cell rich text on not exists worksheet
-	_, e1 := f.GetCellRichText("SheetN", "A1")
-	assert.EqualError(t, e1, "sheet SheetN is not exist")
+	_, err = f.GetCellRichText("SheetN", "A1")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
-	_, e2 := f.GetCellRichText("Sheet1", "A")
-	assert.EqualError(t, e2, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	_, err = f.GetCellRichText("Sheet1", "A")
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 func TestSetCellRichText(t *testing.T) {
 	f := NewFile()

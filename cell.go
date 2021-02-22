@@ -505,41 +505,38 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 	if err != nil {
 		return
 	}
-
-	siIndex, err := strconv.Atoi(cellData.V)
+	siIdx, err := strconv.Atoi(cellData.V)
 	if nil != err {
 		return
 	}
-
 	sst := f.sharedStringsReader()
-	a := sst.SI[siIndex]
-	for _, v := range a.R {
+	if len(sst.SI) <= siIdx || siIdx < 0 {
+		return
+	}
+	si := sst.SI[siIdx]
+	for _, v := range si.R {
 		run := RichTextRun{
 			Text: v.T.Val,
 		}
 		if nil != v.RPr {
 			font := Font{}
-			font.Bold = v.RPr.B == " "
-			font.Italic = v.RPr.I == " "
+			font.Bold = v.RPr.B != nil
+			font.Italic = v.RPr.I != nil
 			if nil != v.RPr.U {
 				font.Underline = *v.RPr.U.Val
 			}
-
 			if nil != v.RPr.RFont {
 				font.Family = *v.RPr.RFont.Val
 			}
-
 			if nil != v.RPr.Sz {
 				font.Size = *v.RPr.Sz.Val
 			}
-
-			font.Strike = v.RPr.Strike == " "
+			font.Strike = v.RPr.Strike != nil
 			if nil != v.RPr.Color {
 				font.Color = strings.TrimPrefix(v.RPr.Color.RGB, "FF")
 			}
 			run.Font = &font
 		}
-
 		runs = append(runs, run)
 	}
 	return
@@ -670,14 +667,15 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		fnt := textRun.Font
 		if fnt != nil {
 			rpr := xlsxRPr{}
+			trueVal := ""
 			if fnt.Bold {
-				rpr.B = " "
+				rpr.B = &trueVal
 			}
 			if fnt.Italic {
-				rpr.I = " "
+				rpr.I = &trueVal
 			}
 			if fnt.Strike {
-				rpr.Strike = " "
+				rpr.Strike = &trueVal
 			}
 			if fnt.Underline != "" {
 				rpr.U = &attrValString{Val: &fnt.Underline}
