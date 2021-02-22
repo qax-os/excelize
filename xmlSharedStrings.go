@@ -86,13 +86,13 @@ type xlsxRPr struct {
 	RFont     *attrValString `xml:"rFont"`
 	Charset   *attrValInt    `xml:"charset"`
 	Family    *attrValInt    `xml:"family"`
-	B         string         `xml:"b,omitempty"`
-	I         string         `xml:"i,omitempty"`
-	Strike    string         `xml:"strike,omitempty"`
-	Outline   string         `xml:"outline,omitempty"`
-	Shadow    string         `xml:"shadow,omitempty"`
-	Condense  string         `xml:"condense,omitempty"`
-	Extend    string         `xml:"extend,omitempty"`
+	B         *string        `xml:"b"`
+	I         *string        `xml:"i"`
+	Strike    *string        `xml:"strike"`
+	Outline   *string        `xml:"outline"`
+	Shadow    *string        `xml:"shadow"`
+	Condense  *string        `xml:"condense"`
+	Extend    *string        `xml:"extend"`
 	Color     *xlsxColor     `xml:"color"`
 	Sz        *attrValFloat  `xml:"sz"`
 	U         *attrValString `xml:"u"`
