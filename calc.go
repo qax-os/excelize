@@ -288,6 +288,8 @@ var tokenPriority = map[string]int{
 //    ISO.CEILING
 //    KURT
 //    LCM
+//    LEFT
+//    LEFTB
 //    LEN
 //    LENB
 //    LN
@@ -321,6 +323,8 @@ var tokenPriority = map[string]int{
 //    RAND
 //    RANDBETWEEN
 //    REPT
+//    RIGHT
+//    RIGHTB
 //    ROMAN
 //    ROUND
 //    ROUNDDOWN
@@ -4635,6 +4639,54 @@ func (fn *formulaFuncs) EXACT(argsList *list.List) formulaArg {
 	return newBoolFormulaArg(text1 == text2)
 }
 
+// LEFT function returns a specified number of characters from the start of a
+// supplied text string. The syntax of the function is:
+//
+//    LEFT(text,[num_chars])
+//
+func (fn *formulaFuncs) LEFT(argsList *list.List) formulaArg {
+	return fn.leftRight("LEFT", argsList)
+}
+
+// LEFTB returns the first character or characters in a text string, based on
+// the number of bytes you specify. The syntax of the function is:
+//
+//    LEFTB(text,[num_bytes])
+//
+func (fn *formulaFuncs) LEFTB(argsList *list.List) formulaArg {
+	return fn.leftRight("LEFTB", argsList)
+}
+
+// leftRight is an implementation of the formula function LEFT, LEFTB, RIGHT,
+// RIGHTB. TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
+// (Traditional), and Korean.
+func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 2 arguments", name))
+	}
+	text, numChars := argsList.Front().Value.(formulaArg).Value(), 1
+	if argsList.Len() == 2 {
+		numArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if numArg.Type != ArgNumber {
+			return numArg
+		}
+		if numArg.Number < 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		numChars = int(numArg.Number)
+	}
+	if len(text) > numChars {
+		if name == "LEFT" || name == "LEFTB" {
+			return newStringFormulaArg(text[:numChars])
+		}
+		return newStringFormulaArg(text[len(text)-numChars:])
+	}
+	return newStringFormulaArg(text)
+}
+
 // LEN returns the length of a supplied text string. The syntax of the
 // function is:
 //
@@ -4740,6 +4792,24 @@ func (fn *formulaFuncs) REPT(argsList *list.List) formulaArg {
 		buf.WriteString(text.String)
 	}
 	return newStringFormulaArg(buf.String())
+}
+
+// RIGHT function returns a specified number of characters from the end of a
+// supplied text string. The syntax of the function is:
+//
+//    RIGHT(text,[num_chars])
+//
+func (fn *formulaFuncs) RIGHT(argsList *list.List) formulaArg {
+	return fn.leftRight("RIGHT", argsList)
+}
+
+// RIGHTB returns the last character or characters in a text string, based on
+// the number of bytes you specify. The syntax of the function is:
+//
+//    RIGHTB(text,[num_bytes])
+//
+func (fn *formulaFuncs) RIGHTB(argsList *list.List) formulaArg {
+	return fn.leftRight("RIGHTB", argsList)
 }
 
 // UPPER converts all characters in a supplied text string to upper case. The

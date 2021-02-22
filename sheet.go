@@ -1762,6 +1762,7 @@ func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
 	fillColumns(rowData, col, row)
 }
 
+// fillColumns fill cells in the column of the row as contiguous.
 func fillColumns(rowData *xlsxRow, col, row int) {
 	cellCount := len(rowData.C)
 	if cellCount < col {
@@ -1772,6 +1773,7 @@ func fillColumns(rowData *xlsxRow, col, row int) {
 	}
 }
 
+// makeContiguousColumns make columns in specific rows as contiguous.
 func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
 	for ; fromRow < toRow; fromRow++ {
 		rowData := &ws.SheetData.Row[fromRow-1]

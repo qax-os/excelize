@@ -522,13 +522,13 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 			font := Font{}
 			font.Bold = v.RPr.B != nil
 			font.Italic = v.RPr.I != nil
-			if nil != v.RPr.U {
+			if v.RPr.U != nil && v.RPr.U.Val != nil {
 				font.Underline = *v.RPr.U.Val
 			}
-			if nil != v.RPr.RFont {
+			if v.RPr.RFont != nil && v.RPr.RFont.Val != nil {
 				font.Family = *v.RPr.RFont.Val
 			}
-			if nil != v.RPr.Sz {
+			if v.RPr.Sz != nil && v.RPr.Sz.Val != nil {
 				font.Size = *v.RPr.Sz.Val
 			}
 			font.Strike = v.RPr.Strike != nil

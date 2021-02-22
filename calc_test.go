@@ -723,6 +723,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXACT(1,\"1\")":     "TRUE",
 		"=EXACT(1,1)":         "TRUE",
 		"=EXACT(\"A\",\"a\")": "FALSE",
+		// LEFT
+		"=LEFT(\"Original Text\")":    "O",
+		"=LEFT(\"Original Text\",4)":  "Orig",
+		"=LEFT(\"Original Text\",0)":  "",
+		"=LEFT(\"Original Text\",13)": "Original Text",
+		"=LEFT(\"Original Text\",20)": "Original Text",
+		// LEFTB
+		"=LEFTB(\"Original Text\")":    "O",
+		"=LEFTB(\"Original Text\",4)":  "Orig",
+		"=LEFTB(\"Original Text\",0)":  "",
+		"=LEFTB(\"Original Text\",13)": "Original Text",
+		"=LEFTB(\"Original Text\",20)": "Original Text",
 		// LEN
 		"=LEN(\"\")": "0",
 		"=LEN(D1)":   "5",
@@ -746,6 +758,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=REPT(\"*\",0)":  "",
 		"=REPT(\"*\",1)":  "*",
 		"=REPT(\"**\",2)": "****",
+		// RIGHT
+		"=RIGHT(\"Original Text\")":    "t",
+		"=RIGHT(\"Original Text\",4)":  "Text",
+		"=RIGHT(\"Original Text\",0)":  "",
+		"=RIGHT(\"Original Text\",13)": "Original Text",
+		"=RIGHT(\"Original Text\",20)": "Original Text",
+		// RIGHTB
+		"=RIGHTB(\"Original Text\")":    "t",
+		"=RIGHTB(\"Original Text\",4)":  "Text",
+		"=RIGHTB(\"Original Text\",0)":  "",
+		"=RIGHTB(\"Original Text\",13)": "Original Text",
+		"=RIGHTB(\"Original Text\",20)": "Original Text",
 		// UPPER
 		"=UPPER(\"test\")":     "TEST",
 		"=UPPER(\"TEST\")":     "TEST",
@@ -1308,6 +1332,16 @@ func TestCalcCellValue(t *testing.T) {
 		// EXACT
 		"=EXACT()":      "EXACT requires 2 arguments",
 		"=EXACT(1,2,3)": "EXACT requires 2 arguments",
+		// LEFT
+		"=LEFT()":          "LEFT requires at least 1 argument",
+		"=LEFT(\"\",2,3)":  "LEFT allows at most 2 arguments",
+		"=LEFT(\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LEFT(\"\",-1)":   "#VALUE!",
+		// LEFTB
+		"=LEFTB()":          "LEFTB requires at least 1 argument",
+		"=LEFTB(\"\",2,3)":  "LEFTB allows at most 2 arguments",
+		"=LEFTB(\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LEFTB(\"\",-1)":   "#VALUE!",
 		// LEN
 		"=LEN()": "LEN requires 1 string argument",
 		// LENB
@@ -1329,6 +1363,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=REPT(INT(0),2)":    "REPT requires first argument to be a string",
 		"=REPT(\"*\",\"*\")": "REPT requires second argument to be a number",
 		"=REPT(\"*\",-1)":    "REPT requires second argument to be >= 0",
+		// RIGHT
+		"=RIGHT()":          "RIGHT requires at least 1 argument",
+		"=RIGHT(\"\",2,3)":  "RIGHT allows at most 2 arguments",
+		"=RIGHT(\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RIGHT(\"\",-1)":   "#VALUE!",
+		// RIGHTB
+		"=RIGHTB()":          "RIGHTB requires at least 1 argument",
+		"=RIGHTB(\"\",2,3)":  "RIGHTB allows at most 2 arguments",
+		"=RIGHTB(\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RIGHTB(\"\",-1)":   "#VALUE!",
 		// Conditional Functions
 		// IF
 		"=IF()":        "IF requires at least 1 argument",
