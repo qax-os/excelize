@@ -3,7 +3,9 @@ package excelize
 import (
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -221,7 +223,45 @@ func TestOverflowNumericCell(t *testing.T) {
 	// GOARCH=amd64 - all ok; GOARCH=386 - actual: "-2147483648"
 	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
 }
+func TestGetCellRichText(t *testing.T) {
+	f := NewFile()
 
+	runsSource := []RichTextRun{
+		{
+			Text: "a\n",
+		},
+		{
+			Text: "b",
+			Font: &Font{
+				Underline: "single",
+				Color:     "ff0000",
+				Bold:      true,
+				Italic:    true,
+				Family:    "宋体",
+				Size:      100,
+				Strike:    true,
+			},
+		},
+	}
+	f.SetCellRichText("Sheet1", "A1", runsSource)
+
+	runs, err := f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+
+	assert.Equal(t, runsSource[0].Text, runs[0].Text)
+	assert.Nil(t, runs[0].Font)
+	assert.NotNil(t, runs[1].Font)
+
+	runsSource[1].Font.Color = strings.ToUpper(runsSource[1].Font.Color)
+	assert.True(t, reflect.DeepEqual(runsSource[1].Font, runs[1].Font), "should get the same font")
+
+	// Test set cell rich text on not exists worksheet
+	_, e1 := f.GetCellRichText("SheetN", "A1")
+	assert.EqualError(t, e1, "sheet SheetN is not exist")
+	// Test set cell rich text with illegal cell coordinates
+	_, e2 := f.GetCellRichText("Sheet1", "A")
+	assert.EqualError(t, e2, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
 func TestSetCellRichText(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))
