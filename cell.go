@@ -519,11 +519,14 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 			Text: v.T.Val,
 		}
 		if nil != v.RPr {
-			font := Font{}
+			font := Font{Underline: "none"}
 			font.Bold = v.RPr.B != nil
 			font.Italic = v.RPr.I != nil
-			if v.RPr.U != nil && v.RPr.U.Val != nil {
-				font.Underline = *v.RPr.U.Val
+			if v.RPr.U != nil {
+				font.Underline = "single"
+				if v.RPr.U.Val != nil {
+					font.Underline = *v.RPr.U.Val
+				}
 			}
 			if v.RPr.RFont != nil && v.RPr.RFont.Val != nil {
 				font.Family = *v.RPr.RFont.Val

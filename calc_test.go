@@ -715,6 +715,12 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN(\"\u0009clean text\")": "clean text",
 		"=CLEAN(0)":                    "0",
+		// CODE
+		"=CODE(\"Alpha\")": "65",
+		"=CODE(\"alpha\")": "97",
+		"=CODE(\"?\")":     "63",
+		"=CODE(\"3\")":     "51",
+		"=CODE(\"\")":      "0",
 		// CONCAT
 		"=CONCAT(TRUE(),1,FALSE(),\"0\",INT(2))": "TRUE1FALSE02",
 		// CONCATENATE
@@ -723,6 +729,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXACT(1,\"1\")":     "TRUE",
 		"=EXACT(1,1)":         "TRUE",
 		"=EXACT(\"A\",\"a\")": "FALSE",
+		// FIND
+		"=FIND(\"T\",\"Original Text\")":   "10",
+		"=FIND(\"t\",\"Original Text\")":   "13",
+		"=FIND(\"i\",\"Original Text\")":   "3",
+		"=FIND(\"i\",\"Original Text\",4)": "5",
+		"=FIND(\"\",\"Original Text\")":    "1",
+		"=FIND(\"\",\"Original Text\",2)":  "2",
+		// FINDB
+		"=FINDB(\"T\",\"Original Text\")":   "10",
+		"=FINDB(\"t\",\"Original Text\")":   "13",
+		"=FINDB(\"i\",\"Original Text\")":   "3",
+		"=FINDB(\"i\",\"Original Text\",4)": "5",
+		"=FINDB(\"\",\"Original Text\")":    "1",
+		"=FINDB(\"\",\"Original Text\",2)":  "2",
 		// LEFT
 		"=LEFT(\"Original Text\")":    "O",
 		"=LEFT(\"Original Text\",4)":  "Orig",
@@ -786,6 +806,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
 		"=CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
 		"=SUM(CHOOSE(A2,A1,B1:B2,A1:A3,A1:A4))":           "9",
+		// COLUMN
+		"=COLUMN()":                "3",
+		"=COLUMN(Sheet1!A1)":       "1",
+		"=COLUMN(Sheet1!A1:B1:C1)": "1",
+		"=COLUMN(Sheet1!F1:G1)":    "6",
+		"=COLUMN(H1)":              "8",
 		// HLOOKUP
 		"=HLOOKUP(D2,D2:D8,1,FALSE)":          "Jan",
 		"=HLOOKUP(F3,F3:F8,3,FALSE)":          "34440",
@@ -1325,6 +1351,9 @@ func TestCalcCellValue(t *testing.T) {
 		// CLEAN
 		"=CLEAN()":    "CLEAN requires 1 argument",
 		"=CLEAN(1,2)": "CLEAN requires 1 argument",
+		// CODE
+		"=CODE()":    "CODE requires 1 argument",
+		"=CODE(1,2)": "CODE requires 1 argument",
 		// CONCAT
 		"=CONCAT(MUNIT(2))": "CONCAT requires arguments to be strings",
 		// CONCATENATE
@@ -1332,6 +1361,18 @@ func TestCalcCellValue(t *testing.T) {
 		// EXACT
 		"=EXACT()":      "EXACT requires 2 arguments",
 		"=EXACT(1,2,3)": "EXACT requires 2 arguments",
+		// FIND
+		"=FIND()":                 "FIND requires at least 2 arguments",
+		"=FIND(1,2,3,4)":          "FIND allows at most 3 arguments",
+		"=FIND(\"x\",\"\")":       "#VALUE!",
+		"=FIND(\"x\",\"x\",-1)":   "#VALUE!",
+		"=FIND(\"x\",\"x\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// FINDB
+		"=FINDB()":                 "FINDB requires at least 2 arguments",
+		"=FINDB(1,2,3,4)":          "FINDB allows at most 3 arguments",
+		"=FINDB(\"x\",\"\")":       "#VALUE!",
+		"=FINDB(\"x\",\"x\",-1)":   "#VALUE!",
+		"=FINDB(\"x\",\"x\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// LEFT
 		"=LEFT()":          "LEFT requires at least 1 argument",
 		"=LEFT(\"\",2,3)":  "LEFT allows at most 2 arguments",
@@ -1383,6 +1424,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE()":                "CHOOSE requires 2 arguments",
 		"=CHOOSE(\"index_num\",0)": "CHOOSE requires first argument of type number",
 		"=CHOOSE(2,0)":             "index_num should be <= to the number of values",
+		// COLUMN
+		"=COLUMN(1,2)":          "COLUMN requires at most 1 argument",
+		"=COLUMN(\"\")":         "invalid reference",
+		"=COLUMN(Sheet1)":       "invalid column name \"Sheet1\"",
+		"=COLUMN(Sheet1!A1!B1)": "invalid column name \"Sheet1\"",
 		// HLOOKUP
 		"=HLOOKUP()":                     "HLOOKUP requires at least 3 arguments",
 		"=HLOOKUP(D2,D1,1,FALSE)":        "HLOOKUP requires second argument of table array",

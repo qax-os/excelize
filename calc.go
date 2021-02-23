@@ -101,14 +101,15 @@ const (
 
 // formulaArg is the argument of a formula or function.
 type formulaArg struct {
-	SheetName string
-	Number    float64
-	String    string
-	List      []formulaArg
-	Matrix    [][]formulaArg
-	Boolean   bool
-	Error     string
-	Type      ArgType
+	SheetName            string
+	Number               float64
+	String               string
+	List                 []formulaArg
+	Matrix               [][]formulaArg
+	Boolean              bool
+	Error                string
+	Type                 ArgType
+	cellRefs, cellRanges *list.List
 }
 
 // Value returns a string data type of the formula argument.
@@ -181,8 +182,8 @@ func (fa formulaArg) ToList() []formulaArg {
 
 // formulaFuncs is the type of the formula functions.
 type formulaFuncs struct {
-	f     *File
-	sheet string
+	f           *File
+	sheet, cell string
 }
 
 // tokenPriority defined basic arithmetic operator priority.
@@ -235,6 +236,8 @@ var tokenPriority = map[string]int{
 //    CEILING.PRECISE
 //    CHOOSE
 //    CLEAN
+//    CODE
+//    COLUMN
 //    COMBIN
 //    COMBINA
 //    CONCAT
@@ -261,6 +264,8 @@ var tokenPriority = map[string]int{
 //    FACT
 //    FACTDOUBLE
 //    FALSE
+//    FIND
+//    FINDB
 //    FISHER
 //    FISHERINV
 //    FLOOR
@@ -363,7 +368,7 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	if tokens == nil {
 		return
 	}
-	if token, err = f.evalInfixExp(sheet, tokens); err != nil {
+	if token, err = f.evalInfixExp(sheet, cell, tokens); err != nil {
 		return
 	}
 	result = token.TValue
@@ -446,7 +451,7 @@ func newEmptyFormulaArg() formulaArg {
 //
 // TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 //
-func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error) {
+func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, error) {
 	var err error
 	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
 	for i := 0; i < len(tokens); i++ {
@@ -537,7 +542,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
 				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
 			}
-			if err = f.evalInfixExpFunc(sheet, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
+			if err = f.evalInfixExpFunc(sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
 				return efp.Token{}, err
 			}
 		}
@@ -556,7 +561,7 @@ func (f *File) evalInfixExp(sheet string, tokens []efp.Token) (efp.Token, error)
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
-func (f *File) evalInfixExpFunc(sheet string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
+func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
 	if !isFunctionStopToken(token) {
 		return nil
 	}
@@ -575,7 +580,7 @@ func (f *File) evalInfixExpFunc(sheet string, token, nextToken efp.Token, opfSta
 		argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
 	}
 	// call formula function to evaluate
-	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet}, strings.NewReplacer(
+	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell}, strings.NewReplacer(
 		"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
@@ -1007,6 +1012,7 @@ func prepareValueRef(cr cellRef, valueRange []int) {
 // This function will not ignore the empty cell. For example, A1:A2:A2:B3 will
 // be reference A1:B3.
 func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, err error) {
+	arg.cellRefs, arg.cellRanges = cellRefs, cellRanges
 	// value range order: from row, to row, from column, to column
 	valueRange := []int{0, 0, 0, 0}
 	var sheet string
@@ -4581,6 +4587,23 @@ func (fn *formulaFuncs) CLEAN(argsList *list.List) formulaArg {
 	return newStringFormulaArg(b.String())
 }
 
+// CODE function converts the first character of a supplied text string into
+// the associated numeric character set code used by your computer. The
+// syntax of the function is:
+//
+//    CODE(text)
+//
+func (fn *formulaFuncs) CODE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CODE requires 1 argument")
+	}
+	text := argsList.Front().Value.(formulaArg).Value()
+	if len(text) == 0 {
+		return newNumberFormulaArg(0)
+	}
+	return newNumberFormulaArg(float64(text[0]))
+}
+
 // CONCAT function joins together a series of supplied text strings into one
 // combined text string.
 //
@@ -4637,6 +4660,63 @@ func (fn *formulaFuncs) EXACT(argsList *list.List) formulaArg {
 	text1 := argsList.Front().Value.(formulaArg).Value()
 	text2 := argsList.Back().Value.(formulaArg).Value()
 	return newBoolFormulaArg(text1 == text2)
+}
+
+// FIND function returns the position of a specified character or sub-string
+// within a supplied text string. The function is case-sensitive. The syntax
+// of the function is:
+//
+//    FIND(find_text,within_text,[start_num])
+//
+func (fn *formulaFuncs) FIND(argsList *list.List) formulaArg {
+	return fn.find("FIND", argsList)
+}
+
+// FINDB counts each double-byte character as 2 when you have enabled the
+// editing of a language that supports DBCS and then set it as the default
+// language. Otherwise, FINDB counts each character as 1. The syntax of the
+// function is:
+//
+//    FINDB(find_text,within_text,[start_num])
+//
+func (fn *formulaFuncs) FINDB(argsList *list.List) formulaArg {
+	return fn.find("FINDB", argsList)
+}
+
+// find is an implementation of the formula function FIND and FINDB.
+func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 3 arguments", name))
+	}
+	findText := argsList.Front().Value.(formulaArg).Value()
+	withinText := argsList.Front().Next().Value.(formulaArg).Value()
+	startNum, result := 1, 1
+	if argsList.Len() == 3 {
+		numArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if numArg.Type != ArgNumber {
+			return numArg
+		}
+		if numArg.Number < 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		startNum = int(numArg.Number)
+	}
+	if findText == "" {
+		return newNumberFormulaArg(float64(startNum))
+	}
+	for idx := range withinText {
+		if result < startNum {
+			result++
+		}
+		if strings.Index(withinText[idx:], findText) == 0 {
+			return newNumberFormulaArg(float64(result))
+		}
+		result++
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 }
 
 // LEFT function returns a specified number of characters from the start of a
@@ -5029,6 +5109,28 @@ func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool
 		}
 	}
 	return criteriaEq
+}
+
+// COLUMN function returns the first column number within a supplied reference
+// or the number of the current column. The syntax of the function is:
+//
+//    COLUMN([reference])
+//
+func (fn *formulaFuncs) COLUMN(argsList *list.List) formulaArg {
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COLUMN requires at most 1 argument")
+	}
+	if argsList.Len() == 1 {
+		if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
+			return newNumberFormulaArg(float64(argsList.Front().Value.(formulaArg).cellRanges.Front().Value.(cellRange).From.Col))
+		}
+		if argsList.Front().Value.(formulaArg).cellRefs != nil && argsList.Front().Value.(formulaArg).cellRefs.Len() > 0 {
+			return newNumberFormulaArg(float64(argsList.Front().Value.(formulaArg).cellRefs.Front().Value.(cellRef).Col))
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, "invalid reference")
+	}
+	col, _, _ := CellNameToCoordinates(fn.cell)
+	return newNumberFormulaArg(float64(col))
 }
 
 // HLOOKUP function 'looks up' a given value in the top row of a data array
