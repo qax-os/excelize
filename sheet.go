@@ -157,6 +157,9 @@ func (f *File) workSheetWriter() {
 			for k, v := range sheet.SheetData.Row {
 				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
 			}
+			if sheet.SheetPr != nil || sheet.Drawing != nil || sheet.Hyperlinks != nil || sheet.Picture != nil || sheet.TableParts != nil {
+				f.addNameSpaces(p, SourceRelationship)
+			}
 			// reusing buffer
 			_ = encoder.Encode(sheet)
 			f.saveFileList(p, replaceRelationshipsBytes(f.replaceNameSpaceBytes(p, buffer.Bytes())))
@@ -455,7 +458,11 @@ func (f *File) getSheetMap() map[string]string {
 				// path, compatible with different types of relative paths in
 				// workbook.xml.rels, for example: worksheets/sheet%d.xml
 				// and /xl/worksheets/sheet%d.xml
-				path := filepath.ToSlash(strings.TrimPrefix(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), rel.Target)), "/"))
+				path := filepath.ToSlash(strings.TrimPrefix(
+					strings.Replace(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), rel.Target)), "\\", "/", -1), "/"))
+				if strings.HasPrefix(rel.Target, "/") {
+					path = filepath.ToSlash(strings.TrimPrefix(strings.Replace(filepath.Clean(rel.Target), "\\", "/", -1), "/"))
+				}
 				if _, ok := f.XLSX[path]; ok {
 					maps[v.Name] = path
 				}

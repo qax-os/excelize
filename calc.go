@@ -234,10 +234,12 @@ var tokenPriority = map[string]int{
 //    CEILING
 //    CEILING.MATH
 //    CEILING.PRECISE
+//    CHAR
 //    CHOOSE
 //    CLEAN
 //    CODE
 //    COLUMN
+//    COLUMNS
 //    COMBIN
 //    COMBINA
 //    CONCAT
@@ -305,6 +307,8 @@ var tokenPriority = map[string]int{
 //    MAX
 //    MDETERM
 //    MEDIAN
+//    MID
+//    MIDB
 //    MIN
 //    MINA
 //    MOD
@@ -327,6 +331,8 @@ var tokenPriority = map[string]int{
 //    RADIANS
 //    RAND
 //    RANDBETWEEN
+//    REPLACE
+//    REPLACEB
 //    REPT
 //    RIGHT
 //    RIGHTB
@@ -334,6 +340,8 @@ var tokenPriority = map[string]int{
 //    ROUND
 //    ROUNDDOWN
 //    ROUNDUP
+//    ROW
+//    ROWS
 //    SEC
 //    SECH
 //    SHEET
@@ -352,6 +360,8 @@ var tokenPriority = map[string]int{
 //    TRIM
 //    TRUE
 //    TRUNC
+//    UNICHAR
+//    UNICODE
 //    UPPER
 //    VLOOKUP
 //
@@ -932,8 +942,17 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 		cr := cellRef{}
 		if len(tokens) == 2 { // have a worksheet name
 			cr.Sheet = tokens[0]
+			// cast to cell coordinates
 			if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[1]); err != nil {
-				return
+				// cast to column
+				if cr.Col, err = ColumnNameToNumber(tokens[1]); err != nil {
+					// cast to row
+					if cr.Row, err = strconv.Atoi(tokens[1]); err != nil {
+						err = newInvalidColumnNameError(tokens[1])
+						return
+					}
+					cr.Col = TotalColumns
+				}
 			}
 			if refs.Len() > 0 {
 				e := refs.Back()
@@ -943,9 +962,16 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 			refs.PushBack(cr)
 			continue
 		}
+		// cast to cell coordinates
 		if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[0]); err != nil {
+			// cast to column
 			if cr.Col, err = ColumnNameToNumber(tokens[0]); err != nil {
-				return
+				// cast to row
+				if cr.Row, err = strconv.Atoi(tokens[0]); err != nil {
+					err = newInvalidColumnNameError(tokens[0])
+					return
+				}
+				cr.Col = TotalColumns
 			}
 			cellRanges.PushBack(cellRange{
 				From: cellRef{Sheet: sheet, Col: cr.Col, Row: 1},
@@ -1329,7 +1355,7 @@ func (fn *formulaFuncs) bitwise(name string, argsList *list.List) formulaArg {
 		"BITRSHIFT": func(a, b int) int { return a >> uint(b) },
 		"BITXOR":    func(a, b int) int { return a ^ b },
 	}
-	bitwiseFunc, _ := bitwiseFuncMap[name]
+	bitwiseFunc := bitwiseFuncMap[name]
 	return newNumberFormulaArg(float64(bitwiseFunc(int(num1.Number), int(num2.Number))))
 }
 
@@ -4569,6 +4595,26 @@ func daysBetween(startDate, endDate int64) float64 {
 
 // Text Functions
 
+// CHAR function returns the character relating to a supplied character set
+// number (from 1 to 255). syntax of the function is:
+//
+//    CHAR(number)
+//
+func (fn *formulaFuncs) CHAR(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHAR requires 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type != ArgNumber {
+		return arg
+	}
+	num := int(arg.Number)
+	if num < 0 || num > 255 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newStringFormulaArg(fmt.Sprintf("%c", num))
+}
+
 // CLEAN removes all non-printable characters from a supplied text string. The
 // syntax of the function is:
 //
@@ -4594,12 +4640,20 @@ func (fn *formulaFuncs) CLEAN(argsList *list.List) formulaArg {
 //    CODE(text)
 //
 func (fn *formulaFuncs) CODE(argsList *list.List) formulaArg {
+	return fn.code("CODE", argsList)
+}
+
+// code is an implementation of the formula function CODE and UNICODE.
+func (fn *formulaFuncs) code(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "CODE requires 1 argument")
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 1 argument", name))
 	}
 	text := argsList.Front().Value.(formulaArg).Value()
 	if len(text) == 0 {
-		return newNumberFormulaArg(0)
+		if name == "CODE" {
+			return newNumberFormulaArg(0)
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	return newNumberFormulaArg(float64(text[0]))
 }
@@ -4795,19 +4849,6 @@ func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
 	return newStringFormulaArg(strconv.Itoa(len(argsList.Front().Value.(formulaArg).String)))
 }
 
-// TRIM removes extra spaces (i.e. all spaces except for single spaces between
-// words or characters) from a supplied text string. The syntax of the
-// function is:
-//
-//    TRIM(text)
-//
-func (fn *formulaFuncs) TRIM(argsList *list.List) formulaArg {
-	if argsList.Len() != 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "TRIM requires 1 argument")
-	}
-	return newStringFormulaArg(strings.TrimSpace(argsList.Front().Value.(formulaArg).String))
-}
-
 // LOWER converts all characters in a supplied text string to lower case. The
 // syntax of the function is:
 //
@@ -4818,6 +4859,56 @@ func (fn *formulaFuncs) LOWER(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOWER requires 1 argument")
 	}
 	return newStringFormulaArg(strings.ToLower(argsList.Front().Value.(formulaArg).String))
+}
+
+// MID function returns a specified number of characters from the middle of a
+// supplied text string. The syntax of the function is:
+//
+//    MID(text,start_num,num_chars)
+//
+func (fn *formulaFuncs) MID(argsList *list.List) formulaArg {
+	return fn.mid("MID", argsList)
+}
+
+// MIDB returns a specific number of characters from a text string, starting
+// at the position you specify, based on the number of bytes you specify. The
+// syntax of the function is:
+//
+//    MID(text,start_num,num_chars)
+//
+func (fn *formulaFuncs) MIDB(argsList *list.List) formulaArg {
+	return fn.mid("MIDB", argsList)
+}
+
+// mid is an implementation of the formula function MID and MIDB. TODO:
+// support DBCS include Japanese, Chinese (Simplified), Chinese
+// (Traditional), and Korean.
+func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
+	}
+	text := argsList.Front().Value.(formulaArg).Value()
+	startNumArg, numCharsArg := argsList.Front().Next().Value.(formulaArg).ToNumber(), argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if startNumArg.Type != ArgNumber {
+		return startNumArg
+	}
+	if numCharsArg.Type != ArgNumber {
+		return numCharsArg
+	}
+	startNum := int(startNumArg.Number)
+	if startNum < 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	textLen := len(text)
+	if startNum > textLen {
+		return newStringFormulaArg("")
+	}
+	startNum--
+	endNum := startNum + int(numCharsArg.Number)
+	if endNum > textLen+1 {
+		return newStringFormulaArg(text[startNum:])
+	}
+	return newStringFormulaArg(text[startNum:endNum])
 }
 
 // PROPER converts all characters in a supplied text string to proper case
@@ -4842,6 +4933,54 @@ func (fn *formulaFuncs) PROPER(argsList *list.List) formulaArg {
 		isLetter = unicode.IsLetter(char)
 	}
 	return newStringFormulaArg(buf.String())
+}
+
+// REPLACE function replaces all or part of a text string with another string.
+// The syntax of the function is:
+//
+//    REPLACE(old_text,start_num,num_chars,new_text)
+//
+func (fn *formulaFuncs) REPLACE(argsList *list.List) formulaArg {
+	return fn.replace("REPLACE", argsList)
+}
+
+// REPLACEB replaces part of a text string, based on the number of bytes you
+// specify, with a different text string.
+//
+//    REPLACEB(old_text,start_num,num_chars,new_text)
+//
+func (fn *formulaFuncs) REPLACEB(argsList *list.List) formulaArg {
+	return fn.replace("REPLACEB", argsList)
+}
+
+// replace is an implementation of the formula function REPLACE and REPLACEB.
+// TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
+// (Traditional), and Korean.
+func (fn *formulaFuncs) replace(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 4 arguments", name))
+	}
+	oldText, newText := argsList.Front().Value.(formulaArg).Value(), argsList.Back().Value.(formulaArg).Value()
+	startNumArg, numCharsArg := argsList.Front().Next().Value.(formulaArg).ToNumber(), argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if startNumArg.Type != ArgNumber {
+		return startNumArg
+	}
+	if numCharsArg.Type != ArgNumber {
+		return numCharsArg
+	}
+	oldTextLen, startIdx := len(oldText), int(startNumArg.Number)
+	if startIdx > oldTextLen {
+		startIdx = oldTextLen + 1
+	}
+	endIdx := startIdx + int(numCharsArg.Number)
+	if endIdx > oldTextLen {
+		endIdx = oldTextLen + 1
+	}
+	if startIdx < 1 || endIdx < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	result := oldText[:startIdx-1] + newText + oldText[endIdx-1:]
+	return newStringFormulaArg(result)
 }
 
 // REPT function returns a supplied text string, repeated a specified number
@@ -4890,6 +5029,47 @@ func (fn *formulaFuncs) RIGHT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) RIGHTB(argsList *list.List) formulaArg {
 	return fn.leftRight("RIGHTB", argsList)
+}
+
+// TRIM removes extra spaces (i.e. all spaces except for single spaces between
+// words or characters) from a supplied text string. The syntax of the
+// function is:
+//
+//    TRIM(text)
+//
+func (fn *formulaFuncs) TRIM(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TRIM requires 1 argument")
+	}
+	return newStringFormulaArg(strings.TrimSpace(argsList.Front().Value.(formulaArg).String))
+}
+
+// UNICHAR returns the Unicode character that is referenced by the given
+// numeric value. The syntax of the function is:
+//
+//    UNICHAR(number)
+//
+func (fn *formulaFuncs) UNICHAR(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "UNICHAR requires 1 argument")
+	}
+	numArg := argsList.Front().Value.(formulaArg).ToNumber()
+	if numArg.Type != ArgNumber {
+		return numArg
+	}
+	if numArg.Number <= 0 || numArg.Number > 55295 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newStringFormulaArg(string(rune(numArg.Number)))
+}
+
+// UNICODE function returns the code point for the first character of a
+// supplied text string. The syntax of the function is:
+//
+//    UNICODE(text)
+//
+func (fn *formulaFuncs) UNICODE(argsList *list.List) formulaArg {
+	return fn.code("UNICODE", argsList)
 }
 
 // UPPER converts all characters in a supplied text string to upper case. The
@@ -5131,6 +5311,63 @@ func (fn *formulaFuncs) COLUMN(argsList *list.List) formulaArg {
 	}
 	col, _, _ := CellNameToCoordinates(fn.cell)
 	return newNumberFormulaArg(float64(col))
+}
+
+// COLUMNS function receives an Excel range and returns the number of columns
+// that are contained within the range. The syntax of the function is:
+//
+//    COLUMNS(array)
+//
+func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COLUMNS requires 1 argument")
+	}
+	var min, max int
+	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
+		crs := argsList.Front().Value.(formulaArg).cellRanges
+		for cr := crs.Front(); cr != nil; cr = cr.Next() {
+			if min == 0 {
+				min = cr.Value.(cellRange).From.Col
+			}
+			if min > cr.Value.(cellRange).From.Col {
+				min = cr.Value.(cellRange).From.Col
+			}
+			if min > cr.Value.(cellRange).To.Col {
+				min = cr.Value.(cellRange).To.Col
+			}
+			if max < cr.Value.(cellRange).To.Col {
+				max = cr.Value.(cellRange).To.Col
+			}
+			if max < cr.Value.(cellRange).From.Col {
+				max = cr.Value.(cellRange).From.Col
+			}
+		}
+	}
+	if argsList.Front().Value.(formulaArg).cellRefs != nil && argsList.Front().Value.(formulaArg).cellRefs.Len() > 0 {
+		cr := argsList.Front().Value.(formulaArg).cellRefs
+		for refs := cr.Front(); refs != nil; refs = refs.Next() {
+			if min == 0 {
+				min = refs.Value.(cellRef).Col
+			}
+			if min > refs.Value.(cellRef).Col {
+				min = refs.Value.(cellRef).Col
+			}
+			if max < refs.Value.(cellRef).Col {
+				max = refs.Value.(cellRef).Col
+			}
+		}
+	}
+	if max == TotalColumns {
+		return newNumberFormulaArg(float64(TotalColumns))
+	}
+	result := max - min + 1
+	if max == min {
+		if min == 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, "invalid reference")
+		}
+		return newNumberFormulaArg(float64(1))
+	}
+	return newNumberFormulaArg(float64(result))
 }
 
 // HLOOKUP function 'looks up' a given value in the top row of a data array
@@ -5394,6 +5631,85 @@ func lookupCol(arr formulaArg) []formulaArg {
 		}
 	}
 	return col
+}
+
+// ROW function returns the first row number within a supplied reference or
+// the number of the current row. The syntax of the function is:
+//
+//    ROW([reference])
+//
+func (fn *formulaFuncs) ROW(argsList *list.List) formulaArg {
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ROW requires at most 1 argument")
+	}
+	if argsList.Len() == 1 {
+		if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
+			return newNumberFormulaArg(float64(argsList.Front().Value.(formulaArg).cellRanges.Front().Value.(cellRange).From.Row))
+		}
+		if argsList.Front().Value.(formulaArg).cellRefs != nil && argsList.Front().Value.(formulaArg).cellRefs.Len() > 0 {
+			return newNumberFormulaArg(float64(argsList.Front().Value.(formulaArg).cellRefs.Front().Value.(cellRef).Row))
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, "invalid reference")
+	}
+	_, row, _ := CellNameToCoordinates(fn.cell)
+	return newNumberFormulaArg(float64(row))
+}
+
+// ROWS function takes an Excel range and returns the number of rows that are
+// contained within the range. The syntax of the function is:
+//
+//    ROWS(array)
+//
+func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ROWS requires 1 argument")
+	}
+	var min, max int
+	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
+		crs := argsList.Front().Value.(formulaArg).cellRanges
+		for cr := crs.Front(); cr != nil; cr = cr.Next() {
+			if min == 0 {
+				min = cr.Value.(cellRange).From.Row
+			}
+			if min > cr.Value.(cellRange).From.Row {
+				min = cr.Value.(cellRange).From.Row
+			}
+			if min > cr.Value.(cellRange).To.Row {
+				min = cr.Value.(cellRange).To.Row
+			}
+			if max < cr.Value.(cellRange).To.Row {
+				max = cr.Value.(cellRange).To.Row
+			}
+			if max < cr.Value.(cellRange).From.Row {
+				max = cr.Value.(cellRange).From.Row
+			}
+		}
+	}
+	if argsList.Front().Value.(formulaArg).cellRefs != nil && argsList.Front().Value.(formulaArg).cellRefs.Len() > 0 {
+		cr := argsList.Front().Value.(formulaArg).cellRefs
+		for refs := cr.Front(); refs != nil; refs = refs.Next() {
+			if min == 0 {
+				min = refs.Value.(cellRef).Row
+			}
+			if min > refs.Value.(cellRef).Row {
+				min = refs.Value.(cellRef).Row
+			}
+			if max < refs.Value.(cellRef).Row {
+				max = refs.Value.(cellRef).Row
+			}
+		}
+	}
+	if max == TotalRows {
+		return newStringFormulaArg(strconv.Itoa(TotalRows))
+	}
+	result := max - min + 1
+	if max == min {
+		if min == 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, "invalid reference")
+		}
+		return newNumberFormulaArg(float64(1))
+	}
+	return newStringFormulaArg(strconv.Itoa(result))
 }
 
 // Web Functions

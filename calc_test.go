@@ -712,6 +712,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
 		"=DATE(1900,1,1)":   "1899-12-31 00:00:00 +0000 UTC",
 		// Text Functions
+		// CHAR
+		"=CHAR(65)": "A",
+		"=CHAR(97)": "a",
+		"=CHAR(63)": "?",
+		"=CHAR(51)": "3",
 		// CLEAN
 		"=CLEAN(\"\u0009clean text\")": "clean text",
 		"=CLEAN(0)":                    "0",
@@ -761,19 +766,38 @@ func TestCalcCellValue(t *testing.T) {
 		// LENB
 		"=LENB(\"\")": "0",
 		"=LENB(D1)":   "5",
-		// TRIM
-		"=TRIM(\" trim text \")": "trim text",
-		"=TRIM(0)":               "0",
 		// LOWER
 		"=LOWER(\"test\")":     "test",
 		"=LOWER(\"TEST\")":     "test",
 		"=LOWER(\"Test\")":     "test",
 		"=LOWER(\"TEST 123\")": "test 123",
+		// MID
+		"=MID(\"Original Text\",7,1)": "a",
+		"=MID(\"Original Text\",4,7)": "ginal T",
+		"=MID(\"255 years\",3,1)":     "5",
+		"=MID(\"text\",3,6)":          "xt",
+		"=MID(\"text\",6,0)":          "",
+		// MIDB
+		"=MIDB(\"Original Text\",7,1)": "a",
+		"=MIDB(\"Original Text\",4,7)": "ginal T",
+		"=MIDB(\"255 years\",3,1)":     "5",
+		"=MIDB(\"text\",3,6)":          "xt",
+		"=MIDB(\"text\",6,0)":          "",
 		// PROPER
 		"=PROPER(\"this is a test sentence\")": "This Is A Test Sentence",
 		"=PROPER(\"THIS IS A TEST SENTENCE\")": "This Is A Test Sentence",
 		"=PROPER(\"123tEST teXT\")":            "123Test Text",
 		"=PROPER(\"Mr. SMITH's address\")":     "Mr. Smith'S Address",
+		// REPLACE
+		"=REPLACE(\"test string\",7,3,\"X\")":          "test sXng",
+		"=REPLACE(\"second test string\",8,4,\"XXX\")": "second XXX string",
+		"=REPLACE(\"text\",5,0,\" and char\")":         "text and char",
+		"=REPLACE(\"text\",1,20,\"char and \")":        "char and ",
+		// REPLACEB
+		"=REPLACEB(\"test string\",7,3,\"X\")":          "test sXng",
+		"=REPLACEB(\"second test string\",8,4,\"XXX\")": "second XXX string",
+		"=REPLACEB(\"text\",5,0,\" and char\")":         "text and char",
+		"=REPLACEB(\"text\",1,20,\"char and \")":        "char and ",
 		// REPT
 		"=REPT(\"*\",0)":  "",
 		"=REPT(\"*\",1)":  "*",
@@ -790,6 +814,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=RIGHTB(\"Original Text\",0)":  "",
 		"=RIGHTB(\"Original Text\",13)": "Original Text",
 		"=RIGHTB(\"Original Text\",20)": "Original Text",
+		// TRIM
+		"=TRIM(\" trim text \")": "trim text",
+		"=TRIM(0)":               "0",
+		// UNICHAR
+		"=UNICHAR(65)": "A",
+		"=UNICHAR(97)": "a",
+		"=UNICHAR(63)": "?",
+		"=UNICHAR(51)": "3",
+		// UNICODE
+		"=UNICODE(\"Alpha\")": "65",
+		"=UNICODE(\"alpha\")": "97",
+		"=UNICODE(\"?\")":     "63",
+		"=UNICODE(\"3\")":     "51",
 		// UPPER
 		"=UPPER(\"test\")":     "TEST",
 		"=UPPER(\"TEST\")":     "TEST",
@@ -812,6 +849,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=COLUMN(Sheet1!A1:B1:C1)": "1",
 		"=COLUMN(Sheet1!F1:G1)":    "6",
 		"=COLUMN(H1)":              "8",
+		// COLUMNS
+		"=COLUMNS(B1)":                   "1",
+		"=COLUMNS(1:1)":                  "16384",
+		"=COLUMNS(Sheet1!1:1)":           "16384",
+		"=COLUMNS(B1:E5)":                "4",
+		"=COLUMNS(Sheet1!E5:H7:B1)":      "7",
+		"=COLUMNS(E5:H7:B1:C1:Z1:C1:B1)": "25",
+		"=COLUMNS(E5:B1)":                "4",
+		"=COLUMNS(EM38:HZ81)":            "92",
 		// HLOOKUP
 		"=HLOOKUP(D2,D2:D8,1,FALSE)":          "Jan",
 		"=HLOOKUP(F3,F3:F8,3,FALSE)":          "34440",
@@ -832,6 +878,21 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
 		"=LOOKUP(1,MUNIT(1),MUNIT(1))": "1",
+		// ROW
+		"=ROW()":                "1",
+		"=ROW(Sheet1!A1)":       "1",
+		"=ROW(Sheet1!A1:B2:C3)": "1",
+		"=ROW(Sheet1!F5:G6)":    "5",
+		"=ROW(A8)":              "8",
+		// ROWS
+		"=ROWS(B1)":                    "1",
+		"=ROWS(B:B)":                   "1048576",
+		"=ROWS(Sheet1!B:B)":            "1048576",
+		"=ROWS(B1:E5)":                 "5",
+		"=ROWS(Sheet1!E5:H7:B1)":       "7",
+		"=ROWS(E5:H8:B2:C3:Z26:C3:B2)": "25",
+		"=ROWS(E5:B1)":                 "5",
+		"=ROWS(EM38:HZ81)":             "44",
 		// Web Functions
 		// ENCODEURL
 		"=ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
@@ -1348,6 +1409,11 @@ func TestCalcCellValue(t *testing.T) {
 		`=DATE(2020,"text",21)`: "DATE requires 3 number arguments",
 		`=DATE(2020,10,"text")`: "DATE requires 3 number arguments",
 		// Text Functions
+		// CHAR
+		"=CHAR()":     "CHAR requires 1 argument",
+		"=CHAR(-1)":   "#VALUE!",
+		"=CHAR(256)":  "#VALUE!",
+		"=CHAR(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// CLEAN
 		"=CLEAN()":    "CLEAN requires 1 argument",
 		"=CLEAN(1,2)": "CLEAN requires 1 argument",
@@ -1387,18 +1453,32 @@ func TestCalcCellValue(t *testing.T) {
 		"=LEN()": "LEN requires 1 string argument",
 		// LENB
 		"=LENB()": "LENB requires 1 string argument",
-		// TRIM
-		"=TRIM()":    "TRIM requires 1 argument",
-		"=TRIM(1,2)": "TRIM requires 1 argument",
 		// LOWER
 		"=LOWER()":    "LOWER requires 1 argument",
 		"=LOWER(1,2)": "LOWER requires 1 argument",
-		// UPPER
-		"=UPPER()":    "UPPER requires 1 argument",
-		"=UPPER(1,2)": "UPPER requires 1 argument",
+		// MID
+		"=MID()":            "MID requires 3 arguments",
+		"=MID(\"\",-1,1)":   "#VALUE!",
+		"=MID(\"\",\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MID(\"\",1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// MIDB
+		"=MIDB()":            "MIDB requires 3 arguments",
+		"=MIDB(\"\",-1,1)":   "#VALUE!",
+		"=MIDB(\"\",\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MIDB(\"\",1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// PROPER
 		"=PROPER()":    "PROPER requires 1 argument",
 		"=PROPER(1,2)": "PROPER requires 1 argument",
+		// REPLACE
+		"=REPLACE()":                           "REPLACE requires 4 arguments",
+		"=REPLACE(\"text\",0,4,\"string\")":    "#VALUE!",
+		"=REPLACE(\"text\",\"\",0,\"string\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=REPLACE(\"text\",1,\"\",\"string\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// REPLACEB
+		"=REPLACEB()":                           "REPLACEB requires 4 arguments",
+		"=REPLACEB(\"text\",0,4,\"string\")":    "#VALUE!",
+		"=REPLACEB(\"text\",\"\",0,\"string\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=REPLACEB(\"text\",1,\"\",\"string\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// REPT
 		"=REPT()":            "REPT requires 2 arguments",
 		"=REPT(INT(0),2)":    "REPT requires first argument to be a string",
@@ -1414,6 +1494,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=RIGHTB(\"\",2,3)":  "RIGHTB allows at most 2 arguments",
 		"=RIGHTB(\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=RIGHTB(\"\",-1)":   "#VALUE!",
+		// TRIM
+		"=TRIM()":    "TRIM requires 1 argument",
+		"=TRIM(1,2)": "TRIM requires 1 argument",
+		// UNICHAR
+		"=UNICHAR()":      "UNICHAR requires 1 argument",
+		"=UNICHAR(\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=UNICHAR(55296)": "#VALUE!",
+		"=UNICHAR(0)":     "#VALUE!",
+		// UNICODE
+		"=UNICODE()":     "UNICODE requires 1 argument",
+		"=UNICODE(\"\")": "#VALUE!",
+		// UPPER
+		"=UPPER()":    "UPPER requires 1 argument",
+		"=UPPER(1,2)": "UPPER requires 1 argument",
 		// Conditional Functions
 		// IF
 		"=IF()":        "IF requires at least 1 argument",
@@ -1429,6 +1523,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=COLUMN(\"\")":         "invalid reference",
 		"=COLUMN(Sheet1)":       "invalid column name \"Sheet1\"",
 		"=COLUMN(Sheet1!A1!B1)": "invalid column name \"Sheet1\"",
+		// COLUMNS
+		"=COLUMNS()":              "COLUMNS requires 1 argument",
+		"=COLUMNS(1)":             "invalid reference",
+		"=COLUMNS(\"\")":          "invalid reference",
+		"=COLUMNS(Sheet1)":        "invalid column name \"Sheet1\"",
+		"=COLUMNS(Sheet1!A1!B1)":  "invalid column name \"Sheet1\"",
+		"=COLUMNS(Sheet1!Sheet1)": "invalid column name \"Sheet1\"",
 		// HLOOKUP
 		"=HLOOKUP()":                     "HLOOKUP requires at least 3 arguments",
 		"=HLOOKUP(D2,D1,1,FALSE)":        "HLOOKUP requires second argument of table array",
@@ -1460,6 +1561,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOOKUP(D2,D1,D2)":             "LOOKUP requires second argument of table array",
 		"=LOOKUP(D2,D1,D2,FALSE)":       "LOOKUP requires at most 3 arguments",
 		"=LOOKUP(D1,MUNIT(1),MUNIT(1))": "LOOKUP no result found",
+		// ROW
+		"=ROW(1,2)":          "ROW requires at most 1 argument",
+		"=ROW(\"\")":         "invalid reference",
+		"=ROW(Sheet1)":       "invalid column name \"Sheet1\"",
+		"=ROW(Sheet1!A1!B1)": "invalid column name \"Sheet1\"",
+		// ROWS
+		"=ROWS()":              "ROWS requires 1 argument",
+		"=ROWS(1)":             "invalid reference",
+		"=ROWS(\"\")":          "invalid reference",
+		"=ROWS(Sheet1)":        "invalid column name \"Sheet1\"",
+		"=ROWS(Sheet1!A1!B1)":  "invalid column name \"Sheet1\"",
+		"=ROWS(Sheet1!Sheet1)": "invalid column name \"Sheet1\"",
 		// Web Functions
 		// ENCODEURL
 		"=ENCODEURL()": "ENCODEURL requires 1 argument",

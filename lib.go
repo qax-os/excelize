@@ -33,14 +33,14 @@ func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	fileList := make(map[string][]byte, len(r.File))
 	worksheets := 0
 	for _, v := range r.File {
-		fileName := v.Name
-		if partName, ok := docPart[strings.ToLower(v.Name)]; ok {
+		fileName := strings.Replace(v.Name, "\\", "/", -1)
+		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
 		if fileList[fileName], err = readFile(v); err != nil {
 			return nil, 0, err
 		}
-		if strings.HasPrefix(v.Name, "xl/worksheets/sheet") {
+		if strings.HasPrefix(fileName, "xl/worksheets/sheet") {
 			worksheets++
 		}
 	}
