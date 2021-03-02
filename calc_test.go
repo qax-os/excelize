@@ -161,10 +161,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.ACOTH(2)":       "0.549306144334055",
 		"=_xlfn.ACOTH(ABS(-2))": "0.549306144334055",
 		// ARABIC
-		`=_xlfn.ARABIC("IV")`:   "4",
-		`=_xlfn.ARABIC("-IV")`:  "-4",
-		`=_xlfn.ARABIC("MCXX")`: "1120",
-		`=_xlfn.ARABIC("")`:     "0",
+		"=_xlfn.ARABIC(\"IV\")":       "4",
+		"=_xlfn.ARABIC(\"-IV\")":      "-4",
+		"=_xlfn.ARABIC(\"MCXX\")":     "1120",
+		"=_xlfn.ARABIC(\"\")":         "0",
+		"=_xlfn.ARABIC(\" ll  lc \")": "-50",
 		// ASIN
 		"=ASIN(-1)":      "-1.570796326794897",
 		"=ASIN(0)":       "0",
@@ -608,6 +609,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=KURT(F1:F9)":           "-1.033503502551368",
 		"=KURT(F1,F2:F9)":        "-1.033503502551368",
 		"=KURT(INT(1),MUNIT(2))": "-3.333333333333336",
+		// LARGE
+		"=LARGE(A1:A5,1)": "3",
+		"=LARGE(A1:B5,2)": "4",
+		"=LARGE(A1,1)":    "1",
+		"=LARGE(A1:F2,1)": "36693",
 		// MAX
 		"=MAX(1)":          "1",
 		"=MAX(TRUE())":     "1",
@@ -646,6 +652,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUT(6,6)":  "720",
 		"=PERMUT(7,6)":  "5040",
 		"=PERMUT(10,6)": "151200",
+		// SMALL
+		"=SMALL(A1:A5,1)": "0",
+		"=SMALL(A1:B5,2)": "1",
+		"=SMALL(A1,1)":    "1",
+		"=SMALL(A1:F2,1)": "1",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
@@ -814,6 +825,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=RIGHTB(\"Original Text\",0)":  "",
 		"=RIGHTB(\"Original Text\",13)": "Original Text",
 		"=RIGHTB(\"Original Text\",20)": "Original Text",
+		// SUBSTITUTE
+		"=SUBSTITUTE(\"abab\",\"a\",\"X\")":                      "XbXb",
+		"=SUBSTITUTE(\"abab\",\"a\",\"X\",2)":                    "abXb",
+		"=SUBSTITUTE(\"abab\",\"x\",\"X\",2)":                    "abab",
+		"=SUBSTITUTE(\"John is 5 years old\",\"John\",\"Jack\")": "Jack is 5 years old",
+		"=SUBSTITUTE(\"John is 5 years old\",\"5\",\"6\")":       "John is 6 years old",
 		// TRIM
 		"=TRIM(\" trim text \")": "trim text",
 		"=TRIM(0)":               "0",
@@ -1046,6 +1063,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.ACOTH(_xlfn.ACOTH(2))": "#NUM!",
 		// _xlfn.ARABIC
 		"=_xlfn.ARABIC()": "ARABIC requires 1 numeric argument",
+		"=_xlfn.ARABIC(\"" + strings.Repeat("I", 256) + "\")": "#VALUE!",
 		// ASIN
 		"=ASIN()":    "ASIN requires 1 numeric argument",
 		`=ASIN("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -1334,6 +1352,11 @@ func TestCalcCellValue(t *testing.T) {
 		// KURT
 		"=KURT()":          "KURT requires at least 1 argument",
 		"=KURT(F1,INT(1))": "#DIV/0!",
+		// LARGE
+		"=LARGE()":           "LARGE requires 2 arguments",
+		"=LARGE(A1:A5,0)":    "k should be > 0",
+		"=LARGE(A1:A5,6)":    "k should be <= length of array",
+		"=LARGE(A1:A5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// MAX
 		"=MAX()":     "MAX requires at least 1 argument",
 		"=MAX(NA())": "#N/A",
@@ -1355,6 +1378,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUT(6,8)":    "#N/A",
+		// SMALL
+		"=SMALL()":           "SMALL requires 2 arguments",
+		"=SMALL(A1:A5,0)":    "k should be > 0",
+		"=SMALL(A1:A5,6)":    "k should be <= length of array",
+		"=SMALL(A1:A5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
@@ -1494,6 +1522,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=RIGHTB(\"\",2,3)":  "RIGHTB allows at most 2 arguments",
 		"=RIGHTB(\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=RIGHTB(\"\",-1)":   "#VALUE!",
+		// SUBSTITUTE
+		"=SUBSTITUTE()":                    "SUBSTITUTE requires 3 or 4 arguments",
+		"=SUBSTITUTE(\"\",\"\",\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=SUBSTITUTE(\"\",\"\",\"\",0)":    "instance_num should be > 0",
 		// TRIM
 		"=TRIM()":    "TRIM requires 1 argument",
 		"=TRIM(1,2)": "TRIM requires 1 argument",

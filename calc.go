@@ -167,15 +167,17 @@ func (fa formulaArg) ToBool() formulaArg {
 
 // ToList returns a formula argument with array data type.
 func (fa formulaArg) ToList() []formulaArg {
-	if fa.Type == ArgMatrix {
+	switch fa.Type {
+	case ArgMatrix:
 		list := []formulaArg{}
 		for _, row := range fa.Matrix {
 			list = append(list, row...)
 		}
 		return list
-	}
-	if fa.Type == ArgList {
+	case ArgList:
 		return fa.List
+	case ArgNumber, ArgString, ArgError, ArgUnknown:
+		return []formulaArg{fa}
 	}
 	return nil
 }
@@ -294,6 +296,7 @@ var tokenPriority = map[string]int{
 //    ISTEXT
 //    ISO.CEILING
 //    KURT
+//    LARGE
 //    LCM
 //    LEFT
 //    LEFTB
@@ -348,10 +351,12 @@ var tokenPriority = map[string]int{
 //    SIGN
 //    SIN
 //    SINH
+//    SMALL
 //    SQRT
 //    SQRTPI
 //    STDEV
 //    STDEVA
+//    SUBSTITUTE
 //    SUM
 //    SUMIF
 //    SUMSQ
@@ -454,10 +459,7 @@ func newEmptyFormulaArg() formulaArg {
 //    opf  - Operation formula
 //    opfd - Operand of the operation formula
 //    opft - Operator of the operation formula
-//
-// Evaluate arguments of the operation formula by list:
-//
-//    args - Arguments of the operation formula
+//    args - Arguments list of the operation formula
 //
 // TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 //
@@ -1705,28 +1707,48 @@ func (fn *formulaFuncs) ARABIC(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ARABIC requires 1 numeric argument")
 	}
-	charMap := map[rune]float64{'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
-	val, last, prefix := 0.0, 0.0, 1.0
-	for _, char := range argsList.Front().Value.(formulaArg).String {
-		digit := 0.0
-		if char == '-' {
-			prefix = -1
+	text := argsList.Front().Value.(formulaArg).Value()
+	if len(text) > 255 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	text = strings.ToUpper(text)
+	number, actualStart, index, isNegative := 0, 0, len(text)-1, false
+	startIndex, subtractNumber, currentPartValue, currentCharValue, prevCharValue := 0, 0, 0, 0, -1
+	for index >= 0 && text[index] == ' ' {
+		index--
+	}
+	for actualStart <= index && text[actualStart] == ' ' {
+		actualStart++
+	}
+	if actualStart <= index && text[actualStart] == '-' {
+		isNegative = true
+		actualStart++
+	}
+	charMap := map[rune]int{'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
+	for index >= actualStart {
+		startIndex = index
+		startChar := text[startIndex]
+		index--
+		for index >= actualStart && (text[index]|' ') == startChar {
+			index--
+		}
+		currentCharValue = charMap[rune(startChar)]
+		currentPartValue = (startIndex - index) * currentCharValue
+		if currentCharValue >= prevCharValue {
+			number += currentPartValue - subtractNumber
+			prevCharValue = currentCharValue
+			subtractNumber = 0
 			continue
 		}
-		digit = charMap[char]
-		val += digit
-		switch {
-		case last == digit && (last == 5 || last == 50 || last == 500):
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		case 2*last == digit:
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		}
-		if last < digit {
-			val -= 2 * last
-		}
-		last = digit
+		subtractNumber += currentPartValue
 	}
-	return newNumberFormulaArg(prefix * val)
+	if subtractNumber != 0 {
+		number -= subtractNumber
+	}
+	if isNegative {
+		number = -number
+	}
+	return newNumberFormulaArg(float64(number))
 }
 
 // ASIN function calculates the arcsine (i.e. the inverse sine) of a given
@@ -3933,6 +3955,45 @@ func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 }
 
+// kth is an implementation of the formula function LARGE and SMALL.
+func (fn *formulaFuncs) kth(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
+	}
+	array := argsList.Front().Value.(formulaArg).ToList()
+	kArg := argsList.Back().Value.(formulaArg).ToNumber()
+	if kArg.Type != ArgNumber {
+		return kArg
+	}
+	k := int(kArg.Number)
+	if k < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, "k should be > 0")
+	}
+	data := []float64{}
+	for _, arg := range array {
+		if numArg := arg.ToNumber(); numArg.Type == ArgNumber {
+			data = append(data, numArg.Number)
+		}
+	}
+	if len(data) < k {
+		return newErrorFormulaArg(formulaErrorNUM, "k should be <= length of array")
+	}
+	sort.Float64s(data)
+	if name == "LARGE" {
+		return newNumberFormulaArg(data[len(data)-k])
+	}
+	return newNumberFormulaArg(data[k-1])
+}
+
+// LARGE function returns the k'th largest value from an array of numeric
+// values. The syntax of the function is:
+//
+//    LARGE(array,k)
+//
+func (fn *formulaFuncs) LARGE(argsList *list.List) formulaArg {
+	return fn.kth("LARGE", argsList)
+}
+
 // MAX function returns the largest value from a supplied set of numeric
 // values. The syntax of the function is:
 //
@@ -4166,6 +4227,15 @@ func (fn *formulaFuncs) PERMUT(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(math.Round(fact(number.Number) / fact(number.Number-chosen.Number)))
+}
+
+// SMALL function returns the k'th smallest value from an array of numeric
+// values. The syntax of the function is:
+//
+//    SMALL(array,k)
+//
+func (fn *formulaFuncs) SMALL(argsList *list.List) formulaArg {
+	return fn.kth("SMALL", argsList)
 }
 
 // Information Functions
@@ -5029,6 +5099,52 @@ func (fn *formulaFuncs) RIGHT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) RIGHTB(argsList *list.List) formulaArg {
 	return fn.leftRight("RIGHTB", argsList)
+}
+
+// SUBSTITUTE function replaces one or more instances of a given text string,
+// within an original text string. The syntax of the function is:
+//
+//    SUBSTITUTE(text,old_text,new_text,[instance_num])
+//
+func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 && argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SUBSTITUTE requires 3 or 4 arguments")
+	}
+	text, oldText := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
+	newText, instanceNum := argsList.Front().Next().Next().Value.(formulaArg), 0
+	if argsList.Len() == 3 {
+		return newStringFormulaArg(strings.Replace(text.Value(), oldText.Value(), newText.Value(), -1))
+	}
+	instanceNumArg := argsList.Back().Value.(formulaArg).ToNumber()
+	if instanceNumArg.Type != ArgNumber {
+		return instanceNumArg
+	}
+	instanceNum = int(instanceNumArg.Number)
+	if instanceNum < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "instance_num should be > 0")
+	}
+	str, oldTextLen, count, chars, pos := text.Value(), len(oldText.Value()), instanceNum, 0, -1
+	for {
+		count--
+		index := strings.Index(str, oldText.Value())
+		if index == -1 {
+			pos = -1
+			break
+		} else {
+			pos = index + chars
+			if count == 0 {
+				break
+			}
+			idx := oldTextLen + index
+			chars += idx
+			str = str[idx:]
+		}
+	}
+	if pos == -1 {
+		return newStringFormulaArg(text.Value())
+	}
+	pre, post := text.Value()[:pos], text.Value()[pos+oldTextLen:]
+	return newStringFormulaArg(pre + newText.Value() + post)
 }
 
 // TRIM removes extra spaces (i.e. all spaces except for single spaces between
