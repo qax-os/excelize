@@ -604,6 +604,7 @@ type xlsxHyperlink struct {
 	Ref      string `xml:"ref,attr"`
 	Location string `xml:"location,attr,omitempty"`
 	Display  string `xml:"display,attr,omitempty"`
+	Tooltip  string `xml:"tooltip,attr,omitempty"`
 	RID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 

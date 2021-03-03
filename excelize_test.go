@@ -326,6 +326,13 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "C1", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
 	// Test add Location hyperlink in a work sheet.
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location"))
+	// Test add Location hyperlink with display & tooltip in a work sheet.
+	display := "Display value"
+	tooltip := "Hover text"
+	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D7", "Sheet1!D9", "Location", HyperlinkOpts{
+		Display: &display,
+		Tooltip: &tooltip,
+	}))
 
 	assert.EqualError(t, f.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", ""), `invalid link type ""`)
 

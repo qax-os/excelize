@@ -431,6 +431,13 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	return false, "", err
 }
 
+// HyperlinkOpts can be passed to SetCellHyperlink to set optional hyperlink
+// attributes (e.g. display value)
+type HyperlinkOpts struct {
+	Display *string
+	Tooltip *string
+}
+
 // SetCellHyperLink provides a function to set cell hyperlink by given
 // worksheet name and link URL address. LinkType defines two types of
 // hyperlink "External" for web site or "Location" for moving to one of cell
@@ -446,7 +453,7 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 //
 //    err := f.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
 //
-func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
+func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...HyperlinkOpts) error {
 	// Check for correct cell name
 	if _, _, err := SplitCellName(axis); err != nil {
 		return err
@@ -488,6 +495,15 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string) error {
 		}
 	default:
 		return fmt.Errorf("invalid link type %q", linkType)
+	}
+
+	for _, o := range opts {
+		if o.Display != nil {
+			linkData.Display = *o.Display
+		}
+		if o.Tooltip != nil {
+			linkData.Tooltip = *o.Tooltip
+		}
 	}
 
 	ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink, linkData)
