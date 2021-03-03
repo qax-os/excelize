@@ -1242,15 +1242,6 @@ func TestAttrValToInt(t *testing.T) {
 	assert.EqualError(t, err, `strconv.Atoi: parsing "s": invalid syntax`)
 }
 
-func TestUpdateLinkedValue(t *testing.T) {
-	// Test update the spreadsheet file.
-	f, err := OpenFile(filepath.Join("test", "TestGraphSheet.xlsx"))
-	assert.NoError(t, err)
-
-	// Test if have a graph sheet
-	assert.NoError(t, f.UpdateLinkedValue())
-}
-
 func prepareTestBook1() (*File, error) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if err != nil {
