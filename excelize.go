@@ -63,6 +63,10 @@ type Options struct {
 	Password string
 }
 
+type ChartSheetError struct{ err error }
+
+func (e ChartSheetError) Error() string { return e.err.Error() }
+
 // OpenFile take the name of an spreadsheet file and returns a populated spreadsheet file struct
 // for it. For example, open spreadsheet with password protection:
 //
@@ -180,7 +184,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	if ws = f.Sheet[name]; f.Sheet[name] == nil {
 		if strings.HasPrefix(name, "xl/chartsheets") {
-			err = fmt.Errorf("sheet %s is chart sheet", sheet)
+			err = &ChartSheetError{err: fmt.Errorf("sheet %s is chart sheet", sheet)}
 			return
 		}
 		ws = new(xlsxWorksheet)
@@ -313,7 +317,11 @@ func (f *File) UpdateLinkedValue() error {
 	wb.CalcPr = nil
 	for _, name := range f.GetSheetList() {
 		xlsx, err := f.workSheetReader(name)
-		if err != nil {
+		var chartSheetErr *ChartSheetError
+		if errors.As(err, &chartSheetErr) {
+			// continue other seat
+			continue
+		} else if err != nil {
 			return err
 		}
 		for indexR := range xlsx.SheetData.Row {
