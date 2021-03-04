@@ -314,6 +314,9 @@ func (f *File) UpdateLinkedValue() error {
 	for _, name := range f.GetSheetList() {
 		xlsx, err := f.workSheetReader(name)
 		if err != nil {
+			if err.Error() == fmt.Sprintf("sheet %s is chart sheet", trimSheetName(name)) {
+				continue
+			}
 			return err
 		}
 		for indexR := range xlsx.SheetData.Row {
