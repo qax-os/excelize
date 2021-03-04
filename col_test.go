@@ -310,12 +310,12 @@ func TestColWidth(t *testing.T) {
 	assert.Equal(t, float64(12), width)
 	assert.NoError(t, err)
 	width, err = f.GetColWidth("Sheet1", "C")
-	assert.Equal(t, float64(64), width)
+	assert.Equal(t, defaultColWidth, width)
 	assert.NoError(t, err)
 
 	// Test set and get column width with illegal cell coordinates.
 	width, err = f.GetColWidth("Sheet1", "*")
-	assert.Equal(t, float64(64), width)
+	assert.Equal(t, defaultColWidth, width)
 	assert.EqualError(t, err, `invalid column name "*"`)
 	assert.EqualError(t, f.SetColWidth("Sheet1", "*", "B", 1), `invalid column name "*"`)
 	assert.EqualError(t, f.SetColWidth("Sheet1", "A", "*", 1), `invalid column name "*"`)

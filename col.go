@@ -24,6 +24,7 @@ import (
 
 // Define the default cell size and EMU unit of measurement.
 const (
+	defaultColWidth        float64 = 9.140625
 	defaultColWidthPixels  float64 = 64
 	defaultRowHeight       float64 = 15
 	defaultRowHeightPixels float64 = 20
@@ -270,32 +271,18 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 //    err := f.SetColVisible("Sheet1", "D:F", false)
 //
 func (f *File) SetColVisible(sheet, columns string, visible bool) error {
-	var max int
-
-	colsTab := strings.Split(columns, ":")
-	min, err := ColumnNameToNumber(colsTab[0])
+	start, end, err := f.parseColRange(columns)
 	if err != nil {
 		return err
-	}
-	if len(colsTab) == 2 {
-		max, err = ColumnNameToNumber(colsTab[1])
-		if err != nil {
-			return err
-		}
-	} else {
-		max = min
-	}
-	if max < min {
-		min, max = max, min
 	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	colData := xlsxCol{
-		Min:         min,
-		Max:         max,
-		Width:       9, // default width
+		Min:         start,
+		Max:         end,
+		Width:       defaultColWidth, // default width
 		Hidden:      !visible,
 		CustomWidth: true,
 	}
@@ -344,6 +331,25 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 		}
 	}
 	return level, err
+}
+
+// parseColRange parse and convert column range with column name to the column number.
+func (f *File) parseColRange(columns string) (start, end int, err error) {
+	colsTab := strings.Split(columns, ":")
+	start, err = ColumnNameToNumber(colsTab[0])
+	if err != nil {
+		return
+	}
+	end = start
+	if len(colsTab) == 2 {
+		if end, err = ColumnNameToNumber(colsTab[1]); err != nil {
+			return
+		}
+	}
+	if end < start {
+		start, end = end, start
+	}
+	return
 }
 
 // SetColOutlineLevel provides a function to set outline level of a single
@@ -401,37 +407,21 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 //    err = f.SetColStyle("Sheet1", "C:F", style)
 //
 func (f *File) SetColStyle(sheet, columns string, styleID int) error {
+	start, end, err := f.parseColRange(columns)
+	if err != nil {
+		return err
+	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
-	}
-	var c1, c2 string
-	var min, max int
-	cols := strings.Split(columns, ":")
-	c1 = cols[0]
-	min, err = ColumnNameToNumber(c1)
-	if err != nil {
-		return err
-	}
-	if len(cols) == 2 {
-		c2 = cols[1]
-		max, err = ColumnNameToNumber(c2)
-		if err != nil {
-			return err
-		}
-	} else {
-		max = min
-	}
-	if max < min {
-		min, max = max, min
 	}
 	if ws.Cols == nil {
 		ws.Cols = &xlsxCols{}
 	}
 	ws.Cols.Col = flatCols(xlsxCol{
-		Min:   min,
-		Max:   max,
-		Width: 9,
+		Min:   start,
+		Max:   end,
+		Width: defaultColWidth,
 		Style: styleID,
 	}, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
@@ -638,11 +628,11 @@ func (f *File) getColWidth(sheet string, col int) int {
 func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {
-		return defaultColWidthPixels, err
+		return defaultColWidth, err
 	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return defaultColWidthPixels, err
+		return defaultColWidth, err
 	}
 	if ws.Cols != nil {
 		var width float64
@@ -656,7 +646,7 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 		}
 	}
 	// Optimisation for when the column widths haven't changed.
-	return defaultColWidthPixels, err
+	return defaultColWidth, err
 }
 
 // InsertCol provides a function to insert a new column before given column
