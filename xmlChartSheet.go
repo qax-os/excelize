@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -16,27 +16,27 @@ import "encoding/xml"
 // xlsxChartsheet directly maps the chartsheet element of Chartsheet Parts in
 // a SpreadsheetML document.
 type xlsxChartsheet struct {
-	XMLName          xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main chartsheet"`
-	SheetPr          []*xlsxChartsheetPr          `xml:"sheetPr"`
-	SheetViews       []*xlsxChartsheetViews       `xml:"sheetViews"`
-	SheetProtection  []*xlsxChartsheetProtection  `xml:"sheetProtection"`
-	CustomSheetViews []*xlsxCustomChartsheetViews `xml:"customSheetViews"`
-	PageMargins      *xlsxPageMargins             `xml:"pageMargins"`
-	PageSetup        []*xlsxPageSetUp             `xml:"pageSetup"`
-	HeaderFooter     *xlsxHeaderFooter            `xml:"headerFooter"`
-	Drawing          *xlsxDrawing                 `xml:"drawing"`
-	DrawingHF        []*xlsxDrawingHF             `xml:"drawingHF"`
-	Picture          []*xlsxPicture               `xml:"picture"`
-	WebPublishItems  []*xlsxInnerXML              `xml:"webPublishItems"`
-	ExtLst           []*xlsxExtLst                `xml:"extLst"`
+	XMLName          xml.Name                   `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main chartsheet"`
+	SheetPr          *xlsxChartsheetPr          `xml:"sheetPr"`
+	SheetViews       *xlsxChartsheetViews       `xml:"sheetViews"`
+	SheetProtection  *xlsxChartsheetProtection  `xml:"sheetProtection"`
+	CustomSheetViews *xlsxCustomChartsheetViews `xml:"customSheetViews"`
+	PageMargins      *xlsxPageMargins           `xml:"pageMargins"`
+	PageSetup        *xlsxPageSetUp             `xml:"pageSetup"`
+	HeaderFooter     *xlsxHeaderFooter          `xml:"headerFooter"`
+	Drawing          *xlsxDrawing               `xml:"drawing"`
+	DrawingHF        *xlsxDrawingHF             `xml:"drawingHF"`
+	Picture          *xlsxPicture               `xml:"picture"`
+	WebPublishItems  *xlsxInnerXML              `xml:"webPublishItems"`
+	ExtLst           *xlsxExtLst                `xml:"extLst"`
 }
 
 // xlsxChartsheetPr specifies chart sheet properties.
 type xlsxChartsheetPr struct {
-	XMLName       xml.Name        `xml:"sheetPr"`
-	PublishedAttr bool            `xml:"published,attr,omitempty"`
-	CodeNameAttr  string          `xml:"codeName,attr,omitempty"`
-	TabColor      []*xlsxTabColor `xml:"tabColor"`
+	XMLName       xml.Name      `xml:"sheetPr"`
+	PublishedAttr bool          `xml:"published,attr,omitempty"`
+	CodeNameAttr  string        `xml:"codeName,attr,omitempty"`
+	TabColor      *xlsxTabColor `xml:"tabColor"`
 }
 
 // xlsxChartsheetViews specifies chart sheet views.
@@ -71,13 +71,13 @@ type xlsxChartsheetProtection struct {
 // xlsxCustomChartsheetViews collection of custom Chart Sheet View
 // information.
 type xlsxCustomChartsheetViews struct {
-	XMLName         xml.Name                    `xml:"customChartsheetViews"`
+	XMLName         xml.Name                    `xml:"customSheetViews"`
 	CustomSheetView []*xlsxCustomChartsheetView `xml:"customSheetView"`
 }
 
 // xlsxCustomChartsheetView defines custom view properties for chart sheets.
 type xlsxCustomChartsheetView struct {
-	XMLName       xml.Name            `xml:"customChartsheetView"`
+	XMLName       xml.Name            `xml:"customSheetView"`
 	GUIDAttr      string              `xml:"guid,attr"`
 	ScaleAttr     uint32              `xml:"scale,attr,omitempty"`
 	StateAttr     string              `xml:"state,attr,omitempty"`

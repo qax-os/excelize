@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -923,8 +923,8 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 		return err
 	}
 	cs := xlsxChartsheet{
-		SheetViews: []*xlsxChartsheetViews{{
-			SheetView: []*xlsxChartsheetView{{ZoomScaleAttr: 100, ZoomToFitAttr: true}}},
+		SheetViews: &xlsxChartsheetViews{
+			SheetView: []*xlsxChartsheetView{{ZoomScaleAttr: 100, ZoomToFitAttr: true}},
 		},
 	}
 	f.SheetCount++

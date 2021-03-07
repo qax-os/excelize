@@ -71,6 +71,13 @@ type StreamWriter struct {
 //        fmt.Println(err)
 //    }
 //
+// Set cell value and cell formula for a worksheet with stream writer:
+//
+//    err := streamWriter.SetRow("A1", []interface{}{
+//        excelize.Cell{Value: 1},
+//        excelize.Cell{Value: 2},
+//        excelize.Cell{Formula: "SUM(A1,B1)"}});
+//
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	sheetID := f.getSheetID(sheet)
 	if sheetID == -1 {
@@ -106,7 +113,14 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 //
 // Create a table of F2:H6 with format set:
 //
-//    err := sw.AddTable("F2", "H6", `{"table_name":"table","table_style":"TableStyleMedium2","show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`)
+//    err := sw.AddTable("F2", "H6", `{
+//        "table_name": "table",
+//        "table_style": "TableStyleMedium2",
+//        "show_first_column": true,
+//        "show_last_column": true,
+//        "show_row_stripes": false,
+//        "show_column_stripes": true
+//    }`)
 //
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique.
@@ -266,6 +280,7 @@ func getRowElement(token xml.Token, hrow int) (startElement xml.StartElement, ok
 // a value.
 type Cell struct {
 	StyleID int
+	Formula string
 	Value   interface{}
 }
 
@@ -291,9 +306,11 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 		if v, ok := val.(Cell); ok {
 			c.S = v.StyleID
 			val = v.Value
+			setCellFormula(&c, v.Formula)
 		} else if v, ok := val.(*Cell); ok && v != nil {
 			c.S = v.StyleID
 			val = v.Value
+			setCellFormula(&c, v.Formula)
 		}
 		if err = setCellValFunc(&c, val); err != nil {
 			_, _ = sw.rawData.WriteString(`</row>`)
@@ -303,6 +320,13 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
+}
+
+// setCellFormula provides a function to set formula of a cell.
+func setCellFormula(c *xlsxC, formula string) {
+	if formula != "" {
+		c.F = &xlsxF{Content: formula}
+	}
 }
 
 // setCellValFunc provides a function to set value of a cell.
@@ -373,6 +397,11 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 		fmt.Fprintf(buf, ` t="%s"`, c.T)
 	}
 	_, _ = buf.WriteString(`>`)
+	if c.F != nil {
+		_, _ = buf.WriteString(`<f>`)
+		_ = xml.EscapeText(buf, []byte(c.F.Content))
+		_, _ = buf.WriteString(`</f>`)
+	}
 	if c.V != "" {
 		_, _ = buf.WriteString(`<v>`)
 		_ = xml.EscapeText(buf, []byte(c.V))
