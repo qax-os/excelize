@@ -34,7 +34,7 @@ type PivotTableOption struct {
 	PageOverThenDown    bool
 	MergeItem           bool
 	CompactData         bool
-	ShowError			bool
+	ShowError           bool
 	ShowRowHeaders      bool
 	ShowColHeaders      bool
 	ShowRowStripes      bool
