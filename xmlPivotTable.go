@@ -31,7 +31,7 @@ type xlsxPivotTableDefinition struct {
 	DataCaption             string                   `xml:"dataCaption,attr"`
 	GrandTotalCaption       string                   `xml:"grandTotalCaption,attr,omitempty"`
 	ErrorCaption            string                   `xml:"errorCaption,attr,omitempty"`
-	ShowError               bool                     `xml:"showError,attr,omitempty"`
+	ShowError               *bool                     `xml:"showError,attr,omitempty"`
 	MissingCaption          string                   `xml:"missingCaption,attr,omitempty"`
 	ShowMissing             bool                     `xml:"showMissing,attr,omitempty"`
 	PageStyle               string                   `xml:"pageStyle,attr,omitempty"`
