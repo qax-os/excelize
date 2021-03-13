@@ -31,7 +31,7 @@ type xlsxPivotTableDefinition struct {
 	DataCaption             string                   `xml:"dataCaption,attr"`
 	GrandTotalCaption       string                   `xml:"grandTotalCaption,attr,omitempty"`
 	ErrorCaption            string                   `xml:"errorCaption,attr,omitempty"`
-	ShowError               bool                     `xml:"showError,attr,omitempty"`
+	ShowError               *bool                    `xml:"showError,attr"`
 	MissingCaption          string                   `xml:"missingCaption,attr,omitempty"`
 	ShowMissing             bool                     `xml:"showMissing,attr,omitempty"`
 	PageStyle               string                   `xml:"pageStyle,attr,omitempty"`
@@ -48,7 +48,7 @@ type xlsxPivotTableDefinition struct {
 	VisualTotals            bool                     `xml:"visualTotals,attr,omitempty"`
 	ShowMultipleLabel       bool                     `xml:"showMultipleLabel,attr,omitempty"`
 	ShowDataDropDown        bool                     `xml:"showDataDropDown,attr,omitempty"`
-	ShowDrill               *bool                    `xml:"showDrill,attr,omitempty"`
+	ShowDrill               *bool                    `xml:"showDrill,attr"`
 	PrintDrill              bool                     `xml:"printDrill,attr,omitempty"`
 	ShowMemberPropertyTips  bool                     `xml:"showMemberPropertyTips,attr,omitempty"`
 	ShowDataTips            bool                     `xml:"showDataTips,attr,omitempty"`

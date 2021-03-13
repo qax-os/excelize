@@ -38,6 +38,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowRowHeaders:  true,
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
+		ShowError:       true,
 	}))
 	// Use different order of coordinate tests
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{

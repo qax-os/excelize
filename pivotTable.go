@@ -34,6 +34,7 @@ type PivotTableOption struct {
 	PageOverThenDown    bool
 	MergeItem           bool
 	CompactData         bool
+	ShowError           bool
 	ShowRowHeaders      bool
 	ShowColHeaders      bool
 	ShowRowStripes      bool
@@ -308,6 +309,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		PageOverThenDown:  &opt.PageOverThenDown,
 		MergeItem:         &opt.MergeItem,
 		CompactData:       &opt.CompactData,
+		ShowError:         &opt.ShowError,
 		DataCaption:       "Values",
 		Location: &xlsxLocation{
 			Ref:            hcell + ":" + vcell,
