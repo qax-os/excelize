@@ -1436,6 +1436,10 @@ func TestCalcCellValue(t *testing.T) {
 		`=DATE("text",10,21)`:   "DATE requires 3 number arguments",
 		`=DATE(2020,"text",21)`: "DATE requires 3 number arguments",
 		`=DATE(2020,10,"text")`: "DATE requires 3 number arguments",
+		// NOW
+		"=NOW(A1)": "NOW accepts no arguments",
+		// TODAY
+		"=TODAY(A1)": "TODAY accepts no arguments",
 		// Text Functions
 		// CHAR
 		"=CHAR()":     "CHAR requires 1 argument",
@@ -1658,8 +1662,10 @@ func TestCalcCellValue(t *testing.T) {
 	}
 
 	volatileFuncs := []string{
+		"=NOW()",
 		"=RAND()",
 		"=RANDBETWEEN(1,2)",
+		"=TODAY()",
 	}
 	for _, formula := range volatileFuncs {
 		f := prepareCalcData(cellData)

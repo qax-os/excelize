@@ -320,6 +320,7 @@ var tokenPriority = map[string]int{
 //    MUNIT
 //    NA
 //    NOT
+//    NOW
 //    OCT2BIN
 //    OCT2DEC
 //    OCT2HEX
@@ -362,6 +363,7 @@ var tokenPriority = map[string]int{
 //    SUMSQ
 //    TAN
 //    TANH
+//    TODAY
 //    TRIM
 //    TRUE
 //    TRUNC
@@ -4645,6 +4647,33 @@ func (fn *formulaFuncs) DATE(argsList *list.List) formulaArg {
 	}
 	d := makeDate(year, time.Month(month), day)
 	return newStringFormulaArg(timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), d)+1, false).String())
+}
+
+// NOW function returns the current date and time. The function receives no arguments and therefore. The syntax of the function is:
+//
+//    NOW()
+//
+func (fn *formulaFuncs) NOW(argsList *list.List) formulaArg {
+	if argsList.Len() != 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NOW accepts no arguments")
+	}
+	now := time.Now()
+	_, offset := now.Zone()
+	return newNumberFormulaArg(25569.0 + float64(now.Unix()+int64(offset))/86400)
+}
+
+// TODAY function returns the current date. The function has no arguments and
+// therefore. The syntax of the function is:
+//
+//    TODAY()
+//
+func (fn *formulaFuncs) TODAY(argsList *list.List) formulaArg {
+	if argsList.Len() != 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TODAY accepts no arguments")
+	}
+	now := time.Now()
+	_, offset := now.Zone()
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), now.Unix()+int64(offset)) + 1)
 }
 
 // makeDate return date as a Unix time, the number of seconds elapsed since
