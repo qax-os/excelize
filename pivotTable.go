@@ -70,7 +70,8 @@ type PivotTableField struct {
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
-// options.
+// options. Note that the same fields can not in Columns, Rows and Filter
+// fields at the same time.
 //
 // For example, create a pivot table on the Sheet1!$G$2:$M$34 area with the
 // region Sheet1!$A$1:$E$31 as the data source, summarize by sum for sales:
@@ -243,8 +244,11 @@ func (f *File) addPivotCache(pivotCacheID int, pivotCacheXML string, opt *PivotT
 	hcell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	vcell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
-		SaveData:      false,
-		RefreshOnLoad: true,
+		SaveData:              false,
+		RefreshOnLoad:         true,
+		CreatedVersion:        pivotTableVersion,
+		RefreshedVersion:      pivotTableVersion,
+		MinRefreshableVersion: pivotTableVersion,
 		CacheSource: &xlsxCacheSource{
 			Type: "worksheet",
 			WorksheetSource: &xlsxWorksheetSource{
@@ -300,17 +304,20 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		return opt.PivotTableStyleName
 	}
 	pt := xlsxPivotTableDefinition{
-		Name:              fmt.Sprintf("Pivot Table%d", pivotTableID),
-		CacheID:           cacheID,
-		RowGrandTotals:    &opt.RowGrandTotals,
-		ColGrandTotals:    &opt.ColGrandTotals,
-		ShowDrill:         &opt.ShowDrill,
-		UseAutoFormatting: &opt.UseAutoFormatting,
-		PageOverThenDown:  &opt.PageOverThenDown,
-		MergeItem:         &opt.MergeItem,
-		CompactData:       &opt.CompactData,
-		ShowError:         &opt.ShowError,
-		DataCaption:       "Values",
+		Name:                  fmt.Sprintf("Pivot Table%d", pivotTableID),
+		CacheID:               cacheID,
+		RowGrandTotals:        &opt.RowGrandTotals,
+		ColGrandTotals:        &opt.ColGrandTotals,
+		UpdatedVersion:        pivotTableVersion,
+		MinRefreshableVersion: pivotTableVersion,
+		ShowDrill:             &opt.ShowDrill,
+		UseAutoFormatting:     &opt.UseAutoFormatting,
+		PageOverThenDown:      &opt.PageOverThenDown,
+		MergeItem:             &opt.MergeItem,
+		CreatedVersion:        pivotTableVersion,
+		CompactData:           &opt.CompactData,
+		ShowError:             &opt.ShowError,
+		DataCaption:           "Values",
 		Location: &xlsxLocation{
 			Ref:            hcell + ":" + vcell,
 			FirstDataCol:   1,

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2020 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -100,6 +100,11 @@ const (
 	TotalColumns         = 16384
 	TotalSheetHyperlinks = 65529
 	TotalCellChars       = 32767
+	// pivotTableVersion should be greater than 3. One or more of the
+	// PivotTables chosen are created in a version of Excel earlier than
+	// Excel 2007 or in compatibility mode. Slicer can only be used with
+	// PivotTables created in Excel 2007 or a newer version of Excel.
+	pivotTableVersion = 3
 )
 
 var supportImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff"}
