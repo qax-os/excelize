@@ -722,6 +722,20 @@ func TestCalcCellValue(t *testing.T) {
 		// DATE
 		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
 		"=DATE(1900,1,1)":   "1899-12-31 00:00:00 +0000 UTC",
+		// DATEDIF
+		"=DATEDIF(43101,43101,\"D\")":  "0",
+		"=DATEDIF(43101,43891,\"d\")":  "790",
+		"=DATEDIF(43101,43891,\"Y\")":  "2",
+		"=DATEDIF(42156,44242,\"y\")":  "5",
+		"=DATEDIF(43101,43891,\"M\")":  "26",
+		"=DATEDIF(42171,44242,\"m\")":  "67",
+		"=DATEDIF(42156,44454,\"MD\")": "14",
+		"=DATEDIF(42171,44242,\"md\")": "30",
+		"=DATEDIF(43101,43891,\"YM\")": "2",
+		"=DATEDIF(42171,44242,\"ym\")": "7",
+		"=DATEDIF(43101,43891,\"YD\")": "59",
+		"=DATEDIF(36526,73110,\"YD\")": "60",
+		"=DATEDIF(42171,44242,\"yd\")": "244",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1436,6 +1450,11 @@ func TestCalcCellValue(t *testing.T) {
 		`=DATE("text",10,21)`:   "DATE requires 3 number arguments",
 		`=DATE(2020,"text",21)`: "DATE requires 3 number arguments",
 		`=DATE(2020,10,"text")`: "DATE requires 3 number arguments",
+		// DATEDIF
+		"=DATEDIF()":                  "DATEDIF requires 3 number arguments",
+		"=DATEDIF(\"\",\"\",\"\")":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DATEDIF(43891,43101,\"Y\")": "start_date > end_date",
+		"=DATEDIF(43101,43891,\"x\")": "DATEDIF has invalid unit",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
 		// TODAY

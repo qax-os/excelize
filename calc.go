@@ -256,6 +256,7 @@ var tokenPriority = map[string]int{
 //    CSC
 //    CSCH
 //    DATE
+//    DATEDIF
 //    DEC2BIN
 //    DEC2HEX
 //    DEC2OCT
@@ -4634,22 +4635,89 @@ func (fn *formulaFuncs) DATE(argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "DATE requires 3 number arguments")
 	}
-	var year, month, day int
-	var err error
-	if year, err = strconv.Atoi(argsList.Front().Value.(formulaArg).String); err != nil {
+	year := argsList.Front().Value.(formulaArg).ToNumber()
+	month := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	day := argsList.Back().Value.(formulaArg).ToNumber()
+	if year.Type != ArgNumber || month.Type != ArgNumber || day.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, "DATE requires 3 number arguments")
 	}
-	if month, err = strconv.Atoi(argsList.Front().Next().Value.(formulaArg).String); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, "DATE requires 3 number arguments")
-	}
-	if day, err = strconv.Atoi(argsList.Back().Value.(formulaArg).String); err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, "DATE requires 3 number arguments")
-	}
-	d := makeDate(year, time.Month(month), day)
+	d := makeDate(int(year.Number), time.Month(month.Number), int(day.Number))
 	return newStringFormulaArg(timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), d)+1, false).String())
 }
 
-// NOW function returns the current date and time. The function receives no arguments and therefore. The syntax of the function is:
+// DATEDIF function calculates the number of days, months, or years between
+// two dates. The syntax of the function is:
+//
+//    DATEDIF(start_date,end_date,unit)
+//
+func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DATEDIF requires 3 number arguments")
+	}
+	startArg, endArg := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if startArg.Type != ArgNumber || endArg.Type != ArgNumber {
+		return startArg
+	}
+	if startArg.Number > endArg.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "start_date > end_date")
+	}
+	if startArg.Number == endArg.Number {
+		return newNumberFormulaArg(0)
+	}
+	unit := strings.ToLower(argsList.Back().Value.(formulaArg).Value())
+	startDate, endDate := timeFromExcelTime(startArg.Number, false), timeFromExcelTime(endArg.Number, false)
+	sy, smm, sd := startDate.Date()
+	ey, emm, ed := endDate.Date()
+	sm, em, diff := int(smm), int(emm), 0.0
+	switch unit {
+	case "d":
+		return newNumberFormulaArg(endArg.Number - startArg.Number)
+	case "y":
+		diff = float64(ey - sy)
+		if em < sm || (em == sm && ed < sd) {
+			diff--
+		}
+	case "m":
+		ydiff := ey - sy
+		mdiff := em - sm
+		if ed < sd {
+			mdiff--
+		}
+		if mdiff < 0 {
+			ydiff--
+			mdiff += 12
+		}
+		diff = float64(ydiff*12 + mdiff)
+	case "md":
+		smMD := em
+		if ed < sd {
+			smMD--
+		}
+		diff = endArg.Number - daysBetween(excelMinTime1900.Unix(), makeDate(ey, time.Month(smMD), sd)) - 1
+	case "ym":
+		diff = float64(em - sm)
+		if ed < sd {
+			diff--
+		}
+		if diff < 0 {
+			diff += 12
+		}
+	case "yd":
+		syYD := sy
+		if em < sm || (em == sm && ed < sd) {
+			syYD++
+		}
+		s := daysBetween(excelMinTime1900.Unix(), makeDate(syYD, time.Month(em), ed))
+		e := daysBetween(excelMinTime1900.Unix(), makeDate(sy, time.Month(sm), sd))
+		diff = s - e
+	default:
+		return newErrorFormulaArg(formulaErrorVALUE, "DATEDIF has invalid unit")
+	}
+	return newNumberFormulaArg(diff)
+}
+
+// NOW function returns the current date and time. The function receives no
+// arguments and therefore. The syntax of the function is:
 //
 //    NOW()
 //
