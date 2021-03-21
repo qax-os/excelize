@@ -29,6 +29,8 @@ import (
 	"unsafe"
 
 	"github.com/xuri/efp"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // Excel formula errors
@@ -273,6 +275,7 @@ var tokenPriority = map[string]int{
 //    FINDB
 //    FISHER
 //    FISHERINV
+//    FIXED
 //    FLOOR
 //    FLOOR.MATH
 //    FLOOR.PRECISE
@@ -4881,6 +4884,55 @@ func (fn *formulaFuncs) EXACT(argsList *list.List) formulaArg {
 	text1 := argsList.Front().Value.(formulaArg).Value()
 	text2 := argsList.Back().Value.(formulaArg).Value()
 	return newBoolFormulaArg(text1 == text2)
+}
+
+// FIXED function rounds a supplied number to a specified number of decimal
+// places and then converts this into text. The syntax of the function is:
+//
+//    FIXED(number,[decimals],[no_commas])
+//
+func (fn *formulaFuncs) FIXED(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FIXED requires at least 1 argument")
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FIXED allows at most 3 arguments")
+	}
+	numArg := argsList.Front().Value.(formulaArg).ToNumber()
+	if numArg.Type != ArgNumber {
+		return numArg
+	}
+	precision, decimals, noCommas := 0, 0, false
+	s := strings.Split(argsList.Front().Value.(formulaArg).Value(), ".")
+	if argsList.Len() == 1 && len(s) == 2 {
+		precision = len(s[1])
+		decimals = len(s[1])
+	}
+	if argsList.Len() >= 2 {
+		decimalsArg := argsList.Front().Next().Value.(formulaArg).ToNumber()
+		if decimalsArg.Type != ArgNumber {
+			return decimalsArg
+		}
+		decimals = int(decimalsArg.Number)
+	}
+	if argsList.Len() == 3 {
+		noCommasArg := argsList.Back().Value.(formulaArg).ToBool()
+		if noCommasArg.Type == ArgError {
+			return noCommasArg
+		}
+		noCommas = noCommasArg.Boolean
+	}
+	n := math.Pow(10, float64(decimals))
+	r := numArg.Number * n
+	fixed := float64(int(r+math.Copysign(0.5, r))) / n
+	if decimals > 0 {
+		precision = decimals
+	}
+	if noCommas {
+		return newStringFormulaArg(fmt.Sprintf(fmt.Sprintf("%%.%df", precision), fixed))
+	}
+	p := message.NewPrinter(language.English)
+	return newStringFormulaArg(p.Sprintf(fmt.Sprintf("%%.%df", precision), fixed))
 }
 
 // FIND function returns the position of a specified character or sub-string

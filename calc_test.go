@@ -759,6 +759,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXACT(1,\"1\")":     "TRUE",
 		"=EXACT(1,1)":         "TRUE",
 		"=EXACT(\"A\",\"a\")": "FALSE",
+		// FIXED
+		"=FIXED(5123.591)":         "5,123.591",
+		"=FIXED(5123.591,1)":       "5,123.6",
+		"=FIXED(5123.591,0)":       "5,124",
+		"=FIXED(5123.591,-1)":      "5,120",
+		"=FIXED(5123.591,-2)":      "5,100",
+		"=FIXED(5123.591,-3,TRUE)": "5000",
+		"=FIXED(5123.591,-5)":      "0",
+		"=FIXED(-77262.23973,-5)":  "-100,000",
 		// FIND
 		"=FIND(\"T\",\"Original Text\")":   "10",
 		"=FIND(\"t\",\"Original Text\")":   "13",
@@ -1478,6 +1487,12 @@ func TestCalcCellValue(t *testing.T) {
 		// EXACT
 		"=EXACT()":      "EXACT requires 2 arguments",
 		"=EXACT(1,2,3)": "EXACT requires 2 arguments",
+		// FIXED
+		"=FIXED()":         "FIXED requires at least 1 argument",
+		"=FIXED(0,1,2,3)":  "FIXED allows at most 3 arguments",
+		"=FIXED(\"\")":     "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FIXED(0,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FIXED(0,0,\"\")": "strconv.ParseBool: parsing \"\": invalid syntax",
 		// FIND
 		"=FIND()":                 "FIND requires at least 2 arguments",
 		"=FIND(1,2,3,4)":          "FIND allows at most 3 arguments",
