@@ -1487,9 +1487,8 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 		Data:    definedName.RefersTo,
 	}
 	if definedName.Scope != "" {
-		if sheetID := f.getSheetID(definedName.Scope); sheetID != 0 {
-			sheetID--
-			d.LocalSheetID = &sheetID
+		if sheetIndex := f.GetSheetIndex(definedName.Scope); sheetIndex >= 0 {
+			d.LocalSheetID = &sheetIndex
 		}
 	}
 	if wb.DefinedNames != nil {
