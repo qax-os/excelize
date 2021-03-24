@@ -2472,8 +2472,8 @@ func newAlignment(style *Style) *xlsxAlignment {
 func newProtection(style *Style) *xlsxProtection {
 	var protection xlsxProtection
 	if style.Protection != nil {
-		protection.Hidden = style.Protection.Hidden
-		protection.Locked = style.Protection.Locked
+		protection.Hidden = &style.Protection.Hidden
+		protection.Locked = &style.Protection.Locked
 	}
 	return &protection
 }

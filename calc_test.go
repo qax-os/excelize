@@ -605,6 +605,9 @@ func TestCalcCellValue(t *testing.T) {
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.453736570842443",
 		"=GAMMALN(INT(1))": "0",
+		// HARMEAN
+		"=HARMEAN(2.5,3,0.5,1,3)":               "1.229508196721312",
+		"=HARMEAN(\"2.5\",3,0.5,1,INT(3),\"\")": "1.229508196721312",
 		// KURT
 		"=KURT(F1:F9)":           "-1.033503502551368",
 		"=KURT(F1,F2:F9)":        "-1.033503502551368",
@@ -1393,6 +1396,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(0)":      "#N/A",
 		"=GAMMALN(INT(0))": "#N/A",
+		// HARMEAN
+		"=HARMEAN()":   "HARMEAN requires at least 1 argument",
+		"=HARMEAN(-1)": "#N/A",
+		"=HARMEAN(0)":  "#N/A",
 		// KURT
 		"=KURT()":          "KURT requires at least 1 argument",
 		"=KURT(F1,INT(1))": "#DIV/0!",

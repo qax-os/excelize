@@ -282,6 +282,7 @@ var tokenPriority = map[string]int{
 //    GAMMA
 //    GAMMALN
 //    GCD
+//    HARMEAN
 //    HEX2BIN
 //    HEX2DEC
 //    HEX2OCT
@@ -3925,6 +3926,40 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+}
+
+// HARMEAN function calculates the harmonic mean of a supplied set of values.
+// The syntax of the function is:
+//
+//    HARMEAN(number1,[number2],...)
+//
+func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HARMEAN requires at least 1 argument")
+	}
+	if min := fn.MIN(argsList); min.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	number, val, cnt := 0.0, 0.0, 0.0
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		arg := token.Value.(formulaArg)
+		switch arg.Type {
+		case ArgString:
+			num := arg.ToNumber()
+			if num.Type != ArgNumber {
+				continue
+			}
+			number = num.Number
+		case ArgNumber:
+			number = arg.Number
+		}
+		if number <= 0 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		val += (1 / number)
+		cnt++
+	}
+	return newNumberFormulaArg(1 / (val / cnt))
 }
 
 // KURT function calculates the kurtosis of a supplied set of values. The

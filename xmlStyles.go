@@ -49,8 +49,8 @@ type xlsxAlignment struct {
 // set. The cell protection properties do not take effect unless the sheet has
 // been protected.
 type xlsxProtection struct {
-	Hidden bool `xml:"hidden,attr"`
-	Locked bool `xml:"locked,attr"`
+	Hidden *bool `xml:"hidden,attr"`
+	Locked *bool `xml:"locked,attr"`
 }
 
 // xlsxLine expresses a single set of cell border.
