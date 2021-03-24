@@ -609,6 +609,27 @@ func TestCalcCellValue(t *testing.T) {
 		"=KURT(F1:F9)":           "-1.033503502551368",
 		"=KURT(F1,F2:F9)":        "-1.033503502551368",
 		"=KURT(INT(1),MUNIT(2))": "-3.333333333333336",
+		// NORM.DIST
+		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
+		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
+		// NORMDIST
+		"=NORMDIST(0.8,1,0.3,TRUE)": "0.252492537546923",
+		"=NORMDIST(50,40,20,FALSE)": "0.017603266338215",
+		// NORM.INV
+		"=NORM.INV(0.6,5,2)": "5.506694205719997",
+		// NORMINV
+		"=NORMINV(0.6,5,2)":     "5.506694205719997",
+		"=NORMINV(0.99,40,1.5)": "43.489521811582044",
+		"=NORMINV(0.02,40,1.5)": "36.91937663649545",
+		// NORM.S.DIST
+		"=NORM.S.DIST(0.8,TRUE)": "0.788144601416603",
+		// NORMSDIST
+		"=NORMSDIST(1.333333)": "0.908788725604095",
+		"=NORMSDIST(0)":        "0.5",
+		// NORM.S.INV
+		"=NORM.S.INV(0.25)": "-0.674489750223423",
+		// NORMSINV
+		"=NORMSINV(0.25)": "-0.674489750223423",
 		// LARGE
 		"=LARGE(A1:A5,1)": "3",
 		"=LARGE(A1:B5,2)": "4",
@@ -1375,6 +1396,33 @@ func TestCalcCellValue(t *testing.T) {
 		// KURT
 		"=KURT()":          "KURT requires at least 1 argument",
 		"=KURT(F1,INT(1))": "#DIV/0!",
+		// NORM.DIST
+		"=NORM.DIST()": "NORM.DIST requires 4 arguments",
+		// NORMDIST
+		"=NORMDIST()":               "NORMDIST requires 4 arguments",
+		"=NORMDIST(\"\",0,0,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NORMDIST(0,\"\",0,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NORMDIST(0,0,\"\",FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NORMDIST(0,0,0,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=NORMDIST(0,0,-1,TRUE)":    "#N/A",
+		// NORM.INV
+		"=NORM.INV()": "NORM.INV requires 3 arguments",
+		// NORMINV
+		"=NORMINV()":         "NORMINV requires 3 arguments",
+		"=NORMINV(\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NORMINV(0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NORMINV(0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NORMINV(0,0,-1)":   "#N/A",
+		"=NORMINV(-1,0,0)":   "#N/A",
+		"=NORMINV(0,0,0)":    "#NUM!",
+		// NORM.S.DIST
+		"=NORM.S.DIST()": "NORM.S.DIST requires 2 numeric arguments",
+		// NORMSDIST
+		"=NORMSDIST()": "NORMSDIST requires 1 numeric argument",
+		// NORM.S.INV
+		"=NORM.S.INV()": "NORM.S.INV requires 1 numeric argument",
+		// NORMSINV
+		"=NORMSINV()": "NORMSINV requires 1 numeric argument",
 		// LARGE
 		"=LARGE()":           "LARGE requires 2 arguments",
 		"=LARGE(A1:A5,0)":    "k should be > 0",

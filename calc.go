@@ -323,6 +323,14 @@ var tokenPriority = map[string]int{
 //    MULTINOMIAL
 //    MUNIT
 //    NA
+//    NORM.DIST
+//    NORMDIST
+//    NORM.INV
+//    NORMINV
+//    NORM.S.DIST
+//    NORMSDIST
+//    NORM.S.INV
+//    NORMSINV
 //    NOT
 //    NOW
 //    OCT2BIN
@@ -599,7 +607,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 	}
 	// call formula function to evaluate
 	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell}, strings.NewReplacer(
-		"_xlfn", "", ".", "").Replace(opfStack.Peek().(efp.Token).TValue),
+		"_xlfn.", "", ".", "dot").Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
 		return errors.New(arg.Value())
@@ -1922,12 +1930,12 @@ func (fn *formulaFuncs) CEILING(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(number * significance)
 }
 
-// CEILINGMATH function rounds a supplied number up to a supplied multiple of
-// significance. The syntax of the function is:
+// CEILINGdotMATH function rounds a supplied number up to a supplied multiple
+// of significance. The syntax of the function is:
 //
 //    CEILING.MATH(number,[significance],[mode])
 //
-func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) CEILINGdotMATH(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "CEILING.MATH requires at least 1 argument")
 	}
@@ -1971,13 +1979,13 @@ func (fn *formulaFuncs) CEILINGMATH(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(val * significance)
 }
 
-// CEILINGPRECISE function rounds a supplied number up (regardless of the
+// CEILINGdotPRECISE function rounds a supplied number up (regardless of the
 // number's sign), to the nearest multiple of a given number. The syntax of
 // the function is:
 //
 //    CEILING.PRECISE(number,[significance])
 //
-func (fn *formulaFuncs) CEILINGPRECISE(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) CEILINGdotPRECISE(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "CEILING.PRECISE requires at least 1 argument")
 	}
@@ -2365,12 +2373,12 @@ func (fn *formulaFuncs) FLOOR(argsList *list.List) formulaArg {
 	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", val*significance.Number)))
 }
 
-// FLOORMATH function rounds a supplied number down to a supplied multiple of
-// significance. The syntax of the function is:
+// FLOORdotMATH function rounds a supplied number down to a supplied multiple
+// of significance. The syntax of the function is:
 //
 //    FLOOR.MATH(number,[significance],[mode])
 //
-func (fn *formulaFuncs) FLOORMATH(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) FLOORdotMATH(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "FLOOR.MATH requires at least 1 argument")
 	}
@@ -2409,12 +2417,12 @@ func (fn *formulaFuncs) FLOORMATH(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(val * significance)
 }
 
-// FLOORPRECISE function rounds a supplied number down to a supplied multiple
-// of significance. The syntax of the function is:
+// FLOORdotPRECISE function rounds a supplied number down to a supplied
+// multiple of significance. The syntax of the function is:
 //
 //    FLOOR.PRECISE(number,[significance])
 //
-func (fn *formulaFuncs) FLOORPRECISE(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) FLOORdotPRECISE(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "FLOOR.PRECISE requires at least 1 argument")
 	}
@@ -2534,13 +2542,13 @@ func (fn *formulaFuncs) INT(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(val)
 }
 
-// ISOCEILING function rounds a supplied number up (regardless of the number's
-// sign), to the nearest multiple of a supplied significance. The syntax of
-// the function is:
+// ISOdotCEILING function rounds a supplied number up (regardless of the
+// number's sign), to the nearest multiple of a supplied significance. The
+// syntax of the function is:
 //
 //    ISO.CEILING(number,[significance])
 //
-func (fn *formulaFuncs) ISOCEILING(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) ISOdotCEILING(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISO.CEILING requires at least 1 argument")
 	}
@@ -3959,6 +3967,207 @@ func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
 		}
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// NORMdotDIST function calculates the Normal Probability Density Function or
+// the Cumulative Normal Distribution. Function for a supplied set of
+// parameters. The syntax of the function is:
+//
+//    NORM.DIST(x,mean,standard_dev,cumulative)
+//
+func (fn *formulaFuncs) NORMdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORM.DIST requires 4 arguments")
+	}
+	return fn.NORMDIST(argsList)
+}
+
+// NORMDIST function calculates the Normal Probability Density Function or the
+// Cumulative Normal Distribution. Function for a supplied set of parameters.
+// The syntax of the function is:
+//
+//    NORMDIST(x,mean,standard_dev,cumulative)
+//
+func (fn *formulaFuncs) NORMDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORMDIST requires 4 arguments")
+	}
+	var x, mean, stdDev, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if mean = argsList.Front().Next().Value.(formulaArg).ToNumber(); mean.Type != ArgNumber {
+		return mean
+	}
+	if stdDev = argsList.Back().Prev().Value.(formulaArg).ToNumber(); stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if stdDev.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(0.5 * (1 + math.Erf((x.Number-mean.Number)/(stdDev.Number*math.Sqrt(2)))))
+	}
+	return newNumberFormulaArg((1 / (math.Sqrt(2*math.Pi) * stdDev.Number)) * math.Exp(0-(math.Pow(x.Number-mean.Number, 2)/(2*(stdDev.Number*stdDev.Number)))))
+}
+
+// NORMdotINV function calculates the inverse of the Cumulative Normal
+// Distribution Function for a supplied value of x, and a supplied
+// distribution mean & standard deviation. The syntax of the function is:
+//
+//    NORM.INV(probability,mean,standard_dev)
+//
+func (fn *formulaFuncs) NORMdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORM.INV requires 3 arguments")
+	}
+	return fn.NORMINV(argsList)
+}
+
+// NORMINV function calculates the inverse of the Cumulative Normal
+// Distribution Function for a supplied value of x, and a supplied
+// distribution mean & standard deviation. The syntax of the function is:
+//
+//    NORMINV(probability,mean,standard_dev)
+//
+func (fn *formulaFuncs) NORMINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORMINV requires 3 arguments")
+	}
+	var prob, mean, stdDev formulaArg
+	if prob = argsList.Front().Value.(formulaArg).ToNumber(); prob.Type != ArgNumber {
+		return prob
+	}
+	if mean = argsList.Front().Next().Value.(formulaArg).ToNumber(); mean.Type != ArgNumber {
+		return mean
+	}
+	if stdDev = argsList.Back().Value.(formulaArg).ToNumber(); stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if prob.Number < 0 || prob.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if stdDev.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	inv, err := norminv(prob.Number)
+	if err != nil {
+		return newErrorFormulaArg(err.Error(), err.Error())
+	}
+	return newNumberFormulaArg(inv*stdDev.Number + mean.Number)
+}
+
+// NORMdotSdotDIST function calculates the Standard Normal Cumulative
+// Distribution Function for a supplied value. The syntax of the function
+// is:
+//
+//    NORM.S.DIST(z)
+//
+func (fn *formulaFuncs) NORMdotSdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORM.S.DIST requires 2 numeric arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 0})
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 1})
+	args.PushBack(argsList.Back().Value.(formulaArg))
+	return fn.NORMDIST(args)
+}
+
+// NORMSDIST function calculates the Standard Normal Cumulative Distribution
+// Function for a supplied value. The syntax of the function is:
+//
+//    NORMSDIST(z)
+//
+func (fn *formulaFuncs) NORMSDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORMSDIST requires 1 numeric argument")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 0})
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 1})
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 1, Boolean: true})
+	return fn.NORMDIST(args)
+}
+
+// NORMSINV function calculates the inverse of the Standard Normal Cumulative
+// Distribution Function for a supplied probability value. The syntax of the
+// function is:
+//
+//    NORMSINV(probability)
+//
+func (fn *formulaFuncs) NORMSINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORMSINV requires 1 numeric argument")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 0})
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 1})
+	return fn.NORMINV(args)
+}
+
+// NORMdotSdotINV function calculates the inverse of the Standard Normal
+// Cumulative Distribution Function for a supplied probability value. The
+// syntax of the function is:
+//
+//    NORM.S.INV(probability)
+//
+func (fn *formulaFuncs) NORMdotSdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NORM.S.INV requires 1 numeric argument")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 0})
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 1})
+	return fn.NORMINV(args)
+}
+
+// norminv returns the inverse of the normal cumulative distribution for the
+// specified value.
+func norminv(p float64) (float64, error) {
+	a := map[int]float64{
+		1: -3.969683028665376e+01, 2: 2.209460984245205e+02, 3: -2.759285104469687e+02,
+		4: 1.383577518672690e+02, 5: -3.066479806614716e+01, 6: 2.506628277459239e+00,
+	}
+	b := map[int]float64{
+		1: -5.447609879822406e+01, 2: 1.615858368580409e+02, 3: -1.556989798598866e+02,
+		4: 6.680131188771972e+01, 5: -1.328068155288572e+01,
+	}
+	c := map[int]float64{
+		1: -7.784894002430293e-03, 2: -3.223964580411365e-01, 3: -2.400758277161838e+00,
+		4: -2.549732539343734e+00, 5: 4.374664141464968e+00, 6: 2.938163982698783e+00,
+	}
+	d := map[int]float64{
+		1: 7.784695709041462e-03, 2: 3.224671290700398e-01, 3: 2.445134137142996e+00,
+		4: 3.754408661907416e+00,
+	}
+	pLow := 0.02425   // Use lower region approx. below this
+	pHigh := 1 - pLow // Use upper region approx. above this
+	if 0 < p && p < pLow {
+		// Rational approximation for lower region.
+		q := math.Sqrt(-2 * math.Log(p))
+		return (((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
+			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), nil
+	} else if pLow <= p && p <= pHigh {
+		// Rational approximation for central region.
+		q := p - 0.5
+		r := q * q
+		return (((((a[1]*r+a[2])*r+a[3])*r+a[4])*r+a[5])*r + a[6]) * q /
+			(((((b[1]*r+b[2])*r+b[3])*r+b[4])*r+b[5])*r + 1), nil
+	} else if pHigh < p && p < 1 {
+		// Rational approximation for upper region.
+		q := math.Sqrt(-2 * math.Log(1-p))
+		return -(((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
+			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), nil
+	}
+	return 0, errors.New(formulaErrorNUM)
 }
 
 // kth is an implementation of the formula function LARGE and SMALL.
