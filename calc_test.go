@@ -509,10 +509,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=STDEV(MUNIT(2))":      "0.577350269189626",
 		"=STDEV(0,INT(0))":      "0",
 		"=STDEV(INT(1),INT(1))": "0",
+		// STDEV.S
+		"=STDEV.S(F2:F9)": "10724.978287523809",
 		// STDEVA
 		"=STDEVA(F2:F9)":    "10724.978287523809",
 		"=STDEVA(MUNIT(2))": "0.577350269189626",
 		"=STDEVA(0,INT(0))": "0",
+		// POISSON.DIST
+		"=POISSON.DIST(20,25,FALSE)": "0.051917468608491",
+		"=POISSON.DIST(35,40,TRUE)":  "0.242414197690103",
+		// POISSON
+		"=POISSON(20,25,FALSE)": "0.051917468608491",
+		"=POISSON(35,40,TRUE)":  "0.242414197690103",
 		// SUM
 		"=SUM(1,2)":                           "3",
 		`=SUM("",1,2)`:                        "3",
@@ -676,6 +684,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUT(6,6)":  "720",
 		"=PERMUT(7,6)":  "5040",
 		"=PERMUT(10,6)": "151200",
+		// SKEW
+		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
+		"=SKEW(A1:B2)":     "0",
+		"=SKEW(A1:D3)":     "0",
 		// SMALL
 		"=SMALL(A1:A5,1)": "0",
 		"=SMALL(A1:B5,2)": "1",
@@ -1345,9 +1357,19 @@ func TestCalcCellValue(t *testing.T) {
 		// STDEV
 		"=STDEV()":      "STDEV requires at least 1 argument",
 		"=STDEV(E2:E9)": "#DIV/0!",
+		// STDEV.S
+		"=STDEV.S()": "STDEV.S requires at least 1 argument",
 		// STDEVA
 		"=STDEVA()":      "STDEVA requires at least 1 argument",
 		"=STDEVA(E2:E9)": "#DIV/0!",
+		// POISSON.DIST
+		"=POISSON.DIST()": "POISSON.DIST requires 3 arguments",
+		// POISSON
+		"=POISSON()":             "POISSON requires 3 arguments",
+		"=POISSON(\"\",0,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=POISSON(0,\"\",FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=POISSON(0,0,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=POISSON(0,-1,TRUE)":    "#N/A",
 		// SUM
 		"=SUM((":   "formula not valid",
 		"=SUM(-)":  "formula not valid",
@@ -1456,6 +1478,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUT(6,8)":    "#N/A",
+		// SKEW
+		"=SKEW()":     "SKEW requires at least 1 argument",
+		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=SKEW(0)":    "#DIV/0!",
 		// SMALL
 		"=SMALL()":           "SMALL requires 2 arguments",
 		"=SMALL(A1:A5,0)":    "k should be > 0",

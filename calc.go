@@ -341,6 +341,8 @@ var tokenPriority = map[string]int{
 //    OR
 //    PERMUT
 //    PI
+//    POISSON.DIST
+//    POISSON
 //    POWER
 //    PRODUCT
 //    PROPER
@@ -365,10 +367,12 @@ var tokenPriority = map[string]int{
 //    SIGN
 //    SIN
 //    SINH
+//    SKEW
 //    SMALL
 //    SQRT
 //    SQRTPI
 //    STDEV
+//    STDEV.S
 //    STDEVA
 //    SUBSTITUTE
 //    SUM
@@ -3396,6 +3400,18 @@ func (fn *formulaFuncs) STDEV(argsList *list.List) formulaArg {
 	return fn.stdev(false, argsList)
 }
 
+// STDEVdotS function calculates the sample standard deviation of a supplied
+// set of values. The syntax of the function is:
+//
+//    STDEV.S(number1,[number2],...)
+//
+func (fn *formulaFuncs) STDEVdotS(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "STDEV.S requires at least 1 argument")
+	}
+	return fn.stdev(false, argsList)
+}
+
 // STDEVA function estimates standard deviation based on a sample. The
 // standard deviation is a measure of how widely values are dispersed from
 // the average value (the mean). The syntax of the function is:
@@ -3470,6 +3486,53 @@ func (fn *formulaFuncs) stdev(stdeva bool, argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Sqrt(result / count))
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// POISSONdotDIST function calculates the Poisson Probability Mass Function or
+// the Cumulative Poisson Probability Function for a supplied set of
+// parameters. The syntax of the function is:
+//
+//    POISSON.DIST(x,mean,cumulative)
+//
+func (fn *formulaFuncs) POISSONdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "POISSON.DIST requires 3 arguments")
+	}
+	return fn.POISSON(argsList)
+}
+
+// POISSON function calculates the Poisson Probability Mass Function or the
+// Cumulative Poisson Probability Function for a supplied set of parameters.
+// The syntax of the function is:
+//
+//    POISSON(x,mean,cumulative)
+//
+func (fn *formulaFuncs) POISSON(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "POISSON requires 3 arguments")
+	}
+	var x, mean, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if mean = argsList.Front().Next().Value.(formulaArg).ToNumber(); mean.Type != ArgNumber {
+		return mean
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if x.Number < 0 || mean.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if cumulative.Number == 1 {
+		summer := 0.0
+		floor := math.Floor(x.Number)
+		for i := 0; i <= int(floor); i++ {
+			summer += math.Pow(mean.Number, float64(i)) / fact(float64(i))
+		}
+		return newNumberFormulaArg(math.Exp(0-mean.Number) * summer)
+	}
+	return newNumberFormulaArg(math.Exp(0-mean.Number) * math.Pow(mean.Number, x.Number) / fact(x.Number))
 }
 
 // SUM function adds together a supplied set of numbers and returns the sum of
@@ -4477,6 +4540,43 @@ func (fn *formulaFuncs) PERMUT(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(math.Round(fact(number.Number) / fact(number.Number-chosen.Number)))
+}
+
+// SKEW function calculates the skewness of the distribution of a supplied set
+// of values. The syntax of the function is:
+//
+//    SKEW(number1,[number2],...)
+//
+func (fn *formulaFuncs) SKEW(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SKEW requires at least 1 argument")
+	}
+	mean, stdDev, count, summer := fn.AVERAGE(argsList), fn.STDEV(argsList), 0.0, 0.0
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgNumber, ArgString:
+			num := token.ToNumber()
+			if num.Type == ArgError {
+				return num
+			}
+			summer += math.Pow((num.Number-mean.Number)/stdDev.Number, 3)
+			count++
+		case ArgList, ArgMatrix:
+			for _, row := range token.ToList() {
+				numArg := row.ToNumber()
+				if numArg.Type != ArgNumber {
+					continue
+				}
+				summer += math.Pow((numArg.Number-mean.Number)/stdDev.Number, 3)
+				count++
+			}
+		}
+	}
+	if count > 2 {
+		return newNumberFormulaArg(summer * (count / ((count - 1) * (count - 2))))
+	}
+	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 }
 
 // SMALL function returns the k'th smallest value from an array of numeric
