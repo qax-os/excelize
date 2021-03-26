@@ -339,7 +339,9 @@ var tokenPriority = map[string]int{
 //    OCT2HEX
 //    ODD
 //    OR
+//    PERCENTILE
 //    PERMUT
+//    PERMUTATIONA
 //    PI
 //    POISSON.DIST
 //    POISSON
@@ -4519,6 +4521,46 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(min)
 }
 
+// PERCENTILE function returns the k'th percentile (i.e. the value below which
+// k% of the data values fall) for a supplied range of values and a supplied
+// k. The syntax of the function is:
+//
+//    PERCENTILE(array,k)
+//
+func (fn *formulaFuncs) PERCENTILE(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PERCENTILE requires 2 arguments")
+	}
+	array := argsList.Front().Value.(formulaArg).ToList()
+	k := argsList.Back().Value.(formulaArg).ToNumber()
+	if k.Type != ArgNumber {
+		return k
+	}
+	if k.Number < 0 || k.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	numbers := []float64{}
+	for _, arg := range array {
+		if arg.Type == ArgError {
+			return arg
+		}
+		num := arg.ToNumber()
+		if num.Type == ArgNumber {
+			numbers = append(numbers, num.Number)
+		}
+	}
+	cnt := len(numbers)
+	sort.Float64s(numbers)
+	idx := k.Number * (float64(cnt) - 1)
+	base := math.Floor(idx)
+	if idx == base {
+		return newNumberFormulaArg(numbers[int(idx)])
+	}
+	next := base + 1
+	proportion := idx - base
+	return newNumberFormulaArg(numbers[int(base)] + ((numbers[int(next)] - numbers[int(base)]) * proportion))
+}
+
 // PERMUT function calculates the number of permutations of a specified number
 // of objects from a set of objects. The syntax of the function is:
 //
@@ -4540,6 +4582,31 @@ func (fn *formulaFuncs) PERMUT(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(math.Round(fact(number.Number) / fact(number.Number-chosen.Number)))
+}
+
+// PERMUTATIONA function calculates the number of permutations, with
+// repetitions, of a specified number of objects from a set. The syntax of
+// the function is:
+//
+//    PERMUTATIONA(number,number_chosen)
+//
+func (fn *formulaFuncs) PERMUTATIONA(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PERMUTATIONA requires 2 numeric arguments")
+	}
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	chosen := argsList.Back().Value.(formulaArg).ToNumber()
+	if number.Type != ArgNumber {
+		return number
+	}
+	if chosen.Type != ArgNumber {
+		return chosen
+	}
+	num, numChosen := math.Floor(number.Number), math.Floor(chosen.Number)
+	if num < 0 || numChosen < 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(math.Pow(num, numChosen))
 }
 
 // SKEW function calculates the skewness of the distribution of a supplied set

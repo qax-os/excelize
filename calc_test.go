@@ -680,10 +680,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=MINA(MUNIT(2))":    "0",
 		"=MINA(INT(1))":      "1",
 		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
+		// PERCENTILE
+		"=PERCENTILE(A1:A4,0.2)": "0.6",
+		"=PERCENTILE(0,0)":       "0",
 		// PERMUT
 		"=PERMUT(6,6)":  "720",
 		"=PERMUT(7,6)":  "5040",
 		"=PERMUT(10,6)": "151200",
+		// PERMUTATIONA
+		"=PERMUTATIONA(6,6)": "46656",
+		"=PERMUTATIONA(7,6)": "117649",
 		// SKEW
 		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
 		"=SKEW(A1:B2)":     "0",
@@ -1473,11 +1479,22 @@ func TestCalcCellValue(t *testing.T) {
 		// MINA
 		"=MINA()":     "MINA requires at least 1 argument",
 		"=MINA(NA())": "#N/A",
+		// PERCENTILE
+		"=PERCENTILE()":       "PERCENTILE requires 2 arguments",
+		"=PERCENTILE(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTILE(0,-1)":   "#N/A",
+		"=PERCENTILE(NA(),1)": "#N/A",
 		// PERMUT
 		"=PERMUT()":       "PERMUT requires 2 numeric arguments",
 		"=PERMUT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUT(6,8)":    "#N/A",
+		// PERMUTATIONA
+		"=PERMUTATIONA()":       "PERMUTATIONA requires 2 numeric arguments",
+		"=PERMUTATIONA(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERMUTATIONA(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERMUTATIONA(-1,0)":   "#N/A",
+		"=PERMUTATIONA(0,-1)":   "#N/A",
 		// SKEW
 		"=SKEW()":     "SKEW requires at least 1 argument",
 		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
