@@ -259,7 +259,7 @@ func TestSetDefaultFont(t *testing.T) {
 
 func TestStylesReader(t *testing.T) {
 	f := NewFile()
-	// Test read styles with unsupport charset.
+	// Test read styles with unsupported charset.
 	f.Styles = nil
 	f.XLSX["xl/styles.xml"] = MacintoshCyrillicCharset
 	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
@@ -267,7 +267,7 @@ func TestStylesReader(t *testing.T) {
 
 func TestThemeReader(t *testing.T) {
 	f := NewFile()
-	// Test read theme with unsupport charset.
+	// Test read theme with unsupported charset.
 	f.XLSX["xl/theme/theme1.xml"] = MacintoshCyrillicCharset
 	assert.EqualValues(t, new(xlsxTheme), f.themeReader())
 }

@@ -270,7 +270,7 @@ func TestAddSparkline(t *testing.T) {
 }
 
 func TestAppendSparkline(t *testing.T) {
-	// Test unsupport charset.
+	// Test unsupported charset.
 	f := NewFile()
 	ws, err := f.workSheetReader("Sheet1")
 	assert.NoError(t, err)

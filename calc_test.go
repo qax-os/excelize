@@ -680,6 +680,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MINA(MUNIT(2))":    "0",
 		"=MINA(INT(1))":      "1",
 		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
+		// PERCENTILE.INC
+		"=PERCENTILE.INC(A1:A4,0.2)": "0.6",
 		// PERCENTILE
 		"=PERCENTILE(A1:A4,0.2)": "0.6",
 		"=PERCENTILE(0,0)":       "0",
@@ -730,8 +732,17 @@ func TestCalcCellValue(t *testing.T) {
 		// ISTEXT
 		"=ISTEXT(D1)": "TRUE",
 		"=ISTEXT(A1)": "FALSE",
+		// N
+		"=N(10)":     "10",
+		"=N(\"10\")": "10",
+		"=N(\"x\")":  "0",
+		"=N(TRUE)":   "1",
+		"=N(FALSE)":  "0",
 		// SHEET
-		"SHEET()": "1",
+		"=SHEET()": "1",
+		// T
+		"=T(\"text\")": "text",
+		"=T(N(10))":    "",
 		// Logical Functions
 		// AND
 		"=AND(0)":               "FALSE",
@@ -1479,6 +1490,8 @@ func TestCalcCellValue(t *testing.T) {
 		// MINA
 		"=MINA()":     "MINA requires at least 1 argument",
 		"=MINA(NA())": "#N/A",
+		// PERCENTILE.INC
+		"=PERCENTILE.INC()": "PERCENTILE.INC requires 2 arguments",
 		// PERCENTILE
 		"=PERCENTILE()":       "PERCENTILE requires 2 arguments",
 		"=PERCENTILE(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -1525,11 +1538,17 @@ func TestCalcCellValue(t *testing.T) {
 		`=ISODD("text")`: "strconv.Atoi: parsing \"text\": invalid syntax",
 		// ISTEXT
 		"=ISTEXT()": "ISTEXT requires 1 argument",
+		// N
+		"=N()":     "N requires 1 argument",
+		"=N(NA())": "#N/A",
 		// NA
 		"=NA()":  "#N/A",
 		"=NA(1)": "NA accepts no arguments",
 		// SHEET
 		"=SHEET(1)": "SHEET accepts no arguments",
+		// T
+		"=T()":     "T requires 1 argument",
+		"=T(NA())": "#N/A",
 		// Logical Functions
 		// AND
 		`=AND("text")`: "strconv.ParseFloat: parsing \"text\": invalid syntax",

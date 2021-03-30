@@ -1195,7 +1195,7 @@ func TestAddVBAProject(t *testing.T) {
 }
 
 func TestContentTypesReader(t *testing.T) {
-	// Test unsupport charset.
+	// Test unsupported charset.
 	f := NewFile()
 	f.ContentTypes = nil
 	f.XLSX["[Content_Types].xml"] = MacintoshCyrillicCharset
@@ -1203,7 +1203,7 @@ func TestContentTypesReader(t *testing.T) {
 }
 
 func TestWorkbookReader(t *testing.T) {
-	// Test unsupport charset.
+	// Test unsupported charset.
 	f := NewFile()
 	f.WorkBook = nil
 	f.XLSX["xl/workbook.xml"] = MacintoshCyrillicCharset
@@ -1211,7 +1211,7 @@ func TestWorkbookReader(t *testing.T) {
 }
 
 func TestWorkSheetReader(t *testing.T) {
-	// Test unsupport charset.
+	// Test unsupported charset.
 	f := NewFile()
 	delete(f.Sheet, "xl/worksheets/sheet1.xml")
 	f.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
@@ -1228,7 +1228,7 @@ func TestWorkSheetReader(t *testing.T) {
 }
 
 func TestRelsReader(t *testing.T) {
-	// Test unsupport charset.
+	// Test unsupported charset.
 	f := NewFile()
 	rels := "xl/_rels/workbook.xml.rels"
 	f.Relationships[rels] = nil

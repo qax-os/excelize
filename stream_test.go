@@ -94,7 +94,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.rawData.tmp.Close())
 	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
 
-	// Test unsupport charset
+	// Test unsupported charset
 	file = NewFile()
 	delete(file.Sheet, "xl/worksheets/sheet1.xml")
 	file.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
