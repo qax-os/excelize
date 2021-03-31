@@ -350,6 +350,8 @@ var tokenPriority = map[string]int{
 //    POWER
 //    PRODUCT
 //    PROPER
+//    QUARTILE
+//    QUARTILE.INC
 //    QUOTIENT
 //    RADIANS
 //    RAND
@@ -4623,6 +4625,40 @@ func (fn *formulaFuncs) PERMUTATIONA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(math.Pow(num, numChosen))
+}
+
+// QUARTILE function returns a requested quartile of a supplied range of
+// values. The syntax of the function is:
+//
+//    QUARTILE(array,quart)
+//
+func (fn *formulaFuncs) QUARTILE(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "QUARTILE requires 2 arguments")
+	}
+	quart := argsList.Back().Value.(formulaArg).ToNumber()
+	if quart.Type != ArgNumber {
+		return quart
+	}
+	if quart.Number < 0 || quart.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(newNumberFormulaArg(quart.Number / 4))
+	return fn.PERCENTILE(args)
+}
+
+// QUARTILEdotINC function returns a requested quartile of a supplied range of
+// values. The syntax of the function is:
+//
+//    QUARTILE.INC(array,quart)
+//
+func (fn *formulaFuncs) QUARTILEdotINC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "QUARTILE.INC requires 2 arguments")
+	}
+	return fn.QUARTILE(argsList)
 }
 
 // SKEW function calculates the skewness of the distribution of a supplied set

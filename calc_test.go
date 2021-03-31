@@ -692,6 +692,10 @@ func TestCalcCellValue(t *testing.T) {
 		// PERMUTATIONA
 		"=PERMUTATIONA(6,6)": "46656",
 		"=PERMUTATIONA(7,6)": "117649",
+		// QUARTILE
+		"=QUARTILE(A1:A4,2)": "1.5",
+		// QUARTILE.INC
+		"=QUARTILE.INC(A1:A4,0)": "0",
 		// SKEW
 		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
 		"=SKEW(A1:B2)":     "0",
@@ -1508,6 +1512,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUTATIONA(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUTATIONA(-1,0)":   "#N/A",
 		"=PERMUTATIONA(0,-1)":   "#N/A",
+		// QUARTILE
+		"=QUARTILE()":           "QUARTILE requires 2 arguments",
+		"=QUARTILE(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=QUARTILE(A1:A4,-1)":   "#NUM!",
+		"=QUARTILE(A1:A4,5)":    "#NUM!",
+		// QUARTILE.INC
+		"=QUARTILE.INC()": "QUARTILE.INC requires 2 arguments",
 		// SKEW
 		"=SKEW()":     "SKEW requires at least 1 argument",
 		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
