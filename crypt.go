@@ -278,14 +278,12 @@ func extractPart(doc *mscfb.Reader) (encryptionInfoBuf, encryptedPackageBuf []by
 			i, _ := doc.Read(buf)
 			if i > 0 {
 				encryptionInfoBuf = buf
-				break
 			}
 		case "EncryptedPackage":
 			buf := make([]byte, entry.Size)
 			i, _ := doc.Read(buf)
 			if i > 0 {
 				encryptedPackageBuf = buf
-				break
 			}
 		}
 	}

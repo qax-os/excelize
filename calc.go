@@ -394,6 +394,8 @@ var tokenPriority = map[string]int{
 //    UNICHAR
 //    UNICODE
 //    UPPER
+//    VAR.P
+//    VARP
 //    VLOOKUP
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
@@ -1302,7 +1304,7 @@ func (fn *formulaFuncs) bin2dec(number string) formulaArg {
 	decimal, length := 0.0, len(number)
 	for i := length; i > 0; i-- {
 		s := string(number[length-i])
-		if 10 == i && s == "1" {
+		if i == 10 && s == "1" {
 			decimal += math.Pow(-2.0, float64(i-1))
 			continue
 		}
@@ -1550,7 +1552,7 @@ func (fn *formulaFuncs) hex2dec(number string) formulaArg {
 		if err != nil {
 			return newErrorFormulaArg(formulaErrorNUM, err.Error())
 		}
-		if 10 == i && string(number[length-i]) == "F" {
+		if i == 10 && string(number[length-i]) == "F" {
 			decimal += math.Pow(-16.0, float64(i-1))
 			continue
 		}
@@ -1631,7 +1633,7 @@ func (fn *formulaFuncs) oct2dec(number string) formulaArg {
 	decimal, length := 0.0, len(number)
 	for i := length; i > 0; i-- {
 		num, _ := strconv.Atoi(string(number[length-i]))
-		if 10 == i && string(number[length-i]) == "7" {
+		if i == 10 && string(number[length-i]) == "7" {
 			decimal += math.Pow(-8.0, float64(i-1))
 			continue
 		}
@@ -4705,6 +4707,45 @@ func (fn *formulaFuncs) SKEW(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) SMALL(argsList *list.List) formulaArg {
 	return fn.kth("SMALL", argsList)
+}
+
+// VARP function returns the Variance of a given set of values. The syntax of
+// the function is:
+//
+//    VARP(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARP(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VARP requires at least 1 argument")
+	}
+	summerA, summerB, count := 0.0, 0.0, 0.0
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		for _, token := range arg.Value.(formulaArg).ToList() {
+			if num := token.ToNumber(); num.Type == ArgNumber {
+				summerA += (num.Number * num.Number)
+				summerB += num.Number
+				count++
+			}
+		}
+	}
+	if count > 0 {
+		summerA *= count
+		summerB *= summerB
+		return newNumberFormulaArg((summerA - summerB) / (count * count))
+	}
+	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// VARdotP function returns the Variance of a given set of values. The syntax
+// of the function is:
+//
+//    VAR.P(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARdotP(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VAR.P requires at least 1 argument")
+	}
+	return fn.VARP(argsList)
 }
 
 // Information Functions

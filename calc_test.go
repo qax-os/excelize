@@ -705,6 +705,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1:B5,2)": "1",
 		"=SMALL(A1,1)":    "1",
 		"=SMALL(A1:F2,1)": "1",
+		// VARP
+		"=VARP(A1:A5)": "1.25",
+		// VAR.P
+		"=VAR.P(A1:A5)": "1.25",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
@@ -1528,6 +1532,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1:A5,0)":    "k should be > 0",
 		"=SMALL(A1:A5,6)":    "k should be <= length of array",
 		"=SMALL(A1:A5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// VARP
+		"=VARP()":     "VARP requires at least 1 argument",
+		"=VARP(\"\")": "#DIV/0!",
+		// VAR.P
+		"=VAR.P()":     "VAR.P requires at least 1 argument",
+		"=VAR.P(\"\")": "#DIV/0!",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
