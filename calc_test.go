@@ -47,6 +47,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=2>=3": "FALSE",
 		"=1&2":  "12",
 		// Engineering Functions
+		// BESSELI
+		"=BESSELI(4.5,1)": "15.389222753735925",
+		"=BESSELI(32,1)":  "5.502845511211247e+12",
+		// BESSELJ
+		"=BESSELJ(1.9,2)": "0.329925727692387",
 		// BIN2DEC
 		"=BIN2DEC(\"10\")":         "2",
 		"=BIN2DEC(\"11\")":         "3",
@@ -1008,6 +1013,14 @@ func TestCalcCellValue(t *testing.T) {
 	mathCalcError := map[string]string{
 		"=1/0": "#DIV/0!",
 		// Engineering Functions
+		// BESSELI
+		"=BESSELI()":       "BESSELI requires 2 numeric arguments",
+		"=BESSELI(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BESSELI(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// BESSELJ
+		"=BESSELJ()":       "BESSELJ requires 2 numeric arguments",
+		"=BESSELJ(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BESSELJ(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// BIN2DEC
 		"=BIN2DEC()":     "BIN2DEC requires 1 numeric argument",
 		"=BIN2DEC(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",

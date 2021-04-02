@@ -227,6 +227,8 @@ var tokenPriority = map[string]int{
 //    AVERAGE
 //    AVERAGEA
 //    BASE
+//    BESSELI
+//    BESSELJ
 //    BIN2DEC
 //    BIN2HEX
 //    BIN2OCT
@@ -1225,6 +1227,64 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 }
 
 // Engineering Functions
+
+// BESSELI function the modified Bessel function, which is equivalent to the
+// Bessel function evaluated for purely imaginary arguments. The syntax of
+// the Besseli function is:
+//
+//    BESSELI(x,n)
+//
+func (fn *formulaFuncs) BESSELI(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BESSELI requires 2 numeric arguments")
+	}
+	return fn.bassel(argsList, true)
+}
+
+// BESSELJ function returns the Bessel function, Jn(x), for a specified order
+// and value of x. The syntax of the function is:
+//
+//    BESSELJ(x,n)
+//
+func (fn *formulaFuncs) BESSELJ(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BESSELJ requires 2 numeric arguments")
+	}
+	return fn.bassel(argsList, false)
+}
+
+// bassel is an implementation of the formula function BESSELI and BESSELJ.
+func (fn *formulaFuncs) bassel(argsList *list.List, modfied bool) formulaArg {
+	x, n := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Back().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	if n.Type != ArgNumber {
+		return n
+	}
+	max, x1 := 100, x.Number*0.5
+	x2 := x1 * x1
+	x1 = math.Pow(x1, n.Number)
+	n1, n2, n3, n4, add := fact(n.Number), 1.0, 0.0, n.Number, false
+	result := x1 / n1
+	t := result * 0.9
+	for result != t && max != 0 {
+		x1 *= x2
+		n3++
+		n1 *= n3
+		n4++
+		n2 *= n4
+		t = result
+		if modfied || add {
+			result += (x1 / n1 / n2)
+		} else {
+			result -= (x1 / n1 / n2)
+		}
+		max--
+		add = !add
+	}
+	return newNumberFormulaArg(result)
+}
 
 // BIN2DEC function converts a Binary (a base-2 number) into a decimal number.
 // The syntax of the function is:
