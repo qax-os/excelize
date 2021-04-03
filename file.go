@@ -131,6 +131,9 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	}
 
 	for path, content := range f.XLSX {
+		if _, ok := f.streams[path]; ok {
+			continue
+		}
 		fi, err := zw.Create(path)
 		if err != nil {
 			zw.Close()

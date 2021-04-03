@@ -248,6 +248,7 @@ var tokenPriority = map[string]int{
 //    COLUMNS
 //    COMBIN
 //    COMBINA
+//    COMPLEX
 //    CONCAT
 //    CONCATENATE
 //    COS
@@ -1447,6 +1448,35 @@ func (fn *formulaFuncs) bitwise(name string, argsList *list.List) formulaArg {
 	}
 	bitwiseFunc := bitwiseFuncMap[name]
 	return newNumberFormulaArg(float64(bitwiseFunc(int(num1.Number), int(num2.Number))))
+}
+
+// COMPLEX function takes two arguments, representing the real and the
+// imaginary coefficients of a complex number, and from these, creates a
+// complex number. The syntax of the function is:
+//
+//    COMPLEX(real_num,i_num,[suffix])
+//
+func (fn *formulaFuncs) COMPLEX(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COMPLEX requires at least 2 arguments")
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COMPLEX allows at most 3 arguments")
+	}
+	real, i, suffix := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Front().Next().Value.(formulaArg).ToNumber(), "i"
+	if real.Type != ArgNumber {
+		return real
+	}
+	if i.Type != ArgNumber {
+		return i
+	}
+	if argsList.Len() == 3 {
+		if suffix = strings.ToLower(argsList.Back().Value.(formulaArg).Value()); suffix != "i" && suffix != "j" {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	r := strings.NewReplacer("(", "", ")", "", "0+", "", "+0i", "", "0+0i", "0", "i", suffix)
+	return newStringFormulaArg(r.Replace(fmt.Sprint(complex(real.Number, i.Number))))
 }
 
 // DEC2BIN function converts a decimal number into a Binary (Base 2) number.

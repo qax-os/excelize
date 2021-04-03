@@ -83,6 +83,13 @@ func TestCalcCellValue(t *testing.T) {
 		// BITXOR
 		"=BITXOR(5,6)":  "3",
 		"=BITXOR(9,12)": "5",
+		// COMPLEX
+		"=COMPLEX(5,2)":         "5+2i",
+		"=COMPLEX(5,-9)":        "5-9i",
+		"=COMPLEX(-1,2,\"j\")":  "-1+2j",
+		"=COMPLEX(10,-5,\"i\")": "10-5i",
+		"=COMPLEX(0,5)":         "5i",
+		"=COMPLEX(3,0)":         "3",
 		// DEC2BIN
 		"=DEC2BIN(2)":    "10",
 		"=DEC2BIN(3)":    "11",
@@ -1080,6 +1087,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=BITXOR(\"\",-1)": "#NUM!",
 		"=BITXOR(1,\"\")":  "#NUM!",
 		"=BITXOR(1,2^48)":  "#NUM!",
+		// COMPLEX
+		"=COMPLEX()":              "COMPLEX requires at least 2 arguments",
+		"=COMPLEX(10,-5,\"\")":    "#VALUE!",
+		"=COMPLEX(\"\",0)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=COMPLEX(0,\"\")":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=COMPLEX(10,-5,\"i\",0)": "COMPLEX allows at most 3 arguments",
 		// DEC2BIN
 		"=DEC2BIN()":        "DEC2BIN requires at least 1 argument",
 		"=DEC2BIN(1,1,1)":   "DEC2BIN allows at most 2 arguments",
