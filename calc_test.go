@@ -90,6 +90,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=COMPLEX(10,-5,\"i\")": "10-5i",
 		"=COMPLEX(0,5)":         "5i",
 		"=COMPLEX(3,0)":         "3",
+		"=COMPLEX(0,-2)":        "-2i",
+		"=COMPLEX(0,0)":         "0",
+		"=COMPLEX(0,-1,\"j\")":  "-j",
 		// DEC2BIN
 		"=DEC2BIN(2)":    "10",
 		"=DEC2BIN(3)":    "11",
@@ -127,6 +130,43 @@ func TestCalcCellValue(t *testing.T) {
 		"=HEX2OCT(\"8\",10)":       "0000000010",
 		"=HEX2OCT(\"FFFFFFFFF8\")": "7777777770",
 		"=HEX2OCT(\"1F3\")":        "763",
+		// IMABS
+		"=IMABS(\"2j\")":              "2",
+		"=IMABS(\"-1+2i\")":           "2.23606797749979",
+		"=IMABS(COMPLEX(-1,2,\"j\"))": "2.23606797749979",
+		// IMCOS
+		"=IMCOS(0)":          "1",
+		"=IMCOS(0.5)":        "0.877582561890373",
+		"=IMCOS(\"3+0.5i\")": "-1.1163412445261518-0.0735369737112366i",
+		// IMCOSH
+		"=IMCOSH(0.5)":           "1.127625965206381",
+		"=IMCOSH(\"3+0.5i\")":    "8.835204606500994+4.802825082743033i",
+		"=IMCOSH(\"2-i\")":       "2.0327230070196656-3.0518977991518i",
+		"=IMCOSH(COMPLEX(1,-1))": "0.8337300251311491-0.9888977057628651i",
+		// IMCOT
+		"=IMCOT(0.5)":           "1.830487721712452",
+		"=IMCOT(\"3+0.5i\")":    "-0.4793455787473728-2.016092521506228i",
+		"=IMCOT(\"2-i\")":       "-0.171383612909185+0.8213297974938518i",
+		"=IMCOT(COMPLEX(1,-1))": "0.21762156185440268+0.868014142895925i",
+		// IMCSC
+		"=IMCSC(\"j\")": "-0.8509181282393216i",
+		// IMCSCH
+		"=IMCSCH(COMPLEX(1,-1))": "0.30393100162842646+0.6215180171704284i",
+		// IMEXP
+		"=IMEXP(0)":             "1",
+		"=IMEXP(0.5)":           "1.648721270700128",
+		"=IMEXP(\"1-2i\")":      "-1.1312043837568135-2.4717266720048183i",
+		"=IMEXP(COMPLEX(1,-1))": "1.4686939399158851-2.2873552871788423i",
+		// IMLN
+		"=IMLN(0.5)":           "-0.693147180559945",
+		"=IMLN(\"3+0.5i\")":    "1.1123117757621668+0.16514867741462683i",
+		"=IMLN(\"2-i\")":       "0.8047189562170503-0.4636476090008061i",
+		"=IMLN(COMPLEX(1,-1))": "0.3465735902799727-0.7853981633974483i",
+		// IMLOG10
+		"=IMLOG10(0.5)":           "-0.301029995663981",
+		"=IMLOG10(\"3+0.5i\")":    "0.48307086636951624+0.07172315929479262i",
+		"=IMLOG10(\"2-i\")":       "0.34948500216800943-0.20135959813668655i",
+		"=IMLOG10(COMPLEX(1,-1))": "0.1505149978319906-0.3410940884604603i",
 		// OCT2BIN
 		"=OCT2BIN(\"5\")":          "101",
 		"=OCT2BIN(\"0000000001\")": "1",
@@ -1135,6 +1175,37 @@ func TestCalcCellValue(t *testing.T) {
 		"=HEX2OCT(1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=HEX2OCT(-513,10)": "strconv.ParseInt: parsing \"-\": invalid syntax",
 		"=HEX2OCT(1,-1)":    "#NUM!",
+		// IMABS
+		"=IMABS()":     "IMABS requires 1 argument",
+		"=IMABS(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMCOS
+		"=IMCOS()":     "IMCOS requires 1 argument",
+		"=IMCOS(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMCOSH
+		"=IMCOSH()":     "IMCOSH requires 1 argument",
+		"=IMCOSH(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMCOT
+		"=IMCOT()":     "IMCOT requires 1 argument",
+		"=IMCOT(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMCSC
+		"=IMCSC()":     "IMCSC requires 1 argument",
+		"=IMCSC(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMCSC(0)":    "#NUM!",
+		// IMCSCH
+		"=IMCSCH()":     "IMCSCH requires 1 argument",
+		"=IMCSCH(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMCSCH(0)":    "#NUM!",
+		// IMEXP
+		"=IMEXP()":     "IMEXP requires 1 argument",
+		"=IMEXP(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMLN
+		"=IMLN()":     "IMLN requires 1 argument",
+		"=IMLN(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMLN(0)":    "#NUM!",
+		// IMLOG10
+		"=IMLOG10()":     "IMLOG10 requires 1 argument",
+		"=IMLOG10(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMLOG10(0)":    "#NUM!",
 		// OCT2BIN
 		"=OCT2BIN()":               "OCT2BIN requires at least 1 argument",
 		"=OCT2BIN(1,1,1)":          "OCT2BIN allows at most 2 arguments",
