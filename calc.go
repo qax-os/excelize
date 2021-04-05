@@ -302,6 +302,12 @@ var tokenPriority = map[string]int{
 //    IMEXP
 //    IMLN
 //    IMLOG10
+//    IMSIN
+//    IMSINH
+//    IMSQRT
+//    IMSUB
+//    IMSUM
+//    IMTAN
 //    INT
 //    ISBLANK
 //    ISERR
@@ -1490,7 +1496,7 @@ func (fn *formulaFuncs) COMPLEX(argsList *list.List) formulaArg {
 
 // cmplx2str replace complex number string characters.
 func cmplx2str(c, suffix string) string {
-	if c == "(0+0i)" || c == "(0-0i)" {
+	if c == "(0+0i)" || c == "(-0+0i)" || c == "(0-0i)" || c == "(-0-0i)" {
 		return "0"
 	}
 	c = strings.TrimPrefix(c, "(")
@@ -1504,7 +1510,7 @@ func cmplx2str(c, suffix string) string {
 	c = strings.TrimPrefix(c, "0+")
 	c = strings.TrimSuffix(c, "+0i")
 	c = strings.TrimSuffix(c, "-0i")
-	c = strings.NewReplacer("+1i", "i", "-1i", "-i").Replace(c)
+	c = strings.NewReplacer("+1i", "+i", "-1i", "-i").Replace(c)
 	c = strings.Replace(c, "i", suffix, -1)
 	return c
 }
@@ -1849,6 +1855,112 @@ func (fn *formulaFuncs) IMLOG10(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+}
+
+// IMSIN function returns the Sine of a supplied complex number. The syntax of
+// the function is:
+//
+//    IMSIN(inumber)
+//
+func (fn *formulaFuncs) IMSIN(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSIN requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Sin(inumber)), "i"))
+}
+
+// IMSINH function returns the hyperbolic sine of a supplied complex number.
+// The syntax of the function is:
+//
+//    IMSINH(inumber)
+//
+func (fn *formulaFuncs) IMSINH(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSINH requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Sinh(inumber)), "i"))
+}
+
+// IMSQRT function returns the square root of a supplied complex number. The
+// syntax of the function is:
+//
+//    IMSQRT(inumber)
+//
+func (fn *formulaFuncs) IMSQRT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSQRT requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Sqrt(inumber)), "i"))
+}
+
+// IMSUB function calculates the difference between two complex numbers
+// (i.e. subtracts one complex number from another). The syntax of the
+// function is:
+//
+//    IMSUB(inumber1,inumber2)
+//
+func (fn *formulaFuncs) IMSUB(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSUB requires 2 arguments")
+	}
+	i1, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	i2, err := strconv.ParseComplex(str2cmplx(argsList.Back().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(i1-i2), "i"))
+}
+
+// IMSUM function calculates the sum of two or more complex numbers. The
+// syntax of the function is:
+//
+//    IMSUM(inumber1,inumber2,...)
+//
+func (fn *formulaFuncs) IMSUM(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSUM requires at least 1 argument")
+	}
+	var result complex128
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		num, err := strconv.ParseComplex(str2cmplx(token.Value()), 128)
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorNUM, err.Error())
+		}
+		result += num
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(result), "i"))
+}
+
+// IMTAN function returns the tangent of a supplied complex number. The syntax
+// of the function is:
+//
+//    IMTAN(inumber)
+//
+func (fn *formulaFuncs) IMTAN(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMTAN requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Tan(inumber)), "i"))
 }
 
 // OCT2BIN function converts an Octal (Base 8) number into a Binary (Base 2)

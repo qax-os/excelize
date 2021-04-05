@@ -167,6 +167,36 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMLOG10(\"3+0.5i\")":    "0.48307086636951624+0.07172315929479262i",
 		"=IMLOG10(\"2-i\")":       "0.34948500216800943-0.20135959813668655i",
 		"=IMLOG10(COMPLEX(1,-1))": "0.1505149978319906-0.3410940884604603i",
+		// IMSIN
+		"=IMSIN(0.5)":           "0.479425538604203",
+		"=IMSIN(\"3+0.5i\")":    "0.15913058529843999-0.5158804424525267i",
+		"=IMSIN(\"2-i\")":       "1.4031192506220405+0.4890562590412937i",
+		"=IMSIN(COMPLEX(1,-1))": "1.2984575814159773-0.6349639147847361i",
+		// IMSINH
+		"=IMSINH(-0)":            "0",
+		"=IMSINH(0.5)":           "0.521095305493747",
+		"=IMSINH(\"3+0.5i\")":    "8.791512343493714+4.82669427481082i",
+		"=IMSINH(\"2-i\")":       "1.9596010414216063-3.165778513216168i",
+		"=IMSINH(COMPLEX(1,-1))": "0.6349639147847361-1.2984575814159773i",
+		// IMSQRT
+		"=IMSQRT(\"i\")":     "0.7071067811865476+0.7071067811865476i",
+		"=IMSQRT(\"2-i\")":   "1.455346690225355-0.34356074972251244i",
+		"=IMSQRT(\"5+2i\")":  "2.27872385417085+0.4388421169022545i",
+		"=IMSQRT(6)":         "2.449489742783178",
+		"=IMSQRT(\"-2-4i\")": "1.1117859405028423-1.7989074399478673i",
+		// IMSUB
+		"=IMSUB(\"5+i\",\"1+4i\")":          "4-3i",
+		"=IMSUB(\"9+2i\",6)":                "3+2i",
+		"=IMSUB(COMPLEX(5,2),COMPLEX(0,1))": "5+i",
+		// IMSUM
+		"=IMSUM(\"1-i\",\"5+10i\",2)":       "8+9i",
+		"=IMSUM(COMPLEX(5,2),COMPLEX(0,1))": "5+3i",
+		// IMTAN
+		"=IMTAN(-0)":            "0",
+		"=IMTAN(0.5)":           "0.546302489843791",
+		"=IMTAN(\"3+0.5i\")":    "-0.11162105077158344+0.46946999342588536i",
+		"=IMTAN(\"2-i\")":       "-0.24345820118572523-1.16673625724092i",
+		"=IMTAN(COMPLEX(1,-1))": "0.2717525853195117-1.0839233273386948i",
 		// OCT2BIN
 		"=OCT2BIN(\"5\")":          "101",
 		"=OCT2BIN(\"0000000001\")": "1",
@@ -1206,6 +1236,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMLOG10()":     "IMLOG10 requires 1 argument",
 		"=IMLOG10(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
 		"=IMLOG10(0)":    "#NUM!",
+		// IMSIN
+		"=IMSIN()":     "IMSIN requires 1 argument",
+		"=IMSIN(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMSINH
+		"=IMSINH()":     "IMSINH requires 1 argument",
+		"=IMSINH(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMSQRT
+		"=IMSQRT()":     "IMSQRT requires 1 argument",
+		"=IMSQRT(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMSUB
+		"=IMSUB()":       "IMSUB requires 2 arguments",
+		"=IMSUB(0,\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMSUB(\"\",0)": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMSUM
+		"=IMSUM()":     "IMSUM requires at least 1 argument",
+		"=IMSUM(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMTAN
+		"=IMTAN()":     "IMTAN requires 1 argument",
+		"=IMTAN(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
 		// OCT2BIN
 		"=OCT2BIN()":               "OCT2BIN requires at least 1 argument",
 		"=OCT2BIN(1,1,1)":          "OCT2BIN allows at most 2 arguments",
