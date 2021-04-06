@@ -302,6 +302,12 @@ var tokenPriority = map[string]int{
 //    IMEXP
 //    IMLN
 //    IMLOG10
+//    IMLOG2
+//    IMPOWER
+//    IMPRODUCT
+//    IMREAL
+//    IMSEC
+//    IMSECH
 //    IMSIN
 //    IMSINH
 //    IMSQRT
@@ -1855,6 +1861,140 @@ func (fn *formulaFuncs) IMLOG10(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+}
+
+// IMLOG2 function calculates the base 2 logarithm of a supplied complex
+// number. The syntax of the function is:
+//
+//    IMLOG2(inumber)
+//
+func (fn *formulaFuncs) IMLOG2(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMLOG2 requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	num := cmplx.Log(inumber)
+	if cmplx.IsInf(num) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(num/cmplx.Log(2)), "i"))
+}
+
+// IMPOWER function returns a supplied complex number, raised to a given
+// power. The syntax of the function is:
+//
+//    IMPOWER(inumber,number)
+//
+func (fn *formulaFuncs) IMPOWER(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMPOWER requires 2 arguments")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	number, err := strconv.ParseComplex(str2cmplx(argsList.Back().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	if inumber == 0 && number == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	num := cmplx.Pow(inumber, number)
+	if cmplx.IsInf(num) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+}
+
+// IMPRODUCT function calculates the product of two or more complex numbers.
+// The syntax of the function is:
+//
+//    IMPRODUCT(number1,[number2],...)
+//
+func (fn *formulaFuncs) IMPRODUCT(argsList *list.List) formulaArg {
+	product := complex128(1)
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgString:
+			if token.Value() == "" {
+				continue
+			}
+			val, err := strconv.ParseComplex(str2cmplx(token.Value()), 128)
+			if err != nil {
+				return newErrorFormulaArg(formulaErrorNUM, err.Error())
+			}
+			product = product * val
+		case ArgNumber:
+			product = product * complex(token.Number, 0)
+		case ArgMatrix:
+			for _, row := range token.Matrix {
+				for _, value := range row {
+					if value.Value() == "" {
+						continue
+					}
+					val, err := strconv.ParseComplex(str2cmplx(value.Value()), 128)
+					if err != nil {
+						return newErrorFormulaArg(formulaErrorNUM, err.Error())
+					}
+					product = product * val
+				}
+			}
+		}
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(product), "i"))
+}
+
+// IMREAL function returns the real coefficient of a supplied complex number.
+// The syntax of the function is:
+//
+//    IMREAL(inumber)
+//
+func (fn *formulaFuncs) IMREAL(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMREAL requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(real(inumber)), "i"))
+}
+
+// IMSEC function returns the secant of a supplied complex number. The syntax
+// of the function is:
+//
+//    IMSEC(inumber)
+//
+func (fn *formulaFuncs) IMSEC(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSEC requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(1/cmplx.Cos(inumber)), "i"))
+}
+
+// IMSECH function returns the hyperbolic secant of a supplied complex number.
+// The syntax of the function is:
+//
+//    IMSECH(inumber)
+//
+func (fn *formulaFuncs) IMSECH(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMSECH requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(1/cmplx.Cosh(inumber)), "i"))
 }
 
 // IMSIN function returns the Sine of a supplied complex number. The syntax of

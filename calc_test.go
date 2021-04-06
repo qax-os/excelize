@@ -167,6 +167,22 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMLOG10(\"3+0.5i\")":    "0.48307086636951624+0.07172315929479262i",
 		"=IMLOG10(\"2-i\")":       "0.34948500216800943-0.20135959813668655i",
 		"=IMLOG10(COMPLEX(1,-1))": "0.1505149978319906-0.3410940884604603i",
+		// IMREAL
+		"=IMREAL(\"5+2i\")":     "5",
+		"=IMREAL(\"2+2i\")":     "2",
+		"=IMREAL(6)":            "6",
+		"=IMREAL(\"3i\")":       "0",
+		"=IMREAL(COMPLEX(4,1))": "4",
+		// IMSEC
+		"=IMSEC(0.5)":           "1.139493927324549",
+		"=IMSEC(\"3+0.5i\")":    "-0.8919131797403304+0.05875317818173977i",
+		"=IMSEC(\"2-i\")":       "-0.4131493442669401-0.687527438655479i",
+		"=IMSEC(COMPLEX(1,-1))": "0.49833703055518686-0.5910838417210451i",
+		// IMSECH
+		"=IMSECH(0.5)":           "0.886818883970074",
+		"=IMSECH(\"3+0.5i\")":    "0.08736657796213027-0.047492549490160664i",
+		"=IMSECH(\"2-i\")":       "0.1511762982655772+0.22697367539372157i",
+		"=IMSECH(COMPLEX(1,-1))": "0.49833703055518686+0.5910838417210451i",
 		// IMSIN
 		"=IMSIN(0.5)":           "0.479425538604203",
 		"=IMSIN(\"3+0.5i\")":    "0.15913058529843999-0.5158804424525267i",
@@ -465,6 +481,23 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOG10(0.001)":      "-3",
 		"=LOG10(25)":         "1.397940008672038",
 		"=LOG10(LOG10(100))": "0.301029995663981",
+		// IMLOG2
+		"=IMLOG2(\"5+2i\")": "2.4289904975637864+0.5489546632866347i",
+		"=IMLOG2(\"2-i\")":  "1.1609640474436813-0.6689021062254881i",
+		"=IMLOG2(6)":        "2.584962500721156",
+		"=IMLOG2(\"3i\")":   "1.584962500721156+2.266180070913597i",
+		"=IMLOG2(\"4+i\")":  "2.04373142062517+0.3534295024167349i",
+		// IMPOWER
+		"=IMPOWER(\"2-i\",2)":   "3.000000000000001-4i",
+		"=IMPOWER(\"2-i\",3)":   "2.0000000000000018-11.000000000000002i",
+		"=IMPOWER(9,0.5)":       "3",
+		"=IMPOWER(\"2+4i\",-2)": "-0.029999999999999985-0.039999999999999994i",
+		// IMPRODUCT
+		"=IMPRODUCT(3,6)":                       "18",
+		`=IMPRODUCT("",3,SUM(6))`:               "18",
+		"=IMPRODUCT(\"1-i\",\"5+10i\",2)":       "30+10i",
+		"=IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
+		"=IMPRODUCT(A1:C1)":                     "4",
 		// MOD
 		"=MOD(6,4)":        "2",
 		"=MOD(6,3)":        "0",
@@ -1236,6 +1269,28 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMLOG10()":     "IMLOG10 requires 1 argument",
 		"=IMLOG10(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
 		"=IMLOG10(0)":    "#NUM!",
+		// IMLOG2
+		"=IMLOG2()":     "IMLOG2 requires 1 argument",
+		"=IMLOG2(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMLOG2(0)":    "#NUM!",
+		// IMPOWER
+		"=IMPOWER()":       "IMPOWER requires 2 arguments",
+		"=IMPOWER(0,\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMPOWER(\"\",0)": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMPOWER(0,0)":    "#NUM!",
+		"=IMPOWER(0,-1)":   "#NUM!",
+		// IMPRODUCT
+		"=IMPRODUCT(\"x\")": "strconv.ParseComplex: parsing \"x\": invalid syntax",
+		"=IMPRODUCT(A1:D1)": "strconv.ParseComplex: parsing \"Month\": invalid syntax",
+		// IMREAL
+		"=IMREAL()":     "IMREAL requires 1 argument",
+		"=IMREAL(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMSEC
+		"=IMSEC()":     "IMSEC requires 1 argument",
+		"=IMSEC(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMSECH
+		"=IMSECH()":     "IMSECH requires 1 argument",
+		"=IMSECH(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
 		// IMSIN
 		"=IMSIN()":     "IMSIN requires 1 argument",
 		"=IMSIN(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
@@ -1944,6 +1999,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MDETERM(A1:B2)": "-3",
 		// PRODUCT
 		"=PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
+		// IMPRODUCT
+		"=IMPRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// SUM
 		"=A1/A3":                          "0.333333333333333",
 		"=SUM(A1:A2)":                     "3",
