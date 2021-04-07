@@ -134,6 +134,22 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMABS(\"2j\")":              "2",
 		"=IMABS(\"-1+2i\")":           "2.23606797749979",
 		"=IMABS(COMPLEX(-1,2,\"j\"))": "2.23606797749979",
+		// IMAGINARY
+		"=IMAGINARY(\"5+2i\")": "2",
+		"=IMAGINARY(\"2-i\")":  "-1",
+		"=IMAGINARY(6)":        "0",
+		"=IMAGINARY(\"3i\")":   "3",
+		"=IMAGINARY(\"4+i\")":  "1",
+		// IMARGUMENT
+		"=IMARGUMENT(\"5+2i\")": "0.380506377112365",
+		"=IMARGUMENT(\"2-i\")":  "-0.463647609000806",
+		"=IMARGUMENT(6)":        "0",
+		// IMCONJUGATE
+		"=IMCONJUGATE(\"5+2i\")": "5-2i",
+		"=IMCONJUGATE(\"2-i\")":  "2+i",
+		"=IMCONJUGATE(6)":        "6",
+		"=IMCONJUGATE(\"3i\")":   "-3i",
+		"=IMCONJUGATE(\"4+i\")":  "4-i",
 		// IMCOS
 		"=IMCOS(0)":          "1",
 		"=IMCOS(0.5)":        "0.877582561890373",
@@ -152,6 +168,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMCSC(\"j\")": "-0.8509181282393216i",
 		// IMCSCH
 		"=IMCSCH(COMPLEX(1,-1))": "0.30393100162842646+0.6215180171704284i",
+		// IMDIV
+		"=IMDIV(\"5+2i\",\"1+i\")":          "3.5-1.5i",
+		"=IMDIV(\"2+2i\",\"2+i\")":          "1.2+0.4i",
+		"=IMDIV(COMPLEX(5,2),COMPLEX(0,1))": "2-5i",
 		// IMEXP
 		"=IMEXP(0)":             "1",
 		"=IMEXP(0.5)":           "1.648721270700128",
@@ -1241,6 +1261,15 @@ func TestCalcCellValue(t *testing.T) {
 		// IMABS
 		"=IMABS()":     "IMABS requires 1 argument",
 		"=IMABS(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMAGINARY
+		"=IMAGINARY()":     "IMAGINARY requires 1 argument",
+		"=IMAGINARY(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMARGUMENT
+		"=IMARGUMENT()":     "IMARGUMENT requires 1 argument",
+		"=IMARGUMENT(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		// IMCONJUGATE
+		"=IMCONJUGATE()":     "IMCONJUGATE requires 1 argument",
+		"=IMCONJUGATE(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
 		// IMCOS
 		"=IMCOS()":     "IMCOS requires 1 argument",
 		"=IMCOS(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
@@ -1258,6 +1287,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMCSCH()":     "IMCSCH requires 1 argument",
 		"=IMCSCH(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
 		"=IMCSCH(0)":    "#NUM!",
+		// IMDIV
+		"=IMDIV()":       "IMDIV requires 2 arguments",
+		"=IMDIV(0,\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMDIV(\"\",0)": "strconv.ParseComplex: parsing \"\": invalid syntax",
+		"=IMDIV(1,0)":    "#NUM!",
 		// IMEXP
 		"=IMEXP()":     "IMEXP requires 1 argument",
 		"=IMEXP(\"\")": "strconv.ParseComplex: parsing \"\": invalid syntax",

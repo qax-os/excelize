@@ -294,11 +294,15 @@ var tokenPriority = map[string]int{
 //    IF
 //    IFERROR
 //    IMABS
+//    IMAGINARY
+//    IMARGUMENT
+//    IMCONJUGATE
 //    IMCOS
 //    IMCOSH
 //    IMCOT
 //    IMCSC
 //    IMCSCH
+//    IMDIV
 //    IMEXP
 //    IMLN
 //    IMLOG10
@@ -1712,11 +1716,59 @@ func (fn *formulaFuncs) IMABS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMABS requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(strings.Replace(argsList.Front().Value.(formulaArg).Value(), "j", "i", -1), 128)
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
 	return newNumberFormulaArg(cmplx.Abs(inumber))
+}
+
+// IMAGINARY function returns the imaginary coefficient of a supplied complex
+// number. The syntax of the function is:
+//
+//    IMAGINARY(inumber)
+//
+func (fn *formulaFuncs) IMAGINARY(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMAGINARY requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newNumberFormulaArg(imag(inumber))
+}
+
+// IMARGUMENT function returns the phase (also called the argument) of a
+// supplied complex number. The syntax of the function is:
+//
+//    IMARGUMENT(inumber)
+//
+func (fn *formulaFuncs) IMARGUMENT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMARGUMENT requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newNumberFormulaArg(cmplx.Phase(inumber))
+}
+
+// IMCONJUGATE function returns the complex conjugate of a supplied complex
+// number. The syntax of the function is:
+//
+//    IMCONJUGATE(inumber)
+//
+func (fn *formulaFuncs) IMCONJUGATE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMCONJUGATE requires 1 argument")
+	}
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Conj(inumber)), "i"))
 }
 
 // IMCOS function returns the cosine of a supplied complex number. The syntax
@@ -1728,7 +1780,7 @@ func (fn *formulaFuncs) IMCOS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCOS requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(strings.Replace(argsList.Front().Value.(formulaArg).Value(), "j", "i", -1), 128)
+	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -1801,6 +1853,30 @@ func (fn *formulaFuncs) IMCSCH(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
 	num := 1 / cmplx.Sinh(inumber)
+	if cmplx.IsInf(num) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+}
+
+// IMDIV function calculates the quotient of two complex numbers (i.e. divides
+// one complex number by another). The syntax of the function is:
+//
+//    IMDIV(inumber1,inumber2)
+//
+func (fn *formulaFuncs) IMDIV(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IMDIV requires 2 arguments")
+	}
+	inumber1, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	inumber2, err := strconv.ParseComplex(str2cmplx(argsList.Back().Value.(formulaArg).Value()), 128)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNUM, err.Error())
+	}
+	num := inumber1 / inumber2
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}

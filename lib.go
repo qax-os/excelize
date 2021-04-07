@@ -52,6 +52,9 @@ func (f *File) readXML(name string) []byte {
 	if content, ok := f.XLSX[name]; ok {
 		return content
 	}
+	if content, ok := f.streams[name]; ok {
+		return content.rawData.buf.Bytes()
+	}
 	return []byte{}
 }
 
