@@ -1132,6 +1132,16 @@ func TestCalcCellValue(t *testing.T) {
 		// Web Functions
 		// ENCODEURL
 		"=ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
+		// Financial Functions
+		// IPMT
+		"=IPMT(0.05/12,2,60,50000)":   "-205.26988187971995",
+		"=IPMT(0.035/4,2,8,0,5000,1)": "5.257455237829077",
+		// PMT
+		"=PMT(0,8,0,5000,1)":       "-625",
+		"=PMT(0.035/4,8,0,5000,1)": "-600.8520271804658",
+		// PPMT
+		"=PPMT(0.05/12,2,60,50000)":   "-738.2918003208238",
+		"=PPMT(0.035/4,2,8,0,5000,1)": "-606.1094824182949",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareCalcData(cellData)
@@ -2019,6 +2029,40 @@ func TestCalcCellValue(t *testing.T) {
 		// Web Functions
 		// ENCODEURL
 		"=ENCODEURL()": "ENCODEURL requires 1 argument",
+		// Financial Functions
+		// IPMT
+		"=IPMT()":               "IPMT requires at least 4 arguments",
+		"=IPMT(0,0,0,0,0,0,0)":  "IPMT allows at most 6 arguments",
+		"=IPMT(0,0,0,0,0,2)":    "#N/A",
+		"=IPMT(0,-1,0,0,0,0)":   "#N/A",
+		"=IPMT(0,1,0,0,0,0)":    "#N/A",
+		"=IPMT(\"\",0,0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=IPMT(0,\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=IPMT(0,0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=IPMT(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=IPMT(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=IPMT(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// PMT
+		"=PMT()":             "PMT requires at least 3 arguments",
+		"=PMT(0,0,0,0,0,0)":  "PMT allows at most 5 arguments",
+		"=PMT(0,0,0,0,2)":    "#N/A",
+		"=PMT(\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PMT(0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PMT(0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PMT(0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PMT(0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// PPMT
+		"=PPMT()":               "PPMT requires at least 4 arguments",
+		"=PPMT(0,0,0,0,0,0,0)":  "PPMT allows at most 6 arguments",
+		"=PPMT(0,0,0,0,0,2)":    "#N/A",
+		"=PPMT(0,-1,0,0,0,0)":   "#N/A",
+		"=PPMT(0,1,0,0,0,0)":    "#N/A",
+		"=PPMT(\"\",0,0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PPMT(0,\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PPMT(0,0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PPMT(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PPMT(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PPMT(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareCalcData(cellData)

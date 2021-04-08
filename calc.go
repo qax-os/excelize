@@ -319,6 +319,7 @@ var tokenPriority = map[string]int{
 //    IMSUM
 //    IMTAN
 //    INT
+//    IPMT
 //    ISBLANK
 //    ISERR
 //    ISERROR
@@ -374,9 +375,11 @@ var tokenPriority = map[string]int{
 //    PERMUT
 //    PERMUTATIONA
 //    PI
+//    PMT
 //    POISSON.DIST
 //    POISSON
 //    POWER
+//    PPMT
 //    PRODUCT
 //    PROPER
 //    QUARTILE
@@ -7155,4 +7158,135 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 	}
 	token := argsList.Front().Value.(formulaArg).Value()
 	return newStringFormulaArg(strings.Replace(url.QueryEscape(token), "+", "%20", -1))
+}
+
+// Financial Functions
+
+// IPMT function calculates the interest payment, during a specific period of a
+// loan or investment that is paid in constant periodic payments, with a
+// constant interest rate. The syntax of the function is:
+//
+//    IPMT(rate,per,nper,pv,[fv],[type])
+//
+func (fn *formulaFuncs) IPMT(argsList *list.List) formulaArg {
+	return fn.ipmt("IPMT", argsList)
+}
+
+// ipmt is an implementation of the formula function IPMT and PPMT.
+func (fn *formulaFuncs) ipmt(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 4 arguments", name))
+	}
+	if argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 6 arguments", name))
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	per := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if per.Type != ArgNumber {
+		return per
+	}
+	nper := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pv := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	fv, typ := newNumberFormulaArg(0), newNumberFormulaArg(0)
+	if argsList.Len() >= 5 {
+		if fv = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	if argsList.Len() == 6 {
+		if typ = argsList.Back().Value.(formulaArg).ToNumber(); typ.Type != ArgNumber {
+			return typ
+		}
+	}
+	if typ.Number != 0 && typ.Number != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if per.Number <= 0 || per.Number > nper.Number {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	args := list.New().Init()
+	args.PushBack(rate)
+	args.PushBack(nper)
+	args.PushBack(pv)
+	args.PushBack(fv)
+	args.PushBack(typ)
+	pmt, capital, interest, principal := fn.PMT(args), pv.Number, 0.0, 0.0
+	for i := 1; i <= int(per.Number); i++ {
+		if typ.Number != 0 && i == 1 {
+			interest = 0
+		} else {
+			interest = -capital * rate.Number
+		}
+		principal = pmt.Number - interest
+		capital += principal
+	}
+	if name == "IPMT" {
+		return newNumberFormulaArg(interest)
+	}
+	return newNumberFormulaArg(principal)
+}
+
+// PMT function calculates the constant periodic payment required to pay off
+// (or partially pay off) a loan or investment, with a constant interest
+// rate, over a specified period. The syntax of the function is:
+//
+//    PMT(rate,nper,pv,[fv],[type])
+//
+func (fn *formulaFuncs) PMT(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PMT requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PMT allows at most 5 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	nper := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pv := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	fv, typ := newNumberFormulaArg(0), newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	if argsList.Len() == 5 {
+		if typ = argsList.Back().Value.(formulaArg).ToNumber(); typ.Type != ArgNumber {
+			return typ
+		}
+	}
+	if typ.Number != 0 && typ.Number != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if rate.Number != 0 {
+		p := (-fv.Number - pv.Number*math.Pow((1+rate.Number), nper.Number)) / (1 + rate.Number*typ.Number) / ((math.Pow((1+rate.Number), nper.Number) - 1) / rate.Number)
+		return newNumberFormulaArg(p)
+	}
+	return newNumberFormulaArg((-pv.Number - fv.Number) / nper.Number)
+}
+
+// PPMT function calculates the payment on the principal, during a specific
+// period of a loan or investment that is paid in constant periodic payments,
+// with a constant interest rate. The syntax of the function is:
+//
+//    PPMT(rate,per,nper,pv,[fv],[type])
+//
+func (fn *formulaFuncs) PPMT(argsList *list.List) formulaArg {
+	return fn.ipmt("PPMT", argsList)
 }
