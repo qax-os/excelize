@@ -494,6 +494,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 		Title: formatChartTitle{
 			Name: " ",
 		},
+		VaryColors:   true,
 		ShowBlanksAs: "gap",
 	}
 	err := json.Unmarshal([]byte(formatSet), &format)
@@ -710,6 +711,8 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 // span: Specifies that blank values shall be spanned with a line.
 //
 // zero: Specifies that blank values shall be treated as zero.
+//
+// Specifies that each data marker in the series has a different color by vary_colors. The default value is true.
 //
 // Set chart offset, scale, aspect ratio setting and print settings by format, same as function AddPicture.
 //

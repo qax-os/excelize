@@ -553,15 +553,16 @@ type formatChartDimension struct {
 
 // formatChart directly maps the format settings of the chart.
 type formatChart struct {
-	Type      string               `json:"type"`
-	Series    []formatChartSeries  `json:"series"`
-	Format    formatPicture        `json:"format"`
-	Dimension formatChartDimension `json:"dimension"`
-	Legend    formatChartLegend    `json:"legend"`
-	Title     formatChartTitle     `json:"title"`
-	XAxis     formatChartAxis      `json:"x_axis"`
-	YAxis     formatChartAxis      `json:"y_axis"`
-	Chartarea struct {
+	Type       string               `json:"type"`
+	Series     []formatChartSeries  `json:"series"`
+	Format     formatPicture        `json:"format"`
+	Dimension  formatChartDimension `json:"dimension"`
+	Legend     formatChartLegend    `json:"legend"`
+	Title      formatChartTitle     `json:"title"`
+	VaryColors bool                 `json:"vary_colors"`
+	XAxis      formatChartAxis      `json:"x_axis"`
+	YAxis      formatChartAxis      `json:"y_axis"`
+	Chartarea  struct {
 		Border struct {
 			None bool `json:"none"`
 		} `json:"border"`

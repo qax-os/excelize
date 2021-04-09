@@ -271,7 +271,7 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 			Val: stringPtr("clustered"),
 		},
 		VaryColors: &attrValBool{
-			Val: boolPtr(true),
+			Val: boolPtr(formatSet.VaryColors),
 		},
 		Ser:   f.drawChartSeries(formatSet),
 		Shape: f.drawChartShape(formatSet),
@@ -515,7 +515,7 @@ func (f *File) drawDoughnutChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		DoughnutChart: &cCharts{
 			VaryColors: &attrValBool{
-				Val: boolPtr(true),
+				Val: boolPtr(formatSet.VaryColors),
 			},
 			Ser:      f.drawChartSeries(formatSet),
 			HoleSize: &attrValInt{Val: intPtr(75)},
@@ -555,7 +555,7 @@ func (f *File) drawPieChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		PieChart: &cCharts{
 			VaryColors: &attrValBool{
-				Val: boolPtr(true),
+				Val: boolPtr(formatSet.VaryColors),
 			},
 			Ser: f.drawChartSeries(formatSet),
 		},
@@ -568,7 +568,7 @@ func (f *File) drawPie3DChart(formatSet *formatChart) *cPlotArea {
 	return &cPlotArea{
 		Pie3DChart: &cCharts{
 			VaryColors: &attrValBool{
-				Val: boolPtr(true),
+				Val: boolPtr(formatSet.VaryColors),
 			},
 			Ser: f.drawChartSeries(formatSet),
 		},
@@ -584,7 +584,7 @@ func (f *File) drawPieOfPieChart(formatSet *formatChart) *cPlotArea {
 				Val: stringPtr("pie"),
 			},
 			VaryColors: &attrValBool{
-				Val: boolPtr(true),
+				Val: boolPtr(formatSet.VaryColors),
 			},
 			Ser:      f.drawChartSeries(formatSet),
 			SerLines: &attrValString{},
@@ -601,7 +601,7 @@ func (f *File) drawBarOfPieChart(formatSet *formatChart) *cPlotArea {
 				Val: stringPtr("bar"),
 			},
 			VaryColors: &attrValBool{
-				Val: boolPtr(true),
+				Val: boolPtr(formatSet.VaryColors),
 			},
 			Ser:      f.drawChartSeries(formatSet),
 			SerLines: &attrValString{},
