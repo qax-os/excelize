@@ -261,6 +261,8 @@ var tokenPriority = map[string]int{
 //    COUNTBLANK
 //    CSC
 //    CSCH
+//    CUMIPMT
+//    CUMPRINC
 //    DATE
 //    DATEDIF
 //    DEC2BIN
@@ -7161,6 +7163,79 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 }
 
 // Financial Functions
+
+// CUMIPMT function calculates the cumulative interest paid on a loan or
+// investment, between two specified periods. The syntax of the function is:
+//
+//    CUMIPMT(rate,nper,pv,start_period,end_period,type)
+//
+func (fn *formulaFuncs) CUMIPMT(argsList *list.List) formulaArg {
+	return fn.cumip("CUMIPMT", argsList)
+}
+
+// CUMPRINC function calculates the cumulative payment on the principal of a
+// loan or investment, between two specified periods. The syntax of the
+// function is:
+//
+//    CUMPRINC(rate,nper,pv,start_period,end_period,type)
+//
+func (fn *formulaFuncs) CUMPRINC(argsList *list.List) formulaArg {
+	return fn.cumip("CUMPRINC", argsList)
+}
+
+// cumip is an implementation of the formula function CUMIPMT and CUMPRINC.
+func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 6 arguments", name))
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	nper := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pv := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	start := argsList.Back().Prev().Prev().Value.(formulaArg).ToNumber()
+	if start.Type != ArgNumber {
+		return start
+	}
+	end := argsList.Back().Prev().Value.(formulaArg).ToNumber()
+	if end.Type != ArgNumber {
+		return end
+	}
+	typ := argsList.Back().Value.(formulaArg).ToNumber()
+	if typ.Type != ArgNumber {
+		return typ
+	}
+	if typ.Number != 0 && typ.Number != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if start.Number < 1 || start.Number > end.Number {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	num, ipmt := 0.0, newNumberFormulaArg(0)
+	for per := start.Number; per <= end.Number; per++ {
+		args := list.New().Init()
+		args.PushBack(rate)
+		args.PushBack(newNumberFormulaArg(per))
+		args.PushBack(nper)
+		args.PushBack(pv)
+		args.PushBack(newNumberFormulaArg(0))
+		args.PushBack(typ)
+		if name == "CUMIPMT" {
+			ipmt = fn.IPMT(args)
+		} else {
+			ipmt = fn.PPMT(args)
+		}
+		num += ipmt.Number
+	}
+	return newNumberFormulaArg(num)
+}
 
 // IPMT function calculates the interest payment, during a specific period of a
 // loan or investment that is paid in constant periodic payments, with a

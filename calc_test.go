@@ -1133,6 +1133,12 @@ func TestCalcCellValue(t *testing.T) {
 		// ENCODEURL
 		"=ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
 		// Financial Functions
+		// CUMIPMT
+		"=CUMIPMT(0.05/12,60,50000,1,12,0)":  "-2294.97753732664",
+		"=CUMIPMT(0.05/12,60,50000,13,24,0)": "-1833.1000665738893",
+		// CUMPRINC
+		"=CUMPRINC(0.05/12,60,50000,1,12,0)":  "-9027.762649079885",
+		"=CUMPRINC(0.05/12,60,50000,13,24,0)": "-9489.640119832635",
 		// IPMT
 		"=IPMT(0.05/12,2,60,50000)":   "-205.26988187971995",
 		"=IPMT(0.035/4,2,8,0,5000,1)": "5.257455237829077",
@@ -2030,6 +2036,28 @@ func TestCalcCellValue(t *testing.T) {
 		// ENCODEURL
 		"=ENCODEURL()": "ENCODEURL requires 1 argument",
 		// Financial Functions
+		// CUMIPMT
+		"=CUMIPMT()":               "CUMIPMT requires 6 arguments",
+		"=CUMIPMT(0,0,0,0,0,2)":    "#N/A",
+		"=CUMIPMT(0,0,0,-1,0,0)":   "#N/A",
+		"=CUMIPMT(0,0,0,1,0,0)":    "#N/A",
+		"=CUMIPMT(\"\",0,0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMIPMT(0,\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMIPMT(0,0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMIPMT(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMIPMT(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMIPMT(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// CUMPRINC
+		"=CUMPRINC()":               "CUMPRINC requires 6 arguments",
+		"=CUMPRINC(0,0,0,0,0,2)":    "#N/A",
+		"=CUMPRINC(0,0,0,-1,0,0)":   "#N/A",
+		"=CUMPRINC(0,0,0,1,0,0)":    "#N/A",
+		"=CUMPRINC(\"\",0,0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMPRINC(0,\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMPRINC(0,0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMPRINC(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMPRINC(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CUMPRINC(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// IPMT
 		"=IPMT()":               "IPMT requires at least 4 arguments",
 		"=IPMT(0,0,0,0,0,0,0)":  "IPMT allows at most 6 arguments",
