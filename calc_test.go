@@ -1139,9 +1139,35 @@ func TestCalcCellValue(t *testing.T) {
 		// CUMPRINC
 		"=CUMPRINC(0.05/12,60,50000,1,12,0)":  "-9027.762649079885",
 		"=CUMPRINC(0.05/12,60,50000,13,24,0)": "-9489.640119832635",
+		// DB
+		"=DB(0,1000,5,1)":       "0",
+		"=DB(10000,1000,5,1)":   "3690",
+		"=DB(10000,1000,5,2)":   "2328.39",
+		"=DB(10000,1000,5,1,6)": "1845",
+		"=DB(10000,1000,5,6,6)": "238.52712458788187",
+		// DDB
+		"=DDB(0,1000,5,1)":     "0",
+		"=DDB(10000,1000,5,1)": "4000",
+		"=DDB(10000,1000,5,2)": "2400",
+		"=DDB(10000,1000,5,3)": "1440",
+		"=DDB(10000,1000,5,4)": "864",
+		"=DDB(10000,1000,5,5)": "296",
+		// DOLLARDE
+		"=DOLLARDE(1.01,16)": "1.0625",
+		// DOLLARFR
+		"=DOLLARFR(1.0625,16)": "1.01",
+		// EFFECT
+		"=EFFECT(0.1,4)":   "0.103812890625",
+		"=EFFECT(0.025,2)": "0.02515625",
 		// IPMT
 		"=IPMT(0.05/12,2,60,50000)":   "-205.26988187971995",
 		"=IPMT(0.035/4,2,8,0,5000,1)": "5.257455237829077",
+		// ISPMT
+		"=ISPMT(0.05/12,1,60,50000)": "-204.8611111111111",
+		"=ISPMT(0.05/12,2,60,50000)": "-201.38888888888886",
+		"=ISPMT(0.05/12,2,1,50000)":  "208.33333333333334",
+		// NOMINAL
+		"=NOMINAL(0.025,12)": "0.024718035238113",
 		// PMT
 		"=PMT(0,8,0,5000,1)":       "-625",
 		"=PMT(0.035/4,8,0,5000,1)": "-600.8520271804658",
@@ -2058,6 +2084,42 @@ func TestCalcCellValue(t *testing.T) {
 		"=CUMPRINC(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=CUMPRINC(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=CUMPRINC(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// DB
+		"=DB()":             "DB requires at least 4 arguments",
+		"=DB(0,0,0,0,0,0)":  "DB allows at most 5 arguments",
+		"=DB(-1,0,0,0)":     "#N/A",
+		"=DB(\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DB(0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DB(0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DB(0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DB(0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// DDB
+		"=DDB()":             "DDB requires at least 4 arguments",
+		"=DDB(0,0,0,0,0,0)":  "DDB allows at most 5 arguments",
+		"=DDB(-1,0,0,0)":     "#N/A",
+		"=DDB(\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DDB(0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DDB(0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DDB(0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DDB(0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// DOLLARDE
+		"=DOLLARDE()":       "DOLLARDE requires 2 arguments",
+		"=DOLLARDE(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DOLLARDE(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DOLLARDE(0,-1)":   "#NUM!",
+		"=DOLLARDE(0,0)":    "#DIV/0!",
+		// DOLLARFR
+		"=DOLLARFR()":       "DOLLARFR requires 2 arguments",
+		"=DOLLARFR(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DOLLARFR(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DOLLARFR(0,-1)":   "#NUM!",
+		"=DOLLARFR(0,0)":    "#DIV/0!",
+		// EFFECT
+		"=EFFECT()":       "EFFECT requires 2 arguments",
+		"=EFFECT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EFFECT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EFFECT(0,0)":    "#NUM!",
+		"=EFFECT(1,0)":    "#NUM!",
 		// IPMT
 		"=IPMT()":               "IPMT requires at least 4 arguments",
 		"=IPMT(0,0,0,0,0,0,0)":  "IPMT allows at most 6 arguments",
@@ -2070,6 +2132,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=IPMT(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=IPMT(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=IPMT(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// ISPMT
+		"=ISPMT()":           "ISPMT requires 4 arguments",
+		"=ISPMT(\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ISPMT(0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ISPMT(0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ISPMT(0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// NOMINAL
+		"=NOMINAL()":       "NOMINAL requires 2 arguments",
+		"=NOMINAL(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NOMINAL(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NOMINAL(0,0)":    "#NUM!",
+		"=NOMINAL(1,0)":    "#NUM!",
 		// PMT
 		"=PMT()":             "PMT requires at least 3 arguments",
 		"=PMT(0,0,0,0,0,0)":  "PMT allows at most 5 arguments",

@@ -265,11 +265,16 @@ var tokenPriority = map[string]int{
 //    CUMPRINC
 //    DATE
 //    DATEDIF
+//    DB
+//    DDB
 //    DEC2BIN
 //    DEC2HEX
 //    DEC2OCT
 //    DECIMAL
 //    DEGREES
+//    DOLLARDE
+//    DOLLARFR
+//    EFFECT
 //    ENCODEURL
 //    EVEN
 //    EXACT
@@ -332,6 +337,7 @@ var tokenPriority = map[string]int{
 //    ISODD
 //    ISTEXT
 //    ISO.CEILING
+//    ISPMT
 //    KURT
 //    LARGE
 //    LCM
@@ -357,6 +363,7 @@ var tokenPriority = map[string]int{
 //    MUNIT
 //    N
 //    NA
+//    NOMINAL
 //    NORM.DIST
 //    NORMDIST
 //    NORM.INV
@@ -7237,6 +7244,185 @@ func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(num)
 }
 
+// DB function calculates the depreciation of an asset, using the Fixed
+// Declining Balance Method, for each period of the asset's lifetime. The
+// syntax of the function is:
+//
+//    DB(cost,salvage,life,period,[month])
+//
+func (fn *formulaFuncs) DB(argsList *list.List) formulaArg {
+	if argsList.Len() < 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DB requires at least 4 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DB allows at most 5 arguments")
+	}
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber {
+		return cost
+	}
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if salvage.Type != ArgNumber {
+		return salvage
+	}
+	life := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if life.Type != ArgNumber {
+		return life
+	}
+	period := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if period.Type != ArgNumber {
+		return period
+	}
+	month := newNumberFormulaArg(12)
+	if argsList.Len() == 5 {
+		if month = argsList.Back().Value.(formulaArg).ToNumber(); month.Type != ArgNumber {
+			return month
+		}
+	}
+	if cost.Number == 0 {
+		return newNumberFormulaArg(0)
+	}
+	if (cost.Number <= 0) || ((salvage.Number / cost.Number) < 0) || (life.Number <= 0) || (period.Number < 1) || (month.Number < 1) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	dr := 1 - math.Pow(salvage.Number/cost.Number, 1/life.Number)
+	dr = math.Round(dr*1000) / 1000
+	pd, depreciation := 0.0, 0.0
+	for per := 1; per <= int(period.Number); per++ {
+		if per == 1 {
+			depreciation = cost.Number * dr * month.Number / 12
+		} else if per == int(life.Number+1) {
+			depreciation = (cost.Number - pd) * dr * (12 - month.Number) / 12
+		} else {
+			depreciation = (cost.Number - pd) * dr
+		}
+		pd += depreciation
+	}
+	return newNumberFormulaArg(depreciation)
+}
+
+// DDB function calculates the depreciation of an asset, using the Double
+// Declining Balance Method, or another specified depreciation rate. The
+// syntax of the function is:
+//
+//    DDB(cost,salvage,life,period,[factor])
+//
+func (fn *formulaFuncs) DDB(argsList *list.List) formulaArg {
+	if argsList.Len() < 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DDB requires at least 4 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DDB allows at most 5 arguments")
+	}
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber {
+		return cost
+	}
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if salvage.Type != ArgNumber {
+		return salvage
+	}
+	life := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if life.Type != ArgNumber {
+		return life
+	}
+	period := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if period.Type != ArgNumber {
+		return period
+	}
+	factor := newNumberFormulaArg(2)
+	if argsList.Len() == 5 {
+		if factor = argsList.Back().Value.(formulaArg).ToNumber(); factor.Type != ArgNumber {
+			return factor
+		}
+	}
+	if cost.Number == 0 {
+		return newNumberFormulaArg(0)
+	}
+	if (cost.Number <= 0) || ((salvage.Number / cost.Number) < 0) || (life.Number <= 0) || (period.Number < 1) || (factor.Number <= 0.0) || (period.Number > life.Number) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	pd, depreciation := 0.0, 0.0
+	for per := 1; per <= int(period.Number); per++ {
+		depreciation = math.Min((cost.Number-pd)*(factor.Number/life.Number), (cost.Number - salvage.Number - pd))
+		pd += depreciation
+	}
+	return newNumberFormulaArg(depreciation)
+}
+
+// DOLLARDE function converts a dollar value in fractional notation, into a
+// dollar value expressed as a decimal. The syntax of the function is:
+//
+//    DOLLARDE(fractional_dollar,fraction)
+//
+func (fn *formulaFuncs) DOLLARDE(argsList *list.List) formulaArg {
+	return fn.dollar("DOLLARDE", argsList)
+}
+
+// DOLLARFR function converts a dollar value in decimal notation, into a
+// dollar value that is expressed in fractional notation. The syntax of the
+// function is:
+//
+//    DOLLARFR(decimal_dollar,fraction)
+//
+func (fn *formulaFuncs) DOLLARFR(argsList *list.List) formulaArg {
+	return fn.dollar("DOLLARFR", argsList)
+}
+
+// dollar is an implementation of the formula function DOLLARDE and DOLLARFR.
+func (fn *formulaFuncs) dollar(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
+	}
+	dollar := argsList.Front().Value.(formulaArg).ToNumber()
+	if dollar.Type != ArgNumber {
+		return dollar
+	}
+	frac := argsList.Back().Value.(formulaArg).ToNumber()
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	if frac.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if frac.Number == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	cents := math.Mod(dollar.Number, 1)
+	if name == "DOLLARDE" {
+		cents /= frac.Number
+		cents *= math.Pow(10, math.Ceil(math.Log10(frac.Number)))
+	} else {
+		cents *= frac.Number
+		cents *= math.Pow(10, -math.Ceil(math.Log10(frac.Number)))
+	}
+	return newNumberFormulaArg(math.Floor(dollar.Number) + cents)
+}
+
+// EFFECT function returns the effective annual interest rate for a given
+// nominal interest rate and number of compounding periods per year. The
+// syntax of the function is:
+//
+//    EFFECT(nominal_rate,npery)
+//
+func (fn *formulaFuncs) EFFECT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EFFECT requires 2 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	npery := argsList.Back().Value.(formulaArg).ToNumber()
+	if npery.Type != ArgNumber {
+		return npery
+	}
+	if rate.Number <= 0 || npery.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(math.Pow((1+rate.Number/npery.Number), npery.Number) - 1)
+}
+
 // IPMT function calculates the interest payment, during a specific period of a
 // loan or investment that is paid in constant periodic payments, with a
 // constant interest rate. The syntax of the function is:
@@ -7308,6 +7494,66 @@ func (fn *formulaFuncs) ipmt(name string, argsList *list.List) formulaArg {
 		return newNumberFormulaArg(interest)
 	}
 	return newNumberFormulaArg(principal)
+}
+
+// ISPMT function calculates the interest paid during a specific period of a
+// loan or investment. The syntax of the function is:
+//
+//    ISPMT(rate,per,nper,pv)
+//
+func (fn *formulaFuncs) ISPMT(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISPMT requires 4 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	per := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if per.Type != ArgNumber {
+		return per
+	}
+	nper := argsList.Back().Prev().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pv := argsList.Back().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	pr, payment, num := pv.Number, pv.Number/nper.Number, 0.0
+	for i := 0; i <= int(per.Number); i++ {
+		num = rate.Number * pr * -1
+		pr -= payment
+		if i == int(nper.Number) {
+			num = 0
+		}
+	}
+	return newNumberFormulaArg(num)
+}
+
+// NOMINAL function returns the nominal interest rate for a given effective
+// interest rate and number of compounding periods per year. The syntax of
+// the function is:
+//
+//    NOMINAL(effect_rate,npery)
+//
+func (fn *formulaFuncs) NOMINAL(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NOMINAL requires 2 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	npery := argsList.Back().Value.(formulaArg).ToNumber()
+	if npery.Type != ArgNumber {
+		return npery
+	}
+	if rate.Number <= 0 || npery.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(npery.Number * (math.Pow(rate.Number+1, 1/npery.Number) - 1))
 }
 
 // PMT function calculates the constant periodic payment required to pay off
