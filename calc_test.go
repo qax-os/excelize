@@ -1159,6 +1159,13 @@ func TestCalcCellValue(t *testing.T) {
 		// EFFECT
 		"=EFFECT(0.1,4)":   "0.103812890625",
 		"=EFFECT(0.025,2)": "0.02515625",
+		// FV
+		"=FV(0.05/12,60,-1000)":   "68006.08284084337",
+		"=FV(0.1/4,16,-2000,0,1)": "39729.46089416617",
+		"=FV(0,16,-2000)":         "32000",
+		// FVSCHEDULE
+		"=FVSCHEDULE(10000,A1:A5)": "240000",
+		"=FVSCHEDULE(10000,0.5)":   "15000",
 		// IPMT
 		"=IPMT(0.05/12,2,60,50000)":   "-205.26988187971995",
 		"=IPMT(0.035/4,2,8,0,5000,1)": "5.257455237829077",
@@ -1168,6 +1175,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISPMT(0.05/12,2,1,50000)":  "208.33333333333334",
 		// NOMINAL
 		"=NOMINAL(0.025,12)": "0.024718035238113",
+		// NPER
+		"=NPER(0.04,-6000,50000)":           "10.338035071507665",
+		"=NPER(0,-6000,50000)":              "8.333333333333334",
+		"=NPER(0.06/4,-2000,60000,30000,1)": "52.794773709274764",
+		// NPV
+		"=NPV(0.02,-5000,\"\",800)": "-4133.025759323337",
+		// PDURATION
+		"=PDURATION(0.04,10000,15000)": "10.33803507150765",
 		// PMT
 		"=PMT(0,8,0,5000,1)":       "-625",
 		"=PMT(0.035/4,8,0,5000,1)": "-600.8520271804658",
@@ -2120,6 +2135,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=EFFECT(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=EFFECT(0,0)":    "#NUM!",
 		"=EFFECT(1,0)":    "#NUM!",
+		// FV
+		"=FV()":              "FV requires at least 3 arguments",
+		"=FV(0,0,0,0,0,0,0)": "FV allows at most 5 arguments",
+		"=FV(0,0,0,0,2)":     "#N/A",
+		"=FV(\"\",0,0,0,0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FV(0,\"\",0,0,0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FV(0,0,\"\",0,0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FV(0,0,0,\"\",0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FV(0,0,0,0,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// FVSCHEDULE
+		"=FVSCHEDULE()":        "FVSCHEDULE requires 2 arguments",
+		"=FVSCHEDULE(\"\",0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FVSCHEDULE(0,\"x\")": "strconv.ParseFloat: parsing \"x\": invalid syntax",
 		// IPMT
 		"=IPMT()":               "IPMT requires at least 4 arguments",
 		"=IPMT(0,0,0,0,0,0,0)":  "IPMT allows at most 6 arguments",
@@ -2144,6 +2172,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=NOMINAL(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=NOMINAL(0,0)":    "#NUM!",
 		"=NOMINAL(1,0)":    "#NUM!",
+		// NPER
+		"=NPER()":             "NPER requires at least 3 arguments",
+		"=NPER(0,0,0,0,0,0)":  "NPER allows at most 5 arguments",
+		"=NPER(0,0,0)":        "#NUM!",
+		"=NPER(0,0,0,0,2)":    "#N/A",
+		"=NPER(\"\",0,0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NPER(0,\"\",0,0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NPER(0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NPER(0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NPER(0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// NPV
+		"=NPV()":       "NPV requires at least 2 arguments",
+		"=NPV(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// PDURATION
+		"=PDURATION()":         "PDURATION requires 3 arguments",
+		"=PDURATION(\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PDURATION(0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PDURATION(0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PDURATION(0,0,0)":    "#NUM!",
 		// PMT
 		"=PMT()":             "PMT requires at least 3 arguments",
 		"=PMT(0,0,0,0,0,0)":  "PMT allows at most 5 arguments",

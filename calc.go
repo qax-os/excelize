@@ -290,6 +290,8 @@ var tokenPriority = map[string]int{
 //    FLOOR
 //    FLOOR.MATH
 //    FLOOR.PRECISE
+//    FV
+//    FVSCHEDULE
 //    GAMMA
 //    GAMMALN
 //    GCD
@@ -374,11 +376,14 @@ var tokenPriority = map[string]int{
 //    NORMSINV
 //    NOT
 //    NOW
+//    NPER
+//    NPV
 //    OCT2BIN
 //    OCT2DEC
 //    OCT2HEX
 //    ODD
 //    OR
+//    PDURATION
 //    PERCENTILE.INC
 //    PERCENTILE
 //    PERMUT
@@ -7423,6 +7428,78 @@ func (fn *formulaFuncs) EFFECT(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(math.Pow((1+rate.Number/npery.Number), npery.Number) - 1)
 }
 
+// FV function calculates the Future Value of an investment with periodic
+// constant payments and a constant interest rate. The syntax of the function
+// is:
+//
+//    FV(rate,nper,[pmt],[pv],[type])
+//
+func (fn *formulaFuncs) FV(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FV requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FV allows at most 5 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	nper := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pmt := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pmt.Type != ArgNumber {
+		return pmt
+	}
+	pv, typ := newNumberFormulaArg(0), newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if pv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); pv.Type != ArgNumber {
+			return pv
+		}
+	}
+	if argsList.Len() == 5 {
+		if typ = argsList.Back().Value.(formulaArg).ToNumber(); typ.Type != ArgNumber {
+			return typ
+		}
+	}
+	if typ.Number != 0 && typ.Number != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if rate.Number != 0 {
+		return newNumberFormulaArg(-pv.Number*math.Pow(1+rate.Number, nper.Number) - pmt.Number*(1+rate.Number*typ.Number)*(math.Pow(1+rate.Number, nper.Number)-1)/rate.Number)
+	}
+	return newNumberFormulaArg(-pv.Number - pmt.Number*nper.Number)
+}
+
+// FVSCHEDULE function calculates the Future Value of an investment with a
+// variable interest rate. The syntax of the function is:
+//
+//    FVSCHEDULE(principal,schedule)
+//
+func (fn *formulaFuncs) FVSCHEDULE(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FVSCHEDULE requires 2 arguments")
+	}
+	pri := argsList.Front().Value.(formulaArg).ToNumber()
+	if pri.Type != ArgNumber {
+		return pri
+	}
+	principal := pri.Number
+	for _, arg := range argsList.Back().Value.(formulaArg).ToList() {
+		if arg.Value() == "" {
+			continue
+		}
+		rate := arg.ToNumber()
+		if rate.Type != ArgNumber {
+			return rate
+		}
+		principal *= (1 + rate.Number)
+	}
+	return newNumberFormulaArg(principal)
+}
+
 // IPMT function calculates the interest payment, during a specific period of a
 // loan or investment that is paid in constant periodic payments, with a
 // constant interest rate. The syntax of the function is:
@@ -7554,6 +7631,109 @@ func (fn *formulaFuncs) NOMINAL(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(npery.Number * (math.Pow(rate.Number+1, 1/npery.Number) - 1))
+}
+
+// NPER function calculates the number of periods required to pay off a loan,
+// for a constant periodic payment and a constant interest rate. The syntax
+// of the function is:
+//
+//    NPER(rate,pmt,pv,[fv],[type])
+//
+func (fn *formulaFuncs) NPER(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NPER requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NPER allows at most 5 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	pmt := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if pmt.Type != ArgNumber {
+		return pmt
+	}
+	pv := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	fv, typ := newNumberFormulaArg(0), newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	if argsList.Len() == 5 {
+		if typ = argsList.Back().Value.(formulaArg).ToNumber(); typ.Type != ArgNumber {
+			return typ
+		}
+	}
+	if typ.Number != 0 && typ.Number != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if pmt.Number == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if rate.Number != 0 {
+		p := math.Log((pmt.Number*(1+rate.Number*typ.Number)/rate.Number-fv.Number)/(pv.Number+pmt.Number*(1+rate.Number*typ.Number)/rate.Number)) / math.Log(1+rate.Number)
+		return newNumberFormulaArg(p)
+	}
+	return newNumberFormulaArg((-pv.Number - fv.Number) / pmt.Number)
+}
+
+// NPV function calculates the Net Present Value of an investment, based on a
+// supplied discount rate, and a series of future payments and income. The
+// syntax of the function is:
+//
+//    NPV(rate,value1,[value2],[value3],...)
+//
+func (fn *formulaFuncs) NPV(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NPV requires at least 2 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	val, i := 0.0, 1
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		num := arg.Value.(formulaArg).ToNumber()
+		if num.Type != ArgNumber {
+			continue
+		}
+		val += num.Number / math.Pow(1+rate.Number, float64(i))
+		i++
+	}
+	return newNumberFormulaArg(val)
+}
+
+// PDURATION function calculates the number of periods required for an
+// investment to reach a specified future value. The syntax of the function
+// is:
+//
+//    PDURATION(rate,pv,fv)
+//
+func (fn *formulaFuncs) PDURATION(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PDURATION requires 3 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	pv := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	fv := argsList.Back().Value.(formulaArg).ToNumber()
+	if fv.Type != ArgNumber {
+		return fv
+	}
+	if rate.Number <= 0 || pv.Number <= 0 || fv.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg((math.Log(fv.Number) - math.Log(pv.Number)) / math.Log(1+rate.Number))
 }
 
 // PMT function calculates the constant periodic payment required to pay off
