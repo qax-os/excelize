@@ -2518,3 +2518,58 @@ func TestCalcHLOOKUP(t *testing.T) {
 		assert.Equal(t, "", result, formula)
 	}
 }
+
+func TestCalcIRR(t *testing.T) {
+	cellData := [][]interface{}{{-1}, {0.2}, {0.24}, {0.288}, {0.3456}, {0.4147}}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=IRR(A1:A4)":      "-0.136189509034157",
+		"=IRR(A1:A6)":      "0.130575760006905",
+		"=IRR(A1:A4,-0.1)": "-0.136189514994621",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=IRR()":       "IRR requires at least 1 argument",
+		"=IRR(0,0,0)":  "IRR allows at most 2 arguments",
+		"=IRR(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=IRR(A2:A3)":  "#NUM!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcMIRR(t *testing.T) {
+	cellData := [][]interface{}{{-100}, {18}, {22.5}, {28}, {35.5}, {45}}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=MIRR(A1:A5,0.055,0.05)": "0.025376365108071",
+		"=MIRR(A1:A6,0.055,0.05)": "0.1000268752662",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=MIRR()":             "MIRR requires 3 arguments",
+		"=MIRR(A1:A5,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MIRR(A1:A5,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MIRR(B1:B5,0,0)":    "#DIV/0!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}

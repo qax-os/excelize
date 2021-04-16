@@ -55,6 +55,8 @@ const (
 // displays only the leading 15 figures. In the second line, the number one
 // is added to the fraction, and again Excel displays only 15 figures.
 const numericPrecision = 1000000000000000
+const maxFinancialIterations = 128
+const financialPercision = 1.0e-08
 
 // cellRef defines the structure of a cell reference.
 type cellRef struct {
@@ -329,6 +331,7 @@ var tokenPriority = map[string]int{
 //    IMTAN
 //    INT
 //    IPMT
+//    IRR
 //    ISBLANK
 //    ISERR
 //    ISERROR
@@ -359,6 +362,7 @@ var tokenPriority = map[string]int{
 //    MIDB
 //    MIN
 //    MINA
+//    MIRR
 //    MOD
 //    MROUND
 //    MULTINOMIAL
@@ -7573,6 +7577,76 @@ func (fn *formulaFuncs) ipmt(name string, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(principal)
 }
 
+// IRR function returns the Internal Rate of Return for a supplied series of
+// periodic cash flows (i.e. an initial investment value and a series of net
+// income values). The syntax of the function is:
+//
+//    IRR(values,[guess])
+//
+func (fn *formulaFuncs) IRR(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IRR requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IRR allows at most 2 arguments")
+	}
+	values, guess := argsList.Front().Value.(formulaArg).ToList(), newNumberFormulaArg(0.1)
+	if argsList.Len() > 1 {
+		if guess = argsList.Back().Value.(formulaArg).ToNumber(); guess.Type != ArgNumber {
+			return guess
+		}
+	}
+	x1, x2 := newNumberFormulaArg(0), guess
+	args := list.New().Init()
+	args.PushBack(x1)
+	for _, v := range values {
+		args.PushBack(v)
+	}
+	f1 := fn.NPV(args)
+	args.Front().Value = x2
+	f2 := fn.NPV(args)
+	for i := 0; i < maxFinancialIterations; i++ {
+		if f1.Number*f2.Number < 0 {
+			break
+		}
+		if math.Abs(f1.Number) < math.Abs((f2.Number)) {
+			x1.Number += 1.6 * (x1.Number - x2.Number)
+			args.Front().Value = x1
+			f1 = fn.NPV(args)
+			continue
+		}
+		x2.Number += 1.6 * (x2.Number - x1.Number)
+		args.Front().Value = x2
+		f2 = fn.NPV(args)
+	}
+	if f1.Number*f2.Number > 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args.Front().Value = x1
+	f := fn.NPV(args)
+	var rtb, dx, xMid, fMid float64
+	if f.Number < 0 {
+		rtb = x1.Number
+		dx = x2.Number - x1.Number
+	} else {
+		rtb = x2.Number
+		dx = x1.Number - x2.Number
+	}
+	for i := 0; i < maxFinancialIterations; i++ {
+		dx *= 0.5
+		xMid = rtb + dx
+		args.Front().Value = newNumberFormulaArg(xMid)
+		fMid = fn.NPV(args).Number
+		if fMid <= 0 {
+			rtb = xMid
+		}
+		if math.Abs(fMid) < financialPercision || math.Abs(dx) < financialPercision {
+			break
+		}
+	}
+	return newNumberFormulaArg(xMid)
+}
+
 // ISPMT function calculates the interest paid during a specific period of a
 // loan or investment. The syntax of the function is:
 //
@@ -7607,6 +7681,41 @@ func (fn *formulaFuncs) ISPMT(argsList *list.List) formulaArg {
 		}
 	}
 	return newNumberFormulaArg(num)
+}
+
+// MIRR function returns the Modified Internal Rate of Return for a supplied
+// series of periodic cash flows (i.e. a set of values, which includes an
+// initial investment value and a series of net income values). The syntax of
+// the function is:
+//
+//    MIRR(values,finance_rate,reinvest_rate)
+//
+func (fn *formulaFuncs) MIRR(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MIRR requires 3 arguments")
+	}
+	values := argsList.Front().Value.(formulaArg).ToList()
+	financeRate := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if financeRate.Type != ArgNumber {
+		return financeRate
+	}
+	reinvestRate := argsList.Back().Value.(formulaArg).ToNumber()
+	if reinvestRate.Type != ArgNumber {
+		return reinvestRate
+	}
+	n, fr, rr, npvPos, npvNeg := len(values), 1+financeRate.Number, 1+reinvestRate.Number, 0.0, 0.0
+	for i, v := range values {
+		val := v.ToNumber()
+		if val.Number >= 0 {
+			npvPos += val.Number / math.Pow(float64(rr), float64(i))
+			continue
+		}
+		npvNeg += val.Number / math.Pow(float64(fr), float64(i))
+	}
+	if npvNeg == 0 || npvPos == 0 || reinvestRate.Number <= -1 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	return newNumberFormulaArg(math.Pow(-npvPos*math.Pow(rr, float64(n))/(npvNeg*rr), 1/(float64(n)-1)) - 1)
 }
 
 // NOMINAL function returns the nominal interest rate for a given effective
