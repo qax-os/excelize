@@ -48,7 +48,7 @@ var builtInNumFmt = map[int]string{
 	19: "h:mm:ss am/pm",
 	20: "h:mm",
 	21: "h:mm:ss",
-	22: "m/d/yy h:mm",
+	22: "m/d/yy hh:mm",
 	37: "#,##0 ;(#,##0)",
 	38: "#,##0 ;[red](#,##0)",
 	39: "#,##0.00;(#,##0.00)",

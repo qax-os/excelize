@@ -121,7 +121,7 @@ func TestSetCellValues(t *testing.T) {
 
 	v, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
-	assert.Equal(t, v, "12/31/10 12:00")
+	assert.Equal(t, v, "12/31/10 00:00")
 
 	// test date value lower than min date supported by Excel
 	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
