@@ -40,6 +40,7 @@ func TestAddComments(t *testing.T) {
 	comments := f.GetComments()
 	assert.EqualValues(t, 2, len(comments["Sheet1"]))
 	assert.EqualValues(t, 1, len(comments["Sheet2"]))
+	assert.EqualValues(t, len(NewFile().GetComments()), 0)
 }
 
 func TestDecodeVMLDrawingReader(t *testing.T) {
