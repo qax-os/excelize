@@ -24,7 +24,7 @@ import "encoding/xml"
 // something special about the cell.
 type xlsxComments struct {
 	XMLName     xml.Name        `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main comments"`
-	Authors     []xlsxAuthor    `xml:"authors"`
+	Authors     xlsxAuthor      `xml:"authors"`
 	CommentList xlsxCommentList `xml:"commentList"`
 }
 
@@ -33,7 +33,7 @@ type xlsxComments struct {
 // have an author. The maximum length of the author string is an implementation
 // detail, but a good guideline is 255 chars.
 type xlsxAuthor struct {
-	Author string `xml:"author"`
+	Author []string `xml:"author"`
 }
 
 // xlsxCommentList (List of Comments) directly maps the xlsxCommentList element.

@@ -43,15 +43,15 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 		if target == "" {
 			continue
 		}
-		if !filepath.IsAbs(target) {
+		if !strings.HasPrefix(target, "/") {
 			target = "xl" + strings.TrimPrefix(target, "..")
 		}
 		if d := f.commentsReader(strings.TrimPrefix(target, "/")); d != nil {
 			sheetComments := []Comment{}
 			for _, comment := range d.CommentList.Comment {
 				sheetComment := Comment{}
-				if comment.AuthorID < len(d.Authors) {
-					sheetComment.Author = d.Authors[comment.AuthorID].Author
+				if comment.AuthorID < len(d.Authors.Author) {
+					sheetComment.Author = d.Authors.Author[comment.AuthorID]
 				}
 				sheetComment.Ref = comment.Ref
 				sheetComment.AuthorID = comment.AuthorID
@@ -250,20 +250,19 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 		t = t[0:32512]
 	}
 	comments := f.commentsReader(commentsXML)
+	authorID := 0
 	if comments == nil {
-		comments = &xlsxComments{
-			Authors: []xlsxAuthor{
-				{
-					Author: formatSet.Author,
-				},
-			},
-		}
+		comments = &xlsxComments{Authors: xlsxAuthor{Author: []string{formatSet.Author}}}
+	}
+	if inStrSlice(comments.Authors.Author, formatSet.Author) == -1 {
+		comments.Authors.Author = append(comments.Authors.Author, formatSet.Author)
+		authorID = len(comments.Authors.Author) - 1
 	}
 	defaultFont := f.GetDefaultFont()
 	bold := ""
 	cmt := xlsxComment{
 		Ref:      cell,
-		AuthorID: 0,
+		AuthorID: authorID,
 		Text: xlsxText{
 			R: []xlsxR{
 				{
