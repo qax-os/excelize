@@ -43,6 +43,28 @@ func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	})
 }
 
+// Opinionated version of SetCellValue which is better for loops
+func (f *File) SetCellValueSplit(sheet, col string, row int, value interface{}) error {
+	if name, err := JoinCellName(col, row); err == nil {
+		return f.SetCellValue(sheet, name, value)
+	} else {
+		return err
+	}
+}
+
+// Opinionated version of SetCellValue which is better for loops of loops
+func (f *File) SetCellValueNumericSplit(sheet string, col, row int, value interface{}) error {
+	if name, err := ColumnNumberToName(col); err == nil {
+		if joinedName, err := JoinCellName(name, row); err == nil {
+			return f.SetCellValue(sheet, joinedName, value)
+		} else {
+			return err
+		}
+	} else {
+		return err
+	}
+}
+
 // SetCellValue provides a function to set the value of a cell. The specified
 // coordinates should not be in the first row of the table, a complex number
 // can be set with string text. The following shows the supported data
