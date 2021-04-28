@@ -134,6 +134,18 @@ func TestStreamTable(t *testing.T) {
 	assert.EqualError(t, streamWriter.AddTable("A1", "B", `{}`), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
 }
 
+func TestStreamMergeCells(t *testing.T) {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.MergeCell("A1", "D1"))
+	// Test merge cells with illegal cell coordinates.
+	assert.EqualError(t, streamWriter.MergeCell("A", "D1"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.NoError(t, streamWriter.Flush())
+	// Save spreadsheet by the given path.
+	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamMergeCells.xlsx")))
+}
+
 func TestNewStreamWriter(t *testing.T) {
 	// Test error exceptions
 	file := NewFile()

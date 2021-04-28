@@ -26,12 +26,14 @@ import (
 
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
-	File       *File
-	Sheet      string
-	SheetID    int
-	worksheet  *xlsxWorksheet
-	rawData    bufferedWriter
-	tableParts string
+	File            *File
+	Sheet           string
+	SheetID         int
+	worksheet       *xlsxWorksheet
+	rawData         bufferedWriter
+	mergeCellsCount int
+	mergeCells      string
+	tableParts      string
 }
 
 // NewStreamWriter return stream writer struct by given worksheet name for
@@ -322,6 +324,19 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	return sw.rawData.Sync()
 }
 
+// MergeCell provides a function to merge cells by a given coordinate area for
+// the StreamWriter. Don't create a merged cell that overlaps with another
+// existing merged cell.
+func (sw *StreamWriter) MergeCell(hcell, vcell string) error {
+	_, err := areaRangeToCoordinates(hcell, vcell)
+	if err != nil {
+		return err
+	}
+	sw.mergeCellsCount++
+	sw.mergeCells += fmt.Sprintf(`<mergeCell ref="%s:%s"/>`, hcell, vcell)
+	return nil
+}
+
 // setCellFormula provides a function to set formula of a cell.
 func setCellFormula(c *xlsxC, formula string) {
 	if formula != "" {
@@ -413,7 +428,12 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 38)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
+	if sw.mergeCellsCount > 0 {
+		sw.mergeCells = fmt.Sprintf(`<mergeCells count="%d">%s</mergeCells>`, sw.mergeCellsCount, sw.mergeCells)
+	}
+	_, _ = sw.rawData.WriteString(sw.mergeCells)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 17, 38)
 	_, _ = sw.rawData.WriteString(sw.tableParts)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
 	_, _ = sw.rawData.WriteString(`</worksheet>`)
