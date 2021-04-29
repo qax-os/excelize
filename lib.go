@@ -349,6 +349,9 @@ func genXMLNamespace(attr []xml.Attr) string {
 	var rootElement string
 	for _, v := range attr {
 		if lastSpace := getXMLNamespace(v.Name.Space, attr); lastSpace != "" {
+			if lastSpace == NameSpaceXML {
+				lastSpace = "xml"
+			}
 			rootElement += fmt.Sprintf("%s:%s=\"%s\" ", lastSpace, v.Name.Local, v.Value)
 			continue
 		}

@@ -2187,17 +2187,16 @@ func (f *File) newFont(style *Style) *xlsxFont {
 		Family: &attrValInt{Val: intPtr(2)},
 	}
 	if style.Font.Bold {
-		fnt.B = &style.Font.Bold
+		fnt.B = &attrValBool{Val: &style.Font.Bold}
 	}
 	if style.Font.Italic {
-		fnt.I = &style.Font.Italic
+		fnt.I = &attrValBool{Val: &style.Font.Italic}
 	}
 	if *fnt.Name.Val == "" {
 		*fnt.Name.Val = f.GetDefaultFont()
 	}
 	if style.Font.Strike {
-		strike := true
-		fnt.Strike = &strike
+		fnt.Strike = &attrValBool{Val: &style.Font.Strike}
 	}
 	val, ok := fontUnderlineType[style.Font.Underline]
 	if ok {

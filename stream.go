@@ -40,8 +40,9 @@ type StreamWriter struct {
 // generate new worksheet with large amounts of data. Note that after set
 // rows, you must call the 'Flush' method to end the streaming writing
 // process and ensure that the order of line numbers is ascending, the common
-// API and stream API can't be work mixed to writing data on the worksheets.
-// For example, set data for worksheet of size 102400 rows x 50 columns with
+// API and stream API can't be work mixed to writing data on the worksheets,
+// you can't get cell value when in-memory chunks data over 16MB. For
+// example, set data for worksheet of size 102400 rows x 50 columns with
 // numbers and style:
 //
 //    file := excelize.NewFile()
@@ -111,7 +112,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // AddTable creates an Excel table for the StreamWriter using the given
 // coordinate area and format set. For example, create a table of A1:D5:
 //
-//    err := sw.AddTable("A1", "D5", ``)
+//    err := sw.AddTable("A1", "D5", "")
 //
 // Create a table of F2:H6 with format set:
 //
@@ -500,8 +501,7 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 // buffer has grown large enough. Any error will be returned.
 func (bw *bufferedWriter) Sync() (err error) {
 	// Try to use local storage
-	const chunk = 1 << 24
-	if bw.buf.Len() < chunk {
+	if bw.buf.Len() < StreamChunkSize {
 		return nil
 	}
 	if bw.tmp == nil {

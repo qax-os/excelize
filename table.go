@@ -35,7 +35,7 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 // name, coordinate area and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
-//    err := f.AddTable("Sheet1", "A1", "D5", ``)
+//    err := f.AddTable("Sheet1", "A1", "D5", "")
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //

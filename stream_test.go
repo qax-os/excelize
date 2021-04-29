@@ -40,7 +40,7 @@ func TestStreamWriter(t *testing.T) {
 
 	// Test max characters in a cell.
 	row := make([]interface{}, 1)
-	row[0] = strings.Repeat("c", 32769)
+	row[0] = strings.Repeat("c", TotalCellChars+2)
 	assert.NoError(t, streamWriter.SetRow("A1", row))
 
 	// Test leading and ending space(s) character characters in a cell.
@@ -100,6 +100,16 @@ func TestStreamWriter(t *testing.T) {
 	file.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
 	_, err = file.NewStreamWriter("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+
+	// Test read cell.
+	file = NewFile()
+	streamWriter, err = file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{Cell{StyleID: styleID, Value: "Data"}}))
+	assert.NoError(t, streamWriter.Flush())
+	cellValue, err := file.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Data", cellValue)
 }
 
 func TestStreamTable(t *testing.T) {

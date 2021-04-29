@@ -83,13 +83,13 @@ type xlsxFonts struct {
 // xlsxFont directly maps the font element. This element defines the
 // properties for one of the fonts used in this workbook.
 type xlsxFont struct {
-	B        *bool          `xml:"b,omitempty"`
-	I        *bool          `xml:"i,omitempty"`
-	Strike   *bool          `xml:"strike,omitempty"`
-	Outline  *bool          `xml:"outline,omitempty"`
-	Shadow   *bool          `xml:"shadow,omitempty"`
-	Condense *bool          `xml:"condense,omitempty"`
-	Extend   *bool          `xml:"extend,omitempty"`
+	B        *attrValBool   `xml:"b,omitempty"`
+	I        *attrValBool   `xml:"i,omitempty"`
+	Strike   *attrValBool   `xml:"strike,omitempty"`
+	Outline  *attrValBool   `xml:"outline,omitempty"`
+	Shadow   *attrValBool   `xml:"shadow,omitempty"`
+	Condense *attrValBool   `xml:"condense,omitempty"`
+	Extend   *attrValBool   `xml:"extend,omitempty"`
 	U        *attrValString `xml:"u"`
 	Sz       *attrValFloat  `xml:"sz"`
 	Color    *xlsxColor     `xml:"color"`

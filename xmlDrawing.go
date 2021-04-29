@@ -91,6 +91,7 @@ const (
 
 // Excel specifications and limits
 const (
+	StreamChunkSize      = 1 << 24
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
 	MaxFileNameLength    = 207

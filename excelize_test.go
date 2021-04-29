@@ -54,7 +54,7 @@ func TestOpenFile(t *testing.T) {
 
 	assert.NoError(t, f.SetCellStr("Sheet2", "C11", "Knowns"))
 	// Test max characters in a cell.
-	assert.NoError(t, f.SetCellStr("Sheet2", "D11", strings.Repeat("c", 32769)))
+	assert.NoError(t, f.SetCellStr("Sheet2", "D11", strings.Repeat("c", TotalCellChars+2)))
 	f.NewSheet(":\\/?*[]Maximum 31 characters allowed in sheet title.")
 	// Test set worksheet name with illegal name.
 	f.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")

@@ -228,3 +228,9 @@ func TestStack(t *testing.T) {
 	assert.Equal(t, s.Peek(), nil)
 	assert.Equal(t, s.Pop(), nil)
 }
+
+func TestGenXMLNamespace(t *testing.T) {
+	assert.Equal(t, genXMLNamespace([]xml.Attr{
+		{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"},
+	}), `xml:space="preserve">`)
+}
