@@ -214,7 +214,7 @@ func (f *File) setSheet(index int, name string) {
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = path
 	f.Sheet[path] = &ws
-	f.xmlAttr[path] = append(f.xmlAttr[path], NameSpaceSpreadSheet)
+	f.xmlAttr[path] = []xml.Attr{NameSpaceSpreadSheet}
 }
 
 // setWorkbook update workbook property of the spreadsheet. Maximum 31
@@ -530,11 +530,8 @@ func (f *File) DeleteSheet(name string) {
 			if wbRels != nil {
 				for _, rel := range wbRels.Relationships {
 					if rel.ID == sheet.ID {
-						sheetXML = fmt.Sprintf("xl/%s", rel.Target)
-						pathInfo := strings.Split(rel.Target, "/")
-						if len(pathInfo) == 2 {
-							rels = fmt.Sprintf("xl/%s/_rels/%s.rels", pathInfo[0], pathInfo[1])
-						}
+						sheetXML = rel.Target
+						rels = "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[sheetName], "xl/worksheets/") + ".rels"
 					}
 				}
 			}
@@ -569,9 +566,12 @@ func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 // deleteSheetFromContentTypes provides a function to remove worksheet
 // relationships by given target name in the file [Content_Types].xml.
 func (f *File) deleteSheetFromContentTypes(target string) {
+	if !strings.HasPrefix(target, "/") {
+		target = "/xl/" + target
+	}
 	content := f.contentTypesReader()
 	for k, v := range content.Overrides {
-		if v.PartName == "/xl/"+target {
+		if v.PartName == target {
 			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
 		}
 	}
