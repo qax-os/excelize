@@ -108,23 +108,23 @@ type xlsxPageSetUp struct {
 	XMLName            xml.Name `xml:"pageSetup"`
 	BlackAndWhite      bool     `xml:"blackAndWhite,attr,omitempty"`
 	CellComments       string   `xml:"cellComments,attr,omitempty"`
-	Copies             uint     `xml:"copies,attr,omitempty"`
+	Copies             int      `xml:"copies,attr,omitempty"`
 	Draft              bool     `xml:"draft,attr,omitempty"`
 	Errors             string   `xml:"errors,attr,omitempty"`
-	FirstPageNumber    uint     `xml:"firstPageNumber,attr,omitempty"`
+	FirstPageNumber    int      `xml:"firstPageNumber,attr,omitempty"`
 	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
 	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
-	HorizontalDPI      uint     `xml:"horizontalDpi,attr,omitempty"`
+	HorizontalDPI      int      `xml:"horizontalDpi,attr,omitempty"`
 	RID                string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Orientation        string   `xml:"orientation,attr,omitempty"`
 	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
 	PaperHeight        string   `xml:"paperHeight,attr,omitempty"`
 	PaperSize          int      `xml:"paperSize,attr,omitempty"`
 	PaperWidth         string   `xml:"paperWidth,attr,omitempty"`
-	Scale              uint     `xml:"scale,attr,omitempty"`
+	Scale              int      `xml:"scale,attr,omitempty"`
 	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
 	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
-	VerticalDPI        uint     `xml:"verticalDpi,attr,omitempty"`
+	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`
 }
 
 // xlsxPrintOptions directly maps the printOptions element in the namespace

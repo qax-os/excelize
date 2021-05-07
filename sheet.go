@@ -1204,8 +1204,8 @@ func (p *BlackAndWhite) getPageLayout(ps *xlsxPageSetUp) {
 // setPageLayout provides a method to set the first printed page number for
 // the worksheet.
 func (p FirstPageNumber) setPageLayout(ps *xlsxPageSetUp) {
-	if 0 < uint(p) {
-		ps.FirstPageNumber = uint(p)
+	if 0 < int(p) {
+		ps.FirstPageNumber = int(p)
 		ps.UseFirstPageNumber = true
 	}
 }
@@ -1284,8 +1284,8 @@ func (p *FitToWidth) getPageLayout(ps *xlsxPageSetUp) {
 
 // setPageLayout provides a method to set the scale for the worksheet.
 func (p PageLayoutScale) setPageLayout(ps *xlsxPageSetUp) {
-	if 10 <= uint(p) && uint(p) <= 400 {
-		ps.Scale = uint(p)
+	if 10 <= int(p) && int(p) <= 400 {
+		ps.Scale = int(p)
 	}
 }
 
