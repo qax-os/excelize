@@ -11,7 +11,10 @@
 
 package excelize
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 func newInvalidColumnNameError(col string) error {
 	return fmt.Errorf("invalid column name %q", col)
@@ -28,3 +31,44 @@ func newInvalidCellNameError(cell string) error {
 func newInvalidExcelDateError(dateValue float64) error {
 	return fmt.Errorf("invalid date value %f, negative values are not supported supported", dateValue)
 }
+
+var (
+	// ErrStreamSetColWidth defined the error message on set column width in
+	// stream writing mode.
+	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
+	// ErrColumnNumber defined the error message on receive an invalid column
+	// number.
+	ErrColumnNumber = errors.New("column number exceeds maximum limit")
+	// ErrColumnWidth defined the error message on receive an invalid column
+	// width.
+	ErrColumnWidth = errors.New("the width of the column must be smaller than or equal to 255 characters")
+	// ErrOutlineLevel defined the error message on receive an invalid outline
+	// level number.
+	ErrOutlineLevel = errors.New("invalid outline level")
+	// ErrCoordinates defined the error message on invalid coordinates tuples
+	// length.
+	ErrCoordinates = errors.New("coordinates length must be 4")
+	// ErrExistsWorksheet defined the error message on given worksheet already
+	// exists.
+	ErrExistsWorksheet = errors.New("the same name worksheet already exists")
+	// ErrTotalSheetHyperlinks defined the error message on hyperlinks count
+	// overflow.
+	ErrTotalSheetHyperlinks = errors.New("over maximum limit hyperlinks in a worksheet")
+	// ErrInvalidFormula defined the error message on receive an invalid
+	// formula.
+	ErrInvalidFormula = errors.New("formula not valid")
+	// ErrAddVBAProject defined the error message on add the VBA project in
+	// the workbook.
+	ErrAddVBAProject = errors.New("unsupported VBA project extension")
+	// ErrToExcelTime defined the error message on receive a not UTC time.
+	ErrToExcelTime = errors.New("only UTC time expected")
+	// ErrMaxRowHeight defined the error message on receive an invalid row
+	// height.
+	ErrMaxRowHeight = errors.New("the height of the row must be smaller than or equal to 409 points")
+	// ErrImgExt defined the error message on receive an unsupported image
+	// extension.
+	ErrImgExt = errors.New("unsupported image extension")
+	// ErrMaxFileNameLength defined the error message on receive the file name
+	// length overflow.
+	ErrMaxFileNameLength = errors.New("file name length exceeds maximum limit")
+)

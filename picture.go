@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -93,7 +92,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	}
 	ext, ok := supportImageTypes[path.Ext(picture)]
 	if !ok {
-		return errors.New("unsupported image extension")
+		return ErrImgExt
 	}
 	file, _ := ioutil.ReadFile(picture)
 	_, name := filepath.Split(picture)
@@ -134,7 +133,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	var hyperlinkType string
 	ext, ok := supportImageTypes[extension]
 	if !ok {
-		return errors.New("unsupported image extension")
+		return ErrImgExt
 	}
 	formatSet, err := parseFormatPictureSet(format)
 	if err != nil {

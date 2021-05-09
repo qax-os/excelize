@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"errors"
 	"math"
 	"time"
 )
@@ -35,7 +34,7 @@ func timeToExcelTime(t time.Time) (float64, error) {
 	// Because for example 1900-01-01 00:00:00 +0300 MSK converts to 1900-01-01 00:00:00 +0230 LMT
 	// probably due to daylight saving.
 	if t.Location() != time.UTC {
-		return 0.0, errors.New("only UTC time expected")
+		return 0.0, ErrToExcelTime
 	}
 
 	if t.Before(excelMinTime1900) {

@@ -475,7 +475,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	}
 
 	if len(ws.Hyperlinks.Hyperlink) > TotalSheetHyperlinks {
-		return errors.New("over maximum limit hyperlinks in a worksheet")
+		return ErrTotalSheetHyperlinks
 	}
 
 	switch linkType {

@@ -14,7 +14,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"math"
 	"strconv"
 	"strings"
@@ -360,7 +359,7 @@ func (f *File) parseColRange(columns string) (start, end int, err error) {
 //
 func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 	if level > 7 || level < 1 {
-		return errors.New("invalid outline level")
+		return ErrOutlineLevel
 	}
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {
@@ -452,7 +451,7 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 		return err
 	}
 	if width > MaxColumnWidth {
-		return errors.New("the width of the column must be smaller than or equal to 255 characters")
+		return ErrColumnWidth
 	}
 	if min > max {
 		min, max = max, min

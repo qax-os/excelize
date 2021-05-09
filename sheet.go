@@ -482,7 +482,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	}
 	ext, ok := supportImageTypes[path.Ext(picture)]
 	if !ok {
-		return errors.New("unsupported image extension")
+		return ErrImgExt
 	}
 	file, _ := ioutil.ReadFile(picture)
 	name := f.addMedia(file, ext)

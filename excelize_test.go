@@ -144,7 +144,7 @@ func TestOpenFile(t *testing.T) {
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G2", nil))
 
-	assert.EqualError(t, f.SetCellValue("Sheet2", "G4", time.Now()), "only UTC time expected")
+	assert.EqualError(t, f.SetCellValue("Sheet2", "G4", time.Now()), ErrToExcelTime.Error())
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now().UTC()))
 	// 02:46:40
@@ -166,7 +166,7 @@ func TestOpenFile(t *testing.T) {
 		assert.NoError(t, f.SetCellStr("Sheet2", "c"+strconv.Itoa(i), strconv.Itoa(i)))
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestOpenFile.xlsx")))
-	assert.EqualError(t, f.SaveAs(filepath.Join("test", strings.Repeat("c", 199), ".xlsx")), "file name length exceeds maximum limit")
+	assert.EqualError(t, f.SaveAs(filepath.Join("test", strings.Repeat("c", 199), ".xlsx")), ErrMaxFileNameLength.Error())
 }
 
 func TestSaveFile(t *testing.T) {
@@ -344,7 +344,7 @@ func TestSetCellHyperLink(t *testing.T) {
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
 	f.Sheet["xl/worksheets/sheet1.xml"].Hyperlinks = &xlsxHyperlinks{Hyperlink: make([]xlsxHyperlink, 65530)}
-	assert.EqualError(t, f.SetCellHyperLink("Sheet1", "A65531", "https://github.com/360EntSecGroup-Skylar/excelize", "External"), "over maximum limit hyperlinks in a worksheet")
+	assert.EqualError(t, f.SetCellHyperLink("Sheet1", "A65531", "https://github.com/360EntSecGroup-Skylar/excelize", "External"), ErrTotalSheetHyperlinks.Error())
 
 	f = NewFile()
 	_, err = f.workSheetReader("Sheet1")
@@ -449,7 +449,7 @@ func TestSetSheetBackgroundErrors(t *testing.T) {
 	}
 
 	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "Book1.xlsx"))
-	assert.EqualError(t, err, "unsupported image extension")
+	assert.EqualError(t, err, ErrImgExt.Error())
 }
 
 // TestWriteArrayFormula tests the extended options of SetCellFormula by writing an array function
@@ -1187,7 +1187,7 @@ func TestAddVBAProject(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetSheetPrOptions("Sheet1", CodeName("Sheet1")))
 	assert.EqualError(t, f.AddVBAProject("macros.bin"), "stat macros.bin: no such file or directory")
-	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "Book1.xlsx")), "unsupported VBA project extension")
+	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "Book1.xlsx")), ErrAddVBAProject.Error())
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
 	// Test add VBA project twice.
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))

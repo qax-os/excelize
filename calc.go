@@ -647,7 +647,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 		optStack.Pop()
 	}
 	if opdStack.Len() == 0 {
-		return efp.Token{}, errors.New("formula not valid")
+		return efp.Token{}, ErrInvalidFormula
 	}
 	return opdStack.Peek().(efp.Token), err
 }
@@ -849,7 +849,7 @@ func calcDiv(rOpd, lOpd string, opdStack *Stack) error {
 func calculate(opdStack *Stack, opt efp.Token) error {
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorPrefix {
 		if opdStack.Len() < 1 {
-			return errors.New("formula not valid")
+			return ErrInvalidFormula
 		}
 		opd := opdStack.Pop().(efp.Token)
 		opdVal, err := strconv.ParseFloat(opd.TValue, 64)
@@ -874,7 +874,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 	}
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
 		if opdStack.Len() < 2 {
-			return errors.New("formula not valid")
+			return ErrInvalidFormula
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
@@ -885,7 +885,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 	fn, ok := tokenCalcFunc[opt.TValue]
 	if ok {
 		if opdStack.Len() < 2 {
-			return errors.New("formula not valid")
+			return ErrInvalidFormula
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)

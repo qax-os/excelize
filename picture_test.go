@@ -82,10 +82,10 @@ func TestAddPictureErrors(t *testing.T) {
 
 	// Test add picture to worksheet with unsupported file type.
 	err = xlsx.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), "")
-	assert.EqualError(t, err, "unsupported image extension")
+	assert.EqualError(t, err, ErrImgExt.Error())
 
 	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
-	assert.EqualError(t, err, "unsupported image extension")
+	assert.EqualError(t, err, ErrImgExt.Error())
 
 	// Test add picture to worksheet with invalid file data.
 	err = xlsx.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))

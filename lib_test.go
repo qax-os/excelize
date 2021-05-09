@@ -73,7 +73,7 @@ func TestColumnNameToNumber_Error(t *testing.T) {
 		}
 	}
 	_, err := ColumnNameToNumber("XFE")
-	assert.EqualError(t, err, "column number exceeds maximum limit")
+	assert.EqualError(t, err, ErrColumnNumber.Error())
 }
 
 func TestColumnNumberToName_OK(t *testing.T) {
@@ -98,7 +98,7 @@ func TestColumnNumberToName_Error(t *testing.T) {
 	}
 
 	_, err = ColumnNumberToName(TotalColumns + 1)
-	assert.EqualError(t, err, "column number exceeds maximum limit")
+	assert.EqualError(t, err, ErrColumnNumber.Error())
 }
 
 func TestSplitCellName_OK(t *testing.T) {

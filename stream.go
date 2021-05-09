@@ -29,6 +29,8 @@ type StreamWriter struct {
 	File            *File
 	Sheet           string
 	SheetID         int
+	sheetWritten    bool
+	cols            string
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
 	mergeCellsCount int
@@ -104,8 +106,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXML] = sw
 
 	_, _ = sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 6)
-	_, _ = sw.rawData.WriteString(`<sheetData>`)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 5)
 	return sw, err
 }
 
@@ -298,7 +299,13 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	if err != nil {
 		return err
 	}
-
+	if !sw.sheetWritten {
+		if len(sw.cols) > 0 {
+			sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+		}
+		_, _ = sw.rawData.WriteString(`<sheetData>`)
+		sw.sheetWritten = true
+	}
 	fmt.Fprintf(&sw.rawData, `<row r="%d">`, row)
 	for i, val := range values {
 		axis, err := CoordinatesToCellName(col+i, row)
@@ -323,6 +330,33 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
+}
+
+// SetColWidth provides a function to set the width of a single column or
+// multiple columns for the the StreamWriter. Note that you must call
+// the 'SetColWidth' function before the 'SetRow' function. For example set
+// the width column B:C as 20:
+//
+//    err := streamWriter.SetColWidth(2, 3, 20)
+//
+func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
+	if sw.sheetWritten {
+		return ErrStreamSetColWidth
+	}
+	if min > TotalColumns || max > TotalColumns {
+		return ErrColumnNumber
+	}
+	if min < 1 || max < 1 {
+		return ErrColumnNumber
+	}
+	if width > MaxColumnWidth {
+		return ErrColumnWidth
+	}
+	if min > max {
+		min, max = max, min
+	}
+	sw.cols += fmt.Sprintf(`<col min="%d" max="%d" width="%f" customWidth="1"/>`, min, max, width)
+	return nil
 }
 
 // MergeCell provides a function to merge cells by a given coordinate area for

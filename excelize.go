@@ -16,7 +16,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -351,7 +350,7 @@ func (f *File) AddVBAProject(bin string) error {
 		return fmt.Errorf("stat %s: no such file or directory", bin)
 	}
 	if path.Ext(bin) != ".bin" {
-		return errors.New("unsupported VBA project extension")
+		return ErrAddVBAProject
 	}
 	f.setContentTypePartVBAProjectExtensions()
 	wb := f.relsReader(f.getWorkbookRelsPath())

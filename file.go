@@ -14,7 +14,6 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -66,7 +65,7 @@ func (f *File) Save() error {
 // provided path.
 func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFileNameLength {
-		return errors.New("file name length exceeds maximum limit")
+		return ErrMaxFileNameLength
 	}
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {

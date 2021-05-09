@@ -14,7 +14,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -245,7 +244,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 		return newInvalidRowNumberError(row)
 	}
 	if height > MaxRowHeight {
-		return errors.New("the height of the row must be smaller than or equal to 409 points")
+		return ErrMaxRowHeight
 	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -436,7 +435,7 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 		return newInvalidRowNumberError(row)
 	}
 	if level > 7 || level < 1 {
-		return errors.New("invalid outline level")
+		return ErrOutlineLevel
 	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {

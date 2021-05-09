@@ -57,7 +57,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}))
 	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
-	assert.EqualError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}), "only UTC time expected")
+	assert.EqualError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}), ErrToExcelTime.Error())
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
@@ -67,6 +67,9 @@ func TestStreamWriter(t *testing.T) {
 		cell, _ := CoordinatesToCellName(1, rowID)
 		assert.NoError(t, streamWriter.SetRow(cell, row))
 	}
+
+	// Test set cell column overflow.
+	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
 
 	assert.NoError(t, streamWriter.Flush())
 	// Save spreadsheet by the given path.
@@ -110,6 +113,18 @@ func TestStreamWriter(t *testing.T) {
 	cellValue, err := file.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "Data", cellValue)
+}
+
+func TestStreamSetColWidth(t *testing.T) {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetColWidth(3, 2, 20))
+	assert.EqualError(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber.Error())
+	assert.EqualError(t, streamWriter.SetColWidth(TotalColumns+1, 3, 20), ErrColumnNumber.Error())
+	assert.EqualError(t, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1), ErrColumnWidth.Error())
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
+	assert.EqualError(t, streamWriter.SetColWidth(2, 3, 20), ErrStreamSetColWidth.Error())
 }
 
 func TestStreamTable(t *testing.T) {

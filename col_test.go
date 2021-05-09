@@ -246,12 +246,12 @@ func TestOutlineLevel(t *testing.T) {
 	assert.EqualError(t, err, "sheet Shee2 is not exist")
 
 	assert.NoError(t, f.SetColWidth("Sheet2", "A", "D", 13))
-	assert.EqualError(t, f.SetColWidth("Sheet2", "A", "D", MaxColumnWidth+1), "the width of the column must be smaller than or equal to 255 characters")
+	assert.EqualError(t, f.SetColWidth("Sheet2", "A", "D", MaxColumnWidth+1), ErrColumnWidth.Error())
 
 	assert.NoError(t, f.SetColOutlineLevel("Sheet2", "B", 2))
 	assert.NoError(t, f.SetRowOutlineLevel("Sheet1", 2, 7))
-	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "D", 8), "invalid outline level")
-	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 2, 8), "invalid outline level")
+	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "D", 8), ErrOutlineLevel.Error())
+	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 2, 8), ErrOutlineLevel.Error())
 	// Test set row outline level on not exists worksheet.
 	assert.EqualError(t, f.SetRowOutlineLevel("SheetN", 1, 4), "sheet SheetN is not exist")
 	// Test get row outline level on not exists worksheet.

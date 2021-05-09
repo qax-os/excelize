@@ -109,7 +109,7 @@ func TestRowHeight(t *testing.T) {
 	assert.Equal(t, 111.0, height)
 
 	// Test set row height overflow max row height limit.
-	assert.EqualError(t, f.SetRowHeight(sheet1, 4, MaxRowHeight+1), "the height of the row must be smaller than or equal to 409 points")
+	assert.EqualError(t, f.SetRowHeight(sheet1, 4, MaxRowHeight+1), ErrMaxRowHeight.Error())
 
 	// Test get row height that rows index over exists rows.
 	height, err = f.GetRowHeight(sheet1, 5)

@@ -1710,12 +1710,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=POISSON(0,0,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=POISSON(0,-1,TRUE)":    "#N/A",
 		// SUM
-		"=SUM((":   "formula not valid",
-		"=SUM(-)":  "formula not valid",
-		"=SUM(1+)": "formula not valid",
-		"=SUM(1-)": "formula not valid",
-		"=SUM(1*)": "formula not valid",
-		"=SUM(1/)": "formula not valid",
+		"=SUM((":   ErrInvalidFormula.Error(),
+		"=SUM(-)":  ErrInvalidFormula.Error(),
+		"=SUM(1+)": ErrInvalidFormula.Error(),
+		"=SUM(1-)": ErrInvalidFormula.Error(),
+		"=SUM(1*)": ErrInvalidFormula.Error(),
+		"=SUM(1/)": ErrInvalidFormula.Error(),
 		// SUMIF
 		"=SUMIF()": "SUMIF requires at least 2 argument",
 		// SUMSQ
