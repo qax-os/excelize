@@ -52,6 +52,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=BESSELI(32,1)":  "5.502845511211247e+12",
 		// BESSELJ
 		"=BESSELJ(1.9,2)": "0.329925727692387",
+		// BESSELK
+		"=BESSELK(0.05,0)": "3.114234034289662",
+		"=BESSELK(0.05,1)": "19.90967432724863",
+		"=BESSELK(0.05,2)": "799.501207124235",
+		"=BESSELK(3,2)":    "0.061510458561912",
+		// BESSELY
+		"=BESSELY(0.05,0)": "-1.979311006841528",
+		"=BESSELY(0.05,1)": "-12.789855163794034",
+		"=BESSELY(0.05,2)": "-509.61489554491976",
+		"=BESSELY(9,2)":    "-0.229082087487741",
 		// BIN2DEC
 		"=BIN2DEC(\"10\")":         "2",
 		"=BIN2DEC(\"11\")":         "3",
@@ -1208,6 +1218,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=BESSELJ()":       "BESSELJ requires 2 numeric arguments",
 		"=BESSELJ(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=BESSELJ(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// BESSELK
+		"=BESSELK()":       "BESSELK requires 2 numeric arguments",
+		"=BESSELK(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BESSELK(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BESSELK(-1,0)":   "#NUM!",
+		"=BESSELK(1,-1)":   "#NUM!",
+		// BESSELY
+		"=BESSELY()":       "BESSELY requires 2 numeric arguments",
+		"=BESSELY(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BESSELY(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BESSELY(-1,0)":   "#NUM!",
+		"=BESSELY(1,-1)":   "#NUM!",
 		// BIN2DEC
 		"=BIN2DEC()":     "BIN2DEC requires 1 numeric argument",
 		"=BIN2DEC(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
