@@ -1023,9 +1023,9 @@ func parseTime(v string, format string) string {
 		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	} else {
 		goFmt = strings.Replace(goFmt, "hh", "15", 1)
-		goFmt = strings.Replace(goFmt, "h", "3", 1)
+		goFmt = strings.Replace(goFmt, "h", "15", 1)
 		goFmt = strings.Replace(goFmt, "HH", "15", 1)
-		goFmt = strings.Replace(goFmt, "H", "3", 1)
+		goFmt = strings.Replace(goFmt, "H", "15", 1)
 	}
 
 	for _, repl := range replacements {
