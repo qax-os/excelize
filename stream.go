@@ -99,11 +99,11 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		return nil, err
 	}
 
-	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
+	sheetPath := f.sheetMap[trimSheetName(sheet)]
 	if f.streams == nil {
 		f.streams = make(map[string]*StreamWriter)
 	}
-	f.streams[sheetXML] = sw
+	f.streams[sheetPath] = sw
 
 	_, _ = sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 5)
@@ -462,6 +462,10 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
+	if !sw.sheetWritten {
+		_, _ = sw.rawData.WriteString(`<sheetData>`)
+		sw.sheetWritten = true
+	}
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
 	if sw.mergeCellsCount > 0 {
@@ -476,10 +480,10 @@ func (sw *StreamWriter) Flush() error {
 		return err
 	}
 
-	sheetXML := fmt.Sprintf("xl/worksheets/sheet%d.xml", sw.SheetID)
-	delete(sw.File.Sheet, sheetXML)
-	delete(sw.File.checked, sheetXML)
-	delete(sw.File.XLSX, sheetXML)
+	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
+	delete(sw.File.Sheet, sheetPath)
+	delete(sw.File.checked, sheetPath)
+	delete(sw.File.XLSX, sheetPath)
 
 	return nil
 }

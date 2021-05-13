@@ -68,12 +68,12 @@ func TestStreamWriter(t *testing.T) {
 		assert.NoError(t, streamWriter.SetRow(cell, row))
 	}
 
-	// Test set cell column overflow.
-	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
-
 	assert.NoError(t, streamWriter.Flush())
 	// Save spreadsheet by the given path.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
+
+	// Test set cell column overflow.
+	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
 
 	// Test close temporary file error.
 	file = NewFile()
