@@ -934,8 +934,6 @@ func formatToE(v string, format string) string {
 	return fmt.Sprintf("%.e", f)
 }
 
-var dateTimeFormatsCache = map[string]string{}
-
 // parseTime provides a function to returns a string parsed using time.Time.
 // Replace Excel placeholders with Go time placeholders. For example, replace
 // yyyy with 2006. These are in a specific order, due to the fact that m is
@@ -961,11 +959,6 @@ func parseTime(v string, format string) string {
 
 	if format == "" {
 		return v
-	}
-
-	goFmt, found := dateTimeFormatsCache[format]
-	if found {
-		return val.Format(goFmt)
 	}
 
 	goFmt = format
@@ -1023,9 +1016,17 @@ func parseTime(v string, format string) string {
 		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	} else {
 		goFmt = strings.Replace(goFmt, "hh", "15", 1)
-		goFmt = strings.Replace(goFmt, "h", "3", 1)
+		if val.Hour() < 12 {
+			goFmt = strings.Replace(goFmt, "h", "3", 1)
+		} else {
+			goFmt = strings.Replace(goFmt, "h", "15", 1)
+		}
 		goFmt = strings.Replace(goFmt, "HH", "15", 1)
-		goFmt = strings.Replace(goFmt, "H", "3", 1)
+		if val.Hour() < 12 {
+			goFmt = strings.Replace(goFmt, "H", "3", 1)
+		} else {
+			goFmt = strings.Replace(goFmt, "H", "15", 1)
+		}
 	}
 
 	for _, repl := range replacements {
@@ -1045,9 +1046,6 @@ func parseTime(v string, format string) string {
 		goFmt = strings.Replace(goFmt, "[3]", "3", 1)
 		goFmt = strings.Replace(goFmt, "[15]", "15", 1)
 	}
-
-	dateTimeFormatsCache[format] = goFmt
-
 	return val.Format(goFmt)
 }
 
