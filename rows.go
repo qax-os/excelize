@@ -43,15 +43,19 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	results := make([][]string, 0, 64)
+	results, cur, max := make([][]string, 0, 64), 0, 0
 	for rows.Next() {
+		cur++
 		row, err := rows.Columns()
 		if err != nil {
 			break
 		}
 		results = append(results, row)
+		if len(row) > 0 {
+			max = cur
+		}
 	}
-	return results, nil
+	return results[:max], nil
 }
 
 // Rows defines an iterator to a sheet.
@@ -161,7 +165,9 @@ func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
 		}
 		blank := rowIterator.cellCol - len(rowIterator.columns)
 		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d)
-		rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
+		if val != "" {
+			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
+		}
 	}
 }
 
