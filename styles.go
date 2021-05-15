@@ -46,8 +46,8 @@ var builtInNumFmt = map[int]string{
 	17: "mmm-yy",
 	18: "h:mm am/pm",
 	19: "h:mm:ss am/pm",
-	20: "h:mm",
-	21: "h:mm:ss",
+	20: "hh:mm",
+	21: "hh:mm:ss",
 	22: "m/d/yy hh:mm",
 	37: "#,##0 ;(#,##0)",
 	38: "#,##0 ;[red](#,##0)",
@@ -1009,6 +1009,10 @@ func parseTime(v string, format string) string {
 	}
 	// It is the presence of the "am/pm" indicator that determines if this is
 	// a 12 hour or 24 hours time format, not the number of 'h' characters.
+	var padding bool
+	if val.Hour() == 0 && !strings.Contains(format, "hh") && !strings.Contains(format, "HH") {
+		padding = true
+	}
 	if is12HourTime(format) {
 		goFmt = strings.Replace(goFmt, "hh", "3", 1)
 		goFmt = strings.Replace(goFmt, "h", "3", 1)
@@ -1016,15 +1020,12 @@ func parseTime(v string, format string) string {
 		goFmt = strings.Replace(goFmt, "H", "3", 1)
 	} else {
 		goFmt = strings.Replace(goFmt, "hh", "15", 1)
-		if val.Hour() < 12 {
-			goFmt = strings.Replace(goFmt, "h", "3", 1)
-		} else {
-			goFmt = strings.Replace(goFmt, "h", "15", 1)
-		}
 		goFmt = strings.Replace(goFmt, "HH", "15", 1)
-		if val.Hour() < 12 {
+		if 0 < val.Hour() && val.Hour() < 12 {
+			goFmt = strings.Replace(goFmt, "h", "3", 1)
 			goFmt = strings.Replace(goFmt, "H", "3", 1)
 		} else {
+			goFmt = strings.Replace(goFmt, "h", "15", 1)
 			goFmt = strings.Replace(goFmt, "H", "15", 1)
 		}
 	}
@@ -1046,7 +1047,11 @@ func parseTime(v string, format string) string {
 		goFmt = strings.Replace(goFmt, "[3]", "3", 1)
 		goFmt = strings.Replace(goFmt, "[15]", "15", 1)
 	}
-	return val.Format(goFmt)
+	s := val.Format(goFmt)
+	if padding {
+		s = strings.Replace(s, "00:", "0:", 1)
+	}
+	return s
 }
 
 // is12HourTime checks whether an Excel time format string is a 12 hours form.
