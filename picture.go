@@ -633,6 +633,9 @@ func (f *File) drawingResize(sheet string, cell string, width, height float64, f
 		asp := float64(cellHeight) / height
 		height, width = float64(cellHeight), width*asp
 	}
+	if formatSet.NoChangeAspect {
+		height, width = float64(cellHeight), float64(cellWidth)
+	}
 	width, height = width-float64(formatSet.OffsetX), height-float64(formatSet.OffsetY)
 	w, h = int(width*formatSet.XScale), int(height*formatSet.YScale)
 	return

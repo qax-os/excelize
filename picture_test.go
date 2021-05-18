@@ -50,6 +50,7 @@ func TestAddPicture(t *testing.T) {
 	// Test add picture to worksheet with autofit.
 	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
 	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), `{"x_offset": 10, "y_offset": 10, "autofit": true}`))
+	assert.NoError(t, f.AddPicture("Sheet1", "C30", filepath.Join("test", "images", "excel.jpg"), `{"lock_aspect_ratio": true, "autofit": true}`))
 	f.NewSheet("AddPicture")
 	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
 	assert.NoError(t, f.MergeCell("AddPicture", "B3", "D9"))
