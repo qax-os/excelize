@@ -322,6 +322,9 @@ func (f *File) sharedStringsReader() *xlsxSST {
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
+		if sharedStrings.Count == 0 {
+			sharedStrings.Count = len(sharedStrings.SI)
+		}
 		if sharedStrings.UniqueCount == 0 {
 			sharedStrings.UniqueCount = sharedStrings.Count
 		}

@@ -248,9 +248,9 @@ type xlsxSheetPr struct {
 // adjust the direction of grouper controls.
 type xlsxOutlinePr struct {
 	ApplyStyles        *bool `xml:"applyStyles,attr"`
-	SummaryBelow       bool  `xml:"summaryBelow,attr,omitempty"`
-	SummaryRight       bool  `xml:"summaryRight,attr,omitempty"`
-	ShowOutlineSymbols bool  `xml:"showOutlineSymbols,attr,omitempty"`
+	SummaryBelow       bool  `xml:"summaryBelow,attr"`
+	SummaryRight       bool  `xml:"summaryRight,attr"`
+	ShowOutlineSymbols bool  `xml:"showOutlineSymbols,attr"`
 }
 
 // xlsxPageSetUpPr expresses page setup properties of the worksheet.
