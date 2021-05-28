@@ -520,6 +520,7 @@ type cPageMargins struct {
 
 // formatChartAxis directly maps the format settings of the chart axis.
 type formatChartAxis struct {
+	None                bool    `json:"none"`
 	Crossing            string  `json:"crossing"`
 	MajorGridlines      bool    `json:"major_grid_lines"`
 	MinorGridlines      bool    `json:"minor_grid_lines"`
