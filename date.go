@@ -30,13 +30,6 @@ var (
 func timeToExcelTime(t time.Time) (float64, error) {
 	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
 
-	// Force user to explicit convet passed value to UTC time.
-	// Because for example 1900-01-01 00:00:00 +0300 MSK converts to 1900-01-01 00:00:00 +0230 LMT
-	// probably due to daylight saving.
-	if t.Location() != time.UTC {
-		return 0.0, ErrToExcelTime
-	}
-
 	if t.Before(excelMinTime1900) {
 		return 0.0, nil
 	}
