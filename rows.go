@@ -165,7 +165,7 @@ func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
 		}
 		blank := rowIterator.cellCol - len(rowIterator.columns)
 		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d)
-		if val != "" {
+		if val != "" || colCell.F != nil {
 			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
 		}
 	}

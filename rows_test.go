@@ -138,12 +138,18 @@ func TestRowHeight(t *testing.T) {
 	// Test set row height with custom default row height with prepare XML.
 	assert.NoError(t, f.SetCellValue(sheet1, "A10", "A10"))
 
+	f.NewSheet("Sheet2")
+	assert.NoError(t, f.SetCellValue("Sheet2", "A2", true))
+	height, err = f.GetRowHeight("Sheet2", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 15.0, height)
+
 	err = f.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	convertColWidthToPixels(0)
+	assert.Equal(t, 0.0, convertColWidthToPixels(0))
 }
 
 func TestColumns(t *testing.T) {

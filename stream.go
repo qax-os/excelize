@@ -333,7 +333,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 }
 
 // SetColWidth provides a function to set the width of a single column or
-// multiple columns for the the StreamWriter. Note that you must call
+// multiple columns for the StreamWriter. Note that you must call
 // the 'SetColWidth' function before the 'SetRow' function. For example set
 // the width column B:C as 20:
 //
