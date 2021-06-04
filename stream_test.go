@@ -57,7 +57,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}))
 	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
-	assert.EqualError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}), ErrToExcelTime.Error())
+	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
