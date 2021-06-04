@@ -144,7 +144,7 @@ func TestOpenFile(t *testing.T) {
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G2", nil))
 
-	assert.EqualError(t, f.SetCellValue("Sheet2", "G4", time.Now()), ErrToExcelTime.Error())
+	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now()))
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now().UTC()))
 	// 02:46:40

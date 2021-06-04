@@ -55,7 +55,7 @@ func TestTimeToExcelTime_Timezone(t *testing.T) {
 	for i, test := range trueExpectedDateList {
 		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
 			_, err := timeToExcelTime(test.GoValue.In(location))
-			assert.EqualError(t, err, ErrToExcelTime.Error())
+			assert.NoError(t, err)
 		})
 	}
 }
