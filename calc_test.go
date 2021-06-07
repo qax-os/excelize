@@ -2335,11 +2335,18 @@ func TestCalcWithDefinedName(t *testing.T) {
 	f := prepareCalcData(cellData)
 	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
 	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
+
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=defined_name1"))
 	result, err := f.CalcCellValue("Sheet1", "C1")
 	assert.NoError(t, err)
 	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
 	assert.Equal(t, "B1 value", result, "=defined_name1")
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=CONCATENATE(\"<\",defined_name1,\">\")"))
+	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "<B1 value>", result, "=defined_name1")
+
 }
 
 func TestCalcArithmeticOperations(t *testing.T) {
