@@ -590,6 +590,10 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 				}
 				if nextToken.TType == efp.TokenTypeArgument || nextToken.TType == efp.TokenTypeFunction {
 					// parse reference: reference or range at here
+					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
+					if refTo != "" {
+						token.TValue = refTo
+					}
 					result, err := f.parseReference(sheet, token.TValue)
 					if err != nil {
 						return efp.Token{TValue: formulaErrorNAME}, err
