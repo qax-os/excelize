@@ -636,7 +636,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			// current token is text
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
-				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
+				// argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
 			}
 			if err = f.evalInfixExpFunc(sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
 				return efp.Token{}, err
@@ -1012,7 +1012,7 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 		optStack.Pop()
 	}
 	// opd
-	if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeNumber {
+	if token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText) {
 		opdStack.Push(token)
 	}
 	return nil

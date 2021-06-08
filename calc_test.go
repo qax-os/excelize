@@ -34,18 +34,20 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"=2^3":  "8",
-		"=1=1":  "TRUE",
-		"=1=2":  "FALSE",
-		"=1<2":  "TRUE",
-		"=3<2":  "FALSE",
-		"=2<=3": "TRUE",
-		"=2<=1": "FALSE",
-		"=2>1":  "TRUE",
-		"=2>3":  "FALSE",
-		"=2>=1": "TRUE",
-		"=2>=3": "FALSE",
-		"=1&2":  "12",
+		"=2^3":      "8",
+		"=1=1":      "TRUE",
+		"=1=2":      "FALSE",
+		"=1<2":      "TRUE",
+		"=3<2":      "FALSE",
+		"=2<=3":     "TRUE",
+		"=2<=1":     "FALSE",
+		"=2>1":      "TRUE",
+		"=2>3":      "FALSE",
+		"=2>=1":     "TRUE",
+		"=2>=3":     "FALSE",
+		"=1&2":      "12",
+		`="A"="A"`:  "TRUE",
+		`="A"<>"A"`: "FALSE",
 		// Engineering Functions
 		// BESSELI
 		"=BESSELI(4.5,1)": "15.389222753735925",
@@ -1084,6 +1086,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=IF(1<>1)":                             "FALSE",
 		"=IF(5<0, \"negative\", \"positive\")":  "positive",
 		"=IF(-2<0, \"negative\", \"positive\")": "negative",
+		`=IF(1=1, "equal", "notequal")`:         "equal",
+		`=IF(1<>1, "equal", "notequal")`:        "notequal",
+		`=IF("A"="A", "equal", "notequal")`:     "equal",
+		`=IF("A"<>"A", "equal", "notequal")`:    "notequal",
 		// Excel Lookup and Reference Functions
 		// CHOOSE
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
