@@ -18,6 +18,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -452,6 +453,51 @@ func isNumeric(s string) (bool, int) {
 		}
 	}
 	return true, p
+}
+
+// bstrUnmarshal parses the binary basic string, this will trim escaped string
+// literal which not permitted in an XML 1.0 document. The basic string
+// variant type can store any valid Unicode character. Unicode characters
+// that cannot be directly represented in XML as defined by the XML 1.0
+// specification, shall be escaped using the Unicode numerical character
+// representation escape character format _xHHHH_, where H represents a
+// hexadecimal character in the character's value. For example: The Unicode
+// character 8 is not permitted in an XML 1.0 document, so it shall be
+// escaped as _x0008_. To store the literal form of an escape sequence, the
+// initial underscore shall itself be escaped (i.e. stored as _x005F_). For
+// example: The string literal _x0008_ would be stored as _x005F_x0008_.
+func bstrUnmarshal(s string) (result string) {
+	m := regexp.MustCompile(`_x[a-zA-Z0-9]{4}_`)
+	escapeExp := regexp.MustCompile(`x[a-zA-Z0-9]{4}_`)
+	matches := m.FindAllStringSubmatchIndex(s, -1)
+	var cursor int
+	for _, match := range matches {
+		result += s[cursor:match[0]]
+		if s[match[0]:match[1]] == "_x005F_" {
+			if len(s) > match[1]+6 && !escapeExp.MatchString(s[match[1]:match[1]+6]) {
+				result += s[match[0]:match[1]]
+				cursor = match[1]
+				continue
+			}
+			if len(s) > match[1]+5 && s[match[1]:match[1]+5] == "x005F" {
+				result += "_"
+				cursor = match[1]
+				continue
+			}
+			if escapeExp.MatchString(s[match[0]:match[1]]) {
+				result += "_"
+				cursor = match[1]
+				continue
+			}
+		}
+		if escapeExp.MatchString(s[match[0]:match[1]]) {
+			cursor = match[1]
+		}
+	}
+	if cursor < len(s) {
+		result += s[cursor:]
+	}
+	return result
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

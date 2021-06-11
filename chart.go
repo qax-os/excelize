@@ -739,6 +739,7 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties of x_axis that can be set are:
 //
+//    none
 //    major_grid_lines
 //    minor_grid_lines
 //    tick_label_skip
@@ -748,12 +749,15 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // The properties of y_axis that can be set are:
 //
+//    none
 //    major_grid_lines
 //    minor_grid_lines
 //    major_unit
 //    reverse_order
 //    maximum
 //    minimum
+//
+// none: Disable axes.
 //
 // major_grid_lines: Specifies major gridlines.
 //

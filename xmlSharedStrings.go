@@ -53,10 +53,10 @@ func (x xlsxSI) String() string {
 				rows.WriteString(s.T.Val)
 			}
 		}
-		return rows.String()
+		return bstrUnmarshal(rows.String())
 	}
 	if x.T != nil {
-		return x.T.Val
+		return bstrUnmarshal(x.T.Val)
 	}
 	return ""
 }

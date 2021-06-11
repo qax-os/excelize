@@ -234,3 +234,22 @@ func TestGenXMLNamespace(t *testing.T) {
 		{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"},
 	}), `xml:space="preserve">`)
 }
+
+func TestBstrUnmarshal(t *testing.T) {
+	bstrs := map[string]string{
+		"*":                           "*",
+		"*_x0008_":                    "*",
+		"_x0008_*":                    "*",
+		"*_x0008_*":                   "**",
+		"*_x005F__x0008_*":            "*_x005F_*",
+		"*_x005F_x0001_*":             "*_x0001_*",
+		"*_x005F_x005F_x005F_x0006_*": "*_x005F_x0006_*",
+		"_x005F__x0008_******":        "_x005F_******",
+		"******_x005F__x0008_":        "******_x005F_",
+		"******_x005F__x0008_******":  "******_x005F_******",
+		"*_x005F_x005F__x0008_*":      "*_x005F_*",
+	}
+	for bstr, expected := range bstrs {
+		assert.Equal(t, expected, bstrUnmarshal(bstr))
+	}
+}
