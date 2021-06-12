@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
@@ -467,34 +468,44 @@ func isNumeric(s string) (bool, int) {
 // initial underscore shall itself be escaped (i.e. stored as _x005F_). For
 // example: The string literal _x0008_ would be stored as _x005F_x0008_.
 func bstrUnmarshal(s string) (result string) {
-	m := regexp.MustCompile(`_x[a-zA-Z0-9]{4}_`)
+	bstrExp := regexp.MustCompile(`_x[a-zA-Z0-9]{4}_`)
 	escapeExp := regexp.MustCompile(`x[a-zA-Z0-9]{4}_`)
-	matches := m.FindAllStringSubmatchIndex(s, -1)
-	var cursor int
+	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
 	for _, match := range matches {
 		result += s[cursor:match[0]]
-		if s[match[0]:match[1]] == "_x005F_" {
-			if len(s) > match[1]+6 && !escapeExp.MatchString(s[match[1]:match[1]+6]) {
-				result += s[match[0]:match[1]]
+		subStr := s[match[0]:match[1]]
+		if subStr == "_x005F_" {
+			if l > match[1]+6 && !escapeExp.MatchString(s[match[1]:match[1]+6]) {
+				result += subStr
 				cursor = match[1]
 				continue
 			}
-			if len(s) > match[1]+5 && s[match[1]:match[1]+5] == "x005F" {
+			if l > match[1]+5 && s[match[1]:match[1]+5] == "x005F" {
 				result += "_"
 				cursor = match[1]
 				continue
 			}
-			if escapeExp.MatchString(s[match[0]:match[1]]) {
+			if escapeExp.MatchString(subStr) {
 				result += "_"
 				cursor = match[1]
 				continue
 			}
 		}
-		if escapeExp.MatchString(s[match[0]:match[1]]) {
+		if bstrExp.MatchString(subStr) {
+			x, _ := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
+			hasRune := false
+			for _, c := range string(x) {
+				if unicode.IsControl(c) {
+					hasRune = true
+				}
+			}
+			if !hasRune {
+				result += string(x)
+			}
 			cursor = match[1]
 		}
 	}
-	if cursor < len(s) {
+	if cursor < l {
 		result += s[cursor:]
 	}
 	return result

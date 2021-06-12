@@ -237,10 +237,12 @@ func TestGenXMLNamespace(t *testing.T) {
 
 func TestBstrUnmarshal(t *testing.T) {
 	bstrs := map[string]string{
+		"*_x0000_":                    "*",
 		"*":                           "*",
 		"*_x0008_":                    "*",
 		"_x0008_*":                    "*",
 		"*_x0008_*":                   "**",
+		"*_x4F60__x597D_":             "*你好",
 		"*_x005F__x0008_*":            "*_x005F_*",
 		"*_x005F_x0001_*":             "*_x0001_*",
 		"*_x005F_x005F_x005F_x0006_*": "*_x005F_x0006_*",
