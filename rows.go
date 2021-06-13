@@ -271,7 +271,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 	ws, _ := f.workSheetReader(sheet)
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
-		if v.R == row+1 && v.Ht != 0 {
+		if v.R == row && v.Ht != 0 {
 			return int(convertRowHeightToPixels(v.Ht))
 		}
 	}
