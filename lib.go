@@ -475,34 +475,35 @@ func bstrUnmarshal(s string) (result string) {
 		result += s[cursor:match[0]]
 		subStr := s[match[0]:match[1]]
 		if subStr == "_x005F_" {
+			cursor = match[1]
 			if l > match[1]+6 && !escapeExp.MatchString(s[match[1]:match[1]+6]) {
 				result += subStr
-				cursor = match[1]
 				continue
 			}
-			if l > match[1]+5 && s[match[1]:match[1]+5] == "x005F" {
-				result += "_"
-				cursor = match[1]
-				continue
-			}
-			if escapeExp.MatchString(subStr) {
-				result += "_"
-				cursor = match[1]
-				continue
-			}
+			result += "_"
+			continue
 		}
 		if bstrExp.MatchString(subStr) {
-			x, _ := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
+			cursor = match[1]
+			v, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
+			if err != nil {
+				if l > match[1]+6 && escapeExp.MatchString(s[match[1]:match[1]+6]) {
+					result += subStr[:6]
+					cursor = match[1] + 6
+					continue
+				}
+				result += subStr
+				continue
+			}
 			hasRune := false
-			for _, c := range string(x) {
+			for _, c := range v {
 				if unicode.IsControl(c) {
 					hasRune = true
 				}
 			}
 			if !hasRune {
-				result += string(x)
+				result += v
 			}
-			cursor = match[1]
 		}
 	}
 	if cursor < l {
