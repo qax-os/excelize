@@ -266,7 +266,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 }
 
 // getRowHeight provides a function to get row height in pixels by given sheet
-// name and row index.
+// name and row number.
 func (f *File) getRowHeight(sheet string, row int) int {
 	ws, _ := f.workSheetReader(sheet)
 	for i := range ws.SheetData.Row {
@@ -280,7 +280,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 }
 
 // GetRowHeight provides a function to get row height by given worksheet name
-// and row index. For example, get the height of the first row in Sheet1:
+// and row number. For example, get the height of the first row in Sheet1:
 //
 //    height, err := f.GetRowHeight("Sheet1", 1)
 //

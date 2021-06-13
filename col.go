@@ -592,9 +592,9 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 	}
 
 	// Subtract the underlying cell heights to find end cell of the object.
-	for height >= f.getRowHeight(sheet, rowEnd) {
-		height -= f.getRowHeight(sheet, rowEnd)
+	for height >= f.getRowHeight(sheet, rowEnd+1) {
 		rowEnd++
+		height -= f.getRowHeight(sheet, rowEnd)
 	}
 
 	// The end vertices are whatever is left from the width and height.
