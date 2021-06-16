@@ -288,6 +288,7 @@ func (f *File) setSharedString(val string) int {
 	}
 	sst.Count++
 	sst.UniqueCount++
+	val = bstrMarshal(val)
 	t := xlsxT{Val: val}
 	// Leading and ending space(s) character detection.
 	if len(val) > 0 && (val[0] == 32 || val[len(val)-1] == 32) {
@@ -315,7 +316,7 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 		}
 	}
 	t = "str"
-	v = value
+	v = bstrMarshal(value)
 	return
 }
 

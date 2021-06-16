@@ -258,3 +258,16 @@ func TestBstrUnmarshal(t *testing.T) {
 		assert.Equal(t, expected, bstrUnmarshal(bstr))
 	}
 }
+
+func TestBstrMarshal(t *testing.T) {
+	bstrs := map[string]string{
+		"*_xG05F_*":       "*_xG05F_*",
+		"*_x0008_*":       "*_x005F_x0008_*",
+		"*_x005F_*":       "*_x005F_x005F_*",
+		"*_x005F_xG006_*": "*_x005F_x005F_xG006_*",
+		"*_x005F_x0006_*": "*_x005F_x005F_x005F_x0006_*",
+	}
+	for bstr, expected := range bstrs {
+		assert.Equal(t, expected, bstrMarshal(bstr))
+	}
+}

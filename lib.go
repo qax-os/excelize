@@ -456,6 +456,11 @@ func isNumeric(s string) (bool, int) {
 	return true, p
 }
 
+var (
+	bstrExp       = regexp.MustCompile(`_x[a-zA-Z\d]{4}_`)
+	bstrEscapeExp = regexp.MustCompile(`x[a-zA-Z\d]{4}_`)
+)
+
 // bstrUnmarshal parses the binary basic string, this will trim escaped string
 // literal which not permitted in an XML 1.0 document. The basic string
 // variant type can store any valid Unicode character. Unicode characters
@@ -468,15 +473,13 @@ func isNumeric(s string) (bool, int) {
 // initial underscore shall itself be escaped (i.e. stored as _x005F_). For
 // example: The string literal _x0008_ would be stored as _x005F_x0008_.
 func bstrUnmarshal(s string) (result string) {
-	bstrExp := regexp.MustCompile(`_x[a-zA-Z0-9]{4}_`)
-	escapeExp := regexp.MustCompile(`x[a-zA-Z0-9]{4}_`)
 	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
 	for _, match := range matches {
 		result += s[cursor:match[0]]
 		subStr := s[match[0]:match[1]]
 		if subStr == "_x005F_" {
 			cursor = match[1]
-			if l > match[1]+6 && !escapeExp.MatchString(s[match[1]:match[1]+6]) {
+			if l > match[1]+6 && !bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
 				result += subStr
 				continue
 			}
@@ -487,7 +490,7 @@ func bstrUnmarshal(s string) (result string) {
 			cursor = match[1]
 			v, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
 			if err != nil {
-				if l > match[1]+6 && escapeExp.MatchString(s[match[1]:match[1]+6]) {
+				if l > match[1]+6 && bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
 					result += subStr[:6]
 					cursor = match[1] + 6
 					continue
@@ -504,6 +507,41 @@ func bstrUnmarshal(s string) (result string) {
 			if !hasRune {
 				result += v
 			}
+		}
+	}
+	if cursor < l {
+		result += s[cursor:]
+	}
+	return result
+}
+
+// bstrMarshal encode the escaped string literal which not permitted in an XML
+// 1.0 document.
+func bstrMarshal(s string) (result string) {
+	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
+	for _, match := range matches {
+		result += s[cursor:match[0]]
+		subStr := s[match[0]:match[1]]
+		if subStr == "_x005F_" {
+			cursor = match[1]
+			if match[1]+6 <= l && bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
+				_, err := strconv.Unquote(`"\u` + s[match[1]+1:match[1]+5] + `"`)
+				if err == nil {
+					result += subStr + "x005F" + subStr
+					continue
+				}
+			}
+			result += subStr + "x005F_"
+			continue
+		}
+		if bstrExp.MatchString(subStr) {
+			cursor = match[1]
+			_, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
+			if err == nil {
+				result += "_x005F" + subStr
+				continue
+			}
+			result += subStr
 		}
 	}
 	if cursor < l {
