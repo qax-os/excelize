@@ -100,16 +100,13 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil
 }
 
-// WriteToBuffer provides a function to get bytes.Buffer from the saved file.
+// WriteToBuffer provides a function to get bytes.Buffer from the saved file. And it allocate space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
 
 	if err := f.writeToZip(zw); err != nil {
-		if e := zw.Close(); e != nil {
-			return buf, e
-		}
-		return buf, err
+		return buf, zw.Close()
 	}
 
 	if f.options != nil && f.options.Password != "" {
@@ -127,17 +124,17 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	return buf, zw.Close()
 }
 
+// writeDirectToWriter provides a function to write to io.Writer.
 func (f *File) writeDirectToWriter(w io.Writer) error {
 	zw := zip.NewWriter(w)
 	if err := f.writeToZip(zw); err != nil {
-		if e := zw.Close(); e != nil {
-			return e
-		}
+		zw.Close()
 		return err
 	}
 	return zw.Close()
 }
 
+// writeToZip provides a function to write to zip.Writer
 func (f *File) writeToZip(zw *zip.Writer) error {
 	f.calcChainWriter()
 	f.commentsWriter()

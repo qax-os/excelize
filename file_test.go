@@ -3,6 +3,7 @@ package excelize
 import (
 	"bufio"
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
@@ -33,16 +34,36 @@ func BenchmarkWrite(b *testing.B) {
 }
 
 func TestWriteTo(t *testing.T) {
-	f := File{}
-	buf := bytes.Buffer{}
-	f.XLSX = make(map[string][]byte)
-	f.XLSX["/d/"] = []byte("s")
-	_, err := f.WriteTo(bufio.NewWriter(&buf))
-	assert.EqualError(t, err, "zip: write to directory")
-	delete(f.XLSX, "/d/")
+	// Test WriteToBuffer err
+	{
+		f := File{}
+		buf := bytes.Buffer{}
+		f.XLSX = make(map[string][]byte)
+		f.XLSX["/d/"] = []byte("s")
+		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		assert.EqualError(t, err, "zip: write to directory")
+		delete(f.XLSX, "/d/")
+	}
 	// Test file path overflow
-	const maxUint16 = 1<<16 - 1
-	f.XLSX[strings.Repeat("s", maxUint16+1)] = nil
-	_, err = f.WriteTo(bufio.NewWriter(&buf))
-	assert.EqualError(t, err, "zip: FileHeader.Name too long")
+	{
+		f := File{}
+		buf := bytes.Buffer{}
+		f.XLSX = make(map[string][]byte)
+		const maxUint16 = 1<<16 - 1
+		f.XLSX[strings.Repeat("s", maxUint16+1)] = nil
+		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		assert.EqualError(t, err, "zip: FileHeader.Name too long")
+	}
+	// Test StreamsWriter err
+	{
+		f := File{}
+		buf := bytes.Buffer{}
+		f.XLSX = make(map[string][]byte)
+		f.XLSX["s"] = nil
+		f.streams = make(map[string]*StreamWriter)
+		file, _ := os.Open("123")
+		f.streams["s"] = &StreamWriter{rawData: bufferedWriter{tmp: file}}
+		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		assert.Nil(t, err)
+	}
 }
