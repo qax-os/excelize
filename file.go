@@ -87,62 +87,26 @@ func (f *File) Write(w io.Writer) error {
 
 // WriteTo implements io.WriterTo to write the file.
 func (f *File) WriteTo(w io.Writer) (int64, error) {
-	buf, err := f.WriteToBuffer()
-	if err != nil {
+	if f.options != nil && f.options.Password != "" {
+		buf, err := f.WriteToBuffer()
+		if err != nil {
+			return 0, err
+		}
+		return buf.WriteTo(w)
+	}
+	if err := f.writeDirectToWriter(w); err != nil {
 		return 0, err
 	}
-	return buf.WriteTo(w)
+	return 0, nil
 }
 
-// WriteToBuffer provides a function to get bytes.Buffer from the saved file.
+// WriteToBuffer provides a function to get bytes.Buffer from the saved file. And it allocate space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
-	f.calcChainWriter()
-	f.commentsWriter()
-	f.contentTypesWriter()
-	f.drawingsWriter()
-	f.vmlDrawingWriter()
-	f.workBookWriter()
-	f.workSheetWriter()
-	f.relsWriter()
-	f.sharedStringsWriter()
-	f.styleSheetWriter()
 
-	for path, stream := range f.streams {
-		fi, err := zw.Create(path)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
-		var from io.Reader
-		from, err = stream.rawData.Reader()
-		if err != nil {
-			stream.rawData.Close()
-			return buf, err
-		}
-		_, err = io.Copy(fi, from)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
-		stream.rawData.Close()
-	}
-
-	for path, content := range f.XLSX {
-		if _, ok := f.streams[path]; ok {
-			continue
-		}
-		fi, err := zw.Create(path)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
-		_, err = fi.Write(content)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
+	if err := f.writeToZip(zw); err != nil {
+		return buf, zw.Close()
 	}
 
 	if f.options != nil && f.options.Password != "" {
@@ -158,4 +122,62 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		return buf, nil
 	}
 	return buf, zw.Close()
+}
+
+// writeDirectToWriter provides a function to write to io.Writer.
+func (f *File) writeDirectToWriter(w io.Writer) error {
+	zw := zip.NewWriter(w)
+	if err := f.writeToZip(zw); err != nil {
+		zw.Close()
+		return err
+	}
+	return zw.Close()
+}
+
+// writeToZip provides a function to write to zip.Writer
+func (f *File) writeToZip(zw *zip.Writer) error {
+	f.calcChainWriter()
+	f.commentsWriter()
+	f.contentTypesWriter()
+	f.drawingsWriter()
+	f.vmlDrawingWriter()
+	f.workBookWriter()
+	f.workSheetWriter()
+	f.relsWriter()
+	f.sharedStringsWriter()
+	f.styleSheetWriter()
+
+	for path, stream := range f.streams {
+		fi, err := zw.Create(path)
+		if err != nil {
+			return err
+		}
+		var from io.Reader
+		from, err = stream.rawData.Reader()
+		if err != nil {
+			stream.rawData.Close()
+			return err
+		}
+		_, err = io.Copy(fi, from)
+		if err != nil {
+			return err
+		}
+		stream.rawData.Close()
+	}
+
+	for path, content := range f.XLSX {
+		if _, ok := f.streams[path]; ok {
+			continue
+		}
+		fi, err := zw.Create(path)
+		if err != nil {
+			return err
+		}
+		_, err = fi.Write(content)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
