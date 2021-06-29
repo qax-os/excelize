@@ -955,16 +955,23 @@ func isOperatorPrefixToken(token efp.Token) bool {
 
 // getDefinedNameRefTo convert defined name to reference range.
 func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
+	var workbookRefTo, worksheetRefTo string
 	for _, definedName := range f.GetDefinedName() {
 		if definedName.Name == definedNameName {
-			refTo = definedName.RefersTo
 			// worksheet scope takes precedence over scope workbook when both definedNames exist
+			if definedName.Scope == "Workbook" {
+				workbookRefTo = definedName.RefersTo
+			}
 			if definedName.Scope == currentSheet {
-				break
+				worksheetRefTo = definedName.RefersTo
 			}
 		}
 	}
-	return refTo
+	refTo = workbookRefTo
+	if worksheetRefTo != "" {
+		refTo = worksheetRefTo
+	}
+	return
 }
 
 // parseToken parse basic arithmetic operator priority and evaluate based on
