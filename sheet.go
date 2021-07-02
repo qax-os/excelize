@@ -507,17 +507,17 @@ func (f *File) DeleteSheet(name string) {
 	wb := f.workbookReader()
 	wbRels := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
-	deleteSheetID := f.getSheetID(name)
+	deleteLocalSheetID := f.GetSheetIndex(name)
 	// Delete and adjust defined names
 	if wb.DefinedNames != nil {
 		for idx := 0; idx < len(wb.DefinedNames.DefinedName); idx++ {
 			dn := wb.DefinedNames.DefinedName[idx]
 			if dn.LocalSheetID != nil {
-				sheetID := *dn.LocalSheetID + 1
-				if sheetID == deleteSheetID {
+				localSheetID := *dn.LocalSheetID
+				if localSheetID == deleteLocalSheetID {
 					wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
 					idx--
-				} else if sheetID > deleteSheetID {
+				} else if localSheetID > deleteLocalSheetID {
 					wb.DefinedNames.DefinedName[idx].LocalSheetID = intPtr(*dn.LocalSheetID - 1)
 				}
 			}
@@ -1495,7 +1495,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 		for _, dn := range wb.DefinedNames.DefinedName {
 			var scope string
 			if dn.LocalSheetID != nil {
-				scope = f.getSheetNameByID(*dn.LocalSheetID + 1)
+				scope = f.GetSheetName(*dn.LocalSheetID)
 			}
 			if scope == definedName.Scope && dn.Name == definedName.Name {
 				return errors.New("the same name already exists on the scope")
@@ -1525,7 +1525,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 		for idx, dn := range wb.DefinedNames.DefinedName {
 			var scope string
 			if dn.LocalSheetID != nil {
-				scope = f.getSheetNameByID(*dn.LocalSheetID + 1)
+				scope = f.GetSheetName(*dn.LocalSheetID)
 			}
 			if scope == definedName.Scope && dn.Name == definedName.Name {
 				wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
@@ -1550,7 +1550,7 @@ func (f *File) GetDefinedName() []DefinedName {
 				Scope:    "Workbook",
 			}
 			if dn.LocalSheetID != nil && *dn.LocalSheetID >= 0 {
-				definedName.Scope = f.getSheetNameByID(*dn.LocalSheetID + 1)
+				definedName.Scope = f.GetSheetName(*dn.LocalSheetID)
 			}
 			definedNames = append(definedNames, definedName)
 		}
