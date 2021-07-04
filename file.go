@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
 
 // NewFile provides a function to create new file by default template. For
@@ -40,13 +41,13 @@ func NewFile() *File {
 	f.CalcChain = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes = f.contentTypesReader()
-	f.Drawings = make(map[string]*xlsxWsDr)
+	f.Drawings = sync.Map{}
 	f.Styles = f.stylesReader()
 	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
 	f.VMLDrawing = make(map[string]*vmlDrawing)
 	f.WorkBook = f.workbookReader()
-	f.Relationships = make(map[string]*xlsxRelationships)
-	f.Relationships["xl/_rels/workbook.xml.rels"] = f.relsReader("xl/_rels/workbook.xml.rels")
+	f.Relationships = sync.Map{}
+	f.Relationships.Store("xl/_rels/workbook.xml.rels", f.relsReader("xl/_rels/workbook.xml.rels"))
 	f.Sheet["xl/worksheets/sheet1.xml"], _ = f.workSheetReader("Sheet1")
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
 	f.Theme = f.themeReader()

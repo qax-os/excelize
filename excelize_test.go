@@ -975,7 +975,7 @@ func TestGetActiveSheetIndex(t *testing.T) {
 
 func TestRelsWriter(t *testing.T) {
 	f := NewFile()
-	f.Relationships["xl/worksheets/sheet/rels/sheet1.xml.rel"] = &xlsxRelationships{}
+	f.Relationships.Store("xl/worksheets/sheet/rels/sheet1.xml.rel", &xlsxRelationships{})
 	f.relsWriter()
 }
 
@@ -1231,7 +1231,7 @@ func TestRelsReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
 	rels := "xl/_rels/workbook.xml.rels"
-	f.Relationships[rels] = nil
+	f.Relationships.Store(rels, nil)
 	f.XLSX[rels] = MacintoshCyrillicCharset
 	f.relsReader(rels)
 }
@@ -1239,7 +1239,7 @@ func TestRelsReader(t *testing.T) {
 func TestDeleteSheetFromWorkbookRels(t *testing.T) {
 	f := NewFile()
 	rels := "xl/_rels/workbook.xml.rels"
-	f.Relationships[rels] = nil
+	f.Relationships.Store(rels, nil)
 	assert.Equal(t, f.deleteSheetFromWorkbookRels("rID"), "")
 }
 

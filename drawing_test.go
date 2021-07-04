@@ -12,12 +12,13 @@
 package excelize
 
 import (
+	"sync"
 	"testing"
 )
 
 func TestDrawingParser(t *testing.T) {
 	f := File{
-		Drawings: make(map[string]*xlsxWsDr),
+		Drawings: sync.Map{},
 		XLSX: map[string][]byte{
 			"charset": MacintoshCyrillicCharset,
 			"wsDr":    []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><xdr:oneCellAnchor><xdr:graphicFrame/></xdr:oneCellAnchor></xdr:wsDr>`)},

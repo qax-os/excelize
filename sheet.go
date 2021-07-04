@@ -231,15 +231,16 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 // relsWriter provides a function to save relationships after
 // serialize structure.
 func (f *File) relsWriter() {
-	for path, rel := range f.Relationships {
+	f.Relationships.Range(func(path, rel interface{}) bool {
 		if rel != nil {
-			output, _ := xml.Marshal(rel)
-			if strings.HasPrefix(path, "xl/worksheets/sheet/rels/sheet") {
-				output = f.replaceNameSpaceBytes(path, output)
+			output, _ := xml.Marshal(rel.(*xlsxRelationships))
+			if strings.HasPrefix(path.(string), "xl/worksheets/sheet/rels/sheet") {
+				output = f.replaceNameSpaceBytes(path.(string), output)
 			}
-			f.saveFileList(path, replaceRelationshipsBytes(output))
+			f.saveFileList(path.(string), replaceRelationshipsBytes(output))
 		}
-	}
+		return true
+	})
 }
 
 // setAppXML update docProps/app.xml file of XML.
@@ -357,22 +358,6 @@ func (f *File) SetSheetName(oldName, newName string) {
 			delete(f.sheetMap, oldName)
 		}
 	}
-}
-
-// getSheetNameByID provides a function to get worksheet name of the
-// spreadsheet by given worksheet ID. If given sheet ID is invalid, will
-// return an empty string.
-func (f *File) getSheetNameByID(ID int) string {
-	wb := f.workbookReader()
-	if wb == nil || ID < 1 {
-		return ""
-	}
-	for _, sheet := range wb.Sheets.Sheet {
-		if ID == sheet.SheetID {
-			return sheet.Name
-		}
-	}
-	return ""
 }
 
 // GetSheetName provides a function to get the sheet name of the workbook by
@@ -541,7 +526,7 @@ func (f *File) DeleteSheet(name string) {
 			delete(f.sheetMap, sheetName)
 			delete(f.XLSX, sheetXML)
 			delete(f.XLSX, rels)
-			delete(f.Relationships, rels)
+			f.Relationships.Delete(rels)
 			delete(f.Sheet, sheetXML)
 			delete(f.xmlAttr, sheetXML)
 			f.SheetCount--
@@ -1727,8 +1712,8 @@ func (f *File) RemovePageBreak(sheet, cell string) (err error) {
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
 func (f *File) relsReader(path string) *xlsxRelationships {
 	var err error
-
-	if f.Relationships[path] == nil {
+	rels, _ := f.Relationships.Load(path)
+	if rels == nil {
 		_, ok := f.XLSX[path]
 		if ok {
 			c := xlsxRelationships{}
@@ -1736,11 +1721,13 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 				Decode(&c); err != nil && err != io.EOF {
 				log.Printf("xml decode error: %s", err)
 			}
-			f.Relationships[path] = &c
+			f.Relationships.Store(path, &c)
 		}
 	}
-
-	return f.Relationships[path]
+	if rels, _ = f.Relationships.Load(path); rels != nil {
+		return rels.(*xlsxRelationships)
+	}
+	return nil
 }
 
 // fillSheetData ensures there are enough rows, and columns in the chosen

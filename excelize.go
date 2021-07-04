@@ -39,7 +39,7 @@ type File struct {
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
-	Drawings         map[string]*xlsxWsDr
+	Drawings         sync.Map
 	Path             string
 	SharedStrings    *xlsxSST
 	sharedStringsMap map[string]int
@@ -50,7 +50,7 @@ type File struct {
 	DecodeVMLDrawing map[string]*decodeVmlDrawing
 	VMLDrawing       map[string]*vmlDrawing
 	WorkBook         *xlsxWorkbook
-	Relationships    map[string]*xlsxRelationships
+	Relationships    sync.Map
 	XLSX             map[string][]byte
 	CharsetReader    charsetTranscoderFn
 }
@@ -93,12 +93,12 @@ func newFile() *File {
 		checked:          make(map[string]bool),
 		sheetMap:         make(map[string]string),
 		Comments:         make(map[string]*xlsxComments),
-		Drawings:         make(map[string]*xlsxWsDr),
+		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
 		Sheet:            make(map[string]*xlsxWorksheet),
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
 		VMLDrawing:       make(map[string]*vmlDrawing),
-		Relationships:    make(map[string]*xlsxRelationships),
+		Relationships:    sync.Map{},
 		CharsetReader:    charset.NewReaderLabel,
 	}
 }
@@ -277,7 +277,7 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 		Target:     target,
 		TargetMode: targetMode,
 	})
-	f.Relationships[relPath] = rels
+	f.Relationships.Store(relPath, rels)
 	return rID
 }
 

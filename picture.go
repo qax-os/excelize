@@ -189,7 +189,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
-	f.Relationships[rels] = sheetRels
+	f.Relationships.Store(rels, sheetRels)
 }
 
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
@@ -228,11 +228,12 @@ func (f *File) countDrawings() int {
 			c1++
 		}
 	}
-	for rel := range f.Drawings {
-		if strings.Contains(rel, "xl/drawings/drawing") {
+	f.Drawings.Range(func(rel, value interface{}) bool {
+		if strings.Contains(rel.(string), "xl/drawings/drawing") {
 			c2++
 		}
-	}
+		return true
+	})
 	if c1 < c2 {
 		return c2
 	}
@@ -296,7 +297,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
-	f.Drawings[drawingXML] = content
+	f.Drawings.Store(drawingXML, content)
 	return err
 }
 
@@ -582,12 +583,13 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
 // drawingsWriter provides a function to save xl/drawings/drawing%d.xml after
 // serialize structure.
 func (f *File) drawingsWriter() {
-	for path, d := range f.Drawings {
+	f.Drawings.Range(func(path, d interface{}) bool {
 		if d != nil {
-			v, _ := xml.Marshal(d)
-			f.saveFileList(path, v)
+			v, _ := xml.Marshal(d.(*xlsxWsDr))
+			f.saveFileList(path.(string), v)
 		}
-	}
+		return true
+	})
 }
 
 // drawingResize calculate the height and width after resizing.

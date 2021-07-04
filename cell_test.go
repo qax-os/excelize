@@ -14,15 +14,23 @@ import (
 )
 
 func TestConcurrency(t *testing.T) {
-	f := NewFile()
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
 	wg := new(sync.WaitGroup)
 	for i := 1; i <= 5; i++ {
 		wg.Add(1)
 		go func(val int, t *testing.T) {
+			// Concurrency set cell value
 			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", val), val))
 			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", val), strconv.Itoa(val)))
 			_, err := f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
 			assert.NoError(t, err)
+			// Concurrency get cell picture
+			name, raw, err := f.GetPicture("Sheet1", "A1")
+			assert.Equal(t, "", name)
+			assert.Nil(t, raw)
+			assert.NoError(t, err)
+
 			wg.Done()
 		}(i, t)
 	}

@@ -1146,8 +1146,8 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 		err error
 		ok  bool
 	)
-
-	if f.Drawings[path] == nil {
+	_, ok = f.Drawings.Load(path)
+	if !ok {
 		content := xlsxWsDr{}
 		content.A = NameSpaceDrawingML.Value
 		content.Xdr = NameSpaceDrawingMLSpreadSheet.Value
@@ -1171,10 +1171,10 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 				})
 			}
 		}
-		f.Drawings[path] = &content
+		f.Drawings.Store(path, &content)
 	}
-	wsDr := f.Drawings[path]
-	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2
+	wsDr, _ := f.Drawings.Load(path)
+	return wsDr.(*xlsxWsDr), len(wsDr.(*xlsxWsDr).OneCellAnchor) + len(wsDr.(*xlsxWsDr).TwoCellAnchor) + 2
 }
 
 // addDrawingChart provides a function to add chart graphic frame by given
@@ -1232,7 +1232,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
-	f.Drawings[drawingXML] = content
+	f.Drawings.Store(drawingXML, content)
 	return err
 }
 
@@ -1272,7 +1272,7 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *forma
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
 	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
-	f.Drawings[drawingXML] = content
+	f.Drawings.Store(drawingXML, content)
 }
 
 // deleteDrawing provides a function to delete chart graphic frame by given by
@@ -1313,6 +1313,6 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 			}
 		}
 	}
-	f.Drawings[drawingXML] = wsDr
+	f.Drawings.Store(drawingXML, wsDr)
 	return err
 }
