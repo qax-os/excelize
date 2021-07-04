@@ -347,9 +347,13 @@ func TestSetActiveSheet(t *testing.T) {
 	f.WorkBook.BookViews = nil
 	f.SetActiveSheet(1)
 	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
 	f.SetActiveSheet(1)
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetViews = nil
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = nil
 	f.SetActiveSheet(1)
 	f = NewFile()
 	f.SetActiveSheet(-1)
@@ -365,14 +369,14 @@ func TestSetSheetName(t *testing.T) {
 
 func TestGetWorkbookPath(t *testing.T) {
 	f := NewFile()
-	delete(f.XLSX, "_rels/.rels")
+	f.Pkg.Delete("_rels/.rels")
 	assert.Equal(t, "", f.getWorkbookPath())
 }
 
 func TestGetWorkbookRelsPath(t *testing.T) {
 	f := NewFile()
-	delete(f.XLSX, "xl/_rels/.rels")
-	f.XLSX["_rels/.rels"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`)
+	f.Pkg.Delete("xl/_rels/.rels")
+	f.Pkg.Store("_rels/.rels", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`))
 	assert.Equal(t, "_rels/workbook.xml.rels", f.getWorkbookRelsPath())
 }
 

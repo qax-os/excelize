@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -163,7 +162,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 // properties.
 func (f *File) parseFormatPivotTableSet(opt *PivotTableOption) (*xlsxWorksheet, string, error) {
 	if opt == nil {
-		return nil, "", errors.New("parameter is required")
+		return nil, "", ErrParameterRequired
 	}
 	pivotTableSheetName, _, err := f.adjustRange(opt.PivotTableRange)
 	if err != nil {
@@ -192,11 +191,11 @@ func (f *File) parseFormatPivotTableSet(opt *PivotTableOption) (*xlsxWorksheet, 
 // adjustRange adjust range, for example: adjust Sheet1!$E$31:$A$1 to Sheet1!$A$1:$E$31
 func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 	if len(rangeStr) < 1 {
-		return "", []int{}, errors.New("parameter is required")
+		return "", []int{}, ErrParameterRequired
 	}
 	rng := strings.Split(rangeStr, "!")
 	if len(rng) != 2 {
-		return "", []int{}, errors.New("parameter is invalid")
+		return "", []int{}, ErrParameterInvalid
 	}
 	trimRng := strings.Replace(rng[1], "$", "", -1)
 	coordinates, err := f.areaRefToCoordinates(trimRng)
@@ -205,7 +204,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 	}
 	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 	if x1 == x2 && y1 == y2 {
-		return rng[0], []int{}, errors.New("parameter is invalid")
+		return rng[0], []int{}, ErrParameterInvalid
 	}
 
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
@@ -600,11 +599,12 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 // the folder xl/pivotTables.
 func (f *File) countPivotTables() int {
 	count := 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/pivotTables/pivotTable") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/pivotTables/pivotTable") {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 
@@ -612,11 +612,12 @@ func (f *File) countPivotTables() int {
 // the folder xl/pivotCache.
 func (f *File) countPivotCache() int {
 	count := 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/pivotCache/pivotCacheDefinition") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/pivotCache/pivotCacheDefinition") {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 

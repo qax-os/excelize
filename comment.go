@@ -299,11 +299,12 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 // the folder xl.
 func (f *File) countComments() int {
 	c1, c2 := 0, 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/comments") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/comments") {
 			c1++
 		}
-	}
+		return true
+	})
 	for rel := range f.Comments {
 		if strings.Contains(rel, "xl/comments") {
 			c2++
@@ -321,10 +322,10 @@ func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
 	var err error
 
 	if f.DecodeVMLDrawing[path] == nil {
-		c, ok := f.XLSX[path]
-		if ok {
+		c, ok := f.Pkg.Load(path)
+		if ok && c != nil {
 			f.DecodeVMLDrawing[path] = new(decodeVmlDrawing)
-			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c))).
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c.([]byte)))).
 				Decode(f.DecodeVMLDrawing[path]); err != nil && err != io.EOF {
 				log.Printf("xml decode error: %s", err)
 			}
@@ -339,7 +340,7 @@ func (f *File) vmlDrawingWriter() {
 	for path, vml := range f.VMLDrawing {
 		if vml != nil {
 			v, _ := xml.Marshal(vml)
-			f.XLSX[path] = v
+			f.Pkg.Store(path, v)
 		}
 	}
 }
@@ -348,12 +349,11 @@ func (f *File) vmlDrawingWriter() {
 // after deserialization of xl/comments%d.xml.
 func (f *File) commentsReader(path string) *xlsxComments {
 	var err error
-
 	if f.Comments[path] == nil {
-		content, ok := f.XLSX[path]
-		if ok {
+		content, ok := f.Pkg.Load(path)
+		if ok && content != nil {
 			f.Comments[path] = new(xlsxComments)
-			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content))).
+			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
 				Decode(f.Comments[path]); err != nil && err != io.EOF {
 				log.Printf("xml decode error: %s", err)
 			}

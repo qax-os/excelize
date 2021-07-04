@@ -48,11 +48,11 @@ func TestCols(t *testing.T) {
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
 
-	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		Dimension: &xlsxDimension{
 			Ref: "C2:C4",
 		},
-	}
+	})
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
 }
@@ -110,15 +110,15 @@ func TestGetColsError(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	f = NewFile()
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`))
 	f.checked = nil
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
 	f = NewFile()
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>B</v></c></row></sheetData></worksheet>`))
 	f.checked = nil
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
@@ -142,14 +142,14 @@ func TestColsRows(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
-	f.Sheet["xl/worksheets/sheet1.xml"] = &xlsxWorksheet{
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		Dimension: &xlsxDimension{
 			Ref: "A1:A1",
 		},
-	}
+	})
 
 	f = NewFile()
-	f.XLSX["xl/worksheets/sheet1.xml"] = nil
+	f.Pkg.Store("xl/worksheets/sheet1.xml", nil)
 	_, err = f.Cols("Sheet1")
 	if !assert.NoError(t, err) {
 		t.FailNow()

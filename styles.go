@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -1104,14 +1103,14 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 	case *Style:
 		fs = *v
 	default:
-		err = errors.New("invalid parameter type")
+		err = ErrParameterInvalid
 	}
 	if fs.Font != nil {
 		if len(fs.Font.Family) > MaxFontFamilyLength {
-			return &fs, errors.New("the length of the font family name must be smaller than or equal to 31")
+			return &fs, ErrFontLength
 		}
 		if fs.Font.Size > MaxFontSize {
-			return &fs, errors.New("font size must be between 1 and 409 points")
+			return &fs, ErrFontSize
 		}
 	}
 	return &fs, err

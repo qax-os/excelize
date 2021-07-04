@@ -155,7 +155,7 @@ func TestGetPicture(t *testing.T) {
 	assert.Empty(t, raw)
 	f, err = prepareTestBook1()
 	assert.NoError(t, err)
-	f.XLSX["xl/drawings/drawing1.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("xl/drawings/drawing1.xml", MacintoshCyrillicCharset)
 	_, _, err = f.getPicture(20, 5, "xl/drawings/drawing1.xml", "xl/drawings/_rels/drawing2.xml.rels")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
@@ -173,11 +173,12 @@ func TestAddPictureFromBytes(t *testing.T) {
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile))
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile))
 	imageCount := 0
-	for fileName := range f.XLSX {
-		if strings.Contains(fileName, "media/image") {
+	f.Pkg.Range(func(fileName, v interface{}) bool {
+		if strings.Contains(fileName.(string), "media/image") {
 			imageCount++
 		}
-	}
+		return true
+	})
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
 	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN is not exist")
 }
@@ -205,6 +206,8 @@ func TestDrawingResize(t *testing.T) {
 	// Test calculate drawing resize with invalid coordinates.
 	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
 	assert.EqualError(t, err, `cannot convert cell "" to coordinates: invalid cell name ""`)
-	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }

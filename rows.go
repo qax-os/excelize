@@ -195,9 +195,12 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
-	if f.Sheet[name] != nil {
+	if ws, ok := f.Sheet.Load(name); ok && ws != nil {
+		worksheet := ws.(*xlsxWorksheet)
+		worksheet.Lock()
+		defer worksheet.Unlock()
 		// flush data
-		output, _ := xml.Marshal(f.Sheet[name])
+		output, _ := xml.Marshal(worksheet)
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var (

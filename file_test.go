@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,19 +39,19 @@ func TestWriteTo(t *testing.T) {
 	{
 		f := File{}
 		buf := bytes.Buffer{}
-		f.XLSX = make(map[string][]byte)
-		f.XLSX["/d/"] = []byte("s")
+		f.Pkg = sync.Map{}
+		f.Pkg.Store("/d/", []byte("s"))
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, "zip: write to directory")
-		delete(f.XLSX, "/d/")
+		f.Pkg.Delete("/d/")
 	}
 	// Test file path overflow
 	{
 		f := File{}
 		buf := bytes.Buffer{}
-		f.XLSX = make(map[string][]byte)
+		f.Pkg = sync.Map{}
 		const maxUint16 = 1<<16 - 1
-		f.XLSX[strings.Repeat("s", maxUint16+1)] = nil
+		f.Pkg.Store(strings.Repeat("s", maxUint16+1), nil)
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, "zip: FileHeader.Name too long")
 	}
@@ -58,8 +59,8 @@ func TestWriteTo(t *testing.T) {
 	{
 		f := File{}
 		buf := bytes.Buffer{}
-		f.XLSX = make(map[string][]byte)
-		f.XLSX["s"] = nil
+		f.Pkg = sync.Map{}
+		f.Pkg.Store("s", nil)
 		f.streams = make(map[string]*StreamWriter)
 		file, _ := os.Open("123")
 		f.streams["s"] = &StreamWriter{rawData: bufferedWriter{tmp: file}}

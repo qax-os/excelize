@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -152,25 +151,27 @@ func (f *File) workSheetWriter() {
 	var arr []byte
 	buffer := bytes.NewBuffer(arr)
 	encoder := xml.NewEncoder(buffer)
-	for p, sheet := range f.Sheet {
-		if sheet != nil {
+	f.Sheet.Range(func(p, ws interface{}) bool {
+		if ws != nil {
+			sheet := ws.(*xlsxWorksheet)
 			for k, v := range sheet.SheetData.Row {
-				f.Sheet[p].SheetData.Row[k].C = trimCell(v.C)
+				sheet.SheetData.Row[k].C = trimCell(v.C)
 			}
 			if sheet.SheetPr != nil || sheet.Drawing != nil || sheet.Hyperlinks != nil || sheet.Picture != nil || sheet.TableParts != nil {
-				f.addNameSpaces(p, SourceRelationship)
+				f.addNameSpaces(p.(string), SourceRelationship)
 			}
 			// reusing buffer
 			_ = encoder.Encode(sheet)
-			f.saveFileList(p, replaceRelationshipsBytes(f.replaceNameSpaceBytes(p, buffer.Bytes())))
-			ok := f.checked[p]
+			f.saveFileList(p.(string), replaceRelationshipsBytes(f.replaceNameSpaceBytes(p.(string), buffer.Bytes())))
+			ok := f.checked[p.(string)]
 			if ok {
-				delete(f.Sheet, p)
-				f.checked[p] = false
+				f.Sheet.Delete(p.(string))
+				f.checked[p.(string)] = false
 			}
 			buffer.Reset()
 		}
-	}
+		return true
+	})
 }
 
 // trimCell provides a function to trim blank cells which created by fillColumns.
@@ -213,7 +214,7 @@ func (f *File) setSheet(index int, name string) {
 	}
 	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = path
-	f.Sheet[path] = &ws
+	f.Sheet.Store(path, &ws)
 	f.xmlAttr[path] = []xml.Attr{NameSpaceSpreadSheet}
 }
 
@@ -448,7 +449,7 @@ func (f *File) getSheetMap() map[string]string {
 				if strings.HasPrefix(rel.Target, "/") {
 					path = filepath.ToSlash(strings.TrimPrefix(strings.Replace(filepath.Clean(rel.Target), "\\", "/", -1), "/"))
 				}
-				if _, ok := f.XLSX[path]; ok {
+				if _, ok := f.Pkg.Load(path); ok {
 					maps[v.Name] = path
 				}
 			}
@@ -524,10 +525,10 @@ func (f *File) DeleteSheet(name string) {
 			f.deleteSheetFromContentTypes(target)
 			f.deleteCalcChain(sheet.SheetID, "")
 			delete(f.sheetMap, sheetName)
-			delete(f.XLSX, sheetXML)
-			delete(f.XLSX, rels)
+			f.Pkg.Delete(sheetXML)
+			f.Pkg.Delete(rels)
 			f.Relationships.Delete(rels)
-			delete(f.Sheet, sheetXML)
+			f.Sheet.Delete(sheetXML)
 			delete(f.xmlAttr, sheetXML)
 			f.SheetCount--
 		}
@@ -573,7 +574,7 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 //
 func (f *File) CopySheet(from, to int) error {
 	if from < 0 || to < 0 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
-		return errors.New("invalid worksheet index")
+		return ErrSheetIdx
 	}
 	return f.copySheet(from, to)
 }
@@ -595,12 +596,11 @@ func (f *File) copySheet(from, to int) error {
 	worksheet.Drawing = nil
 	worksheet.TableParts = nil
 	worksheet.PageSetUp = nil
-	f.Sheet[path] = worksheet
+	f.Sheet.Store(path, worksheet)
 	toRels := "xl/worksheets/_rels/sheet" + toSheetID + ".xml.rels"
 	fromRels := "xl/worksheets/_rels/sheet" + strconv.Itoa(f.getSheetID(fromSheet)) + ".xml.rels"
-	_, ok := f.XLSX[fromRels]
-	if ok {
-		f.XLSX[toRels] = f.XLSX[fromRels]
+	if rels, ok := f.Pkg.Load(fromRels); ok && rels != nil {
+		f.Pkg.Store(toRels, rels.([]byte))
 	}
 	fromSheetXMLPath := f.sheetMap[trimSheetName(fromSheet)]
 	fromSheetAttr := f.xmlAttr[fromSheetXMLPath]
@@ -824,9 +824,9 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	if !ok {
 		return result, ErrSheetNotExist{sheet}
 	}
-	if f.Sheet[name] != nil {
+	if ws, ok := f.Sheet.Load(name); ok && ws != nil {
 		// flush data
-		output, _ := xml.Marshal(f.Sheet[name])
+		output, _ := xml.Marshal(ws.(*xlsxWorksheet))
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	return f.searchSheet(name, value, regSearch)
@@ -1483,7 +1483,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 				scope = f.GetSheetName(*dn.LocalSheetID)
 			}
 			if scope == definedName.Scope && dn.Name == definedName.Name {
-				return errors.New("the same name already exists on the scope")
+				return ErrDefinedNameduplicate
 			}
 		}
 		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
@@ -1518,7 +1518,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 			}
 		}
 	}
-	return errors.New("no defined name on the scope")
+	return ErrDefinedNameScope
 }
 
 // GetDefinedName provides a function to get the defined names of the workbook
@@ -1558,7 +1558,7 @@ func (f *File) GroupSheets(sheets []string) error {
 		}
 	}
 	if !inActiveSheet {
-		return errors.New("group worksheet must contain an active worksheet")
+		return ErrGroupSheets
 	}
 	// check worksheet exists
 	wss := []*xlsxWorksheet{}
@@ -1714,8 +1714,7 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 	var err error
 	rels, _ := f.Relationships.Load(path)
 	if rels == nil {
-		_, ok := f.XLSX[path]
-		if ok {
+		if _, ok := f.Pkg.Load(path); ok {
 			c := xlsxRelationships{}
 			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
 				Decode(&c); err != nil && err != io.EOF {
@@ -1734,6 +1733,8 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 // row to accept data. Missing rows are backfilled and given their row number
 // Uses the last populated row as a hint for the size of the next row to add
 func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
+	ws.Lock()
+	defer ws.Unlock()
 	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
 	var ht float64

@@ -223,11 +223,12 @@ func (f *File) addSheetPicture(sheet string, rID int) {
 // folder xl/drawings.
 func (f *File) countDrawings() int {
 	c1, c2 := 0, 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/drawings/drawing") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/drawings/drawing") {
 			c1++
 		}
-	}
+		return true
+	})
 	f.Drawings.Range(func(rel, value interface{}) bool {
 		if strings.Contains(rel.(string), "xl/drawings/drawing") {
 			c2++
@@ -305,11 +306,12 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 // folder xl/media/image.
 func (f *File) countMedia() int {
 	count := 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/media/image") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/media/image") {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 
@@ -318,16 +320,22 @@ func (f *File) countMedia() int {
 // and drawings that use it will reference the same image.
 func (f *File) addMedia(file []byte, ext string) string {
 	count := f.countMedia()
-	for name, existing := range f.XLSX {
-		if !strings.HasPrefix(name, "xl/media/image") {
-			continue
+	var name string
+	f.Pkg.Range(func(k, existing interface{}) bool {
+		if !strings.HasPrefix(k.(string), "xl/media/image") {
+			return true
 		}
-		if bytes.Equal(file, existing) {
-			return name
+		if bytes.Equal(file, existing.([]byte)) {
+			name = k.(string)
+			return false
 		}
+		return true
+	})
+	if name != "" {
+		return name
 	}
 	media := "xl/media/image" + strconv.Itoa(count+1) + ext
-	f.XLSX[media] = file
+	f.Pkg.Store(media, file)
 	return media
 }
 
@@ -468,8 +476,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.Replace(target, "..", "xl", -1)
-	_, ok := f.XLSX[drawingXML]
-	if !ok {
+	if _, ok := f.Pkg.Load(drawingXML); !ok {
 		return "", nil, err
 	}
 	drawingRelationships := strings.Replace(
@@ -532,7 +539,10 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+					ret = filepath.Base(drawRel.Target)
+					if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
+						buf = buffer.([]byte)
+					}
 					return
 				}
 			}
@@ -556,7 +566,10 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
 					if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-						ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+						ret = filepath.Base(drawRel.Target)
+						if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
+							buf = buffer.([]byte)
+						}
 						return
 					}
 				}

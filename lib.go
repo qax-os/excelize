@@ -51,8 +51,8 @@ func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 
 // readXML provides a function to read XML content as string.
 func (f *File) readXML(name string) []byte {
-	if content, ok := f.XLSX[name]; ok {
-		return content
+	if content, _ := f.Pkg.Load(name); content != nil {
+		return content.([]byte)
 	}
 	if content, ok := f.streams[name]; ok {
 		return content.rawData.buf.Bytes()
@@ -66,7 +66,7 @@ func (f *File) saveFileList(name string, content []byte) {
 	newContent := make([]byte, 0, len(XMLHeader)+len(content))
 	newContent = append(newContent, []byte(XMLHeader)...)
 	newContent = append(newContent, content...)
-	f.XLSX[name] = newContent
+	f.Pkg.Store(name, newContent)
 }
 
 // Read file content as string in a archive file.

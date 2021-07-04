@@ -65,10 +65,10 @@ func TestChartSize(t *testing.T) {
 		anchor  decodeTwoCellAnchor
 	)
 
-	content, ok := newFile.XLSX["xl/drawings/drawing1.xml"]
+	content, ok := newFile.Pkg.Load("xl/drawings/drawing1.xml")
 	assert.True(t, ok, "Can't open the chart")
 
-	err = xml.Unmarshal([]byte(content), &workdir)
+	err = xml.Unmarshal(content.([]byte), &workdir)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -340,11 +340,15 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 	type xmlChartContent []byte
 	xmlCharts := make([]xmlChartContent, expectedChartsCount)
 	expectedChartsLogBase := []float64{0, 10.5, 0, 2, 0, 1000}
-	var ok bool
-
+	var (
+		drawingML interface{}
+		ok        bool
+	)
 	for i := 0; i < expectedChartsCount; i++ {
 		chartPath := fmt.Sprintf("xl/charts/chart%d.xml", i+1)
-		xmlCharts[i], ok = newFile.XLSX[chartPath]
+		if drawingML, ok = newFile.Pkg.Load(chartPath); ok {
+			xmlCharts[i] = drawingML.([]byte)
+		}
 		assert.True(t, ok, "Can't open the %s", chartPath)
 
 		err = xml.Unmarshal([]byte(xmlCharts[i]), &chartSpaces[i])

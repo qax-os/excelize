@@ -14,7 +14,6 @@ package excelize
 import (
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -945,7 +944,7 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	sheetID++
 	path := "xl/chartsheets/sheet" + strconv.Itoa(sheetID) + ".xml"
 	f.sheetMap[trimSheetName(sheet)] = path
-	f.Sheet[path] = nil
+	f.Sheet.Store(path, nil)
 	drawingID := f.countDrawings() + 1
 	chartID := f.countCharts() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
@@ -981,12 +980,12 @@ func (f *File) getFormatChart(format string, combo []string) (*formatChart, []*f
 			return formatSet, comboCharts, err
 		}
 		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
-			return formatSet, comboCharts, errors.New("unsupported chart type " + comboChart.Type)
+			return formatSet, comboCharts, newUnsupportChartType(comboChart.Type)
 		}
 		comboCharts = append(comboCharts, comboChart)
 	}
 	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
-		return formatSet, comboCharts, errors.New("unsupported chart type " + formatSet.Type)
+		return formatSet, comboCharts, newUnsupportChartType(formatSet.Type)
 	}
 	return formatSet, comboCharts, err
 }
@@ -1015,11 +1014,12 @@ func (f *File) DeleteChart(sheet, cell string) (err error) {
 // folder xl/charts.
 func (f *File) countCharts() int {
 	count := 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/charts/chart") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/charts/chart") {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 

@@ -36,7 +36,7 @@ func TestAddComments(t *testing.T) {
 	}
 
 	f.Comments["xl/comments2.xml"] = nil
-	f.XLSX["xl/comments2.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`)
+	f.Pkg.Store("xl/comments2.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
 	comments := f.GetComments()
 	assert.EqualValues(t, 2, len(comments["Sheet1"]))
 	assert.EqualValues(t, 1, len(comments["Sheet2"]))
@@ -46,14 +46,14 @@ func TestAddComments(t *testing.T) {
 func TestDecodeVMLDrawingReader(t *testing.T) {
 	f := NewFile()
 	path := "xl/drawings/vmlDrawing1.xml"
-	f.XLSX[path] = MacintoshCyrillicCharset
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
 	f.decodeVMLDrawingReader(path)
 }
 
 func TestCommentsReader(t *testing.T) {
 	f := NewFile()
 	path := "xl/comments1.xml"
-	f.XLSX[path] = MacintoshCyrillicCharset
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
 	f.commentsReader(path)
 }
 

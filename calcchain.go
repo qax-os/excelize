@@ -54,7 +54,7 @@ func (f *File) deleteCalcChain(index int, axis string) {
 	}
 	if len(calc.C) == 0 {
 		f.CalcChain = nil
-		delete(f.XLSX, "xl/calcChain.xml")
+		f.Pkg.Delete("xl/calcChain.xml")
 		content := f.contentTypesReader()
 		for k, v := range content.Overrides {
 			if v.PartName == "/xl/calcChain.xml" {

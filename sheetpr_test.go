@@ -443,7 +443,9 @@ func TestSheetFormatPrOptions(t *testing.T) {
 func TestSetSheetFormatPr(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetFormatPr = nil
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetFormatPr = nil
 	assert.NoError(t, f.SetSheetFormatPr("Sheet1", BaseColWidth(1.0)))
 	// Test set formatting properties on not exists worksheet.
 	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
@@ -452,7 +454,9 @@ func TestSetSheetFormatPr(t *testing.T) {
 func TestGetSheetFormatPr(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetFormatPr = nil
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetFormatPr = nil
 	var (
 		baseColWidth     BaseColWidth
 		defaultColWidth  DefaultColWidth

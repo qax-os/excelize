@@ -137,12 +137,12 @@ func TestAddPivotTable(t *testing.T) {
 		ShowLastColumn:  true,
 	}))
 	// Create pivot table with many data, many rows, many cols and defined name
-	f.SetDefinedName(&DefinedName{
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
 		Name:     "dataRange",
 		RefersTo: "Sheet1!$A$1:$E$31",
 		Comment:  "Pivot Table Data Range",
 		Scope:    "Sheet2",
-	})
+	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "dataRange",
 		PivotTableRange: "Sheet2!$A$57:$AJ$91",

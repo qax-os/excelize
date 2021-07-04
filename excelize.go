@@ -43,7 +43,7 @@ type File struct {
 	Path             string
 	SharedStrings    *xlsxSST
 	sharedStringsMap map[string]int
-	Sheet            map[string]*xlsxWorksheet
+	Sheet            sync.Map // map[string]*xlsxWorksheet
 	SheetCount       int
 	Styles           *xlsxStyleSheet
 	Theme            *xlsxTheme
@@ -51,7 +51,7 @@ type File struct {
 	VMLDrawing       map[string]*vmlDrawing
 	WorkBook         *xlsxWorkbook
 	Relationships    sync.Map
-	XLSX             map[string][]byte
+	Pkg              sync.Map
 	CharsetReader    charsetTranscoderFn
 }
 
@@ -95,7 +95,7 @@ func newFile() *File {
 		Comments:         make(map[string]*xlsxComments),
 		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
-		Sheet:            make(map[string]*xlsxWorksheet),
+		Sheet:            sync.Map{},
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
 		VMLDrawing:       make(map[string]*vmlDrawing),
 		Relationships:    sync.Map{},
@@ -129,7 +129,10 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.SheetCount, f.XLSX = sheetCount, file
+	f.SheetCount = sheetCount
+	for k, v := range file {
+		f.Pkg.Store(k, v)
+	}
 	f.CalcChain = f.calcChainReader()
 	f.sheetMap = f.getSheetMap()
 	f.Styles = f.stylesReader()
@@ -172,40 +175,40 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		name string
 		ok   bool
 	)
-
 	if name, ok = f.sheetMap[trimSheetName(sheet)]; !ok {
 		err = fmt.Errorf("sheet %s is not exist", sheet)
 		return
 	}
-	if ws = f.Sheet[name]; f.Sheet[name] == nil {
-		if strings.HasPrefix(name, "xl/chartsheets") {
-			err = fmt.Errorf("sheet %s is chart sheet", sheet)
-			return
-		}
-		ws = new(xlsxWorksheet)
-		if _, ok := f.xmlAttr[name]; !ok {
-			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
-			f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
-		}
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
-			Decode(ws); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
-			return
-		}
-		err = nil
-		if f.checked == nil {
-			f.checked = make(map[string]bool)
-		}
-		if ok = f.checked[name]; !ok {
-			checkSheet(ws)
-			if err = checkRow(ws); err != nil {
-				return
-			}
-			f.checked[name] = true
-		}
-		f.Sheet[name] = ws
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
+		ws = worksheet.(*xlsxWorksheet)
+		return
 	}
-
+	if strings.HasPrefix(name, "xl/chartsheets") {
+		err = fmt.Errorf("sheet %s is chart sheet", sheet)
+		return
+	}
+	ws = new(xlsxWorksheet)
+	if _, ok := f.xmlAttr[name]; !ok {
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
+		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
+	}
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
+		Decode(ws); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
+	}
+	err = nil
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	if ok = f.checked[name]; !ok {
+		checkSheet(ws)
+		if err = checkRow(ws); err != nil {
+			return
+		}
+		f.checked[name] = true
+	}
+	f.Sheet.Store(name, ws)
 	return
 }
 
@@ -375,7 +378,7 @@ func (f *File) AddVBAProject(bin string) error {
 		})
 	}
 	file, _ := ioutil.ReadFile(bin)
-	f.XLSX["xl/vbaProject.bin"] = file
+	f.Pkg.Store("xl/vbaProject.bin", file)
 	return err
 }
 

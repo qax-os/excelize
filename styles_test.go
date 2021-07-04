@@ -201,7 +201,7 @@ func TestNewStyle(t *testing.T) {
 	_, err = f.NewStyle(&Style{})
 	assert.NoError(t, err)
 	_, err = f.NewStyle(Style{})
-	assert.EqualError(t, err, "invalid parameter type")
+	assert.EqualError(t, err, ErrParameterInvalid.Error())
 
 	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
 	assert.EqualError(t, err, "the length of the font family name must be smaller than or equal to 31")
@@ -261,14 +261,14 @@ func TestStylesReader(t *testing.T) {
 	f := NewFile()
 	// Test read styles with unsupported charset.
 	f.Styles = nil
-	f.XLSX["xl/styles.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("xl/styles.xml", MacintoshCyrillicCharset)
 	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
 }
 
 func TestThemeReader(t *testing.T) {
 	f := NewFile()
 	// Test read theme with unsupported charset.
-	f.XLSX["xl/theme/theme1.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("xl/theme/theme1.xml", MacintoshCyrillicCharset)
 	assert.EqualValues(t, new(xlsxTheme), f.themeReader())
 }
 

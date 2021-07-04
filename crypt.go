@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/xml"
-	"errors"
 	"hash"
 	"math/rand"
 	"reflect"
@@ -145,7 +144,7 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 	case "standard":
 		return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
 	default:
-		err = errors.New("unsupport encryption mechanism")
+		err = ErrUnsupportEncryptMechanism
 	}
 	return
 }
@@ -265,7 +264,7 @@ func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 	}
 	// TODO: Create a new CFB.
 	_, _ = encryptedPackage, encryptionInfoBuffer
-	err = errors.New("not support encryption currently")
+	err = ErrEncrypt
 	return
 }
 
@@ -293,7 +292,7 @@ func extractPart(doc *mscfb.Reader) (encryptionInfoBuf, encryptedPackageBuf []by
 // encryptionMechanism parse password-protected documents created mechanism.
 func encryptionMechanism(buffer []byte) (mechanism string, err error) {
 	if len(buffer) < 4 {
-		err = errors.New("unknown encryption mechanism")
+		err = ErrUnknownEncryptMechanism
 		return
 	}
 	versionMajor, versionMinor := binary.LittleEndian.Uint16(buffer[0:2]), binary.LittleEndian.Uint16(buffer[2:4])
@@ -306,7 +305,7 @@ func encryptionMechanism(buffer []byte) (mechanism string, err error) {
 	} else if (versionMajor == 3 || versionMajor == 4) && versionMinor == 3 {
 		mechanism = "extensible"
 	}
-	err = errors.New("unsupport encryption mechanism")
+	err = ErrUnsupportEncryptMechanism
 	return
 }
 
@@ -470,7 +469,6 @@ func convertPasswdToKey(passwd string, blockKey []byte, encryption Encryption) (
 	if len(key) < keyBytes {
 		tmp := make([]byte, 0x36)
 		key = append(key, tmp...)
-		key = tmp
 	} else if len(key) > keyBytes {
 		key = key[:keyBytes]
 	}
@@ -599,7 +597,6 @@ func createIV(blockKey interface{}, encryption Encryption) ([]byte, error) {
 	if len(iv) < encryptedKey.BlockSize {
 		tmp := make([]byte, 0x36)
 		iv = append(iv, tmp...)
-		iv = tmp
 	} else if len(iv) > encryptedKey.BlockSize {
 		iv = iv[0:encryptedKey.BlockSize]
 	}

@@ -301,7 +301,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	}
 	if !sw.sheetWritten {
 		if len(sw.cols) > 0 {
-			sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
 		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
@@ -481,9 +481,9 @@ func (sw *StreamWriter) Flush() error {
 	}
 
 	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
-	delete(sw.File.Sheet, sheetPath)
+	sw.File.Sheet.Delete(sheetPath)
 	delete(sw.File.checked, sheetPath)
-	delete(sw.File.XLSX, sheetPath)
+	sw.File.Pkg.Delete(sheetPath)
 
 	return nil
 }

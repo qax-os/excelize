@@ -1151,7 +1151,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 		content := xlsxWsDr{}
 		content.A = NameSpaceDrawingML.Value
 		content.Xdr = NameSpaceDrawingMLSpreadSheet.Value
-		if _, ok = f.XLSX[path]; ok { // Append Model
+		if _, ok = f.Pkg.Load(path); ok { // Append Model
 			decodeWsDr := decodeWsDr{}
 			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
 				Decode(&decodeWsDr); err != nil && err != io.EOF {

@@ -467,7 +467,7 @@ func (f *File) parseFormatAddSparklineSet(sheet string, opt *SparklineOption) (*
 		return ws, err
 	}
 	if opt == nil {
-		return ws, errors.New("parameter is required")
+		return ws, ErrParameterRequired
 	}
 	if len(opt.Location) < 1 {
 		return ws, errors.New("parameter 'Location' is required")

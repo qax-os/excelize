@@ -26,18 +26,17 @@ import (
 //    f := NewFile()
 //
 func NewFile() *File {
-	file := make(map[string][]byte)
-	file["_rels/.rels"] = []byte(XMLHeader + templateRels)
-	file["docProps/app.xml"] = []byte(XMLHeader + templateDocpropsApp)
-	file["docProps/core.xml"] = []byte(XMLHeader + templateDocpropsCore)
-	file["xl/_rels/workbook.xml.rels"] = []byte(XMLHeader + templateWorkbookRels)
-	file["xl/theme/theme1.xml"] = []byte(XMLHeader + templateTheme)
-	file["xl/worksheets/sheet1.xml"] = []byte(XMLHeader + templateSheet)
-	file["xl/styles.xml"] = []byte(XMLHeader + templateStyles)
-	file["xl/workbook.xml"] = []byte(XMLHeader + templateWorkbook)
-	file["[Content_Types].xml"] = []byte(XMLHeader + templateContentTypes)
 	f := newFile()
-	f.SheetCount, f.XLSX = 1, file
+	f.Pkg.Store("_rels/.rels", []byte(XMLHeader+templateRels))
+	f.Pkg.Store("docProps/app.xml", []byte(XMLHeader+templateDocpropsApp))
+	f.Pkg.Store("docProps/core.xml", []byte(XMLHeader+templateDocpropsCore))
+	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(XMLHeader+templateWorkbookRels))
+	f.Pkg.Store("xl/theme/theme1.xml", []byte(XMLHeader+templateTheme))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(XMLHeader+templateSheet))
+	f.Pkg.Store("xl/styles.xml", []byte(XMLHeader+templateStyles))
+	f.Pkg.Store("xl/workbook.xml", []byte(XMLHeader+templateWorkbook))
+	f.Pkg.Store("[Content_Types].xml", []byte(XMLHeader+templateContentTypes))
+	f.SheetCount = 1
 	f.CalcChain = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes = f.contentTypesReader()
@@ -48,8 +47,9 @@ func NewFile() *File {
 	f.WorkBook = f.workbookReader()
 	f.Relationships = sync.Map{}
 	f.Relationships.Store("xl/_rels/workbook.xml.rels", f.relsReader("xl/_rels/workbook.xml.rels"))
-	f.Sheet["xl/worksheets/sheet1.xml"], _ = f.workSheetReader("Sheet1")
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
+	ws, _ := f.workSheetReader("Sheet1")
+	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
 	f.Theme = f.themeReader()
 	return f
 }
@@ -165,20 +165,22 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		}
 		stream.rawData.Close()
 	}
-
-	for path, content := range f.XLSX {
-		if _, ok := f.streams[path]; ok {
-			continue
-		}
-		fi, err := zw.Create(path)
+	var err error
+	f.Pkg.Range(func(path, content interface{}) bool {
 		if err != nil {
-			return err
+			return false
 		}
-		_, err = fi.Write(content)
+		if _, ok := f.streams[path.(string)]; ok {
+			return true
+		}
+		var fi io.Writer
+		fi, err = zw.Create(path.(string))
 		if err != nil {
-			return err
+			return false
 		}
-	}
+		_, err = fi.Write(content.([]byte))
+		return true
+	})
 
-	return nil
+	return err
 }

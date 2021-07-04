@@ -105,11 +105,12 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 // folder xl/tables.
 func (f *File) countTables() int {
 	count := 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/tables/table") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/tables/table") {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 

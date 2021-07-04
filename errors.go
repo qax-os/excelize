@@ -32,6 +32,10 @@ func newInvalidExcelDateError(dateValue float64) error {
 	return fmt.Errorf("invalid date value %f, negative values are not supported supported", dateValue)
 }
 
+func newUnsupportChartType(chartType string) error {
+	return fmt.Errorf("unsupported chart type %s", chartType)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
@@ -71,4 +75,34 @@ var (
 	// ErrMaxFileNameLength defined the error message on receive the file name
 	// length overflow.
 	ErrMaxFileNameLength = errors.New("file name length exceeds maximum limit")
+	// ErrEncrypt defined the error message on encryption spreadsheet.
+	ErrEncrypt = errors.New("not support encryption currently")
+	// ErrUnknownEncryptMechanism defined the error message on unsupport
+	// encryption mechanism.
+	ErrUnknownEncryptMechanism = errors.New("unknown encryption mechanism")
+	// ErrUnsupportEncryptMechanism defined the error message on unsupport
+	// encryption mechanism.
+	ErrUnsupportEncryptMechanism = errors.New("unsupport encryption mechanism")
+	// ErrParameterRequired defined the error message on receive the empty
+	// parameter.
+	ErrParameterRequired = errors.New("parameter is required")
+	// ErrParameterInvalid defined the error message on receive the invalid
+	// parameter.
+	ErrParameterInvalid = errors.New("parameter is invalid")
+	// ErrDefinedNameScope defined the error message on not found defined name
+	// in the given scope.
+	ErrDefinedNameScope = errors.New("no defined name on the scope")
+	// ErrDefinedNameduplicate defined the error message on the same name
+	// already exists on the scope.
+	ErrDefinedNameduplicate = errors.New("the same name already exists on the scope")
+	// ErrFontLength defined the error message on the length of the font
+	// family name overflow.
+	ErrFontLength = errors.New("the length of the font family name must be smaller than or equal to 31")
+	// ErrFontSize defined the error message on the size of the font is invalid.
+	ErrFontSize = errors.New("font size must be between 1 and 409 points")
+	// ErrSheetIdx defined the error message on receive the invalid worksheet
+	// index.
+	ErrSheetIdx = errors.New("invalid worksheet index")
+	// ErrGroupSheets defined the error message on group sheets.
+	ErrGroupSheets = errors.New("group worksheet must contain an active worksheet")
 )

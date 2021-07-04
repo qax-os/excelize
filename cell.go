@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -187,6 +186,8 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
 	return err
@@ -262,6 +263,8 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = f.setCellString(value)
 	return err
@@ -742,7 +745,7 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 	// Make sure 'slice' is a Ptr to Slice
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
-		return errors.New("pointer to slice expected")
+		return ErrParameterInvalid
 	}
 	v = v.Elem()
 
@@ -762,8 +765,6 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 
 // getCellInfo does common preparation for all SetCell* methods.
 func (f *File) prepareCell(ws *xlsxWorksheet, sheet, cell string) (*xlsxC, int, int, error) {
-	ws.Lock()
-	defer ws.Unlock()
 	var err error
 	cell, err = f.mergeCellsParser(ws, cell)
 	if err != nil {
@@ -775,7 +776,8 @@ func (f *File) prepareCell(ws *xlsxWorksheet, sheet, cell string) (*xlsxC, int, 
 	}
 
 	prepareSheetXML(ws, col, row)
-
+	ws.Lock()
+	defer ws.Unlock()
 	return &ws.SheetData.Row[row-1].C[col-1], col, row, err
 }
 
