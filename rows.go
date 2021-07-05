@@ -272,6 +272,8 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 // name and row number.
 func (f *File) getRowHeight(sheet string, row int) int {
 	ws, _ := f.workSheetReader(sheet)
+	ws.Lock()
+	defer ws.Unlock()
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
 		if v.R == row && v.Ht != 0 {

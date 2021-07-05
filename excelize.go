@@ -43,7 +43,7 @@ type File struct {
 	Path             string
 	SharedStrings    *xlsxSST
 	sharedStringsMap map[string]int
-	Sheet            sync.Map // map[string]*xlsxWorksheet
+	Sheet            sync.Map
 	SheetCount       int
 	Styles           *xlsxStyleSheet
 	Theme            *xlsxTheme
@@ -257,6 +257,8 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	if rels == nil {
 		rels = &xlsxRelationships{}
 	}
+	rels.Lock()
+	defer rels.Unlock()
 	var rID int
 	for idx, rel := range rels.Relationships {
 		ID, _ := strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
@@ -357,6 +359,8 @@ func (f *File) AddVBAProject(bin string) error {
 	}
 	f.setContentTypePartVBAProjectExtensions()
 	wb := f.relsReader(f.getWorkbookRelsPath())
+	wb.Lock()
+	defer wb.Unlock()
 	var rID int
 	var ok bool
 	for _, rel := range wb.Relationships {
@@ -387,6 +391,8 @@ func (f *File) AddVBAProject(bin string) error {
 func (f *File) setContentTypePartVBAProjectExtensions() {
 	var ok bool
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Defaults {
 		if v.Extension == "bin" {
 			ok = true

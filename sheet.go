@@ -93,6 +93,8 @@ func (f *File) contentTypesWriter() {
 // the spreadsheet.
 func (f *File) getWorkbookPath() (path string) {
 	if rels := f.relsReader("_rels/.rels"); rels != nil {
+		rels.Lock()
+		defer rels.Unlock()
 		for _, rel := range rels.Relationships {
 			if rel.Type == SourceRelationshipOfficeDocument {
 				path = strings.TrimPrefix(rel.Target, "/")
@@ -198,6 +200,8 @@ func trimCell(column []xlsxC) []xlsxC {
 // type of the spreadsheet.
 func (f *File) setContentTypes(partName, contentType string) {
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    partName,
 		ContentType: contentType,
@@ -540,6 +544,8 @@ func (f *File) DeleteSheet(name string) {
 // relationships by given relationships ID in the file workbook.xml.rels.
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	content := f.relsReader(f.getWorkbookRelsPath())
+	content.Lock()
+	defer content.Unlock()
 	for k, v := range content.Relationships {
 		if v.ID == rID {
 			content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
@@ -556,6 +562,8 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 		target = "/xl/" + target
 	}
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for k, v := range content.Overrides {
 		if v.PartName == target {
 			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)

@@ -11,12 +11,16 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sync"
+)
 
 // xlsxTypes directly maps the types element of content types for relationship
 // parts, it takes a Multipurpose Internet Mail Extension (MIME) media type as a
 // value.
 type xlsxTypes struct {
+	sync.Mutex
 	XMLName   xml.Name       `xml:"http://schemas.openxmlformats.org/package/2006/content-types Types"`
 	Overrides []xlsxOverride `xml:"Override"`
 	Defaults  []xlsxDefault  `xml:"Default"`

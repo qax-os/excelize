@@ -11,7 +11,10 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sync"
+)
 
 // Source relationship and namespace list, associated prefixes and schema in which it was
 // introduced.
@@ -303,6 +306,7 @@ type xlsxPoint2D struct {
 // xlsxWsDr directly maps the root element for a part of this content type shall
 // wsDr.
 type xlsxWsDr struct {
+	sync.Mutex
 	XMLName        xml.Name         `xml:"xdr:wsDr"`
 	AbsoluteAnchor []*xdrCellAnchor `xml:"xdr:absoluteAnchor"`
 	OneCellAnchor  []*xdrCellAnchor `xml:"xdr:oneCellAnchor"`

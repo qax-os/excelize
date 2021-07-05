@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	_ "image/jpeg"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,6 +27,9 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", val), strconv.Itoa(val)))
 			_, err := f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
 			assert.NoError(t, err)
+			// Concurrency add picture
+			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
+				`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 			// Concurrency get cell picture
 			name, raw, err := f.GetPicture("Sheet1", "A1")
 			assert.Equal(t, "", name)

@@ -76,6 +76,8 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 func (f *File) getSheetComments(sheetFile string) string {
 	var rels = "xl/worksheets/_rels/" + sheetFile + ".rels"
 	if sheetRels := f.relsReader(rels); sheetRels != nil {
+		sheetRels.Lock()
+		defer sheetRels.Unlock()
 		for _, v := range sheetRels.Relationships {
 			if v.Type == SourceRelationshipComments {
 				return v.Target

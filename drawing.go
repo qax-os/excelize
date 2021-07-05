@@ -1173,8 +1173,13 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 		}
 		f.Drawings.Store(path, &content)
 	}
-	wsDr, _ := f.Drawings.Load(path)
-	return wsDr.(*xlsxWsDr), len(wsDr.(*xlsxWsDr).OneCellAnchor) + len(wsDr.(*xlsxWsDr).TwoCellAnchor) + 2
+	var wsDr *xlsxWsDr
+	if drawing, ok := f.Drawings.Load(path); ok && drawing != nil {
+		wsDr = drawing.(*xlsxWsDr)
+	}
+	wsDr.Lock()
+	defer wsDr.Unlock()
+	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2
 }
 
 // addDrawingChart provides a function to add chart graphic frame by given

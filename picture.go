@@ -184,6 +184,8 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
+	sheetRels.Lock()
+	defer sheetRels.Unlock()
 	for k, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
@@ -297,6 +299,8 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 		FLocksWithSheet:  formatSet.FLocksWithSheet,
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
+	content.Lock()
+	defer content.Unlock()
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)
 	return err
@@ -344,6 +348,8 @@ func (f *File) addMedia(file []byte, ext string) string {
 func (f *File) setContentTypePartImageExtensions() {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Defaults {
 		_, ok := imageTypes[v.Extension]
 		if ok {
@@ -365,6 +371,8 @@ func (f *File) setContentTypePartImageExtensions() {
 func (f *File) setContentTypePartVMLExtensions() {
 	vml := false
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Defaults {
 		if v.Extension == "vml" {
 			vml = true
@@ -410,6 +418,8 @@ func (f *File) addContentTypePart(index int, contentType string) {
 		s()
 	}
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Overrides {
 		if v.PartName == partNames[contentType] {
 			return
@@ -434,6 +444,8 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
+	sheetRels.Lock()
+	defer sheetRels.Unlock()
 	for _, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			return v.Target
@@ -560,6 +572,8 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 		anchor  *xdrCellAnchor
 		drawRel *xlsxRelationship
 	)
+	wsDr.Lock()
+	defer wsDr.Unlock()
 	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
@@ -584,6 +598,8 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 // relationship ID.
 func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
 	if drawingRels := f.relsReader(rels); drawingRels != nil {
+		drawingRels.Lock()
+		defer drawingRels.Unlock()
 		for _, v := range drawingRels.Relationships {
 			if v.ID == rID {
 				return &v
