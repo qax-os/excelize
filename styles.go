@@ -1990,6 +1990,8 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 		fs.DecimalPlaces = 2
 	}
 	s := f.stylesReader()
+	s.Lock()
+	defer s.Unlock()
 	// check given style already exist.
 	if cellXfsID = f.getStyleID(s, fs); cellXfsID != -1 {
 		return cellXfsID, err
@@ -2693,7 +2695,8 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 	}
 	prepareSheetXML(ws, vcol, vrow)
 	makeContiguousColumns(ws, hrow, vrow, vcol)
-
+	ws.Lock()
+	defer ws.Unlock()
 	for r := hrowIdx; r <= vrowIdx; r++ {
 		for k := hcolIdx; k <= vcolIdx; k++ {
 			ws.SheetData.Row[r].C[k].S = styleID

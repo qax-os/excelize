@@ -139,7 +139,9 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	ws.Unlock()
 
 	var isNum bool
 	cellData.T, cellData.V, isNum, err = setCellTime(value)
@@ -155,6 +157,8 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	return err
 }
 
+// setCellTime prepares cell type and Excel time by given Go time.Time type
+// timestamp.
 func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	var excelTime float64
 	excelTime, err = timeToExcelTime(value)
@@ -170,6 +174,8 @@ func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	return
 }
 
+// setCellDuration prepares cell type and value by given Go time.Duration type
+// time duration.
 func setCellDuration(value time.Duration) (t string, v string) {
 	v = strconv.FormatFloat(value.Seconds()/86400.0, 'f', -1, 32)
 	return
@@ -193,6 +199,8 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	return err
 }
 
+// setCellInt prepares cell type and string type cell value by a given
+// integer.
 func setCellInt(value int) (t string, v string) {
 	v = strconv.Itoa(value)
 	return
@@ -209,11 +217,15 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
 	return err
 }
 
+// setCellBool prepares cell type and string type cell value by a given
+// boolean value.
 func setCellBool(value bool) (t string, v string) {
 	t = "b"
 	if value {
@@ -242,11 +254,15 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, prec, bitSize)
 	return err
 }
 
+// setCellFloat prepares cell type and string type cell value by a given
+// float value.
 func setCellFloat(value float64, prec, bitSize int) (t string, v string) {
 	v = strconv.FormatFloat(value, 'f', prec, bitSize)
 	return
@@ -334,11 +350,15 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
 	return err
 }
 
+// setCellDefault prepares cell type and string type cell value by a given
+// string.
 func setCellDefault(value string) (t string, v string) {
 	v = value
 	return

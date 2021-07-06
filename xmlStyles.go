@@ -11,10 +11,14 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sync"
+)
 
 // xlsxStyleSheet is the root element of the Styles part.
 type xlsxStyleSheet struct {
+	sync.Mutex
 	XMLName      xml.Name          `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main styleSheet"`
 	NumFmts      *xlsxNumFmts      `xml:"numFmts,omitempty"`
 	Fonts        *xlsxFonts        `xml:"fonts,omitempty"`

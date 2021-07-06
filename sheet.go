@@ -1777,6 +1777,8 @@ func fillColumns(rowData *xlsxRow, col, row int) {
 
 // makeContiguousColumns make columns in specific rows as contiguous.
 func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
+	ws.Lock()
+	defer ws.Unlock()
 	for ; fromRow < toRow; fromRow++ {
 		rowData := &ws.SheetData.Row[fromRow-1]
 		fillColumns(rowData, colCount, fromRow)
