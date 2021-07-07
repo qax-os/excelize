@@ -947,10 +947,7 @@ func isEndParenthesesToken(token efp.Token) bool {
 // token.
 func isOperatorPrefixToken(token efp.Token) bool {
 	_, ok := tokenPriority[token.TValue]
-	if (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || (ok && token.TType == efp.TokenTypeOperatorInfix) {
-		return true
-	}
-	return false
+	return (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || (ok && token.TType == efp.TokenTypeOperatorInfix)
 }
 
 // getDefinedNameRefTo convert defined name to reference range.

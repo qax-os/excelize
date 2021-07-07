@@ -435,6 +435,13 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		fc.Width = c.Width
 		return fc
 	})
+	if rows := len(ws.SheetData.Row); rows > 0 {
+		for col := start; col <= end; col++ {
+			from, _ := CoordinatesToCellName(col, 1)
+			to, _ := CoordinatesToCellName(col, rows)
+			f.SetCellStyle(sheet, from, to, styleID)
+		}
+	}
 	return nil
 }
 
