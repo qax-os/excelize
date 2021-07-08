@@ -68,6 +68,7 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFileNameLength {
 		return ErrMaxFileNameLength
 	}
+	f.Path = name
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err

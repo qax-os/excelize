@@ -307,6 +307,7 @@ func TestNewFile(t *testing.T) {
 	}
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewFile.xlsx")))
+	assert.NoError(t, f.Save())
 }
 
 func TestAddDrawingVML(t *testing.T) {
