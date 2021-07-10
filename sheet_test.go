@@ -81,7 +81,8 @@ func ExampleFile_GetPageLayout() {
 
 func TestNewSheet(t *testing.T) {
 	f := NewFile()
-	sheetID := f.NewSheet("Sheet2")
+	f.NewSheet("Sheet2")
+	sheetID := f.NewSheet("sheet2")
 	f.SetActiveSheet(sheetID)
 	// delete original sheet
 	f.DeleteSheet(f.GetSheetName(f.GetSheetIndex("Sheet1")))

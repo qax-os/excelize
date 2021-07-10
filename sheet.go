@@ -33,8 +33,9 @@ import (
 
 // NewSheet provides the function to create a new sheet by given a worksheet
 // name and returns the index of the sheets in the workbook
-// (spreadsheet) after it appended. Note that when creating a new spreadsheet
-// file, the default worksheet named `Sheet1` will be created.
+// (spreadsheet) after it appended. Note that the worksheet names are not
+// case sensitive, when creating a new spreadsheet file, the default
+// worksheet named `Sheet1` will be created.
 func (f *File) NewSheet(name string) int {
 	// Check if the worksheet already exists
 	index := f.GetSheetIndex(name)
@@ -391,12 +392,13 @@ func (f *File) getSheetID(name string) int {
 }
 
 // GetSheetIndex provides a function to get a sheet index of the workbook by
-// the given sheet name. If the given sheet name is invalid or sheet doesn't
-// exist, it will return an integer type value -1.
+// the given sheet name, the sheet names are not case sensitive. If the given
+// sheet name is invalid or sheet doesn't exist, it will return an integer
+// type value -1.
 func (f *File) GetSheetIndex(name string) int {
 	var idx = -1
 	for index, sheet := range f.GetSheetList() {
-		if sheet == trimSheetName(name) {
+		if strings.EqualFold(sheet, trimSheetName(name)) {
 			idx = index
 		}
 	}
@@ -485,10 +487,12 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 }
 
 // DeleteSheet provides a function to delete worksheet in a workbook by given
-// worksheet name. Use this method with caution, which will affect changes in
-// references such as formulas, charts, and so on. If there is any referenced
-// value of the deleted worksheet, it will cause a file error when you open it.
-// This function will be invalid when only the one worksheet is left.
+// worksheet name, the sheet names are not case sensitive.the sheet names are
+// not case sensitive. Use this method with caution, which will affect
+// changes in references such as formulas, charts, and so on. If there is any
+// referenced value of the deleted worksheet, it will cause a file error when
+// you open it. This function will be invalid when only the one worksheet is
+// left.
 func (f *File) DeleteSheet(name string) {
 	if f.SheetCount == 1 || f.GetSheetIndex(name) == -1 {
 		return
@@ -514,7 +518,7 @@ func (f *File) DeleteSheet(name string) {
 		}
 	}
 	for idx, sheet := range wb.Sheets.Sheet {
-		if sheet.Name == sheetName {
+		if strings.EqualFold(sheet.Name, sheetName) {
 			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
 			var sheetXML, rels string
 			if wbRels != nil {
@@ -528,7 +532,7 @@ func (f *File) DeleteSheet(name string) {
 			target := f.deleteSheetFromWorkbookRels(sheet.ID)
 			f.deleteSheetFromContentTypes(target)
 			f.deleteCalcChain(sheet.SheetID, "")
-			delete(f.sheetMap, sheetName)
+			delete(f.sheetMap, sheet.Name)
 			f.Pkg.Delete(sheetXML)
 			f.Pkg.Delete(rels)
 			f.Relationships.Delete(rels)
