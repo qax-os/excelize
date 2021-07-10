@@ -198,6 +198,10 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 // pair of coordinates.
 func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
 	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
+	if len(rng) < 2 {
+		return nil, ErrParameterInvalid
+	}
+
 	return areaRangeToCoordinates(rng[0], rng[1])
 }
 
