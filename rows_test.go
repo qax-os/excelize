@@ -851,22 +851,24 @@ func TestGetValueFromInlineStr(t *testing.T) {
 }
 
 func TestGetValueFromNumber(t *testing.T) {
-	c := &xlsxC{T: "n", V: "2.2200000000000002"}
+	c := &xlsxC{T: "n"}
 	f := NewFile()
 	d := &xlsxSST{}
-	val, err := c.getValueFrom(f, d)
-	assert.NoError(t, err)
-	assert.Equal(t, "2.22", val)
-
-	c = &xlsxC{T: "n", V: "2.220000ddsf0000000002-r"}
-	val, err = c.getValueFrom(f, d)
-	assert.NoError(t, err)
-	assert.Equal(t, "2.220000ddsf0000000002-r", val)
-
-	c = &xlsxC{T: "n", V: "2.2."}
-	val, err = c.getValueFrom(f, d)
-	assert.NoError(t, err)
-	assert.Equal(t, "2.2.", val)
+	for input, expected := range map[string]string{
+		"2.2.":                     "2.2.",
+		"1.1000000000000001":       "1.1",
+		"2.2200000000000002":       "2.22",
+		"28.552":                   "28.552",
+		"27.399000000000001":       "27.399",
+		"26.245999999999999":       "26.246",
+		"2422.3000000000002":       "2422.3",
+		"2.220000ddsf0000000002-r": "2.220000ddsf0000000002-r",
+	} {
+		c.V = input
+		val, err := c.getValueFrom(f, d)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
