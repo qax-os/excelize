@@ -1520,11 +1520,15 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 	wb := f.workbookReader()
 	if wb.DefinedNames != nil {
 		for idx, dn := range wb.DefinedNames.DefinedName {
-			var scope string
+			scope := "Workbook"
+			deleteScope := definedName.Scope
+			if deleteScope == "" {
+				deleteScope = "Workbook"
+			}
 			if dn.LocalSheetID != nil {
 				scope = f.GetSheetName(*dn.LocalSheetID)
 			}
-			if scope == definedName.Scope && dn.Name == definedName.Name {
+			if scope == deleteScope && dn.Name == definedName.Name {
 				wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
 				return nil
 			}
