@@ -528,6 +528,7 @@ type xlsxPhoneticPr struct {
 // applied to a particular cell or range.
 type xlsxConditionalFormatting struct {
 	XMLName xml.Name      `xml:"conditionalFormatting"`
+	Pivot   bool          `xml:"pivot,attr,omitempty"`
 	SQRef   string        `xml:"sqref,attr,omitempty"`
 	CfRule  []*xlsxCfRule `xml:"cfRule"`
 }
@@ -535,19 +536,19 @@ type xlsxConditionalFormatting struct {
 // xlsxCfRule (Conditional Formatting Rule) represents a description of a
 // conditional formatting rule.
 type xlsxCfRule struct {
-	AboveAverage *bool           `xml:"aboveAverage,attr"`
-	Bottom       bool            `xml:"bottom,attr,omitempty"`
+	Type         string          `xml:"type,attr,omitempty"`
 	DxfID        *int            `xml:"dxfId,attr"`
-	EqualAverage bool            `xml:"equalAverage,attr,omitempty"`
-	Operator     string          `xml:"operator,attr,omitempty"`
-	Percent      bool            `xml:"percent,attr,omitempty"`
 	Priority     int             `xml:"priority,attr,omitempty"`
-	Rank         int             `xml:"rank,attr,omitempty"`
-	StdDev       int             `xml:"stdDev,attr,omitempty"`
 	StopIfTrue   bool            `xml:"stopIfTrue,attr,omitempty"`
+	AboveAverage *bool           `xml:"aboveAverage,attr"`
+	Percent      bool            `xml:"percent,attr,omitempty"`
+	Bottom       bool            `xml:"bottom,attr,omitempty"`
+	Operator     string          `xml:"operator,attr,omitempty"`
 	Text         string          `xml:"text,attr,omitempty"`
 	TimePeriod   string          `xml:"timePeriod,attr,omitempty"`
-	Type         string          `xml:"type,attr,omitempty"`
+	Rank         int             `xml:"rank,attr,omitempty"`
+	StdDev       int             `xml:"stdDev,attr,omitempty"`
+	EqualAverage bool            `xml:"equalAverage,attr,omitempty"`
 	Formula      []string        `xml:"formula,omitempty"`
 	ColorScale   *xlsxColorScale `xml:"colorScale"`
 	DataBar      *xlsxDataBar    `xml:"dataBar"`
