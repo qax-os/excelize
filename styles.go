@@ -3130,11 +3130,11 @@ func ThemeColor(baseColor string, tint float64) string {
 	if tint == 0 {
 		return "FF" + baseColor
 	}
-	r, _ := strconv.ParseInt(baseColor[0:2], 16, 64)
-	g, _ := strconv.ParseInt(baseColor[2:4], 16, 64)
-	b, _ := strconv.ParseInt(baseColor[4:6], 16, 64)
+	r, _ := strconv.ParseUint(baseColor[0:2], 16, 64)
+	g, _ := strconv.ParseUint(baseColor[2:4], 16, 64)
+	b, _ := strconv.ParseUint(baseColor[4:6], 16, 64)
 	var h, s, l float64
-	if r >= 0 && r <= math.MaxUint8 && g >= 0 && g <= math.MaxUint8 && b >= 0 && b <= math.MaxUint8 {
+	if r <= math.MaxUint8 && g <= math.MaxUint8 && b <= math.MaxUint8 {
 		h, s, l = RGBToHSL(uint8(r), uint8(g), uint8(b))
 	}
 	if tint < 0 {

@@ -7401,7 +7401,7 @@ func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
 	if start.Number < 1 || start.Number > end.Number {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	num, ipmt := 0.0, newNumberFormulaArg(0)
+	num := 0.0
 	for per := start.Number; per <= end.Number; per++ {
 		args := list.New().Init()
 		args.PushBack(rate)
@@ -7411,11 +7411,10 @@ func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
 		args.PushBack(newNumberFormulaArg(0))
 		args.PushBack(typ)
 		if name == "CUMIPMT" {
-			ipmt = fn.IPMT(args)
-		} else {
-			ipmt = fn.PPMT(args)
+			num += fn.IPMT(args).Number
+			continue
 		}
-		num += ipmt.Number
+		num += fn.PPMT(args).Number
 	}
 	return newNumberFormulaArg(num)
 }

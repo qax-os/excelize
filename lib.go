@@ -63,10 +63,7 @@ func (f *File) readXML(name string) []byte {
 // saveFileList provides a function to update given file content in file list
 // of XLSX.
 func (f *File) saveFileList(name string, content []byte) {
-	newContent := make([]byte, 0, len(XMLHeader)+len(content))
-	newContent = append(newContent, []byte(XMLHeader)...)
-	newContent = append(newContent, content...)
-	f.Pkg.Store(name, newContent)
+	f.Pkg.Store(name, append([]byte(XMLHeader), content...))
 }
 
 // Read file content as string in a archive file.
