@@ -1202,7 +1202,7 @@ func (p *BlackAndWhite) getPageLayout(ps *xlsxPageSetUp) {
 // the worksheet.
 func (p FirstPageNumber) setPageLayout(ps *xlsxPageSetUp) {
 	if 0 < int(p) {
-		ps.FirstPageNumber = int(p)
+		ps.FirstPageNumber = strconv.Itoa(int(p))
 		ps.UseFirstPageNumber = true
 	}
 }
@@ -1210,11 +1210,13 @@ func (p FirstPageNumber) setPageLayout(ps *xlsxPageSetUp) {
 // getPageLayout provides a method to get the first printed page number for
 // the worksheet.
 func (p *FirstPageNumber) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil || ps.FirstPageNumber == 0 || !ps.UseFirstPageNumber {
-		*p = 1
-		return
+	if ps != nil && ps.UseFirstPageNumber {
+		if number, _ := strconv.Atoi(ps.FirstPageNumber); number != 0 {
+			*p = FirstPageNumber(number)
+			return
+		}
 	}
-	*p = FirstPageNumber(ps.FirstPageNumber)
+	*p = 1
 }
 
 // setPageLayout provides a method to set the orientation for the worksheet.
