@@ -13,6 +13,8 @@ package excelize
 
 import (
 	"encoding/xml"
+	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -399,7 +401,20 @@ type xlsxCustomSheetView struct {
 
 // xlsxMergeCell directly maps the mergeCell element. A single merged cell.
 type xlsxMergeCell struct {
-	Ref string `xml:"ref,attr,omitempty"`
+	Ref  string `xml:"ref,attr,omitempty"`
+	rect []int  `xml:"-"`
+}
+
+func (mc *xlsxMergeCell) Rect() ([]int, error) {
+	var err error
+	if mc.rect == nil {
+		rng := strings.Split(strings.Replace(mc.Ref, "$", "", -1), ":")
+		if len(rng) != 2 {
+			return nil, fmt.Errorf("invalid area %q", mc.Ref)
+		}
+		mc.rect, err = areaRangeToCoordinates(rng[0], rng[1])
+	}
+	return mc.rect, err
 }
 
 // xlsxMergeCells directly maps the mergeCells element. This collection

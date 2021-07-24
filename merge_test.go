@@ -1,8 +1,12 @@
 package excelize
 
 import (
+	"log"
+	"math/rand"
 	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -180,4 +184,61 @@ func TestUnmergeCell(t *testing.T) {
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
+}
+
+func TestMergeCellSpeed(t *testing.T) {
+	inTwoForLoop(make([]struct{}, 100))
+	inTwoForLoop(make([]struct{}, 1000))
+	inTwoForLoop(make([]struct{}, 2000))
+	inTwoForLoop(make([]struct{}, 3000))
+	inTwoForLoop(make([]struct{}, 10000))
+	//inTwoForLoop(make([]struct{}, 20000))
+	//inTwoForLoop(make([]struct{}, 50000))
+	//inTwoForLoop(make([]struct{}, 100000))
+}
+
+func inTwoForLoop(datas []struct{}) {
+	var columns = [...]string{
+		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+		"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+		"U", "V", "W", "X", "Y", "Z",
+		"AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ",
+		"AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT",
+		"AU", "AV", "AW", "AX", "AY", "AZ",
+	}
+
+	defer func(t time.Time) { log.Println("inTwoForLoop", "data=", len(datas), "条，cost=", time.Now().Sub(t)) }(time.Now())
+	f := NewFile()
+	_, err := f.NewStyle(`{"alignment":{"horizontal":"center","vertical":"center"}}`)
+	//f.SetColStyle("Sheet1", "A:D", style)
+	if err != nil {
+		log.Println(err)
+	}
+	var headerRow = 0
+	for _ = range datas {
+		headerRow++
+		currentRowStr := strconv.Itoa(headerRow)
+
+		for _, column := range columns {
+			f.SetCellValue("Sheet1", column+currentRowStr, column+currentRowStr)
+		}
+	}
+	headerRow = 1
+
+	//问题的关键
+	l := len(datas)
+	maxMergeColNum := 20
+	for _, col := range columns[0:40] {
+		for i := 1; i < l; {
+			mergeNum := rand.Intn(maxMergeColNum) + 1 //[1,maxMergeColNum]
+			if i+mergeNum > l {
+				break
+			}
+			f.MergeCell("Sheet1", col+strconv.Itoa(i), col+strconv.Itoa(i+mergeNum))
+			i += mergeNum + 1
+		}
+	}
+	//问题的关键
+
+	f.SaveAs("./test/TestMergeCellSpeed-" + strconv.Itoa(l) + ".xlsx")
 }
