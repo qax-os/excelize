@@ -140,7 +140,7 @@ func (f *File) writeDirectToWriter(w io.Writer) error {
 func (f *File) writeToZip(zw *zip.Writer) error {
 	var err error
 	f.Sheet.Range(func(name, ws interface{}) bool {
-		if ws==nil {
+		if ws == nil {
 			return true
 		}
 		sheet := ws.(*xlsxWorksheet)
