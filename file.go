@@ -138,6 +138,26 @@ func (f *File) writeDirectToWriter(w io.Writer) error {
 
 // writeToZip provides a function to write to zip.Writer
 func (f *File) writeToZip(zw *zip.Writer) error {
+	var err error
+	f.Sheet.Range(func(name, ws interface{}) bool {
+		if ws==nil {
+			return true
+		}
+		sheet := ws.(*xlsxWorksheet)
+		if sheet.MergeCells != nil && len(sheet.MergeCells.Cells) > 0 {
+			err1 := f.mergeOverlapCells(sheet)
+			if err1 != nil {
+				err = err1
+				return false
+			}
+		}
+		return true
+	})
+
+	if err != nil {
+		return err
+	}
+
 	f.calcChainWriter()
 	f.commentsWriter()
 	f.contentTypesWriter()
@@ -166,7 +186,6 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		}
 		stream.rawData.Close()
 	}
-	var err error
 	f.Pkg.Range(func(path, content interface{}) bool {
 		if err != nil {
 			return false

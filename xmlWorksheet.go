@@ -405,11 +405,12 @@ type xlsxMergeCell struct {
 	rect []int  `xml:"-"`
 }
 
+// Rect get merged cell rect.
 func (mc *xlsxMergeCell) Rect() ([]int, error) {
 	var err error
 	if mc.rect == nil {
 		rng := strings.Split(strings.Replace(mc.Ref, "$", "", -1), ":")
-		if len(rng) != 2 {
+		if len(rng) != 2 || rng[0] == "" || rng[1] == "" {
 			return nil, fmt.Errorf("invalid area %q", mc.Ref)
 		}
 		mc.rect, err = areaRangeToCoordinates(rng[0], rng[1])

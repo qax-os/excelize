@@ -31,7 +31,7 @@ func TestMergeCell(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)"))
 	value, err := f.GetCellValue("Sheet1", "H11")
-	assert.Equal(t, "0.5", value)
+	assert.Equal(t, "100", value)
 	assert.NoError(t, err)
 	value, err = f.GetCellValue("Sheet2", "A6") // Merged cell ref is single coordinate.
 	assert.Equal(t, "", value)
@@ -80,15 +80,21 @@ func TestMergeCell(t *testing.T) {
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{nil, nil}}
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
 
+	f = NewFile()
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
-	assert.EqualError(t, f.MergeCell("Sheet1", "A2", "B3"), `invalid area "A1"`)
+	assert.EqualError(t, f.SaveAs("./test/TestMergeCellError-A1.xlsx"), `invalid area "A1"`)
+	assert.EqualError(t, f.MergeCell("Sheet1", "A1", ""), `invalid area "A1:"`)
+	assert.EqualError(t, f.MergeCell("Sheet1", "", "B1"), `invalid area ":B1"`)
 
+	f = NewFile()
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.MergeCell("Sheet1", "A2", "B3"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SaveAs("./test/TestMergeCellError-A:A.xlsx"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.MergeCell("Sheet1", "A", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
 }
 
 func TestGetMergeCells(t *testing.T) {
@@ -190,8 +196,8 @@ func TestMergeCellSpeed(t *testing.T) {
 	inTwoForLoop(make([]struct{}, 100))
 	inTwoForLoop(make([]struct{}, 1000))
 	inTwoForLoop(make([]struct{}, 2000))
-	inTwoForLoop(make([]struct{}, 3000))
-	inTwoForLoop(make([]struct{}, 10000))
+	//inTwoForLoop(make([]struct{}, 3000))
+	//inTwoForLoop(make([]struct{}, 10000))
 	//inTwoForLoop(make([]struct{}, 20000))
 	//inTwoForLoop(make([]struct{}, 50000))
 	//inTwoForLoop(make([]struct{}, 100000))
