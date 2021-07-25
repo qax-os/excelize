@@ -402,7 +402,7 @@ type xlsxCustomSheetView struct {
 // xlsxMergeCell directly maps the mergeCell element. A single merged cell.
 type xlsxMergeCell struct {
 	Ref  string `xml:"ref,attr,omitempty"`
-	rect []int  `xml:"-"`
+	rect []int
 }
 
 // Rect get merged cell rect.
