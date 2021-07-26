@@ -213,10 +213,11 @@ func (f *File) mergeOverlapCells(ws *xlsxWorksheet) error {
 
 	for i, cell := range ws.MergeCells.Cells {
 		rect, err := cell.Rect()
-		if err == nil {
+		if err != nil {
 			continue
 		}
-		if sheetMap[rect[0]][rect[1]] != cell {
+		x1, y1 := rect[0]-1, rect[1]-1
+		if sheetMap[x1][y1] != cell {
 			ws.MergeCells.Cells = append(ws.MergeCells.Cells[0:i], ws.MergeCells.Cells[i+1:]...)
 		}
 	}

@@ -94,7 +94,24 @@ func TestMergeCell(t *testing.T) {
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	assert.EqualError(t, f.SaveAs("./test/TestMergeCellError-A:A.xlsx"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 	assert.EqualError(t, f.MergeCell("Sheet1", "A", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
 
+func TestMergeCellOverlap(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A1", "C2"))
+	assert.NoError(t, f.MergeCell("Sheet1", "B2", "D3"))
+	f.SaveAs(filepath.Join("test", "TestMergeCellOverlap.xlsx"))
+
+	f, err := OpenFile(filepath.Join("test", "TestMergeCellOverlap.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	mc, err := f.GetMergeCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(mc))
+	assert.Equal(t, "A1", mc[0].GetStartAxis())
+	assert.Equal(t, "D3", mc[0].GetEndAxis())
+	assert.Equal(t, "", mc[0].GetCellValue())
 }
 
 func TestGetMergeCells(t *testing.T) {
@@ -193,17 +210,17 @@ func TestUnmergeCell(t *testing.T) {
 }
 
 func TestMergeCellSpeed(t *testing.T) {
-	inTwoForLoop(make([]struct{}, 100))
-	inTwoForLoop(make([]struct{}, 1000))
-	inTwoForLoop(make([]struct{}, 2000))
-	//inTwoForLoop(make([]struct{}, 3000))
-	//inTwoForLoop(make([]struct{}, 10000))
-	//inTwoForLoop(make([]struct{}, 20000))
-	//inTwoForLoop(make([]struct{}, 50000))
-	//inTwoForLoop(make([]struct{}, 100000))
+	bigBatchMergeCells(make([]struct{}, 100))
+	bigBatchMergeCells(make([]struct{}, 1000))
+	bigBatchMergeCells(make([]struct{}, 2000))
+	//bigBatchMergeCells(make([]struct{}, 3000))
+	//bigBatchMergeCells(make([]struct{}, 10000))
+	//bigBatchMergeCells(make([]struct{}, 20000))
+	//bigBatchMergeCells(make([]struct{}, 50000))
+	//bigBatchMergeCells(make([]struct{}, 100000))
 }
 
-func inTwoForLoop(datas []struct{}) {
+func bigBatchMergeCells(datas []struct{}) {
 	var columns = [...]string{
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
 		"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
@@ -213,7 +230,7 @@ func inTwoForLoop(datas []struct{}) {
 		"AU", "AV", "AW", "AX", "AY", "AZ",
 	}
 
-	defer func(t time.Time) { log.Println("inTwoForLoop", "data=", len(datas), "条，cost=", time.Now().Sub(t)) }(time.Now())
+	defer func(t time.Time) { log.Println("bigBatchMergeCells", "data=", len(datas), "条，cost=", time.Now().Sub(t)) }(time.Now())
 	f := NewFile()
 	_, err := f.NewStyle(`{"alignment":{"horizontal":"center","vertical":"center"}}`)
 	//f.SetColStyle("Sheet1", "A:D", style)
@@ -229,9 +246,7 @@ func inTwoForLoop(datas []struct{}) {
 			f.SetCellValue("Sheet1", column+currentRowStr, column+currentRowStr)
 		}
 	}
-	headerRow = 1
 
-	//问题的关键
 	l := len(datas)
 	maxMergeColNum := 20
 	for _, col := range columns[0:40] {
@@ -244,7 +259,6 @@ func inTwoForLoop(datas []struct{}) {
 			i += mergeNum + 1
 		}
 	}
-	//问题的关键
 
 	f.SaveAs("./test/TestMergeCellSpeed-" + strconv.Itoa(l) + ".xlsx")
 }
