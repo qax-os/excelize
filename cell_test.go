@@ -41,7 +41,7 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
 			// Concurrency add picture
 			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-				`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
+				`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 			// Concurrency get cell picture
 			name, raw, err := f.GetPicture("Sheet1", "A1")
 			assert.Equal(t, "", name)

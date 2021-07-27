@@ -24,7 +24,7 @@ func TestMergeCell(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet1", "G11", "set value in merged cell"))
 	assert.NoError(t, f.SetCellInt("Sheet1", "H11", 100))
 	assert.NoError(t, f.SetCellValue("Sheet1", "I11", float64(0.5)))
-	assert.NoError(t, f.SetCellHyperLink("Sheet1", "J11", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "J11", "https://github.com/xuri/excelize", "External"))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "G12", "SUM(Sheet1!B19,Sheet1!C19)"))
 	value, err := f.GetCellValue("Sheet1", "H11")
 	assert.Equal(t, "0.5", value)

@@ -1,10 +1,10 @@
 <p align="center"><img width="650" src="./excelize.svg" alt="Excelize logo"></p>
 
 <p align="center">
-    <a href="https://github.com/360EntSecGroup-Skylar/excelize/actions/workflows/go.yml"><img src="https://github.com/360EntSecGroup-Skylar/excelize/actions/workflows/go.yml/badge.svg" alt="Build Status"></a>
-    <a href="https://codecov.io/gh/360EntSecGroup-Skylar/excelize"><img src="https://codecov.io/gh/360EntSecGroup-Skylar/excelize/branch/master/graph/badge.svg" alt="Code Coverage"></a>
-    <a href="https://goreportcard.com/report/github.com/360EntSecGroup-Skylar/excelize"><img src="https://goreportcard.com/badge/github.com/360EntSecGroup-Skylar/excelize" alt="Go Report Card"></a>
-    <a href="https://pkg.go.dev/github.com/360EntSecGroup-Skylar/excelize/v2?tab=doc"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white" alt="go.dev"></a>
+    <a href="https://github.com/xuri/excelize/actions/workflows/go.yml"><img src="https://github.com/xuri/excelize/actions/workflows/go.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://codecov.io/gh/qax-os/excelize"><img src="https://codecov.io/gh/qax-os/excelize/branch/master/graph/badge.svg" alt="Code Coverage"></a>
+    <a href="https://goreportcard.com/report/github.com/xuri/excelize"><img src="https://goreportcard.com/badge/github.com/xuri/excelize" alt="Go Report Card"></a>
+    <a href="https://pkg.go.dev/github.com/xuri/excelize/v2?tab=doc"><img src="https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white" alt="go.dev"></a>
     <a href="https://opensource.org/licenses/BSD-3-Clause"><img src="https://img.shields.io/badge/license-bsd-orange.svg" alt="Licenses"></a>
     <a href="https://www.paypal.com/paypalme/xuri"><img src="https://img.shields.io/badge/Donate-PayPal-green.svg" alt="Donate"></a>
 </p>
@@ -13,20 +13,20 @@
 
 ## 简介
 
-Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLSX / XLSM / XLTM / XLTX 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写 API，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.15 或更高版本，完整的 API 使用文档请访问 [go.dev](https://pkg.go.dev/github.com/360EntSecGroup-Skylar/excelize/v2?tab=doc) 或查看 [参考文档](https://xuri.me/excelize/)。
+Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLSX / XLSM / XLTM / XLTX 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写 API，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.15 或更高版本，完整的 API 使用文档请访问 [go.dev](https://pkg.go.dev/github.com/xuri/excelize/v2?tab=doc) 或查看 [参考文档](https://xuri.me/excelize/)。
 
 ## 快速上手
 
 ### 安装
 
 ```bash
-go get github.com/360EntSecGroup-Skylar/excelize
+go get github.com/xuri/excelize
 ```
 
 - 如果您使用 [Go Modules](https://blog.golang.org/using-go-modules) 管理软件包，请使用下面的命令来安装最新版本。
 
 ```bash
-go get github.com/360EntSecGroup-Skylar/excelize/v2
+go get github.com/xuri/excelize/v2
 ```
 
 ### 创建 Excel 文档
@@ -39,7 +39,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize/v2"
+    "github.com/xuri/excelize/v2"
 )
 
 func main() {
@@ -68,7 +68,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize/v2"
+    "github.com/xuri/excelize/v2"
 )
 
 func main() {
@@ -111,7 +111,7 @@ package main
 import (
     "fmt"
 
-    "github.com/360EntSecGroup-Skylar/excelize/v2"
+    "github.com/xuri/excelize/v2"
 )
 
 func main() {
@@ -171,7 +171,7 @@ import (
     _ "image/jpeg"
     _ "image/png"
 
-    "github.com/360EntSecGroup-Skylar/excelize/v2"
+    "github.com/xuri/excelize/v2"
 )
 
 func main() {

@@ -468,7 +468,7 @@ type HyperlinkOpts struct {
 // in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
 // below is example for external link.
 //
-//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
 //    // Set underline and font color style for the cell.
 //    style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 //    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
@@ -594,7 +594,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/xuri/excelize/v2"
 //    )
 //
 //    func main() {
