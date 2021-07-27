@@ -12,6 +12,8 @@
 package excelize
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"strings"
 )
@@ -111,6 +113,12 @@ func (dd *DataValidation) SetInput(title, msg string) {
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
 	formula := "\"" + strings.Join(keys, ",") + "\""
+	buf := bytes.NewBuffer(nil)
+	if err := xml.EscapeText(buf, []byte(formula)); err != nil {
+		return err
+	}
+	formula = buf.String()
+
 	if dataValidationFormulaStrLen < len(formula) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
