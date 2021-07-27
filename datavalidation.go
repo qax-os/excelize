@@ -12,8 +12,6 @@
 package excelize
 
 import (
-	"bytes"
-	"encoding/xml"
 	"fmt"
 	"strings"
 )
@@ -76,6 +74,15 @@ const (
 	DataValidationOperatorNotEqual
 )
 
+// formulaEscaper mimics the Excel escaping rules for data validation,
+// which converts `"` to `""` instead of `&quot;`.
+var formulaEscaper = strings.NewReplacer(
+	`&`, `&amp;`,
+	`<`, `&lt;`,
+	`>`, `&gt;`,
+	`"`, `""`,
+)
+
 // NewDataValidation return data validation struct.
 func NewDataValidation(allowBlank bool) *DataValidation {
 	return &DataValidation{
@@ -112,13 +119,7 @@ func (dd *DataValidation) SetInput(title, msg string) {
 
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
-	formula := "\"" + strings.Join(keys, ",") + "\""
-	buf := bytes.NewBuffer(nil)
-	if err := xml.EscapeText(buf, []byte(formula)); err != nil {
-		return err
-	}
-	formula = buf.String()
-
+	formula := `"` + formulaEscaper.Replace(strings.Join(keys, ",")) + `"`
 	if dataValidationFormulaStrLen < len(formula) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
