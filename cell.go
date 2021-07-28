@@ -308,14 +308,14 @@ func (f *File) setSharedString(val string) int {
 	sst.Count++
 	sst.UniqueCount++
 	val = bstrMarshal(val)
-	t := xlsxT{Val: val}
-	// Leading and ending space(s) character detection.
-	if len(val) > 0 && (val[0] == 32 || val[len(val)-1] == 32) {
-		ns := xml.Attr{
+	t := xlsxT{
+		Val: val,
+	}
+	if strings.ContainsAny(val, "\r\n ") {
+		t.Space = xml.Attr{
 			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
 			Value: "preserve",
 		}
-		t.Space = ns
 	}
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
