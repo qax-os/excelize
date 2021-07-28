@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -103,8 +104,9 @@ func TestDataValidationError(t *testing.T) {
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 	assert.NoError(t, f.SaveAs(resultFile))
 
-	dvRange.Formula1 = strings.Repeat("s", dataValidationFormulaStrLen+22)
-	assert.EqualError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan), "data validation must be 0-255 characters")
+	assert.NoError(t, dvRange.SetRange(
+		math.SmallestNonzeroFloat64, math.MaxFloat64,
+		DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 
 	// Test add data validation on no exists worksheet.
 	f = NewFile()

@@ -132,14 +132,8 @@ func (dd *DataValidation) SetDropList(keys []string) error {
 
 // SetRange provides function to set data validation range in drop list.
 func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
-	formula1 := fmt.Sprintf("%f", f1)
-	formula2 := fmt.Sprintf("%f", f2)
-	if dataValidationFormulaStrLen+21 < len(dd.Formula1) || dataValidationFormulaStrLen+21 < len(dd.Formula2) {
-		return fmt.Errorf(dataValidationFormulaStrLenErr)
-	}
-
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula1)
-	dd.Formula2 = fmt.Sprintf("<formula2>%s</formula2>", formula2)
+	dd.Formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", f1)
+	dd.Formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", f2)
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil
