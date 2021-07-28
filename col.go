@@ -439,10 +439,10 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		for col := start; col <= end; col++ {
 			from, _ := CoordinatesToCellName(col, 1)
 			to, _ := CoordinatesToCellName(col, rows)
-			f.SetCellStyle(sheet, from, to, styleID)
+			err = f.SetCellStyle(sheet, from, to, styleID)
 		}
 	}
-	return nil
+	return err
 }
 
 // SetColWidth provides a function to set the width of a single column or

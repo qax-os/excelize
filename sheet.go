@@ -72,12 +72,13 @@ func (f *File) contentTypesReader() *xlsxTypes {
 
 	if f.ContentTypes == nil {
 		f.ContentTypes = new(xlsxTypes)
+		f.ContentTypes.Lock()
+		defer f.ContentTypes.Unlock()
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")))).
 			Decode(f.ContentTypes); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
 	}
-
 	return f.ContentTypes
 }
 

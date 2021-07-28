@@ -14,6 +14,7 @@ package excelize
 import (
 	"fmt"
 	"strings"
+	"unicode/utf16"
 )
 
 // DataValidationType defined the type of data validation.
@@ -111,10 +112,10 @@ func (dd *DataValidation) SetInput(title, msg string) {
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
 	formula := "\"" + strings.Join(keys, ",") + "\""
-	if dataValidationFormulaStrLen < len(formula) {
+	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(formula))) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula)
+	dd.Formula1 = formula
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
@@ -123,12 +124,12 @@ func (dd *DataValidation) SetDropList(keys []string) error {
 func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
 	formula1 := fmt.Sprintf("%f", f1)
 	formula2 := fmt.Sprintf("%f", f2)
-	if dataValidationFormulaStrLen+21 < len(dd.Formula1) || dataValidationFormulaStrLen+21 < len(dd.Formula2) {
+	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(dd.Formula1))) || dataValidationFormulaStrLen < len(utf16.Encode([]rune(dd.Formula2))) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
 
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula1)
-	dd.Formula2 = fmt.Sprintf("<formula2>%s</formula2>", formula2)
+	dd.Formula1 = formula1
+	dd.Formula2 = formula2
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil
@@ -148,7 +149,7 @@ func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataV
 //
 func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
 	if isCurrentSheet {
-		dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
+		dd.Formula1 = sqref
 		dd.Type = convDataValidationType(typeList)
 		return nil
 	}
