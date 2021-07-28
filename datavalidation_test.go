@@ -40,7 +40,20 @@ func TestDataValidation(t *testing.T) {
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
-	assert.NoError(t, dvRange.SetDropList([]string{"1", "2", "3"}))
+	for _, listValid := range [][]string{
+		{"1", "2", "3"},
+		{strings.Repeat("&", 255)},
+		{strings.Repeat("\u4E00", 255)},
+		{strings.Repeat("\U0001F600", 100), strings.Repeat("\u4E01", 50), "<&>"},
+		{`A<`, `B>`, `C"`, "D\t", `E'`, `F`},
+	} {
+		dvRange.Formula1 = ""
+		assert.NoError(t, dvRange.SetDropList(listValid),
+			"SetDropList failed for valid input %v", listValid)
+		assert.NotEqual(t, "", dvRange.Formula1,
+			"Formula1 should not be empty for valid input %v", listValid)
+	}
+	assert.Equal(t, dvRange.Formula1, `<formula1>"A&lt;,B&gt;,C"",D	,E',F"</formula1>`)
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 	assert.NoError(t, f.SaveAs(resultFile))
 }
@@ -65,12 +78,7 @@ func TestDataValidationError(t *testing.T) {
 	assert.NoError(t, f.SaveAs(resultFile))
 
 	dvRange = NewDataValidation(true)
-	err = dvRange.SetDropList(make([]string, 258))
-	if dvRange.Formula1 != "" {
-		t.Errorf("data validation error. Formula1 must be empty!")
-		return
-	}
-	assert.EqualError(t, err, "data validation must be 0-255 characters")
+
 	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 	dvRange.SetSqref("A9:B10")
 
@@ -78,6 +86,23 @@ func TestDataValidationError(t *testing.T) {
 	assert.NoError(t, f.SaveAs(resultFile))
 
 	// Test width invalid data validation formula.
+	prevFormula1 := dvRange.Formula1
+	for _, listTooLong := range [][]string{
+		make([]string, 257),
+		{strings.Repeat("s", 256)},
+		{strings.Repeat("\u4E00", 256)},
+		{strings.Repeat("\U0001F600", 128)},
+		{strings.Repeat("\U0001F600", 127), "s"},
+	} {
+		err = dvRange.SetDropList(listTooLong)
+		assert.Equal(t, prevFormula1, dvRange.Formula1,
+			"Formula1 should be unchanged for invalid input %v", listTooLong)
+		assert.EqualError(t, err, "data validation must be 0-255 characters")
+	}
+
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.SaveAs(resultFile))
+
 	dvRange.Formula1 = strings.Repeat("s", dataValidationFormulaStrLen+22)
 	assert.EqualError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan), "data validation must be 0-255 characters")
 
