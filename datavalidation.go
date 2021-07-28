@@ -34,8 +34,8 @@ const (
 )
 
 const (
-	// dataValidationFormulaStrLen 255 characters+ 2 quotes
-	dataValidationFormulaStrLen = 257
+	// dataValidationFormulaStrLen
+	dataValidationFormulaStrLen = 255
 	// dataValidationFormulaStrLenErr
 	dataValidationFormulaStrLenErr = "data validation must be 0-255 characters"
 )
@@ -119,11 +119,13 @@ func (dd *DataValidation) SetInput(title, msg string) {
 
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
-	formula := `"` + formulaEscaper.Replace(strings.Join(keys, ",")) + `"`
-	if dataValidationFormulaStrLen < len(formula) {
+	formula := strings.Join(keys, ",")
+	if dataValidationFormulaStrLen < UTF16Length(formula) {
 		return fmt.Errorf(dataValidationFormulaStrLenErr)
 	}
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula)
+
+	formula = formulaEscaper.Replace(formula)
+	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formula)
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
