@@ -105,4 +105,10 @@ var (
 	ErrSheetIdx = errors.New("invalid worksheet index")
 	// ErrGroupSheets defined the error message on group sheets.
 	ErrGroupSheets = errors.New("group worksheet must contain an active worksheet")
+	// ErrDataValidationFormulaLenth defined the error message for receiving a
+	// data validation formula length that exceeds the limit.
+	ErrDataValidationFormulaLenth = errors.New("data validation must be 0-255 characters")
+	// ErrDataValidationRange defined the error message on set decimal range
+	// exceeds limit.
+	ErrDataValidationRange = errors.New("data validation range exceeds limit")
 )

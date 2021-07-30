@@ -436,8 +436,8 @@ type DataValidation struct {
 	ShowInputMessage bool    `xml:"showInputMessage,attr,omitempty"`
 	Sqref            string  `xml:"sqref,attr"`
 	Type             string  `xml:"type,attr,omitempty"`
-	Formula1         string  `xml:"formula1,omitempty"`
-	Formula2         string  `xml:"formula2,omitempty"`
+	Formula1         string  `xml:",innerxml"`
+	Formula2         string  `xml:",innerxml"`
 }
 
 // xlsxC collection represents a cell in the worksheet. Information about the

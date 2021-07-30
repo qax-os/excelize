@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode/utf16"
 )
@@ -35,10 +36,8 @@ const (
 )
 
 const (
-	// dataValidationFormulaStrLen 255 characters+ 2 quotes
-	dataValidationFormulaStrLen = 257
-	// dataValidationFormulaStrLenErr
-	dataValidationFormulaStrLenErr = "data validation must be 0-255 characters"
+	// dataValidationFormulaStrLen 255 characters
+	dataValidationFormulaStrLen = 255
 )
 
 // DataValidationErrorStyle defined the style of data validation error alert.
@@ -73,6 +72,15 @@ const (
 	DataValidationOperatorLessThanOrEqual
 	DataValidationOperatorNotBetween
 	DataValidationOperatorNotEqual
+)
+
+// formulaEscaper mimics the Excel escaping rules for data validation,
+// which converts `"` to `""` instead of `&quot;`.
+var formulaEscaper = strings.NewReplacer(
+	`&`, `&amp;`,
+	`<`, `&lt;`,
+	`>`, `&gt;`,
+	`"`, `""`,
 )
 
 // NewDataValidation return data validation struct.
@@ -111,25 +119,22 @@ func (dd *DataValidation) SetInput(title, msg string) {
 
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
-	formula := "\"" + strings.Join(keys, ",") + "\""
+	formula := strings.Join(keys, ",")
 	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(formula))) {
-		return fmt.Errorf(dataValidationFormulaStrLenErr)
+		return ErrDataValidationFormulaLenth
 	}
-	dd.Formula1 = formula
+	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
 
 // SetRange provides function to set data validation range in drop list.
 func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
-	formula1 := fmt.Sprintf("%f", f1)
-	formula2 := fmt.Sprintf("%f", f2)
-	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(dd.Formula1))) || dataValidationFormulaStrLen < len(utf16.Encode([]rune(dd.Formula2))) {
-		return fmt.Errorf(dataValidationFormulaStrLenErr)
+	if math.Abs(f1) > math.MaxFloat32 || math.Abs(f2) > math.MaxFloat32 {
+		return ErrDataValidationRange
 	}
-
-	dd.Formula1 = formula1
-	dd.Formula2 = formula2
+	dd.Formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", f1)
+	dd.Formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", f2)
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil
