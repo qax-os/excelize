@@ -13,7 +13,9 @@ package excelize
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"unicode/utf16"
 )
 
 // DataValidationType defined the type of data validation.
@@ -34,10 +36,8 @@ const (
 )
 
 const (
-	// dataValidationFormulaStrLen
+	// dataValidationFormulaStrLen 255 characters
 	dataValidationFormulaStrLen = 255
-	// dataValidationFormulaStrLenErr
-	dataValidationFormulaStrLenErr = "data validation must be 0-255 characters"
 )
 
 // DataValidationErrorStyle defined the style of data validation error alert.
@@ -120,18 +120,19 @@ func (dd *DataValidation) SetInput(title, msg string) {
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
-	if dataValidationFormulaStrLen < UTF16Length(formula) {
-		return fmt.Errorf(dataValidationFormulaStrLenErr)
+	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(formula))) {
+		return ErrDataValidationFormulaLenth
 	}
-
-	formula = formulaEscaper.Replace(formula)
-	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formula)
+	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
 
 // SetRange provides function to set data validation range in drop list.
 func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
+	if math.Abs(f1) > math.MaxFloat32 || math.Abs(f2) > math.MaxFloat32 {
+		return ErrDataValidationRange
+	}
 	dd.Formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", f1)
 	dd.Formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", f2)
 	dd.Type = convDataValidationType(t)
@@ -153,7 +154,7 @@ func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataV
 //
 func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
 	if isCurrentSheet {
-		dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
+		dd.Formula1 = sqref
 		dd.Type = convDataValidationType(typeList)
 		return nil
 	}
