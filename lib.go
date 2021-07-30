@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf16"
 )
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
@@ -591,10 +590,4 @@ func (stack *Stack) Len() int {
 // Empty the stack.
 func (stack *Stack) Empty() bool {
 	return stack.list.Len() == 0
-}
-
-// UTF16Length encodes the given string in UTF-16, and
-// returns the count of 16-bit code units in this form of the string.
-func UTF16Length(s string) int {
-	return len(utf16.Encode([]rune(s)))
 }
