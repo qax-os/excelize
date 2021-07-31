@@ -10,6 +10,7 @@
 package excelize
 
 import (
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -40,7 +41,20 @@ func TestDataValidation(t *testing.T) {
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
-	assert.NoError(t, dvRange.SetDropList([]string{"1", "2", "3"}))
+	for _, listValid := range [][]string{
+		{"1", "2", "3"},
+		{strings.Repeat("&", 255)},
+		{strings.Repeat("\u4E00", 255)},
+		{strings.Repeat("\U0001F600", 100), strings.Repeat("\u4E01", 50), "<&>"},
+		{`A<`, `B>`, `C"`, "D\t", `E'`, `F`},
+	} {
+		dvRange.Formula1 = ""
+		assert.NoError(t, dvRange.SetDropList(listValid),
+			"SetDropList failed for valid input %v", listValid)
+		assert.NotEqual(t, "", dvRange.Formula1,
+			"Formula1 should not be empty for valid input %v", listValid)
+	}
+	assert.Equal(t, `<formula1>"A&lt;,B&gt;,C"",D	,E',F"</formula1>`, dvRange.Formula1)
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 	assert.NoError(t, f.SaveAs(resultFile))
 }
@@ -62,7 +76,6 @@ func TestDataValidationError(t *testing.T) {
 	assert.EqualError(t, err, "cross-sheet sqref cell are not supported")
 
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
-	assert.NoError(t, f.SaveAs(resultFile))
 
 	dvRange = NewDataValidation(true)
 	err = dvRange.SetDropList(make([]string, 258))
@@ -70,16 +83,37 @@ func TestDataValidationError(t *testing.T) {
 		t.Errorf("data validation error. Formula1 must be empty!")
 		return
 	}
-	assert.EqualError(t, err, "data validation must be 0-255 characters")
+	assert.EqualError(t, err, ErrDataValidationFormulaLenth.Error())
 	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 	dvRange.SetSqref("A9:B10")
 
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
-	assert.NoError(t, f.SaveAs(resultFile))
 
 	// Test width invalid data validation formula.
-	dvRange.Formula1 = strings.Repeat("s", dataValidationFormulaStrLen+22)
-	assert.EqualError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan), "data validation must be 0-255 characters")
+	prevFormula1 := dvRange.Formula1
+	for _, keys := range [][]string{
+		make([]string, 257),
+		{strings.Repeat("s", 256)},
+		{strings.Repeat("\u4E00", 256)},
+		{strings.Repeat("\U0001F600", 128)},
+		{strings.Repeat("\U0001F600", 127), "s"},
+	} {
+		err = dvRange.SetDropList(keys)
+		assert.Equal(t, prevFormula1, dvRange.Formula1,
+			"Formula1 should be unchanged for invalid input %v", keys)
+		assert.EqualError(t, err, ErrDataValidationFormulaLenth.Error())
+	}
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, dvRange.SetRange(
+		-math.MaxFloat32, math.MaxFloat32,
+		DataValidationTypeWhole, DataValidationOperatorGreaterThan))
+	assert.EqualError(t, dvRange.SetRange(
+		-math.MaxFloat64, math.MaxFloat32,
+		DataValidationTypeWhole, DataValidationOperatorGreaterThan), ErrDataValidationRange.Error())
+	assert.EqualError(t, dvRange.SetRange(
+		math.SmallestNonzeroFloat64, math.MaxFloat64,
+		DataValidationTypeWhole, DataValidationOperatorGreaterThan), ErrDataValidationRange.Error())
+	assert.NoError(t, f.SaveAs(resultFile))
 
 	// Test add data validation on no exists worksheet.
 	f = NewFile()

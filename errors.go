@@ -111,7 +111,7 @@ var (
 	// ErrDataValidationRange defined the error message on set decimal range
 	// exceeds limit.
 	ErrDataValidationRange = errors.New("data validation range exceeds limit")
-	// ErrCellCharsLength defined the error message for receiving a
-	// cell characters length that exceeds the limit.
+	// ErrCellCharsLength defined the error message for receiving a cell
+	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
 )

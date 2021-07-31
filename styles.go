@@ -996,6 +996,7 @@ func parseTime(v string, format string) string {
 		{"mm", "01"},
 		{"am/pm", "pm"},
 		{"m/", "1/"},
+		{"m", "1"},
 		{"%%%%", "January"},
 		{"&&&&", "Monday"},
 	}
@@ -1005,6 +1006,7 @@ func parseTime(v string, format string) string {
 		{"\\ ", " "},
 		{"\\.", "."},
 		{"\\", ""},
+		{"\"", ""},
 	}
 	// It is the presence of the "am/pm" indicator that determines if this is
 	// a 12 hour or 24 hours time format, not the number of 'h' characters.
