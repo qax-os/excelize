@@ -45,7 +45,7 @@ var (
 	ErrColumnNumber = errors.New("column number exceeds maximum limit")
 	// ErrColumnWidth defined the error message on receive an invalid column
 	// width.
-	ErrColumnWidth = errors.New("the width of the column must be smaller than or equal to 255 characters")
+	ErrColumnWidth = fmt.Errorf("the width of the column must be smaller than or equal to %d characters", MaxColumnWidth)
 	// ErrOutlineLevel defined the error message on receive an invalid outline
 	// level number.
 	ErrOutlineLevel = errors.New("invalid outline level")
@@ -111,4 +111,7 @@ var (
 	// ErrDataValidationRange defined the error message on set decimal range
 	// exceeds limit.
 	ErrDataValidationRange = errors.New("data validation range exceeds limit")
+	// ErrCellCharsLength defined the error message for receiving a cell
+	// characters length that exceeds the limit.
+	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
 )

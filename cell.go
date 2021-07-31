@@ -307,16 +307,8 @@ func (f *File) setSharedString(val string) int {
 	}
 	sst.Count++
 	sst.UniqueCount++
-	val = bstrMarshal(val)
 	t := xlsxT{Val: val}
-	// Leading and ending space(s) character detection.
-	if len(val) > 0 && (val[0] == 32 || val[len(val)-1] == 32) {
-		ns := xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
-		}
-		t.Space = ns
-	}
+	_, val, t.Space = setCellStr(val)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1
@@ -327,11 +319,16 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > TotalCellChars {
 		value = value[0:TotalCellChars]
 	}
-	// Leading and ending space(s) character detection.
-	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
-		ns = xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
+	if len(value) > 0 {
+		prefix, suffix := value[0], value[len(value)-1]
+		for _, ascii := range []byte{10, 13, 32} {
+			if prefix == ascii || suffix == ascii {
+				ns = xml.Attr{
+					Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+					Value: "preserve",
+				}
+				break
+			}
 		}
 	}
 	t = "str"
@@ -702,11 +699,14 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
 	textRuns := []xlsxR{}
+	totalCellChars := 0
 	for _, textRun := range runs {
-		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
-		if strings.ContainsAny(textRun.Text, "\r\n ") {
-			run.T.Space = xml.Attr{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"}
+		totalCellChars += len(textRun.Text)
+		if totalCellChars > TotalCellChars {
+			return ErrCellCharsLength
 		}
+		run := xlsxR{T: &xlsxT{}}
+		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
 		fnt := textRun.Font
 		if fnt != nil {
 			rpr := xlsxRPr{}

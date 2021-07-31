@@ -401,6 +401,9 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
+	// Test set cell rich text with characters over the maximum limit
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A1", richTextRun), ErrCellCharsLength.Error())
 }
 
 func TestFormattedValue2(t *testing.T) {
