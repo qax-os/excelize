@@ -99,20 +99,3 @@ func TestAdjustCalcChain(t *testing.T) {
 	f.CalcChain = nil
 	assert.NoError(t, f.InsertCol("Sheet1", "A"))
 }
-
-func TestCoordinatesToAreaRef(t *testing.T) {
-	f := NewFile()
-	_, err := f.coordinatesToAreaRef([]int{})
-	assert.EqualError(t, err, ErrCoordinates.Error())
-	_, err = f.coordinatesToAreaRef([]int{1, -1, 1, 1})
-	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
-	_, err = f.coordinatesToAreaRef([]int{1, 1, 1, -1})
-	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
-	ref, err := f.coordinatesToAreaRef([]int{1, 1, 1, 1})
-	assert.NoError(t, err)
-	assert.EqualValues(t, ref, "A1:A1")
-}
-
-func TestSortCoordinates(t *testing.T) {
-	assert.EqualError(t, sortCoordinates(make([]int, 3)), ErrCoordinates.Error())
-}

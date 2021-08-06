@@ -301,10 +301,6 @@ func TestGetPivotFieldsOrder(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
-func TestInStrSlice(t *testing.T) {
-	assert.EqualValues(t, -1, inStrSlice([]string{}, ""))
-}
-
 func TestGetPivotTableFieldName(t *testing.T) {
 	f := NewFile()
 	f.getPivotTableFieldName("-", []PivotTableField{})

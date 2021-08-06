@@ -219,6 +219,114 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	return sign + colname + sign + strconv.Itoa(row), err
 }
 
+// areaRefToCoordinates provides a function to convert area reference to a
+// pair of coordinates.
+func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
+	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
+	if len(rng) < 2 {
+		return nil, ErrParameterInvalid
+	}
+
+	return areaRangeToCoordinates(rng[0], rng[1])
+}
+
+// areaRangeToCoordinates provides a function to convert cell range to a
+// pair of coordinates.
+func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
+	coordinates := make([]int, 4)
+	var err error
+	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
+	if err != nil {
+		return coordinates, err
+	}
+	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
+	return coordinates, err
+}
+
+// sortCoordinates provides a function to correct the coordinate area, such
+// correct C1:B3 to B1:C3.
+func sortCoordinates(coordinates []int) error {
+	if len(coordinates) != 4 {
+		return ErrCoordinates
+	}
+	if coordinates[2] < coordinates[0] {
+		coordinates[2], coordinates[0] = coordinates[0], coordinates[2]
+	}
+	if coordinates[3] < coordinates[1] {
+		coordinates[3], coordinates[1] = coordinates[1], coordinates[3]
+	}
+	return nil
+}
+
+// coordinatesToAreaRef provides a function to convert a pair of coordinates
+// to area reference.
+func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
+	if len(coordinates) != 4 {
+		return "", ErrCoordinates
+	}
+	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1])
+	if err != nil {
+		return "", err
+	}
+	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3])
+	if err != nil {
+		return "", err
+	}
+	return firstCell + ":" + lastCell, err
+}
+
+// flatSqref convert reference sequence to cell coordinates list.
+func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
+	var coordinates []int
+	cells = make(map[int][][]int)
+	for _, ref := range strings.Fields(sqref) {
+		rng := strings.Split(ref, ":")
+		switch len(rng) {
+		case 1:
+			var col, row int
+			col, row, err = CellNameToCoordinates(rng[0])
+			if err != nil {
+				return
+			}
+			cells[col] = append(cells[col], []int{col, row})
+		case 2:
+			if coordinates, err = f.areaRefToCoordinates(ref); err != nil {
+				return
+			}
+			_ = sortCoordinates(coordinates)
+			for c := coordinates[0]; c <= coordinates[2]; c++ {
+				for r := coordinates[1]; r <= coordinates[3]; r++ {
+					cells[c] = append(cells[c], []int{c, r})
+				}
+			}
+		}
+	}
+	return
+}
+
+// inCoordinates provides a method to check if an coordinate is present in
+// coordinates array, and return the index of its location, otherwise
+// return -1.
+func inCoordinates(a [][]int, x []int) int {
+	for idx, n := range a {
+		if x[0] == n[0] && x[1] == n[1] {
+			return idx
+		}
+	}
+	return -1
+}
+
+// inStrSlice provides a method to check if an element is present in an array,
+// and return the index of its location, otherwise return -1.
+func inStrSlice(a []string, x string) int {
+	for idx, n := range a {
+		if x == n {
+			return idx
+		}
+	}
+	return -1
+}
+
 // boolPtr returns a pointer to a bool with the given value.
 func boolPtr(b bool) *bool { return &b }
 

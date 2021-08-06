@@ -459,17 +459,6 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opt *PivotTableO
 	return err
 }
 
-// inStrSlice provides a method to check if an element is present in an array,
-// and return the index of its location, otherwise return -1.
-func inStrSlice(a []string, x string) int {
-	for idx, n := range a {
-		if x == n {
-			return idx
-		}
-	}
-	return -1
-}
-
 // inPivotTableField provides a method to check if an element is present in
 // pivot table fields list, and return the index of its location, otherwise
 // return -1.

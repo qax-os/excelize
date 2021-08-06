@@ -129,9 +129,35 @@ func TestDeleteDataValidation(t *testing.T) {
 	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorBetween))
 	dvRange.SetInput("input title", "input body")
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
-
 	assert.NoError(t, f.DeleteDataValidation("Sheet1", "A1:B2"))
+
+	dvRange.Sqref = "A1"
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.DeleteDataValidation("Sheet1", "B1"))
+	assert.NoError(t, f.DeleteDataValidation("Sheet1", "A1"))
+
+	dvRange.Sqref = "C2:C5"
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.DeleteDataValidation("Sheet1", "C4"))
+
+	dvRange = NewDataValidation(true)
+	dvRange.Sqref = "D2:D2 D3 D4"
+	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorBetween))
+	dvRange.SetInput("input title", "input body")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.NoError(t, f.DeleteDataValidation("Sheet1", "D3"))
+
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteDataValidation.xlsx")))
+
+	dvRange.Sqref = "A"
+	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+
+	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A1:A"
+	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:B2"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// Test delete data validation on no exists worksheet.
 	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN is not exist")

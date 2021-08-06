@@ -258,9 +258,30 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 	if ws.DataValidations == nil {
 		return nil
 	}
+	delCells, err := f.flatSqref(sqref)
+	if err != nil {
+		return err
+	}
 	dv := ws.DataValidations
 	for i := 0; i < len(dv.DataValidation); i++ {
-		if dv.DataValidation[i].Sqref == sqref {
+		applySqref := []string{}
+		colCells, err := f.flatSqref(dv.DataValidation[i].Sqref)
+		if err != nil {
+			return err
+		}
+		for col, cells := range delCells {
+			for _, cell := range cells {
+				idx := inCoordinates(colCells[col], cell)
+				if idx != -1 {
+					colCells[col] = append(colCells[col][:idx], colCells[col][idx+1:]...)
+				}
+			}
+		}
+		for _, col := range colCells {
+			applySqref = append(applySqref, f.squashSqref(col)...)
+		}
+		dv.DataValidation[i].Sqref = strings.Join(applySqref, " ")
+		if len(applySqref) == 0 {
 			dv.DataValidation = append(dv.DataValidation[:i], dv.DataValidation[i+1:]...)
 			i--
 		}
@@ -270,4 +291,32 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 		ws.DataValidations = nil
 	}
 	return nil
+}
+
+// squashSqref generates cell reference sequence by given cells coordinates list.
+func (f *File) squashSqref(cells [][]int) []string {
+	if len(cells) == 1 {
+		cell, _ := CoordinatesToCellName(cells[0][0], cells[0][1])
+		return []string{cell}
+	} else if len(cells) == 0 {
+		return []string{}
+	}
+	l, r, res := 0, 0, []string{}
+	for i := 1; i < len(cells); i++ {
+		if cells[i][0] == cells[r][0] && cells[i][1]-cells[r][1] > 1 {
+			curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+			if l == r {
+				curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
+			}
+			res = append(res, curr)
+			l, r = i, i
+		} else {
+			r++
+		}
+	}
+	curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+	if l == r {
+		curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
+	}
+	return append(res, curr)
 }
