@@ -237,6 +237,10 @@ func TestBytesReplace(t *testing.T) {
 	assert.EqualValues(t, s, bytesReplace(s, []byte{}, []byte{}, 0))
 }
 
+func TestGetRootElement(t *testing.T) {
+	assert.Equal(t, 0, len(getRootElement(xml.NewDecoder(strings.NewReader("")))))
+}
+
 func TestSetIgnorableNameSpace(t *testing.T) {
 	f := NewFile()
 	f.xmlAttr["xml_path"] = []xml.Attr{{}}
