@@ -34,8 +34,8 @@ const (
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
-// returned, along with the raw value of the cell. All cells value will be
-// same in a merged range.
+// returned, along with the raw value of the cell. All cells' values will be
+// the same in a merged range.
 func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader())

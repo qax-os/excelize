@@ -154,7 +154,7 @@ func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataV
 //
 func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
 	if isCurrentSheet {
-		dd.Formula1 = sqref
+		dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
 		dd.Type = convDataValidationType(typeList)
 		return nil
 	}

@@ -622,7 +622,7 @@ func (f *File) drawingsWriter() {
 }
 
 // drawingResize calculate the height and width after resizing.
-func (f *File) drawingResize(sheet string, cell string, width, height float64, formatSet *formatPicture) (w, h, c, r int, err error) {
+func (f *File) drawingResize(sheet, cell string, width, height float64, formatSet *formatPicture) (w, h, c, r int, err error) {
 	var mergeCells []MergeCell
 	mergeCells, err = f.GetMergeCells(sheet)
 	if err != nil {
