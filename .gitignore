@@ -8,3 +8,4 @@ test/*.png
 *.out
 *.test
 .idea
+.DS_Store
