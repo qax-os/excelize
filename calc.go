@@ -6746,7 +6746,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 	var (
 		cond   bool
 		err    error
-		result string
+		result formulaArg
 	)
 	switch token.Type {
 	case ArgString:
@@ -6757,13 +6757,26 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 			return newBoolFormulaArg(cond)
 		}
 		if cond {
-			return newStringFormulaArg(argsList.Front().Next().Value.(formulaArg).String)
+			value := argsList.Front().Next().Value.(formulaArg)
+			switch value.Type {
+			case ArgNumber:
+				result = value.ToNumber()
+			default:
+				result = newStringFormulaArg(value.String)
+			}
+			return result
 		}
 		if argsList.Len() == 3 {
-			result = argsList.Back().Value.(formulaArg).String
+			value := argsList.Back().Value.(formulaArg)
+			switch value.Type {
+			case ArgNumber:
+				result = value.ToNumber()
+			default:
+				result = newStringFormulaArg(value.String)
+			}
 		}
 	}
-	return newStringFormulaArg(result)
+	return result
 }
 
 // Lookup and Reference Functions
