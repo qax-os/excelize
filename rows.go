@@ -614,7 +614,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 		row++
 	}
 	for _, rng := range ws.MergeCells.Cells {
-		coordinates, err := f.areaRefToCoordinates(rng.Ref)
+		coordinates, err := areaRefToCoordinates(rng.Ref)
 		if err != nil {
 			return err
 		}
@@ -624,7 +624,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 	}
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
 		areaData := ws.MergeCells.Cells[i]
-		coordinates, _ := f.areaRefToCoordinates(areaData.Ref)
+		coordinates, _ := areaRefToCoordinates(areaData.Ref)
 		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 		if y1 == y2 && y1 == row {
 			from, _ := CoordinatesToCellName(x1, row2)

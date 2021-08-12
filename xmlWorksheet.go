@@ -13,8 +13,6 @@ package excelize
 
 import (
 	"encoding/xml"
-	"fmt"
-	"strings"
 	"sync"
 )
 
@@ -405,19 +403,6 @@ type xlsxMergeCell struct {
 	rect []int
 }
 
-// Rect get merged cell rect.
-func (mc *xlsxMergeCell) Rect() ([]int, error) {
-	var err error
-	if mc.rect == nil {
-		rng := strings.Split(strings.Replace(mc.Ref, "$", "", -1), ":")
-		if len(rng) != 2 || rng[0] == "" || rng[1] == "" {
-			return nil, fmt.Errorf("invalid area %q", mc.Ref)
-		}
-		mc.rect, err = areaRangeToCoordinates(rng[0], rng[1])
-	}
-	return mc.rect, err
-}
-
 // xlsxMergeCells directly maps the mergeCells element. This collection
 // expresses all the merged cells in the sheet.
 type xlsxMergeCells struct {
@@ -482,10 +467,6 @@ type xlsxC struct {
 	F  *xlsxF  `xml:"f,omitempty"`      // Formula
 	V  string  `xml:"v,omitempty"`      // Value
 	IS *xlsxSI `xml:"is"`
-}
-
-func (c *xlsxC) hasValue() bool {
-	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
 // xlsxF represents a formula for the cell. The formula expression is

@@ -1,12 +1,8 @@
 package excelize
 
 import (
-	"log"
-	"math/rand"
 	"path/filepath"
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -79,28 +75,13 @@ func TestMergeCell(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{nil, nil}}
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
-
-	f = NewFile()
-	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
-	assert.True(t, ok)
-	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
-	assert.EqualError(t, f.SaveAs("./test/TestMergeCellError-A1.xlsx"), `invalid area "A1"`)
-	assert.EqualError(t, f.MergeCell("Sheet1", "A1", ""), `invalid area "A1:"`)
-	assert.EqualError(t, f.MergeCell("Sheet1", "", "B1"), `invalid area ":B1"`)
-
-	f = NewFile()
-	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
-	assert.True(t, ok)
-	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.SaveAs("./test/TestMergeCellError-A:A.xlsx"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, f.MergeCell("Sheet1", "A", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
 func TestMergeCellOverlap(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.MergeCell("Sheet1", "A1", "C2"))
 	assert.NoError(t, f.MergeCell("Sheet1", "B2", "D3"))
-	f.SaveAs(filepath.Join("test", "TestMergeCellOverlap.xlsx"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCellOverlap.xlsx")))
 
 	f, err := OpenFile(filepath.Join("test", "TestMergeCellOverlap.xlsx"))
 	if !assert.NoError(t, err) {
@@ -200,65 +181,15 @@ func TestUnmergeCell(t *testing.T) {
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
-	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), `invalid area "A1"`)
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), "parameter is invalid")
 
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-
 }
 
-func TestMergeCellSpeed(t *testing.T) {
-	bigBatchMergeCells(make([]struct{}, 100))
-	bigBatchMergeCells(make([]struct{}, 1000))
-	bigBatchMergeCells(make([]struct{}, 2000))
-	//bigBatchMergeCells(make([]struct{}, 3000))
-	//bigBatchMergeCells(make([]struct{}, 10000))
-	//bigBatchMergeCells(make([]struct{}, 20000))
-	//bigBatchMergeCells(make([]struct{}, 50000))
-	//bigBatchMergeCells(make([]struct{}, 100000))
-}
-
-func bigBatchMergeCells(datas []struct{}) {
-	var columns = [...]string{
-		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-		"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
-		"U", "V", "W", "X", "Y", "Z",
-		"AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ",
-		"AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT",
-		"AU", "AV", "AW", "AX", "AY", "AZ",
-	}
-
-	defer func(t time.Time) { log.Println("bigBatchMergeCells", "data=", len(datas), "条，cost=", time.Now().Sub(t)) }(time.Now())
-	f := NewFile()
-	_, err := f.NewStyle(`{"alignment":{"horizontal":"center","vertical":"center"}}`)
-	//f.SetColStyle("Sheet1", "A:D", style)
-	if err != nil {
-		log.Println(err)
-	}
-	var headerRow = 0
-	for _ = range datas {
-		headerRow++
-		currentRowStr := strconv.Itoa(headerRow)
-
-		for _, column := range columns {
-			f.SetCellValue("Sheet1", column+currentRowStr, column+currentRowStr)
-		}
-	}
-
-	l := len(datas)
-	maxMergeColNum := 20
-	for _, col := range columns[0:40] {
-		for i := 1; i < l; {
-			mergeNum := rand.Intn(maxMergeColNum) + 1 //[1,maxMergeColNum]
-			if i+mergeNum > l {
-				break
-			}
-			f.MergeCell("Sheet1", col+strconv.Itoa(i), col+strconv.Itoa(i+mergeNum))
-			i += mergeNum + 1
-		}
-	}
-
-	f.SaveAs("./test/TestMergeCellSpeed-" + strconv.Itoa(l) + ".xlsx")
+func TestFlatMergedCells(t *testing.T) {
+	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}}
+	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), "parameter is invalid")
 }

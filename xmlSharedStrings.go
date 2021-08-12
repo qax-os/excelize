@@ -11,10 +11,7 @@
 
 package excelize
 
-import (
-	"encoding/xml"
-	"strings"
-)
+import "encoding/xml"
 
 // xlsxSST directly maps the sst element from the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main. String values may
@@ -42,23 +39,6 @@ type xlsxSI struct {
 	R          []xlsxR            `xml:"r"`
 	RPh        []*xlsxPhoneticRun `xml:"rPh"`
 	PhoneticPr *xlsxPhoneticPr    `xml:"phoneticPr"`
-}
-
-// String extracts characters from a string item.
-func (x xlsxSI) String() string {
-	if len(x.R) > 0 {
-		var rows strings.Builder
-		for _, s := range x.R {
-			if s.T != nil {
-				rows.WriteString(s.T.Val)
-			}
-		}
-		return bstrUnmarshal(rows.String())
-	}
-	if x.T != nil {
-		return bstrUnmarshal(x.T.Val)
-	}
-	return ""
 }
 
 // xlsxR represents a run of rich text. A rich text run is a region of text

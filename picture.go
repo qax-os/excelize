@@ -148,6 +148,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	if err != nil {
 		return err
 	}
+	ws.Lock()
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
@@ -162,6 +163,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		}
 		drawingHyperlinkRID = f.addRels(drawingRels, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
+	ws.Unlock()
 	err = f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
 	if err != nil {
 		return err

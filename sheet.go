@@ -158,6 +158,9 @@ func (f *File) workSheetWriter() {
 	f.Sheet.Range(func(p, ws interface{}) bool {
 		if ws != nil {
 			sheet := ws.(*xlsxWorksheet)
+			if sheet.MergeCells != nil && len(sheet.MergeCells.Cells) > 0 {
+				_ = f.mergeOverlapCells(sheet)
+			}
 			for k, v := range sheet.SheetData.Row {
 				sheet.SheetData.Row[k].C = trimCell(v.C)
 			}
