@@ -41,7 +41,7 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
 			// Concurrency add picture
 			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-				`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
+				`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 			// Concurrency get cell picture
 			name, raw, err := f.GetPicture("Sheet1", "A1")
 			assert.Equal(t, "", name)
@@ -401,6 +401,9 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
+	// Test set cell rich text with characters over the maximum limit
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A1", richTextRun), ErrCellCharsLength.Error())
 }
 
 func TestFormattedValue2(t *testing.T) {

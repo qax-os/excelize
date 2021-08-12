@@ -42,7 +42,7 @@ func TestAddPicture(t *testing.T) {
 		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`))
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
 	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
+		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 
 	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)

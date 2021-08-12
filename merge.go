@@ -17,7 +17,9 @@ import (
 )
 
 // MergeCell provides a function to merge cells by given coordinate area and
-// sheet name. For example create a merged cell of D3:E9 on Sheet1:
+// sheet name. Merging cells only keeps the upper-left cell value, and
+// discards the other values. For example create a merged cell of D3:E9 on
+// Sheet1:
 //
 //    err := f.MergeCell("Sheet1", "D3", "E9")
 //

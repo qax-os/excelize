@@ -34,7 +34,8 @@ const (
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
-// returned, along with the raw value of the cell.
+// returned, along with the raw value of the cell. All cells' values will be
+// the same in a merged range.
 func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader())
@@ -307,16 +308,8 @@ func (f *File) setSharedString(val string) int {
 	}
 	sst.Count++
 	sst.UniqueCount++
-	val = bstrMarshal(val)
 	t := xlsxT{Val: val}
-	// Leading and ending space(s) character detection.
-	if len(val) > 0 && (val[0] == 32 || val[len(val)-1] == 32) {
-		ns := xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
-		}
-		t.Space = ns
-	}
+	_, val, t.Space = setCellStr(val)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1
@@ -327,11 +320,16 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > TotalCellChars {
 		value = value[0:TotalCellChars]
 	}
-	// Leading and ending space(s) character detection.
-	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
-		ns = xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
+	if len(value) > 0 {
+		prefix, suffix := value[0], value[len(value)-1]
+		for _, ascii := range []byte{10, 13, 32} {
+			if prefix == ascii || suffix == ascii {
+				ns = xml.Attr{
+					Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+					Value: "preserve",
+				}
+				break
+			}
 		}
 	}
 	t = "str"
@@ -468,7 +466,7 @@ type HyperlinkOpts struct {
 // in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
 // below is example for external link.
 //
-//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
 //    // Set underline and font color style for the cell.
 //    style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 //    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
@@ -594,7 +592,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/xuri/excelize/v2"
 //    )
 //
 //    func main() {
@@ -702,11 +700,14 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
 	textRuns := []xlsxR{}
+	totalCellChars := 0
 	for _, textRun := range runs {
-		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
-		if strings.ContainsAny(textRun.Text, "\r\n ") {
-			run.T.Space = xml.Attr{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"}
+		totalCellChars += len(textRun.Text)
+		if totalCellChars > TotalCellChars {
+			return ErrCellCharsLength
 		}
+		run := xlsxR{T: &xlsxT{}}
+		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
 		fnt := textRun.Font
 		if fnt != nil {
 			rpr := xlsxRPr{}

@@ -82,7 +82,7 @@ type PivotTableField struct {
 //        "fmt"
 //        "math/rand"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/xuri/excelize/v2"
 //    )
 //
 //    func main() {
@@ -457,17 +457,6 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opt *PivotTableO
 		pt.DataFields.Count = len(pt.DataFields.DataField)
 	}
 	return err
-}
-
-// inStrSlice provides a method to check if an element is present in an array,
-// and return the index of its location, otherwise return -1.
-func inStrSlice(a []string, x string) int {
-	for idx, n := range a {
-		if x == n {
-			return idx
-		}
-	}
-	return -1
 }
 
 // inPivotTableField provides a method to check if an element is present in

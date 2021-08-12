@@ -55,9 +55,11 @@ func TestStreamWriter(t *testing.T) {
 	// Test set cell with style.
 	styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
 	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}))
+	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}), RowOpts{Height: 45})
 	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
+	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Hidden: true}))
+	assert.EqualError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
