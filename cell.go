@@ -101,6 +101,28 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	return err
 }
 
+// String extracts characters from a string item.
+func (x xlsxSI) String() string {
+	if len(x.R) > 0 {
+		var rows strings.Builder
+		for _, s := range x.R {
+			if s.T != nil {
+				rows.WriteString(s.T.Val)
+			}
+		}
+		return bstrUnmarshal(rows.String())
+	}
+	if x.T != nil {
+		return bstrUnmarshal(x.T.Val)
+	}
+	return ""
+}
+
+// hasValue determine if cell non-blank value.
+func (c *xlsxC) hasValue() bool {
+	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
+}
+
 // setCellIntFunc is a wrapper of SetCellInt.
 func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
 	var err error
@@ -431,13 +453,11 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	if _, _, err := SplitCellName(axis); err != nil {
 		return false, "", err
 	}
-
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return false, "", err
 	}
-	axis, err = f.mergeCellsParser(ws, axis)
-	if err != nil {
+	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return false, "", err
 	}
 	if ws.Hyperlinks != nil {
@@ -485,8 +505,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	if err != nil {
 		return err
 	}
-	axis, err = f.mergeCellsParser(ws, axis)
-	if err != nil {
+	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return err
 	}
 
@@ -932,7 +951,7 @@ func (f *File) checkCellInArea(cell, area string) (bool, error) {
 	if len(rng) != 2 {
 		return false, err
 	}
-	coordinates, err := f.areaRefToCoordinates(area)
+	coordinates, err := areaRefToCoordinates(area)
 	if err != nil {
 		return false, err
 	}

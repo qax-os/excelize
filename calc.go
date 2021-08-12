@@ -5103,11 +5103,11 @@ func (fn *formulaFuncs) kth(name string, argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
 	}
 	array := argsList.Front().Value.(formulaArg).ToList()
-	kArg := argsList.Back().Value.(formulaArg).ToNumber()
-	if kArg.Type != ArgNumber {
-		return kArg
+	argK := argsList.Back().Value.(formulaArg).ToNumber()
+	if argK.Type != ArgNumber {
+		return argK
 	}
-	k := int(kArg.Number)
+	k := int(argK.Number)
 	if k < 1 {
 		return newErrorFormulaArg(formulaErrorNUM, "k should be > 0")
 	}
@@ -7177,7 +7177,7 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 func vlookupBinarySearch(tableArray, lookupValue formulaArg) (matchIdx int, wasExact bool) {
 	var low, high, lastMatchIdx int = 0, len(tableArray.Matrix) - 1, -1
 	for low <= high {
-		var mid int = low + (high-low)/2
+		mid := low + (high-low)/2
 		mtx := tableArray.Matrix[mid]
 		lhs := mtx[0]
 		switch lookupValue.Type {
@@ -7216,7 +7216,7 @@ func vlookupBinarySearch(tableArray, lookupValue formulaArg) (matchIdx int, wasE
 func hlookupBinarySearch(row []formulaArg, lookupValue formulaArg) (matchIdx int, wasExact bool) {
 	var low, high, lastMatchIdx int = 0, len(row) - 1, -1
 	for low <= high {
-		var mid int = low + (high-low)/2
+		mid := low + (high-low)/2
 		mtx := row[mid]
 		result := compareFormulaArg(mtx, lookupValue, false, false)
 		if result == criteriaEq {

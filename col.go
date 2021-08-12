@@ -616,10 +616,10 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 // getColWidth provides a function to get column width in pixels by given
 // sheet name and column number.
 func (f *File) getColWidth(sheet string, col int) int {
-	xlsx, _ := f.workSheetReader(sheet)
-	if xlsx.Cols != nil {
+	ws, _ := f.workSheetReader(sheet)
+	if ws.Cols != nil {
 		var width float64
-		for _, v := range xlsx.Cols.Col {
+		for _, v := range ws.Cols.Col {
 			if v.Min <= col && col <= v.Max {
 				width = v.Width
 			}

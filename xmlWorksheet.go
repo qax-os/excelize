@@ -399,7 +399,8 @@ type xlsxCustomSheetView struct {
 
 // xlsxMergeCell directly maps the mergeCell element. A single merged cell.
 type xlsxMergeCell struct {
-	Ref string `xml:"ref,attr,omitempty"`
+	Ref  string `xml:"ref,attr,omitempty"`
+	rect []int
 }
 
 // xlsxMergeCells directly maps the mergeCells element. This collection
@@ -466,10 +467,6 @@ type xlsxC struct {
 	F  *xlsxF  `xml:"f,omitempty"`      // Formula
 	V  string  `xml:"v,omitempty"`      // Value
 	IS *xlsxSI `xml:"is"`
-}
-
-func (c *xlsxC) hasValue() bool {
-	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
 // xlsxF represents a formula for the cell. The formula expression is

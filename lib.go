@@ -221,12 +221,11 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 
 // areaRefToCoordinates provides a function to convert area reference to a
 // pair of coordinates.
-func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
+func areaRefToCoordinates(ref string) ([]int, error) {
 	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
 	if len(rng) < 2 {
 		return nil, ErrParameterInvalid
 	}
-
 	return areaRangeToCoordinates(rng[0], rng[1])
 }
 
@@ -290,7 +289,7 @@ func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
 			}
 			cells[col] = append(cells[col], []int{col, row})
 		case 2:
-			if coordinates, err = f.areaRefToCoordinates(ref); err != nil {
+			if coordinates, err = areaRefToCoordinates(ref); err != nil {
 				return
 			}
 			_ = sortCoordinates(coordinates)

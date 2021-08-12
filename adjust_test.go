@@ -84,6 +84,10 @@ func TestAdjustHelper(t *testing.T) {
 	assert.EqualError(t, f.adjustHelper("SheetN", rows, 0, 0), "sheet SheetN is not exist")
 }
 
+func TestAdjustMergeCellsHelper(t *testing.T) {
+	assert.Equal(t, 1, NewFile().adjustMergeCellsHelper(1, 0, -2))
+}
+
 func TestAdjustCalcChain(t *testing.T) {
 	f := NewFile()
 	f.CalcChain = &xlsxCalcChain{

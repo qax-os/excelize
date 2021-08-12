@@ -11,10 +11,16 @@
 
 package excelize
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
+
+// Rect gets merged cell rectangle coordinates sequence.
+func (mc *xlsxMergeCell) Rect() ([]int, error) {
+	var err error
+	if mc.rect == nil {
+		mc.rect, err = areaRefToCoordinates(mc.Ref)
+	}
+	return mc.rect, err
+}
 
 // MergeCell provides a function to merge cells by given coordinate area and
 // sheet name. Merging cells only keeps the upper-left cell value, and
@@ -24,7 +30,9 @@ import (
 //    err := f.MergeCell("Sheet1", "D3", "E9")
 //
 // If you create a merged cell that overlaps with another existing merged cell,
-// those merged cells that already exist will be removed.
+// those merged cells that already exist will be removed. The cell coordinates
+// tuple after merging in the following range will be: A1(x3,y1) D1(x2,y1)
+// A8(x3,y4) D8(x2,y4)
 //
 //                 B1(x1,y1)      D1(x2,y1)
 //               +------------------------+
@@ -39,15 +47,15 @@ import (
 //    +------------------------+
 //
 func (f *File) MergeCell(sheet, hcell, vcell string) error {
-	rect1, err := f.areaRefToCoordinates(hcell + ":" + vcell)
+	rect, err := areaRefToCoordinates(hcell + ":" + vcell)
 	if err != nil {
 		return err
 	}
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
-	_ = sortCoordinates(rect1)
+	_ = sortCoordinates(rect)
 
-	hcell, _ = CoordinatesToCellName(rect1[0], rect1[1])
-	vcell, _ = CoordinatesToCellName(rect1[2], rect1[3])
+	hcell, _ = CoordinatesToCellName(rect[0], rect[1])
+	vcell, _ = CoordinatesToCellName(rect[2], rect[3])
 
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -55,49 +63,9 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 	}
 	ref := hcell + ":" + vcell
 	if ws.MergeCells != nil {
-		for i := 0; i < len(ws.MergeCells.Cells); i++ {
-			cellData := ws.MergeCells.Cells[i]
-			if cellData == nil {
-				continue
-			}
-			cc := strings.Split(cellData.Ref, ":")
-			if len(cc) != 2 {
-				return fmt.Errorf("invalid area %q", cellData.Ref)
-			}
-
-			rect2, err := f.areaRefToCoordinates(cellData.Ref)
-			if err != nil {
-				return err
-			}
-
-			// Delete the merged cells of the overlapping area.
-			if isOverlap(rect1, rect2) {
-				ws.MergeCells.Cells = append(ws.MergeCells.Cells[:i], ws.MergeCells.Cells[i+1:]...)
-				i--
-
-				if rect1[0] > rect2[0] {
-					rect1[0], rect2[0] = rect2[0], rect1[0]
-				}
-
-				if rect1[2] < rect2[2] {
-					rect1[2], rect2[2] = rect2[2], rect1[2]
-				}
-
-				if rect1[1] > rect2[1] {
-					rect1[1], rect2[1] = rect2[1], rect1[1]
-				}
-
-				if rect1[3] < rect2[3] {
-					rect1[3], rect2[3] = rect2[3], rect1[3]
-				}
-				hcell, _ = CoordinatesToCellName(rect1[0], rect1[1])
-				vcell, _ = CoordinatesToCellName(rect1[2], rect1[3])
-				ref = hcell + ":" + vcell
-			}
-		}
-		ws.MergeCells.Cells = append(ws.MergeCells.Cells, &xlsxMergeCell{Ref: ref})
+		ws.MergeCells.Cells = append(ws.MergeCells.Cells, &xlsxMergeCell{Ref: ref, rect: rect})
 	} else {
-		ws.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ref}}}
+		ws.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ref, rect: rect}}}
 	}
 	ws.MergeCells.Count = len(ws.MergeCells.Cells)
 	return err
@@ -114,7 +82,7 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 	if err != nil {
 		return err
 	}
-	rect1, err := f.areaRefToCoordinates(hcell + ":" + vcell)
+	rect1, err := areaRefToCoordinates(hcell + ":" + vcell)
 	if err != nil {
 		return err
 	}
@@ -126,26 +94,19 @@ func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
 	if ws.MergeCells == nil {
 		return nil
 	}
-
+	if err = f.mergeOverlapCells(ws); err != nil {
+		return err
+	}
 	i := 0
-	for _, cellData := range ws.MergeCells.Cells {
-		if cellData == nil {
+	for _, mergeCell := range ws.MergeCells.Cells {
+		if mergeCell == nil {
 			continue
 		}
-		cc := strings.Split(cellData.Ref, ":")
-		if len(cc) != 2 {
-			return fmt.Errorf("invalid area %q", cellData.Ref)
-		}
-
-		rect2, err := f.areaRefToCoordinates(cellData.Ref)
-		if err != nil {
-			return err
-		}
-
+		rect2, _ := areaRefToCoordinates(mergeCell.Ref)
 		if isOverlap(rect1, rect2) {
 			continue
 		}
-		ws.MergeCells.Cells[i] = cellData
+		ws.MergeCells.Cells[i] = mergeCell
 		i++
 	}
 	ws.MergeCells.Cells = ws.MergeCells.Cells[:i]
@@ -165,8 +126,10 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 		return mergeCells, err
 	}
 	if ws.MergeCells != nil {
+		if err = f.mergeOverlapCells(ws); err != nil {
+			return mergeCells, err
+		}
 		mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
-
 		for i := range ws.MergeCells.Cells {
 			ref := ws.MergeCells.Cells[i].Ref
 			axis := strings.Split(ref, ":")[0]
@@ -174,8 +137,126 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 			mergeCells = append(mergeCells, []string{ref, val})
 		}
 	}
-
 	return mergeCells, err
+}
+
+// overlapRange calculate overlap range of merged cells, and returns max
+// column and rows of the range.
+func overlapRange(ws *xlsxWorksheet) (row, col int, err error) {
+	var rect []int
+	for _, mergeCell := range ws.MergeCells.Cells {
+		if mergeCell == nil {
+			continue
+		}
+		if rect, err = mergeCell.Rect(); err != nil {
+			return
+		}
+		x1, y1, x2, y2 := rect[0], rect[1], rect[2], rect[3]
+		if x1 > col {
+			col = x1
+		}
+		if x2 > col {
+			col = x2
+		}
+		if y1 > row {
+			row = y1
+		}
+		if y2 > row {
+			row = y2
+		}
+	}
+	return
+}
+
+// flatMergedCells convert merged cells range reference to cell-matrix.
+func flatMergedCells(ws *xlsxWorksheet, matrix [][]*xlsxMergeCell) error {
+	for i, cell := range ws.MergeCells.Cells {
+		rect, err := cell.Rect()
+		if err != nil {
+			return err
+		}
+		x1, y1, x2, y2 := rect[0]-1, rect[1]-1, rect[2]-1, rect[3]-1
+		var overlapCells []*xlsxMergeCell
+		for x := x1; x <= x2; x++ {
+			for y := y1; y <= y2; y++ {
+				if matrix[x][y] != nil {
+					overlapCells = append(overlapCells, matrix[x][y])
+				}
+				matrix[x][y] = cell
+			}
+		}
+		if len(overlapCells) != 0 {
+			newCell := cell
+			for _, overlapCell := range overlapCells {
+				newCell = mergeCell(cell, overlapCell)
+			}
+			newRect, _ := newCell.Rect()
+			x1, y1, x2, y2 := newRect[0]-1, newRect[1]-1, newRect[2]-1, newRect[3]-1
+			for x := x1; x <= x2; x++ {
+				for y := y1; y <= y2; y++ {
+					matrix[x][y] = newCell
+				}
+			}
+			ws.MergeCells.Cells[i] = newCell
+		}
+	}
+	return nil
+}
+
+// mergeOverlapCells merge overlap cells.
+func (f *File) mergeOverlapCells(ws *xlsxWorksheet) error {
+	rows, cols, err := overlapRange(ws)
+	if err != nil {
+		return err
+	}
+	if rows == 0 || cols == 0 {
+		return nil
+	}
+	matrix := make([][]*xlsxMergeCell, cols)
+	for i := range matrix {
+		matrix[i] = make([]*xlsxMergeCell, rows)
+	}
+	_ = flatMergedCells(ws, matrix)
+	mergeCells := ws.MergeCells.Cells[:0]
+	for _, cell := range ws.MergeCells.Cells {
+		rect, _ := cell.Rect()
+		x1, y1, x2, y2 := rect[0]-1, rect[1]-1, rect[2]-1, rect[3]-1
+		if matrix[x1][y1] == cell {
+			mergeCells = append(mergeCells, cell)
+			for x := x1; x <= x2; x++ {
+				for y := y1; y <= y2; y++ {
+					matrix[x][y] = nil
+				}
+			}
+		}
+	}
+	ws.MergeCells.Count, ws.MergeCells.Cells = len(mergeCells), mergeCells
+	return nil
+}
+
+// mergeCell merge two cells.
+func mergeCell(cell1, cell2 *xlsxMergeCell) *xlsxMergeCell {
+	rect1, _ := cell1.Rect()
+	rect2, _ := cell2.Rect()
+
+	if rect1[0] > rect2[0] {
+		rect1[0], rect2[0] = rect2[0], rect1[0]
+	}
+
+	if rect1[2] < rect2[2] {
+		rect1[2], rect2[2] = rect2[2], rect1[2]
+	}
+
+	if rect1[1] > rect2[1] {
+		rect1[1], rect2[1] = rect2[1], rect1[1]
+	}
+
+	if rect1[3] < rect2[3] {
+		rect1[3], rect2[3] = rect2[3], rect1[3]
+	}
+	hcell, _ := CoordinatesToCellName(rect1[0], rect1[1])
+	vcell, _ := CoordinatesToCellName(rect1[2], rect1[3])
+	return &xlsxMergeCell{rect: rect1, Ref: hcell + ":" + vcell}
 }
 
 // MergeCell define a merged cell data.

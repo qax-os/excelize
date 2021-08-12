@@ -145,7 +145,7 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 		return nil
 	}
 
-	coordinates, err := f.areaRefToCoordinates(ws.AutoFilter.Ref)
+	coordinates, err := areaRefToCoordinates(ws.AutoFilter.Ref)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
 		areaData := ws.MergeCells.Cells[i]
-		coordinates, err := f.areaRefToCoordinates(areaData.Ref)
+		coordinates, err := areaRefToCoordinates(areaData.Ref)
 		if err != nil {
 			return err
 		}
@@ -219,7 +219,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 			x1 = f.adjustMergeCellsHelper(x1, num, offset)
 			x2 = f.adjustMergeCellsHelper(x2, num, offset)
 		}
-		if x1 == x2 && y1 == y2 {
+		if x1 == x2 && y1 == y2 && i >= 0 {
 			f.deleteMergeCell(ws, i)
 			i--
 		}
@@ -234,7 +234,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 // compare and calculate cell axis by the given pivot, operation axis and
 // offset.
 func (f *File) adjustMergeCellsHelper(pivot, num, offset int) int {
-	if pivot >= num {
+	if pivot > num {
 		pivot += offset
 		if pivot < 1 {
 			return 1

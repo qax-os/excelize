@@ -198,7 +198,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 		return "", []int{}, ErrParameterInvalid
 	}
 	trimRng := strings.Replace(rng[1], "$", "", -1)
-	coordinates, err := f.areaRefToCoordinates(trimRng)
+	coordinates, err := areaRefToCoordinates(trimRng)
 	if err != nil {
 		return rng[0], []int{}, err
 	}
