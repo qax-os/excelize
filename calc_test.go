@@ -1090,6 +1090,8 @@ func TestCalcCellValue(t *testing.T) {
 		`=IF(1<>1, "equal", "notequal")`:        "notequal",
 		`=IF("A"="A", "equal", "notequal")`:     "equal",
 		`=IF("A"<>"A", "equal", "notequal")`:    "notequal",
+		`=IF(FALSE,0,ROUND(4/2,0))`:             "2",
+		`=IF(TRUE,ROUND(4/2,0),0)`:              "2",
 		// Excel Lookup and Reference Functions
 		// CHOOSE
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
