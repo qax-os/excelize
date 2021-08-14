@@ -392,7 +392,7 @@ func (f *File) GetCellFormula(sheet, axis string) (string, error) {
 			return "", false, nil
 		}
 		if c.F.T == STCellFormulaTypeShared {
-			return getSharedForumula(x, c.F.Si), true, nil
+			return getSharedForumula(x, c.F.Si, c.R), true, nil
 		}
 		return c.F.Content, true, nil
 	})
@@ -977,6 +977,48 @@ func isOverlap(rect1, rect2 []int) bool {
 		cellInRef([]int{rect2[2], rect2[3]}, rect1)
 }
 
+// parseSharedFormula generate dynamic part of shared formula for target cell
+// by given column and rows distance and origin shared formula.
+func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
+	var (
+		end           int
+		stringLiteral bool
+	)
+	for end = 0; end < len(orig); end++ {
+		c := orig[end]
+		if c == '"' {
+			stringLiteral = !stringLiteral
+		}
+		if stringLiteral {
+			continue // Skip characters in quotes
+		}
+		if c >= 'A' && c <= 'Z' || c == '$' {
+			res += string(orig[start:end])
+			start = end
+			end++
+			foundNum := false
+			for ; end < len(orig); end++ {
+				idc := orig[end]
+				if idc >= '0' && idc <= '9' || idc == '$' {
+					foundNum = true
+				} else if idc >= 'A' && idc <= 'Z' {
+					if foundNum {
+						break
+					}
+				} else {
+					break
+				}
+			}
+			if foundNum {
+				cellID := string(orig[start:end])
+				res += shiftCell(cellID, dCol, dRow)
+				start = end
+			}
+		}
+	}
+	return
+}
+
 // getSharedForumula find a cell contains the same formula as another cell,
 // the "shared" value can be used for the t attribute and the si attribute can
 // be used to refer to the cell containing the formula. Two formulas are
@@ -985,13 +1027,43 @@ func isOverlap(rect1, rect2 []int) bool {
 //
 // Note that this function not validate ref tag to check the cell if or not in
 // allow area, and always return origin shared formula.
-func getSharedForumula(ws *xlsxWorksheet, si string) string {
+func getSharedForumula(ws *xlsxWorksheet, si string, axis string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si == si {
-				return c.F.Content
+				col, row, _ := CellNameToCoordinates(axis)
+				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
+				dCol := col - sharedCol
+				dRow := row - sharedRow
+				orig := []byte(c.F.Content)
+				res, start := parseSharedFormula(dCol, dRow, orig)
+				if start < len(orig) {
+					res += string(orig[start:])
+				}
+				return res
 			}
 		}
 	}
 	return ""
+}
+
+// shiftCell returns the cell shifted according to dCol and dRow taking into
+// consideration of absolute references with dollar sign ($)
+func shiftCell(cellID string, dCol, dRow int) string {
+	fCol, fRow, _ := CellNameToCoordinates(cellID)
+	signCol, signRow := "", ""
+	if strings.Index(cellID, "$") == 0 {
+		signCol = "$"
+	} else {
+		// Shift column
+		fCol += dCol
+	}
+	if strings.LastIndex(cellID, "$") > 0 {
+		signRow = "$"
+	} else {
+		// Shift row
+		fRow += dRow
+	}
+	colName, _ := ColumnNumberToName(fCol)
+	return signCol + colName + signRow + strconv.Itoa(fRow)
 }

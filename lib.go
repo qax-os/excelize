@@ -93,13 +93,12 @@ func readFile(file *zip.File) ([]byte, error) {
 //
 func SplitCellName(cell string) (string, int, error) {
 	alpha := func(r rune) bool {
-		return ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z')
+		return ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') || (r == 36)
 	}
-
 	if strings.IndexFunc(cell, alpha) == 0 {
 		i := strings.LastIndexFunc(cell, alpha)
 		if i >= 0 && i < len(cell)-1 {
-			col, rowstr := cell[:i+1], cell[i+1:]
+			col, rowstr := strings.ReplaceAll(cell[:i+1], "$", ""), cell[i+1:]
 			if row, err := strconv.Atoi(rowstr); err == nil && row > 0 {
 				return col, row, nil
 			}
