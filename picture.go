@@ -94,7 +94,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	if !ok {
 		return ErrImgExt
 	}
-	file, _ := ioutil.ReadFile(picture)
+	file, _ := ioutil.ReadFile(filepath.Clean(picture))
 	_, name := filepath.Split(picture)
 	return f.AddPictureFromBytes(sheet, cell, format, name, ext, file)
 }
@@ -199,8 +199,8 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
-	xlsx.LegacyDrawing = &xlsxLegacyDrawing{
+	ws, _ := f.workSheetReader(sheet)
+	ws.LegacyDrawing = &xlsxLegacyDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 }
@@ -208,8 +208,8 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 // addSheetDrawing provides a function to add drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
-	xlsx.Drawing = &xlsxDrawing{
+	ws, _ := f.workSheetReader(sheet)
+	ws.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 }
@@ -217,8 +217,8 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 // addSheetPicture provides a function to add picture element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetPicture(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
-	xlsx.Picture = &xlsxPicture{
+	ws, _ := f.workSheetReader(sheet)
+	ws.Picture = &xlsxPicture{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 }

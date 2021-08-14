@@ -6026,6 +6026,39 @@ func (fn *formulaFuncs) DATE(argsList *list.List) formulaArg {
 	return newStringFormulaArg(timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), d)+1, false).String())
 }
 
+// calcDateDif is an implementation of the formula function DATEDIF,
+// calculation difference between two dates.
+func calcDateDif(unit string, diff float64, seq []int, startArg, endArg formulaArg) float64 {
+	ey, sy, em, sm, ed, sd := seq[0], seq[1], seq[2], seq[3], seq[4], seq[5]
+	switch unit {
+	case "d":
+		diff = endArg.Number - startArg.Number
+	case "md":
+		smMD := em
+		if ed < sd {
+			smMD--
+		}
+		diff = endArg.Number - daysBetween(excelMinTime1900.Unix(), makeDate(ey, time.Month(smMD), sd)) - 1
+	case "ym":
+		diff = float64(em - sm)
+		if ed < sd {
+			diff--
+		}
+		if diff < 0 {
+			diff += 12
+		}
+	case "yd":
+		syYD := sy
+		if em < sm || (em == sm && ed < sd) {
+			syYD++
+		}
+		s := daysBetween(excelMinTime1900.Unix(), makeDate(syYD, time.Month(em), ed))
+		e := daysBetween(excelMinTime1900.Unix(), makeDate(sy, time.Month(sm), sd))
+		diff = s - e
+	}
+	return diff
+}
+
 // DATEDIF function calculates the number of days, months, or years between
 // two dates. The syntax of the function is:
 //
@@ -6051,8 +6084,6 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 	ey, emm, ed := endDate.Date()
 	sm, em, diff := int(smm), int(emm), 0.0
 	switch unit {
-	case "d":
-		return newNumberFormulaArg(endArg.Number - startArg.Number)
 	case "y":
 		diff = float64(ey - sy)
 		if em < sm || (em == sm && ed < sd) {
@@ -6069,28 +6100,8 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 			mdiff += 12
 		}
 		diff = float64(ydiff*12 + mdiff)
-	case "md":
-		smMD := em
-		if ed < sd {
-			smMD--
-		}
-		diff = endArg.Number - daysBetween(excelMinTime1900.Unix(), makeDate(ey, time.Month(smMD), sd)) - 1
-	case "ym":
-		diff = float64(em - sm)
-		if ed < sd {
-			diff--
-		}
-		if diff < 0 {
-			diff += 12
-		}
-	case "yd":
-		syYD := sy
-		if em < sm || (em == sm && ed < sd) {
-			syYD++
-		}
-		s := daysBetween(excelMinTime1900.Unix(), makeDate(syYD, time.Month(em), ed))
-		e := daysBetween(excelMinTime1900.Unix(), makeDate(sy, time.Month(sm), sd))
-		diff = s - e
+	case "d", "md", "ym", "yd":
+		diff = calcDateDif(unit, diff, []int{ey, sy, em, sm, ed, sd}, startArg, endArg)
 	default:
 		return newErrorFormulaArg(formulaErrorVALUE, "DATEDIF has invalid unit")
 	}

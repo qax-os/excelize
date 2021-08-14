@@ -346,8 +346,8 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 // marshalRowAttrs prepare attributes of the row by given options.
 func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
 	var opt *RowOpts
-	for _, o := range opts {
-		opt = &o
+	for i := range opts {
+		opt = &opts[i]
 	}
 	if opt == nil {
 		return

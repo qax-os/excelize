@@ -184,13 +184,9 @@ func TestSaveFile(t *testing.T) {
 
 func TestSaveAsWrongPath(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if assert.NoError(t, err) {
-		// Test write file to not exist directory.
-		err = f.SaveAs("")
-		if assert.Error(t, err) {
-			assert.True(t, os.IsNotExist(err), "Error: %v: Expected os.IsNotExists(err) == true", err)
-		}
-	}
+	assert.NoError(t, err)
+	// Test write file to not exist directory.
+	assert.EqualError(t, f.SaveAs(""), "open .: is a directory")
 }
 
 func TestCharsetTranscoder(t *testing.T) {
@@ -203,6 +199,10 @@ func TestOpenReader(t *testing.T) {
 	assert.EqualError(t, err, "zip: not a valid zip file")
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password"})
 	assert.EqualError(t, err, "decrypted file failed")
+
+	// Test open spreadsheet with unzip size limit.
+	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
+	assert.EqualError(t, err, newUnzipSizeLimitError(100).Error())
 
 	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
@@ -1226,6 +1226,7 @@ func TestWorkSheetReader(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err := f.workSheetReader("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.UpdateLinkedValue(), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 
 	// Test on no checked worksheet.
 	f = NewFile()

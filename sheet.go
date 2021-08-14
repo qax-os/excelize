@@ -480,7 +480,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	if !ok {
 		return ErrImgExt
 	}
-	file, _ := ioutil.ReadFile(picture)
+	file, _ := ioutil.ReadFile(filepath.Clean(picture))
 	name := f.addMedia(file, ext)
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
@@ -655,13 +655,13 @@ func (f *File) SetSheetVisible(name string, visible bool) error {
 		}
 	}
 	for k, v := range content.Sheets.Sheet {
-		xlsx, err := f.workSheetReader(v.Name)
+		ws, err := f.workSheetReader(v.Name)
 		if err != nil {
 			return err
 		}
 		tabSelected := false
-		if len(xlsx.SheetViews.SheetView) > 0 {
-			tabSelected = xlsx.SheetViews.SheetView[0].TabSelected
+		if len(ws.SheetViews.SheetView) > 0 {
+			tabSelected = ws.SheetViews.SheetView[0].TabSelected
 		}
 		if v.Name == name && count > 1 && !tabSelected {
 			content.Sheets.Sheet[k].State = "hidden"

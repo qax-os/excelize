@@ -16,24 +16,34 @@ import (
 	"fmt"
 )
 
+// newInvalidColumnNameError defined the error message on receiving the invalid column name.
 func newInvalidColumnNameError(col string) error {
 	return fmt.Errorf("invalid column name %q", col)
 }
 
+// newInvalidRowNumberError defined the error message on receiving the invalid row number.
 func newInvalidRowNumberError(row int) error {
 	return fmt.Errorf("invalid row number %d", row)
 }
 
+// newInvalidCellNameError defined the error message on receiving the invalid cell name.
 func newInvalidCellNameError(cell string) error {
 	return fmt.Errorf("invalid cell name %q", cell)
 }
 
+// newInvalidExcelDateError defined the error message on receiving the data with negative values.
 func newInvalidExcelDateError(dateValue float64) error {
-	return fmt.Errorf("invalid date value %f, negative values are not supported supported", dateValue)
+	return fmt.Errorf("invalid date value %f, negative values are not supported", dateValue)
 }
 
+// newUnsupportChartType defined the error message on receiving the chart type are unsupported.
 func newUnsupportChartType(chartType string) error {
 	return fmt.Errorf("unsupported chart type %s", chartType)
+}
+
+// newUnzipSizeLimitError defined the error message on unzip size exceeds the limit.
+func newUnzipSizeLimitError(unzipSizeLimit int64) error {
+	return fmt.Errorf("unzip size exceeds the %d bytes limit", unzipSizeLimit)
 }
 
 var (

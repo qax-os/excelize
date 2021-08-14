@@ -85,5 +85,5 @@ func TestExcelDateToTime(t *testing.T) {
 	}
 	// Check error case
 	_, err := ExcelDateToTime(-1, false)
-	assert.EqualError(t, err, "invalid date value -1.000000, negative values are not supported supported")
+	assert.EqualError(t, err, "invalid date value -1.000000, negative values are not supported")
 }

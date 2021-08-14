@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,21 +60,27 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 
 // Options define the options for open spreadsheet.
 type Options struct {
-	Password string
+	Password       string
+	UnzipSizeLimit int64
 }
 
-// OpenFile take the name of an spreadsheet file and returns a populated spreadsheet file struct
-// for it. For example, open spreadsheet with password protection:
+// OpenFile take the name of an spreadsheet file and returns a populated
+// spreadsheet file struct for it. For example, open spreadsheet with
+// password protection:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
 //    if err != nil {
 //        return
 //    }
 //
-// Note that the excelize just support decrypt and not support encrypt currently, the spreadsheet
-// saved by Save and SaveAs will be without password unprotected.
+// Note that the excelize just support decrypt and not support encrypt
+// currently, the spreadsheet saved by Save and SaveAs will be without
+// password unprotected.
+//
+// UnzipSizeLimit specified the unzip size limit in bytes on open the
+// spreadsheet, the default size limit is 16GB.
 func OpenFile(filename string, opt ...Options) (*File, error) {
-	file, err := os.Open(filename)
+	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +96,7 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 // newFile is object builder
 func newFile() *File {
 	return &File{
+		options:          &Options{UnzipSizeLimit: UnzipSizeLimit},
 		xmlAttr:          make(map[string][]xml.Attr),
 		checked:          make(map[string]bool),
 		sheetMap:         make(map[string]string),
@@ -111,10 +119,13 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 		return nil, err
 	}
 	f := newFile()
-	if bytes.Contains(b, oleIdentifier) && len(opt) > 0 {
-		for _, o := range opt {
-			f.options = &o
+	for i := range opt {
+		f.options = &opt[i]
+		if f.options.UnzipSizeLimit == 0 {
+			f.options.UnzipSizeLimit = UnzipSizeLimit
 		}
+	}
+	if bytes.Contains(b, oleIdentifier) {
 		b, err = Decrypt(b, f.options)
 		if err != nil {
 			return nil, fmt.Errorf("decrypted file failed")
@@ -124,8 +135,7 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	file, sheetCount, err := ReadZipReader(zr)
+	file, sheetCount, err := ReadZipReader(zr, f.options)
 	if err != nil {
 		return nil, err
 	}
@@ -316,18 +326,18 @@ func (f *File) UpdateLinkedValue() error {
 	// recalculate formulas
 	wb.CalcPr = nil
 	for _, name := range f.GetSheetList() {
-		xlsx, err := f.workSheetReader(name)
+		ws, err := f.workSheetReader(name)
 		if err != nil {
 			if err.Error() == fmt.Sprintf("sheet %s is chart sheet", trimSheetName(name)) {
 				continue
 			}
 			return err
 		}
-		for indexR := range xlsx.SheetData.Row {
-			for indexC, col := range xlsx.SheetData.Row[indexR].C {
+		for indexR := range ws.SheetData.Row {
+			for indexC, col := range ws.SheetData.Row[indexR].C {
 				if col.F != nil && col.V != "" {
-					xlsx.SheetData.Row[indexR].C[indexC].V = ""
-					xlsx.SheetData.Row[indexR].C[indexC].T = ""
+					ws.SheetData.Row[indexR].C[indexC].V = ""
+					ws.SheetData.Row[indexR].C[indexC].T = ""
 				}
 			}
 		}
@@ -381,7 +391,7 @@ func (f *File) AddVBAProject(bin string) error {
 			Type:   SourceRelationshipVBAProject,
 		})
 	}
-	file, _ := ioutil.ReadFile(bin)
+	file, _ := ioutil.ReadFile(filepath.Clean(bin))
 	f.Pkg.Store("xl/vbaProject.bin", file)
 	return err
 }

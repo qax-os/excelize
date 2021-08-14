@@ -21,5 +21,5 @@ func TestNewInvalidCellNameError(t *testing.T) {
 }
 
 func TestNewInvalidExcelDateError(t *testing.T) {
-	assert.EqualError(t, newInvalidExcelDateError(-1), "invalid date value -1.000000, negative values are not supported supported")
+	assert.EqualError(t, newInvalidExcelDateError(-1), "invalid date value -1.000000, negative values are not supported")
 }

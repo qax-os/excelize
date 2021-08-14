@@ -94,6 +94,7 @@ const (
 
 // Excel specifications and limits
 const (
+	UnzipSizeLimit       = 1000 << 24
 	StreamChunkSize      = 1 << 24
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409

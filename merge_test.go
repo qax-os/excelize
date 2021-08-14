@@ -148,16 +148,16 @@ func TestUnmergeCell(t *testing.T) {
 	}
 	sheet1 := f.GetSheetName(0)
 
-	xlsx, err := f.workSheetReader(sheet1)
+	sheet, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
 
-	mergeCellNum := len(xlsx.MergeCells.Cells)
+	mergeCellNum := len(sheet.MergeCells.Cells)
 
 	assert.EqualError(t, f.UnmergeCell("Sheet1", "A", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 
 	// unmerge the mergecell that contains A1
 	assert.NoError(t, f.UnmergeCell(sheet1, "A1", "A1"))
-	if len(xlsx.MergeCells.Cells) != mergeCellNum-1 {
+	if len(sheet.MergeCells.Cells) != mergeCellNum-1 {
 		t.FailNow()
 	}
 

@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -69,14 +70,14 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		return ErrMaxFileNameLength
 	}
 	f.Path = name
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 	f.options = nil
-	for _, o := range opt {
-		f.options = &o
+	for i := range opt {
+		f.options = &opt[i]
 	}
 	return f.Write(file)
 }
@@ -102,7 +103,8 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil
 }
 
-// WriteToBuffer provides a function to get bytes.Buffer from the saved file. And it allocate space in memory. Be careful when the file size is large.
+// WriteToBuffer provides a function to get bytes.Buffer from the saved file,
+// and it allocates space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
@@ -130,7 +132,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 func (f *File) writeDirectToWriter(w io.Writer) error {
 	zw := zip.NewWriter(w)
 	if err := f.writeToZip(zw); err != nil {
-		zw.Close()
+		_ = zw.Close()
 		return err
 	}
 	return zw.Close()
@@ -157,14 +159,14 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		var from io.Reader
 		from, err = stream.rawData.Reader()
 		if err != nil {
-			stream.rawData.Close()
+			_ = stream.rawData.Close()
 			return err
 		}
 		_, err = io.Copy(fi, from)
 		if err != nil {
 			return err
 		}
-		stream.rawData.Close()
+		_ = stream.rawData.Close()
 	}
 	var err error
 	f.Pkg.Range(func(path, content interface{}) bool {

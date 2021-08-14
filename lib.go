@@ -26,15 +26,22 @@ import (
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
 // filesystem.
-func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
-	var err error
-	var docPart = map[string]string{
-		"[content_types].xml":  "[Content_Types].xml",
-		"xl/sharedstrings.xml": "xl/sharedStrings.xml",
-	}
-	fileList := make(map[string][]byte, len(r.File))
-	worksheets := 0
+func ReadZipReader(r *zip.Reader, o *Options) (map[string][]byte, int, error) {
+	var (
+		err     error
+		docPart = map[string]string{
+			"[content_types].xml":  "[Content_Types].xml",
+			"xl/sharedstrings.xml": "xl/sharedStrings.xml",
+		}
+		fileList   = make(map[string][]byte, len(r.File))
+		worksheets int
+		unzipSize  int64
+	)
 	for _, v := range r.File {
+		unzipSize += v.FileInfo().Size()
+		if unzipSize > o.UnzipSizeLimit {
+			return fileList, worksheets, newUnzipSizeLimitError(o.UnzipSizeLimit)
+		}
 		fileName := strings.Replace(v.Name, "\\", "/", -1)
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
@@ -61,7 +68,7 @@ func (f *File) readXML(name string) []byte {
 }
 
 // saveFileList provides a function to update given file content in file list
-// of XLSX.
+// of spreadsheet.
 func (f *File) saveFileList(name string, content []byte) {
 	f.Pkg.Store(name, append([]byte(XMLHeader), content...))
 }
@@ -75,8 +82,7 @@ func readFile(file *zip.File) ([]byte, error) {
 	dat := make([]byte, 0, file.FileInfo().Size())
 	buff := bytes.NewBuffer(dat)
 	_, _ = io.Copy(buff, rc)
-	rc.Close()
-	return buff.Bytes(), nil
+	return buff.Bytes(), rc.Close()
 }
 
 // SplitCellName splits cell name to column name and row number.
