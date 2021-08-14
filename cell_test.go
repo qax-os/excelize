@@ -226,6 +226,28 @@ func TestGetCellFormula(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
 	_, err = f.GetCellFormula("Sheet1", "A1")
 	assert.NoError(t, err)
+
+	// Test get cell shared formula
+	f = NewFile()
+	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><f>2*A1</f></c></row><row r="2"><c r="A2"><v>2</v></c><c r="B2"><f t="shared" ref="B2:B7" si="0">%s</f></c></row><row r="3"><c r="A3"><v>3</v></c><c r="B3"><f t="shared" si="0"/></c></row><row r="4"><c r="A4"><v>4</v></c><c r="B4"><f t="shared" si="0"/></c></row><row r="5"><c r="A5"><v>5</v></c><c r="B5"><f t="shared" si="0"/></c></row><row r="6"><c r="A6"><v>6</v></c><c r="B6"><f t="shared" si="0"/></c></row><row r="7"><c r="A7"><v>7</v></c><c r="B7"><f t="shared" si="0"/></c></row></sheetData></worksheet>`
+
+	for sharedFormula, expected := range map[string]string{
+		`2*A2`:           `2*A3`,
+		`2*A1A`:          `2*A2A`,
+		`2*$A$2+LEN("")`: `2*$A$2+LEN("")`,
+	} {
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, sharedFormula)))
+		formula, err := f.GetCellFormula("Sheet1", "B3")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, formula)
+	}
+
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="2"><c r="B2"><f t="shared" si="0"></f></c></row></sheetData></worksheet>`))
+	formula, err := f.GetCellFormula("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "", formula)
 }
 
 func ExampleFile_SetCellFloat() {

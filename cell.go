@@ -977,6 +977,48 @@ func isOverlap(rect1, rect2 []int) bool {
 		cellInRef([]int{rect2[2], rect2[3]}, rect1)
 }
 
+// parseSharedFormula generate dynamic part of shared formula for target cell
+// by given column and rows distance and origin shared formula.
+func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
+	var (
+		end           int
+		stringLiteral bool
+	)
+	for end = 0; end < len(orig); end++ {
+		c := orig[end]
+		if c == '"' {
+			stringLiteral = !stringLiteral
+		}
+		if stringLiteral {
+			continue // Skip characters in quotes
+		}
+		if c >= 'A' && c <= 'Z' || c == '$' {
+			res += string(orig[start:end])
+			start = end
+			end++
+			foundNum := false
+			for ; end < len(orig); end++ {
+				idc := orig[end]
+				if idc >= '0' && idc <= '9' || idc == '$' {
+					foundNum = true
+				} else if idc >= 'A' && idc <= 'Z' {
+					if foundNum {
+						break
+					}
+				} else {
+					break
+				}
+			}
+			if foundNum {
+				cellID := string(orig[start:end])
+				res += shiftCell(cellID, dCol, dRow)
+				start = end
+			}
+		}
+	}
+	return
+}
+
 // getSharedForumula find a cell contains the same formula as another cell,
 // the "shared" value can be used for the t attribute and the si attribute can
 // be used to refer to the cell containing the formula. Two formulas are
@@ -989,46 +1031,12 @@ func getSharedForumula(ws *xlsxWorksheet, si string, axis string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si == si {
-				var res string
 				col, row, _ := CellNameToCoordinates(axis)
 				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
 				dCol := col - sharedCol
 				dRow := row - sharedRow
 				orig := []byte(c.F.Content)
-				var start, end int
-				var stringLiteral bool
-				for end = 0; end < len(orig); end++ {
-					c := orig[end]
-					if c == '"' {
-						stringLiteral = !stringLiteral
-					}
-					if stringLiteral {
-						continue // Skip characters in quotes
-					}
-					if c >= 'A' && c <= 'Z' || c == '$' {
-						res += string(orig[start:end])
-						start = end
-						end++
-						foundNum := false
-						for ; end < len(orig); end++ {
-							idc := orig[end]
-							if idc >= '0' && idc <= '9' || idc == '$' {
-								foundNum = true
-							} else if idc >= 'A' && idc <= 'Z' {
-								if foundNum {
-									break
-								}
-							} else {
-								break
-							}
-						}
-						if foundNum {
-							cellID := string(orig[start:end])
-							res += shiftCell(cellID, dCol, dRow)
-							start = end
-						}
-					}
-				}
+				res, start := parseSharedFormula(dCol, dRow, orig)
 				if start < len(orig) {
 					res += string(orig[start:])
 				}
@@ -1039,10 +1047,10 @@ func getSharedForumula(ws *xlsxWorksheet, si string, axis string) string {
 	return ""
 }
 
-// shiftCell returns the cell shifted according to dCol and dRow taking into consideration of absolute
-// references with dollar sign ($)
+// shiftCell returns the cell shifted according to dCol and dRow taking into
+// consideration of absolute references with dollar sign ($)
 func shiftCell(cellID string, dCol, dRow int) string {
-	fCol, fRow, _ := CellNameToCoordinates2(cellID)
+	fCol, fRow, _ := CellNameToCoordinates(cellID)
 	signCol, signRow := "", ""
 	if strings.Index(cellID, "$") == 0 {
 		signCol = "$"
@@ -1058,35 +1066,4 @@ func shiftCell(cellID string, dCol, dRow int) string {
 	}
 	colName, _ := ColumnNumberToName(fCol)
 	return signCol + colName + signRow + strconv.Itoa(fRow)
-}
-
-// CellNameToCoordinates2 converts cell name to coordinates taking into consideration of absolute
-// "B3" "$B$3" "B$3" "$B3"  returns 2,3,nil
-func CellNameToCoordinates2(cell string) (col, row int, err error) {
-	wrap := func(err error) (int, int, error) {
-		return -1, -1, fmt.Errorf("CellNameToCoordinates2(%q): %w", cell, err)
-	}
-	var colName = strings.Map(func(rune rune) rune {
-		switch {
-		case 'A' <= rune && rune <= 'Z':
-			return rune
-		case 'a' <= rune && rune <= 'z':
-			return rune - 32
-		}
-		return -1
-	}, cell)
-	row, err = strconv.Atoi(strings.Map(func(rune rune) rune {
-		if rune >= 48 && rune < 58 {
-			return rune
-		}
-		return -1
-	}, cell))
-	if err != nil {
-		return wrap(err)
-	}
-	col, err = ColumnNameToNumber(colName)
-	if err != nil {
-		return wrap(err)
-	}
-	return
 }
