@@ -55,9 +55,11 @@ func TestStreamWriter(t *testing.T) {
 	// Test set cell with style.
 	styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
 	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}))
+	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}), RowOpts{Height: 45})
 	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
-	assert.EqualError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}), ErrToExcelTime.Error())
+	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
+	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Hidden: true}))
+	assert.EqualError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
@@ -99,8 +101,8 @@ func TestStreamWriter(t *testing.T) {
 
 	// Test unsupported charset
 	file = NewFile()
-	delete(file.Sheet, "xl/worksheets/sheet1.xml")
-	file.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
+	file.Sheet.Delete("xl/worksheets/sheet1.xml")
+	file.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err = file.NewStreamWriter("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 
@@ -145,7 +147,9 @@ func TestStreamTable(t *testing.T) {
 
 	// Verify the table has names.
 	var table xlsxTable
-	assert.NoError(t, xml.Unmarshal(file.XLSX["xl/tables/table1.xml"], &table))
+	val, ok := file.Pkg.Load("xl/tables/table1.xml")
+	assert.True(t, ok)
+	assert.NoError(t, xml.Unmarshal(val.([]byte), &table))
 	assert.Equal(t, "A", table.TableColumns.TableColumn[0].Name)
 	assert.Equal(t, "B", table.TableColumns.TableColumn[1].Name)
 	assert.Equal(t, "C", table.TableColumns.TableColumn[2].Name)

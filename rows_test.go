@@ -43,11 +43,13 @@ func TestRows(t *testing.T) {
 	}
 
 	f = NewFile()
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	delete(f.checked, "xl/worksheets/sheet1.xml")
 	_, err = f.Rows("Sheet1")
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
-	f.XLSX["xl/worksheets/sheet1.xml"] = nil
+	f.Pkg.Store("xl/worksheets/sheet1.xml", nil)
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
 }
@@ -138,12 +140,18 @@ func TestRowHeight(t *testing.T) {
 	// Test set row height with custom default row height with prepare XML.
 	assert.NoError(t, f.SetCellValue(sheet1, "A10", "A10"))
 
+	f.NewSheet("Sheet2")
+	assert.NoError(t, f.SetCellValue("Sheet2", "A2", true))
+	height, err = f.GetRowHeight("Sheet2", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 15.0, height)
+
 	err = f.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	convertColWidthToPixels(0)
+	assert.Equal(t, 0.0, convertColWidthToPixels(0))
 }
 
 func TestColumns(t *testing.T) {
@@ -181,7 +189,7 @@ func TestColumns(t *testing.T) {
 
 func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
-	f.XLSX["xl/sharedStrings.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("xl/sharedStrings.xml", MacintoshCyrillicCharset)
 	f.sharedStringsReader()
 	si := xlsxSI{}
 	assert.EqualValues(t, "", si.String())
@@ -224,7 +232,7 @@ func TestRemoveRow(t *testing.T) {
 	)
 	fillCells(f, sheet1, colCount, rowCount)
 
-	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
 	assert.EqualError(t, f.RemoveRow(sheet1, -1), "invalid row number -1")
 
@@ -285,7 +293,7 @@ func TestInsertRow(t *testing.T) {
 	)
 	fillCells(f, sheet1, colCount, rowCount)
 
-	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
 	assert.EqualError(t, f.InsertRow(sheet1, -1), "invalid row number -1")
 
@@ -843,22 +851,24 @@ func TestGetValueFromInlineStr(t *testing.T) {
 }
 
 func TestGetValueFromNumber(t *testing.T) {
-	c := &xlsxC{T: "n", V: "2.2200000000000002"}
+	c := &xlsxC{T: "n"}
 	f := NewFile()
 	d := &xlsxSST{}
-	val, err := c.getValueFrom(f, d)
-	assert.NoError(t, err)
-	assert.Equal(t, "2.22", val)
-
-	c = &xlsxC{T: "n", V: "2.220000ddsf0000000002-r"}
-	val, err = c.getValueFrom(f, d)
-	assert.NoError(t, err)
-	assert.Equal(t, "2.220000ddsf0000000002-r", val)
-
-	c = &xlsxC{T: "n", V: "2.2."}
-	val, err = c.getValueFrom(f, d)
-	assert.NoError(t, err)
-	assert.Equal(t, "2.2.", val)
+	for input, expected := range map[string]string{
+		"2.2.":                     "2.2.",
+		"1.1000000000000001":       "1.1",
+		"2.2200000000000002":       "2.22",
+		"28.552":                   "28.552",
+		"27.399000000000001":       "27.399",
+		"26.245999999999999":       "26.246",
+		"2422.3000000000002":       "2422.3",
+		"2.220000ddsf0000000002-r": "2.220000ddsf0000000002-r",
+	} {
+		c.V = input
+		val, err := c.getValueFrom(f, d)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
@@ -868,12 +878,14 @@ func TestErrSheetNotExistError(t *testing.T) {
 
 func TestCheckRow(t *testing.T) {
 	f := NewFile()
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`)
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
 	_, err := f.GetRows("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", false))
 	f = NewFile()
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`)
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	delete(f.checked, "xl/worksheets/sheet1.xml")
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 }
 

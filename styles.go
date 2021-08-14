@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -997,6 +996,7 @@ func parseTime(v string, format string) string {
 		{"mm", "01"},
 		{"am/pm", "pm"},
 		{"m/", "1/"},
+		{"m", "1"},
 		{"%%%%", "January"},
 		{"&&&&", "Monday"},
 	}
@@ -1006,6 +1006,7 @@ func parseTime(v string, format string) string {
 		{"\\ ", " "},
 		{"\\.", "."},
 		{"\\", ""},
+		{"\"", ""},
 	}
 	// It is the presence of the "am/pm" indicator that determines if this is
 	// a 12 hour or 24 hours time format, not the number of 'h' characters.
@@ -1104,14 +1105,14 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 	case *Style:
 		fs = *v
 	default:
-		err = errors.New("invalid parameter type")
+		err = ErrParameterInvalid
 	}
 	if fs.Font != nil {
 		if len(fs.Font.Family) > MaxFontFamilyLength {
-			return &fs, errors.New("the length of the font family name must be smaller than or equal to 31")
+			return &fs, ErrFontLength
 		}
 		if fs.Font.Size > MaxFontSize {
-			return &fs, errors.New("font size must be between 1 and 409 points")
+			return &fs, ErrFontSize
 		}
 	}
 	return &fs, err
@@ -1991,6 +1992,8 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 		fs.DecimalPlaces = 2
 	}
 	s := f.stylesReader()
+	s.Lock()
+	defer s.Unlock()
 	// check given style already exist.
 	if cellXfsID = f.getStyleID(s, fs); cellXfsID != -1 {
 		return cellXfsID, err
@@ -2694,7 +2697,8 @@ func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
 	}
 	prepareSheetXML(ws, vcol, vrow)
 	makeContiguousColumns(ws, hrow, vrow, vcol)
-
+	ws.Lock()
+	defer ws.Unlock()
 	for r := hrowIdx; r <= vrowIdx; r++ {
 		for k := hcolIdx; k <= vcolIdx; k++ {
 			ws.SheetData.Row[r].C[k].S = styleID
@@ -3128,11 +3132,11 @@ func ThemeColor(baseColor string, tint float64) string {
 	if tint == 0 {
 		return "FF" + baseColor
 	}
-	r, _ := strconv.ParseInt(baseColor[0:2], 16, 64)
-	g, _ := strconv.ParseInt(baseColor[2:4], 16, 64)
-	b, _ := strconv.ParseInt(baseColor[4:6], 16, 64)
+	r, _ := strconv.ParseUint(baseColor[0:2], 16, 64)
+	g, _ := strconv.ParseUint(baseColor[2:4], 16, 64)
+	b, _ := strconv.ParseUint(baseColor[4:6], 16, 64)
 	var h, s, l float64
-	if r >= 0 && r <= math.MaxUint8 && g >= 0 && g <= math.MaxUint8 && b >= 0 && b <= math.MaxUint8 {
+	if r <= math.MaxUint8 && g <= math.MaxUint8 && b <= math.MaxUint8 {
 		h, s, l = RGBToHSL(uint8(r), uint8(g), uint8(b))
 	}
 	if tint < 0 {

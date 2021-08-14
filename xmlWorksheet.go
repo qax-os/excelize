@@ -111,7 +111,7 @@ type xlsxPageSetUp struct {
 	Copies             int      `xml:"copies,attr,omitempty"`
 	Draft              bool     `xml:"draft,attr,omitempty"`
 	Errors             string   `xml:"errors,attr,omitempty"`
-	FirstPageNumber    int      `xml:"firstPageNumber,attr,omitempty"`
+	FirstPageNumber    string   `xml:"firstPageNumber,attr,omitempty"`
 	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
 	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
 	HorizontalDPI      int      `xml:"horizontalDpi,attr,omitempty"`
@@ -248,9 +248,9 @@ type xlsxSheetPr struct {
 // adjust the direction of grouper controls.
 type xlsxOutlinePr struct {
 	ApplyStyles        *bool `xml:"applyStyles,attr"`
-	SummaryBelow       bool  `xml:"summaryBelow,attr,omitempty"`
-	SummaryRight       bool  `xml:"summaryRight,attr,omitempty"`
-	ShowOutlineSymbols bool  `xml:"showOutlineSymbols,attr,omitempty"`
+	SummaryBelow       bool  `xml:"summaryBelow,attr"`
+	SummaryRight       bool  `xml:"summaryRight,attr"`
+	ShowOutlineSymbols bool  `xml:"showOutlineSymbols,attr"`
 }
 
 // xlsxPageSetUpPr expresses page setup properties of the worksheet.
@@ -399,7 +399,8 @@ type xlsxCustomSheetView struct {
 
 // xlsxMergeCell directly maps the mergeCell element. A single merged cell.
 type xlsxMergeCell struct {
-	Ref string `xml:"ref,attr,omitempty"`
+	Ref  string `xml:"ref,attr,omitempty"`
+	rect []int
 }
 
 // xlsxMergeCells directly maps the mergeCells element. This collection
@@ -468,10 +469,6 @@ type xlsxC struct {
 	IS *xlsxSI `xml:"is"`
 }
 
-func (c *xlsxC) hasValue() bool {
-	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
-}
-
 // xlsxF represents a formula for the cell. The formula expression is
 // contained in the character node of this element.
 type xlsxF struct {
@@ -528,6 +525,7 @@ type xlsxPhoneticPr struct {
 // applied to a particular cell or range.
 type xlsxConditionalFormatting struct {
 	XMLName xml.Name      `xml:"conditionalFormatting"`
+	Pivot   bool          `xml:"pivot,attr,omitempty"`
 	SQRef   string        `xml:"sqref,attr,omitempty"`
 	CfRule  []*xlsxCfRule `xml:"cfRule"`
 }
@@ -535,19 +533,19 @@ type xlsxConditionalFormatting struct {
 // xlsxCfRule (Conditional Formatting Rule) represents a description of a
 // conditional formatting rule.
 type xlsxCfRule struct {
-	AboveAverage *bool           `xml:"aboveAverage,attr"`
-	Bottom       bool            `xml:"bottom,attr,omitempty"`
+	Type         string          `xml:"type,attr,omitempty"`
 	DxfID        *int            `xml:"dxfId,attr"`
-	EqualAverage bool            `xml:"equalAverage,attr,omitempty"`
-	Operator     string          `xml:"operator,attr,omitempty"`
-	Percent      bool            `xml:"percent,attr,omitempty"`
 	Priority     int             `xml:"priority,attr,omitempty"`
-	Rank         int             `xml:"rank,attr,omitempty"`
-	StdDev       int             `xml:"stdDev,attr,omitempty"`
 	StopIfTrue   bool            `xml:"stopIfTrue,attr,omitempty"`
+	AboveAverage *bool           `xml:"aboveAverage,attr"`
+	Percent      bool            `xml:"percent,attr,omitempty"`
+	Bottom       bool            `xml:"bottom,attr,omitempty"`
+	Operator     string          `xml:"operator,attr,omitempty"`
 	Text         string          `xml:"text,attr,omitempty"`
 	TimePeriod   string          `xml:"timePeriod,attr,omitempty"`
-	Type         string          `xml:"type,attr,omitempty"`
+	Rank         int             `xml:"rank,attr,omitempty"`
+	StdDev       int             `xml:"stdDev,attr,omitempty"`
+	EqualAverage bool            `xml:"equalAverage,attr,omitempty"`
 	Formula      []string        `xml:"formula,omitempty"`
 	ColorScale   *xlsxColorScale `xml:"colorScale"`
 	DataBar      *xlsxDataBar    `xml:"dataBar"`

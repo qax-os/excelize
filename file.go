@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"sync"
 )
 
 // NewFile provides a function to create new file by default template. For
@@ -25,30 +27,30 @@ import (
 //    f := NewFile()
 //
 func NewFile() *File {
-	file := make(map[string][]byte)
-	file["_rels/.rels"] = []byte(XMLHeader + templateRels)
-	file["docProps/app.xml"] = []byte(XMLHeader + templateDocpropsApp)
-	file["docProps/core.xml"] = []byte(XMLHeader + templateDocpropsCore)
-	file["xl/_rels/workbook.xml.rels"] = []byte(XMLHeader + templateWorkbookRels)
-	file["xl/theme/theme1.xml"] = []byte(XMLHeader + templateTheme)
-	file["xl/worksheets/sheet1.xml"] = []byte(XMLHeader + templateSheet)
-	file["xl/styles.xml"] = []byte(XMLHeader + templateStyles)
-	file["xl/workbook.xml"] = []byte(XMLHeader + templateWorkbook)
-	file["[Content_Types].xml"] = []byte(XMLHeader + templateContentTypes)
 	f := newFile()
-	f.SheetCount, f.XLSX = 1, file
+	f.Pkg.Store("_rels/.rels", []byte(XMLHeader+templateRels))
+	f.Pkg.Store("docProps/app.xml", []byte(XMLHeader+templateDocpropsApp))
+	f.Pkg.Store("docProps/core.xml", []byte(XMLHeader+templateDocpropsCore))
+	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(XMLHeader+templateWorkbookRels))
+	f.Pkg.Store("xl/theme/theme1.xml", []byte(XMLHeader+templateTheme))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(XMLHeader+templateSheet))
+	f.Pkg.Store("xl/styles.xml", []byte(XMLHeader+templateStyles))
+	f.Pkg.Store("xl/workbook.xml", []byte(XMLHeader+templateWorkbook))
+	f.Pkg.Store("[Content_Types].xml", []byte(XMLHeader+templateContentTypes))
+	f.SheetCount = 1
 	f.CalcChain = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes = f.contentTypesReader()
-	f.Drawings = make(map[string]*xlsxWsDr)
+	f.Drawings = sync.Map{}
 	f.Styles = f.stylesReader()
 	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
 	f.VMLDrawing = make(map[string]*vmlDrawing)
 	f.WorkBook = f.workbookReader()
-	f.Relationships = make(map[string]*xlsxRelationships)
-	f.Relationships["xl/_rels/workbook.xml.rels"] = f.relsReader("xl/_rels/workbook.xml.rels")
-	f.Sheet["xl/worksheets/sheet1.xml"], _ = f.workSheetReader("Sheet1")
+	f.Relationships = sync.Map{}
+	f.Relationships.Store("xl/_rels/workbook.xml.rels", f.relsReader("xl/_rels/workbook.xml.rels"))
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
+	ws, _ := f.workSheetReader("Sheet1")
+	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
 	f.Theme = f.themeReader()
 	return f
 }
@@ -67,14 +69,15 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFileNameLength {
 		return ErrMaxFileNameLength
 	}
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	f.Path = name
+	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 	f.options = nil
-	for _, o := range opt {
-		f.options = &o
+	for i := range opt {
+		f.options = &opt[i]
 	}
 	return f.Write(file)
 }
@@ -87,62 +90,27 @@ func (f *File) Write(w io.Writer) error {
 
 // WriteTo implements io.WriterTo to write the file.
 func (f *File) WriteTo(w io.Writer) (int64, error) {
-	buf, err := f.WriteToBuffer()
-	if err != nil {
+	if f.options != nil && f.options.Password != "" {
+		buf, err := f.WriteToBuffer()
+		if err != nil {
+			return 0, err
+		}
+		return buf.WriteTo(w)
+	}
+	if err := f.writeDirectToWriter(w); err != nil {
 		return 0, err
 	}
-	return buf.WriteTo(w)
+	return 0, nil
 }
 
-// WriteToBuffer provides a function to get bytes.Buffer from the saved file.
+// WriteToBuffer provides a function to get bytes.Buffer from the saved file,
+// and it allocates space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
-	f.calcChainWriter()
-	f.commentsWriter()
-	f.contentTypesWriter()
-	f.drawingsWriter()
-	f.vmlDrawingWriter()
-	f.workBookWriter()
-	f.workSheetWriter()
-	f.relsWriter()
-	f.sharedStringsWriter()
-	f.styleSheetWriter()
 
-	for path, stream := range f.streams {
-		fi, err := zw.Create(path)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
-		var from io.Reader
-		from, err = stream.rawData.Reader()
-		if err != nil {
-			stream.rawData.Close()
-			return buf, err
-		}
-		_, err = io.Copy(fi, from)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
-		stream.rawData.Close()
-	}
-
-	for path, content := range f.XLSX {
-		if _, ok := f.streams[path]; ok {
-			continue
-		}
-		fi, err := zw.Create(path)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
-		_, err = fi.Write(content)
-		if err != nil {
-			zw.Close()
-			return buf, err
-		}
+	if err := f.writeToZip(zw); err != nil {
+		return buf, zw.Close()
 	}
 
 	if f.options != nil && f.options.Password != "" {
@@ -158,4 +126,64 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		return buf, nil
 	}
 	return buf, zw.Close()
+}
+
+// writeDirectToWriter provides a function to write to io.Writer.
+func (f *File) writeDirectToWriter(w io.Writer) error {
+	zw := zip.NewWriter(w)
+	if err := f.writeToZip(zw); err != nil {
+		_ = zw.Close()
+		return err
+	}
+	return zw.Close()
+}
+
+// writeToZip provides a function to write to zip.Writer
+func (f *File) writeToZip(zw *zip.Writer) error {
+	f.calcChainWriter()
+	f.commentsWriter()
+	f.contentTypesWriter()
+	f.drawingsWriter()
+	f.vmlDrawingWriter()
+	f.workBookWriter()
+	f.workSheetWriter()
+	f.relsWriter()
+	f.sharedStringsWriter()
+	f.styleSheetWriter()
+
+	for path, stream := range f.streams {
+		fi, err := zw.Create(path)
+		if err != nil {
+			return err
+		}
+		var from io.Reader
+		from, err = stream.rawData.Reader()
+		if err != nil {
+			_ = stream.rawData.Close()
+			return err
+		}
+		_, err = io.Copy(fi, from)
+		if err != nil {
+			return err
+		}
+		_ = stream.rawData.Close()
+	}
+	var err error
+	f.Pkg.Range(func(path, content interface{}) bool {
+		if err != nil {
+			return false
+		}
+		if _, ok := f.streams[path.(string)]; ok {
+			return true
+		}
+		var fi io.Writer
+		fi, err = zw.Create(path.(string))
+		if err != nil {
+			return false
+		}
+		_, err = fi.Write(content.([]byte))
+		return true
+	})
+
+	return err
 }

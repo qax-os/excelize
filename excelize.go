@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,19 +40,19 @@ type File struct {
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
-	Drawings         map[string]*xlsxWsDr
+	Drawings         sync.Map
 	Path             string
 	SharedStrings    *xlsxSST
 	sharedStringsMap map[string]int
-	Sheet            map[string]*xlsxWorksheet
+	Sheet            sync.Map
 	SheetCount       int
 	Styles           *xlsxStyleSheet
 	Theme            *xlsxTheme
 	DecodeVMLDrawing map[string]*decodeVmlDrawing
 	VMLDrawing       map[string]*vmlDrawing
 	WorkBook         *xlsxWorkbook
-	Relationships    map[string]*xlsxRelationships
-	XLSX             map[string][]byte
+	Relationships    sync.Map
+	Pkg              sync.Map
 	CharsetReader    charsetTranscoderFn
 }
 
@@ -59,21 +60,27 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 
 // Options define the options for open spreadsheet.
 type Options struct {
-	Password string
+	Password       string
+	UnzipSizeLimit int64
 }
 
-// OpenFile take the name of an spreadsheet file and returns a populated spreadsheet file struct
-// for it. For example, open spreadsheet with password protection:
+// OpenFile take the name of an spreadsheet file and returns a populated
+// spreadsheet file struct for it. For example, open spreadsheet with
+// password protection:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
 //    if err != nil {
 //        return
 //    }
 //
-// Note that the excelize just support decrypt and not support encrypt currently, the spreadsheet
-// saved by Save and SaveAs will be without password unprotected.
+// Note that the excelize just support decrypt and not support encrypt
+// currently, the spreadsheet saved by Save and SaveAs will be without
+// password unprotected.
+//
+// UnzipSizeLimit specified the unzip size limit in bytes on open the
+// spreadsheet, the default size limit is 16GB.
 func OpenFile(filename string, opt ...Options) (*File, error) {
-	file, err := os.Open(filename)
+	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
@@ -89,16 +96,17 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 // newFile is object builder
 func newFile() *File {
 	return &File{
+		options:          &Options{UnzipSizeLimit: UnzipSizeLimit},
 		xmlAttr:          make(map[string][]xml.Attr),
 		checked:          make(map[string]bool),
 		sheetMap:         make(map[string]string),
 		Comments:         make(map[string]*xlsxComments),
-		Drawings:         make(map[string]*xlsxWsDr),
+		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
-		Sheet:            make(map[string]*xlsxWorksheet),
+		Sheet:            sync.Map{},
 		DecodeVMLDrawing: make(map[string]*decodeVmlDrawing),
 		VMLDrawing:       make(map[string]*vmlDrawing),
-		Relationships:    make(map[string]*xlsxRelationships),
+		Relationships:    sync.Map{},
 		CharsetReader:    charset.NewReaderLabel,
 	}
 }
@@ -111,10 +119,13 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 		return nil, err
 	}
 	f := newFile()
-	if bytes.Contains(b, oleIdentifier) && len(opt) > 0 {
-		for _, o := range opt {
-			f.options = &o
+	for i := range opt {
+		f.options = &opt[i]
+		if f.options.UnzipSizeLimit == 0 {
+			f.options.UnzipSizeLimit = UnzipSizeLimit
 		}
+	}
+	if bytes.Contains(b, oleIdentifier) {
 		b, err = Decrypt(b, f.options)
 		if err != nil {
 			return nil, fmt.Errorf("decrypted file failed")
@@ -124,12 +135,14 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	file, sheetCount, err := ReadZipReader(zr)
+	file, sheetCount, err := ReadZipReader(zr, f.options)
 	if err != nil {
 		return nil, err
 	}
-	f.SheetCount, f.XLSX = sheetCount, file
+	f.SheetCount = sheetCount
+	for k, v := range file {
+		f.Pkg.Store(k, v)
+	}
 	f.CalcChain = f.calcChainReader()
 	f.sheetMap = f.getSheetMap()
 	f.Styles = f.stylesReader()
@@ -172,40 +185,40 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		name string
 		ok   bool
 	)
-
 	if name, ok = f.sheetMap[trimSheetName(sheet)]; !ok {
 		err = fmt.Errorf("sheet %s is not exist", sheet)
 		return
 	}
-	if ws = f.Sheet[name]; f.Sheet[name] == nil {
-		if strings.HasPrefix(name, "xl/chartsheets") {
-			err = fmt.Errorf("sheet %s is chart sheet", sheet)
-			return
-		}
-		ws = new(xlsxWorksheet)
-		if _, ok := f.xmlAttr[name]; !ok {
-			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
-			f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
-		}
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
-			Decode(ws); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
-			return
-		}
-		err = nil
-		if f.checked == nil {
-			f.checked = make(map[string]bool)
-		}
-		if ok = f.checked[name]; !ok {
-			checkSheet(ws)
-			if err = checkRow(ws); err != nil {
-				return
-			}
-			f.checked[name] = true
-		}
-		f.Sheet[name] = ws
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
+		ws = worksheet.(*xlsxWorksheet)
+		return
 	}
-
+	if strings.HasPrefix(name, "xl/chartsheets") {
+		err = fmt.Errorf("sheet %s is chart sheet", sheet)
+		return
+	}
+	ws = new(xlsxWorksheet)
+	if _, ok := f.xmlAttr[name]; !ok {
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
+		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
+	}
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
+		Decode(ws); err != nil && err != io.EOF {
+		err = fmt.Errorf("xml decode error: %s", err)
+		return
+	}
+	err = nil
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	if ok = f.checked[name]; !ok {
+		checkSheet(ws)
+		if err = checkRow(ws); err != nil {
+			return
+		}
+		f.checked[name] = true
+	}
+	f.Sheet.Store(name, ws)
 	return
 }
 
@@ -254,6 +267,8 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	if rels == nil {
 		rels = &xlsxRelationships{}
 	}
+	rels.Lock()
+	defer rels.Unlock()
 	var rID int
 	for idx, rel := range rels.Relationships {
 		ID, _ := strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
@@ -277,7 +292,7 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 		Target:     target,
 		TargetMode: targetMode,
 	})
-	f.Relationships[relPath] = rels
+	f.Relationships.Store(relPath, rels)
 	return rID
 }
 
@@ -311,18 +326,18 @@ func (f *File) UpdateLinkedValue() error {
 	// recalculate formulas
 	wb.CalcPr = nil
 	for _, name := range f.GetSheetList() {
-		xlsx, err := f.workSheetReader(name)
+		ws, err := f.workSheetReader(name)
 		if err != nil {
 			if err.Error() == fmt.Sprintf("sheet %s is chart sheet", trimSheetName(name)) {
 				continue
 			}
 			return err
 		}
-		for indexR := range xlsx.SheetData.Row {
-			for indexC, col := range xlsx.SheetData.Row[indexR].C {
+		for indexR := range ws.SheetData.Row {
+			for indexC, col := range ws.SheetData.Row[indexR].C {
 				if col.F != nil && col.V != "" {
-					xlsx.SheetData.Row[indexR].C[indexC].V = ""
-					xlsx.SheetData.Row[indexR].C[indexC].T = ""
+					ws.SheetData.Row[indexR].C[indexC].V = ""
+					ws.SheetData.Row[indexR].C[indexC].T = ""
 				}
 			}
 		}
@@ -354,6 +369,8 @@ func (f *File) AddVBAProject(bin string) error {
 	}
 	f.setContentTypePartVBAProjectExtensions()
 	wb := f.relsReader(f.getWorkbookRelsPath())
+	wb.Lock()
+	defer wb.Unlock()
 	var rID int
 	var ok bool
 	for _, rel := range wb.Relationships {
@@ -374,8 +391,8 @@ func (f *File) AddVBAProject(bin string) error {
 			Type:   SourceRelationshipVBAProject,
 		})
 	}
-	file, _ := ioutil.ReadFile(bin)
-	f.XLSX["xl/vbaProject.bin"] = file
+	file, _ := ioutil.ReadFile(filepath.Clean(bin))
+	f.Pkg.Store("xl/vbaProject.bin", file)
 	return err
 }
 
@@ -384,6 +401,8 @@ func (f *File) AddVBAProject(bin string) error {
 func (f *File) setContentTypePartVBAProjectExtensions() {
 	var ok bool
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Defaults {
 		if v.Extension == "bin" {
 			ok = true

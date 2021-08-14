@@ -10,19 +10,58 @@ import (
 	"testing"
 	"time"
 
+	_ "image/jpeg"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConcurrency(t *testing.T) {
-	f := NewFile()
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
 	wg := new(sync.WaitGroup)
 	for i := 1; i <= 5; i++ {
 		wg.Add(1)
 		go func(val int, t *testing.T) {
+			// Concurrency set cell value
 			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", val), val))
 			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", val), strconv.Itoa(val)))
+			// Concurrency get cell value
 			_, err := f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
 			assert.NoError(t, err)
+			// Concurrency set rows
+			assert.NoError(t, f.SetSheetRow("Sheet1", "B6", &[]interface{}{" Hello",
+				[]byte("World"), 42, int8(1<<8/2 - 1), int16(1<<16/2 - 1), int32(1<<32/2 - 1),
+				int64(1<<32/2 - 1), float32(42.65418), float64(-42.65418), float32(42), float64(42),
+				uint(1<<32 - 1), uint8(1<<8 - 1), uint16(1<<16 - 1), uint32(1<<32 - 1),
+				uint64(1<<32 - 1), true, complex64(5 + 10i)}))
+			// Concurrency create style
+			style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+			assert.NoError(t, err)
+			// Concurrency set cell style
+			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
+			// Concurrency add picture
+			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
+				`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
+			// Concurrency get cell picture
+			name, raw, err := f.GetPicture("Sheet1", "A1")
+			assert.Equal(t, "", name)
+			assert.Nil(t, raw)
+			assert.NoError(t, err)
+			// Concurrency iterate rows
+			rows, err := f.Rows("Sheet1")
+			assert.NoError(t, err)
+			for rows.Next() {
+				_, err := rows.Columns()
+				assert.NoError(t, err)
+			}
+			// Concurrency iterate columns
+			cols, err := f.Cols("Sheet1")
+			assert.NoError(t, err)
+			for rows.Next() {
+				_, err := cols.Rows()
+				assert.NoError(t, err)
+			}
+
 			wg.Done()
 		}(i, t)
 	}
@@ -32,6 +71,7 @@ func TestConcurrency(t *testing.T) {
 		t.Error(err)
 	}
 	assert.Equal(t, "1", val)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestConcurrency.xlsx")))
 }
 
 func TestCheckCellInArea(t *testing.T) {
@@ -141,8 +181,8 @@ func TestGetCellValue(t *testing.T) {
 	// Test get cell value without r attribute of the row.
 	f := NewFile()
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`)))
 	f.checked = nil
 	cells := []string{"A3", "A4", "B4", "A7", "B7"}
 	rows, err := f.GetRows("Sheet1")
@@ -156,20 +196,20 @@ func TestGetCellValue(t *testing.T) {
 	cols, err := f.GetCols("Sheet1")
 	assert.Equal(t, [][]string{{"", "", "A3", "A4", "", "", "A7", "A8"}, {"", "", "", "B4", "", "", "B7", "B8"}}, cols)
 	assert.NoError(t, err)
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`)))
 	f.checked = nil
 	cell, err := f.GetCellValue("Sheet1", "A2")
 	assert.Equal(t, "A2", cell)
 	assert.NoError(t, err)
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{nil, {"A2", "B2"}}, rows)
 	assert.NoError(t, err)
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="str"><v>A1</v></c></row><row r="1"><c r="B1" t="str"><v>B1</v></c></row>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="str"><v>A1</v></c></row><row r="1"><c r="B1" t="str"><v>B1</v></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{{"A1", "B1"}}, rows)
@@ -256,17 +296,23 @@ func TestGetCellRichText(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(runsSource[1].Font, runs[1].Font), "should get the same font")
 
 	// Test get cell rich text when string item index overflow
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetData.Row[0].C[0].V = "2"
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "2"
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text when string item index is negative
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetData.Row[0].C[0].V = "-1"
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "-1"
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text on invalid string item index
-	f.Sheet["xl/worksheets/sheet1.xml"].SheetData.Row[0].C[0].V = "x"
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "x"
 	_, err = f.GetCellRichText("Sheet1", "A1")
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
 	// Test set cell rich text on not exists worksheet
@@ -355,6 +401,9 @@ func TestSetCellRichText(t *testing.T) {
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
+	// Test set cell rich text with characters over the maximum limit
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A1", richTextRun), ErrCellCharsLength.Error())
 }
 
 func TestFormattedValue2(t *testing.T) {

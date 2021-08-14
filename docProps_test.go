@@ -42,12 +42,12 @@ func TestSetDocProps(t *testing.T) {
 		Version:        "1.0.0",
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocProps.xlsx")))
-	f.XLSX["docProps/core.xml"] = nil
+	f.Pkg.Store("docProps/core.xml", nil)
 	assert.NoError(t, f.SetDocProps(&DocProperties{}))
 
 	// Test unsupported charset
 	f = NewFile()
-	f.XLSX["docProps/core.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("docProps/core.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
@@ -59,13 +59,13 @@ func TestGetDocProps(t *testing.T) {
 	props, err := f.GetDocProps()
 	assert.NoError(t, err)
 	assert.Equal(t, props.Creator, "Microsoft Office User")
-	f.XLSX["docProps/core.xml"] = nil
+	f.Pkg.Store("docProps/core.xml", nil)
 	_, err = f.GetDocProps()
 	assert.NoError(t, err)
 
 	// Test unsupported charset
 	f = NewFile()
-	f.XLSX["docProps/core.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("docProps/core.xml", MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }

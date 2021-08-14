@@ -54,7 +54,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //        _ "image/jpeg"
 //        _ "image/png"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/xuri/excelize/v2"
 //    )
 //
 //    func main() {
@@ -68,7 +68,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //            fmt.Println(err)
 //        }
 //        // Insert a picture offset in the cell with external hyperlink, printing and positioning support.
-//        if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`); err != nil {
+//        if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`); err != nil {
 //            fmt.Println(err)
 //        }
 //        if err := f.SaveAs("Book1.xlsx"); err != nil {
@@ -94,7 +94,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	if !ok {
 		return ErrImgExt
 	}
-	file, _ := ioutil.ReadFile(picture)
+	file, _ := ioutil.ReadFile(filepath.Clean(picture))
 	_, name := filepath.Split(picture)
 	return f.AddPictureFromBytes(sheet, cell, format, name, ext, file)
 }
@@ -110,7 +110,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //        _ "image/jpeg"
 //        "io/ioutil"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/xuri/excelize/v2"
 //    )
 //
 //    func main() {
@@ -148,6 +148,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	if err != nil {
 		return err
 	}
+	ws.Lock()
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
@@ -162,6 +163,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 		}
 		drawingHyperlinkRID = f.addRels(drawingRels, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
 	}
+	ws.Unlock()
 	err = f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
 	if err != nil {
 		return err
@@ -184,19 +186,21 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
+	sheetRels.Lock()
+	defer sheetRels.Unlock()
 	for k, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
-	f.Relationships[rels] = sheetRels
+	f.Relationships.Store(rels, sheetRels)
 }
 
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
-	xlsx.LegacyDrawing = &xlsxLegacyDrawing{
+	ws, _ := f.workSheetReader(sheet)
+	ws.LegacyDrawing = &xlsxLegacyDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 }
@@ -204,8 +208,8 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 // addSheetDrawing provides a function to add drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
-	xlsx.Drawing = &xlsxDrawing{
+	ws, _ := f.workSheetReader(sheet)
+	ws.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 }
@@ -213,8 +217,8 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 // addSheetPicture provides a function to add picture element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetPicture(sheet string, rID int) {
-	xlsx, _ := f.workSheetReader(sheet)
-	xlsx.Picture = &xlsxPicture{
+	ws, _ := f.workSheetReader(sheet)
+	ws.Picture = &xlsxPicture{
 		RID: "rId" + strconv.Itoa(rID),
 	}
 }
@@ -223,16 +227,18 @@ func (f *File) addSheetPicture(sheet string, rID int) {
 // folder xl/drawings.
 func (f *File) countDrawings() int {
 	c1, c2 := 0, 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/drawings/drawing") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/drawings/drawing") {
 			c1++
 		}
-	}
-	for rel := range f.Drawings {
-		if strings.Contains(rel, "xl/drawings/drawing") {
+		return true
+	})
+	f.Drawings.Range(func(rel, value interface{}) bool {
+		if strings.Contains(rel.(string), "xl/drawings/drawing") {
 			c2++
 		}
-	}
+		return true
+	})
 	if c1 < c2 {
 		return c2
 	}
@@ -295,8 +301,10 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 		FLocksWithSheet:  formatSet.FLocksWithSheet,
 		FPrintsWithSheet: formatSet.FPrintsWithSheet,
 	}
+	content.Lock()
+	defer content.Unlock()
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
-	f.Drawings[drawingXML] = content
+	f.Drawings.Store(drawingXML, content)
 	return err
 }
 
@@ -304,11 +312,12 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 // folder xl/media/image.
 func (f *File) countMedia() int {
 	count := 0
-	for k := range f.XLSX {
-		if strings.Contains(k, "xl/media/image") {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/media/image") {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 
@@ -317,16 +326,22 @@ func (f *File) countMedia() int {
 // and drawings that use it will reference the same image.
 func (f *File) addMedia(file []byte, ext string) string {
 	count := f.countMedia()
-	for name, existing := range f.XLSX {
-		if !strings.HasPrefix(name, "xl/media/image") {
-			continue
+	var name string
+	f.Pkg.Range(func(k, existing interface{}) bool {
+		if !strings.HasPrefix(k.(string), "xl/media/image") {
+			return true
 		}
-		if bytes.Equal(file, existing) {
-			return name
+		if bytes.Equal(file, existing.([]byte)) {
+			name = k.(string)
+			return false
 		}
+		return true
+	})
+	if name != "" {
+		return name
 	}
 	media := "xl/media/image" + strconv.Itoa(count+1) + ext
-	f.XLSX[media] = file
+	f.Pkg.Store(media, file)
 	return media
 }
 
@@ -335,6 +350,8 @@ func (f *File) addMedia(file []byte, ext string) string {
 func (f *File) setContentTypePartImageExtensions() {
 	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Defaults {
 		_, ok := imageTypes[v.Extension]
 		if ok {
@@ -356,6 +373,8 @@ func (f *File) setContentTypePartImageExtensions() {
 func (f *File) setContentTypePartVMLExtensions() {
 	vml := false
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Defaults {
 		if v.Extension == "vml" {
 			vml = true
@@ -401,6 +420,8 @@ func (f *File) addContentTypePart(index int, contentType string) {
 		s()
 	}
 	content := f.contentTypesReader()
+	content.Lock()
+	defer content.Unlock()
 	for _, v := range content.Overrides {
 		if v.PartName == partNames[contentType] {
 			return
@@ -425,6 +446,8 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
+	sheetRels.Lock()
+	defer sheetRels.Unlock()
 	for _, v := range sheetRels.Relationships {
 		if v.ID == rID {
 			return v.Target
@@ -467,8 +490,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.Replace(target, "..", "xl", -1)
-	_, ok := f.XLSX[drawingXML]
-	if !ok {
+	if _, ok := f.Pkg.Load(drawingXML); !ok {
 		return "", nil, err
 	}
 	drawingRelationships := strings.Replace(
@@ -531,7 +553,10 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+					ret = filepath.Base(drawRel.Target)
+					if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
+						buf = buffer.([]byte)
+					}
 					return
 				}
 			}
@@ -549,13 +574,18 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 		anchor  *xdrCellAnchor
 		drawRel *xlsxRelationship
 	)
+	wsDr.Lock()
+	defer wsDr.Unlock()
 	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
 					if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
-						ret, buf = filepath.Base(drawRel.Target), f.XLSX[strings.Replace(drawRel.Target, "..", "xl", -1)]
+						ret = filepath.Base(drawRel.Target)
+						if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
+							buf = buffer.([]byte)
+						}
 						return
 					}
 				}
@@ -570,6 +600,8 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 // relationship ID.
 func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
 	if drawingRels := f.relsReader(rels); drawingRels != nil {
+		drawingRels.Lock()
+		defer drawingRels.Unlock()
 		for _, v := range drawingRels.Relationships {
 			if v.ID == rID {
 				return &v
@@ -582,16 +614,17 @@ func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
 // drawingsWriter provides a function to save xl/drawings/drawing%d.xml after
 // serialize structure.
 func (f *File) drawingsWriter() {
-	for path, d := range f.Drawings {
+	f.Drawings.Range(func(path, d interface{}) bool {
 		if d != nil {
-			v, _ := xml.Marshal(d)
-			f.saveFileList(path, v)
+			v, _ := xml.Marshal(d.(*xlsxWsDr))
+			f.saveFileList(path.(string), v)
 		}
-	}
+		return true
+	})
 }
 
 // drawingResize calculate the height and width after resizing.
-func (f *File) drawingResize(sheet string, cell string, width, height float64, formatSet *formatPicture) (w, h, c, r int, err error) {
+func (f *File) drawingResize(sheet, cell string, width, height float64, formatSet *formatPicture) (w, h, c, r int, err error) {
 	var mergeCells []MergeCell
 	mergeCells, err = f.GetMergeCells(sheet)
 	if err != nil {
@@ -618,10 +651,10 @@ func (f *File) drawingResize(sheet string, cell string, width, height float64, f
 	if inMergeCell {
 		cellWidth, cellHeight = 0, 0
 		c, r = rng[0], rng[1]
-		for col := rng[0] - 1; col < rng[2]; col++ {
+		for col := rng[0]; col <= rng[2]; col++ {
 			cellWidth += f.getColWidth(sheet, col)
 		}
-		for row := rng[1] - 1; row < rng[3]; row++ {
+		for row := rng[1]; row <= rng[3]; row++ {
 			cellHeight += f.getRowHeight(sheet, row)
 		}
 	}

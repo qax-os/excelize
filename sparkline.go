@@ -467,7 +467,7 @@ func (f *File) parseFormatAddSparklineSet(sheet string, opt *SparklineOption) (*
 		return ws, err
 	}
 	if opt == nil {
-		return ws, errors.New("parameter is required")
+		return ws, ErrParameterRequired
 	}
 	if len(opt.Location) < 1 {
 		return ws, errors.New("parameter 'Location' is required")
@@ -524,10 +524,11 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 			if sparklineGroupBytes, err = xml.Marshal(group); err != nil {
 				return
 			}
-			groups = &xlsxX14SparklineGroups{
-				XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value,
-				Content: decodeSparklineGroups.Content + string(sparklineGroupBytes),
+			if groups == nil {
+				groups = &xlsxX14SparklineGroups{}
 			}
+			groups.XMLNSXM = NameSpaceSpreadSheetExcel2006Main.Value
+			groups.Content = decodeSparklineGroups.Content + string(sparklineGroupBytes)
 			if sparklineGroupsBytes, err = xml.Marshal(groups); err != nil {
 				return
 			}

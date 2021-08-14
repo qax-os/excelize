@@ -253,7 +253,9 @@ func TestAddSparkline(t *testing.T) {
 		Style:    -1,
 	}), `parameter 'Style' must betweent 0-35`)
 
-	f.Sheet["xl/worksheets/sheet1.xml"].ExtLst.Ext = `<extLst>
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst.Ext = `<extLst>
 	    <ext x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}">
 	        <x14:sparklineGroups
 	            xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">

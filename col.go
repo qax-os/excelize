@@ -199,8 +199,11 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
-	if f.Sheet[name] != nil {
-		output, _ := xml.Marshal(f.Sheet[name])
+	if ws, ok := f.Sheet.Load(name); ok && ws != nil {
+		worksheet := ws.(*xlsxWorksheet)
+		worksheet.Lock()
+		defer worksheet.Unlock()
+		output, _ := xml.Marshal(worksheet)
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var colIterator columnXMLIterator
@@ -432,7 +435,14 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		fc.Width = c.Width
 		return fc
 	})
-	return nil
+	if rows := len(ws.SheetData.Row); rows > 0 {
+		for col := start; col <= end; col++ {
+			from, _ := CoordinatesToCellName(col, 1)
+			to, _ := CoordinatesToCellName(col, rows)
+			err = f.SetCellStyle(sheet, from, to, styleID)
+		}
+	}
+	return err
 }
 
 // SetColWidth provides a function to set the width of a single column or
@@ -592,9 +602,9 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 	}
 
 	// Subtract the underlying cell heights to find end cell of the object.
-	for height >= f.getRowHeight(sheet, rowEnd) {
-		height -= f.getRowHeight(sheet, rowEnd)
+	for height >= f.getRowHeight(sheet, rowEnd+1) {
 		rowEnd++
+		height -= f.getRowHeight(sheet, rowEnd)
 	}
 
 	// The end vertices are whatever is left from the width and height.
@@ -604,12 +614,12 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 }
 
 // getColWidth provides a function to get column width in pixels by given
-// sheet name and column index.
+// sheet name and column number.
 func (f *File) getColWidth(sheet string, col int) int {
-	xlsx, _ := f.workSheetReader(sheet)
-	if xlsx.Cols != nil {
+	ws, _ := f.workSheetReader(sheet)
+	if ws.Cols != nil {
 		var width float64
-		for _, v := range xlsx.Cols.Col {
+		for _, v := range ws.Cols.Col {
 			if v.Min <= col && col <= v.Max {
 				width = v.Width
 			}
@@ -623,7 +633,7 @@ func (f *File) getColWidth(sheet string, col int) int {
 }
 
 // GetColWidth provides a function to get column width by given worksheet name
-// and column index.
+// and column name.
 func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {

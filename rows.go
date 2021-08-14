@@ -165,7 +165,7 @@ func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
 		}
 		blank := rowIterator.cellCol - len(rowIterator.columns)
 		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d)
-		if val != "" {
+		if val != "" || colCell.F != nil {
 			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
 		}
 	}
@@ -195,9 +195,12 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
-	if f.Sheet[name] != nil {
+	if ws, ok := f.Sheet.Load(name); ok && ws != nil {
+		worksheet := ws.(*xlsxWorksheet)
+		worksheet.Lock()
+		defer worksheet.Unlock()
 		// flush data
-		output, _ := xml.Marshal(f.Sheet[name])
+		output, _ := xml.Marshal(worksheet)
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var (
@@ -266,12 +269,14 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 }
 
 // getRowHeight provides a function to get row height in pixels by given sheet
-// name and row index.
+// name and row number.
 func (f *File) getRowHeight(sheet string, row int) int {
 	ws, _ := f.workSheetReader(sheet)
+	ws.Lock()
+	defer ws.Unlock()
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
-		if v.R == row+1 && v.Ht != 0 {
+		if v.R == row && v.Ht != 0 {
 			return int(convertRowHeightToPixels(v.Ht))
 		}
 	}
@@ -280,7 +285,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 }
 
 // GetRowHeight provides a function to get row height by given worksheet name
-// and row index. For example, get the height of the first row in Sheet1:
+// and row number. For example, get the height of the first row in Sheet1:
 //
 //    height, err := f.GetRowHeight("Sheet1", 1)
 //
@@ -321,6 +326,9 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
+		}
+		if sharedStrings.Count == 0 {
+			sharedStrings.Count = len(sharedStrings.SI)
 		}
 		if sharedStrings.UniqueCount == 0 {
 			sharedStrings.UniqueCount = sharedStrings.Count
@@ -370,7 +378,7 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 		return f.formattedValue(c.S, c.V), nil
 	default:
 		isNum, precision := isNumeric(c.V)
-		if isNum && precision > 15 {
+		if isNum && precision > 10 {
 			val, _ := roundPrecision(c.V)
 			if val != c.V {
 				return f.formattedValue(c.S, val), nil
@@ -606,7 +614,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 		row++
 	}
 	for _, rng := range ws.MergeCells.Cells {
-		coordinates, err := f.areaRefToCoordinates(rng.Ref)
+		coordinates, err := areaRefToCoordinates(rng.Ref)
 		if err != nil {
 			return err
 		}
@@ -616,7 +624,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 	}
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
 		areaData := ws.MergeCells.Cells[i]
-		coordinates, _ := f.areaRefToCoordinates(areaData.Ref)
+		coordinates, _ := areaRefToCoordinates(areaData.Ref)
 		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 		if y1 == y2 && y1 == row {
 			from, _ := CoordinatesToCellName(x1, row2)

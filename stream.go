@@ -56,7 +56,8 @@ type StreamWriter struct {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Data"}}); err != nil {
+//    if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Data"}},
+//        excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
 //        fmt.Println(err)
 //    }
 //    for rowID := 2; rowID <= 102400; rowID++ {
@@ -288,25 +289,35 @@ type Cell struct {
 	Value   interface{}
 }
 
+// RowOpts define the options for set row.
+type RowOpts struct {
+	Height float64
+	Hidden bool
+}
+
 // SetRow writes an array to stream rows by giving a worksheet name, starting
 // coordinate and a pointer to an array of values. Note that you must call the
 // 'Flush' method to end the streaming writing process.
 //
 // As a special case, if Cell is used as a value, then the Cell.StyleID will be
 // applied to that cell.
-func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
+func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpts) error {
 	col, row, err := CellNameToCoordinates(axis)
 	if err != nil {
 		return err
 	}
 	if !sw.sheetWritten {
 		if len(sw.cols) > 0 {
-			sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
 		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
 	}
-	fmt.Fprintf(&sw.rawData, `<row r="%d">`, row)
+	attrs, err := marshalRowAttrs(opts...)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(&sw.rawData, `<row r="%d"%s>`, row, attrs)
 	for i, val := range values {
 		axis, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
@@ -332,8 +343,30 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}) error {
 	return sw.rawData.Sync()
 }
 
+// marshalRowAttrs prepare attributes of the row by given options.
+func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
+	var opt *RowOpts
+	for i := range opts {
+		opt = &opts[i]
+	}
+	if opt == nil {
+		return
+	}
+	if opt.Height > MaxRowHeight {
+		err = ErrMaxRowHeight
+		return
+	}
+	if opt.Height > 0 {
+		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, opt.Height)
+	}
+	if opt.Hidden {
+		attrs += ` hidden="true"`
+	}
+	return
+}
+
 // SetColWidth provides a function to set the width of a single column or
-// multiple columns for the the StreamWriter. Note that you must call
+// multiple columns for the StreamWriter. Note that you must call
 // the 'SetColWidth' function before the 'SetRow' function. For example set
 // the width column B:C as 20:
 //
@@ -481,9 +514,9 @@ func (sw *StreamWriter) Flush() error {
 	}
 
 	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
-	delete(sw.File.Sheet, sheetPath)
+	sw.File.Sheet.Delete(sheetPath)
 	delete(sw.File.checked, sheetPath)
-	delete(sw.File.XLSX, sheetPath)
+	sw.File.Pkg.Delete(sheetPath)
 
 	return nil
 }

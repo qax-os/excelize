@@ -34,18 +34,20 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"=2^3":  "8",
-		"=1=1":  "TRUE",
-		"=1=2":  "FALSE",
-		"=1<2":  "TRUE",
-		"=3<2":  "FALSE",
-		"=2<=3": "TRUE",
-		"=2<=1": "FALSE",
-		"=2>1":  "TRUE",
-		"=2>3":  "FALSE",
-		"=2>=1": "TRUE",
-		"=2>=3": "FALSE",
-		"=1&2":  "12",
+		"=2^3":      "8",
+		"=1=1":      "TRUE",
+		"=1=2":      "FALSE",
+		"=1<2":      "TRUE",
+		"=3<2":      "FALSE",
+		"=2<=3":     "TRUE",
+		"=2<=1":     "FALSE",
+		"=2>1":      "TRUE",
+		"=2>3":      "FALSE",
+		"=2>=1":     "TRUE",
+		"=2>=3":     "FALSE",
+		"=1&2":      "12",
+		`="A"="A"`:  "TRUE",
+		`="A"<>"A"`: "FALSE",
 		// Engineering Functions
 		// BESSELI
 		"=BESSELI(4.5,1)": "15.389222753735925",
@@ -1084,6 +1086,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=IF(1<>1)":                             "FALSE",
 		"=IF(5<0, \"negative\", \"positive\")":  "positive",
 		"=IF(-2<0, \"negative\", \"positive\")": "negative",
+		`=IF(1=1, "equal", "notequal")`:         "equal",
+		`=IF(1<>1, "equal", "notequal")`:        "notequal",
+		`=IF("A"="A", "equal", "notequal")`:     "equal",
+		`=IF("A"<>"A", "equal", "notequal")`:    "notequal",
+		`=IF(FALSE,0,ROUND(4/2,0))`:             "2",
+		`=IF(TRUE,ROUND(4/2,0),0)`:              "2",
 		// Excel Lookup and Reference Functions
 		// CHOOSE
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
@@ -2335,11 +2343,18 @@ func TestCalcWithDefinedName(t *testing.T) {
 	f := prepareCalcData(cellData)
 	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
 	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
+
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=defined_name1"))
 	result, err := f.CalcCellValue("Sheet1", "C1")
 	assert.NoError(t, err)
 	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
 	assert.Equal(t, "B1 value", result, "=defined_name1")
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=CONCATENATE(\"<\",defined_name1,\">\")"))
+	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "<B1 value>", result, "=defined_name1")
+
 }
 
 func TestCalcArithmeticOperations(t *testing.T) {

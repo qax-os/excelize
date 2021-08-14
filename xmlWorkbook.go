@@ -11,10 +11,14 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sync"
+)
 
 // xlsxRelationships describe references from parts to other internal resources in the package or to external resources.
 type xlsxRelationships struct {
+	sync.Mutex
 	XMLName       xml.Name           `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`
 	Relationships []xlsxRelationship `xml:"Relationship"`
 }

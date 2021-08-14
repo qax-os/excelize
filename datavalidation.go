@@ -13,7 +13,9 @@ package excelize
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"unicode/utf16"
 )
 
 // DataValidationType defined the type of data validation.
@@ -34,10 +36,8 @@ const (
 )
 
 const (
-	// dataValidationFormulaStrLen 255 characters+ 2 quotes
-	dataValidationFormulaStrLen = 257
-	// dataValidationFormulaStrLenErr
-	dataValidationFormulaStrLenErr = "data validation must be 0-255 characters"
+	// dataValidationFormulaStrLen 255 characters
+	dataValidationFormulaStrLen = 255
 )
 
 // DataValidationErrorStyle defined the style of data validation error alert.
@@ -72,6 +72,15 @@ const (
 	DataValidationOperatorLessThanOrEqual
 	DataValidationOperatorNotBetween
 	DataValidationOperatorNotEqual
+)
+
+// formulaEscaper mimics the Excel escaping rules for data validation,
+// which converts `"` to `""` instead of `&quot;`.
+var formulaEscaper = strings.NewReplacer(
+	`&`, `&amp;`,
+	`<`, `&lt;`,
+	`>`, `&gt;`,
+	`"`, `""`,
 )
 
 // NewDataValidation return data validation struct.
@@ -110,25 +119,22 @@ func (dd *DataValidation) SetInput(title, msg string) {
 
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
-	formula := "\"" + strings.Join(keys, ",") + "\""
-	if dataValidationFormulaStrLen < len(formula) {
-		return fmt.Errorf(dataValidationFormulaStrLenErr)
+	formula := strings.Join(keys, ",")
+	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(formula))) {
+		return ErrDataValidationFormulaLenth
 	}
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula)
+	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
 	dd.Type = convDataValidationType(typeList)
 	return nil
 }
 
 // SetRange provides function to set data validation range in drop list.
 func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
-	formula1 := fmt.Sprintf("%f", f1)
-	formula2 := fmt.Sprintf("%f", f2)
-	if dataValidationFormulaStrLen+21 < len(dd.Formula1) || dataValidationFormulaStrLen+21 < len(dd.Formula2) {
-		return fmt.Errorf(dataValidationFormulaStrLenErr)
+	if math.Abs(f1) > math.MaxFloat32 || math.Abs(f2) > math.MaxFloat32 {
+		return ErrDataValidationRange
 	}
-
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", formula1)
-	dd.Formula2 = fmt.Sprintf("<formula2>%s</formula2>", formula2)
+	dd.Formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", f1)
+	dd.Formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", f2)
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil
@@ -252,9 +258,30 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 	if ws.DataValidations == nil {
 		return nil
 	}
+	delCells, err := f.flatSqref(sqref)
+	if err != nil {
+		return err
+	}
 	dv := ws.DataValidations
 	for i := 0; i < len(dv.DataValidation); i++ {
-		if dv.DataValidation[i].Sqref == sqref {
+		applySqref := []string{}
+		colCells, err := f.flatSqref(dv.DataValidation[i].Sqref)
+		if err != nil {
+			return err
+		}
+		for col, cells := range delCells {
+			for _, cell := range cells {
+				idx := inCoordinates(colCells[col], cell)
+				if idx != -1 {
+					colCells[col] = append(colCells[col][:idx], colCells[col][idx+1:]...)
+				}
+			}
+		}
+		for _, col := range colCells {
+			applySqref = append(applySqref, f.squashSqref(col)...)
+		}
+		dv.DataValidation[i].Sqref = strings.Join(applySqref, " ")
+		if len(applySqref) == 0 {
 			dv.DataValidation = append(dv.DataValidation[:i], dv.DataValidation[i+1:]...)
 			i--
 		}
@@ -264,4 +291,32 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 		ws.DataValidations = nil
 	}
 	return nil
+}
+
+// squashSqref generates cell reference sequence by given cells coordinates list.
+func (f *File) squashSqref(cells [][]int) []string {
+	if len(cells) == 1 {
+		cell, _ := CoordinatesToCellName(cells[0][0], cells[0][1])
+		return []string{cell}
+	} else if len(cells) == 0 {
+		return []string{}
+	}
+	l, r, res := 0, 0, []string{}
+	for i := 1; i < len(cells); i++ {
+		if cells[i][0] == cells[r][0] && cells[i][1]-cells[r][1] > 1 {
+			curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+			if l == r {
+				curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
+			}
+			res = append(res, curr)
+			l, r = i, i
+		} else {
+			r++
+		}
+	}
+	curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+	if l == r {
+		curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
+	}
+	return append(res, curr)
 }

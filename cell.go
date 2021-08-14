@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -35,7 +34,8 @@ const (
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
-// returned, along with the raw value of the cell.
+// returned, along with the raw value of the cell. All cells' values will be
+// the same in a merged range.
 func (f *File) GetCellValue(sheet, axis string) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader())
@@ -101,6 +101,28 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	return err
 }
 
+// String extracts characters from a string item.
+func (x xlsxSI) String() string {
+	if len(x.R) > 0 {
+		var rows strings.Builder
+		for _, s := range x.R {
+			if s.T != nil {
+				rows.WriteString(s.T.Val)
+			}
+		}
+		return bstrUnmarshal(rows.String())
+	}
+	if x.T != nil {
+		return bstrUnmarshal(x.T.Val)
+	}
+	return ""
+}
+
+// hasValue determine if cell non-blank value.
+func (c *xlsxC) hasValue() bool {
+	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
+}
+
 // setCellIntFunc is a wrapper of SetCellInt.
 func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
 	var err error
@@ -140,7 +162,9 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	ws.Unlock()
 
 	var isNum bool
 	cellData.T, cellData.V, isNum, err = setCellTime(value)
@@ -156,6 +180,8 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	return err
 }
 
+// setCellTime prepares cell type and Excel time by given Go time.Time type
+// timestamp.
 func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	var excelTime float64
 	excelTime, err = timeToExcelTime(value)
@@ -171,6 +197,8 @@ func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	return
 }
 
+// setCellDuration prepares cell type and value by given Go time.Duration type
+// time duration.
 func setCellDuration(value time.Duration) (t string, v string) {
 	v = strconv.FormatFloat(value.Seconds()/86400.0, 'f', -1, 32)
 	return
@@ -187,11 +215,15 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
 	return err
 }
 
+// setCellInt prepares cell type and string type cell value by a given
+// integer.
 func setCellInt(value int) (t string, v string) {
 	v = strconv.Itoa(value)
 	return
@@ -208,11 +240,15 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
 	return err
 }
 
+// setCellBool prepares cell type and string type cell value by a given
+// boolean value.
 func setCellBool(value bool) (t string, v string) {
 	t = "b"
 	if value {
@@ -241,11 +277,15 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, prec, bitSize)
 	return err
 }
 
+// setCellFloat prepares cell type and string type cell value by a given
+// float value.
 func setCellFloat(value float64, prec, bitSize int) (t string, v string) {
 	v = strconv.FormatFloat(value, 'f', prec, bitSize)
 	return
@@ -262,6 +302,8 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = f.setCellString(value)
 	return err
@@ -289,14 +331,7 @@ func (f *File) setSharedString(val string) int {
 	sst.Count++
 	sst.UniqueCount++
 	t := xlsxT{Val: val}
-	// Leading and ending space(s) character detection.
-	if len(val) > 0 && (val[0] == 32 || val[len(val)-1] == 32) {
-		ns := xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
-		}
-		t.Space = ns
-	}
+	_, val, t.Space = setCellStr(val)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1
@@ -307,15 +342,20 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > TotalCellChars {
 		value = value[0:TotalCellChars]
 	}
-	// Leading and ending space(s) character detection.
-	if len(value) > 0 && (value[0] == 32 || value[len(value)-1] == 32) {
-		ns = xml.Attr{
-			Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
-			Value: "preserve",
+	if len(value) > 0 {
+		prefix, suffix := value[0], value[len(value)-1]
+		for _, ascii := range []byte{10, 13, 32} {
+			if prefix == ascii || suffix == ascii {
+				ns = xml.Attr{
+					Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+					Value: "preserve",
+				}
+				break
+			}
 		}
 	}
 	t = "str"
-	v = value
+	v = bstrMarshal(value)
 	return
 }
 
@@ -330,11 +370,15 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
 	return err
 }
 
+// setCellDefault prepares cell type and string type cell value by a given
+// string.
 func setCellDefault(value string) (t string, v string) {
 	v = value
 	return
@@ -409,13 +453,11 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	if _, _, err := SplitCellName(axis); err != nil {
 		return false, "", err
 	}
-
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return false, "", err
 	}
-	axis, err = f.mergeCellsParser(ws, axis)
-	if err != nil {
+	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return false, "", err
 	}
 	if ws.Hyperlinks != nil {
@@ -444,7 +486,7 @@ type HyperlinkOpts struct {
 // in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
 // below is example for external link.
 //
-//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
 //    // Set underline and font color style for the cell.
 //    style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 //    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
@@ -463,8 +505,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	if err != nil {
 		return err
 	}
-	axis, err = f.mergeCellsParser(ws, axis)
-	if err != nil {
+	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return err
 	}
 
@@ -570,7 +611,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 //    import (
 //        "fmt"
 //
-//        "github.com/360EntSecGroup-Skylar/excelize/v2"
+//        "github.com/xuri/excelize/v2"
 //    )
 //
 //    func main() {
@@ -678,11 +719,14 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
 	textRuns := []xlsxR{}
+	totalCellChars := 0
 	for _, textRun := range runs {
-		run := xlsxR{T: &xlsxT{Val: textRun.Text}}
-		if strings.ContainsAny(textRun.Text, "\r\n ") {
-			run.T.Space = xml.Attr{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"}
+		totalCellChars += len(textRun.Text)
+		if totalCellChars > TotalCellChars {
+			return ErrCellCharsLength
 		}
+		run := xlsxR{T: &xlsxT{}}
+		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
 		fnt := textRun.Font
 		if fnt != nil {
 			rpr := xlsxRPr{}
@@ -741,7 +785,7 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 	// Make sure 'slice' is a Ptr to Slice
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
-		return errors.New("pointer to slice expected")
+		return ErrParameterInvalid
 	}
 	v = v.Elem()
 
@@ -761,8 +805,6 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 
 // getCellInfo does common preparation for all SetCell* methods.
 func (f *File) prepareCell(ws *xlsxWorksheet, sheet, cell string) (*xlsxC, int, int, error) {
-	ws.Lock()
-	defer ws.Unlock()
 	var err error
 	cell, err = f.mergeCellsParser(ws, cell)
 	if err != nil {
@@ -774,7 +816,8 @@ func (f *File) prepareCell(ws *xlsxWorksheet, sheet, cell string) (*xlsxC, int, 
 	}
 
 	prepareSheetXML(ws, col, row)
-
+	ws.Lock()
+	defer ws.Unlock()
 	return &ws.SheetData.Row[row-1].C[col-1], col, row, err
 }
 
@@ -908,7 +951,7 @@ func (f *File) checkCellInArea(cell, area string) (bool, error) {
 	if len(rng) != 2 {
 		return false, err
 	}
-	coordinates, err := f.areaRefToCoordinates(area)
+	coordinates, err := areaRefToCoordinates(area)
 	if err != nil {
 		return false, err
 	}

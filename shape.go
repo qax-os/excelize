@@ -436,7 +436,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		FPrintsWithSheet: formatSet.Format.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
-	f.Drawings[drawingXML] = content
+	f.Drawings.Store(drawingXML, content)
 	return err
 }
 

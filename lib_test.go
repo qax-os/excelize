@@ -211,9 +211,34 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 	}
 }
 
+func TestCoordinatesToAreaRef(t *testing.T) {
+	f := NewFile()
+	_, err := f.coordinatesToAreaRef([]int{})
+	assert.EqualError(t, err, ErrCoordinates.Error())
+	_, err = f.coordinatesToAreaRef([]int{1, -1, 1, 1})
+	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
+	_, err = f.coordinatesToAreaRef([]int{1, 1, 1, -1})
+	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
+	ref, err := f.coordinatesToAreaRef([]int{1, 1, 1, 1})
+	assert.NoError(t, err)
+	assert.EqualValues(t, ref, "A1:A1")
+}
+
+func TestSortCoordinates(t *testing.T) {
+	assert.EqualError(t, sortCoordinates(make([]int, 3)), ErrCoordinates.Error())
+}
+
+func TestInStrSlice(t *testing.T) {
+	assert.EqualValues(t, -1, inStrSlice([]string{}, ""))
+}
+
 func TestBytesReplace(t *testing.T) {
 	s := []byte{0x01}
 	assert.EqualValues(t, s, bytesReplace(s, []byte{}, []byte{}, 0))
+}
+
+func TestGetRootElement(t *testing.T) {
+	assert.Equal(t, 0, len(getRootElement(xml.NewDecoder(strings.NewReader("")))))
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {
@@ -233,4 +258,41 @@ func TestGenXMLNamespace(t *testing.T) {
 	assert.Equal(t, genXMLNamespace([]xml.Attr{
 		{Name: xml.Name{Space: NameSpaceXML, Local: "space"}, Value: "preserve"},
 	}), `xml:space="preserve">`)
+}
+
+func TestBstrUnmarshal(t *testing.T) {
+	bstrs := map[string]string{
+		"*":                           "*",
+		"*_x0000_":                    "*",
+		"*_x0008_":                    "*",
+		"_x0008_*":                    "*",
+		"*_x0008_*":                   "**",
+		"*_x4F60__x597D_":             "*你好",
+		"*_xG000_":                    "*_xG000_",
+		"*_xG05F_x0001_*":             "*_xG05F*",
+		"*_x005F__x0008_*":            "*_x005F_*",
+		"*_x005F_x0001_*":             "*_x0001_*",
+		"*_x005f_x005F__x0008_*":      "*_x005F_*",
+		"*_x005F_x005F_xG05F_x0006_*": "*_x005F_xG05F*",
+		"*_x005F_x005F_x005F_x0006_*": "*_x005F_x0006_*",
+		"_x005F__x0008_******":        "_x005F_******",
+		"******_x005F__x0008_":        "******_x005F_",
+		"******_x005F__x0008_******":  "******_x005F_******",
+	}
+	for bstr, expected := range bstrs {
+		assert.Equal(t, expected, bstrUnmarshal(bstr))
+	}
+}
+
+func TestBstrMarshal(t *testing.T) {
+	bstrs := map[string]string{
+		"*_xG05F_*":       "*_xG05F_*",
+		"*_x0008_*":       "*_x005F_x0008_*",
+		"*_x005F_*":       "*_x005F_x005F_*",
+		"*_x005F_xG006_*": "*_x005F_x005F_xG006_*",
+		"*_x005F_x0006_*": "*_x005F_x005F_x005F_x0006_*",
+	}
+	for bstr, expected := range bstrs {
+		assert.Equal(t, expected, bstrMarshal(bstr))
+	}
 }

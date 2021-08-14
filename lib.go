@@ -18,21 +18,30 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
 // filesystem.
-func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
-	var err error
-	var docPart = map[string]string{
-		"[content_types].xml":  "[Content_Types].xml",
-		"xl/sharedstrings.xml": "xl/sharedStrings.xml",
-	}
-	fileList := make(map[string][]byte, len(r.File))
-	worksheets := 0
+func ReadZipReader(r *zip.Reader, o *Options) (map[string][]byte, int, error) {
+	var (
+		err     error
+		docPart = map[string]string{
+			"[content_types].xml":  "[Content_Types].xml",
+			"xl/sharedstrings.xml": "xl/sharedStrings.xml",
+		}
+		fileList   = make(map[string][]byte, len(r.File))
+		worksheets int
+		unzipSize  int64
+	)
 	for _, v := range r.File {
+		unzipSize += v.FileInfo().Size()
+		if unzipSize > o.UnzipSizeLimit {
+			return fileList, worksheets, newUnzipSizeLimitError(o.UnzipSizeLimit)
+		}
 		fileName := strings.Replace(v.Name, "\\", "/", -1)
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
@@ -49,8 +58,8 @@ func ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 
 // readXML provides a function to read XML content as string.
 func (f *File) readXML(name string) []byte {
-	if content, ok := f.XLSX[name]; ok {
-		return content
+	if content, _ := f.Pkg.Load(name); content != nil {
+		return content.([]byte)
 	}
 	if content, ok := f.streams[name]; ok {
 		return content.rawData.buf.Bytes()
@@ -59,12 +68,9 @@ func (f *File) readXML(name string) []byte {
 }
 
 // saveFileList provides a function to update given file content in file list
-// of XLSX.
+// of spreadsheet.
 func (f *File) saveFileList(name string, content []byte) {
-	newContent := make([]byte, 0, len(XMLHeader)+len(content))
-	newContent = append(newContent, []byte(XMLHeader)...)
-	newContent = append(newContent, content...)
-	f.XLSX[name] = newContent
+	f.Pkg.Store(name, append([]byte(XMLHeader), content...))
 }
 
 // Read file content as string in a archive file.
@@ -76,8 +82,7 @@ func readFile(file *zip.File) ([]byte, error) {
 	dat := make([]byte, 0, file.FileInfo().Size())
 	buff := bytes.NewBuffer(dat)
 	_, _ = io.Copy(buff, rc)
-	rc.Close()
-	return buff.Bytes(), nil
+	return buff.Bytes(), rc.Close()
 }
 
 // SplitCellName splits cell name to column name and row number.
@@ -218,6 +223,113 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	}
 	colname, err := ColumnNumberToName(col)
 	return sign + colname + sign + strconv.Itoa(row), err
+}
+
+// areaRefToCoordinates provides a function to convert area reference to a
+// pair of coordinates.
+func areaRefToCoordinates(ref string) ([]int, error) {
+	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
+	if len(rng) < 2 {
+		return nil, ErrParameterInvalid
+	}
+	return areaRangeToCoordinates(rng[0], rng[1])
+}
+
+// areaRangeToCoordinates provides a function to convert cell range to a
+// pair of coordinates.
+func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
+	coordinates := make([]int, 4)
+	var err error
+	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
+	if err != nil {
+		return coordinates, err
+	}
+	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
+	return coordinates, err
+}
+
+// sortCoordinates provides a function to correct the coordinate area, such
+// correct C1:B3 to B1:C3.
+func sortCoordinates(coordinates []int) error {
+	if len(coordinates) != 4 {
+		return ErrCoordinates
+	}
+	if coordinates[2] < coordinates[0] {
+		coordinates[2], coordinates[0] = coordinates[0], coordinates[2]
+	}
+	if coordinates[3] < coordinates[1] {
+		coordinates[3], coordinates[1] = coordinates[1], coordinates[3]
+	}
+	return nil
+}
+
+// coordinatesToAreaRef provides a function to convert a pair of coordinates
+// to area reference.
+func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
+	if len(coordinates) != 4 {
+		return "", ErrCoordinates
+	}
+	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1])
+	if err != nil {
+		return "", err
+	}
+	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3])
+	if err != nil {
+		return "", err
+	}
+	return firstCell + ":" + lastCell, err
+}
+
+// flatSqref convert reference sequence to cell coordinates list.
+func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
+	var coordinates []int
+	cells = make(map[int][][]int)
+	for _, ref := range strings.Fields(sqref) {
+		rng := strings.Split(ref, ":")
+		switch len(rng) {
+		case 1:
+			var col, row int
+			col, row, err = CellNameToCoordinates(rng[0])
+			if err != nil {
+				return
+			}
+			cells[col] = append(cells[col], []int{col, row})
+		case 2:
+			if coordinates, err = areaRefToCoordinates(ref); err != nil {
+				return
+			}
+			_ = sortCoordinates(coordinates)
+			for c := coordinates[0]; c <= coordinates[2]; c++ {
+				for r := coordinates[1]; r <= coordinates[3]; r++ {
+					cells[c] = append(cells[c], []int{c, r})
+				}
+			}
+		}
+	}
+	return
+}
+
+// inCoordinates provides a method to check if an coordinate is present in
+// coordinates array, and return the index of its location, otherwise
+// return -1.
+func inCoordinates(a [][]int, x []int) int {
+	for idx, n := range a {
+		if x[0] == n[0] && x[1] == n[1] {
+			return idx
+		}
+	}
+	return -1
+}
+
+// inStrSlice provides a method to check if an element is present in an array,
+// and return the index of its location, otherwise return -1.
+func inStrSlice(a []string, x string) int {
+	for idx, n := range a {
+		if x == n {
+			return idx
+		}
+	}
+	return -1
 }
 
 // boolPtr returns a pointer to a bool with the given value.
@@ -452,6 +564,100 @@ func isNumeric(s string) (bool, int) {
 		}
 	}
 	return true, p
+}
+
+var (
+	bstrExp       = regexp.MustCompile(`_x[a-zA-Z\d]{4}_`)
+	bstrEscapeExp = regexp.MustCompile(`x[a-zA-Z\d]{4}_`)
+)
+
+// bstrUnmarshal parses the binary basic string, this will trim escaped string
+// literal which not permitted in an XML 1.0 document. The basic string
+// variant type can store any valid Unicode character. Unicode characters
+// that cannot be directly represented in XML as defined by the XML 1.0
+// specification, shall be escaped using the Unicode numerical character
+// representation escape character format _xHHHH_, where H represents a
+// hexadecimal character in the character's value. For example: The Unicode
+// character 8 is not permitted in an XML 1.0 document, so it shall be
+// escaped as _x0008_. To store the literal form of an escape sequence, the
+// initial underscore shall itself be escaped (i.e. stored as _x005F_). For
+// example: The string literal _x0008_ would be stored as _x005F_x0008_.
+func bstrUnmarshal(s string) (result string) {
+	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
+	for _, match := range matches {
+		result += s[cursor:match[0]]
+		subStr := s[match[0]:match[1]]
+		if subStr == "_x005F_" {
+			cursor = match[1]
+			if l > match[1]+6 && !bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
+				result += subStr
+				continue
+			}
+			result += "_"
+			continue
+		}
+		if bstrExp.MatchString(subStr) {
+			cursor = match[1]
+			v, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
+			if err != nil {
+				if l > match[1]+6 && bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
+					result += subStr[:6]
+					cursor = match[1] + 6
+					continue
+				}
+				result += subStr
+				continue
+			}
+			hasRune := false
+			for _, c := range v {
+				if unicode.IsControl(c) {
+					hasRune = true
+				}
+			}
+			if !hasRune {
+				result += v
+			}
+		}
+	}
+	if cursor < l {
+		result += s[cursor:]
+	}
+	return result
+}
+
+// bstrMarshal encode the escaped string literal which not permitted in an XML
+// 1.0 document.
+func bstrMarshal(s string) (result string) {
+	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
+	for _, match := range matches {
+		result += s[cursor:match[0]]
+		subStr := s[match[0]:match[1]]
+		if subStr == "_x005F_" {
+			cursor = match[1]
+			if match[1]+6 <= l && bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
+				_, err := strconv.Unquote(`"\u` + s[match[1]+1:match[1]+5] + `"`)
+				if err == nil {
+					result += subStr + "x005F" + subStr
+					continue
+				}
+			}
+			result += subStr + "x005F_"
+			continue
+		}
+		if bstrExp.MatchString(subStr) {
+			cursor = match[1]
+			_, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
+			if err == nil {
+				result += "_x005F" + subStr
+				continue
+			}
+			result += subStr
+		}
+	}
+	if cursor < l {
+		result += s[cursor:]
+	}
+	return result
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

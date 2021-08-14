@@ -136,10 +136,16 @@ func TestAddPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
-	//Test Pivot table with many data, many rows, many cols
+	// Create pivot table with many data, many rows, many cols and defined name
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "dataRange",
+		RefersTo: "Sheet1!$A$1:$E$31",
+		Comment:  "Pivot Table Data Range",
+		Scope:    "Sheet2",
+	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
-		DataRange:       "Sheet1!$A$1:$E$31",
-		PivotTableRange: "Sheet2!$A$56:$AG$90",
+		DataRange:       "dataRange",
+		PivotTableRange: "Sheet2!$A$57:$AJ$91",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type"}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Sum of Sales"}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales"}},
@@ -222,8 +228,11 @@ func TestAddPivotTable(t *testing.T) {
 	// Test adjust range with invalid range
 	_, _, err := f.adjustRange("")
 	assert.EqualError(t, err, "parameter is required")
+	// Test adjust range with incorrect range
+	_, _, err = f.adjustRange("sheet1!")
+	assert.EqualError(t, err, "parameter is invalid")
 	// Test get pivot fields order with empty data range
-	_, err = f.getPivotFieldsOrder("")
+	_, err = f.getPivotFieldsOrder(&PivotTableOption{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot cache with empty data range
 	assert.EqualError(t, f.addPivotCache(0, "", &PivotTableOption{}, nil), "parameter 'DataRange' parsing error: parameter is required")
@@ -288,12 +297,8 @@ func TestAddPivotColFields(t *testing.T) {
 func TestGetPivotFieldsOrder(t *testing.T) {
 	f := NewFile()
 	// Test get pivot fields order with not exist worksheet
-	_, err := f.getPivotFieldsOrder("SheetN!$A$1:$E$31")
+	_, err := f.getPivotFieldsOrder(&PivotTableOption{DataRange: "SheetN!$A$1:$E$31"})
 	assert.EqualError(t, err, "sheet SheetN is not exist")
-}
-
-func TestInStrSlice(t *testing.T) {
-	assert.EqualValues(t, -1, inStrSlice([]string{}, ""))
 }
 
 func TestGetPivotTableFieldName(t *testing.T) {

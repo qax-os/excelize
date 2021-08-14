@@ -11,10 +11,6 @@
 
 package excelize
 
-import (
-	"strings"
-)
-
 type adjustDirection bool
 
 const (
@@ -149,7 +145,7 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 		return nil
 	}
 
-	coordinates, err := f.areaRefToCoordinates(ws.AutoFilter.Ref)
+	coordinates, err := areaRefToCoordinates(ws.AutoFilter.Ref)
 	if err != nil {
 		return err
 	}
@@ -194,58 +190,6 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 	return coordinates
 }
 
-// areaRefToCoordinates provides a function to convert area reference to a
-// pair of coordinates.
-func (f *File) areaRefToCoordinates(ref string) ([]int, error) {
-	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
-	return areaRangeToCoordinates(rng[0], rng[1])
-}
-
-// areaRangeToCoordinates provides a function to convert cell range to a
-// pair of coordinates.
-func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
-	coordinates := make([]int, 4)
-	var err error
-	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
-	if err != nil {
-		return coordinates, err
-	}
-	coordinates[2], coordinates[3], err = CellNameToCoordinates(lastCell)
-	return coordinates, err
-}
-
-// sortCoordinates provides a function to correct the coordinate area, such
-// correct C1:B3 to B1:C3.
-func sortCoordinates(coordinates []int) error {
-	if len(coordinates) != 4 {
-		return ErrCoordinates
-	}
-	if coordinates[2] < coordinates[0] {
-		coordinates[2], coordinates[0] = coordinates[0], coordinates[2]
-	}
-	if coordinates[3] < coordinates[1] {
-		coordinates[3], coordinates[1] = coordinates[1], coordinates[3]
-	}
-	return nil
-}
-
-// coordinatesToAreaRef provides a function to convert a pair of coordinates
-// to area reference.
-func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
-	if len(coordinates) != 4 {
-		return "", ErrCoordinates
-	}
-	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1])
-	if err != nil {
-		return "", err
-	}
-	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3])
-	if err != nil {
-		return "", err
-	}
-	return firstCell + ":" + lastCell, err
-}
-
 // adjustMergeCells provides a function to update merged cells when inserting
 // or deleting rows or columns.
 func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
@@ -255,7 +199,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
 		areaData := ws.MergeCells.Cells[i]
-		coordinates, err := f.areaRefToCoordinates(areaData.Ref)
+		coordinates, err := areaRefToCoordinates(areaData.Ref)
 		if err != nil {
 			return err
 		}
@@ -275,7 +219,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 			x1 = f.adjustMergeCellsHelper(x1, num, offset)
 			x2 = f.adjustMergeCellsHelper(x2, num, offset)
 		}
-		if x1 == x2 && y1 == y2 {
+		if x1 == x2 && y1 == y2 && i >= 0 {
 			f.deleteMergeCell(ws, i)
 			i--
 		}
@@ -290,7 +234,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 // compare and calculate cell axis by the given pivot, operation axis and
 // offset.
 func (f *File) adjustMergeCellsHelper(pivot, num, offset int) int {
-	if pivot >= num {
+	if pivot > num {
 		pivot += offset
 		if pivot < 1 {
 			return 1

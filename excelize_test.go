@@ -144,7 +144,7 @@ func TestOpenFile(t *testing.T) {
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G2", nil))
 
-	assert.EqualError(t, f.SetCellValue("Sheet2", "G4", time.Now()), ErrToExcelTime.Error())
+	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now()))
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now().UTC()))
 	// 02:46:40
@@ -184,13 +184,9 @@ func TestSaveFile(t *testing.T) {
 
 func TestSaveAsWrongPath(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if assert.NoError(t, err) {
-		// Test write file to not exist directory.
-		err = f.SaveAs("")
-		if assert.Error(t, err) {
-			assert.True(t, os.IsNotExist(err), "Error: %v: Expected os.IsNotExists(err) == true", err)
-		}
-	}
+	assert.NoError(t, err)
+	// Test write file to not exist directory.
+	assert.EqualError(t, f.SaveAs(""), "open .: is a directory")
 }
 
 func TestCharsetTranscoder(t *testing.T) {
@@ -203,6 +199,10 @@ func TestOpenReader(t *testing.T) {
 	assert.EqualError(t, err, "zip: not a valid zip file")
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password"})
 	assert.EqualError(t, err, "decrypted file failed")
+
+	// Test open spreadsheet with unzip size limit.
+	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
+	assert.EqualError(t, err, newUnzipSizeLimitError(100).Error())
 
 	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
@@ -307,6 +307,7 @@ func TestNewFile(t *testing.T) {
 	}
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewFile.xlsx")))
+	assert.NoError(t, f.Save())
 }
 
 func TestAddDrawingVML(t *testing.T) {
@@ -321,9 +322,9 @@ func TestSetCellHyperLink(t *testing.T) {
 		t.Log(err)
 	}
 	// Test set cell hyperlink in a work sheet already have hyperlinks.
-	assert.NoError(t, f.SetCellHyperLink("Sheet1", "B19", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "B19", "https://github.com/xuri/excelize", "External"))
 	// Test add first hyperlink in a work sheet.
-	assert.NoError(t, f.SetCellHyperLink("Sheet2", "C1", "https://github.com/360EntSecGroup-Skylar/excelize", "External"))
+	assert.NoError(t, f.SetCellHyperLink("Sheet2", "C1", "https://github.com/xuri/excelize", "External"))
 	// Test add Location hyperlink in a work sheet.
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location"))
 	// Test add Location hyperlink with display & tooltip in a work sheet.
@@ -343,14 +344,18 @@ func TestSetCellHyperLink(t *testing.T) {
 	f = NewFile()
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
-	f.Sheet["xl/worksheets/sheet1.xml"].Hyperlinks = &xlsxHyperlinks{Hyperlink: make([]xlsxHyperlink, 65530)}
-	assert.EqualError(t, f.SetCellHyperLink("Sheet1", "A65531", "https://github.com/360EntSecGroup-Skylar/excelize", "External"), ErrTotalSheetHyperlinks.Error())
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).Hyperlinks = &xlsxHyperlinks{Hyperlink: make([]xlsxHyperlink, 65530)}
+	assert.EqualError(t, f.SetCellHyperLink("Sheet1", "A65531", "https://github.com/xuri/excelize", "External"), ErrTotalSheetHyperlinks.Error())
 
 	f = NewFile()
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
-	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	err = f.SetCellHyperLink("Sheet1", "A1", "https://github.com/360EntSecGroup-Skylar/excelize", "External")
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	err = f.SetCellHyperLink("Sheet1", "A1", "https://github.com/xuri/excelize", "External")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
@@ -376,7 +381,9 @@ func TestGetCellHyperLink(t *testing.T) {
 	f = NewFile()
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
-	f.Sheet["xl/worksheets/sheet1.xml"].Hyperlinks = &xlsxHyperlinks{
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).Hyperlinks = &xlsxHyperlinks{
 		Hyperlink: []xlsxHyperlink{{Ref: "A1"}},
 	}
 	link, target, err = f.GetCellHyperLink("Sheet1", "A1")
@@ -384,7 +391,9 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.Equal(t, link, true)
 	assert.Equal(t, target, "")
 
-	f.Sheet["xl/worksheets/sheet1.xml"].MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	link, target, err = f.GetCellHyperLink("Sheet1", "A1")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 	assert.Equal(t, link, false)
@@ -975,7 +984,7 @@ func TestGetActiveSheetIndex(t *testing.T) {
 
 func TestRelsWriter(t *testing.T) {
 	f := NewFile()
-	f.Relationships["xl/worksheets/sheet/rels/sheet1.xml.rel"] = &xlsxRelationships{}
+	f.Relationships.Store("xl/worksheets/sheet/rels/sheet1.xml.rel", &xlsxRelationships{})
 	f.relsWriter()
 }
 
@@ -1112,8 +1121,8 @@ func TestSetSheetRow(t *testing.T) {
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "", &[]interface{}{"cell", nil, 2}),
 		`cannot convert cell "" to coordinates: invalid cell name ""`)
 
-	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", []interface{}{}), `pointer to slice expected`)
-	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", &f), `pointer to slice expected`)
+	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", &f), ErrParameterInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetRow.xlsx")))
 }
 
@@ -1198,7 +1207,7 @@ func TestContentTypesReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
 	f.ContentTypes = nil
-	f.XLSX["[Content_Types].xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("[Content_Types].xml", MacintoshCyrillicCharset)
 	f.contentTypesReader()
 }
 
@@ -1206,22 +1215,23 @@ func TestWorkbookReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
 	f.WorkBook = nil
-	f.XLSX["xl/workbook.xml"] = MacintoshCyrillicCharset
+	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
 	f.workbookReader()
 }
 
 func TestWorkSheetReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = MacintoshCyrillicCharset
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err := f.workSheetReader("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.UpdateLinkedValue(), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 
 	// Test on no checked worksheet.
 	f = NewFile()
-	delete(f.Sheet, "xl/worksheets/sheet1.xml")
-	f.XLSX["xl/worksheets/sheet1.xml"] = []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`)
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
 	f.checked = nil
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
@@ -1231,15 +1241,15 @@ func TestRelsReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
 	rels := "xl/_rels/workbook.xml.rels"
-	f.Relationships[rels] = nil
-	f.XLSX[rels] = MacintoshCyrillicCharset
+	f.Relationships.Store(rels, nil)
+	f.Pkg.Store(rels, MacintoshCyrillicCharset)
 	f.relsReader(rels)
 }
 
 func TestDeleteSheetFromWorkbookRels(t *testing.T) {
 	f := NewFile()
 	rels := "xl/_rels/workbook.xml.rels"
-	f.Relationships[rels] = nil
+	f.Relationships.Store(rels, nil)
 	assert.Equal(t, f.deleteSheetFromWorkbookRels("rID"), "")
 }
 
@@ -1263,7 +1273,7 @@ func prepareTestBook1() (*File, error) {
 
 	// Test add picture to worksheet with offset, external hyperlink and positioning.
 	err = f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.png"),
-		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/360EntSecGroup-Skylar/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
+		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`)
 	if err != nil {
 		return nil, err
 	}
