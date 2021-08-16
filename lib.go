@@ -196,7 +196,7 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 		return -1, -1, fmt.Errorf(msg, cell, err)
 	}
 	if row > TotalRows {
-		return -1, -1, fmt.Errorf("row number exceeds maximum limit")
+		return -1, -1, ErrMaxRows
 	}
 	col, err := ColumnNameToNumber(colname)
 	return col, row, err

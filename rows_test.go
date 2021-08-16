@@ -889,6 +889,18 @@ func TestCheckRow(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 }
 
+func TestSetRowStyle(t *testing.T) {
+	f := NewFile()
+	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	assert.NoError(t, err)
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 10, -1, styleID), newInvalidRowNumberError(-1).Error())
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, styleID), ErrMaxRows.Error())
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, -1), newInvalidStyleID(-1).Error())
+	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, styleID), "sheet SheetN is not exist")
+	assert.NoError(t, f.SetRowStyle("Sheet1", 10, 1, styleID))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
+}
+
 func TestNumberFormats(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {

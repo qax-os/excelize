@@ -23,8 +23,9 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
-// GetRows return all the rows in a sheet by given worksheet name (case
-// sensitive). For example:
+// GetRows return all the rows in a sheet by given worksheet name
+// (case sensitive). GetRows fetched the rows with value or formula cells,
+// the tail continuously empty cell will be skipped. For example:
 //
 //    rows, err := f.GetRows("Sheet1")
 //    if err != nil {
@@ -715,6 +716,43 @@ func checkRow(ws *xlsxWorksheet) error {
 				ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
 			}
 		}
+	}
+	return nil
+}
+
+// SetRowStyle provides a function to set style of rows by given worksheet
+// name, row range and style ID. Note that this will overwrite the existing
+// styles for the cell, it won't append or merge style with existing styles.
+//
+// For example set style of row 1 on Sheet1:
+//
+//    err = f.SetRowStyle("Sheet1", 1, style)
+//
+// Set style of rows 1 to 10 on Sheet1:
+//
+//    err = f.SetRowStyle("Sheet1", 1, 10, style)
+//
+func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
+	if end < start {
+		start, end = end, start
+	}
+	if start < 1 {
+		return newInvalidRowNumberError(start)
+	}
+	if end > TotalRows {
+		return ErrMaxRows
+	}
+	if styleID < 0 {
+		return newInvalidStyleID(styleID)
+	}
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	prepareSheetXML(ws, 0, end)
+	for row := start - 1; row < end; row++ {
+		ws.SheetData.Row[row].S = styleID
+		ws.SheetData.Row[row].CustomFormat = true
 	}
 	return nil
 }

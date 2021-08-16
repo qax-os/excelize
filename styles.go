@@ -2603,7 +2603,8 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 // SetCellStyle provides a function to add style attribute for cells by given
 // worksheet name, coordinate area and style ID. Note that diagonalDown and
 // diagonalUp type border should be use same color in the same coordinate
-// area.
+// area, this will overwrite the existing styles for the cell, it won't
+// append or merge style with existing styles.
 //
 // For example create a borders of cell H9 on Sheet1:
 //

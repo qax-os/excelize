@@ -46,6 +46,11 @@ func newUnzipSizeLimitError(unzipSizeLimit int64) error {
 	return fmt.Errorf("unzip size exceeds the %d bytes limit", unzipSizeLimit)
 }
 
+// newInvalidStyleID defined the error message on receiving the invalid style ID.
+func newInvalidStyleID(styleID int) error {
+	return fmt.Errorf("invalid style ID %d, negative values are not supported", styleID)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
@@ -76,6 +81,8 @@ var (
 	ErrAddVBAProject = errors.New("unsupported VBA project extension")
 	// ErrToExcelTime defined the error message on receive a not UTC time.
 	ErrToExcelTime = errors.New("only UTC time expected")
+	// ErrMaxRows defined the error message on receive a row number exceeds maximum limit.
+	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrMaxRowHeight defined the error message on receive an invalid row
 	// height.
 	ErrMaxRowHeight = errors.New("the height of the row must be smaller than or equal to 409 points")
