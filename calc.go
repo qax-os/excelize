@@ -7263,7 +7263,11 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 	if lookupVector.Type != ArgMatrix && lookupVector.Type != ArgList {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
 	}
-	cols, matchIdx := lookupCol(lookupVector), -1
+	arrayForm := lookupVector.Type == ArgMatrix
+	if arrayForm && len(lookupVector.Matrix) == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires not empty range as second argument")
+	}
+	cols, matchIdx := lookupCol(lookupVector, 0), -1
 	for idx, col := range cols {
 		lhs := lookupValue
 		switch col.Type {
@@ -7280,9 +7284,13 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 			break
 		}
 	}
-	column := cols
+	var column []formulaArg
 	if argsList.Len() == 3 {
-		column = lookupCol(argsList.Back().Value.(formulaArg))
+		column = lookupCol(argsList.Back().Value.(formulaArg), 0)
+	} else if arrayForm && len(lookupVector.Matrix[0]) > 1 {
+		column = lookupCol(lookupVector, 1)
+	} else {
+		column = cols
 	}
 	if matchIdx < 0 || matchIdx >= len(column) {
 		return newErrorFormulaArg(formulaErrorNA, "LOOKUP no result found")
@@ -7291,13 +7299,13 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 }
 
 // lookupCol extract columns for LOOKUP.
-func lookupCol(arr formulaArg) []formulaArg {
+func lookupCol(arr formulaArg, idx int) []formulaArg {
 	col := arr.List
 	if arr.Type == ArgMatrix {
 		col = nil
 		for _, r := range arr.Matrix {
 			if len(r) > 0 {
-				col = append(col, r[0])
+				col = append(col, r[idx])
 				continue
 			}
 			col = append(col, newEmptyFormulaArg())
