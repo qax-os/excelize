@@ -1131,6 +1131,8 @@ func TestCalcCellValue(t *testing.T) {
 		// LOOKUP
 		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
+		"=LOOKUP(E3,E2:E5,F2:F5)":      "22100",
+		"=LOOKUP(E3,E2:F5)":            "22100",
 		"=LOOKUP(1,MUNIT(1),MUNIT(1))": "1",
 		// ROW
 		"=ROW()":                "1",
