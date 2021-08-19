@@ -367,6 +367,7 @@ var tokenPriority = map[string]int{
 //    MINA
 //    MIRR
 //    MOD
+//    MONTH
 //    MROUND
 //    MULTINOMIAL
 //    MUNIT
