@@ -367,6 +367,7 @@ var tokenPriority = map[string]int{
 //    MINA
 //    MIRR
 //    MOD
+//    MONTH
 //    MROUND
 //    MULTINOMIAL
 //    MUNIT
@@ -6143,7 +6144,7 @@ func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
 	return timeFunc("DAY", argsList)
 }
 
-// Returns the month of a date represented by a serial number.
+// MONTH function returns the month of a date represented by a serial number.
 // The month is given as an integer, ranging from 1 (January) to 12 (December).
 // The syntax of the function is:
 //
