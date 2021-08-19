@@ -948,6 +948,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAY(42171)": "16",
 		// MONTH
 		"=MONTH(42171)": "6",
+		// YEAR
+		"=YEAR(42171)": "2015",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",

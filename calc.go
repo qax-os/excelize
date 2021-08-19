@@ -6125,11 +6125,13 @@ func timeFunc(name string, argsList *list.List) formulaArg {
 		result = float64(t.Day())
 	case "MONTH":
 		result = float64(t.Month())
+	case "YEAR":
+		result = float64(t.Year())
 	}
 	return newNumberFormulaArg(result)
 }
 
-// DAY Returns the day of a date, represented by a serial number.
+// DAY function returns the day of a date, represented by a serial number.
 // The day is given as an integer ranging from 1 to 31.
 // The syntax of the function is:
 //
@@ -6143,7 +6145,7 @@ func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
 	return timeFunc("DAY", argsList)
 }
 
-// Returns the month of a date represented by a serial number.
+// MONTH function returns the month of a date represented by a serial number.
 // The month is given as an integer, ranging from 1 (January) to 12 (December).
 // The syntax of the function is:
 //
@@ -6155,6 +6157,20 @@ func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
 // For example, use DATE(2008,5,23) for the 23rd day of May, 2008.
 func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
 	return timeFunc("MONTH", argsList)
+}
+
+// YEAR function returns the year corresponding to a date.
+// The year is returned as an integer in the range 1900-9999.
+// The syntax of the function is:
+//
+//    YEAR(serial_number)
+//
+// Serial_number (required) is the date of the year you want to find.
+// Dates should be entered by using the DATE function,
+// or as results of other formulas or functions.
+// For example, use DATE(2008,5,23) for the 23rd day of May, 2008.
+func (fn *formulaFuncs) YEAR(argsList *list.List) formulaArg {
+	return timeFunc("YEAR", argsList)
 }
 
 // NOW function returns the current date and time. The function receives no
