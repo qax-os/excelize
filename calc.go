@@ -6109,6 +6109,26 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(diff)
 }
 
+// timeFunc is a helper function for DAY and MONTH
+func timeFunc(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, name+" requires exactly one argument")
+	}
+	excelDate := argsList.Front().Value.(formulaArg).ToNumber()
+	if excelDate.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, name+" requires a number argument")
+	}
+	t := timeFromExcelTime(excelDate.Number, false)
+	var result float64
+	switch name {
+	case "DAY":
+		result = float64(t.Day())
+	case "MONTH":
+		result = float64(t.Month())
+	}
+	return newNumberFormulaArg(result)
+}
+
 // DAY Returns the day of a date, represented by a serial number.
 // The day is given as an integer ranging from 1 to 31.
 // The syntax of the function is:
@@ -6118,17 +6138,23 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 // Serial_number (required) is the date of the day you are trying to find.
 // Dates should be entered by using the DATE function,
 // or as results of other formulas or functions.
-// For example, use DATE(2008,5,23) for the 23rd day of May, 2008. 
+// For example, use DATE(2008,5,23) for the 23rd day of May, 2008.
 func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
-	if argsList.Len() != 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DAY requires exactly one argument")
-	}
-	excelDate := argsList.Front().Value.(formulaArg).ToNumber()
-	if excelDate.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, "DAY requires a number argument")
-	}
-	t := timeFromExcelTime(excelDate.Number, false)
-	return newNumberFormulaArg(float64(t.Day()))
+	return timeFunc("DAY", argsList)
+}
+
+// Returns the month of a date represented by a serial number.
+// The month is given as an integer, ranging from 1 (January) to 12 (December).
+// The syntax of the function is:
+//
+//    MONTH(serial_number)
+//
+// Serial_number (required) is the date of the month you are trying to find.
+// Dates should be entered by using the DATE function,
+// or as results of other formulas or functions.
+// For example, use DATE(2008,5,23) for the 23rd day of May, 2008.
+func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
+	return timeFunc("MONTH", argsList)
 }
 
 // NOW function returns the current date and time. The function receives no

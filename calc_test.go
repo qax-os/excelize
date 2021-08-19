@@ -946,6 +946,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(42171,44242,\"yd\")": "244",
 		// DAY
 		"=DAY(42171)": "16",
+		// MONTH
+		"=MONTH(42171)": "6",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1933,6 +1935,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAY()":            "DAY requires exactly one argument",
 		"=DAY(43891,43101)": "DAY requires exactly one argument",
 		`=DAY("text")`:      "DAY requires a number argument",
+		// MONTH
+		"=MONTH()":            "MONTH requires exactly one argument",
+		"=MONTH(43891,43101)": "MONTH requires exactly one argument",
+		`=MONTH("text")`:      "MONTH requires a number argument",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
 		// TODAY
