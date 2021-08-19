@@ -944,6 +944,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(43101,43891,\"YD\")": "59",
 		"=DATEDIF(36526,73110,\"YD\")": "60",
 		"=DATEDIF(42171,44242,\"yd\")": "244",
+		// DAY
+		"=DAY(42171)": "16",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1927,6 +1929,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(\"\",\"\",\"\")":    "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DATEDIF(43891,43101,\"Y\")": "start_date > end_date",
 		"=DATEDIF(43101,43891,\"x\")": "DATEDIF has invalid unit",
+		// DAY
+		"=DAY()":            "DAY requires exactly one argument",
+		"=DAY(43891,43101)": "DAY requires exactly one argument",
+		`=DAY("text")`:      "DAY requires a number argument",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
 		// TODAY

@@ -269,6 +269,7 @@ var tokenPriority = map[string]int{
 //    CUMPRINC
 //    DATE
 //    DATEDIF
+//    DAY
 //    DB
 //    DDB
 //    DEC2BIN
@@ -6106,6 +6107,28 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DATEDIF has invalid unit")
 	}
 	return newNumberFormulaArg(diff)
+}
+
+// DAY Returns the day of a date, represented by a serial number.
+// The day is given as an integer ranging from 1 to 31.
+// The syntax of the function is:
+//
+//    DAY(serial_number)
+//
+// Serial_number (required) is the date of the day you are trying to find.
+// Dates should be entered by using the DATE function,
+// or as results of other formulas or functions.
+// For example, use DATE(2008,5,23) for the 23rd day of May, 2008. 
+func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAY requires exactly one argument")
+	}
+	excelDate := argsList.Front().Value.(formulaArg).ToNumber()
+	if excelDate.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAY requires a number argument")
+	}
+	t := timeFromExcelTime(excelDate.Number, false)
+	return newNumberFormulaArg(float64(t.Day()))
 }
 
 // NOW function returns the current date and time. The function receives no
