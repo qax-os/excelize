@@ -1131,6 +1131,9 @@ func TestCalcCellValue(t *testing.T) {
 		// LOOKUP
 		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
+		"=LOOKUP(E3,E2:E5,F2:F5)":      "22100",
+		"=LOOKUP(E3,E2:F5)":            "22100",
+		"=LOOKUP(1,MUNIT(1))":          "1",
 		"=LOOKUP(1,MUNIT(1),MUNIT(1))": "1",
 		// ROW
 		"=ROW()":                "1",
@@ -2090,6 +2093,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOOKUP()":                     "LOOKUP requires at least 2 arguments",
 		"=LOOKUP(D2,D1,D2)":             "LOOKUP requires second argument of table array",
 		"=LOOKUP(D2,D1,D2,FALSE)":       "LOOKUP requires at most 3 arguments",
+		"=LOOKUP(1,MUNIT(0))":           "LOOKUP requires not empty range as second argument",
 		"=LOOKUP(D1,MUNIT(1),MUNIT(1))": "LOOKUP no result found",
 		// ROW
 		"=ROW(1,2)":          "ROW requires at most 1 argument",
