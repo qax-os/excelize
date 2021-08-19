@@ -6130,7 +6130,7 @@ func timeFunc(name string, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(result)
 }
 
-// DAY Returns the day of a date, represented by a serial number.
+// DAY function returns the day of a date, represented by a serial number.
 // The day is given as an integer ranging from 1 to 31.
 // The syntax of the function is:
 //
