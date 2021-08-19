@@ -451,6 +451,7 @@ var tokenPriority = map[string]int{
 //    VAR.P
 //    VARP
 //    VLOOKUP
+//    YEAR
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
@@ -6110,7 +6111,7 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(diff)
 }
 
-// timeFunc is a helper function for DAY and MONTH
+// timeFunc is a helper function for DAY, MONTH and YEAR
 func timeFunc(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, name+" requires exactly one argument")
