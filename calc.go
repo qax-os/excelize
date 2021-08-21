@@ -504,6 +504,7 @@ type formulaFuncs struct {
 //    VAR.P
 //    VARP
 //    VLOOKUP
+//    YEAR
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
@@ -6443,6 +6444,36 @@ func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, "MONTH only accepts positive argument")
 	}
 	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Month()))
+}
+
+// YEAR function returns an integer representing the year of a supplied date.
+// The syntax of the function is:
+//
+//    YEAR(serial_number)
+//
+func (fn *formulaFuncs) YEAR(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YEAR requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		year, _, _, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(year))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YEAR only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Year()))
 }
 
 // NOW function returns the current date and time. The function receives no

@@ -965,6 +965,13 @@ func TestCalcCellValue(t *testing.T) {
 		// MONTH
 		"=MONTH(42171)":           "6",
 		"=MONTH(\"31-May-2015\")": "5",
+		// YEAR
+		"=YEAR(15)":              "1900",
+		"=YEAR(\"15\")":          "1900",
+		"=YEAR(2048)":            "1905",
+		"=YEAR(42171)":           "2015",
+		"=YEAR(\"29-May-2015\")": "2015",
+		"=YEAR(\"05/03/1984\")":  "1984",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1986,10 +1993,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAY(\"0-January-1900\")":                                            "#VALUE!",
 		// MONTH
 		"=MONTH()":                    "MONTH requires exactly 1 argument",
-		"=MONTH(43891,43101)":         "MONTH requires exactly 1 argument",
+		"=MONTH(0,0)":                 "MONTH requires exactly 1 argument",
 		"=MONTH(-1)":                  "MONTH only accepts positive argument",
 		"=MONTH(\"text\")":            "#VALUE!",
 		"=MONTH(\"January 25, 100\")": "#VALUE!",
+		// YEAR
+		"=YEAR()":                    "YEAR requires exactly 1 argument",
+		"=YEAR(0,0)":                 "YEAR requires exactly 1 argument",
+		"=YEAR(-1)":                  "YEAR only accepts positive argument",
+		"=YEAR(\"text\")":            "#VALUE!",
+		"=YEAR(\"January 25, 100\")": "#VALUE!",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
 		// TODAY
