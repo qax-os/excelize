@@ -7572,7 +7572,7 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 	if arrayForm && len(lookupVector.Matrix) == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires not empty range as second argument")
 	}
-	cols, matchIdx := lookupCol(lookupVector, 0), -1
+	cols, matchIdx, ok := lookupCol(lookupVector, 0), -1, false
 	for idx, col := range cols {
 		lhs := lookupValue
 		switch col.Type {
@@ -7584,10 +7584,21 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 				}
 			}
 		}
-		if compareFormulaArg(lhs, col, false, false) == criteriaEq {
+		compare := compareFormulaArg(lhs, col, false, false)
+		// Find exact match
+		if compare == criteriaEq {
 			matchIdx = idx
 			break
 		}
+		// Find nearest match if lookup value is more than or equal to the first value in lookup vector
+		if idx == 0 {
+			ok = compare == criteriaG
+		} else if ok && compare == criteriaL && matchIdx == -1 {
+			matchIdx = idx - 1
+		}
+	}
+	if ok && matchIdx == -1 {
+		matchIdx = len(cols) - 1
 	}
 	var column []formulaArg
 	if argsList.Len() == 3 {
