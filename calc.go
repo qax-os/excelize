@@ -420,6 +420,7 @@ type formulaFuncs struct {
 //    MINA
 //    MIRR
 //    MOD
+//    MONTH
 //    MROUND
 //    MULTINOMIAL
 //    MUNIT
@@ -6411,6 +6412,37 @@ func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Mod(num.Number, 31.0))
 	}
 	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Day()))
+}
+
+// MONTH function returns the month of a date represented by a serial number.
+// The month is given as an integer, ranging from 1 (January) to 12
+// (December). The syntax of the function is:
+//
+//    MONTH(serial_number)
+//
+func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MONTH requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		_, month, _, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(month))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "MONTH only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Month()))
 }
 
 // NOW function returns the current date and time. The function receives no
