@@ -944,6 +944,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(43101,43891,\"YD\")": "59",
 		"=DATEDIF(36526,73110,\"YD\")": "60",
 		"=DATEDIF(42171,44242,\"yd\")": "244",
+		// DAY
+		"=DAY(0)":                                "0",
+		"=DAY(INT(7))":                           "7",
+		"=DAY(\"35\")":                           "4",
+		"=DAY(42171)":                            "16",
+		"=DAY(\"2-28-1900\")":                    "28",
+		"=DAY(\"31-May-2015\")":                  "31",
+		"=DAY(\"01/03/2019 12:14:16\")":          "3",
+		"=DAY(\"January 25, 2020 01 AM\")":       "25",
+		"=DAY(\"January 25, 2020 01:03 AM\")":    "25",
+		"=DAY(\"January 25, 2020 12:00:00 AM\")": "25",
+		"=DAY(\"1900-1-1\")":                     "1",
+		"=DAY(\"12-1-1900\")":                    "1",
+		"=DAY(\"3-January-1900\")":               "3",
+		"=DAY(\"3-February-2000\")":              "3",
+		"=DAY(\"3-February-2008\")":              "3",
+		"=DAY(\"01/25/20\")":                     "25",
+		"=DAY(\"01/25/31\")":                     "25",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1927,6 +1945,40 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(\"\",\"\",\"\")":    "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DATEDIF(43891,43101,\"Y\")": "start_date > end_date",
 		"=DATEDIF(43101,43891,\"x\")": "DATEDIF has invalid unit",
+		// DAY
+		"=DAY()":         "DAY requires exactly 1 argument",
+		"=DAY(-1)":       "DAY only accepts positive argument",
+		"=DAY(0,0)":      "DAY requires exactly 1 argument",
+		"=DAY(\"text\")": "#VALUE!",
+		"=DAY(\"January 25, 2020 9223372036854775808 AM\")":                   "#VALUE!",
+		"=DAY(\"January 25, 2020 9223372036854775808:00 AM\")":                "#VALUE!",
+		"=DAY(\"January 25, 2020 00:9223372036854775808 AM\")":                "#VALUE!",
+		"=DAY(\"January 25, 2020 9223372036854775808:00.0 AM\")":              "#VALUE!",
+		"=DAY(\"January 25, 2020 0:1" + strings.Repeat("0", 309) + ".0 AM\")": "#VALUE!",
+		"=DAY(\"January 25, 2020 9223372036854775808:00:00 AM\")":             "#VALUE!",
+		"=DAY(\"January 25, 2020 0:9223372036854775808:0 AM\")":               "#VALUE!",
+		"=DAY(\"January 25, 2020 0:0:1" + strings.Repeat("0", 309) + " AM\")": "#VALUE!",
+		"=DAY(\"January 25, 2020 0:61:0 AM\")":                                "#VALUE!",
+		"=DAY(\"January 25, 2020 0:00:60 AM\")":                               "#VALUE!",
+		"=DAY(\"January 25, 2020 24:00:00\")":                                 "#VALUE!",
+		"=DAY(\"January 25, 2020 00:00:10001\")":                              "#VALUE!",
+		"=DAY(\"9223372036854775808/25/2020\")":                               "#VALUE!",
+		"=DAY(\"01/9223372036854775808/2020\")":                               "#VALUE!",
+		"=DAY(\"01/25/9223372036854775808\")":                                 "#VALUE!",
+		"=DAY(\"01/25/10000\")":                                               "#VALUE!",
+		"=DAY(\"01/25/100\")":                                                 "#VALUE!",
+		"=DAY(\"January 9223372036854775808, 2020\")":                         "#VALUE!",
+		"=DAY(\"January 25, 9223372036854775808\")":                           "#VALUE!",
+		"=DAY(\"January 25, 10000\")":                                         "#VALUE!",
+		"=DAY(\"January 25, 100\")":                                           "#VALUE!",
+		"=DAY(\"9223372036854775808-25-2020\")":                               "#VALUE!",
+		"=DAY(\"01-9223372036854775808-2020\")":                               "#VALUE!",
+		"=DAY(\"01-25-9223372036854775808\")":                                 "#VALUE!",
+		"=DAY(\"1900-0-0\")":                                                  "#VALUE!",
+		"=DAY(\"14-25-1900\")":                                                "#VALUE!",
+		"=DAY(\"3-January-9223372036854775808\")":                             "#VALUE!",
+		"=DAY(\"9223372036854775808-January-1900\")":                          "#VALUE!",
+		"=DAY(\"0-January-1900\")":                                            "#VALUE!",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
 		// TODAY
@@ -2613,4 +2665,9 @@ func TestCalcMIRR(t *testing.T) {
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}
+}
+
+func TestStrToDate(t *testing.T) {
+	_, _, _, _, err := strToDate("")
+	assert.Equal(t, formulaErrorVALUE, err.Error)
 }

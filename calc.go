@@ -34,29 +34,111 @@ import (
 	"golang.org/x/text/message"
 )
 
-// Excel formula errors
 const (
+	// Excel formula errors
 	formulaErrorDIV         = "#DIV/0!"
 	formulaErrorNAME        = "#NAME?"
 	formulaErrorNA          = "#N/A"
 	formulaErrorNUM         = "#NUM!"
 	formulaErrorVALUE       = "#VALUE!"
 	formulaErrorREF         = "#REF!"
-	formulaErrorNULL        = "#NULL"
+	formulaErrorNULL        = "#NULL!"
 	formulaErrorSPILL       = "#SPILL!"
 	formulaErrorCALC        = "#CALC!"
 	formulaErrorGETTINGDATA = "#GETTING_DATA"
+	// formula criteria condition enumeration.
+	_ byte = iota
+	criteriaEq
+	criteriaLe
+	criteriaGe
+	criteriaL
+	criteriaG
+	criteriaBeg
+	criteriaEnd
+	criteriaErr
+	// Numeric precision correct numeric values as legacy Excel application
+	// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel In the
+	// top figure the fraction 1/9000 in Excel is displayed. Although this number
+	// has a decimal representation that is an infinite string of ones, Excel
+	// displays only the leading 15 figures. In the second line, the number one
+	// is added to the fraction, and again Excel displays only 15 figures.
+	numericPrecision       = 1000000000000000
+	maxFinancialIterations = 128
+	financialPercision     = 1.0e-08
+	// Date and time format regular expressions
+	monthRe    = `((jan|january)|(feb|february)|(mar|march)|(apr|april)|(may)|(jun|june)|(jul|july)|(aug|august)|(sep|september)|(oct|october)|(nov|november)|(dec|december))`
+	df1        = `(([0-9])+)/(([0-9])+)/(([0-9])+)`
+	df2        = monthRe + ` (([0-9])+), (([0-9])+)`
+	df3        = `(([0-9])+)-(([0-9])+)-(([0-9])+)`
+	df4        = `(([0-9])+)-` + monthRe + `-(([0-9])+)`
+	datePrefix = `^((` + df1 + `|` + df2 + `|` + df3 + `|` + df4 + `) )?`
+	tfhh       = `(([0-9])+) (am|pm)`
+	tfhhmm     = `(([0-9])+):(([0-9])+)( (am|pm))?`
+	tfmmss     = `(([0-9])+):(([0-9])+\.([0-9])+)( (am|pm))?`
+	tfhhmmss   = `(([0-9])+):(([0-9])+):(([0-9])+(\.([0-9])+)?)( (am|pm))?`
+	timeSuffix = `( (` + tfhh + `|` + tfhhmm + `|` + tfmmss + `|` + tfhhmmss + `))?$`
 )
 
-// Numeric precision correct numeric values as legacy Excel application
-// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel In the
-// top figure the fraction 1/9000 in Excel is displayed. Although this number
-// has a decimal representation that is an infinite string of ones, Excel
-// displays only the leading 15 figures. In the second line, the number one
-// is added to the fraction, and again Excel displays only 15 figures.
-const numericPrecision = 1000000000000000
-const maxFinancialIterations = 128
-const financialPercision = 1.0e-08
+var (
+	// tokenPriority defined basic arithmetic operator priority.
+	tokenPriority = map[string]int{
+		"^":  5,
+		"*":  4,
+		"/":  4,
+		"+":  3,
+		"-":  3,
+		"=":  2,
+		"<>": 2,
+		"<":  2,
+		"<=": 2,
+		">":  2,
+		">=": 2,
+		"&":  1,
+	}
+	month2num = map[string]int{
+		"january":   1,
+		"february":  2,
+		"march":     3,
+		"april":     4,
+		"may":       5,
+		"june":      6,
+		"july":      7,
+		"august":    8,
+		"septemper": 9,
+		"october":   10,
+		"november":  11,
+		"december":  12,
+		"jan":       1,
+		"feb":       2,
+		"mar":       3,
+		"apr":       4,
+		"jun":       6,
+		"jul":       7,
+		"aug":       8,
+		"sep":       9,
+		"oct":       10,
+		"nov":       11,
+		"dec":       12,
+	}
+	dateFormats = map[string]*regexp.Regexp{
+		"mm/dd/yy":    regexp.MustCompile(`^` + df1 + timeSuffix),
+		"mm dd, yy":   regexp.MustCompile(`^` + df2 + timeSuffix),
+		"yy-mm-dd":    regexp.MustCompile(`^` + df3 + timeSuffix),
+		"yy-mmStr-dd": regexp.MustCompile(`^` + df4 + timeSuffix),
+	}
+	timeFormats = map[string]*regexp.Regexp{
+		"hh":       regexp.MustCompile(datePrefix + tfhh + `$`),
+		"hh:mm":    regexp.MustCompile(datePrefix + tfhhmm + `$`),
+		"mm:ss":    regexp.MustCompile(datePrefix + tfmmss + `$`),
+		"hh:mm:ss": regexp.MustCompile(datePrefix + tfhhmmss + `$`),
+	}
+	dateOnlyFormats = []*regexp.Regexp{
+		regexp.MustCompile(`^` + df1 + `$`),
+		regexp.MustCompile(`^` + df2 + `$`),
+		regexp.MustCompile(`^` + df3 + `$`),
+		regexp.MustCompile(`^` + df4 + `$`),
+	}
+)
 
 // cellRef defines the structure of a cell reference.
 type cellRef struct {
@@ -70,19 +152,6 @@ type cellRange struct {
 	From cellRef
 	To   cellRef
 }
-
-// formula criteria condition enumeration.
-const (
-	_ byte = iota
-	criteriaEq
-	criteriaLe
-	criteriaGe
-	criteriaL
-	criteriaG
-	criteriaBeg
-	criteriaEnd
-	criteriaErr
-)
 
 // formulaCriteria defined formula criteria parser result.
 type formulaCriteria struct {
@@ -193,22 +262,6 @@ type formulaFuncs struct {
 	sheet, cell string
 }
 
-// tokenPriority defined basic arithmetic operator priority.
-var tokenPriority = map[string]int{
-	"^":  5,
-	"*":  4,
-	"/":  4,
-	"+":  3,
-	"-":  3,
-	"=":  2,
-	"<>": 2,
-	"<":  2,
-	"<=": 2,
-	">":  2,
-	">=": 2,
-	"&":  1,
-}
-
 // CalcCellValue provides a function to get calculated cell value. This
 // feature is currently in working processing. Array formula, table formula
 // and some other formulas are not supported currently.
@@ -269,6 +322,7 @@ var tokenPriority = map[string]int{
 //    CUMPRINC
 //    DATE
 //    DATEDIF
+//    DAY
 //    DB
 //    DDB
 //    DEC2BIN
@@ -6106,6 +6160,257 @@ func (fn *formulaFuncs) DATEDIF(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DATEDIF has invalid unit")
 	}
 	return newNumberFormulaArg(diff)
+}
+
+// isDateOnlyFmt check if the given string matches date-only format regular expressions.
+func isDateOnlyFmt(dateString string) bool {
+	for _, df := range dateOnlyFormats {
+		submatch := df.FindStringSubmatch(dateString)
+		if len(submatch) > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// strToTimePatternHandler1 parse and convert the given string in pattern
+// hh to the time.
+func strToTimePatternHandler1(submatch []string) (h, m int, s float64, err error) {
+	h, err = strconv.Atoi(submatch[0])
+	return
+}
+
+// strToTimePatternHandler2 parse and convert the given string in pattern
+// hh:mm to the time.
+func strToTimePatternHandler2(submatch []string) (h, m int, s float64, err error) {
+	if h, err = strconv.Atoi(submatch[0]); err != nil {
+		return
+	}
+	m, err = strconv.Atoi(submatch[2])
+	return
+}
+
+// strToTimePatternHandler3 parse and convert the given string in pattern
+// mm:ss to the time.
+func strToTimePatternHandler3(submatch []string) (h, m int, s float64, err error) {
+	if m, err = strconv.Atoi(submatch[0]); err != nil {
+		return
+	}
+	s, err = strconv.ParseFloat(submatch[2], 64)
+	return
+}
+
+// strToTimePatternHandler4 parse and convert the given string in pattern
+// hh:mm:ss to the time.
+func strToTimePatternHandler4(submatch []string) (h, m int, s float64, err error) {
+	if h, err = strconv.Atoi(submatch[0]); err != nil {
+		return
+	}
+	if m, err = strconv.Atoi(submatch[2]); err != nil {
+		return
+	}
+	s, err = strconv.ParseFloat(submatch[4], 64)
+	return
+}
+
+// strToTime parse and convert the given string to the time.
+func strToTime(str string) (int, int, float64, bool, bool, formulaArg) {
+	pattern, submatch := "", []string{}
+	for key, tf := range timeFormats {
+		submatch = tf.FindStringSubmatch(str)
+		if len(submatch) > 1 {
+			pattern = key
+			break
+		}
+	}
+	if pattern == "" {
+		return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	dateIsEmpty := submatch[1] == ""
+	submatch = submatch[49:]
+	var (
+		l              = len(submatch)
+		last           = submatch[l-1]
+		am             = last == "am"
+		pm             = last == "pm"
+		hours, minutes int
+		seconds        float64
+		err            error
+	)
+	if handler, ok := map[string]func(subsubmatch []string) (int, int, float64, error){
+		"hh":       strToTimePatternHandler1,
+		"hh:mm":    strToTimePatternHandler2,
+		"mm:ss":    strToTimePatternHandler3,
+		"hh:mm:ss": strToTimePatternHandler4,
+	}[pattern]; ok {
+		if hours, minutes, seconds, err = handler(submatch); err != nil {
+			return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if minutes >= 60 {
+		return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if am || pm {
+		if hours > 12 || seconds >= 60 {
+			return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		} else if hours == 12 {
+			hours = 0
+		}
+	} else if hours >= 24 || seconds >= 10000 {
+		return 0, 0, 0, false, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return hours, minutes, seconds, pm, dateIsEmpty, newEmptyFormulaArg()
+}
+
+// strToDatePatternHandler1 parse and convert the given string in pattern
+// mm/dd/yy to the date.
+func strToDatePatternHandler1(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	var err error
+	if month, err = strconv.Atoi(submatch[1]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if day, err = strconv.Atoi(submatch[3]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year, err = strconv.Atoi(submatch[5]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year < 0 || year > 9999 || (year > 99 && year < 1900) {
+		return 0, 0, 0, false, ErrParameterInvalid
+	}
+	return formatYear(year), month, day, submatch[8] == "", err
+}
+
+// strToDatePatternHandler2 parse and convert the given string in pattern mm
+// dd, yy to the date.
+func strToDatePatternHandler2(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	var err error
+	month = month2num[submatch[1]]
+	if day, err = strconv.Atoi(submatch[14]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year, err = strconv.Atoi(submatch[16]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	if year < 0 || year > 9999 || (year > 99 && year < 1900) {
+		return 0, 0, 0, false, ErrParameterInvalid
+	}
+	return formatYear(year), month, day, submatch[19] == "", err
+}
+
+// strToDatePatternHandler3 parse and convert the given string in pattern
+// yy-mm-dd to the date.
+func strToDatePatternHandler3(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	v1, err := strconv.Atoi(submatch[1])
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	v2, err := strconv.Atoi(submatch[3])
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	v3, err := strconv.Atoi(submatch[5])
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	if v1 >= 1900 && v1 < 10000 {
+		year = v1
+		month = v2
+		day = v3
+	} else if v1 > 0 && v1 < 13 {
+		month = v1
+		day = v2
+		year = v3
+	} else {
+		return 0, 0, 0, false, ErrParameterInvalid
+	}
+	return year, month, day, submatch[8] == "", err
+}
+
+// strToDatePatternHandler4 parse and convert the given string in pattern
+// yy-mmStr-dd, yy to the date.
+func strToDatePatternHandler4(submatch []string) (int, int, int, bool, error) {
+	var year, month, day int
+	var err error
+	if year, err = strconv.Atoi(submatch[16]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	month = month2num[submatch[3]]
+	if day, err = strconv.Atoi(submatch[1]); err != nil {
+		return 0, 0, 0, false, err
+	}
+	return formatYear(year), month, day, submatch[19] == "", err
+}
+
+// strToDate parse and convert the given string to the date.
+func strToDate(str string) (int, int, int, bool, formulaArg) {
+	pattern, submatch := "", []string{}
+	for key, df := range dateFormats {
+		submatch = df.FindStringSubmatch(str)
+		if len(submatch) > 1 {
+			pattern = key
+			break
+		}
+	}
+	if pattern == "" {
+		return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	var (
+		timeIsEmpty      bool
+		year, month, day int
+		err              error
+	)
+	if handler, ok := map[string]func(subsubmatch []string) (int, int, int, bool, error){
+		"mm/dd/yy":    strToDatePatternHandler1,
+		"mm dd, yy":   strToDatePatternHandler2,
+		"yy-mm-dd":    strToDatePatternHandler3,
+		"yy-mmStr-dd": strToDatePatternHandler4,
+	}[pattern]; ok {
+		if year, month, day, timeIsEmpty, err = handler(submatch); err != nil {
+			return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if !validateDate(year, month, day) {
+		return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return year, month, day, timeIsEmpty, newEmptyFormulaArg()
+}
+
+// DAY function returns the day of a date, represented by a serial number. The
+// day is given as an integer ranging from 1 to 31. The syntax of the
+// function is:
+//
+//    DAY(serial_number)
+//
+func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAY requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		_, _, day, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(day))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "DAY only accepts positive argument")
+	}
+	if num.Number <= 60 {
+		return newNumberFormulaArg(math.Mod(num.Number, 31.0))
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Day()))
 }
 
 // NOW function returns the current date and time. The function receives no
