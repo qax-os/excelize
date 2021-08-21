@@ -23,6 +23,7 @@ const (
 )
 
 var (
+	daysInMonth           = []int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 	excel1900Epoc         = time.Date(1899, time.December, 30, 0, 0, 0, 0, time.UTC)
 	excel1904Epoc         = time.Date(1904, time.January, 1, 0, 0, 0, 0, time.UTC)
 	excelMinTime1900      = time.Date(1899, time.December, 31, 0, 0, 0, 0, time.UTC)
@@ -166,4 +167,48 @@ func ExcelDateToTime(excelDate float64, use1904Format bool) (time.Time, error) {
 		return time.Time{}, newInvalidExcelDateError(excelDate)
 	}
 	return timeFromExcelTime(excelDate, use1904Format), nil
+}
+
+// isLeapYear determine if leap year for a given year.
+func isLeapYear(y int) bool {
+	if y == y/400*400 {
+		return true
+	}
+	if y == y/100*100 {
+		return false
+	}
+	return y == y/4*4
+}
+
+// getDaysInMonth provides a function to get the days by a given year and
+// month number.
+func getDaysInMonth(y, m int) int {
+	if m == 2 && isLeapYear(y) {
+		return 29
+	}
+	return daysInMonth[m-1]
+}
+
+// validateDate provides a function to validate if a valid date by a given
+// year, month, and day number.
+func validateDate(y, m, d int) bool {
+	if m < 1 || m > 12 {
+		return false
+	}
+	if d < 1 {
+		return false
+	}
+	return d <= getDaysInMonth(y, m)
+}
+
+// formatYear converts the given year number into a 4-digit format.
+func formatYear(y int) int {
+	if y < 1900 {
+		if y < 30 {
+			y += 2000
+		} else {
+			y += 1900
+		}
+	}
+	return y
 }
