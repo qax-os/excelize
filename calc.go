@@ -6414,38 +6414,35 @@ func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Day()))
 }
 
-// timeFunc is a helper function for DAY and MONTH
-func timeFunc(name string, argsList *list.List) formulaArg {
-    if argsList.Len() != 1 {
-        return newErrorFormulaArg(formulaErrorVALUE, name+" requires exactly one argument")
-    }
-    excelDate := argsList.Front().Value.(formulaArg).ToNumber()
-    if excelDate.Type != ArgNumber {
-        return newErrorFormulaArg(formulaErrorVALUE, name+" requires a number argument")
-    }
-    t := timeFromExcelTime(excelDate.Number, false)
-    var result float64
-    switch name {
-    case "DAY":
-        result = float64(t.Day())
-    case "MONTH":
-        result = float64(t.Month())
-    }
-    return newNumberFormulaArg(result)
-}
-
 // MONTH function returns the month of a date represented by a serial number.
-// The month is given as an integer, ranging from 1 (January) to 12 (December).
-// The syntax of the function is:
+// The month is given as an integer, ranging from 1 (January) to 12
+// (December). The syntax of the function is:
 //
 //    MONTH(serial_number)
 //
-// Serial_number (required) is the date of the month you are trying to find.
-// Dates should be entered by using the DATE function,
-// or as results of other formulas or functions.
-// For example, use DATE(2008,5,23) for the 23rd day of May, 2008.
 func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
-    return timeFunc("MONTH", argsList)
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MONTH requires exactly 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		_, month, _, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(month))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "MONTH only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Month()))
 }
 
 // NOW function returns the current date and time. The function receives no
