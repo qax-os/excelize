@@ -6181,7 +6181,7 @@ func strToTimePatternHandler1(submatch []string) (h, m int, s float64, err error
 }
 
 // strToTimePatternHandler2 parse and convert the given string in pattern
-// hh to the time.
+// hh:mm to the time.
 func strToTimePatternHandler2(submatch []string) (h, m int, s float64, err error) {
 	if h, err = strconv.Atoi(submatch[0]); err != nil {
 		return
@@ -6191,7 +6191,7 @@ func strToTimePatternHandler2(submatch []string) (h, m int, s float64, err error
 }
 
 // strToTimePatternHandler3 parse and convert the given string in pattern
-// hh to the time.
+// mm:ss to the time.
 func strToTimePatternHandler3(submatch []string) (h, m int, s float64, err error) {
 	if m, err = strconv.Atoi(submatch[0]); err != nil {
 		return
@@ -6201,7 +6201,7 @@ func strToTimePatternHandler3(submatch []string) (h, m int, s float64, err error
 }
 
 // strToTimePatternHandler4 parse and convert the given string in pattern
-// hh to the time.
+// hh:mm:ss to the time.
 func strToTimePatternHandler4(submatch []string) (h, m int, s float64, err error) {
 	if h, err = strconv.Atoi(submatch[0]); err != nil {
 		return
