@@ -225,6 +225,23 @@ func TestGetCellValue(t *testing.T) {
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{{"A3"}, {"A4", "B4"}, nil, nil, nil, nil, {"A7", "B7"}, {"A8", "B8"}}, rows)
 	assert.NoError(t, err)
+
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="0"><c r="H6" t="str"><v>H6</v></c><c r="A1" t="str"><v>r0A6</v></c><c r="F4" t="str"><v>F4</v></c></row><row><c r="A1" t="str"><v>A6</v></c><c r="B1" t="str"><v>B6</v></c><c r="C1" t="str"><v>C6</v></c></row><row r="3"><c r="A3"><v>100</v></c><c r="B3" t="str"><v>B3</v></c></row>`)))
+	f.checked = nil
+	cell, err = f.GetCellValue("Sheet1", "H6")
+	assert.Equal(t, "H6", cell)
+	assert.NoError(t, err)
+	rows, err = f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{
+		{"A6", "B6", "C6"},
+		nil,
+		{"100", "B3"},
+		{"", "", "", "", "", "F4"},
+		nil,
+		{"", "", "", "", "", "", "", "H6"},
+	}, rows)
+	assert.NoError(t, err)
 }
 
 func TestGetCellFormula(t *testing.T) {

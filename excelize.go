@@ -226,7 +226,13 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 // continuous in a worksheet of XML.
 func checkSheet(ws *xlsxWorksheet) {
 	var row int
-	for _, r := range ws.SheetData.Row {
+	var r0 xlsxRow
+	for i, r := range ws.SheetData.Row {
+		if i == 0 && r.R == 0 {
+			r0 = r
+			ws.SheetData.Row = ws.SheetData.Row[1:]
+			continue
+		}
 		if r.R != 0 && r.R > row {
 			row = r.R
 			continue
@@ -254,7 +260,29 @@ func checkSheet(ws *xlsxWorksheet) {
 	for i := 1; i <= row; i++ {
 		sheetData.Row[i-1].R = i
 	}
-	ws.SheetData = sheetData
+	checkSheetR0(ws, &sheetData, &r0)
+}
+
+// checkSheetR0 handle the row element with r="0" attribute, cells in this row
+// could be disorderly, the cell in this row can be used as the value of
+// which cell is empty in the normal rows.
+func checkSheetR0(ws *xlsxWorksheet, sheetData *xlsxSheetData, r0 *xlsxRow) {
+	for _, cell := range r0.C {
+		if col, row, err := CellNameToCoordinates(cell.R); err == nil {
+			rows, rowIdx := len(sheetData.Row), row-1
+			for r := rows; r < row; r++ {
+				sheetData.Row = append(sheetData.Row, xlsxRow{R: r + 1})
+			}
+			columns, colIdx := len(sheetData.Row[rowIdx].C), col-1
+			for c := columns; c < col; c++ {
+				sheetData.Row[rowIdx].C = append(sheetData.Row[rowIdx].C, xlsxC{})
+			}
+			if !sheetData.Row[rowIdx].C[colIdx].hasValue() {
+				sheetData.Row[rowIdx].C[colIdx] = cell
+			}
+		}
+	}
+	ws.SheetData = *sheetData
 }
 
 // addRels provides a function to add relationships by given XML path,
