@@ -24,8 +24,12 @@ import (
 )
 
 // GetRows return all the rows in a sheet by given worksheet name
-// (case sensitive). GetRows fetched the rows with value or formula cells,
-// the tail continuously empty cell will be skipped. For example:
+// (case sensitive), returned as a two-dimensional array, where the value of
+// the cell is converted to the string type. If the cell format can be
+// applied to the value of the cell, the applied value will be used,
+// otherwise the original value will be used. GetRows fetched the rows with
+// value or formula cells, the tail continuously empty cell will be skipped.
+// For example:
 //
 //    rows, err := f.GetRows("Sheet1")
 //    if err != nil {
@@ -111,7 +115,7 @@ func (rows *Rows) Columns() ([]string, error) {
 			}
 		case xml.EndElement:
 			rowIterator.inElement = xmlElement.Name.Local
-			if rowIterator.row == 0 {
+			if rowIterator.row == 0 && rowIterator.rows.curRow > 1 {
 				rowIterator.row = rowIterator.rows.curRow
 			}
 			if rowIterator.inElement == "row" && rowIterator.row+1 < rowIterator.rows.curRow {
@@ -720,9 +724,9 @@ func checkRow(ws *xlsxWorksheet) error {
 	return nil
 }
 
-// SetRowStyle provides a function to set style of rows by given worksheet
-// name, row range and style ID. Note that this will overwrite the existing
-// styles for the cell, it won't append or merge style with existing styles.
+// SetRowStyle provides a function to set the style of rows by given worksheet
+// name, row range, and style ID. Note that this will overwrite the existing
+// styles for the rows, it won't append or merge style with existing styles.
 //
 // For example set style of row 1 on Sheet1:
 //

@@ -238,7 +238,7 @@ func checkSheet(ws *xlsxWorksheet) {
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
 	row = 0
 	for _, r := range ws.SheetData.Row {
-		if r.R == row {
+		if r.R == row && row > 0 {
 			sheetData.Row[r.R-1].C = append(sheetData.Row[r.R-1].C, r.C...)
 			continue
 		}

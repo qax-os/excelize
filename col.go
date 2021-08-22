@@ -399,8 +399,8 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 
 // SetColStyle provides a function to set style of columns by given worksheet
 // name, columns range and style ID. Note that this will overwrite the
-// existing styles for the cell, it won't append or merge style with existing
-// styles.
+// existing styles for the columns, it won't append or merge style with
+// existing styles.
 //
 // For example set style of column H on Sheet1:
 //
