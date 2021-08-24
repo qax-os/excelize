@@ -172,6 +172,63 @@ func TestSetCellValues(t *testing.T) {
 	assert.Equal(t, v, "1600-12-31T00:00:00Z")
 }
 
+func TestSetCellsData(t *testing.T) {
+	timeValue := time.Now()
+	structArray := []struct{
+	Id        int
+	Feild1    string
+	Feild2    float64
+	DateField time.Time
+	}{
+		{1, "string value 1", 2.35, timeValue},
+		{2, "string value 2", 3.48, timeValue.Add(time.Minute * time.Duration(2))},
+	}
+	localize := map[string]string{
+		"Id":        "Identity Number",
+		"Feild1":    "Field First",
+		"Feild2":    "Field Second",
+		"DateField": "Created Date",
+	}
+	f := NewFile()
+	err := f.SetCellsData("Sheet1", structArray, localize)
+	assert.NoError(t, err)
+
+	v, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, v, "Identity Number")
+
+	v2, err := f.GetCellValue("Sheet1", "B3")
+	assert.NoError(t, err)
+	assert.Equal(t, v2, "string value 2")
+
+	err2 := f.SetCellsData("Sheet1", structArray, nil)
+	assert.NoError(t, err2)
+
+	v21, err2 := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err2)
+	assert.Equal(t, v21, "Id")
+
+	v22, err2 := f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err2)
+	assert.Equal(t, v22, "Feild1")
+
+	err3 := f.SetCellsData("Sheet1", "something", nil)
+	assert.EqualError(t, err3, ErrDatasourceTypeValidation.Error())
+
+	emptyStructArray := []struct{
+		Id        int
+		Feild1    string
+		Feild2    float64
+		DateField time.Time
+		}{}
+	err4 := f.SetCellsData("Sheet1", emptyStructArray, nil)
+	assert.EqualError(t, err4, ErrDatasourceValueContent.Error())
+
+	emptyStringArray := []string{"123", "456"}
+	err5 := f.SetCellsData("Sheet1", emptyStringArray, nil)
+	assert.EqualError(t, err5, ErrDatasourceItemTypeValidation.Error())
+}
+
 func TestSetCellBool(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)

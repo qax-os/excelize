@@ -131,4 +131,13 @@ var (
 	// ErrCellCharsLength defined the error message for receiving a cell
 	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
+	// ErrDatasourceTypeValidation defined the error message for type of
+	// datasource.
+	ErrDatasourceTypeValidation = errors.New("datasource must be SLICE")
+	// ErrDatasourceValueContent defined the error message for value of
+	// datasource.
+	ErrDatasourceValueContent = errors.New("datasource is nil")
+	// ErrDatasourceItemTypeValidation defined the error message for type of
+	// datasource item.
+	ErrDatasourceItemTypeValidation = errors.New("slice item is not a STRUCT")
 )

@@ -101,6 +101,76 @@ func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	return err
 }
 
+// SetCellsData provides a function to insert the values of a struct slice.
+// you can set column names by localize parameter.
+// the key of localize parameter is the name of the struct field. if set localize 
+// parameter as a nil value, the column name will be set by struct field name.
+func (f *File) SetCellsData(sheet string, data interface{}, localize map[string]string) error {
+	var err error
+	items := reflect.ValueOf(data)
+	if items.Kind() != reflect.Slice {
+		return ErrDatasourceTypeValidation
+	}
+	if items.Len() == 0 {
+		return ErrDatasourceValueContent
+	}
+	if items.Index(0).Kind() != reflect.Struct {
+		return ErrDatasourceItemTypeValidation
+	}
+	fieldsCount := items.Index(0).NumField()
+	col := items.Index(0)
+
+	// Set Header for columns.
+	for i := 0; i < fieldsCount; i++ {
+		columnAddress := getColumnAddress(i)
+		columnCaption := col.Type().Field(i).Name
+		if localize != nil {
+			caption := localize[columnCaption]
+			if caption != "" {
+				columnCaption = caption
+			}
+		}
+		err = f.SetCellValue(sheet, columnAddress+"1", columnCaption)
+		if err != nil{
+			break
+		}
+	}
+	if err == nil{
+		// Set value for cells.
+		for i := 0; i < items.Len(); i++ {
+			item := items.Index(i)
+			if item.Kind() == reflect.Struct {
+				row := reflect.Indirect(item)
+				for j := 0; j < row.NumField(); j++ {
+					columnAddress := getColumnAddress(j)
+					if row.CanInterface() {
+						err = f.SetCellValue(sheet, columnAddress+fmt.Sprint((i+2)), row.Field(j).Interface())
+					} else {
+						err = f.SetCellValue(sheet, columnAddress+fmt.Sprint((i+2)), row.Field(j))
+					}
+					if err != nil{
+						break
+					}
+				}
+			}
+			if err != nil{
+				break
+			}
+		}
+	}
+	return err
+}
+
+// generate excel column address by column index
+func getColumnAddress(colIndex int) string {
+	ret := ""
+	for i := colIndex; i >= 0; i-- {
+		ret = string(rune(i%26+65)) + ret
+		i = i / 26
+	}
+	return ret
+}
+
 // String extracts characters from a string item.
 func (x xlsxSI) String() string {
 	if len(x.R) > 0 {
