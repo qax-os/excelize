@@ -128,13 +128,37 @@ func (dd *DataValidation) SetDropList(keys []string) error {
 	return nil
 }
 
-// SetRange provides function to set data validation range in drop list.
-func (dd *DataValidation) SetRange(f1, f2 float64, t DataValidationType, o DataValidationOperator) error {
-	if math.Abs(f1) > math.MaxFloat32 || math.Abs(f2) > math.MaxFloat32 {
-		return ErrDataValidationRange
+// SetRange provides function to set data validation range in drop list, only
+// accepts int, float64, or string data type formula argument.
+func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
+	var formula1, formula2 string
+	switch v := f1.(type) {
+	case int:
+		formula1 = fmt.Sprintf("<formula1>%d</formula1>", int(v))
+	case float64:
+		if math.Abs(float64(v)) > math.MaxFloat32 {
+			return ErrDataValidationRange
+		}
+		formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", float64(v))
+	case string:
+		formula1 = fmt.Sprintf("<formula1>%s</formula1>", string(v))
+	default:
+		return ErrParameterInvalid
 	}
-	dd.Formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", f1)
-	dd.Formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", f2)
+	switch v := f2.(type) {
+	case int:
+		formula2 = fmt.Sprintf("<formula2>%d</formula2>", int(v))
+	case float64:
+		if math.Abs(float64(v)) > math.MaxFloat32 {
+			return ErrDataValidationRange
+		}
+		formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", float64(v))
+	case string:
+		formula2 = fmt.Sprintf("<formula2>%s</formula2>", string(v))
+	default:
+		return ErrParameterInvalid
+	}
+	dd.Formula1, dd.Formula2 = formula1, formula2
 	dd.Type = convDataValidationType(t)
 	dd.Operator = convDataValidationOperatior(o)
 	return nil

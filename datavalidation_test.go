@@ -41,6 +41,15 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 	assert.NoError(t, f.SaveAs(resultFile))
 
+	f.NewSheet("Sheet2")
+	assert.NoError(t, f.SetSheetRow("Sheet2", "A2", &[]interface{}{"B2", 1}))
+	assert.NoError(t, f.SetSheetRow("Sheet2", "A3", &[]interface{}{"B3", 3}))
+	dvRange = NewDataValidation(true)
+	dvRange.Sqref = "A1:B1"
+	assert.NoError(t, dvRange.SetRange("INDIRECT($A$2)", "INDIRECT($A$3)", DataValidationTypeWhole, DataValidationOperatorBetween))
+	dvRange.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	assert.NoError(t, f.AddDataValidation("Sheet2", dvRange))
+
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
 	for _, listValid := range [][]string{
@@ -86,6 +95,8 @@ func TestDataValidationError(t *testing.T) {
 		return
 	}
 	assert.EqualError(t, err, ErrDataValidationFormulaLenth.Error())
+	assert.EqualError(t, dvRange.SetRange(nil, 20, DataValidationTypeWhole, DataValidationOperatorBetween), ErrParameterInvalid.Error())
+	assert.EqualError(t, dvRange.SetRange(10, nil, DataValidationTypeWhole, DataValidationOperatorBetween), ErrParameterInvalid.Error())
 	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 	dvRange.SetSqref("A9:B10")
 
