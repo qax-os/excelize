@@ -21,7 +21,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // ReadZipReader can be used to read the spreadsheet in memory without touching the
@@ -588,10 +587,6 @@ func bstrUnmarshal(s string) (result string) {
 		subStr := s[match[0]:match[1]]
 		if subStr == "_x005F_" {
 			cursor = match[1]
-			if l > match[1]+6 && !bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
-				result += subStr
-				continue
-			}
 			result += "_"
 			continue
 		}
@@ -607,15 +602,7 @@ func bstrUnmarshal(s string) (result string) {
 				result += subStr
 				continue
 			}
-			hasRune := false
-			for _, c := range v {
-				if unicode.IsControl(c) {
-					hasRune = true
-				}
-			}
-			if !hasRune {
-				result += v
-			}
+			result += v
 		}
 	}
 	if cursor < l {
