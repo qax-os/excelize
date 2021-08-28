@@ -53,9 +53,8 @@ const (
 	criteriaGe
 	criteriaL
 	criteriaG
-	criteriaBeg
-	criteriaEnd
 	criteriaErr
+	criteriaRegexp
 	// Numeric precision correct numeric values as legacy Excel application
 	// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel In the
 	// top figure the fraction 1/9000 in Excel is displayed. Although this number
@@ -411,6 +410,7 @@ type formulaFuncs struct {
 //    LOG10
 //    LOOKUP
 //    LOWER
+//    MATCH
 //    MAX
 //    MDETERM
 //    MEDIAN
@@ -504,6 +504,7 @@ type formulaFuncs struct {
 //    VAR.P
 //    VARP
 //    VLOOKUP
+//    XOR
 //    YEAR
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
@@ -1285,16 +1286,13 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 		fc.Type, fc.Condition = criteriaG, match[1]
 		return
 	}
-	if strings.Contains(exp, "*") {
-		if strings.HasPrefix(exp, "*") {
-			fc.Type, fc.Condition = criteriaEnd, strings.TrimPrefix(exp, "*")
-		}
-		if strings.HasSuffix(exp, "*") {
-			fc.Type, fc.Condition = criteriaBeg, strings.TrimSuffix(exp, "*")
-		}
-		return
+	if strings.Contains(exp, "?") {
+		exp = strings.ReplaceAll(exp, "?", ".")
 	}
-	fc.Type, fc.Condition = criteriaEq, exp
+	if strings.Contains(exp, "*") {
+		exp = strings.ReplaceAll(exp, "*", ".*")
+	}
+	fc.Type, fc.Condition = criteriaRegexp, exp
 	return
 }
 
@@ -1326,10 +1324,8 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	case criteriaG:
 		value, expected, e = prepareValue(val, criteria.Condition)
 		return value > expected && e == nil, err
-	case criteriaBeg:
-		return strings.HasPrefix(val, criteria.Condition), err
-	case criteriaEnd:
-		return strings.HasSuffix(val, criteria.Condition), err
+	case criteriaRegexp:
+		return regexp.MatchString(criteria.Condition, val)
 	}
 	return
 }
@@ -6061,6 +6057,65 @@ func (fn *formulaFuncs) TRUE(argsList *list.List) formulaArg {
 	return newBoolFormulaArg(true)
 }
 
+// calcXor checking if numeric cell exists and count it by given arguments
+// sequence for the formula function XOR.
+func calcXor(argsList *list.List) formulaArg {
+	count, ok := 0, false
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		switch token.Type {
+		case ArgError:
+			return token
+		case ArgString:
+			if b := token.ToBool(); b.Type == ArgNumber {
+				ok = true
+				if b.Number == 1 {
+					count++
+				}
+				continue
+			}
+			if num := token.ToNumber(); num.Type == ArgNumber {
+				ok = true
+				if num.Number != 0 {
+					count++
+				}
+			}
+		case ArgNumber:
+			ok = true
+			if token.Number != 0 {
+				count++
+			}
+		case ArgMatrix:
+			for _, value := range token.ToList() {
+				if num := value.ToNumber(); num.Type == ArgNumber {
+					ok = true
+					if num.Number != 0 {
+						count++
+					}
+				}
+			}
+		}
+	}
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newBoolFormulaArg(count%2 != 0)
+}
+
+// XOR function returns the Exclusive Or logical operation for one or more
+// supplied conditions. I.e. the Xor function returns TRUE if an odd number
+// of the supplied conditions evaluate to TRUE, and FALSE otherwise. The
+// syntax of the function is:
+//
+//    XOR(logical_test1,[logical_test2],...)
+//
+func (fn *formulaFuncs) XOR(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XOR requires at least 1 argument")
+	}
+	return calcXor(argsList)
+}
+
 // Date and Time Functions
 
 // DATE returns a date, from a user-supplied year, month and day. The syntax
@@ -7411,6 +7466,46 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(result))
 }
 
+// checkHVLookupArgs checking arguments, prepare extract mode, lookup value,
+// and data for the formula functions HLOOKUP and VLOOKUP.
+func checkHVLookupArgs(name string, argsList *list.List) (idx, matchIdx int, wasExact, exactMatch bool, lookupValue, tableArray, errArg formulaArg) {
+	unit := map[string]string{
+		"HLOOKUP": "row",
+		"VLOOKUP": "col",
+	}[name]
+	if argsList.Len() < 3 {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 3 arguments", name))
+		return
+	}
+	if argsList.Len() > 4 {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at most 4 arguments", name))
+		return
+	}
+	lookupValue = argsList.Front().Value.(formulaArg)
+	tableArray = argsList.Front().Next().Value.(formulaArg)
+	if tableArray.Type != ArgMatrix {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires second argument of table array", name))
+		return
+	}
+	arg := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if arg.Type != ArgNumber {
+		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires numeric %s argument", name, unit))
+		return
+	}
+	idx, matchIdx = int(arg.Number)-1, -1
+	if argsList.Len() == 4 {
+		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
+		if rangeLookup.Type == ArgError {
+			errArg = newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
+			return
+		}
+		if rangeLookup.Number == 0 {
+			exactMatch = true
+		}
+	}
+	return
+}
+
 // HLOOKUP function 'looks up' a given value in the top row of a data array
 // (or table), and returns the corresponding value from another row of the
 // array. The syntax of the function is:
@@ -7418,30 +7513,10 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 //    HLOOKUP(lookup_value,table_array,row_index_num,[range_lookup])
 //
 func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
-	if argsList.Len() < 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires at least 3 arguments")
-	}
-	if argsList.Len() > 4 {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires at most 4 arguments")
-	}
-	lookupValue := argsList.Front().Value.(formulaArg)
-	tableArray := argsList.Front().Next().Value.(formulaArg)
-	if tableArray.Type != ArgMatrix {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires second argument of table array")
-	}
-	rowArg := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if rowArg.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, "HLOOKUP requires numeric row argument")
-	}
-	rowIdx, matchIdx, wasExact, exactMatch := int(rowArg.Number)-1, -1, false, false
-	if argsList.Len() == 4 {
-		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
-		if rangeLookup.Type == ArgError {
-			return newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
-		}
-		if rangeLookup.Number == 0 {
-			exactMatch = true
-		}
+	rowIdx, matchIdx, wasExact, exactMatch,
+		lookupValue, tableArray, errArg := checkHVLookupArgs("HLOOKUP", argsList)
+	if errArg.Type == ArgError {
+		return errArg
 	}
 	row := tableArray.Matrix[0]
 	if exactMatch || len(tableArray.Matrix) == TotalRows {
@@ -7481,6 +7556,87 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
 }
 
+// calcMatch returns the position of the value by given match type, criteria
+// and lookup array for the formula function MATCH.
+func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
+	switch matchType {
+	case 0:
+		for i, arg := range lookupArray {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+				return newNumberFormulaArg(float64(i + 1))
+			}
+		}
+	case -1:
+		for i, arg := range lookupArray {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+				return newNumberFormulaArg(float64(i + 1))
+			}
+			if ok, _ := formulaCriteriaEval(arg.Value(), &formulaCriteria{
+				Type: criteriaL, Condition: criteria.Condition,
+			}); ok {
+				if i == 0 {
+					return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+				}
+				return newNumberFormulaArg(float64(i))
+			}
+		}
+	case 1:
+		for i, arg := range lookupArray {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+				return newNumberFormulaArg(float64(i + 1))
+			}
+			if ok, _ := formulaCriteriaEval(arg.Value(), &formulaCriteria{
+				Type: criteriaG, Condition: criteria.Condition,
+			}); ok {
+				if i == 0 {
+					return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+				}
+				return newNumberFormulaArg(float64(i))
+			}
+		}
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
+// MATCH function looks up a value in an array, and returns the position of
+// the value within the array. The user can specify that the function should
+// only return a result if an exact match is found, or that the function
+// should return the position of the closest match (above or below), if an
+// exact match is not found. The syntax of the Match function is:
+//
+//    MATCH(lookup_value,lookup_array,[match_type])
+//
+func (fn *formulaFuncs) MATCH(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MATCH requires 1 or 2 arguments")
+	}
+	var (
+		matchType      = 1
+		lookupArray    []formulaArg
+		lookupArrayArg = argsList.Front().Next().Value.(formulaArg)
+		lookupArrayErr = "MATCH arguments lookup_array should be one-dimensional array"
+	)
+	if argsList.Len() == 3 {
+		matchTypeArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if matchTypeArg.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, "MATCH requires numeric match_type argument")
+		}
+		if matchTypeArg.Number == -1 || matchTypeArg.Number == 0 {
+			matchType = int(matchTypeArg.Number)
+		}
+	}
+	switch lookupArrayArg.Type {
+	case ArgMatrix:
+		if len(lookupArrayArg.Matrix[0]) != 1 {
+			return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
+		}
+		lookupArray = lookupArrayArg.ToList()
+	default:
+		return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
+	}
+	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg).String), lookupArray)
+}
+
 // VLOOKUP function 'looks up' a given value in the left-hand column of a
 // data array (or table), and returns the corresponding value from another
 // column of the array. The syntax of the function is:
@@ -7488,30 +7644,10 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 //    VLOOKUP(lookup_value,table_array,col_index_num,[range_lookup])
 //
 func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
-	if argsList.Len() < 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires at least 3 arguments")
-	}
-	if argsList.Len() > 4 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires at most 4 arguments")
-	}
-	lookupValue := argsList.Front().Value.(formulaArg)
-	tableArray := argsList.Front().Next().Value.(formulaArg)
-	if tableArray.Type != ArgMatrix {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires second argument of table array")
-	}
-	colIdx := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if colIdx.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, "VLOOKUP requires numeric col argument")
-	}
-	col, matchIdx, wasExact, exactMatch := int(colIdx.Number)-1, -1, false, false
-	if argsList.Len() == 4 {
-		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
-		if rangeLookup.Type == ArgError {
-			return newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
-		}
-		if rangeLookup.Number == 0 {
-			exactMatch = true
-		}
+	colIdx, matchIdx, wasExact, exactMatch,
+		lookupValue, tableArray, errArg := checkHVLookupArgs("VLOOKUP", argsList)
+	if errArg.Type == ArgError {
+		return errArg
 	}
 	if exactMatch || len(tableArray.Matrix) == TotalRows {
 	start:
@@ -7541,11 +7677,11 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 	}
 	mtx := tableArray.Matrix[matchIdx]
-	if col < 0 || col >= len(mtx) {
+	if colIdx < 0 || colIdx >= len(mtx) {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP has invalid column index")
 	}
 	if wasExact || !exactMatch {
-		return mtx[col]
+		return mtx[colIdx]
 	}
 	return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 }

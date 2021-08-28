@@ -926,6 +926,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=OR(1=2,2=3)": "FALSE",
 		// TRUE
 		"=TRUE()": "TRUE",
+		// XOR
+		"=XOR(1>0,2>0)":                       "FALSE",
+		"=XOR(1>0,0>1)":                       "TRUE",
+		"=XOR(1>0,0>1,INT(0),INT(1),A1:A4,2)": "FALSE",
 		// Date and Time Functions
 		// DATE
 		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
@@ -1946,6 +1950,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
 		// TRUE
 		"=TRUE(A1)": "TRUE takes no arguments",
+		// XOR
+		"=XOR()":              "XOR requires at least 1 argument",
+		"=XOR(\"text\")":      "#VALUE!",
+		"=XOR(XOR(\"text\"))": "#VALUE!",
 		// Date and Time Functions
 		// DATE
 		"=DATE()":               "DATE requires 3 number arguments",
@@ -2152,6 +2160,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=HLOOKUP(INT(1),E2:E9,1)":       "HLOOKUP no result found",
 		"=HLOOKUP(MUNIT(2),MUNIT(3),1)":  "HLOOKUP no result found",
 		"=HLOOKUP(A1:B2,B2:B3,1)":        "HLOOKUP no result found",
+		// MATCH
+		"=MATCH()":              "MATCH requires 1 or 2 arguments",
+		"=MATCH(0,A1:A1,0,0)":   "MATCH requires 1 or 2 arguments",
+		"=MATCH(0,A1:A1,\"x\")": "MATCH requires numeric match_type argument",
+		"=MATCH(0,A1)":          "MATCH arguments lookup_array should be one-dimensional array",
+		"=MATCH(0,A1:B1)":       "MATCH arguments lookup_array should be one-dimensional array",
 		// VLOOKUP
 		"=VLOOKUP()":                     "VLOOKUP requires at least 3 arguments",
 		"=VLOOKUP(D2,D1,1,FALSE)":        "VLOOKUP requires second argument of table array",
@@ -2689,6 +2703,48 @@ func TestCalcMIRR(t *testing.T) {
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}
+}
+
+func TestCalcMATCH(t *testing.T) {
+	f := NewFile()
+	for cell, row := range map[string][]interface{}{
+		"A1": {"cccc", 7, 4, 16},
+		"A2": {"dddd", 2, 6, 11},
+		"A3": {"aaaa", 4, 7, 10},
+		"A4": {"bbbb", 1, 10, 7},
+		"A5": {"eeee", 8, 11, 6},
+		"A6": {nil, 11, 16, 4},
+	} {
+		assert.NoError(t, f.SetSheetRow("Sheet1", cell, &row))
+	}
+	formulaList := map[string]string{
+		"=MATCH(\"aaaa\",A1:A6,0)": "3",
+		"=MATCH(\"*b\",A1:A5,0)":   "4",
+		"=MATCH(\"?eee\",A1:A5,0)": "5",
+		"=MATCH(\"?*?e\",A1:A5,0)": "5",
+		"=MATCH(\"aaaa\",A1:A6,1)": "3",
+		"=MATCH(10,B1:B6)":         "5",
+		"=MATCH(8,C1:C6,1)":        "3",
+		"=MATCH(6,B1:B6,-1)":       "1",
+		"=MATCH(10,D1:D6,-1)":      "3",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=MATCH(3,C1:C6,1)":  "#N/A",
+		"=MATCH(5,C1:C6,-1)": "#N/A",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+	assert.Equal(t, newErrorFormulaArg(formulaErrorNA, formulaErrorNA), calcMatch(2, nil, []formulaArg{}))
 }
 
 func TestStrToDate(t *testing.T) {
