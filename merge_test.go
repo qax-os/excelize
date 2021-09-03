@@ -181,7 +181,7 @@ func TestUnmergeCell(t *testing.T) {
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
-	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), "parameter is invalid")
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), ErrParameterInvalid.Error())
 
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
@@ -191,5 +191,5 @@ func TestUnmergeCell(t *testing.T) {
 
 func TestFlatMergedCells(t *testing.T) {
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}}
-	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), "parameter is invalid")
+	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), ErrParameterInvalid.Error())
 }

@@ -391,8 +391,8 @@ func (f *File) GetCellFormula(sheet, axis string) (string, error) {
 		if c.F == nil {
 			return "", false, nil
 		}
-		if c.F.T == STCellFormulaTypeShared {
-			return getSharedForumula(x, c.F.Si, c.R), true, nil
+		if c.F.T == STCellFormulaTypeShared && c.F.Si != nil {
+			return getSharedForumula(x, *c.F.Si, c.R), true, nil
 		}
 		return c.F.Content, true, nil
 	})
@@ -404,8 +404,50 @@ type FormulaOpts struct {
 	Ref  *string // Shared formula ref
 }
 
-// SetCellFormula provides a function to set cell formula by given string and
-// worksheet name.
+// SetCellFormula provides a function to set formula on the cell is taken
+// according to the given worksheet name (case sensitive) and cell formula
+// settings. The result of the formula cell can be calculated when the
+// worksheet is opened by the Office Excel application or can be using
+// the "CalcCellValue" function also can get the calculated cell value. If
+// the Excel application doesn't calculate the formula automatically when the
+// workbook has been opened, please call "UpdateLinkedValue" after setting
+// the cell formula functions.
+//
+// Example 1, set normal formula "=SUM(A1,B1)" for the cell "A3" on "Sheet1":
+//
+//    err := f.SetCellFormula("Sheet1", "A3", "=SUM(A1,B1)")
+//
+// Example 2, set one-dimensional vertical constant array (row array) formula
+// "1,2,3" for the cell "A3" on "Sheet1":
+//
+//    err := f.SetCellFormula("Sheet1", "A3", "={1,2,3}")
+//
+// Example 3, set one-dimensional horizontal constant array (column array)
+// formula '"a","b","c"' for the cell "A3" on "Sheet1":
+//
+//    err := f.SetCellFormula("Sheet1", "A3", "={\"a\",\"b\",\"c\"}")
+//
+// Example 4, set two-dimensional constant array formula '{1,2,"a","b"}' for
+// the cell "A3" on "Sheet1":
+//
+//    formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//    err := f.SetCellFormula("Sheet1", "A3", "={1,2,\"a\",\"b\"}",
+//        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
+// Example 5, set range array formula "A1:A2" for the cell "A3" on "Sheet1":
+//
+//    formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//    err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
+//	      excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
+//
+// Example 6, set shared formula "=A1+B1" for the cell "C1:C5"
+// on "Sheet1", "C1" is the master cell:
+//
+//    formulaType, ref := excelize.STCellFormulaTypeShared, "C1:C5"
+//    err := f.SetCellFormula("Sheet1", "C1", "=A1+B1",
+//        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
 func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -430,14 +472,52 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 	for _, o := range opts {
 		if o.Type != nil {
 			cellData.F.T = *o.Type
+			if cellData.F.T == STCellFormulaTypeShared {
+				if err = ws.setSharedFormula(*o.Ref); err != nil {
+					return err
+				}
+			}
 		}
-
 		if o.Ref != nil {
 			cellData.F.Ref = *o.Ref
 		}
 	}
 
 	return err
+}
+
+// setSharedFormula set shared formula for the cells.
+func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
+	coordinates, err := areaRefToCoordinates(ref)
+	if err != nil {
+		return err
+	}
+	_ = sortCoordinates(coordinates)
+	cnt := ws.countSharedFormula()
+	for c := coordinates[0]; c <= coordinates[2]; c++ {
+		for r := coordinates[1]; r <= coordinates[3]; r++ {
+			prepareSheetXML(ws, c, r)
+			cell := &ws.SheetData.Row[r-1].C[c-1]
+			if cell.F == nil {
+				cell.F = &xlsxF{}
+			}
+			cell.F.T = STCellFormulaTypeShared
+			cell.F.Si = &cnt
+		}
+	}
+	return err
+}
+
+// countSharedFormula count shared formula in the given worksheet.
+func (ws *xlsxWorksheet) countSharedFormula() (count int) {
+	for _, row := range ws.SheetData.Row {
+		for _, cell := range row.C {
+			if cell.F != nil && cell.F.Si != nil && *cell.F.Si+1 > count {
+				count = *cell.F.Si + 1
+			}
+		}
+	}
+	return
 }
 
 // GetCellHyperLink provides a function to get cell hyperlink by given
@@ -1027,10 +1107,10 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 //
 // Note that this function not validate ref tag to check the cell if or not in
 // allow area, and always return origin shared formula.
-func getSharedForumula(ws *xlsxWorksheet, si string, axis string) string {
+func getSharedForumula(ws *xlsxWorksheet, si int, axis string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {
-			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si == si {
+			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {
 				col, row, _ := CellNameToCoordinates(axis)
 				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
 				dCol := col - sharedCol

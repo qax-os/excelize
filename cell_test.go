@@ -313,6 +313,51 @@ func TestOverflowNumericCell(t *testing.T) {
 	// GOARCH=amd64 - all ok; GOARCH=386 - actual: "-2147483648"
 	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
 }
+
+func TestSetCellFormula(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B19", "SUM(Sheet2!D2,Sheet2!D11)"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)"))
+
+	// Test set cell formula with illegal rows number.
+	assert.EqualError(t, f.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)"), `cannot convert cell "C" to coordinates: invalid cell name "C"`)
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula1.xlsx")))
+
+	f, err = OpenFile(filepath.Join("test", "CalcChain.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	// Test remove cell formula.
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", ""))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula2.xlsx")))
+	// Test remove all cell formula.
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", ""))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula3.xlsx")))
+
+	// Test set shared formula for the cells.
+	f = NewFile()
+	for r := 1; r <= 5; r++ {
+		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", r), &[]interface{}{r, r + 1}))
+	}
+	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	sharedFormulaSpreadsheet := filepath.Join("test", "TestSetCellFormula4.xlsx")
+	assert.NoError(t, f.SaveAs(sharedFormulaSpreadsheet))
+
+	f, err = OpenFile(sharedFormulaSpreadsheet)
+	assert.NoError(t, err)
+	ref = "D1:D5"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	ref = ""
+	assert.EqualError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}), ErrParameterInvalid.Error())
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula5.xlsx")))
+}
+
 func TestGetCellRichText(t *testing.T) {
 	f := NewFile()
 

@@ -83,7 +83,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.GetCellFormula("Sheet2", "I11")
 	assert.NoError(t, err)
-	getSharedForumula(&xlsxWorksheet{}, "", "")
+	getSharedForumula(&xlsxWorksheet{}, 0, "")
 
 	// Test read cell value with given illegal rows number.
 	_, err = f.GetCellValue("Sheet2", "a-1")
@@ -399,32 +399,6 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.Equal(t, link, false)
 	assert.Equal(t, target, "")
 
-}
-
-func TestSetCellFormula(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B19", "SUM(Sheet2!D2,Sheet2!D11)"))
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)"))
-
-	// Test set cell formula with illegal rows number.
-	assert.EqualError(t, f.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)"), `cannot convert cell "C" to coordinates: invalid cell name "C"`)
-
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula1.xlsx")))
-
-	f, err = OpenFile(filepath.Join("test", "CalcChain.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-	// Test remove cell formula.
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", ""))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula2.xlsx")))
-	// Test remove all cell formula.
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", ""))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula3.xlsx")))
 }
 
 func TestSetSheetBackground(t *testing.T) {

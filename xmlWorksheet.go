@@ -475,7 +475,7 @@ type xlsxF struct {
 	Content string `xml:",chardata"`
 	T       string `xml:"t,attr,omitempty"`   // Formula type
 	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
-	Si      string `xml:"si,attr,omitempty"`  // Shared formula index
+	Si      *int   `xml:"si,attr"`            // Shared formula index
 }
 
 // xlsxSheetProtection collection expresses the sheet protection options to
