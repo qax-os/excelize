@@ -473,9 +473,18 @@ type xlsxC struct {
 // contained in the character node of this element.
 type xlsxF struct {
 	Content string `xml:",chardata"`
-	T       string `xml:"t,attr,omitempty"`   // Formula type
+	T       string `xml:"t,attr,omitempty"` // Formula type
+	Aca     bool   `xml:"aca,attr,omitempty"`
 	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
-	Si      *int   `xml:"si,attr"`            // Shared formula index
+	Dt2D    bool   `xml:"dt2D,attr,omitempty"`
+	Dtr     bool   `xml:"dtr,attr,omitempty"`
+	Del1    bool   `xml:"del1,attr,omitempty"`
+	Del2    bool   `xml:"del2,attr,omitempty"`
+	R1      string `xml:"r1,attr,omitempty"`
+	R2      string `xml:"r2,attr,omitempty"`
+	Ca      bool   `xml:"ca,attr,omitempty"`
+	Si      *int   `xml:"si,attr"` // Shared formula index
+	Bx      bool   `xml:"bx,attr,omitempty"`
 }
 
 // xlsxSheetProtection collection expresses the sheet protection options to

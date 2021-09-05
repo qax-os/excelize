@@ -356,6 +356,16 @@ func TestSetCellFormula(t *testing.T) {
 	ref = ""
 	assert.EqualError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}), ErrParameterInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula5.xlsx")))
+
+	// Test set table formula for the cells.
+	f = NewFile()
+	for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
+		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row))
+	}
+	assert.NoError(t, f.AddTable("Sheet1", "A1", "C2", `{"table_name":"Table1","table_style":"TableStyleMedium2"}`))
+	formulaType = STCellFormulaTypeDataTable
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])", FormulaOpts{Type: &formulaType}))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula6.xlsx")))
 }
 
 func TestGetCellRichText(t *testing.T) {
@@ -503,20 +513,20 @@ func TestSetCellRichText(t *testing.T) {
 
 func TestFormattedValue2(t *testing.T) {
 	f := NewFile()
-	v := f.formattedValue(0, "43528")
+	v := f.formattedValue(0, "43528", false)
 	assert.Equal(t, "43528", v)
 
-	v = f.formattedValue(15, "43528")
+	v = f.formattedValue(15, "43528", false)
 	assert.Equal(t, "43528", v)
 
-	v = f.formattedValue(1, "43528")
+	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
 	customNumFmt := "[$-409]MM/DD/YYYY"
 	_, err := f.NewStyle(&Style{
 		CustomNumFmt: &customNumFmt,
 	})
 	assert.NoError(t, err)
-	v = f.formattedValue(1, "43528")
+	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "03/04/2019", v)
 
 	// formatted value with no built-in number format ID
@@ -524,20 +534,20 @@ func TestFormattedValue2(t *testing.T) {
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	v = f.formattedValue(2, "43528")
+	v = f.formattedValue(2, "43528", false)
 	assert.Equal(t, "43528", v)
 
 	// formatted value with invalid number format ID
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: nil,
 	})
-	_ = f.formattedValue(3, "43528")
+	_ = f.formattedValue(3, "43528", false)
 
 	// formatted value with empty number format
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	v = f.formattedValue(1, "43528")
+	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
 }

@@ -2452,17 +2452,27 @@ func TestCalcWithDefinedName(t *testing.T) {
 }
 
 func TestCalcArithmeticOperations(t *testing.T) {
+	opdStack := NewStack()
+	for _, test := range [][]string{{"1", "text", "FALSE"}, {"text", "1", "TRUE"}} {
+		assert.NoError(t, calcL(test[0], test[1], opdStack))
+		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
+		opdStack.Empty()
+		assert.NoError(t, calcLe(test[0], test[1], opdStack))
+		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
+		opdStack.Empty()
+	}
+	for _, test := range [][]string{{"1", "text", "TRUE"}, {"text", "1", "FALSE"}} {
+		assert.NoError(t, calcG(test[0], test[1], opdStack))
+		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
+		opdStack.Empty()
+		assert.NoError(t, calcGe(test[0], test[1], opdStack))
+		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
+		opdStack.Empty()
+	}
+
 	err := `strconv.ParseFloat: parsing "text": invalid syntax`
 	assert.EqualError(t, calcPow("1", "text", nil), err)
 	assert.EqualError(t, calcPow("text", "1", nil), err)
-	assert.EqualError(t, calcL("1", "text", nil), err)
-	assert.EqualError(t, calcL("text", "1", nil), err)
-	assert.EqualError(t, calcLe("1", "text", nil), err)
-	assert.EqualError(t, calcLe("text", "1", nil), err)
-	assert.EqualError(t, calcG("1", "text", nil), err)
-	assert.EqualError(t, calcG("text", "1", nil), err)
-	assert.EqualError(t, calcGe("1", "text", nil), err)
-	assert.EqualError(t, calcGe("text", "1", nil), err)
 	assert.EqualError(t, calcAdd("1", "text", nil), err)
 	assert.EqualError(t, calcAdd("text", "1", nil), err)
 	assert.EqualError(t, calcAdd("1", "text", nil), err)

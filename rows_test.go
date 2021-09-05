@@ -845,7 +845,7 @@ func TestGetValueFromInlineStr(t *testing.T) {
 	c := &xlsxC{T: "inlineStr"}
 	f := NewFile()
 	d := &xlsxSST{}
-	val, err := c.getValueFrom(f, d)
+	val, err := c.getValueFrom(f, d, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "", val)
 }
@@ -865,7 +865,7 @@ func TestGetValueFromNumber(t *testing.T) {
 		"2.220000ddsf0000000002-r": "2.220000ddsf0000000002-r",
 	} {
 		c.V = input
-		val, err := c.getValueFrom(f, d)
+		val, err := c.getValueFrom(f, d, false)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, val)
 	}

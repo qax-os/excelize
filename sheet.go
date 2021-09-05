@@ -880,7 +880,7 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 			if inElement == "c" {
 				colCell := xlsxC{}
 				_ = decoder.DecodeElement(&colCell, &xmlElement)
-				val, _ := colCell.getValueFrom(f, d)
+				val, _ := colCell.getValueFrom(f, d, false)
 				if regSearch {
 					regex := regexp.MustCompile(value)
 					if !regex.MatchString(val) {

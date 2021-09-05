@@ -36,9 +36,9 @@ const (
 // format to the cell value, it will do so, if not then an error will be
 // returned, along with the raw value of the cell. All cells' values will be
 // the same in a merged range.
-func (f *File) GetCellValue(sheet, axis string) (string, error) {
+func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
-		val, err := c.getValueFrom(f, f.sharedStringsReader())
+		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
 		return val, true, err
 	})
 }
@@ -440,13 +440,47 @@ type FormulaOpts struct {
 //    err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
 //	      excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
-//
 // Example 6, set shared formula "=A1+B1" for the cell "C1:C5"
 // on "Sheet1", "C1" is the master cell:
 //
 //    formulaType, ref := excelize.STCellFormulaTypeShared, "C1:C5"
 //    err := f.SetCellFormula("Sheet1", "C1", "=A1+B1",
 //        excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//
+// Example 7, set table formula "=SUM(Table1[[A]:[B]])" for the cell "C2"
+// on "Sheet1":
+//
+//    package main
+//
+//    import (
+//        "fmt"
+//
+//        "github.com/xuri/excelize/v2"
+//    )
+//
+//    func main() {
+//        f := excelize.NewFile()
+//        for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
+//            if err := f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row); err != nil {
+//            	fmt.Println(err)
+//            	return
+//            }
+//        }
+//        if err := f.AddTable("Sheet1", "A1", "C2",
+//            `{"table_name":"Table1","table_style":"TableStyleMedium2"}`); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        formulaType := excelize.STCellFormulaTypeDataTable
+//        if err := f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])",
+//            excelize.FormulaOpts{Type: &formulaType}); err != nil {
+//            fmt.Println(err)
+//            return
+//        }
+//        if err := f.SaveAs("Book1.xlsx"); err != nil {
+//            fmt.Println(err)
+//        }
+//    }
 //
 func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) error {
 	ws, err := f.workSheetReader(sheet)
@@ -471,6 +505,9 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 
 	for _, o := range opts {
 		if o.Type != nil {
+			if *o.Type == STCellFormulaTypeDataTable {
+				return err
+			}
 			cellData.F.T = *o.Type
 			if cellData.F.T == STCellFormulaTypeShared {
 				if err = ws.setSharedFormula(*o.Ref); err != nil {
@@ -955,8 +992,8 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
-func (f *File) formattedValue(s int, v string) string {
-	if s == 0 {
+func (f *File) formattedValue(s int, v string, raw bool) string {
+	if s == 0 || raw {
 		return v
 	}
 	styleSheet := f.stylesReader()

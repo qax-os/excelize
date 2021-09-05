@@ -777,57 +777,25 @@ func calcNEq(rOpd, lOpd string, opdStack *Stack) error {
 
 // calcL evaluate less than arithmetic operations.
 func calcL(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
-	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
-	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal > lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) == -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcLe evaluate less than or equal arithmetic operations.
 func calcLe(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
-	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
-	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal >= lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) != 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcG evaluate greater than or equal arithmetic operations.
 func calcG(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
-	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
-	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal < lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) == 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcGe evaluate greater than or equal arithmetic operations.
 func calcGe(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
-	if err != nil {
-		return err
-	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
-	if err != nil {
-		return err
-	}
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpdVal <= lOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) != -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
@@ -1214,7 +1182,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 				if cell, err = CoordinatesToCellName(col, row); err != nil {
 					return
 				}
-				if value, err = f.GetCellValue(sheet, cell); err != nil {
+				if value, err = f.GetCellValue(sheet, cell, Options{RawCellValue: true}); err != nil {
 					return
 				}
 				matrixRow = append(matrixRow, formulaArg{
@@ -1233,7 +1201,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 		if cell, err = CoordinatesToCellName(cr.Col, cr.Row); err != nil {
 			return
 		}
-		if arg.String, err = f.GetCellValue(cr.Sheet, cell); err != nil {
+		if arg.String, err = f.GetCellValue(cr.Sheet, cell, Options{RawCellValue: true}); err != nil {
 			return
 		}
 		arg.Type = ArgString
@@ -7749,28 +7717,33 @@ func hlookupBinarySearch(row []formulaArg, lookupValue formulaArg) (matchIdx int
 	return
 }
 
-// LOOKUP function performs an approximate match lookup in a one-column or
-// one-row range, and returns the corresponding value from another one-column
-// or one-row range. The syntax of the function is:
-//
-//    LOOKUP(lookup_value,lookup_vector,[result_vector])
-//
-func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
+// checkLookupArgs checking arguments, prepare lookup value, and data for the
+// formula function LOOKUP.
+func checkLookupArgs(argsList *list.List) (arrayForm bool, lookupValue, lookupVector, errArg formulaArg) {
 	if argsList.Len() < 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at least 2 arguments")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at least 2 arguments")
+		return
 	}
 	if argsList.Len() > 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at most 3 arguments")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at most 3 arguments")
+		return
 	}
-	lookupValue := argsList.Front().Value.(formulaArg)
-	lookupVector := argsList.Front().Next().Value.(formulaArg)
+	lookupValue = argsList.Front().Value.(formulaArg)
+	lookupVector = argsList.Front().Next().Value.(formulaArg)
 	if lookupVector.Type != ArgMatrix && lookupVector.Type != ArgList {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
+		return
 	}
-	arrayForm := lookupVector.Type == ArgMatrix
+	arrayForm = lookupVector.Type == ArgMatrix
 	if arrayForm && len(lookupVector.Matrix) == 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires not empty range as second argument")
+		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires not empty range as second argument")
 	}
+	return
+}
+
+// iterateLookupArgs iterate arguments to extract columns and calculate match
+// index for the formula function LOOKUP.
+func iterateLookupArgs(lookupValue, lookupVector formulaArg) ([]formulaArg, int, bool) {
 	cols, matchIdx, ok := lookupCol(lookupVector, 0), -1, false
 	for idx, col := range cols {
 		lhs := lookupValue
@@ -7796,6 +7769,21 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 			matchIdx = idx - 1
 		}
 	}
+	return cols, matchIdx, ok
+}
+
+// LOOKUP function performs an approximate match lookup in a one-column or
+// one-row range, and returns the corresponding value from another one-column
+// or one-row range. The syntax of the function is:
+//
+//    LOOKUP(lookup_value,lookup_vector,[result_vector])
+//
+func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
+	arrayForm, lookupValue, lookupVector, errArg := checkLookupArgs(argsList)
+	if errArg.Type == ArgError {
+		return errArg
+	}
+	cols, matchIdx, ok := iterateLookupArgs(lookupValue, lookupVector)
 	if ok && matchIdx == -1 {
 		matchIdx = len(cols) - 1
 	}

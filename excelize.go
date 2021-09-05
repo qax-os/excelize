@@ -58,9 +58,12 @@ type File struct {
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
-// Options define the options for open spreadsheet.
+// Options define the options for open and reading spreadsheet. RawCellValue
+// specify if apply the number format for the cell value or get the raw
+// value.
 type Options struct {
 	Password       string
+	RawCellValue   bool
 	UnzipSizeLimit int64
 }
 
@@ -119,11 +122,9 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 		return nil, err
 	}
 	f := newFile()
-	for i := range opt {
-		f.options = &opt[i]
-		if f.options.UnzipSizeLimit == 0 {
-			f.options.UnzipSizeLimit = UnzipSizeLimit
-		}
+	f.options = parseOptions(opt...)
+	if f.options.UnzipSizeLimit == 0 {
+		f.options.UnzipSizeLimit = UnzipSizeLimit
 	}
 	if bytes.Contains(b, oleIdentifier) {
 		b, err = Decrypt(b, f.options)
@@ -148,6 +149,16 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	f.Styles = f.stylesReader()
 	f.Theme = f.themeReader()
 	return f, nil
+}
+
+// parseOptions provides a function to parse the optional settings for open
+// and reading spreadsheet.
+func parseOptions(opts ...Options) *Options {
+	opt := &Options{}
+	for _, o := range opts {
+		opt = &o
+	}
+	return opt
 }
 
 // CharsetTranscoder Set user defined codepage transcoder function for open

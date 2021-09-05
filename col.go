@@ -34,6 +34,7 @@ const (
 type Cols struct {
 	err                                  error
 	curCol, totalCol, stashCol, totalRow int
+	rawCellValue                         bool
 	sheet                                string
 	f                                    *File
 	sheetXML                             []byte
@@ -54,14 +55,14 @@ type Cols struct {
 //        fmt.Println()
 //    }
 //
-func (f *File) GetCols(sheet string) ([][]string, error) {
+func (f *File) GetCols(sheet string, opts ...Options) ([][]string, error) {
 	cols, err := f.Cols(sheet)
 	if err != nil {
 		return nil, err
 	}
 	results := make([][]string, 0, 64)
 	for cols.Next() {
-		col, _ := cols.Rows()
+		col, _ := cols.Rows(opts...)
 		results = append(results, col)
 	}
 	return results, nil
@@ -79,7 +80,7 @@ func (cols *Cols) Error() error {
 }
 
 // Rows return the current column's row values.
-func (cols *Cols) Rows() ([]string, error) {
+func (cols *Cols) Rows(opts ...Options) ([]string, error) {
 	var (
 		err              error
 		inElement        string
@@ -89,6 +90,7 @@ func (cols *Cols) Rows() ([]string, error) {
 	if cols.stashCol >= cols.curCol {
 		return rows, err
 	}
+	cols.rawCellValue = parseOptions(opts...).RawCellValue
 	d := cols.f.sharedStringsReader()
 	decoder := cols.f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
 	for {
@@ -123,7 +125,7 @@ func (cols *Cols) Rows() ([]string, error) {
 				if cellCol == cols.curCol {
 					colCell := xlsxC{}
 					_ = decoder.DecodeElement(&colCell, &xmlElement)
-					val, _ := colCell.getValueFrom(cols.f, d)
+					val, _ := colCell.getValueFrom(cols.f, d, cols.rawCellValue)
 					rows = append(rows, val)
 				}
 			}

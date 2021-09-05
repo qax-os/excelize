@@ -43,7 +43,7 @@ import (
 //        fmt.Println()
 //    }
 //
-func (f *File) GetRows(sheet string) ([][]string, error) {
+func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 	rows, err := f.Rows(sheet)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 	results, cur, max := make([][]string, 0, 64), 0, 0
 	for rows.Next() {
 		cur++
-		row, err := rows.Columns()
+		row, err := rows.Columns(opts...)
 		if err != nil {
 			break
 		}
@@ -67,6 +67,7 @@ func (f *File) GetRows(sheet string) ([][]string, error) {
 type Rows struct {
 	err                        error
 	curRow, totalRow, stashRow int
+	rawCellValue               bool
 	sheet                      string
 	f                          *File
 	decoder                    *xml.Decoder
@@ -84,11 +85,12 @@ func (rows *Rows) Error() error {
 }
 
 // Columns return the current row's column values.
-func (rows *Rows) Columns() ([]string, error) {
+func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	var rowIterator rowXMLIterator
 	if rows.stashRow >= rows.curRow {
 		return rowIterator.columns, rowIterator.err
 	}
+	rows.rawCellValue = parseOptions(opts...).RawCellValue
 	rowIterator.rows = rows
 	rowIterator.d = rows.f.sharedStringsReader()
 	for {
@@ -109,7 +111,7 @@ func (rows *Rows) Columns() ([]string, error) {
 					return rowIterator.columns, rowIterator.err
 				}
 			}
-			rowXMLHandler(&rowIterator, &xmlElement)
+			rowXMLHandler(&rowIterator, &xmlElement, rows.rawCellValue)
 			if rowIterator.err != nil {
 				return rowIterator.columns, rowIterator.err
 			}
@@ -157,7 +159,7 @@ type rowXMLIterator struct {
 }
 
 // rowXMLHandler parse the row XML element of the worksheet.
-func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
+func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement, raw bool) {
 	rowIterator.err = nil
 	if rowIterator.inElement == "c" {
 		rowIterator.cellCol++
@@ -169,7 +171,7 @@ func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement) {
 			}
 		}
 		blank := rowIterator.cellCol - len(rowIterator.columns)
-		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d)
+		val, _ := colCell.getValueFrom(rowIterator.rows.f, rowIterator.d, raw)
 		if val != "" || colCell.F != nil {
 			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
 		}
@@ -361,7 +363,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 // getValueFrom return a value from a column/row cell, this function is
 // inteded to be used with for range on rows an argument with the spreadsheet
 // opened file.
-func (c *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
+func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	f.Lock()
 	defer f.Unlock()
 	switch c.T {
@@ -370,26 +372,26 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST) (string, error) {
 			xlsxSI := 0
 			xlsxSI, _ = strconv.Atoi(c.V)
 			if len(d.SI) > xlsxSI {
-				return f.formattedValue(c.S, d.SI[xlsxSI].String()), nil
+				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil
 			}
 		}
-		return f.formattedValue(c.S, c.V), nil
+		return f.formattedValue(c.S, c.V, raw), nil
 	case "str":
-		return f.formattedValue(c.S, c.V), nil
+		return f.formattedValue(c.S, c.V, raw), nil
 	case "inlineStr":
 		if c.IS != nil {
-			return f.formattedValue(c.S, c.IS.String()), nil
+			return f.formattedValue(c.S, c.IS.String(), raw), nil
 		}
-		return f.formattedValue(c.S, c.V), nil
+		return f.formattedValue(c.S, c.V, raw), nil
 	default:
 		isNum, precision := isNumeric(c.V)
 		if isNum && precision > 10 {
 			val, _ := roundPrecision(c.V)
 			if val != c.V {
-				return f.formattedValue(c.S, val), nil
+				return f.formattedValue(c.S, val, raw), nil
 			}
 		}
-		return f.formattedValue(c.S, c.V), nil
+		return f.formattedValue(c.S, c.V, raw), nil
 	}
 }
 
