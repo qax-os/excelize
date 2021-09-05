@@ -46,6 +46,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=2>=1":     "TRUE",
 		"=2>=3":     "FALSE",
 		"=1&2":      "12",
+		"=15%":      "0.15",
+		"=1+20%":    "1.2",
 		`="A"="A"`:  "TRUE",
 		`="A"<>"A"`: "FALSE",
 		// Engineering Functions

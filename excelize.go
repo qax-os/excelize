@@ -204,8 +204,8 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		ws = worksheet.(*xlsxWorksheet)
 		return
 	}
-	if strings.HasPrefix(name, "xl/chartsheets") {
-		err = fmt.Errorf("sheet %s is chart sheet", sheet)
+	if strings.HasPrefix(name, "xl/chartsheets") || strings.HasPrefix(name, "xl/macrosheet") {
+		err = fmt.Errorf("sheet %s is not a worksheet", sheet)
 		return
 	}
 	ws = new(xlsxWorksheet)
@@ -367,7 +367,7 @@ func (f *File) UpdateLinkedValue() error {
 	for _, name := range f.GetSheetList() {
 		ws, err := f.workSheetReader(name)
 		if err != nil {
-			if err.Error() == fmt.Sprintf("sheet %s is chart sheet", trimSheetName(name)) {
+			if err.Error() == fmt.Sprintf("sheet %s is not a worksheet", trimSheetName(name)) {
 				continue
 			}
 			return err

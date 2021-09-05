@@ -975,6 +975,11 @@ func isOperatorPrefixToken(token efp.Token) bool {
 	return (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || (ok && token.TType == efp.TokenTypeOperatorInfix)
 }
 
+// isOperand determine if the token is parse operand perand.
+func isOperand(token efp.Token) bool {
+	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText)
+}
+
 // getDefinedNameRefTo convert defined name to reference range.
 func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
 	var workbookRefTo, worksheetRefTo string
@@ -1034,8 +1039,15 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 		}
 		optStack.Pop()
 	}
+	if token.TType == efp.TokenTypeOperatorPostfix && !opdStack.Empty() {
+		topOpd := opdStack.Pop().(efp.Token)
+		opd, err := strconv.ParseFloat(topOpd.TValue, 64)
+		topOpd.TValue = strconv.FormatFloat(opd/100, 'f', -1, 64)
+		opdStack.Push(topOpd)
+		return err
+	}
 	// opd
-	if token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText) {
+	if isOperand(token) {
 		opdStack.Push(token)
 	}
 	return nil

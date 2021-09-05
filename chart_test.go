@@ -230,7 +230,7 @@ func TestAddChartSheet(t *testing.T) {
 	f.SetActiveSheet(sheetIdx)
 
 	// Test cell value on chartsheet
-	assert.EqualError(t, f.SetCellValue("Chart1", "A1", true), "sheet Chart1 is chart sheet")
+	assert.EqualError(t, f.SetCellValue("Chart1", "A1", true), "sheet Chart1 is not a worksheet")
 	// Test add chartsheet on already existing name sheet
 	assert.EqualError(t, f.AddChartSheet("Sheet1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`), ErrExistsWorksheet.Error())
 	// Test with unsupported chart type

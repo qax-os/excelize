@@ -3011,6 +3011,7 @@ func drawCondFmtCellIs(p int, ct string, format *formatConditional) *xlsxCfRule 
 func drawCondFmtTop10(p int, ct string, format *formatConditional) *xlsxCfRule {
 	c := &xlsxCfRule{
 		Priority: p + 1,
+		Bottom:   format.Type == "bottom",
 		Type:     validType[format.Type],
 		Rank:     10,
 		DxfID:    &format.Format,
