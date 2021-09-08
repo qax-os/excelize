@@ -948,7 +948,7 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	return
 }
 
-// isFunctionStartToken determine if the token is function stop.
+// isFunctionStartToken determine if the token is function start.
 func isFunctionStartToken(token efp.Token) bool {
 	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart
 }

@@ -32,6 +32,7 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 			XScale:           1.0,
 			YScale:           1.0,
 		},
+		Line: formatLine{Width: 1},
 	}
 	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err
@@ -42,7 +43,33 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 // print settings) and properties set. For example, add text box (rect shape)
 // in Sheet1:
 //
-//    err := f.AddShape("Sheet1", "G6", `{"type":"rect","color":{"line":"#4286F4","fill":"#8eb9ff"},"paragraph":[{"text":"Rectangle Shape","font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777","underline":"sng"}}],"width":180,"height": 90}`)
+//    err := f.AddShape("Sheet1", "G6", `{
+//        "type": "rect",
+//        "color":
+//        {
+//            "line": "#4286F4",
+//            "fill": "#8eb9ff"
+//        },
+//        "paragraph": [
+//        {
+//            "text": "Rectangle Shape",
+//            "font":
+//            {
+//                "bold": true,
+//                "italic": true,
+//                "family": "Times New Roman",
+//                "size": 36,
+//                "color": "#777777",
+//                "underline": "sng"
+//            }
+//        }],
+//        "width": 180,
+//        "height": 90,
+//        "line":
+//        {
+//            "width": 1.2
+//        }
+//    }`)
 //
 // The following shows the type of shape supported by excelize:
 //
@@ -377,6 +404,11 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 				Anchor:       "t",
 			},
 		},
+	}
+	if formatSet.Line.Width != 1 {
+		shape.SpPr.Ln = xlsxLineProperties{
+			W: f.ptToEMUs(formatSet.Line.Width),
+		}
 	}
 	if len(formatSet.Paragraph) < 1 {
 		formatSet.Paragraph = []formatShapeParagraph{

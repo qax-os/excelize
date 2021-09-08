@@ -234,14 +234,22 @@ type xlsxBlipFill struct {
 	Stretch xlsxStretch `xml:"a:stretch"`
 }
 
+// xlsxLineProperties specifies the width of a line in EMUs. This simple type
+// has a minimum value of greater than or equal to 0. This simple type has a
+// maximum value of less than or equal to 20116800.
+type xlsxLineProperties struct {
+	W int `xml:"w,attr,omitempty"`
+}
+
 // xlsxSpPr directly maps the spPr (Shape Properties). This element specifies
 // the visual shape properties that can be applied to a picture. These are the
 // same properties that are allowed to describe the visual properties of a shape
 // but are used here to describe the visual appearance of a picture within a
 // document.
 type xlsxSpPr struct {
-	Xfrm     xlsxXfrm     `xml:"a:xfrm"`
-	PrstGeom xlsxPrstGeom `xml:"a:prstGeom"`
+	Xfrm     xlsxXfrm           `xml:"a:xfrm"`
+	PrstGeom xlsxPrstGeom       `xml:"a:prstGeom"`
+	Ln       xlsxLineProperties `xml:"a:ln"`
 }
 
 // xlsxPic elements encompass the definition of pictures within the DrawingML
@@ -469,6 +477,7 @@ type formatShape struct {
 	Height    int                    `json:"height"`
 	Format    formatPicture          `json:"format"`
 	Color     formatShapeColor       `json:"color"`
+	Line      formatLine             `json:"line"`
 	Paragraph []formatShapeParagraph `json:"paragraph"`
 }
 
@@ -484,4 +493,9 @@ type formatShapeColor struct {
 	Line   string `json:"line"`
 	Fill   string `json:"fill"`
 	Effect string `json:"effect"`
+}
+
+// formatLine directly maps the line settings of the shape.
+type formatLine struct {
+	Width float64 `json:"width"`
 }
