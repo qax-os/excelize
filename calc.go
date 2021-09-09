@@ -158,7 +158,7 @@ type formulaCriteria struct {
 	Condition string
 }
 
-// ArgType is the type if formula argument type.
+// ArgType is the type of formula argument type.
 type ArgType byte
 
 // Formula argument types enumeration.

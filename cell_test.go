@@ -244,6 +244,19 @@ func TestGetCellValue(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetCellType(t *testing.T) {
+	f := NewFile()
+	cellType, err := f.GetCellType("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, CellTypeUnset, cellType)
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A1"))
+	cellType, err = f.GetCellType("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, CellTypeString, cellType)
+	_, err = f.GetCellType("Sheet1", "A")
+	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+}
+
 func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
 	f := NewFile()

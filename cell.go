@@ -20,6 +20,19 @@ import (
 	"time"
 )
 
+// CellType is the type of cell value type.
+type CellType byte
+
+// Cell value types enumeration.
+const (
+	CellTypeUnset CellType = iota
+	CellTypeBool
+	CellTypeDate
+	CellTypeError
+	CellTypeNumber
+	CellTypeString
+)
+
 const (
 	// STCellFormulaTypeArray defined the formula is an array formula.
 	STCellFormulaTypeArray = "array"
@@ -31,6 +44,17 @@ const (
 	STCellFormulaTypeShared = "shared"
 )
 
+// cellTypes mapping the cell's data type and enumeration.
+var cellTypes = map[string]CellType{
+	"b":         CellTypeBool,
+	"d":         CellTypeDate,
+	"n":         CellTypeNumber,
+	"e":         CellTypeError,
+	"s":         CellTypeString,
+	"str":       CellTypeString,
+	"inlineStr": CellTypeString,
+}
+
 // GetCellValue provides a function to get formatted value from cell by given
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
@@ -41,6 +65,32 @@ func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error)
 		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
 		return val, true, err
 	})
+}
+
+// GetCellType provides a function to get the cell's data type by given
+// worksheet name and axis in spreadsheet file.
+func (f *File) GetCellType(sheet, axis string) (CellType, error) {
+	cellTypes := map[string]CellType{
+		"b":         CellTypeBool,
+		"d":         CellTypeDate,
+		"n":         CellTypeNumber,
+		"e":         CellTypeError,
+		"s":         CellTypeString,
+		"str":       CellTypeString,
+		"inlineStr": CellTypeString,
+	}
+	var (
+		err         error
+		cellTypeStr string
+		cellType    CellType = CellTypeUnset
+	)
+	if cellTypeStr, err = f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+		return c.T, true, nil
+	}); err != nil {
+		return CellTypeUnset, err
+	}
+	cellType = cellTypes[cellTypeStr]
+	return cellType, err
 }
 
 // SetCellValue provides a function to set the value of a cell. The specified
