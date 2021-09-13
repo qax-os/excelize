@@ -1899,6 +1899,20 @@ func TestCalcCellValue(t *testing.T) {
 		// VAR.P
 		"=VAR.P()":     "VAR.P requires at least 1 argument",
 		"=VAR.P(\"\")": "#DIV/0!",
+		// Z.TEST
+		"Z.TEST(A1)":        "Z.TEST requires at least 2 arguments",
+		"Z.TEST(A1,0,0,0)":  "Z.TEST accepts at most 3 arguments",
+		"Z.TEST(H1,0)":      "#N/A",
+		"Z.TEST(A1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"Z.TEST(A1,1)":      "#DIV/0!",
+		"Z.TEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// ZTEST
+		"ZTEST(A1)":        "ZTEST requires at least 2 arguments",
+		"ZTEST(A1,0,0,0)":  "ZTEST accepts at most 3 arguments",
+		"ZTEST(H1,0)":      "#N/A",
+		"ZTEST(A1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"ZTEST(A1,1)":      "#DIV/0!",
+		"ZTEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
@@ -2757,6 +2771,25 @@ func TestCalcMATCH(t *testing.T) {
 		assert.Equal(t, "", result, formula)
 	}
 	assert.Equal(t, newErrorFormulaArg(formulaErrorNA, formulaErrorNA), calcMatch(2, nil, []formulaArg{}))
+}
+
+func TestCalcZTEST(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{4, 5, 2, 5, 8, 9, 3, 2, 3, 8, 9, 5}))
+	formulaList := map[string]string{
+		"=Z.TEST(A1:L1,5)":   "0.371103278558538",
+		"=Z.TEST(A1:L1,6)":   "0.838129187019751",
+		"=Z.TEST(A1:L1,5,1)": "0.193238115385616",
+		"=ZTEST(A1:L1,5)":    "0.371103278558538",
+		"=ZTEST(A1:L1,6)":    "0.838129187019751",
+		"=ZTEST(A1:L1,5,1)":  "0.193238115385616",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "M1", formula))
+		result, err := f.CalcCellValue("Sheet1", "M1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
 }
 
 func TestStrToDate(t *testing.T) {

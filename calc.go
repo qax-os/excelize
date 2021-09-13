@@ -506,6 +506,8 @@ type formulaFuncs struct {
 //    VLOOKUP
 //    XOR
 //    YEAR
+//    Z.TEST
+//    ZTEST
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
@@ -5610,6 +5612,61 @@ func (fn *formulaFuncs) VARdotP(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "VAR.P requires at least 1 argument")
 	}
 	return fn.VARP(argsList)
+}
+
+// ZdotTEST function calculates the one-tailed probability value of the
+// Z-Test. The syntax of the function is:
+//
+//    Z.TEST(array,x,[sigma])
+//
+func (fn *formulaFuncs) ZdotTEST(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "Z.TEST requires at least 2 arguments")
+	}
+	if argsLen > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "Z.TEST accepts at most 3 arguments")
+	}
+	return fn.ZTEST(argsList)
+}
+
+// ZTEST function calculates the one-tailed probability value of the Z-Test.
+// The syntax of the function is:
+//
+//    ZTEST(array,x,[sigma])
+//
+func (fn *formulaFuncs) ZTEST(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ZTEST requires at least 2 arguments")
+	}
+	if argsLen > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ZTEST accepts at most 3 arguments")
+	}
+	arrArg, arrArgs := argsList.Front().Value.(formulaArg), list.New()
+	arrArgs.PushBack(arrArg)
+	arr := fn.AVERAGE(arrArgs)
+	if arr.Type == ArgError {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	x := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if x.Type == ArgError {
+		return x
+	}
+	sigma := argsList.Back().Value.(formulaArg).ToNumber()
+	if sigma.Type == ArgError {
+		return sigma
+	}
+	if argsLen != 3 {
+		sigma = fn.STDEV(arrArgs).ToNumber()
+	}
+	normsdistArg := list.New()
+	div := sigma.Number / math.Sqrt(float64(len(arrArg.ToList())))
+	if div == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	normsdistArg.PushBack(newNumberFormulaArg((arr.Number - x.Number) / div))
+	return newNumberFormulaArg(1 - fn.NORMSDIST(normsdistArg).Number)
 }
 
 // Information Functions
