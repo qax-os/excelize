@@ -504,6 +504,8 @@ type formulaFuncs struct {
 //    VAR.P
 //    VARP
 //    VLOOKUP
+//    WEIBULL
+//    WEIBULL.DIST
 //    XOR
 //    YEAR
 //    Z.TEST
@@ -5612,6 +5614,46 @@ func (fn *formulaFuncs) VARdotP(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "VAR.P requires at least 1 argument")
 	}
 	return fn.VARP(argsList)
+}
+
+// WEIBULL function calculates the Weibull Probability Density Function or the
+// Weibull Cumulative Distribution Function for a supplied set of parameters.
+// The syntax of the function is:
+//
+//    WEIBULL(x,alpha,beta,cumulative)
+//
+func (fn *formulaFuncs) WEIBULL(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEIBULL requires 4 arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	alpha := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	beta := argsList.Back().Prev().Value.(formulaArg).ToNumber()
+	if alpha.Type == ArgNumber && beta.Type == ArgNumber && x.Type == ArgNumber {
+		if alpha.Number < 0 || alpha.Number <= 0 || beta.Number <= 0 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		cumulative := argsList.Back().Value.(formulaArg).ToBool()
+		if cumulative.Boolean && cumulative.Number == 1 {
+			return newNumberFormulaArg(1 - math.Exp(0-math.Pow((x.Number/beta.Number), alpha.Number)))
+		}
+		return newNumberFormulaArg((alpha.Number / math.Pow(beta.Number, alpha.Number)) *
+			math.Pow(x.Number, (alpha.Number-1)) * math.Exp(0-math.Pow((x.Number/beta.Number), alpha.Number)))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+}
+
+// WEIBULLdotDIST function calculates the Weibull Probability Density Function
+// or the Weibull Cumulative Distribution Function for a supplied set of
+// parameters. The syntax of the function is:
+//
+//    WEIBULL.DIST(x,alpha,beta,cumulative)
+//
+func (fn *formulaFuncs) WEIBULLdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEIBULL.DIST requires 4 arguments")
+	}
+	return fn.WEIBULL(argsList)
 }
 
 // ZdotTEST function calculates the one-tailed probability value of the

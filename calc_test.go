@@ -858,6 +858,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=VARP(A1:A5)": "1.25",
 		// VAR.P
 		"=VAR.P(A1:A5)": "1.25",
+		// WEIBULL
+		"=WEIBULL(1,3,1,FALSE)":  "1.103638323514327",
+		"=WEIBULL(2,5,1.5,TRUE)": "0.985212776817482",
+		// WEIBULL.DIST
+		"=WEIBULL.DIST(1,3,1,FALSE)":  "1.103638323514327",
+		"=WEIBULL.DIST(2,5,1.5,TRUE)": "0.985212776817482",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
@@ -1899,20 +1905,30 @@ func TestCalcCellValue(t *testing.T) {
 		// VAR.P
 		"=VAR.P()":     "VAR.P requires at least 1 argument",
 		"=VAR.P(\"\")": "#DIV/0!",
+		// WEIBULL
+		"=WEIBULL()":               "WEIBULL requires 4 arguments",
+		"=WEIBULL(\"\",1,1,FALSE)": "#VALUE!",
+		"=WEIBULL(1,0,1,FALSE)":    "#N/A",
+		"=WEIBULL(1,1,-1,FALSE)":   "#N/A",
+		// WEIBULL.DIST
+		"=WEIBULL.DIST()":               "WEIBULL.DIST requires 4 arguments",
+		"=WEIBULL.DIST(\"\",1,1,FALSE)": "#VALUE!",
+		"=WEIBULL.DIST(1,0,1,FALSE)":    "#N/A",
+		"=WEIBULL.DIST(1,1,-1,FALSE)":   "#N/A",
 		// Z.TEST
-		"Z.TEST(A1)":        "Z.TEST requires at least 2 arguments",
-		"Z.TEST(A1,0,0,0)":  "Z.TEST accepts at most 3 arguments",
-		"Z.TEST(H1,0)":      "#N/A",
-		"Z.TEST(A1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"Z.TEST(A1,1)":      "#DIV/0!",
-		"Z.TEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=Z.TEST(A1)":        "Z.TEST requires at least 2 arguments",
+		"=Z.TEST(A1,0,0,0)":  "Z.TEST accepts at most 3 arguments",
+		"=Z.TEST(H1,0)":      "#N/A",
+		"=Z.TEST(A1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=Z.TEST(A1,1)":      "#DIV/0!",
+		"=Z.TEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// ZTEST
-		"ZTEST(A1)":        "ZTEST requires at least 2 arguments",
-		"ZTEST(A1,0,0,0)":  "ZTEST accepts at most 3 arguments",
-		"ZTEST(H1,0)":      "#N/A",
-		"ZTEST(A1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"ZTEST(A1,1)":      "#DIV/0!",
-		"ZTEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ZTEST(A1)":        "ZTEST requires at least 2 arguments",
+		"=ZTEST(A1,0,0,0)":  "ZTEST accepts at most 3 arguments",
+		"=ZTEST(H1,0)":      "#N/A",
+		"=ZTEST(A1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ZTEST(A1,1)":      "#DIV/0!",
+		"=ZTEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// Information Functions
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
