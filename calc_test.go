@@ -956,6 +956,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(43101,43891,\"YD\")": "59",
 		"=DATEDIF(36526,73110,\"YD\")": "60",
 		"=DATEDIF(42171,44242,\"yd\")": "244",
+		// DATEVALUE
+		"=DATEVALUE(\"01/01/16\")":   "42370",
+		"=DATEVALUE(\"01/01/2016\")": "42370",
+		"=DATEVALUE(\"01/01/29\")":   "47119",
+		"=DATEVALUE(\"01/01/30\")":   "10959",
 		// DAY
 		"=DAY(0)":                                "0",
 		"=DAY(INT(7))":                           "7",
@@ -1997,6 +2002,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=DATEDIF(\"\",\"\",\"\")":    "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DATEDIF(43891,43101,\"Y\")": "start_date > end_date",
 		"=DATEDIF(43101,43891,\"x\")": "DATEDIF has invalid unit",
+		// DATEVALUE
+		"=DATEVALUE()":             "DATEVALUE requires 1 argument",
+		"=DATEVALUE(\"01/01\")":    "#VALUE!", // valid in Excel, which uses years by the system date
+		"=DATEVALUE(\"1900-0-0\")": "#VALUE!",
 		// DAY
 		"=DAY()":         "DAY requires exactly 1 argument",
 		"=DAY(-1)":       "DAY only accepts positive argument",

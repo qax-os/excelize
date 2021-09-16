@@ -321,6 +321,7 @@ type formulaFuncs struct {
 //    CUMPRINC
 //    DATE
 //    DATEDIF
+//    DATEVALUE
 //    DAY
 //    DB
 //    DDB
@@ -6513,6 +6514,30 @@ func strToDate(str string) (int, int, int, bool, formulaArg) {
 		return 0, 0, 0, false, newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	return year, month, day, timeIsEmpty, newEmptyFormulaArg()
+}
+
+// DATEVALUE function converts a text representation of a date into an Excel
+// date. For example, the function converts a text string representing a
+// date, into the serial number that represents the date in Excel's date-time
+// code.  The syntax of the function is:
+//
+//    DATEVALUE(date_text)
+//
+func (fn *formulaFuncs) DATEVALUE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DATEVALUE requires 1 argument")
+	}
+	dateText := argsList.Front().Value.(formulaArg).Value()
+	if !isDateOnlyFmt(dateText) {
+		if _, _, _, _, _, err := strToTime(dateText); err.Type == ArgError {
+			return err
+		}
+	}
+	y, m, d, _, err := strToDate(dateText)
+	if err.Type == ArgError {
+		return err
+	}
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(y, time.Month(m), d)) + 1)
 }
 
 // DAY function returns the day of a date, represented by a serial number. The

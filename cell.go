@@ -82,7 +82,7 @@ func (f *File) GetCellType(sheet, axis string) (CellType, error) {
 	var (
 		err         error
 		cellTypeStr string
-		cellType    CellType = CellTypeUnset
+		cellType    CellType
 	)
 	if cellTypeStr, err = f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		return c.T, true, nil

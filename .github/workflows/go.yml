@@ -28,7 +28,7 @@ jobs:
       run: go build -v .
 
     - name: Test
-      run: env GO111MODULE=on go test -v -race ./... -coverprofile=coverage.txt -covermode=atomic
+      run: env GO111MODULE=on go test -v -timeout 30m -race ./... -coverprofile=coverage.txt -covermode=atomic
 
     - name: Codecov
       uses: codecov/codecov-action@v1
