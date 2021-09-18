@@ -167,6 +167,7 @@ func TestOpenFile(t *testing.T) {
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestOpenFile.xlsx")))
 	assert.EqualError(t, f.SaveAs(filepath.Join("test", strings.Repeat("c", 199), ".xlsx")), ErrMaxFileNameLength.Error())
+	assert.NoError(t, f.Close())
 }
 
 func TestSaveFile(t *testing.T) {
@@ -175,11 +176,13 @@ func TestSaveFile(t *testing.T) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSaveFile.xlsx")))
+	assert.NoError(t, f.Close())
 	f, err = OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 	assert.NoError(t, f.Save())
+	assert.NoError(t, f.Close())
 }
 
 func TestSaveAsWrongPath(t *testing.T) {
@@ -187,6 +190,7 @@ func TestSaveAsWrongPath(t *testing.T) {
 	assert.NoError(t, err)
 	// Test write file to not exist directory.
 	assert.EqualError(t, f.SaveAs(""), "open .: is a directory")
+	assert.NoError(t, f.Close())
 }
 
 func TestCharsetTranscoder(t *testing.T) {
@@ -197,7 +201,7 @@ func TestCharsetTranscoder(t *testing.T) {
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
-	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password"})
+	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", WorksheetUnzipMemLimit: UnzipSizeLimit + 1})
 	assert.EqualError(t, err, "decrypted file failed")
 
 	// Test open spreadsheet with unzip size limit.
@@ -210,6 +214,7 @@ func TestOpenReader(t *testing.T) {
 	val, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", val)
+	assert.NoError(t, f.Close())
 
 	// Test open password protected spreadsheet created by LibreOffice 7.0.0.3.
 	f, err = OpenFile(filepath.Join("test", "encryptAES.xlsx"), Options{Password: "password"})
@@ -217,6 +222,11 @@ func TestOpenReader(t *testing.T) {
 	val, err = f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", val)
+	assert.NoError(t, f.Close())
+
+	// Test open spreadsheet with invalid optioins.
+	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{UnzipSizeLimit: 1, WorksheetUnzipMemLimit: 2})
+	assert.EqualError(t, err, ErrOptionsUnzipSizeLimit.Error())
 
 	// Test unexpected EOF.
 	var b bytes.Buffer
@@ -266,6 +276,7 @@ func TestBrokenFile(t *testing.T) {
 		f3.GetActiveSheetIndex()
 		f3.SetActiveSheet(1)
 		assert.NoError(t, err)
+		assert.NoError(t, f3.Close())
 	})
 
 	t.Run("OpenNotExistsFile", func(t *testing.T) {
@@ -340,6 +351,7 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.EqualError(t, f.SetCellHyperLink("Sheet2", "", "Sheet1!D60", "Location"), `invalid cell name ""`)
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellHyperLink.xlsx")))
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	_, err = f.workSheetReader("Sheet1")
@@ -377,6 +389,7 @@ func TestGetCellHyperLink(t *testing.T) {
 	link, target, err = f.GetCellHyperLink("Sheet3", "H3")
 	assert.EqualError(t, err, "sheet Sheet3 is not exist")
 	t.Log(link, target)
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	_, err = f.workSheetReader("Sheet1")
@@ -398,7 +411,6 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 	assert.Equal(t, link, false)
 	assert.Equal(t, target, "")
-
 }
 
 func TestSetSheetBackground(t *testing.T) {
@@ -418,6 +430,7 @@ func TestSetSheetBackground(t *testing.T) {
 	}
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetBackground.xlsx")))
+	assert.NoError(t, f.Close())
 }
 
 func TestSetSheetBackgroundErrors(t *testing.T) {
@@ -433,6 +446,7 @@ func TestSetSheetBackgroundErrors(t *testing.T) {
 
 	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "Book1.xlsx"))
 	assert.EqualError(t, err, ErrImgExt.Error())
+	assert.NoError(t, f.Close())
 }
 
 // TestWriteArrayFormula tests the extended options of SetCellFormula by writing an array function
@@ -1052,6 +1066,7 @@ func TestConditionalFormat(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
+	assert.NoError(t, f.Close())
 }
 
 func TestConditionalFormatError(t *testing.T) {
@@ -1082,6 +1097,7 @@ func TestSharedStrings(t *testing.T) {
 		t.FailNow()
 	}
 	assert.Equal(t, "Test Weight (Kgs)", rows[0][0])
+	assert.NoError(t, f.Close())
 }
 
 func TestSetSheetRow(t *testing.T) {
@@ -1098,6 +1114,7 @@ func TestSetSheetRow(t *testing.T) {
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", &f), ErrParameterInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetRow.xlsx")))
+	assert.NoError(t, f.Close())
 }
 
 func TestHSL(t *testing.T) {
@@ -1155,6 +1172,7 @@ func TestUnprotectSheet(t *testing.T) {
 
 	assert.NoError(t, f.UnprotectSheet("Sheet1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnprotectSheet.xlsx")))
+	assert.NoError(t, f.Close())
 }
 
 func TestSetDefaultTimeStyle(t *testing.T) {
@@ -1323,7 +1341,11 @@ func fillCells(f *File, sheet string, colCount, rowCount int) {
 
 func BenchmarkOpenFile(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if _, err := OpenFile(filepath.Join("test", "Book1.xlsx")); err != nil {
+		f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+		if err != nil {
+			b.Error(err)
+		}
+		if err := f.Close(); err != nil {
 			b.Error(err)
 		}
 	}

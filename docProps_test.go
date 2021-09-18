@@ -44,6 +44,7 @@ func TestSetDocProps(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocProps.xlsx")))
 	f.Pkg.Store("docProps/core.xml", nil)
 	assert.NoError(t, f.SetDocProps(&DocProperties{}))
+	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
@@ -62,6 +63,7 @@ func TestGetDocProps(t *testing.T) {
 	f.Pkg.Store("docProps/core.xml", nil)
 	_, err = f.GetDocProps()
 	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()

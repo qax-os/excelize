@@ -72,6 +72,7 @@ func TestConcurrency(t *testing.T) {
 	}
 	assert.Equal(t, "1", val)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestConcurrency.xlsx")))
+	assert.NoError(t, f.Close())
 }
 
 func TestCheckCellInArea(t *testing.T) {
@@ -325,6 +326,7 @@ func TestOverflowNumericCell(t *testing.T) {
 	assert.NoError(t, err)
 	// GOARCH=amd64 - all ok; GOARCH=386 - actual: "-2147483648"
 	assert.Equal(t, "8595602512225", val, "A1 should be 8595602512225")
+	assert.NoError(t, f.Close())
 }
 
 func TestSetCellFormula(t *testing.T) {
@@ -340,6 +342,7 @@ func TestSetCellFormula(t *testing.T) {
 	assert.EqualError(t, f.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)"), `cannot convert cell "C" to coordinates: invalid cell name "C"`)
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula1.xlsx")))
+	assert.NoError(t, f.Close())
 
 	f, err = OpenFile(filepath.Join("test", "CalcChain.xlsx"))
 	if !assert.NoError(t, err) {
@@ -351,6 +354,7 @@ func TestSetCellFormula(t *testing.T) {
 	// Test remove all cell formula.
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", ""))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula3.xlsx")))
+	assert.NoError(t, f.Close())
 
 	// Test set shared formula for the cells.
 	f = NewFile()

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkWrite(b *testing.B) {
@@ -61,4 +62,10 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.Nil(t, err)
 	}
+}
+
+func TestClose(t *testing.T) {
+	f := NewFile()
+	f.tempFiles.Store("/d/", "/d/")
+	require.Error(t, f.Close())
 }

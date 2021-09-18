@@ -18,14 +18,15 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-// ReadZipReader can be used to read the spreadsheet in memory without touching the
-// filesystem.
-func ReadZipReader(r *zip.Reader, o *Options) (map[string][]byte, int, error) {
+// ReadZipReader extract spreadsheet with given options.
+func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	var (
 		err     error
 		docPart = map[string]string{
@@ -37,25 +38,49 @@ func ReadZipReader(r *zip.Reader, o *Options) (map[string][]byte, int, error) {
 		unzipSize  int64
 	)
 	for _, v := range r.File {
-		unzipSize += v.FileInfo().Size()
-		if unzipSize > o.UnzipSizeLimit {
-			return fileList, worksheets, newUnzipSizeLimitError(o.UnzipSizeLimit)
+		fileSize := v.FileInfo().Size()
+		unzipSize += fileSize
+		if unzipSize > f.options.UnzipSizeLimit {
+			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
 		}
 		fileName := strings.Replace(v.Name, "\\", "/", -1)
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
-		if fileList[fileName], err = readFile(v); err != nil {
-			return nil, 0, err
-		}
 		if strings.HasPrefix(fileName, "xl/worksheets/sheet") {
 			worksheets++
+			if fileSize > f.options.WorksheetUnzipMemLimit && !v.FileInfo().IsDir() {
+				if tempFile, err := f.unzipToTemp(v); err == nil {
+					f.tempFiles.Store(fileName, tempFile)
+					continue
+				}
+			}
+		}
+		if fileList[fileName], err = readFile(v); err != nil {
+			return nil, 0, err
 		}
 	}
 	return fileList, worksheets, nil
 }
 
-// readXML provides a function to read XML content as string.
+// unzipToTemp unzip the zip entity to the system temporary directory and
+// returned the unzipped file path.
+func (f *File) unzipToTemp(zipFile *zip.File) (string, error) {
+	tmp, err := ioutil.TempFile(os.TempDir(), "excelize-")
+	if err != nil {
+		return "", err
+	}
+	rc, err := zipFile.Open()
+	if err != nil {
+		return tmp.Name(), err
+	}
+	_, err = io.Copy(tmp, rc)
+	rc.Close()
+	tmp.Close()
+	return tmp.Name(), err
+}
+
+// readXML provides a function to read XML content as bytes.
 func (f *File) readXML(name string) []byte {
 	if content, _ := f.Pkg.Load(name); content != nil {
 		return content.([]byte)
@@ -64,6 +89,32 @@ func (f *File) readXML(name string) []byte {
 		return content.rawData.buf.Bytes()
 	}
 	return []byte{}
+}
+
+// readBytes read file as bytes by given path.
+func (f *File) readBytes(name string) []byte {
+	content := f.readXML(name)
+	if len(content) != 0 {
+		return content
+	}
+	file, err := f.readTemp(name)
+	if err != nil {
+		return content
+	}
+	content, _ = ioutil.ReadAll(file)
+	f.Pkg.Store(name, content)
+	file.Close()
+	return content
+}
+
+// readTemp read file from system temporary directory by given path.
+func (f *File) readTemp(name string) (file *os.File, err error) {
+	path, ok := f.tempFiles.Load(name)
+	if !ok {
+		return
+	}
+	file, err = os.Open(path.(string))
+	return
 }
 
 // saveFileList provides a function to update given file content in file list

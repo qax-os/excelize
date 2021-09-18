@@ -22,6 +22,7 @@ func TestEncrypt(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
 	assert.EqualError(t, f.SaveAs(filepath.Join("test", "BadEncrypt.xlsx"), Options{Password: "password"}), "not support encryption currently")
+	assert.NoError(t, f.Close())
 }
 
 func TestEncryptionMechanism(t *testing.T) {

@@ -39,6 +39,7 @@ func TestCols(t *testing.T) {
 	if !assert.Equal(t, collectedRows, returnedColumns) {
 		t.FailNow()
 	}
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	cells := []string{"C2", "C3", "C4"}
@@ -75,6 +76,7 @@ func TestColumnsIterator(t *testing.T) {
 		require.True(t, colCount <= expectedNumCol, "colCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumCol, colCount)
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	cells := []string{"C2", "C3", "C4", "D2", "D3", "D4"}
@@ -99,6 +101,7 @@ func TestColsError(t *testing.T) {
 	}
 	_, err = f.Cols("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.NoError(t, f.Close())
 }
 
 func TestGetColsError(t *testing.T) {
@@ -108,6 +111,7 @@ func TestGetColsError(t *testing.T) {
 	}
 	_, err = f.GetCols("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
@@ -283,6 +287,7 @@ func TestOutlineLevel(t *testing.T) {
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetColOutlineLevel("Sheet2", "B", 2))
+	assert.NoError(t, f.Close())
 }
 
 func TestSetColStyle(t *testing.T) {

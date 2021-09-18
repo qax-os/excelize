@@ -68,6 +68,7 @@ func TestAddPicture(t *testing.T) {
 
 	// Test write file to given path.
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
+	assert.NoError(t, f.Close())
 }
 
 func TestAddPictureErrors(t *testing.T) {
@@ -90,6 +91,7 @@ func TestAddPictureErrors(t *testing.T) {
 	// Test add picture to worksheet with invalid file data.
 	err = f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
 	assert.EqualError(t, err, "image: unknown format")
+	assert.NoError(t, f.Close())
 }
 
 func TestGetPicture(t *testing.T) {
@@ -137,7 +139,6 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0644)) {
-
 		t.FailNow()
 	}
 
@@ -146,6 +147,7 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
+	assert.NoError(t, f.Close())
 
 	// Test get picture from none drawing worksheet.
 	f = NewFile()
@@ -194,6 +196,7 @@ func TestDeletePicture(t *testing.T) {
 	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN is not exist")
 	// Test delete picture with invalid coordinates.
 	assert.EqualError(t, f.DeletePicture("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
+	assert.NoError(t, f.Close())
 	// Test delete picture on no chart worksheet.
 	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
 }

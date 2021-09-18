@@ -82,6 +82,18 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 	return f.Write(file)
 }
 
+// Close closes and cleanup the open temporary file for the spreadsheet.
+func (f *File) Close() error {
+	var err error
+	f.tempFiles.Range(func(k, v interface{}) bool {
+		if err = os.Remove(v.(string)); err != nil {
+			return false
+		}
+		return true
+	})
+	return err
+}
+
 // Write provides a function to write to an io.Writer.
 func (f *File) Write(w io.Writer) error {
 	_, err := f.WriteTo(w)

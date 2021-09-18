@@ -209,7 +209,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var colIterator columnXMLIterator
-	colIterator.cols.sheetXML = f.readXML(name)
+	colIterator.cols.sheetXML = f.readBytes(name)
 	decoder := f.xmlNewDecoder(bytes.NewReader(colIterator.cols.sheetXML))
 	for {
 		token, _ := decoder.Token()

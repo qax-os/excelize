@@ -497,6 +497,9 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //    if err := ioutil.WriteFile(file, raw, 0644); err != nil {
 //        fmt.Println(err)
 //    }
+//    if err = f.Close(); err != nil {
+//        fmt.Println(err)
+//    }
 //
 func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	col, row, err := CellNameToCoordinates(cell)

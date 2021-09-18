@@ -115,6 +115,21 @@ func TestStreamWriter(t *testing.T) {
 	cellValue, err := file.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "Data", cellValue)
+
+	// Test stream reader for a worksheet with huge amounts of data.
+	file, err = OpenFile(filepath.Join("test", "TestStreamWriter.xlsx"))
+	assert.NoError(t, err)
+	rows, err := file.Rows("Sheet1")
+	assert.NoError(t, err)
+	cells := 0
+	for rows.Next() {
+		row, err := rows.Columns()
+		assert.NoError(t, err)
+		cells += len(row)
+	}
+	assert.NoError(t, rows.Close())
+	assert.Equal(t, 2559558, cells)
+	assert.NoError(t, file.Close())
 }
 
 func TestStreamSetColWidth(t *testing.T) {

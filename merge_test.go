@@ -68,6 +68,7 @@ func TestMergeCell(t *testing.T) {
 	assert.EqualError(t, f.MergeCell("SheetN", "N10", "O11"), "sheet SheetN is not exist")
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
@@ -93,6 +94,7 @@ func TestMergeCellOverlap(t *testing.T) {
 	assert.Equal(t, "A1", mc[0].GetStartAxis())
 	assert.Equal(t, "D3", mc[0].GetEndAxis())
 	assert.Equal(t, "", mc[0].GetCellValue())
+	assert.NoError(t, f.Close())
 }
 
 func TestGetMergeCells(t *testing.T) {
@@ -139,6 +141,7 @@ func TestGetMergeCells(t *testing.T) {
 	// Test get merged cells on not exists worksheet.
 	_, err = f.GetMergeCells("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.NoError(t, f.Close())
 }
 
 func TestUnmergeCell(t *testing.T) {
@@ -162,6 +165,7 @@ func TestUnmergeCell(t *testing.T) {
 	}
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnmergeCell.xlsx")))
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))

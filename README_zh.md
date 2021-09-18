@@ -96,6 +96,10 @@ func main() {
         }
         fmt.Println()
     }
+    // 关闭工作簿
+    if err = f.Close(); err != nil {
+        fmt.Println(err)
+    }
 }
 ```
 
@@ -199,8 +203,12 @@ func main() {
     }`); err != nil {
         fmt.Println(err)
     }
-    // 保存文件
+    // 保存工作簿
     if err = f.Save(); err != nil {
+        fmt.Println(err)
+    }
+    // 关闭工作簿
+    if err = f.Close(); err != nil {
         fmt.Println(err)
     }
 }

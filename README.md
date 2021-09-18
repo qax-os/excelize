@@ -96,6 +96,10 @@ func main() {
         }
         fmt.Println()
     }
+    // Close the spreadsheet.
+    if err = f.Close(); err != nil {
+        fmt.Println(err)
+    }
 }
 ```
 
@@ -201,6 +205,10 @@ func main() {
     }
     // Save the spreadsheet with the origin path.
     if err = f.Save(); err != nil {
+        fmt.Println(err)
+    }
+    // Close the spreadsheet.
+    if err = f.Close(); err != nil {
         fmt.Println(err)
     }
 }

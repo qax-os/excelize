@@ -419,6 +419,9 @@ func (f *File) GetSheetIndex(name string) int {
 //    for index, name := range f.GetSheetMap() {
 //        fmt.Println(index, name)
 //    }
+//    if err = f.Close(); err != nil {
+//        fmt.Println(err)
+//    }
 //
 func (f *File) GetSheetMap() map[int]string {
 	wb := f.workbookReader()
@@ -460,6 +463,9 @@ func (f *File) getSheetMap() map[string]string {
 					path = filepath.ToSlash(strings.TrimPrefix(strings.Replace(filepath.Clean(rel.Target), "\\", "/", -1), "/"))
 				}
 				if _, ok := f.Pkg.Load(path); ok {
+					maps[v.Name] = path
+				}
+				if _, ok := f.tempFiles.Load(path); ok {
 					maps[v.Name] = path
 				}
 			}
@@ -858,7 +864,7 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 	)
 
 	d = f.sharedStringsReader()
-	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+	decoder := f.xmlNewDecoder(bytes.NewReader(f.readBytes(name)))
 	for {
 		var token xml.Token
 		token, err = decoder.Token()

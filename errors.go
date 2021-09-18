@@ -131,4 +131,7 @@ var (
 	// ErrCellCharsLength defined the error message for receiving a cell
 	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
+	// ErrOptionsUnzipSizeLimit defined the error message for receiving
+	// invalid UnzipSizeLimit and WorksheetUnzipMemLimit.
+	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to WorksheetUnzipMemLimit")
 )

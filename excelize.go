@@ -37,6 +37,7 @@ type File struct {
 	checked          map[string]bool
 	sheetMap         map[string]string
 	streams          map[string]*StreamWriter
+	tempFiles        sync.Map
 	CalcChain        *xlsxCalcChain
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
@@ -58,13 +59,26 @@ type File struct {
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
-// Options define the options for open and reading spreadsheet. RawCellValue
-// specify if apply the number format for the cell value or get the raw
-// value.
+// Options define the options for open and reading spreadsheet.
+//
+// Password specifies the password of the spreadsheet in plain text.
+//
+// RawCellValue specifies if apply the number format for the cell value or get
+// the raw value.
+//
+// UnzipSizeLimit specifies the unzip size limit in bytes on open the
+// spreadsheet, this value should be greater than or equal to
+// WorksheetUnzipMemLimit, the default size limit is 16GB.
+//
+// WorksheetUnzipMemLimit specifies the memory limit on unzipping worksheet in
+// bytes, worksheet XML will be extracted to system temporary directory when
+// the file size is over this value, this value should be less than or equal
+// to UnzipSizeLimit, the default value is 16MB.
 type Options struct {
-	Password       string
-	RawCellValue   bool
-	UnzipSizeLimit int64
+	Password               string
+	RawCellValue           bool
+	UnzipSizeLimit         int64
+	WorksheetUnzipMemLimit int64
 }
 
 // OpenFile take the name of an spreadsheet file and returns a populated
@@ -78,10 +92,8 @@ type Options struct {
 //
 // Note that the excelize just support decrypt and not support encrypt
 // currently, the spreadsheet saved by Save and SaveAs will be without
-// password unprotected.
-//
-// UnzipSizeLimit specified the unzip size limit in bytes on open the
-// spreadsheet, the default size limit is 16GB.
+// password unprotected. Close the file by Close after opening the
+// spreadsheet.
 func OpenFile(filename string, opt ...Options) (*File, error) {
 	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
@@ -99,10 +111,11 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 // newFile is object builder
 func newFile() *File {
 	return &File{
-		options:          &Options{UnzipSizeLimit: UnzipSizeLimit},
+		options:          &Options{UnzipSizeLimit: UnzipSizeLimit, WorksheetUnzipMemLimit: StreamChunkSize},
 		xmlAttr:          make(map[string][]xml.Attr),
 		checked:          make(map[string]bool),
 		sheetMap:         make(map[string]string),
+		tempFiles:        sync.Map{},
 		Comments:         make(map[string]*xlsxComments),
 		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
@@ -125,6 +138,18 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	f.options = parseOptions(opt...)
 	if f.options.UnzipSizeLimit == 0 {
 		f.options.UnzipSizeLimit = UnzipSizeLimit
+		if f.options.WorksheetUnzipMemLimit > f.options.UnzipSizeLimit {
+			f.options.UnzipSizeLimit = f.options.WorksheetUnzipMemLimit
+		}
+	}
+	if f.options.WorksheetUnzipMemLimit == 0 {
+		f.options.WorksheetUnzipMemLimit = StreamChunkSize
+		if f.options.UnzipSizeLimit < f.options.WorksheetUnzipMemLimit {
+			f.options.WorksheetUnzipMemLimit = f.options.UnzipSizeLimit
+		}
+	}
+	if f.options.WorksheetUnzipMemLimit > f.options.UnzipSizeLimit {
+		return nil, ErrOptionsUnzipSizeLimit
 	}
 	if bytes.Contains(b, oleIdentifier) {
 		b, err = Decrypt(b, f.options)
@@ -136,7 +161,7 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	file, sheetCount, err := ReadZipReader(zr, f.options)
+	file, sheetCount, err := f.ReadZipReader(zr)
 	if err != nil {
 		return nil, err
 	}
@@ -210,10 +235,10 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	ws = new(xlsxWorksheet)
 	if _, ok := f.xmlAttr[name]; !ok {
-		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name))))
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
 		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
 	}
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(name)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return

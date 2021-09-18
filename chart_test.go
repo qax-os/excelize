@@ -206,6 +206,7 @@ func TestAddChart(t *testing.T) {
 	assert.EqualError(t, f.AddChart("Sheet2", "BD32", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"2D Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`, ""), "unexpected end of JSON input")
 	// Test add combo chart with unsupported chart type
 	assert.EqualError(t, f.AddChart("Sheet2", "BD64", `{"type":"barOfPie","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Bar of Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"major_grid_lines":true},"y_axis":{"major_grid_lines":true}}`, `{"type":"unknown","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Bar of Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"major_grid_lines":true},"y_axis":{"major_grid_lines":true}}`), "unsupported chart type unknown")
+	assert.NoError(t, f.Close())
 }
 
 func TestAddChartSheet(t *testing.T) {
@@ -254,6 +255,7 @@ func TestDeleteChart(t *testing.T) {
 	assert.EqualError(t, f.DeleteChart("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
 	// Test delete chart on no chart worksheet.
 	assert.NoError(t, NewFile().DeleteChart("Sheet1", "A1"))
+	assert.NoError(t, f.Close())
 }
 
 func TestChartWithLogarithmicBase(t *testing.T) {

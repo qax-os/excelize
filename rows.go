@@ -18,6 +18,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"os"
 	"strconv"
 
 	"github.com/mohae/deepcopy"
@@ -60,7 +61,7 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 			max = cur
 		}
 	}
-	return results[:max], nil
+	return results[:max], rows.Close()
 }
 
 // Rows defines an iterator to a sheet.
@@ -70,6 +71,7 @@ type Rows struct {
 	rawCellValue               bool
 	sheet                      string
 	f                          *File
+	tempFile                   *os.File
 	decoder                    *xml.Decoder
 }
 
@@ -82,6 +84,15 @@ func (rows *Rows) Next() bool {
 // Error will return the error when the error occurs.
 func (rows *Rows) Error() error {
 	return rows.err
+}
+
+// Close closes the open worksheet XML file in the system temporary
+// directory.
+func (rows *Rows) Close() error {
+	if rows.tempFile != nil {
+		return rows.tempFile.Close()
+	}
+	return nil
 }
 
 // Columns return the current row's column values.
@@ -196,6 +207,9 @@ func rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement, ra
 //        }
 //        fmt.Println()
 //    }
+//    if err = rows.Close(); err != nil {
+//        fmt.Println(err)
+//    }
 //
 func (f *File) Rows(sheet string) (*Rows, error) {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
@@ -215,8 +229,13 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		inElement string
 		row       int
 		rows      Rows
+		needClose bool
+		decoder   *xml.Decoder
+		tempFile  *os.File
 	)
-	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+	if needClose, decoder, tempFile, err = f.sheetDecoder(name); needClose && err == nil {
+		defer tempFile.Close()
+	}
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
@@ -241,13 +260,27 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 			if xmlElement.Name.Local == "sheetData" {
 				rows.f = f
 				rows.sheet = name
-				rows.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
-				return &rows, nil
+				_, rows.decoder, rows.tempFile, err = f.sheetDecoder(name)
+				return &rows, err
 			}
-		default:
 		}
 	}
 	return &rows, nil
+}
+
+// sheetDecoder creates XML decoder by given path in the zip from memory data
+// or system temporary file.
+func (f *File) sheetDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
+	var (
+		content  []byte
+		err      error
+		tempFile *os.File
+	)
+	if content = f.readXML(name); len(content) > 0 {
+		return false, f.xmlNewDecoder(bytes.NewReader(content)), tempFile, err
+	}
+	tempFile, err = f.readTemp(name)
+	return true, f.xmlNewDecoder(tempFile), tempFile, err
 }
 
 // SetRowHeight provides a function to set the height of a single row. For

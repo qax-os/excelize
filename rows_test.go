@@ -32,6 +32,7 @@ func TestRows(t *testing.T) {
 	if !assert.NoError(t, rows.Error()) {
 		t.FailNow()
 	}
+	assert.NoError(t, rows.Close())
 
 	returnedRows, err := f.GetRows(sheet2)
 	assert.NoError(t, err)
@@ -41,6 +42,7 @@ func TestRows(t *testing.T) {
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
+	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`))
@@ -52,6 +54,14 @@ func TestRows(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", nil)
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
+
+	// Test reload the file to memory from system temporary directory.
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{WorksheetUnzipMemLimit: 1024})
+	assert.NoError(t, err)
+	value, err := f.GetCellValue("Sheet1", "A19")
+	assert.NoError(t, err)
+	assert.Equal(t, "Total:", value)
+	assert.NoError(t, f.Close())
 }
 
 func TestRowsIterator(t *testing.T) {
@@ -70,6 +80,8 @@ func TestRowsIterator(t *testing.T) {
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
+	assert.NoError(t, rows.Close())
+	assert.NoError(t, f.Close())
 
 	// Valued cell sparse distribution test
 	f = NewFile()
@@ -94,6 +106,7 @@ func TestRowsError(t *testing.T) {
 	}
 	_, err = f.Rows("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.NoError(t, f.Close())
 }
 
 func TestRowHeight(t *testing.T) {
@@ -871,6 +884,11 @@ func TestGetValueFromNumber(t *testing.T) {
 	}
 }
 
+func TestRoundPrecision(t *testing.T) {
+	_, err := roundPrecision("")
+	assert.EqualError(t, err, "strconv.ParseFloat: parsing \"\": invalid syntax")
+}
+
 func TestErrSheetNotExistError(t *testing.T) {
 	err := ErrSheetNotExist{SheetName: "Sheet1"}
 	assert.EqualValues(t, err.Error(), "sheet Sheet1 is not exist")
@@ -920,6 +938,7 @@ func TestNumberFormats(t *testing.T) {
 		cells = append(cells, col)
 	}
 	assert.Equal(t, []string{"", "200", "450", "200", "510", "315", "127", "89", "348", "53", "37"}, cells[3])
+	assert.NoError(t, f.Close())
 }
 
 func BenchmarkRows(b *testing.B) {
@@ -934,6 +953,12 @@ func BenchmarkRows(b *testing.B) {
 				}
 			}
 		}
+		if err := rows.Close(); err != nil {
+			b.Error(err)
+		}
+	}
+	if err := f.Close(); err != nil {
+		b.Error(err)
 	}
 }
 

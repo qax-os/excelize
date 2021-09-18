@@ -5,6 +5,7 @@ test/Test*.xlsm
 test/BadEncrypt.xlsx
 test/BadWorkbook.SaveAsEmptyStruct.xlsx
 test/*.png
+test/excelize-*
 *.out
 *.test
 .idea

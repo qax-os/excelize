@@ -189,6 +189,7 @@ func TestSearchSheet(t *testing.T) {
 	result, err = f.SearchSheet("Sheet1", "[0-9]", true)
 	assert.NoError(t, err)
 	assert.EqualValues(t, expected, result)
+	assert.NoError(t, f.Close())
 
 	// Test search worksheet data after set cell value
 	f = NewFile()
@@ -327,6 +328,7 @@ func TestGetSheetName(t *testing.T) {
 	assert.Equal(t, "Sheet2", f.GetSheetName(1))
 	assert.Equal(t, "", f.GetSheetName(-1))
 	assert.Equal(t, "", f.GetSheetName(2))
+	assert.NoError(t, f.Close())
 }
 
 func TestGetSheetMap(t *testing.T) {
@@ -341,6 +343,7 @@ func TestGetSheetMap(t *testing.T) {
 		assert.Equal(t, expectedMap[idx], name)
 	}
 	assert.Equal(t, len(sheetMap), 2)
+	assert.NoError(t, f.Close())
 }
 
 func TestSetActiveSheet(t *testing.T) {
