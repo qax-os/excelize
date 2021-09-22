@@ -52,6 +52,10 @@ func NewFile() *File {
 	ws, _ := f.workSheetReader("Sheet1")
 	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
 	f.Theme = f.themeReader()
+
+	f.SharedStrings = &xlsxSST{}
+	f.SharedStrings.SI = make([]xlsxSI, 0)
+
 	return f
 }
 

@@ -69,3 +69,22 @@ func TestClose(t *testing.T) {
 	f.tempFiles.Store("/d/", "/d/")
 	require.Error(t, f.Close())
 }
+
+func UpdateExcelizeFile(f File, sheetName string, cellAxis string, cellValue string) {
+	f.SetCellStr(sheetName, cellAxis, cellValue)
+}
+
+func TestPassByValueExcelFile(t *testing.T) {
+	excelFile := NewFile()
+	sheetName := "testSheet"
+	excelFile.NewSheet(sheetName)
+	cellAxis := "A1"
+
+	cellValue := "this is a test"
+	UpdateExcelizeFile(*excelFile, sheetName, cellAxis, cellValue)
+
+	cellValueReturned, getCellErr := excelFile.GetCellValue(sheetName, cellAxis)
+	//fmt.Println("cellValue:", cellValue, "getCellErr:", getCellErr)
+	assert.Equal(t, cellValue, cellValueReturned)
+	assert.Nil(t, getCellErr)
+}
