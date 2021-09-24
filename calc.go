@@ -323,6 +323,7 @@ type formulaFuncs struct {
 //    DATEDIF
 //    DATEVALUE
 //    DAY
+//    DAYS
 //    DB
 //    DDB
 //    DEC2BIN
@@ -6572,6 +6573,58 @@ func (fn *formulaFuncs) DAY(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Mod(num.Number, 31.0))
 	}
 	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Day()))
+}
+
+// DAYS function returns the number of days between two supplied dates. The
+// syntax of the function is:
+//
+//    DAYS(end_date,start_date)
+//
+func (fn *formulaFuncs) DAYS(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAYS requires 2 arguments")
+	}
+	var end, start float64
+	endArg, startArg := argsList.Front().Value.(formulaArg), argsList.Back().Value.(formulaArg)
+	switch endArg.Type {
+	case ArgNumber:
+		end = endArg.Number
+	case ArgString:
+		endNum := endArg.ToNumber()
+		if endNum.Type == ArgNumber {
+			end = endNum.Number
+		} else {
+			args := list.New()
+			args.PushBack(endArg)
+			endValue := fn.DATEVALUE(args)
+			if endValue.Type == ArgError {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
+			end = endValue.Number
+		}
+	default:
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	switch startArg.Type {
+	case ArgNumber:
+		start = startArg.Number
+	case ArgString:
+		startNum := startArg.ToNumber()
+		if startNum.Type == ArgNumber {
+			start = startNum.Number
+		} else {
+			args := list.New()
+			args.PushBack(startArg)
+			startValue := fn.DATEVALUE(args)
+			if startValue.Type == ArgError {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
+			start = startValue.Number
+		}
+	default:
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newNumberFormulaArg(end - start)
 }
 
 // MONTH function returns the month of a date represented by a serial number.

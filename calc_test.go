@@ -979,6 +979,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAY(\"3-February-2008\")":              "3",
 		"=DAY(\"01/25/20\")":                     "25",
 		"=DAY(\"01/25/31\")":                     "25",
+		// DAYS
+		"=DAYS(2,1)":                           "1",
+		"=DAYS(INT(2),INT(1))":                 "1",
+		"=DAYS(\"02/02/2015\",\"01/01/2015\")": "32",
 		// MONTH
 		"=MONTH(42171)":           "6",
 		"=MONTH(\"31-May-2015\")": "5",
@@ -2040,6 +2044,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAY(\"3-January-9223372036854775808\")":                             "#VALUE!",
 		"=DAY(\"9223372036854775808-January-1900\")":                          "#VALUE!",
 		"=DAY(\"0-January-1900\")":                                            "#VALUE!",
+		// DAYS
+		"=DAYS()":       "DAYS requires 2 arguments",
+		"=DAYS(\"\",0)": "#VALUE!",
+		"=DAYS(0,\"\")": "#VALUE!",
+		"=DAYS(NA(),0)": "#VALUE!",
+		"=DAYS(0,NA())": "#VALUE!",
 		// MONTH
 		"=MONTH()":                    "MONTH requires exactly 1 argument",
 		"=MONTH(0,0)":                 "MONTH requires exactly 1 argument",
