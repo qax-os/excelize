@@ -103,7 +103,7 @@ var (
 		"june":      6,
 		"july":      7,
 		"august":    8,
-		"septemper": 9,
+		"september": 9,
 		"october":   10,
 		"november":  11,
 		"december":  12,

@@ -1043,13 +1043,18 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
 func (f *File) formattedValue(s int, v string, raw bool) string {
+	precise := v
+	isNum, precision := isNumeric(v)
+	if isNum && precision > 10 {
+		precise, _ = roundPrecision(v)
+	}
 	if s == 0 || raw {
-		return v
+		return precise
 	}
 	styleSheet := f.stylesReader()
 
 	if s >= len(styleSheet.CellXfs.Xf) {
-		return v
+		return precise
 	}
 	var numFmtID int
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
@@ -1061,18 +1066,23 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 		return ok(v, builtInNumFmt[numFmtID])
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
-		return v
+		return precise
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
 			format := strings.ToLower(xlsxFmt.FormatCode)
-			if strings.Contains(format, "y") || strings.Contains(format, "m") || strings.Contains(strings.Replace(format, "red", "", -1), "d") || strings.Contains(format, "h") {
+			if isTimeNumFmt(format) {
 				return parseTime(v, format)
 			}
-			return v
+			return precise
 		}
 	}
-	return v
+	return precise
+}
+
+// isTimeNumFmt determine if the given number format expression is a time number format.
+func isTimeNumFmt(format string) bool {
+	return strings.Contains(format, "y") || strings.Contains(format, "m") || strings.Contains(strings.Replace(format, "red", "", -1), "d") || strings.Contains(format, "h")
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in
