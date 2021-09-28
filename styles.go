@@ -930,7 +930,7 @@ func formatToE(v string, format string) string {
 	if err != nil {
 		return v
 	}
-	return fmt.Sprintf("%.e", f)
+	return fmt.Sprintf("%.2E", f)
 }
 
 // parseTime provides a function to returns a string parsed using time.Time.
@@ -1114,6 +1114,9 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 		if fs.Font.Size > MaxFontSize {
 			return &fs, ErrFontSize
 		}
+	}
+	if fs.CustomNumFmt != nil && len(*fs.CustomNumFmt) == 0 {
+		err = ErrCustomNumFmt
 	}
 	return &fs, err
 }

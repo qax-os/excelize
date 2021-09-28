@@ -203,10 +203,13 @@ func TestNewStyle(t *testing.T) {
 	_, err = f.NewStyle(Style{})
 	assert.EqualError(t, err, ErrParameterInvalid.Error())
 
+	var exp string
+	_, err = f.NewStyle(&Style{CustomNumFmt: &exp})
+	assert.EqualError(t, err, ErrCustomNumFmt.Error())
 	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
-	assert.EqualError(t, err, "the length of the font family name must be smaller than or equal to 31")
+	assert.EqualError(t, err, ErrFontLength.Error())
 	_, err = f.NewStyle(&Style{Font: &Font{Size: MaxFontSize + 1}})
-	assert.EqualError(t, err, "font size must be between 1 and 409 points")
+	assert.EqualError(t, err, ErrFontSize.Error())
 
 	// new numeric custom style
 	fmt := "####;####"
@@ -240,6 +243,15 @@ func TestNewStyle(t *testing.T) {
 
 	nf = f.Styles.CellXfs.Xf[styleID]
 	assert.Equal(t, 32, *nf.NumFmtID)
+
+	// Test set build-in scientific number format
+	styleID, err = f.NewStyle(&Style{NumFmt: 11})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "B1", styleID))
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]float64{1.23, 1.234}))
+	rows, err := f.GetRows("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, [][]string{{"1.23E+00", "1.23E+00"}}, rows)
 }
 
 func TestGetDefaultFont(t *testing.T) {

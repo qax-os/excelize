@@ -112,6 +112,8 @@ var (
 	// ErrDefinedNameduplicate defined the error message on the same name
 	// already exists on the scope.
 	ErrDefinedNameduplicate = errors.New("the same name already exists on the scope")
+	// ErrCustomNumFmt defined the error message on receive the empty parameter.
+	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.
 	ErrFontLength = errors.New("the length of the font family name must be smaller than or equal to 31")
