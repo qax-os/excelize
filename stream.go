@@ -84,6 +84,12 @@ type StreamWriter struct {
 //        excelize.Cell{Value: 2},
 //        excelize.Cell{Formula: "SUM(A1,B1)"}});
 //
+// Set cell value and rows style for a worksheet with stream writer:
+//
+//    err := streamWriter.SetRow("A1", []interface{}{
+//        excelize.Cell{Value: 1}},
+//        excelize.RowOpts{StyleID: styleID, Height: 20, Hidden: false});
+//
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	sheetID := f.getSheetID(sheet)
 	if sheetID == -1 {
@@ -289,10 +295,12 @@ type Cell struct {
 	Value   interface{}
 }
 
-// RowOpts define the options for set row.
+// RowOpts define the options for the set row, it can be used directly in
+// StreamWriter.SetRow to specify the style and properties of the row.
 type RowOpts struct {
-	Height float64
-	Hidden bool
+	Height  float64
+	Hidden  bool
+	StyleID int
 }
 
 // SetRow writes an array to stream rows by giving a worksheet name, starting
@@ -355,6 +363,9 @@ func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
 	if opt.Height > MaxRowHeight {
 		err = ErrMaxRowHeight
 		return
+	}
+	if opt.StyleID > 0 {
+		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, opt.StyleID)
 	}
 	if opt.Height > 0 {
 		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, opt.Height)
