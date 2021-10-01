@@ -2217,6 +2217,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MATCH(0,A1:A1,\"x\")": "MATCH requires numeric match_type argument",
 		"=MATCH(0,A1)":          "MATCH arguments lookup_array should be one-dimensional array",
 		"=MATCH(0,A1:B1)":       "MATCH arguments lookup_array should be one-dimensional array",
+		// TRANSPOSE
+		"=TRANSPOSE()": "TRANSPOSE requires 1 argument",
 		// VLOOKUP
 		"=VLOOKUP()":                     "VLOOKUP requires at least 3 arguments",
 		"=VLOOKUP(D2,D1,1,FALSE)":        "VLOOKUP requires second argument of table array",
@@ -2609,6 +2611,21 @@ func TestCalcMatchPattern(t *testing.T) {
 	assert.True(t, matchPattern("file/*", "file/abc/bcd/def"))
 	assert.True(t, matchPattern("*", ""))
 	assert.False(t, matchPattern("file/?", "file/abc/bcd/def"))
+}
+
+func TestCalcTRANSPOSE(t *testing.T) {
+	cellData := [][]interface{}{
+		{"a", "d"},
+		{"b", "e"},
+		{"c", "f"},
+	}
+	formula := "=TRANSPOSE(A1:A3)"
+	f := prepareCalcData(cellData)
+	formulaType, ref := STCellFormulaTypeArray, "D1:F2"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula,
+		FormulaOpts{Ref: &ref, Type: &formulaType}))
+	_, err := f.CalcCellValue("Sheet1", "D1")
+	assert.NoError(t, err, formula)
 }
 
 func TestCalcVLOOKUP(t *testing.T) {

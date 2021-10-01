@@ -79,8 +79,6 @@ var (
 	// ErrAddVBAProject defined the error message on add the VBA project in
 	// the workbook.
 	ErrAddVBAProject = errors.New("unsupported VBA project extension")
-	// ErrToExcelTime defined the error message on receive a not UTC time.
-	ErrToExcelTime = errors.New("only UTC time expected")
 	// ErrMaxRows defined the error message on receive a row number exceeds maximum limit.
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrMaxRowHeight defined the error message on receive an invalid row
@@ -112,7 +110,7 @@ var (
 	// ErrDefinedNameduplicate defined the error message on the same name
 	// already exists on the scope.
 	ErrDefinedNameduplicate = errors.New("the same name already exists on the scope")
-	// ErrCustomNumFmt defined the error message on receive the empty parameter.
+	// ErrCustomNumFmt defined the error message on receive the empty custom number format.
 	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.

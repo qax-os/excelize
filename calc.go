@@ -497,6 +497,7 @@ type formulaFuncs struct {
 //    TAN
 //    TANH
 //    TODAY
+//    TRANSPOSE
 //    TRIM
 //    TRUE
 //    TRUNC
@@ -7792,6 +7793,38 @@ func (fn *formulaFuncs) MATCH(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
 	}
 	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg).String), lookupArray)
+}
+
+// TRANSPOSE function 'transposes' an array of cells (i.e. the function copies
+// a horizontal range of cells into a vertical range and vice versa). The
+// syntax of the function is:
+//
+//    TRANSPOSE(array)
+//
+func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TRANSPOSE requires 1 argument")
+	}
+	args := argsList.Back().Value.(formulaArg).ToList()
+	rmin, rmax := calcRowsMinMax(argsList)
+	cmin, cmax := calcColumnsMinMax(argsList)
+	cols, rows := cmax-cmin+1, rmax-rmin+1
+	src := make([][]formulaArg, 0)
+	for i := 0; i < len(args); i += cols {
+		src = append(src, args[i:i+cols])
+	}
+	mtx := make([][]formulaArg, cols)
+	for r, row := range src {
+		colIdx := r % rows
+		for c, cell := range row {
+			rowIdx := c % cols
+			if len(mtx[rowIdx]) == 0 {
+				mtx[rowIdx] = make([]formulaArg, rows)
+			}
+			mtx[rowIdx][colIdx] = cell
+		}
+	}
+	return newMatrixFormulaArg(mtx)
 }
 
 // VLOOKUP function 'looks up' a given value in the left-hand column of a
