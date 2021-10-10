@@ -71,8 +71,8 @@ type xlsxPivotTableDefinition struct {
 	ShowEmptyRow            bool                     `xml:"showEmptyRow,attr,omitempty"`
 	ShowEmptyCol            bool                     `xml:"showEmptyCol,attr,omitempty"`
 	ShowHeaders             bool                     `xml:"showHeaders,attr,omitempty"`
-	Compact                 bool                     `xml:"compact,attr"`
-	Outline                 bool                     `xml:"outline,attr"`
+	Compact                 *bool                    `xml:"compact,attr"`
+	Outline                 *bool                    `xml:"outline,attr"`
 	OutlineData             bool                     `xml:"outlineData,attr,omitempty"`
 	CompactData             *bool                    `xml:"compactData,attr,omitempty"`
 	Published               bool                     `xml:"published,attr,omitempty"`
@@ -125,10 +125,10 @@ type xlsxPivotField struct {
 	ShowDropDowns                bool               `xml:"showDropDowns,attr,omitempty"`
 	HiddenLevel                  bool               `xml:"hiddenLevel,attr,omitempty"`
 	UniqueMemberProperty         string             `xml:"uniqueMemberProperty,attr,omitempty"`
-	Compact                      bool               `xml:"compact,attr"`
+	Compact                      *bool              `xml:"compact,attr"`
 	AllDrilled                   bool               `xml:"allDrilled,attr,omitempty"`
 	NumFmtID                     string             `xml:"numFmtId,attr,omitempty"`
-	Outline                      bool               `xml:"outline,attr"`
+	Outline                      *bool              `xml:"outline,attr"`
 	SubtotalTop                  bool               `xml:"subtotalTop,attr,omitempty"`
 	DragToRow                    bool               `xml:"dragToRow,attr,omitempty"`
 	DragToCol                    bool               `xml:"dragToCol,attr,omitempty"`

@@ -19,6 +19,13 @@ import (
 )
 
 // PivotTableOption directly maps the format settings of the pivot table.
+//
+// PivotTableStyleName: The built-in pivot table style names
+//
+//    PivotStyleLight1 - PivotStyleLight28
+//    PivotStyleMedium1 - PivotStyleMedium28
+//    PivotStyleDark1 - PivotStyleDark28
+//
 type PivotTableOption struct {
 	pivotTableSheetName string
 	DataRange           string
@@ -63,8 +70,10 @@ type PivotTableOption struct {
 // Name specifies the name of the data field. Maximum 255 characters
 // are allowed in data field name, excess characters will be truncated.
 type PivotTableField struct {
+	Compact         bool
 	Data            string
 	Name            string
+	Outline         bool
 	Subtotal        string
 	DefaultSubtotal bool
 }
@@ -277,13 +286,13 @@ func (f *File) addPivotCache(pivotCacheID int, pivotCacheXML string, opt *PivotT
 		pc.CacheSource.WorksheetSource = &xlsxWorksheetSource{Name: opt.DataRange}
 	}
 	for _, name := range order {
-		defaultRowsSubtotal, rowOk := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Rows)
-		defaultColumnsSubtotal, colOk := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Columns)
+		rowOptions, rowOk := f.getPivotTableFieldOptions(name, opt.Rows)
+		columnOptions, colOk := f.getPivotTableFieldOptions(name, opt.Columns)
 		sharedItems := xlsxSharedItems{
 			Count: 0,
 		}
 		s := xlsxString{}
-		if (rowOk && !defaultRowsSubtotal) || (colOk && !defaultColumnsSubtotal) {
+		if (rowOk && !rowOptions.DefaultSubtotal) || (colOk && !columnOptions.DefaultSubtotal) {
 			s = xlsxString{
 				V: "",
 			}
@@ -522,22 +531,24 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 	x := 0
 	for _, name := range order {
 		if inPivotTableField(opt.Rows, name) != -1 {
-			defaultSubtotal, ok := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Rows)
+			rowOptions, ok := f.getPivotTableFieldOptions(name, opt.Rows)
 			var items []*xlsxItem
-			if !ok || !defaultSubtotal {
+			if !ok || !rowOptions.DefaultSubtotal {
 				items = append(items, &xlsxItem{X: &x})
 			} else {
 				items = append(items, &xlsxItem{T: "default"})
 			}
 
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
-				Axis: "axisRow",
-				Name: f.getPivotTableFieldName(name, opt.Rows),
+				Name:            f.getPivotTableFieldName(name, opt.Rows),
+				Axis:            "axisRow",
+				Compact:         &rowOptions.Compact,
+				Outline:         &rowOptions.Outline,
+				DefaultSubtotal: &rowOptions.DefaultSubtotal,
 				Items: &xlsxItems{
 					Count: len(items),
 					Item:  items,
 				},
-				DefaultSubtotal: &defaultSubtotal,
 			})
 			continue
 		}
@@ -555,21 +566,23 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			continue
 		}
 		if inPivotTableField(opt.Columns, name) != -1 {
-			defaultSubtotal, ok := f.getPivotTableFieldNameDefaultSubtotal(name, opt.Columns)
+			columnOptions, ok := f.getPivotTableFieldOptions(name, opt.Columns)
 			var items []*xlsxItem
-			if !ok || !defaultSubtotal {
+			if !ok || !columnOptions.DefaultSubtotal {
 				items = append(items, &xlsxItem{X: &x})
 			} else {
 				items = append(items, &xlsxItem{T: "default"})
 			}
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
-				Axis: "axisCol",
-				Name: f.getPivotTableFieldName(name, opt.Columns),
+				Name:            f.getPivotTableFieldName(name, opt.Columns),
+				Axis:            "axisCol",
+				Compact:         &columnOptions.Compact,
+				Outline:         &columnOptions.Outline,
+				DefaultSubtotal: &columnOptions.DefaultSubtotal,
 				Items: &xlsxItems{
 					Count: len(items),
 					Item:  items,
 				},
-				DefaultSubtotal: &defaultSubtotal,
 			})
 			continue
 		}
@@ -669,13 +682,15 @@ func (f *File) getPivotTableFieldName(name string, fields []PivotTableField) str
 	return ""
 }
 
-func (f *File) getPivotTableFieldNameDefaultSubtotal(name string, fields []PivotTableField) (bool, bool) {
+// getPivotTableFieldOptions return options for specific field by given field name.
+func (f *File) getPivotTableFieldOptions(name string, fields []PivotTableField) (options PivotTableField, ok bool) {
 	for _, field := range fields {
 		if field.Data == name {
-			return field.DefaultSubtotal, true
+			options, ok = field, true
+			return
 		}
 	}
-	return false, false
+	return
 }
 
 // addWorkbookPivotCache add the association ID of the pivot cache in workbook.xml.
