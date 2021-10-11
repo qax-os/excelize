@@ -33,6 +33,7 @@ var excelTimeInputList = []dateTest{
 	{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC)},
 	{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC)},
 	{41275.0, time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC)},
+	{44450.3333333333, time.Date(2021, time.September, 11, 8, 0, 0, 0, time.UTC)},
 	{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
 }
 
@@ -65,6 +66,19 @@ func TestTimeFromExcelTime(t *testing.T) {
 		t.Run(fmt.Sprintf("TestData%d", i+1), func(t *testing.T) {
 			assert.Equal(t, test.GoValue, timeFromExcelTime(test.ExcelValue, false))
 		})
+	}
+	for hour := 0; hour < 24; hour++ {
+		for min := 0; min < 60; min++ {
+			for sec := 0; sec < 60; sec++ {
+				date := time.Date(2021, time.December, 30, hour, min, sec, 0, time.UTC)
+				excelTime, err := timeToExcelTime(date)
+				assert.NoError(t, err)
+				dateOut := timeFromExcelTime(excelTime, false)
+				assert.EqualValues(t, hour, dateOut.Hour())
+				assert.EqualValues(t, min, dateOut.Minute())
+				assert.EqualValues(t, sec, dateOut.Second())
+			}
+		}
 	}
 }
 

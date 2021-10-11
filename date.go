@@ -20,6 +20,7 @@ const (
 	nanosInADay    = float64((24 * time.Hour) / time.Nanosecond)
 	dayNanoseconds = 24 * time.Hour
 	maxDuration    = 290 * 364 * dayNanoseconds
+	roundEpsilon   = 1e-9
 )
 
 var (
@@ -151,14 +152,14 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		}
 		return date
 	}
-	var floatPart = excelTime - float64(wholeDaysPart)
+	var floatPart = excelTime - float64(wholeDaysPart) + roundEpsilon
 	if date1904 {
 		date = excel1904Epoc
 	} else {
 		date = excel1900Epoc
 	}
 	durationPart := time.Duration(nanosInADay * floatPart)
-	return date.AddDate(0, 0, wholeDaysPart).Add(durationPart)
+	return date.AddDate(0, 0, wholeDaysPart).Add(durationPart).Truncate(time.Second)
 }
 
 // ExcelDateToTime converts a float-based excel date representation to a time.Time.
