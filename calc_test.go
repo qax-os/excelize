@@ -2789,7 +2789,6 @@ func TestCalcMIRR(t *testing.T) {
 	cellData := [][]interface{}{{-100}, {18}, {22.5}, {28}, {35.5}, {45}}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"=MIRR(A1:A5,0.055,0.05)": "0.0253763651080707",
 		"=MIRR(A1:A6,0.055,0.05)": "0.1000268752662",
 	}
 	for formula, expected := range formulaList {
