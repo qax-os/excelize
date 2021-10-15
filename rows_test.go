@@ -884,11 +884,6 @@ func TestGetValueFromNumber(t *testing.T) {
 	}
 }
 
-func TestRoundPrecision(t *testing.T) {
-	_, err := roundPrecision("")
-	assert.EqualError(t, err, "strconv.ParseFloat: parsing \"\": invalid syntax")
-}
-
 func TestErrSheetNotExistError(t *testing.T) {
 	err := ErrSheetNotExist{SheetName: "Sheet1"}
 	assert.EqualValues(t, err.Error(), "sheet Sheet1 is not exist")

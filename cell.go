@@ -70,15 +70,6 @@ func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error)
 // GetCellType provides a function to get the cell's data type by given
 // worksheet name and axis in spreadsheet file.
 func (f *File) GetCellType(sheet, axis string) (CellType, error) {
-	cellTypes := map[string]CellType{
-		"b":         CellTypeBool,
-		"d":         CellTypeDate,
-		"n":         CellTypeNumber,
-		"e":         CellTypeError,
-		"s":         CellTypeString,
-		"str":       CellTypeString,
-		"inlineStr": CellTypeString,
-	}
 	var (
 		err         error
 		cellTypeStr string
@@ -1046,9 +1037,16 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	precise := v
 	isNum, precision := isNumeric(v)
 	if isNum && precision > 10 {
-		precise, _ = roundPrecision(v)
+		precise = roundPrecision(v, -1)
 	}
-	if s == 0 || raw {
+	if raw {
+		return v
+	}
+	if !isNum {
+		v = roundPrecision(v, 15)
+		precise = v
+	}
+	if s == 0 {
 		return precise
 	}
 	styleSheet := f.stylesReader()
@@ -1063,7 +1061,7 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 
 	ok := builtInNumFmtFunc[numFmtID]
 	if ok != nil {
-		return ok(v, builtInNumFmt[numFmtID])
+		return ok(precise, builtInNumFmt[numFmtID])
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
 		return precise

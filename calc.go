@@ -55,13 +55,6 @@ const (
 	criteriaG
 	criteriaErr
 	criteriaRegexp
-	// Numeric precision correct numeric values as legacy Excel application
-	// https://en.wikipedia.org/wiki/Numeric_precision_in_Microsoft_Excel In the
-	// top figure the fraction 1/9000 in Excel is displayed. Although this number
-	// has a decimal representation that is an infinite string of ones, Excel
-	// displays only the leading 15 figures. In the second line, the number one
-	// is added to the fraction, and again Excel displays only 15 figures.
-	numericPrecision       = 1000000000000000
 	maxFinancialIterations = 128
 	financialPercision     = 1.0e-08
 	// Date and time format regular expressions
@@ -511,6 +504,7 @@ type formulaFuncs struct {
 //    WEIBULL.DIST
 //    XOR
 //    YEAR
+//    YEARFRAC
 //    Z.TEST
 //    ZTEST
 //
@@ -533,7 +527,7 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	result = token.TValue
 	isNum, precision := isNumeric(result)
 	if isNum && precision > 15 {
-		num, _ := roundPrecision(result)
+		num := roundPrecision(result, -1)
 		result = strings.ToUpper(num)
 	}
 	return
@@ -6687,6 +6681,157 @@ func (fn *formulaFuncs) YEAR(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, "YEAR only accepts positive argument")
 	}
 	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Year()))
+}
+
+// yearFracBasisCond is an implementation of the yearFracBasis1.
+func yearFracBasisCond(sy, sm, sd, ey, em, ed int) bool {
+	return (isLeapYear(sy) && (sm < 2 || (sm == 2 && sd <= 29))) || (isLeapYear(ey) && (em > 2 || (em == 2 && ed == 29)))
+}
+
+// yearFracBasis0 function returns the fraction of a year that between two
+// supplied dates in US (NASD) 30/360 type of day.
+func yearFracBasis0(startDate, endDate float64) (dayDiff, daysInYear float64) {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	sy, smM, sd := startTime.Date()
+	ey, emM, ed := endTime.Date()
+	sm, em := int(smM), int(emM)
+	if sd == 31 {
+		sd--
+	}
+	if sd == 30 && ed == 31 {
+		ed--
+	} else if leap := isLeapYear(sy); sm == 2 && ((leap && sd == 29) || (!leap && sd == 28)) {
+		sd = 30
+		if leap := isLeapYear(ey); em == 2 && ((leap && ed == 29) || (!leap && ed == 28)) {
+			ed = 30
+		}
+	}
+	dayDiff = float64((ey-sy)*360 + (em-sm)*30 + (ed - sd))
+	daysInYear = 360
+	return
+}
+
+// yearFracBasis1 function returns the fraction of a year that between two
+// supplied dates in actual type of day.
+func yearFracBasis1(startDate, endDate float64) (dayDiff, daysInYear float64) {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	sy, smM, sd := startTime.Date()
+	ey, emM, ed := endTime.Date()
+	sm, em := int(smM), int(emM)
+	dayDiff = endDate - startDate
+	isYearDifferent := sy != ey
+	if isYearDifferent && (ey != sy+1 || sm < em || (sm == em && sd < ed)) {
+		dayCount := 0
+		for y := sy; y <= ey; y++ {
+			dayCount += getYearDays(y, 1)
+		}
+		daysInYear = float64(dayCount) / float64(ey-sy+1)
+	} else {
+		if !isYearDifferent && isLeapYear(sy) {
+			daysInYear = 366
+		} else {
+			if isYearDifferent && yearFracBasisCond(sy, sm, sd, ey, em, ed) {
+				daysInYear = 366
+			} else {
+				daysInYear = 365
+			}
+		}
+	}
+	return
+}
+
+// yearFracBasis4 function returns the fraction of a year that between two
+// supplied dates in European 30/360 type of day.
+func yearFracBasis4(startDate, endDate float64) (dayDiff, daysInYear float64) {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	sy, smM, sd := startTime.Date()
+	ey, emM, ed := endTime.Date()
+	sm, em := int(smM), int(emM)
+	if sd == 31 {
+		sd--
+	}
+	if ed == 31 {
+		ed--
+	}
+	dayDiff = float64((ey-sy)*360 + (em-sm)*30 + (ed - sd))
+	daysInYear = 360
+	return
+}
+
+// yearFrac is an implementation of the formula function YEARFRAC.
+func yearFrac(startDate, endDate float64, basis int) formulaArg {
+	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
+	if startTime == endTime {
+		return newNumberFormulaArg(0)
+	}
+	var dayDiff, daysInYear float64
+	switch basis {
+	case 0:
+		dayDiff, daysInYear = yearFracBasis0(startDate, endDate)
+	case 1:
+		dayDiff, daysInYear = yearFracBasis1(startDate, endDate)
+	case 2:
+		dayDiff = endDate - startDate
+		daysInYear = 360
+	case 3:
+		dayDiff = endDate - startDate
+		daysInYear = 365
+	case 4:
+		dayDiff, daysInYear = yearFracBasis4(startDate, endDate)
+	default:
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	return newNumberFormulaArg(dayDiff / daysInYear)
+}
+
+// getYearDays return days of the year with specifying the type of day count
+// basis to be used.
+func getYearDays(year, basis int) int {
+	switch basis {
+	case 1:
+		if isLeapYear(year) {
+			return 366
+		}
+		return 365
+	case 3:
+		return 365
+	default:
+		return 360
+	}
+}
+
+// YEARFRAC function returns the fraction of a year that is represented by the
+// number of whole days between two supplied dates. The syntax of the
+// function is:
+//
+//    YEARFRAC(start_date,end_date,[basis])
+//
+func (fn *formulaFuncs) YEARFRAC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YEARFRAC requires 3 or 4 arguments")
+	}
+	var basisArg formulaArg
+	startArg, endArg := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Front().Next().Value.(formulaArg).ToNumber()
+	args := list.New().Init()
+	if startArg.Type != ArgNumber {
+		args.PushBack(argsList.Front().Value.(formulaArg))
+		if startArg = fn.DATEVALUE(args); startArg.Type != ArgNumber {
+			return startArg
+		}
+	}
+	if endArg.Type != ArgNumber {
+		args.Init()
+		args.PushBack(argsList.Front().Next().Value.(formulaArg))
+		if endArg = fn.DATEVALUE(args); endArg.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if argsList.Len() == 3 {
+		if basisArg = argsList.Back().Value.(formulaArg).ToNumber(); basisArg.Type != ArgNumber {
+			return basisArg
+		}
+	}
+	return yearFrac(startArg.Number, endArg.Number, int(basisArg.Number))
 }
 
 // NOW function returns the current date and time. The function receives no

@@ -18,6 +18,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"math/big"
 	"os"
 	"strconv"
 
@@ -421,14 +422,19 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	}
 }
 
-// roundPrecision round precision for numeric.
-func roundPrecision(value string) (result string, err error) {
-	var num float64
-	if num, err = strconv.ParseFloat(value, 64); err != nil {
-		return
+// roundPrecision provides a function to format floating-point number text
+// with precision, if the given text couldn't be parsed to float, this will
+// return the original string.
+func roundPrecision(text string, prec int) string {
+	decimal := big.Float{}
+	if _, ok := decimal.SetString(text); ok {
+		flt, _ := decimal.Float64()
+		if prec == -1 {
+			return decimal.Text('G', 15)
+		}
+		return strconv.FormatFloat(flt, 'f', -1, 64)
 	}
-	result = fmt.Sprintf("%g", math.Round(num*numericPrecision)/numericPrecision)
-	return
+	return text
 }
 
 // SetRowVisible provides a function to set visible of a single row by given
