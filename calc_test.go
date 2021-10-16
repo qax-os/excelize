@@ -1016,6 +1016,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=YEARFRAC(\"02/29/2000\", \"01/29/2001\",1)": "0.915300546448087",
 		"=YEARFRAC(\"02/29/2000\", \"03/29/2000\",1)": "0.0792349726775956",
 		"=YEARFRAC(\"01/31/2000\", \"03/29/2000\",4)": "0.163888888888889",
+		// TIME
+		"=TIME(5,44,32)":             "0.239259259259259",
+		"=TIME(\"5\",\"44\",\"32\")": "0.239259259259259",
+		"=TIME(0,0,73)":              "0.000844907407407407",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -2093,6 +2097,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=YEARFRAC(42005,42094,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
+		// TIME
+		"=TIME()":         "TIME requires 3 number arguments",
+		"=TIME(\"\",0,0)": "TIME requires 3 number arguments",
+		"=TIME(0,0,-1)":   "#NUM!",
 		// TODAY
 		"=TODAY(A1)": "TODAY accepts no arguments",
 		// Text Functions

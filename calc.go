@@ -489,6 +489,7 @@ type formulaFuncs struct {
 //    T
 //    TAN
 //    TANH
+//    TIME
 //    TODAY
 //    TRANSPOSE
 //    TRIM
@@ -6846,6 +6847,30 @@ func (fn *formulaFuncs) NOW(argsList *list.List) formulaArg {
 	now := time.Now()
 	_, offset := now.Zone()
 	return newNumberFormulaArg(25569.0 + float64(now.Unix()+int64(offset))/86400)
+}
+
+// TIME function accepts three integer arguments representing hours, minutes
+// and seconds, and returns an Excel time. I.e. the function returns the
+// decimal value that represents the time in Excel. The syntax of the Time
+// function is:
+//
+//    TIME(hour,minute,second)
+//
+func (fn *formulaFuncs) TIME(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TIME requires 3 number arguments")
+	}
+	h := argsList.Front().Value.(formulaArg).ToNumber()
+	m := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	s := argsList.Back().Value.(formulaArg).ToNumber()
+	if h.Type != ArgNumber || m.Type != ArgNumber || s.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "TIME requires 3 number arguments")
+	}
+	t := (h.Number*3600 + m.Number*60 + s.Number) / 86400
+	if t < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(t)
 }
 
 // TODAY function returns the current date. The function has no arguments and
