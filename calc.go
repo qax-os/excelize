@@ -267,6 +267,7 @@ type formulaFuncs struct {
 //    ACOT
 //    ACOTH
 //    AMORDEGRC
+//    AMORLINC
 //    AND
 //    ARABIC
 //    ASIN
@@ -8457,6 +8458,40 @@ func (fn *formulaFuncs) AMORDEGRC(argsList *list.List) formulaArg {
 		cost.Number -= nRate
 	}
 	return newNumberFormulaArg(nRate)
+}
+
+// AMORLINC function is provided for users of the French accounting system.
+// The function calculates the prorated linear depreciation of an asset for a
+// specified accounting period. The syntax of the function is:
+//
+//    AMORLINC(cost,date_purchased,first_period,salvage,period,rate,[basis])
+//
+func (fn *formulaFuncs) AMORLINC(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AMORLINC requires 6 or 7 arguments")
+	}
+	args := fn.prepareAmorArgs("AMORLINC", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	cost, datePurchased, firstPeriod, salvage, period, rate, basis := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6]
+	frac := yearFrac(datePurchased.Number, firstPeriod.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	rate1 := frac.Number * cost.Number * rate.Number
+	if period.Number == 0 {
+		return newNumberFormulaArg(rate1)
+	}
+	rate2 := cost.Number * rate.Number
+	delta := cost.Number - salvage.Number
+	periods := int((delta - rate1) / rate2)
+	if int(period.Number) <= periods {
+		return newNumberFormulaArg(rate2)
+	} else if int(period.Number)-1 == periods {
+		return newNumberFormulaArg(delta - rate2*float64(periods) - rate1)
+	}
+	return newNumberFormulaArg(0)
 }
 
 // CUMIPMT function calculates the cumulative interest paid on a loan or
