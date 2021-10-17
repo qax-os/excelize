@@ -1232,6 +1232,16 @@ func TestCalcCellValue(t *testing.T) {
 		// ENCODEURL
 		"=ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
 		// Financial Functions
+		// ACCRINTM
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,10000)":   "800",
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,10000,3)": "800",
+		// AMORDEGRC
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%)":    "42",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,4)":  "42",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,40%,4)":  "42",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,25%,4)":  "41",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",109,1,25%,4)": "54",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",110,2,25%,4)": "0",
 		// CUMIPMT
 		"=CUMIPMT(0.05/12,60,50000,1,12,0)":  "-2294.97753732664",
 		"=CUMIPMT(0.05/12,60,50000,13,24,0)": "-1833.1000665738893",
@@ -2291,6 +2301,32 @@ func TestCalcCellValue(t *testing.T) {
 		// ENCODEURL
 		"=ENCODEURL()": "ENCODEURL requires 1 argument",
 		// Financial Functions
+		// ACCRINTM
+		"=ACCRINTM()": "ACCRINTM requires 4 or 5 arguments",
+		"=ACCRINTM(\"\",\"01/01/2012\",8%,10000)":                "#VALUE!",
+		"=ACCRINTM(\"01/01/2012\",\"\",8%,10000)":                "#VALUE!",
+		"=ACCRINTM(\"12/31/2012\",\"01/01/2012\",8%,10000)":      "#NUM!",
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",\"\",10000)":    "#NUM!",
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,\"\",10000)": "#NUM!",
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,-1,10000)":   "#NUM!",
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,10000,\"\")": "#NUM!",
+		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,10000,5)":    "invalid basis",
+		// AMORDEGRC
+		"=AMORDEGRC()": "AMORDEGRC requires 6 or 7 arguments",
+		"=AMORDEGRC(\"\",\"01/01/2015\",\"09/30/2015\",20,1,20%)":     "AMORDEGRC requires cost to be number argument",
+		"=AMORDEGRC(-1,\"01/01/2015\",\"09/30/2015\",20,1,20%)":       "AMORDEGRC requires cost >= 0",
+		"=AMORDEGRC(150,\"\",\"09/30/2015\",20,1,20%)":                "#VALUE!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"\",20,1,20%)":                "#VALUE!",
+		"=AMORDEGRC(150,\"09/30/2015\",\"01/01/2015\",20,1,20%)":      "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",\"\",1,20%)":    "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",-1,1,20%)":      "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,\"\",20%)":   "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,-1,20%)":     "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,\"\")":     "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,-1)":       "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,\"\")": "#NUM!",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,50%)":      "AMORDEGRC requires rate to be < 0.5",
+		"=AMORDEGRC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,5)":    "invalid basis",
 		// CUMIPMT
 		"=CUMIPMT()":               "CUMIPMT requires 6 arguments",
 		"=CUMIPMT(0,0,0,0,0,2)":    "#N/A",

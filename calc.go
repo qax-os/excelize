@@ -261,10 +261,12 @@ type formulaFuncs struct {
 // Supported formula functions:
 //
 //    ABS
+//    ACCRINTM
 //    ACOS
 //    ACOSH
 //    ACOT
 //    ACOTH
+//    AMORDEGRC
 //    AND
 //    ARABIC
 //    ASIN
@@ -8311,6 +8313,151 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 }
 
 // Financial Functions
+
+// ACCRINTM function returns the accrued interest for a security that pays
+// interest at maturity. The syntax of the function is:
+//
+//    ACCRINTM(issue,settlement,rate,[par],[basis])
+//
+func (fn *formulaFuncs) ACCRINTM(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINTM requires 4 or 5 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	issue := fn.DATEVALUE(args)
+	if issue.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if settlement.Number < issue.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	par := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber || par.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if par.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg(frac.Number * rate.Number * par.Number)
+}
+
+// prepareAmorArgs checking and prepare arguments for the formula functions
+// AMORDEGRC and AMORLINC.
+func (fn *formulaFuncs) prepareAmorArgs(name string, argsList *list.List) formulaArg {
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires cost to be number argument", name))
+	}
+	if cost.Number < 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires cost >= 0", name))
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	datePurchased := fn.DATEVALUE(args)
+	if datePurchased.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+	firstPeriod := fn.DATEVALUE(args)
+	if firstPeriod.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if firstPeriod.Number < datePurchased.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	salvage := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if salvage.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if salvage.Number < 0 || salvage.Number > cost.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	period := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if period.Type != ArgNumber || period.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	rate := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber || rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 7 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{cost, datePurchased, firstPeriod, salvage, period, rate, basis})
+}
+
+// AMORDEGRC function is provided for users of the French accounting system.
+// The function calculates the prorated linear depreciation of an asset for a
+// specified accounting period. The syntax of the function is:
+//
+//    AMORDEGRC(cost,date_purchased,first_period,salvage,period,rate,[basis])
+//
+func (fn *formulaFuncs) AMORDEGRC(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AMORDEGRC requires 6 or 7 arguments")
+	}
+	args := fn.prepareAmorArgs("AMORDEGRC", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	cost, datePurchased, firstPeriod, salvage, period, rate, basis := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6]
+	if rate.Number >= 0.5 {
+		return newErrorFormulaArg(formulaErrorNUM, "AMORDEGRC requires rate to be < 0.5")
+	}
+	assetsLife, amorCoeff := 1/rate.Number, 2.5
+	if assetsLife < 3 {
+		amorCoeff = 1
+	} else if assetsLife < 5 {
+		amorCoeff = 1.5
+	} else if assetsLife <= 6 {
+		amorCoeff = 2
+	}
+	rate.Number *= amorCoeff
+	frac := yearFrac(datePurchased.Number, firstPeriod.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	nRate := float64(int((frac.Number * cost.Number * rate.Number) + 0.5))
+	cost.Number -= nRate
+	rest := cost.Number - salvage.Number
+	for n := 0; n < int(period.Number); n++ {
+		nRate = float64(int((cost.Number * rate.Number) + 0.5))
+		rest -= nRate
+		if rest < 0 {
+			switch int(period.Number) - n {
+			case 0:
+			case 1:
+				return newNumberFormulaArg(float64(int((cost.Number * 0.5) + 0.5)))
+			default:
+				return newNumberFormulaArg(0)
+			}
+		}
+		cost.Number -= nRate
+	}
+	return newNumberFormulaArg(nRate)
+}
 
 // CUMIPMT function calculates the cumulative interest paid on a loan or
 // investment, between two specified periods. The syntax of the function is:
