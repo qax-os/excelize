@@ -357,6 +357,8 @@ type formulaFuncs struct {
 //    HLOOKUP
 //    IF
 //    IFERROR
+//    IFNA
+//    IFS
 //    IMABS
 //    IMAGINARY
 //    IMARGUMENT
@@ -754,12 +756,12 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 }
 
 // calcPow evaluate exponentiation arithmetic operations.
-func calcPow(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcPow(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -769,54 +771,106 @@ func calcPow(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcEq evaluate equal arithmetic operations.
-func calcEq(rOpd, lOpd string, opdStack *Stack) error {
+func calcEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
 	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd == lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
-func calcNEq(rOpd, lOpd string, opdStack *Stack) error {
+func calcNEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
 	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd != lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcL evaluate less than arithmetic operations.
-func calcL(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) == -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcL(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal < rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) == -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcLe evaluate less than or equal arithmetic operations.
-func calcLe(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) != 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcLe(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal <= rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) != 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcG evaluate greater than or equal arithmetic operations.
-func calcG(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) == 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcG(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal > rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) == 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcGe evaluate greater than or equal arithmetic operations.
-func calcGe(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd, rOpd) != -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcGe(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
+		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
+		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal >= rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) != -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
+	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
+		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	}
 	return nil
 }
 
 // calcSplice evaluate splice '&' operations.
-func calcSplice(rOpd, lOpd string, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: lOpd + rOpd, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcSplice(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	opdStack.Push(efp.Token{TValue: lOpd.TValue + rOpd.TValue, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcAdd evaluate addition arithmetic operations.
-func calcAdd(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcAdd(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -826,12 +880,12 @@ func calcAdd(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcSubtract evaluate subtraction arithmetic operations.
-func calcSubtract(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcSubtract(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -841,12 +895,12 @@ func calcSubtract(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcMultiply evaluate multiplication arithmetic operations.
-func calcMultiply(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcMultiply(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -856,12 +910,12 @@ func calcMultiply(rOpd, lOpd string, opdStack *Stack) error {
 }
 
 // calcDiv evaluate division arithmetic operations.
-func calcDiv(rOpd, lOpd string, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd, 64)
+func calcDiv(rOpd, lOpd efp.Token, opdStack *Stack) error {
+	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd, 64)
+	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
 	if err != nil {
 		return err
 	}
@@ -887,7 +941,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		result := 0 - opdVal
 		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
-	tokenCalcFunc := map[string]func(rOpd, lOpd string, opdStack *Stack) error{
+	tokenCalcFunc := map[string]func(rOpd, lOpd efp.Token, opdStack *Stack) error{
 		"^":  calcPow,
 		"*":  calcMultiply,
 		"/":  calcDiv,
@@ -906,7 +960,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
-		if err := calcSubtract(rOpd.TValue, lOpd.TValue, opdStack); err != nil {
+		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
 			return err
 		}
 	}
@@ -917,7 +971,8 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
-		if err := fn(rOpd.TValue, lOpd.TValue, opdStack); err != nil {
+
+		if err := fn(rOpd, lOpd, opdStack); err != nil {
 			return err
 		}
 	}
@@ -6054,6 +6109,44 @@ func (fn *formulaFuncs) IFERROR(argsList *list.List) formulaArg {
 		return value
 	}
 	return argsList.Back().Value.(formulaArg)
+}
+
+// IFNA function tests if an initial supplied value (or expression) evaluates
+// to the Excel #N/A error. If so, the function returns a second supplied
+// value; Otherwise the function returns the first supplied value. The syntax
+// of the function is:
+//
+//    IFNA(value,value_if_na)
+//
+func (fn *formulaFuncs) IFNA(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IFNA requires 2 arguments")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.Type == ArgError && arg.Value() == formulaErrorNA {
+		return argsList.Back().Value.(formulaArg)
+	}
+	return arg
+}
+
+// IFS function tests a number of supplied conditions and returns the result
+// corresponding to the first condition that evaluates to TRUE. If none of
+// the supplied conditions evaluate to TRUE, the function returns the #N/A
+// error.
+//
+//    IFS(logical_test1,value_if_true1,[logical_test2,value_if_true2],...)
+//
+func (fn *formulaFuncs) IFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "IFS requires at least 2 arguments")
+	}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		if arg.Value.(formulaArg).ToBool().Number == 1 {
+			return arg.Next().Value.(formulaArg)
+		}
+		arg = arg.Next()
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 }
 
 // NOT function returns the opposite to a supplied logical value. The syntax

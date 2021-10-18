@@ -34,22 +34,34 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"=2^3":      "8",
-		"=1=1":      "TRUE",
-		"=1=2":      "FALSE",
-		"=1<2":      "TRUE",
-		"=3<2":      "FALSE",
-		"=2<=3":     "TRUE",
-		"=2<=1":     "FALSE",
-		"=2>1":      "TRUE",
-		"=2>3":      "FALSE",
-		"=2>=1":     "TRUE",
-		"=2>=3":     "FALSE",
-		"=1&2":      "12",
-		"=15%":      "0.15",
-		"=1+20%":    "1.2",
-		`="A"="A"`:  "TRUE",
-		`="A"<>"A"`: "FALSE",
+		"=2^3":            "8",
+		"=1=1":            "TRUE",
+		"=1=2":            "FALSE",
+		"=1<2":            "TRUE",
+		"=3<2":            "FALSE",
+		"=1<\"-1\"":       "TRUE",
+		"=\"-1\"<1":       "FALSE",
+		"=\"-1\"<\"-2\"":  "TRUE",
+		"=2<=3":           "TRUE",
+		"=2<=1":           "FALSE",
+		"=1<=\"-1\"":      "TRUE",
+		"=\"-1\"<=1":      "FALSE",
+		"=\"-1\"<=\"-2\"": "TRUE",
+		"=2>1":            "TRUE",
+		"=2>3":            "FALSE",
+		"=1>\"-1\"":       "FALSE",
+		"=\"-1\">-1":      "TRUE",
+		"=\"-1\">\"-2\"":  "FALSE",
+		"=2>=1":           "TRUE",
+		"=2>=3":           "FALSE",
+		"=1>=\"-1\"":      "FALSE",
+		"=\"-1\">=-1":     "TRUE",
+		"=\"-1\">=\"-2\"": "FALSE",
+		"=1&2":            "12",
+		"=15%":            "0.15",
+		"=1+20%":          "1.2",
+		`="A"="A"`:        "TRUE",
+		`="A"<>"A"`:       "FALSE",
 		// Engineering Functions
 		// BESSELI
 		"=BESSELI(4.5,1)": "15.389222753735925",
@@ -922,6 +934,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=IFERROR(1/2,0)":       "0.5",
 		"=IFERROR(ISERROR(),0)": "0",
 		"=IFERROR(1/0,0)":       "0",
+		// IFNA
+		"=IFNA(1,\"not found\")":    "1",
+		"=IFNA(NA(),\"not found\")": "not found",
+		// IFS
+		"=IFS(4>1,5/4,4<-1,-5/4,TRUE,0)":     "1.25",
+		"=IFS(-2>1,5/-2,-2<-1,-5/-2,TRUE,0)": "2.5",
+		"=IFS(0>1,5/0,0<-1,-5/0,TRUE,0)":     "0",
 		// NOT
 		"=NOT(FALSE())":     "TRUE",
 		"=NOT(\"false\")":   "TRUE",
@@ -1313,7 +1332,17 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string]string{
-		"=1/0": "#DIV/0!",
+		"=1/0":       "#DIV/0!",
+		"1^\"text\"": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"\"text\"^1": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"1+\"text\"": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"\"text\"+1": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"1-\"text\"": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"\"text\"-1": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"1*\"text\"": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"\"text\"*1": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"1/\"text\"": "strconv.ParseFloat: parsing \"text\": invalid syntax",
+		"\"text\"/1": "strconv.ParseFloat: parsing \"text\": invalid syntax",
 		// Engineering Functions
 		// BESSELI
 		"=BESSELI()":       "BESSELI requires 2 numeric arguments",
@@ -2023,6 +2052,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=FALSE(A1)": "FALSE takes no arguments",
 		// IFERROR
 		"=IFERROR()": "IFERROR requires 2 arguments",
+		// IFNA
+		"=IFNA()": "IFNA requires 2 arguments",
+		// IFS
+		"=IFS()": "IFS requires at least 2 arguments",
 		// NOT
 		"=NOT()":      "NOT requires 1 argument",
 		"=NOT(NOT())": "NOT requires 1 argument",
@@ -2596,40 +2629,6 @@ func TestCalcWithDefinedName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "<B1 value>", result, "=defined_name1")
 
-}
-
-func TestCalcArithmeticOperations(t *testing.T) {
-	opdStack := NewStack()
-	for _, test := range [][]string{{"1", "text", "FALSE"}, {"text", "1", "TRUE"}} {
-		assert.NoError(t, calcL(test[0], test[1], opdStack))
-		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
-		opdStack.Empty()
-		assert.NoError(t, calcLe(test[0], test[1], opdStack))
-		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
-		opdStack.Empty()
-	}
-	for _, test := range [][]string{{"1", "text", "TRUE"}, {"text", "1", "FALSE"}} {
-		assert.NoError(t, calcG(test[0], test[1], opdStack))
-		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
-		opdStack.Empty()
-		assert.NoError(t, calcGe(test[0], test[1], opdStack))
-		assert.Equal(t, test[2], opdStack.Peek().(efp.Token).TValue)
-		opdStack.Empty()
-	}
-
-	err := `strconv.ParseFloat: parsing "text": invalid syntax`
-	assert.EqualError(t, calcPow("1", "text", nil), err)
-	assert.EqualError(t, calcPow("text", "1", nil), err)
-	assert.EqualError(t, calcAdd("1", "text", nil), err)
-	assert.EqualError(t, calcAdd("text", "1", nil), err)
-	assert.EqualError(t, calcAdd("1", "text", nil), err)
-	assert.EqualError(t, calcAdd("text", "1", nil), err)
-	assert.EqualError(t, calcSubtract("1", "text", nil), err)
-	assert.EqualError(t, calcSubtract("text", "1", nil), err)
-	assert.EqualError(t, calcMultiply("1", "text", nil), err)
-	assert.EqualError(t, calcMultiply("text", "1", nil), err)
-	assert.EqualError(t, calcDiv("1", "text", nil), err)
-	assert.EqualError(t, calcDiv("text", "1", nil), err)
 }
 
 func TestCalcISBLANK(t *testing.T) {
