@@ -1323,6 +1323,13 @@ func TestCalcCellValue(t *testing.T) {
 		// PPMT
 		"=PPMT(0.05/12,2,60,50000)":   "-738.2918003208238",
 		"=PPMT(0.035/4,2,8,0,5000,1)": "-606.1094824182949",
+		// RRI
+		"=RRI(10,10000,15000)": "0.0413797439924106",
+		// SLN
+		"=SLN(10000,1000,5)": "1800",
+		// SYD
+		"=SYD(10000,1000,5,1)": "3000",
+		"=SYD(10000,1000,5,2)": "2400",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareCalcData(cellData)
@@ -2516,6 +2523,22 @@ func TestCalcCellValue(t *testing.T) {
 		"=PPMT(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PPMT(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PPMT(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// RRI
+		"=RRI()":               "RRI requires 3 arguments",
+		"=RRI(\"\",\"\",\"\")": "#NUM!",
+		"=RRI(0,10000,15000)":  "RRI requires nper argument to be > 0",
+		"=RRI(10,0,15000)":     "RRI requires pv argument to be > 0",
+		"=RRI(10,10000,-1)":    "RRI requires fv argument to be >= 0",
+		// SLN
+		"=SLN()":               "SLN requires 3 arguments",
+		"=SLN(\"\",\"\",\"\")": "#NUM!",
+		"=SLN(10000,1000,0)":   "SLN requires life argument to be > 0",
+		// SYD
+		"=SYD()":                    "SYD requires 4 arguments",
+		"=SYD(\"\",\"\",\"\",\"\")": "#NUM!",
+		"=SYD(10000,1000,0,1)":      "SYD requires life argument to be > 0",
+		"=SYD(10000,1000,5,0)":      "SYD requires per argument to be > 0",
+		"=SYD(10000,1000,1,5)":      "#NUM!",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareCalcData(cellData)

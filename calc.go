@@ -474,6 +474,7 @@ type formulaFuncs struct {
 //    ROUNDUP
 //    ROW
 //    ROWS
+//    RRI
 //    SEC
 //    SECH
 //    SHEET
@@ -481,6 +482,7 @@ type formulaFuncs struct {
 //    SIN
 //    SINH
 //    SKEW
+//    SLN
 //    SMALL
 //    SQRT
 //    SQRTPI
@@ -491,6 +493,7 @@ type formulaFuncs struct {
 //    SUM
 //    SUMIF
 //    SUMSQ
+//    SYD
 //    T
 //    TAN
 //    TANH
@@ -9316,4 +9319,82 @@ func (fn *formulaFuncs) PMT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) PPMT(argsList *list.List) formulaArg {
 	return fn.ipmt("PPMT", argsList)
+}
+
+// RRI function calculates the equivalent interest rate for an investment with
+// specified present value, future value and duration. The syntax of the
+// function is:
+//
+//    RRI(nper,pv,fv)
+//
+func (fn *formulaFuncs) RRI(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RRI requires 3 arguments")
+	}
+	nper := argsList.Front().Value.(formulaArg).ToNumber()
+	pv := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	fv := argsList.Back().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber || pv.Type != ArgNumber || fv.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if nper.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RRI requires nper argument to be > 0")
+	}
+	if pv.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RRI requires pv argument to be > 0")
+	}
+	if fv.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RRI requires fv argument to be >= 0")
+	}
+	return newNumberFormulaArg(math.Pow(fv.Number/pv.Number, 1/nper.Number) - 1)
+}
+
+// SLN function calculates the straight line depreciation of an asset for one
+// period. The syntax of the function is:
+//
+//    SLN(cost,salvage,life)
+//
+func (fn *formulaFuncs) SLN(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SLN requires 3 arguments")
+	}
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	life := argsList.Back().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber || salvage.Type != ArgNumber || life.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if life.Number == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SLN requires life argument to be > 0")
+	}
+	return newNumberFormulaArg((cost.Number - salvage.Number) / life.Number)
+}
+
+// SYD function calculates the sum-of-years' digits depreciation for a
+// specified period in the lifetime of an asset. The syntax of the function
+// is:
+//
+//    SYD(cost,salvage,life,per)
+//
+func (fn *formulaFuncs) SYD(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SYD requires 4 arguments")
+	}
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	life := argsList.Back().Prev().Value.(formulaArg).ToNumber()
+	per := argsList.Back().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber || salvage.Type != ArgNumber || life.Type != ArgNumber || per.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if life.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SYD requires life argument to be > 0")
+	}
+	if per.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SYD requires per argument to be > 0")
+	}
+	if per.Number > life.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(((cost.Number - salvage.Number) * (life.Number - per.Number + 1) * 2) / (life.Number * (life.Number + 1)))
 }
