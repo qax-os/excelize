@@ -1286,6 +1286,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=DDB(10000,1000,5,3)": "1440",
 		"=DDB(10000,1000,5,4)": "864",
 		"=DDB(10000,1000,5,5)": "296",
+		// DISC
+		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100)": "0.01",
 		// DOLLARDE
 		"=DOLLARDE(1.01,16)": "1.0625",
 		// DOLLARFR
@@ -1300,6 +1302,8 @@ func TestCalcCellValue(t *testing.T) {
 		// FVSCHEDULE
 		"=FVSCHEDULE(10000,A1:A5)": "240000",
 		"=FVSCHEDULE(10000,0.5)":   "15000",
+		// INTRATE
+		"=INTRATE(\"04/01/2005\",\"03/31/2010\",1000,2125)": "0.225",
 		// IPMT
 		"=IPMT(0.05/12,2,60,50000)":   "-205.26988187971995",
 		"=IPMT(0.035/4,2,8,0,5000,1)": "5.257455237829077",
@@ -2428,6 +2432,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=DDB(0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DDB(0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DDB(0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// DISC
+		"=DISC()":                                          "DISC requires 4 or 5 arguments",
+		"=DISC(\"\",\"03/31/2021\",95,100)":                "#VALUE!",
+		"=DISC(\"04/01/2016\",\"\",95,100)":                "#VALUE!",
+		"=DISC(\"04/01/2016\",\"03/31/2021\",\"\",100)":    "#VALUE!",
+		"=DISC(\"04/01/2016\",\"03/31/2021\",95,\"\")":     "#VALUE!",
+		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100,\"\")": "#NUM!",
+		"=DISC(\"03/31/2021\",\"04/01/2016\",95,100)":      "DISC requires maturity > settlement",
+		"=DISC(\"04/01/2016\",\"03/31/2021\",0,100)":       "DISC requires pr > 0",
+		"=DISC(\"04/01/2016\",\"03/31/2021\",95,0)":        "DISC requires redemption > 0",
+		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    "invalid basis",
 		// DOLLARDE
 		"=DOLLARDE()":       "DOLLARDE requires 2 arguments",
 		"=DOLLARDE(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -2459,6 +2474,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=FVSCHEDULE()":        "FVSCHEDULE requires 2 arguments",
 		"=FVSCHEDULE(\"\",0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=FVSCHEDULE(0,\"x\")": "strconv.ParseFloat: parsing \"x\": invalid syntax",
+		// INTRATE
+		"=INTRATE()":                                          "INTRATE requires 4 or 5 arguments",
+		"=INTRATE(\"\",\"03/31/2021\",95,100)":                "#VALUE!",
+		"=INTRATE(\"04/01/2016\",\"\",95,100)":                "#VALUE!",
+		"=INTRATE(\"04/01/2016\",\"03/31/2021\",\"\",100)":    "#VALUE!",
+		"=INTRATE(\"04/01/2016\",\"03/31/2021\",95,\"\")":     "#VALUE!",
+		"=INTRATE(\"04/01/2016\",\"03/31/2021\",95,100,\"\")": "#NUM!",
+		"=INTRATE(\"03/31/2021\",\"04/01/2016\",95,100)":      "INTRATE requires maturity > settlement",
+		"=INTRATE(\"04/01/2016\",\"03/31/2021\",0,100)":       "INTRATE requires investment > 0",
+		"=INTRATE(\"04/01/2016\",\"03/31/2021\",95,0)":        "INTRATE requires redemption > 0",
+		"=INTRATE(\"04/01/2016\",\"03/31/2021\",95,100,5)":    "invalid basis",
 		// IPMT
 		"=IPMT()":               "IPMT requires at least 4 arguments",
 		"=IPMT(0,0,0,0,0,0,0)":  "IPMT allows at most 6 arguments",

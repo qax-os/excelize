@@ -327,6 +327,7 @@ type formulaFuncs struct {
 //    DEC2OCT
 //    DECIMAL
 //    DEGREES
+//    DISC
 //    DOLLARDE
 //    DOLLARFR
 //    EFFECT
@@ -385,6 +386,7 @@ type formulaFuncs struct {
 //    IMSUM
 //    IMTAN
 //    INT
+//    INTRATE
 //    IPMT
 //    IRR
 //    ISBLANK
@@ -8773,6 +8775,57 @@ func (fn *formulaFuncs) DDB(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(depreciation)
 }
 
+// DISC function calculates the Discount Rate for a security. The syntax of
+// the function is:
+//
+//    DISC(settlement,maturity,pr,redemption,[basis])
+//
+func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DISC requires 4 or 5 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "DISC requires maturity > settlement")
+	}
+	pr := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "DISC requires pr > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "DISC requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg((redemption.Number - pr.Number) / redemption.Number / frac.Number)
+}
+
 // DOLLARDE function converts a dollar value in fractional notation, into a
 // dollar value expressed as a decimal. The syntax of the function is:
 //
@@ -8916,6 +8969,57 @@ func (fn *formulaFuncs) FVSCHEDULE(argsList *list.List) formulaArg {
 		principal *= (1 + rate.Number)
 	}
 	return newNumberFormulaArg(principal)
+}
+
+// INTRATE function calculates the interest rate for a fully invested
+// security. The syntax of the function is:
+//
+//    INTRATE(settlement,maturity,investment,redemption,[basis])
+//
+func (fn *formulaFuncs) INTRATE(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "INTRATE requires 4 or 5 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires maturity > settlement")
+	}
+	investment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if investment.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if investment.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires investment > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg((redemption.Number - investment.Number) / investment.Number / frac.Number)
 }
 
 // IPMT function calculates the interest payment, during a specific period of a
