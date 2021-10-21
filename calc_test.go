@@ -1188,6 +1188,17 @@ func TestCalcCellValue(t *testing.T) {
 		`=IF(FALSE,0,ROUND(4/2,0))`:             "2",
 		`=IF(TRUE,ROUND(4/2,0),0)`:              "2",
 		// Excel Lookup and Reference Functions
+		// ADDRESS
+		"=ADDRESS(1,1,1,TRUE)":            "$A$1",
+		"=ADDRESS(1,1,1,FALSE)":           "R1C1",
+		"=ADDRESS(1,1,2,TRUE)":            "A$1",
+		"=ADDRESS(1,1,2,FALSE)":           "R1C[1]",
+		"=ADDRESS(1,1,3,TRUE)":            "$A1",
+		"=ADDRESS(1,1,3,FALSE)":           "R[1]C1",
+		"=ADDRESS(1,1,4,TRUE)":            "A1",
+		"=ADDRESS(1,1,4,FALSE)":           "R[1]C[1]",
+		"=ADDRESS(1,1,4,TRUE,\"\")":       "A1",
+		"=ADDRESS(1,1,4,TRUE,\"Sheet1\")": "Sheet1!A1",
 		// CHOOSE
 		"=CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
 		"=CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
@@ -1327,6 +1338,9 @@ func TestCalcCellValue(t *testing.T) {
 		// PPMT
 		"=PPMT(0.05/12,2,60,50000)":   "-738.2918003208238",
 		"=PPMT(0.035/4,2,8,0,5000,1)": "-606.1094824182949",
+		// PRICEDISC
+		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100)":   "90",
+		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100,3)": "90",
 		// RRI
 		"=RRI(10,10000,15000)": "0.0413797439924106",
 		// SLN
@@ -2279,6 +2293,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=IF(0,1,2,3)": "IF accepts at most 3 arguments",
 		"=IF(D1,1,2)":  "strconv.ParseBool: parsing \"Month\": invalid syntax",
 		// Excel Lookup and Reference Functions
+		// ADDRESS
+		"=ADDRESS()":                        "ADDRESS requires at least 2 arguments",
+		"=ADDRESS(1,1,1,TRUE,\"Sheet1\",0)": "ADDRESS requires at most 5 arguments",
+		"=ADDRESS(\"\",1,1,TRUE)":           "#VALUE!",
+		"=ADDRESS(1,\"\",1,TRUE)":           "#VALUE!",
+		"=ADDRESS(1,1,\"\",TRUE)":           "#VALUE!",
+		"=ADDRESS(1,1,1,\"\")":              "#VALUE!",
+		"=ADDRESS(1,1,0,TRUE)":              "#NUM!",
+		"=ADDRESS(1,16385,2,TRUE)":          "#VALUE!",
+		"=ADDRESS(1,16385,3,TRUE)":          "#VALUE!",
+		"=ADDRESS(1048576,1,1,TRUE)":        "#VALUE!",
 		// CHOOSE
 		"=CHOOSE()":                "CHOOSE requires 2 arguments",
 		"=CHOOSE(\"index_num\",0)": "CHOOSE requires first argument of type number",
@@ -2549,6 +2574,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=PPMT(0,0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PPMT(0,0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PPMT(0,0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// PRICEDISC
+		"=PRICEDISC()":                                          "PRICEDISC requires 4 or 5 arguments",
+		"=PRICEDISC(\"\",\"03/31/2021\",95,100)":                "#VALUE!",
+		"=PRICEDISC(\"04/01/2016\",\"\",95,100)":                "#VALUE!",
+		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",\"\",100)":    "#VALUE!",
+		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,\"\")":     "#VALUE!",
+		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,100,\"\")": "#NUM!",
+		"=PRICEDISC(\"03/31/2021\",\"04/01/2016\",95,100)":      "PRICEDISC requires maturity > settlement",
+		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",0,100)":       "PRICEDISC requires discount > 0",
+		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,0)":        "PRICEDISC requires redemption > 0",
+		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    "invalid basis",
 		// RRI
 		"=RRI()":               "RRI requires 3 arguments",
 		"=RRI(\"\",\"\",\"\")": "#NUM!",

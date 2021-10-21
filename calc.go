@@ -130,6 +130,40 @@ var (
 		regexp.MustCompile(`^` + df3 + `$`),
 		regexp.MustCompile(`^` + df4 + `$`),
 	}
+	addressFmtMaps = map[string]func(col, row int) (string, error){
+		"1_TRUE": func(col, row int) (string, error) {
+			return CoordinatesToCellName(col, row, true)
+		},
+		"1_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R%dC%d", row, col), nil
+		},
+		"2_TRUE": func(col, row int) (string, error) {
+			column, err := ColumnNumberToName(col)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("%s$%d", column, row), nil
+		},
+		"2_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R%dC[%d]", row, col), nil
+		},
+		"3_TRUE": func(col, row int) (string, error) {
+			column, err := ColumnNumberToName(col)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("$%s%d", column, row), nil
+		},
+		"3_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R[%d]C%d", row, col), nil
+		},
+		"4_TRUE": func(col, row int) (string, error) {
+			return CoordinatesToCellName(col, row, false)
+		},
+		"4_FALSE": func(col, row int) (string, error) {
+			return fmt.Sprintf("R[%d]C[%d]", row, col), nil
+		},
+	}
 )
 
 // cellRef defines the structure of a cell reference.
@@ -266,6 +300,7 @@ type formulaFuncs struct {
 //    ACOSH
 //    ACOT
 //    ACOTH
+//    ADDRESS
 //    AMORDEGRC
 //    AMORLINC
 //    AND
@@ -457,6 +492,7 @@ type formulaFuncs struct {
 //    POISSON
 //    POWER
 //    PPMT
+//    PRICEDISC
 //    PRODUCT
 //    PROPER
 //    QUARTILE
@@ -7644,6 +7680,61 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 
 // Lookup and Reference Functions
 
+// ADDRESS function takes a row and a column number and returns a cell
+// reference as a text string. The syntax of the function is:
+//
+//    ADDRESS(row_num,column_num,[abs_num],[a1],[sheet_text])
+//
+func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ADDRESS requires at least 2 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ADDRESS requires at most 5 arguments")
+	}
+	rowNum := argsList.Front().Value.(formulaArg).ToNumber()
+	if rowNum.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if rowNum.Number >= TotalRows {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	colNum := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if colNum.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	absNum := newNumberFormulaArg(1)
+	if argsList.Len() >= 3 {
+		absNum = argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+		if absNum.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	if absNum.Number < 1 || absNum.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	a1 := newBoolFormulaArg(true)
+	if argsList.Len() >= 4 {
+		a1 = argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool()
+		if a1.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	var sheetText string
+	if argsList.Len() == 5 {
+		sheetText = trimSheetName(argsList.Back().Value.(formulaArg).Value())
+	}
+	if len(sheetText) > 0 {
+		sheetText = fmt.Sprintf("%s!", sheetText)
+	}
+	formatter := addressFmtMaps[fmt.Sprintf("%d_%s", int(absNum.Number), a1.Value())]
+	addr, err := formatter(int(colNum.Number), int(colNum.Number))
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newStringFormulaArg(fmt.Sprintf("%s%s", sheetText, addr))
+}
+
 // CHOOSE function returns a value from an array, that corresponds to a
 // supplied index number (position). The syntax of the function is:
 //
@@ -9423,6 +9514,57 @@ func (fn *formulaFuncs) PMT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) PPMT(argsList *list.List) formulaArg {
 	return fn.ipmt("PPMT", argsList)
+}
+
+// PRICEDISC function calculates the price, per $100 face value of a
+// discounted security. The syntax of the function is:
+//
+//    PRICEDISC(settlement,maturity,discount,redemption,[basis])
+//
+func (fn *formulaFuncs) PRICEDISC(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PRICEDISC requires 4 or 5 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires maturity > settlement")
+	}
+	discount := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires discount > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg(redemption.Number * (1 - discount.Number*frac.Number))
 }
 
 // RRI function calculates the equivalent interest rate for an investment with
