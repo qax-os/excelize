@@ -735,6 +735,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRUNC(-99.999,-1)":  "-90",
 		"=TRUNC(TRUNC(1),-1)": "0",
 		// Statistical Functions
+		// AVEDEV
+		"=AVEDEV(1,2)":          "0.5",
+		"=AVERAGE(A1:A4,B1:B4)": "2.5",
 		// AVERAGE
 		"=AVERAGE(INT(1))": "1",
 		"=AVERAGE(A1)":     "1",
@@ -745,6 +748,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGEA(A1)":     "1",
 		"=AVERAGEA(A1:A2)":  "1.5",
 		"=AVERAGEA(D2:F9)":  "12671.375",
+		// CHIDIST
+		"=CHIDIST(0.5,3)": "0.918891411654676",
+		"=CHIDIST(8,3)":   "0.0460117056892315",
 		// COUNT
 		"=COUNT()":                        "0",
 		"=COUNT(E1:F2,\"text\",1,INT(2))": "3",
@@ -1891,10 +1897,18 @@ func TestCalcCellValue(t *testing.T) {
 		`=TRUNC("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		`=TRUNC(1,"X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// Statistical Functions
+		// AVEDEV
+		"=AVEDEV()":       "AVEDEV requires at least 1 argument",
+		"=AVEDEV(\"\")":   "#VALUE!",
+		"=AVEDEV(1,\"\")": "#VALUE!",
 		// AVERAGE
 		"=AVERAGE(H1)": "AVERAGE divide by zero",
 		// AVERAGE
 		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		// CHIDIST
+		"=CHIDIST()":         "CHIDIST requires 2 numeric arguments",
+		"=CHIDIST(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHIDIST(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",

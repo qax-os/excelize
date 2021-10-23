@@ -310,6 +310,7 @@ type formulaFuncs struct {
 //    ATAN
 //    ATAN2
 //    ATANH
+//    AVEDEV
 //    AVERAGE
 //    AVERAGEA
 //    BASE
@@ -329,6 +330,7 @@ type formulaFuncs struct {
 //    CEILING.MATH
 //    CEILING.PRECISE
 //    CHAR
+//    CHIDIST
 //    CHOOSE
 //    CLEAN
 //    CODE
@@ -4675,6 +4677,31 @@ func (fn *formulaFuncs) TRUNC(argsList *list.List) formulaArg {
 
 // Statistical Functions
 
+// AVEDEV function calculates the average deviation of a supplied set of
+// values. The syntax of the function is:
+//
+//    AVEDEV(number1,[number2],...)
+//
+func (fn *formulaFuncs) AVEDEV(argsList *list.List) formulaArg {
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AVEDEV requires at least 1 argument")
+	}
+	average := fn.AVERAGE(argsList)
+	if average.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	result, count := 0.0, 0.0
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		num := arg.Value.(formulaArg).ToNumber()
+		if num.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		result += math.Abs(num.Number - average.Number)
+		count++
+	}
+	return newNumberFormulaArg(result / count)
+}
+
 // AVERAGE function returns the arithmetic mean of a list of supplied numbers.
 // The syntax of the function is:
 //
@@ -4707,6 +4734,40 @@ func (fn *formulaFuncs) AVERAGEA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEA divide by zero")
 	}
 	return newNumberFormulaArg(sum / count)
+}
+
+// incompleteGamma is an implementation of the incomplete gamma function.
+func incompleteGamma(a, x float64) float64 {
+	max := 32
+	summer := 0.0
+	for n := 0; n <= max; n++ {
+		divisor := a
+		for i := 1; i <= n; i++ {
+			divisor *= (a + float64(i))
+		}
+		summer += math.Pow(x, float64(n)) / divisor
+	}
+	return math.Pow(x, a) * math.Exp(0-x) * summer
+}
+
+// CHIDIST function calculates the right-tailed probability of the chi-square
+// distribution. The syntax of the function is:
+//
+//    CHIDIST(x,degrees_freedom)
+//
+func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHIDIST requires 2 numeric arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	degress := argsList.Back().Value.(formulaArg).ToNumber()
+	if degress.Type != ArgNumber {
+		return degress
+	}
+	return newNumberFormulaArg(1 - (incompleteGamma(degress.Number/2, x.Number/2) / math.Gamma(degress.Number/2)))
 }
 
 // calcStringCountSum is part of the implementation countSum.
