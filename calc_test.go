@@ -1354,6 +1354,12 @@ func TestCalcCellValue(t *testing.T) {
 		// SYD
 		"=SYD(10000,1000,5,1)": "3000",
 		"=SYD(10000,1000,5,2)": "2400",
+		// YIELDDISC
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100)":   "0.0622012325059031",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100,0)": "0.0622012325059031",
+		// YIELDMAT
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5.5%,101)":   "0.0419422478838651",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5.5%,101,0)": "0.0419422478838651",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareCalcData(cellData)
@@ -2615,6 +2621,28 @@ func TestCalcCellValue(t *testing.T) {
 		"=SYD(10000,1000,0,1)":      "SYD requires life argument to be > 0",
 		"=SYD(10000,1000,5,0)":      "SYD requires per argument to be > 0",
 		"=SYD(10000,1000,1,5)":      "#NUM!",
+		// YIELDDISC
+		"=YIELDDISC()": "YIELDDISC requires 4 or 5 arguments",
+		"=YIELDDISC(\"\",\"06/30/2017\",97,100,0)":              "#VALUE!",
+		"=YIELDDISC(\"01/01/2017\",\"\",97,100,0)":              "#VALUE!",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",\"\",100,0)":  "#VALUE!",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,\"\",0)":   "#VALUE!",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100,\"\")": "#NUM!",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",0,100)":       "YIELDDISC requires pr > 0",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,0)":        "YIELDDISC requires redemption > 0",
+		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100,5)":    "invalid basis",
+		// YIELDMAT
+		"=YIELDMAT()": "YIELDMAT requires 5 or 6 arguments",
+		"=YIELDMAT(\"\",\"06/30/2018\",\"06/01/2014\",5.5%,101,0)":            "#VALUE!",
+		"=YIELDMAT(\"01/01/2017\",\"\",\"06/01/2014\",5.5%,101,0)":            "#VALUE!",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"\",5.5%,101,0)":            "#VALUE!",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",\"\",101,0)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5,\"\",0)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5,5.5%,\"\")": "#NUM!",
+		"=YIELDMAT(\"06/01/2014\",\"06/30/2018\",\"01/01/2017\",5.5%,101,0)":  "YIELDMAT requires settlement > issue",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",-1,101,0)":    "YIELDMAT requires rate >= 0",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",1,0,0)":       "YIELDMAT requires pr > 0",
+		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5.5%,101,5)":  "invalid basis",
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareCalcData(cellData)

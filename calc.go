@@ -554,6 +554,8 @@ type formulaFuncs struct {
 //    XOR
 //    YEAR
 //    YEARFRAC
+//    YIELDDISC
+//    YIELDMAT
 //    Z.TEST
 //    ZTEST
 //
@@ -9704,4 +9706,115 @@ func (fn *formulaFuncs) SYD(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(((cost.Number - salvage.Number) * (life.Number - per.Number + 1) * 2) / (life.Number * (life.Number + 1)))
+}
+
+// YIELDDISC function calculates the annual yield of a discounted security.
+// The syntax of the function is:
+//
+//    YIELDDISC(settlement,maturity,pr,redemption,[basis])
+//
+func (fn *formulaFuncs) YIELDDISC(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YIELDDISC requires 4 or 5 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	pr := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDDISC requires pr > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDDISC requires redemption > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg((redemption.Number/pr.Number - 1) / frac.Number)
+}
+
+// YIELDMAT function calculates the annual yield of a security that pays
+// interest at maturity. The syntax of the function is:
+//
+//    YIELDMAT(settlement,maturity,issue,rate,pr,[basis])
+//
+func (fn *formulaFuncs) YIELDMAT(argsList *list.List) formulaArg {
+	if argsList.Len() != 5 && argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YIELDMAT requires 5 or 6 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+	issue := fn.DATEVALUE(args)
+	if issue.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if issue.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires settlement > issue")
+	}
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires rate >= 0")
+	}
+	pr := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return pr
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires pr > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 6 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	dim := yearFrac(issue.Number, maturity.Number, int(basis.Number))
+	if dim.Type != ArgNumber {
+		return dim
+	}
+	dis := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	dsm := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	result := 1 + dim.Number*rate.Number
+	result /= pr.Number/100 + dis.Number*rate.Number
+	result--
+	result /= dsm.Number
+	return newNumberFormulaArg(result)
 }
