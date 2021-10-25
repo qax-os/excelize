@@ -537,6 +537,8 @@ type formulaFuncs struct {
 //    T
 //    TAN
 //    TANH
+//    TBILLEQ
+//    TEXTJOIN
 //    TIME
 //    TODAY
 //    TRANSPOSE
@@ -7636,6 +7638,64 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	return newStringFormulaArg(pre + newText.Value() + post)
 }
 
+// TEXTJOIN function joins together a series of supplied text strings into one
+// combined text string. The user can specify a delimiter to add between the
+// individual text items, if required. The syntax of the function is:
+//
+//    TEXTJOIN([delimiter],[ignore_empty],text1,[text2],...)
+//
+func (fn *formulaFuncs) TEXTJOIN(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TEXTJOIN requires at least 3 arguments")
+	}
+	if argsList.Len() > 252 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TEXTJOIN accepts at most 252 arguments")
+	}
+	delimiter := argsList.Front().Value.(formulaArg)
+	ignoreEmpty := argsList.Front().Next().Value.(formulaArg).ToBool()
+	if ignoreEmpty.Type != ArgNumber {
+		return ignoreEmpty
+	}
+	args, ok := textJoin(argsList.Front().Next().Next(), []string{}, ignoreEmpty.Number != 0)
+	if ok.Type != ArgNumber {
+		return ok
+	}
+	result := strings.Join(args, delimiter.Value())
+	if len(result) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("TEXTJOIN function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(result)
+}
+
+// textJoin is an implementation of the formula function TEXTJOIN.
+func textJoin(arg *list.Element, arr []string, ignoreEmpty bool) ([]string, formulaArg) {
+	for arg.Next(); arg != nil; arg = arg.Next() {
+		switch arg.Value.(formulaArg).Type {
+		case ArgError:
+			return arr, arg.Value.(formulaArg)
+		case ArgString:
+			val := arg.Value.(formulaArg).Value()
+			if val != "" || !ignoreEmpty {
+				arr = append(arr, val)
+			}
+		case ArgNumber:
+			arr = append(arr, arg.Value.(formulaArg).Value())
+		case ArgMatrix:
+			for _, row := range arg.Value.(formulaArg).Matrix {
+				argList := list.New().Init()
+				for _, ele := range row {
+					argList.PushBack(ele)
+				}
+				if argList.Len() > 0 {
+					args, _ := textJoin(argList.Front(), []string{}, ignoreEmpty)
+					arr = append(arr, args...)
+				}
+			}
+		}
+	}
+	return arr, newBoolFormulaArg(true)
+}
+
 // TRIM removes extra spaces (i.e. all spaces except for single spaces between
 // words or characters) from a supplied text string. The syntax of the
 // function is:
@@ -7818,14 +7878,7 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	for i := 0; i < idx; i++ {
 		arg = arg.Next()
 	}
-	var result formulaArg
-	switch arg.Value.(formulaArg).Type {
-	case ArgString:
-		result = newStringFormulaArg(arg.Value.(formulaArg).String)
-	case ArgMatrix:
-		result = newMatrixFormulaArg(arg.Value.(formulaArg).Matrix)
-	}
-	return result
+	return arg.Value.(formulaArg)
 }
 
 // deepMatchRune finds whether the text deep matches/satisfies the pattern
@@ -9706,6 +9759,41 @@ func (fn *formulaFuncs) SYD(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(((cost.Number - salvage.Number) * (life.Number - per.Number + 1) * 2) / (life.Number * (life.Number + 1)))
+}
+
+// TBILLEQ function calculates the bond-equivalent yield for a Treasury Bill.
+// The syntax of the function is:
+//
+//    TBILLEQ(settlement,maturity,discount)
+//
+func (fn *formulaFuncs) TBILLEQ(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TBILLEQ requires 3 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	dsm := maturity.Number - settlement.Number
+	if dsm > 365 || maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	discount := argsList.Back().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg((365 * discount.Number) / (360 - discount.Number*dsm))
 }
 
 // YIELDDISC function calculates the annual yield of a discounted security.

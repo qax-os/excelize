@@ -1163,6 +1163,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUBSTITUTE(\"abab\",\"x\",\"X\",2)":                    "abab",
 		"=SUBSTITUTE(\"John is 5 years old\",\"John\",\"Jack\")": "Jack is 5 years old",
 		"=SUBSTITUTE(\"John is 5 years old\",\"5\",\"6\")":       "John is 6 years old",
+		// TEXTJOIN
+		"=TEXTJOIN(\"-\",TRUE,1,2,3,4)":  "1-2-3-4",
+		"=TEXTJOIN(A4,TRUE,A1:B2)":       "1040205",
+		"=TEXTJOIN(\",\",FALSE,A1:C2)":   "1,4,,2,5,",
+		"=TEXTJOIN(\",\",TRUE,A1:C2)":    "1,4,2,5",
+		"=TEXTJOIN(\",\",TRUE,MUNIT(2))": "1,0,0,1",
 		// TRIM
 		"=TRIM(\" trim text \")": "trim text",
 		"=TRIM(0)":               "0",
@@ -1354,6 +1360,8 @@ func TestCalcCellValue(t *testing.T) {
 		// SYD
 		"=SYD(10000,1000,5,1)": "3000",
 		"=SYD(10000,1000,5,2)": "2400",
+		// TBILLEQ
+		"=TBILLEQ(\"01/01/2017\",\"06/30/2017\",2.5%)": "0.0256680731364276",
 		// YIELDDISC
 		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100)":   "0.0622012325059031",
 		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100,0)": "0.0622012325059031",
@@ -2293,6 +2301,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUBSTITUTE()":                    "SUBSTITUTE requires 3 or 4 arguments",
 		"=SUBSTITUTE(\"\",\"\",\"\",\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=SUBSTITUTE(\"\",\"\",\"\",0)":    "instance_num should be > 0",
+		// TEXTJOIN
+		"=TEXTJOIN()":               "TEXTJOIN requires at least 3 arguments",
+		"=TEXTJOIN(\"\",\"\",1)":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=TEXTJOIN(\"\",TRUE,NA())": "#N/A",
+		"=TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": "TEXTJOIN accepts at most 252 arguments",
+		"=TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 "TEXTJOIN function exceeds 32767 characters",
 		// TRIM
 		"=TRIM()":    "TRIM requires 1 argument",
 		"=TRIM(1,2)": "TRIM requires 1 argument",
@@ -2328,6 +2342,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE()":                "CHOOSE requires 2 arguments",
 		"=CHOOSE(\"index_num\",0)": "CHOOSE requires first argument of type number",
 		"=CHOOSE(2,0)":             "index_num should be <= to the number of values",
+		"=CHOOSE(1,NA())":          "#N/A",
 		// COLUMN
 		"=COLUMN(1,2)":          "COLUMN requires at most 1 argument",
 		"=COLUMN(\"\")":         "invalid reference",
@@ -2621,6 +2636,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=SYD(10000,1000,0,1)":      "SYD requires life argument to be > 0",
 		"=SYD(10000,1000,5,0)":      "SYD requires per argument to be > 0",
 		"=SYD(10000,1000,1,5)":      "#NUM!",
+		// TBILLEQ
+		"=TBILLEQ()":                                   "TBILLEQ requires 3 arguments",
+		"=TBILLEQ(\"\",\"06/30/2017\",2.5%)":           "#VALUE!",
+		"=TBILLEQ(\"01/01/2017\",\"\",2.5%)":           "#VALUE!",
+		"=TBILLEQ(\"01/01/2017\",\"06/30/2017\",\"\")": "#VALUE!",
+		"=TBILLEQ(\"01/01/2017\",\"06/30/2017\",0)":    "#NUM!",
+		"=TBILLEQ(\"01/01/2017\",\"06/30/2018\",2.5%)": "#NUM!",
+		"=TBILLEQ(\"06/30/2017\",\"01/01/2017\",2.5%)": "#NUM!",
 		// YIELDDISC
 		"=YIELDDISC()": "YIELDDISC requires 4 or 5 arguments",
 		"=YIELDDISC(\"\",\"06/30/2017\",97,100,0)":              "#VALUE!",
