@@ -1362,6 +1362,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=SYD(10000,1000,5,2)": "2400",
 		// TBILLEQ
 		"=TBILLEQ(\"01/01/2017\",\"06/30/2017\",2.5%)": "0.0256680731364276",
+		// TBILLPRICE
+		"=TBILLPRICE(\"02/01/2017\",\"06/30/2017\",2.75%)": "98.86180555555556",
+		// TBILLYIELD
+		"=TBILLYIELD(\"02/01/2017\",\"06/30/2017\",99)": "0.024405125076266",
 		// YIELDDISC
 		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100)":   "0.0622012325059031",
 		"=YIELDDISC(\"01/01/2017\",\"06/30/2017\",97,100,0)": "0.0622012325059031",
@@ -2644,6 +2648,22 @@ func TestCalcCellValue(t *testing.T) {
 		"=TBILLEQ(\"01/01/2017\",\"06/30/2017\",0)":    "#NUM!",
 		"=TBILLEQ(\"01/01/2017\",\"06/30/2018\",2.5%)": "#NUM!",
 		"=TBILLEQ(\"06/30/2017\",\"01/01/2017\",2.5%)": "#NUM!",
+		// TBILLPRICE
+		"=TBILLPRICE()":                                   "TBILLPRICE requires 3 arguments",
+		"=TBILLPRICE(\"\",\"06/30/2017\",2.5%)":           "#VALUE!",
+		"=TBILLPRICE(\"01/01/2017\",\"\",2.5%)":           "#VALUE!",
+		"=TBILLPRICE(\"01/01/2017\",\"06/30/2017\",\"\")": "#VALUE!",
+		"=TBILLPRICE(\"01/01/2017\",\"06/30/2017\",0)":    "#NUM!",
+		"=TBILLPRICE(\"01/01/2017\",\"06/30/2018\",2.5%)": "#NUM!",
+		"=TBILLPRICE(\"06/30/2017\",\"01/01/2017\",2.5%)": "#NUM!",
+		// TBILLYIELD
+		"=TBILLYIELD()":                                   "TBILLYIELD requires 3 arguments",
+		"=TBILLYIELD(\"\",\"06/30/2017\",2.5%)":           "#VALUE!",
+		"=TBILLYIELD(\"01/01/2017\",\"\",2.5%)":           "#VALUE!",
+		"=TBILLYIELD(\"01/01/2017\",\"06/30/2017\",\"\")": "#VALUE!",
+		"=TBILLYIELD(\"01/01/2017\",\"06/30/2017\",0)":    "#NUM!",
+		"=TBILLYIELD(\"01/01/2017\",\"06/30/2018\",2.5%)": "#NUM!",
+		"=TBILLYIELD(\"06/30/2017\",\"01/01/2017\",2.5%)": "#NUM!",
 		// YIELDDISC
 		"=YIELDDISC()": "YIELDDISC requires 4 or 5 arguments",
 		"=YIELDDISC(\"\",\"06/30/2017\",97,100,0)":              "#VALUE!",

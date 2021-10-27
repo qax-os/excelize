@@ -538,6 +538,8 @@ type formulaFuncs struct {
 //    TAN
 //    TANH
 //    TBILLEQ
+//    TBILLPRICE
+//    TBILLYIELD
 //    TEXTJOIN
 //    TIME
 //    TODAY
@@ -9794,6 +9796,76 @@ func (fn *formulaFuncs) TBILLEQ(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg((365 * discount.Number) / (360 - discount.Number*dsm))
+}
+
+// TBILLPRICE function returns the price, per $100 face value, of a Treasury
+// Bill. The syntax of the function is:
+//
+//    TBILLPRICE(settlement,maturity,discount)
+//
+func (fn *formulaFuncs) TBILLPRICE(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TBILLPRICE requires 3 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	dsm := maturity.Number - settlement.Number
+	if dsm > 365 || maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	discount := argsList.Back().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(100 * (1 - discount.Number*dsm/360))
+}
+
+// TBILLYIELD function calculates the yield of a Treasury Bill. The syntax of
+// the function is:
+//
+//    TBILLYIELD(settlement,maturity,pr)
+//
+func (fn *formulaFuncs) TBILLYIELD(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TBILLYIELD requires 3 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	dsm := maturity.Number - settlement.Number
+	if dsm > 365 || maturity.Number <= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	pr := argsList.Back().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(((100 - pr.Number) / pr.Number) * (360 / dsm))
 }
 
 // YIELDDISC function calculates the annual yield of a discounted security.
