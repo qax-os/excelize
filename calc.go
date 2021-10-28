@@ -533,6 +533,7 @@ type formulaFuncs struct {
 //    SUM
 //    SUMIF
 //    SUMSQ
+//    SWITCH
 //    SYD
 //    T
 //    TAN
@@ -545,6 +546,7 @@ type formulaFuncs struct {
 //    TODAY
 //    TRANSPOSE
 //    TRIM
+//    TRIMMEAN
 //    TRUE
 //    TRUNC
 //    UNICHAR
@@ -5741,6 +5743,49 @@ func (fn *formulaFuncs) SMALL(argsList *list.List) formulaArg {
 	return fn.kth("SMALL", argsList)
 }
 
+// TRIMMEAN function calculates the trimmed mean (or truncated mean) of a
+// supplied set of values. The syntax of the function is:
+//
+//    TRIMMEAN(array,percent)
+//
+func (fn *formulaFuncs) TRIMMEAN(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TRIMMEAN requires 2 arguments")
+	}
+	percent := argsList.Back().Value.(formulaArg).ToNumber()
+	if percent.Type != ArgNumber {
+		return percent
+	}
+	if percent.Number < 0 || percent.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	arr := []float64{}
+	arrArg := argsList.Front().Value.(formulaArg).ToList()
+	for _, cell := range arrArg {
+		num := cell.ToNumber()
+		if num.Type != ArgNumber {
+			continue
+		}
+		arr = append(arr, num.Number)
+	}
+	discard := math.Floor(float64(len(arr)) * percent.Number / 2)
+	sort.Float64s(arr)
+	for i := 0; i < int(discard); i++ {
+		if len(arr) > 0 {
+			arr = arr[1:]
+		}
+		if len(arr) > 0 {
+			arr = arr[:len(arr)-1]
+		}
+	}
+
+	args := list.New().Init()
+	for _, ele := range arr {
+		args.PushBack(newNumberFormulaArg(ele))
+	}
+	return fn.AVERAGE(args)
+}
+
 // VARP function returns the Variance of a given set of values. The syntax of
 // the function is:
 //
@@ -6324,6 +6369,41 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 		}
 	}
 	return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
+}
+
+// SWITCH function compares a number of supplied values to a supplied test
+// expression and returns a result corresponding to the first value that
+// matches the test expression. A default value can be supplied, to be
+// returned if none of the supplied values match the test expression. The
+// syntax of the function is:
+//
+//
+//    SWITCH(expression,value1,result1,[value2,result2],[value3,result3],...,[default])
+//
+func (fn *formulaFuncs) SWITCH(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SWITCH requires at least 3 arguments")
+	}
+	target := argsList.Front().Value.(formulaArg)
+	argCount := argsList.Len() - 1
+	switchCount := int(math.Floor(float64(argCount) / 2))
+	hasDefaultClause := argCount%2 != 0
+	result := newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	if hasDefaultClause {
+		result = argsList.Back().Value.(formulaArg)
+	}
+	if switchCount > 0 {
+		arg := argsList.Front()
+		for i := 0; i < switchCount; i++ {
+			arg = arg.Next()
+			if target.Value() == arg.Value.(formulaArg).Value() {
+				result = arg.Next().Value.(formulaArg)
+				break
+			}
+			arg = arg.Next()
+		}
+	}
+	return result
 }
 
 // TRUE function returns the logical value TRUE. The syntax of the function

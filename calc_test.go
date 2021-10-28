@@ -872,6 +872,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1:B5,2)": "1",
 		"=SMALL(A1,1)":    "1",
 		"=SMALL(A1:F2,1)": "1",
+		// TRIMMEAN
+		"=TRIMMEAN(A1:B4,10%)": "2.5",
+		"=TRIMMEAN(A1:B4,70%)": "2.5",
 		// VARP
 		"=VARP(A1:A5)": "1.25",
 		// VAR.P
@@ -957,6 +960,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=OR(0)":       "FALSE",
 		"=OR(1=2,2=2)": "TRUE",
 		"=OR(1=2,2=3)": "FALSE",
+		// SWITCH
+		"=SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",
+		"=SWITCH(3,1,\"A\",2,\"B\",3,\"C\",\"N\")": "C",
+		"=SWITCH(4,1,\"A\",2,\"B\",3,\"C\",\"N\")": "N",
 		// TRUE
 		"=TRUE()": "TRUE",
 		// XOR
@@ -2037,6 +2044,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1:A5,0)":    "k should be > 0",
 		"=SMALL(A1:A5,6)":    "k should be <= length of array",
 		"=SMALL(A1:A5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// TRIMMEAN
+		"=TRIMMEAN()":        "TRIMMEAN requires 2 arguments",
+		"=TRIMMEAN(A1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TRIMMEAN(A1,1)":    "#NUM!",
+		"=TRIMMEAN(A1,-1)":   "#NUM!",
 		// VARP
 		"=VARP()":     "VARP requires at least 1 argument",
 		"=VARP(\"\")": "#DIV/0!",
@@ -2122,6 +2134,9 @@ func TestCalcCellValue(t *testing.T) {
 		`=OR(A1:B1)`:                             "#VALUE!",
 		"=OR()":                                  "OR requires at least 1 argument",
 		"=OR(1" + strings.Repeat(",1", 30) + ")": "OR accepts at most 30 arguments",
+		// SWITCH
+		"=SWITCH()":      "SWITCH requires at least 3 arguments",
+		"=SWITCH(0,1,2)": "#N/A",
 		// TRUE
 		"=TRUE(A1)": "TRUE takes no arguments",
 		// XOR
