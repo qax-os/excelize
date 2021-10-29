@@ -1052,6 +1052,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=TIME(5,44,32)":             "0.239259259259259",
 		"=TIME(\"5\",\"44\",\"32\")": "0.239259259259259",
 		"=TIME(0,0,73)":              "0.000844907407407407",
+		// WEEKDAY
+		"=WEEKDAY(0)":                 "7",
+		"=WEEKDAY(47119)":             "2",
+		"=WEEKDAY(\"12/25/2012\")":    "3",
+		"=WEEKDAY(\"12/25/2012\",1)":  "3",
+		"=WEEKDAY(\"12/25/2012\",2)":  "2",
+		"=WEEKDAY(\"12/25/2012\",3)":  "1",
+		"=WEEKDAY(\"12/25/2012\",11)": "2",
+		"=WEEKDAY(\"12/25/2012\",12)": "1",
+		"=WEEKDAY(\"12/25/2012\",13)": "7",
+		"=WEEKDAY(\"12/25/2012\",14)": "6",
+		"=WEEKDAY(\"12/25/2012\",15)": "5",
+		"=WEEKDAY(\"12/25/2012\",16)": "4",
+		"=WEEKDAY(\"12/25/2012\",17)": "3",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -1194,6 +1208,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=UPPER(\"TEST\")":     "TEST",
 		"=UPPER(\"Test\")":     "TEST",
 		"=UPPER(\"TEST 123\")": "TEST 123",
+		// VALUE
+		"=VALUE(\"50\")":                  "50",
+		"=VALUE(\"1.0E-07\")":             "1e-07",
+		"=VALUE(\"5,000\")":               "5000",
+		"=VALUE(\"20%\")":                 "0.2",
+		"=VALUE(\"12:00:00\")":            "0.5",
+		"=VALUE(\"01/02/2006 15:04:05\")": "38719.62783564815",
 		// Conditional Functions
 		// IF
 		"=IF(1=1)":                              "TRUE",
@@ -2224,6 +2245,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=TIME(0,0,-1)":   "#NUM!",
 		// TODAY
 		"=TODAY(A1)": "TODAY accepts no arguments",
+		// WEEKDAY
+		"=WEEKDAY()":                    "WEEKDAY requires at least 1 argument",
+		"=WEEKDAY(0,1,0)":               "WEEKDAY allows at most 2 arguments",
+		"=WEEKDAY(0,\"\")":              "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=WEEKDAY(\"\",1)":              "#VALUE!",
+		"=WEEKDAY(0,0)":                 "#VALUE!",
+		"=WEEKDAY(\"January 25, 100\")": "#VALUE!",
+		"=WEEKDAY(-1,1)":                "#NUM!",
 		// Text Functions
 		// CHAR
 		"=CHAR()":     "CHAR requires 1 argument",
@@ -2337,6 +2366,9 @@ func TestCalcCellValue(t *testing.T) {
 		// UNICODE
 		"=UNICODE()":     "UNICODE requires 1 argument",
 		"=UNICODE(\"\")": "#VALUE!",
+		// VALUE
+		"=VALUE()":     "VALUE requires 1 argument",
+		"=VALUE(\"\")": "#VALUE!",
 		// UPPER
 		"=UPPER()":    "UPPER requires 1 argument",
 		"=UPPER(1,2)": "UPPER requires 1 argument",

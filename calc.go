@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"math/cmplx"
 	"math/rand"
 	"net/url"
@@ -552,9 +553,11 @@ type formulaFuncs struct {
 //    UNICHAR
 //    UNICODE
 //    UPPER
+//    VALUE
 //    VAR.P
 //    VARP
 //    VLOOKUP
+//    WEEKDAY
 //    WEIBULL
 //    WEIBULL.DIST
 //    XOR
@@ -7187,6 +7190,63 @@ func daysBetween(startDate, endDate int64) float64 {
 	return float64(int(0.5 + float64((endDate-startDate)/86400)))
 }
 
+// WEEKDAY function returns an integer representing the day of the week for a
+// supplied date. The syntax of the function is:
+//
+//    WEEKDAY(serial_number,[return_type])
+//
+func (fn *formulaFuncs) WEEKDAY(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEEKDAY requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEEKDAY allows at most 2 arguments")
+	}
+
+	sn := argsList.Front().Value.(formulaArg)
+	num := sn.ToNumber()
+	weekday, returnType := 0, 1
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(sn.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		weekday = int(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.Now().Location()).Weekday())
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		weekday = int(timeFromExcelTime(num.Number, false).Weekday())
+	}
+	if argsList.Len() == 2 {
+		returnTypeArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if returnTypeArg.Type != ArgNumber {
+			return returnTypeArg
+		}
+		returnType = int(returnTypeArg.Number)
+	}
+	if returnType == 2 {
+		returnType = 11
+	}
+	weekday++
+	if returnType == 1 {
+		return newNumberFormulaArg(float64(weekday))
+	}
+	if returnType == 3 {
+		return newNumberFormulaArg(float64((weekday + 6 - 1) % 7))
+	}
+	if returnType >= 11 && returnType <= 17 {
+		return newNumberFormulaArg(float64((weekday+6-(returnType-10))%7 + 1))
+	}
+	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+}
+
 // Text Functions
 
 // CHAR function returns the character relating to a supplied character set
@@ -7829,6 +7889,44 @@ func (fn *formulaFuncs) UPPER(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "UPPER requires 1 argument")
 	}
 	return newStringFormulaArg(strings.ToUpper(argsList.Front().Value.(formulaArg).String))
+}
+
+// VALUE function converts a text string into a numeric value. The syntax of
+// the function is:
+//
+//    VALUE(text)
+//
+func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VALUE requires 1 argument")
+	}
+	text := strings.ReplaceAll(argsList.Front().Value.(formulaArg).Value(), ",", "")
+	percent := 1.0
+	if strings.HasSuffix(text, "%") {
+		percent, text = 0.01, strings.TrimSuffix(text, "%")
+	}
+	decimal := big.Float{}
+	if _, ok := decimal.SetString(text); ok {
+		value, _ := decimal.Float64()
+		return newNumberFormulaArg(value * percent)
+	}
+	dateValue, timeValue, errTime, errDate := 0.0, 0.0, false, false
+	if !isDateOnlyFmt(text) {
+		h, m, s, _, _, err := strToTime(text)
+		errTime = err.Type == ArgError
+		if !errTime {
+			timeValue = (float64(h)*3600 + float64(m)*60 + s) / 86400
+		}
+	}
+	y, m, d, _, err := strToDate(text)
+	errDate = err.Type == ArgError
+	if !errDate {
+		dateValue = daysBetween(excelMinTime1900.Unix(), makeDate(y, time.Month(m), d)) + 1
+	}
+	if errTime && errDate {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newNumberFormulaArg(dateValue + timeValue)
 }
 
 // Conditional Functions
