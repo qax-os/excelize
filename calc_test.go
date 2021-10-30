@@ -763,6 +763,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTBLANK(1)":        "0",
 		"=COUNTBLANK(B1:C1)":    "1",
 		"=COUNTBLANK(C1)":       "1",
+		// DEVSQ
+		"=DEVSQ(1,3,5,2,9,7)": "47.5",
+		"=DEVSQ(A1:D2)":       "10",
 		// FISHER
 		"=FISHER(-0.9)":   "-1.47221948958322",
 		"=FISHER(-0.25)":  "-0.255412811882995",
@@ -780,6 +783,8 @@ func TestCalcCellValue(t *testing.T) {
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.45373657084244",
 		"=GAMMALN(INT(1))": "0",
+		// GEOMEAN
+		"=GEOMEAN(2.5,3,0.5,1,3)": "1.6226711115996",
 		// HARMEAN
 		"=HARMEAN(2.5,3,0.5,1,3)":               "1.22950819672131",
 		"=HARMEAN(\"2.5\",3,0.5,1,INT(3),\"\")": "1.22950819672131",
@@ -1977,6 +1982,9 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
+		// DEVSQ
+		"=DEVSQ()":      "DEVSQ requires at least 1 numeric argument",
+		"=DEVSQ(D1:D2)": "#N/A",
 		// FISHER
 		"=FISHER()":         "FISHER requires 1 numeric argument",
 		"=FISHER(2)":        "#N/A",
@@ -1995,6 +2003,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(0)":      "#N/A",
 		"=GAMMALN(INT(0))": "#N/A",
+		// GEOMEAN
+		"=GEOMEAN()":      "GEOMEAN requires at least 1 numeric argument",
+		"=GEOMEAN(0)":     "#NUM!",
+		"=GEOMEAN(D1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
 		// HARMEAN
 		"=HARMEAN()":   "HARMEAN requires at least 1 argument",
 		"=HARMEAN(-1)": "#N/A",

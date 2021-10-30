@@ -365,6 +365,7 @@ type formulaFuncs struct {
 //    DEC2OCT
 //    DECIMAL
 //    DEGREES
+//    DEVSQ
 //    DISC
 //    DOLLARDE
 //    DOLLARFR
@@ -389,6 +390,7 @@ type formulaFuncs struct {
 //    GAMMA
 //    GAMMALN
 //    GCD
+//    GEOMEAN
 //    HARMEAN
 //    HEX2BIN
 //    HEX2DEC
@@ -4924,6 +4926,36 @@ func (fn *formulaFuncs) COUNTBLANK(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(count))
 }
 
+// DEVSQ function calculates the sum of the squared deviations from the sample
+// mean. The syntax of the function is:
+//
+//    DEVSQ(number1,[number2],...)
+//
+func (fn *formulaFuncs) DEVSQ(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DEVSQ requires at least 1 numeric argument")
+	}
+	avg, count, result := fn.AVERAGE(argsList), -1, 0.0
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		for _, number := range arg.Value.(formulaArg).ToList() {
+			num := number.ToNumber()
+			if num.Type != ArgNumber {
+				continue
+			}
+			count++
+			if count == 0 {
+				result = math.Pow(num.Number-avg.Number, 2)
+				continue
+			}
+			result += math.Pow(num.Number-avg.Number, 2)
+		}
+	}
+	if count == -1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(result)
+}
+
 // FISHER function calculates the Fisher Transformation for a supplied value.
 // The syntax of the function is:
 //
@@ -5028,6 +5060,27 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+}
+
+// GEOMEAN function calculates the geometric mean of a supplied set of values.
+// The syntax of the function is:
+//
+//    GEOMEAN(number1,[number2],...)
+//
+func (fn *formulaFuncs) GEOMEAN(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GEOMEAN requires at least 1 numeric argument")
+	}
+	product := fn.PRODUCT(argsList)
+	if product.Type != ArgNumber {
+		return product
+	}
+	count := fn.COUNT(argsList)
+	min := fn.MIN(argsList)
+	if product.Number > 0 && min.Number > 0 {
+		return newNumberFormulaArg(math.Pow(product.Number, (1 / count.Number)))
+	}
+	return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 }
 
 // HARMEAN function calculates the harmonic mean of a supplied set of values.
