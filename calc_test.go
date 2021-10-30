@@ -863,6 +863,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=QUARTILE(A1:A4,2)": "1.5",
 		// QUARTILE.INC
 		"=QUARTILE.INC(A1:A4,0)": "0",
+		// RANK
+		"=RANK(1,A1:B5)":   "5",
+		"=RANK(1,A1:B5,0)": "5",
+		"=RANK(1,A1:B5,1)": "2",
+		// RANK.EQ
+		"=RANK.EQ(1,A1:B5)":   "5",
+		"=RANK.EQ(1,A1:B5,0)": "5",
+		"=RANK.EQ(1,A1:B5,1)": "2",
 		// SKEW
 		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
 		"=SKEW(A1:B2)":     "0",
@@ -1381,6 +1389,10 @@ func TestCalcCellValue(t *testing.T) {
 		// PRICEDISC
 		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100)":   "90",
 		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100,3)": "90",
+		// PV
+		"=PV(0,60,1000)":         "-60000",
+		"=PV(5%/12,60,1000)":     "-52990.70632392748",
+		"=PV(10%/4,16,2000,0,1)": "-26762.75545288113",
 		// RRI
 		"=RRI(10,10000,15000)": "0.0413797439924106",
 		// SLN
@@ -2056,6 +2068,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=QUARTILE(A1:A4,5)":    "#NUM!",
 		// QUARTILE.INC
 		"=QUARTILE.INC()": "QUARTILE.INC requires 2 arguments",
+		// RANK
+		"=RANK()":             "RANK requires at least 2 arguments",
+		"=RANK(1,A1:B5,0,0)":  "RANK requires at most 3 arguments",
+		"=RANK(-1,A1:B5)":     "#N/A",
+		"=RANK(\"\",A1:B5)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RANK(1,A1:B5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// RANK.EQ
+		"=RANK.EQ()":             "RANK.EQ requires at least 2 arguments",
+		"=RANK.EQ(1,A1:B5,0,0)":  "RANK.EQ requires at most 3 arguments",
+		"=RANK.EQ(-1,A1:B5)":     "#N/A",
+		"=RANK.EQ(\"\",A1:B5)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RANK.EQ(1,A1:B5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// SKEW
 		"=SKEW()":     "SKEW requires at least 1 argument",
 		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -2671,6 +2695,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",0,100)":       "PRICEDISC requires discount > 0",
 		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,0)":        "PRICEDISC requires redemption > 0",
 		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    "invalid basis",
+		// PV
+		"=PV()":                     "PV requires at least 3 arguments",
+		"=PV(10%/4,16,2000,0,1,0)":  "PV allows at most 5 arguments",
+		"=PV(\"\",16,2000,0,1)":     "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PV(10%/4,\"\",2000,0,1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PV(10%/4,16,\"\",0,1)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PV(10%/4,16,2000,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PV(10%/4,16,2000,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// RRI
 		"=RRI()":               "RRI requires 3 arguments",
 		"=RRI(\"\",\"\",\"\")": "#NUM!",

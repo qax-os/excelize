@@ -498,12 +498,15 @@ type formulaFuncs struct {
 //    PRICEDISC
 //    PRODUCT
 //    PROPER
+//    PV
 //    QUARTILE
 //    QUARTILE.INC
 //    QUOTIENT
 //    RADIANS
 //    RAND
 //    RANDBETWEEN
+//    RANK
+//    RANK.EQ
 //    REPLACE
 //    REPLACEB
 //    REPT
@@ -5700,6 +5703,63 @@ func (fn *formulaFuncs) QUARTILEdotINC(argsList *list.List) formulaArg {
 	return fn.QUARTILE(argsList)
 }
 
+// rank is an implementation of the formula functions RANK and RANK.EQ.
+func (fn *formulaFuncs) rank(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at most 3 arguments", name))
+	}
+	num := argsList.Front().Value.(formulaArg).ToNumber()
+	if num.Type != ArgNumber {
+		return num
+	}
+	arr := []float64{}
+	for _, arg := range argsList.Front().Next().Value.(formulaArg).ToList() {
+		n := arg.ToNumber()
+		if n.Type == ArgNumber {
+			arr = append(arr, n.Number)
+		}
+	}
+	sort.Float64s(arr)
+	order := newNumberFormulaArg(0)
+	if argsList.Len() == 3 {
+		if order = argsList.Back().Value.(formulaArg).ToNumber(); order.Type != ArgNumber {
+			return order
+		}
+	}
+	if order.Number == 0 {
+		sort.Sort(sort.Reverse(sort.Float64Slice(arr)))
+	}
+	for idx, n := range arr {
+		if num.Number == n {
+			return newNumberFormulaArg(float64(idx + 1))
+		}
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
+// RANK.EQ function returns the statistical rank of a given value, within a
+// supplied array of values. If there are duplicate values in the list, these
+// are given the same rank. The syntax of the function is:
+//
+//    RANK.EQ(number,ref,[order])
+//
+func (fn *formulaFuncs) RANKdotEQ(argsList *list.List) formulaArg {
+	return fn.rank("RANK.EQ", argsList)
+}
+
+// RANK function returns the statistical rank of a given value, within a
+// supplied array of values. If there are duplicate values in the list, these
+// are given the same rank. The syntax of the function is:
+//
+//    RANK(number,ref,[order])
+//
+func (fn *formulaFuncs) RANK(argsList *list.List) formulaArg {
+	return fn.rank("RANK", argsList)
+}
+
 // SKEW function calculates the skewness of the distribution of a supplied set
 // of values. The syntax of the function is:
 //
@@ -9861,6 +9921,51 @@ func (fn *formulaFuncs) PRICEDISC(argsList *list.List) formulaArg {
 		return frac
 	}
 	return newNumberFormulaArg(redemption.Number * (1 - discount.Number*frac.Number))
+}
+
+// PV function calculates the Present Value of an investment, based on a
+// series of future payments. The syntax of the function is:
+//
+//    PV(rate,nper,pmt,[fv],[type])
+//
+func (fn *formulaFuncs) PV(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PV requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PV allows at most 5 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	nper := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pmt := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pmt.Type != ArgNumber {
+		return pmt
+	}
+	fv := newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	t := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if t = argsList.Back().Value.(formulaArg).ToNumber(); t.Type != ArgNumber {
+			return t
+		}
+		if t.Number != 0 {
+			t.Number = 1
+		}
+	}
+	if rate.Number == 0 {
+		return newNumberFormulaArg(-pmt.Number*nper.Number - fv.Number)
+	}
+	return newNumberFormulaArg((((1-math.Pow(1+rate.Number, nper.Number))/rate.Number)*pmt.Number*(1+rate.Number*t.Number) - fv.Number) / math.Pow(1+rate.Number, nper.Number))
 }
 
 // RRI function calculates the equivalent interest rate for an investment with
