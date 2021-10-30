@@ -507,6 +507,8 @@ type formulaFuncs struct {
 //    RANDBETWEEN
 //    RANK
 //    RANK.EQ
+//    RATE
+//    RECEIVED
 //    REPLACE
 //    REPLACEB
 //    REPT
@@ -9966,6 +9968,119 @@ func (fn *formulaFuncs) PV(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(-pmt.Number*nper.Number - fv.Number)
 	}
 	return newNumberFormulaArg((((1-math.Pow(1+rate.Number, nper.Number))/rate.Number)*pmt.Number*(1+rate.Number*t.Number) - fv.Number) / math.Pow(1+rate.Number, nper.Number))
+}
+
+// RATE function calculates the interest rate required to pay off a specified
+// amount of a loan, or to reach a target amount on an investment, over a
+// given period. The syntax of the function is:
+//
+//    RATE(nper,pmt,pv,[fv],[type],[guess])
+//
+func (fn *formulaFuncs) RATE(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RATE requires at least 3 arguments")
+	}
+	if argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RATE allows at most 6 arguments")
+	}
+	nper := argsList.Front().Value.(formulaArg).ToNumber()
+	if nper.Type != ArgNumber {
+		return nper
+	}
+	pmt := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if pmt.Type != ArgNumber {
+		return pmt
+	}
+	pv := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if pv.Type != ArgNumber {
+		return pv
+	}
+	fv := newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fv = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); fv.Type != ArgNumber {
+			return fv
+		}
+	}
+	t := newNumberFormulaArg(0)
+	if argsList.Len() >= 5 {
+		if t = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); t.Type != ArgNumber {
+			return t
+		}
+		if t.Number != 0 {
+			t.Number = 1
+		}
+	}
+	guess := newNumberFormulaArg(0.1)
+	if argsList.Len() == 6 {
+		if guess = argsList.Back().Value.(formulaArg).ToNumber(); guess.Type != ArgNumber {
+			return guess
+		}
+	}
+	maxIter, iter, close, epsMax, rate := 100, 0, false, 1e-6, guess.Number
+	for iter < maxIter && !close {
+		t1 := math.Pow(rate+1, nper.Number)
+		t2 := math.Pow(rate+1, nper.Number-1)
+		rt := rate*t.Number + 1
+		p0 := pmt.Number * (t1 - 1)
+		f1 := fv.Number + t1*pv.Number + p0*rt/rate
+		f2 := nper.Number*t2*pv.Number - p0*rt/math.Pow(rate, 2)
+		f3 := (nper.Number*pmt.Number*t2*rt + p0*t.Number) / rate
+		delta := f1 / (f2 + f3)
+		if math.Abs(delta) < epsMax {
+			close = true
+		}
+		iter++
+		rate -= delta
+	}
+	return newNumberFormulaArg(rate)
+}
+
+// RECEIVED function calculates the amount received at maturity for a fully
+// invested security. The syntax of the function is:
+//
+//    RECEIVED(settlement,maturity,investment,discount,[basis])
+//
+func (fn *formulaFuncs) RECEIVED(argsList *list.List) formulaArg {
+	if argsList.Len() < 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RECEIVED requires at least 4 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "RECEIVED allows at most 5 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	investment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if investment.Type != ArgNumber {
+		return investment
+	}
+	discount := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if discount.Type != ArgNumber {
+		return discount
+	}
+	if discount.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "RECEIVED requires discount > 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 5 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	return newNumberFormulaArg(investment.Number / (1 - discount.Number*frac.Number))
 }
 
 // RRI function calculates the equivalent interest rate for an investment with
