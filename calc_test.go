@@ -1393,6 +1393,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=PV(0,60,1000)":         "-60000",
 		"=PV(5%/12,60,1000)":     "-52990.70632392748",
 		"=PV(10%/4,16,2000,0,1)": "-26762.75545288113",
+		// RATE
+		"=RATE(60,-1000,50000)":       "0.0061834131621292",
+		"=RATE(24,-800,0,20000,1)":    "0.00325084350160374",
+		"=RATE(48,-200,8000,3,1,0.5)": "0.0080412665831637",
+		// RECEIVED
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,4.5%)":   "1290.3225806451612",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,4.5%,0)": "1290.3225806451612",
 		// RRI
 		"=RRI(10,10000,15000)": "0.0413797439924106",
 		// SLN
@@ -2703,6 +2710,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=PV(10%/4,16,\"\",0,1)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PV(10%/4,16,2000,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PV(10%/4,16,2000,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// RATE
+		"=RATE()":                        "RATE requires at least 3 arguments",
+		"=RATE(48,-200,8000,3,1,0.5,0)":  "RATE allows at most 6 arguments",
+		"=RATE(\"\",-200,8000,3,1,0.5)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RATE(48,\"\",8000,3,1,0.5)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RATE(48,-200,\"\",3,1,0.5)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RATE(48,-200,8000,\"\",1,0.5)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RATE(48,-200,8000,3,\"\",0.5)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RATE(48,-200,8000,3,1,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// RECEIVED
+		"=RECEIVED()": "RECEIVED requires at least 4 arguments",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,4.5%,1,0)":  "RECEIVED allows at most 5 arguments",
+		"=RECEIVED(\"\",\"03/31/2016\",1000,4.5%,1)":              "#VALUE!",
+		"=RECEIVED(\"04/01/2011\",\"\",1000,4.5%,1)":              "#VALUE!",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",\"\",4.5%,1)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,\"\",1)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,4.5%,\"\")": "#NUM!",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,0)":         "RECEIVED requires discount > 0",
+		"=RECEIVED(\"04/01/2011\",\"03/31/2016\",1000,4.5%,5)":    "invalid basis",
 		// RRI
 		"=RRI()":               "RRI requires 3 arguments",
 		"=RRI(\"\",\"\",\"\")": "#NUM!",
