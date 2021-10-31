@@ -296,6 +296,7 @@ type formulaFuncs struct {
 // Supported formula functions:
 //
 //    ABS
+//    ACCRINT
 //    ACCRINTM
 //    ACOS
 //    ACOSH
@@ -439,6 +440,7 @@ type formulaFuncs struct {
 //    ISODD
 //    ISTEXT
 //    ISO.CEILING
+//    ISOWEEKNUM
 //    ISPMT
 //    KURT
 //    LARGE
@@ -7025,6 +7027,39 @@ func (fn *formulaFuncs) DAYS(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(end - start)
 }
 
+// ISOWEEKNUM function returns the ISO week number of a supplied date. The
+// syntax of the function is:
+//
+//    ISOWEEKNUM(date)
+//
+func (fn *formulaFuncs) ISOWEEKNUM(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISOWEEKNUM requires 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	weeknum := 0
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(date.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		_, weeknum = time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC).ISOWeek()
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		_, weeknum = timeFromExcelTime(num.Number, false).ISOWeek()
+	}
+	return newNumberFormulaArg(float64(weeknum))
+}
+
 // MONTH function returns the month of a date represented by a serial number.
 // The month is given as an integer, ranging from 1 (January) to 12
 // (December). The syntax of the function is:
@@ -7317,7 +7352,6 @@ func (fn *formulaFuncs) WEEKDAY(argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "WEEKDAY allows at most 2 arguments")
 	}
-
 	sn := argsList.Front().Value.(formulaArg)
 	num := sn.ToNumber()
 	weekday, returnType := 0, 1
@@ -8915,6 +8949,69 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 
 // Financial Functions
 
+// validateFrequency check the number of coupon payments per year if be equal to 1, 2 or 4.
+func validateFrequency(freq float64) bool {
+	return freq == 1 || freq == 2 || freq == 4
+}
+
+// ACCRINT function returns the accrued interest for a security that pays
+// periodic interest. The syntax of the function is:
+//
+//    ACCRINT(issue,first_interest,settlement,rate,par,frequency,[basis],[calc_method])
+//
+func (fn *formulaFuncs) ACCRINT(argsList *list.List) formulaArg {
+	if argsList.Len() < 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINT requires at least 6 arguments")
+	}
+	if argsList.Len() > 8 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINT allows at most 8 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	issue := fn.DATEVALUE(args)
+	if issue.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	fi := fn.DATEVALUE(args)
+	if fi.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	par := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber || par.Type != ArgNumber || frequency.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() >= 7 {
+		if basis = argsList.Front().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	cm := newBoolFormulaArg(true)
+	if argsList.Len() == 8 {
+		if cm = argsList.Back().Value.(formulaArg).ToBool(); cm.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	frac1 := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	if frac1.Type != ArgNumber {
+		return frac1
+	}
+	return newNumberFormulaArg(par.Number * rate.Number * frac1.Number)
+}
+
 // ACCRINTM function returns the accrued interest for a security that pays
 // interest at maturity. The syntax of the function is:
 //
@@ -10023,6 +10120,27 @@ func (fn *formulaFuncs) PV(argsList *list.List) formulaArg {
 	return newNumberFormulaArg((((1-math.Pow(1+rate.Number, nper.Number))/rate.Number)*pmt.Number*(1+rate.Number*t.Number) - fv.Number) / math.Pow(1+rate.Number, nper.Number))
 }
 
+// rate is an implementation of the formula function RATE.
+func (fn *formulaFuncs) rate(nper, pmt, pv, fv, t, guess formulaArg, argsList *list.List) formulaArg {
+	maxIter, iter, close, epsMax, rate := 100, 0, false, 1e-6, guess.Number
+	for iter < maxIter && !close {
+		t1 := math.Pow(rate+1, nper.Number)
+		t2 := math.Pow(rate+1, nper.Number-1)
+		rt := rate*t.Number + 1
+		p0 := pmt.Number * (t1 - 1)
+		f1 := fv.Number + t1*pv.Number + p0*rt/rate
+		f2 := nper.Number*t2*pv.Number - p0*rt/math.Pow(rate, 2)
+		f3 := (nper.Number*pmt.Number*t2*rt + p0*t.Number) / rate
+		delta := f1 / (f2 + f3)
+		if math.Abs(delta) < epsMax {
+			close = true
+		}
+		iter++
+		rate -= delta
+	}
+	return newNumberFormulaArg(rate)
+}
+
 // RATE function calculates the interest rate required to pay off a specified
 // amount of a loan, or to reach a target amount on an investment, over a
 // given period. The syntax of the function is:
@@ -10069,23 +10187,7 @@ func (fn *formulaFuncs) RATE(argsList *list.List) formulaArg {
 			return guess
 		}
 	}
-	maxIter, iter, close, epsMax, rate := 100, 0, false, 1e-6, guess.Number
-	for iter < maxIter && !close {
-		t1 := math.Pow(rate+1, nper.Number)
-		t2 := math.Pow(rate+1, nper.Number-1)
-		rt := rate*t.Number + 1
-		p0 := pmt.Number * (t1 - 1)
-		f1 := fv.Number + t1*pv.Number + p0*rt/rate
-		f2 := nper.Number*t2*pv.Number - p0*rt/math.Pow(rate, 2)
-		f3 := (nper.Number*pmt.Number*t2*rt + p0*t.Number) / rate
-		delta := f1 / (f2 + f3)
-		if math.Abs(delta) < epsMax {
-			close = true
-		}
-		iter++
-		rate -= delta
-	}
-	return newNumberFormulaArg(rate)
+	return fn.rate(nper, pmt, pv, fv, t, guess, argsList)
 }
 
 // RECEIVED function calculates the amount received at maturity for a fully

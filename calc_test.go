@@ -1028,6 +1028,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(2,1)":                           "1",
 		"=DAYS(INT(2),INT(1))":                 "1",
 		"=DAYS(\"02/02/2015\",\"01/01/2015\")": "32",
+		// ISOWEEKNUM
+		"=ISOWEEKNUM(42370)":          "53",
+		"=ISOWEEKNUM(\"42370\")":      "53",
+		"=ISOWEEKNUM(\"01/01/2005\")": "53",
+		"=ISOWEEKNUM(\"02/02/2005\")": "5",
 		// MONTH
 		"=MONTH(42171)":           "6",
 		"=MONTH(\"31-May-2015\")": "5",
@@ -1315,6 +1320,9 @@ func TestCalcCellValue(t *testing.T) {
 		// ENCODEURL
 		"=ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
 		// Financial Functions
+		// ACCRINT
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,0,TRUE)":  "1600",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,0,FALSE)": "1600",
 		// ACCRINTM
 		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,10000)":   "800",
 		"=ACCRINTM(\"01/01/2012\",\"12/31/2012\",8%,10000,3)": "800",
@@ -2262,6 +2270,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(0,\"\")": "#VALUE!",
 		"=DAYS(NA(),0)": "#VALUE!",
 		"=DAYS(0,NA())": "#VALUE!",
+		// ISOWEEKNUM
+		"=ISOWEEKNUM()":                    "ISOWEEKNUM requires 1 argument",
+		"=ISOWEEKNUM(\"\")":                "#VALUE!",
+		"=ISOWEEKNUM(\"January 25, 100\")": "#VALUE!",
+		"=ISOWEEKNUM(-1)":                  "#NUM!",
 		// MONTH
 		"=MONTH()":                    "MONTH requires exactly 1 argument",
 		"=MONTH(0,0)":                 "MONTH requires exactly 1 argument",
@@ -2505,6 +2518,19 @@ func TestCalcCellValue(t *testing.T) {
 		// ENCODEURL
 		"=ENCODEURL()": "ENCODEURL requires 1 argument",
 		// Financial Functions
+		// ACCRINT
+		"=ACCRINT()": "ACCRINT requires at least 6 arguments",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,1,FALSE,0)":  "ACCRINT allows at most 8 arguments",
+		"=ACCRINT(\"\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,1,FALSE)":              "#VALUE!",
+		"=ACCRINT(\"01/01/2012\",\"\",\"12/31/2013\",8%,10000,4,1,FALSE)":              "#VALUE!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"\",8%,10000,4,1,FALSE)":              "#VALUE!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",\"\",10000,4,1,FALSE)":  "#NUM!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,\"\",4,1,FALSE)":     "#NUM!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,3)":            "#NUM!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,\"\",1,FALSE)": "#NUM!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,\"\",FALSE)": "#NUM!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,1,\"\")":     "#VALUE!",
+		"=ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,5,FALSE)":    "invalid basis",
 		// ACCRINTM
 		"=ACCRINTM()": "ACCRINTM requires 4 or 5 arguments",
 		"=ACCRINTM(\"\",\"01/01/2012\",8%,10000)":                "#VALUE!",
