@@ -366,6 +366,7 @@ type formulaFuncs struct {
 //    DEC2OCT
 //    DECIMAL
 //    DEGREES
+//    DELTA
 //    DEVSQ
 //    DISC
 //    DOLLARDE
@@ -392,6 +393,7 @@ type formulaFuncs struct {
 //    GAMMALN
 //    GCD
 //    GEOMEAN
+//    GESTEP
 //    HARMEAN
 //    HEX2BIN
 //    HEX2DEC
@@ -1973,6 +1975,57 @@ func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(strings.ToUpper(binary[len(binary)-10:]))
 	}
 	return newStringFormulaArg(strings.ToUpper(binary))
+}
+
+// DELTA function tests two numbers for equality and returns the Kronecker
+// Delta. i.e. the function returns 1 if the two supplied numbers are equal
+// and 0 otherwise. The syntax of the function is:
+//
+//    DELTA(number1,[number2])
+//
+func (fn *formulaFuncs) DELTA(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DELTA requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DELTA allows at most 2 arguments")
+	}
+	number1 := argsList.Front().Value.(formulaArg).ToNumber()
+	if number1.Type != ArgNumber {
+		return number1
+	}
+	number2 := newNumberFormulaArg(0)
+	if argsList.Len() == 2 {
+		if number2 = argsList.Back().Value.(formulaArg).ToNumber(); number2.Type != ArgNumber {
+			return number2
+		}
+	}
+	return newBoolFormulaArg(number1.Number == number2.Number).ToNumber()
+}
+
+// GESTEP unction tests whether a supplied number is greater than a supplied
+// step size and returns. The syntax of the function is:
+//
+//    GESTEP(number,[step])
+//
+func (fn *formulaFuncs) GESTEP(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GESTEP requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GESTEP allows at most 2 arguments")
+	}
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type != ArgNumber {
+		return number
+	}
+	step := newNumberFormulaArg(0)
+	if argsList.Len() == 2 {
+		if step = argsList.Back().Value.(formulaArg).ToNumber(); step.Type != ArgNumber {
+			return step
+		}
+	}
+	return newBoolFormulaArg(number.Number >= step.Number).ToNumber()
 }
 
 // HEX2BIN function converts a Hexadecimal (Base 16) number into a Binary

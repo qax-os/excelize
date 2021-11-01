@@ -137,6 +137,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=DEC2OCT(8,10)": "0000000010",
 		"=DEC2OCT(-8)":   "7777777770",
 		"=DEC2OCT(237)":  "355",
+		// DELTA
+		"=DELTA(5,4)":       "0",
+		"=DELTA(1.00001,1)": "0",
+		"=DELTA(1.23,1.23)": "1",
+		"=DELTA(1)":         "0",
+		"=DELTA(0)":         "1",
+		// GESTEP
+		"=GESTEP(1.2,0.001)":  "1",
+		"=GESTEP(0.05,0.05)":  "1",
+		"=GESTEP(-0.00001,0)": "0",
+		"=GESTEP(-0.00001)":   "0",
 		// HEX2BIN
 		"=HEX2BIN(\"2\")":          "10",
 		"=HEX2BIN(\"0000000001\")": "1",
@@ -1562,6 +1573,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=DEC2OCT(-536870912 ,10)": "#NUM!",
 		"=DEC2OCT(1,-1)":           "#NUM!",
 		"=DEC2OCT(8,1)":            "#NUM!",
+		// DELTA
+		"=DELTA()":       "DELTA requires at least 1 argument",
+		"=DELTA(0,0,0)":  "DELTA allows at most 2 arguments",
+		"=DELTA(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DELTA(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// GESTEP
+		"=GESTEP()":       "GESTEP requires at least 1 argument",
+		"=GESTEP(0,0,0)":  "GESTEP allows at most 2 arguments",
+		"=GESTEP(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GESTEP(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// HEX2BIN
 		"=HEX2BIN()":        "HEX2BIN requires at least 1 argument",
 		"=HEX2BIN(1,1,1)":   "HEX2BIN allows at most 2 arguments",
