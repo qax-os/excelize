@@ -373,6 +373,10 @@ type formulaFuncs struct {
 //    DOLLARFR
 //    EFFECT
 //    ENCODEURL
+//    ERF
+//    ERF.PRECISE
+//    ERFC
+//    ERFC.PRECISE
 //    EVEN
 //    EXACT
 //    EXP
@@ -2001,6 +2005,80 @@ func (fn *formulaFuncs) DELTA(argsList *list.List) formulaArg {
 		}
 	}
 	return newBoolFormulaArg(number1.Number == number2.Number).ToNumber()
+}
+
+// ERF function calculates the Error Function, integrated between two supplied
+// limits. The syntax of the function is:
+//
+//    ERF(lower_limit,[upper_limit])
+//
+func (fn *formulaFuncs) ERF(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERF requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERF allows at most 2 arguments")
+	}
+	lower := argsList.Front().Value.(formulaArg).ToNumber()
+	if lower.Type != ArgNumber {
+		return lower
+	}
+	if argsList.Len() == 2 {
+		upper := argsList.Back().Value.(formulaArg).ToNumber()
+		if upper.Type != ArgNumber {
+			return upper
+		}
+		return newNumberFormulaArg(math.Erf(upper.Number) - math.Erf(lower.Number))
+	}
+	return newNumberFormulaArg(math.Erf(lower.Number))
+}
+
+// ERFdotPRECISE function calculates the Error Function, integrated between a
+// supplied lower or upper limit and 0. The syntax of the function is:
+//
+//    ERF.PRECISE(x)
+//
+func (fn *formulaFuncs) ERFdotPRECISE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERF.PRECISE requires 1 argument")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	return newNumberFormulaArg(math.Erf(x.Number))
+}
+
+// erfc is an implementation of the formula functions ERFC and ERFC.PRECISE.
+func (fn *formulaFuncs) erfc(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 1 argument", name))
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	return newNumberFormulaArg(math.Erfc(x.Number))
+}
+
+// ERFC function calculates the Complementary Error Function, integrated
+// between a supplied lower limit and infinity. The syntax of the function
+// is:
+//
+//    ERFC(x)
+//
+func (fn *formulaFuncs) ERFC(argsList *list.List) formulaArg {
+	return fn.erfc("ERFC", argsList)
+}
+
+// ERFC.PRECISE function calculates the Complementary Error Function,
+// integrated between a supplied lower limit and infinity. The syntax of the
+// function is:
+//
+//    ERFC(x)
+//
+func (fn *formulaFuncs) ERFCdotPRECISE(argsList *list.List) formulaArg {
+	return fn.erfc("ERFC.PRECISE", argsList)
 }
 
 // GESTEP unction tests whether a supplied number is greater than a supplied

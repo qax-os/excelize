@@ -143,6 +143,21 @@ func TestCalcCellValue(t *testing.T) {
 		"=DELTA(1.23,1.23)": "1",
 		"=DELTA(1)":         "0",
 		"=DELTA(0)":         "1",
+		// ERF
+		"=ERF(1.5)":   "0.966105146475311",
+		"=ERF(0,1.5)": "0.966105146475311",
+		"=ERF(1,2)":   "0.152621472069238",
+		// ERF.PRECISE
+		"=ERF.PRECISE(-1)":  "-0.842700792949715",
+		"=ERF.PRECISE(1.5)": "0.966105146475311",
+		// ERFC
+		"=ERFC(0)":   "1",
+		"=ERFC(0.5)": "0.479500122186953",
+		"=ERFC(-1)":  "1.84270079294971",
+		// ERFC.PRECISE
+		"=ERFC.PRECISE(0)":   "1",
+		"=ERFC.PRECISE(0.5)": "0.479500122186953",
+		"=ERFC.PRECISE(-1)":  "1.84270079294971",
 		// GESTEP
 		"=GESTEP(1.2,0.001)":  "1",
 		"=GESTEP(0.05,0.05)":  "1",
@@ -1578,6 +1593,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=DELTA(0,0,0)":  "DELTA allows at most 2 arguments",
 		"=DELTA(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DELTA(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// ERF
+		"=ERF()":       "ERF requires at least 1 argument",
+		"=ERF(0,0,0)":  "ERF allows at most 2 arguments",
+		"=ERF(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=ERF(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// ERF.PRECISE
+		"=ERF.PRECISE()":     "ERF.PRECISE requires 1 argument",
+		"=ERF.PRECISE(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// ERFC
+		"=ERFC()":     "ERFC requires 1 argument",
+		"=ERFC(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// ERFC.PRECISE
+		"=ERFC.PRECISE()":     "ERFC.PRECISE requires 1 argument",
+		"=ERFC.PRECISE(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// GESTEP
 		"=GESTEP()":       "GESTEP requires at least 1 argument",
 		"=GESTEP(0,0,0)":  "GESTEP allows at most 2 arguments",
