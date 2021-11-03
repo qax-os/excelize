@@ -911,6 +911,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1:B5,2)": "1",
 		"=SMALL(A1,1)":    "1",
 		"=SMALL(A1:F2,1)": "1",
+		// STANDARDIZE
+		"=STANDARDIZE( 5.5, 5, 2 )":   "0.25",
+		"=STANDARDIZE( 12, 15, 1.5 )": "-2",
+		"=STANDARDIZE( -2, 0, 5 )":    "-0.4",
+		// STDEVP
+		"=STDEVP(A1:B2,6,-1)": "2.40947204913349",
+		// STDEV.P
+		"=STDEV.P(A1:B2,6,-1)": "2.40947204913349",
 		// TRIMMEAN
 		"=TRIMMEAN(A1:B4,10%)": "2.5",
 		"=TRIMMEAN(A1:B4,70%)": "2.5",
@@ -2166,6 +2174,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1:A5,0)":    "k should be > 0",
 		"=SMALL(A1:A5,6)":    "k should be <= length of array",
 		"=SMALL(A1:A5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// STANDARDIZE
+		"=STANDARDIZE()":         "STANDARDIZE requires 3 arguments",
+		"=STANDARDIZE(\"\",0,5)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=STANDARDIZE(0,\"\",5)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=STANDARDIZE(0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=STANDARDIZE(0,0,0)":    "#N/A",
+		// STDEVP
+		"=STDEVP()":     "STDEVP requires at least 1 argument",
+		"=STDEVP(\"\")": "#DIV/0!",
+		// STDEV.P
+		"=STDEV.P()":     "STDEV.P requires at least 1 argument",
+		"=STDEV.P(\"\")": "#DIV/0!",
 		// TRIMMEAN
 		"=TRIMMEAN()":        "TRIMMEAN requires 2 arguments",
 		"=TRIMMEAN(A1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",

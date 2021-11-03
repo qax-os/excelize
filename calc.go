@@ -542,9 +542,12 @@ type formulaFuncs struct {
 //    SMALL
 //    SQRT
 //    SQRTPI
+//    STANDARDIZE
 //    STDEV
+//    STDEV.P
 //    STDEV.S
 //    STDEVA
+//    STDEVP
 //    SUBSTITUTE
 //    SUM
 //    SUMIF
@@ -5992,6 +5995,64 @@ func (fn *formulaFuncs) SKEW(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) SMALL(argsList *list.List) formulaArg {
 	return fn.kth("SMALL", argsList)
+}
+
+// STANDARDIZE function returns a normalized value of a distribution that is
+// characterized by a supplied mean and standard deviation. The syntax of the
+// function is:
+//
+//    STANDARDIZE(x,mean,standard_dev)
+//
+func (fn *formulaFuncs) STANDARDIZE(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "STANDARDIZE requires 3 arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	mean := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if mean.Type != ArgNumber {
+		return mean
+	}
+	stdDev := argsList.Back().Value.(formulaArg).ToNumber()
+	if stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg((x.Number - mean.Number) / stdDev.Number)
+}
+
+// stdevp is an implementation of the formula functions STDEVP and STDEV.P.
+func (fn *formulaFuncs) stdevp(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	varp := fn.VARP(argsList)
+	if varp.Type != ArgNumber {
+		return varp
+	}
+	return newNumberFormulaArg(math.Sqrt(varp.Number))
+}
+
+// STDEVP function calculates the standard deviation of a supplied set of
+// values. The syntax of the function is:
+//
+//    STDEVP(number1,[number2],...)
+//
+func (fn *formulaFuncs) STDEVP(argsList *list.List) formulaArg {
+	return fn.stdevp("STDEVP", argsList)
+}
+
+// STDEVdotP function calculates the standard deviation of a supplied set of
+// values.
+//
+//    STDEV.P( number1, [number2], ... )
+//
+func (fn *formulaFuncs) STDEVdotP(argsList *list.List) formulaArg {
+	return fn.stdevp("STDEV.P", argsList)
 }
 
 // TRIMMEAN function calculates the trimmed mean (or truncated mean) of a
