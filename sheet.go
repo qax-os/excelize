@@ -325,6 +325,7 @@ func (f *File) GetActiveSheetIndex() (index int) {
 		for idx, sheet := range wb.Sheets.Sheet {
 			if sheet.SheetID == sheetID {
 				index = idx
+				return
 			}
 		}
 	}
@@ -377,6 +378,7 @@ func (f *File) GetSheetName(index int) (name string) {
 	for idx, sheet := range f.GetSheetList() {
 		if idx == index {
 			name = sheet
+			return
 		}
 	}
 	return
@@ -386,13 +388,12 @@ func (f *File) GetSheetName(index int) (name string) {
 // given sheet name. If given worksheet name is invalid, will return an
 // integer type value -1.
 func (f *File) getSheetID(name string) int {
-	var ID = -1
 	for sheetID, sheet := range f.GetSheetMap() {
 		if sheet == trimSheetName(name) {
-			ID = sheetID
+			return sheetID
 		}
 	}
-	return ID
+	return -1
 }
 
 // GetSheetIndex provides a function to get a sheet index of the workbook by
@@ -400,13 +401,12 @@ func (f *File) getSheetID(name string) int {
 // sheet name is invalid or sheet doesn't exist, it will return an integer
 // type value -1.
 func (f *File) GetSheetIndex(name string) int {
-	var idx = -1
 	for index, sheet := range f.GetSheetList() {
 		if strings.EqualFold(sheet, trimSheetName(name)) {
-			idx = index
+			return index
 		}
 	}
-	return idx
+	return -1
 }
 
 // GetSheetMap provides a function to get worksheets, chart sheets, dialog
