@@ -912,9 +912,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=SMALL(A1,1)":    "1",
 		"=SMALL(A1:F2,1)": "1",
 		// STANDARDIZE
-		"=STANDARDIZE( 5.5, 5, 2 )":   "0.25",
-		"=STANDARDIZE( 12, 15, 1.5 )": "-2",
-		"=STANDARDIZE( -2, 0, 5 )":    "-0.4",
+		"=STANDARDIZE(5.5,5,2)":   "0.25",
+		"=STANDARDIZE(12,15,1.5)": "-2",
+		"=STANDARDIZE(-2,0,5)":    "-0.4",
 		// STDEVP
 		"=STDEVP(A1:B2,6,-1)": "2.40947204913349",
 		// STDEV.P
@@ -922,10 +922,20 @@ func TestCalcCellValue(t *testing.T) {
 		// TRIMMEAN
 		"=TRIMMEAN(A1:B4,10%)": "2.5",
 		"=TRIMMEAN(A1:B4,70%)": "2.5",
+		// VAR
+		"=VAR(1,3,5,0,C1)":      "4.916666666666667",
+		"=VAR(1,3,5,0,C1,TRUE)": "4",
+		// VARA
+		"=VARA(1,3,5,0,C1)":      "4.7",
+		"=VARA(1,3,5,0,C1,TRUE)": "3.86666666666667",
 		// VARP
-		"=VARP(A1:A5)": "1.25",
+		"=VARP(A1:A5)":           "1.25",
+		"=VARP(1,3,5,0,C1,TRUE)": "3.2",
 		// VAR.P
 		"=VAR.P(A1:A5)": "1.25",
+		// VARPA
+		"=VARPA(1,3,5,0,C1)":      "3.76",
+		"=VARPA(1,3,5,0,C1,TRUE)": "3.22222222222222",
 		// WEIBULL
 		"=WEIBULL(1,3,1,FALSE)":  "1.103638323514327",
 		"=WEIBULL(2,5,1.5,TRUE)": "0.985212776817482",
@@ -2191,12 +2201,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=TRIMMEAN(A1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=TRIMMEAN(A1,1)":    "#NUM!",
 		"=TRIMMEAN(A1,-1)":   "#NUM!",
+		// VAR
+		"=VAR()": "VAR requires at least 1 argument",
+		// VARA
+		"=VARA()": "VARA requires at least 1 argument",
 		// VARP
 		"=VARP()":     "VARP requires at least 1 argument",
 		"=VARP(\"\")": "#DIV/0!",
 		// VAR.P
 		"=VAR.P()":     "VAR.P requires at least 1 argument",
 		"=VAR.P(\"\")": "#DIV/0!",
+		// VARPA
+		"=VARPA()": "VARPA requires at least 1 argument",
 		// WEIBULL
 		"=WEIBULL()":               "WEIBULL requires 4 arguments",
 		"=WEIBULL(\"\",1,1,FALSE)": "#VALUE!",

@@ -572,8 +572,11 @@ type formulaFuncs struct {
 //    UNICODE
 //    UPPER
 //    VALUE
+//    VAR
 //    VAR.P
+//    VARA
 //    VARP
+//    VARPA
 //    VLOOKUP
 //    WEEKDAY
 //    WEIBULL
@@ -6098,31 +6101,71 @@ func (fn *formulaFuncs) TRIMMEAN(argsList *list.List) formulaArg {
 	return fn.AVERAGE(args)
 }
 
+// vars is an implementation of the formula functions VAR, VARA, VARP, VAR.P
+// and VARPA.
+func (fn *formulaFuncs) vars(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	summerA, summerB, count := 0.0, 0.0, 0.0
+	minimum := 0.0
+	if name == "VAR" || name == "VARA" {
+		minimum = 1.0
+	}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		for _, token := range arg.Value.(formulaArg).ToList() {
+			num := token.ToNumber()
+			if token.Value() != "TRUE" && num.Type == ArgNumber {
+				summerA += (num.Number * num.Number)
+				summerB += num.Number
+				count++
+				continue
+			}
+			num = token.ToBool()
+			if num.Type == ArgNumber {
+				summerA += (num.Number * num.Number)
+				summerB += num.Number
+				count++
+				continue
+			}
+			if name == "VARA" || name == "VARPA" {
+				count++
+			}
+		}
+	}
+	if count > minimum {
+		summerA *= count
+		summerB *= summerB
+		return newNumberFormulaArg((summerA - summerB) / (count * (count - minimum)))
+	}
+	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// VAR function returns the sample variance of a supplied set of values. The
+// syntax of the function is:
+//
+//    VAR(number1,[number2],...)
+//
+func (fn *formulaFuncs) VAR(argsList *list.List) formulaArg {
+	return fn.vars("VAR", argsList)
+}
+
+// VARA function calculates the sample variance of a supplied set of values.
+// The syntax of the function is:
+//
+//    VARA(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARA(argsList *list.List) formulaArg {
+	return fn.vars("VARA", argsList)
+}
+
 // VARP function returns the Variance of a given set of values. The syntax of
 // the function is:
 //
 //    VARP(number1,[number2],...)
 //
 func (fn *formulaFuncs) VARP(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VARP requires at least 1 argument")
-	}
-	summerA, summerB, count := 0.0, 0.0, 0.0
-	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		for _, token := range arg.Value.(formulaArg).ToList() {
-			if num := token.ToNumber(); num.Type == ArgNumber {
-				summerA += (num.Number * num.Number)
-				summerB += num.Number
-				count++
-			}
-		}
-	}
-	if count > 0 {
-		summerA *= count
-		summerB *= summerB
-		return newNumberFormulaArg((summerA - summerB) / (count * count))
-	}
-	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	return fn.vars("VARP", argsList)
 }
 
 // VARdotP function returns the Variance of a given set of values. The syntax
@@ -6131,10 +6174,16 @@ func (fn *formulaFuncs) VARP(argsList *list.List) formulaArg {
 //    VAR.P(number1,[number2],...)
 //
 func (fn *formulaFuncs) VARdotP(argsList *list.List) formulaArg {
-	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "VAR.P requires at least 1 argument")
-	}
-	return fn.VARP(argsList)
+	return fn.vars("VAR.P", argsList)
+}
+
+// VARPA function returns the Variance of a given set of values. The syntax of
+// the function is:
+//
+//    VARPA(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARPA(argsList *list.List) formulaArg {
+	return fn.vars("VARPA", argsList)
 }
 
 // WEIBULL function calculates the Weibull Probability Density Function or the
