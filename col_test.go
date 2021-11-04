@@ -59,39 +59,37 @@ func TestCols(t *testing.T) {
 }
 
 func TestColumnsIterator(t *testing.T) {
-	const (
-		sheet2         = "Sheet2"
-		expectedNumCol = 9
-	)
-
+	sheetName, colCount, expectedNumCol := "Sheet2", 0, 9
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	require.NoError(t, err)
 
-	cols, err := f.Cols(sheet2)
+	cols, err := f.Cols(sheetName)
 	require.NoError(t, err)
 
-	var colCount int
 	for cols.Next() {
 		colCount++
+		assert.Equal(t, colCount, cols.CurrentCol())
+		assert.Equal(t, expectedNumCol, cols.TotalCols())
 		require.True(t, colCount <= expectedNumCol, "colCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumCol, colCount)
 	assert.NoError(t, f.Close())
 
-	f = NewFile()
+	f, sheetName, colCount, expectedNumCol = NewFile(), "Sheet1", 0, 4
 	cells := []string{"C2", "C3", "C4", "D2", "D3", "D4"}
 	for _, cell := range cells {
-		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
+		assert.NoError(t, f.SetCellValue(sheetName, cell, 1))
 	}
-	cols, err = f.Cols("Sheet1")
+	cols, err = f.Cols(sheetName)
 	require.NoError(t, err)
 
-	colCount = 0
 	for cols.Next() {
 		colCount++
+		assert.Equal(t, colCount, cols.CurrentCol())
+		assert.Equal(t, expectedNumCol, cols.TotalCols())
 		require.True(t, colCount <= 4, "colCount is greater than expected")
 	}
-	assert.Equal(t, 4, colCount)
+	assert.Equal(t, expectedNumCol, colCount)
 }
 
 func TestColsError(t *testing.T) {
@@ -130,8 +128,8 @@ func TestGetColsError(t *testing.T) {
 	f = NewFile()
 	cols, err := f.Cols("Sheet1")
 	assert.NoError(t, err)
-	cols.totalRow = 2
-	cols.totalCol = 2
+	cols.totalRows = 2
+	cols.totalCols = 2
 	cols.curCol = 1
 	cols.sheetXML = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`)
 	_, err = cols.Rows()
