@@ -67,19 +67,20 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 
 // Rows defines an iterator to a sheet.
 type Rows struct {
-	err                        error
-	curRow, totalRow, stashRow int
-	rawCellValue               bool
-	sheet                      string
-	f                          *File
-	tempFile                   *os.File
-	decoder                    *xml.Decoder
+	TotalRow         int
+	err              error
+	curRow, stashRow int
+	rawCellValue     bool
+	sheet            string
+	f                *File
+	tempFile         *os.File
+	decoder          *xml.Decoder
 }
 
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
 	rows.curRow++
-	return rows.curRow <= rows.totalRow
+	return rows.curRow <= rows.TotalRow
 }
 
 // Error will return the error when the error occurs.
@@ -255,7 +256,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 						}
 					}
 				}
-				rows.totalRow = row
+				rows.TotalRow = row
 			}
 		case xml.EndElement:
 			if xmlElement.Name.Local == "sheetData" {
