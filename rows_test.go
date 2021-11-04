@@ -65,18 +65,17 @@ func TestRows(t *testing.T) {
 }
 
 func TestRowsIterator(t *testing.T) {
-	const (
-		sheet2         = "Sheet2"
-		expectedNumRow = 11
-	)
+	sheetName, rowCount, expectedNumRow := "Sheet2", 0, 11
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	require.NoError(t, err)
 
-	rows, err := f.Rows(sheet2)
+	rows, err := f.Rows(sheetName)
 	require.NoError(t, err)
-	var rowCount int
+
 	for rows.Next() {
 		rowCount++
+		assert.Equal(t, rowCount, rows.CurrentRow())
+		assert.Equal(t, expectedNumRow, rows.TotalRows())
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
@@ -84,19 +83,18 @@ func TestRowsIterator(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Valued cell sparse distribution test
-	f = NewFile()
+	f, sheetName, rowCount, expectedNumRow = NewFile(), "Sheet1", 0, 3
 	cells := []string{"C1", "E1", "A3", "B3", "C3", "D3", "E3"}
 	for _, cell := range cells {
-		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
+		assert.NoError(t, f.SetCellValue(sheetName, cell, 1))
 	}
-	rows, err = f.Rows("Sheet1")
+	rows, err = f.Rows(sheetName)
 	require.NoError(t, err)
-	rowCount = 0
 	for rows.Next() {
 		rowCount++
-		require.True(t, rowCount <= 3, "rowCount is greater than expected")
+		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
-	assert.Equal(t, 3, rowCount)
+	assert.Equal(t, expectedNumRow, rowCount)
 }
 
 func TestRowsError(t *testing.T) {

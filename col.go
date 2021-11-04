@@ -32,12 +32,22 @@ const (
 
 // Cols defines an iterator to a sheet
 type Cols struct {
-	err                                  error
-	curCol, totalCol, stashCol, totalRow int
-	rawCellValue                         bool
-	sheet                                string
-	f                                    *File
-	sheetXML                             []byte
+	err                                    error
+	curCol, totalCols, totalRows, stashCol int
+	rawCellValue                           bool
+	sheet                                  string
+	f                                      *File
+	sheetXML                               []byte
+}
+
+// CurrentCol returns the column number that represents the current column.
+func (cols *Cols) CurrentCol() int {
+	return cols.curCol
+}
+
+// TotalCols returns the total columns count in the worksheet.
+func (cols *Cols) TotalCols() int {
+	return cols.totalCols
 }
 
 // GetCols return all the columns in a sheet by given worksheet name (case
@@ -71,7 +81,7 @@ func (f *File) GetCols(sheet string, opts ...Options) ([][]string, error) {
 // Next will return true if the next column is found.
 func (cols *Cols) Next() bool {
 	cols.curCol++
-	return cols.curCol <= cols.totalCol
+	return cols.curCol <= cols.totalCols
 }
 
 // Error will return an error when the error occurs.
@@ -159,7 +169,7 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 				colIterator.row = colIterator.curRow
 			}
 		}
-		colIterator.cols.totalRow = colIterator.row
+		colIterator.cols.totalRows = colIterator.row
 		colIterator.cellCol = 0
 	}
 	if inElement == "c" {
@@ -171,8 +181,8 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 				}
 			}
 		}
-		if colIterator.cellCol > colIterator.cols.totalCol {
-			colIterator.cols.totalCol = colIterator.cellCol
+		if colIterator.cellCol > colIterator.cols.totalCols {
+			colIterator.cols.totalCols = colIterator.cellCol
 		}
 	}
 }
