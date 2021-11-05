@@ -878,6 +878,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=MINA(MUNIT(2))":    "0",
 		"=MINA(INT(1))":      "1",
 		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
+		// PERCENTILE.EXC
+		"=PERCENTILE.EXC(A1:A4,0.2)": "0",
+		"=PERCENTILE.EXC(A1:A4,0.6)": "2",
 		// PERCENTILE.INC
 		"=PERCENTILE.INC(A1:A4,0.2)": "0.6",
 		// PERCENTILE
@@ -892,6 +895,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUTATIONA(7,6)": "117649",
 		// QUARTILE
 		"=QUARTILE(A1:A4,2)": "1.5",
+		// QUARTILE.EXC
+		"=QUARTILE.EXC(A1:A4,1)": "0.25",
+		"=QUARTILE.EXC(A1:A4,2)": "1.5",
+		"=QUARTILE.EXC(A1:A4,3)": "2.75",
 		// QUARTILE.INC
 		"=QUARTILE.INC(A1:A4,0)": "0",
 		// RANK
@@ -933,6 +940,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=VARP(1,3,5,0,C1,TRUE)": "3.2",
 		// VAR.P
 		"=VAR.P(A1:A5)": "1.25",
+		// VAR.S
+		"=VAR.S(1,3,5,0,C1)":      "4.916666666666667",
+		"=VAR.S(1,3,5,0,C1,TRUE)": "4",
 		// VARPA
 		"=VARPA(1,3,5,0,C1)":      "3.76",
 		"=VARPA(1,3,5,0,C1,TRUE)": "3.22222222222222",
@@ -2138,6 +2148,13 @@ func TestCalcCellValue(t *testing.T) {
 		// MINA
 		"=MINA()":     "MINA requires at least 1 argument",
 		"=MINA(NA())": "#N/A",
+		// PERCENTILE.EXC
+		"=PERCENTILE.EXC()":           "PERCENTILE.EXC requires 2 arguments",
+		"=PERCENTILE.EXC(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTILE.EXC(A1:A4,-1)":   "#NUM!",
+		"=PERCENTILE.EXC(A1:A4,0)":    "#NUM!",
+		"=PERCENTILE.EXC(A1:A4,1)":    "#NUM!",
+		"=PERCENTILE.EXC(NA(),0.5)":   "#NUM!",
 		// PERCENTILE.INC
 		"=PERCENTILE.INC()": "PERCENTILE.INC requires 2 arguments",
 		// PERCENTILE
@@ -2161,6 +2178,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=QUARTILE(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=QUARTILE(A1:A4,-1)":   "#NUM!",
 		"=QUARTILE(A1:A4,5)":    "#NUM!",
+		// QUARTILE.EXC
+		"=QUARTILE.EXC()":           "QUARTILE.EXC requires 2 arguments",
+		"=QUARTILE.EXC(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=QUARTILE.EXC(A1:A4,0)":    "#NUM!",
+		"=QUARTILE.EXC(A1:A4,4)":    "#NUM!",
 		// QUARTILE.INC
 		"=QUARTILE.INC()": "QUARTILE.INC requires 2 arguments",
 		// RANK
@@ -2211,6 +2233,8 @@ func TestCalcCellValue(t *testing.T) {
 		// VAR.P
 		"=VAR.P()":     "VAR.P requires at least 1 argument",
 		"=VAR.P(\"\")": "#DIV/0!",
+		// VAR.S
+		"=VAR.S()": "VAR.S requires at least 1 argument",
 		// VARPA
 		"=VARPA()": "VARPA requires at least 1 argument",
 		// WEIBULL

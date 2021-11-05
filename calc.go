@@ -495,6 +495,7 @@ type formulaFuncs struct {
 //    ODD
 //    OR
 //    PDURATION
+//    PERCENTILE.EXC
 //    PERCENTILE.INC
 //    PERCENTILE
 //    PERMUT
@@ -510,6 +511,7 @@ type formulaFuncs struct {
 //    PROPER
 //    PV
 //    QUARTILE
+//    QUARTILE.EXC
 //    QUARTILE.INC
 //    QUOTIENT
 //    RADIANS
@@ -574,6 +576,7 @@ type formulaFuncs struct {
 //    VALUE
 //    VAR
 //    VAR.P
+//    VAR.S
 //    VARA
 //    VARP
 //    VARPA
@@ -5762,6 +5765,43 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(min)
 }
 
+// PERCENTILEdotEXC function returns the k'th percentile (i.e. the value below
+// which k% of the data values fall) for a supplied range of values and a
+// supplied k (between 0 & 1 exclusive).The syntax of the function is:
+//
+//    PERCENTILE.EXC(array,k)
+//
+func (fn *formulaFuncs) PERCENTILEdotEXC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PERCENTILE.EXC requires 2 arguments")
+	}
+	array := argsList.Front().Value.(formulaArg).ToList()
+	k := argsList.Back().Value.(formulaArg).ToNumber()
+	if k.Type != ArgNumber {
+		return k
+	}
+	if k.Number <= 0 || k.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	numbers := []float64{}
+	for _, arg := range array {
+		if arg.Type == ArgError {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		num := arg.ToNumber()
+		if num.Type == ArgNumber {
+			numbers = append(numbers, num.Number)
+		}
+	}
+	cnt := len(numbers)
+	sort.Float64s(numbers)
+	idx := k.Number * (float64(cnt) + 1)
+	base := math.Floor(idx)
+	next := base - 1
+	proportion := idx - base
+	return newNumberFormulaArg(numbers[int(next)] + ((numbers[int(base)] - numbers[int(next)]) * proportion))
+}
+
 // PERCENTILEdotINC function returns the k'th percentile (i.e. the value below
 // which k% of the data values fall) for a supplied range of values and a
 // supplied k. The syntax of the function is:
@@ -5883,6 +5923,29 @@ func (fn *formulaFuncs) QUARTILE(argsList *list.List) formulaArg {
 	args.PushBack(argsList.Front().Value.(formulaArg))
 	args.PushBack(newNumberFormulaArg(quart.Number / 4))
 	return fn.PERCENTILE(args)
+}
+
+// QUARTILEdotEXC function returns a requested quartile of a supplied range of
+// values, based on a percentile range of 0 to 1 exclusive. The syntax of the
+// function is:
+//
+//    QUARTILE.EXC(array,quart)
+//
+func (fn *formulaFuncs) QUARTILEdotEXC(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "QUARTILE.EXC requires 2 arguments")
+	}
+	quart := argsList.Back().Value.(formulaArg).ToNumber()
+	if quart.Type != ArgNumber {
+		return quart
+	}
+	if quart.Number <= 0 || quart.Number >= 4 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(newNumberFormulaArg(quart.Number / 4))
+	return fn.PERCENTILEdotEXC(args)
 }
 
 // QUARTILEdotINC function returns a requested quartile of a supplied range of
@@ -6102,14 +6165,14 @@ func (fn *formulaFuncs) TRIMMEAN(argsList *list.List) formulaArg {
 }
 
 // vars is an implementation of the formula functions VAR, VARA, VARP, VAR.P
-// and VARPA.
+// VAR.S and VARPA.
 func (fn *formulaFuncs) vars(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
 	}
 	summerA, summerB, count := 0.0, 0.0, 0.0
 	minimum := 0.0
-	if name == "VAR" || name == "VARA" {
+	if name == "VAR" || name == "VAR.S" || name == "VARA" {
 		minimum = 1.0
 	}
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
@@ -6175,6 +6238,15 @@ func (fn *formulaFuncs) VARP(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) VARdotP(argsList *list.List) formulaArg {
 	return fn.vars("VAR.P", argsList)
+}
+
+// VARdotS function calculates the sample variance of a supplied set of
+// values. The syntax of the function is:
+//
+//    VAR.S(number1,[number2],...)
+//
+func (fn *formulaFuncs) VARdotS(argsList *list.List) formulaArg {
+	return fn.vars("VAR.S", argsList)
 }
 
 // VARPA function returns the Variance of a given set of values. The syntax of
