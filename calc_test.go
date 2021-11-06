@@ -1393,6 +1393,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,20,15%,4)": "0",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,6,15%,4)":  "0.6875",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,0,15%,4)":  "16.8125",
+		// COUPPCD
+		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4)":   "40476",
+		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4,0)": "40476",
+		"=COUPPCD(\"10/25/2011\",\"01/01/2012\",4)":   "40817",
 		// CUMIPMT
 		"=CUMIPMT(0.05/12,60,50000,1,12,0)":  "-2294.97753732664",
 		"=CUMIPMT(0.05/12,60,50000,13,24,0)": "-1833.1000665738893",
@@ -1456,6 +1460,9 @@ func TestCalcCellValue(t *testing.T) {
 		// PRICEDISC
 		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100)":   "90",
 		"=PRICEDISC(\"04/01/2017\",\"03/31/2021\",2.5%,100,3)": "90",
+		// PRICEMAT
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%)":   "107.17045454545453",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%,0)": "107.17045454545453",
 		// PV
 		"=PV(0,60,1000)":         "-60000",
 		"=PV(5%/12,60,1000)":     "-52990.70632392748",
@@ -2682,6 +2689,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,-1)":       "#NUM!",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,\"\")": "#NUM!",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,5)":    "invalid basis",
+		// COUPPCD
+		"=COUPPCD()": "COUPPCD requires 3 or 4 arguments",
+		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4,0,0)":  "COUPPCD requires 3 or 4 arguments",
+		"=COUPPCD(\"\",\"10/25/2012\",4)":                "#VALUE!",
+		"=COUPPCD(\"01/01/2011\",\"\",4)":                "#VALUE!",
+		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",\"\")":   "#VALUE!",
+		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4,\"\")": "#NUM!",
+		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",3)":      "#NUM!",
+		"=COUPPCD(\"10/25/2012\",\"01/01/2011\",4)":      "COUPPCD requires maturity > settlement",
 		// CUMIPMT
 		"=CUMIPMT()":               "CUMIPMT requires 6 arguments",
 		"=CUMIPMT(0,0,0,0,0,2)":    "#N/A",
@@ -2850,6 +2866,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",0,100)":       "PRICEDISC requires discount > 0",
 		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,0)":        "PRICEDISC requires redemption > 0",
 		"=PRICEDISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    "invalid basis",
+		// PRICEMAT
+		"=PRICEMAT()": "PRICEMAT requires 5 or 6 arguments",
+		"=PRICEMAT(\"\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%)":                "#VALUE!",
+		"=PRICEMAT(\"04/01/2017\",\"\",\"01/01/2017\",4.5%,2.5%)":                "#VALUE!",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"\",4.5%,2.5%)":                "#VALUE!",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",\"\",2.5%)":      "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,\"\")":      "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%,\"\")": "#NUM!",
+		"=PRICEMAT(\"03/31/2021\",\"04/01/2017\",\"01/01/2017\",4.5%,2.5%)":      "PRICEMAT requires maturity > settlement",
+		"=PRICEMAT(\"01/01/2017\",\"03/31/2021\",\"04/01/2017\",4.5%,2.5%)":      "PRICEMAT requires settlement > issue",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",-1,2.5%)":        "PRICEMAT requires rate >= 0",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,-1)":        "PRICEMAT requires yld >= 0",
+		"=PRICEMAT(\"04/01/2017\",\"03/31/2021\",\"01/01/2017\",4.5%,2.5%,5)":    "invalid basis",
 		// PV
 		"=PV()":                     "PV requires at least 3 arguments",
 		"=PV(10%/4,16,2000,0,1,0)":  "PV allows at most 5 arguments",

@@ -350,6 +350,7 @@ type formulaFuncs struct {
 //    COUNT
 //    COUNTA
 //    COUNTBLANK
+//    COUPPCD
 //    CSC
 //    CSCH
 //    CUMIPMT
@@ -507,6 +508,7 @@ type formulaFuncs struct {
 //    POWER
 //    PPMT
 //    PRICEDISC
+//    PRICEMAT
 //    PRODUCT
 //    PROPER
 //    PV
@@ -9504,6 +9506,67 @@ func (fn *formulaFuncs) AMORLINC(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(0)
 }
 
+// prepareCouponArgs checking and prepare arguments for the formula functions
+// COUPDAYBS, COUPDAYS, COUPDAYSNC, COUPPCD, COUPNUM and COUPNCD.
+func (fn *formulaFuncs) prepareCouponArgs(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 && argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 or 4 arguments", name))
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
+	}
+	frequency := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 4 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, frequency, basis})
+}
+
+// COUPPCD function returns the previous coupon date, before the settlement
+// date for a security. The syntax of the function is:
+//
+//    COUPPCD(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPPCD(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPPCD", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement := timeFromExcelTime(args.List[0].Number, false)
+	maturity := timeFromExcelTime(args.List[1].Number, false)
+	date, years := maturity, settlement.Year()-maturity.Year()
+	date = date.AddDate(years, 0, 0)
+	if settlement.After(date) {
+		date = date.AddDate(1, 0, 0)
+	}
+	month := -12 / args.List[2].Number
+	for date.After(settlement) {
+		date = date.AddDate(0, int(month), 0)
+	}
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(date.Year(), date.Month(), date.Day())) + 1)
+}
+
 // CUMIPMT function calculates the cumulative interest paid on a loan or
 // investment, between two specified periods. The syntax of the function is:
 //
@@ -10386,6 +10449,68 @@ func (fn *formulaFuncs) PRICEDISC(argsList *list.List) formulaArg {
 		return frac
 	}
 	return newNumberFormulaArg(redemption.Number * (1 - discount.Number*frac.Number))
+}
+
+// PRICEMAT function calculates the price, per $100 face value of a security
+// that pays interest at maturity. The syntax of the function is:
+//
+//    PRICEMAT(settlement,maturity,issue,rate,yld,[basis])
+//
+func (fn *formulaFuncs) PRICEMAT(argsList *list.List) formulaArg {
+	if argsList.Len() != 5 && argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PRICEMAT requires 5 or 6 arguments")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	settlement := fn.DATEVALUE(args)
+	if settlement.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	maturity := fn.DATEVALUE(args)
+	if maturity.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires maturity > settlement")
+	}
+	args.Init()
+	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+	issue := fn.DATEVALUE(args)
+	if issue.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if issue.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires settlement > issue")
+	}
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires rate >= 0")
+	}
+	yld := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires yld >= 0")
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 6 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	dsm := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if dsm.Type != ArgNumber {
+		return dsm
+	}
+	dis := yearFrac(issue.Number, settlement.Number, int(basis.Number))
+	dim := yearFrac(issue.Number, maturity.Number, int(basis.Number))
+	return newNumberFormulaArg(((1+dim.Number*rate.Number)/(1+dsm.Number*yld.Number) - dis.Number*rate.Number) * 100)
 }
 
 // PV function calculates the Present Value of an investment, based on a
