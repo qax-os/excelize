@@ -350,6 +350,8 @@ type formulaFuncs struct {
 //    COUNT
 //    COUNTA
 //    COUNTBLANK
+//    COUPNCD
+//    COUPNUM
 //    COUPPCD
 //    CSC
 //    CSCH
@@ -9541,6 +9543,46 @@ func (fn *formulaFuncs) prepareCouponArgs(name string, argsList *list.List) form
 		}
 	}
 	return newListFormulaArg([]formulaArg{settlement, maturity, frequency, basis})
+}
+
+// COUPNCD function calculates the number of coupons payable, between a
+// security's settlement date and maturity date, rounded up to the nearest
+// whole coupon. The syntax of the function is:
+//
+//    COUPNCD(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPNCD(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPNCD", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement := timeFromExcelTime(args.List[0].Number, false)
+	maturity := timeFromExcelTime(args.List[1].Number, false)
+	ncd := time.Date(settlement.Year(), maturity.Month(), maturity.Day(), 0, 0, 0, 0, time.UTC)
+	if ncd.After(settlement) {
+		ncd = ncd.AddDate(-1, 0, 0)
+	}
+	for !ncd.After(settlement) {
+		ncd = ncd.AddDate(0, 12/int(args.List[2].Number), 0)
+	}
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(ncd.Year(), ncd.Month(), ncd.Day())) + 1)
+}
+
+// COUPNUM function calculates the number of coupons payable, between a
+// security's settlement date and maturity date, rounded up to the nearest
+// whole coupon. The syntax of the function is:
+//
+//    COUPNUM(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPNUM(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPNUM", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	maturity, dateValue := timeFromExcelTime(args.List[1].Number, false), fn.COUPPCD(argsList)
+	date := timeFromExcelTime(dateValue.Number, false)
+	months := (maturity.Year()-date.Year())*12 + int(maturity.Month()) - int(date.Month())
+	return newNumberFormulaArg(float64(months) * args.List[2].Number / 12.0)
 }
 
 // COUPPCD function returns the previous coupon date, before the settlement

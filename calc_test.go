@@ -1393,6 +1393,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,20,15%,4)": "0",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,6,15%,4)":  "0.6875",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,0,15%,4)":  "16.8125",
+		// COUPNCD
+		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4)":   "40568",
+		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4,0)": "40568",
+		"=COUPNCD(\"10/25/2011\",\"01/01/2012\",4)":   "40909",
+		// COUPNUM
+		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",4)":   "8",
+		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",4,0)": "8",
 		// COUPPCD
 		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4)":   "40476",
 		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4,0)": "40476",
@@ -2689,6 +2696,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,-1)":       "#NUM!",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,\"\")": "#NUM!",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,5)":    "invalid basis",
+		// COUPNCD
+		"=COUPNCD()": "COUPNCD requires 3 or 4 arguments",
+		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4,0,0)":  "COUPNCD requires 3 or 4 arguments",
+		"=COUPNCD(\"\",\"10/25/2012\",4)":                "#VALUE!",
+		"=COUPNCD(\"01/01/2011\",\"\",4)":                "#VALUE!",
+		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",\"\")":   "#VALUE!",
+		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4,\"\")": "#NUM!",
+		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",3)":      "#NUM!",
+		"=COUPNCD(\"10/25/2012\",\"01/01/2011\",4)":      "COUPNCD requires maturity > settlement",
+		// COUPNUM
+		"=COUPNUM()": "COUPNUM requires 3 or 4 arguments",
+		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",4,0,0)":  "COUPNUM requires 3 or 4 arguments",
+		"=COUPNUM(\"\",\"10/25/2012\",4)":                "#VALUE!",
+		"=COUPNUM(\"01/01/2011\",\"\",4)":                "#VALUE!",
+		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",\"\")":   "#VALUE!",
+		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",4,\"\")": "#NUM!",
+		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",3)":      "#NUM!",
+		"=COUPNUM(\"10/25/2012\",\"01/01/2011\",4)":      "COUPNUM requires maturity > settlement",
 		// COUPPCD
 		"=COUPPCD()": "COUPPCD requires 3 or 4 arguments",
 		"=COUPPCD(\"01/01/2011\",\"10/25/2012\",4,0,0)":  "COUPPCD requires 3 or 4 arguments",
