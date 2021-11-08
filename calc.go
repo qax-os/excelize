@@ -501,6 +501,9 @@ type formulaFuncs struct {
 //    PERCENTILE.EXC
 //    PERCENTILE.INC
 //    PERCENTILE
+//    PERCENTRANK.EXC
+//    PERCENTRANK.INC
+//    PERCENTRANK
 //    PERMUT
 //    PERMUTATIONA
 //    PI
@@ -5859,6 +5862,88 @@ func (fn *formulaFuncs) PERCENTILE(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(numbers[int(base)] + ((numbers[int(next)] - numbers[int(base)]) * proportion))
 }
 
+// percentrank is an implementation of the formula functions PERCENTRANK and
+// PERCENTRANK.INC.
+func (fn *formulaFuncs) percentrank(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 or 3 arguments", name))
+	}
+	array := argsList.Front().Value.(formulaArg).ToList()
+	x := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	numbers := []float64{}
+	for _, arg := range array {
+		if arg.Type == ArgError {
+			return arg
+		}
+		num := arg.ToNumber()
+		if num.Type == ArgNumber {
+			numbers = append(numbers, num.Number)
+		}
+	}
+	cnt := len(numbers)
+	sort.Float64s(numbers)
+	if x.Number < numbers[0] || x.Number > numbers[cnt-1] {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	pos, significance := float64(inFloat64Slice(numbers, x.Number)), newNumberFormulaArg(3)
+	if argsList.Len() == 3 {
+		if significance = argsList.Back().Value.(formulaArg).ToNumber(); significance.Type != ArgNumber {
+			return significance
+		}
+		if significance.Number < 1 {
+			return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s arguments significance should be > 1", name))
+		}
+	}
+	if pos == -1 {
+		pos = 0
+		cmp := numbers[0]
+		for cmp < x.Number {
+			pos++
+			cmp = numbers[int(pos)]
+		}
+		pos--
+		pos += (x.Number - numbers[int(pos)]) / (cmp - numbers[int(pos)])
+	}
+	pow := math.Pow(10, float64(significance.Number))
+	digit := pow * float64(pos) / (float64(cnt) - 1)
+	if name == "PERCENTRANK.EXC" {
+		digit = pow * float64(pos+1) / (float64(cnt) + 1)
+	}
+	return newNumberFormulaArg(math.Floor(digit) / pow)
+}
+
+// PERCENTRANKdotEXC function calculates the relative position, between 0 and
+// 1 (exclusive), of a specified value within a supplied array. The syntax of
+// the function is:
+//
+//    PERCENTRANK.EXC(array,x,[significance])
+//
+func (fn *formulaFuncs) PERCENTRANKdotEXC(argsList *list.List) formulaArg {
+	return fn.percentrank("PERCENTRANK.EXC", argsList)
+}
+
+// PERCENTRANKdotINC function calculates the relative position, between 0 and
+// 1 (inclusive), of a specified value within a supplied array.The syntax of
+// the function is:
+//
+//    PERCENTRANK.INC(array,x,[significance])
+//
+func (fn *formulaFuncs) PERCENTRANKdotINC(argsList *list.List) formulaArg {
+	return fn.percentrank("PERCENTRANK.INC", argsList)
+}
+
+// PERCENTRANK function calculates the relative position of a specified value,
+// within a set of values, as a percentage. The syntax of the function is:
+//
+//    PERCENTRANK(array,x,[significance])
+//
+func (fn *formulaFuncs) PERCENTRANK(argsList *list.List) formulaArg {
+	return fn.percentrank("PERCENTRANK", argsList)
+}
+
 // PERMUT function calculates the number of permutations of a specified number
 // of objects from a set of objects. The syntax of the function is:
 //
@@ -5993,10 +6078,8 @@ func (fn *formulaFuncs) rank(name string, argsList *list.List) formulaArg {
 	if order.Number == 0 {
 		sort.Sort(sort.Reverse(sort.Float64Slice(arr)))
 	}
-	for idx, n := range arr {
-		if num.Number == n {
-			return newNumberFormulaArg(float64(idx + 1))
-		}
+	if idx := inFloat64Slice(arr, num.Number); idx != -1 {
+		return newNumberFormulaArg(float64(idx + 1))
 	}
 	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 }

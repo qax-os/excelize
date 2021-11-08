@@ -381,6 +381,17 @@ func inStrSlice(a []string, x string) int {
 	return -1
 }
 
+// inFloat64Slice provides a method to check if an element is present in an
+// float64 array, and return the index of its location, otherwise return -1.
+func inFloat64Slice(a []float64, x float64) int {
+	for idx, n := range a {
+		if x == n {
+			return idx
+		}
+	}
+	return -1
+}
+
 // boolPtr returns a pointer to a bool with the given value.
 func boolPtr(b bool) *bool { return &b }
 

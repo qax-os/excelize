@@ -886,6 +886,24 @@ func TestCalcCellValue(t *testing.T) {
 		// PERCENTILE
 		"=PERCENTILE(A1:A4,0.2)": "0.6",
 		"=PERCENTILE(0,0)":       "0",
+		// PERCENTRANK.EXC
+		"=PERCENTRANK.EXC(A1:B4,0)":     "0.142",
+		"=PERCENTRANK.EXC(A1:B4,2)":     "0.428",
+		"=PERCENTRANK.EXC(A1:B4,2.5)":   "0.5",
+		"=PERCENTRANK.EXC(A1:B4,2.6,1)": "0.5",
+		"=PERCENTRANK.EXC(A1:B4,5)":     "0.857",
+		// PERCENTRANK.INC
+		"=PERCENTRANK.INC(A1:B4,0)":     "0",
+		"=PERCENTRANK.INC(A1:B4,2)":     "0.4",
+		"=PERCENTRANK.INC(A1:B4,2.5)":   "0.5",
+		"=PERCENTRANK.INC(A1:B4,2.6,1)": "0.5",
+		"=PERCENTRANK.INC(A1:B4,5)":     "1",
+		// PERCENTRANK
+		"=PERCENTRANK(A1:B4,0)":     "0",
+		"=PERCENTRANK(A1:B4,2)":     "0.4",
+		"=PERCENTRANK(A1:B4,2.5)":   "0.5",
+		"=PERCENTRANK(A1:B4,2.6,1)": "0.5",
+		"=PERCENTRANK(A1:B4,5)":     "1",
 		// PERMUT
 		"=PERMUT(6,6)":  "720",
 		"=PERMUT(7,6)":  "5040",
@@ -2176,6 +2194,27 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERCENTILE(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERCENTILE(0,-1)":   "#N/A",
 		"=PERCENTILE(NA(),1)": "#N/A",
+		// PERCENTRANK.EXC
+		"=PERCENTRANK.EXC()":             "PERCENTRANK.EXC requires 2 or 3 arguments",
+		"=PERCENTRANK.EXC(A1:B4,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTRANK.EXC(A1:B4,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTRANK.EXC(A1:B4,0,0)":    "PERCENTRANK.EXC arguments significance should be > 1",
+		"=PERCENTRANK.EXC(A1:B4,6)":      "#N/A",
+		"=PERCENTRANK.EXC(NA(),1)":       "#N/A",
+		// PERCENTRANK.INC
+		"=PERCENTRANK.INC()":             "PERCENTRANK.INC requires 2 or 3 arguments",
+		"=PERCENTRANK.INC(A1:B4,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTRANK.INC(A1:B4,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTRANK.INC(A1:B4,0,0)":    "PERCENTRANK.INC arguments significance should be > 1",
+		"=PERCENTRANK.INC(A1:B4,6)":      "#N/A",
+		"=PERCENTRANK.INC(NA(),1)":       "#N/A",
+		// PERCENTRANK
+		"=PERCENTRANK()":             "PERCENTRANK requires 2 or 3 arguments",
+		"=PERCENTRANK(A1:B4,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTRANK(A1:B4,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PERCENTRANK(A1:B4,0,0)":    "PERCENTRANK arguments significance should be > 1",
+		"=PERCENTRANK(A1:B4,6)":      "#N/A",
+		"=PERCENTRANK(NA(),1)":       "#N/A",
 		// PERMUT
 		"=PERMUT()":       "PERMUT requires 2 numeric arguments",
 		"=PERMUT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
