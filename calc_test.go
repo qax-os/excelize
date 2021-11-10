@@ -3391,6 +3391,46 @@ func TestCalcMIRR(t *testing.T) {
 	}
 }
 
+func TestCalcXNPV(t *testing.T) {
+	cellData := [][]interface{}{{nil, 0.05},
+		{"01/01/2016", -10000, nil},
+		{"02/01/2016", 2000},
+		{"05/01/2016", 2400},
+		{"07/01/2016", 2900},
+		{"11/01/2016", 3500},
+		{"01/01/2017", 4100},
+		{},
+		{"02/01/2016"},
+		{"01/01/2016"}}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=XNPV(B1,B2:B7,A2:A7)": "4447.938009440515",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=XNPV()":                 "XNPV requires 3 arguments",
+		"=XNPV(\"\",B2:B7,A2:A7)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=XNPV(0,B2:B7,A2:A7)":    "XNPV requires rate > 0",
+		"=XNPV(B1,\"\",A2:A7)":    "#NUM!",
+		"=XNPV(B1,B2:B7,\"\")":    "#NUM!",
+		"=XNPV(B1,B2:B7,C2:C7)":   "#NUM!",
+		"=XNPV(B1,B2,A2)":         "#NUM!",
+		"=XNPV(B1,B2:B3,A2:A5)":   "#NUM!",
+		"=XNPV(B1,B2:B3,A9:A10)":  "#VALUE!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcMATCH(t *testing.T) {
 	f := NewFile()
 	for cell, row := range map[string][]interface{}{

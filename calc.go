@@ -591,6 +591,7 @@ type formulaFuncs struct {
 //    WEEKDAY
 //    WEIBULL
 //    WEIBULL.DIST
+//    XNPV
 //    XOR
 //    YEAR
 //    YEARFRAC
@@ -10982,6 +10983,71 @@ func (fn *formulaFuncs) TBILLYIELD(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(((100 - pr.Number) / pr.Number) * (360 / dsm))
+}
+
+// prepareXArgs prepare arguments for the formula function XIRR and XNPV.
+func (fn *formulaFuncs) prepareXArgs(name string, values, dates formulaArg) (valuesArg, datesArg []float64, err formulaArg) {
+	for _, arg := range values.ToList() {
+		if numArg := arg.ToNumber(); numArg.Type == ArgNumber {
+			valuesArg = append(valuesArg, numArg.Number)
+			continue
+		}
+		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		return
+	}
+	if len(valuesArg) < 2 {
+		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		return
+	}
+	args, date := list.New(), 0.0
+	for _, arg := range dates.ToList() {
+		args.Init()
+		args.PushBack(arg)
+		dateValue := fn.DATEVALUE(args)
+		if dateValue.Type != ArgNumber {
+			err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			return
+		}
+		if dateValue.Number < date {
+			err = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			return
+		}
+		datesArg = append(datesArg, dateValue.Number)
+		date = dateValue.Number
+	}
+	if len(valuesArg) != len(datesArg) {
+		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		return
+	}
+	err = newEmptyFormulaArg()
+	return
+}
+
+// XNPV function calculates the Net Present Value for a schedule of cash flows
+// that is not necessarily periodic. The syntax of the function is:
+//
+//    XNPV(rate,values,dates)
+//
+func (fn *formulaFuncs) XNPV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XNPV requires 3 arguments")
+	}
+	rate := argsList.Front().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XNPV requires rate > 0")
+	}
+	values, dates, err := fn.prepareXArgs("XNPV", argsList.Front().Next().Value.(formulaArg), argsList.Back().Value.(formulaArg))
+	if err.Type != ArgEmpty {
+		return err
+	}
+	date1, xnpv := dates[0], 0.0
+	for idx, value := range values {
+		xnpv += value / math.Pow(1+rate.Number, (dates[idx]-date1)/365)
+	}
+	return newNumberFormulaArg(xnpv)
 }
 
 // YIELDDISC function calculates the annual yield of a discounted security.
