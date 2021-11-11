@@ -471,6 +471,7 @@ type formulaFuncs struct {
 //    MIDB
 //    MIN
 //    MINA
+//    MINUTE
 //    MIRR
 //    MOD
 //    MONTH
@@ -7112,6 +7113,17 @@ func isDateOnlyFmt(dateString string) bool {
 	return false
 }
 
+// isTimeOnlyFmt check if the given string matches time-only format regular expressions.
+func isTimeOnlyFmt(timeString string) bool {
+	for _, tf := range timeFormats {
+		submatch := tf.FindStringSubmatch(timeString)
+		if len(submatch) > 1 {
+			return true
+		}
+	}
+	return false
+}
+
 // strToTimePatternHandler1 parse and convert the given string in pattern
 // hh to the time.
 func strToTimePatternHandler1(submatch []string) (h, m int, s float64, err error) {
@@ -7459,6 +7471,37 @@ func (fn *formulaFuncs) ISOWEEKNUM(argsList *list.List) formulaArg {
 		_, weeknum = timeFromExcelTime(num.Number, false).ISOWeek()
 	}
 	return newNumberFormulaArg(float64(weeknum))
+}
+
+// MINUTE function returns an integer representing the minute component of a
+// supplied Excel time. The syntax of the function is:
+//
+//    MINUTE(serial_number)
+//
+func (fn *formulaFuncs) MINUTE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MINUTE requires exactly 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	if num.Type != ArgNumber {
+		timeString := strings.ToLower(date.Value())
+		if !isTimeOnlyFmt(timeString) {
+			_, _, _, _, err := strToDate(timeString)
+			if err.Type == ArgError {
+				return err
+			}
+		}
+		_, m, _, _, _, err := strToTime(timeString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(m))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "MINUTE only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Minute()))
 }
 
 // MONTH function returns the month of a date represented by a serial number.

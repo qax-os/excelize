@@ -1105,6 +1105,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISOWEEKNUM(\"42370\")":      "53",
 		"=ISOWEEKNUM(\"01/01/2005\")": "53",
 		"=ISOWEEKNUM(\"02/02/2005\")": "5",
+		// MINUTE
+		"=MINUTE(1)":                    "0",
+		"=MINUTE(0.04)":                 "57",
+		"=MINUTE(\"0.04\")":             "57",
+		"=MINUTE(\"13:35:55\")":         "35",
+		"=MINUTE(\"12/09/2015 08:55\")": "55",
 		// MONTH
 		"=MONTH(42171)":           "6",
 		"=MONTH(\"31-May-2015\")": "5",
@@ -2438,6 +2444,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISOWEEKNUM(\"\")":                "#VALUE!",
 		"=ISOWEEKNUM(\"January 25, 100\")": "#VALUE!",
 		"=ISOWEEKNUM(-1)":                  "#NUM!",
+		// MINUTE
+		"=MINUTE()":             "MINUTE requires exactly 1 argument",
+		"=MINUTE(-1)":           "MINUTE only accepts positive argument",
+		"=MINUTE(\"\")":         "#VALUE!",
+		"=MINUTE(\"13:60:55\")": "#VALUE!",
 		// MONTH
 		"=MONTH()":                    "MONTH requires exactly 1 argument",
 		"=MONTH(0,0)":                 "MONTH requires exactly 1 argument",
