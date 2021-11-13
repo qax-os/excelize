@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -149,6 +150,37 @@ func (f *File) workBookWriter() {
 	}
 }
 
+// mergeExpandedCols merge expanded columns.
+func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
+	sort.Slice(ws.Cols.Col, func(i, j int) bool {
+		return ws.Cols.Col[i].Min < ws.Cols.Col[j].Min
+	})
+	columns := []xlsxCol{}
+	for i, n := 0, len(ws.Cols.Col); i < n; {
+		left := i
+		for i++; i < n && reflect.DeepEqual(
+			xlsxCol{
+				BestFit:      ws.Cols.Col[i-1].BestFit,
+				Collapsed:    ws.Cols.Col[i-1].Collapsed,
+				CustomWidth:  ws.Cols.Col[i-1].CustomWidth,
+				Hidden:       ws.Cols.Col[i-1].Hidden,
+				Max:          ws.Cols.Col[i-1].Max + 1,
+				Min:          ws.Cols.Col[i-1].Min + 1,
+				OutlineLevel: ws.Cols.Col[i-1].OutlineLevel,
+				Phonetic:     ws.Cols.Col[i-1].Phonetic,
+				Style:        ws.Cols.Col[i-1].Style,
+				Width:        ws.Cols.Col[i-1].Width,
+			}, ws.Cols.Col[i]); i++ {
+		}
+		column := deepcopy.Copy(ws.Cols.Col[left]).(xlsxCol)
+		if left < i-1 {
+			column.Max = ws.Cols.Col[i-1].Min
+		}
+		columns = append(columns, column)
+	}
+	ws.Cols.Col = columns
+}
+
 // workSheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
 func (f *File) workSheetWriter() {
@@ -160,6 +192,9 @@ func (f *File) workSheetWriter() {
 			sheet := ws.(*xlsxWorksheet)
 			if sheet.MergeCells != nil && len(sheet.MergeCells.Cells) > 0 {
 				_ = f.mergeOverlapCells(sheet)
+			}
+			if sheet.Cols != nil && len(sheet.Cols.Col) > 0 {
+				f.mergeExpandedCols(sheet)
 			}
 			for k, v := range sheet.SheetData.Row {
 				sheet.SheetData.Row[k].C = trimCell(v.C)

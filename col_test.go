@@ -243,9 +243,9 @@ func TestOutlineLevel(t *testing.T) {
 	assert.Equal(t, uint8(4), level)
 	assert.NoError(t, err)
 
-	level, err = f.GetColOutlineLevel("Shee2", "A")
+	level, err = f.GetColOutlineLevel("SheetN", "A")
 	assert.Equal(t, uint8(0), level)
-	assert.EqualError(t, err, "sheet Shee2 is not exist")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	assert.NoError(t, f.SetColWidth("Sheet2", "A", "D", 13))
 	assert.EqualError(t, f.SetColWidth("Sheet2", "A", "D", MaxColumnWidth+1), ErrColumnWidth.Error())

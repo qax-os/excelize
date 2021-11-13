@@ -413,8 +413,8 @@ func defaultTrue(b *bool) bool {
 	return *b
 }
 
-// MarshalXMLMarshalXML convert the boolean data type to literal values 0 or 1
-// on serialization.
+// MarshalXML convert the boolean data type to literal values 0 or 1 on
+// serialization.
 func (avb attrValBool) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	attr := xml.Attr{
 		Name: xml.Name{
@@ -437,7 +437,7 @@ func (avb attrValBool) MarshalXML(e *xml.Encoder, start xml.StartElement) error 
 }
 
 // UnmarshalXML convert the literal values true, false, 1, 0 of the XML
-// attribute to boolean data type on de-serialization.
+// attribute to boolean data type on deserialization.
 func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	for {
 		t, err := d.Token()
