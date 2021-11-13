@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -235,6 +236,36 @@ func TestSortCoordinates(t *testing.T) {
 
 func TestInStrSlice(t *testing.T) {
 	assert.EqualValues(t, -1, inStrSlice([]string{}, ""))
+}
+
+func TestBoolValMarshal(t *testing.T) {
+	bold := true
+	node := &xlsxFont{B: &attrValBool{Val: &bold}}
+	data, err := xml.Marshal(node)
+	assert.NoError(t, err)
+	assert.Equal(t, `<xlsxFont><b val="1"></b></xlsxFont>`, string(data))
+
+	node = &xlsxFont{}
+	err = xml.Unmarshal(data, node)
+	assert.NoError(t, err)
+	assert.NotEqual(t, nil, node)
+	assert.NotEqual(t, nil, node.B)
+	assert.NotEqual(t, nil, node.B.Val)
+	assert.Equal(t, true, *node.B.Val)
+}
+
+func TestBoolValUnmarshalXML(t *testing.T) {
+	node := xlsxFont{}
+	assert.NoError(t, xml.Unmarshal([]byte("<xlsxFont><b val=\"\"></b></xlsxFont>"), &node))
+	assert.Equal(t, true, *node.B.Val)
+	for content, err := range map[string]string{
+		"<xlsxFont><b val=\"0\"><i></i></b></xlsxFont>": "unexpected child of attrValBool",
+		"<xlsxFont><b val=\"x\"></b></xlsxFont>":        "strconv.ParseBool: parsing \"x\": invalid syntax",
+	} {
+		assert.EqualError(t, xml.Unmarshal([]byte(content), &node), err)
+	}
+	attr := attrValBool{}
+	assert.EqualError(t, attr.UnmarshalXML(xml.NewDecoder(strings.NewReader("")), xml.StartElement{}), io.EOF.Error())
 }
 
 func TestBytesReplace(t *testing.T) {
