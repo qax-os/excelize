@@ -1417,6 +1417,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,20,15%,4)": "0",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,6,15%,4)":  "0.6875",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,0,15%,4)":  "16.8125",
+		// COUPDAYBS
+		"=COUPDAYBS(\"02/24/2000\",\"11/24/2000\",4,4)": "0",
+		"=COUPDAYBS(\"03/27/2000\",\"11/29/2000\",4,4)": "28",
+		"=COUPDAYBS(\"02/29/2000\",\"04/01/2000\",4,4)": "58",
+		"=COUPDAYBS(\"01/01/2011\",\"10/25/2012\",4)":   "66",
+		"=COUPDAYBS(\"01/01/2011\",\"10/25/2012\",4,1)": "68",
+		"=COUPDAYBS(\"10/31/2011\",\"02/26/2012\",4,0)": "65",
+		// COUPDAYS
+		"=COUPDAYS(\"01/01/2011\",\"10/25/2012\",4)":   "90",
+		"=COUPDAYS(\"01/01/2011\",\"10/25/2012\",4,1)": "92",
+		// COUPDAYSNC
+		"=COUPDAYSNC(\"01/01/2011\",\"10/25/2012\",4)": "24",
 		// COUPNCD
 		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4)":   "40568",
 		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4,0)": "40568",
@@ -2746,6 +2758,27 @@ func TestCalcCellValue(t *testing.T) {
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,-1)":       "#NUM!",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,\"\")": "#NUM!",
 		"=AMORLINC(150,\"01/01/2015\",\"09/30/2015\",20,1,20%,5)":    "invalid basis",
+		// COUPDAYBS
+		"=COUPDAYBS()":                                     "COUPDAYBS requires 3 or 4 arguments",
+		"=COUPDAYBS(\"\",\"10/25/2012\",4)":                "#VALUE!",
+		"=COUPDAYBS(\"01/01/2011\",\"\",4)":                "#VALUE!",
+		"=COUPDAYBS(\"01/01/2011\",\"10/25/2012\",\"\")":   "#VALUE!",
+		"=COUPDAYBS(\"01/01/2011\",\"10/25/2012\",4,\"\")": "#NUM!",
+		"=COUPDAYBS(\"10/25/2012\",\"01/01/2011\",4)":      "COUPDAYBS requires maturity > settlement",
+		// COUPDAYS
+		"=COUPDAYS()":                                     "COUPDAYS requires 3 or 4 arguments",
+		"=COUPDAYS(\"\",\"10/25/2012\",4)":                "#VALUE!",
+		"=COUPDAYS(\"01/01/2011\",\"\",4)":                "#VALUE!",
+		"=COUPDAYS(\"01/01/2011\",\"10/25/2012\",\"\")":   "#VALUE!",
+		"=COUPDAYS(\"01/01/2011\",\"10/25/2012\",4,\"\")": "#NUM!",
+		"=COUPDAYS(\"10/25/2012\",\"01/01/2011\",4)":      "COUPDAYS requires maturity > settlement",
+		// COUPDAYSNC
+		"=COUPDAYSNC()":                                     "COUPDAYSNC requires 3 or 4 arguments",
+		"=COUPDAYSNC(\"\",\"10/25/2012\",4)":                "#VALUE!",
+		"=COUPDAYSNC(\"01/01/2011\",\"\",4)":                "#VALUE!",
+		"=COUPDAYSNC(\"01/01/2011\",\"10/25/2012\",\"\")":   "#VALUE!",
+		"=COUPDAYSNC(\"01/01/2011\",\"10/25/2012\",4,\"\")": "#NUM!",
+		"=COUPDAYSNC(\"10/25/2012\",\"01/01/2011\",4)":      "COUPDAYSNC requires maturity > settlement",
 		// COUPNCD
 		"=COUPNCD()": "COUPNCD requires 3 or 4 arguments",
 		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4,0,0)":  "COUPNCD requires 3 or 4 arguments",

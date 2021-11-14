@@ -350,6 +350,9 @@ type formulaFuncs struct {
 //    COUNT
 //    COUNTA
 //    COUNTBLANK
+//    COUPDAYBS
+//    COUPDAYS
+//    COUPDAYSNC
 //    COUPNCD
 //    COUPNUM
 //    COUPPCD
@@ -9642,16 +9645,22 @@ func (fn *formulaFuncs) prepareCouponArgs(name string, argsList *list.List) form
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 or 4 arguments", name))
 	}
 	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
+	settlement := argsList.Front().Value.(formulaArg).ToNumber()
 	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		args.PushBack(argsList.Front().Value.(formulaArg))
+		settlement = fn.DATEVALUE(args)
+		if settlement.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
+	maturity := argsList.Front().Next().Value.(formulaArg).ToNumber()
 	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		args.Init()
+		args.PushBack(argsList.Front().Next().Value.(formulaArg))
+		maturity = fn.DATEVALUE(args)
+		if maturity.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 	}
 	if settlement.Number >= maturity.Number {
 		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
@@ -9670,6 +9679,126 @@ func (fn *formulaFuncs) prepareCouponArgs(name string, argsList *list.List) form
 		}
 	}
 	return newListFormulaArg([]formulaArg{settlement, maturity, frequency, basis})
+}
+
+// is30BasisMethod determine if the financial day count basis rules is 30/360
+// methods.
+func is30BasisMethod(basis int) bool {
+	return basis == 0 || basis == 4
+}
+
+// getDaysInMonthRange return the day by given year, month range and day count
+// basis.
+func getDaysInMonthRange(year, fromMonth, toMonth, basis int) int {
+	if fromMonth > toMonth {
+		return 0
+	}
+	return (toMonth - fromMonth + 1) * 30
+}
+
+// getDayOnBasis returns the day by given date and day count basis.
+func getDayOnBasis(y, m, d, basis int) int {
+	if !is30BasisMethod(basis) {
+		return d
+	}
+	day := d
+	dim := getDaysInMonth(y, m)
+	if day > 30 || d >= dim || day >= dim {
+		day = 30
+	}
+	return day
+}
+
+// coupdays returns the number of days that base on date range and the day
+// count basis to be used.
+func coupdays(from, to time.Time, basis int) float64 {
+	days := 0
+	fromY, fromM, fromD := from.Date()
+	toY, toM, toD := to.Date()
+	fromDay, toDay := getDayOnBasis(fromY, int(fromM), fromD, basis), getDayOnBasis(toY, int(toM), toD, basis)
+	if !is30BasisMethod(basis) {
+		return (daysBetween(excelMinTime1900.Unix(), makeDate(toY, toM, toDay)) + 1) - (daysBetween(excelMinTime1900.Unix(), makeDate(fromY, fromM, fromDay)) + 1)
+	}
+	if basis == 0 {
+		if (int(fromM) == 2 || fromDay < 30) && toD == 31 {
+			toDay = 31
+		}
+	} else {
+		if int(fromM) == 2 && fromDay == 30 {
+			fromDay = getDaysInMonth(fromY, 2)
+		}
+		if int(toM) == 2 && toDay == 30 {
+			toDay = getDaysInMonth(toY, 2)
+		}
+	}
+	if fromY < toY || (fromY == toY && int(fromM) < int(toM)) {
+		days = 30 - fromDay + 1
+		fromD = 1
+		fromDay = 1
+		date := time.Date(fromY, fromM, fromD, 0, 0, 0, 0, time.UTC).AddDate(0, 1, 0)
+		if date.Year() < toY {
+			days += getDaysInMonthRange(date.Year(), int(date.Month()), 12, basis)
+			date = date.AddDate(0, 13-int(date.Month()), 0)
+		}
+		days += getDaysInMonthRange(toY, int(date.Month()), int(toM)-1, basis)
+		date = date.AddDate(0, int(toM)-int(date.Month()), 0)
+	}
+	days += toDay - fromDay
+	if days > 0 {
+		return float64(days)
+	}
+	return 0
+}
+
+// COUPDAYBS function calculates the number of days from the beginning of a
+// coupon's period to the settlement date. The syntax of the function is:
+//
+//    COUPDAYBS(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPDAYBS(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPDAYBS", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement := timeFromExcelTime(args.List[0].Number, false)
+	pcd := timeFromExcelTime(fn.COUPPCD(argsList).Number, false)
+	return newNumberFormulaArg(coupdays(pcd, settlement, int(args.List[3].Number)))
+}
+
+// COUPDAYS function calculates the number of days in a coupon period that
+// contains the settlement date. The syntax of the function is:
+//
+//    COUPDAYS(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPDAYS(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPDAYS", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	freq := args.List[2].Number
+	basis := int(args.List[3].Number)
+	if basis == 1 {
+		pcd := timeFromExcelTime(fn.COUPPCD(argsList).Number, false)
+		next := pcd.AddDate(0, 12/int(freq), 0)
+		return newNumberFormulaArg(coupdays(pcd, next, basis))
+	}
+	return newNumberFormulaArg(float64(getYearDays(0, basis)) / freq)
+}
+
+// COUPDAYSNC function calculates the number of days from the settlement date
+// to the next coupon date. The syntax of the function is:
+//
+//    COUPDAYSNC(settlement,maturity,frequency,[basis])
+//
+func (fn *formulaFuncs) COUPDAYSNC(argsList *list.List) formulaArg {
+	args := fn.prepareCouponArgs("COUPDAYSNC", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement := timeFromExcelTime(args.List[0].Number, false)
+	basis := int(args.List[3].Number)
+	ncd := timeFromExcelTime(fn.COUPNCD(argsList).Number, false)
+	return newNumberFormulaArg(coupdays(settlement, ncd, basis))
 }
 
 // COUPNCD function calculates the number of coupons payable, between a
