@@ -245,11 +245,11 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	a := formatSet.Author
 	t := formatSet.Text
-	if len(a) > 255 {
-		a = a[0:255]
+	if len(a) > MaxFieldLength {
+		a = a[:MaxFieldLength]
 	}
 	if len(t) > 32512 {
-		t = t[0:32512]
+		t = t[:32512]
 	}
 	comments := f.commentsReader(commentsXML)
 	authorID := 0

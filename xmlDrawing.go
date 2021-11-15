@@ -99,6 +99,7 @@ const (
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
 	MaxFileNameLength    = 207
+	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
 	TotalRows            = 1048576

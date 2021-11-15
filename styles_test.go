@@ -262,10 +262,10 @@ func TestGetDefaultFont(t *testing.T) {
 
 func TestSetDefaultFont(t *testing.T) {
 	f := NewFile()
-	f.SetDefaultFont("Ariel")
+	f.SetDefaultFont("Arial")
 	styles := f.stylesReader()
 	s := f.GetDefaultFont()
-	assert.Equal(t, s, "Ariel", "Default font should change to Ariel")
+	assert.Equal(t, s, "Arial", "Default font should change to Arial")
 	assert.Equal(t, *styles.CellStyles.CellStyle[0].CustomBuiltIn, true)
 }
 

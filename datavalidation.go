@@ -35,11 +35,6 @@ const (
 	DataValidationTypeWhole
 )
 
-const (
-	// dataValidationFormulaStrLen 255 characters
-	dataValidationFormulaStrLen = 255
-)
-
 // DataValidationErrorStyle defined the style of data validation error alert.
 type DataValidationErrorStyle int
 
@@ -120,7 +115,7 @@ func (dd *DataValidation) SetInput(title, msg string) {
 // SetDropList data validation list.
 func (dd *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
-	if dataValidationFormulaStrLen < len(utf16.Encode([]rune(formula))) {
+	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
 		return ErrDataValidationFormulaLenth
 	}
 	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))

@@ -2849,7 +2849,7 @@ func (fn *formulaFuncs) ARABIC(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ARABIC requires 1 numeric argument")
 	}
 	text := argsList.Front().Value.(formulaArg).Value()
-	if len(text) > 255 {
+	if len(text) > MaxFieldLength {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	text = strings.ToUpper(text)
@@ -7400,47 +7400,12 @@ func (fn *formulaFuncs) DAYS(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "DAYS requires 2 arguments")
 	}
-	var end, start float64
-	endArg, startArg := argsList.Front().Value.(formulaArg), argsList.Back().Value.(formulaArg)
-	switch endArg.Type {
-	case ArgNumber:
-		end = endArg.Number
-	case ArgString:
-		endNum := endArg.ToNumber()
-		if endNum.Type == ArgNumber {
-			end = endNum.Number
-		} else {
-			args := list.New()
-			args.PushBack(endArg)
-			endValue := fn.DATEVALUE(args)
-			if endValue.Type == ArgError {
-				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-			}
-			end = endValue.Number
-		}
-	default:
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	switch startArg.Type {
-	case ArgNumber:
-		start = startArg.Number
-	case ArgString:
-		startNum := startArg.ToNumber()
-		if startNum.Type == ArgNumber {
-			start = startNum.Number
-		} else {
-			args := list.New()
-			args.PushBack(startArg)
-			startValue := fn.DATEVALUE(args)
-			if startValue.Type == ArgError {
-				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-			}
-			start = startValue.Number
-		}
-	default:
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	return newNumberFormulaArg(end - start)
+	end, start := args.List[0], args.List[1]
+	return newNumberFormulaArg(end.Number - start.Number)
 }
 
 // ISOWEEKNUM function returns the ISO week number of a supplied date. The
@@ -7695,28 +7660,18 @@ func (fn *formulaFuncs) YEARFRAC(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 && argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "YEARFRAC requires 3 or 4 arguments")
 	}
-	var basisArg formulaArg
-	startArg, endArg := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Front().Next().Value.(formulaArg).ToNumber()
-	args := list.New().Init()
-	if startArg.Type != ArgNumber {
-		args.PushBack(argsList.Front().Value.(formulaArg))
-		if startArg = fn.DATEVALUE(args); startArg.Type != ArgNumber {
-			return startArg
-		}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	if endArg.Type != ArgNumber {
-		args.Init()
-		args.PushBack(argsList.Front().Next().Value.(formulaArg))
-		if endArg = fn.DATEVALUE(args); endArg.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		}
-	}
+	start, end := args.List[0], args.List[1]
+	basis := newNumberFormulaArg(0)
 	if argsList.Len() == 3 {
-		if basisArg = argsList.Back().Value.(formulaArg).ToNumber(); basisArg.Type != ArgNumber {
-			return basisArg
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return basis
 		}
 	}
-	return yearFrac(startArg.Number, endArg.Number, int(basisArg.Number))
+	return yearFrac(start.Number, end.Number, int(basis.Number))
 }
 
 // NOW function returns the current date and time. The function receives no
@@ -7859,7 +7814,7 @@ func (fn *formulaFuncs) CHAR(argsList *list.List) formulaArg {
 		return arg
 	}
 	num := int(arg.Number)
-	if num < 0 || num > 255 {
+	if num < 0 || num > MaxFieldLength {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	return newStringFormulaArg(fmt.Sprintf("%c", num))
@@ -9413,24 +9368,11 @@ func (fn *formulaFuncs) ACCRINT(argsList *list.List) formulaArg {
 	if argsList.Len() > 8 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINT allows at most 8 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	issue := fn.DATEVALUE(args)
-	if issue.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(3, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	fi := fn.DATEVALUE(args)
-	if fi.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	issue, settlement := args.List[0], args.List[2]
 	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
 	par := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
 	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
@@ -9468,18 +9410,11 @@ func (fn *formulaFuncs) ACCRINTM(argsList *list.List) formulaArg {
 	if argsList.Len() != 4 && argsList.Len() != 5 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ACCRINTM requires 4 or 5 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	issue := fn.DATEVALUE(args)
-	if issue.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	issue, settlement := args.List[0], args.List[1]
 	if settlement.Number < issue.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
@@ -9644,24 +9579,11 @@ func (fn *formulaFuncs) prepareCouponArgs(name string, argsList *list.List) form
 	if argsList.Len() != 3 && argsList.Len() != 4 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 or 4 arguments", name))
 	}
-	args := list.New().Init()
-	settlement := argsList.Front().Value.(formulaArg).ToNumber()
-	if settlement.Type != ArgNumber {
-		args.PushBack(argsList.Front().Value.(formulaArg))
-		settlement = fn.DATEVALUE(args)
-		if settlement.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	maturity := argsList.Front().Next().Value.(formulaArg).ToNumber()
-	if maturity.Type != ArgNumber {
-		args.Init()
-		args.PushBack(argsList.Front().Next().Value.(formulaArg))
-		maturity = fn.DATEVALUE(args)
-		if maturity.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		}
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	if settlement.Number >= maturity.Number {
 		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
 	}
@@ -10048,6 +9970,43 @@ func (fn *formulaFuncs) DDB(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(depreciation)
 }
 
+// prepareDataValueArgs convert first N arguments to data value for the
+// formula functions.
+func (fn *formulaFuncs) prepareDataValueArgs(n int, argsList *list.List) formulaArg {
+	l := list.New()
+	dataValues := []formulaArg{}
+	getDateValue := func(arg formulaArg, l *list.List) formulaArg {
+		switch arg.Type {
+		case ArgNumber:
+			break
+		case ArgString:
+			num := arg.ToNumber()
+			if num.Type == ArgNumber {
+				arg = num
+				break
+			}
+			l.Init()
+			l.PushBack(arg)
+			arg = fn.DATEVALUE(l)
+			if arg.Type == ArgError {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
+		default:
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		return arg
+	}
+	for i, arg := 0, argsList.Front(); i < n; arg = arg.Next() {
+		dataValue := getDateValue(arg.Value.(formulaArg), l)
+		if dataValue.Type != ArgNumber {
+			return dataValue
+		}
+		dataValues = append(dataValues, dataValue)
+		i++
+	}
+	return newListFormulaArg(dataValues)
+}
+
 // DISC function calculates the Discount Rate for a security. The syntax of
 // the function is:
 //
@@ -10057,18 +10016,11 @@ func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
 	if argsList.Len() != 4 && argsList.Len() != 5 {
 		return newErrorFormulaArg(formulaErrorVALUE, "DISC requires 4 or 5 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	if maturity.Number <= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, "DISC requires maturity > settlement")
 	}
@@ -10253,18 +10205,11 @@ func (fn *formulaFuncs) INTRATE(argsList *list.List) formulaArg {
 	if argsList.Len() != 4 && argsList.Len() != 5 {
 		return newErrorFormulaArg(formulaErrorVALUE, "INTRATE requires 4 or 5 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	if maturity.Number <= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires maturity > settlement")
 	}
@@ -10707,18 +10652,11 @@ func (fn *formulaFuncs) PRICEDISC(argsList *list.List) formulaArg {
 	if argsList.Len() != 4 && argsList.Len() != 5 {
 		return newErrorFormulaArg(formulaErrorVALUE, "PRICEDISC requires 4 or 5 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	if maturity.Number <= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, "PRICEDISC requires maturity > settlement")
 	}
@@ -10758,26 +10696,13 @@ func (fn *formulaFuncs) PRICEMAT(argsList *list.List) formulaArg {
 	if argsList.Len() != 5 && argsList.Len() != 6 {
 		return newErrorFormulaArg(formulaErrorVALUE, "PRICEMAT requires 5 or 6 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(3, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity, issue := args.List[0], args.List[1], args.List[2]
 	if settlement.Number >= maturity.Number {
 		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires maturity > settlement")
-	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
-	issue := fn.DATEVALUE(args)
-	if issue.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	if issue.Number >= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, "PRICEMAT requires settlement > issue")
@@ -10938,18 +10863,11 @@ func (fn *formulaFuncs) RECEIVED(argsList *list.List) formulaArg {
 	if argsList.Len() > 5 {
 		return newErrorFormulaArg(formulaErrorVALUE, "RECEIVED allows at most 5 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	investment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
 	if investment.Type != ArgNumber {
 		return investment
@@ -11061,18 +10979,11 @@ func (fn *formulaFuncs) TBILLEQ(argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TBILLEQ requires 3 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	dsm := maturity.Number - settlement.Number
 	if dsm > 365 || maturity.Number <= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -11096,18 +11007,11 @@ func (fn *formulaFuncs) TBILLPRICE(argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TBILLPRICE requires 3 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	dsm := maturity.Number - settlement.Number
 	if dsm > 365 || maturity.Number <= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -11131,18 +11035,11 @@ func (fn *formulaFuncs) TBILLYIELD(argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TBILLYIELD requires 3 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	dsm := maturity.Number - settlement.Number
 	if dsm > 365 || maturity.Number <= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -11231,18 +11128,11 @@ func (fn *formulaFuncs) YIELDDISC(argsList *list.List) formulaArg {
 	if argsList.Len() != 4 && argsList.Len() != 5 {
 		return newErrorFormulaArg(formulaErrorVALUE, "YIELDDISC requires 4 or 5 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
+	settlement, maturity := args.List[0], args.List[1]
 	pr := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
 	if pr.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
@@ -11279,23 +11169,19 @@ func (fn *formulaFuncs) YIELDMAT(argsList *list.List) formulaArg {
 	if argsList.Len() != 5 && argsList.Len() != 6 {
 		return newErrorFormulaArg(formulaErrorVALUE, "YIELDMAT requires 5 or 6 arguments")
 	}
-	args := list.New().Init()
-	args.PushBack(argsList.Front().Value.(formulaArg))
-	settlement := fn.DATEVALUE(args)
-	if settlement.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
 	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Value.(formulaArg))
-	maturity := fn.DATEVALUE(args)
-	if maturity.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	args.Init()
-	args.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
-	issue := fn.DATEVALUE(args)
+	settlement, maturity := args.List[0], args.List[1]
+	arg := list.New().Init()
+	issue := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
 	if issue.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		arg.PushBack(argsList.Front().Next().Next().Value.(formulaArg))
+		issue = fn.DATEVALUE(arg)
+		if issue.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 	}
 	if issue.Number >= settlement.Number {
 		return newErrorFormulaArg(formulaErrorNUM, "YIELDMAT requires settlement > issue")

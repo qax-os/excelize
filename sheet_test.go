@@ -217,10 +217,18 @@ func TestSetHeaderFooter(t *testing.T) {
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN is not exist")
 	// Test set header and footer with illegal setting.
 	assert.EqualError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
-		OddHeader: strings.Repeat("c", 256),
-	}), "field OddHeader must be less than 255 characters")
+		OddHeader: strings.Repeat("c", MaxFieldLength+1),
+	}), "field OddHeader must be less or equal than 255 characters")
 
 	assert.NoError(t, f.SetHeaderFooter("Sheet1", nil))
+	text := strings.Repeat("一", MaxFieldLength)
+	assert.NoError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
+		OddHeader:   text,
+		OddFooter:   text,
+		EvenHeader:  text,
+		EvenFooter:  text,
+		FirstHeader: text,
+	}))
 	assert.NoError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
 		DifferentFirst:   true,
 		DifferentOddEven: true,

@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	"github.com/mohae/deepcopy"
@@ -1092,8 +1093,8 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 	// Check 6 string type fields: OddHeader, OddFooter, EvenHeader, EvenFooter,
 	// FirstFooter, FirstHeader
 	for i := 4; i < v.NumField()-1; i++ {
-		if v.Field(i).Len() >= 255 {
-			return fmt.Errorf("field %s must be less than 255 characters", v.Type().Field(i).Name)
+		if len(utf16.Encode([]rune(v.Field(i).String()))) > MaxFieldLength {
+			return newFieldLengthError(v.Type().Field(i).Name)
 		}
 	}
 	ws.HeaderFooter = &xlsxHeaderFooter{

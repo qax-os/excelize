@@ -54,8 +54,8 @@ func TestDataValidation(t *testing.T) {
 	dvRange.Sqref = "A5:B6"
 	for _, listValid := range [][]string{
 		{"1", "2", "3"},
-		{strings.Repeat("&", 255)},
-		{strings.Repeat("\u4E00", 255)},
+		{strings.Repeat("&", MaxFieldLength)},
+		{strings.Repeat("\u4E00", MaxFieldLength)},
 		{strings.Repeat("\U0001F600", 100), strings.Repeat("\u4E01", 50), "<&>"},
 		{`A<`, `B>`, `C"`, "D\t", `E'`, `F`},
 	} {

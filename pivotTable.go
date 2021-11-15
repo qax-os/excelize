@@ -662,8 +662,8 @@ func (f *File) getPivotTableFieldsSubtotal(fields []PivotTableField) []string {
 func (f *File) getPivotTableFieldsName(fields []PivotTableField) []string {
 	field := make([]string, len(fields))
 	for idx, fld := range fields {
-		if len(fld.Name) > 255 {
-			field[idx] = fld.Name[0:255]
+		if len(fld.Name) > MaxFieldLength {
+			field[idx] = fld.Name[:MaxFieldLength]
 			continue
 		}
 		field[idx] = fld.Name

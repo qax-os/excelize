@@ -51,6 +51,11 @@ func newInvalidStyleID(styleID int) error {
 	return fmt.Errorf("invalid style ID %d, negative values are not supported", styleID)
 }
 
+// newFieldLengthError defined the error message on receiving the field length overflow.
+func newFieldLengthError(name string) error {
+	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
