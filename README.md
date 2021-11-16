@@ -77,6 +77,12 @@ func main() {
         fmt.Println(err)
         return
     }
+    defer func() {
+        // Close the spreadsheet.
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // Get value from cell by given worksheet name and axis.
     cell, err := f.GetCellValue("Sheet1", "B2")
     if err != nil {
@@ -95,10 +101,6 @@ func main() {
             fmt.Print(colCell, "\t")
         }
         fmt.Println()
-    }
-    // Close the spreadsheet.
-    if err = f.Close(); err != nil {
-        fmt.Println(err)
     }
 }
 ```
@@ -184,6 +186,12 @@ func main() {
         fmt.Println(err)
         return
     }
+    defer func() {
+        // Close the spreadsheet.
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // Insert a picture.
     if err := f.AddPicture("Sheet1", "A2", "image.png", ""); err != nil {
         fmt.Println(err)
@@ -205,10 +213,6 @@ func main() {
     }
     // Save the spreadsheet with the origin path.
     if err = f.Save(); err != nil {
-        fmt.Println(err)
-    }
-    // Close the spreadsheet.
-    if err = f.Close(); err != nil {
         fmt.Println(err)
     }
 }

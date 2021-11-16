@@ -234,7 +234,7 @@ func trimCell(column []xlsxC) []xlsxC {
 			i++
 		}
 	}
-	return col[0:i]
+	return col[:i]
 }
 
 // setContentTypes provides a function to read and update property of contents
@@ -452,11 +452,13 @@ func (f *File) GetSheetIndex(name string) int {
 //    if err != nil {
 //        return
 //    }
+//    defer func() {
+//        if err := f.Close(); err != nil {
+//            fmt.Println(err)
+//        }
+//    }()
 //    for index, name := range f.GetSheetMap() {
 //        fmt.Println(index, name)
-//    }
-//    if err = f.Close(); err != nil {
-//        fmt.Println(err)
 //    }
 //
 func (f *File) GetSheetMap() map[int]string {

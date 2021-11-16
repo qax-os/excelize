@@ -297,7 +297,7 @@ func encryptionMechanism(buffer []byte) (mechanism string, err error) {
 		err = ErrUnknownEncryptMechanism
 		return
 	}
-	versionMajor, versionMinor := binary.LittleEndian.Uint16(buffer[0:2]), binary.LittleEndian.Uint16(buffer[2:4])
+	versionMajor, versionMinor := binary.LittleEndian.Uint16(buffer[:2]), binary.LittleEndian.Uint16(buffer[2:4])
 	if versionMajor == 4 && versionMinor == 4 {
 		mechanism = "agile"
 		return
@@ -600,7 +600,7 @@ func createIV(blockKey interface{}, encryption Encryption) ([]byte, error) {
 		tmp := make([]byte, 0x36)
 		iv = append(iv, tmp...)
 	} else if len(iv) > encryptedKey.BlockSize {
-		iv = iv[0:encryptedKey.BlockSize]
+		iv = iv[:encryptedKey.BlockSize]
 	}
 	return iv, nil
 }

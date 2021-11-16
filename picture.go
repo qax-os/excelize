@@ -481,23 +481,26 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 }
 
 // GetPicture provides a function to get picture base name and raw content
-// embed in XLSX by given worksheet and cell name. This function returns the
-// file name in XLSX and file contents as []byte data types. For example:
+// embed in spreadsheet by given worksheet and cell name. This function
+// returns the file name in spreadsheet and file contents as []byte data
+// types. For example:
 //
 //    f, err := excelize.OpenFile("Book1.xlsx")
 //    if err != nil {
 //        fmt.Println(err)
 //        return
 //    }
+//    defer func() {
+//        if err := f.Close(); err != nil {
+//            fmt.Println(err)
+//        }
+//    }()
 //    file, raw, err := f.GetPicture("Sheet1", "A2")
 //    if err != nil {
 //        fmt.Println(err)
 //        return
 //    }
 //    if err := ioutil.WriteFile(file, raw, 0644); err != nil {
-//        fmt.Println(err)
-//    }
-//    if err = f.Close(); err != nil {
 //        fmt.Println(err)
 //    }
 //

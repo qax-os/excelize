@@ -526,7 +526,7 @@ func bytesReplace(s, old, new []byte, n int) []byte {
 	}
 
 	w += copy(s[w:], s[i:])
-	return s[0:w]
+	return s[:w]
 }
 
 // genSheetPasswd provides a method to generate password for worksheet

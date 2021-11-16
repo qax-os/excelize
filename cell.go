@@ -354,7 +354,7 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 // table.
 func (f *File) setCellString(value string) (t string, v string) {
 	if len(value) > TotalCellChars {
-		value = value[0:TotalCellChars]
+		value = value[:TotalCellChars]
 	}
 	t = "s"
 	v = strconv.Itoa(f.setSharedString(value))
@@ -381,7 +381,7 @@ func (f *File) setSharedString(val string) int {
 // setCellStr provides a function to set string type to cell.
 func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	if len(value) > TotalCellChars {
-		value = value[0:TotalCellChars]
+		value = value[:TotalCellChars]
 	}
 	if len(value) > 0 {
 		prefix, suffix := value[0], value[len(value)-1]

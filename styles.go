@@ -3137,7 +3137,7 @@ func ThemeColor(baseColor string, tint float64) string {
 	if tint == 0 {
 		return "FF" + baseColor
 	}
-	r, _ := strconv.ParseUint(baseColor[0:2], 16, 64)
+	r, _ := strconv.ParseUint(baseColor[:2], 16, 64)
 	g, _ := strconv.ParseUint(baseColor[2:4], 16, 64)
 	b, _ := strconv.ParseUint(baseColor[4:6], 16, 64)
 	var h, s, l float64

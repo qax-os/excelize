@@ -1429,10 +1429,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUPDAYS(\"01/01/2011\",\"10/25/2012\",4,1)": "92",
 		// COUPDAYSNC
 		"=COUPDAYSNC(\"01/01/2011\",\"10/25/2012\",4)": "24",
+		"=COUPDAYSNC(\"04/01/2012\",\"03/31/2020\",2)": "179",
 		// COUPNCD
 		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4)":   "40568",
 		"=COUPNCD(\"01/01/2011\",\"10/25/2012\",4,0)": "40568",
 		"=COUPNCD(\"10/25/2011\",\"01/01/2012\",4)":   "40909",
+		"=COUPNCD(\"04/01/2012\",\"03/31/2020\",2)":   "41182",
+		"=COUPNCD(\"01/01/2000\",\"08/30/2001\",2)":   "36585",
 		// COUPNUM
 		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",4)":   "8",
 		"=COUPNUM(\"01/01/2011\",\"10/25/2012\",4,0)": "8",
@@ -1497,6 +1500,10 @@ func TestCalcCellValue(t *testing.T) {
 		// PMT
 		"=PMT(0,8,0,5000,1)":       "-625",
 		"=PMT(0.035/4,8,0,5000,1)": "-600.8520271804658",
+		// PRICE
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,100,2)":   "110.65510517844305",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,100,2,4)": "110.65510517844305",
+		"=PRICE(\"04/01/2012\",\"03/31/2020\",12%,10%,100,2)":   "110.83448359321572",
 		// PPMT
 		"=PPMT(0.05/12,2,60,50000)":   "-738.2918003208238",
 		"=PPMT(0.035/4,2,8,0,5000,1)": "-606.1094824182949",
@@ -2951,6 +2958,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=PMT(0,0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PMT(0,0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PMT(0,0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// PRICE
+		"=PRICE()": "PRICE requires 6 or 7 arguments",
+		"=PRICE(\"\",\"02/01/2020\",12%,10%,100,2,4)":              "#VALUE!",
+		"=PRICE(\"04/01/2012\",\"\",12%,10%,100,2,4)":              "#VALUE!",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",\"\",10%,100,2,4)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,\"\",100,2,4)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,\"\",2,4)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,100,\"\",4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",-1,10%,100,2,4)":     "PRICE requires rate >= 0",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,-1,100,2,4)":     "PRICE requires yld >= 0",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,0,2,4)":      "PRICE requires redemption > 0",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,100,2,\"\")": "#NUM!",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,100,3,4)":    "#NUM!",
+		"=PRICE(\"04/01/2012\",\"02/01/2020\",12%,10%,100,2,5)":    "invalid basis",
 		// PPMT
 		"=PPMT()":               "PPMT requires at least 4 arguments",
 		"=PPMT(0,0,0,0,0,0,0)":  "PPMT allows at most 6 arguments",

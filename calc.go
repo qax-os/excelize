@@ -516,6 +516,7 @@ type formulaFuncs struct {
 //    POISSON
 //    POWER
 //    PPMT
+//    PRICE
 //    PRICEDISC
 //    PRICEMAT
 //    PRODUCT
@@ -9723,6 +9724,40 @@ func (fn *formulaFuncs) COUPDAYSNC(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(coupdays(settlement, ncd, basis))
 }
 
+// coupons is an implementation of the formula function COUPNCD and COUPPCD.
+func (fn *formulaFuncs) coupons(name string, arg formulaArg) formulaArg {
+	settlement := timeFromExcelTime(arg.List[0].Number, false)
+	maturity := timeFromExcelTime(arg.List[1].Number, false)
+	maturityDays := (maturity.Year()-settlement.Year())*12 + (int(maturity.Month()) - int(settlement.Month()))
+	coupon := 12 / int(arg.List[2].Number)
+	mod := maturityDays % coupon
+	year := settlement.Year()
+	month := int(settlement.Month())
+	if mod == 0 && settlement.Day() >= maturity.Day() {
+		month += coupon
+	} else {
+		month += mod
+	}
+	if name != "COUPNCD" {
+		month -= coupon
+	}
+	if month > 11 {
+		year += 1
+		month -= 12
+	} else if month < 0 {
+		year -= 1
+		month += 12
+	}
+	day, lastDay := maturity.Day(), time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	days := getDaysInMonth(lastDay.Year(), int(lastDay.Month()))
+	if getDaysInMonth(maturity.Year(), int(maturity.Month())) == maturity.Day() {
+		day = days
+	} else if day > 27 && day > days {
+		day = days
+	}
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(year, time.Month(month), day)) + 1)
+}
+
 // COUPNCD function calculates the number of coupons payable, between a
 // security's settlement date and maturity date, rounded up to the nearest
 // whole coupon. The syntax of the function is:
@@ -9734,16 +9769,7 @@ func (fn *formulaFuncs) COUPNCD(argsList *list.List) formulaArg {
 	if args.Type != ArgList {
 		return args
 	}
-	settlement := timeFromExcelTime(args.List[0].Number, false)
-	maturity := timeFromExcelTime(args.List[1].Number, false)
-	ncd := time.Date(settlement.Year(), maturity.Month(), maturity.Day(), 0, 0, 0, 0, time.UTC)
-	if ncd.After(settlement) {
-		ncd = ncd.AddDate(-1, 0, 0)
-	}
-	for !ncd.After(settlement) {
-		ncd = ncd.AddDate(0, 12/int(args.List[2].Number), 0)
-	}
-	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(ncd.Year(), ncd.Month(), ncd.Day())) + 1)
+	return fn.coupons("COUPNCD", args)
 }
 
 // COUPNUM function calculates the number of coupons payable, between a
@@ -9773,18 +9799,7 @@ func (fn *formulaFuncs) COUPPCD(argsList *list.List) formulaArg {
 	if args.Type != ArgList {
 		return args
 	}
-	settlement := timeFromExcelTime(args.List[0].Number, false)
-	maturity := timeFromExcelTime(args.List[1].Number, false)
-	date, years := maturity, settlement.Year()-maturity.Year()
-	date = date.AddDate(years, 0, 0)
-	if settlement.After(date) {
-		date = date.AddDate(1, 0, 0)
-	}
-	month := -12 / args.List[2].Number
-	for date.After(settlement) {
-		date = date.AddDate(0, int(month), 0)
-	}
-	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), makeDate(date.Year(), date.Month(), date.Day())) + 1)
+	return fn.coupons("COUPPCD", args)
 }
 
 // CUMIPMT function calculates the cumulative interest paid on a loan or
@@ -10641,6 +10656,81 @@ func (fn *formulaFuncs) PMT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) PPMT(argsList *list.List) formulaArg {
 	return fn.ipmt("PPMT", argsList)
+}
+
+// price is an implementation of the formula function PRICE.
+func (fn *formulaFuncs) price(settlement, maturity, rate, yld, redemption, frequency, basis formulaArg) formulaArg {
+	if basis.Number < 0 || basis.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	argsList := list.New().Init()
+	argsList.PushBack(settlement)
+	argsList.PushBack(maturity)
+	argsList.PushBack(frequency)
+	argsList.PushBack(basis)
+	e := fn.COUPDAYS(argsList)
+	dsc := fn.COUPDAYSNC(argsList).Number / e.Number
+	n := fn.COUPNUM(argsList)
+	a := fn.COUPDAYBS(argsList)
+	ret := redemption.Number / math.Pow(1+yld.Number/frequency.Number, n.Number-1+dsc)
+	ret -= 100 * rate.Number / frequency.Number * a.Number / e.Number
+	t1 := 100 * rate.Number / frequency.Number
+	t2 := 1 + yld.Number/frequency.Number
+	for k := 0.0; k < n.Number; k++ {
+		ret += t1 / math.Pow(t2, k+dsc)
+	}
+	return newNumberFormulaArg(ret)
+}
+
+// PRICE function calculates the price, per $100 face value of a security that
+// pays periodic interest. The syntax of the function is:
+//
+//    PRICE(settlement,maturity,rate,yld,redemption,frequency,[basis])
+//
+func (fn *formulaFuncs) PRICE(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PRICE requires 6 or 7 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires rate >= 0")
+	}
+	yld := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires yld >= 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption > 0")
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 7 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return fn.price(settlement, maturity, rate, yld, redemption, frequency, basis)
 }
 
 // PRICEDISC function calculates the price, per $100 face value of a

@@ -446,7 +446,7 @@ func (f *File) parseFilterExpression(expression string, tokens []string) ([]int,
 		if re {
 			conditional = 1
 		}
-		expression1, token1, err := f.parseFilterTokens(expression, tokens[0:3])
+		expression1, token1, err := f.parseFilterTokens(expression, tokens[:3])
 		if err != nil {
 			return expressions, t, err
 		}
