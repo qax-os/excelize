@@ -122,6 +122,19 @@ func (f *File) getWorkbookRelsPath() (path string) {
 	return
 }
 
+// getWorksheetPath construct a target XML as xl/worksheets/sheet%d by split
+// path, compatible with different types of relative paths in
+// workbook.xml.rels, for example: worksheets/sheet%d.xml
+// and /xl/worksheets/sheet%d.xml
+func (f *File) getWorksheetPath(relTarget string) (path string) {
+	path = filepath.ToSlash(strings.TrimPrefix(
+		strings.Replace(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), relTarget)), "\\", "/", -1), "/"))
+	if strings.HasPrefix(relTarget, "/") {
+		path = filepath.ToSlash(strings.TrimPrefix(strings.Replace(filepath.Clean(relTarget), "\\", "/", -1), "/"))
+	}
+	return path
+}
+
 // workbookReader provides a function to get the pointer to the workbook.xml
 // structure after deserialization.
 func (f *File) workbookReader() *xlsxWorkbook {
@@ -491,15 +504,7 @@ func (f *File) getSheetMap() map[string]string {
 	for _, v := range f.workbookReader().Sheets.Sheet {
 		for _, rel := range f.relsReader(f.getWorkbookRelsPath()).Relationships {
 			if rel.ID == v.ID {
-				// Construct a target XML as xl/worksheets/sheet%d by split
-				// path, compatible with different types of relative paths in
-				// workbook.xml.rels, for example: worksheets/sheet%d.xml
-				// and /xl/worksheets/sheet%d.xml
-				path := filepath.ToSlash(strings.TrimPrefix(
-					strings.Replace(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), rel.Target)), "\\", "/", -1), "/"))
-				if strings.HasPrefix(rel.Target, "/") {
-					path = filepath.ToSlash(strings.TrimPrefix(strings.Replace(filepath.Clean(rel.Target), "\\", "/", -1), "/"))
-				}
+				path := f.getWorksheetPath(rel.Target)
 				if _, ok := f.Pkg.Load(path); ok {
 					maps[v.Name] = path
 				}
@@ -572,7 +577,7 @@ func (f *File) DeleteSheet(name string) {
 			if wbRels != nil {
 				for _, rel := range wbRels.Relationships {
 					if rel.ID == sheet.ID {
-						sheetXML = rel.Target
+						sheetXML = f.getWorksheetPath(rel.Target)
 						rels = "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[sheetName], "xl/worksheets/") + ".rels"
 					}
 				}
