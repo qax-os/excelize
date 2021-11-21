@@ -592,6 +592,7 @@ type formulaFuncs struct {
 //    VARA
 //    VARP
 //    VARPA
+//    VDB
 //    VLOOKUP
 //    WEEKDAY
 //    WEIBULL
@@ -11143,6 +11144,143 @@ func (fn *formulaFuncs) TBILLYIELD(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(((100 - pr.Number) / pr.Number) * (360 / dsm))
+}
+
+// prepareVdbArgs checking and prepare arguments for the formula functions
+// VDB.
+func (fn *formulaFuncs) prepareVdbArgs(argsList *list.List) formulaArg {
+	cost := argsList.Front().Value.(formulaArg).ToNumber()
+	if cost.Type != ArgNumber {
+		return cost
+	}
+	if cost.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires cost >= 0")
+	}
+	salvage := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if salvage.Type != ArgNumber {
+		return salvage
+	}
+	if salvage.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires salvage >= 0")
+	}
+	life := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if life.Type != ArgNumber {
+		return life
+	}
+	if life.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires life > 0")
+	}
+	startPeriod := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if startPeriod.Type != ArgNumber {
+		return startPeriod
+	}
+	if startPeriod.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires start_period > 0")
+	}
+	endPeriod := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if endPeriod.Type != ArgNumber {
+		return endPeriod
+	}
+	if startPeriod.Number > endPeriod.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires start_period <= end_period")
+	}
+	if endPeriod.Number > life.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "VDB requires end_period <= life")
+	}
+	factor := newNumberFormulaArg(2)
+	if argsList.Len() > 5 {
+		if factor = argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); factor.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		if factor.Number < 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, "VDB requires factor >= 0")
+		}
+	}
+	return newListFormulaArg([]formulaArg{cost, salvage, life, startPeriod, endPeriod, factor})
+}
+
+// vdb is a part of implementation of the formula function VDB.
+func (fn *formulaFuncs) vdb(cost, salvage, life, life1, period, factor formulaArg) formulaArg {
+	var ddb, vdb, sln, term float64
+	endInt, cs, nowSln := math.Ceil(period.Number), cost.Number-salvage.Number, false
+	ddbArgs := list.New()
+	for i := 1.0; i <= endInt; i++ {
+		if !nowSln {
+			ddbArgs.Init()
+			ddbArgs.PushBack(cost)
+			ddbArgs.PushBack(salvage)
+			ddbArgs.PushBack(life)
+			ddbArgs.PushBack(newNumberFormulaArg(i))
+			ddbArgs.PushBack(factor)
+			ddb = fn.DDB(ddbArgs).Number
+			sln = cs / (life1.Number - i + 1)
+			if sln > ddb {
+				term = sln
+				nowSln = true
+			} else {
+				term = ddb
+				cs -= ddb
+			}
+		} else {
+			term = sln
+		}
+		if i == endInt {
+			term *= period.Number + 1 - endInt
+		}
+		vdb += term
+	}
+	return newNumberFormulaArg(vdb)
+}
+
+// VDB function calculates the depreciation of an asset, using the Double
+// Declining Balance Method, or another specified depreciation rate, for a
+// specified period (including partial periods). The syntax of the function
+// is:
+//
+//    VDB(cost,salvage,life,start_period,end_period,[factor],[no_switch])
+//
+func (fn *formulaFuncs) VDB(argsList *list.List) formulaArg {
+	if argsList.Len() < 5 || argsList.Len() > 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "VDB requires 5 or 7 arguments")
+	}
+	args := fn.prepareVdbArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	cost, salvage, life, startPeriod, endPeriod, factor := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5]
+	noSwitch := newBoolFormulaArg(false)
+	if argsList.Len() > 6 {
+		if noSwitch = argsList.Back().Value.(formulaArg).ToBool(); noSwitch.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	startInt, endInt, vdb, ddbArgs := math.Floor(startPeriod.Number), math.Ceil(endPeriod.Number), newNumberFormulaArg(0), list.New()
+	if noSwitch.Number == 1 {
+		for i := startInt + 1; i <= endInt; i++ {
+			ddbArgs.Init()
+			ddbArgs.PushBack(cost)
+			ddbArgs.PushBack(salvage)
+			ddbArgs.PushBack(life)
+			ddbArgs.PushBack(newNumberFormulaArg(i))
+			ddbArgs.PushBack(factor)
+			term := fn.DDB(ddbArgs)
+			if i == startInt+1 {
+				term.Number *= math.Min(endPeriod.Number, startInt+1) - startPeriod.Number
+			} else if i == endInt {
+				term.Number *= endPeriod.Number + 1 - endInt
+			}
+			vdb.Number += term.Number
+		}
+		return vdb
+	}
+	life1, part := life, 0.0
+	if startPeriod.Number != math.Floor(startPeriod.Number) && factor.Number > 1.0 && startPeriod.Number >= life.Number/2.0 {
+		part = startPeriod.Number - life.Number/2.0
+		startPeriod.Number = life.Number / 2.0
+		endPeriod.Number -= part
+	}
+	cost.Number -= fn.vdb(cost, salvage, life, life1, startPeriod, factor).Number
+	return fn.vdb(cost, salvage, life, newNumberFormulaArg(life.Number-startPeriod.Number), newNumberFormulaArg(endPeriod.Number-startPeriod.Number), factor)
 }
 
 // prepareXArgs prepare arguments for the formula function XIRR and XNPV.
