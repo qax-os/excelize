@@ -596,6 +596,7 @@ type formulaFuncs struct {
 //    WEEKDAY
 //    WEIBULL
 //    WEIBULL.DIST
+//    XIRR
 //    XNPV
 //    XOR
 //    YEAR
@@ -11180,6 +11181,93 @@ func (fn *formulaFuncs) prepareXArgs(name string, values, dates formulaArg) (val
 	}
 	err = newEmptyFormulaArg()
 	return
+}
+
+// xirr is an implementation of the formula function XIRR.
+func (fn *formulaFuncs) xirr(values, dates []float64, guess float64) formulaArg {
+	positive, negative := false, false
+	for i := 0; i < len(values); i++ {
+		if values[i] > 0 {
+			positive = true
+		}
+		if values[i] < 0 {
+			negative = true
+		}
+	}
+	if !positive || !negative {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	result, epsMax, count, maxIterate, err := guess, 1e-10, 0, 50, false
+	for {
+		resultValue := xirrPart1(values, dates, result)
+		newRate := result - resultValue/xirrPart2(values, dates, result)
+		epsRate := math.Abs(newRate - result)
+		result = newRate
+		count++
+		if epsRate <= epsMax || math.Abs(resultValue) <= epsMax {
+			break
+		}
+		if count > maxIterate {
+			err = true
+			break
+		}
+	}
+	if err || math.IsNaN(result) || math.IsInf(result, 0) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(result)
+}
+
+// xirrPart1 is a part of implementation of the formula function XIRR.
+func xirrPart1(values, dates []float64, rate float64) float64 {
+	r := rate + 1
+	result := values[0]
+	vlen := len(values)
+	firstDate := dates[0]
+	for i := 1; i < vlen; i++ {
+		result += values[i] / math.Pow(r, (dates[i]-firstDate)/365)
+	}
+	return result
+}
+
+// xirrPart2 is a part of implementation of the formula function XIRR.
+func xirrPart2(values, dates []float64, rate float64) float64 {
+	r := rate + 1
+	result := 0.0
+	vlen := len(values)
+	firstDate := dates[0]
+	for i := 1; i < vlen; i++ {
+		frac := (dates[i] - firstDate) / 365
+		result -= frac * values[i] / math.Pow(r, frac+1)
+	}
+	return result
+}
+
+// XIRR function returns the Internal Rate of Return for a supplied series of
+// cash flows (i.e. a set of values, which includes an initial investment
+// value and a series of net income values) occurring at a series of supplied
+// dates. The syntax of the function is:
+//
+//    XIRR(values,dates,[guess])
+//
+func (fn *formulaFuncs) XIRR(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 && argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XIRR requires 2 or 3 arguments")
+	}
+	values, dates, err := fn.prepareXArgs("XIRR", argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg))
+	if err.Type != ArgEmpty {
+		return err
+	}
+	guess := newNumberFormulaArg(0)
+	if argsList.Len() == 3 {
+		if guess = argsList.Back().Value.(formulaArg).ToNumber(); guess.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		if guess.Number <= -1 {
+			return newErrorFormulaArg(formulaErrorVALUE, "XIRR requires guess > -1")
+		}
+	}
+	return fn.xirr(values, dates, guess.Number)
 }
 
 // XNPV function calculates the Net Present Value for a schedule of cash flows

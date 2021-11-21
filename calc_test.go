@@ -3456,6 +3456,44 @@ func TestCalcMIRR(t *testing.T) {
 	}
 }
 
+func TestCalcXIRR(t *testing.T) {
+	cellData := [][]interface{}{
+		{-100.00, "01/01/2016"},
+		{20.00, "04/01/2016"},
+		{40.00, "10/01/2016"},
+		{25.00, "02/01/2017"},
+		{8.00, "03/01/2017"},
+		{15.00, "06/01/2017"},
+		{-1e-10, "09/01/2017"}}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=XIRR(A1:A4,B1:B4)":     "-0.196743861298328",
+		"=XIRR(A1:A6,B1:B6)":     "0.09443907444452",
+		"=XIRR(A1:A6,B1:B6,0.1)": "0.0944390744445201",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=XIRR()":                 "XIRR requires 2 or 3 arguments",
+		"=XIRR(A1:A4,B1:B4,-1)":   "XIRR requires guess > -1",
+		"=XIRR(\"\",B1:B4)":       "#NUM!",
+		"=XIRR(A1:A4,\"\")":       "#NUM!",
+		"=XIRR(A1:A4,B1:B4,\"\")": "#NUM!",
+		"=XIRR(A2:A6,B2:B6)":      "#NUM!",
+		"=XIRR(A2:A7,B2:B7)":      "#NUM!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcXNPV(t *testing.T) {
 	cellData := [][]interface{}{{nil, 0.05},
 		{"01/01/2016", -10000, nil},
