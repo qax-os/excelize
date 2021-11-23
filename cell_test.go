@@ -178,6 +178,24 @@ func TestSetCellBool(t *testing.T) {
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 }
 
+func TestSetCellTime(t *testing.T) {
+	date, err := time.Parse(time.RFC3339Nano, "2009-11-10T23:00:00Z")
+	assert.NoError(t, err)
+	for location, expected := range map[string]string{
+		"America/New_York": "40127.75",
+		"Asia/Shanghai":    "40128.291666666664",
+		"Europe/London":    "40127.958333333336",
+		"UTC":              "40127.958333333336",
+	} {
+		timezone, err := time.LoadLocation(location)
+		assert.NoError(t, err)
+		_, b, isNum, err := setCellTime(date.In(timezone))
+		assert.NoError(t, err)
+		assert.Equal(t, true, isNum)
+		assert.Equal(t, expected, b)
+	}
+}
+
 func TestGetCellValue(t *testing.T) {
 	// Test get cell value without r attribute of the row.
 	f := NewFile()

@@ -225,6 +225,8 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 // timestamp.
 func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	var excelTime float64
+	_, offset := value.In(value.Location()).Zone()
+	value = value.Add(time.Duration(offset) * time.Second)
 	excelTime, err = timeToExcelTime(value)
 	if err != nil {
 		return
