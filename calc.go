@@ -343,6 +343,8 @@ type formulaFuncs struct {
 //    COMPLEX
 //    CONCAT
 //    CONCATENATE
+//    CONFIDENCE
+//    CONFIDENCE.NORM
 //    COS
 //    COSH
 //    COT
@@ -4945,6 +4947,65 @@ func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(1 - (incompleteGamma(degress.Number/2, x.Number/2) / math.Gamma(degress.Number/2)))
 }
 
+// confidence is an implementation of the formula function CONFIDENCE and
+// CONFIDENCE.NORM.
+func (fn *formulaFuncs) confidence(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 numeric arguments", name))
+	}
+	alpha := argsList.Front().Value.(formulaArg).ToNumber()
+	if alpha.Type != ArgNumber {
+		return alpha
+	}
+	if alpha.Number <= 0 || alpha.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	stdDev := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	size := argsList.Back().Value.(formulaArg).ToNumber()
+	if size.Type != ArgNumber {
+		return size
+	}
+	if size.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New()
+	args.Init()
+	args.PushBack(newNumberFormulaArg(alpha.Number / 2))
+	args.PushBack(newNumberFormulaArg(0))
+	args.PushBack(newNumberFormulaArg(1))
+	return newNumberFormulaArg(-fn.NORMINV(args).Number * (stdDev.Number / math.Sqrt(size.Number)))
+}
+
+// CONFIDENCE function uses a Normal Distribution to calculate a confidence
+// value that can be used to construct the Confidence Interval for a
+// population mean, for a supplied probablity and sample size. It is assumed
+// that the standard deviation of the population is known. The syntax of the
+// function is:
+//
+//    CONFIDENCE(alpha,standard_dev,size)
+//
+func (fn *formulaFuncs) CONFIDENCE(argsList *list.List) formulaArg {
+	return fn.confidence("CONFIDENCE", argsList)
+}
+
+// CONFIDENCEdotNORM function uses a Normal Distribution to calculate a
+// confidence value that can be used to construct the confidence interval for
+// a population mean, for a supplied probablity and sample size. It is
+// assumed that the standard deviation of the population is known. The syntax
+// of the Confidence.Norm function is:
+//
+//    CONFIDENCE.NORM(alpha,standard_dev,size)
+//
+func (fn *formulaFuncs) CONFIDENCEdotNORM(argsList *list.List) formulaArg {
+	return fn.confidence("CONFIDENCE.NORM", argsList)
+}
+
 // calcStringCountSum is part of the implementation countSum.
 func calcStringCountSum(countText bool, count, sum float64, num, arg formulaArg) (float64, float64) {
 	if countText && num.Type == ArgError && arg.String != "" {
@@ -5517,7 +5578,7 @@ func norminv(p float64) (float64, error) {
 	return 0, errors.New(formulaErrorNUM)
 }
 
-// kth is an implementation of the formula function LARGE and SMALL.
+// kth is an implementation of the formula functions LARGE and SMALL.
 func (fn *formulaFuncs) kth(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
@@ -11146,7 +11207,7 @@ func (fn *formulaFuncs) TBILLYIELD(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(((100 - pr.Number) / pr.Number) * (360 / dsm))
 }
 
-// prepareVdbArgs checking and prepare arguments for the formula functions
+// prepareVdbArgs checking and prepare arguments for the formula function
 // VDB.
 func (fn *formulaFuncs) prepareVdbArgs(argsList *list.List) formulaArg {
 	cost := argsList.Front().Value.(formulaArg).ToNumber()

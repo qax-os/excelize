@@ -777,6 +777,10 @@ func TestCalcCellValue(t *testing.T) {
 		// CHIDIST
 		"=CHIDIST(0.5,3)": "0.918891411654676",
 		"=CHIDIST(8,3)":   "0.0460117056892315",
+		// CONFIDENCE
+		"=CONFIDENCE(0.05,0.07,100)": "0.0137197479028414",
+		// CONFIDENCE.NORM
+		"=CONFIDENCE.NORM(0.05,0.07,100)": "0.0137197479028414",
 		// COUNT
 		"=COUNT()":                        "0",
 		"=COUNT(E1:F2,\"text\",1,INT(2))": "3",
@@ -2133,6 +2137,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHIDIST()":         "CHIDIST requires 2 numeric arguments",
 		"=CHIDIST(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=CHIDIST(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// CONFIDENCE
+		"=CONFIDENCE()":               "CONFIDENCE requires 3 numeric arguments",
+		"=CONFIDENCE(\"\",0.07,100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE(0.05,\"\",100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE(0.05,0.07,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE(0,0.07,100)":     "#NUM!",
+		"=CONFIDENCE(1,0.07,100)":     "#NUM!",
+		"=CONFIDENCE(0.05,0,100)":     "#NUM!",
+		"=CONFIDENCE(0.05,0.07,0.5)":  "#NUM!",
+		// CONFIDENCE.NORM
+		"=CONFIDENCE.NORM()":               "CONFIDENCE.NORM requires 3 numeric arguments",
+		"=CONFIDENCE.NORM(\"\",0.07,100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE.NORM(0.05,\"\",100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE.NORM(0.05,0.07,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE.NORM(0,0.07,100)":     "#NUM!",
+		"=CONFIDENCE.NORM(1,0.07,100)":     "#NUM!",
+		"=CONFIDENCE.NORM(0.05,0,100)":     "#NUM!",
+		"=CONFIDENCE.NORM(0.05,0.07,0.5)":  "#NUM!",
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
