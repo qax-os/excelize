@@ -345,7 +345,35 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
-		writeCell(&sw.rawData, c)
+		writeCell(&sw.rawData, c, false)
+	}
+	_, _ = sw.rawData.WriteString(`</row>`)
+	return sw.rawData.Sync()
+}
+
+func (sw *StreamWriter) AddRow(values []Cell, opts ...RowOpts) error {
+	if !sw.sheetWritten {
+		if len(sw.cols) > 0 {
+			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+		}
+		_, _ = sw.rawData.WriteString(`<sheetData>`)
+		sw.sheetWritten = true
+	}
+	attrs, err := marshalRowAttrs(opts...)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(&sw.rawData, `<row%s>`, attrs)
+	for _, val := range values {
+		c := xlsxC{
+			S: val.StyleID,
+		}
+		setCellFormula(&c, val.Formula)
+		if err = setCellValFunc(&c, val.Value); err != nil {
+			_, _ = sw.rawData.WriteString(`</row>`)
+			return err
+		}
+		writeCell(&sw.rawData, c, true)
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
@@ -478,27 +506,41 @@ func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
 	return
 }
 
-func writeCell(buf *bufferedWriter, c xlsxC) {
+func writeCell(buf *bufferedWriter, c xlsxC, skipRef bool) {
 	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
 		fmt.Fprintf(buf, ` xml:%s="%s"`, c.XMLSpace.Name.Local, c.XMLSpace.Value)
 	}
-	fmt.Fprintf(buf, ` r="%s"`, c.R)
-	if c.S != 0 {
-		fmt.Fprintf(buf, ` s="%d"`, c.S)
+	if !skipRef {
+		fmt.Fprintf(buf, ` r="%s"`, c.R)
+	}
+	if c.S > 1 {
+		_, _ = buf.WriteString(` s="`)
+		_, _ = buf.WriteString(strconv.Itoa(c.S))
+		_, _ = buf.WriteString(`"`)
 	}
 	if c.T != "" {
-		fmt.Fprintf(buf, ` t="%s"`, c.T)
+		_, _ = buf.WriteString(` t="`)
+		_, _ = buf.WriteString(c.T)
+		_, _ = buf.WriteString(`"`)
 	}
 	_, _ = buf.WriteString(`>`)
 	if c.F != nil {
 		_, _ = buf.WriteString(`<f>`)
-		_ = xml.EscapeText(buf, []byte(c.F.Content))
+		if xmlNeedToEscape(c.F.Content) {
+			_ = xml.EscapeText(buf, []byte(c.F.Content))
+		} else {
+			_, _ = buf.WriteString(c.F.Content)
+		}
 		_, _ = buf.WriteString(`</f>`)
 	}
 	if c.V != "" {
 		_, _ = buf.WriteString(`<v>`)
-		_ = xml.EscapeText(buf, []byte(c.V))
+		if xmlNeedToEscape(c.V) {
+			_ = xml.EscapeText(buf, []byte(c.V))
+		} else {
+			_, _ = buf.WriteString(c.V)
+		}
 		_, _ = buf.WriteString(`</v>`)
 	}
 	_, _ = buf.WriteString(`</c>`)
@@ -618,4 +660,56 @@ func (bw *bufferedWriter) Close() error {
 	}
 	defer os.Remove(bw.tmp.Name())
 	return bw.tmp.Close()
+}
+
+var (
+	escQuot = []byte("&#34;") // shorter than "&quot;"
+	escApos = []byte("&#39;") // shorter than "&apos;"
+	escAmp  = []byte("&amp;")
+	escLT   = []byte("&lt;")
+	escGT   = []byte("&gt;")
+	escTab  = []byte("&#x9;")
+	escNL   = []byte("&#xA;")
+	escCR   = []byte("&#xD;")
+	escFFFD = []byte("\uFFFD") // Unicode replacement character
+)
+
+// based on xml.EscapeText in stdlib
+func xmlNeedToEscape(s string) bool {
+	for _, r := range s {
+		switch r {
+		case '"':
+			return true
+		case '\'':
+			return true
+		case '&':
+			return true
+		case '<':
+			return true
+		case '>':
+			return true
+		case '\t':
+			return true
+		case '\n':
+			return true
+		case '\r':
+			return true
+		default:
+			if !isInCharacterRange(r) || (r == 0xFFFD) {
+				return true
+			}
+			continue
+		}
+	}
+	return false
+}
+
+// copied and modified from stdlib
+func isInCharacterRange(r rune) (inrange bool) {
+	return r == 0x09 ||
+		r == 0x0A ||
+		r == 0x0D ||
+		r >= 0x20 && r <= 0xD7FF ||
+		r >= 0xE000 && r <= 0xFFFD ||
+		r >= 0x10000 && r <= 0x10FFFF
 }
