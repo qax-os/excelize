@@ -604,6 +604,7 @@ type formulaFuncs struct {
 //    XOR
 //    YEAR
 //    YEARFRAC
+//    YIELD
 //    YIELDDISC
 //    YIELDMAT
 //    Z.TEST
@@ -1492,7 +1493,7 @@ func (fn *formulaFuncs) BESSELJ(argsList *list.List) formulaArg {
 	return fn.bassel(argsList, false)
 }
 
-// bassel is an implementation of the formula function BESSELI and BESSELJ.
+// bassel is an implementation of the formula functions BESSELI and BESSELJ.
 func (fn *formulaFuncs) bassel(argsList *list.List, modfied bool) formulaArg {
 	x, n := argsList.Front().Value.(formulaArg).ToNumber(), argsList.Back().Value.(formulaArg).ToNumber()
 	if x.Type != ArgNumber {
@@ -1826,7 +1827,7 @@ func (fn *formulaFuncs) BITXOR(argsList *list.List) formulaArg {
 	return fn.bitwise("BITXOR", argsList)
 }
 
-// bitwise is an implementation of the formula function BITAND, BITLSHIFT,
+// bitwise is an implementation of the formula functions BITAND, BITLSHIFT,
 // BITOR, BITRSHIFT and BITXOR.
 func (fn *formulaFuncs) bitwise(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
@@ -1937,7 +1938,7 @@ func (fn *formulaFuncs) DEC2OCT(argsList *list.List) formulaArg {
 	return fn.dec2x("DEC2OCT", argsList)
 }
 
-// dec2x is an implementation of the formula function DEC2BIN, DEC2HEX and
+// dec2x is an implementation of the formula functions DEC2BIN, DEC2HEX and
 // DEC2OCT.
 func (fn *formulaFuncs) dec2x(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
@@ -4586,7 +4587,7 @@ func calcStdev(stdeva bool, result, count float64, mean, token formulaArg) (floa
 	return result, count
 }
 
-// stdev is an implementation of the formula function STDEV and STDEVA.
+// stdev is an implementation of the formula functions STDEV and STDEVA.
 func (fn *formulaFuncs) stdev(stdeva bool, argsList *list.List) formulaArg {
 	count, result := -1.0, -1.0
 	var mean formulaArg
@@ -4947,7 +4948,7 @@ func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(1 - (incompleteGamma(degress.Number/2, x.Number/2) / math.Gamma(degress.Number/2)))
 }
 
-// confidence is an implementation of the formula function CONFIDENCE and
+// confidence is an implementation of the formula functions CONFIDENCE and
 // CONFIDENCE.NORM.
 func (fn *formulaFuncs) confidence(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
@@ -10735,12 +10736,21 @@ func (fn *formulaFuncs) price(settlement, maturity, rate, yld, redemption, frequ
 	dsc := fn.COUPDAYSNC(argsList).Number / e.Number
 	n := fn.COUPNUM(argsList)
 	a := fn.COUPDAYBS(argsList)
-	ret := redemption.Number / math.Pow(1+yld.Number/frequency.Number, n.Number-1+dsc)
-	ret -= 100 * rate.Number / frequency.Number * a.Number / e.Number
-	t1 := 100 * rate.Number / frequency.Number
-	t2 := 1 + yld.Number/frequency.Number
-	for k := 0.0; k < n.Number; k++ {
-		ret += t1 / math.Pow(t2, k+dsc)
+	ret := 0.0
+	if n.Number > 1 {
+		ret = redemption.Number / math.Pow(1+yld.Number/frequency.Number, n.Number-1+dsc)
+		ret -= 100 * rate.Number / frequency.Number * a.Number / e.Number
+		t1 := 100 * rate.Number / frequency.Number
+		t2 := 1 + yld.Number/frequency.Number
+		for k := 0.0; k < n.Number; k++ {
+			ret += t1 / math.Pow(t2, k+dsc)
+		}
+	} else {
+		dsc = e.Number - a.Number
+		t1 := 100*(rate.Number/frequency.Number) + redemption.Number
+		t2 := (yld.Number/frequency.Number)*(dsc/e.Number) + 1
+		t3 := 100 * (rate.Number / frequency.Number) * (a.Number / e.Number)
+		ret = t1/t2 - t3
 	}
 	return newNumberFormulaArg(ret)
 }
@@ -11494,6 +11504,92 @@ func (fn *formulaFuncs) XNPV(argsList *list.List) formulaArg {
 		xnpv += value / math.Pow(1+rate.Number, (dates[idx]-date1)/365)
 	}
 	return newNumberFormulaArg(xnpv)
+}
+
+// yield is an implementation of the formula function YIELD.
+func (fn *formulaFuncs) yield(settlement, maturity, rate, pr, redemption, frequency, basis formulaArg) formulaArg {
+	priceN, yield1, yield2 := newNumberFormulaArg(0), newNumberFormulaArg(0), newNumberFormulaArg(1)
+	price1 := fn.price(settlement, maturity, rate, yield1, redemption, frequency, basis)
+	if price1.Type != ArgNumber {
+		return price1
+	}
+	price2 := fn.price(settlement, maturity, rate, yield2, redemption, frequency, basis)
+	yieldN := newNumberFormulaArg((yield2.Number - yield1.Number) * 0.5)
+	for iter := 0; iter < 100 && priceN.Number != pr.Number; iter++ {
+		priceN = fn.price(settlement, maturity, rate, yieldN, redemption, frequency, basis)
+		if pr.Number == price1.Number {
+			return yield1
+		} else if pr.Number == price2.Number {
+			return yield2
+		} else if pr.Number == priceN.Number {
+			return yieldN
+		} else if pr.Number < price2.Number {
+			yield2.Number *= 2.0
+			price2 = fn.price(settlement, maturity, rate, yield2, redemption, frequency, basis)
+			yieldN.Number = (yield2.Number - yield1.Number) * 0.5
+		} else {
+			if pr.Number < priceN.Number {
+				yield1 = yieldN
+				price1 = priceN
+			} else {
+				yield2 = yieldN
+				price2 = priceN
+			}
+			yieldN.Number = yield2.Number - (yield2.Number-yield1.Number)*((pr.Number-price2.Number)/(price1.Number-price2.Number))
+		}
+	}
+	return yieldN
+}
+
+// YIELD function calculates the Yield of a security that pays periodic
+// interest. The syntax of the function is:
+//
+//    YIELD(settlement,maturity,rate,pr,redemption,frequency,[basis])
+//
+func (fn *formulaFuncs) YIELD(argsList *list.List) formulaArg {
+	if argsList.Len() != 6 && argsList.Len() != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "YIELD requires 6 or 7 arguments")
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires rate >= 0")
+	}
+	pr := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if pr.Type != ArgNumber {
+		return pr
+	}
+	if pr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires pr > 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption >= 0")
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 7 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return fn.yield(settlement, maturity, rate, pr, redemption, frequency, basis)
 }
 
 // YIELDDISC function calculates the annual yield of a discounted security.

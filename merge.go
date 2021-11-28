@@ -269,15 +269,15 @@ func (m *MergeCell) GetCellValue() string {
 	return (*m)[1]
 }
 
-// GetStartAxis returns the merge start axis.
-// example: "C2"
+// GetStartAxis returns the top left cell coordinates of merged range, for
+// example: "C2".
 func (m *MergeCell) GetStartAxis() string {
 	axis := strings.Split((*m)[0], ":")
 	return axis[0]
 }
 
-// GetEndAxis returns the merge end axis.
-// example: "D4"
+// GetEndAxis returns the bottom right cell coordinates of merged range, for
+// example: "D4".
 func (m *MergeCell) GetEndAxis() string {
 	axis := strings.Split((*m)[0], ":")
 	return axis[1]
