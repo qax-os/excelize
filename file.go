@@ -196,6 +196,14 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		_, err = fi.Write(content.([]byte))
 		return true
 	})
-
+	f.tempFiles.Range(func(path, content interface{}) bool {
+		var fi io.Writer
+		fi, err = zw.Create(path.(string))
+		if err != nil {
+			return false
+		}
+		_, err = fi.Write(f.readBytes(path.(string)))
+		return true
+	})
 	return err
 }

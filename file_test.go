@@ -62,6 +62,15 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.Nil(t, err)
 	}
+	// Test write with temporary file
+	{
+		f, buf := File{tempFiles: sync.Map{}}, bytes.Buffer{}
+		const maxUint16 = 1<<16 - 1
+		f.tempFiles.Store("s", "")
+		f.tempFiles.Store(strings.Repeat("s", maxUint16+1), "")
+		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		assert.EqualError(t, err, "zip: FileHeader.Name too long")
+	}
 }
 
 func TestClose(t *testing.T) {
