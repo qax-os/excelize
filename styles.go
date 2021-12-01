@@ -2229,11 +2229,11 @@ func (f *File) newFont(style *Style) *xlsxFont {
 // If given number format code is not exist, will return -1.
 func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (numFmtID int) {
 	numFmtID = -1
-	if styleSheet.NumFmts == nil {
-		return
-	}
 	if _, ok := builtInNumFmt[style.NumFmt]; ok {
 		return style.NumFmt
+	}
+	if styleSheet.NumFmts == nil {
+		return
 	}
 	if fmtCode, ok := currencyNumFmt[style.NumFmt]; ok {
 		for _, numFmt := range styleSheet.NumFmts.NumFmt {
