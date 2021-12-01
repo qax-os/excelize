@@ -330,3 +330,18 @@ func TestThemeColor(t *testing.T) {
 		assert.Equal(t, clr[0], clr[1])
 	}
 }
+
+func TestGetNumFmtID(t *testing.T) {
+	f := NewFile()
+
+	fs1, err := parseFormatStyleSet(`{"protection":{"hidden":false,"locked":false},"number_format":10}`)
+	assert.NoError(t, err)
+	id1 := getNumFmtID(&xlsxStyleSheet{}, fs1)
+
+	fs2, err := parseFormatStyleSet(`{"protection":{"hidden":false,"locked":false},"number_format":0}`)
+	assert.NoError(t, err)
+	id2 := getNumFmtID(&xlsxStyleSheet{}, fs2)
+
+	assert.NotEqual(t, id1, id2)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestStyleNumFmt.xlsx")))
+}
