@@ -555,21 +555,7 @@ func (f *File) DeleteSheet(name string) {
 	wbRels := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	deleteLocalSheetID := f.GetSheetIndex(name)
-	// Delete and adjust defined names
-	if wb.DefinedNames != nil {
-		for idx := 0; idx < len(wb.DefinedNames.DefinedName); idx++ {
-			dn := wb.DefinedNames.DefinedName[idx]
-			if dn.LocalSheetID != nil {
-				localSheetID := *dn.LocalSheetID
-				if localSheetID == deleteLocalSheetID {
-					wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
-					idx--
-				} else if localSheetID > deleteLocalSheetID {
-					wb.DefinedNames.DefinedName[idx].LocalSheetID = intPtr(*dn.LocalSheetID - 1)
-				}
-			}
-		}
-	}
+	deleteAndAdjustDefinedNames(wb, deleteLocalSheetID)
 	for idx, sheet := range wb.Sheets.Sheet {
 		if strings.EqualFold(sheet.Name, sheetName) {
 			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
@@ -595,6 +581,29 @@ func (f *File) DeleteSheet(name string) {
 		}
 	}
 	f.SetActiveSheet(f.GetSheetIndex(activeSheetName))
+}
+
+func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
+	if wb == nil {
+		return
+	}
+
+	if wb.DefinedNames == nil {
+		return
+	}
+
+	for idx := 0; idx < len(wb.DefinedNames.DefinedName); idx++ {
+		dn := wb.DefinedNames.DefinedName[idx]
+		if dn.LocalSheetID != nil {
+			localSheetID := *dn.LocalSheetID
+			if localSheetID == deleteLocalSheetID {
+				wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
+				idx--
+			} else if localSheetID > deleteLocalSheetID {
+				wb.DefinedNames.DefinedName[idx].LocalSheetID = intPtr(*dn.LocalSheetID - 1)
+			}
+		}
+	}
 }
 
 // deleteSheetFromWorkbookRels provides a function to remove worksheet
