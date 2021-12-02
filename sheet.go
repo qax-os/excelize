@@ -556,29 +556,32 @@ func (f *File) DeleteSheet(name string) {
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	deleteLocalSheetID := f.GetSheetIndex(name)
 	deleteAndAdjustDefinedNames(wb, deleteLocalSheetID)
+
 	for idx, sheet := range wb.Sheets.Sheet {
-		if strings.EqualFold(sheet.Name, sheetName) {
-			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
-			var sheetXML, rels string
-			if wbRels != nil {
-				for _, rel := range wbRels.Relationships {
-					if rel.ID == sheet.ID {
-						sheetXML = f.getWorksheetPath(rel.Target)
-						rels = "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[sheetName], "xl/worksheets/") + ".rels"
-					}
+		if !strings.EqualFold(sheet.Name, sheetName) {
+			continue
+		}
+
+		wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
+		var sheetXML, rels string
+		if wbRels != nil {
+			for _, rel := range wbRels.Relationships {
+				if rel.ID == sheet.ID {
+					sheetXML = f.getWorksheetPath(rel.Target)
+					rels = "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[sheetName], "xl/worksheets/") + ".rels"
 				}
 			}
-			target := f.deleteSheetFromWorkbookRels(sheet.ID)
-			f.deleteSheetFromContentTypes(target)
-			f.deleteCalcChain(sheet.SheetID, "")
-			delete(f.sheetMap, sheet.Name)
-			f.Pkg.Delete(sheetXML)
-			f.Pkg.Delete(rels)
-			f.Relationships.Delete(rels)
-			f.Sheet.Delete(sheetXML)
-			delete(f.xmlAttr, sheetXML)
-			f.SheetCount--
 		}
+		target := f.deleteSheetFromWorkbookRels(sheet.ID)
+		f.deleteSheetFromContentTypes(target)
+		f.deleteCalcChain(sheet.SheetID, "")
+		delete(f.sheetMap, sheet.Name)
+		f.Pkg.Delete(sheetXML)
+		f.Pkg.Delete(rels)
+		f.Relationships.Delete(rels)
+		f.Sheet.Delete(sheetXML)
+		delete(f.xmlAttr, sheetXML)
+		f.SheetCount--
 	}
 	f.SetActiveSheet(f.GetSheetIndex(activeSheetName))
 }
