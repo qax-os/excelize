@@ -2053,8 +2053,8 @@ func (f *File) NewStyle(style interface{}) (int, error) {
 
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
-		if style.NumFmt == 0 && style.CustomNumFmt == nil && numFmtID == -1 {
-			return xf.NumFmtID != nil || *xf.NumFmtID == 0
+		if style.CustomNumFmt == nil && numFmtID == -1 {
+			return xf.NumFmtID != nil && *xf.NumFmtID == 0
 		}
 		if style.NegRed || style.Lang != "" || style.DecimalPlaces != 2 {
 			return false
@@ -2232,14 +2232,20 @@ func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (numFmtID int) {
 	if _, ok := builtInNumFmt[style.NumFmt]; ok {
 		return style.NumFmt
 	}
-	if styleSheet.NumFmts == nil {
-		return
+	for lang, numFmt := range langNumFmt {
+		if _, ok := numFmt[style.NumFmt]; ok && lang == style.Lang {
+			numFmtID = style.NumFmt
+			return
+		}
 	}
 	if fmtCode, ok := currencyNumFmt[style.NumFmt]; ok {
-		for _, numFmt := range styleSheet.NumFmts.NumFmt {
-			if numFmt.FormatCode == fmtCode {
-				numFmtID = numFmt.NumFmtID
-				return
+		numFmtID = style.NumFmt
+		if styleSheet.NumFmts != nil {
+			for _, numFmt := range styleSheet.NumFmts.NumFmt {
+				if numFmt.FormatCode == fmtCode {
+					numFmtID = numFmt.NumFmtID
+					return
+				}
 			}
 		}
 	}

@@ -586,15 +586,12 @@ func (f *File) DeleteSheet(name string) {
 	f.SetActiveSheet(f.GetSheetIndex(activeSheetName))
 }
 
+// deleteAndAdjustDefinedNames delete and adjust defined name in the workbook
+// by given worksheet ID.
 func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
-	if wb == nil {
+	if wb == nil || wb.DefinedNames == nil {
 		return
 	}
-
-	if wb.DefinedNames == nil {
-		return
-	}
-
 	for idx := 0; idx < len(wb.DefinedNames.DefinedName); idx++ {
 		dn := wb.DefinedNames.DefinedName[idx]
 		if dn.LocalSheetID != nil {

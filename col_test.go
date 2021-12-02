@@ -118,10 +118,7 @@ func TestGetColsError(t *testing.T) {
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
-	f = NewFile()
-	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>B</v></c></row></sheetData></worksheet>`))
-	f.checked = nil
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
 

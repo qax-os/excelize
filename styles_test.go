@@ -252,6 +252,33 @@ func TestNewStyle(t *testing.T) {
 	rows, err := f.GetRows("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, [][]string{{"1.23E+00", "1.23E+00"}}, rows)
+
+	f = NewFile()
+	// Test currency number format
+	customNumFmt := "[$$-409]#,##0.00"
+	style1, err := f.NewStyle(&Style{CustomNumFmt: &customNumFmt})
+	assert.NoError(t, err)
+	style2, err := f.NewStyle(&Style{NumFmt: 165})
+	assert.NoError(t, err)
+	assert.Equal(t, style1, style2)
+
+	style3, err := f.NewStyle(&Style{NumFmt: 166})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, style3)
+
+	f = NewFile()
+	f.Styles.NumFmts = nil
+	f.Styles.CellXfs.Xf = nil
+	style4, err := f.NewStyle(&Style{NumFmt: 160, Lang: "unknown"})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, style4)
+
+	f = NewFile()
+	f.Styles.NumFmts = nil
+	f.Styles.CellXfs.Xf = nil
+	style5, err := f.NewStyle(&Style{NumFmt: 160, Lang: "zh-cn"})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, style5)
 }
 
 func TestGetDefaultFont(t *testing.T) {
