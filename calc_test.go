@@ -1472,6 +1472,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=DOLLARDE(1.01,16)": "1.0625",
 		// DOLLARFR
 		"=DOLLARFR(1.0625,16)": "1.01",
+		// DURATION
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,4)": "6.674422798483131",
 		// EFFECT
 		"=EFFECT(0.1,4)":   "0.103812890625",
 		"=EFFECT(0.025,2)": "0.02515625",
@@ -1491,6 +1493,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISPMT(0.05/12,1,60,50000)": "-204.8611111111111",
 		"=ISPMT(0.05/12,2,60,50000)": "-201.38888888888886",
 		"=ISPMT(0.05/12,2,1,50000)":  "208.33333333333334",
+		// MDURATION
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,4)": "6.543551763218756",
 		// NOMINAL
 		"=NOMINAL(0.025,12)": "0.0247180352381129",
 		// NPER
@@ -2916,6 +2920,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=DOLLARFR(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=DOLLARFR(0,-1)":   "#NUM!",
 		"=DOLLARFR(0,0)":    "#DIV/0!",
+		// DURATION
+		"=DURATION()": "DURATION requires 5 or 6 arguments",
+		"=DURATION(\"\",\"03/31/2025\",10%,8%,4)":                "#VALUE!",
+		"=DURATION(\"04/01/2015\",\"\",10%,8%,4)":                "#VALUE!",
+		"=DURATION(\"03/31/2025\",\"04/01/2015\",10%,8%,4)":      "DURATION requires maturity > settlement",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",-1,8%,4)":       "DURATION requires coupon >= 0",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,-1,4)":      "DURATION requires yld >= 0",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",\"\",8%,4)":     "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,\"\",4)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,3)":      "#NUM!",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,4,\"\")": "#NUM!",
+		"=DURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,4,5)":    "invalid basis",
 		// EFFECT
 		"=EFFECT()":       "EFFECT requires 2 arguments",
 		"=EFFECT(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -2964,6 +2981,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISPMT(0,\"\",0,0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=ISPMT(0,0,\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=ISPMT(0,0,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// MDURATION
+		"=MDURATION()": "MDURATION requires 5 or 6 arguments",
+		"=MDURATION(\"\",\"03/31/2025\",10%,8%,4)":                "#VALUE!",
+		"=MDURATION(\"04/01/2015\",\"\",10%,8%,4)":                "#VALUE!",
+		"=MDURATION(\"03/31/2025\",\"04/01/2015\",10%,8%,4)":      "MDURATION requires maturity > settlement",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",-1,8%,4)":       "MDURATION requires coupon >= 0",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,-1,4)":      "MDURATION requires yld >= 0",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",\"\",8%,4)":     "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,\"\",4)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,3)":      "#NUM!",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,4,\"\")": "#NUM!",
+		"=MDURATION(\"04/01/2015\",\"03/31/2025\",10%,8%,4,5)":    "invalid basis",
 		// NOMINAL
 		"=NOMINAL()":       "NOMINAL requires 2 arguments",
 		"=NOMINAL(\"\",0)": "strconv.ParseFloat: parsing \"\": invalid syntax",

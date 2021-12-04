@@ -379,6 +379,7 @@ type formulaFuncs struct {
 //    DISC
 //    DOLLARDE
 //    DOLLARFR
+//    DURATION
 //    EFFECT
 //    ENCODEURL
 //    ERF
@@ -471,6 +472,7 @@ type formulaFuncs struct {
 //    MATCH
 //    MAX
 //    MDETERM
+//    MDURATION
 //    MEDIAN
 //    MID
 //    MIDB
@@ -10179,6 +10181,96 @@ func (fn *formulaFuncs) dollar(name string, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(math.Floor(dollar.Number) + cents)
 }
 
+// prepareDurationArgs checking and prepare arguments for the formula
+// functions DURATION and MDURATION.
+func (fn *formulaFuncs) prepareDurationArgs(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 5 && argsList.Len() != 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 5 or 6 arguments", name))
+	}
+	args := fn.prepareDataValueArgs(2, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity := args.List[0], args.List[1]
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
+	}
+	coupon := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if coupon.Type != ArgNumber {
+		return coupon
+	}
+	if coupon.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires coupon >= 0", name))
+	}
+	yld := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires yld >= 0", name))
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 6 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, coupon, yld, frequency, basis})
+}
+
+// duration is an implementation of the formula function DURATION.
+func (fn *formulaFuncs) duration(settlement, maturity, coupon, yld, frequency, basis formulaArg) formulaArg {
+	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
+	if frac.Type != ArgNumber {
+		return frac
+	}
+	argumments := list.New().Init()
+	argumments.PushBack(settlement)
+	argumments.PushBack(maturity)
+	argumments.PushBack(frequency)
+	argumments.PushBack(basis)
+	coups := fn.COUPNUM(argumments)
+	duration := 0.0
+	p := 0.0
+	coupon.Number *= 100 / frequency.Number
+	yld.Number /= frequency.Number
+	yld.Number++
+	diff := frac.Number*frequency.Number - coups.Number
+	for t := 1.0; t < coups.Number; t++ {
+		tDiff := t + diff
+		add := coupon.Number / math.Pow(yld.Number, tDiff)
+		p += add
+		duration += tDiff * add
+	}
+	add := (coupon.Number + 100) / math.Pow(yld.Number, coups.Number+diff)
+	p += add
+	duration += (coups.Number + diff) * add
+	duration /= p
+	duration /= frequency.Number
+	return newNumberFormulaArg(duration)
+}
+
+// DURATION function calculates the Duration (specifically, the Macaulay
+// Duration) of a security that pays periodic interest, assuming a par value
+// of $100. The syntax of the function is:
+//
+//    DURATION(settlement,maturity,coupon,yld,frequency,[basis])
+//
+func (fn *formulaFuncs) DURATION(argsList *list.List) formulaArg {
+	args := fn.prepareDurationArgs("DURATION", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	return fn.duration(args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5])
+}
+
 // EFFECT function returns the effective annual interest rate for a given
 // nominal interest rate and number of compounding periods per year. The
 // syntax of the function is:
@@ -10502,6 +10594,24 @@ func (fn *formulaFuncs) ISPMT(argsList *list.List) formulaArg {
 		}
 	}
 	return newNumberFormulaArg(num)
+}
+
+// MDURATION function calculates the Modified Macaulay Duration of a security
+// that pays periodic interest, assuming a par value of $100. The syntax of
+// the function is:
+//
+//    MDURATION(settlement,maturity,coupon,yld,frequency,[basis])
+//
+func (fn *formulaFuncs) MDURATION(argsList *list.List) formulaArg {
+	args := fn.prepareDurationArgs("MDURATION", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	duration := fn.duration(args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5])
+	if duration.Type != ArgNumber {
+		return duration
+	}
+	return newNumberFormulaArg(duration.Number / (1 + args.List[3].Number/args.List[4].Number))
 }
 
 // MIRR function returns the Modified Internal Rate of Return for a supplied
