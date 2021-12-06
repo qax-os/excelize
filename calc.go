@@ -504,6 +504,7 @@ type formulaFuncs struct {
 //    OCT2DEC
 //    OCT2HEX
 //    ODD
+//    ODDFPRICE
 //    OR
 //    PDURATION
 //    PERCENTILE.EXC
@@ -9849,10 +9850,8 @@ func (fn *formulaFuncs) COUPNUM(argsList *list.List) formulaArg {
 	if args.Type != ArgList {
 		return args
 	}
-	maturity, dateValue := timeFromExcelTime(args.List[1].Number, false), fn.COUPPCD(argsList)
-	date := timeFromExcelTime(dateValue.Number, false)
-	months := (maturity.Year()-date.Year())*12 + int(maturity.Month()) - int(date.Month())
-	return newNumberFormulaArg(float64(months) * args.List[2].Number / 12.0)
+	frac := yearFrac(args.List[0].Number, args.List[1].Number, 0)
+	return newNumberFormulaArg(math.Ceil(frac.Number * args.List[2].Number))
 }
 
 // COUPPCD function returns the previous coupon date, before the settlement
@@ -10746,6 +10745,276 @@ func (fn *formulaFuncs) NPV(argsList *list.List) formulaArg {
 		i++
 	}
 	return newNumberFormulaArg(val)
+}
+
+// aggrBetween is a part of implementation of the formula function ODDFPRICE.
+func aggrBetween(startPeriod, endPeriod float64, initialValue []float64, f func(acc []float64, index float64) []float64) []float64 {
+	s := []float64{}
+	if startPeriod <= endPeriod {
+		for i := startPeriod; i <= endPeriod; i++ {
+			s = append(s, i)
+		}
+	} else {
+		for i := startPeriod; i >= endPeriod; i-- {
+			s = append(s, i)
+		}
+	}
+	return fold(f, initialValue, s)
+}
+
+// fold is a part of implementation of the formula function ODDFPRICE.
+func fold(f func(acc []float64, index float64) []float64, state []float64, source []float64) []float64 {
+	length, value := len(source), state
+	for index := 0; length > index; index++ {
+		value = f(value, source[index])
+	}
+	return value
+}
+
+// changeMonth is a part of implementation of the formula function ODDFPRICE.
+func changeMonth(date time.Time, numMonths float64, returnLastMonth bool) time.Time {
+	offsetDay := 0
+	if returnLastMonth && date.Day() == getDaysInMonth(date.Year(), int(date.Month())) {
+		offsetDay--
+	}
+	newDate := date.AddDate(0, int(numMonths), offsetDay)
+	if returnLastMonth {
+		lastDay := getDaysInMonth(newDate.Year(), int(newDate.Month()))
+		return timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), makeDate(newDate.Year(), newDate.Month(), lastDay))+1, false)
+	}
+	return newDate
+}
+
+// datesAggregate is a part of implementation of the formula function
+// ODDFPRICE.
+func datesAggregate(startDate, endDate time.Time, numMonths, basis float64, f func(pcd, ncd time.Time) float64, acc float64, returnLastMonth bool) (time.Time, time.Time, float64) {
+	frontDate, trailingDate := startDate, endDate
+	s1 := frontDate.After(endDate) || frontDate.Equal(endDate)
+	s2 := endDate.After(frontDate) || endDate.Equal(frontDate)
+	stop := s2
+	if numMonths > 0 {
+		stop = s1
+	}
+	for !stop {
+		trailingDate = frontDate
+		frontDate = changeMonth(frontDate, numMonths, returnLastMonth)
+		fn := f(frontDate, trailingDate)
+		acc += fn
+		s1 = frontDate.After(endDate) || frontDate.Equal(endDate)
+		s2 = endDate.After(frontDate) || endDate.Equal(frontDate)
+		stop = s2
+		if numMonths > 0 {
+			stop = s1
+		}
+	}
+	return frontDate, trailingDate, acc
+}
+
+// coupNumber is a part of implementation of the formula function ODDFPRICE.
+func coupNumber(maturity, settlement, numMonths, basis float64) float64 {
+	maturityTime, settlementTime := timeFromExcelTime(maturity, false), timeFromExcelTime(settlement, false)
+	my, mm, md := maturityTime.Year(), maturityTime.Month(), maturityTime.Day()
+	sy, sm, sd := settlementTime.Year(), settlementTime.Month(), settlementTime.Day()
+	couponsTemp, endOfMonthTemp := 0.0, getDaysInMonth(my, int(mm)) == md
+	endOfMonth := endOfMonthTemp
+	if !endOfMonthTemp && mm != 2 && md > 28 && md < getDaysInMonth(my, int(mm)) {
+		endOfMonth = getDaysInMonth(sy, int(sm)) == sd
+	}
+	startDate := changeMonth(settlementTime, 0, endOfMonth)
+	coupons := couponsTemp
+	if startDate.After(settlementTime) {
+		coupons++
+	}
+	date := changeMonth(startDate, numMonths, endOfMonth)
+	f := func(pcd, ncd time.Time) float64 {
+		return 1
+	}
+	_, _, result := datesAggregate(date, maturityTime, numMonths, basis, f, coupons, endOfMonth)
+	return result
+}
+
+// prepareOddfpriceArgs checking and prepare arguments for the formula
+// function ODDFPRICE.
+func (fn *formulaFuncs) prepareOddfpriceArgs(argsList *list.List) formulaArg {
+	dateValues := fn.prepareDataValueArgs(4, argsList)
+	if dateValues.Type != ArgList {
+		return dateValues
+	}
+	settlement, maturity, issue, firstCoupon := dateValues.List[0], dateValues.List[1], dateValues.List[2], dateValues.List[3]
+	if issue.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires settlement > issue")
+	}
+	if settlement.Number >= firstCoupon.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires first_coupon > settlement")
+	}
+	if firstCoupon.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires maturity > first_coupon")
+	}
+	rate := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires rate >= 0")
+	}
+	yld := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if yld.Type != ArgNumber {
+		return yld
+	}
+	if yld.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires yld >= 0")
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires redemption > 0")
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 9 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basis})
+}
+
+// ODDFPRICE function calculates the price per $100 face value of a security
+// with an odd (short or long) first period. The syntax of the function is:
+//
+//    ODDFPRICE(settlement,maturity,issue,first_coupon,rate,yld,redemption,frequency,[basis])
+//
+func (fn *formulaFuncs) ODDFPRICE(argsList *list.List) formulaArg {
+	if argsList.Len() != 8 && argsList.Len() != 9 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ODDFPRICE requires 8 or 9 arguments")
+	}
+	args := fn.prepareOddfpriceArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basisArg :=
+		args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6], args.List[7], args.List[8]
+	if basisArg.Number < 0 || basisArg.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	issueTime := timeFromExcelTime(issue.Number, false)
+	settlementTime := timeFromExcelTime(settlement.Number, false)
+	maturityTime := timeFromExcelTime(maturity.Number, false)
+	firstCouponTime := timeFromExcelTime(firstCoupon.Number, false)
+	basis := int(basisArg.Number)
+	monthDays := getDaysInMonth(maturityTime.Year(), int(maturityTime.Month()))
+	returnLastMonth := monthDays == maturityTime.Day()
+	numMonths := 12 / frequency.Number
+	numMonthsNeg := -numMonths
+	mat := changeMonth(maturityTime, numMonthsNeg, returnLastMonth)
+	pcd, _, _ := datesAggregate(mat, firstCouponTime, numMonthsNeg, basisArg.Number, func(d1, d2 time.Time) float64 {
+		return 0
+	}, 0, returnLastMonth)
+	if !pcd.Equal(firstCouponTime) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	fnArgs := list.New().Init()
+	fnArgs.PushBack(settlement)
+	fnArgs.PushBack(maturity)
+	fnArgs.PushBack(frequency)
+	fnArgs.PushBack(basisArg)
+	e := fn.COUPDAYS(fnArgs)
+	n := fn.COUPNUM(fnArgs)
+	m := frequency.Number
+	dfc := coupdays(issueTime, firstCouponTime, basis)
+	if dfc < e.Number {
+		dsc := coupdays(settlementTime, firstCouponTime, basis)
+		a := coupdays(issueTime, settlementTime, basis)
+		x := yld.Number/m + 1
+		y := dsc / e.Number
+		p1 := x
+		p3 := math.Pow(p1, n.Number-1+y)
+		term1 := redemption.Number / p3
+		term2 := 100 * rate.Number / m * dfc / e.Number / math.Pow(p1, y)
+		f := func(acc []float64, index float64) []float64 {
+			return []float64{acc[0] + 100*rate.Number/m/math.Pow(p1, index-1+y)}
+		}
+		term3 := aggrBetween(2, math.Floor(n.Number), []float64{0}, f)
+		p2 := rate.Number / m
+		term4 := a / e.Number * p2 * 100
+		return newNumberFormulaArg(term1 + term2 + term3[0] - term4)
+	}
+	fnArgs.Init()
+	fnArgs.PushBack(issue)
+	fnArgs.PushBack(firstCoupon)
+	fnArgs.PushBack(frequency)
+	nc := fn.COUPNUM(fnArgs)
+	lastCoupon := firstCoupon.Number
+	aggrFunc := func(acc []float64, index float64) []float64 {
+		lastCouponTime := timeFromExcelTime(lastCoupon, false)
+		earlyCoupon := daysBetween(excelMinTime1900.Unix(), makeDate(lastCouponTime.Year(), time.Month(float64(lastCouponTime.Month())+numMonthsNeg), lastCouponTime.Day())) + 1
+		earlyCouponTime := timeFromExcelTime(earlyCoupon, false)
+		nl := e.Number
+		if basis == 1 {
+			nl = coupdays(earlyCouponTime, lastCouponTime, basis)
+		}
+		dci := coupdays(issueTime, lastCouponTime, basis)
+		if index > 1 {
+			dci = nl
+		}
+		startDate := earlyCoupon
+		if issue.Number > earlyCoupon {
+			startDate = issue.Number
+		}
+		endDate := lastCoupon
+		if settlement.Number < lastCoupon {
+			endDate = settlement.Number
+		}
+		startDateTime := timeFromExcelTime(startDate, false)
+		endDateTime := timeFromExcelTime(endDate, false)
+		a := coupdays(startDateTime, endDateTime, basis)
+		lastCoupon = earlyCoupon
+		dcnl := acc[0]
+		anl := acc[1]
+		return []float64{dcnl + dci/nl, anl + a/nl}
+	}
+	ag := aggrBetween(math.Floor(nc.Number), 1, []float64{0, 0}, aggrFunc)
+	dcnl, anl := ag[0], ag[1]
+	dsc := 0.0
+	fnArgs.Init()
+	fnArgs.PushBack(settlement)
+	fnArgs.PushBack(firstCoupon)
+	fnArgs.PushBack(frequency)
+	if basis == 2 || basis == 3 {
+		d := timeFromExcelTime(fn.COUPNCD(fnArgs).Number, false)
+		dsc = coupdays(settlementTime, d, basis)
+	} else {
+		d := timeFromExcelTime(fn.COUPPCD(fnArgs).Number, false)
+		a := coupdays(d, settlementTime, basis)
+		dsc = e.Number - a
+	}
+	nq := coupNumber(firstCoupon.Number, settlement.Number, numMonths, basisArg.Number)
+	fnArgs.Init()
+	fnArgs.PushBack(firstCoupon)
+	fnArgs.PushBack(maturity)
+	fnArgs.PushBack(frequency)
+	fnArgs.PushBack(basisArg)
+	n = fn.COUPNUM(fnArgs)
+	x := yld.Number/m + 1
+	y := dsc / e.Number
+	p1 := x
+	p3 := math.Pow(p1, y+nq+n.Number)
+	term1 := redemption.Number / p3
+	term2 := 100 * rate.Number / m * dcnl / math.Pow(p1, nq+y)
+	f := func(acc []float64, index float64) []float64 {
+		return []float64{acc[0] + 100*rate.Number/m/math.Pow(p1, index+nq+y)}
+	}
+	term3 := aggrBetween(1, math.Floor(n.Number), []float64{0}, f)
+	term4 := 100 * rate.Number / m * anl
+	return newNumberFormulaArg(term1 + term2 + term3[0] - term4)
 }
 
 // PDURATION function calculates the number of periods required for an
