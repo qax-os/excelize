@@ -219,7 +219,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 				continue
 			}
 
-			x1, x2 = f.adjustMergeCellsHelper(x1, x2, num ,offset)
+			x1, x2 = f.adjustMergeCellsHelper(x1, x2, num, offset)
 		}
 		if x1 == x2 && y1 == y2 {
 			f.deleteMergeCell(ws, i)
@@ -248,13 +248,13 @@ func (f *File) adjustMergeCellsHelper(p1, p2, num, offset int) (int, int) {
 		} else if num <= p2 {
 			p2 += offset
 		}
-	} else {
-		if num < p1 || (num == p1 && num == p2) {
-			p1 += offset
-			p2 += offset
-		} else if num <= p2 {
-			p2 += offset
-		}
+		return p1, p2
+	}
+	if num < p1 || (num == p1 && num == p2) {
+		p1 += offset
+		p2 += offset
+	} else if num <= p2 {
+		p2 += offset
 	}
 	return p1, p2
 }

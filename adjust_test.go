@@ -46,9 +46,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}, columns, 1, -1))
 
-	/*
-		testing adjustMergeCells performance
-	 */
+	// testing adjustMergeCells
 	var cases []struct {
 		lable  string
 		ws     *xlsxWorksheet
@@ -244,6 +242,12 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, -1))
 		assert.Equal(t, 0, len(c.ws.MergeCells.Cells), c.lable)
 	}
+
+	f = NewFile()
+	p1, p2 := f.adjustMergeCellsHelper(2, 1, 0, 0)
+	assert.Equal(t, 1, p1)
+	assert.Equal(t, 2, p2)
+	f.deleteMergeCell(nil, -1)
 }
 
 func TestAdjustAutoFilter(t *testing.T) {
