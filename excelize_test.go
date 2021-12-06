@@ -45,12 +45,12 @@ func TestOpenFile(t *testing.T) {
 
 	// Test set cell value with illegal row number.
 	assert.EqualError(t, f.SetCellDefault("Sheet2", "A", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64)),
-		`cannot convert cell "A" to coordinates: invalid cell name "A"`)
+		newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.SetCellInt("Sheet2", "A1", 100))
 
 	// Test set cell integer value with illegal row number.
-	assert.EqualError(t, f.SetCellInt("Sheet2", "A", 100), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellInt("Sheet2", "A", 100), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.SetCellStr("Sheet2", "C11", "Knowns"))
 	// Test max characters in a cell.
@@ -63,7 +63,7 @@ func TestOpenFile(t *testing.T) {
 	assert.EqualError(t, f.SetCellStr("Sheet10", "b230", "10"), "sheet Sheet10 is not exist")
 
 	// Test set cell string value with illegal row number.
-	assert.EqualError(t, f.SetCellStr("Sheet1", "A", "10"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellStr("Sheet1", "A", "10"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	f.SetActiveSheet(2)
 	// Test get cell formula with given rows number.
@@ -77,7 +77,7 @@ func TestOpenFile(t *testing.T) {
 
 	// Test get cell formula with illegal rows number.
 	_, err = f.GetCellFormula("Sheet1", "B")
-	assert.EqualError(t, err, `cannot convert cell "B" to coordinates: invalid cell name "B"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test get shared cell formula
 	_, err = f.GetCellFormula("Sheet2", "H11")
 	assert.NoError(t, err)
@@ -87,9 +87,9 @@ func TestOpenFile(t *testing.T) {
 
 	// Test read cell value with given illegal rows number.
 	_, err = f.GetCellValue("Sheet2", "a-1")
-	assert.EqualError(t, err, `cannot convert cell "A-1" to coordinates: invalid cell name "A-1"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A-1", newInvalidCellNameError("A-1")).Error())
 	_, err = f.GetCellValue("Sheet2", "A")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	// Test read cell value with given lowercase column number.
 	_, err = f.GetCellValue("Sheet2", "a5")
@@ -324,7 +324,7 @@ func TestNewFile(t *testing.T) {
 func TestAddDrawingVML(t *testing.T) {
 	// Test addDrawingVML with illegal cell coordinates.
 	f := NewFile()
-	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), `cannot convert cell "*" to coordinates: invalid cell name "*"`)
+	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
 }
 
 func TestSetCellHyperLink(t *testing.T) {
@@ -368,7 +368,7 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	err = f.SetCellHyperLink("Sheet1", "A1", "https://github.com/xuri/excelize", "External")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestGetCellHyperLink(t *testing.T) {
@@ -408,7 +408,7 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	link, target, err = f.GetCellHyperLink("Sheet1", "A1")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.Equal(t, link, false)
 	assert.Equal(t, target, "")
 }
@@ -570,13 +570,13 @@ func TestSetCellStyleAlignment(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A22", "A22", style))
 
 	// Test set cell style with given illegal rows number.
-	assert.EqualError(t, f.SetCellStyle("Sheet1", "A", "A22", style), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, f.SetCellStyle("Sheet1", "A22", "A", style), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellStyle("Sheet1", "A", "A22", style), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.SetCellStyle("Sheet1", "A22", "A", style), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	// Test get cell style with given illegal rows number.
 	index, err := f.GetCellStyle("Sheet1", "A")
 	assert.Equal(t, 0, index)
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellStyleAlignment.xlsx")))
 }
@@ -1109,7 +1109,7 @@ func TestSetSheetRow(t *testing.T) {
 	assert.NoError(t, f.SetSheetRow("Sheet1", "B27", &[]interface{}{"cell", nil, int32(42), float64(42), time.Now().UTC()}))
 
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "", &[]interface{}{"cell", nil, 2}),
-		`cannot convert cell "" to coordinates: invalid cell name ""`)
+		newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", &f), ErrParameterInvalid.Error())
@@ -1181,7 +1181,7 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN is not exist")
 
 	// Test set default time style on invalid cell
-	assert.EqualError(t, f.setDefaultTimeStyle("Sheet1", "", 42), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
+	assert.EqualError(t, f.setDefaultTimeStyle("Sheet1", "", 42), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 }
 
 func TestAddVBAProject(t *testing.T) {

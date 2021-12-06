@@ -220,38 +220,38 @@ func TestAddSparkline(t *testing.T) {
 		Range:    []string{"Sheet2!A3:E3"},
 	}), "sheet SheetN is not exist")
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", nil), "parameter is required")
+	assert.EqualError(t, f.AddSparkline("Sheet1", nil), ErrParameterRequired.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOption{
 		Range: []string{"Sheet2!A3:E3"},
-	}), `parameter 'Location' is required`)
+	}), ErrSparklineLocation.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOption{
 		Location: []string{"F3"},
-	}), `parameter 'Range' is required`)
+	}), ErrSparklineRange.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOption{
 		Location: []string{"F2", "F3"},
 		Range:    []string{"Sheet2!A3:E3"},
-	}), `must have the same number of 'Location' and 'Range' parameters`)
+	}), ErrSparkline.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOption{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Type:     "unknown_type",
-	}), `parameter 'Type' must be 'line', 'column' or 'win_loss'`)
+	}), ErrSparklineType.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOption{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Style:    -1,
-	}), `parameter 'Style' must betweent 0-35`)
+	}), ErrSparklineStyle.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOption{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Style:    -1,
-	}), `parameter 'Style' must betweent 0-35`)
+	}), ErrSparklineStyle.Error())
 
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)

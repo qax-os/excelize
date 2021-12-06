@@ -1857,7 +1857,7 @@ func TestCalcCellValue(t *testing.T) {
 		// ABS
 		"=ABS()":    "ABS requires 1 numeric argument",
 		`=ABS("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
-		"=ABS(~)":   `invalid column name "~"`,
+		"=ABS(~)":   newInvalidColumnNameError("~").Error(),
 		// ACOS
 		"=ACOS()":        "ACOS requires 1 numeric argument",
 		`=ACOS("X")`:     "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -2699,15 +2699,15 @@ func TestCalcCellValue(t *testing.T) {
 		// COLUMN
 		"=COLUMN(1,2)":          "COLUMN requires at most 1 argument",
 		"=COLUMN(\"\")":         "invalid reference",
-		"=COLUMN(Sheet1)":       "invalid column name \"Sheet1\"",
-		"=COLUMN(Sheet1!A1!B1)": "invalid column name \"Sheet1\"",
+		"=COLUMN(Sheet1)":       newInvalidColumnNameError("Sheet1").Error(),
+		"=COLUMN(Sheet1!A1!B1)": newInvalidColumnNameError("Sheet1").Error(),
 		// COLUMNS
 		"=COLUMNS()":              "COLUMNS requires 1 argument",
 		"=COLUMNS(1)":             "invalid reference",
 		"=COLUMNS(\"\")":          "invalid reference",
-		"=COLUMNS(Sheet1)":        "invalid column name \"Sheet1\"",
-		"=COLUMNS(Sheet1!A1!B1)":  "invalid column name \"Sheet1\"",
-		"=COLUMNS(Sheet1!Sheet1)": "invalid column name \"Sheet1\"",
+		"=COLUMNS(Sheet1)":        newInvalidColumnNameError("Sheet1").Error(),
+		"=COLUMNS(Sheet1!A1!B1)":  newInvalidColumnNameError("Sheet1").Error(),
+		"=COLUMNS(Sheet1!Sheet1)": newInvalidColumnNameError("Sheet1").Error(),
 		// HLOOKUP
 		"=HLOOKUP()":                     "HLOOKUP requires at least 3 arguments",
 		"=HLOOKUP(D2,D1,1,FALSE)":        "HLOOKUP requires second argument of table array",
@@ -2751,15 +2751,15 @@ func TestCalcCellValue(t *testing.T) {
 		// ROW
 		"=ROW(1,2)":          "ROW requires at most 1 argument",
 		"=ROW(\"\")":         "invalid reference",
-		"=ROW(Sheet1)":       "invalid column name \"Sheet1\"",
-		"=ROW(Sheet1!A1!B1)": "invalid column name \"Sheet1\"",
+		"=ROW(Sheet1)":       newInvalidColumnNameError("Sheet1").Error(),
+		"=ROW(Sheet1!A1!B1)": newInvalidColumnNameError("Sheet1").Error(),
 		// ROWS
 		"=ROWS()":              "ROWS requires 1 argument",
 		"=ROWS(1)":             "invalid reference",
 		"=ROWS(\"\")":          "invalid reference",
-		"=ROWS(Sheet1)":        "invalid column name \"Sheet1\"",
-		"=ROWS(Sheet1!A1!B1)":  "invalid column name \"Sheet1\"",
-		"=ROWS(Sheet1!Sheet1)": "invalid column name \"Sheet1\"",
+		"=ROWS(Sheet1)":        newInvalidColumnNameError("Sheet1").Error(),
+		"=ROWS(Sheet1!A1!B1)":  newInvalidColumnNameError("Sheet1").Error(),
+		"=ROWS(Sheet1!Sheet1)": newInvalidColumnNameError("Sheet1").Error(),
 		// Web Functions
 		// ENCODEURL
 		"=ENCODEURL()": "ENCODEURL requires 1 argument",

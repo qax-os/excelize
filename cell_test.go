@@ -108,11 +108,11 @@ func TestCheckCellInArea(t *testing.T) {
 	}
 
 	ok, err := f.checkCellInArea("A1", "A:B")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.False(t, ok)
 
 	ok, err = f.checkCellInArea("AA0", "Z0:AB1")
-	assert.EqualError(t, err, `cannot convert cell "AA0" to coordinates: invalid cell name "AA0"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("AA0", newInvalidCellNameError("AA0")).Error())
 	assert.False(t, ok)
 }
 
@@ -146,13 +146,13 @@ func TestSetCellFloat(t *testing.T) {
 		assert.Equal(t, "123.42", val, "A1 should be 123.42")
 	})
 	f := NewFile()
-	assert.EqualError(t, f.SetCellFloat(sheet, "A", 123.42, -1, 64), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellFloat(sheet, "A", 123.42, -1, 64), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetCellValue(t *testing.T) {
 	f := NewFile()
-	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -175,7 +175,7 @@ func TestSetCellValues(t *testing.T) {
 
 func TestSetCellBool(t *testing.T) {
 	f := NewFile()
-	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetCellTime(t *testing.T) {
@@ -336,7 +336,7 @@ func TestGetCellType(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, CellTypeString, cellType)
 	_, err = f.GetCellType("Sheet1", "A")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestGetCellFormula(t *testing.T) {
@@ -420,7 +420,7 @@ func TestSetCellFormula(t *testing.T) {
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C19", "SUM(Sheet2!D2,Sheet2!D9)"))
 
 	// Test set cell formula with illegal rows number.
-	assert.EqualError(t, f.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)"), `cannot convert cell "C" to coordinates: invalid cell name "C"`)
+	assert.EqualError(t, f.SetCellFormula("Sheet1", "C", "SUM(Sheet2!D2,Sheet2!D9)"), newCellNameToCoordinatesError("C", newInvalidCellNameError("C")).Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula1.xlsx")))
 	assert.NoError(t, f.Close())
@@ -523,7 +523,7 @@ func TestGetCellRichText(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
 	_, err = f.GetCellRichText("Sheet1", "A")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 func TestSetCellRichText(t *testing.T) {
 	f := NewFile()
@@ -603,7 +603,7 @@ func TestSetCellRichText(t *testing.T) {
 	// Test set cell rich text on not exists worksheet
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
 	// Test set cell rich text with illegal cell coordinates
-	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
 	// Test set cell rich text with characters over the maximum limit
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A1", richTextRun), ErrCellCharsLength.Error())

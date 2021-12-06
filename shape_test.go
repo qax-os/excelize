@@ -56,7 +56,7 @@ func TestAddShape(t *testing.T) {
 				"color": "2980B9"
 			}
 		}]
-	}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape1.xlsx")))
 
 	// Test add first shape for given sheet.

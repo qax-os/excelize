@@ -184,7 +184,7 @@ func TestCellNameToCoordinates_Error(t *testing.T) {
 		}
 	}
 	_, _, err := CellNameToCoordinates("A1048577")
-	assert.EqualError(t, err, "row number exceeds maximum limit")
+	assert.EqualError(t, err, ErrMaxRows.Error())
 }
 
 func TestCoordinatesToCellName_OK(t *testing.T) {

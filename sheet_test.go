@@ -207,7 +207,7 @@ func TestSearchSheet(t *testing.T) {
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
-	assert.EqualError(t, err, "cannot convert cell \"A\" to coordinates: invalid cell name \"A\"")
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.Equal(t, []string(nil), result)
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="str"><v>A</v></c></row></sheetData></worksheet>`))
@@ -236,7 +236,7 @@ func TestSetHeaderFooter(t *testing.T) {
 	// Test set header and footer with illegal setting.
 	assert.EqualError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
 		OddHeader: strings.Repeat("c", MaxFieldLength+1),
-	}), "field OddHeader must be less or equal than 255 characters")
+	}), newFieldLengthError("OddHeader").Error())
 
 	assert.NoError(t, f.SetHeaderFooter("Sheet1", nil))
 	text := strings.Repeat("一", MaxFieldLength)
@@ -276,10 +276,10 @@ func TestDefinedName(t *testing.T) {
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
-	}), "the same name already exists on the scope")
+	}), ErrDefinedNameduplicate.Error())
 	assert.EqualError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "No Exist Defined Name",
-	}), "no defined name on the scope")
+	}), ErrDefinedNameScope.Error())
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[1].RefersTo)
 	assert.NoError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "Amount",
@@ -316,7 +316,7 @@ func TestInsertPageBreak(t *testing.T) {
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "B2"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
-	assert.EqualError(t, f.InsertPageBreak("Sheet1", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.InsertPageBreak("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.InsertPageBreak("SheetN", "C3"), "sheet SheetN is not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertPageBreak.xlsx")))
 }
@@ -342,7 +342,7 @@ func TestRemovePageBreak(t *testing.T) {
 	assert.NoError(t, f.InsertPageBreak("Sheet2", "C2"))
 	assert.NoError(t, f.RemovePageBreak("Sheet2", "B2"))
 
-	assert.EqualError(t, f.RemovePageBreak("Sheet1", "A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.RemovePageBreak("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.RemovePageBreak("SheetN", "C3"), "sheet SheetN is not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemovePageBreak.xlsx")))
 }

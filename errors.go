@@ -56,6 +56,12 @@ func newFieldLengthError(name string) error {
 	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
 }
 
+// newCellNameToCoordinatesError defined the error message on converts
+// alphanumeric cell name to coordinates.
+func newCellNameToCoordinatesError(cell string, err error) error {
+	return fmt.Errorf("cannot convert cell %q to coordinates: %v", cell, err)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
@@ -139,4 +145,24 @@ var (
 	// ErrOptionsUnzipSizeLimit defined the error message for receiving
 	// invalid UnzipSizeLimit and WorksheetUnzipMemLimit.
 	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to WorksheetUnzipMemLimit")
+	// ErrSave defined the error message for saving file.
+	ErrSave = errors.New("no path defined for file, consider File.WriteTo or File.Write")
+	// ErrAttrValBool defined the error message on marshal and unmarshal
+	// boolean type XML attribute.
+	ErrAttrValBool = errors.New("unexpected child of attrValBool")
+	// ErrSparklineType defined the error message on receive the invalid
+	// sparkline Type parameters.
+	ErrSparklineType = errors.New("parameter 'Type' must be 'line', 'column' or 'win_loss'")
+	// ErrSparklineLocation defined the error message on missing Location
+	// parameters
+	ErrSparklineLocation = errors.New("parameter 'Location' is required")
+	// ErrSparklineRange defined the error message on missing sparkline Range
+	// parameters
+	ErrSparklineRange = errors.New("parameter 'Range' is required")
+	// ErrSparkline defined the error message on receive the invalid sparkline
+	// parameters.
+	ErrSparkline = errors.New("must have the same number of 'Location' and 'Range' parameters")
+	// ErrSparklineStyle defined the error message on receive the invalid
+	// sparkline Style parameters.
+	ErrSparklineStyle = errors.New("parameter 'Style' must betweent 0-35")
 )

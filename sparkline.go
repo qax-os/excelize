@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"encoding/xml"
-	"errors"
 	"io"
 	"strings"
 )
@@ -410,7 +409,7 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
 	sparkTypes = map[string]string{"line": "line", "column": "column", "win_loss": "stacked"}
 	if opt.Type != "" {
 		if specifiedSparkTypes, ok = sparkTypes[opt.Type]; !ok {
-			err = errors.New("parameter 'Type' must be 'line', 'column' or 'win_loss'")
+			err = ErrSparklineType
 			return
 		}
 		sparkType = specifiedSparkTypes
@@ -470,17 +469,17 @@ func (f *File) parseFormatAddSparklineSet(sheet string, opt *SparklineOption) (*
 		return ws, ErrParameterRequired
 	}
 	if len(opt.Location) < 1 {
-		return ws, errors.New("parameter 'Location' is required")
+		return ws, ErrSparklineLocation
 	}
 	if len(opt.Range) < 1 {
-		return ws, errors.New("parameter 'Range' is required")
+		return ws, ErrSparklineRange
 	}
 	// The ranges and locations must match.\
 	if len(opt.Location) != len(opt.Range) {
-		return ws, errors.New(`must have the same number of 'Location' and 'Range' parameters`)
+		return ws, ErrSparkline
 	}
 	if opt.Style < 0 || opt.Style > 35 {
-		return ws, errors.New("parameter 'Style' must betweent 0-35")
+		return ws, ErrSparklineStyle
 	}
 	if ws.ExtLst == nil {
 		ws.ExtLst = &xlsxExtLst{}

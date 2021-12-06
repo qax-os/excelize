@@ -158,7 +158,7 @@ func TestAddPivotTable(t *testing.T) {
 	}))
 
 	// Test empty pivot table options
-	assert.EqualError(t, f.AddPivotTable(nil), "parameter is required")
+	assert.EqualError(t, f.AddPivotTable(nil), ErrParameterRequired.Error())
 	// Test invalid data range
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
 		DataRange:       "Sheet1!$A$1:$A$1",
@@ -227,7 +227,7 @@ func TestAddPivotTable(t *testing.T) {
 
 	// Test adjust range with invalid range
 	_, _, err := f.adjustRange("")
-	assert.EqualError(t, err, "parameter is required")
+	assert.EqualError(t, err, ErrParameterRequired.Error())
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")
 	assert.EqualError(t, err, "parameter is invalid")

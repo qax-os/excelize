@@ -111,10 +111,10 @@ func TestRowHeight(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 
-	assert.EqualError(t, f.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), "invalid row number 0")
+	assert.EqualError(t, f.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), newInvalidRowNumberError(0).Error())
 
 	_, err := f.GetRowHeight("Sheet1", 0)
-	assert.EqualError(t, err, "invalid row number 0")
+	assert.EqualError(t, err, newInvalidRowNumberError(0).Error())
 
 	assert.NoError(t, f.SetRowHeight(sheet1, 1, 111.0))
 	height, err := f.GetRowHeight(sheet1, 1)
@@ -190,7 +190,7 @@ func TestColumns(t *testing.T) {
 	rows.curRow = 3
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
 	_, err = rows.Columns()
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	// Test token is nil
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
@@ -220,12 +220,12 @@ func TestRowVisibility(t *testing.T) {
 	visiable, err = f.GetRowVisible("Sheet3", 25)
 	assert.Equal(t, false, visiable)
 	assert.NoError(t, err)
-	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), "invalid row number 0")
+	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), newInvalidRowNumberError(0).Error())
 	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN is not exist")
 
 	visible, err := f.GetRowVisible("Sheet3", 0)
 	assert.Equal(t, false, visible)
-	assert.EqualError(t, err, "invalid row number 0")
+	assert.EqualError(t, err, newInvalidRowNumberError(0).Error())
 	_, err = f.GetRowVisible("SheetN", 1)
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
@@ -245,9 +245,9 @@ func TestRemoveRow(t *testing.T) {
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
-	assert.EqualError(t, f.RemoveRow(sheet1, -1), "invalid row number -1")
+	assert.EqualError(t, f.RemoveRow(sheet1, -1), newInvalidRowNumberError(-1).Error())
 
-	assert.EqualError(t, f.RemoveRow(sheet1, 0), "invalid row number 0")
+	assert.EqualError(t, f.RemoveRow(sheet1, 0), newInvalidRowNumberError(0).Error())
 
 	assert.NoError(t, f.RemoveRow(sheet1, 4))
 	if !assert.Len(t, r.SheetData.Row, rowCount-1) {
@@ -306,9 +306,9 @@ func TestInsertRow(t *testing.T) {
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
-	assert.EqualError(t, f.InsertRow(sheet1, -1), "invalid row number -1")
+	assert.EqualError(t, f.InsertRow(sheet1, -1), newInvalidRowNumberError(-1).Error())
 
-	assert.EqualError(t, f.InsertRow(sheet1, 0), "invalid row number 0")
+	assert.EqualError(t, f.InsertRow(sheet1, 0), newInvalidRowNumberError(0).Error())
 
 	assert.NoError(t, f.InsertRow(sheet1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
@@ -484,7 +484,7 @@ func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 	t.Run("ZeroWithNoRows", func(t *testing.T) {
 		f := NewFile()
 
-		assert.EqualError(t, f.DuplicateRow(sheet, 0), "invalid row number 0")
+		assert.EqualError(t, f.DuplicateRow(sheet, 0), newInvalidRowNumberError(0).Error())
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "ZeroWithNoRows"))) {
 			t.FailNow()
@@ -800,7 +800,7 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 				assert.NoError(t, f.SetCellStr(sheet, col, val))
 			}
 
-			assert.EqualError(t, f.DuplicateRow(sheet, row), fmt.Sprintf("invalid row number %d", row))
+			assert.EqualError(t, f.DuplicateRow(sheet, row), newInvalidRowNumberError(row).Error())
 
 			for col, val := range cells {
 				v, err := f.GetCellValue(sheet, col)
@@ -822,7 +822,7 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 					assert.NoError(t, f.SetCellStr(sheet, col, val))
 				}
 
-				assert.EqualError(t, f.DuplicateRowTo(sheet, row1, row2), fmt.Sprintf("invalid row number %d", row1))
+				assert.EqualError(t, f.DuplicateRowTo(sheet, row1, row2), newInvalidRowNumberError(row1).Error())
 
 				for col, val := range cells {
 					v, err := f.GetCellValue(sheet, col)
@@ -897,7 +897,7 @@ func TestCheckRow(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	delete(f.checked, "xl/worksheets/sheet1.xml")
-	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), newCellNameToCoordinatesError("-", newInvalidCellNameError("-")).Error())
 }
 
 func TestSetRowStyle(t *testing.T) {

@@ -60,7 +60,7 @@ func TestAddPicture(t *testing.T) {
 	// Test add picture to worksheet from bytes.
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
 	// Test add picture to worksheet from bytes with illegal cell coordinates.
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".png", file), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".png", file), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), ""))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q15", filepath.Join("test", "images", "excel.jpg"), ""))
@@ -110,7 +110,7 @@ func TestGetPicture(t *testing.T) {
 
 	// Try to get picture from a worksheet with illegal cell coordinates.
 	_, _, err = f.GetPicture("Sheet1", "A")
-	assert.EqualError(t, err, `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	// Try to get picture from a worksheet that doesn't contain any images.
 	file, raw, err = f.GetPicture("Sheet3", "I9")
@@ -165,7 +165,7 @@ func TestGetPicture(t *testing.T) {
 func TestAddDrawingPicture(t *testing.T) {
 	// testing addDrawingPicture with illegal cell coordinates.
 	f := NewFile()
-	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestAddPictureFromBytes(t *testing.T) {
@@ -195,7 +195,7 @@ func TestDeletePicture(t *testing.T) {
 	// Test delete picture on not exists worksheet.
 	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN is not exist")
 	// Test delete picture with invalid coordinates.
-	assert.EqualError(t, f.DeletePicture("Sheet1", ""), `cannot convert cell "" to coordinates: invalid cell name ""`)
+	assert.EqualError(t, f.DeletePicture("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	assert.NoError(t, f.Close())
 	// Test delete picture on no chart worksheet.
 	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
@@ -208,9 +208,9 @@ func TestDrawingResize(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test calculate drawing resize with invalid coordinates.
 	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
-	assert.EqualError(t, err, `cannot convert cell "" to coordinates: invalid cell name ""`)
+	assert.EqualError(t, err, newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }

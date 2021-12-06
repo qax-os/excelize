@@ -14,7 +14,6 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -58,7 +57,7 @@ func NewFile() *File {
 // Save provides a function to override the spreadsheet with origin path.
 func (f *File) Save() error {
 	if f.Path == "" {
-		return fmt.Errorf("no path defined for file, consider File.WriteTo or File.Write")
+		return ErrSave
 	}
 	return f.SaveAs(f.Path)
 }

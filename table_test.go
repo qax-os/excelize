@@ -34,8 +34,8 @@ func TestAddTable(t *testing.T) {
 	// Test add table with illegal formatset.
 	assert.EqualError(t, f.AddTable("Sheet1", "B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
 	// Test add table with illegal cell coordinates.
-	assert.EqualError(t, f.AddTable("Sheet1", "A", "B1", `{}`), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, f.AddTable("Sheet1", "A1", "B", `{}`), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
+	assert.EqualError(t, f.AddTable("Sheet1", "A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddTable("Sheet1", "A1", "B", `{}`), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
@@ -73,8 +73,8 @@ func TestAutoFilter(t *testing.T) {
 	}
 
 	// testing AutoFilter with illegal cell coordinates.
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A", "B1", ""), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A1", "B", ""), `cannot convert cell "B" to coordinates: invalid cell name "B"`)
+	assert.EqualError(t, f.AutoFilter("Sheet1", "A", "B1", ""), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AutoFilter("Sheet1", "A1", "B", ""), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 }
 
 func TestAutoFilterError(t *testing.T) {
@@ -109,7 +109,7 @@ func TestAutoFilterError(t *testing.T) {
 	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
 		Column:     "-",
 		Expression: "-",
-	}), `invalid column name "-"`)
+	}), newInvalidColumnNameError("-").Error())
 	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &formatAutoFilter{
 		Column:     "A",
 		Expression: "-",

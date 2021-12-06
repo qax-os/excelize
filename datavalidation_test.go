@@ -164,13 +164,13 @@ func TestDeleteDataValidation(t *testing.T) {
 
 	dvRange.Sqref = "A"
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
-	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
-	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:A"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A1:A"
-	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:B2"), `cannot convert cell "A" to coordinates: invalid cell name "A"`)
+	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:B2"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	// Test delete data validation on no exists worksheet.
 	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN is not exist")

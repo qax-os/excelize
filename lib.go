@@ -16,7 +16,6 @@ import (
 	"bytes"
 	"container/list"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -240,11 +239,9 @@ func ColumnNumberToName(num int) (string, error) {
 //    excelize.CellNameToCoordinates("Z3") // returns 26, 3, nil
 //
 func CellNameToCoordinates(cell string) (int, int, error) {
-	const msg = "cannot convert cell %q to coordinates: %v"
-
 	colname, row, err := SplitCellName(cell)
 	if err != nil {
-		return -1, -1, fmt.Errorf(msg, cell, err)
+		return -1, -1, newCellNameToCoordinatesError(cell, err)
 	}
 	if row > TotalRows {
 		return -1, -1, ErrMaxRows
@@ -447,7 +444,7 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 		found := false
 		switch t.(type) {
 		case xml.StartElement:
-			return errors.New("unexpected child of attrValBool")
+			return ErrAttrValBool
 		case xml.EndElement:
 			found = true
 		}
