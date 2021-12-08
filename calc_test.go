@@ -3323,22 +3323,41 @@ func TestCalculate(t *testing.T) {
 
 func TestCalcWithDefinedName(t *testing.T) {
 	cellData := [][]interface{}{
-		{"A1 value", "B1 value", nil},
+		{"A1_as_string", "B1_as_string", 123, nil},
 	}
 	f := prepareCalcData(cellData)
 	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!A1", Scope: "Workbook"}))
 	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name1", RefersTo: "Sheet1!B1", Scope: "Sheet1"}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{Name: "defined_name2", RefersTo: "Sheet1!C1", Scope: "Workbook"}))
 
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=defined_name1"))
-	result, err := f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=defined_name1"))
+	result, err := f.CalcCellValue("Sheet1", "D1")
 	assert.NoError(t, err)
 	// DefinedName with scope WorkSheet takes precedence over DefinedName with scope Workbook, so we should get B1 value
-	assert.Equal(t, "B1 value", result, "=defined_name1")
+	assert.Equal(t, "B1_as_string", result, "=defined_name1")
 
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=CONCATENATE(\"<\",defined_name1,\">\")"))
-	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", `=CONCATENATE("<",defined_name1,">")`))
+	result, err = f.CalcCellValue("Sheet1", "D1")
 	assert.NoError(t, err)
-	assert.Equal(t, "<B1 value>", result, "=defined_name1")
+	assert.Equal(t, "<B1_as_string>", result, "=defined_name1")
+
+	// comparing numeric values
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", `=123=defined_name2`))
+	result, err = f.CalcCellValue("Sheet1", "D1")
+	assert.NoError(t, err)
+	assert.Equal(t, "TRUE", result, "=123=defined_name2")
+
+	// comparing text values
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", `="B1_as_string"=defined_name1`))
+	result, err = f.CalcCellValue("Sheet1", "D1")
+	assert.NoError(t, err)
+	assert.Equal(t, "TRUE", result, `="B1_as_string"=defined_name1`)
+
+	// comparing text values
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", `=IF("B1_as_string"=defined_name1,"YES","NO")`))
+	result, err = f.CalcCellValue("Sheet1", "D1")
+	assert.NoError(t, err)
+	assert.Equal(t, "YES", result, `=IF("B1_as_string"=defined_name1,"YES","NO")`)
 
 }
 
