@@ -449,10 +449,13 @@ type formulaFuncs struct {
 //    ISERR
 //    ISERROR
 //    ISEVEN
+//    ISFORMULA
+//    ISLOGICAL
 //    ISNA
 //    ISNONTEXT
 //    ISNUMBER
 //    ISODD
+//    ISREF
 //    ISTEXT
 //    ISO.CEILING
 //    ISOWEEKNUM
@@ -6622,6 +6625,44 @@ func (fn *formulaFuncs) ISEVEN(argsList *list.List) formulaArg {
 	return newStringFormulaArg(result)
 }
 
+// ISFORMULA function tests if a specified cell contains a formula, and if so,
+// returns TRUE; Otherwise, the function returns FALSE. The syntax of the
+// function is:
+//
+//    ISFORMULA(reference)
+//
+func (fn *formulaFuncs) ISFORMULA(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISFORMULA requires 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.cellRefs != nil && arg.cellRefs.Len() == 1 {
+		ref := arg.cellRefs.Front().Value.(cellRef)
+		cell, _ := CoordinatesToCellName(ref.Col, ref.Row)
+		if formula, _ := fn.f.GetCellFormula(ref.Sheet, cell); len(formula) > 0 {
+			return newBoolFormulaArg(true)
+		}
+	}
+	return newBoolFormulaArg(false)
+}
+
+// ISLOGICAL function tests if a supplied value (or expression) returns a
+// logical value (i.e. evaluates to True or False). If so, the function
+// returns TRUE; Otherwise, it returns FALSE. The syntax of the function is:
+//
+//    ISLOGICAL(value)
+//
+func (fn *formulaFuncs) ISLOGICAL(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISLOGICAL requires 1 argument")
+	}
+	val := argsList.Front().Value.(formulaArg).Value()
+	if strings.EqualFold("TRUE", val) || strings.EqualFold("FALSE", val) {
+		return newBoolFormulaArg(true)
+	}
+	return newBoolFormulaArg(false)
+}
+
 // ISNA function tests if an initial supplied expression (or value) returns
 // the Excel #N/A Error, and if so, returns TRUE; Otherwise the function
 // returns FALSE. The syntax of the function is:
@@ -6702,6 +6743,23 @@ func (fn *formulaFuncs) ISODD(argsList *list.List) formulaArg {
 		}
 	}
 	return newStringFormulaArg(result)
+}
+
+// ISREF function tests if a supplied value is a reference. If so, the
+// function returns TRUE; Otherwise it returns FALSE. The syntax of the
+// function is:
+//
+//    ISREF(value)
+//
+func (fn *formulaFuncs) ISREF(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ISREF requires 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 || arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
+		return newBoolFormulaArg(true)
+	}
+	return newBoolFormulaArg(false)
 }
 
 // ISTEXT function tests if a supplied value is text, and if so, returns TRUE;

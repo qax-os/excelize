@@ -988,6 +988,17 @@ func TestCalcCellValue(t *testing.T) {
 		// ISEVEN
 		"=ISEVEN(A1)": "FALSE",
 		"=ISEVEN(A2)": "TRUE",
+		// ISFORMULA
+		"=ISFORMULA(A1)":    "FALSE",
+		"=ISFORMULA(\"A\")": "FALSE",
+		// ISLOGICAL
+		"=ISLOGICAL(TRUE)":      "TRUE",
+		"=ISLOGICAL(FALSE)":     "TRUE",
+		"=ISLOGICAL(A1=A2)":     "TRUE",
+		"=ISLOGICAL(\"true\")":  "TRUE",
+		"=ISLOGICAL(\"false\")": "TRUE",
+		"=ISLOGICAL(A1)":        "FALSE",
+		"=ISLOGICAL(20/5)":      "FALSE",
 		// ISNA
 		"=ISNA(A1)":   "FALSE",
 		"=ISNA(NA())": "TRUE",
@@ -1002,6 +1013,11 @@ func TestCalcCellValue(t *testing.T) {
 		// ISODD
 		"=ISODD(A1)": "TRUE",
 		"=ISODD(A2)": "FALSE",
+		// ISREF
+		"=ISREF(B1)":       "TRUE",
+		"=ISREF(B1:B2)":    "TRUE",
+		"=ISREF(\"text\")": "FALSE",
+		"=ISREF(B1*B2)":    "FALSE",
 		// ISTEXT
 		"=ISTEXT(D1)": "TRUE",
 		"=ISTEXT(A1)": "FALSE",
@@ -2402,6 +2418,10 @@ func TestCalcCellValue(t *testing.T) {
 		// ISEVEN
 		"=ISEVEN()":       "ISEVEN requires 1 argument",
 		`=ISEVEN("text")`: "strconv.Atoi: parsing \"text\": invalid syntax",
+		// ISFORMULA
+		"=ISFORMULA()": "ISFORMULA requires 1 argument",
+		// ISLOGICAL
+		"=ISLOGICAL()": "ISLOGICAL requires 1 argument",
 		// ISNA
 		"=ISNA()": "ISNA requires 1 argument",
 		// ISNONTEXT
@@ -2411,6 +2431,8 @@ func TestCalcCellValue(t *testing.T) {
 		// ISODD
 		"=ISODD()":       "ISODD requires 1 argument",
 		`=ISODD("text")`: "strconv.Atoi: parsing \"text\": invalid syntax",
+		// ISREF
+		"=ISREF()": "ISREF requires 1 argument",
 		// ISTEXT
 		"=ISTEXT()": "ISTEXT requires 1 argument",
 		// N
@@ -3723,6 +3745,17 @@ func TestCalcMATCH(t *testing.T) {
 		assert.Equal(t, "", result, formula)
 	}
 	assert.Equal(t, newErrorFormulaArg(formulaErrorNA, formulaErrorNA), calcMatch(2, nil, []formulaArg{}))
+}
+
+func TestCalcISFORMULA(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=ISFORMULA(A1)"))
+	for _, formula := range []string{"=NA()", "=SUM(A1:A3)"} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formula))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, "TRUE", result, formula)
+	}
 }
 
 func TestCalcZTEST(t *testing.T) {
