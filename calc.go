@@ -736,6 +736,10 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 			// current token is args or range, skip next token, order required: parse reference first
 			if token.TSubType == efp.TokenSubTypeRange {
 				if !opftStack.Empty() {
+					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
+					if refTo != "" {
+						token.TValue = refTo
+					}
 					// parse reference: must reference at here
 					result, err := f.parseReference(sheet, token.TValue)
 					if err != nil {
@@ -871,13 +875,13 @@ func calcPow(rOpd, lOpd efp.Token, opdStack *Stack) error {
 
 // calcEq evaluate equal arithmetic operations.
 func calcEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd == lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd.TValue == lOpd.TValue)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
 func calcNEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd != lOpd)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd.TValue != lOpd.TValue)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	return nil
 }
 
