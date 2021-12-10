@@ -723,6 +723,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 		if isFunctionStartToken(token) {
 			opfStack.Push(token)
 			argsStack.Push(list.New().Init())
+			opftStack.Push(token) // to know which operators belong to a function use the function as a separator
 			continue
 		}
 
@@ -735,7 +736,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			// current token is args or range, skip next token, order required: parse reference first
 			if token.TSubType == efp.TokenSubTypeRange {
-				if !opftStack.Empty() {
+				if opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
 					if refTo != "" {
 						token.TValue = refTo
@@ -780,7 +781,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			// current token is arg
 			if token.TType == efp.TokenTypeArgument {
-				for !opftStack.Empty() {
+				for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
 					if err := calculate(opfdStack, topOpt); err != nil {
@@ -823,7 +824,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		return nil
 	}
 	// current token is function stop
-	for !opftStack.Empty() {
+	for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 		// calculate trigger
 		topOpt := opftStack.Peek().(efp.Token)
 		if err := calculate(opfdStack, topOpt); err != nil {
@@ -844,9 +845,10 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		return errors.New(arg.Value())
 	}
 	argsStack.Pop()
+	opftStack.Pop() // remove current function separator
 	opfStack.Pop()
 	if opfStack.Len() > 0 { // still in function stack
-		if nextToken.TType == efp.TokenTypeOperatorInfix {
+		if nextToken.TType == efp.TokenTypeOperatorInfix || opftStack.Len() > 1 {
 			// mathematics calculate in formula function
 			opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 		} else {
