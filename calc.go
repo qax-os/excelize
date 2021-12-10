@@ -739,9 +739,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			// current token is args or range, skip next token, order required: parse reference first
 			if token.TSubType == efp.TokenSubTypeRange {
-
 				if opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
-
 					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
 					if refTo != "" {
 						token.TValue = refTo
