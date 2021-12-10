@@ -3787,3 +3787,23 @@ func TestGetYearDays(t *testing.T) {
 		assert.Equal(t, data[2], getYearDays(data[0], data[1]))
 	}
 }
+
+func TestNestedFunctionsWithOperators(t *testing.T) {
+	f := NewFile()
+	formulaList := map[string]string{
+		`=LEN("KEEP")`:                                               "4",
+		`=LEN("REMOVEKEEP") - LEN("REMOVE")`:                         "4",
+		`=RIGHT("REMOVEKEEP", 4)`:                                    "KEEP",
+		`=RIGHT("REMOVEKEEP", 10 - 6))`:                              "KEEP",
+		`=RIGHT("REMOVEKEEP", LEN("REMOVEKEEP") - 6)`:                "KEEP",
+		`=RIGHT("REMOVEKEEP", LEN("REMOVEKEEP") - LEN("REMOV") - 1)`: "KEEP",
+		`=RIGHT("REMOVEKEEP", 10 - LEN("REMOVE"))`:                   "KEEP",
+		`=RIGHT("REMOVEKEEP", LEN("REMOVEKEEP") - LEN("REMOVE"))`:    "KEEP",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
