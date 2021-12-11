@@ -556,6 +556,7 @@ type formulaFuncs struct {
 //    SEC
 //    SECH
 //    SHEET
+//    SHEETS
 //    SIGN
 //    SIN
 //    SINH
@@ -6818,13 +6819,61 @@ func (fn *formulaFuncs) NA(argsList *list.List) formulaArg {
 // SHEET function returns the Sheet number for a specified reference. The
 // syntax of the function is:
 //
-//    SHEET()
+//    SHEET([value])
 //
 func (fn *formulaFuncs) SHEET(argsList *list.List) formulaArg {
-	if argsList.Len() != 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "SHEET accepts no arguments")
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SHEET accepts at most 1 argument")
 	}
-	return newNumberFormulaArg(float64(fn.f.GetSheetIndex(fn.sheet) + 1))
+	if argsList.Len() == 0 {
+		return newNumberFormulaArg(float64(fn.f.GetSheetIndex(fn.sheet) + 1))
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if sheetIdx := fn.f.GetSheetIndex(arg.Value()); sheetIdx != -1 {
+		return newNumberFormulaArg(float64(sheetIdx + 1))
+	}
+	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 {
+		if sheetIdx := fn.f.GetSheetIndex(arg.cellRanges.Front().Value.(cellRange).From.Sheet); sheetIdx != -1 {
+			return newNumberFormulaArg(float64(sheetIdx + 1))
+		}
+	}
+	if arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
+		if sheetIdx := fn.f.GetSheetIndex(arg.cellRefs.Front().Value.(cellRef).Sheet); sheetIdx != -1 {
+			return newNumberFormulaArg(float64(sheetIdx + 1))
+		}
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
+// SHEETS function returns the number of sheets in a supplied reference. The
+// result includes sheets that are Visible, Hidden or Very Hidden. The syntax
+// of the function is:
+//
+//    SHEETS([reference])
+//
+func (fn *formulaFuncs) SHEETS(argsList *list.List) formulaArg {
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SHEETS accepts at most 1 argument")
+	}
+	if argsList.Len() == 0 {
+		return newNumberFormulaArg(float64(len(fn.f.GetSheetList())))
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	sheetMap := map[string]interface{}{}
+	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 {
+		for rng := arg.cellRanges.Front(); rng != nil; rng = rng.Next() {
+			sheetMap[rng.Value.(cellRange).From.Sheet] = nil
+		}
+	}
+	if arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
+		for ref := arg.cellRefs.Front(); ref != nil; ref = ref.Next() {
+			sheetMap[ref.Value.(cellRef).Sheet] = nil
+		}
+	}
+	if len(sheetMap) > 0 {
+		return newNumberFormulaArg(float64(len(sheetMap)))
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 }
 
 // T function tests if a supplied value is text and if so, returns the

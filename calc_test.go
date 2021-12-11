@@ -1028,7 +1028,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=N(TRUE)":   "1",
 		"=N(FALSE)":  "0",
 		// SHEET
-		"=SHEET()": "1",
+		"=SHEET()":           "1",
+		"=SHEET(\"Sheet1\")": "1",
+		// SHEETS
+		"=SHEETS()":   "1",
+		"=SHEETS(A1)": "1",
 		// T
 		"=T(\"text\")": "text",
 		"=T(N(10))":    "",
@@ -2442,7 +2446,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=NA()":  "#N/A",
 		"=NA(1)": "NA accepts no arguments",
 		// SHEET
-		"=SHEET(1)": "SHEET accepts no arguments",
+		"=SHEET(\"\",\"\")":  "SHEET accepts at most 1 argument",
+		"=SHEET(\"Sheet2\")": "#N/A",
+		// SHEETS
+		"=SHEETS(\"\",\"\")":  "SHEETS accepts at most 1 argument",
+		"=SHEETS(\"Sheet1\")": "#N/A",
 		// T
 		"=T()":     "T requires 1 argument",
 		"=T(NA())": "#N/A",
@@ -2459,7 +2467,8 @@ func TestCalcCellValue(t *testing.T) {
 		// IFNA
 		"=IFNA()": "IFNA requires 2 arguments",
 		// IFS
-		"=IFS()": "IFS requires at least 2 arguments",
+		"=IFS()":            "IFS requires at least 2 arguments",
+		"=IFS(FALSE,FALSE)": "#N/A",
 		// NOT
 		"=NOT()":      "NOT requires 1 argument",
 		"=NOT(NOT())": "NOT requires 1 argument",
@@ -3755,6 +3764,38 @@ func TestCalcISFORMULA(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "B1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, "TRUE", result, formula)
+	}
+}
+
+func TestCalcSHEET(t *testing.T) {
+	f := NewFile()
+	f.NewSheet("Sheet2")
+	formulaList := map[string]string{
+		"=SHEET(\"Sheet2\")":   "2",
+		"=SHEET(Sheet2!A1)":    "2",
+		"=SHEET(Sheet2!A1:A2)": "2",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formula))
+		result, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcSHEETS(t *testing.T) {
+	f := NewFile()
+	f.NewSheet("Sheet2")
+	formulaList := map[string]string{
+		"=SHEETS(Sheet1!A1:B1)":        "1",
+		"=SHEETS(Sheet1!A1:Sheet1!A1)": "1",
+		"=SHEETS(Sheet1!A1:Sheet2!A1)": "2",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formula))
+		result, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
 	}
 }
 
