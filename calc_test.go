@@ -737,6 +737,7 @@ func TestCalcCellValue(t *testing.T) {
 		`=SUMIF(D2:D9,"Feb",F2:F9)`:     "157559",
 		`=SUMIF(E2:E9,"North 1",F2:F9)`: "66582",
 		`=SUMIF(E2:E9,"North*",F2:F9)`:  "138772",
+		"=SUMIF(D1:D3,\"Month\",D1:D3)": "0",
 		// SUMSQ
 		"=SUMSQ(A1:A4)":            "14",
 		"=SUMSQ(A1,B1,A2,B2,6)":    "82",
@@ -793,6 +794,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTBLANK(1)":        "0",
 		"=COUNTBLANK(B1:C1)":    "1",
 		"=COUNTBLANK(C1)":       "1",
+		// COUNTIF
+		"=COUNTIF(D1:D9,\"Jan\")":     "4",
+		"=COUNTIF(D1:D9,\"<>Jan\")":   "5",
+		"=COUNTIF(A1:F9,\">=50000\")": "2",
+		"=COUNTIF(A1:F9,TRUE)":        "0",
 		// DEVSQ
 		"=DEVSQ(1,3,5,2,9,7)": "47.5",
 		"=DEVSQ(A1:D2)":       "10",
@@ -2150,7 +2156,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUM(1*)": ErrInvalidFormula.Error(),
 		"=SUM(1/)": ErrInvalidFormula.Error(),
 		// SUMIF
-		"=SUMIF()": "SUMIF requires at least 2 argument",
+		"=SUMIF()": "SUMIF requires at least 2 arguments",
 		// SUMSQ
 		`=SUMSQ("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		"=SUMSQ(C1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
@@ -2171,8 +2177,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVEDEV(1,\"\")": "#VALUE!",
 		// AVERAGE
 		"=AVERAGE(H1)": "AVERAGE divide by zero",
-		// AVERAGE
+		// AVERAGEA
 		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		// AVERAGEIF
+		"=AVERAGEIF()":                      "AVERAGEIF requires at least 2 arguments",
+		"=AVERAGEIF(H1,\"\")":               "AVERAGEIF divide by zero",
+		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
+		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
 		// CHIDIST
 		"=CHIDIST()":         "CHIDIST requires 2 numeric arguments",
 		"=CHIDIST(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -2198,6 +2209,8 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
+		// COUNTIF
+		"=COUNTIF()": "COUNTIF requires 2 arguments",
 		// DEVSQ
 		"=DEVSQ()":      "DEVSQ requires at least 1 numeric argument",
 		"=DEVSQ(D1:D2)": "#N/A",
@@ -3539,6 +3552,37 @@ func TestCalcBoolean(t *testing.T) {
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
 		result, err := f.CalcCellValue("Sheet1", "B10")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcAVERAGEIF(t *testing.T) {
+	f := prepareCalcData([][]interface{}{
+		{"Monday", 500},
+		{"Tuesday", 50},
+		{"Thursday", 100},
+		{"Friday", 100},
+		{"Thursday", 200},
+		{5, 300},
+		{2, 200},
+		{3, 100},
+		{4, 50},
+		{5, 100},
+		{1, 50},
+		{"TRUE", 200},
+		{"TRUE", 250},
+		{"FALSE", 50},
+	})
+	for formula, expected := range map[string]string{
+		"=AVERAGEIF(A1:A14,\"Thursday\",B1:B14)": "150",
+		"=AVERAGEIF(A1:A14,5,B1:B14)":            "200",
+		"=AVERAGEIF(A1:A14,\">2\",B1:B14)":       "137.5",
+		"=AVERAGEIF(A1:A14,TRUE,B1:B14)":         "225",
+		"=AVERAGEIF(A1:A14,\"<>TRUE\",B1:B14)":   "150",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}

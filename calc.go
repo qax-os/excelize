@@ -52,6 +52,7 @@ const (
 	criteriaEq
 	criteriaLe
 	criteriaGe
+	criteriaNe
 	criteriaL
 	criteriaG
 	criteriaErr
@@ -315,6 +316,7 @@ type formulaFuncs struct {
 //    AVEDEV
 //    AVERAGE
 //    AVERAGEA
+//    AVERAGEIF
 //    BASE
 //    BESSELI
 //    BESSELJ
@@ -352,6 +354,7 @@ type formulaFuncs struct {
 //    COUNT
 //    COUNTA
 //    COUNTBLANK
+//    COUNTIF
 //    COUPDAYBS
 //    COUPDAYS
 //    COUPDAYSNC
@@ -1419,6 +1422,10 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 		fc.Type, fc.Condition = criteriaEq, match[1]
 		return
 	}
+	if match := regexp.MustCompile(`^<>(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
+		fc.Type, fc.Condition = criteriaNe, match[1]
+		return
+	}
 	if match := regexp.MustCompile(`^<=(.*)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaLe, match[1]
 		return
@@ -1467,6 +1474,8 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	case criteriaGe:
 		value, expected, e = prepareValue(val, criteria.Condition)
 		return value >= expected && e == nil, err
+	case criteriaNe:
+		return val != criteria.Condition, err
 	case criteriaL:
 		value, expected, e = prepareValue(val, criteria.Condition)
 		return value < expected && e == nil, err
@@ -4723,7 +4732,7 @@ func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "SUMIF requires at least 2 argument")
+		return newErrorFormulaArg(formulaErrorVALUE, "SUMIF requires at least 2 arguments")
 	}
 	var criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
 	var rangeMtx = argsList.Front().Value.(formulaArg).Matrix
@@ -4740,9 +4749,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 			if col.String == "" {
 				continue
 			}
-			if ok, err = formulaCriteriaEval(fromVal, criteria); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
+			ok, _ = formulaCriteriaEval(fromVal, criteria)
 			if ok {
 				if argsList.Len() == 3 {
 					if len(sumRange) <= rowIdx || len(sumRange[rowIdx]) <= colIdx {
@@ -4751,7 +4758,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 					fromVal = sumRange[rowIdx][colIdx].String
 				}
 				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
-					return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+					continue
 				}
 				sum += val
 			}
@@ -4923,6 +4930,57 @@ func (fn *formulaFuncs) AVERAGEA(argsList *list.List) formulaArg {
 	count, sum := fn.countSum(true, args)
 	if count == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEA divide by zero")
+	}
+	return newNumberFormulaArg(sum / count)
+}
+
+// AVERAGEIF function finds the values in a supplied array that satisfy a
+// specified criteria, and returns the average (i.e. the statistical mean) of
+// the corresponding values in a second supplied array. The syntax of the
+// function is:
+//
+//    AVERAGEIF(range,criteria,[average_range])
+//
+func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AVERAGEIF requires at least 2 arguments")
+	}
+	var (
+		criteria  = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+		rangeMtx  = argsList.Front().Value.(formulaArg).Matrix
+		cellRange [][]formulaArg
+		args      []formulaArg
+		val       float64
+		err       error
+		ok        bool
+	)
+	if argsList.Len() == 3 {
+		cellRange = argsList.Back().Value.(formulaArg).Matrix
+	}
+	for rowIdx, row := range rangeMtx {
+		for colIdx, col := range row {
+			fromVal := col.String
+			if col.String == "" {
+				continue
+			}
+			ok, _ = formulaCriteriaEval(fromVal, criteria)
+			if ok {
+				if argsList.Len() == 3 {
+					if len(cellRange) <= rowIdx || len(cellRange[rowIdx]) <= colIdx {
+						continue
+					}
+					fromVal = cellRange[rowIdx][colIdx].String
+				}
+				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
+					continue
+				}
+				args = append(args, newNumberFormulaArg(val))
+			}
+		}
+	}
+	count, sum := fn.countSum(false, args)
+	if count == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEIF divide by zero")
 	}
 	return newNumberFormulaArg(sum / count)
 }
@@ -5134,28 +5192,34 @@ func (fn *formulaFuncs) COUNTBLANK(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COUNTBLANK requires 1 argument")
 	}
-	var count int
-	token := argsList.Front().Value.(formulaArg)
-	switch token.Type {
-	case ArgString:
-		if token.String == "" {
+	var count float64
+	for _, cell := range argsList.Front().Value.(formulaArg).ToList() {
+		if cell.Value() == "" {
 			count++
 		}
-	case ArgList, ArgMatrix:
-		for _, row := range token.ToList() {
-			switch row.Type {
-			case ArgString:
-				if row.String == "" {
-					count++
-				}
-			case ArgEmpty:
-				count++
-			}
-		}
-	case ArgEmpty:
-		count++
 	}
-	return newNumberFormulaArg(float64(count))
+	return newNumberFormulaArg(count)
+}
+
+// COUNTIF function returns the number of cells within a supplied range, that
+// satisfy a given criteria. The syntax of the function is:
+//
+//    COUNTIF(range,criteria)
+//
+func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COUNTIF requires 2 arguments")
+	}
+	var (
+		criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+		count    float64
+	)
+	for _, cell := range argsList.Front().Value.(formulaArg).ToList() {
+		if ok, _ := formulaCriteriaEval(cell.Value(), criteria); ok {
+			count++
+		}
+	}
+	return newNumberFormulaArg(count)
 }
 
 // DEVSQ function calculates the sum of the squared deviations from the sample
