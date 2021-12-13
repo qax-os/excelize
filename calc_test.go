@@ -799,6 +799,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTIF(D1:D9,\"<>Jan\")":   "5",
 		"=COUNTIF(A1:F9,\">=50000\")": "2",
 		"=COUNTIF(A1:F9,TRUE)":        "0",
+		// COUNTIFS
+		"=COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
+		"=COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
 		// DEVSQ
 		"=DEVSQ(1,3,5,2,9,7)": "47.5",
 		"=DEVSQ(A1:D2)":       "10",
@@ -2211,6 +2214,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
 		// COUNTIF
 		"=COUNTIF()": "COUNTIF requires 2 arguments",
+		// COUNTIFS
+		"=COUNTIFS()":              "COUNTIFS requires at least 2 arguments",
+		"=COUNTIFS(A1:A9,2,D1:D9)": "#N/A",
 		// DEVSQ
 		"=DEVSQ()":      "DEVSQ requires at least 1 numeric argument",
 		"=DEVSQ(D1:D2)": "#N/A",

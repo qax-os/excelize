@@ -355,6 +355,7 @@ type formulaFuncs struct {
 //    COUNTA
 //    COUNTBLANK
 //    COUNTIF
+//    COUNTIFS
 //    COUPDAYBS
 //    COUPDAYS
 //    COUPDAYSNC
@@ -5222,6 +5223,48 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(count)
 }
 
+// COUNTIFS function returns the number of rows within a table, that satisfy a
+// set of given criteria. The syntax of the function is:
+//
+//    COUNTIFS(criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) COUNTIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COUNTIFS requires at least 2 arguments")
+	}
+	if argsList.Len()%2 != 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	group, rowsIdx := 0, map[int]struct{}{}
+	for criteriaRange := argsList.Front(); criteriaRange != nil; criteriaRange = criteriaRange.Next() {
+		criteria := criteriaRange.Next()
+		if group == 0 {
+			for rowIdx, row := range criteriaRange.Value.(formulaArg).Matrix {
+				for _, col := range row {
+					if ok, _ := formulaCriteriaEval(col.String, formulaCriteriaParser(criteria.Value.(formulaArg).Value())); ok {
+						rowsIdx[rowIdx] = struct{}{}
+					}
+				}
+			}
+		} else {
+			for rowIdx, row := range criteriaRange.Value.(formulaArg).Matrix {
+				if _, ok := rowsIdx[rowIdx]; !ok {
+					delete(rowsIdx, rowIdx)
+					continue
+				}
+				for _, col := range row {
+					if ok, _ := formulaCriteriaEval(col.String, formulaCriteriaParser(criteria.Value.(formulaArg).Value())); !ok {
+						delete(rowsIdx, rowIdx)
+					}
+				}
+			}
+		}
+		criteriaRange = criteriaRange.Next()
+		group++
+	}
+	return newNumberFormulaArg(float64(len(rowsIdx)))
+}
+
 // DEVSQ function calculates the sum of the squared deviations from the sample
 // mean. The syntax of the function is:
 //
@@ -6923,15 +6966,15 @@ func (fn *formulaFuncs) SHEETS(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(float64(len(fn.f.GetSheetList())))
 	}
 	arg := argsList.Front().Value.(formulaArg)
-	sheetMap := map[string]interface{}{}
+	sheetMap := map[string]struct{}{}
 	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 {
 		for rng := arg.cellRanges.Front(); rng != nil; rng = rng.Next() {
-			sheetMap[rng.Value.(cellRange).From.Sheet] = nil
+			sheetMap[rng.Value.(cellRange).From.Sheet] = struct{}{}
 		}
 	}
 	if arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
 		for ref := arg.cellRefs.Front(); ref != nil; ref = ref.Next() {
-			sheetMap[ref.Value.(cellRef).Sheet] = nil
+			sheetMap[ref.Value.(cellRef).Sheet] = struct{}{}
 		}
 	}
 	if len(sheetMap) > 0 {
