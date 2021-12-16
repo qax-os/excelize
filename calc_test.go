@@ -1403,6 +1403,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=VLOOKUP(MUNIT(3),MUNIT(3),1)":       "0",
 		"=VLOOKUP(A1,A3:B5,1)":                "0",
 		"=VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
+		// INDEX
+		"=INDEX(0,0,0)":          "0",
+		"=INDEX(A1,0,0)":         "1",
+		"=INDEX(A1:A1,0,0)":      "1",
+		"=SUM(INDEX(A1:B1,1))":   "5",
+		"=SUM(INDEX(A1:B1,1,0))": "5",
+		"=SUM(INDEX(A1:B2,2,0))": "7",
+		"=SUM(INDEX(A1:B4,0,2))": "9",
+		"=SUM(INDEX(E1:F5,5,2))": "34440",
 		// LOOKUP
 		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
@@ -2792,6 +2801,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=VLOOKUP(INT(1),E2:E9,1)":       "VLOOKUP no result found",
 		"=VLOOKUP(MUNIT(2),MUNIT(3),1)":  "VLOOKUP no result found",
 		"=VLOOKUP(1,G1:H2,1,FALSE)":      "VLOOKUP no result found",
+		// INDEX
+		"=INDEX()":          "INDEX requires 2 or 3 arguments",
+		"=INDEX(A1,2)":      "INDEX row_num out of range",
+		"=INDEX(A1,0,2)":    "INDEX col_num out of range",
+		"=INDEX(A1:A1,2)":   "INDEX row_num out of range",
+		"=INDEX(A1:A1,0,2)": "INDEX col_num out of range",
+		"=INDEX(A1:B2,2,3)": "INDEX col_num out of range",
+		"=INDEX(A1:A2,0,0)": "#VALUE!",
+		"=INDEX(0,\"\")":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=INDEX(0,0,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// LOOKUP
 		"=LOOKUP()":                     "LOOKUP requires at least 2 arguments",
 		"=LOOKUP(D2,D1,D2)":             "LOOKUP requires second argument of table array",

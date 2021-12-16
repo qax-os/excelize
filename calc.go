@@ -445,6 +445,7 @@ type formulaFuncs struct {
 //    IMSUB
 //    IMSUM
 //    IMTAN
+//    INDEX
 //    INT
 //    INTRATE
 //    IPMT
@@ -5791,7 +5792,7 @@ func calcListMatrixMax(maxa bool, max float64, arg formulaArg) float64 {
 	return max
 }
 
-// max is an implementation of the formula function MAX and MAXA.
+// max is an implementation of the formula functions MAX and MAXA.
 func (fn *formulaFuncs) max(maxa bool, argsList *list.List) formulaArg {
 	max := -math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
@@ -5926,7 +5927,7 @@ func calcListMatrixMin(mina bool, min float64, arg formulaArg) float64 {
 	return min
 }
 
-// min is an implementation of the formula function MIN and MINA.
+// min is an implementation of the formula functions MIN and MINA.
 func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	min := math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
@@ -8136,7 +8137,7 @@ func (fn *formulaFuncs) CODE(argsList *list.List) formulaArg {
 	return fn.code("CODE", argsList)
 }
 
-// code is an implementation of the formula function CODE and UNICODE.
+// code is an implementation of the formula functions CODE and UNICODE.
 func (fn *formulaFuncs) code(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 1 argument", name))
@@ -8169,7 +8170,8 @@ func (fn *formulaFuncs) CONCATENATE(argsList *list.List) formulaArg {
 	return fn.concat("CONCATENATE", argsList)
 }
 
-// concat is an implementation of the formula function CONCAT and CONCATENATE.
+// concat is an implementation of the formula functions CONCAT and
+// CONCATENATE.
 func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
 	buf := bytes.Buffer{}
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
@@ -8279,7 +8281,7 @@ func (fn *formulaFuncs) FINDB(argsList *list.List) formulaArg {
 	return fn.find("FINDB", argsList)
 }
 
-// find is an implementation of the formula function FIND and FINDB.
+// find is an implementation of the formula functions FIND and FINDB.
 func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
@@ -8333,7 +8335,7 @@ func (fn *formulaFuncs) LEFTB(argsList *list.List) formulaArg {
 	return fn.leftRight("LEFTB", argsList)
 }
 
-// leftRight is an implementation of the formula function LEFT, LEFTB, RIGHT,
+// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT,
 // RIGHTB. TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
 // (Traditional), and Korean.
 func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
@@ -8422,7 +8424,7 @@ func (fn *formulaFuncs) MIDB(argsList *list.List) formulaArg {
 	return fn.mid("MIDB", argsList)
 }
 
-// mid is an implementation of the formula function MID and MIDB. TODO:
+// mid is an implementation of the formula functions MID and MIDB. TODO:
 // support DBCS include Japanese, Chinese (Simplified), Chinese
 // (Traditional), and Korean.
 func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
@@ -8495,7 +8497,7 @@ func (fn *formulaFuncs) REPLACEB(argsList *list.List) formulaArg {
 	return fn.replace("REPLACEB", argsList)
 }
 
-// replace is an implementation of the formula function REPLACE and REPLACEB.
+// replace is an implementation of the formula functions REPLACE and REPLACEB.
 // TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
 // (Traditional), and Korean.
 func (fn *formulaFuncs) replace(name string, argsList *list.List) formulaArg {
@@ -9491,6 +9493,73 @@ func iterateLookupArgs(lookupValue, lookupVector formulaArg) ([]formulaArg, int,
 	return cols, matchIdx, ok
 }
 
+// index is an implementation of the formula function INDEX.
+func (fn *formulaFuncs) index(array formulaArg, rowIdx, colIdx int) formulaArg {
+	var cells []formulaArg
+	if array.Type == ArgMatrix {
+		cellMatrix := array.Matrix
+		if rowIdx < -1 || rowIdx >= len(cellMatrix) {
+			return newErrorFormulaArg(formulaErrorREF, "INDEX row_num out of range")
+		}
+		if rowIdx == -1 {
+			if colIdx >= len(cellMatrix[0]) {
+				return newErrorFormulaArg(formulaErrorREF, "INDEX col_num out of range")
+			}
+			column := [][]formulaArg{}
+			for _, cells = range cellMatrix {
+				column = append(column, []formulaArg{cells[colIdx]})
+			}
+			return newMatrixFormulaArg(column)
+		}
+		cells = cellMatrix[rowIdx]
+	}
+	if colIdx < -1 || colIdx >= len(cells) {
+		return newErrorFormulaArg(formulaErrorREF, "INDEX col_num out of range")
+	}
+	return newListFormulaArg(cells)
+}
+
+// INDEX function returns a reference to a cell that lies in a specified row
+// and column of a range of cells. The syntax of the function is:
+//
+//    INDEX(array,row_num,[col_num])
+//
+func (fn *formulaFuncs) INDEX(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 || argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "INDEX requires 2 or 3 arguments")
+	}
+	array := argsList.Front().Value.(formulaArg)
+	if array.Type != ArgMatrix && array.Type != ArgList {
+		array = newMatrixFormulaArg([][]formulaArg{{array}})
+	}
+	rowArg := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if rowArg.Type != ArgNumber {
+		return rowArg
+	}
+	rowIdx, colIdx := int(rowArg.Number)-1, -1
+	if argsList.Len() == 3 {
+		colArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if colArg.Type != ArgNumber {
+			return colArg
+		}
+		colIdx = int(colArg.Number) - 1
+	}
+	if rowIdx == -1 && colIdx == -1 {
+		if len(array.ToList()) != 1 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		return array.ToList()[0]
+	}
+	cells := fn.index(array, rowIdx, colIdx)
+	if cells.Type != ArgList {
+		return cells
+	}
+	if colIdx == -1 {
+		return newMatrixFormulaArg([][]formulaArg{cells.List})
+	}
+	return cells.List[colIdx]
+}
+
 // LOOKUP function performs an approximate match lookup in a one-column or
 // one-row range, and returns the corresponding value from another one-column
 // or one-row range. The syntax of the function is:
@@ -10011,7 +10080,7 @@ func (fn *formulaFuncs) COUPDAYSNC(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(coupdays(settlement, ncd, basis))
 }
 
-// coupons is an implementation of the formula function COUPNCD and COUPPCD.
+// coupons is an implementation of the formula functions COUPNCD and COUPPCD.
 func (fn *formulaFuncs) coupons(name string, arg formulaArg) formulaArg {
 	settlement := timeFromExcelTime(arg.List[0].Number, false)
 	maturity := timeFromExcelTime(arg.List[1].Number, false)
@@ -10106,7 +10175,7 @@ func (fn *formulaFuncs) CUMPRINC(argsList *list.List) formulaArg {
 	return fn.cumip("CUMPRINC", argsList)
 }
 
-// cumip is an implementation of the formula function CUMIPMT and CUMPRINC.
+// cumip is an implementation of the formula functions CUMIPMT and CUMPRINC.
 func (fn *formulaFuncs) cumip(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 6 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 6 arguments", name))
@@ -10370,7 +10439,7 @@ func (fn *formulaFuncs) DOLLARFR(argsList *list.List) formulaArg {
 	return fn.dollar("DOLLARFR", argsList)
 }
 
-// dollar is an implementation of the formula function DOLLARDE and DOLLARFR.
+// dollar is an implementation of the formula functions DOLLARDE and DOLLARFR.
 func (fn *formulaFuncs) dollar(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
@@ -10658,7 +10727,7 @@ func calcIpmt(name string, typ, per, pmt, pv, rate formulaArg) formulaArg {
 	return newNumberFormulaArg(principal)
 }
 
-// ipmt is an implementation of the formula function IPMT and PPMT.
+// ipmt is an implementation of the formula functions IPMT and PPMT.
 func (fn *formulaFuncs) ipmt(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 4 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 4 arguments", name))
