@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"container/list"
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -802,6 +803,7 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTIFS
 		"=COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
 		"=COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
+		"=COUNTIFS(F1:F9,\">60000\",D1:D9,\"Jan\")": "0",
 		// DEVSQ
 		"=DEVSQ(1,3,5,2,9,7)": "47.5",
 		"=DEVSQ(A1:D2)":       "10",
@@ -872,6 +874,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MAXA(MUNIT(2))":   "1",
 		"=MAXA(INT(1))":     "1",
 		"=MAXA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "36693",
+		// MAXIFS
+		"=MAXIFS(F2:F4,A2:A4,\">0\")": "36693",
 		// MEDIAN
 		"=MEDIAN(A1:A5,12)":               "2",
 		"=MEDIAN(A1:A5)":                  "1.5",
@@ -891,6 +895,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MINA(MUNIT(2))":    "0",
 		"=MINA(INT(1))":      "1",
 		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
+		// MINIFS
+		"=MINIFS(F2:F4,A2:A4,\">0\")": "22100",
 		// PERCENTILE.EXC
 		"=PERCENTILE.EXC(A1:A4,0.2)": "0",
 		"=PERCENTILE.EXC(A1:A4,0.6)": "2",
@@ -2296,6 +2302,9 @@ func TestCalcCellValue(t *testing.T) {
 		// MAXA
 		"=MAXA()":     "MAXA requires at least 1 argument",
 		"=MAXA(NA())": "#N/A",
+		// MAXIFS
+		"=MAXIFS()":                         "MAXIFS requires at least 3 arguments",
+		"=MAXIFS(F2:F4,A2:A4,\">0\",D2:D9)": "#N/A",
 		// MEDIAN
 		"=MEDIAN()":      "MEDIAN requires at least 1 argument",
 		"=MEDIAN(\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -2306,6 +2315,9 @@ func TestCalcCellValue(t *testing.T) {
 		// MINA
 		"=MINA()":     "MINA requires at least 1 argument",
 		"=MINA(NA())": "#N/A",
+		// MINIFS
+		"=MINIFS()":                         "MINIFS requires at least 3 arguments",
+		"=MINIFS(F2:F4,A2:A4,\"<0\",D2:D9)": "#N/A",
 		// PERCENTILE.EXC
 		"=PERCENTILE.EXC()":           "PERCENTILE.EXC requires 2 arguments",
 		"=PERCENTILE.EXC(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -3676,6 +3688,30 @@ func TestCalcIRR(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "B1")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcMAXMINIFS(t *testing.T) {
+	f := NewFile()
+	for cell, row := range map[string][]interface{}{
+		"A1": {1, -math.MaxFloat64 - 1},
+		"A2": {2, -math.MaxFloat64 - 2},
+		"A3": {3, math.MaxFloat64 + 1},
+		"A4": {4, math.MaxFloat64 + 2},
+	} {
+		assert.NoError(t, f.SetSheetRow("Sheet1", cell, &row))
+	}
+	formulaList := map[string]string{
+		"=MAX(B1:B2)":                 "0",
+		"=MAXIFS(B1:B2,A1:A2,\">0\")": "0",
+		"=MIN(B3:B4)":                 "0",
+		"=MINIFS(B3:B4,A3:A4,\"<0\")": "0",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
 	}
 }
 

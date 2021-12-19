@@ -479,6 +479,8 @@ type formulaFuncs struct {
 //    LOWER
 //    MATCH
 //    MAX
+//    MAXA
+//    MAXIFS
 //    MDETERM
 //    MDURATION
 //    MEDIAN
@@ -486,6 +488,7 @@ type formulaFuncs struct {
 //    MIDB
 //    MIN
 //    MINA
+//    MINIFS
 //    MINUTE
 //    MIRR
 //    MOD
@@ -5224,6 +5227,35 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(count)
 }
 
+// formulaIfsMatch function returns cells reference array which match criterias.
+func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
+	for i := 0; i < len(args)-1; i += 2 {
+		match := []cellRef{}
+		matrix, criteria := args[i].Matrix, formulaCriteriaParser(args[i+1].Value())
+		if i == 0 {
+			for rowIdx, row := range matrix {
+				for colIdx, col := range row {
+					if ok, _ := formulaCriteriaEval(col.Value(), criteria); ok {
+						match = append(match, cellRef{Col: colIdx, Row: rowIdx})
+					}
+				}
+			}
+		} else {
+			for _, ref := range cellRefs {
+				value := matrix[ref.Row][ref.Col]
+				if ok, _ := formulaCriteriaEval(value.Value(), criteria); ok {
+					match = append(match, ref)
+				}
+			}
+		}
+		if len(match) == 0 {
+			return
+		}
+		cellRefs = match[:]
+	}
+	return
+}
+
 // COUNTIFS function returns the number of rows within a table, that satisfy a
 // set of given criteria. The syntax of the function is:
 //
@@ -5236,34 +5268,11 @@ func (fn *formulaFuncs) COUNTIFS(argsList *list.List) formulaArg {
 	if argsList.Len()%2 != 0 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	group, rowsIdx := 0, map[int]struct{}{}
-	for criteriaRange := argsList.Front(); criteriaRange != nil; criteriaRange = criteriaRange.Next() {
-		criteria := criteriaRange.Next()
-		if group == 0 {
-			for rowIdx, row := range criteriaRange.Value.(formulaArg).Matrix {
-				for _, col := range row {
-					if ok, _ := formulaCriteriaEval(col.String, formulaCriteriaParser(criteria.Value.(formulaArg).Value())); ok {
-						rowsIdx[rowIdx] = struct{}{}
-					}
-				}
-			}
-		} else {
-			for rowIdx, row := range criteriaRange.Value.(formulaArg).Matrix {
-				if _, ok := rowsIdx[rowIdx]; !ok {
-					delete(rowsIdx, rowIdx)
-					continue
-				}
-				for _, col := range row {
-					if ok, _ := formulaCriteriaEval(col.String, formulaCriteriaParser(criteria.Value.(formulaArg).Value())); !ok {
-						delete(rowsIdx, rowIdx)
-					}
-				}
-			}
-		}
-		criteriaRange = criteriaRange.Next()
-		group++
+	args := []formulaArg{}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
 	}
-	return newNumberFormulaArg(float64(len(rowsIdx)))
+	return newNumberFormulaArg(float64(len(formulaIfsMatch(args))))
 }
 
 // DEVSQ function calculates the sum of the squared deviations from the sample
@@ -5765,6 +5774,34 @@ func (fn *formulaFuncs) MAXA(argsList *list.List) formulaArg {
 	return fn.max(true, argsList)
 }
 
+// MAXIFS function returns the maximum value from a subset of values that are
+// specified according to one or more criteria. The syntax of the function
+// is:
+//
+//    MAXIFS(max_range,criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MAXIFS requires at least 3 arguments")
+	}
+	if argsList.Len()%2 != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	max, maxRange, args := -math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix, []formulaArg{}
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	for _, ref := range formulaIfsMatch(args) {
+		if num := maxRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && max < num.Number {
+			max = num.Number
+		}
+	}
+	if max == -math.MaxFloat64 {
+		max = 0
+	}
+	return newNumberFormulaArg(max)
+}
+
 // calcListMatrixMax is part of the implementation max.
 func calcListMatrixMax(maxa bool, max float64, arg formulaArg) float64 {
 	for _, row := range arg.ToList() {
@@ -5898,6 +5935,34 @@ func (fn *formulaFuncs) MINA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "MINA requires at least 1 argument")
 	}
 	return fn.min(true, argsList)
+}
+
+// MINIFS function returns the minimum value from a subset of values that are
+// specified according to one or more criteria. The syntax of the function
+// is:
+//
+//    MINIFS(min_range,criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MINIFS requires at least 3 arguments")
+	}
+	if argsList.Len()%2 != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	min, minRange, args := math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix, []formulaArg{}
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	for _, ref := range formulaIfsMatch(args) {
+		if num := minRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && min > num.Number {
+			min = num.Number
+		}
+	}
+	if min == math.MaxFloat64 {
+		min = 0
+	}
+	return newNumberFormulaArg(min)
 }
 
 // calcListMatrixMin is part of the implementation min.
