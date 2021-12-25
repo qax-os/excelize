@@ -57,6 +57,17 @@ const (
 	criteriaG
 	criteriaErr
 	criteriaRegexp
+
+	matchModeExact      = 0
+	matchModeMinGreater = 1
+	matchModeMaxLess    = -1
+	matchModeWildcard   = 2
+
+	searchModeLinear        = 1
+	searchModeReverseLinear = -1
+	searchModeAscBinary     = 2
+	searchModeDescBinary    = -2
+
 	maxFinancialIterations = 128
 	financialPercision     = 1.0e-08
 	// Date and time format regular expressions
@@ -860,7 +871,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 	opftStack.Pop() // remove current function separator
 	opfStack.Pop()
 	if opfStack.Len() > 0 { // still in function stack
-		if nextToken.TType == efp.TokenTypeOperatorInfix || opftStack.Len() > 1 {
+		if nextToken.TType == efp.TokenTypeOperatorInfix || (opftStack.Len() > 1 && opfdStack.Len() > 0) {
 			// mathematics calculate in formula function
 			opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 		} else {
@@ -5227,7 +5238,7 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(count)
 }
 
-// formulaIfsMatch function returns cells reference array which match criterias.
+// formulaIfsMatch function returns cells reference array which match criteria.
 func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
 	for i := 0; i < len(args)-1; i += 2 {
 		match := []cellRef{}
@@ -9013,7 +9024,7 @@ func matchPattern(pattern, name string) (matched bool) {
 // compareFormulaArg compares the left-hand sides and the right-hand sides
 // formula arguments by given conditions such as case sensitive, if exact
 // match, and make compare result as formula criteria condition type.
-func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if lhs.Type != rhs.Type {
 		return criteriaErr
 	}
@@ -9031,35 +9042,26 @@ func compareFormulaArg(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte
 		if !caseSensitive {
 			ls, rs = strings.ToLower(ls), strings.ToLower(rs)
 		}
-		if exactMatch {
-			match := matchPattern(rs, ls)
-			if match {
+		if matchMode.Number == matchModeWildcard {
+			if matchPattern(rs, ls) {
 				return criteriaEq
 			}
-			return criteriaG
+
 		}
-		switch strings.Compare(ls, rs) {
-		case 1:
-			return criteriaG
-		case -1:
-			return criteriaL
-		case 0:
-			return criteriaEq
-		}
-		return criteriaErr
+		return map[int]byte{1: criteriaG, -1: criteriaL, 0: criteriaEq}[strings.Compare(ls, rs)]
 	case ArgEmpty:
 		return criteriaEq
 	case ArgList:
-		return compareFormulaArgList(lhs, rhs, caseSensitive, exactMatch)
+		return compareFormulaArgList(lhs, rhs, matchMode, caseSensitive)
 	case ArgMatrix:
-		return compareFormulaArgMatrix(lhs, rhs, caseSensitive, exactMatch)
+		return compareFormulaArgMatrix(lhs, rhs, matchMode, caseSensitive)
 	}
 	return criteriaErr
 }
 
 // compareFormulaArgList compares the left-hand sides and the right-hand sides
 // list type formula arguments.
-func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+func compareFormulaArgList(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if len(lhs.List) < len(rhs.List) {
 		return criteriaL
 	}
@@ -9067,7 +9069,7 @@ func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) 
 		return criteriaG
 	}
 	for arg := range lhs.List {
-		criteria := compareFormulaArg(lhs.List[arg], rhs.List[arg], caseSensitive, exactMatch)
+		criteria := compareFormulaArg(lhs.List[arg], rhs.List[arg], matchMode, caseSensitive)
 		if criteria != criteriaEq {
 			return criteria
 		}
@@ -9077,7 +9079,7 @@ func compareFormulaArgList(lhs, rhs formulaArg, caseSensitive, exactMatch bool) 
 
 // compareFormulaArgMatrix compares the left-hand sides and the right-hand sides
 // matrix type formula arguments.
-func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool) byte {
+func compareFormulaArgMatrix(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if len(lhs.Matrix) < len(rhs.Matrix) {
 		return criteriaL
 	}
@@ -9094,7 +9096,7 @@ func compareFormulaArgMatrix(lhs, rhs formulaArg, caseSensitive, exactMatch bool
 			return criteriaG
 		}
 		for arg := range left {
-			criteria := compareFormulaArg(left[arg], right[arg], caseSensitive, exactMatch)
+			criteria := compareFormulaArg(left[arg], right[arg], matchMode, caseSensitive)
 			if criteria != criteriaEq {
 				return criteria
 			}
@@ -9190,7 +9192,7 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 
 // checkHVLookupArgs checking arguments, prepare extract mode, lookup value,
 // and data for the formula functions HLOOKUP and VLOOKUP.
-func checkHVLookupArgs(name string, argsList *list.List) (idx, matchIdx int, wasExact, exactMatch bool, lookupValue, tableArray, errArg formulaArg) {
+func checkHVLookupArgs(name string, argsList *list.List) (idx int, lookupValue, tableArray, matchMode, errArg formulaArg) {
 	unit := map[string]string{
 		"HLOOKUP": "row",
 		"VLOOKUP": "col",
@@ -9214,7 +9216,7 @@ func checkHVLookupArgs(name string, argsList *list.List) (idx, matchIdx int, was
 		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires numeric %s argument", name, unit))
 		return
 	}
-	idx, matchIdx = int(arg.Number)-1, -1
+	idx, matchMode = int(arg.Number)-1, newNumberFormulaArg(matchModeMaxLess)
 	if argsList.Len() == 4 {
 		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
 		if rangeLookup.Type == ArgError {
@@ -9222,7 +9224,7 @@ func checkHVLookupArgs(name string, argsList *list.List) (idx, matchIdx int, was
 			return
 		}
 		if rangeLookup.Number == 0 {
-			exactMatch = true
+			matchMode = newNumberFormulaArg(matchModeWildcard)
 		}
 	}
 	return
@@ -9235,35 +9237,16 @@ func checkHVLookupArgs(name string, argsList *list.List) (idx, matchIdx int, was
 //    HLOOKUP(lookup_value,table_array,row_index_num,[range_lookup])
 //
 func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
-	rowIdx, matchIdx, wasExact, exactMatch,
-		lookupValue, tableArray, errArg := checkHVLookupArgs("HLOOKUP", argsList)
+	rowIdx, lookupValue, tableArray, matchMode, errArg := checkHVLookupArgs("HLOOKUP", argsList)
 	if errArg.Type == ArgError {
 		return errArg
 	}
-	row := tableArray.Matrix[0]
-	if exactMatch || len(tableArray.Matrix) == TotalRows {
-	start:
-		for idx, mtx := range row {
-			lhs := mtx
-			switch lookupValue.Type {
-			case ArgNumber:
-				if !lookupValue.Boolean {
-					lhs = mtx.ToNumber()
-					if lhs.Type == ArgError {
-						lhs = mtx
-					}
-				}
-			case ArgMatrix:
-				lhs = tableArray
-			}
-			if compareFormulaArg(lhs, lookupValue, false, exactMatch) == criteriaEq {
-				matchIdx = idx
-				wasExact = true
-				break start
-			}
-		}
+	var matchIdx int
+	var wasExact bool
+	if matchMode.Number == matchModeWildcard || len(tableArray.Matrix) == TotalRows {
+		matchIdx, wasExact = lookupLinearSearch(false, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeLinear))
 	} else {
-		matchIdx, wasExact = hlookupBinarySearch(row, lookupValue)
+		matchIdx, wasExact = lookupBinarySearch(false, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
@@ -9271,8 +9254,8 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 	if rowIdx < 0 || rowIdx >= len(tableArray.Matrix) {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP has invalid row index")
 	}
-	row = tableArray.Matrix[rowIdx]
-	if wasExact || !exactMatch {
+	row := tableArray.Matrix[rowIdx]
+	if wasExact || matchMode.Number == matchModeWildcard {
 		return row[matchIdx]
 	}
 	return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
@@ -9391,6 +9374,43 @@ func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
 	return newMatrixFormulaArg(mtx)
 }
 
+// lookupLinearSearch sequentially checks each look value of the lookup array until
+// a match is found or the whole list has been searched.
+func lookupLinearSearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (int, bool) {
+	tableArray := []formulaArg{}
+	if vertical {
+		for _, row := range lookupArray.Matrix {
+			tableArray = append(tableArray, row[0])
+		}
+	} else {
+		tableArray = lookupArray.Matrix[0]
+	}
+	matchIdx, wasExact := -1, false
+start:
+	for i, cell := range tableArray {
+		lhs := cell
+		if lookupValue.Type == ArgNumber {
+			if lhs = cell.ToNumber(); lhs.Type == ArgError {
+				lhs = cell
+			}
+		} else if lookupValue.Type == ArgMatrix {
+			lhs = lookupArray
+		}
+		if compareFormulaArg(lhs, lookupValue, matchMode, false) == criteriaEq {
+			matchIdx = i
+			wasExact = true
+			if searchMode.Number == searchModeLinear {
+				break start
+			}
+		}
+		if matchMode.Number == matchModeMinGreater || matchMode.Number == matchModeMaxLess {
+			matchIdx = int(calcMatch(int(matchMode.Number), formulaCriteriaParser(lookupValue.Value()), tableArray).Number)
+			continue
+		}
+	}
+	return matchIdx, wasExact
+}
+
 // VLOOKUP function 'looks up' a given value in the left-hand column of a
 // data array (or table), and returns the corresponding value from another
 // column of the array. The syntax of the function is:
@@ -9398,34 +9418,16 @@ func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
 //    VLOOKUP(lookup_value,table_array,col_index_num,[range_lookup])
 //
 func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
-	colIdx, matchIdx, wasExact, exactMatch,
-		lookupValue, tableArray, errArg := checkHVLookupArgs("VLOOKUP", argsList)
+	colIdx, lookupValue, tableArray, matchMode, errArg := checkHVLookupArgs("VLOOKUP", argsList)
 	if errArg.Type == ArgError {
 		return errArg
 	}
-	if exactMatch || len(tableArray.Matrix) == TotalRows {
-	start:
-		for idx, mtx := range tableArray.Matrix {
-			lhs := mtx[0]
-			switch lookupValue.Type {
-			case ArgNumber:
-				if !lookupValue.Boolean {
-					lhs = mtx[0].ToNumber()
-					if lhs.Type == ArgError {
-						lhs = mtx[0]
-					}
-				}
-			case ArgMatrix:
-				lhs = tableArray
-			}
-			if compareFormulaArg(lhs, lookupValue, false, exactMatch) == criteriaEq {
-				matchIdx = idx
-				wasExact = true
-				break start
-			}
-		}
+	var matchIdx int
+	var wasExact bool
+	if matchMode.Number == matchModeWildcard || len(tableArray.Matrix) == TotalRows {
+		matchIdx, wasExact = lookupLinearSearch(true, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeLinear))
 	} else {
-		matchIdx, wasExact = vlookupBinarySearch(tableArray, lookupValue)
+		matchIdx, wasExact = lookupBinarySearch(true, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
@@ -9434,67 +9436,52 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 	if colIdx < 0 || colIdx >= len(mtx) {
 		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP has invalid column index")
 	}
-	if wasExact || !exactMatch {
+	if wasExact || matchMode.Number == matchModeWildcard {
 		return mtx[colIdx]
 	}
 	return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 }
 
-// vlookupBinarySearch finds the position of a target value when range lookup
+// lookupBinarySearch finds the position of a target value when range lookup
 // is TRUE, if the data of table array can't guarantee be sorted, it will
 // return wrong result.
-func vlookupBinarySearch(tableArray, lookupValue formulaArg) (matchIdx int, wasExact bool) {
-	var low, high, lastMatchIdx int = 0, len(tableArray.Matrix) - 1, -1
+func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (matchIdx int, wasExact bool) {
+	tableArray := []formulaArg{}
+	if vertical {
+		for _, row := range lookupArray.Matrix {
+			tableArray = append(tableArray, row[0])
+		}
+	} else {
+		tableArray = lookupArray.Matrix[0]
+	}
+	var low, high, lastMatchIdx int = 0, len(tableArray) - 1, -1
+	count := high
 	for low <= high {
 		mid := low + (high-low)/2
-		mtx := tableArray.Matrix[mid]
-		lhs := mtx[0]
-		switch lookupValue.Type {
-		case ArgNumber:
-			if !lookupValue.Boolean {
-				lhs = mtx[0].ToNumber()
-				if lhs.Type == ArgError {
-					lhs = mtx[0]
-				}
+		cell := tableArray[mid]
+		lhs := cell
+		if lookupValue.Type == ArgNumber {
+			if lhs = cell.ToNumber(); lhs.Type == ArgError {
+				lhs = cell
 			}
-		case ArgMatrix:
-			lhs = tableArray
+		} else if lookupValue.Type == ArgMatrix && vertical {
+			lhs = lookupArray
 		}
-		result := compareFormulaArg(lhs, lookupValue, false, false)
+		result := compareFormulaArg(lhs, lookupValue, matchMode, false)
 		if result == criteriaEq {
 			matchIdx, wasExact = mid, true
+			if searchMode.Number == searchModeDescBinary {
+				matchIdx = count - matchIdx
+			}
 			return
 		} else if result == criteriaG {
 			high = mid - 1
 		} else if result == criteriaL {
-			matchIdx, low = mid, mid+1
+			matchIdx = mid
 			if lhs.Value() != "" {
 				lastMatchIdx = matchIdx
 			}
-		} else {
-			return -1, false
-		}
-	}
-	matchIdx, wasExact = lastMatchIdx, true
-	return
-}
-
-// vlookupBinarySearch finds the position of a target value when range lookup
-// is TRUE, if the data of table array can't guarantee be sorted, it will
-// return wrong result.
-func hlookupBinarySearch(row []formulaArg, lookupValue formulaArg) (matchIdx int, wasExact bool) {
-	var low, high, lastMatchIdx int = 0, len(row) - 1, -1
-	for low <= high {
-		mid := low + (high-low)/2
-		mtx := row[mid]
-		result := compareFormulaArg(mtx, lookupValue, false, false)
-		if result == criteriaEq {
-			matchIdx, wasExact = mid, true
-			return
-		} else if result == criteriaG {
-			high = mid - 1
-		} else if result == criteriaL {
-			low, lastMatchIdx = mid+1, mid
+			low = mid + 1
 		} else {
 			return -1, false
 		}
@@ -9542,7 +9529,7 @@ func iterateLookupArgs(lookupValue, lookupVector formulaArg) ([]formulaArg, int,
 				}
 			}
 		}
-		compare := compareFormulaArg(lhs, col, false, false)
+		compare := compareFormulaArg(lhs, col, newNumberFormulaArg(matchModeMaxLess), false)
 		// Find exact match
 		if compare == criteriaEq {
 			matchIdx = idx
@@ -9582,6 +9569,139 @@ func (fn *formulaFuncs) index(array formulaArg, rowIdx, colIdx int) formulaArg {
 		return newErrorFormulaArg(formulaErrorREF, "INDEX col_num out of range")
 	}
 	return newListFormulaArg(cells)
+}
+
+// validateMatchMode check the number of match mode if be equal to 0, 1, -1 or
+// 2.
+func validateMatchMode(mode float64) bool {
+	return mode == matchModeExact || mode == matchModeMinGreater || mode == matchModeMaxLess || mode == matchModeWildcard
+}
+
+// validateSearchMode check the number of search mode if be equal to 1, -1, 2
+// or -2.
+func validateSearchMode(mode float64) bool {
+	return mode == searchModeLinear || mode == searchModeReverseLinear || mode == searchModeAscBinary || mode == searchModeDescBinary
+}
+
+// prepareXlookupArgs checking and prepare arguments for the formula function
+// XLOOKUP.
+func (fn *formulaFuncs) prepareXlookupArgs(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XLOOKUP requires at least 3 arguments")
+	}
+	if argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "XLOOKUP allows at most 6 arguments")
+	}
+	lookupValue := argsList.Front().Value.(formulaArg)
+	lookupArray := argsList.Front().Next().Value.(formulaArg)
+	returnArray := argsList.Front().Next().Next().Value.(formulaArg)
+	ifNotFond := newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	matchMode, searchMode := newNumberFormulaArg(matchModeExact), newNumberFormulaArg(searchModeLinear)
+	if argsList.Len() > 3 {
+		ifNotFond = argsList.Front().Next().Next().Next().Value.(formulaArg)
+	}
+	if argsList.Len() > 4 {
+		if matchMode = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); matchMode.Type != ArgNumber {
+			return matchMode
+		}
+	}
+	if argsList.Len() > 5 {
+		if searchMode = argsList.Back().Value.(formulaArg).ToNumber(); searchMode.Type != ArgNumber {
+			return searchMode
+		}
+	}
+	if lookupArray.Type != ArgMatrix || returnArray.Type != ArgMatrix {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	if !validateMatchMode(matchMode.Number) || !validateSearchMode(searchMode.Number) {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return newListFormulaArg([]formulaArg{lookupValue, lookupArray, returnArray, ifNotFond, matchMode, searchMode})
+}
+
+// xlookup is an implementation of the formula function XLOOKUP.
+func (fn *formulaFuncs) xlookup(lookupRows, lookupCols, returnArrayRows, returnArrayCols, matchIdx int,
+	condition1, condition2, condition3, condition4 bool, returnArray formulaArg) formulaArg {
+	result := [][]formulaArg{}
+	for rowIdx, row := range returnArray.Matrix {
+		for colIdx, cell := range row {
+			if condition1 {
+				if condition2 {
+					result = append(result, []formulaArg{cell})
+					continue
+				}
+				if returnArrayRows > 1 && returnArrayCols > 1 {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+			}
+			if condition3 {
+				if returnArrayCols != lookupCols {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+				if colIdx == matchIdx {
+					result = append(result, []formulaArg{cell})
+					continue
+				}
+			}
+			if condition4 {
+				if returnArrayRows != lookupRows {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+				if rowIdx == matchIdx {
+					if len(result) == 0 {
+						result = append(result, []formulaArg{cell})
+						continue
+					}
+					result[0] = append(result[0], cell)
+				}
+			}
+		}
+	}
+	array := newMatrixFormulaArg(result)
+	cells := array.ToList()
+	if len(cells) == 1 {
+		return cells[0]
+	}
+	return array
+}
+
+// XLOOKUP function searches a range or an array, and then returns the item
+// corresponding to the first match it finds. If no match exists, then
+// XLOOKUP can return the closest (approximate) match. The syntax of the
+// function is:
+//
+//    XLOOKUP(lookup_value,lookup_array,return_array,[if_not_found],[match_mode],[search_mode])
+//
+func (fn *formulaFuncs) XLOOKUP(argsList *list.List) formulaArg {
+	args := fn.prepareXlookupArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	lookupValue, lookupArray, returnArray, ifNotFond, matchMode, searchMode := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5]
+	lookupRows, lookupCols := len(lookupArray.Matrix), 0
+	if lookupRows > 0 {
+		lookupCols = len(lookupArray.Matrix[0])
+	}
+	if lookupRows != 1 && lookupCols != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	verticalLookup := lookupRows >= lookupCols
+	var matchIdx int
+	switch searchMode.Number {
+	case searchModeLinear, searchModeReverseLinear:
+		matchIdx, _ = lookupLinearSearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
+	default:
+		matchIdx, _ = lookupBinarySearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
+	}
+	if matchIdx == -1 {
+		return ifNotFond
+	}
+	returnArrayRows, returnArrayCols := len(returnArray.Matrix), len(returnArray.Matrix[0])
+	condition1 := lookupRows == 1 && lookupCols == 1
+	condition2 := returnArrayRows == 1 || returnArrayCols == 1
+	condition3 := lookupRows == 1 && lookupCols > 1
+	condition4 := lookupRows > 1 && lookupCols == 1
+	return fn.xlookup(lookupRows, lookupCols, returnArrayRows, returnArrayCols, matchIdx, condition1, condition2, condition3, condition4, returnArray)
 }
 
 // INDEX function returns a reference to a cell that lies in a specified row

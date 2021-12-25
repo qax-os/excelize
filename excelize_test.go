@@ -590,7 +590,16 @@ func TestSetCellStyleBorder(t *testing.T) {
 	var style int
 
 	// Test set border on overlapping area with vertical variants shading styles gradient fill.
-	style, err = f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":2},{"type":"top","color":"00FF00","style":12},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":9},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+	style, err = f.NewStyle(&Style{
+		Border: []Border{
+			{Type: "left", Color: "0000FF", Style: 3},
+			{Type: "top", Color: "00FF00", Style: 4},
+			{Type: "bottom", Color: "FFFF00", Style: 5},
+			{Type: "right", Color: "FF0000", Style: 6},
+			{Type: "diagonalDown", Color: "A020F0", Style: 7},
+			{Type: "diagonalUp", Color: "A020F0", Style: 8},
+		},
+	})
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

@@ -3497,17 +3497,17 @@ func TestCalcToList(t *testing.T) {
 }
 
 func TestCalcCompareFormulaArg(t *testing.T) {
-	assert.Equal(t, compareFormulaArg(newEmptyFormulaArg(), newEmptyFormulaArg(), false, false), criteriaEq)
+	assert.Equal(t, compareFormulaArg(newEmptyFormulaArg(), newEmptyFormulaArg(), newNumberFormulaArg(matchModeMaxLess), false), criteriaEq)
 	lhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg()})
 	rhs := newListFormulaArg([]formulaArg{newEmptyFormulaArg(), newEmptyFormulaArg()})
-	assert.Equal(t, compareFormulaArg(lhs, rhs, false, false), criteriaL)
-	assert.Equal(t, compareFormulaArg(rhs, lhs, false, false), criteriaG)
+	assert.Equal(t, compareFormulaArg(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaL)
+	assert.Equal(t, compareFormulaArg(rhs, lhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaG)
 
 	lhs = newListFormulaArg([]formulaArg{newBoolFormulaArg(true)})
 	rhs = newListFormulaArg([]formulaArg{newBoolFormulaArg(true)})
-	assert.Equal(t, compareFormulaArg(lhs, rhs, false, false), criteriaEq)
+	assert.Equal(t, compareFormulaArg(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaEq)
 
-	assert.Equal(t, compareFormulaArg(formulaArg{Type: ArgUnknown}, formulaArg{Type: ArgUnknown}, false, false), criteriaErr)
+	assert.Equal(t, compareFormulaArg(formulaArg{Type: ArgUnknown}, formulaArg{Type: ArgUnknown}, newNumberFormulaArg(matchModeMaxLess), false), criteriaErr)
 }
 
 func TestCalcMatchPattern(t *testing.T) {
@@ -3774,6 +3774,113 @@ func TestCalcXIRR(t *testing.T) {
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcXLOOKUP(t *testing.T) {
+	cellData := [][]interface{}{
+		{},
+		{nil, nil, "Quarter", "Gross Profit", "Net profit", "Profit %"},
+		{nil, nil, "Qtr1", nil, 19342, 29.30},
+		{},
+		{nil, "Income Statement", "Qtr1", "Qtr2", "Qtr3", "Qtr4", "Total"},
+		{nil, "Total sales", 50000, 78200, 89500, 91250, 308.95},
+		{nil, "Cost of sales", -25000, -42050, -59450, -60450, -186950},
+		{nil, "Gross Profit", 25000, 36150, 30050, 30800, 122000},
+		{},
+		{nil, "Depreciation", -899, -791, -202, -412, -2304},
+		{nil, "Interest", -513, -853, -150, -956, -2472},
+		{nil, "Earnings before Tax", 23588, 34506, 29698, 29432, 117224},
+		{},
+		{nil, "Tax", -4246, -6211, -5346, -5298, 21100},
+		{},
+		{nil, "Net profit", 19342, 28295, 24352, 24134, 96124},
+		{nil, "Profit %", 0.293, 0.278, 0.234, 0.276, 0.269},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=SUM(XLOOKUP($C3,$C5:$C5,$C6:$C17,NA(),0,2))":        "87272.293",
+		"=SUM(XLOOKUP($C3,$C5:$C5,$C6:$G6,NA(),0,-2))":        "309258.95",
+		"=SUM(XLOOKUP($C3,$C5:$C5,$C6:$C17,NA(),0,-2))":       "87272.293",
+		"=SUM(XLOOKUP($C3,$C5:$G5,$C6:$G17,NA(),0,2))":        "87272.293",
+		"=SUM(XLOOKUP(D2,$B6:$B17,$C6:$G17,NA(),0,2))":        "244000",
+		"=XLOOKUP(D2,$B6:$B17,C6:C17)":                        "25000",
+		"=XLOOKUP(D2,$B6:$B17,XLOOKUP($C3,$C5:$G5,$C6:$G17))": "25000",
+		"=XLOOKUP(\"*p*\",B2:B9,C2:C9,NA(),2)":                "25000",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D3", formula))
+		result, err := f.CalcCellValue("Sheet1", "D3")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=XLOOKUP()": "XLOOKUP requires at least 3 arguments",
+		"=XLOOKUP($C3,$C5:$C5,$C6:$C17,NA(),0,2,1)":  "XLOOKUP allows at most 6 arguments",
+		"=XLOOKUP($C3,$C5,$C6,NA(),0,2)":             "#N/A",
+		"=XLOOKUP($C3,$C4:$D5,$C6:$C17,NA(),0,2)":    "#VALUE!",
+		"=XLOOKUP($C3,$C5:$C5,$C6:$G17,NA(),0,-2)":   "#VALUE!",
+		"=XLOOKUP($C3,$C5:$G5,$C6:$F7,NA(),0,2)":     "#VALUE!",
+		"=XLOOKUP(D2,$B6:$B17,$C6:$G16,NA(),0,2)":    "#VALUE!",
+		"=XLOOKUP(D2,$B6:$B17,$C6:$G17,NA(),3,2)":    "#VALUE!",
+		"=XLOOKUP(D2,$B6:$B17,$C6:$G17,NA(),0,0)":    "#VALUE!",
+		"=XLOOKUP(D2,$B6:$B17,$C6:$G17,NA(),\"\",2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=XLOOKUP(D2,$B6:$B17,$C6:$G17,NA(),0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D3", formula))
+		result, err := f.CalcCellValue("Sheet1", "D3")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+
+	cellData = [][]interface{}{
+		{"Salesperson", "Item", "Amont"},
+		{"B", "Apples", 30, 25, 15, 50, 45, 18},
+		{"L", "Oranges", 25, "D3", "E3"},
+		{"C", "Grapes", 15},
+		{"L", "Lemons", 50},
+		{"L", "Oranges", 45},
+		{"C", "Peaches", 18},
+		{"B", "Pears", 40},
+		{"B", "Apples", 55},
+	}
+	f = prepareCalcData(cellData)
+	formulaList = map[string]string{
+		// Test match mode with partial match (wildcards)
+		"=XLOOKUP(\"*p*\",B2:B9,C2:C9,NA(),2)": "30",
+		// Test match mode with approximate match in vertical (next larger item)
+		"=XLOOKUP(32,B2:B9,C2:C9,NA(),1)": "30",
+		// Test match mode with approximate match in horizontal (next larger item)
+		"=XLOOKUP(30,C2:F2,C3:F3,NA(),1)": "25",
+		// Test match mode with approximate match in vertical (next smaller item)
+		"=XLOOKUP(40,C2:C9,B2:B9,NA(),-1)": "Pears",
+		// Test match mode with approximate match in horizontal (next smaller item)
+		"=XLOOKUP(29,C2:F2,C3:F3,NA(),-1)": "D3",
+		// Test search mode
+		"=XLOOKUP(\"L\",A2:A9,C2:C9,NA(),0,1)":  "25",
+		"=XLOOKUP(\"L\",A2:A9,C2:C9,NA(),0,-1)": "45",
+		"=XLOOKUP(\"L\",A2:A9,C2:C9,NA(),0,2)":  "50",
+		"=XLOOKUP(\"L\",A2:A9,C2:C9,NA(),0,-2)": "45",
+		// Test match mode and search mode
+		"=XLOOKUP(29,C2:H2,C3:H3,NA(),-1,-1)": "D3",
+		"=XLOOKUP(29,C2:H2,C3:H3,NA(),-1,1)":  "D3",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D3", formula))
+		result, err := f.CalcCellValue("Sheet1", "D3")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError = map[string]string{
+		// Test match mode with exact match
+		"=XLOOKUP(\"*p*\",B2:B9,C2:C9,NA(),0)": "#N/A",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D3", formula))
+		result, err := f.CalcCellValue("Sheet1", "D3")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}
