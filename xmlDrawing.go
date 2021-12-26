@@ -19,37 +19,39 @@ import (
 // Source relationship and namespace list, associated prefixes and schema in which it was
 // introduced.
 var (
-	SourceRelationship                = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
-	SourceRelationshipCompatibility   = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
-	SourceRelationshipChart20070802   = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
-	SourceRelationshipChart2014       = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
-	SourceRelationshipChart201506     = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
-	NameSpaceSpreadSheet              = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-	NameSpaceSpreadSheetX14           = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
-	NameSpaceDrawingML                = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
-	NameSpaceDrawingMLChart           = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
-	NameSpaceDrawingMLSpreadSheet     = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
-	NameSpaceSpreadSheetX15           = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
-	NameSpaceSpreadSheetExcel2006Main = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
-	NameSpaceMacExcel2008Main         = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
+	SourceRelationship                      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+	SourceRelationshipCompatibility         = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
+	SourceRelationshipChart20070802         = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
+	SourceRelationshipChart2014             = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
+	SourceRelationshipChart201506           = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
+	NameSpaceSpreadSheet                    = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+	NameSpaceSpreadSheetX14                 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	NameSpaceDrawingML                      = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
+	NameSpaceDrawingMLChart                 = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
+	NameSpaceDrawingMLSpreadSheet           = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
+	NameSpaceSpreadSheetX15                 = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
+	NameSpaceSpreadSheetExcel2006Main       = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
+	NameSpaceMacExcel2008Main               = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
+	NameSpaceDocumentPropertiesVariantTypes = xml.Attr{Name: xml.Name{Local: "vt", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"}
 )
 
 // Source relationship and namespace.
 const (
-	SourceRelationshipOfficeDocument             = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
-	SourceRelationshipChart                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
-	SourceRelationshipComments                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
-	SourceRelationshipImage                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-	SourceRelationshipTable                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
-	SourceRelationshipDrawingML                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
-	SourceRelationshipDrawingVML                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing"
-	SourceRelationshipHyperLink                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
-	SourceRelationshipWorkSheet                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
-	SourceRelationshipChartsheet                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"
-	SourceRelationshipDialogsheet                = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/dialogsheet"
-	SourceRelationshipPivotTable                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
-	SourceRelationshipPivotCache                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
-	SourceRelationshipSharedStrings              = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
+	SourceRelationshipOfficeDocument = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+	SourceRelationshipChart          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
+	SourceRelationshipComments       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+	SourceRelationshipImage          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+	SourceRelationshipTable          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
+	SourceRelationshipDrawingML      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
+	SourceRelationshipDrawingVML     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing"
+	SourceRelationshipHyperLink      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+	SourceRelationshipWorkSheet      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
+	SourceRelationshipChartsheet     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"
+	SourceRelationshipDialogsheet    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/dialogsheet"
+	SourceRelationshipPivotTable     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
+	SourceRelationshipPivotCache     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
+	SourceRelationshipSharedStrings  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
+
 	SourceRelationshipVBAProject                 = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
 	NameSpaceXML                                 = "http://www.w3.org/XML/1998/namespace"
 	NameSpaceXMLSchemaInstance                   = "http://www.w3.org/2001/XMLSchema-instance"

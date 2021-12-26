@@ -23,7 +23,7 @@ Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基�
 go get github.com/xuri/excelize
 ```
 
-- 如果您使用 [Go Modules](https://blog.golang.org/using-go-modules) 管理软件包，请使用下面的命令来安装最新版本。
+- 如果您使用 [Go Modules](https://go.dev/blog/using-go-modules) 管理软件包，请使用下面的命令来安装最新版本。
 
 ```bash
 go get github.com/xuri/excelize/v2

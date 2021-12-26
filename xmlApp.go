@@ -13,38 +13,50 @@ package excelize
 
 import "encoding/xml"
 
+// AppProperties directly maps the document application properties.
+type AppProperties struct {
+	Application       string
+	ScaleCrop         bool
+	DocSecurity       int
+	Company           string
+	LinksUpToDate     bool
+	HyperlinksChanged bool
+	AppVersion        string
+}
+
 // xlsxProperties specifies to an OOXML document properties such as the
 // template used, the number of pages and words, and the application name and
 // version.
 type xlsxProperties struct {
 	XMLName              xml.Name `xml:"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties Properties"`
-	Template             string
-	Manager              string
-	Company              string
-	Pages                int
-	Words                int
-	Characters           int
-	PresentationFormat   string
-	Lines                int
-	Paragraphs           int
-	Slides               int
-	Notes                int
-	TotalTime            int
-	HiddenSlides         int
-	MMClips              int
-	ScaleCrop            bool
+	Vt                   string   `xml:"xmlns:vt,attr"`
+	Template             string   `xml:",omitempty"`
+	Manager              string   `xml:",omitempty"`
+	Company              string   `xml:",omitempty"`
+	Pages                int      `xml:",omitempty"`
+	Words                int      `xml:",omitempty"`
+	Characters           int      `xml:",omitempty"`
+	PresentationFormat   string   `xml:",omitempty"`
+	Lines                int      `xml:",omitempty"`
+	Paragraphs           int      `xml:",omitempty"`
+	Slides               int      `xml:",omitempty"`
+	Notes                int      `xml:",omitempty"`
+	TotalTime            int      `xml:",omitempty"`
+	HiddenSlides         int      `xml:",omitempty"`
+	MMClips              int      `xml:",omitempty"`
+	ScaleCrop            bool     `xml:",omitempty"`
 	HeadingPairs         *xlsxVectorVariant
 	TitlesOfParts        *xlsxVectorLpstr
-	LinksUpToDate        bool
-	CharactersWithSpaces int
-	SharedDoc            bool
-	HyperlinkBase        string
+	LinksUpToDate        bool   `xml:",omitempty"`
+	CharactersWithSpaces int    `xml:",omitempty"`
+	SharedDoc            bool   `xml:",omitempty"`
+	HyperlinkBase        string `xml:",omitempty"`
 	HLinks               *xlsxVectorVariant
-	HyperlinksChanged    bool
+	HyperlinksChanged    bool `xml:",omitempty"`
 	DigSig               *xlsxDigSig
-	Application          string
-	AppVersion           string
-	DocSecurity          int
+	Application          string `xml:",omitempty"`
+	AppVersion           string `xml:",omitempty"`
+	DocSecurity          int    `xml:",omitempty"`
 }
 
 // xlsxVectorVariant specifies the set of hyperlinks that were in this

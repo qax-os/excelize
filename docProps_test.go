@@ -20,6 +20,51 @@ import (
 
 var MacintoshCyrillicCharset = []byte{0x8F, 0xF0, 0xE8, 0xE2, 0xE5, 0xF2, 0x20, 0xEC, 0xE8, 0xF0}
 
+func TestSetAppProps(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	assert.NoError(t, f.SetAppProps(&AppProperties{
+		Application:       "Microsoft Excel",
+		ScaleCrop:         true,
+		DocSecurity:       3,
+		Company:           "Company Name",
+		LinksUpToDate:     true,
+		HyperlinksChanged: true,
+		AppVersion:        "16.0000",
+	}))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetAppProps.xlsx")))
+	f.Pkg.Store("docProps/app.xml", nil)
+	assert.NoError(t, f.SetAppProps(&AppProperties{}))
+	assert.NoError(t, f.Close())
+
+	// Test unsupported charset
+	f = NewFile()
+	f.Pkg.Store("docProps/app.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetAppProps(&AppProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestGetAppProps(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	props, err := f.GetAppProps()
+	assert.NoError(t, err)
+	assert.Equal(t, props.Application, "Microsoft Macintosh Excel")
+	f.Pkg.Store("docProps/app.xml", nil)
+	_, err = f.GetAppProps()
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
+	// Test unsupported charset
+	f = NewFile()
+	f.Pkg.Store("docProps/app.xml", MacintoshCyrillicCharset)
+	_, err = f.GetAppProps()
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestSetDocProps(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {

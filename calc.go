@@ -626,6 +626,7 @@ type formulaFuncs struct {
 //    WEIBULL
 //    WEIBULL.DIST
 //    XIRR
+//    XLOOKUP
 //    XNPV
 //    XOR
 //    YEAR
