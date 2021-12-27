@@ -35,13 +35,13 @@ func TestSetAppProps(t *testing.T) {
 		AppVersion:        "16.0000",
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetAppProps.xlsx")))
-	f.Pkg.Store("docProps/app.xml", nil)
+	f.Pkg.Store(dafaultXMLPathDocPropsApp, nil)
 	assert.NoError(t, f.SetAppProps(&AppProperties{}))
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store("docProps/app.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(dafaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetAppProps(&AppProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
@@ -53,14 +53,14 @@ func TestGetAppProps(t *testing.T) {
 	props, err := f.GetAppProps()
 	assert.NoError(t, err)
 	assert.Equal(t, props.Application, "Microsoft Macintosh Excel")
-	f.Pkg.Store("docProps/app.xml", nil)
+	f.Pkg.Store(dafaultXMLPathDocPropsApp, nil)
 	_, err = f.GetAppProps()
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store("docProps/app.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(dafaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
 	_, err = f.GetAppProps()
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
@@ -87,13 +87,13 @@ func TestSetDocProps(t *testing.T) {
 		Version:        "1.0.0",
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocProps.xlsx")))
-	f.Pkg.Store("docProps/core.xml", nil)
+	f.Pkg.Store(dafaultXMLPathDocPropsCore, nil)
 	assert.NoError(t, f.SetDocProps(&DocProperties{}))
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store("docProps/core.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(dafaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
@@ -105,14 +105,14 @@ func TestGetDocProps(t *testing.T) {
 	props, err := f.GetDocProps()
 	assert.NoError(t, err)
 	assert.Equal(t, props.Creator, "Microsoft Office User")
-	f.Pkg.Store("docProps/core.xml", nil)
+	f.Pkg.Store(dafaultXMLPathDocPropsCore, nil)
 	_, err = f.GetDocProps()
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store("docProps/core.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(dafaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }

@@ -76,7 +76,7 @@ func (f *File) contentTypesReader() *xlsxTypes {
 		f.ContentTypes = new(xlsxTypes)
 		f.ContentTypes.Lock()
 		defer f.ContentTypes.Unlock()
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("[Content_Types].xml")))).
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
 			Decode(f.ContentTypes); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
@@ -89,7 +89,7 @@ func (f *File) contentTypesReader() *xlsxTypes {
 func (f *File) contentTypesWriter() {
 	if f.ContentTypes != nil {
 		output, _ := xml.Marshal(f.ContentTypes)
-		f.saveFileList("[Content_Types].xml", output)
+		f.saveFileList(defaultXMLPathContentTypes, output)
 	}
 }
 
@@ -304,7 +304,7 @@ func (f *File) relsWriter() {
 
 // setAppXML update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
-	f.saveFileList("docProps/app.xml", []byte(templateDocpropsApp))
+	f.saveFileList(dafaultXMLPathDocPropsApp, []byte(templateDocpropsApp))
 }
 
 // replaceRelationshipsBytes; Some tools that read spreadsheet files have very

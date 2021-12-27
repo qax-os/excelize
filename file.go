@@ -14,6 +14,7 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/xml"
 	"io"
 	"os"
 	"path/filepath"
@@ -27,15 +28,15 @@ import (
 //
 func NewFile() *File {
 	f := newFile()
-	f.Pkg.Store("_rels/.rels", []byte(XMLHeader+templateRels))
-	f.Pkg.Store("docProps/app.xml", []byte(XMLHeader+templateDocpropsApp))
-	f.Pkg.Store("docProps/core.xml", []byte(XMLHeader+templateDocpropsCore))
-	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(XMLHeader+templateWorkbookRels))
-	f.Pkg.Store("xl/theme/theme1.xml", []byte(XMLHeader+templateTheme))
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(XMLHeader+templateSheet))
-	f.Pkg.Store("xl/styles.xml", []byte(XMLHeader+templateStyles))
-	f.Pkg.Store("xl/workbook.xml", []byte(XMLHeader+templateWorkbook))
-	f.Pkg.Store("[Content_Types].xml", []byte(XMLHeader+templateContentTypes))
+	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
+	f.Pkg.Store(dafaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
+	f.Pkg.Store(dafaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
+	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(xml.Header+templateWorkbookRels))
+	f.Pkg.Store("xl/theme/theme1.xml", []byte(xml.Header+templateTheme))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+templateSheet))
+	f.Pkg.Store(defaultXMLPathStyles, []byte(xml.Header+templateStyles))
+	f.Pkg.Store(defaultXMLPathWorkbook, []byte(xml.Header+templateWorkbook))
+	f.Pkg.Store(defaultXMLPathContentTypes, []byte(xml.Header+templateContentTypes))
 	f.SheetCount = 1
 	f.CalcChain = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
@@ -159,6 +160,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 	f.workBookWriter()
 	f.workSheetWriter()
 	f.relsWriter()
+	f.sharedStringsLoader()
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 
@@ -196,6 +198,9 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		return true
 	})
 	f.tempFiles.Range(func(path, content interface{}) bool {
+		if _, ok := f.Pkg.Load(path); ok {
+			return true
+		}
 		var fi io.Writer
 		fi, err = zw.Create(path.(string))
 		if err != nil {

@@ -32,29 +32,30 @@ import (
 // File define a populated spreadsheet file struct.
 type File struct {
 	sync.Mutex
-	options          *Options
-	xmlAttr          map[string][]xml.Attr
-	checked          map[string]bool
-	sheetMap         map[string]string
-	streams          map[string]*StreamWriter
-	tempFiles        sync.Map
-	CalcChain        *xlsxCalcChain
-	Comments         map[string]*xlsxComments
-	ContentTypes     *xlsxTypes
-	Drawings         sync.Map
-	Path             string
-	SharedStrings    *xlsxSST
-	sharedStringsMap map[string]int
-	Sheet            sync.Map
-	SheetCount       int
-	Styles           *xlsxStyleSheet
-	Theme            *xlsxTheme
-	DecodeVMLDrawing map[string]*decodeVmlDrawing
-	VMLDrawing       map[string]*vmlDrawing
-	WorkBook         *xlsxWorkbook
-	Relationships    sync.Map
-	Pkg              sync.Map
-	CharsetReader    charsetTranscoderFn
+	options             *Options
+	xmlAttr             map[string][]xml.Attr
+	checked             map[string]bool
+	sheetMap            map[string]string
+	streams             map[string]*StreamWriter
+	tempFiles           sync.Map
+	CalcChain           *xlsxCalcChain
+	Comments            map[string]*xlsxComments
+	ContentTypes        *xlsxTypes
+	Drawings            sync.Map
+	Path                string
+	SharedStrings       *xlsxSST
+	sharedStringsMap    map[string]int
+	sharedStringItemMap *sync.Map
+	Sheet               sync.Map
+	SheetCount          int
+	Styles              *xlsxStyleSheet
+	Theme               *xlsxTheme
+	DecodeVMLDrawing    map[string]*decodeVmlDrawing
+	VMLDrawing          map[string]*vmlDrawing
+	WorkBook            *xlsxWorkbook
+	Relationships       sync.Map
+	Pkg                 sync.Map
+	CharsetReader       charsetTranscoderFn
 }
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
@@ -68,17 +69,18 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 //
 // UnzipSizeLimit specifies the unzip size limit in bytes on open the
 // spreadsheet, this value should be greater than or equal to
-// WorksheetUnzipMemLimit, the default size limit is 16GB.
+// UnzipXMLSizeLimit, the default size limit is 16GB.
 //
-// WorksheetUnzipMemLimit specifies the memory limit on unzipping worksheet in
-// bytes, worksheet XML will be extracted to system temporary directory when
-// the file size is over this value, this value should be less than or equal
-// to UnzipSizeLimit, the default value is 16MB.
+// UnzipXMLSizeLimit specifies the memory limit on unzipping worksheet and
+// shared string table in bytes, worksheet XML will be extracted to system
+// temporary directory when the file size is over this value, this value
+// should be less than or equal to UnzipSizeLimit, the default value is
+// 16MB.
 type Options struct {
-	Password               string
-	RawCellValue           bool
-	UnzipSizeLimit         int64
-	WorksheetUnzipMemLimit int64
+	Password          string
+	RawCellValue      bool
+	UnzipSizeLimit    int64
+	UnzipXMLSizeLimit int64
 }
 
 // OpenFile take the name of an spreadsheet file and returns a populated
@@ -111,7 +113,7 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 // newFile is object builder
 func newFile() *File {
 	return &File{
-		options:          &Options{UnzipSizeLimit: UnzipSizeLimit, WorksheetUnzipMemLimit: StreamChunkSize},
+		options:          &Options{UnzipSizeLimit: UnzipSizeLimit, UnzipXMLSizeLimit: StreamChunkSize},
 		xmlAttr:          make(map[string][]xml.Attr),
 		checked:          make(map[string]bool),
 		sheetMap:         make(map[string]string),
@@ -138,17 +140,17 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	f.options = parseOptions(opt...)
 	if f.options.UnzipSizeLimit == 0 {
 		f.options.UnzipSizeLimit = UnzipSizeLimit
-		if f.options.WorksheetUnzipMemLimit > f.options.UnzipSizeLimit {
-			f.options.UnzipSizeLimit = f.options.WorksheetUnzipMemLimit
+		if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
+			f.options.UnzipSizeLimit = f.options.UnzipXMLSizeLimit
 		}
 	}
-	if f.options.WorksheetUnzipMemLimit == 0 {
-		f.options.WorksheetUnzipMemLimit = StreamChunkSize
-		if f.options.UnzipSizeLimit < f.options.WorksheetUnzipMemLimit {
-			f.options.WorksheetUnzipMemLimit = f.options.UnzipSizeLimit
+	if f.options.UnzipXMLSizeLimit == 0 {
+		f.options.UnzipXMLSizeLimit = StreamChunkSize
+		if f.options.UnzipSizeLimit < f.options.UnzipXMLSizeLimit {
+			f.options.UnzipXMLSizeLimit = f.options.UnzipSizeLimit
 		}
 	}
-	if f.options.WorksheetUnzipMemLimit > f.options.UnzipSizeLimit {
+	if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
 		return nil, ErrOptionsUnzipSizeLimit
 	}
 	if bytes.Contains(b, oleIdentifier) {

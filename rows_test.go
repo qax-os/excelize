@@ -56,11 +56,18 @@ func TestRows(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test reload the file to memory from system temporary directory.
-	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{WorksheetUnzipMemLimit: 1024})
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
 	assert.NoError(t, err)
 	value, err := f.GetCellValue("Sheet1", "A19")
 	assert.NoError(t, err)
 	assert.Equal(t, "Total:", value)
+	// Test load shared string table to memory
+	err = f.SetCellValue("Sheet1", "A19", "A19")
+	assert.NoError(t, err)
+	value, err = f.GetCellValue("Sheet1", "A19")
+	assert.NoError(t, err)
+	assert.Equal(t, "A19", value)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRow.xlsx")))
 	assert.NoError(t, f.Close())
 }
 
@@ -200,7 +207,7 @@ func TestColumns(t *testing.T) {
 
 func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store("xl/sharedStrings.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(dafaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	f.sharedStringsReader()
 	si := xlsxSI{}
 	assert.EqualValues(t, "", si.String())

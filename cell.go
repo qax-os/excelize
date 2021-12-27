@@ -14,6 +14,7 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -348,28 +349,49 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	ws.Lock()
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
-	cellData.T, cellData.V = f.setCellString(value)
+	cellData.T, cellData.V, err = f.setCellString(value)
 	return err
 }
 
 // setCellString provides a function to set string type to shared string
 // table.
-func (f *File) setCellString(value string) (t string, v string) {
+func (f *File) setCellString(value string) (t, v string, err error) {
 	if len(value) > TotalCellChars {
 		value = value[:TotalCellChars]
 	}
 	t = "s"
-	v = strconv.Itoa(f.setSharedString(value))
+	var si int
+	if si, err = f.setSharedString(value); err != nil {
+		return
+	}
+	v = strconv.Itoa(si)
+	return
+}
+
+// sharedStringsLoader load shared string table from system temporary file to
+// memory, and reset shared string table for reader.
+func (f *File) sharedStringsLoader() (err error) {
+	f.Lock()
+	defer f.Unlock()
+	if path, ok := f.tempFiles.Load(dafaultXMLPathSharedStrings); ok {
+		f.Pkg.Store(dafaultXMLPathSharedStrings, f.readBytes(dafaultXMLPathSharedStrings))
+		f.tempFiles.Delete(dafaultXMLPathSharedStrings)
+		err = os.Remove(path.(string))
+		f.SharedStrings, f.sharedStringItemMap = nil, nil
+	}
 	return
 }
 
 // setSharedString provides a function to add string to the share string table.
-func (f *File) setSharedString(val string) int {
+func (f *File) setSharedString(val string) (int, error) {
+	if err := f.sharedStringsLoader(); err != nil {
+		return 0, err
+	}
 	sst := f.sharedStringsReader()
 	f.Lock()
 	defer f.Unlock()
 	if i, ok := f.sharedStringsMap[val]; ok {
-		return i
+		return i, nil
 	}
 	sst.Count++
 	sst.UniqueCount++
@@ -377,7 +399,7 @@ func (f *File) setSharedString(val string) int {
 	_, val, t.Space = setCellStr(val)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
-	return sst.UniqueCount - 1
+	return sst.UniqueCount - 1, nil
 }
 
 // setCellStr provides a function to set string type to cell.
@@ -762,6 +784,34 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 	return
 }
 
+// newRpr create run properties for the rich text by given font format.
+func newRpr(fnt *Font) *xlsxRPr {
+	rpr := xlsxRPr{}
+	trueVal := ""
+	if fnt.Bold {
+		rpr.B = &trueVal
+	}
+	if fnt.Italic {
+		rpr.I = &trueVal
+	}
+	if fnt.Strike {
+		rpr.Strike = &trueVal
+	}
+	if fnt.Underline != "" {
+		rpr.U = &attrValString{Val: &fnt.Underline}
+	}
+	if fnt.Family != "" {
+		rpr.RFont = &attrValString{Val: &fnt.Family}
+	}
+	if fnt.Size > 0.0 {
+		rpr.Sz = &attrValFloat{Val: &fnt.Size}
+	}
+	if fnt.Color != "" {
+		rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
+	}
+	return &rpr
+}
+
 // SetCellRichText provides a function to set cell with rich text by given
 // worksheet. For example, set rich text on the A1 cell of the worksheet named
 // Sheet1:
@@ -875,6 +925,9 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	if err != nil {
 		return err
 	}
+	if err := f.sharedStringsLoader(); err != nil {
+		return err
+	}
 	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
@@ -889,30 +942,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
 		fnt := textRun.Font
 		if fnt != nil {
-			rpr := xlsxRPr{}
-			trueVal := ""
-			if fnt.Bold {
-				rpr.B = &trueVal
-			}
-			if fnt.Italic {
-				rpr.I = &trueVal
-			}
-			if fnt.Strike {
-				rpr.Strike = &trueVal
-			}
-			if fnt.Underline != "" {
-				rpr.U = &attrValString{Val: &fnt.Underline}
-			}
-			if fnt.Family != "" {
-				rpr.RFont = &attrValString{Val: &fnt.Family}
-			}
-			if fnt.Size > 0.0 {
-				rpr.Sz = &attrValFloat{Val: &fnt.Size}
-			}
-			if fnt.Color != "" {
-				rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
-			}
-			run.RPr = &rpr
+			run.RPr = newRpr(fnt)
 		}
 		textRuns = append(textRuns, run)
 	}

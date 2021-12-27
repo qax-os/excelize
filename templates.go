@@ -14,13 +14,22 @@
 
 package excelize
 
-// XMLHeader define an XML declaration can also contain a standalone declaration.
-const XMLHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+import "encoding/xml"
 
 var (
 	// XMLHeaderByte define an XML declaration can also contain a standalone
 	// declaration.
-	XMLHeaderByte = []byte(XMLHeader)
+	XMLHeaderByte = []byte(xml.Header)
+)
+
+const (
+	defaultXMLPathContentTypes  = "[Content_Types].xml"
+	dafaultXMLPathDocPropsApp   = "docProps/app.xml"
+	dafaultXMLPathDocPropsCore  = "docProps/core.xml"
+	dafaultXMLPathCalcChain     = "xl/calcChain.xml"
+	dafaultXMLPathSharedStrings = "xl/sharedStrings.xml"
+	defaultXMLPathStyles        = "xl/styles.xml"
+	defaultXMLPathWorkbook      = "xl/workbook.xml"
 )
 
 const templateDocpropsApp = `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><TotalTime>0</TotalTime><Application>Go Excelize</Application></Properties>`

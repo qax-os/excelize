@@ -143,8 +143,8 @@ var (
 	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
 	// ErrOptionsUnzipSizeLimit defined the error message for receiving
-	// invalid UnzipSizeLimit and WorksheetUnzipMemLimit.
-	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to WorksheetUnzipMemLimit")
+	// invalid UnzipSizeLimit and UnzipXMLSizeLimit.
+	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to UnzipXMLSizeLimit")
 	// ErrSave defined the error message for saving file.
 	ErrSave = errors.New("no path defined for file, consider File.WriteTo or File.Write")
 	// ErrAttrValBool defined the error message on marshal and unmarshal

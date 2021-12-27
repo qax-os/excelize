@@ -201,7 +201,7 @@ func TestCharsetTranscoder(t *testing.T) {
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
 	assert.EqualError(t, err, "zip: not a valid zip file")
-	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", WorksheetUnzipMemLimit: UnzipSizeLimit + 1})
+	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", UnzipXMLSizeLimit: UnzipSizeLimit + 1})
 	assert.EqualError(t, err, "decrypted file failed")
 
 	// Test open spreadsheet with unzip size limit.
@@ -225,7 +225,7 @@ func TestOpenReader(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Test open spreadsheet with invalid optioins.
-	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{UnzipSizeLimit: 1, WorksheetUnzipMemLimit: 2})
+	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{UnzipSizeLimit: 1, UnzipXMLSizeLimit: 2})
 	assert.EqualError(t, err, ErrOptionsUnzipSizeLimit.Error())
 
 	// Test unexpected EOF.
@@ -1208,7 +1208,7 @@ func TestContentTypesReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
 	f.ContentTypes = nil
-	f.Pkg.Store("[Content_Types].xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	f.contentTypesReader()
 }
 
@@ -1216,7 +1216,7 @@ func TestWorkbookReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
 	f.WorkBook = nil
-	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	f.workbookReader()
 }
 

@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/mohae/deepcopy"
 )
@@ -244,7 +245,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		decoder   *xml.Decoder
 		tempFile  *os.File
 	)
-	if needClose, decoder, tempFile, err = f.sheetDecoder(name); needClose && err == nil {
+	if needClose, decoder, tempFile, err = f.xmlDecoder(name); needClose && err == nil {
 		defer tempFile.Close()
 	}
 	for {
@@ -271,7 +272,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 			if xmlElement.Name.Local == "sheetData" {
 				rows.f = f
 				rows.sheet = name
-				_, rows.decoder, rows.tempFile, err = f.sheetDecoder(name)
+				_, rows.decoder, rows.tempFile, err = f.xmlDecoder(name)
 				return &rows, err
 			}
 		}
@@ -279,9 +280,46 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	return &rows, nil
 }
 
-// sheetDecoder creates XML decoder by given path in the zip from memory data
+// getFromStringItemMap build shared string item map from system temporary
+// file at one time, and return value by given to string index.
+func (f *File) getFromStringItemMap(index int) string {
+	if f.sharedStringItemMap != nil {
+		if value, ok := f.sharedStringItemMap.Load(index); ok {
+			return value.(string)
+		}
+		return strconv.Itoa(index)
+	}
+	f.sharedStringItemMap = &sync.Map{}
+	needClose, decoder, tempFile, err := f.xmlDecoder(dafaultXMLPathSharedStrings)
+	if needClose && err == nil {
+		defer tempFile.Close()
+	}
+	var (
+		inElement string
+		i         int
+	)
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch xmlElement := token.(type) {
+		case xml.StartElement:
+			inElement = xmlElement.Name.Local
+			if inElement == "si" {
+				si := xlsxSI{}
+				_ = decoder.DecodeElement(&si, &xmlElement)
+				f.sharedStringItemMap.Store(i, si.String())
+				i++
+			}
+		}
+	}
+	return f.getFromStringItemMap(index)
+}
+
+// xmlDecoder creates XML decoder by given path in the zip from memory data
 // or system temporary file.
-func (f *File) sheetDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
+func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 	var (
 		content  []byte
 		err      error
@@ -373,7 +411,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	relPath := f.getWorkbookRelsPath()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
-		ss := f.readXML("xl/sharedStrings.xml")
+		ss := f.readXML(dafaultXMLPathSharedStrings)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
@@ -415,6 +453,9 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		if c.V != "" {
 			xlsxSI := 0
 			xlsxSI, _ = strconv.Atoi(c.V)
+			if _, ok := f.tempFiles.Load(dafaultXMLPathSharedStrings); ok {
+				return f.formattedValue(c.S, f.getFromStringItemMap(xlsxSI), raw), nil
+			}
 			if len(d.SI) > xlsxSI {
 				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil
 			}

@@ -1078,7 +1078,7 @@ func (f *File) stylesReader() *xlsxStyleSheet {
 
 	if f.Styles == nil {
 		f.Styles = new(xlsxStyleSheet)
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/styles.xml")))).
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathStyles)))).
 			Decode(f.Styles); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
@@ -1092,7 +1092,7 @@ func (f *File) stylesReader() *xlsxStyleSheet {
 func (f *File) styleSheetWriter() {
 	if f.Styles != nil {
 		output, _ := xml.Marshal(f.Styles)
-		f.saveFileList("xl/styles.xml", f.replaceNameSpaceBytes("xl/styles.xml", output))
+		f.saveFileList(defaultXMLPathStyles, f.replaceNameSpaceBytes(defaultXMLPathStyles, output))
 	}
 }
 
@@ -1101,7 +1101,7 @@ func (f *File) styleSheetWriter() {
 func (f *File) sharedStringsWriter() {
 	if f.SharedStrings != nil {
 		output, _ := xml.Marshal(f.SharedStrings)
-		f.saveFileList("xl/sharedStrings.xml", f.replaceNameSpaceBytes("xl/sharedStrings.xml", output))
+		f.saveFileList(dafaultXMLPathSharedStrings, f.replaceNameSpaceBytes(dafaultXMLPathSharedStrings, output))
 	}
 }
 

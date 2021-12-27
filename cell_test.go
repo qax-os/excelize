@@ -649,3 +649,20 @@ func TestFormattedValue2(t *testing.T) {
 	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
 }
+
+func TestSharedStringsError(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
+	assert.NoError(t, err)
+	f.tempFiles.Store(dafaultXMLPathSharedStrings, "")
+	assert.Equal(t, "1", f.getFromStringItemMap(1))
+
+	// Test reload the file error on set cell cell and rich text. The error message was different between macOS and Windows.
+	err = f.SetCellValue("Sheet1", "A19", "A19")
+	assert.Error(t, err)
+
+	f.tempFiles.Store(dafaultXMLPathSharedStrings, "")
+	err = f.SetCellRichText("Sheet1", "A19", []RichTextRun{})
+	assert.Error(t, err)
+
+	assert.NoError(t, f.Close())
+}

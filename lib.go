@@ -30,8 +30,8 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	var (
 		err     error
 		docPart = map[string]string{
-			"[content_types].xml":  "[Content_Types].xml",
-			"xl/sharedstrings.xml": "xl/sharedStrings.xml",
+			"[content_types].xml":  defaultXMLPathContentTypes,
+			"xl/sharedstrings.xml": dafaultXMLPathSharedStrings,
 		}
 		fileList   = make(map[string][]byte, len(r.File))
 		worksheets int
@@ -47,9 +47,15 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
+		if strings.EqualFold(fileName, dafaultXMLPathSharedStrings) && fileSize > f.options.UnzipXMLSizeLimit {
+			if tempFile, err := f.unzipToTemp(v); err == nil {
+				f.tempFiles.Store(fileName, tempFile)
+				continue
+			}
+		}
 		if strings.HasPrefix(fileName, "xl/worksheets/sheet") {
 			worksheets++
-			if fileSize > f.options.WorksheetUnzipMemLimit && !v.FileInfo().IsDir() {
+			if fileSize > f.options.UnzipXMLSizeLimit && !v.FileInfo().IsDir() {
 				if tempFile, err := f.unzipToTemp(v); err == nil {
 					f.tempFiles.Store(fileName, tempFile)
 					continue
@@ -120,7 +126,7 @@ func (f *File) readTemp(name string) (file *os.File, err error) {
 // saveFileList provides a function to update given file content in file list
 // of spreadsheet.
 func (f *File) saveFileList(name string, content []byte) {
-	f.Pkg.Store(name, append([]byte(XMLHeader), content...))
+	f.Pkg.Store(name, append([]byte(xml.Header), content...))
 }
 
 // Read file content as string in a archive file.

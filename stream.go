@@ -112,7 +112,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	}
 	f.streams[sheetPath] = sw
 
-	_, _ = sw.rawData.WriteString(XMLHeader + `<worksheet` + templateNamespaceIDMap)
+	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 5)
 	return sw, err
 }

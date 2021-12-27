@@ -300,7 +300,7 @@ func TestStylesReader(t *testing.T) {
 	f := NewFile()
 	// Test read styles with unsupported charset.
 	f.Styles = nil
-	f.Pkg.Store("xl/styles.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
 }
 

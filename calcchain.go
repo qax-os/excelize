@@ -25,7 +25,7 @@ func (f *File) calcChainReader() *xlsxCalcChain {
 
 	if f.CalcChain == nil {
 		f.CalcChain = new(xlsxCalcChain)
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/calcChain.xml")))).
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathCalcChain)))).
 			Decode(f.CalcChain); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
@@ -39,7 +39,7 @@ func (f *File) calcChainReader() *xlsxCalcChain {
 func (f *File) calcChainWriter() {
 	if f.CalcChain != nil && f.CalcChain.C != nil {
 		output, _ := xml.Marshal(f.CalcChain)
-		f.saveFileList("xl/calcChain.xml", output)
+		f.saveFileList(dafaultXMLPathCalcChain, output)
 	}
 }
 
@@ -54,7 +54,7 @@ func (f *File) deleteCalcChain(index int, axis string) {
 	}
 	if len(calc.C) == 0 {
 		f.CalcChain = nil
-		f.Pkg.Delete("xl/calcChain.xml")
+		f.Pkg.Delete(dafaultXMLPathCalcChain)
 		content := f.contentTypesReader()
 		content.Lock()
 		defer content.Unlock()

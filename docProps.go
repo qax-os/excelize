@@ -27,8 +27,8 @@ import (
 //     Application       | The name of the application that created this document.
 //                       |
 //     ScaleCrop         | Indicates the display mode of the document thumbnail. Set this element
-//                       | to TRUE to enable scaling of the document thumbnail to the display. Set
-//                       | this element to FALSE to enable cropping of the document thumbnail to
+//                       | to 'true' to enable scaling of the document thumbnail to the display. Set
+//                       | this element to 'false' to enable cropping of the document thumbnail to
 //                       | show only sections that will fit the display.
 //                       |
 //     DocSecurity       | Security level of a document as a numeric value. Document security is
@@ -41,8 +41,8 @@ import (
 //     Company           | The name of a company associated with the document.
 //                       |
 //     LinksUpToDate     | Indicates whether hyperlinks in a document are up-to-date. Set this
-//                       | element to TRUE to indicate that hyperlinks are updated. Set this
-//                       | element to FALSE to indicate that hyperlinks are outdated.
+//                       | element to 'true' to indicate that hyperlinks are updated. Set this
+//                       | element to 'false' to indicate that hyperlinks are outdated.
 //                       |
 //     HyperlinksChanged | Specifies that one or more hyperlinks in this part were updated
 //                       | exclusively in this part by a producer. The next producer to open this
@@ -75,7 +75,7 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 		field              string
 	)
 	app = new(xlsxProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/app.xml")))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -95,14 +95,14 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 	}
 	app.Vt = NameSpaceDocumentPropertiesVariantTypes.Value
 	output, err = xml.Marshal(app)
-	f.saveFileList("docProps/app.xml", output)
+	f.saveFileList(dafaultXMLPathDocPropsApp, output)
 	return
 }
 
 // GetAppProps provides a function to get document application properties.
 func (f *File) GetAppProps() (ret *AppProperties, err error) {
 	var app = new(xlsxProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/app.xml")))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -181,7 +181,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	)
 
 	core = new(decodeCoreProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -223,7 +223,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		newProps.Modified.Text = docProperties.Modified
 	}
 	output, err = xml.Marshal(newProps)
-	f.saveFileList("docProps/core.xml", output)
+	f.saveFileList(dafaultXMLPathDocPropsCore, output)
 
 	return
 }
@@ -232,7 +232,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 func (f *File) GetDocProps() (ret *DocProperties, err error) {
 	var core = new(decodeCoreProperties)
 
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("docProps/core.xml")))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
