@@ -1,4 +1,4 @@
-module github.com/xuri/excelize/v2
+module github.com/vst93/excelize/v2
 
 go 1.15
 
