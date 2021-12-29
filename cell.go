@@ -409,7 +409,7 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 	}
 	if len(value) > 0 {
 		prefix, suffix := value[0], value[len(value)-1]
-		for _, ascii := range []byte{10, 13, 32} {
+		for _, ascii := range []byte{9, 10, 13, 32} {
 			if prefix == ascii || suffix == ascii {
 				ns = xml.Attr{
 					Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
