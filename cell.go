@@ -228,8 +228,7 @@ func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 	var excelTime float64
 	_, offset := value.In(value.Location()).Zone()
 	value = value.Add(time.Duration(offset) * time.Second)
-	excelTime, err = timeToExcelTime(value)
-	if err != nil {
+	if excelTime, err = timeToExcelTime(value); err != nil {
 		return
 	}
 	isNum = excelTime > 0
@@ -419,8 +418,7 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 			}
 		}
 	}
-	t = "str"
-	v = bstrMarshal(value)
+	t, v = "str", bstrMarshal(value)
 	return
 }
 

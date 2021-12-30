@@ -341,7 +341,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 			val = v.Value
 			setCellFormula(&c, v.Formula)
 		}
-		if err = setCellValFunc(&c, val); err != nil {
+		if err = sw.setCellValFunc(&c, val); err != nil {
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
@@ -424,7 +424,7 @@ func setCellFormula(c *xlsxC, formula string) {
 }
 
 // setCellValFunc provides a function to set value of a cell.
-func setCellValFunc(c *xlsxC, val interface{}) (err error) {
+func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 	switch val := val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		err = setCellIntFunc(c, val)
@@ -439,7 +439,12 @@ func setCellValFunc(c *xlsxC, val interface{}) (err error) {
 	case time.Duration:
 		c.T, c.V = setCellDuration(val)
 	case time.Time:
-		c.T, c.V, _, err = setCellTime(val)
+		var isNum bool
+		c.T, c.V, isNum, err = setCellTime(val)
+		if isNum && c.S == 0 {
+			style, _ := sw.File.NewStyle(&Style{NumFmt: 22})
+			c.S = style
+		}
 	case bool:
 		c.T, c.V = setCellBool(val)
 	case nil:
