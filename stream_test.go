@@ -53,7 +53,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.SetRow("A3", row))
 
 	// Test set cell with style.
-	styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
+	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}), RowOpts{Height: 45, StyleID: styleID})
 	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))

@@ -52,7 +52,7 @@ type StreamWriter struct {
 //    if err != nil {
 //        fmt.Println(err)
 //    }
-//    styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
+//    styleID, err := file.NewStyle(&excelize.Style{Font: &excelize.Font{Color: "#777777"}})
 //    if err != nil {
 //        fmt.Println(err)
 //    }
