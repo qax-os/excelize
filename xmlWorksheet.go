@@ -838,6 +838,7 @@ type formatConditional struct {
 
 // FormatSheetProtection directly maps the settings of worksheet protection.
 type FormatSheetProtection struct {
+	AlgorithmName       string // empty for SHA-1, supports "SHA-512"
 	AutoFilter          bool
 	DeleteColumns       bool
 	DeleteRows          bool

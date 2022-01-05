@@ -477,3 +477,99 @@ func newSheetWithSave() {
 	}
 	_ = file.Save()
 }
+
+func TestProtectSheet_SheetNotExist(t *testing.T) {
+	f := NewFile()
+	assert.Error(t, f.ProtectSheet(f.GetSheetName(0)+"_NotExisted", nil))
+}
+
+func TestProtectSheet_ProtectWithNoPassword(t *testing.T) {
+	f := NewFile()
+	sheetName := f.GetSheetName(0)
+	f.ProtectSheet(sheetName, &FormatSheetProtection{})
+	ws, _ := f.workSheetReader(sheetName)
+	assert.Equal(t, "", ws.SheetProtection.Password)
+}
+
+func TestProtectSheet_ProtectWithSHA1(t *testing.T) {
+	password := "TestPassword"
+	hashPassword := "916A"
+
+	f := NewFile()
+	sheetName := f.GetSheetName(0)
+	f.ProtectSheet(sheetName, &FormatSheetProtection{
+		Password: password,
+	})
+	ws, _ := f.workSheetReader(sheetName)
+	assert.Equal(t, hashPassword, ws.SheetProtection.Password)
+}
+
+func TestProtectSheet_ProtectWithSHA512(t *testing.T) {
+	password := "TestPassword"
+	// SHA512 will generate random salt value
+	// so hashValue has no way to verify
+
+	f := NewFile()
+	sheetName := f.GetSheetName(0)
+	f.ProtectSheet(sheetName, &FormatSheetProtection{
+		AlgorithmName: "SHA-512",
+		Password:      password,
+	})
+	ws, _ := f.workSheetReader(sheetName)
+
+	assert.NotEmpty(t, ws.SheetProtection.SaltValue)
+	assert.Equal(t, 24, len(ws.SheetProtection.SaltValue))
+
+	assert.NotEmpty(t, ws.SheetProtection.HashValue)
+	assert.Equal(t, 88, len(ws.SheetProtection.HashValue))
+
+	assert.Equal(t, int(1e5), ws.SheetProtection.SpinCount)
+}
+
+func TestProtectSheet_ProtectWithAlgorithmNotImplement(t *testing.T) {
+	password := "TestPassword"
+
+	f := NewFile()
+	sheetName := f.GetSheetName(0)
+	err := f.ProtectSheet(sheetName, &FormatSheetProtection{
+		AlgorithmName: "SHA-128",
+		Password:      password,
+	})
+
+	assert.EqualError(t, err, "Algorithm NOT implement")
+}
+
+func TestValidateSheetProtect(t *testing.T) {
+	password := "TestPassword"
+
+	f := NewFile()
+	sheetName := f.GetSheetName(0)
+
+	// sheet not existed
+	err, validated := f.ValidateSheetProtect(f.GetSheetName(0)+"_NotExisted", password)
+	assert.False(t, validated)
+	assert.Error(t, err)
+
+	// no protect
+	err, validated = f.ValidateSheetProtect(sheetName, password)
+	assert.False(t, validated)
+	assert.EqualError(t, err, "sheet has no protection setting")
+
+	// SHA-1
+	f.ProtectSheet(sheetName, &FormatSheetProtection{
+		Password: password,
+	})
+	err, validated = f.ValidateSheetProtect(sheetName, password)
+	assert.True(t, validated)
+	assert.NoError(t, err)
+
+	// SHA-512
+	f.ProtectSheet(sheetName, &FormatSheetProtection{
+		AlgorithmName: hashAlgorithmSHA512,
+		Password:      password,
+	})
+	err, validated = f.ValidateSheetProtect(sheetName, password)
+	assert.True(t, validated)
+	assert.NoError(t, err)
+
+}

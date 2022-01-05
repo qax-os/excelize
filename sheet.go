@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -1137,6 +1138,14 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 //        EditScenarios: false,
 //    })
 //
+// with Algorithm "SHA-512" (which Excel use as default since Excel 2013):
+//
+//    err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//        AlgorithmName: "SHA-512"
+//        Password:      "password",
+//        EditScenarios: false,
+//    })
+//
 func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1167,8 +1176,31 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error
 		Sheet:               true,
 		Sort:                settings.Sort,
 	}
+
 	if settings.Password != "" {
-		ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+		// settings.AlgorithmName == "SHA-512"
+		if settings.AlgorithmName == hashAlgorithmSHA512 {
+			err, result := genISOPasswordHash(saltHashData{
+				AlgorithmName: hashAlgorithmSHA512,
+				Password:      settings.Password,
+				SpinCount:     1e5,
+			})
+			if err != nil {
+				log.Printf("ProtectSheet error: %s", err)
+				return err
+			}
+			ws.SheetProtection.Password = ""
+
+			ws.SheetProtection.AlgorithmName = hashAlgorithmSHA512
+			ws.SheetProtection.SaltValue = result.SaltValue
+			ws.SheetProtection.HashValue = result.HashValue
+			ws.SheetProtection.SpinCount = result.SpinCount
+		} else if settings.AlgorithmName == "" {
+			// SHA-1 password
+			ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+		} else {
+			return errors.New("Algorithm NOT implement")
+		}
 	}
 	return err
 }
@@ -1181,6 +1213,35 @@ func (f *File) UnprotectSheet(sheet string) error {
 	}
 	ws.SheetProtection = nil
 	return err
+}
+
+// ValidateSheetProtect provides a function to validate worksheet protect password.
+func (f *File) ValidateSheetProtect(sheet string, password string) (error, bool) {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err, false
+	}
+	if ws.SheetProtection == nil {
+		return errors.New("sheet has no protection setting"), false
+	}
+
+	if ws.SheetProtection.AlgorithmName == "" {
+		// SHA-1
+		return err, ws.SheetProtection.Password == genSheetPasswd(password)
+	}
+	if ws.SheetProtection.AlgorithmName == "SHA-512" {
+		// SHA-512
+		// check with given salt value
+		err, result := genISOPasswordHash(saltHashData{
+			AlgorithmName: hashAlgorithmSHA512,
+			Password:      password,
+			SpinCount:     ws.SheetProtection.SpinCount,
+		}, ws.SheetProtection.SaltValue)
+		return err, ws.SheetProtection.HashValue == result.HashValue
+	}
+
+	log.Printf("sheet protect algorithm %s is not implementd", ws.SheetProtection.AlgorithmName)
+	return err, false
 }
 
 // trimSheetName provides a function to trim invaild characters by given worksheet
