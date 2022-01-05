@@ -2628,7 +2628,16 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // For example create a borders of cell H9 on Sheet1:
 //
-//    style, err := f.NewStyle(`{"border":[{"type":"left","color":"0000FF","style":3},{"type":"top","color":"00FF00","style":4},{"type":"bottom","color":"FFFF00","style":5},{"type":"right","color":"FF0000","style":6},{"type":"diagonalDown","color":"A020F0","style":7},{"type":"diagonalUp","color":"A020F0","style":8}]}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Border: []excelize.Border{
+//            {Type: "left", Color: "0000FF", Style: 3},
+//            {Type: "top", Color: "00FF00", Style: 4},
+//            {Type: "bottom", Color: "FFFF00", Style: 5},
+//            {Type: "right", Color: "FF0000", Style: 6},
+//            {Type: "diagonalDown", Color: "A020F0", Style: 7},
+//            {Type: "diagonalUp", Color: "A020F0", Style: 8},
+//        },
+//    })
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -2637,7 +2646,9 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 // Set gradient fill with vertical variants shading styles for cell H9 on
 // Sheet1:
 //
-//    style, err := f.NewStyle(`{"fill":{"type":"gradient","color":["#FFFFFF","#E0EBF5"],"shading":1}}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Fill: excelize.Fill{Type: "gradient", Color: []string{"#FFFFFF", "#E0EBF5"}, Shading: 1},
+//    })
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -2645,7 +2656,9 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // Set solid style pattern fill for cell H9 on Sheet1:
 //
-//    style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Fill: excelize.Fill{Type: "pattern", Color: []string{"#E0EBF5"}, Pattern: 1},
+//    })
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -2653,7 +2666,19 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // Set alignment style for cell H9 on Sheet1:
 //
-//    style, err := f.NewStyle(`{"alignment":{"horizontal":"center","ident":1,"justify_last_line":true,"reading_order":0,"relative_indent":1,"shrink_to_fit":true,"text_rotation":45,"vertical":"","wrap_text":true}}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Alignment: &excelize.Alignment{
+//            Horizontal:      "center",
+//            Indent:          1,
+//            JustifyLastLine: true,
+//            ReadingOrder:    0,
+//            RelativeIndent:  1,
+//            ShrinkToFit:     true,
+//            TextRotation:    45,
+//            Vertical:        "",
+//            WrapText:        true,
+//        },
+//    })
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -2664,7 +2689,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 // for cell H9 on Sheet1:
 //
 //    f.SetCellValue("Sheet1", "H9", 42920.5)
-//    style, err := f.NewStyle(`{"number_format": 22}`)
+//    style, err := f.NewStyle(&excelize.Style{NumFmt: 22})
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -2672,7 +2697,15 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // Set font style for cell H9 on Sheet1:
 //
-//    style, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Font: &excelize.Font{
+//            Bold:   true,
+//            Italic: true,
+//            Family: "Times New Roman",
+//            Size:   36,
+//            Color:  "#777777",
+//        },
+//    })
 //    if err != nil {
 //        fmt.Println(err)
 //    }
@@ -2680,7 +2713,12 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //
 // Hide and lock for cell H9 on Sheet1:
 //
-//    style, err := f.NewStyle(`{"protection":{"hidden":true, "locked":true}}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Protection: &excelize.Protection{
+//            Hidden: true,
+//            Locked: true,
+//        },
+//    })
 //    if err != nil {
 //        fmt.Println(err)
 //    }

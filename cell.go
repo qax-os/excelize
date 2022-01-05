@@ -666,9 +666,17 @@ type HyperlinkOpts struct {
 // in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
 // below is example for external link.
 //
-//    err := f.SetCellHyperLink("Sheet1", "A3", "https://github.com/xuri/excelize", "External")
+//    if err := f.SetCellHyperLink("Sheet1", "A3",
+//        "https://github.com/xuri/excelize", "External"); err != nil {
+//        fmt.Println(err)
+//    }
 //    // Set underline and font color style for the cell.
-//    style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+//    style, err := f.NewStyle(&excelize.Style{
+//        Font: &excelize.Font{Color: "#1265BE", Underline: "single"},
+//    })
+//    if err != nil {
+//        fmt.Println(err)
+//    }
 //    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
 //
 // A this is another example for "Location":

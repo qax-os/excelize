@@ -3285,7 +3285,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=YIELD(\"01/01/2010\",\"06/30/2015\",-1,101,100,4)":       "PRICE requires rate >= 0",
 		"=YIELD(\"01/01/2010\",\"06/30/2015\",10%,0,100,4)":        "PRICE requires pr > 0",
 		"=YIELD(\"01/01/2010\",\"06/30/2015\",10%,101,-1,4)":       "PRICE requires redemption >= 0",
-		// "=YIELD(\"01/01/2010\",\"06/30/2015\",10%,101,100,4)": "PRICE requires rate >= 0",
 		// YIELDDISC
 		"=YIELDDISC()": "YIELDDISC requires 4 or 5 arguments",
 		"=YIELDDISC(\"\",\"06/30/2017\",97,100,0)":              "#VALUE!",
