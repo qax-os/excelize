@@ -1168,7 +1168,27 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error
 		Sort:                settings.Sort,
 	}
 	if settings.Password != "" {
-		ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+		// settings.AlgorithmName == "SHA-512"
+		if settings.AlgorithmName == hashAlgorithmSHA512 {
+			err, result := genISOPasswordHash(saltHashData{
+				AlgorithmName: hashAlgorithmSHA512,
+				Password:      settings.Password,
+				SpinCount:     1e5,
+			})
+			if err != nil {
+				log.Printf("ProtectSheet error: %s", err)
+				return err
+			}
+			ws.SheetProtection.Password = ""
+
+			ws.SheetProtection.AlgorithmName = hashAlgorithmSHA512
+			ws.SheetProtection.SaltValue = result.SaltValue
+			ws.SheetProtection.HashValue = result.HashValue
+		} else {
+			// SHA-1 password
+			ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+			// TODO: ?? set AlgorithmName, SaltValue, HashValue empty
+		}
 	}
 	return err
 }
