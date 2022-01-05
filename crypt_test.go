@@ -36,3 +36,61 @@ func TestEncryptionMechanism(t *testing.T) {
 func TestHashing(t *testing.T) {
 	assert.Equal(t, hashing("unsupportHashAlgorithm", []byte{}), []uint8([]byte(nil)))
 }
+
+func TestGenISOPasswordHash(t *testing.T) {
+	/*
+		WorkbookProtection:
+			<workbookProtection
+				workbookAlgorithmName="SHA-512"
+				workbookHashValue="7JIH3q8xjBAG1xGKnS8Y1wUQnrmPXkov7DVCTMa5HKhG413knffE5aWIXF7RFiP31+SXm0qTn/xcTDVfkk3V7g=="
+				workbookSaltValue="1oQNxuoY2xYR2Gu5UM8Xlw=="
+				workbookSpinCount="100000"
+				lockStructure="1"
+			/>
+		WorksheetProtection:
+			<sheetProtection
+				algorithmName="SHA-512"
+				hashValue="R2/6Z96R9jO6DiptdOXU2+tZdm8/iRKkWr61+4Bz6BsDccvJ7y8R5BJsTjRDog7BXcMKsvrBIm+B4VGkAgZ2DA=="
+				saltValue="CDWF0uq3twTX0pCE0eI9Pg=="
+				spinCount="100000"
+				sheet="1"
+				...
+			/>
+	*/
+
+	// test1
+	// given salt value: WorkbookProtection
+	workbookProtectionSaltValue := "1oQNxuoY2xYR2Gu5UM8Xlw=="
+	workbookProtectionHashValue := "7JIH3q8xjBAG1xGKnS8Y1wUQnrmPXkov7DVCTMa5HKhG413knffE5aWIXF7RFiP31+SXm0qTn/xcTDVfkk3V7g=="
+	_, resultWb := genISOPasswordHash(saltHashData{
+		Password:      "excelizeAwesome",
+		AlgorithmName: hashAlgorithmSHA512,
+		SpinCount:     1e5,
+	}, workbookProtectionSaltValue)
+	assert.Equal(t, resultWb.HashValue, workbookProtectionHashValue, "given salt value: WorkbookProtection")
+
+	// test2
+	// given salt value: WorksheetProtection
+	worksheetProtectionSaltValue := "CDWF0uq3twTX0pCE0eI9Pg=="
+	worksheetProtectionHashValue := "R2/6Z96R9jO6DiptdOXU2+tZdm8/iRKkWr61+4Bz6BsDccvJ7y8R5BJsTjRDog7BXcMKsvrBIm+B4VGkAgZ2DA=="
+	_, resultWsht := genISOPasswordHash(saltHashData{
+		Password:      "excelizeAwesome",
+		AlgorithmName: hashAlgorithmSHA512,
+		SpinCount:     1e5,
+	}, worksheetProtectionSaltValue)
+	assert.Equal(t, resultWsht.HashValue, worksheetProtectionHashValue, "given salt value: WorksheetProtection")
+
+	// test3
+	// no given salt value
+	_, resultRandomSalt := genISOPasswordHash(saltHashData{
+		Password:      "excelizeAwesome",
+		AlgorithmName: hashAlgorithmSHA512,
+		SpinCount:     1e5,
+	})
+	_, resultRandomSaltMatch := genISOPasswordHash(saltHashData{
+		Password:      "excelizeAwesome",
+		AlgorithmName: hashAlgorithmSHA512,
+		SpinCount:     1e5,
+	}, resultRandomSalt.SaltValue)
+	assert.Equal(t, resultRandomSalt.HashValue, resultRandomSaltMatch.HashValue, "no given salt value")
+}

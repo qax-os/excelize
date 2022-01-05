@@ -24,9 +24,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/xml"
+	"errors"
 	"hash"
 	"reflect"
 	"strings"
+	"unicode/utf16"
 
 	"github.com/richardlehane/mscfb"
 	"golang.org/x/crypto/md4"
@@ -125,6 +127,105 @@ type StandardEncryptionVerifier struct {
 	EncryptedVerifier     []byte
 	VerifierHashSize      uint32
 	EncryptedVerifierHash []byte
+}
+
+// hashAlgorithmName
+type hashAlgorithmName = string
+
+var hashAlgorithmSHA512 hashAlgorithmName = "SHA-512"
+
+type saltHashData struct {
+	AlgorithmName hashAlgorithmName
+	Password      string
+	SpinCount     int // default 100000 1e5
+}
+type saltHashResult struct {
+	AlgorithmName hashAlgorithmName
+	HashValue     string
+	// An array of bytes that specifies the salt value used during password hash generation.
+	// When computing hashes for new passwords, this MUST be generated using an arbitrary
+	// pseudorandom function. When verifying a password, the salt value retrieved from the
+	// document MUST be used. The salt MUST NOT be larger than 65,536 bytes.
+	SaltValue string
+	// default: 100000 1e5. A 32-bit unsigned integer that specifies the number of
+	// times to iterate on a hash of a password. It MUST NOT be greater than 10,000,000.
+	SpinCount int
+}
+
+/*
+genISOPasswordHash implements "ISO password hashing algorithm"
+	implementation as follow:
+
+	define:
+	- H(): the hashing algorithm specified by AlgorithmName,
+	- iterator: be an unsigned 32-bit integer (from 0 to SpinCount) ,
+	- Hn: be the hash data of the nth iteration,
+	- a plus sign: (+) represent concatenation.
+
+	calculation:
+	-> H_0 = H(salt + password)
+	-> H_n = H(H_n-1 + iterator)
+	-> H_final = H_SpinCount-1
+*/
+func genISOPasswordHash(data saltHashData, givenSaltValue ...string) (error, *saltHashResult) {
+	if data.AlgorithmName != hashAlgorithmSHA512 {
+		return errors.New("genISOPasswordHash NOT yet implement hash algorithm " + data.AlgorithmName), nil
+	}
+	if len(data.Password) < 1 || len(data.Password) > 255 {
+		return errors.New("genISOPasswordHash only accepts password with a minimum of 1 and a maximum of 255 Unicode characters."), nil
+	}
+
+	// byteSaltValue: An array of bytes that specifies the salt value used during password hash
+	// generation. When computing hashes for new passwords, this MUST be generated using an arbitrary
+	// pseudorandom function. When verifying a password, the salt value retrieved from the document
+	// MUST be used. The salt MUST NOT be larger than 65,536 bytes.
+	var byteSaltValue []byte
+	var saltValue string
+	const saltValueSize = 16
+	if len(givenSaltValue) > 0 {
+		saltValue = givenSaltValue[0]
+		byteSaltValue, _ = base64.StdEncoding.DecodeString(saltValue)
+	} else {
+		byteSaltValue, _ = randomBytes(saltValueSize)
+		saltValue = base64.StdEncoding.EncodeToString(byteSaltValue)
+	}
+
+	buf := bytes.NewBufferString("")
+	// init: H(salt + password)
+	buf.Write(byteSaltValue)
+	buf.Write(encodeUTF16LE(data.Password))
+	byteHash := sha512.Sum512(buf.Bytes())
+
+	for iterator := 0; iterator < data.SpinCount; iterator++ {
+		buf := bytes.NewBufferString("")
+		iterator := createUInt32LEBuffer(iterator, 4)
+
+		// H_n = H(H_n-1 + iterator)
+		buf.Write(byteHash[:])
+		buf.Write(iterator)
+		byteHash = sha512.Sum512(buf.Bytes())
+	}
+	hashValue := base64.StdEncoding.EncodeToString(byteHash[:])
+
+	return nil, &saltHashResult{
+		AlgorithmName: data.AlgorithmName,
+		SpinCount:     data.SpinCount,
+		HashValue:     hashValue,
+		SaltValue:     saltValue,
+	}
+}
+
+func encodeUTF16LE(s string) []byte {
+	var head [2]byte
+	buf := bytes.NewBufferString("")
+	runes := utf16.Encode([]rune(s))
+	for _, r := range runes {
+		head[1] = byte(r >> 8)
+		head[0] = byte(r & 255)
+		buf.Write(head[:])
+	}
+
+	return buf.Bytes()
 }
 
 // Decrypt API decrypt the CFB file format with ECMA-376 agile encryption and
