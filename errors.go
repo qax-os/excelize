@@ -109,6 +109,12 @@ var (
 	// ErrUnsupportEncryptMechanism defined the error message on unsupport
 	// encryption mechanism.
 	ErrUnsupportEncryptMechanism = errors.New("unsupport encryption mechanism")
+	// ErrUnsupportHashAlgorithm defined the error message on unsupport
+	// hash algorithm.
+	ErrUnsupportHashAlgorithm = errors.New("unsupport hash algorithm")
+	// ErrPasswordLengthInvalid defined the error message on invalid password
+	// length.
+	ErrPasswordLengthInvalid = errors.New("password length invalid")
 	// ErrParameterRequired defined the error message on receive the empty
 	// parameter.
 	ErrParameterRequired = errors.New("parameter is required")
@@ -131,6 +137,11 @@ var (
 	// ErrSheetIdx defined the error message on receive the invalid worksheet
 	// index.
 	ErrSheetIdx = errors.New("invalid worksheet index")
+	// ErrSheetNotProtected defined the error message on worksheet has set no protection.
+	ErrSheetNotProtected = errors.New("worksheet has set no protect")
+	// ErrSheetProtectPasswordNotMatch defined the error message on worksheet protect password
+	// not match when removing protect with password to verify.
+	ErrSheetProtectPasswordNotMatch = errors.New("worksheet protect password not match")
 	// ErrGroupSheets defined the error message on group sheets.
 	ErrGroupSheets = errors.New("group worksheet must contain an active worksheet")
 	// ErrDataValidationFormulaLenth defined the error message for receiving a

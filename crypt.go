@@ -24,7 +24,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/xml"
-	"errors"
 	"hash"
 	"reflect"
 	"strings"
@@ -129,50 +128,44 @@ type StandardEncryptionVerifier struct {
 	EncryptedVerifierHash []byte
 }
 
-// hashAlgorithmName
-type hashAlgorithmName = string
-
-var hashAlgorithmSHA512 hashAlgorithmName = "SHA-512"
-
 type saltHashData struct {
-	AlgorithmName hashAlgorithmName
+	AlgorithmName string // hash algorithm name, supports: "SHA-512"
 	Password      string
 	SpinCount     int // default 100000 1e5
 }
 type saltHashResult struct {
-	AlgorithmName hashAlgorithmName
+	AlgorithmName string // hash algorithm name, supports: "SHA-512"
 	HashValue     string
-	// An array of bytes that specifies the salt value used during password hash generation.
+	// SaltValue is a base64-encoded string from an array of bytes.
+	// The array of bytes that specifies the salt value used during password hash generation.
 	// When computing hashes for new passwords, this MUST be generated using an arbitrary
 	// pseudorandom function. When verifying a password, the salt value retrieved from the
 	// document MUST be used. The salt MUST NOT be larger than 65,536 bytes.
 	SaltValue string
-	// default: 100000 1e5. A 32-bit unsigned integer that specifies the number of
+	// default: 100000 (1e5). A 32-bit unsigned integer that specifies the number of
 	// times to iterate on a hash of a password. It MUST NOT be greater than 10,000,000.
 	SpinCount int
 }
 
-/*
-genISOPasswordHash implements "ISO password hashing algorithm"
-	implementation as follow:
-
-	define:
-	- H(): the hashing algorithm specified by AlgorithmName,
-	- iterator: be an unsigned 32-bit integer (from 0 to SpinCount) ,
-	- Hn: be the hash data of the nth iteration,
-	- a plus sign: (+) represent concatenation.
-
-	calculation:
-	-> H_0 = H(salt + password)
-	-> H_n = H(H_n-1 + iterator)
-	-> H_final = H_SpinCount-1
-*/
-func genISOPasswordHash(data saltHashData, givenSaltValue ...string) (error, *saltHashResult) {
-	if data.AlgorithmName != hashAlgorithmSHA512 {
-		return errors.New("genISOPasswordHash NOT yet implement hash algorithm " + data.AlgorithmName), nil
+// 	genISOPasswordHash implements "ISO password hashing algorithm"
+// 	implementation as follow:
+//
+// 		define:
+// 		- H(): the hashing algorithm specified by AlgorithmName,
+// 		- iterator: be an unsigned 32-bit integer (from 0 to SpinCount) ,
+// 		- Hn: be the hash data of the nth iteration,
+// 		- a plus sign: (+) represent concatenation.
+//
+// 	calculation:
+// 		- H_0 = H(salt + password)
+// 		- H_n = H(H_n-1 + iterator)
+// 		- H_final = H_SpinCount-1
+func genISOPasswordHash(data saltHashData, givenSaltValue ...string) (*saltHashResult, error) {
+	if data.AlgorithmName != "SHA-512" {
+		return nil, ErrUnsupportHashAlgorithm
 	}
 	if len(data.Password) < 1 || len(data.Password) > 255 {
-		return errors.New("genISOPasswordHash only accepts password with a minimum of 1 and a maximum of 255 Unicode characters."), nil
+		return nil, ErrPasswordLengthInvalid
 	}
 
 	// byteSaltValue: An array of bytes that specifies the salt value used during password hash
@@ -207,12 +200,12 @@ func genISOPasswordHash(data saltHashData, givenSaltValue ...string) (error, *sa
 	}
 	hashValue := base64.StdEncoding.EncodeToString(byteHash[:])
 
-	return nil, &saltHashResult{
+	return &saltHashResult{
 		AlgorithmName: data.AlgorithmName,
 		SpinCount:     data.SpinCount,
 		HashValue:     hashValue,
 		SaltValue:     saltValue,
-	}
+	}, nil
 }
 
 func encodeUTF16LE(s string) []byte {
