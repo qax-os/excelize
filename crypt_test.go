@@ -103,7 +103,7 @@ func TestGenISOPasswordHash(t *testing.T) {
 		SpinCount:     1e5,
 	}, "")
 	assert.NoError(t, err)
-	assert.NotEqual(t, "", resultRandomSaltMatch.SaltValue)
+	assert.Equal(t, "", resultRandomSaltMatch.SaltValue)
 
 	// password length invalid, should raise ErrPasswordLengthInvalid
 	_, err = genISOPasswordHash(saltHashData{
