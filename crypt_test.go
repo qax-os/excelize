@@ -93,4 +93,35 @@ func TestGenISOPasswordHash(t *testing.T) {
 		SpinCount:     1e5,
 	}, resultRandomSalt.SaltValue)
 	assert.Equal(t, resultRandomSalt.HashValue, resultRandomSaltMatch.HashValue, "no given salt value")
+
+	var err error
+
+	// given salt value: "", should pass
+	resultRandomSaltMatch, err = genISOPasswordHash(saltHashData{
+		Password:      "password",
+		AlgorithmName: "SHA-512",
+		SpinCount:     1e5,
+	}, "")
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", resultRandomSaltMatch.SaltValue)
+
+	// password length invalid, should raise ErrPasswordLengthInvalid
+	_, err = genISOPasswordHash(saltHashData{
+		Password:      "",
+		AlgorithmName: "SHA-512",
+		SpinCount:     1e5,
+	})
+	assert.EqualError(t, err, ErrPasswordLengthInvalid.Error())
+
+	// password length invalid - over length, should raise ErrPasswordLengthInvalid
+	overLengthPassword := "password"
+	for len(overLengthPassword) <= 255 {
+		overLengthPassword = overLengthPassword + "d"
+	}
+	_, err = genISOPasswordHash(saltHashData{
+		Password:      overLengthPassword,
+		AlgorithmName: "SHA-512",
+		SpinCount:     1e5,
+	})
+	assert.EqualError(t, err, ErrPasswordLengthInvalid.Error())
 }

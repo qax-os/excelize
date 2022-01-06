@@ -1180,8 +1180,51 @@ func TestUnprotectSheet(t *testing.T) {
 	assert.EqualError(t, f.UnprotectSheet("SheetN"), "sheet SheetN is not exist")
 
 	assert.NoError(t, f.UnprotectSheet("Sheet1"))
+	assert.EqualError(t, f.UnprotectSheet("Sheet1", "password"), ErrSheetNotProtected.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnprotectSheet.xlsx")))
 	assert.NoError(t, f.Close())
+}
+
+func ExampleFile_ProtectSheetWithPassword(filename string, protectConfig *FormatSheetProtection) {
+	f := NewFile()
+	f.ProtectSheet("Sheet1", protectConfig)
+	f.SaveAs(filename)
+	f.Close()
+}
+
+func TestUnprotectSheet_VerifyPassword(t *testing.T) {
+	// run process for different password method
+	runVerifyProcess := func(filename string, algorithm string) {
+		f, err := OpenFile(filename)
+		if !assert.NoError(t, err) {
+			t.FailNow()
+		}
+		defer f.Close()
+
+		// fail with wrong password
+		assert.EqualError(t, f.UnprotectSheet("Sheet1", "wrongPassword"), ErrSheetProtectPasswordNotMatch.Error())
+		// protect config stay
+		ws, _ := f.workSheetReader("Sheet1")
+		assert.NotNil(t, ws.SheetProtection)
+
+		if algorithm != "" {
+			assert.EqualError(t, f.UnprotectSheet("Sheet1", ""), ErrPasswordLengthInvalid.Error())
+		}
+
+		// pass with password
+		assert.NoError(t, f.UnprotectSheet("Sheet1", "password"))
+		assert.Nil(t, ws.SheetProtection)
+	}
+
+	// XOR password sheet protect
+	xorProtectFile := filepath.Join("test", "TestUnprotectSheet_XORPassword.xlsx")
+	ExampleFile_ProtectSheetWithPassword(xorProtectFile, &FormatSheetProtection{Password: "password"})
+	runVerifyProcess(xorProtectFile, "")
+
+	// SHA-512 hash value sheet protect
+	sha512ProtectFile := filepath.Join("test", "TestUnprotectSheet_SHA512Password.xlsx")
+	ExampleFile_ProtectSheetWithPassword(sha512ProtectFile, &FormatSheetProtection{Password: "password", AlgorithmName: "SHA-512"})
+	runVerifyProcess(sha512ProtectFile, "SHA-512")
 }
 
 func TestSetDefaultTimeStyle(t *testing.T) {
