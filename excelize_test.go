@@ -1185,13 +1185,6 @@ func TestUnprotectSheet(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
-func ExampleFile_ProtectSheetWithPassword(filename string, protectConfig *FormatSheetProtection) {
-	f := NewFile()
-	f.ProtectSheet("Sheet1", protectConfig)
-	f.SaveAs(filename)
-	f.Close()
-}
-
 func TestUnprotectSheet_VerifyPassword(t *testing.T) {
 	// run process for different password method
 	runVerifyProcess := func(filename string, algorithm string) {
@@ -1216,14 +1209,22 @@ func TestUnprotectSheet_VerifyPassword(t *testing.T) {
 		assert.Nil(t, ws.SheetProtection)
 	}
 
+	// prepare example file
+	exampleFileProtectSheetWithPassword := func(filename string, protectConfig *FormatSheetProtection) {
+		f := NewFile()
+		f.ProtectSheet("Sheet1", protectConfig)
+		f.SaveAs(filename)
+		f.Close()
+	}
+
 	// XOR password sheet protect
 	xorProtectFile := filepath.Join("test", "TestUnprotectSheet_XORPassword.xlsx")
-	ExampleFile_ProtectSheetWithPassword(xorProtectFile, &FormatSheetProtection{Password: "password"})
+	exampleFileProtectSheetWithPassword(xorProtectFile, &FormatSheetProtection{Password: "password"})
 	runVerifyProcess(xorProtectFile, "")
 
 	// SHA-512 hash value sheet protect
 	sha512ProtectFile := filepath.Join("test", "TestUnprotectSheet_SHA512Password.xlsx")
-	ExampleFile_ProtectSheetWithPassword(sha512ProtectFile, &FormatSheetProtection{Password: "password", AlgorithmName: "SHA-512"})
+	exampleFileProtectSheetWithPassword(sha512ProtectFile, &FormatSheetProtection{Password: "password", AlgorithmName: "SHA-512"})
 	runVerifyProcess(sha512ProtectFile, "SHA-512")
 }
 
