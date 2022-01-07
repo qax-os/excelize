@@ -29,7 +29,7 @@ const (
 	DataValidationTypeDate
 	DataValidationTypeDecimal
 	typeList // inline use
-	DataValidationTypeTextLeng
+	DataValidationTypeTextLength
 	DataValidationTypeTime
 	// DataValidationTypeWhole Integer
 	DataValidationTypeWhole
@@ -116,7 +116,7 @@ func (dd *DataValidation) SetInput(title, msg string) {
 func (dd *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
 	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
-		return ErrDataValidationFormulaLenth
+		return ErrDataValidationFormulaLength
 	}
 	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
 	dd.Type = convDataValidationType(typeList)
@@ -155,7 +155,7 @@ func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 	}
 	dd.Formula1, dd.Formula2 = formula1, formula2
 	dd.Type = convDataValidationType(t)
-	dd.Operator = convDataValidationOperatior(o)
+	dd.Operator = convDataValidationOperator(o)
 	return nil
 }
 
@@ -192,22 +192,22 @@ func (dd *DataValidation) SetSqref(sqref string) {
 // convDataValidationType get excel data validation type.
 func convDataValidationType(t DataValidationType) string {
 	typeMap := map[DataValidationType]string{
-		typeNone:                   "none",
-		DataValidationTypeCustom:   "custom",
-		DataValidationTypeDate:     "date",
-		DataValidationTypeDecimal:  "decimal",
-		typeList:                   "list",
-		DataValidationTypeTextLeng: "textLength",
-		DataValidationTypeTime:     "time",
-		DataValidationTypeWhole:    "whole",
+		typeNone:                     "none",
+		DataValidationTypeCustom:     "custom",
+		DataValidationTypeDate:       "date",
+		DataValidationTypeDecimal:    "decimal",
+		typeList:                     "list",
+		DataValidationTypeTextLength: "textLength",
+		DataValidationTypeTime:       "time",
+		DataValidationTypeWhole:      "whole",
 	}
 
 	return typeMap[t]
 
 }
 
-// convDataValidationOperatior get excel data validation operator.
-func convDataValidationOperatior(o DataValidationOperator) string {
+// convDataValidationOperator get excel data validation operator.
+func convDataValidationOperator(o DataValidationOperator) string {
 	typeMap := map[DataValidationOperator]string{
 		DataValidationOperatorBetween:            "between",
 		DataValidationOperatorEqual:              "equal",

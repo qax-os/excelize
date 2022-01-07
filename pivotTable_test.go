@@ -222,7 +222,7 @@ func TestAddPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!$G$2:$M$34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "-", Name: strings.Repeat("s", 256)}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "-", Name: strings.Repeat("s", MaxFieldLength+1)}},
 	}))
 
 	// Test adjust range with invalid range

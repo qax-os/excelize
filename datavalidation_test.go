@@ -94,7 +94,7 @@ func TestDataValidationError(t *testing.T) {
 		t.Errorf("data validation error. Formula1 must be empty!")
 		return
 	}
-	assert.EqualError(t, err, ErrDataValidationFormulaLenth.Error())
+	assert.EqualError(t, err, ErrDataValidationFormulaLength.Error())
 	assert.EqualError(t, dvRange.SetRange(nil, 20, DataValidationTypeWhole, DataValidationOperatorBetween), ErrParameterInvalid.Error())
 	assert.EqualError(t, dvRange.SetRange(10, nil, DataValidationTypeWhole, DataValidationOperatorBetween), ErrParameterInvalid.Error())
 	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
@@ -114,7 +114,7 @@ func TestDataValidationError(t *testing.T) {
 		err = dvRange.SetDropList(keys)
 		assert.Equal(t, prevFormula1, dvRange.Formula1,
 			"Formula1 should be unchanged for invalid input %v", keys)
-		assert.EqualError(t, err, ErrDataValidationFormulaLenth.Error())
+		assert.EqualError(t, err, ErrDataValidationFormulaLength.Error())
 	}
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 	assert.NoError(t, dvRange.SetRange(

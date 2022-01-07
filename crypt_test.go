@@ -28,100 +28,27 @@ func TestEncrypt(t *testing.T) {
 func TestEncryptionMechanism(t *testing.T) {
 	mechanism, err := encryptionMechanism([]byte{3, 0, 3, 0})
 	assert.Equal(t, mechanism, "extensible")
-	assert.EqualError(t, err, ErrUnsupportEncryptMechanism.Error())
+	assert.EqualError(t, err, ErrUnsupportedEncryptMechanism.Error())
 	_, err = encryptionMechanism([]byte{})
 	assert.EqualError(t, err, ErrUnknownEncryptMechanism.Error())
 }
 
 func TestHashing(t *testing.T) {
-	assert.Equal(t, hashing("unsupportHashAlgorithm", []byte{}), []uint8([]byte(nil)))
+	assert.Equal(t, hashing("unsupportedHashAlgorithm", []byte{}), []uint8([]byte(nil)))
 }
 
-func TestGenISOPasswordHash(t *testing.T) {
-	/*
-		WorkbookProtection:
-			<workbookProtection
-				workbookAlgorithmName="SHA-512"
-				workbookHashValue="7JIH3q8xjBAG1xGKnS8Y1wUQnrmPXkov7DVCTMa5HKhG413knffE5aWIXF7RFiP31+SXm0qTn/xcTDVfkk3V7g=="
-				workbookSaltValue="1oQNxuoY2xYR2Gu5UM8Xlw=="
-				workbookSpinCount="100000"
-				lockStructure="1"
-			/>
-		WorksheetProtection:
-			<sheetProtection
-				algorithmName="SHA-512"
-				hashValue="R2/6Z96R9jO6DiptdOXU2+tZdm8/iRKkWr61+4Bz6BsDccvJ7y8R5BJsTjRDog7BXcMKsvrBIm+B4VGkAgZ2DA=="
-				saltValue="CDWF0uq3twTX0pCE0eI9Pg=="
-				spinCount="100000"
-				sheet="1"
-				...
-			/>
-	*/
-
-	// test1
-	// given salt value: WorkbookProtection
-	workbookProtectionSaltValue := "1oQNxuoY2xYR2Gu5UM8Xlw=="
-	workbookProtectionHashValue := "7JIH3q8xjBAG1xGKnS8Y1wUQnrmPXkov7DVCTMa5HKhG413knffE5aWIXF7RFiP31+SXm0qTn/xcTDVfkk3V7g=="
-	resultWb, _ := genISOPasswordHash(saltHashData{
-		Password:      "excelizeAwesome",
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	}, workbookProtectionSaltValue)
-	assert.Equal(t, resultWb.HashValue, workbookProtectionHashValue, "given salt value: WorkbookProtection")
-
-	// test2
-	// given salt value: WorksheetProtection
-	worksheetProtectionSaltValue := "CDWF0uq3twTX0pCE0eI9Pg=="
-	worksheetProtectionHashValue := "R2/6Z96R9jO6DiptdOXU2+tZdm8/iRKkWr61+4Bz6BsDccvJ7y8R5BJsTjRDog7BXcMKsvrBIm+B4VGkAgZ2DA=="
-	resultWsht, _ := genISOPasswordHash(saltHashData{
-		Password:      "excelizeAwesome",
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	}, worksheetProtectionSaltValue)
-	assert.Equal(t, resultWsht.HashValue, worksheetProtectionHashValue, "given salt value: WorksheetProtection")
-
-	// test3
-	// no given salt value
-	resultRandomSalt, _ := genISOPasswordHash(saltHashData{
-		Password:      "excelizeAwesome",
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	})
-	resultRandomSaltMatch, _ := genISOPasswordHash(saltHashData{
-		Password:      "excelizeAwesome",
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	}, resultRandomSalt.SaltValue)
-	assert.Equal(t, resultRandomSalt.HashValue, resultRandomSaltMatch.HashValue, "no given salt value")
-
-	var err error
-
-	// given salt value: "", should pass
-	resultRandomSaltMatch, err = genISOPasswordHash(saltHashData{
-		Password:      "password",
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	}, "")
-	assert.NoError(t, err)
-	assert.Equal(t, "", resultRandomSaltMatch.SaltValue)
-
-	// password length invalid, should raise ErrPasswordLengthInvalid
-	_, err = genISOPasswordHash(saltHashData{
-		Password:      "",
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	})
-	assert.EqualError(t, err, ErrPasswordLengthInvalid.Error())
-
-	// password length invalid - over length, should raise ErrPasswordLengthInvalid
-	overLengthPassword := "password"
-	for len(overLengthPassword) <= 255 {
-		overLengthPassword = overLengthPassword + "d"
+func TestGenISOPasswdHash(t *testing.T) {
+	for hashAlgorithm, expected := range map[string][]string{
+		"MD4":     {"2lZQZUubVHLm/t6KsuHX4w==", "TTHjJdU70B/6Zq83XGhHVA=="},
+		"MD5":     {"HWbqyd4dKKCjk1fEhk2kuQ==", "8ADyorkumWCayIukRhlVKQ=="},
+		"SHA-1":   {"XErQIV3Ol+nhXkyCxrLTEQm+mSc=", "I3nDtyf59ASaNX1l6KpFnA=="},
+		"SHA-256": {"7oqMFyfED+mPrzRIBQ+KpKT4SClMHEPOZldliP15xAA=", "ru1R/w3P3Jna2Qo+EE8QiA=="},
+		"SHA-384": {"nMODLlxsC8vr0btcq0kp/jksg5FaI3az5Sjo1yZk+/x4bFzsuIvpDKUhJGAk/fzo", "Zjq9/jHlgOY6MzFDSlVNZg=="},
+		"SHA-512": {"YZ6jrGOFQgVKK3rDK/0SHGGgxEmFJglQIIRamZc2PkxVtUBp54fQn96+jVXEOqo6dtCSanqksXGcm/h3KaiR4Q==", "p5s/bybHBPtusI7EydTIrg=="},
+	} {
+		hashValue, saltValue, err := genISOPasswdHash("password", hashAlgorithm, expected[1], int(sheetProtectionSpinCount))
+		assert.NoError(t, err)
+		assert.Equal(t, expected[0], hashValue)
+		assert.Equal(t, expected[1], saltValue)
 	}
-	_, err = genISOPasswordHash(saltHashData{
-		Password:      overLengthPassword,
-		AlgorithmName: "SHA-512",
-		SpinCount:     1e5,
-	})
-	assert.EqualError(t, err, ErrPasswordLengthInvalid.Error())
 }
