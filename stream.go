@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -140,13 +140,13 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // called after the rows are written but before Flush.
 //
 // See File.AddTable for details on the table format.
-func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
+func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 	formatSet, err := parseFormatTableSet(format)
 	if err != nil {
 		return err
 	}
 
-	coordinates, err := areaRangeToCoordinates(hcell, vcell)
+	coordinates, err := areaRangeToCoordinates(hCell, vCell)
 	if err != nil {
 		return err
 	}
@@ -223,8 +223,8 @@ func (sw *StreamWriter) AddTable(hcell, vcell, format string) error {
 }
 
 // Extract values from a row in the StreamWriter.
-func (sw *StreamWriter) getRowValues(hrow, hcol, vcol int) (res []string, err error) {
-	res = make([]string, vcol-hcol+1)
+func (sw *StreamWriter) getRowValues(hRow, hCol, vCol int) (res []string, err error) {
+	res = make([]string, vCol-hCol+1)
 
 	r, err := sw.rawData.Reader()
 	if err != nil {
@@ -240,7 +240,7 @@ func (sw *StreamWriter) getRowValues(hrow, hcol, vcol int) (res []string, err er
 		if err != nil {
 			return nil, err
 		}
-		startElement, ok := getRowElement(token, hrow)
+		startElement, ok := getRowElement(token, hRow)
 		if !ok {
 			continue
 		}
@@ -254,17 +254,17 @@ func (sw *StreamWriter) getRowValues(hrow, hcol, vcol int) (res []string, err er
 			if err != nil {
 				return nil, err
 			}
-			if col < hcol || col > vcol {
+			if col < hCol || col > vCol {
 				continue
 			}
-			res[col-hcol] = c.V
+			res[col-hCol] = c.V
 		}
 		return res, nil
 	}
 }
 
 // Check if the token is an XLSX row with the matching row number.
-func getRowElement(token xml.Token, hrow int) (startElement xml.StartElement, ok bool) {
+func getRowElement(token xml.Token, hRow int) (startElement xml.StartElement, ok bool) {
 	startElement, ok = token.(xml.StartElement)
 	if !ok {
 		return
@@ -279,7 +279,7 @@ func getRowElement(token xml.Token, hrow int) (startElement xml.StartElement, ok
 			continue
 		}
 		row, _ := strconv.Atoi(attr.Value)
-		if row == hrow {
+		if row == hRow {
 			ok = true
 			return
 		}
@@ -406,13 +406,13 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 // MergeCell provides a function to merge cells by a given coordinate area for
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
-func (sw *StreamWriter) MergeCell(hcell, vcell string) error {
-	_, err := areaRangeToCoordinates(hcell, vcell)
+func (sw *StreamWriter) MergeCell(hCell, vCell string) error {
+	_, err := areaRangeToCoordinates(hCell, vCell)
 	if err != nil {
 		return err
 	}
 	sw.mergeCellsCount++
-	sw.mergeCells += fmt.Sprintf(`<mergeCell ref="%s:%s"/>`, hcell, vcell)
+	sw.mergeCells += fmt.Sprintf(`<mergeCell ref="%s:%s"/>`, hCell, vCell)
 	return nil
 }
 
@@ -563,7 +563,7 @@ func (bw *bufferedWriter) Write(p []byte) (n int, err error) {
 	return bw.buf.Write(p)
 }
 
-// WriteString wites to the in-memory buffer. The err is always nil.
+// WriteString wite to the in-memory buffer. The err is always nil.
 func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
 	return bw.buf.WriteString(p)
 }

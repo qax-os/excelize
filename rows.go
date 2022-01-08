@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -290,7 +290,7 @@ func (f *File) getFromStringItemMap(index int) string {
 		return strconv.Itoa(index)
 	}
 	f.sharedStringItemMap = &sync.Map{}
-	needClose, decoder, tempFile, err := f.xmlDecoder(dafaultXMLPathSharedStrings)
+	needClose, decoder, tempFile, err := f.xmlDecoder(defaultXMLPathSharedStrings)
 	if needClose && err == nil {
 		defer tempFile.Close()
 	}
@@ -369,7 +369,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 			return int(convertRowHeightToPixels(v.Ht))
 		}
 	}
-	// Optimisation for when the row heights haven't changed.
+	// Optimization for when the row heights haven't changed.
 	return int(defaultRowHeightPixels)
 }
 
@@ -398,7 +398,7 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 			return v.Ht, nil
 		}
 	}
-	// Optimisation for when the row heights haven't changed.
+	// Optimization for when the row heights haven't changed.
 	return ht, nil
 }
 
@@ -411,7 +411,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	relPath := f.getWorkbookRelsPath()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
-		ss := f.readXML(dafaultXMLPathSharedStrings)
+		ss := f.readXML(defaultXMLPathSharedStrings)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
@@ -443,7 +443,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 }
 
 // getValueFrom return a value from a column/row cell, this function is
-// inteded to be used with for range on rows an argument with the spreadsheet
+// intended to be used with for range on rows an argument with the spreadsheet
 // opened file.
 func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	f.Lock()
@@ -453,7 +453,7 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		if c.V != "" {
 			xlsxSI := 0
 			xlsxSI, _ = strconv.Atoi(c.V)
-			if _, ok := f.tempFiles.Load(dafaultXMLPathSharedStrings); ok {
+			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
 				return f.formattedValue(c.S, f.getFromStringItemMap(xlsxSI), raw), nil
 			}
 			if len(d.SI) > xlsxSI {
@@ -684,7 +684,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	}
 
 	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
-	f.ajustSingleRowDimensions(&rowCopy, row2)
+	f.adjustSingleRowDimensions(&rowCopy, row2)
 
 	if idx2 != -1 {
 		ws.SheetData.Row[idx2] = rowCopy

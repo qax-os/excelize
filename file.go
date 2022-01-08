@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -29,8 +29,8 @@ import (
 func NewFile() *File {
 	f := newFile()
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
-	f.Pkg.Store(dafaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
-	f.Pkg.Store(dafaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
+	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
+	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
 	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(xml.Header+templateWorkbookRels))
 	f.Pkg.Store("xl/theme/theme1.xml", []byte(xml.Header+templateTheme))
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+templateSheet))

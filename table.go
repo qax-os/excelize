@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -61,27 +61,27 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 //    TableStyleMedium1 - TableStyleMedium28
 //    TableStyleDark1 - TableStyleDark11
 //
-func (f *File) AddTable(sheet, hcell, vcell, format string) error {
+func (f *File) AddTable(sheet, hCell, vCell, format string) error {
 	formatSet, err := parseFormatTableSet(format)
 	if err != nil {
 		return err
 	}
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hcol, hrow, err := CellNameToCoordinates(hcell)
+	hCol, hRow, err := CellNameToCoordinates(hCell)
 	if err != nil {
 		return err
 	}
-	vcol, vrow, err := CellNameToCoordinates(vcell)
+	vCol, vRow, err := CellNameToCoordinates(vCell)
 	if err != nil {
 		return err
 	}
 
-	if vcol < hcol {
-		vcol, hcol = hcol, vcol
+	if vCol < hCol {
+		vCol, hCol = hCol, vCol
 	}
 
-	if vrow < hrow {
-		vrow, hrow = hrow, vrow
+	if vRow < hRow {
+		vRow, hRow = hRow, vRow
 	}
 
 	tableID := f.countTables() + 1
@@ -94,7 +94,7 @@ func (f *File) AddTable(sheet, hcell, vcell, format string) error {
 		return err
 	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
-	if err = f.addTable(sheet, tableXML, hcol, hrow, vcol, vrow, tableID, formatSet); err != nil {
+	if err = f.addTable(sheet, tableXML, hCol, hRow, vCol, vRow, tableID, formatSet); err != nil {
 		return err
 	}
 	f.addContentTypePart(tableID, "table")
@@ -257,9 +257,9 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 // Excel also allows some simple string matching operations:
 //
 //    x == b*      // begins with b
-//    x != b*      // doesnt begin with b
+//    x != b*      // doesn't begin with b
 //    x == *b      // ends with b
-//    x != *b      // doesnt end with b
+//    x != *b      // doesn't end with b
 //    x == *b*     // contains b
 //    x != *b*     // doesn't contains b
 //
@@ -276,27 +276,27 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 //    col   < 2000
 //    Price < 2000
 //
-func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
-	hcol, hrow, err := CellNameToCoordinates(hcell)
+func (f *File) AutoFilter(sheet, hCell, vCell, format string) error {
+	hCol, hRow, err := CellNameToCoordinates(hCell)
 	if err != nil {
 		return err
 	}
-	vcol, vrow, err := CellNameToCoordinates(vcell)
+	vCol, vRow, err := CellNameToCoordinates(vCell)
 	if err != nil {
 		return err
 	}
 
-	if vcol < hcol {
-		vcol, hcol = hcol, vcol
+	if vCol < hCol {
+		vCol, hCol = hCol, vCol
 	}
 
-	if vrow < hrow {
-		vrow, hrow = hrow, vrow
+	if vRow < hRow {
+		vRow, hRow = hRow, vRow
 	}
 
 	formatSet, _ := parseAutoFilterSet(format)
-	cellStart, _ := CoordinatesToCellName(hcol, hrow, true)
-	cellEnd, _ := CoordinatesToCellName(vcol, vrow, true)
+	cellStart, _ := CoordinatesToCellName(hCol, hRow, true)
+	cellEnd, _ := CoordinatesToCellName(vCol, vRow, true)
 	ref, filterDB := cellStart+":"+cellEnd, "_xlnm._FilterDatabase"
 	wb := f.workbookReader()
 	sheetID := f.GetSheetIndex(sheet)
@@ -324,8 +324,8 @@ func (f *File) AutoFilter(sheet, hcell, vcell, format string) error {
 			wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
 		}
 	}
-	refRange := vcol - hcol
-	return f.autoFilter(sheet, ref, refRange, hcol, formatSet)
+	refRange := vCol - hCol
+	return f.autoFilter(sheet, ref, refRange, hCol, formatSet)
 }
 
 // autoFilter provides a function to extract the tokens from the filter

@@ -153,10 +153,10 @@ func TestSheetPrOptions(t *testing.T) {
 	}
 }
 
-func TestSetSheetrOptions(t *testing.T) {
+func TestSetSheetPrOptions(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColor("")))
-	// Test SetSheetrOptions on not exists worksheet.
+	// Test SetSheetPrOptions on not exists worksheet.
 	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -25,7 +25,7 @@ func (f *File) calcChainReader() *xlsxCalcChain {
 
 	if f.CalcChain == nil {
 		f.CalcChain = new(xlsxCalcChain)
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathCalcChain)))).
+		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathCalcChain)))).
 			Decode(f.CalcChain); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
@@ -39,7 +39,7 @@ func (f *File) calcChainReader() *xlsxCalcChain {
 func (f *File) calcChainWriter() {
 	if f.CalcChain != nil && f.CalcChain.C != nil {
 		output, _ := xml.Marshal(f.CalcChain)
-		f.saveFileList(dafaultXMLPathCalcChain, output)
+		f.saveFileList(defaultXMLPathCalcChain, output)
 	}
 }
 
@@ -54,7 +54,7 @@ func (f *File) deleteCalcChain(index int, axis string) {
 	}
 	if len(calc.C) == 0 {
 		f.CalcChain = nil
-		f.Pkg.Delete(dafaultXMLPathCalcChain)
+		f.Pkg.Delete(defaultXMLPathCalcChain)
 		content := f.contentTypesReader()
 		content.Lock()
 		defer content.Unlock()

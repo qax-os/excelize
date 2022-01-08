@@ -207,7 +207,7 @@ func TestColumns(t *testing.T) {
 
 func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store(dafaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	f.sharedStringsReader()
 	si := xlsxSI{}
 	assert.EqualValues(t, "", si.String())
@@ -221,16 +221,16 @@ func TestRowVisibility(t *testing.T) {
 	f.NewSheet("Sheet3")
 	assert.NoError(t, f.SetRowVisible("Sheet3", 2, false))
 	assert.NoError(t, f.SetRowVisible("Sheet3", 2, true))
-	visiable, err := f.GetRowVisible("Sheet3", 2)
-	assert.Equal(t, true, visiable)
+	visible, err := f.GetRowVisible("Sheet3", 2)
+	assert.Equal(t, true, visible)
 	assert.NoError(t, err)
-	visiable, err = f.GetRowVisible("Sheet3", 25)
-	assert.Equal(t, false, visiable)
+	visible, err = f.GetRowVisible("Sheet3", 25)
+	assert.Equal(t, false, visible)
 	assert.NoError(t, err)
 	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), newInvalidRowNumberError(0).Error())
 	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN is not exist")
 
-	visible, err := f.GetRowVisible("Sheet3", 0)
+	visible, err = f.GetRowVisible("Sheet3", 0)
 	assert.Equal(t, false, visible)
 	assert.EqualError(t, err, newInvalidRowNumberError(0).Error())
 	_, err = f.GetRowVisible("SheetN", 1)
@@ -330,8 +330,9 @@ func TestInsertRow(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRow.xlsx")))
 }
 
-// Testing internal sructure state after insert operations.
-// It is important for insert workflow to be constant to avoid side effect with functions related to internal structure.
+// Testing internal structure state after insert operations. It is important
+// for insert workflow to be constant to avoid side effect with functions
+// related to internal structure.
 func TestInsertRowInEmptyFile(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)

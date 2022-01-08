@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -111,10 +111,8 @@ type decodePicLocks struct {
 	NoSelect           bool `xml:"noSelect,attr,omitempty"`
 }
 
-// decodeBlip directly maps the blip element in the namespace
-// http://purl.oclc.org/ooxml/officeDoc ument/relationships - This element
-// specifies the existence of an image (binary large image or picture) and
-// contains a reference to the image data.
+// decodeBlip element specifies the existence of an image (binary large image
+// or picture) and contains a reference to the image data.
 type decodeBlip struct {
 	Embed  string `xml:"embed,attr"`
 	Cstate string `xml:"cstate,attr,omitempty"`

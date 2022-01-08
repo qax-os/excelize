@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -62,7 +62,7 @@ const (
 	StrictNameSpaceSpreadSheet                   = "http://purl.oclc.org/ooxml/spreadsheetml/main"
 	NameSpaceDublinCore                          = "http://purl.org/dc/elements/1.1/"
 	NameSpaceDublinCoreTerms                     = "http://purl.org/dc/terms/"
-	NameSpaceDublinCoreMetadataIntiative         = "http://purl.org/dc/dcmitype/"
+	NameSpaceDublinCoreMetadataInitiative        = "http://purl.org/dc/dcmitype/"
 	ContentTypeDrawing                           = "application/vnd.openxmlformats-officedocument.drawing+xml"
 	ContentTypeDrawingML                         = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
 	ContentTypeMacro                             = "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
@@ -160,10 +160,8 @@ type xlsxPicLocks struct {
 	NoSelect           bool `xml:"noSelect,attr,omitempty"`
 }
 
-// xlsxBlip directly maps the blip element in the namespace
-// http://purl.oclc.org/ooxml/officeDoc ument/relationships - This element
-// specifies the existence of an image (binary large image or picture) and
-// contains a reference to the image data.
+// xlsxBlip element specifies the existence of an image (binary large image or
+// picture) and contains a reference to the image data.
 type xlsxBlip struct {
 	Embed  string `xml:"r:embed,attr"`
 	Cstate string `xml:"cstate,attr,omitempty"`

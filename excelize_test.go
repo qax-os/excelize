@@ -83,7 +83,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.GetCellFormula("Sheet2", "I11")
 	assert.NoError(t, err)
-	getSharedForumula(&xlsxWorksheet{}, 0, "")
+	getSharedFormula(&xlsxWorksheet{}, 0, "")
 
 	// Test read cell value with given illegal rows number.
 	_, err = f.GetCellValue("Sheet2", "a-1")
@@ -224,7 +224,7 @@ func TestOpenReader(t *testing.T) {
 	assert.Equal(t, "SECRET", val)
 	assert.NoError(t, f.Close())
 
-	// Test open spreadsheet with invalid optioins.
+	// Test open spreadsheet with invalid options.
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{UnzipSizeLimit: 1, UnzipXMLSizeLimit: 2})
 	assert.EqualError(t, err, ErrOptionsUnzipSizeLimit.Error())
 
@@ -1065,7 +1065,7 @@ func TestConditionalFormat(t *testing.T) {
 	// Set conditional format with illegal criteria type.
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10", `[{"type":"data_bar", "criteria":"", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`))
 
-	// Set conditional format with file without dxfs element shold not return error.
+	// Set conditional format with file without dxfs element should not return error.
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()

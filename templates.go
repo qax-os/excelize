@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -24,10 +24,10 @@ var (
 
 const (
 	defaultXMLPathContentTypes  = "[Content_Types].xml"
-	dafaultXMLPathDocPropsApp   = "docProps/app.xml"
-	dafaultXMLPathDocPropsCore  = "docProps/core.xml"
-	dafaultXMLPathCalcChain     = "xl/calcChain.xml"
-	dafaultXMLPathSharedStrings = "xl/sharedStrings.xml"
+	defaultXMLPathDocPropsApp   = "docProps/app.xml"
+	defaultXMLPathDocPropsCore  = "docProps/core.xml"
+	defaultXMLPathCalcChain     = "xl/calcChain.xml"
+	defaultXMLPathSharedStrings = "xl/sharedStrings.xml"
 	defaultXMLPathStyles        = "xl/styles.xml"
 	defaultXMLPathWorkbook      = "xl/workbook.xml"
 )

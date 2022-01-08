@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -46,22 +46,22 @@ func (mc *xlsxMergeCell) Rect() ([]int, error) {
 //    |A8(x3,y4)      C8(x4,y4)|
 //    +------------------------+
 //
-func (f *File) MergeCell(sheet, hcell, vcell string) error {
-	rect, err := areaRefToCoordinates(hcell + ":" + vcell)
+func (f *File) MergeCell(sheet, hCell, vCell string) error {
+	rect, err := areaRefToCoordinates(hCell + ":" + vCell)
 	if err != nil {
 		return err
 	}
 	// Correct the coordinate area, such correct C1:B3 to B1:C3.
 	_ = sortCoordinates(rect)
 
-	hcell, _ = CoordinatesToCellName(rect[0], rect[1])
-	vcell, _ = CoordinatesToCellName(rect[2], rect[3])
+	hCell, _ = CoordinatesToCellName(rect[0], rect[1])
+	vCell, _ = CoordinatesToCellName(rect[2], rect[3])
 
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	ref := hcell + ":" + vcell
+	ref := hCell + ":" + vCell
 	if ws.MergeCells != nil {
 		ws.MergeCells.Cells = append(ws.MergeCells.Cells, &xlsxMergeCell{Ref: ref, rect: rect})
 	} else {
@@ -77,12 +77,12 @@ func (f *File) MergeCell(sheet, hcell, vcell string) error {
 //    err := f.UnmergeCell("Sheet1", "D3", "E9")
 //
 // Attention: overlapped areas will also be unmerged.
-func (f *File) UnmergeCell(sheet string, hcell, vcell string) error {
+func (f *File) UnmergeCell(sheet string, hCell, vCell string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	rect1, err := areaRefToCoordinates(hcell + ":" + vcell)
+	rect1, err := areaRefToCoordinates(hCell + ":" + vCell)
 	if err != nil {
 		return err
 	}
@@ -254,9 +254,9 @@ func mergeCell(cell1, cell2 *xlsxMergeCell) *xlsxMergeCell {
 	if rect1[3] < rect2[3] {
 		rect1[3], rect2[3] = rect2[3], rect1[3]
 	}
-	hcell, _ := CoordinatesToCellName(rect1[0], rect1[1])
-	vcell, _ := CoordinatesToCellName(rect1[2], rect1[3])
-	return &xlsxMergeCell{rect: rect1, Ref: hcell + ":" + vcell}
+	hCell, _ := CoordinatesToCellName(rect1[0], rect1[1])
+	vCell, _ := CoordinatesToCellName(rect1[2], rect1[3])
+	return &xlsxMergeCell{rect: rect1, Ref: hCell + ":" + vCell}
 }
 
 // MergeCell define a merged cell data.

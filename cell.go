@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -372,9 +372,9 @@ func (f *File) setCellString(value string) (t, v string, err error) {
 func (f *File) sharedStringsLoader() (err error) {
 	f.Lock()
 	defer f.Unlock()
-	if path, ok := f.tempFiles.Load(dafaultXMLPathSharedStrings); ok {
-		f.Pkg.Store(dafaultXMLPathSharedStrings, f.readBytes(dafaultXMLPathSharedStrings))
-		f.tempFiles.Delete(dafaultXMLPathSharedStrings)
+	if path, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
+		f.Pkg.Store(defaultXMLPathSharedStrings, f.readBytes(defaultXMLPathSharedStrings))
+		f.tempFiles.Delete(defaultXMLPathSharedStrings)
 		err = os.Remove(path.(string))
 		f.SharedStrings, f.sharedStringItemMap = nil, nil
 	}
@@ -455,7 +455,7 @@ func (f *File) GetCellFormula(sheet, axis string) (string, error) {
 			return "", false, nil
 		}
 		if c.F.T == STCellFormulaTypeShared && c.F.Si != nil {
-			return getSharedForumula(x, *c.F.Si, c.R), true, nil
+			return getSharedFormula(x, *c.F.Si, c.R), true, nil
 		}
 		return c.F.Content, true, nil
 	})
@@ -621,7 +621,7 @@ func (ws *xlsxWorksheet) countSharedFormula() (count int) {
 }
 
 // GetCellHyperLink provides a function to get cell hyperlink by given
-// worksheet name and axis. Boolean type value link will be ture if the cell
+// worksheet name and axis. Boolean type value link will be true if the cell
 // has a hyperlink and the target is the address of the hyperlink. Otherwise,
 // the value of link will be false and the value of the target will be a blank
 // string. For example get hyperlink of Sheet1!H6:
@@ -1232,7 +1232,7 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 	return
 }
 
-// getSharedForumula find a cell contains the same formula as another cell,
+// getSharedFormula find a cell contains the same formula as another cell,
 // the "shared" value can be used for the t attribute and the si attribute can
 // be used to refer to the cell containing the formula. Two formulas are
 // considered to be the same when their respective representations in
@@ -1240,7 +1240,7 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 //
 // Note that this function not validate ref tag to check the cell if or not in
 // allow area, and always return origin shared formula.
-func getSharedForumula(ws *xlsxWorksheet, si int, axis string) string {
+func getSharedFormula(ws *xlsxWorksheet, si int, axis string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {

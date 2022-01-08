@@ -400,7 +400,7 @@ func TestSetActiveSheet(t *testing.T) {
 
 func TestSetSheetName(t *testing.T) {
 	f := NewFile()
-	// Test set workksheet with the same name.
+	// Test set worksheet with the same name.
 	f.SetSheetName("Sheet1", "Sheet1")
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 }

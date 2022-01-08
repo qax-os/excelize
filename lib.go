@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -31,7 +31,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 		err     error
 		docPart = map[string]string{
 			"[content_types].xml":  defaultXMLPathContentTypes,
-			"xl/sharedstrings.xml": dafaultXMLPathSharedStrings,
+			"xl/sharedstrings.xml": defaultXMLPathSharedStrings,
 		}
 		fileList   = make(map[string][]byte, len(r.File))
 		worksheets int
@@ -47,7 +47,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
-		if strings.EqualFold(fileName, dafaultXMLPathSharedStrings) && fileSize > f.options.UnzipXMLSizeLimit {
+		if strings.EqualFold(fileName, defaultXMLPathSharedStrings) && fileSize > f.options.UnzipXMLSizeLimit {
 			if tempFile, err := f.unzipToTemp(v); err == nil {
 				f.tempFiles.Store(fileName, tempFile)
 				continue

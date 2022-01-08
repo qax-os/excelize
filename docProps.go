@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -75,7 +75,7 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 		field              string
 	)
 	app = new(xlsxProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsApp)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -95,14 +95,14 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 	}
 	app.Vt = NameSpaceDocumentPropertiesVariantTypes.Value
 	output, err = xml.Marshal(app)
-	f.saveFileList(dafaultXMLPathDocPropsApp, output)
+	f.saveFileList(defaultXMLPathDocPropsApp, output)
 	return
 }
 
 // GetAppProps provides a function to get document application properties.
 func (f *File) GetAppProps() (ret *AppProperties, err error) {
 	var app = new(xlsxProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsApp)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -181,7 +181,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	)
 
 	core = new(decodeCoreProperties)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsCore)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return
@@ -189,7 +189,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	newProps, err = &xlsxCoreProperties{
 		Dc:             NameSpaceDublinCore,
 		Dcterms:        NameSpaceDublinCoreTerms,
-		Dcmitype:       NameSpaceDublinCoreMetadataIntiative,
+		Dcmitype:       NameSpaceDublinCoreMetadataInitiative,
 		XSI:            NameSpaceXMLSchemaInstance,
 		Title:          core.Title,
 		Subject:        core.Subject,
@@ -223,7 +223,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		newProps.Modified.Text = docProperties.Modified
 	}
 	output, err = xml.Marshal(newProps)
-	f.saveFileList(dafaultXMLPathDocPropsCore, output)
+	f.saveFileList(defaultXMLPathDocPropsCore, output)
 
 	return
 }
@@ -232,7 +232,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 func (f *File) GetDocProps() (ret *DocProperties, err error) {
 	var core = new(decodeCoreProperties)
 
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(dafaultXMLPathDocPropsCore)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
 		return

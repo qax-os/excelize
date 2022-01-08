@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -304,7 +304,7 @@ func (f *File) relsWriter() {
 
 // setAppXML update docProps/app.xml file of XML.
 func (f *File) setAppXML() {
-	f.saveFileList(dafaultXMLPathDocPropsApp, []byte(templateDocpropsApp))
+	f.saveFileList(defaultXMLPathDocPropsApp, []byte(templateDocpropsApp))
 }
 
 // replaceRelationshipsBytes; Some tools that read spreadsheet files have very

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -81,13 +81,13 @@ func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) {
 	for i := range ws.SheetData.Row {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			f.ajustSingleRowDimensions(r, newRow)
+			f.adjustSingleRowDimensions(r, newRow)
 		}
 	}
 }
 
-// ajustSingleRowDimensions provides a function to ajust single row dimensions.
-func (f *File) ajustSingleRowDimensions(r *xlsxRow, num int) {
+// adjustSingleRowDimensions provides a function to adjust single row dimensions.
+func (f *File) adjustSingleRowDimensions(r *xlsxRow, num int) {
 	r.R = num
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)

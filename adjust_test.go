@@ -48,7 +48,7 @@ func TestAdjustMergeCells(t *testing.T) {
 
 	// testing adjustMergeCells
 	var cases []struct {
-		lable  string
+		label  string
 		ws     *xlsxWorksheet
 		dir    adjustDirection
 		num    int
@@ -58,7 +58,7 @@ func TestAdjustMergeCells(t *testing.T) {
 
 	// testing insert
 	cases = []struct {
-		lable  string
+		label  string
 		ws     *xlsxWorksheet
 		dir    adjustDirection
 		num    int
@@ -66,7 +66,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		expect string
 	}{
 		{
-			lable: "insert row on ref",
+			label: "insert row on ref",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -82,7 +82,7 @@ func TestAdjustMergeCells(t *testing.T) {
 			expect: "A3:B4",
 		},
 		{
-			lable: "insert row on bottom of ref",
+			label: "insert row on bottom of ref",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -98,7 +98,7 @@ func TestAdjustMergeCells(t *testing.T) {
 			expect: "A2:B4",
 		},
 		{
-			lable: "insert column on the left",
+			label: "insert column on the left",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -116,12 +116,12 @@ func TestAdjustMergeCells(t *testing.T) {
 	}
 	for _, c := range cases {
 		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, 1))
-		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.lable)
+		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.label)
 	}
 
 	// testing delete
 	cases = []struct {
-		lable  string
+		label  string
 		ws     *xlsxWorksheet
 		dir    adjustDirection
 		num    int
@@ -129,7 +129,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		expect string
 	}{
 		{
-			lable: "delete row on top of ref",
+			label: "delete row on top of ref",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -145,7 +145,7 @@ func TestAdjustMergeCells(t *testing.T) {
 			expect: "A2:B2",
 		},
 		{
-			lable: "delete row on bottom of ref",
+			label: "delete row on bottom of ref",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -161,7 +161,7 @@ func TestAdjustMergeCells(t *testing.T) {
 			expect: "A2:B2",
 		},
 		{
-			lable: "delete column on the ref left",
+			label: "delete column on the ref left",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -177,7 +177,7 @@ func TestAdjustMergeCells(t *testing.T) {
 			expect: "A2:A3",
 		},
 		{
-			lable: "delete column on the ref right",
+			label: "delete column on the ref right",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -195,12 +195,12 @@ func TestAdjustMergeCells(t *testing.T) {
 	}
 	for _, c := range cases {
 		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, -1))
-		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.lable)
+		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.label)
 	}
 
 	// testing delete one row/column
 	cases = []struct {
-		lable  string
+		label  string
 		ws     *xlsxWorksheet
 		dir    adjustDirection
 		num    int
@@ -208,7 +208,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		expect string
 	}{
 		{
-			lable: "delete one row ref",
+			label: "delete one row ref",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -223,7 +223,7 @@ func TestAdjustMergeCells(t *testing.T) {
 			offset: -1,
 		},
 		{
-			lable: "delete one column ref",
+			label: "delete one column ref",
 			ws: &xlsxWorksheet{
 				MergeCells: &xlsxMergeCells{
 					Cells: []*xlsxMergeCell{
@@ -240,7 +240,7 @@ func TestAdjustMergeCells(t *testing.T) {
 	}
 	for _, c := range cases {
 		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, -1))
-		assert.Equal(t, 0, len(c.ws.MergeCells.Cells), c.lable)
+		assert.Equal(t, 0, len(c.ws.MergeCells.Cells), c.label)
 	}
 
 	f = NewFile()

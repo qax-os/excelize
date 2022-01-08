@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -35,13 +35,13 @@ func TestSetAppProps(t *testing.T) {
 		AppVersion:        "16.0000",
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetAppProps.xlsx")))
-	f.Pkg.Store(dafaultXMLPathDocPropsApp, nil)
+	f.Pkg.Store(defaultXMLPathDocPropsApp, nil)
 	assert.NoError(t, f.SetAppProps(&AppProperties{}))
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store(dafaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetAppProps(&AppProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
@@ -53,14 +53,14 @@ func TestGetAppProps(t *testing.T) {
 	props, err := f.GetAppProps()
 	assert.NoError(t, err)
 	assert.Equal(t, props.Application, "Microsoft Macintosh Excel")
-	f.Pkg.Store(dafaultXMLPathDocPropsApp, nil)
+	f.Pkg.Store(defaultXMLPathDocPropsApp, nil)
 	_, err = f.GetAppProps()
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store(dafaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
 	_, err = f.GetAppProps()
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
@@ -87,13 +87,13 @@ func TestSetDocProps(t *testing.T) {
 		Version:        "1.0.0",
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocProps.xlsx")))
-	f.Pkg.Store(dafaultXMLPathDocPropsCore, nil)
+	f.Pkg.Store(defaultXMLPathDocPropsCore, nil)
 	assert.NoError(t, f.SetDocProps(&DocProperties{}))
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store(dafaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
@@ -105,14 +105,14 @@ func TestGetDocProps(t *testing.T) {
 	props, err := f.GetDocProps()
 	assert.NoError(t, err)
 	assert.Equal(t, props.Creator, "Microsoft Office User")
-	f.Pkg.Store(dafaultXMLPathDocPropsCore, nil)
+	f.Pkg.Store(defaultXMLPathDocPropsCore, nil)
 	_, err = f.GetDocProps()
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	// Test unsupported charset
 	f = NewFile()
-	f.Pkg.Store(dafaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }

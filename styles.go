@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -1101,7 +1101,7 @@ func (f *File) styleSheetWriter() {
 func (f *File) sharedStringsWriter() {
 	if f.SharedStrings != nil {
 		output, _ := xml.Marshal(f.SharedStrings)
-		f.saveFileList(dafaultXMLPathSharedStrings, f.replaceNameSpaceBytes(dafaultXMLPathSharedStrings, output))
+		f.saveFileList(defaultXMLPathSharedStrings, f.replaceNameSpaceBytes(defaultXMLPathSharedStrings, output))
 	}
 }
 
@@ -2168,7 +2168,7 @@ func (f *File) SetDefaultFont(fontName string) {
 	s.CellStyles.CellStyle[0].CustomBuiltIn = &custom
 }
 
-// readDefaultFont provides an unmarshalled font value.
+// readDefaultFont provides an un-marshalled font value.
 func (f *File) readDefaultFont() *xlsxFont {
 	s := f.stylesReader()
 	return s.Fonts.Font[0]
@@ -2724,42 +2724,42 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 //    }
 //    err = f.SetCellStyle("Sheet1", "H9", "H9", style)
 //
-func (f *File) SetCellStyle(sheet, hcell, vcell string, styleID int) error {
-	hcol, hrow, err := CellNameToCoordinates(hcell)
+func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
+	hCol, hRow, err := CellNameToCoordinates(hCell)
 	if err != nil {
 		return err
 	}
 
-	vcol, vrow, err := CellNameToCoordinates(vcell)
+	vCol, vRow, err := CellNameToCoordinates(vCell)
 	if err != nil {
 		return err
 	}
 
 	// Normalize the coordinate area, such correct C1:B3 to B1:C3.
-	if vcol < hcol {
-		vcol, hcol = hcol, vcol
+	if vCol < hCol {
+		vCol, hCol = hCol, vCol
 	}
 
-	if vrow < hrow {
-		vrow, hrow = hrow, vrow
+	if vRow < hRow {
+		vRow, hRow = hRow, vRow
 	}
 
-	hcolIdx := hcol - 1
-	hrowIdx := hrow - 1
+	hColIdx := hCol - 1
+	hRowIdx := hRow - 1
 
-	vcolIdx := vcol - 1
-	vrowIdx := vrow - 1
+	vColIdx := vCol - 1
+	vRowIdx := vRow - 1
 
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(ws, vcol, vrow)
-	makeContiguousColumns(ws, hrow, vrow, vcol)
+	prepareSheetXML(ws, vCol, vRow)
+	makeContiguousColumns(ws, hRow, vRow, vCol)
 	ws.Lock()
 	defer ws.Unlock()
-	for r := hrowIdx; r <= vrowIdx; r++ {
-		for k := hcolIdx; k <= vcolIdx; k++ {
+	for r := hRowIdx; r <= vRowIdx; r++ {
+		for k := hColIdx; k <= vColIdx; k++ {
 			ws.SheetData.Row[r].C[k].S = styleID
 		}
 	}

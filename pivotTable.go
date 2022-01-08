@@ -1,4 +1,4 @@
-// Copyright 2016 - 2021 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2022 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -265,8 +265,8 @@ func (f *File) addPivotCache(pivotCacheID int, pivotCacheXML string, opt *PivotT
 	}
 	// data range has been checked
 	order, _ := f.getPivotFieldsOrder(opt)
-	hcell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
-	vcell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
+	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
+	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
 		SaveData:              false,
 		RefreshOnLoad:         true,
@@ -276,7 +276,7 @@ func (f *File) addPivotCache(pivotCacheID int, pivotCacheXML string, opt *PivotT
 		CacheSource: &xlsxCacheSource{
 			Type: "worksheet",
 			WorksheetSource: &xlsxWorksheetSource{
-				Ref:   hcell + ":" + vcell,
+				Ref:   hCell + ":" + vCell,
 				Sheet: dataSheet,
 			},
 		},
@@ -320,8 +320,8 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		return fmt.Errorf("parameter 'PivotTableRange' parsing error: %s", err.Error())
 	}
 
-	hcell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
-	vcell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
+	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
+	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 
 	pivotTableStyle := func() string {
 		if opt.PivotTableStyleName == "" {
@@ -345,7 +345,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		ShowError:             &opt.ShowError,
 		DataCaption:           "Values",
 		Location: &xlsxLocation{
-			Ref:            hcell + ":" + vcell,
+			Ref:            hCell + ":" + vCell,
 			FirstDataCol:   1,
 			FirstDataRow:   1,
 			FirstHeaderRow: 1,
@@ -509,7 +509,7 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 		})
 	}
 
-	//in order to create pivot in case there is many Columns and Many Datas
+	// in order to create pivot in case there is many Columns and Data
 	if len(opt.Data) > 1 {
 		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
 			X: -2,

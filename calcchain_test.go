@@ -5,7 +5,7 @@ import "testing"
 func TestCalcChainReader(t *testing.T) {
 	f := NewFile()
 	f.CalcChain = nil
-	f.Pkg.Store(dafaultXMLPathCalcChain, MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathCalcChain, MacintoshCyrillicCharset)
 	f.calcChainReader()
 }
 
