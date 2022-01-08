@@ -43,6 +43,7 @@ var (
 	packageOffset              = 8 // First 8 bytes are the size of the stream
 	packageEncryptionChunkSize = 4096
 	iterCount                  = 50000
+	sheetProtectionSpinCount   = 1e5
 	oleIdentifier              = []byte{
 		0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1,
 	}
@@ -146,7 +147,7 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 	case "standard":
 		return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
 	default:
-		err = ErrUnsupportEncryptMechanism
+		err = ErrUnsupportedEncryptMechanism
 	}
 	return
 }
@@ -307,7 +308,7 @@ func encryptionMechanism(buffer []byte) (mechanism string, err error) {
 	} else if (versionMajor == 3 || versionMajor == 4) && versionMinor == 3 {
 		mechanism = "extensible"
 	}
-	err = ErrUnsupportEncryptMechanism
+	err = ErrUnsupportedEncryptMechanism
 	return
 }
 
@@ -387,14 +388,14 @@ func standardConvertPasswdToKey(header StandardEncryptionHeader, verifier Standa
 		key = hashing("sha1", iterator, key)
 	}
 	var block int
-	hfinal := hashing("sha1", key, createUInt32LEBuffer(block, 4))
+	hFinal := hashing("sha1", key, createUInt32LEBuffer(block, 4))
 	cbRequiredKeyLength := int(header.KeySize) / 8
 	cbHash := sha1.Size
 	buf1 := bytes.Repeat([]byte{0x36}, 64)
-	buf1 = append(standardXORBytes(hfinal, buf1[:cbHash]), buf1[cbHash:]...)
+	buf1 = append(standardXORBytes(hFinal, buf1[:cbHash]), buf1[cbHash:]...)
 	x1 := hashing("sha1", buf1)
 	buf2 := bytes.Repeat([]byte{0x5c}, 64)
-	buf2 = append(standardXORBytes(hfinal, buf2[:cbHash]), buf2[cbHash:]...)
+	buf2 = append(standardXORBytes(hFinal, buf2[:cbHash]), buf2[cbHash:]...)
 	x2 := hashing("sha1", buf2)
 	x3 := append(x1, x2...)
 	keyDerived := x3[:cbRequiredKeyLength]
@@ -417,7 +418,8 @@ func standardXORBytes(a, b []byte) []byte {
 // ECMA-376 Agile Encryption
 
 // agileDecrypt decrypt the CFB file format with ECMA-376 agile encryption.
-// Support cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256, SHA384 and SHA512.
+// Support cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256,
+// SHA384 and SHA512.
 func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (packageBuf []byte, err error) {
 	var encryptionInfo Encryption
 	if encryptionInfo, err = parseEncryptionInfo(encryptionInfoBuf[8:]); err != nil {
@@ -605,11 +607,55 @@ func createIV(blockKey interface{}, encryption Encryption) ([]byte, error) {
 	return iv, nil
 }
 
-// randomBytes returns securely generated random bytes. It will return an error if the system's
-// secure random number generator fails to function correctly, in which case the caller should not
-// continue.
+// randomBytes returns securely generated random bytes. It will return an
+// error if the system's secure random number generator fails to function
+// correctly, in which case the caller should not continue.
 func randomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	return b, err
+}
+
+// ISO Write Protection Method
+
+// genISOPasswdHash implements the ISO password hashing algorithm by given
+// plaintext password, name of the cryptographic hash algorithm, salt value
+// and spin count.
+func genISOPasswdHash(passwd, hashAlgorithm, salt string, spinCount int) (hashValue, saltValue string, err error) {
+	if len(passwd) < 1 || len(passwd) > MaxFieldLength {
+		err = ErrPasswordLengthInvalid
+		return
+	}
+	hash, ok := map[string]string{
+		"MD4":     "md4",
+		"MD5":     "md5",
+		"SHA-1":   "sha1",
+		"SHA-256": "sha256",
+		"SHA-384": "sha384",
+		"SHA-512": "sha512",
+	}[hashAlgorithm]
+	if !ok {
+		err = ErrUnsupportedHashAlgorithm
+		return
+	}
+	var b bytes.Buffer
+	s, _ := randomBytes(16)
+	if salt != "" {
+		if s, err = base64.StdEncoding.DecodeString(salt); err != nil {
+			return
+		}
+	}
+	b.Write(s)
+	encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
+	passwordBuffer, _ := encoder.Bytes([]byte(passwd))
+	b.Write(passwordBuffer)
+	// Generate the initial hash.
+	key := hashing(hash, b.Bytes())
+	// Now regenerate until spin count.
+	for i := 0; i < spinCount; i++ {
+		iterator := createUInt32LEBuffer(i, 4)
+		key = hashing(hash, key, iterator)
+	}
+	hashValue, saltValue = base64.StdEncoding.EncodeToString(key), base64.StdEncoding.EncodeToString(s)
+	return
 }

@@ -1129,10 +1129,14 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 }
 
 // ProtectSheet provides a function to prevent other users from accidentally
-// or deliberately changing, moving, or deleting data in a worksheet. For
-// example, protect Sheet1 with protection settings:
+// or deliberately changing, moving, or deleting data in a worksheet. The
+// optional field AlgorithmName specified hash algorithm, support XOR, MD4,
+// MD5, SHA1, SHA256, SHA384, and SHA512 currently, if no hash algorithm
+// specified, will be using the XOR algorithm as default. For example,
+// protect Sheet1 with protection settings:
 //
 //    err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//        AlgorithmName: "SHA-512",
 //        Password:      "password",
 //        EditScenarios: false,
 //    })
@@ -1168,22 +1172,55 @@ func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error
 		Sort:                settings.Sort,
 	}
 	if settings.Password != "" {
-		ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+		if settings.AlgorithmName == "" {
+			ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+			return err
+		}
+		hashValue, saltValue, err := genISOPasswdHash(settings.Password, settings.AlgorithmName, "", int(sheetProtectionSpinCount))
+		if err != nil {
+			return err
+		}
+		ws.SheetProtection.Password = ""
+		ws.SheetProtection.AlgorithmName = settings.AlgorithmName
+		ws.SheetProtection.SaltValue = saltValue
+		ws.SheetProtection.HashValue = hashValue
+		ws.SheetProtection.SpinCount = int(sheetProtectionSpinCount)
 	}
 	return err
 }
 
-// UnprotectSheet provides a function to unprotect an Excel worksheet.
-func (f *File) UnprotectSheet(sheet string) error {
+// UnprotectSheet provides a function to remove protection for a sheet,
+// specified the second optional password parameter to remove sheet
+// protection with password verification.
+func (f *File) UnprotectSheet(sheet string, password ...string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
+	}
+	// password verification
+	if len(password) > 0 {
+		if ws.SheetProtection == nil {
+			return ErrUnprotectSheet
+		}
+		if ws.SheetProtection.AlgorithmName == "" && ws.SheetProtection.Password != genSheetPasswd(password[0]) {
+			return ErrUnprotectSheetPassword
+		}
+		if ws.SheetProtection.AlgorithmName != "" {
+			// check with given salt value
+			hashValue, _, err := genISOPasswdHash(password[0], ws.SheetProtection.AlgorithmName, ws.SheetProtection.SaltValue, ws.SheetProtection.SpinCount)
+			if err != nil {
+				return err
+			}
+			if ws.SheetProtection.HashValue != hashValue {
+				return ErrUnprotectSheetPassword
+			}
+		}
 	}
 	ws.SheetProtection = nil
 	return err
 }
 
-// trimSheetName provides a function to trim invaild characters by given worksheet
+// trimSheetName provides a function to trim invalid characters by given worksheet
 // name.
 func trimSheetName(name string) string {
 	if strings.ContainsAny(name, ":\\/?*[]") || utf8.RuneCountInString(name) > 31 {

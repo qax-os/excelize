@@ -16,42 +16,50 @@ import (
 	"fmt"
 )
 
-// newInvalidColumnNameError defined the error message on receiving the invalid column name.
+// newInvalidColumnNameError defined the error message on receiving the
+// invalid column name.
 func newInvalidColumnNameError(col string) error {
 	return fmt.Errorf("invalid column name %q", col)
 }
 
-// newInvalidRowNumberError defined the error message on receiving the invalid row number.
+// newInvalidRowNumberError defined the error message on receiving the invalid
+// row number.
 func newInvalidRowNumberError(row int) error {
 	return fmt.Errorf("invalid row number %d", row)
 }
 
-// newInvalidCellNameError defined the error message on receiving the invalid cell name.
+// newInvalidCellNameError defined the error message on receiving the invalid
+// cell name.
 func newInvalidCellNameError(cell string) error {
 	return fmt.Errorf("invalid cell name %q", cell)
 }
 
-// newInvalidExcelDateError defined the error message on receiving the data with negative values.
+// newInvalidExcelDateError defined the error message on receiving the data
+// with negative values.
 func newInvalidExcelDateError(dateValue float64) error {
 	return fmt.Errorf("invalid date value %f, negative values are not supported", dateValue)
 }
 
-// newUnsupportChartType defined the error message on receiving the chart type are unsupported.
-func newUnsupportChartType(chartType string) error {
+// newUnsupportedChartType defined the error message on receiving the chart
+// type are unsupported.
+func newUnsupportedChartType(chartType string) error {
 	return fmt.Errorf("unsupported chart type %s", chartType)
 }
 
-// newUnzipSizeLimitError defined the error message on unzip size exceeds the limit.
+// newUnzipSizeLimitError defined the error message on unzip size exceeds the
+// limit.
 func newUnzipSizeLimitError(unzipSizeLimit int64) error {
 	return fmt.Errorf("unzip size exceeds the %d bytes limit", unzipSizeLimit)
 }
 
-// newInvalidStyleID defined the error message on receiving the invalid style ID.
+// newInvalidStyleID defined the error message on receiving the invalid style
+// ID.
 func newInvalidStyleID(styleID int) error {
 	return fmt.Errorf("invalid style ID %d, negative values are not supported", styleID)
 }
 
-// newFieldLengthError defined the error message on receiving the field length overflow.
+// newFieldLengthError defined the error message on receiving the field length
+// overflow.
 func newFieldLengthError(name string) error {
 	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
 }
@@ -103,12 +111,18 @@ var (
 	ErrMaxFileNameLength = errors.New("file name length exceeds maximum limit")
 	// ErrEncrypt defined the error message on encryption spreadsheet.
 	ErrEncrypt = errors.New("not support encryption currently")
-	// ErrUnknownEncryptMechanism defined the error message on unsupport
+	// ErrUnknownEncryptMechanism defined the error message on unsupported
 	// encryption mechanism.
 	ErrUnknownEncryptMechanism = errors.New("unknown encryption mechanism")
-	// ErrUnsupportEncryptMechanism defined the error message on unsupport
+	// ErrUnsupportedEncryptMechanism defined the error message on unsupported
 	// encryption mechanism.
-	ErrUnsupportEncryptMechanism = errors.New("unsupport encryption mechanism")
+	ErrUnsupportedEncryptMechanism = errors.New("unsupported encryption mechanism")
+	// ErrUnsupportedHashAlgorithm defined the error message on unsupported
+	// hash algorithm.
+	ErrUnsupportedHashAlgorithm = errors.New("unsupported hash algorithm")
+	// ErrPasswordLengthInvalid defined the error message on invalid password
+	// length.
+	ErrPasswordLengthInvalid = errors.New("password length invalid")
 	// ErrParameterRequired defined the error message on receive the empty
 	// parameter.
 	ErrParameterRequired = errors.New("parameter is required")
@@ -131,11 +145,17 @@ var (
 	// ErrSheetIdx defined the error message on receive the invalid worksheet
 	// index.
 	ErrSheetIdx = errors.New("invalid worksheet index")
+	// ErrUnprotectSheet defined the error message on worksheet has set no
+	// protection.
+	ErrUnprotectSheet = errors.New("worksheet has set no protect")
+	// ErrUnprotectSheetPassword defined the error message on remove sheet
+	// protection with password verification failed.
+	ErrUnprotectSheetPassword = errors.New("worksheet protect password not match")
 	// ErrGroupSheets defined the error message on group sheets.
 	ErrGroupSheets = errors.New("group worksheet must contain an active worksheet")
-	// ErrDataValidationFormulaLenth defined the error message for receiving a
+	// ErrDataValidationFormulaLength defined the error message for receiving a
 	// data validation formula length that exceeds the limit.
-	ErrDataValidationFormulaLenth = errors.New("data validation must be 0-255 characters")
+	ErrDataValidationFormulaLength = errors.New("data validation must be 0-255 characters")
 	// ErrDataValidationRange defined the error message on set decimal range
 	// exceeds limit.
 	ErrDataValidationRange = errors.New("data validation range exceeds limit")
@@ -164,5 +184,5 @@ var (
 	ErrSparkline = errors.New("must have the same number of 'Location' and 'Range' parameters")
 	// ErrSparklineStyle defined the error message on receive the invalid
 	// sparkline Style parameters.
-	ErrSparklineStyle = errors.New("parameter 'Style' must betweent 0-35")
+	ErrSparklineStyle = errors.New("parameter 'Style' must between 0-35")
 )

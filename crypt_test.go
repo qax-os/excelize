@@ -28,11 +28,27 @@ func TestEncrypt(t *testing.T) {
 func TestEncryptionMechanism(t *testing.T) {
 	mechanism, err := encryptionMechanism([]byte{3, 0, 3, 0})
 	assert.Equal(t, mechanism, "extensible")
-	assert.EqualError(t, err, ErrUnsupportEncryptMechanism.Error())
+	assert.EqualError(t, err, ErrUnsupportedEncryptMechanism.Error())
 	_, err = encryptionMechanism([]byte{})
 	assert.EqualError(t, err, ErrUnknownEncryptMechanism.Error())
 }
 
 func TestHashing(t *testing.T) {
-	assert.Equal(t, hashing("unsupportHashAlgorithm", []byte{}), []uint8([]byte(nil)))
+	assert.Equal(t, hashing("unsupportedHashAlgorithm", []byte{}), []uint8([]byte(nil)))
+}
+
+func TestGenISOPasswdHash(t *testing.T) {
+	for hashAlgorithm, expected := range map[string][]string{
+		"MD4":     {"2lZQZUubVHLm/t6KsuHX4w==", "TTHjJdU70B/6Zq83XGhHVA=="},
+		"MD5":     {"HWbqyd4dKKCjk1fEhk2kuQ==", "8ADyorkumWCayIukRhlVKQ=="},
+		"SHA-1":   {"XErQIV3Ol+nhXkyCxrLTEQm+mSc=", "I3nDtyf59ASaNX1l6KpFnA=="},
+		"SHA-256": {"7oqMFyfED+mPrzRIBQ+KpKT4SClMHEPOZldliP15xAA=", "ru1R/w3P3Jna2Qo+EE8QiA=="},
+		"SHA-384": {"nMODLlxsC8vr0btcq0kp/jksg5FaI3az5Sjo1yZk+/x4bFzsuIvpDKUhJGAk/fzo", "Zjq9/jHlgOY6MzFDSlVNZg=="},
+		"SHA-512": {"YZ6jrGOFQgVKK3rDK/0SHGGgxEmFJglQIIRamZc2PkxVtUBp54fQn96+jVXEOqo6dtCSanqksXGcm/h3KaiR4Q==", "p5s/bybHBPtusI7EydTIrg=="},
+	} {
+		hashValue, saltValue, err := genISOPasswdHash("password", hashAlgorithm, expected[1], int(sheetProtectionSpinCount))
+		assert.NoError(t, err)
+		assert.Equal(t, expected[0], hashValue)
+		assert.Equal(t, expected[1], saltValue)
+	}
 }

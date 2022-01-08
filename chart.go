@@ -980,12 +980,12 @@ func (f *File) getFormatChart(format string, combo []string) (*formatChart, []*f
 			return formatSet, comboCharts, err
 		}
 		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
-			return formatSet, comboCharts, newUnsupportChartType(comboChart.Type)
+			return formatSet, comboCharts, newUnsupportedChartType(comboChart.Type)
 		}
 		comboCharts = append(comboCharts, comboChart)
 	}
 	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
-		return formatSet, comboCharts, newUnsupportChartType(formatSet.Type)
+		return formatSet, comboCharts, newUnsupportedChartType(formatSet.Type)
 	}
 	return formatSet, comboCharts, err
 }
