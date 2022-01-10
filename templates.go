@@ -30,6 +30,7 @@ const (
 	defaultXMLPathSharedStrings = "xl/sharedStrings.xml"
 	defaultXMLPathStyles        = "xl/styles.xml"
 	defaultXMLPathWorkbook      = "xl/workbook.xml"
+	defaultTempFileSST          = "sharedStrings"
 )
 
 const templateDocpropsApp = `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><TotalTime>0</TotalTime><Application>Go Excelize</Application></Properties>`

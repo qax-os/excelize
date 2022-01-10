@@ -375,8 +375,18 @@ func (f *File) sharedStringsLoader() (err error) {
 	if path, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
 		f.Pkg.Store(defaultXMLPathSharedStrings, f.readBytes(defaultXMLPathSharedStrings))
 		f.tempFiles.Delete(defaultXMLPathSharedStrings)
-		err = os.Remove(path.(string))
-		f.SharedStrings, f.sharedStringItemMap = nil, nil
+		if err = os.Remove(path.(string)); err != nil {
+			return
+		}
+		f.SharedStrings = nil
+	}
+	if f.sharedStringTemp != nil {
+		if err := f.sharedStringTemp.Close(); err != nil {
+			return err
+		}
+		f.tempFiles.Delete(defaultTempFileSST)
+		f.sharedStringItem, err = nil, os.Remove(f.sharedStringTemp.Name())
+		f.sharedStringTemp = nil
 	}
 	return
 }

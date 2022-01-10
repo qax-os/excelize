@@ -32,30 +32,31 @@ import (
 // File define a populated spreadsheet file struct.
 type File struct {
 	sync.Mutex
-	options             *Options
-	xmlAttr             map[string][]xml.Attr
-	checked             map[string]bool
-	sheetMap            map[string]string
-	streams             map[string]*StreamWriter
-	tempFiles           sync.Map
-	CalcChain           *xlsxCalcChain
-	Comments            map[string]*xlsxComments
-	ContentTypes        *xlsxTypes
-	Drawings            sync.Map
-	Path                string
-	SharedStrings       *xlsxSST
-	sharedStringsMap    map[string]int
-	sharedStringItemMap *sync.Map
-	Sheet               sync.Map
-	SheetCount          int
-	Styles              *xlsxStyleSheet
-	Theme               *xlsxTheme
-	DecodeVMLDrawing    map[string]*decodeVmlDrawing
-	VMLDrawing          map[string]*vmlDrawing
-	WorkBook            *xlsxWorkbook
-	Relationships       sync.Map
-	Pkg                 sync.Map
-	CharsetReader       charsetTranscoderFn
+	options          *Options
+	xmlAttr          map[string][]xml.Attr
+	checked          map[string]bool
+	sheetMap         map[string]string
+	streams          map[string]*StreamWriter
+	tempFiles        sync.Map
+	CalcChain        *xlsxCalcChain
+	Comments         map[string]*xlsxComments
+	ContentTypes     *xlsxTypes
+	Drawings         sync.Map
+	Path             string
+	SharedStrings    *xlsxSST
+	sharedStringsMap map[string]int
+	sharedStringItem [][]uint
+	sharedStringTemp *os.File
+	Sheet            sync.Map
+	SheetCount       int
+	Styles           *xlsxStyleSheet
+	Theme            *xlsxTheme
+	DecodeVMLDrawing map[string]*decodeVmlDrawing
+	VMLDrawing       map[string]*vmlDrawing
+	WorkBook         *xlsxWorkbook
+	Relationships    sync.Map
+	Pkg              sync.Map
+	CharsetReader    charsetTranscoderFn
 }
 
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)

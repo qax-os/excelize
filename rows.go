@@ -16,12 +16,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math"
 	"math/big"
 	"os"
 	"strconv"
-	"sync"
 
 	"github.com/mohae/deepcopy"
 )
@@ -280,23 +280,30 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	return &rows, nil
 }
 
-// getFromStringItemMap build shared string item map from system temporary
+// getFromStringItem build shared string item offset list from system temporary
 // file at one time, and return value by given to string index.
-func (f *File) getFromStringItemMap(index int) string {
-	if f.sharedStringItemMap != nil {
-		if value, ok := f.sharedStringItemMap.Load(index); ok {
-			return value.(string)
+func (f *File) getFromStringItem(index int) string {
+	if f.sharedStringTemp != nil {
+		if len(f.sharedStringItem) <= index {
+			return strconv.Itoa(index)
 		}
-		return strconv.Itoa(index)
+		offsetRange := f.sharedStringItem[index]
+		buf := make([]byte, offsetRange[1]-offsetRange[0])
+		if _, err := f.sharedStringTemp.ReadAt(buf, int64(offsetRange[0])); err != nil {
+			return strconv.Itoa(index)
+		}
+		return string(buf)
 	}
-	f.sharedStringItemMap = &sync.Map{}
 	needClose, decoder, tempFile, err := f.xmlDecoder(defaultXMLPathSharedStrings)
 	if needClose && err == nil {
 		defer tempFile.Close()
 	}
+	f.sharedStringItem = [][]uint{}
+	f.sharedStringTemp, _ = ioutil.TempFile(os.TempDir(), "excelize-")
+	f.tempFiles.Store(defaultTempFileSST, f.sharedStringTemp.Name())
 	var (
 		inElement string
-		i         int
+		i, offset uint
 	)
 	for {
 		token, _ := decoder.Token()
@@ -309,12 +316,16 @@ func (f *File) getFromStringItemMap(index int) string {
 			if inElement == "si" {
 				si := xlsxSI{}
 				_ = decoder.DecodeElement(&si, &xmlElement)
-				f.sharedStringItemMap.Store(i, si.String())
+
+				startIdx := offset
+				n, _ := f.sharedStringTemp.WriteString(si.String())
+				offset += uint(n)
+				f.sharedStringItem = append(f.sharedStringItem, []uint{startIdx, offset})
 				i++
 			}
 		}
 	}
-	return f.getFromStringItemMap(index)
+	return f.getFromStringItem(index)
 }
 
 // xmlDecoder creates XML decoder by given path in the zip from memory data
@@ -454,7 +465,7 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 			xlsxSI := 0
 			xlsxSI, _ = strconv.Atoi(c.V)
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(c.S, f.getFromStringItemMap(xlsxSI), raw), nil
+				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw), nil
 			}
 			if len(d.SI) > xlsxSI {
 				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil

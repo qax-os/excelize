@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -653,9 +654,12 @@ func TestFormattedValue2(t *testing.T) {
 func TestSharedStringsError(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
 	assert.NoError(t, err)
+	tempFile, ok := f.tempFiles.Load(defaultXMLPathSharedStrings)
+	assert.True(t, ok)
 	f.tempFiles.Store(defaultXMLPathSharedStrings, "")
-	assert.Equal(t, "1", f.getFromStringItemMap(1))
-
+	assert.Equal(t, "1", f.getFromStringItem(1))
+	// Cleanup undelete temporary files
+	assert.NoError(t, os.Remove(tempFile.(string)))
 	// Test reload the file error on set cell cell and rich text. The error message was different between macOS and Windows.
 	err = f.SetCellValue("Sheet1", "A19", "A19")
 	assert.Error(t, err)
@@ -663,6 +667,50 @@ func TestSharedStringsError(t *testing.T) {
 	f.tempFiles.Store(defaultXMLPathSharedStrings, "")
 	err = f.SetCellRichText("Sheet1", "A19", []RichTextRun{})
 	assert.Error(t, err)
-
 	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
+	assert.NoError(t, err)
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	const maxUint16 = 1<<16 - 1
+	for rows.Next() {
+		if rows.CurrentRow() == 19 {
+			_, err := rows.Columns()
+			assert.NoError(t, err)
+			// Test get cell value from string item with invalid offset
+			f.sharedStringItem[1] = []uint{maxUint16 - 1, maxUint16}
+			assert.Equal(t, "1", f.getFromStringItem(1))
+			break
+		}
+	}
+	assert.NoError(t, rows.Close())
+	// Test shared string item temporary files has been closed before close the workbook
+	assert.NoError(t, f.sharedStringTemp.Close())
+	assert.Error(t, f.Close())
+	// Cleanup undelete temporary files
+	f.tempFiles.Range(func(k, v interface{}) bool {
+		return assert.NoError(t, os.Remove(v.(string)))
+	})
+
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
+	assert.NoError(t, err)
+	rows, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
+	for rows.Next() {
+		if rows.CurrentRow() == 19 {
+			_, err := rows.Columns()
+			assert.NoError(t, err)
+			break
+		}
+	}
+	assert.NoError(t, rows.Close())
+	assert.NoError(t, f.sharedStringTemp.Close())
+	// Test shared string item temporary files has been closed before set the cell value
+	assert.Error(t, f.SetCellValue("Sheet1", "A1", "A1"))
+	assert.Error(t, f.Close())
+	// Cleanup undelete temporary files
+	f.tempFiles.Range(func(k, v interface{}) bool {
+		return assert.NoError(t, os.Remove(v.(string)))
+	})
 }
