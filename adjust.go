@@ -226,6 +226,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 			i--
 			continue
 		}
+		areaData.rect = []int{x1, y1, x2, y2}
 		if areaData.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
 			return err
 		}

@@ -669,6 +669,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 		f := newFileWithDefaults()
 
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
+		assert.NoError(t, f.DuplicateRowTo(sheet, 10, 4))
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBefore"))) {
 			t.FailNow()
@@ -678,7 +679,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 			"A1": cells["A2"], "B1": cells["B2"],
 			"A2": cells["A1"], "B2": cells["B1"],
 			"A3": cells["A2"], "B3": cells["B2"],
-			"A4": cells["A3"], "B4": cells["B3"],
+			"A5": cells["A3"], "B5": cells["B3"],
 		}
 		for cell, val := range expect {
 			v, err := f.GetCellValue(sheet, cell)
