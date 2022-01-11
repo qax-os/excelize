@@ -81,15 +81,12 @@ func TestDataValidationError(t *testing.T) {
 	dvRange := NewDataValidation(true)
 	dvRange.SetSqref("A7:B8")
 	dvRange.SetSqref("A7:B8")
-	assert.NoError(t, dvRange.SetSqrefDropList("$E$1:$E$3", true))
-
-	err := dvRange.SetSqrefDropList("$E$1:$E$3", false)
-	assert.EqualError(t, err, "cross-sheet sqref cell are not supported")
+	dvRange.SetSqrefDropList("$E$1:$E$3")
 
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 
 	dvRange = NewDataValidation(true)
-	err = dvRange.SetDropList(make([]string, 258))
+	err := dvRange.SetDropList(make([]string, 258))
 	if dvRange.Formula1 != "" {
 		t.Errorf("data validation error. Formula1 must be empty!")
 		return

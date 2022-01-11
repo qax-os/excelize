@@ -1335,49 +1335,49 @@ func (o *PageLayoutOrientation) getPageLayout(ps *xlsxPageSetUp) {
 
 // setPageLayout provides a method to set the paper size for the worksheet.
 func (p PageLayoutPaperSize) setPageLayout(ps *xlsxPageSetUp) {
-	ps.PaperSize = int(p)
+	ps.PaperSize = intPtr(int(p))
 }
 
 // getPageLayout provides a method to get the paper size for the worksheet.
 func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
 	// Excel default: 1
-	if ps == nil || ps.PaperSize == 0 {
+	if ps == nil || ps.PaperSize == nil {
 		*p = 1
 		return
 	}
-	*p = PageLayoutPaperSize(ps.PaperSize)
+	*p = PageLayoutPaperSize(*ps.PaperSize)
 }
 
 // setPageLayout provides a method to set the fit to height for the worksheet.
 func (p FitToHeight) setPageLayout(ps *xlsxPageSetUp) {
 	if int(p) > 0 {
-		ps.FitToHeight = int(p)
+		ps.FitToHeight = intPtr(int(p))
 	}
 }
 
 // getPageLayout provides a method to get the fit to height for the worksheet.
 func (p *FitToHeight) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil || ps.FitToHeight == 0 {
+	if ps == nil || ps.FitToHeight == nil {
 		*p = 1
 		return
 	}
-	*p = FitToHeight(ps.FitToHeight)
+	*p = FitToHeight(*ps.FitToHeight)
 }
 
 // setPageLayout provides a method to set the fit to width for the worksheet.
 func (p FitToWidth) setPageLayout(ps *xlsxPageSetUp) {
 	if int(p) > 0 {
-		ps.FitToWidth = int(p)
+		ps.FitToWidth = intPtr(int(p))
 	}
 }
 
 // getPageLayout provides a method to get the fit to width for the worksheet.
 func (p *FitToWidth) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil || ps.FitToWidth == 0 {
+	if ps == nil || ps.FitToWidth == nil {
 		*p = 1
 		return
 	}
-	*p = FitToWidth(ps.FitToWidth)
+	*p = FitToWidth(*ps.FitToWidth)
 }
 
 // setPageLayout provides a method to set the scale for the worksheet.

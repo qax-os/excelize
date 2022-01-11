@@ -112,16 +112,16 @@ type xlsxPageSetUp struct {
 	Draft              bool     `xml:"draft,attr,omitempty"`
 	Errors             string   `xml:"errors,attr,omitempty"`
 	FirstPageNumber    string   `xml:"firstPageNumber,attr,omitempty"`
-	FitToHeight        int      `xml:"fitToHeight,attr,omitempty"`
-	FitToWidth         int      `xml:"fitToWidth,attr,omitempty"`
+	FitToHeight        *int     `xml:"fitToHeight,attr"`
+	FitToWidth         *int     `xml:"fitToWidth,attr,omitempty"`
 	HorizontalDPI      int      `xml:"horizontalDpi,attr,omitempty"`
 	RID                string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Orientation        string   `xml:"orientation,attr,omitempty"`
 	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
 	PaperHeight        string   `xml:"paperHeight,attr,omitempty"`
-	PaperSize          int      `xml:"paperSize,attr,omitempty"`
+	PaperSize          *int     `xml:"paperSize,attr,omitempty"`
 	PaperWidth         string   `xml:"paperWidth,attr,omitempty"`
-	Scale              int      `xml:"scale,attr,omitempty"`
+	Scale              int      `xml:"scale,attr"`
 	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
 	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
 	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`

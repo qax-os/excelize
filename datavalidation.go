@@ -168,16 +168,12 @@ func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 //
 //     dvRange := excelize.NewDataValidation(true)
 //     dvRange.Sqref = "A7:B8"
-//     dvRange.SetSqrefDropList("$E$1:$E$3", true)
+//     dvRange.SetSqrefDropList("$E$1:$E$3")
 //     f.AddDataValidation("Sheet1", dvRange)
 //
-func (dd *DataValidation) SetSqrefDropList(sqref string, isCurrentSheet bool) error {
-	if isCurrentSheet {
-		dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
-		dd.Type = convDataValidationType(typeList)
-		return nil
-	}
-	return fmt.Errorf("cross-sheet sqref cell are not supported")
+func (dd *DataValidation) SetSqrefDropList(sqref string) {
+	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
+	dd.Type = convDataValidationType(typeList)
 }
 
 // SetSqref provides function to set data validation range in drop list.
