@@ -847,7 +847,18 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 }
 
 func TestDuplicateRowTo(t *testing.T) {
-	f := File{}
+	f, sheetName := NewFile(), "Sheet1"
+	// Test duplicate row with invalid target row number
+	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 0))
+	// Test duplicate row with equal source and target row number
+	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 1))
+	// Test duplicate row on the blank worksheet
+	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 2))
+	// Test duplicate row on the worksheet with illegal cell coordinates
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
+		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}}})
+	assert.EqualError(t, f.DuplicateRowTo(sheetName, 1, 2), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test duplicate row on not exists worksheet
 	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN is not exist")
 }
 
