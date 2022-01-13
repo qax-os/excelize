@@ -669,6 +669,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 		f := newFileWithDefaults()
 
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
+		assert.NoError(t, f.DuplicateRowTo(sheet, 10, 4))
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBefore"))) {
 			t.FailNow()
@@ -678,7 +679,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 			"A1": cells["A2"], "B1": cells["B2"],
 			"A2": cells["A1"], "B2": cells["B1"],
 			"A3": cells["A2"], "B3": cells["B2"],
-			"A4": cells["A3"], "B4": cells["B3"],
+			"A5": cells["A3"], "B5": cells["B3"],
 		}
 		for cell, val := range expect {
 			v, err := f.GetCellValue(sheet, cell)
@@ -846,7 +847,18 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 }
 
 func TestDuplicateRowTo(t *testing.T) {
-	f := File{}
+	f, sheetName := NewFile(), "Sheet1"
+	// Test duplicate row with invalid target row number
+	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 0))
+	// Test duplicate row with equal source and target row number
+	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 1))
+	// Test duplicate row on the blank worksheet
+	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 2))
+	// Test duplicate row on the worksheet with illegal cell coordinates
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
+		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}}})
+	assert.EqualError(t, f.DuplicateRowTo(sheetName, 1, 2), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test duplicate row on not exists worksheet
 	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN is not exist")
 }
 

@@ -661,7 +661,8 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	if err != nil {
 		return err
 	}
-	if row > len(ws.SheetData.Row) || row2 < 1 || row == row2 {
+
+	if row2 < 1 || row == row2 {
 		return nil
 	}
 
@@ -675,12 +676,13 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 			break
 		}
 	}
-	if !ok {
-		return nil
-	}
 
 	if err := f.adjustHelper(sheet, rows, row2, 1); err != nil {
 		return err
+	}
+
+	if !ok {
+		return nil
 	}
 
 	idx2 := -1
