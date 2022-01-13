@@ -449,10 +449,32 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 		c.T, c.V = setCellBool(val)
 	case nil:
 		c.T, c.V, c.XMLSpace = setCellStr("")
+	case []RichTextRun:
+		sst := sw.File.sharedStringsReader()
+		si := xlsxSI{}
+		si.R = transformRichTextRun(val)
+		sst.SI = append(sst.SI, si)
+		sst.Count++
+		sst.UniqueCount++
+		c.T, c.V = "s", strconv.Itoa(len(sst.SI)-1)
 	default:
 		c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 	}
 	return err
+}
+
+func transformRichTextRun(runs []RichTextRun) []xlsxR {
+	var result = make([]xlsxR, 0, len(runs))
+	for _, textRun := range runs {
+		run := xlsxR{T: &xlsxT{}}
+		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
+		fnt := textRun.Font
+		if fnt != nil {
+			run.RPr = newRpr(fnt)
+		}
+		result = append(result, run)
+	}
+	return result
 }
 
 // setCellIntFunc is a wrapper of SetCellInt.
