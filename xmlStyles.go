@@ -20,16 +20,16 @@ import (
 type xlsxStyleSheet struct {
 	sync.Mutex
 	XMLName      xml.Name          `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main styleSheet"`
-	NumFmts      *xlsxNumFmts      `xml:"numFmts,omitempty"`
-	Fonts        *xlsxFonts        `xml:"fonts,omitempty"`
-	Fills        *xlsxFills        `xml:"fills,omitempty"`
-	Borders      *xlsxBorders      `xml:"borders,omitempty"`
-	CellStyleXfs *xlsxCellStyleXfs `xml:"cellStyleXfs,omitempty"`
-	CellXfs      *xlsxCellXfs      `xml:"cellXfs,omitempty"`
-	CellStyles   *xlsxCellStyles   `xml:"cellStyles,omitempty"`
-	Dxfs         *xlsxDxfs         `xml:"dxfs,omitempty"`
-	TableStyles  *xlsxTableStyles  `xml:"tableStyles,omitempty"`
-	Colors       *xlsxStyleColors  `xml:"colors,omitempty"`
+	NumFmts      *xlsxNumFmts      `xml:"numFmts"`
+	Fonts        *xlsxFonts        `xml:"fonts"`
+	Fills        *xlsxFills        `xml:"fills"`
+	Borders      *xlsxBorders      `xml:"borders"`
+	CellStyleXfs *xlsxCellStyleXfs `xml:"cellStyleXfs"`
+	CellXfs      *xlsxCellXfs      `xml:"cellXfs"`
+	CellStyles   *xlsxCellStyles   `xml:"cellStyles"`
+	Dxfs         *xlsxDxfs         `xml:"dxfs"`
+	TableStyles  *xlsxTableStyles  `xml:"tableStyles"`
+	Colors       *xlsxStyleColors  `xml:"colors"`
 	ExtLst       *xlsxExtLst       `xml:"extLst"`
 }
 
@@ -60,7 +60,7 @@ type xlsxProtection struct {
 // xlsxLine expresses a single set of cell border.
 type xlsxLine struct {
 	Style string     `xml:"style,attr,omitempty"`
-	Color *xlsxColor `xml:"color,omitempty"`
+	Color *xlsxColor `xml:"color"`
 }
 
 // xlsxColor is a common mapping used for both the fgColor and bgColor elements.
@@ -87,13 +87,13 @@ type xlsxFonts struct {
 // xlsxFont directly maps the font element. This element defines the
 // properties for one of the fonts used in this workbook.
 type xlsxFont struct {
-	B        *attrValBool   `xml:"b,omitempty"`
-	I        *attrValBool   `xml:"i,omitempty"`
-	Strike   *attrValBool   `xml:"strike,omitempty"`
-	Outline  *attrValBool   `xml:"outline,omitempty"`
-	Shadow   *attrValBool   `xml:"shadow,omitempty"`
-	Condense *attrValBool   `xml:"condense,omitempty"`
-	Extend   *attrValBool   `xml:"extend,omitempty"`
+	B        *attrValBool   `xml:"b"`
+	I        *attrValBool   `xml:"i"`
+	Strike   *attrValBool   `xml:"strike"`
+	Outline  *attrValBool   `xml:"outline"`
+	Shadow   *attrValBool   `xml:"shadow"`
+	Condense *attrValBool   `xml:"condense"`
+	Extend   *attrValBool   `xml:"extend"`
 	U        *attrValString `xml:"u"`
 	Sz       *attrValFloat  `xml:"sz"`
 	Color    *xlsxColor     `xml:"color"`
@@ -109,14 +109,14 @@ type xlsxFont struct {
 // applied across the cell.
 type xlsxFills struct {
 	Count int         `xml:"count,attr"`
-	Fill  []*xlsxFill `xml:"fill,omitempty"`
+	Fill  []*xlsxFill `xml:"fill"`
 }
 
 // xlsxFill directly maps the fill element. This element specifies fill
 // formatting.
 type xlsxFill struct {
-	PatternFill  *xlsxPatternFill  `xml:"patternFill,omitempty"`
-	GradientFill *xlsxGradientFill `xml:"gradientFill,omitempty"`
+	PatternFill  *xlsxPatternFill  `xml:"patternFill"`
+	GradientFill *xlsxGradientFill `xml:"gradientFill"`
 }
 
 // xlsxPatternFill is used to specify cell fill information for pattern and
@@ -138,7 +138,7 @@ type xlsxGradientFill struct {
 	Right  float64                 `xml:"right,attr,omitempty"`
 	Top    float64                 `xml:"top,attr,omitempty"`
 	Type   string                  `xml:"type,attr,omitempty"`
-	Stop   []*xlsxGradientFillStop `xml:"stop,omitempty"`
+	Stop   []*xlsxGradientFillStop `xml:"stop"`
 }
 
 // xlsxGradientFillStop directly maps the stop element.
@@ -152,7 +152,7 @@ type xlsxGradientFillStop struct {
 // the workbook.
 type xlsxBorders struct {
 	Count  int           `xml:"count,attr"`
-	Border []*xlsxBorder `xml:"border,omitempty"`
+	Border []*xlsxBorder `xml:"border"`
 }
 
 // xlsxBorder directly maps the border element. Expresses a single set of cell
@@ -177,7 +177,7 @@ type xlsxBorder struct {
 type xlsxCellStyles struct {
 	XMLName   xml.Name         `xml:"cellStyles"`
 	Count     int              `xml:"count,attr"`
-	CellStyle []*xlsxCellStyle `xml:"cellStyle,omitempty"`
+	CellStyle []*xlsxCellStyle `xml:"cellStyle"`
 }
 
 // xlsxCellStyle directly maps the cellStyle element. This element represents
@@ -187,10 +187,10 @@ type xlsxCellStyle struct {
 	XMLName       xml.Name `xml:"cellStyle"`
 	Name          string   `xml:"name,attr"`
 	XfID          int      `xml:"xfId,attr"`
-	BuiltInID     *int     `xml:"builtinId,attr,omitempty"`
-	ILevel        *int     `xml:"iLevel,attr,omitempty"`
-	Hidden        *bool    `xml:"hidden,attr,omitempty"`
-	CustomBuiltIn *bool    `xml:"customBuiltin,attr,omitempty"`
+	BuiltInID     *int     `xml:"builtinId,attr"`
+	ILevel        *int     `xml:"iLevel,attr"`
+	Hidden        *bool    `xml:"hidden,attr"`
+	CustomBuiltIn *bool    `xml:"customBuiltin,attr"`
 }
 
 // xlsxCellStyleXfs directly maps the cellStyleXfs element. This element
@@ -245,7 +245,7 @@ type xlsxCellXfs struct {
 // to any formatting already present on the object using the dxf record.
 type xlsxDxfs struct {
 	Count int        `xml:"count,attr"`
-	Dxfs  []*xlsxDxf `xml:"dxf,omitempty"`
+	Dxfs  []*xlsxDxf `xml:"dxf"`
 }
 
 // xlsxDxf directly maps the dxf element. A single dxf record, expressing
@@ -273,7 +273,7 @@ type xlsxTableStyles struct {
 	Count             int               `xml:"count,attr"`
 	DefaultPivotStyle string            `xml:"defaultPivotStyle,attr"`
 	DefaultTableStyle string            `xml:"defaultTableStyle,attr"`
-	TableStyles       []*xlsxTableStyle `xml:"tableStyle,omitempty"`
+	TableStyles       []*xlsxTableStyle `xml:"tableStyle"`
 }
 
 // xlsxTableStyle directly maps the tableStyle element. This element represents
@@ -293,7 +293,7 @@ type xlsxTableStyle struct {
 // to format and render the numeric value of a cell.
 type xlsxNumFmts struct {
 	Count  int           `xml:"count,attr"`
-	NumFmt []*xlsxNumFmt `xml:"numFmt,omitempty"`
+	NumFmt []*xlsxNumFmt `xml:"numFmt"`
 }
 
 // xlsxNumFmt directly maps the numFmt element. This element specifies number

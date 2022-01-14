@@ -113,15 +113,15 @@ type xlsxPageSetUp struct {
 	Errors             string   `xml:"errors,attr,omitempty"`
 	FirstPageNumber    string   `xml:"firstPageNumber,attr,omitempty"`
 	FitToHeight        *int     `xml:"fitToHeight,attr"`
-	FitToWidth         *int     `xml:"fitToWidth,attr,omitempty"`
+	FitToWidth         *int     `xml:"fitToWidth,attr"`
 	HorizontalDPI      int      `xml:"horizontalDpi,attr,omitempty"`
 	RID                string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 	Orientation        string   `xml:"orientation,attr,omitempty"`
 	PageOrder          string   `xml:"pageOrder,attr,omitempty"`
 	PaperHeight        string   `xml:"paperHeight,attr,omitempty"`
-	PaperSize          *int     `xml:"paperSize,attr,omitempty"`
+	PaperSize          *int     `xml:"paperSize,attr"`
 	PaperWidth         string   `xml:"paperWidth,attr,omitempty"`
-	Scale              int      `xml:"scale,attr"`
+	Scale              int      `xml:"scale,attr,omitempty"`
 	UseFirstPageNumber bool     `xml:"useFirstPageNumber,attr,omitempty"`
 	UsePrinterDefaults bool     `xml:"usePrinterDefaults,attr,omitempty"`
 	VerticalDPI        int      `xml:"verticalDpi,attr,omitempty"`
@@ -239,9 +239,9 @@ type xlsxSheetPr struct {
 	CodeName                          string           `xml:"codeName,attr,omitempty"`
 	FilterMode                        bool             `xml:"filterMode,attr,omitempty"`
 	EnableFormatConditionsCalculation *bool            `xml:"enableFormatConditionsCalculation,attr"`
-	TabColor                          *xlsxTabColor    `xml:"tabColor,omitempty"`
-	OutlinePr                         *xlsxOutlinePr   `xml:"outlinePr,omitempty"`
-	PageSetUpPr                       *xlsxPageSetUpPr `xml:"pageSetUpPr,omitempty"`
+	TabColor                          *xlsxTabColor    `xml:"tabColor"`
+	OutlinePr                         *xlsxOutlinePr   `xml:"outlinePr"`
+	PageSetUpPr                       *xlsxPageSetUpPr `xml:"pageSetUpPr"`
 }
 
 // xlsxOutlinePr maps to the outlinePr element. SummaryBelow allows you to

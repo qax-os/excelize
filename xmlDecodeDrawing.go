@@ -78,7 +78,7 @@ type decodeWsDr struct {
 type decodeTwoCellAnchor struct {
 	From       *decodeFrom       `xml:"from"`
 	To         *decodeTo         `xml:"to"`
-	Pic        *decodePic        `xml:"pic,omitempty"`
+	Pic        *decodePic        `xml:"pic"`
 	ClientData *decodeClientData `xml:"clientData"`
 }
 

@@ -473,6 +473,8 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 			return nil
 		}
 	}
+	defaultVal := true
+	avb.Val = &defaultVal
 	return nil
 }
 
