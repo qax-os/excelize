@@ -300,7 +300,7 @@ func (f *File) AutoFilter(sheet, hCell, vCell, format string) error {
 	ref, filterDB := cellStart+":"+cellEnd, "_xlnm._FilterDatabase"
 	wb := f.workbookReader()
 	sheetID := f.GetSheetIndex(sheet)
-	filterRange := fmt.Sprintf("%s!%s", sheet, ref)
+	filterRange := fmt.Sprintf("'%s'!%s", sheet, ref)
 	d := xlsxDefinedName{
 		Name:         filterDB,
 		Hidden:       true,
