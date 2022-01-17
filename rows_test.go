@@ -44,13 +44,6 @@ func TestRows(t *testing.T) {
 	}
 	assert.NoError(t, f.Close())
 
-	f = NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`))
-	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	delete(f.checked, "xl/worksheets/sheet1.xml")
-	_, err = f.Rows("Sheet1")
-	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
-
 	f.Pkg.Store("xl/worksheets/sheet1.xml", nil)
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
@@ -82,7 +75,6 @@ func TestRowsIterator(t *testing.T) {
 	for rows.Next() {
 		rowCount++
 		assert.Equal(t, rowCount, rows.CurrentRow())
-		assert.Equal(t, expectedNumRow, rows.TotalRows())
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
@@ -186,7 +178,7 @@ func TestColumns(t *testing.T) {
 	assert.NoError(t, err)
 
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="A"><c r="A1" t="s"><v>1</v></c></row><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`)))
-	rows.stashRow, rows.curRow = 0, 1
+	assert.True(t, rows.Next())
 	_, err = rows.Columns()
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
@@ -194,8 +186,8 @@ func TestColumns(t *testing.T) {
 	_, err = rows.Columns()
 	assert.NoError(t, err)
 
-	rows.curRow = 3
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
+	assert.True(t, rows.Next())
 	_, err = rows.Columns()
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 

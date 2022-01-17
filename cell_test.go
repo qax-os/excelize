@@ -340,6 +340,14 @@ func TestGetCellType(t *testing.T) {
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
+func TestGetValueFrom(t *testing.T) {
+	f := NewFile()
+	c := xlsxC{T: "s"}
+	value, err := c.getValueFrom(f, f.sharedStringsReader(), false)
+	assert.NoError(t, err)
+	assert.Equal(t, "", value)
+}
+
 func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
 	f := NewFile()
