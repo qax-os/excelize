@@ -277,6 +277,15 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 //    Price < 2000
 //
 func (f *File) AutoFilter(sheet, hCell, vCell, format string) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+
+	return f.setupAutofilter(sheet, hCell, vCell, format, ws)
+}
+
+func (f *File) setupAutofilter(sheet, hCell, vCell, format string, ws *xlsxWorksheet) error {
 	hCol, hRow, err := CellNameToCoordinates(hCell)
 	if err != nil {
 		return err
@@ -325,20 +334,16 @@ func (f *File) AutoFilter(sheet, hCell, vCell, format string) error {
 		}
 	}
 	refRange := vCol - hCol
-	return f.autoFilter(sheet, ref, refRange, hCol, formatSet)
+	return f.autoFilter(ws, ref, refRange, hCol, formatSet)
 }
 
 // autoFilter provides a function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
-func (f *File) autoFilter(sheet, ref string, refRange, col int, formatSet *formatAutoFilter) error {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
-	}
+func (f *File) autoFilter(ws *xlsxWorksheet, ref string, refRange, col int, formatSet *formatAutoFilter) error {
 	if ws.SheetPr != nil {
 		ws.SheetPr.FilterMode = true
 	}
-	ws.SheetPr = &xlsxSheetPr{FilterMode: true}
+	ws.SheetPr = &xlsxSheetPr{FilterMode: true} //this overwrites the values already set, TODO file a bug report or fix
 	filter := &xlsxAutoFilter{
 		Ref: ref,
 	}

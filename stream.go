@@ -402,6 +402,13 @@ func (sw *StreamWriter) SetPanes(panes string) {
 	sw.worksheet.setPanes(panes)
 }
 
+// AutoFilter provides the method to add auto filter in a worksheet
+//
+// see File.AutoFilter for more details
+func (sw *StreamWriter) AutoFilter(hCell, vCell, format string) error {
+	return sw.File.setupAutofilter(sw.Sheet, hCell, vCell, format, sw.worksheet)
+}
+
 // MergeCell provides a function to merge cells by a given coordinate area for
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
