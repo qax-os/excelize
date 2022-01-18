@@ -554,8 +554,9 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 // is written to the temp file with Sync, which may return an error.
 // Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
-	tmp *os.File
-	buf bytes.Buffer
+	tmp    *os.File
+	buf    bytes.Buffer
+	header bytes.Buffer
 }
 
 // Write to the in-memory buffer. The err is always nil.
@@ -568,10 +569,18 @@ func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
 	return bw.buf.WriteString(p)
 }
 
+func (bw *bufferedWriter) HeaderWriter() io.Writer {
+	return &bw.header
+}
+
 // Reader provides read-access to the underlying buffer/file.
 func (bw *bufferedWriter) Reader() (io.Reader, error) {
+	//header reader
+	hr := bytes.NewReader(bw.header.Bytes())
+
 	if bw.tmp == nil {
-		return bytes.NewReader(bw.buf.Bytes()), nil
+		mr := bytes.NewReader(bw.buf.Bytes())
+		return io.MultiReader(hr, mr), nil
 	}
 	if err := bw.Flush(); err != nil {
 		return nil, err
@@ -580,8 +589,11 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// os.File.ReadAt does not affect the cursor position and is safe to use here
-	return io.NewSectionReader(bw.tmp, 0, fi.Size()), nil
+	fr := io.NewSectionReader(bw.tmp, 0, fi.Size())
+
+	return io.MultiReader(hr, fr), nil
 }
 
 // Sync will write the in-memory buffer to a temp file, if the in-memory
