@@ -821,11 +821,18 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 //    f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 //
 func (f *File) SetPanes(sheet, panes string) error {
-	fs, _ := parseFormatPanesSet(panes)
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
+
+	ws.setPanes(panes)
+	return nil
+}
+
+func (ws *xlsxWorksheet) setPanes(panes string) {
+	fs, _ := parseFormatPanesSet(panes)
+
 	p := &xlsxPane{
 		ActivePane:  fs.ActivePane,
 		TopLeftCell: fs.TopLeftCell,
@@ -850,7 +857,6 @@ func (f *File) SetPanes(sheet, panes string) error {
 		})
 	}
 	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Selection = s
-	return err
 }
 
 // GetSheetVisible provides a function to get worksheet visible by given worksheet

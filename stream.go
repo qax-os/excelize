@@ -394,6 +394,14 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	return nil
 }
 
+// SetPanes provides a function to create and remove freeze panes and split panes
+// on a StreamWriter
+//
+// see File.SetPanes for more details
+func (sw *StreamWriter) SetPanes(panes string) {
+	sw.worksheet.setPanes(panes)
+}
+
 // MergeCell provides a function to merge cells by a given coordinate area for
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
