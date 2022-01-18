@@ -71,10 +71,10 @@ func newCellNameToCoordinatesError(cell string, err error) error {
 }
 
 var (
-	//TODO remove ErrStreamSetColWidth
-
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
+	//
+	// Deprecated: No longer returned.
 	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
 	// ErrColumnNumber defined the error message on receive an invalid column
 	// number.
