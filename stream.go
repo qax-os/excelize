@@ -422,6 +422,10 @@ func setCellFormula(c *xlsxC, formula string) {
 	}
 }
 
+// SharedString is useful for explicitly using a shared string on stream
+// and save space on strings that repeat often
+type SharedString string
+
 // setCellValFunc provides a function to set value of a cell.
 func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 	switch val := val.(type) {
@@ -433,6 +437,8 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 		c.T, c.V = setCellFloat(val, -1, 64)
 	case string:
 		c.T, c.V, c.XMLSpace = setCellStr(val)
+	case SharedString:
+		c.T, c.V, err = sw.File.setCellString(string(val))
 	case []byte:
 		c.T, c.V, c.XMLSpace = setCellStr(string(val))
 	case time.Duration:
