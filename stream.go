@@ -313,9 +313,6 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 		return err
 	}
 	if !sw.sheetWritten {
-		if len(sw.cols) > 0 {
-			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
-		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
 	}
@@ -375,16 +372,12 @@ func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
 }
 
 // SetColWidth provides a function to set the width of a single column or
-// multiple columns for the StreamWriter. Note that you must call
-// the 'SetColWidth' function before the 'SetRow' function. For example set
+// multiple columns for the StreamWriter. For example set
 // the width column B:C as 20:
 //
 //    err := streamWriter.SetColWidth(2, 3, 20)
 //
 func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
-	if sw.sheetWritten {
-		return ErrStreamSetColWidth
-	}
 	if min > TotalColumns || max > TotalColumns {
 		return ErrColumnNumber
 	}
@@ -513,6 +506,10 @@ func (sw *StreamWriter) Flush() error {
 
 	io.WriteString(hw, xml.Header+`<worksheet`+templateNamespaceIDMap)
 	bulkAppendFields(hw, sw.worksheet, 2, 5)
+
+	if len(sw.cols) > 0 {
+		io.WriteString(hw, "<cols>"+sw.cols+"</cols>")
+	}
 
 	if !sw.sheetWritten {
 		_, _ = sw.rawData.WriteString(`<sheetData>`)

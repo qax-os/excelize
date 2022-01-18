@@ -71,6 +71,8 @@ func newCellNameToCoordinatesError(cell string, err error) error {
 }
 
 var (
+	//TODO remove ErrStreamSetColWidth
+
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
 	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
