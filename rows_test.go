@@ -74,7 +74,6 @@ func TestRowsIterator(t *testing.T) {
 
 	for rows.Next() {
 		rowCount++
-		assert.Equal(t, rowCount, rows.CurrentRow())
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumRow, rowCount)

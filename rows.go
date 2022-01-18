@@ -79,11 +79,6 @@ type Rows struct {
 	token                   xml.Token
 }
 
-// CurrentRow returns the row number that represents the current row.
-func (rows *Rows) CurrentRow() int {
-	return rows.seekRow
-}
-
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
 	rows.seekRow++

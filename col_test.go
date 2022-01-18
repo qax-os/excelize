@@ -68,8 +68,6 @@ func TestColumnsIterator(t *testing.T) {
 
 	for cols.Next() {
 		colCount++
-		assert.Equal(t, colCount, cols.CurrentCol())
-		assert.Equal(t, expectedNumCol, cols.TotalCols())
 		require.True(t, colCount <= expectedNumCol, "colCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumCol, colCount)
@@ -85,8 +83,6 @@ func TestColumnsIterator(t *testing.T) {
 
 	for cols.Next() {
 		colCount++
-		assert.Equal(t, colCount, cols.CurrentCol())
-		assert.Equal(t, expectedNumCol, cols.TotalCols())
 		require.True(t, colCount <= 4, "colCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumCol, colCount)
@@ -131,6 +127,11 @@ func TestGetColsError(t *testing.T) {
 	cols.sheetXML = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`)
 	_, err = cols.Rows()
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+
+	f.Pkg.Store("xl/worksheets/sheet1.xml", nil)
+	f.Sheet.Store("xl/worksheets/sheet1.xml", nil)
+	_, err = f.Cols("Sheet1")
+	assert.NoError(t, err)
 }
 
 func TestColsRows(t *testing.T) {

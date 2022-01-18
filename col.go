@@ -40,16 +40,6 @@ type Cols struct {
 	sheetXML                               []byte
 }
 
-// CurrentCol returns the column number that represents the current column.
-func (cols *Cols) CurrentCol() int {
-	return cols.curCol
-}
-
-// TotalCols returns the total columns count in the worksheet.
-func (cols *Cols) TotalCols() int {
-	return cols.totalCols
-}
-
 // GetCols return all the columns in a sheet by given worksheet name (case
 // sensitive). For example:
 //

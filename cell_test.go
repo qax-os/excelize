@@ -682,8 +682,10 @@ func TestSharedStringsError(t *testing.T) {
 	rows, err := f.Rows("Sheet1")
 	assert.NoError(t, err)
 	const maxUint16 = 1<<16 - 1
+	currentRow := 0
 	for rows.Next() {
-		if rows.CurrentRow() == 19 {
+		currentRow++
+		if currentRow == 19 {
 			_, err := rows.Columns()
 			assert.NoError(t, err)
 			// Test get cell value from string item with invalid offset
@@ -705,8 +707,10 @@ func TestSharedStringsError(t *testing.T) {
 	assert.NoError(t, err)
 	rows, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
+	currentRow = 0
 	for rows.Next() {
-		if rows.CurrentRow() == 19 {
+		currentRow++
+		if currentRow == 19 {
 			_, err := rows.Columns()
 			assert.NoError(t, err)
 			break
