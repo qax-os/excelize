@@ -29,7 +29,6 @@ type StreamWriter struct {
 	File            *File
 	Sheet           string
 	SheetID         int
-	sheetWritten    bool
 	cols            string
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
@@ -312,10 +311,7 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 	if err != nil {
 		return err
 	}
-	if !sw.sheetWritten {
-		_, _ = sw.rawData.WriteString(`<sheetData>`)
-		sw.sheetWritten = true
-	}
+
 	attrs, err := marshalRowAttrs(opts...)
 	if err != nil {
 		return err
@@ -531,11 +527,8 @@ func (sw *StreamWriter) Flush() error {
 	if len(sw.cols) > 0 {
 		io.WriteString(hw, "<cols>"+sw.cols+"</cols>")
 	}
+	io.WriteString(hw, `<sheetData>`)
 
-	if !sw.sheetWritten {
-		_, _ = sw.rawData.WriteString(`<sheetData>`)
-		sw.sheetWritten = true
-	}
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
 	if sw.mergeCellsCount > 0 {
