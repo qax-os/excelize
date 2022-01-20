@@ -11,6 +11,12 @@
 
 package excelize
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+)
+
 type adjustDirection bool
 
 const (
@@ -48,6 +54,9 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
+		return err
+	}
+	if err = f.adjustDrawingRefs(ws, sheet, dir, num, offset); err != nil {
 		return err
 	}
 	checkSheet(ws)
@@ -295,6 +304,60 @@ func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) er
 				f.CalcChain.C[index].R, _ = CoordinatesToCellName(newCol, rowNum)
 			}
 		}
+	}
+	return nil
+}
+
+// adjustDrawingRefs uses for get drawing data and adjust all it's anchors
+// after adjusting it writes updated drawing data in file
+func (f *File) adjustDrawingRefs(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) error {
+	_, drawingXML := f.prepareDrawing(ws, 0, sheet, "")
+	wsDr, _ := f.drawingParser(drawingXML)
+	if err := f.adjustCellAnchors(wsDr.AbsoluteAnchor, dir, num, offset); err != nil {
+		return err
+	}
+	if err := f.adjustCellAnchors(wsDr.OneCellAnchor, dir, num, offset); err != nil {
+		return err
+	}
+	if err := f.adjustCellAnchors(wsDr.TwoCellAnchor, dir, num, offset); err != nil {
+		return err
+	}
+
+	f.Drawings.Store(drawingXML, wsDr)
+	f.drawingsWriter()
+	return nil
+}
+
+// adjustCellAnchors need to modify all drawing cell anchors,
+// but now it doesn't make correct decode, because of anchor struct's fields have xml-tags with '%tag%:',
+// if we use xml:"name", it works okay
+func (f *File) adjustCellAnchors(anchors []*xdrCellAnchor, dir adjustDirection, num, offset int) error {
+	for i, anchor := range anchors {
+		newAnchor := new(xdrCellAnchor)
+		if err := f.xmlNewDecoder(
+			bytes.NewReader(
+				// addXMLHeadersToAnchorData needs to make correct xml
+				// document with current anchor's innerXML data
+				// TODO: addXMLHeadersToAnchorData
+				namespaceStrictToTransitional(f.addXMLHeadersToAnchorData(anchor.GraphicFrame)),
+			),
+		).Decode(newAnchor); err != nil && err != io.EOF {
+			err = fmt.Errorf("xml decode error: %s", err)
+			return err
+		}
+		if dir == rows && newAnchor.From.Row > num {
+			newAnchor.From.Row += offset
+			newAnchor.To.Row += offset
+		}
+		if dir == columns && newAnchor.From.Col > num {
+			newAnchor.From.Col += offset
+			newAnchor.To.Col += offset
+		}
+
+		// updateGraphicFrame needs to update anchor's innerXML data by changes
+		// TODO: anchor.updateGraphicFrame()
+
+		anchors[i] = anchor
 	}
 	return nil
 }
