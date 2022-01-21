@@ -102,10 +102,6 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &formatAutoFilter{
-		Column:     "A",
-		Expression: "",
-	}), "sheet SheetN is not exist")
 	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
 		Column:     "-",
 		Expression: "-",
