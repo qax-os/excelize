@@ -102,15 +102,18 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+
+	assert.EqualError(t, f.autoFilter(ws, "A1", 1, 1, &formatAutoFilter{
 		Column:     "-",
 		Expression: "-",
 	}), newInvalidColumnNameError("-").Error())
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &formatAutoFilter{
+	assert.EqualError(t, f.autoFilter(ws, "A1", 1, 100, &formatAutoFilter{
 		Column:     "A",
 		Expression: "-",
 	}), `incorrect index of column 'A'`)
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
+	assert.EqualError(t, f.autoFilter(ws, "A1", 1, 1, &formatAutoFilter{
 		Column:     "A",
 		Expression: "-",
 	}), `incorrect number of tokens in criteria '-'`)
