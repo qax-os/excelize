@@ -142,6 +142,11 @@ func TestStreamSetColWidth(t *testing.T) {
 	assert.EqualError(t, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1), ErrColumnWidth.Error())
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
 	assert.NoError(t, streamWriter.SetColWidth(2, 3, 20))
+	assert.NoError(t, streamWriter.Flush())
+
+	width, err := file.GetColWidth("Sheet1", "C")
+	assert.NoError(t, err)
+	assert.InDelta(t, 20, width, 0.01)
 }
 
 func TestStreamTable(t *testing.T) {
