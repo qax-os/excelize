@@ -30,11 +30,13 @@ func TestConcurrency(t *testing.T) {
 			_, err := f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
 			assert.NoError(t, err)
 			// Concurrency set rows
-			assert.NoError(t, f.SetSheetRow("Sheet1", "B6", &[]interface{}{" Hello",
+			assert.NoError(t, f.SetSheetRow("Sheet1", "B6", &[]interface{}{
+				" Hello",
 				[]byte("World"), 42, int8(1<<8/2 - 1), int16(1<<16/2 - 1), int32(1<<32/2 - 1),
 				int64(1<<32/2 - 1), float32(42.65418), float64(-42.65418), float32(42), float64(42),
 				uint(1<<32 - 1), uint8(1<<8 - 1), uint16(1<<16 - 1), uint32(1<<32 - 1),
-				uint64(1<<32 - 1), true, complex64(5 + 10i)}))
+				uint64(1<<32 - 1), true, complex64(5 + 10i),
+			}))
 			// Concurrency create style
 			style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 			assert.NoError(t, err)
@@ -384,7 +386,7 @@ func TestGetCellFormula(t *testing.T) {
 
 func ExampleFile_SetCellFloat() {
 	f := NewFile()
-	var x = 3.14159265
+	x := 3.14159265
 	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
 		fmt.Println(err)
 	}
@@ -534,6 +536,7 @@ func TestGetCellRichText(t *testing.T) {
 	_, err = f.GetCellRichText("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
+
 func TestSetCellRichText(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))

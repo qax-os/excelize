@@ -74,7 +74,7 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 // getSheetComments provides the method to get the target comment reference by
 // given worksheet file path.
 func (f *File) getSheetComments(sheetFile string) string {
-	var rels = "xl/worksheets/_rels/" + sheetFile + ".rels"
+	rels := "xl/worksheets/_rels/" + sheetFile + ".rels"
 	if sheetRels := f.relsReader(rels); sheetRels != nil {
 		sheetRels.Lock()
 		defer sheetRels.Unlock()

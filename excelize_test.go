@@ -175,7 +175,10 @@ func TestSaveFile(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSaveFile.xlsx")))
+	assert.EqualError(t, f.SaveAs(filepath.Join("test", "TestSaveFile.xlsb")), ErrWorkbookExt.Error())
+	for _, ext := range []string{".xlam", ".xlsm", ".xlsx", ".xltm", ".xltx"} {
+		assert.NoError(t, f.SaveAs(filepath.Join("test", fmt.Sprintf("TestSaveFile%s", ext))))
+	}
 	assert.NoError(t, f.Close())
 	f, err = OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
 	if !assert.NoError(t, err) {
@@ -189,7 +192,7 @@ func TestSaveAsWrongPath(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 	// Test write file to not exist directory.
-	assert.EqualError(t, f.SaveAs(""), "open .: is a directory")
+	assert.Error(t, f.SaveAs(filepath.Join("x", "Book1.xlsx")))
 	assert.NoError(t, f.Close())
 }
 
@@ -1305,7 +1308,8 @@ func TestDeleteSheetFromWorkbookRels(t *testing.T) {
 
 func TestAttrValToInt(t *testing.T) {
 	_, err := attrValToInt("r", []xml.Attr{
-		{Name: xml.Name{Local: "r"}, Value: "s"}})
+		{Name: xml.Name{Local: "r"}, Value: "s"},
+	})
 	assert.EqualError(t, err, `strconv.Atoi: parsing "s": invalid syntax`)
 }
 

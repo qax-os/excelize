@@ -159,7 +159,6 @@ func TestJoinCellName_Error(t *testing.T) {
 			test(col.Name, row)
 		}
 	}
-
 }
 
 func TestCellNameToCoordinates_OK(t *testing.T) {

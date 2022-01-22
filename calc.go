@@ -1377,7 +1377,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 	if cellRanges.Len() > 0 {
 		arg.Type = ArgMatrix
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
-			var matrixRow = []formulaArg{}
+			matrixRow := []formulaArg{}
 			for col := valueRange[2]; col <= valueRange[3]; col++ {
 				var cell, value string
 				if cell, err = CoordinatesToCellName(col, row); err != nil {
@@ -1473,7 +1473,7 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, err error) {
 	var value, expected float64
 	var e error
-	var prepareValue = func(val, cond string) (value float64, expected float64, err error) {
+	prepareValue := func(val, cond string) (value float64, expected float64, err error) {
 		if value, err = strconv.ParseFloat(val, 64); err != nil {
 			return
 		}
@@ -3385,7 +3385,7 @@ func (fn *formulaFuncs) DECIMAL(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "DECIMAL requires 2 numeric arguments")
 	}
-	var text = argsList.Front().Value.(formulaArg).String
+	text := argsList.Front().Value.(formulaArg).String
 	var radix int
 	var err error
 	radix, err = strconv.Atoi(argsList.Back().Value.(formulaArg).String)
@@ -3934,7 +3934,7 @@ func (fn *formulaFuncs) MDETERM(argsList *list.List) (result formulaArg) {
 		return newErrorFormulaArg(formulaErrorVALUE, "MDETERM requires at least 1 argument")
 	}
 	strMtx = argsList.Front().Value.(formulaArg).Matrix
-	var rows = len(strMtx)
+	rows := len(strMtx)
 	for _, row := range argsList.Front().Value.(formulaArg).Matrix {
 		if len(row) != rows {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
@@ -4257,30 +4257,107 @@ type romanNumerals struct {
 
 var romanTable = [][]romanNumerals{
 	{
-		{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"}, {100, "C"}, {90, "XC"},
-		{50, "L"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+		{1000, "M"},
+		{900, "CM"},
+		{500, "D"},
+		{400, "CD"},
+		{100, "C"},
+		{90, "XC"},
+		{50, "L"},
+		{40, "XL"},
+		{10, "X"},
+		{9, "IX"},
+		{5, "V"},
+		{4, "IV"},
+		{1, "I"},
 	},
 	{
-		{1000, "M"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {450, "LD"}, {400, "CD"},
-		{100, "C"}, {95, "VC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"},
-		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+		{1000, "M"},
+		{950, "LM"},
+		{900, "CM"},
+		{500, "D"},
+		{450, "LD"},
+		{400, "CD"},
+		{100, "C"},
+		{95, "VC"},
+		{90, "XC"},
+		{50, "L"},
+		{45, "VL"},
+		{40, "XL"},
+		{10, "X"},
+		{9, "IX"},
+		{5, "V"},
+		{4, "IV"},
+		{1, "I"},
 	},
 	{
-		{1000, "M"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"}, {490, "XD"},
-		{450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"},
-		{45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+		{1000, "M"},
+		{990, "XM"},
+		{950, "LM"},
+		{900, "CM"},
+		{500, "D"},
+		{490, "XD"},
+		{450, "LD"},
+		{400, "CD"},
+		{100, "C"},
+		{99, "IC"},
+		{90, "XC"},
+		{50, "L"},
+		{45, "VL"},
+		{40, "XL"},
+		{10, "X"},
+		{9, "IX"},
+		{5, "V"},
+		{4, "IV"},
+		{1, "I"},
 	},
 	{
-		{1000, "M"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"}, {500, "D"},
-		{495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"}, {100, "C"}, {99, "IC"},
-		{90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"}, {10, "X"}, {9, "IX"},
-		{5, "V"}, {4, "IV"}, {1, "I"},
+		{1000, "M"},
+		{995, "VM"},
+		{990, "XM"},
+		{950, "LM"},
+		{900, "CM"},
+		{500, "D"},
+		{495, "VD"},
+		{490, "XD"},
+		{450, "LD"},
+		{400, "CD"},
+		{100, "C"},
+		{99, "IC"},
+		{90, "XC"},
+		{50, "L"},
+		{45, "VL"},
+		{40, "XL"},
+		{10, "X"},
+		{9, "IX"},
+		{5, "V"},
+		{4, "IV"},
+		{1, "I"},
 	},
 	{
-		{1000, "M"}, {999, "IM"}, {995, "VM"}, {990, "XM"}, {950, "LM"}, {900, "CM"},
-		{500, "D"}, {499, "ID"}, {495, "VD"}, {490, "XD"}, {450, "LD"}, {400, "CD"},
-		{100, "C"}, {99, "IC"}, {90, "XC"}, {50, "L"}, {45, "VL"}, {40, "XL"},
-		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
+		{1000, "M"},
+		{999, "IM"},
+		{995, "VM"},
+		{990, "XM"},
+		{950, "LM"},
+		{900, "CM"},
+		{500, "D"},
+		{499, "ID"},
+		{495, "VD"},
+		{490, "XD"},
+		{450, "LD"},
+		{400, "CD"},
+		{100, "C"},
+		{99, "IC"},
+		{90, "XC"},
+		{50, "L"},
+		{45, "VL"},
+		{40, "XL"},
+		{10, "X"},
+		{9, "IX"},
+		{5, "V"},
+		{4, "IV"},
+		{1, "I"},
 	},
 }
 
@@ -4751,8 +4828,8 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SUMIF requires at least 2 arguments")
 	}
-	var criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
-	var rangeMtx = argsList.Front().Value.(formulaArg).Matrix
+	criteria := formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+	rangeMtx := argsList.Front().Value.(formulaArg).Matrix
 	var sumRange [][]formulaArg
 	if argsList.Len() == 3 {
 		sumRange = argsList.Back().Value.(formulaArg).Matrix
@@ -5886,7 +5963,7 @@ func (fn *formulaFuncs) MEDIAN(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MEDIAN requires at least 1 argument")
 	}
-	var values = []float64{}
+	values := []float64{}
 	var median, digits float64
 	var err error
 	for token := argsList.Front(); token != nil; token = token.Next() {
@@ -9047,7 +9124,6 @@ func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte 
 			if matchPattern(rs, ls) {
 				return criteriaEq
 			}
-
 		}
 		return map[int]byte{1: criteriaG, -1: criteriaL, 0: criteriaEq}[strings.Compare(ls, rs)]
 	case ArgEmpty:
@@ -9931,9 +10007,8 @@ func (fn *formulaFuncs) ACCRINT(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 		}
 	}
-	cm := newBoolFormulaArg(true)
 	if argsList.Len() == 8 {
-		if cm = argsList.Back().Value.(formulaArg).ToBool(); cm.Type != ArgNumber {
+		if cm := argsList.Back().Value.(formulaArg).ToBool(); cm.Type != ArgNumber {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 	}
@@ -10206,10 +10281,8 @@ func coupdays(from, to time.Time, basis int) float64 {
 			date = date.AddDate(0, 13-int(date.Month()), 0)
 		}
 		days += getDaysInMonthRange(toY, int(date.Month()), int(toM)-1, basis)
-		date = date.AddDate(0, int(toM)-int(date.Month()), 0)
 	}
-	days += toDay - fromDay
-	if days > 0 {
+	if days += toDay - fromDay; days > 0 {
 		return float64(days)
 	}
 	return 0
@@ -11375,8 +11448,7 @@ func (fn *formulaFuncs) ODDFPRICE(argsList *list.List) formulaArg {
 	if args.Type != ArgList {
 		return args
 	}
-	settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basisArg :=
-		args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6], args.List[7], args.List[8]
+	settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basisArg := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6], args.List[7], args.List[8]
 	if basisArg.Number < 0 || basisArg.Number > 4 {
 		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
 	}

@@ -195,8 +195,7 @@ type xlsxItem struct {
 }
 
 // xlsxAutoSortScope represents the sorting scope for the PivotTable.
-type xlsxAutoSortScope struct {
-}
+type xlsxAutoSortScope struct{}
 
 // xlsxRowFields represents the collection of row fields for the PivotTable.
 type xlsxRowFields struct {
@@ -225,8 +224,7 @@ type xlsxI struct {
 }
 
 // xlsxX represents an array of indexes to cached shared item values.
-type xlsxX struct {
-}
+type xlsxX struct{}
 
 // xlsxColFields represents the collection of fields that are on the column
 // axis of the PivotTable.
@@ -281,8 +279,7 @@ type xlsxDataField struct {
 
 // xlsxConditionalFormats represents the collection of conditional formats
 // applied to a PivotTable.
-type xlsxConditionalFormats struct {
-}
+type xlsxConditionalFormats struct{}
 
 // xlsxPivotTableStyleInfo represent information on style applied to the
 // PivotTable.

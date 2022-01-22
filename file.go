@@ -70,6 +70,17 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		return ErrMaxFileNameLength
 	}
 	f.Path = name
+	contentType, ok := map[string]string{
+		".xlam": ContentTypeAddinMacro,
+		".xlsm": ContentTypeMacro,
+		".xlsx": ContentTypeSheetML,
+		".xltm": ContentTypeTemplateMacro,
+		".xltx": ContentTypeTemplate,
+	}[filepath.Ext(f.Path)]
+	if !ok {
+		return ErrWorkbookExt
+	}
+	f.setContentTypePartProjectExtensions(contentType)
 	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
 	if err != nil {
 		return err

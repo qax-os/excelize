@@ -123,7 +123,6 @@ func TestPageLayoutOption(t *testing.T) {
 
 	for i, test := range testData {
 		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-
 			opt := test.nonDefault
 			t.Logf("option %T", opt)
 
@@ -452,6 +451,7 @@ func BenchmarkNewSheet(b *testing.B) {
 		}
 	})
 }
+
 func newSheetWithSet() {
 	file := NewFile()
 	file.NewSheet("sheet1")

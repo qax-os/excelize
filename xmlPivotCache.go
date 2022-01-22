@@ -79,8 +79,7 @@ type xlsxWorksheetSource struct {
 // PivotTable is a collection of ranges in the workbook. The ranges are
 // specified in the rangeSets collection. The logic for how the application
 // consolidates the data in the ranges is application- defined.
-type xlsxConsolidation struct {
-}
+type xlsxConsolidation struct{}
 
 // xlsxCacheFields represents the collection of field definitions in the
 // source data.
@@ -144,8 +143,7 @@ type xlsxSharedItems struct {
 }
 
 // xlsxMissing represents a value that was not specified.
-type xlsxMissing struct {
-}
+type xlsxMissing struct{}
 
 // xlsxNumber represents a numeric value in the PivotTable.
 type xlsxNumber struct {
@@ -167,18 +165,15 @@ type xlsxNumber struct {
 
 // xlsxTuples represents members for the OLAP sheet data entry, also known as
 // a tuple.
-type xlsxTuples struct {
-}
+type xlsxTuples struct{}
 
 // xlsxBoolean represents a boolean value for an item in the PivotTable.
-type xlsxBoolean struct {
-}
+type xlsxBoolean struct{}
 
 // xlsxError represents an error value. The use of this item indicates that an
 // error value is present in the PivotTable source. The error is recorded in
 // the value attribute.
-type xlsxError struct {
-}
+type xlsxError struct{}
 
 // xlsxString represents a character value in a PivotTable.
 type xlsxString struct {
@@ -199,45 +194,35 @@ type xlsxString struct {
 }
 
 // xlsxDateTime represents a date-time value in the PivotTable.
-type xlsxDateTime struct {
-}
+type xlsxDateTime struct{}
 
 // xlsxFieldGroup represents the collection of properties for a field group.
-type xlsxFieldGroup struct {
-}
+type xlsxFieldGroup struct{}
 
 // xlsxCacheHierarchies represents the collection of OLAP hierarchies in the
 // PivotCache.
-type xlsxCacheHierarchies struct {
-}
+type xlsxCacheHierarchies struct{}
 
 // xlsxKpis represents the collection of Key Performance Indicators (KPIs)
 // defined on the OLAP server and stored in the PivotCache.
-type xlsxKpis struct {
-}
+type xlsxKpis struct{}
 
 // xlsxTupleCache represents the cache of OLAP sheet data members, or tuples.
-type xlsxTupleCache struct {
-}
+type xlsxTupleCache struct{}
 
 // xlsxCalculatedItems represents the collection of calculated items.
-type xlsxCalculatedItems struct {
-}
+type xlsxCalculatedItems struct{}
 
 // xlsxCalculatedMembers represents the collection of calculated members in an
 // OLAP PivotTable.
-type xlsxCalculatedMembers struct {
-}
+type xlsxCalculatedMembers struct{}
 
 // xlsxDimensions represents the collection of PivotTable OLAP dimensions.
-type xlsxDimensions struct {
-}
+type xlsxDimensions struct{}
 
 // xlsxMeasureGroups represents the collection of PivotTable OLAP measure
 // groups.
-type xlsxMeasureGroups struct {
-}
+type xlsxMeasureGroups struct{}
 
 // xlsxMaps represents the PivotTable OLAP measure group - Dimension maps.
-type xlsxMaps struct {
-}
+type xlsxMaps struct{}

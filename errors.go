@@ -106,6 +106,9 @@ var (
 	// ErrImgExt defined the error message on receive an unsupported image
 	// extension.
 	ErrImgExt = errors.New("unsupported image extension")
+	// ErrWorkbookExt defined the error message on receive an unsupported
+	// workbook extension.
+	ErrWorkbookExt = errors.New("unsupported workbook extension")
 	// ErrMaxFileNameLength defined the error message on receive the file name
 	// length overflow.
 	ErrMaxFileNameLength = errors.New("file name length exceeds maximum limit")

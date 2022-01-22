@@ -199,7 +199,6 @@ func convDataValidationType(t DataValidationType) string {
 	}
 
 	return typeMap[t]
-
 }
 
 // convDataValidationOperator get excel data validation operator.
@@ -216,7 +215,6 @@ func convDataValidationOperator(o DataValidationOperator) string {
 	}
 
 	return typeMap[o]
-
 }
 
 // AddDataValidation provides set data validation on a range of the worksheet

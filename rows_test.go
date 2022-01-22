@@ -847,7 +847,8 @@ func TestDuplicateRowTo(t *testing.T) {
 	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 2))
 	// Test duplicate row on the worksheet with illegal cell coordinates
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
-		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}}})
+		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}},
+	})
 	assert.EqualError(t, f.DuplicateRowTo(sheetName, 1, 2), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test duplicate row on not exists worksheet
 	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN is not exist")

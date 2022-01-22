@@ -81,7 +81,6 @@ func ExampleFile_SetSheetViewOptions() {
 	// - zoomScale: 80
 	// Used correct value:
 	// - zoomScale: 123
-
 }
 
 func ExampleFile_GetSheetViewOptions() {

@@ -209,7 +209,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
 	}
-	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	sheetRels := f.relsReader(rels)
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
@@ -288,8 +288,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	col--
 	row--
-	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
-		f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning
@@ -372,7 +371,7 @@ func (f *File) addMedia(file []byte, ext string) string {
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
-	var imageTypes = map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
+	imageTypes := map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
 	content := f.contentTypesReader()
 	content.Lock()
 	defer content.Unlock()
@@ -465,7 +464,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
 	}
-	var rels = "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	sheetRels := f.relsReader(rels)
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}

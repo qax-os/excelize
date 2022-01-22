@@ -368,7 +368,7 @@ func (f *File) SetActiveSheet(index int) {
 // GetActiveSheetIndex provides a function to get active sheet index of the
 // spreadsheet. If not found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() (index int) {
-	var sheetID = f.getActiveSheetID()
+	sheetID := f.getActiveSheetID()
 	wb := f.workbookReader()
 	if wb != nil {
 		for idx, sheet := range wb.Sheets.Sheet {
@@ -1723,7 +1723,7 @@ func (f *File) UngroupSheets() error {
 func (f *File) InsertPageBreak(sheet, cell string) (err error) {
 	var ws *xlsxWorksheet
 	var row, col int
-	var rowBrk, colBrk = -1, -1
+	rowBrk, colBrk := -1, -1
 	if ws, err = f.workSheetReader(sheet); err != nil {
 		return
 	}

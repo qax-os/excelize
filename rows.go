@@ -362,7 +362,7 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
 	}
-	var ht = defaultRowHeight
+	ht := defaultRowHeight
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return ht, err

@@ -298,9 +298,11 @@ func TestAdjustHelper(t *testing.T) {
 	f := NewFile()
 	f.NewSheet("Sheet2")
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
-		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}}})
+		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}},
+	})
 	f.Sheet.Store("xl/worksheets/sheet2.xml", &xlsxWorksheet{
-		AutoFilter: &xlsxAutoFilter{Ref: "A1:B"}})
+		AutoFilter: &xlsxAutoFilter{Ref: "A1:B"},
+	})
 	// testing adjustHelper with illegal cell coordinates.
 	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())

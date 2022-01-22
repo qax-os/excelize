@@ -1,18 +1,17 @@
 package excelize
 
 import (
+	"fmt"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-
-	_ "golang.org/x/image/tiff"
-
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	_ "golang.org/x/image/tiff"
 
 	"github.com/stretchr/testify/assert"
 )

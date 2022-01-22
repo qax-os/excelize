@@ -3386,7 +3386,6 @@ func TestCalcCellValue(t *testing.T) {
 	_, err = f.CalcCellValue("Sheet1", "A1")
 	assert.EqualError(t, err, "not support UNSUPPORT function")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCalcCellValue.xlsx")))
-
 }
 
 func TestCalculate(t *testing.T) {
@@ -3438,7 +3437,6 @@ func TestCalcWithDefinedName(t *testing.T) {
 	result, err = f.CalcCellValue("Sheet1", "D1")
 	assert.NoError(t, err)
 	assert.Equal(t, "YES", result, `=IF("B1_as_string"=defined_name1,"YES","NO")`)
-
 }
 
 func TestCalcISBLANK(t *testing.T) {
@@ -3748,7 +3746,8 @@ func TestCalcXIRR(t *testing.T) {
 		{25.00, "02/01/2017"},
 		{8.00, "03/01/2017"},
 		{15.00, "06/01/2017"},
-		{-1e-10, "09/01/2017"}}
+		{-1e-10, "09/01/2017"},
+	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
 		"=XIRR(A1:A4,B1:B4)":     "-0.196743861298328",
@@ -3886,7 +3885,8 @@ func TestCalcXLOOKUP(t *testing.T) {
 }
 
 func TestCalcXNPV(t *testing.T) {
-	cellData := [][]interface{}{{nil, 0.05},
+	cellData := [][]interface{}{
+		{nil, 0.05},
 		{"01/01/2016", -10000, nil},
 		{"02/01/2016", 2000},
 		{"05/01/2016", 2400},
@@ -3895,7 +3895,8 @@ func TestCalcXNPV(t *testing.T) {
 		{"01/01/2017", 4100},
 		{},
 		{"02/01/2016"},
-		{"01/01/2016"}}
+		{"01/01/2016"},
+	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
 		"=XNPV(B1,B2:B7,A2:A7)": "4447.938009440515",

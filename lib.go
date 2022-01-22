@@ -490,7 +490,7 @@ func parseFormatSet(formatSet string) []byte {
 // namespaceStrictToTransitional provides a method to convert Strict and
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
-	var namespaceTranslationDic = map[string]string{
+	namespaceTranslationDic := map[string]string{
 		StrictSourceRelationship:               SourceRelationship.Value,
 		StrictSourceRelationshipOfficeDocument: SourceRelationshipOfficeDocument,
 		StrictSourceRelationshipChart:          SourceRelationshipChart,
@@ -611,8 +611,8 @@ func getXMLNamespace(space string, attr []xml.Attr) string {
 // replaceNameSpaceBytes provides a function to replace the XML root element
 // attribute by the given component part path and XML content.
 func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
-	var oldXmlns = []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	var newXmlns = []byte(templateNamespaceIDMap)
+	oldXmlns := []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	newXmlns := []byte(templateNamespaceIDMap)
 	if attr, ok := f.xmlAttr[path]; ok {
 		newXmlns = []byte(genXMLNamespace(attr))
 	}

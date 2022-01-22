@@ -963,7 +963,7 @@ func parseTime(v string, format string) string {
 	goFmt = format
 
 	if strings.Contains(goFmt, "[") {
-		var re = regexp.MustCompile(`\[.+\]`)
+		re := regexp.MustCompile(`\[.+\]`)
 		goFmt = re.ReplaceAllLiteralString(goFmt, "")
 	}
 
@@ -2388,7 +2388,7 @@ func getFillID(styleSheet *xlsxStyleSheet, style *Style) (fillID int) {
 // newFills provides a function to add fill elements in the styles.xml by
 // given cell format settings.
 func newFills(style *Style, fg bool) *xlsxFill {
-	var patterns = []string{
+	patterns := []string{
 		"none",
 		"solid",
 		"mediumGray",
@@ -2410,7 +2410,7 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		"gray0625",
 	}
 
-	var variants = []float64{
+	variants := []float64{
 		90,
 		0,
 		45,
@@ -2522,7 +2522,7 @@ func getBorderID(styleSheet *xlsxStyleSheet, style *Style) (borderID int) {
 // newBorders provides a function to add border elements in the styles.xml by
 // given borders format settings.
 func newBorders(style *Style) *xlsxBorder {
-	var styles = []string{
+	styles := []string{
 		"none",
 		"thin",
 		"medium",

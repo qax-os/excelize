@@ -82,7 +82,6 @@ func shiftJulianToNoon(julianDays, julianFraction float64) (float64, float64) {
 // minutes, seconds and nanoseconds that comprised a given fraction of a day.
 // values would round to 1 us.
 func fractionOfADay(fraction float64) (hours, minutes, seconds, nanoseconds int) {
-
 	const (
 		c1us  = 1e3
 		c1s   = 1e9
@@ -137,7 +136,7 @@ func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 // representation (stored as a floating point number) to a time.Time.
 func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 	var date time.Time
-	var wholeDaysPart = int(excelTime)
+	wholeDaysPart := int(excelTime)
 	// Excel uses Julian dates prior to March 1st 1900, and Gregorian
 	// thereafter.
 	if wholeDaysPart <= 61 {
@@ -152,7 +151,7 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		}
 		return date
 	}
-	var floatPart = excelTime - float64(wholeDaysPart) + roundEpsilon
+	floatPart := excelTime - float64(wholeDaysPart) + roundEpsilon
 	if date1904 {
 		date = excel1904Epoc
 	} else {

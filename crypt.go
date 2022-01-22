@@ -168,16 +168,20 @@ func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 			HashAlgorithm:   "SHA512",
 			SaltValue:       base64.StdEncoding.EncodeToString(keyDataSaltValue),
 		},
-		KeyEncryptors: KeyEncryptors{KeyEncryptor: []KeyEncryptor{{
-			EncryptedKey: EncryptedKey{SpinCount: 100000, KeyData: KeyData{
-				CipherAlgorithm: "AES",
-				CipherChaining:  "ChainingModeCBC",
-				HashAlgorithm:   "SHA512",
-				HashSize:        64,
-				BlockSize:       16,
-				KeyBits:         256,
-				SaltValue:       base64.StdEncoding.EncodeToString(keyEncryptors)},
-			}}},
+		KeyEncryptors: KeyEncryptors{
+			KeyEncryptor: []KeyEncryptor{{
+				EncryptedKey: EncryptedKey{
+					SpinCount: 100000, KeyData: KeyData{
+						CipherAlgorithm: "AES",
+						CipherChaining:  "ChainingModeCBC",
+						HashAlgorithm:   "SHA512",
+						HashSize:        64,
+						BlockSize:       16,
+						KeyBits:         256,
+						SaltValue:       base64.StdEncoding.EncodeToString(keyEncryptors),
+					},
+				},
+			}},
 		},
 	}
 
@@ -481,7 +485,7 @@ func convertPasswdToKey(passwd string, blockKey []byte, encryption Encryption) (
 
 // hashing data by specified hash algorithm.
 func hashing(hashAlgorithm string, buffer ...[]byte) (key []byte) {
-	var hashMap = map[string]hash.Hash{
+	hashMap := map[string]hash.Hash{
 		"md4":        md4.New(),
 		"md5":        md5.New(),
 		"ripemd-160": ripemd160.New(),
@@ -535,8 +539,7 @@ func crypt(encrypt bool, cipherAlgorithm, cipherChaining string, key, iv, input 
 // cryptPackage encrypt / decrypt package by given packageKey and encryption
 // info.
 func cryptPackage(encrypt bool, packageKey, input []byte, encryption Encryption) (outputChunks []byte, err error) {
-	encryptedKey := encryption.KeyData
-	var offset = packageOffset
+	encryptedKey, offset := encryption.KeyData, packageOffset
 	if encrypt {
 		offset = 0
 	}

@@ -327,7 +327,7 @@ func checkSheetR0(ws *xlsxWorksheet, sheetData *xlsxSheetData, r0 *xlsxRow) {
 // addRels provides a function to add relationships by given XML path,
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {
-	var uniqPart = map[string]string{
+	uniqPart := map[string]string{
 		SourceRelationshipSharedStrings: "/xl/sharedStrings.xml",
 	}
 	rels := f.relsReader(relPath)
@@ -434,7 +434,6 @@ func (f *File) AddVBAProject(bin string) error {
 	if path.Ext(bin) != ".bin" {
 		return ErrAddVBAProject
 	}
-	f.setContentTypePartVBAProjectExtensions()
 	wb := f.relsReader(f.getWorkbookRelsPath())
 	wb.Lock()
 	defer wb.Unlock()
@@ -463,9 +462,9 @@ func (f *File) AddVBAProject(bin string) error {
 	return err
 }
 
-// setContentTypePartVBAProjectExtensions provides a function to set the
-// content type for relationship parts and the main document part.
-func (f *File) setContentTypePartVBAProjectExtensions() {
+// setContentTypePartProjectExtensions provides a function to set the content
+// type for relationship parts and the main document part.
+func (f *File) setContentTypePartProjectExtensions(contentType string) {
 	var ok bool
 	content := f.contentTypesReader()
 	content.Lock()
@@ -477,7 +476,7 @@ func (f *File) setContentTypePartVBAProjectExtensions() {
 	}
 	for idx, o := range content.Overrides {
 		if o.PartName == "/xl/workbook.xml" {
-			content.Overrides[idx].ContentType = ContentTypeMacro
+			content.Overrides[idx].ContentType = contentType
 		}
 	}
 	if !ok {

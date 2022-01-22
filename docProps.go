@@ -101,7 +101,7 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 
 // GetAppProps provides a function to get document application properties.
 func (f *File) GetAppProps() (ret *AppProperties, err error) {
-	var app = new(xlsxProperties)
+	app := new(xlsxProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
 		err = fmt.Errorf("xml decode error: %s", err)
@@ -204,8 +204,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		Category:       core.Category,
 		Version:        core.Version,
 	}, nil
-	newProps.Created.Text, newProps.Created.Type, newProps.Modified.Text, newProps.Modified.Type =
-		core.Created.Text, core.Created.Type, core.Modified.Text, core.Modified.Type
+	newProps.Created.Text, newProps.Created.Type, newProps.Modified.Text, newProps.Modified.Type = core.Created.Text, core.Created.Type, core.Modified.Text, core.Modified.Type
 	fields = []string{
 		"Category", "ContentStatus", "Creator", "Description", "Identifier", "Keywords",
 		"LastModifiedBy", "Revision", "Subject", "Title", "Language", "Version",
@@ -230,7 +229,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 
 // GetDocProps provides a function to get document core properties.
 func (f *File) GetDocProps() (ret *DocProperties, err error) {
-	var core = new(decodeCoreProperties)
+	core := new(decodeCoreProperties)
 
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {

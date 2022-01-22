@@ -157,7 +157,8 @@ func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 				Cmpd: "sng",
 				Algn: "ctr",
 				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{Val: "tx1",
+					SchemeClr: &aSchemeClr{
+						Val: "tx1",
 						LumMod: &attrValInt{
 							Val: intPtr(15000),
 						},
@@ -941,7 +942,8 @@ func (f *File) drawChartDLbls(formatSet *formatChart) *cDLbls {
 func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 	dLbls := f.drawChartDLbls(formatSet)
 	chartSeriesDLbls := map[string]*cDLbls{
-		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil}
+		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil,
+	}
 	if _, ok := chartSeriesDLbls[formatSet.Type]; ok {
 		return nil
 	}
@@ -1194,8 +1196,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
-	colStart, rowStart, colEnd, rowEnd, x2, y2 :=
-		f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning
