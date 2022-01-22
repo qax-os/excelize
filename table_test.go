@@ -102,6 +102,8 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
+	assert.EqualError(t, f.AutoFilter("SheetN", "A1", "B2", ""), "sheet SheetN is not exist")
+
 	ws, err := f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
 
