@@ -289,18 +289,24 @@ func TestOutlineLevel(t *testing.T) {
 func TestSetColStyle(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "B2", "Hello"))
-	style, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
+	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
 	assert.NoError(t, err)
 	// Test set column style on not exists worksheet.
-	assert.EqualError(t, f.SetColStyle("SheetN", "E", style), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetColStyle("SheetN", "E", styleID), "sheet SheetN is not exist")
 	// Test set column style with illegal cell coordinates.
-	assert.EqualError(t, f.SetColStyle("Sheet1", "*", style), newInvalidColumnNameError("*").Error())
-	assert.EqualError(t, f.SetColStyle("Sheet1", "A:*", style), newInvalidColumnNameError("*").Error())
+	assert.EqualError(t, f.SetColStyle("Sheet1", "*", styleID), newInvalidColumnNameError("*").Error())
+	assert.EqualError(t, f.SetColStyle("Sheet1", "A:*", styleID), newInvalidColumnNameError("*").Error())
 
-	assert.NoError(t, f.SetColStyle("Sheet1", "B", style))
+	assert.NoError(t, f.SetColStyle("Sheet1", "B", styleID))
 	// Test set column style with already exists column with style.
-	assert.NoError(t, f.SetColStyle("Sheet1", "B", style))
-	assert.NoError(t, f.SetColStyle("Sheet1", "D:C", style))
+	assert.NoError(t, f.SetColStyle("Sheet1", "B", styleID))
+	assert.NoError(t, f.SetColStyle("Sheet1", "D:C", styleID))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[1].C[2].S = 0
+	cellStyleID, err := f.GetCellStyle("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, styleID, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetColStyle.xlsx")))
 }
 

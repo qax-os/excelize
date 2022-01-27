@@ -11,7 +11,9 @@
 
 package excelize
 
-import "strings"
+import (
+	"strings"
+)
 
 // Rect gets merged cell rectangle coordinates sequence.
 func (mc *xlsxMergeCell) Rect() ([]int, error) {
@@ -68,7 +70,8 @@ func (f *File) MergeCell(sheet, hCell, vCell string) error {
 		ws.MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ref, rect: rect}}}
 	}
 	ws.MergeCells.Count = len(ws.MergeCells.Cells)
-	return err
+	styleID, _ := f.GetCellStyle(sheet, hCell)
+	return f.SetCellStyle(sheet, hCell, vCell, styleID)
 }
 
 // UnmergeCell provides a function to unmerge a given coordinate area.

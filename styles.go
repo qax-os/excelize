@@ -2613,11 +2613,11 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return 0, err
 	}
-	return f.prepareCellStyle(ws, col, cellData.S), err
+	return f.prepareCellStyle(ws, col, row, cellData.S), err
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given

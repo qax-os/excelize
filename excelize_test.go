@@ -147,6 +147,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now()))
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now().UTC()))
+	assert.EqualError(t, f.SetCellValue("SheetN", "A1", time.Now()), "sheet SheetN is not exist")
 	// 02:46:40
 	assert.NoError(t, f.SetCellValue("Sheet2", "G5", time.Duration(1e13)))
 	// Test completion column.

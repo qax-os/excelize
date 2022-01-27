@@ -200,12 +200,12 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	ws.Unlock()
 
 	var isNum bool
@@ -214,10 +214,7 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 		return err
 	}
 	if isNum {
-		err = f.setDefaultTimeStyle(sheet, axis, 22)
-		if err != nil {
-			return err
-		}
+		_ = f.setDefaultTimeStyle(sheet, axis, 22)
 	}
 	return err
 }
@@ -254,13 +251,13 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
 	return err
 }
@@ -279,13 +276,13 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
 	return err
 }
@@ -316,13 +313,13 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, prec, bitSize)
 	return err
 }
@@ -341,13 +338,13 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V, err = f.setCellString(value)
 	return err
 }
@@ -439,13 +436,13 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
 	return err
 }
@@ -937,14 +934,14 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, _, err := f.prepareCell(ws, sheet, cell)
+	cellData, col, row, err := f.prepareCell(ws, sheet, cell)
 	if err != nil {
 		return err
 	}
 	if err := f.sharedStringsLoader(); err != nil {
 		return err
 	}
-	cellData.S = f.prepareCellStyle(ws, col, cellData.S)
+	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
 	textRuns := []xlsxR{}
@@ -1133,12 +1130,17 @@ func isTimeNumFmt(format string) bool {
 
 // prepareCellStyle provides a function to prepare style index of cell in
 // worksheet by given column index and style index.
-func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, style int) int {
+func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, row, style int) int {
 	if ws.Cols != nil && style == 0 {
 		for _, c := range ws.Cols.Col {
-			if c.Min <= col && col <= c.Max {
-				style = c.Style
+			if c.Min <= col && col <= c.Max && c.Style != 0 {
+				return c.Style
 			}
+		}
+	}
+	for rowIdx := range ws.SheetData.Row {
+		if styleID := ws.SheetData.Row[rowIdx].S; style == 0 && styleID != 0 {
+			return styleID
 		}
 	}
 	return style
@@ -1150,6 +1152,11 @@ func (f *File) mergeCellsParser(ws *xlsxWorksheet, axis string) (string, error) 
 	axis = strings.ToUpper(axis)
 	if ws.MergeCells != nil {
 		for i := 0; i < len(ws.MergeCells.Cells); i++ {
+			if ws.MergeCells.Cells[i] == nil {
+				ws.MergeCells.Cells = append(ws.MergeCells.Cells[:i], ws.MergeCells.Cells[i+1:]...)
+				i--
+				continue
+			}
 			ok, err := f.checkCellInArea(axis, ws.MergeCells.Cells[i].Ref)
 			if err != nil {
 				return axis, err
@@ -1170,8 +1177,7 @@ func (f *File) checkCellInArea(cell, area string) (bool, error) {
 		return false, err
 	}
 
-	rng := strings.Split(area, ":")
-	if len(rng) != 2 {
+	if rng := strings.Split(area, ":"); len(rng) != 2 {
 		return false, err
 	}
 	coordinates, err := areaRefToCoordinates(area)

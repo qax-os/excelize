@@ -921,6 +921,9 @@ func TestSetRowStyle(t *testing.T) {
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, -1), newInvalidStyleID(-1).Error())
 	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, styleID), "sheet SheetN is not exist")
 	assert.NoError(t, f.SetRowStyle("Sheet1", 10, 1, styleID))
+	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, styleID, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
 }
 

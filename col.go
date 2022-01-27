@@ -592,9 +592,8 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 		row++
 	}
 
-	// Initialise end cell to the same as the start cell.
-	colEnd := col
-	rowEnd := row
+	// Initialized end cell to the same as the start cell.
+	colEnd, rowEnd := col, row
 
 	width += x1
 	height += y1
@@ -632,7 +631,7 @@ func (f *File) getColWidth(sheet string, col int) int {
 			return int(convertColWidthToPixels(width))
 		}
 	}
-	// Optimisation for when the column widths haven't changed.
+	// Optimization for when the column widths haven't changed.
 	return int(defaultColWidthPixels)
 }
 
@@ -658,7 +657,7 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 			return width, err
 		}
 	}
-	// Optimisation for when the column widths haven't changed.
+	// Optimization for when the column widths haven't changed.
 	return defaultColWidth, err
 }
 
@@ -707,7 +706,7 @@ func (f *File) RemoveCol(sheet, col string) error {
 	return f.adjustHelper(sheet, columns, num, -1)
 }
 
-// convertColWidthToPixels provieds function to convert the width of a cell
+// convertColWidthToPixels provides function to convert the width of a cell
 // from user's units to pixels. Excel rounds the column width to the nearest
 // pixel. If the width hasn't been set by the user we use the default value.
 // If the column is hidden it has a value of zero.
