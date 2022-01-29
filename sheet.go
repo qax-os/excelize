@@ -826,11 +826,10 @@ func (f *File) SetPanes(sheet, panes string) error {
 		return err
 	}
 
-	ws.setPanes(panes)
-	return nil
+	return ws.setPanes(panes)
 }
 
-func (ws *xlsxWorksheet) setPanes(panes string) {
+func (ws *xlsxWorksheet) setPanes(panes string) error {
 	fs, _ := parseFormatPanesSet(panes)
 
 	p := &xlsxPane{
@@ -857,6 +856,8 @@ func (ws *xlsxWorksheet) setPanes(panes string) {
 		})
 	}
 	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Selection = s
+
+	return nil
 }
 
 // GetSheetVisible provides a function to get worksheet visible by given worksheet
