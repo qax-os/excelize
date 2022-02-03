@@ -58,10 +58,9 @@ type (
 	// When using a formula to reference another cell which is empty, the referenced value becomes 0
 	// when the flag is true. (Default setting is true.)
 	ShowZeros bool
-
 	// View is a SheetViewOption. It specifies a flag indicating
 	// how sheet is displayed, by default it uses empty string
-	// avl options: pageLayout, pageBreakPreview
+	// available options: pageLayout, pageBreakPreview
 	View string
 	
 	/* TODO
