@@ -14,6 +14,7 @@ var _ = []SheetViewOption{
 	ShowGridLines(true),
 	ShowRowColHeaders(true),
 	TopLeftCell("B2"),
+	View("pageLayout"),
 	// SheetViewOptionPtr are also SheetViewOption
 	new(DefaultGridColor),
 	new(RightToLeft),
@@ -30,6 +31,7 @@ var _ = []SheetViewOptionPtr{
 	(*ShowGridLines)(nil),
 	(*ShowRowColHeaders)(nil),
 	(*TopLeftCell)(nil),
+	(*View)(nil),
 }
 
 func ExampleFile_SetSheetViewOptions() {
@@ -44,6 +46,7 @@ func ExampleFile_SetSheetViewOptions() {
 		ShowRowColHeaders(true),
 		ZoomScale(80),
 		TopLeftCell("C3"),
+		View("pageLayout"),
 	); err != nil {
 		fmt.Println(err)
 	}

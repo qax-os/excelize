@@ -58,7 +58,11 @@ type (
 	// When using a formula to reference another cell which is empty, the referenced value becomes 0
 	// when the flag is true. (Default setting is true.)
 	ShowZeros bool
-
+	// View is a SheetViewOption. It specifies a flag indicating
+	// how sheet is displayed, by default it uses empty string
+	// available options: pageLayout, pageBreakPreview
+	View string
+	
 	/* TODO
 	// ShowWhiteSpace is a SheetViewOption. It specifies a flag indicating
 	// whether page layout view shall display margins. False means do not display
@@ -78,6 +82,14 @@ func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
 
 func (o *TopLeftCell) getSheetViewOption(view *xlsxSheetView) {
 	*o = TopLeftCell(string(view.TopLeftCell))
+}
+
+func (o View) setSheetViewOption(view *xlsxSheetView) {
+	view.View = string(o)
+}
+
+func (o *View) getSheetViewOption(view *xlsxSheetView) {
+	*o = View(string(view.View))
 }
 
 func (o DefaultGridColor) setSheetViewOption(view *xlsxSheetView) {
