@@ -204,6 +204,7 @@ type xlsxSheetView struct {
 	WorkbookViewID           int              `xml:"workbookViewId,attr"`
 	Pane                     *xlsxPane        `xml:"pane,omitempty"`
 	Selection                []*xlsxSelection `xml:"selection"`
+	ShowRuler                *bool            `xml:"showRuler,attr,omitempty"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
