@@ -60,9 +60,12 @@ type (
 	ShowZeros bool
 	// View is a SheetViewOption. It specifies a flag indicating
 	// how sheet is displayed, by default it uses empty string
-	// available options: pageLayout, pageBreakPreview
+	// available options: normal, pageLayout, pageBreakPreview
 	View string
-	
+	// ShowRuler is a SheetViewOption. It specifies a flag indicating
+	// this sheet should display ruler.
+	ShowRuler bool
+
 	/* TODO
 	// ShowWhiteSpace is a SheetViewOption. It specifies a flag indicating
 	// whether page layout view shall display margins. False means do not display
@@ -122,6 +125,14 @@ func (o ShowGridLines) setSheetViewOption(view *xlsxSheetView) {
 
 func (o *ShowGridLines) getSheetViewOption(view *xlsxSheetView) {
 	*o = ShowGridLines(defaultTrue(view.ShowGridLines)) // Excel default: true
+}
+
+func (o ShowRuler) setSheetViewOption(view *xlsxSheetView) {
+	view.ShowRuler = boolPtr(bool(o))
+}
+
+func (o *ShowRuler) getSheetViewOption(view *xlsxSheetView) {
+	*o = ShowRuler(defaultTrue(view.ShowRuler)) // Excel default: true
 }
 
 func (o ShowZeros) setSheetViewOption(view *xlsxSheetView) {
