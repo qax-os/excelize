@@ -60,7 +60,7 @@ type (
 	ShowZeros bool
 	// View is a SheetViewOption. It specifies a flag indicating
 	// how sheet is displayed, by default it uses empty string
-	// available options: pageLayout, pageBreakPreview
+	// available options: normal, pageLayout, pageBreakPreview
 	View string
 	// ShowRuler is a SheetViewOption. It specifies a flag indicating
 	// this sheet should display ruler.

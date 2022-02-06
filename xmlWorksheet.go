@@ -191,6 +191,7 @@ type xlsxSheetView struct {
 	ShowZeros                *bool            `xml:"showZeros,attr,omitempty"`
 	RightToLeft              bool             `xml:"rightToLeft,attr,omitempty"`
 	TabSelected              bool             `xml:"tabSelected,attr,omitempty"`
+	ShowRuler                *bool            `xml:"showRuler,attr,omitempty"`
 	ShowWhiteSpace           *bool            `xml:"showWhiteSpace,attr"`
 	ShowOutlineSymbols       bool             `xml:"showOutlineSymbols,attr,omitempty"`
 	DefaultGridColor         *bool            `xml:"defaultGridColor,attr"`
@@ -204,7 +205,6 @@ type xlsxSheetView struct {
 	WorkbookViewID           int              `xml:"workbookViewId,attr"`
 	Pane                     *xlsxPane        `xml:"pane,omitempty"`
 	Selection                []*xlsxSelection `xml:"selection"`
-	ShowRuler                *bool            `xml:"showRuler,attr,omitempty"`
 }
 
 // xlsxSelection directly maps the selection element in the namespace
