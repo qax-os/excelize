@@ -53,7 +53,7 @@ var builtInNumFmt = map[int]string{
 	39: "#,##0.00;(#,##0.00)",
 	40: "#,##0.00;[red](#,##0.00)",
 	41: `_(* #,##0_);_(* \(#,##0\);_(* "-"_);_(@_)`,
-	42: `_("$"* #,##0_);_("$* \(#,##0\);_("$"* "-"_);_(@_)`,
+	42: `_("$"* #,##0_);_("$"* \(#,##0\);_("$"* "-"_);_(@_)`,
 	43: `_(* #,##0.00_);_(* \(#,##0.00\);_(* "-"??_);_(@_)`,
 	44: `_("$"* #,##0.00_);_("$"* \(#,##0.00\);_("$"* "-"??_);_(@_)`,
 	45: "mm:ss",
@@ -1074,16 +1074,13 @@ func is12HourTime(format string) bool {
 // stylesReader provides a function to get the pointer to the structure after
 // deserialization of xl/styles.xml.
 func (f *File) stylesReader() *xlsxStyleSheet {
-	var err error
-
 	if f.Styles == nil {
 		f.Styles = new(xlsxStyleSheet)
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathStyles)))).
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathStyles)))).
 			Decode(f.Styles); err != nil && err != io.EOF {
 			log.Printf("xml decode error: %s", err)
 		}
 	}
-
 	return f.Styles
 }
 

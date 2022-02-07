@@ -9,31 +9,39 @@ import (
 
 var _ = []SheetViewOption{
 	DefaultGridColor(true),
-	RightToLeft(false),
 	ShowFormulas(false),
 	ShowGridLines(true),
 	ShowRowColHeaders(true),
-	TopLeftCell("B2"),
-	View("pageLayout"),
+	ShowZeros(true),
+	RightToLeft(false),
 	ShowRuler(false),
+	View("pageLayout"),
+	TopLeftCell("B2"),
+	ZoomScale(100),
 	// SheetViewOptionPtr are also SheetViewOption
 	new(DefaultGridColor),
-	new(RightToLeft),
 	new(ShowFormulas),
 	new(ShowGridLines),
 	new(ShowRowColHeaders),
+	new(ShowZeros),
+	new(RightToLeft),
+	new(ShowRuler),
+	new(View),
 	new(TopLeftCell),
+	new(ZoomScale),
 }
 
 var _ = []SheetViewOptionPtr{
 	(*DefaultGridColor)(nil),
-	(*RightToLeft)(nil),
 	(*ShowFormulas)(nil),
 	(*ShowGridLines)(nil),
 	(*ShowRowColHeaders)(nil),
-	(*TopLeftCell)(nil),
-	(*View)(nil),
+	(*ShowZeros)(nil),
+	(*RightToLeft)(nil),
 	(*ShowRuler)(nil),
+	(*View)(nil),
+	(*TopLeftCell)(nil),
+	(*ZoomScale)(nil),
 }
 
 func ExampleFile_SetSheetViewOptions() {
@@ -42,14 +50,14 @@ func ExampleFile_SetSheetViewOptions() {
 
 	if err := f.SetSheetViewOptions(sheet, 0,
 		DefaultGridColor(false),
-		RightToLeft(false),
 		ShowFormulas(true),
 		ShowGridLines(true),
 		ShowRowColHeaders(true),
-		ZoomScale(80),
-		TopLeftCell("C3"),
-		View("pageLayout"),
+		RightToLeft(false),
 		ShowRuler(false),
+		View("pageLayout"),
+		TopLeftCell("C3"),
+		ZoomScale(80),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -95,45 +103,43 @@ func ExampleFile_GetSheetViewOptions() {
 
 	var (
 		defaultGridColor  DefaultGridColor
-		rightToLeft       RightToLeft
 		showFormulas      ShowFormulas
 		showGridLines     ShowGridLines
-		showZeros         ShowZeros
 		showRowColHeaders ShowRowColHeaders
-		zoomScale         ZoomScale
+		showZeros         ShowZeros
+		rightToLeft       RightToLeft
+		showRuler         ShowRuler
+		view              View
 		topLeftCell       TopLeftCell
+		zoomScale         ZoomScale
 	)
 
 	if err := f.GetSheetViewOptions(sheet, 0,
 		&defaultGridColor,
-		&rightToLeft,
 		&showFormulas,
 		&showGridLines,
-		&showZeros,
 		&showRowColHeaders,
-		&zoomScale,
+		&showZeros,
+		&rightToLeft,
+		&showRuler,
+		&view,
 		&topLeftCell,
+		&zoomScale,
 	); err != nil {
 		fmt.Println(err)
 	}
 
 	fmt.Println("Default:")
 	fmt.Println("- defaultGridColor:", defaultGridColor)
-	fmt.Println("- rightToLeft:", rightToLeft)
 	fmt.Println("- showFormulas:", showFormulas)
 	fmt.Println("- showGridLines:", showGridLines)
-	fmt.Println("- showZeros:", showZeros)
 	fmt.Println("- showRowColHeaders:", showRowColHeaders)
-	fmt.Println("- zoomScale:", zoomScale)
+	fmt.Println("- showZeros:", showZeros)
+	fmt.Println("- rightToLeft:", rightToLeft)
+	fmt.Println("- showRuler:", showRuler)
+	fmt.Println("- view:", view)
 	fmt.Println("- topLeftCell:", `"`+topLeftCell+`"`)
-
-	if err := f.SetSheetViewOptions(sheet, 0, TopLeftCell("B2")); err != nil {
-		fmt.Println(err)
-	}
-
-	if err := f.GetSheetViewOptions(sheet, 0, &topLeftCell); err != nil {
-		fmt.Println(err)
-	}
+	fmt.Println("- zoomScale:", zoomScale)
 
 	if err := f.SetSheetViewOptions(sheet, 0, ShowGridLines(false)); err != nil {
 		fmt.Println(err)
@@ -151,24 +157,44 @@ func ExampleFile_GetSheetViewOptions() {
 		fmt.Println(err)
 	}
 
+	if err := f.SetSheetViewOptions(sheet, 0, View("pageLayout")); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := f.GetSheetViewOptions(sheet, 0, &view); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := f.SetSheetViewOptions(sheet, 0, TopLeftCell("B2")); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := f.GetSheetViewOptions(sheet, 0, &topLeftCell); err != nil {
+		fmt.Println(err)
+	}
+
 	fmt.Println("After change:")
 	fmt.Println("- showGridLines:", showGridLines)
 	fmt.Println("- showZeros:", showZeros)
+	fmt.Println("- view:", view)
 	fmt.Println("- topLeftCell:", topLeftCell)
 
 	// Output:
 	// Default:
 	// - defaultGridColor: true
-	// - rightToLeft: false
 	// - showFormulas: false
 	// - showGridLines: true
-	// - showZeros: true
 	// - showRowColHeaders: true
-	// - zoomScale: 0
+	// - showZeros: true
+	// - rightToLeft: false
+	// - showRuler: true
+	// - view: normal
 	// - topLeftCell: ""
+	// - zoomScale: 0
 	// After change:
 	// - showGridLines: false
 	// - showZeros: false
+	// - view: pageLayout
 	// - topLeftCell: B2
 }
 

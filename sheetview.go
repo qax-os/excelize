@@ -27,73 +27,48 @@ type SheetViewOptionPtr interface {
 }
 
 type (
-	// DefaultGridColor is a SheetViewOption. It specifies a flag indicating that
-	// the consuming application should use the default grid lines color (system
-	// dependent). Overrides any color specified in colorId.
+	// DefaultGridColor is a SheetViewOption. It specifies a flag indicating
+	// that the consuming application should use the default grid lines color
+	// (system dependent). Overrides any color specified in colorId.
 	DefaultGridColor bool
-	// RightToLeft is a SheetViewOption. It specifies a flag indicating whether
-	// the sheet is in 'right to left' display mode. When in this mode, Column A
-	// is on the far right, Column B ;is one column left of Column A, and so on.
-	// Also, information in cells is displayed in the Right to Left format.
-	RightToLeft bool
-	// ShowFormulas is a SheetViewOption. It specifies a flag indicating whether
-	// this sheet should display formulas.
+	// ShowFormulas is a SheetViewOption. It specifies a flag indicating
+	// whether this sheet should display formulas.
 	ShowFormulas bool
-	// ShowGridLines is a SheetViewOption. It specifies a flag indicating whether
-	// this sheet should display gridlines.
+	// ShowGridLines is a SheetViewOption. It specifies a flag indicating
+	// whether this sheet should display gridlines.
 	ShowGridLines bool
 	// ShowRowColHeaders is a SheetViewOption. It specifies a flag indicating
 	// whether the sheet should display row and column headings.
 	ShowRowColHeaders bool
-	// ZoomScale is a SheetViewOption. It specifies a window zoom magnification
-	// for current view representing percent values. This attribute is restricted
-	// to values ranging from 10 to 400. Horizontal & Vertical scale together.
-	ZoomScale float64
-	// TopLeftCell is a SheetViewOption. It specifies a location of the top left
-	// visible cell Location of the top left visible cell in the bottom right
-	// pane (when in Left-to-Right mode).
-	TopLeftCell string
-	// ShowZeros is a SheetViewOption. It specifies a flag indicating
-	// whether to "show a zero in cells that have zero value".
-	// When using a formula to reference another cell which is empty, the referenced value becomes 0
+	// ShowZeros is a SheetViewOption. It specifies a flag indicating whether
+	// to "show a zero in cells that have zero value". When using a formula to
+	// reference another cell which is empty, the referenced value becomes 0
 	// when the flag is true. (Default setting is true.)
 	ShowZeros bool
-	// View is a SheetViewOption. It specifies a flag indicating
-	// how sheet is displayed, by default it uses empty string
-	// available options: normal, pageLayout, pageBreakPreview
-	View string
-	// ShowRuler is a SheetViewOption. It specifies a flag indicating
-	// this sheet should display ruler.
+	// RightToLeft is a SheetViewOption. It specifies a flag indicating whether
+	// the sheet is in 'right to left' display mode. When in this mode, Column
+	// A is on the far right, Column B ;is one column left of Column A, and so
+	// on. Also, information in cells is displayed in the Right to Left format.
+	RightToLeft bool
+	// ShowRuler is a SheetViewOption. It specifies a flag indicating this
+	// sheet should display ruler.
 	ShowRuler bool
-
-	/* TODO
-	// ShowWhiteSpace is a SheetViewOption. It specifies a flag indicating
-	// whether page layout view shall display margins. False means do not display
-	// left, right, top (header), and bottom (footer) margins (even when there is
-	// data in the header or footer).
-	ShowWhiteSpace bool
-	// WindowProtection is a SheetViewOption.
-	WindowProtection bool
-	*/
+	// View is a SheetViewOption. It specifies a flag indicating how sheet is
+	// displayed, by default it uses empty string available options: normal,
+	// pageLayout, pageBreakPreview
+	View string
+	// TopLeftCell is a SheetViewOption. It specifies a location of the top
+	// left visible cell Location of the top left visible cell in the bottom
+	// right pane (when in Left-to-Right mode).
+	TopLeftCell string
+	// ZoomScale is a SheetViewOption. It specifies a window zoom magnification
+	// for current view representing percent values. This attribute is
+	// restricted to values ranging from 10 to 400. Horizontal & Vertical
+	// scale together.
+	ZoomScale float64
 )
 
 // Defaults for each option are described in XML schema for CT_SheetView
-
-func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
-	view.TopLeftCell = string(o)
-}
-
-func (o *TopLeftCell) getSheetViewOption(view *xlsxSheetView) {
-	*o = TopLeftCell(string(view.TopLeftCell))
-}
-
-func (o View) setSheetViewOption(view *xlsxSheetView) {
-	view.View = string(o)
-}
-
-func (o *View) getSheetViewOption(view *xlsxSheetView) {
-	*o = View(string(view.View))
-}
 
 func (o DefaultGridColor) setSheetViewOption(view *xlsxSheetView) {
 	view.DefaultGridColor = boolPtr(bool(o))
@@ -101,14 +76,6 @@ func (o DefaultGridColor) setSheetViewOption(view *xlsxSheetView) {
 
 func (o *DefaultGridColor) getSheetViewOption(view *xlsxSheetView) {
 	*o = DefaultGridColor(defaultTrue(view.DefaultGridColor)) // Excel default: true
-}
-
-func (o RightToLeft) setSheetViewOption(view *xlsxSheetView) {
-	view.RightToLeft = bool(o) // Excel default: false
-}
-
-func (o *RightToLeft) getSheetViewOption(view *xlsxSheetView) {
-	*o = RightToLeft(view.RightToLeft)
 }
 
 func (o ShowFormulas) setSheetViewOption(view *xlsxSheetView) {
@@ -127,12 +94,12 @@ func (o *ShowGridLines) getSheetViewOption(view *xlsxSheetView) {
 	*o = ShowGridLines(defaultTrue(view.ShowGridLines)) // Excel default: true
 }
 
-func (o ShowRuler) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowRuler = boolPtr(bool(o))
+func (o ShowRowColHeaders) setSheetViewOption(view *xlsxSheetView) {
+	view.ShowRowColHeaders = boolPtr(bool(o))
 }
 
-func (o *ShowRuler) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowRuler(defaultTrue(view.ShowRuler)) // Excel default: true
+func (o *ShowRowColHeaders) getSheetViewOption(view *xlsxSheetView) {
+	*o = ShowRowColHeaders(defaultTrue(view.ShowRowColHeaders)) // Excel default: true
 }
 
 func (o ShowZeros) setSheetViewOption(view *xlsxSheetView) {
@@ -143,12 +110,40 @@ func (o *ShowZeros) getSheetViewOption(view *xlsxSheetView) {
 	*o = ShowZeros(defaultTrue(view.ShowZeros)) // Excel default: true
 }
 
-func (o ShowRowColHeaders) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowRowColHeaders = boolPtr(bool(o))
+func (o RightToLeft) setSheetViewOption(view *xlsxSheetView) {
+	view.RightToLeft = bool(o) // Excel default: false
 }
 
-func (o *ShowRowColHeaders) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowRowColHeaders(defaultTrue(view.ShowRowColHeaders)) // Excel default: true
+func (o *RightToLeft) getSheetViewOption(view *xlsxSheetView) {
+	*o = RightToLeft(view.RightToLeft)
+}
+
+func (o ShowRuler) setSheetViewOption(view *xlsxSheetView) {
+	view.ShowRuler = boolPtr(bool(o))
+}
+
+func (o *ShowRuler) getSheetViewOption(view *xlsxSheetView) {
+	*o = ShowRuler(defaultTrue(view.ShowRuler)) // Excel default: true
+}
+
+func (o View) setSheetViewOption(view *xlsxSheetView) {
+	view.View = string(o)
+}
+
+func (o *View) getSheetViewOption(view *xlsxSheetView) {
+	if view.View != "" {
+		*o = View(view.View)
+		return
+	}
+	*o = View("normal")
+}
+
+func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
+	view.TopLeftCell = string(o)
+}
+
+func (o *TopLeftCell) getSheetViewOption(view *xlsxSheetView) {
+	*o = TopLeftCell(string(view.TopLeftCell))
 }
 
 func (o ZoomScale) setSheetViewOption(view *xlsxSheetView) {
@@ -186,13 +181,15 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 // Available options:
 //
 //    DefaultGridColor(bool)
-//    RightToLeft(bool)
 //    ShowFormulas(bool)
 //    ShowGridLines(bool)
 //    ShowRowColHeaders(bool)
-//    ZoomScale(float64)
-//    TopLeftCell(string)
 //    ShowZeros(bool)
+//    RightToLeft(bool)
+//    ShowRuler(bool)
+//    View(string)
+//    TopLeftCell(string)
+//    ZoomScale(float64)
 //
 // Example:
 //
@@ -216,13 +213,15 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 // Available options:
 //
 //    DefaultGridColor(bool)
-//    RightToLeft(bool)
 //    ShowFormulas(bool)
 //    ShowGridLines(bool)
 //    ShowRowColHeaders(bool)
-//    ZoomScale(float64)
-//    TopLeftCell(string)
 //    ShowZeros(bool)
+//    RightToLeft(bool)
+//    ShowRuler(bool)
+//    View(string)
+//    TopLeftCell(string)
+//    ZoomScale(float64)
 //
 // Example:
 //

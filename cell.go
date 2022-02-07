@@ -450,6 +450,9 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 // setCellDefault prepares cell type and string type cell value by a given
 // string.
 func setCellDefault(value string) (t string, v string) {
+	if ok, _ := isNumeric(value); !ok {
+		t = "str"
+	}
 	v = value
 	return
 }
