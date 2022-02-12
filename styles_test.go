@@ -325,26 +325,6 @@ func TestGetFillID(t *testing.T) {
 	assert.Equal(t, -1, getFillID(NewFile().stylesReader(), &Style{Fill: Fill{Type: "unknown"}}))
 }
 
-func TestParseTime(t *testing.T) {
-	assert.Equal(t, "2019", parseTime("43528", "YYYY"))
-	assert.Equal(t, "43528", parseTime("43528", ""))
-
-	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss"))
-	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss;YYYY-MM-DD hh:mm:ss"))
-	assert.Equal(t, "3/4/2019 5:5:42", parseTime("43528.2123", "M/D/YYYY h:m:s"))
-	assert.Equal(t, "3/4/2019 0:5:42", parseTime("43528.003958333335", "m/d/yyyy h:m:s"))
-	assert.Equal(t, "3/4/2019 0:05:42", parseTime("43528.003958333335", "M/D/YYYY h:mm:s"))
-	assert.Equal(t, "3:30:00 PM", parseTime("0.64583333333333337", "h:mm:ss am/pm"))
-	assert.Equal(t, "0:05", parseTime("43528.003958333335", "h:mm"))
-	assert.Equal(t, "0:0", parseTime("6.9444444444444444E-5", "h:m"))
-	assert.Equal(t, "0:00", parseTime("6.9444444444444444E-5", "h:mm"))
-	assert.Equal(t, "0:0", parseTime("6.9444444444444444E-5", "h:m"))
-	assert.Equal(t, "12:1", parseTime("0.50070601851851848", "h:m"))
-	assert.Equal(t, "23:30", parseTime("0.97952546296296295", "h:m"))
-	assert.Equal(t, "March", parseTime("43528", "mmmm"))
-	assert.Equal(t, "Monday", parseTime("43528", "dddd"))
-}
-
 func TestThemeColor(t *testing.T) {
 	for _, clr := range [][]string{
 		{"FF000000", ThemeColor("000000", -0.1)},

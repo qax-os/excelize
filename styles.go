@@ -20,7 +20,6 @@ import (
 	"log"
 	"math"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -756,7 +755,7 @@ var currencyNumFmt = map[int]string{
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
 // code doesn't support currently and will return original string.
 var builtInNumFmtFunc = map[int]func(v string, format string) string{
-	0:  formatToString,
+	0:  format,
 	1:  formatToInt,
 	2:  formatToFloat,
 	3:  formatToInt,
@@ -764,30 +763,30 @@ var builtInNumFmtFunc = map[int]func(v string, format string) string{
 	9:  formatToC,
 	10: formatToD,
 	11: formatToE,
-	12: formatToString, // Doesn't support currently
-	13: formatToString, // Doesn't support currently
-	14: parseTime,
-	15: parseTime,
-	16: parseTime,
-	17: parseTime,
-	18: parseTime,
-	19: parseTime,
-	20: parseTime,
-	21: parseTime,
-	22: parseTime,
+	12: format, // Doesn't support currently
+	13: format, // Doesn't support currently
+	14: format,
+	15: format,
+	16: format,
+	17: format,
+	18: format,
+	19: format,
+	20: format,
+	21: format,
+	22: format,
 	37: formatToA,
 	38: formatToA,
 	39: formatToB,
 	40: formatToB,
-	41: formatToString, // Doesn't support currently
-	42: formatToString, // Doesn't support currently
-	43: formatToString, // Doesn't support currently
-	44: formatToString, // Doesn't support currently
-	45: parseTime,
-	46: parseTime,
-	47: parseTime,
+	41: format, // Doesn't support currently
+	42: format, // Doesn't support currently
+	43: format, // Doesn't support currently
+	44: format, // Doesn't support currently
+	45: format,
+	46: format,
+	47: format,
 	48: formatToE,
-	49: formatToString,
+	49: format,
 }
 
 // validType defined the list of valid validation types.
@@ -843,12 +842,6 @@ var criteriaType = map[string]string{
 	"last month":               "lastMonth",
 	"this month":               "thisMonth",
 	"continue month":           "continueMonth",
-}
-
-// formatToString provides a function to return original string by given
-// built-in number formats code and cell string.
-func formatToString(v string, format string) string {
-	return v
 }
 
 // formatToInt provides a function to convert original string to integer
@@ -931,144 +924,6 @@ func formatToE(v string, format string) string {
 		return v
 	}
 	return fmt.Sprintf("%.2E", f)
-}
-
-// parseTime provides a function to returns a string parsed using time.Time.
-// Replace Excel placeholders with Go time placeholders. For example, replace
-// yyyy with 2006. These are in a specific order, due to the fact that m is
-// used in month, minute, and am/pm. It would be easier to fix that with
-// regular expressions, but if it's possible to keep this simple it would be
-// easier to maintain. Full-length month and days (e.g. March, Tuesday) have
-// letters in them that would be replaced by other characters below (such as
-// the 'h' in March, or the 'd' in Tuesday) below. First we convert them to
-// arbitrary characters unused in Excel Date formats, and then at the end,
-// turn them to what they should actually be. Based off:
-// http://www.ozgrid.com/Excel/CustomFormats.htm
-func parseTime(v string, format string) string {
-	var (
-		f     float64
-		err   error
-		goFmt string
-	)
-	f, err = strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	val := timeFromExcelTime(f, false)
-
-	if format == "" {
-		return v
-	}
-
-	goFmt = format
-
-	if strings.Contains(goFmt, "[") {
-		re := regexp.MustCompile(`\[.+\]`)
-		goFmt = re.ReplaceAllLiteralString(goFmt, "")
-	}
-
-	// use only first variant
-	if strings.Contains(goFmt, ";") {
-		goFmt = goFmt[:strings.IndexByte(goFmt, ';')]
-	}
-
-	replacements := []struct{ xltime, gotime string }{
-		{"YYYY", "2006"},
-		{"YY", "06"},
-		{"MM", "01"},
-		{"M", "1"},
-		{"DD", "02"},
-		{"D", "2"},
-		{"yyyy", "2006"},
-		{"yy", "06"},
-		{"MMMM", "%%%%"},
-		{"mmmm", "%%%%"},
-		{"DDDD", "&&&&"},
-		{"dddd", "&&&&"},
-		{"DD", "02"},
-		{"dd", "02"},
-		{"D", "2"},
-		{"d", "2"},
-		{"MMM", "Jan"},
-		{"mmm", "Jan"},
-		{"MMSS", "0405"},
-		{"mmss", "0405"},
-		{"SS", "05"},
-		{"ss", "05"},
-		{"s", "5"},
-		{"MM:", "04:"},
-		{"mm:", "04:"},
-		{":MM", ":04"},
-		{":mm", ":04"},
-		{"m:", "4:"},
-		{":m", ":4"},
-		{"MM", "01"},
-		{"mm", "01"},
-		{"AM/PM", "PM"},
-		{"am/pm", "PM"},
-		{"M/", "1/"},
-		{"m/", "1/"},
-		{"%%%%", "January"},
-		{"&&&&", "Monday"},
-	}
-
-	replacementsGlobal := []struct{ xltime, gotime string }{
-		{"\\-", "-"},
-		{"\\ ", " "},
-		{"\\.", "."},
-		{"\\", ""},
-		{"\"", ""},
-	}
-	// It is the presence of the "am/pm" indicator that determines if this is
-	// a 12 hour or 24 hours time format, not the number of 'h' characters.
-	var padding bool
-	if val.Hour() == 0 && !strings.Contains(format, "hh") && !strings.Contains(format, "HH") {
-		padding = true
-	}
-	if is12HourTime(format) {
-		goFmt = strings.Replace(goFmt, "hh", "3", 1)
-		goFmt = strings.Replace(goFmt, "h", "3", 1)
-		goFmt = strings.Replace(goFmt, "HH", "3", 1)
-		goFmt = strings.Replace(goFmt, "H", "3", 1)
-	} else {
-		goFmt = strings.Replace(goFmt, "hh", "15", 1)
-		goFmt = strings.Replace(goFmt, "HH", "15", 1)
-		if 0 < val.Hour() && val.Hour() < 12 {
-			goFmt = strings.Replace(goFmt, "h", "3", 1)
-			goFmt = strings.Replace(goFmt, "H", "3", 1)
-		} else {
-			goFmt = strings.Replace(goFmt, "h", "15", 1)
-			goFmt = strings.Replace(goFmt, "H", "15", 1)
-		}
-	}
-
-	for _, repl := range replacements {
-		goFmt = strings.Replace(goFmt, repl.xltime, repl.gotime, 1)
-	}
-	for _, repl := range replacementsGlobal {
-		goFmt = strings.Replace(goFmt, repl.xltime, repl.gotime, -1)
-	}
-	// If the hour is optional, strip it out, along with the possible dangling
-	// colon that would remain.
-	if val.Hour() < 1 {
-		goFmt = strings.Replace(goFmt, "]:", "]", 1)
-		goFmt = strings.Replace(goFmt, "[03]", "", 1)
-		goFmt = strings.Replace(goFmt, "[3]", "", 1)
-		goFmt = strings.Replace(goFmt, "[15]", "", 1)
-	} else {
-		goFmt = strings.Replace(goFmt, "[3]", "3", 1)
-		goFmt = strings.Replace(goFmt, "[15]", "15", 1)
-	}
-	s := val.Format(goFmt)
-	if padding {
-		s = strings.Replace(s, "00:", "0:", 1)
-	}
-	return s
-}
-
-// is12HourTime checks whether an Excel time format string is a 12 hours form.
-func is12HourTime(format string) bool {
-	return strings.Contains(format, "am/pm") || strings.Contains(format, "AM/PM") || strings.Contains(format, "a/p") || strings.Contains(format, "A/P")
 }
 
 // stylesReader provides a function to get the pointer to the structure after

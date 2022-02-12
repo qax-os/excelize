@@ -376,8 +376,11 @@ func inCoordinates(a [][]int, x []int) int {
 
 // inStrSlice provides a method to check if an element is present in an array,
 // and return the index of its location, otherwise return -1.
-func inStrSlice(a []string, x string) int {
+func inStrSlice(a []string, x string, caseSensitive bool) int {
 	for idx, n := range a {
+		if !caseSensitive && strings.EqualFold(x, n) {
+			return idx
+		}
 		if x == n {
 			return idx
 		}
@@ -658,7 +661,7 @@ func (f *File) addNameSpaces(path string, ns xml.Attr) {
 // by the given attribute.
 func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 	ignorableNS := []string{"c14", "cdr14", "a14", "pic14", "x14", "xdr14", "x14ac", "dsp", "mso14", "dgm14", "x15", "x12ac", "x15ac", "xr", "xr2", "xr3", "xr4", "xr5", "xr6", "xr7", "xr8", "xr9", "xr10", "xr11", "xr12", "xr13", "xr14", "xr15", "x15", "x16", "x16r2", "mo", "mx", "mv", "o", "v"}
-	if inStrSlice(strings.Fields(f.xmlAttr[path][index].Value), ns.Name.Local) == -1 && inStrSlice(ignorableNS, ns.Name.Local) != -1 {
+	if inStrSlice(strings.Fields(f.xmlAttr[path][index].Value), ns.Name.Local, true) == -1 && inStrSlice(ignorableNS, ns.Name.Local, true) != -1 {
 		f.xmlAttr[path][index].Value = strings.TrimSpace(fmt.Sprintf("%s %s", f.xmlAttr[path][index].Value, ns.Name.Local))
 	}
 }
@@ -672,8 +675,7 @@ func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
 // isNumeric determines whether an expression is a valid numeric type and get
 // the precision for the numeric.
 func isNumeric(s string) (bool, int) {
-	dot := false
-	p := 0
+	dot, n, p := false, false, 0
 	for i, v := range s {
 		if v == '.' {
 			if dot {
@@ -686,10 +688,11 @@ func isNumeric(s string) (bool, int) {
 			}
 			return false, 0
 		} else if dot {
+			n = true
 			p++
 		}
 	}
-	return true, p
+	return n, p
 }
 
 var (

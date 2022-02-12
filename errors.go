@@ -123,6 +123,9 @@ var (
 	// ErrUnsupportedHashAlgorithm defined the error message on unsupported
 	// hash algorithm.
 	ErrUnsupportedHashAlgorithm = errors.New("unsupported hash algorithm")
+	// ErrUnsupportedNumberFormat defined the error message on unsupported number format
+	// expression.
+	ErrUnsupportedNumberFormat = errors.New("unsupported number format token")
 	// ErrPasswordLengthInvalid defined the error message on invalid password
 	// length.
 	ErrPasswordLengthInvalid = errors.New("password length invalid")

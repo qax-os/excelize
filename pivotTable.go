@@ -632,7 +632,7 @@ func (f *File) getPivotFieldsIndex(fields []PivotTableField, opt *PivotTableOpti
 		return pivotFieldsIndex, err
 	}
 	for _, field := range fields {
-		if pos := inStrSlice(orders, field.Data); pos != -1 {
+		if pos := inStrSlice(orders, field.Data, true); pos != -1 {
 			pivotFieldsIndex = append(pivotFieldsIndex, pos)
 		}
 	}

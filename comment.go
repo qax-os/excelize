@@ -256,7 +256,7 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	if comments == nil {
 		comments = &xlsxComments{Authors: xlsxAuthor{Author: []string{formatSet.Author}}}
 	}
-	if inStrSlice(comments.Authors.Author, formatSet.Author) == -1 {
+	if inStrSlice(comments.Authors.Author, formatSet.Author, true) == -1 {
 		comments.Authors.Author = append(comments.Authors.Author, formatSet.Author)
 		authorID = len(comments.Authors.Author) - 1
 	}

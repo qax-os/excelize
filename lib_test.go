@@ -234,7 +234,7 @@ func TestSortCoordinates(t *testing.T) {
 }
 
 func TestInStrSlice(t *testing.T) {
-	assert.EqualValues(t, -1, inStrSlice([]string{}, ""))
+	assert.EqualValues(t, -1, inStrSlice([]string{}, "", true))
 }
 
 func TestBoolValMarshal(t *testing.T) {

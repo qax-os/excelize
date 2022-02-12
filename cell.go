@@ -1116,19 +1116,10 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			format := strings.ToLower(xlsxFmt.FormatCode)
-			if isTimeNumFmt(format) {
-				return parseTime(v, format)
-			}
-			return precise
+			return format(v, xlsxFmt.FormatCode)
 		}
 	}
 	return precise
-}
-
-// isTimeNumFmt determine if the given number format expression is a time number format.
-func isTimeNumFmt(format string) bool {
-	return strings.Contains(format, "y") || strings.Contains(format, "m") || strings.Contains(strings.Replace(format, "red", "", -1), "d") || strings.Contains(format, "h")
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in
