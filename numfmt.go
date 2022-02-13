@@ -20,14 +20,10 @@ import (
 	"github.com/xuri/nfp"
 )
 
-// supportedTokenTypes list the supported number format token types currently.
-var supportedTokenTypes = []string{
-	nfp.TokenTypeCurrencyLanguage,
-	nfp.TokenTypeDateTimes,
-	nfp.TokenTypeElapsedDateTimes,
-	nfp.TokenTypeGeneral,
-	nfp.TokenTypeLiteral,
-	nfp.TokenSubTypeLanguageInfo,
+type languageInfo struct {
+	apFmt      string
+	tags       []string
+	localMonth func(t time.Time, abbr int) string
 }
 
 // numberFormat directly maps the number format parser runtime required
@@ -40,6 +36,137 @@ type numberFormat struct {
 	number                                                                  float64
 	ap, afterPoint, beforePoint, localCode, result, value, valueSectionType string
 }
+
+// supportedTokenTypes list the supported number format token types currently.
+var (
+	supportedTokenTypes = []string{
+		nfp.TokenTypeCurrencyLanguage,
+		nfp.TokenTypeDateTimes,
+		nfp.TokenTypeElapsedDateTimes,
+		nfp.TokenTypeGeneral,
+		nfp.TokenTypeLiteral,
+		nfp.TokenSubTypeLanguageInfo,
+	}
+	// supportedLanguageInfo directly maps the supported language ID and tags.
+	supportedLanguageInfo = map[string]languageInfo{
+		"36":   {tags: []string{"af"}, localMonth: localMonthsNameAfrikaans, apFmt: apFmtAfrikaans},
+		"445":  {tags: []string{"bn-IN"}, localMonth: localMonthsNameBangla, apFmt: nfp.AmPm[0]},
+		"4":    {tags: []string{"zh-Hans"}, localMonth: localMonthsNameChinese1, apFmt: nfp.AmPm[2]},
+		"7804": {tags: []string{"zh"}, localMonth: localMonthsNameChinese1, apFmt: nfp.AmPm[2]},
+		"804":  {tags: []string{"zh-CN"}, localMonth: localMonthsNameChinese1, apFmt: nfp.AmPm[2]},
+		"1004": {tags: []string{"zh-SG"}, localMonth: localMonthsNameChinese2, apFmt: nfp.AmPm[2]},
+		"7C04": {tags: []string{"zh-Hant"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2]},
+		"C04":  {tags: []string{"zh-HK"}, localMonth: localMonthsNameChinese2, apFmt: nfp.AmPm[2]},
+		"1404": {tags: []string{"zh-MO"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2]},
+		"404":  {tags: []string{"zh-TW"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2]},
+		"9":    {tags: []string{"en"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1000": {tags: []string{
+			"aa", "aa-DJ", "aa-ER", "aa-ER", "aa-NA", "agq", "agq-CM", "ak", "ak-GH", "sq-ML",
+			"gsw-LI", "gsw-CH", "ar-TD", "ar-KM", "ar-DJ", "ar-ER", "ar-IL", "ar-MR", "ar-PS",
+			"ar-SO", "ar-SS", "ar-SD", "ar-001", "ast", "ast-ES", "asa", "asa-TZ", "ksf", "ksf-CM",
+			"bm", "bm-Latn-ML", "bas", "bas-CM", "bem", "bem-ZM", "bez", "bez-TZ", "byn", "byn-ER",
+			"brx", "brx-IN", "ca-AD", "ca-FR", "ca-IT", "ceb", "ceb-Latn", "ceb-Latn-PH", "tzm-Latn-MA",
+			"ccp", "ccp-Cakm", "ccp-Cakm-BD", "ccp-Cakm-IN", "ce-RU", "cgg", "cgg-UG", "cu-RU", "swc",
+			"swc-CD", "kw", "ke-GB", "da-GL", "dua", "dua-CM", "nl-AW", "nl-BQ", "nl-CW", "nl-SX",
+			"nl-SR", "dz", "ebu", "ebu-KE", "en-AS", "en-AI", "en-AG", "en-AT", "en-BS", "en-BB",
+			"en-BE", "en-BM", "en-BW", "en-IO", "en-VG", "en-BI", "en-CM", "en-KY", "en-CX", "en-CC",
+			"en-CK", "en-CY", "en-DK", "en-DM", "en-ER", "en-150", "en-FK", "en-FI", "en-FJ", "en-GM",
+			"en-DE", "en-GH", "en-GI", "en-GD", "en-GU", "en-GG", "en-GY", "en-IM", "en-IL", "en-JE",
+			"en-KE", "en-KI", "en-LS", "en-LR", "en-MO", "en-MG", "en-MW", "en-MT", "en-MH", "en-MU",
+			"en-FM", "en-MS", "en-NA", "en-NR", "en-NL", "en-NG", "en-NU", "en-NF", "en-MP", "en-PK",
+			"en-PW", "en-PG", "en-PN", "en-PR", "en-RW", "en-KN", "en-LC", "en-VC", "en-WS", "en-SC",
+			"en-SL", "en-SX", "en-SI", "en-SB", "en-SS", "en-SH", "en-SD", "en-SZ", "en-SE", "en-CH",
+			"en-TZ", "en-TK", "en-TO", "en-TC", "en-TV", "en-UG", "en-UM", "en-VI", "en-VU", "en-001",
+			"en-ZM", "eo", "eo-001", "ee", "ee-GH", "ee-TG", "ewo", "ewo-CM", "fo-DK", "fr-DZ",
+			"fr-BJ", "fr-BF", "fr-BI", "fr-CF", "fr-TD", "fr-KM", "fr-CG", "fr-DJ", "fr-GQ", "fr-GF",
+			"fr-PF", "fr-GA", "fr-GP", "fr-GN", "fr-MG", "fr-MQ", "fr-MR", "fr-MU", "fr-YT", "fr-NC",
+			"fr-NE", "fr-RW", "fr-BL", "fr-MF", "fr-PM", "fr-SC", "fr-SY", "fr-TG", "fr-TN", "fr-VU",
+			"fr-WF", "fur", "fur-IT", "ff-Latn-BF", "ff-CM", "ff-Latn-CM", "ff-Latn-GM", "ff-Latn-GH",
+			"ff-GN", "ff-Latn-GN", "ff-Latn-GW", "ff-Latn-LR", "ff-MR", "ff-Latn-MR", "ff-Latn-NE",
+			"ff-Latn-SL", "lg", "lg-UG", "de-BE", "de-IT", "el-CY", "guz", "guz-KE", "ha-Latn-GH",
+			"ha-Latn-NG", "ia-FR", "ia-001", "it-SM", "it-VA", "jv", "jv-Latn", "jv-Latn-ID", "dyo",
+			"dyo-SN", "kea", "kea-CV", "kab", "kab-DZ", "kkj", "kkj-CM", "kln", "kln-KE", "kam",
+			"kam-KE", "ks-Arab-IN", "ki", "ki-KE", "sw-TZ", "sw-UG", "ko-KP", "khq", "khq-ML", "ses",
+			"ses-ML", "nmg", "nmq-CM", "ku-Arab-IR", "lkt", "lkt-US", "lag", "lag-TZ", "ln", "ln-AO",
+			"ln-CF", "ln-CD", "nds", "nds-DE", "nds-NL", "lu", "lu-CD", "luo", "luo", "luo-KE", "luy",
+			"luy-KE", "jmc", "jmc-TZ", "mgh", "mgh-MZ", "kde", "kde-TZ", "mg", "mg-MG", "gv", "gv-IM",
+			"mas", "mas-KE", "mas-TZ", "mas-IR", "mer", "mer-KE", "mgo", "mgo-CM", "mfe", "mfe-MU",
+			"mua", "mua-CM", "nqo", "nqo-GN", "nqa", "naq-NA", "nnh", "nnh-CM", "jgo", "jgo-CM",
+			"lrc-IQ", "lrc-IR", "nd", "nd-ZW", "nb-SJ", "nus", "nus-SD", "nus-SS", "nyn", "nyn-UG",
+			"om-KE", "os", "os-GE", "os-RU", "ps-PK", "fa-AF", "pt-AO", "pt-CV", "pt-GQ", "pt-GW",
+			"pt-LU", "pt-MO", "pt-MZ", "pt-ST", "pt-CH", "pt-TL", "prg-001", "ksh", "ksh-DE", "rof",
+			"rof-TZ", "rn", "rn-BI", "ru-BY", "ru-KZ", "ru-KG", "ru-UA", "rwk", "rwk-TZ", "ssy",
+			"ssy-ER", "saq", "saq-KE", "sg", "sq-CF", "sbp", "sbp-TZ", "seh", "seh-MZ", "ksb", "ksb-TZ",
+			"sn", "sn-Latn", "sn-Latn-ZW", "xog", "xog-UG", "so-DJ", "so-ET", "so-KE", "nr", "nr-ZA",
+			"st-LS", "es-BZ", "es-BR", "es-PH", "zgh", "zgh-Tfng-MA", "zgh-Tfng", "ss", "ss-ZA",
+			"ss-SZ", "sv-AX", "shi", "shi-Tfng", "shi-Tfng-MA", "shi-Latn", "shi-Latn-MA", "dav",
+			"dav-KE", "ta-MY", "ta-SG", "twq", "twq-NE", "teo", "teo-KE", "teo-UG", "bo-IN", "tig",
+			"tig-ER", "to", "to-TO", "tr-CY", "uz-Arab", "us-Arab-AF", "vai", "vai-Vaii",
+			"vai-Vaii-LR", "vai-Latn-LR", "vai-Latn", "vo", "vo-001", "vun", "vun-TZ", "wae",
+			"wae-CH", "wal", "wae-ET", "yav", "yav-CM", "yo-BJ", "dje", "dje-NE",
+		}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"C09":  {tags: []string{"en-AU"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
+		"2829": {tags: []string{"en-BZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1009": {tags: []string{"en-CA"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"2409": {tags: []string{"en-029"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"3C09": {tags: []string{"en-HK"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4009": {tags: []string{"en-IN"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1809": {tags: []string{"en-IE"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
+		"2009": {tags: []string{"en-JM"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4409": {tags: []string{"en-MY"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1409": {tags: []string{"en-NZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"3409": {tags: []string{"en-PH"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4809": {tags: []string{"en-SG"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1C09": {tags: []string{"en-ZA"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"2C09": {tags: []string{"en-TT"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4C09": {tags: []string{"en-AE"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"809":  {tags: []string{"en-GB"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
+		"409":  {tags: []string{"en-US"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"3009": {tags: []string{"en-ZW"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"C":    {tags: []string{"fr"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0]},
+		"7":    {tags: []string{"de"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
+		"C07":  {tags: []string{"de-AT"}, localMonth: localMonthsNameAustria, apFmt: nfp.AmPm[0]},
+		"407":  {tags: []string{"de-DE"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
+		"10":   {tags: []string{"it"}, localMonth: localMonthsNameItalian, apFmt: nfp.AmPm[0]},
+		"11":   {tags: []string{"ja"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
+		"411":  {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
+		"12":   {tags: []string{"ko"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
+		"412":  {tags: []string{"ko-KR"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
+	}
+	// monthNamesBangla list the month names in the Bangla.
+	monthNamesBangla = []string{
+		"\u099C\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09B0\u09C0",
+		"\u09AB\u09C7\u09AC\u09CD\u09B0\u09C1\u09AF\u09BC\u09BE\u09B0\u09C0",
+		"\u09AE\u09BE\u09B0\u09CD\u099A",
+		"\u098F\u09AA\u09CD\u09B0\u09BF\u09B2",
+		"\u09AE\u09C7",
+		"\u099C\u09C1\u09A8",
+		"\u099C\u09C1\u09B2\u09BE\u0987",
+		"\u0986\u0997\u09B8\u09CD\u099F",
+		"\u09B8\u09C7\u09AA\u09CD\u099F\u09C7\u09AE\u09CD\u09AC\u09B0",
+		"\u0985\u0995\u09CD\u099F\u09CB\u09AC\u09B0",
+		"\u09A8\u09AD\u09C7\u09AE\u09CD\u09AC\u09B0",
+		"\u09A1\u09BF\u09B8\u09C7\u09AE\u09CD\u09AC\u09B0",
+	}
+	// monthNamesAfrikaans list the month names in the Afrikaans.
+	monthNamesAfrikaans = []string{"Januarie", "Februarie", "Maart", "April", "Mei", "Junie", "Julie", "Augustus", "September", "Oktober", "November", "Desember"}
+	// monthNamesChinese list the month names in the Chinese.
+	monthNamesChinese = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
+	// monthNamesFrench list the month names in the French.
+	monthNamesFrench = []string{"janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"}
+	// monthNamesGerman list the month names in the German.
+	monthNamesGerman = []string{"Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	// monthNamesAustria list the month names in the Austria.
+	monthNamesAustria = []string{"Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	// monthNamesItalian list the month names in the Italian.
+	monthNamesItalian = []string{"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"}
+	// apFmtAfrikaans defined the AM/PM name in the Afrikaans.
+	apFmtAfrikaans = "vm./nm."
+	// apFmtJapanese defined the AM/PM name in the Japanese.
+	apFmtJapanese = "午前/午後"
+	// apFmtJapanese defined the AM/PM name in the Korean.
+	apFmtKorean = "오전/오후"
+)
 
 // prepareNumberic split the number into two before and after parts by a
 // decimal point.
@@ -116,12 +243,146 @@ func (nf *numberFormat) currencyLanguageHandler(i int, token nfp.Token) (err err
 			err = ErrUnsupportedNumberFormat
 			return
 		}
-		if nf.localCode = part.Token.TValue; nf.localCode != "409" {
+		if _, ok := supportedLanguageInfo[strings.ToUpper(part.Token.TValue)]; !ok {
 			err = ErrUnsupportedNumberFormat
 			return
 		}
+		nf.localCode = strings.ToUpper(part.Token.TValue)
 	}
 	return
+}
+
+// localAmPm return AM/PM name by supported language ID.
+func (nf *numberFormat) localAmPm(ap string) string {
+	if languageInfo, ok := supportedLanguageInfo[nf.localCode]; ok {
+		return languageInfo.apFmt
+	}
+	return ap
+}
+
+// localMonthsNameEnglish returns the English name of the month.
+func localMonthsNameEnglish(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return t.Month().String()[:3]
+	}
+	if abbr == 4 {
+		return t.Month().String()
+	}
+	return t.Month().String()[:1]
+}
+
+// localMonthsNameAfrikaans returns the Afrikaans name of the month.
+func localMonthsNameAfrikaans(t time.Time, abbr int) string {
+	if abbr == 3 {
+		month := monthNamesAfrikaans[int(t.Month())-1]
+		if len([]rune(month)) <= 3 {
+			return month
+		}
+		return string([]rune(month)[:3]) + "."
+	}
+	if abbr == 4 {
+		return monthNamesAfrikaans[int(t.Month())-1]
+	}
+	return monthNamesAfrikaans[int(t.Month())-1][:1]
+}
+
+// localMonthsNameAustria returns the Austria name of the month.
+func localMonthsNameAustria(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return string([]rune(monthNamesAustria[int(t.Month())-1])[:3])
+	}
+	if abbr == 4 {
+		return monthNamesAustria[int(t.Month())-1]
+	}
+	return monthNamesAustria[int(t.Month())-1][:1]
+}
+
+// localMonthsNameBangla returns the German name of the month.
+func localMonthsNameBangla(t time.Time, abbr int) string {
+	if abbr == 3 || abbr == 4 {
+		return monthNamesBangla[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesBangla[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameFrench returns the French name of the month.
+func localMonthsNameFrench(t time.Time, abbr int) string {
+	if abbr == 3 {
+		month := monthNamesFrench[int(t.Month())-1]
+		if len([]rune(month)) <= 4 {
+			return month
+		}
+		return string([]rune(month)[:4]) + "."
+	}
+	if abbr == 4 {
+		return monthNamesFrench[int(t.Month())-1]
+	}
+	return monthNamesFrench[int(t.Month())-1][:1]
+}
+
+// localMonthsNameItalian returns the Italian name of the month.
+func localMonthsNameItalian(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesItalian[int(t.Month())-1][:3]
+	}
+	if abbr == 4 {
+		return monthNamesItalian[int(t.Month())-1]
+	}
+	return monthNamesItalian[int(t.Month())-1][:1]
+}
+
+// localMonthsNameGerman returns the German name of the month.
+func localMonthsNameGerman(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return string([]rune(monthNamesGerman[int(t.Month())-1])[:3])
+	}
+	if abbr == 4 {
+		return monthNamesGerman[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesGerman[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameChinese1 returns the Chinese name of the month.
+func localMonthsNameChinese1(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return strconv.Itoa(int(t.Month())) + "月"
+	}
+	if abbr == 4 {
+		return monthNamesChinese[int(t.Month())-1] + "月"
+	}
+	return monthNamesChinese[int(t.Month())-1]
+}
+
+// localMonthsNameChinese2 returns the Chinese name of the month.
+func localMonthsNameChinese2(t time.Time, abbr int) string {
+	if abbr == 3 || abbr == 4 {
+		return monthNamesChinese[int(t.Month())-1] + "月"
+	}
+	return monthNamesChinese[int(t.Month())-1]
+}
+
+// localMonthsNameChinese3 returns the Chinese name of the month.
+func localMonthsNameChinese3(t time.Time, abbr int) string {
+	if abbr == 3 || abbr == 4 {
+		return strconv.Itoa(int(t.Month())) + "月"
+	}
+	return strconv.Itoa(int(t.Month()))
+}
+
+// localMonthsNameKorean returns the Korean name of the month.
+func localMonthsNameKorean(t time.Time, abbr int) string {
+	if abbr == 3 || abbr == 4 {
+		return strconv.Itoa(int(t.Month())) + "월"
+	}
+	return strconv.Itoa(int(t.Month()))
+}
+
+// localMonthName return months name by supported language ID.
+func (nf *numberFormat) localMonthsName(abbr int) string {
+	if languageInfo, ok := supportedLanguageInfo[nf.localCode]; ok {
+		return languageInfo.localMonth(nf.t, abbr)
+	}
+	return localMonthsNameEnglish(nf.t, abbr)
 }
 
 // dateTimesHandler will be handling date and times types tokens for a number
@@ -130,7 +391,7 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 	if idx := inStrSlice(nfp.AmPm, strings.ToUpper(token.TValue), false); idx != -1 {
 		if nf.ap == "" {
 			nextHours := nf.hoursNext(i)
-			aps := strings.Split(token.TValue, "/")
+			aps := strings.Split(nf.localAmPm(token.TValue), "/")
 			nf.ap = aps[0]
 			if nextHours > 12 {
 				nf.ap = aps[1]
@@ -150,15 +411,15 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 			return
 		}
 		if l == 3 {
-			nf.result += nf.t.Month().String()[:3]
+			nf.result += nf.localMonthsName(3)
 			return
 		}
 		if l == 4 || l > 5 {
-			nf.result += nf.t.Month().String()
+			nf.result += nf.localMonthsName(4)
 			return
 		}
 		if l == 5 {
-			nf.result += nf.t.Month().String()[:1]
+			nf.result += nf.localMonthsName(5)
 			return
 		}
 	}
@@ -304,7 +565,7 @@ func (nf *numberFormat) apNext(i int) ([]string, bool) {
 				return nil, false
 			}
 			if i := inStrSlice(nfp.AmPm, tokens[idx].TValue, false); i != -1 {
-				return strings.Split(tokens[idx].TValue, "/"), true
+				return strings.Split(nf.localAmPm(tokens[idx].TValue), "/"), true
 			}
 		}
 	}
