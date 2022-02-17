@@ -11,6 +11,7 @@ func ExampleFile_SetWorkbookPrOptions() {
 	f := NewFile()
 	if err := f.SetWorkbookPrOptions(
 		CodeName("code"),
+		FilterPrivacy(false),
 	); err != nil {
 		fmt.Println(err)
 	}
@@ -23,11 +24,17 @@ func ExampleFile_GetWorkbookPrOptions() {
 	if err := f.GetWorkbookPrOptions(&codeName); err != nil {
 		fmt.Println(err)
 	}
+	var filterPrivacy FilterPrivacy
+	if err := f.GetWorkbookPrOptions(&filterPrivacy); err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println("Defaults:")
 	fmt.Printf("- codeName: %q\n", codeName)
+	fmt.Printf("- filterPrivacy: %q\n", filterPrivacy)
 	// Output:
 	// Defaults:
 	// - codeName: ""
+	// - filterPrivacy: true
 }
 
 func TestWorkbookPr(t *testing.T) {
@@ -40,4 +47,11 @@ func TestWorkbookPr(t *testing.T) {
 	assert.NoError(t, f.SetWorkbookPrOptions(CodeName("code")))
 	assert.NoError(t, f.GetWorkbookPrOptions(&codeName))
 	assert.Equal(t, "code", string(codeName))
+
+	var filterPrivacy FilterPrivacy
+	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
+	assert.Equal(t, true, bool(filterPrivacy))
+	assert.NoError(t, f.SetWorkbookPrOptions(FilterPrivacy(false)))
+	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
+	assert.Equal(t, false, bool(filterPrivacy))
 }

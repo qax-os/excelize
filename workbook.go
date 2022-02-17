@@ -123,6 +123,11 @@ func (o CodeName) setWorkbookPrOption(pr *xlsxWorkbookPr) {
 	pr.CodeName = string(o)
 }
 
+// setWorkbookPrOption implements the WorkbookPrOption interface.
+func (o FilterPrivacy) setWorkbookPrOption(pr *xlsxWorkbookPr) {
+	pr.FilterPrivacy = bool(o)
+}
+
 // GetWorkbookPrOptions provides a function to gets workbook properties.
 //
 // Available options:
@@ -144,4 +149,14 @@ func (o *CodeName) getWorkbookPrOption(pr *xlsxWorkbookPr) {
 		return
 	}
 	*o = CodeName(pr.CodeName)
+}
+
+// getWorkbookPrOption implements the WorkbookPrOption interface and get the
+// filter privacy of thw workbook.
+func (o *FilterPrivacy) getWorkbookPrOption(pr *xlsxWorkbookPr) {
+	if pr == nil {
+		*o = true
+		return
+	}
+	*o = FilterPrivacy(pr.FilterPrivacy)
 }

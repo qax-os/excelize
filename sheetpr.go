@@ -25,6 +25,8 @@ type SheetPrOptionPtr interface {
 }
 
 type (
+	// FilterPrivacy is an option used for SheetPrOption and WorkbookPrOption
+	FilterPrivacy bool
 	// CodeName is an option used for SheetPrOption and WorkbookPrOption
 	CodeName string
 	// EnableFormatConditionsCalculation is a SheetPrOption
