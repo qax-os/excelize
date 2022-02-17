@@ -50,8 +50,8 @@ func TestWorkbookPr(t *testing.T) {
 
 	var filterPrivacy FilterPrivacy
 	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
-	assert.Equal(t, true, bool(filterPrivacy))
-	assert.NoError(t, f.SetWorkbookPrOptions(FilterPrivacy(false)))
-	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
 	assert.Equal(t, false, bool(filterPrivacy))
+	assert.NoError(t, f.SetWorkbookPrOptions(FilterPrivacy(true)))
+	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
+	assert.Equal(t, true, bool(filterPrivacy))
 }
