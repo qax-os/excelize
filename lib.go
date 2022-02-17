@@ -675,22 +675,27 @@ func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
 // isNumeric determines whether an expression is a valid numeric type and get
 // the precision for the numeric.
 func isNumeric(s string) (bool, int) {
-	dot, n, p := false, false, 0
+	dot, e, n, p := false, false, false, 0
 	for i, v := range s {
 		if v == '.' {
 			if dot {
 				return false, 0
 			}
 			dot = true
+		} else if v == 'E' || v == 'e' {
+			e = true
 		} else if v < '0' || v > '9' {
 			if i == 0 && v == '-' {
 				continue
 			}
+			if e && v == '-' {
+				continue
+			}
 			return false, 0
 		} else if dot {
-			n = true
 			p++
 		}
+		n = true
 	}
 	return n, p
 }

@@ -130,7 +130,7 @@ func TestSetCellFloat(t *testing.T) {
 		assert.Equal(t, "123", val, "A1 should be 123")
 		val, err = f.GetCellValue(sheet, "A2")
 		assert.NoError(t, err)
-		assert.Equal(t, "123.0", val, "A2 should be 123.0")
+		assert.Equal(t, "123", val, "A2 should be 123")
 	})
 
 	t.Run("with a decimal and precision limit", func(t *testing.T) {
@@ -288,12 +288,14 @@ func TestGetCellValue(t *testing.T) {
     <c r="S1"><v>275.39999999999998</v></c>
     <c r="T1"><v>68.900000000000006</v></c>
     <c r="U1"><v>8.8880000000000001E-2</v></c>
-    <c r="V1"><v>4.0000000000000003E-5</v></c>
+    <c r="V1"><v>4.0000000000000003e-5</v></c>
     <c r="W1"><v>2422.3000000000002</v></c>
     <c r="X1"><v>1101.5999999999999</v></c>
     <c r="Y1"><v>275.39999999999998</v></c>
     <c r="Z1"><v>68.900000000000006</v></c>
     <c r="AA1"><v>1.1000000000000001</v></c>
+    <c r="AA2"><v>1234567890123_4</v></c>
+    <c r="AA3"><v>123456789_0123_4</v></c>
 </row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
@@ -325,6 +327,8 @@ func TestGetCellValue(t *testing.T) {
 		"275.4",
 		"68.9",
 		"1.1",
+		"1234567890123_4",
+		"123456789_0123_4",
 	}}, rows)
 	assert.NoError(t, err)
 }

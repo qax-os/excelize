@@ -1082,23 +1082,23 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
 func (f *File) formattedValue(s int, v string, raw bool) string {
-	precise := v
-	isNum, precision := isNumeric(v)
-	if isNum && precision > 10 {
-		precise = roundPrecision(v, -1)
-	}
 	if raw {
 		return v
 	}
-	if !isNum {
-		v = roundPrecision(v, 15)
-		precise = v
+	precise := v
+	isNum, precision := isNumeric(v)
+	if isNum {
+		if precision > 15 {
+			precise = roundPrecision(v, 15)
+		}
+		if precision <= 15 {
+			precise = roundPrecision(v, -1)
+		}
 	}
 	if s == 0 {
 		return precise
 	}
 	styleSheet := f.stylesReader()
-
 	if s >= len(styleSheet.CellXfs.Xf) {
 		return precise
 	}
@@ -1116,7 +1116,7 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(v, xlsxFmt.FormatCode)
+			return format(precise, xlsxFmt.FormatCode)
 		}
 	}
 	return precise

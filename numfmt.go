@@ -20,6 +20,7 @@ import (
 	"github.com/xuri/nfp"
 )
 
+// languageInfo defined the required fields of localization support for number format.
 type languageInfo struct {
 	apFmt      string
 	tags       []string
@@ -191,16 +192,17 @@ func format(value, numFmt string) string {
 		if section.Type != nf.valueSectionType {
 			continue
 		}
-		switch section.Type {
-		case nfp.TokenSectionPositive:
-			return nf.positiveHandler()
-		case nfp.TokenSectionNegative:
-			return nf.negativeHandler()
-		case nfp.TokenSectionZero:
-			return nf.zeroHandler()
-		default:
-			return nf.textHandler()
+		if nf.isNumberic {
+			switch section.Type {
+			case nfp.TokenSectionPositive:
+				return nf.positiveHandler()
+			case nfp.TokenSectionNegative:
+				return nf.negativeHandler()
+			default:
+				return nf.zeroHandler()
+			}
 		}
+		return nf.textHandler()
 	}
 	return value
 }
@@ -211,12 +213,12 @@ func (nf *numberFormat) positiveHandler() (result string) {
 	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, false), false, false
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
-			result = fmt.Sprint(nf.number)
+			result = nf.value
 			return
 		}
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
 			if err := nf.currencyLanguageHandler(i, token); err != nil {
-				result = fmt.Sprint(nf.number)
+				result = nf.value
 				return
 			}
 		}
@@ -587,12 +589,12 @@ func (nf *numberFormat) secondsNext(i int) bool {
 // negativeHandler will be handling negative selection for a number format
 // expression.
 func (nf *numberFormat) negativeHandler() string {
-	return fmt.Sprint(nf.number)
+	return nf.value
 }
 
 // zeroHandler will be handling zero selection for a number format expression.
 func (nf *numberFormat) zeroHandler() string {
-	return fmt.Sprint(nf.number)
+	return nf.value
 }
 
 // textHandler will be handling text selection for a number format expression.
