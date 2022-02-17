@@ -30,7 +30,7 @@ func ExampleFile_GetWorkbookPrOptions() {
 	}
 	fmt.Println("Defaults:")
 	fmt.Printf("- codeName: %q\n", codeName)
-	fmt.Printf("- filterPrivacy: %q\n", filterPrivacy)
+	fmt.Printf("- filterPrivacy: %t\n", filterPrivacy)
 	// Output:
 	// Defaults:
 	// - codeName: ""
