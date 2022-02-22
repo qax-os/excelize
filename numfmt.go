@@ -128,11 +128,37 @@ var (
 		"7":    {tags: []string{"de"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
 		"C07":  {tags: []string{"de-AT"}, localMonth: localMonthsNameAustria, apFmt: nfp.AmPm[0]},
 		"407":  {tags: []string{"de-DE"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
+		"3C":   {tags: []string{"ga"}, localMonth: localMonthsNameIrish, apFmt: apFmtIrish},
+		"83C":  {tags: []string{"ga-IE"}, localMonth: localMonthsNameIrish, apFmt: apFmtIrish},
 		"10":   {tags: []string{"it"}, localMonth: localMonthsNameItalian, apFmt: nfp.AmPm[0]},
 		"11":   {tags: []string{"ja"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
 		"411":  {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
 		"12":   {tags: []string{"ko"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
 		"412":  {tags: []string{"ko-KR"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
+		"19":   {tags: []string{"ru"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
+		"819":  {tags: []string{"ru-MD"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
+		"419":  {tags: []string{"ru-RU"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
+		"A":    {tags: []string{"es"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"2C0A": {tags: []string{"es-AR"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"200A": {tags: []string{"es-VE"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"400A": {tags: []string{"es-BO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"340A": {tags: []string{"es-CL"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"240A": {tags: []string{"es-CO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"140A": {tags: []string{"es-CR"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"5C0A": {tags: []string{"es-CU"}, localMonth: localMonthsNameSpanish, apFmt: apFmtCuba},
+		"1C0A": {tags: []string{"es-DO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"300A": {tags: []string{"es-EC"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"440A": {tags: []string{"es-SV"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"1E":   {tags: []string{"th"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
+		"41E":  {tags: []string{"th-TH"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
+		"1F":   {tags: []string{"tr"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
+		"41F":  {tags: []string{"tr-TR"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
+		"52":   {tags: []string{"cy"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
+		"452":  {tags: []string{"cy-GB"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
+		"78":   {tags: []string{"ii"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
+		"478":  {tags: []string{"ii-CN"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
+		"35":   {tags: []string{"zu"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
+		"435":  {tags: []string{"zu-ZA"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
 	}
 	// monthNamesBangla list the month names in the Bangla.
 	monthNamesBangla = []string{
@@ -159,14 +185,55 @@ var (
 	monthNamesGerman = []string{"Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
 	// monthNamesAustria list the month names in the Austria.
 	monthNamesAustria = []string{"Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	// monthNamesIrish list the month names in the Irish.
+	monthNamesIrish = []string{"Eanáir", "Feabhra", "Márta", "Aibreán", "Bealtaine", "Meitheamh", "Iúil", "Lúnasa", "Meán Fómhair", "Deireadh Fómhair", "Samhain", "Nollaig"}
 	// monthNamesItalian list the month names in the Italian.
 	monthNamesItalian = []string{"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"}
+	// monthNamesRussian list the month names in the Russian.
+	monthNamesRussian = []string{"январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"}
+	// monthNamesSpanish list the month names in the Spanish.
+	monthNamesSpanish = []string{"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}
+	// monthNamesThai list the month names in the Thai.
+	monthNamesThai = []string{
+		"\u0e21\u0e01\u0e23\u0e32\u0e04\u0e21",
+		"\u0e01\u0e38\u0e21\u0e20\u0e32\u0e1e\u0e31\u0e19\u0e18\u0e4c",
+		"\u0e21\u0e35\u0e19\u0e32\u0e04\u0e21",
+		"\u0e40\u0e21\u0e29\u0e32\u0e22\u0e19",
+		"\u0e1e\u0e24\u0e29\u0e20\u0e32\u0e04\u0e21",
+		"\u0e21\u0e34\u0e16\u0e38\u0e19\u0e32\u0e22\u0e19",
+		"\u0e01\u0e23\u0e01\u0e0e\u0e32\u0e04\u0e21",
+		"\u0e2a\u0e34\u0e07\u0e2b\u0e32\u0e04\u0e21",
+		"\u0e01\u0e31\u0e19\u0e22\u0e32\u0e22\u0e19",
+		"\u0e15\u0e38\u0e25\u0e32\u0e04\u0e21",
+		"\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19",
+		"\u0e18\u0e31\u0e19\u0e27\u0e32\u0e04\u0e21",
+	}
+	// monthNamesTurkish list the month names in the Turkish.
+	monthNamesTurkish = []string{"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"}
+	// monthNamesWelsh list the month names in the Welsh.
+	monthNamesWelsh = []string{"Ionawr", "Chwefror", "Mawrth", "Ebrill", "Mai", "Mehefin", "Gorffennaf", "Awst", "Medi", "Hydref", "Tachwedd", "Rhagfyr"}
+	// monthNamesYi list the month names in the Yi.
+	monthNamesYi = []string{"\ua2cd", "\ua44d", "\ua315", "\ua1d6", "\ua26c", "\ua0d8", "\ua3c3", "\ua246", "\ua22c", "\ua2b0", "\ua2b0\ua2aa", "\ua2b0\ua44b"}
+	// monthNamesZulu list the month names in the Zulu.
+	monthNamesZulu = []string{"Januwari", "Febhuwari", "Mashi", "Ephreli", "Meyi", "Juni", "Julayi", "Agasti", "Septemba", "Okthoba", "Novemba", "Disemba"}
 	// apFmtAfrikaans defined the AM/PM name in the Afrikaans.
 	apFmtAfrikaans = "vm./nm."
+	// apFmtCuba defined the AM/PM name in the Cuba.
+	apFmtCuba = "a.m./p.m."
+	// apFmtIrish defined the AM/PM name in the Irish.
+	apFmtIrish = "r.n./i.n."
 	// apFmtJapanese defined the AM/PM name in the Japanese.
 	apFmtJapanese = "午前/午後"
-	// apFmtJapanese defined the AM/PM name in the Korean.
+	// apFmtKorean defined the AM/PM name in the Korean.
 	apFmtKorean = "오전/오후"
+	// apFmtSpanish defined the AM/PM name in the Spanish.
+	apFmtSpanish = "a. m./p. m."
+	// apFmtTurkish defined the AM/PM name in the Turkish.
+	apFmtTurkish = "\u00F6\u00F6/\u00F6\u0053"
+	// apFmtTurkish defined the AM/PM name in the Yi.
+	apFmtYi = "\ua3b8\ua111/\ua06f\ua2d2"
+	// apFmtWelsh defined the AM/PM name in the Welsh.
+	apFmtWelsh = "yb/yh"
 )
 
 // prepareNumberic split the number into two before and after parts by a
@@ -322,6 +389,26 @@ func localMonthsNameFrench(t time.Time, abbr int) string {
 	return monthNamesFrench[int(t.Month())-1][:1]
 }
 
+// localMonthsNameIrish returns the Irish name of the month.
+func localMonthsNameIrish(t time.Time, abbr int) string {
+	if abbr == 3 {
+		switch int(t.Month()) {
+		case 1, 4, 8:
+			return string([]rune(monthNamesIrish[int(t.Month())-1])[:3])
+		case 2, 3, 6:
+			return string([]rune(monthNamesIrish[int(t.Month())-1])[:5])
+		case 9, 10:
+			return string([]rune(monthNamesIrish[int(t.Month())-1])[:1]) + "Fómh"
+		default:
+			return string([]rune(monthNamesIrish[int(t.Month())-1])[:4])
+		}
+	}
+	if abbr == 4 {
+		return string([]rune(monthNamesIrish[int(t.Month())-1]))
+	}
+	return string([]rune(monthNamesIrish[int(t.Month())-1])[:1])
+}
+
 // localMonthsNameItalian returns the Italian name of the month.
 func localMonthsNameItalian(t time.Time, abbr int) string {
 	if abbr == 3 {
@@ -377,6 +464,95 @@ func localMonthsNameKorean(t time.Time, abbr int) string {
 		return strconv.Itoa(int(t.Month())) + "월"
 	}
 	return strconv.Itoa(int(t.Month()))
+}
+
+// localMonthsNameRussian returns the Russian name of the month.
+func localMonthsNameRussian(t time.Time, abbr int) string {
+	if abbr == 3 {
+		month := monthNamesRussian[int(t.Month())-1]
+		if len([]rune(month)) <= 4 {
+			return month
+		}
+		return string([]rune(month)[:3]) + "."
+	}
+	if abbr == 4 {
+		return string([]rune(monthNamesRussian[int(t.Month())-1]))
+	}
+	return string([]rune(monthNamesRussian[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameSpanish returns the Spanish name of the month.
+func localMonthsNameSpanish(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesSpanish[int(t.Month())-1][:3]
+	}
+	if abbr == 4 {
+		return monthNamesSpanish[int(t.Month())-1]
+	}
+	return monthNamesSpanish[int(t.Month())-1][:1]
+}
+
+// localMonthsNameThai returns the Thai name of the month.
+func localMonthsNameThai(t time.Time, abbr int) string {
+	if abbr == 3 {
+		r := []rune(monthNamesThai[int(t.Month())-1])
+		return string(r[:1]) + "." + string(r[len(r)-2:len(r)-1]) + "."
+	}
+	if abbr == 4 {
+		return string([]rune(monthNamesThai[int(t.Month())-1]))
+	}
+	return string([]rune(monthNamesThai[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameTurkish returns the Turkish name of the month.
+func localMonthsNameTurkish(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return string([]rune(monthNamesTurkish[int(t.Month())-1])[:3])
+	}
+	if abbr == 4 {
+		return monthNamesTurkish[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesTurkish[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameWelsh returns the Welsh name of the month.
+func localMonthsNameWelsh(t time.Time, abbr int) string {
+	if abbr == 3 {
+		switch int(t.Month()) {
+		case 2, 7:
+			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:5])
+		case 8, 9, 11, 12:
+			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:4])
+		default:
+			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:3])
+		}
+	}
+	if abbr == 4 {
+		return monthNamesWelsh[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesWelsh[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameYi returns the Yi name of the month.
+func localMonthsNameYi(t time.Time, abbr int) string {
+	if abbr == 3 || abbr == 4 {
+		return string([]rune(monthNamesYi[int(t.Month())-1])) + "\ua1aa"
+	}
+	return string([]rune(monthNamesYi[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameZulu returns the Zulu name of the month.
+func localMonthsNameZulu(t time.Time, abbr int) string {
+	if abbr == 3 {
+		if int(t.Month()) == 8 {
+			return string([]rune(monthNamesZulu[int(t.Month())-1])[:4])
+		}
+		return string([]rune(monthNamesZulu[int(t.Month())-1])[:3])
+	}
+	if abbr == 4 {
+		return monthNamesZulu[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesZulu[int(t.Month())-1])[:1])
 }
 
 // localMonthName return months name by supported language ID.
