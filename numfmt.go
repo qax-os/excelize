@@ -155,6 +155,12 @@ var (
 		"41F":  {tags: []string{"tr-TR"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
 		"52":   {tags: []string{"cy"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
 		"452":  {tags: []string{"cy-GB"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
+		"2A":   {tags: []string{"vi"}, localMonth: localMonthsNameVietnamese, apFmt: apFmtVietnamese},
+		"42A":  {tags: []string{"vi-VN"}, localMonth: localMonthsNameVietnamese, apFmt: apFmtVietnamese},
+		"88":   {tags: []string{"wo"}, localMonth: localMonthsNameWolof, apFmt: apFmtWolof},
+		"488":  {tags: []string{"wo-SN"}, localMonth: localMonthsNameWolof, apFmt: apFmtWolof},
+		"34":   {tags: []string{"xh"}, localMonth: localMonthsNameXhosa, apFmt: nfp.AmPm[0]},
+		"434":  {tags: []string{"xh-ZA"}, localMonth: localMonthsNameXhosa, apFmt: nfp.AmPm[0]},
 		"78":   {tags: []string{"ii"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
 		"478":  {tags: []string{"ii-CN"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
 		"35":   {tags: []string{"zu"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
@@ -212,6 +218,10 @@ var (
 	monthNamesTurkish = []string{"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"}
 	// monthNamesWelsh list the month names in the Welsh.
 	monthNamesWelsh = []string{"Ionawr", "Chwefror", "Mawrth", "Ebrill", "Mai", "Mehefin", "Gorffennaf", "Awst", "Medi", "Hydref", "Tachwedd", "Rhagfyr"}
+	// monthNamesWolof list the month names in the Wolof.
+	monthNamesWolof = []string{"Samwiye", "Fewriye", "Maars", "Awril", "Me", "Suwe", "Sullet", "Ut", "Septàmbar", "Oktoobar", "Noowàmbar", "Desàmbar"}
+	// monthNamesXhosa list the month names in the Xhosa.
+	monthNamesXhosa = []string{"Januwari", "Febuwari", "Matshi", "Aprili", "Meyi", "Juni", "Julayi", "Agasti", "Septemba", "Oktobha", "Novemba", "Disemba"}
 	// monthNamesYi list the month names in the Yi.
 	monthNamesYi = []string{"\ua2cd", "\ua44d", "\ua315", "\ua1d6", "\ua26c", "\ua0d8", "\ua3c3", "\ua246", "\ua22c", "\ua2b0", "\ua2b0\ua2aa", "\ua2b0\ua44b"}
 	// monthNamesZulu list the month names in the Zulu.
@@ -230,7 +240,11 @@ var (
 	apFmtSpanish = "a. m./p. m."
 	// apFmtTurkish defined the AM/PM name in the Turkish.
 	apFmtTurkish = "\u00F6\u00F6/\u00F6\u0053"
-	// apFmtTurkish defined the AM/PM name in the Yi.
+	// apFmtVietnamese defined the AM/PM name in the Vietnamese.
+	apFmtVietnamese = "SA/CH"
+	// apFmtWolof defined the AM/PM name in the Wolof.
+	apFmtWolof = "Sub/Ngo"
+	// apFmtYi defined the AM/PM name in the Yi.
 	apFmtYi = "\ua3b8\ua111/\ua06f\ua2d2"
 	// apFmtWelsh defined the AM/PM name in the Welsh.
 	apFmtWelsh = "yb/yh"
@@ -531,6 +545,57 @@ func localMonthsNameWelsh(t time.Time, abbr int) string {
 		return monthNamesWelsh[int(t.Month())-1]
 	}
 	return string([]rune(monthNamesWelsh[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameVietnamese returns the Vietnamese name of the month.
+func localMonthsNameVietnamese(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return "Thg " + strconv.Itoa(int(t.Month()))
+	}
+	if abbr == 5 {
+		return "T " + strconv.Itoa(int(t.Month()))
+	}
+	return "Tháng " + strconv.Itoa(int(t.Month()))
+}
+
+// localMonthsNameWolof returns the Wolof name of the month.
+func localMonthsNameWolof(t time.Time, abbr int) string {
+	if abbr == 3 {
+		switch int(t.Month()) {
+		case 3, 6:
+			return string([]rune(monthNamesWolof[int(t.Month())-1])[:3])
+		case 5, 8:
+			return string([]rune(monthNamesWolof[int(t.Month())-1])[:2])
+		case 9:
+			return string([]rune(monthNamesWolof[int(t.Month())-1])[:4]) + "."
+		case 11:
+			return "Now."
+		default:
+			return string([]rune(monthNamesWolof[int(t.Month())-1])[:3]) + "."
+		}
+	}
+	if abbr == 4 {
+		return monthNamesWolof[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesWolof[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameXhosa returns the Xhosa name of the month.
+func localMonthsNameXhosa(t time.Time, abbr int) string {
+	if abbr == 3 {
+		switch int(t.Month()) {
+		case 4:
+			return "uEpr."
+		case 8:
+			return "u" + string([]rune(monthNamesXhosa[int(t.Month())-1])[:2]) + "."
+		default:
+			return "u" + string([]rune(monthNamesXhosa[int(t.Month())-1])[:3]) + "."
+		}
+	}
+	if abbr == 4 {
+		return "u" + monthNamesXhosa[int(t.Month())-1]
+	}
+	return "u"
 }
 
 // localMonthsNameYi returns the Yi name of the month.
