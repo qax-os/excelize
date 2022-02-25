@@ -46,6 +46,7 @@ var (
 		nfp.TokenTypeElapsedDateTimes,
 		nfp.TokenTypeGeneral,
 		nfp.TokenTypeLiteral,
+		nfp.TokenTypeTextPlaceHolder,
 		nfp.TokenSubTypeLanguageInfo,
 	}
 	// supportedLanguageInfo directly maps the supported language ID and tags.
@@ -135,6 +136,9 @@ var (
 		"411":  {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
 		"12":   {tags: []string{"ko"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
 		"412":  {tags: []string{"ko-KR"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
+		"7C50": {tags: []string{"mn-Mong"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
+		"850":  {tags: []string{"mn-Mong-CN"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
+		"C50":  {tags: []string{"mn-Mong-MN"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
 		"19":   {tags: []string{"ru"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
 		"819":  {tags: []string{"ru-MD"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
 		"419":  {tags: []string{"ru-RU"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
@@ -151,6 +155,8 @@ var (
 		"440A": {tags: []string{"es-SV"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
 		"1E":   {tags: []string{"th"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
 		"41E":  {tags: []string{"th-TH"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
+		"51":   {tags: []string{"bo"}, localMonth: localMonthsNameTibetan, apFmt: apFmtTibetan},
+		"451":  {tags: []string{"bo-CN"}, localMonth: localMonthsNameTibetan, apFmt: apFmtTibetan},
 		"1F":   {tags: []string{"tr"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
 		"41F":  {tags: []string{"tr-TR"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
 		"52":   {tags: []string{"cy"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
@@ -214,6 +220,21 @@ var (
 		"\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19",
 		"\u0e18\u0e31\u0e19\u0e27\u0e32\u0e04\u0e21",
 	}
+	// monthNamesTibetan list the month names in the Tibetan.
+	monthNamesTibetan = []string{
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f51\u0f44\u0f0b\u0f54\u0f7c\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f42\u0f66\u0f74\u0f58\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f5e\u0f72\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f63\u0f94\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f51\u0fb2\u0f74\u0f42\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f51\u0f74\u0f53\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f62\u0f92\u0fb1\u0f51\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f51\u0f42\u0f74\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f54\u0f0d",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f45\u0f72\u0f42\u0f0b\u0f54\u0f0b",
+		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
+	}
 	// monthNamesTurkish list the month names in the Turkish.
 	monthNamesTurkish = []string{"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"}
 	// monthNamesWelsh list the month names in the Welsh.
@@ -238,6 +259,8 @@ var (
 	apFmtKorean = "오전/오후"
 	// apFmtSpanish defined the AM/PM name in the Spanish.
 	apFmtSpanish = "a. m./p. m."
+	// apFmtTibetan defined the AM/PM name in the Tibetan.
+	apFmtTibetan = "\u0f66\u0f94\u0f0b\u0f51\u0fb2\u0f7c\u0f0b/\u0f55\u0fb1\u0f72\u0f0b\u0f51\u0fb2\u0f7c\u0f0b"
 	// apFmtTurkish defined the AM/PM name in the Turkish.
 	apFmtTurkish = "\u00F6\u00F6/\u00F6\u0053"
 	// apFmtVietnamese defined the AM/PM name in the Vietnamese.
@@ -480,6 +503,14 @@ func localMonthsNameKorean(t time.Time, abbr int) string {
 	return strconv.Itoa(int(t.Month()))
 }
 
+// localMonthsNameTraditionalMongolian returns the Traditional Mongolian name of the month.
+func localMonthsNameTraditionalMongolian(t time.Time, abbr int) string {
+	if abbr == 5 {
+		return "M"
+	}
+	return fmt.Sprintf("M%02d", int(t.Month()))
+}
+
 // localMonthsNameRussian returns the Russian name of the month.
 func localMonthsNameRussian(t time.Time, abbr int) string {
 	if abbr == 3 {
@@ -516,6 +547,20 @@ func localMonthsNameThai(t time.Time, abbr int) string {
 		return string([]rune(monthNamesThai[int(t.Month())-1]))
 	}
 	return string([]rune(monthNamesThai[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameTibetan returns the Tibetan name of the month.
+func localMonthsNameTibetan(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return "\u0f5f\u0fb3\u0f0b" + []string{"\u0f21", "\u0f22", "\u0f23", "\u0f24", "\u0f25", "\u0f26", "\u0f27", "\u0f28", "\u0f29", "\u0f21\u0f20", "\u0f21\u0f21", "\u0f21\u0f22"}[int(t.Month())-1]
+	}
+	if abbr == 5 {
+		if t.Month() == 10 {
+			return "\u0f66"
+		}
+		return "\u0f5f"
+	}
+	return string(monthNamesTibetan[int(t.Month())-1])
 }
 
 // localMonthsNameTurkish returns the Turkish name of the month.
@@ -839,8 +884,16 @@ func (nf *numberFormat) zeroHandler() string {
 }
 
 // textHandler will be handling text selection for a number format expression.
-func (nf *numberFormat) textHandler() string {
-	return fmt.Sprint(nf.value)
+func (nf *numberFormat) textHandler() (result string) {
+	for _, token := range nf.section[nf.sectionIdx].Items {
+		if token.TType == nfp.TokenTypeLiteral {
+			result += token.TValue
+		}
+		if token.TType == nfp.TokenTypeTextPlaceHolder {
+			result += nf.value
+		}
+	}
+	return result
 }
 
 // getValueSectionType returns its applicable number format expression section
