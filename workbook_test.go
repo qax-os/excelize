@@ -10,6 +10,7 @@ import (
 func ExampleFile_SetWorkbookPrOptions() {
 	f := NewFile()
 	if err := f.SetWorkbookPrOptions(
+		FilterPrivacy(false),
 		CodeName("code"),
 	); err != nil {
 		fmt.Println(err)
@@ -19,14 +20,22 @@ func ExampleFile_SetWorkbookPrOptions() {
 
 func ExampleFile_GetWorkbookPrOptions() {
 	f := NewFile()
-	var codeName CodeName
+	var (
+		filterPrivacy FilterPrivacy
+		codeName      CodeName
+	)
+	if err := f.GetWorkbookPrOptions(&filterPrivacy); err != nil {
+		fmt.Println(err)
+	}
 	if err := f.GetWorkbookPrOptions(&codeName); err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("Defaults:")
+	fmt.Printf("- filterPrivacy: %t\n", filterPrivacy)
 	fmt.Printf("- codeName: %q\n", codeName)
 	// Output:
 	// Defaults:
+	// - filterPrivacy: true
 	// - codeName: ""
 }
 
@@ -40,4 +49,9 @@ func TestWorkbookPr(t *testing.T) {
 	assert.NoError(t, f.SetWorkbookPrOptions(CodeName("code")))
 	assert.NoError(t, f.GetWorkbookPrOptions(&codeName))
 	assert.Equal(t, "code", string(codeName))
+
+	wb.WorkbookPr = nil
+	var filterPrivacy FilterPrivacy
+	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
+	assert.Equal(t, false, bool(filterPrivacy))
 }

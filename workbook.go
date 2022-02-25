@@ -32,6 +32,11 @@ type WorkbookPrOptionPtr interface {
 	getWorkbookPrOption(pr *xlsxWorkbookPr)
 }
 
+type (
+	// FilterPrivacy is an option used for WorkbookPrOption
+	FilterPrivacy bool
+)
+
 // setWorkbook update workbook property of the spreadsheet. Maximum 31
 // characters are allowed in sheet title.
 func (f *File) setWorkbook(name string, sheetID, rid int) {
@@ -104,6 +109,7 @@ func (f *File) workBookWriter() {
 // SetWorkbookPrOptions provides a function to sets workbook properties.
 //
 // Available options:
+//   FilterPrivacy(bool)
 //   CodeName(string)
 func (f *File) SetWorkbookPrOptions(opts ...WorkbookPrOption) error {
 	wb := f.workbookReader()
@@ -119,6 +125,11 @@ func (f *File) SetWorkbookPrOptions(opts ...WorkbookPrOption) error {
 }
 
 // setWorkbookPrOption implements the WorkbookPrOption interface.
+func (o FilterPrivacy) setWorkbookPrOption(pr *xlsxWorkbookPr) {
+	pr.FilterPrivacy = bool(o)
+}
+
+// setWorkbookPrOption implements the WorkbookPrOption interface.
 func (o CodeName) setWorkbookPrOption(pr *xlsxWorkbookPr) {
 	pr.CodeName = string(o)
 }
@@ -126,6 +137,7 @@ func (o CodeName) setWorkbookPrOption(pr *xlsxWorkbookPr) {
 // GetWorkbookPrOptions provides a function to gets workbook properties.
 //
 // Available options:
+//   FilterPrivacy(bool)
 //   CodeName(string)
 func (f *File) GetWorkbookPrOptions(opts ...WorkbookPrOptionPtr) error {
 	wb := f.workbookReader()
@@ -134,6 +146,16 @@ func (f *File) GetWorkbookPrOptions(opts ...WorkbookPrOptionPtr) error {
 		opt.getWorkbookPrOption(pr)
 	}
 	return nil
+}
+
+// getWorkbookPrOption implements the WorkbookPrOption interface and get the
+// filter privacy of thw workbook.
+func (o *FilterPrivacy) getWorkbookPrOption(pr *xlsxWorkbookPr) {
+	if pr == nil {
+		*o = false
+		return
+	}
+	*o = FilterPrivacy(pr.FilterPrivacy)
 }
 
 // getWorkbookPrOption implements the WorkbookPrOption interface and get the
