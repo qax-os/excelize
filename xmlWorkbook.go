@@ -139,19 +139,19 @@ type xlsxBookViews struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
 // specifies a single Workbook view.
 type xlsxWorkBookView struct {
-	ActiveTab              int    `xml:"activeTab,attr,omitempty"`
-	AutoFilterDateGrouping bool   `xml:"autoFilterDateGrouping,attr,omitempty"`
-	FirstSheet             int    `xml:"firstSheet,attr,omitempty"`
-	Minimized              bool   `xml:"minimized,attr,omitempty"`
-	ShowHorizontalScroll   bool   `xml:"showHorizontalScroll,attr,omitempty"`
-	ShowSheetTabs          bool   `xml:"showSheetTabs,attr,omitempty"`
-	ShowVerticalScroll     bool   `xml:"showVerticalScroll,attr,omitempty"`
-	TabRatio               int    `xml:"tabRatio,attr,omitempty"`
 	Visibility             string `xml:"visibility,attr,omitempty"`
-	WindowHeight           int    `xml:"windowHeight,attr,omitempty"`
-	WindowWidth            int    `xml:"windowWidth,attr,omitempty"`
+	Minimized              bool   `xml:"minimized,attr,omitempty"`
+	ShowHorizontalScroll   *bool  `xml:"showHorizontalScroll,attr"`
+	ShowVerticalScroll     *bool  `xml:"showVerticalScroll,attr"`
+	ShowSheetTabs          *bool  `xml:"showSheetTabs,attr"`
 	XWindow                string `xml:"xWindow,attr,omitempty"`
 	YWindow                string `xml:"yWindow,attr,omitempty"`
+	WindowWidth            int    `xml:"windowWidth,attr,omitempty"`
+	WindowHeight           int    `xml:"windowHeight,attr,omitempty"`
+	TabRatio               int    `xml:"tabRatio,attr,omitempty"`
+	FirstSheet             int    `xml:"firstSheet,attr,omitempty"`
+	ActiveTab              int    `xml:"activeTab,attr,omitempty"`
+	AutoFilterDateGrouping *bool  `xml:"autoFilterDateGrouping,attr"`
 }
 
 // xlsxSheets directly maps the sheets element from the namespace

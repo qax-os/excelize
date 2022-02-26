@@ -401,6 +401,7 @@ type formulaFuncs struct {
 //    ERF.PRECISE
 //    ERFC
 //    ERFC.PRECISE
+//    ERROR.TYPE
 //    EVEN
 //    EXACT
 //    EXP
@@ -427,6 +428,7 @@ type formulaFuncs struct {
 //    HEX2DEC
 //    HEX2OCT
 //    HLOOKUP
+//    HOUR
 //    IF
 //    IFERROR
 //    IFNA
@@ -574,6 +576,7 @@ type formulaFuncs struct {
 //    RRI
 //    SEC
 //    SECH
+//    SECOND
 //    SHEET
 //    SHEETS
 //    SIGN
@@ -604,6 +607,7 @@ type formulaFuncs struct {
 //    TBILLYIELD
 //    TEXTJOIN
 //    TIME
+//    TIMEVALUE
 //    TODAY
 //    TRANSPOSE
 //    TRIM
@@ -852,7 +856,9 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		// calculate trigger
 		topOpt := opftStack.Peek().(efp.Token)
 		if err := calculate(opfdStack, topOpt); err != nil {
-			return err
+			argsStack.Peek().(*list.List).PushBack(newErrorFormulaArg(err.Error(), err.Error()))
+			opftStack.Pop()
+			continue
 		}
 		opftStack.Pop()
 	}
@@ -874,7 +880,11 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 	if opfStack.Len() > 0 { // still in function stack
 		if nextToken.TType == efp.TokenTypeOperatorInfix || (opftStack.Len() > 1 && opfdStack.Len() > 0) {
 			// mathematics calculate in formula function
-			opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+			if arg.Type == ArgError {
+				opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeError})
+			} else {
+				opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+			}
 		} else {
 			argsStack.Peek().(*list.List).PushBack(arg)
 		}
@@ -1096,11 +1106,19 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 	fn, ok := tokenCalcFunc[opt.TValue]
 	if ok {
 		if opdStack.Len() < 2 {
+			if opdStack.Len() == 1 {
+				rOpd := opdStack.Pop().(efp.Token)
+				if rOpd.TSubType == efp.TokenSubTypeError {
+					return errors.New(rOpd.TValue)
+				}
+			}
 			return ErrInvalidFormula
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
-
+		if lOpd.TSubType == efp.TokenSubTypeError {
+			return errors.New(lOpd.TValue)
+		}
 		if err := fn(rOpd, lOpd, opdStack); err != nil {
 			return err
 		}
@@ -4797,8 +4815,8 @@ func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
-		case ArgUnknown:
-			continue
+		case ArgError:
+			return token
 		case ArgString:
 			if num := token.ToNumber(); num.Type == ArgNumber {
 				sum += num.Number
@@ -6787,6 +6805,29 @@ func (fn *formulaFuncs) ZTEST(argsList *list.List) formulaArg {
 
 // Information Functions
 
+// ERRORdotTYPE function receives an error value and returns an integer, that
+// tells you the type of the supplied error. The syntax of the function is:
+//
+//    ERROR.TYPE(error_val)
+//
+func (fn *formulaFuncs) ERRORdotTYPE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ERROR.TYPE requires 1 argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	if token.Type == ArgError {
+		for i, errType := range []string{
+			formulaErrorNULL, formulaErrorDIV, formulaErrorVALUE, formulaErrorREF,
+			formulaErrorNAME, formulaErrorNUM, formulaErrorNA,
+		} {
+			if errType == token.String {
+				return newNumberFormulaArg(float64(i) + 1)
+			}
+		}
+	}
+	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+}
+
 // ISBLANK function tests if a specified cell is blank (empty) and if so,
 // returns TRUE; Otherwise the function returns FALSE. The syntax of the
 // function is:
@@ -7884,6 +7925,40 @@ func (fn *formulaFuncs) ISOWEEKNUM(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(weeknum))
 }
 
+// HOUR function returns an integer representing the hour component of a
+// supplied Excel time. The syntax of the function is:
+//
+//    HOUR(serial_number)
+//
+func (fn *formulaFuncs) HOUR(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HOUR requires exactly 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	if num.Type != ArgNumber {
+		timeString := strings.ToLower(date.Value())
+		if !isTimeOnlyFmt(timeString) {
+			_, _, _, _, err := strToDate(timeString)
+			if err.Type == ArgError {
+				return err
+			}
+		}
+		h, _, _, pm, _, err := strToTime(timeString)
+		if err.Type == ArgError {
+			return err
+		}
+		if pm {
+			h += 12
+		}
+		return newNumberFormulaArg(float64(h))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "HOUR only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Hour()))
+}
+
 // MINUTE function returns an integer representing the minute component of a
 // supplied Excel time. The syntax of the function is:
 //
@@ -8131,6 +8206,37 @@ func (fn *formulaFuncs) NOW(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(25569.0 + float64(now.Unix()+int64(offset))/86400)
 }
 
+// SECOND function returns an integer representing the second component of a
+// supplied Excel time. The syntax of the function is:
+//
+//    SECOND(serial_number)
+//
+func (fn *formulaFuncs) SECOND(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SECOND requires exactly 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	if num.Type != ArgNumber {
+		timeString := strings.ToLower(date.Value())
+		if !isTimeOnlyFmt(timeString) {
+			_, _, _, _, err := strToDate(timeString)
+			if err.Type == ArgError {
+				return err
+			}
+		}
+		_, _, s, _, _, err := strToTime(timeString)
+		if err.Type == ArgError {
+			return err
+		}
+		return newNumberFormulaArg(float64(int(s) % 60))
+	}
+	if num.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, "SECOND only accepts positive argument")
+	}
+	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Second()))
+}
+
 // TIME function accepts three integer arguments representing hours, minutes
 // and seconds, and returns an Excel time. I.e. the function returns the
 // decimal value that represents the time in Excel. The syntax of the Time
@@ -8153,6 +8259,37 @@ func (fn *formulaFuncs) TIME(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(t)
+}
+
+// TIMEVALUE function converts a text representation of a time, into an Excel
+// time. The syntax of the Timevalue function is:
+//
+//    TIMEVALUE(time_text)
+//
+func (fn *formulaFuncs) TIMEVALUE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TIMEVALUE requires exactly 1 argument")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	timeString := strings.ToLower(date.Value())
+	if !isTimeOnlyFmt(timeString) {
+		_, _, _, _, err := strToDate(timeString)
+		if err.Type == ArgError {
+			return err
+		}
+	}
+	h, m, s, pm, _, err := strToTime(timeString)
+	if err.Type == ArgError {
+		return err
+	}
+	if pm {
+		h += 12
+	}
+	args := list.New()
+	args.PushBack(newNumberFormulaArg(float64(h)))
+	args.PushBack(newNumberFormulaArg(float64(m)))
+	args.PushBack(newNumberFormulaArg(s))
+	return fn.TIME(args)
 }
 
 // TODAY function returns the current date. The function has no arguments and

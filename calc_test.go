@@ -990,6 +990,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEIBULL.DIST(1,3,1,FALSE)":  "1.103638323514327",
 		"=WEIBULL.DIST(2,5,1.5,TRUE)": "0.985212776817482",
 		// Information Functions
+		// ERROR.TYPE
+		"=ERROR.TYPE(1/0)":           "2",
+		"=ERROR.TYPE(COT(0))":        "2",
+		"=ERROR.TYPE(XOR(\"text\"))": "3",
+		"=ERROR.TYPE(HEX2BIN(2,1))":  "6",
+		"=ERROR.TYPE(NA())":          "7",
 		// ISBLANK
 		"=ISBLANK(A1)": "FALSE",
 		"=ISBLANK(A5)": "TRUE",
@@ -1139,6 +1145,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(2,1)":                           "1",
 		"=DAYS(INT(2),INT(1))":                 "1",
 		"=DAYS(\"02/02/2015\",\"01/01/2015\")": "32",
+		// HOUR
+		"=HOUR(1)":                    "0",
+		"=HOUR(43543.5032060185)":     "12",
+		"=HOUR(\"43543.5032060185\")": "12",
+		"=HOUR(\"13:00:55\")":         "13",
+		"=HOUR(\"1:00 PM\")":          "13",
+		"=HOUR(\"12/09/2015 08:55\")": "8",
 		// ISOWEEKNUM
 		"=ISOWEEKNUM(42370)":          "53",
 		"=ISOWEEKNUM(\"42370\")":      "53",
@@ -1183,10 +1196,26 @@ func TestCalcCellValue(t *testing.T) {
 		"=YEARFRAC(\"02/29/2000\", \"01/29/2001\",1)": "0.915300546448087",
 		"=YEARFRAC(\"02/29/2000\", \"03/29/2000\",1)": "0.0792349726775956",
 		"=YEARFRAC(\"01/31/2000\", \"03/29/2000\",4)": "0.163888888888889",
+		// SECOND
+		"=SECOND(\"13:35:55\")":            "55",
+		"=SECOND(\"13:10:60\")":            "0",
+		"=SECOND(\"13:10:61\")":            "1",
+		"=SECOND(\"08:17:00\")":            "0",
+		"=SECOND(\"12/09/2015 08:55\")":    "0",
+		"=SECOND(\"12/09/2011 08:17:23\")": "23",
+		"=SECOND(\"43543.5032060185\")":    "37",
+		"=SECOND(43543.5032060185)":        "37",
 		// TIME
 		"=TIME(5,44,32)":             "0.239259259259259",
 		"=TIME(\"5\",\"44\",\"32\")": "0.239259259259259",
 		"=TIME(0,0,73)":              "0.000844907407407407",
+		// TIMEVALUE
+		"=TIMEVALUE(\"2:23\")":             "0.0993055555555556",
+		"=TIMEVALUE(\"2:23 am\")":          "0.0993055555555556",
+		"=TIMEVALUE(\"2:23 PM\")":          "0.599305555555555",
+		"=TIMEVALUE(\"14:23:00\")":         "0.599305555555555",
+		"=TIMEVALUE(\"00:02:23\")":         "0.00165509259259259",
+		"=TIMEVALUE(\"01/01/2011 02:23\")": "0.0993055555555556",
 		// WEEKDAY
 		"=WEEKDAY(0)":                 "7",
 		"=WEEKDAY(47119)":             "2",
@@ -2167,12 +2196,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=POISSON(0,0,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=POISSON(0,-1,TRUE)":    "#N/A",
 		// SUM
-		"=SUM((":   ErrInvalidFormula.Error(),
-		"=SUM(-)":  ErrInvalidFormula.Error(),
-		"=SUM(1+)": ErrInvalidFormula.Error(),
-		"=SUM(1-)": ErrInvalidFormula.Error(),
-		"=SUM(1*)": ErrInvalidFormula.Error(),
-		"=SUM(1/)": ErrInvalidFormula.Error(),
+		"=SUM((":             ErrInvalidFormula.Error(),
+		"=SUM(-)":            ErrInvalidFormula.Error(),
+		"=SUM(1+)":           ErrInvalidFormula.Error(),
+		"=SUM(1-)":           ErrInvalidFormula.Error(),
+		"=SUM(1*)":           ErrInvalidFormula.Error(),
+		"=SUM(1/)":           ErrInvalidFormula.Error(),
+		"=SUM(1*SUM(1/0))":   "#DIV/0!",
+		"=SUM(1*SUM(1/0)*1)": "#DIV/0!",
 		// SUMIF
 		"=SUMIF()": "SUMIF requires at least 2 arguments",
 		// SUMSQ
@@ -2453,6 +2484,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=ZTEST(A1,1)":      "#DIV/0!",
 		"=ZTEST(A1,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// Information Functions
+		// ERROR.TYPE
+		"=ERROR.TYPE()":  "ERROR.TYPE requires 1 argument",
+		"=ERROR.TYPE(1)": "#N/A",
 		// ISBLANK
 		"=ISBLANK(A1,A2)": "ISBLANK requires 1 argument",
 		// ISERR
@@ -2582,6 +2616,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(0,\"\")": "#VALUE!",
 		"=DAYS(NA(),0)": "#VALUE!",
 		"=DAYS(0,NA())": "#VALUE!",
+		// HOUR
+		"=HOUR()":             "HOUR requires exactly 1 argument",
+		"=HOUR(-1)":           "HOUR only accepts positive argument",
+		"=HOUR(\"\")":         "#VALUE!",
+		"=HOUR(\"25:10:55\")": "#VALUE!",
 		// ISOWEEKNUM
 		"=ISOWEEKNUM()":                    "ISOWEEKNUM requires 1 argument",
 		"=ISOWEEKNUM(\"\")":                "#VALUE!",
@@ -2612,10 +2651,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=YEARFRAC(42005,42094,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// NOW
 		"=NOW(A1)": "NOW accepts no arguments",
+		// SECOND
+		"=SECOND()":          "SECOND requires exactly 1 argument",
+		"=SECOND(-1)":        "SECOND only accepts positive argument",
+		"=SECOND(\"\")":      "#VALUE!",
+		"=SECOND(\"25:55\")": "#VALUE!",
 		// TIME
 		"=TIME()":         "TIME requires 3 number arguments",
 		"=TIME(\"\",0,0)": "TIME requires 3 number arguments",
 		"=TIME(0,0,-1)":   "#NUM!",
+		// TIMEVALUE
+		"=TIMEVALUE()":          "TIMEVALUE requires exactly 1 argument",
+		"=TIMEVALUE(1)":         "#VALUE!",
+		"=TIMEVALUE(-1)":        "#VALUE!",
+		"=TIMEVALUE(\"25:55\")": "#VALUE!",
 		// TODAY
 		"=TODAY(A1)": "TODAY accepts no arguments",
 		// WEEKDAY
@@ -3354,7 +3403,7 @@ func TestCalcCellValue(t *testing.T) {
 		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.EqualError(t, err, expected)
+		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}
 
