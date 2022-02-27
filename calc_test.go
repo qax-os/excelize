@@ -724,6 +724,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=((3+5*2)+3)/5+(-6)/4*2+3":           "3.2",
 		"=1+SUM(SUM(1,2*3),4)*-4/2+5+(4+2)*3": "2",
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.666666666666664",
+		"=SUM(1+ROW())":                       "2",
 		// SUMIF
 		`=SUMIF(F1:F5, "")`:             "0",
 		`=SUMIF(A1:A5, "3")`:            "3",
@@ -1447,6 +1448,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUM(INDEX(A1:B2,2,0))": "7",
 		"=SUM(INDEX(A1:B4,0,2))": "9",
 		"=SUM(INDEX(E1:F5,5,2))": "34440",
+		// INDIRECT
+		"=INDIRECT(\"E1\")":                   "Team",
+		"=INDIRECT(\"E\"&1)":                  "Team",
+		"=INDIRECT(\"E\"&ROW())":              "Team",
+		"=INDIRECT(\"E\"&ROW(),TRUE)":         "Team",
+		"=INDIRECT(\"R1C5\",FALSE)":           "Team",
+		"=INDIRECT(\"R\"&1&\"C\"&5,FALSE)":    "Team",
+		"=SUM(INDIRECT(\"A1:B2\"))":           "12",
+		"=SUM(INDIRECT(\"A1:B2\",TRUE))":      "12",
+		"=SUM(INDIRECT(\"R1C1:R2C2\",FALSE))": "12",
 		// LOOKUP
 		"=LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"=LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
@@ -2872,6 +2883,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=INDEX(A1:A2,0,0)": "#VALUE!",
 		"=INDEX(0,\"\")":    "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=INDEX(0,0,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// INDIRECT
+		"=INDIRECT()":                     "INDIRECT requires 1 or 2 arguments",
+		"=INDIRECT(\"E\"&1,TRUE,1)":       "INDIRECT requires 1 or 2 arguments",
+		"=INDIRECT(\"R1048577C1\",\"\")":  "#VALUE!",
+		"=INDIRECT(\"E1048577\")":         "#REF!",
+		"=INDIRECT(\"R1048577C1\",FALSE)": "#REF!",
+		"=INDIRECT(\"R1C16385\",FALSE)":   "#REF!",
+		"=INDIRECT(\"\",FALSE)":           "#REF!",
+		"=INDIRECT(\"R C1\",FALSE)":       "#REF!",
+		"=INDIRECT(\"R1C \",FALSE)":       "#REF!",
+		"=INDIRECT(\"R1C1:R2C \",FALSE)":  "#REF!",
 		// LOOKUP
 		"=LOOKUP()":                     "LOOKUP requires at least 2 arguments",
 		"=LOOKUP(D2,D1,D2)":             "LOOKUP requires second argument of table array",

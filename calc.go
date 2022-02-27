@@ -459,6 +459,7 @@ type formulaFuncs struct {
 //    IMSUM
 //    IMTAN
 //    INDEX
+//    INDIRECT
 //    INT
 //    INTRATE
 //    IPMT
@@ -851,22 +852,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 	if !isFunctionStopToken(token) {
 		return nil
 	}
-	// current token is function stop
-	for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
-		// calculate trigger
-		topOpt := opftStack.Peek().(efp.Token)
-		if err := calculate(opfdStack, topOpt); err != nil {
-			argsStack.Peek().(*list.List).PushBack(newErrorFormulaArg(err.Error(), err.Error()))
-			opftStack.Pop()
-			continue
-		}
-		opftStack.Pop()
-	}
-
-	// push opfd to args
-	if opfdStack.Len() > 0 {
-		argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
-	}
+	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
 	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell}, strings.NewReplacer(
 		"_xlfn.", "", ".", "dot").Replace(opfStack.Peek().(efp.Token).TValue),
@@ -892,6 +878,34 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		opdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
 	return nil
+}
+
+// prepareEvalInfixExp check the token and stack state for formula function
+// evaluate.
+func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
+	// current token is function stop
+	for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
+		// calculate trigger
+		topOpt := opftStack.Peek().(efp.Token)
+		if err := calculate(opfdStack, topOpt); err != nil {
+			argsStack.Peek().(*list.List).PushBack(newErrorFormulaArg(err.Error(), err.Error()))
+			opftStack.Pop()
+			continue
+		}
+		opftStack.Pop()
+	}
+	argument := true
+	if opftStack.Len() > 2 && opfdStack.Len() == 1 {
+		topOpt := opftStack.Pop()
+		if opftStack.Peek().(efp.Token).TType == efp.TokenTypeOperatorInfix {
+			argument = false
+		}
+		opftStack.Push(topOpt)
+	}
+	// push opfd to args
+	if argument && opfdStack.Len() > 0 {
+		argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
+	}
 }
 
 // calcPow evaluate exponentiation arithmetic operations.
@@ -1080,6 +1094,16 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		result := 0 - opdVal
 		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
+	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
+		if opdStack.Len() < 2 {
+			return ErrInvalidFormula
+		}
+		rOpd := opdStack.Pop().(efp.Token)
+		lOpd := opdStack.Pop().(efp.Token)
+		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
+			return err
+		}
+	}
 	tokenCalcFunc := map[string]func(rOpd, lOpd efp.Token, opdStack *Stack) error{
 		"^":  calcPow,
 		"*":  calcMultiply,
@@ -1093,29 +1117,16 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		">=": calcGe,
 		"&":  calcSplice,
 	}
-	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
-		if opdStack.Len() < 2 {
-			return ErrInvalidFormula
-		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
-		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
-			return err
-		}
-	}
 	fn, ok := tokenCalcFunc[opt.TValue]
 	if ok {
 		if opdStack.Len() < 2 {
-			if opdStack.Len() == 1 {
-				rOpd := opdStack.Pop().(efp.Token)
-				if rOpd.TSubType == efp.TokenSubTypeError {
-					return errors.New(rOpd.TValue)
-				}
-			}
 			return ErrInvalidFormula
 		}
 		rOpd := opdStack.Pop().(efp.Token)
 		lOpd := opdStack.Pop().(efp.Token)
+		if rOpd.TSubType == efp.TokenSubTypeError {
+			return errors.New(rOpd.TValue)
+		}
 		if lOpd.TSubType == efp.TokenSubTypeError {
 			return errors.New(lOpd.TValue)
 		}
@@ -9957,6 +9968,68 @@ func (fn *formulaFuncs) INDEX(argsList *list.List) formulaArg {
 		return newMatrixFormulaArg([][]formulaArg{cells.List})
 	}
 	return cells.List[colIdx]
+}
+
+// INDIRECT function converts a text string into a cell reference. The syntax
+// of the Indirect function is:
+//
+//    INDIRECT(ref_text,[a1])
+//
+func (fn *formulaFuncs) INDIRECT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 && argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "INDIRECT requires 1 or 2 arguments")
+	}
+	refText := argsList.Front().Value.(formulaArg).Value()
+	a1 := newBoolFormulaArg(true)
+	if argsList.Len() == 2 {
+		if a1 = argsList.Back().Value.(formulaArg).ToBool(); a1.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	R1C1ToA1 := func(ref string) (cell string, err error) {
+		parts := strings.Split(strings.TrimLeft(ref, "R"), "C")
+		if len(parts) != 2 {
+			return
+		}
+		row, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return
+		}
+		col, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return
+		}
+		cell, err = CoordinatesToCellName(col, row)
+		return
+	}
+	refs := strings.Split(refText, ":")
+	fromRef, toRef := refs[0], ""
+	if len(refs) == 2 {
+		toRef = refs[1]
+	}
+	if a1.Number == 0 {
+		from, err := R1C1ToA1(refs[0])
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+		}
+		fromRef = from
+		if len(refs) == 2 {
+			to, err := R1C1ToA1(refs[1])
+			if err != nil {
+				return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+			}
+			toRef = to
+		}
+	}
+	if len(refs) == 1 {
+		value, err := fn.f.GetCellValue(fn.sheet, fromRef)
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+		}
+		return newStringFormulaArg(value)
+	}
+	arg, _ := fn.f.parseReference(fn.sheet, fromRef+":"+toRef)
+	return arg
 }
 
 // LOOKUP function performs an approximate match lookup in a one-column or
