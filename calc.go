@@ -416,6 +416,7 @@ type formulaFuncs struct {
 //    FLOOR
 //    FLOOR.MATH
 //    FLOOR.PRECISE
+//    FORMULATEXT
 //    FV
 //    FVSCHEDULE
 //    GAMMA
@@ -615,6 +616,7 @@ type formulaFuncs struct {
 //    TRIMMEAN
 //    TRUE
 //    TRUNC
+//    TYPE
 //    UNICHAR
 //    UNICODE
 //    UPPER
@@ -6874,7 +6876,7 @@ func (fn *formulaFuncs) ISERR(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISERR requires 1 argument")
 	}
 	token := argsList.Front().Value.(formulaArg)
-	result := "FALSE"
+	result := false
 	if token.Type == ArgError {
 		for _, errType := range []string{
 			formulaErrorDIV, formulaErrorNAME, formulaErrorNUM,
@@ -6882,11 +6884,11 @@ func (fn *formulaFuncs) ISERR(argsList *list.List) formulaArg {
 			formulaErrorSPILL, formulaErrorCALC, formulaErrorGETTINGDATA,
 		} {
 			if errType == token.String {
-				result = "TRUE"
+				result = true
 			}
 		}
 	}
-	return newStringFormulaArg(result)
+	return newBoolFormulaArg(result)
 }
 
 // ISERROR function tests if an initial supplied expression (or value) returns
@@ -6900,7 +6902,7 @@ func (fn *formulaFuncs) ISERROR(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISERROR requires 1 argument")
 	}
 	token := argsList.Front().Value.(formulaArg)
-	result := "FALSE"
+	result := false
 	if token.Type == ArgError {
 		for _, errType := range []string{
 			formulaErrorDIV, formulaErrorNAME, formulaErrorNA, formulaErrorNUM,
@@ -6908,11 +6910,11 @@ func (fn *formulaFuncs) ISERROR(argsList *list.List) formulaArg {
 			formulaErrorCALC, formulaErrorGETTINGDATA,
 		} {
 			if errType == token.String {
-				result = "TRUE"
+				result = true
 			}
 		}
 	}
-	return newStringFormulaArg(result)
+	return newBoolFormulaArg(result)
 }
 
 // ISEVEN function tests if a supplied number (or numeric expression)
@@ -7190,6 +7192,32 @@ func (fn *formulaFuncs) SHEETS(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 }
 
+// TYPE function returns an integer that represents the value's data type. The
+// syntax of the function is:
+//
+//    TYPE(value)
+//
+func (fn *formulaFuncs) TYPE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TYPE requires 1 argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgError:
+		return newNumberFormulaArg(16)
+	case ArgMatrix:
+		return newNumberFormulaArg(64)
+	default:
+		if arg := token.ToNumber(); arg.Type != ArgError || len(token.Value()) == 0 {
+			return newNumberFormulaArg(1)
+		}
+		if arg := token.ToBool(); arg.Type != ArgError {
+			return newNumberFormulaArg(4)
+		}
+		return newNumberFormulaArg(2)
+	}
+}
+
 // T function tests if a supplied value is text and if so, returns the
 // supplied text; Otherwise, the function returns an empty text string. The
 // syntax of the function is:
@@ -7343,7 +7371,6 @@ func (fn *formulaFuncs) NOT(argsList *list.List) formulaArg {
 	case ArgNumber:
 		return newBoolFormulaArg(!(token.Number != 0))
 	case ArgError:
-
 		return token
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "NOT expects 1 boolean or numeric argument")
@@ -9413,6 +9440,32 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(float64(1))
 	}
 	return newNumberFormulaArg(float64(result))
+}
+
+// FORMULATEXT function returns a formula as a text string. The syntax of the
+// function is:
+//
+//    FORMULATEXT(reference)
+//
+func (fn *formulaFuncs) FORMULATEXT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FORMULATEXT requires 1 argument")
+	}
+	refs := argsList.Front().Value.(formulaArg).cellRefs
+	col, row := 0, 0
+	if refs != nil && refs.Len() > 0 {
+		col, row = refs.Front().Value.(cellRef).Col, refs.Front().Value.(cellRef).Row
+	}
+	ranges := argsList.Front().Value.(formulaArg).cellRanges
+	if ranges != nil && ranges.Len() > 0 {
+		col, row = ranges.Front().Value.(cellRange).From.Col, ranges.Front().Value.(cellRange).From.Row
+	}
+	cell, err := CoordinatesToCellName(col, row)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	formula, _ := fn.f.GetCellFormula(fn.sheet, cell)
+	return newStringFormulaArg(formula)
 }
 
 // checkHVLookupArgs checking arguments, prepare extract mode, lookup value,

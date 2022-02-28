@@ -1005,8 +1005,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISERR(NA())":         "FALSE",
 		"=ISERR(POWER(0,-1)))": "TRUE",
 		// ISERROR
-		"=ISERROR(A1)":   "FALSE",
-		"=ISERROR(NA())": "TRUE",
+		"=ISERROR(A1)":          "FALSE",
+		"=ISERROR(NA())":        "TRUE",
+		"=ISERROR(\"#VALUE!\")": "FALSE",
 		// ISEVEN
 		"=ISEVEN(A1)": "FALSE",
 		"=ISEVEN(A2)": "TRUE",
@@ -1055,6 +1056,14 @@ func TestCalcCellValue(t *testing.T) {
 		// SHEETS
 		"=SHEETS()":   "1",
 		"=SHEETS(A1)": "1",
+		// TYPE
+		"=TYPE(2)":        "1",
+		"=TYPE(10/2)":     "1",
+		"=TYPE(C1)":       "1",
+		"=TYPE(\"text\")": "2",
+		"=TYPE(TRUE)":     "4",
+		"=TYPE(NA())":     "16",
+		"=TYPE(MUNIT(2))": "64",
 		// T
 		"=T(\"text\")": "text",
 		"=T(N(10))":    "",
@@ -2536,6 +2545,8 @@ func TestCalcCellValue(t *testing.T) {
 		// SHEETS
 		"=SHEETS(\"\",\"\")":  "SHEETS accepts at most 1 argument",
 		"=SHEETS(\"Sheet1\")": "#N/A",
+		// TYPE
+		"=TYPE()": "TYPE requires 1 argument",
 		// T
 		"=T()":     "T requires 1 argument",
 		"=T(NA())": "#N/A",
@@ -2839,6 +2850,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=COLUMNS(Sheet1)":        newInvalidColumnNameError("Sheet1").Error(),
 		"=COLUMNS(Sheet1!A1!B1)":  newInvalidColumnNameError("Sheet1").Error(),
 		"=COLUMNS(Sheet1!Sheet1)": newInvalidColumnNameError("Sheet1").Error(),
+		// FORMULATEXT
+		"=FORMULATEXT()":  "FORMULATEXT requires 1 argument",
+		"=FORMULATEXT(1)": "#VALUE!",
 		// HLOOKUP
 		"=HLOOKUP()":                     "HLOOKUP requires at least 3 arguments",
 		"=HLOOKUP(D2,D1,1,FALSE)":        "HLOOKUP requires second argument of table array",
@@ -3690,6 +3704,17 @@ func TestCalcAVERAGEIF(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcFORMULATEXT(t *testing.T) {
+	f, formulaText := NewFile(), "=SUM(B1:C1)"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formulaText))
+	for _, formula := range []string{"=FORMULATEXT(A1)", "=FORMULATEXT(A:A)", "=FORMULATEXT(A1:B1)"} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula), formula)
+		result, err := f.CalcCellValue("Sheet1", "D1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, formulaText, result, formula)
 	}
 }
 
