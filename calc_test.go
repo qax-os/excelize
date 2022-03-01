@@ -834,6 +834,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=KURT(F1:F9)":           "-1.03350350255137",
 		"=KURT(F1,F2:F9)":        "-1.03350350255137",
 		"=KURT(INT(1),MUNIT(2))": "-3.33333333333334",
+		// EXPON.DIST
+		"=EXPON.DIST(0.5,1,TRUE)":  "0.393469340287367",
+		"=EXPON.DIST(0.5,1,FALSE)": "0.606530659712633",
+		"=EXPON.DIST(2,1,TRUE)":    "0.864664716763387",
+		// EXPONDIST
+		"=EXPONDIST(0.5,1,TRUE)":  "0.393469340287367",
+		"=EXPONDIST(0.5,1,FALSE)": "0.606530659712633",
+		"=EXPONDIST(2,1,TRUE)":    "0.864664716763387",
 		// NORM.DIST
 		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
 		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
@@ -2315,6 +2323,20 @@ func TestCalcCellValue(t *testing.T) {
 		// KURT
 		"=KURT()":          "KURT requires at least 1 argument",
 		"=KURT(F1,INT(1))": "#DIV/0!",
+		// EXPON.DIST
+		"=EXPON.DIST()":            "EXPON.DIST requires 3 arguments",
+		"=EXPON.DIST(\"\",1,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EXPON.DIST(0,\"\",TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EXPON.DIST(0,1,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=EXPON.DIST(-1,1,TRUE)":   "#NUM!",
+		"=EXPON.DIST(1,0,TRUE)":    "#NUM!",
+		// EXPONDIST
+		"=EXPONDIST()":            "EXPONDIST requires 3 arguments",
+		"=EXPONDIST(\"\",1,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EXPONDIST(0,\"\",TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EXPONDIST(0,1,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=EXPONDIST(-1,1,TRUE)":   "#NUM!",
+		"=EXPONDIST(1,0,TRUE)":    "#NUM!",
 		// NORM.DIST
 		"=NORM.DIST()": "NORM.DIST requires 4 arguments",
 		// NORMDIST
@@ -3704,6 +3726,45 @@ func TestCalcAVERAGEIF(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcCOVAR(t *testing.T) {
+	cellData := [][]interface{}{
+		{"array1", "array2"},
+		{2, 22.9},
+		{7, 33.49},
+		{8, 34.5},
+		{3, 27.61},
+		{4, 19.5},
+		{1, 10.11},
+		{6, 37.9},
+		{5, 31.08},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=COVAR(A1:A9,B1:B9)":        "16.633125",
+		"=COVAR(A2:A9,B2:B9)":        "16.633125",
+		"=COVARIANCE.P(A1:A9,B1:B9)": "16.633125",
+		"=COVARIANCE.P(A2:A9,B2:B9)": "16.633125",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=COVAR()":                   "COVAR requires 2 arguments",
+		"=COVAR(A2:A9,B3:B3)":        "#N/A",
+		"=COVARIANCE.P()":            "COVARIANCE.P requires 2 arguments",
+		"=COVARIANCE.P(A2:A9,B3:B3)": "#N/A",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
 	}
 }
 

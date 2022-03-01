@@ -373,6 +373,8 @@ type formulaFuncs struct {
 //    COUPNCD
 //    COUPNUM
 //    COUPPCD
+//    COVAR
+//    COVARIANCE.P
 //    CSC
 //    CSCH
 //    CUMIPMT
@@ -405,6 +407,8 @@ type formulaFuncs struct {
 //    EVEN
 //    EXACT
 //    EXP
+//    EXPON.DIST
+//    EXPONDIST
 //    FACT
 //    FACTDOUBLE
 //    FALSE
@@ -5203,6 +5207,51 @@ func (fn *formulaFuncs) CONFIDENCEdotNORM(argsList *list.List) formulaArg {
 	return fn.confidence("CONFIDENCE.NORM", argsList)
 }
 
+// COVAR function calculates the covariance of two supplied sets of values. The
+// syntax of the function is:
+//
+//    COVAR(array1,array2)
+//
+func (fn *formulaFuncs) COVAR(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COVAR requires 2 arguments")
+	}
+	array1 := argsList.Front().Value.(formulaArg)
+	array2 := argsList.Back().Value.(formulaArg)
+	left, right := array1.ToList(), array2.ToList()
+	n := len(left)
+	if n != len(right) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	l1, l2 := list.New(), list.New()
+	l1.PushBack(array1)
+	l2.PushBack(array2)
+	result, skip := 0.0, 0
+	mean1, mean2 := fn.AVERAGE(l1), fn.AVERAGE(l2)
+	for i := 0; i < n; i++ {
+		arg1 := left[i].ToNumber()
+		arg2 := right[i].ToNumber()
+		if arg1.Type == ArgError || arg2.Type == ArgError {
+			skip++
+			continue
+		}
+		result += (arg1.Number - mean1.Number) * (arg2.Number - mean2.Number)
+	}
+	return newNumberFormulaArg(result / float64(n-skip))
+}
+
+// COVARIANCEdotP function calculates the population covariance of two supplied
+// sets of values. The syntax of the function is:
+//
+//    COVARIANCE.P(array1,array2)
+//
+func (fn *formulaFuncs) COVARIANCEdotP(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "COVARIANCE.P requires 2 arguments")
+	}
+	return fn.COVAR(argsList)
+}
+
 // calcStringCountSum is part of the implementation countSum.
 func calcStringCountSum(countText bool, count, sum float64, num, arg formulaArg) (float64, float64) {
 	if countText && num.Type == ArgError && arg.String != "" {
@@ -5626,6 +5675,53 @@ func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
 		}
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// EXPONdotDIST function returns the value of the exponential distribution for
+// a give value of x. The user can specify whether the probability density
+// function or the cumulative distribution function is used. The syntax of the
+// Expondist function is:
+//
+//    EXPON.DIST(x,lambda,cumulative)
+//
+func (fn *formulaFuncs) EXPONdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EXPON.DIST requires 3 arguments")
+	}
+	return fn.EXPONDIST(argsList)
+}
+
+// EXPONDIST function returns the value of the exponential distribution for a
+// give value of x. The user can specify whether the probability density
+// function or the cumulative distribution function is used. The syntax of the
+// Expondist function is:
+//
+//    EXPONDIST(x,lambda,cumulative)
+//
+func (fn *formulaFuncs) EXPONDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EXPONDIST requires 3 arguments")
+	}
+	var x, lambda, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if lambda = argsList.Front().Next().Value.(formulaArg).ToNumber(); lambda.Type != ArgNumber {
+		return lambda
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if x.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if lambda.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(1 - math.Exp(-lambda.Number*x.Number))
+	}
+	return newNumberFormulaArg(lambda.Number * math.Exp(-lambda.Number*x.Number))
 }
 
 // NORMdotDIST function calculates the Normal Probability Density Function or
