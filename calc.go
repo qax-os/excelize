@@ -809,6 +809,17 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 				}
 			}
 
+			if isEndParenthesesToken(token) && isBeginParenthesesToken(opftStack.Peek().(efp.Token)) {
+				if arg := argsStack.Peek().(*list.List).Back(); arg != nil {
+					opfdStack.Push(efp.Token{
+						TType:    efp.TokenTypeOperand,
+						TSubType: efp.TokenSubTypeNumber,
+						TValue:   arg.Value.(formulaArg).Value(),
+					})
+					argsStack.Peek().(*list.List).Remove(arg)
+				}
+			}
+
 			// check current token is opft
 			if err = f.parseToken(sheet, token, opfdStack, opftStack); err != nil {
 				return efp.Token{}, err
