@@ -1160,6 +1160,12 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 				log.Printf("xml decode error: %s", err)
 			}
 			content.R = decodeWsDr.R
+			for _, v := range decodeWsDr.AlternateContent {
+				content.AlternateContent = append(content.AlternateContent, &xlsxAlternateContent{
+					Content: v.Content,
+					XMLNSMC: SourceRelationshipCompatibility.Value,
+				})
+			}
 			for _, v := range decodeWsDr.OneCellAnchor {
 				content.OneCellAnchor = append(content.OneCellAnchor, &xdrCellAnchor{
 					EditAs:       v.EditAs,

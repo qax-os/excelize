@@ -63,12 +63,13 @@ type decodeCNvSpPr struct {
 // changed after serialization and deserialization, two different structures
 // are defined. decodeWsDr just for deserialization.
 type decodeWsDr struct {
-	A             string              `xml:"xmlns a,attr"`
-	Xdr           string              `xml:"xmlns xdr,attr"`
-	R             string              `xml:"xmlns r,attr"`
-	OneCellAnchor []*decodeCellAnchor `xml:"oneCellAnchor,omitempty"`
-	TwoCellAnchor []*decodeCellAnchor `xml:"twoCellAnchor,omitempty"`
-	XMLName       xml.Name            `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr,omitempty"`
+	XMLName          xml.Name            `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr,omitempty"`
+	A                string              `xml:"xmlns a,attr"`
+	Xdr              string              `xml:"xmlns xdr,attr"`
+	R                string              `xml:"xmlns r,attr"`
+	AlternateContent []*xlsxInnerXML     `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
+	OneCellAnchor    []*decodeCellAnchor `xml:"oneCellAnchor,omitempty"`
+	TwoCellAnchor    []*decodeCellAnchor `xml:"twoCellAnchor,omitempty"`
 }
 
 // decodeTwoCellAnchor directly maps the oneCellAnchor (One Cell Anchor Shape

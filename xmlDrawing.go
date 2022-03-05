@@ -320,13 +320,14 @@ type xlsxPoint2D struct {
 // wsDr.
 type xlsxWsDr struct {
 	sync.Mutex
-	XMLName        xml.Name         `xml:"xdr:wsDr"`
-	AbsoluteAnchor []*xdrCellAnchor `xml:"xdr:absoluteAnchor"`
-	OneCellAnchor  []*xdrCellAnchor `xml:"xdr:oneCellAnchor"`
-	TwoCellAnchor  []*xdrCellAnchor `xml:"xdr:twoCellAnchor"`
-	A              string           `xml:"xmlns:a,attr,omitempty"`
-	Xdr            string           `xml:"xmlns:xdr,attr,omitempty"`
-	R              string           `xml:"xmlns:r,attr,omitempty"`
+	XMLName          xml.Name                `xml:"xdr:wsDr"`
+	A                string                  `xml:"xmlns:a,attr,omitempty"`
+	Xdr              string                  `xml:"xmlns:xdr,attr,omitempty"`
+	R                string                  `xml:"xmlns:r,attr,omitempty"`
+	AlternateContent []*xlsxAlternateContent `xml:"mc:AlternateContent"`
+	AbsoluteAnchor   []*xdrCellAnchor        `xml:"xdr:absoluteAnchor"`
+	OneCellAnchor    []*xdrCellAnchor        `xml:"xdr:oneCellAnchor"`
+	TwoCellAnchor    []*xdrCellAnchor        `xml:"xdr:twoCellAnchor"`
 }
 
 // xlsxGraphicFrame (Graphic Frame) directly maps the xdr:graphicFrame element.

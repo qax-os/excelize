@@ -158,6 +158,13 @@ func (f *File) workSheetWriter() {
 			if sheet.SheetPr != nil || sheet.Drawing != nil || sheet.Hyperlinks != nil || sheet.Picture != nil || sheet.TableParts != nil {
 				f.addNameSpaces(p.(string), SourceRelationship)
 			}
+			if sheet.DecodeAlternateContent != nil {
+				sheet.AlternateContent = &xlsxAlternateContent{
+					Content: sheet.DecodeAlternateContent.Content,
+					XMLNSMC: SourceRelationshipCompatibility.Value,
+				}
+			}
+			sheet.DecodeAlternateContent = nil
 			// reusing buffer
 			_ = encoder.Encode(sheet)
 			f.saveFileList(p.(string), replaceRelationshipsBytes(f.replaceNameSpaceBytes(p.(string), buffer.Bytes())))

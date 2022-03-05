@@ -20,46 +20,48 @@ import (
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main.
 type xlsxWorksheet struct {
 	sync.Mutex
-	XMLName               xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
-	SheetPr               *xlsxSheetPr                 `xml:"sheetPr"`
-	Dimension             *xlsxDimension               `xml:"dimension"`
-	SheetViews            *xlsxSheetViews              `xml:"sheetViews"`
-	SheetFormatPr         *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
-	Cols                  *xlsxCols                    `xml:"cols"`
-	SheetData             xlsxSheetData                `xml:"sheetData"`
-	SheetCalcPr           *xlsxInnerXML                `xml:"sheetCalcPr"`
-	SheetProtection       *xlsxSheetProtection         `xml:"sheetProtection"`
-	ProtectedRanges       *xlsxInnerXML                `xml:"protectedRanges"`
-	Scenarios             *xlsxInnerXML                `xml:"scenarios"`
-	AutoFilter            *xlsxAutoFilter              `xml:"autoFilter"`
-	SortState             *xlsxSortState               `xml:"sortState"`
-	DataConsolidate       *xlsxInnerXML                `xml:"dataConsolidate"`
-	CustomSheetViews      *xlsxCustomSheetViews        `xml:"customSheetViews"`
-	MergeCells            *xlsxMergeCells              `xml:"mergeCells"`
-	PhoneticPr            *xlsxPhoneticPr              `xml:"phoneticPr"`
-	ConditionalFormatting []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
-	DataValidations       *xlsxDataValidations         `xml:"dataValidations"`
-	Hyperlinks            *xlsxHyperlinks              `xml:"hyperlinks"`
-	PrintOptions          *xlsxPrintOptions            `xml:"printOptions"`
-	PageMargins           *xlsxPageMargins             `xml:"pageMargins"`
-	PageSetUp             *xlsxPageSetUp               `xml:"pageSetup"`
-	HeaderFooter          *xlsxHeaderFooter            `xml:"headerFooter"`
-	RowBreaks             *xlsxBreaks                  `xml:"rowBreaks"`
-	ColBreaks             *xlsxBreaks                  `xml:"colBreaks"`
-	CustomProperties      *xlsxInnerXML                `xml:"customProperties"`
-	CellWatches           *xlsxInnerXML                `xml:"cellWatches"`
-	IgnoredErrors         *xlsxInnerXML                `xml:"ignoredErrors"`
-	SmartTags             *xlsxInnerXML                `xml:"smartTags"`
-	Drawing               *xlsxDrawing                 `xml:"drawing"`
-	LegacyDrawing         *xlsxLegacyDrawing           `xml:"legacyDrawing"`
-	LegacyDrawingHF       *xlsxLegacyDrawingHF         `xml:"legacyDrawingHF"`
-	DrawingHF             *xlsxDrawingHF               `xml:"drawingHF"`
-	Picture               *xlsxPicture                 `xml:"picture"`
-	OleObjects            *xlsxInnerXML                `xml:"oleObjects"`
-	Controls              *xlsxInnerXML                `xml:"controls"`
-	WebPublishItems       *xlsxInnerXML                `xml:"webPublishItems"`
-	TableParts            *xlsxTableParts              `xml:"tableParts"`
-	ExtLst                *xlsxExtLst                  `xml:"extLst"`
+	XMLName                xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
+	SheetPr                *xlsxSheetPr                 `xml:"sheetPr"`
+	Dimension              *xlsxDimension               `xml:"dimension"`
+	SheetViews             *xlsxSheetViews              `xml:"sheetViews"`
+	SheetFormatPr          *xlsxSheetFormatPr           `xml:"sheetFormatPr"`
+	Cols                   *xlsxCols                    `xml:"cols"`
+	SheetData              xlsxSheetData                `xml:"sheetData"`
+	SheetCalcPr            *xlsxInnerXML                `xml:"sheetCalcPr"`
+	SheetProtection        *xlsxSheetProtection         `xml:"sheetProtection"`
+	ProtectedRanges        *xlsxInnerXML                `xml:"protectedRanges"`
+	Scenarios              *xlsxInnerXML                `xml:"scenarios"`
+	AutoFilter             *xlsxAutoFilter              `xml:"autoFilter"`
+	SortState              *xlsxSortState               `xml:"sortState"`
+	DataConsolidate        *xlsxInnerXML                `xml:"dataConsolidate"`
+	CustomSheetViews       *xlsxCustomSheetViews        `xml:"customSheetViews"`
+	MergeCells             *xlsxMergeCells              `xml:"mergeCells"`
+	PhoneticPr             *xlsxPhoneticPr              `xml:"phoneticPr"`
+	ConditionalFormatting  []*xlsxConditionalFormatting `xml:"conditionalFormatting"`
+	DataValidations        *xlsxDataValidations         `xml:"dataValidations"`
+	Hyperlinks             *xlsxHyperlinks              `xml:"hyperlinks"`
+	PrintOptions           *xlsxPrintOptions            `xml:"printOptions"`
+	PageMargins            *xlsxPageMargins             `xml:"pageMargins"`
+	PageSetUp              *xlsxPageSetUp               `xml:"pageSetup"`
+	HeaderFooter           *xlsxHeaderFooter            `xml:"headerFooter"`
+	RowBreaks              *xlsxBreaks                  `xml:"rowBreaks"`
+	ColBreaks              *xlsxBreaks                  `xml:"colBreaks"`
+	CustomProperties       *xlsxInnerXML                `xml:"customProperties"`
+	CellWatches            *xlsxInnerXML                `xml:"cellWatches"`
+	IgnoredErrors          *xlsxInnerXML                `xml:"ignoredErrors"`
+	SmartTags              *xlsxInnerXML                `xml:"smartTags"`
+	Drawing                *xlsxDrawing                 `xml:"drawing"`
+	LegacyDrawing          *xlsxLegacyDrawing           `xml:"legacyDrawing"`
+	LegacyDrawingHF        *xlsxLegacyDrawingHF         `xml:"legacyDrawingHF"`
+	DrawingHF              *xlsxDrawingHF               `xml:"drawingHF"`
+	Picture                *xlsxPicture                 `xml:"picture"`
+	OleObjects             *xlsxInnerXML                `xml:"oleObjects"`
+	Controls               *xlsxInnerXML                `xml:"controls"`
+	WebPublishItems        *xlsxInnerXML                `xml:"webPublishItems"`
+	TableParts             *xlsxTableParts              `xml:"tableParts"`
+	ExtLst                 *xlsxExtLst                  `xml:"extLst"`
+	AlternateContent       *xlsxAlternateContent        `xml:"mc:AlternateContent"`
+	DecodeAlternateContent *xlsxInnerXML                `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
 }
 
 // xlsxDrawing change r:id to rid in the namespace.
@@ -692,6 +694,16 @@ type xlsxLegacyDrawingHF struct {
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
+// xlsxAlternateContent is a container for a sequence of multiple
+// representations of a given piece of content. The program reading the file
+// should only process one of these, and the one chosen should be based on
+// which conditions match.
+type xlsxAlternateContent struct {
+	XMLNSMC string `xml:"xmlns:mc,attr,omitempty"`
+	Content string `xml:",innerxml"`
+}
+
+// xlsxInnerXML holds parts of XML content currently not unmarshal.
 type xlsxInnerXML struct {
 	Content string `xml:",innerxml"`
 }

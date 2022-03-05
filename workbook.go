@@ -101,6 +101,13 @@ func (f *File) workbookReader() *xlsxWorkbook {
 // structure.
 func (f *File) workBookWriter() {
 	if f.WorkBook != nil {
+		if f.WorkBook.DecodeAlternateContent != nil {
+			f.WorkBook.AlternateContent = &xlsxAlternateContent{
+				Content: f.WorkBook.DecodeAlternateContent.Content,
+				XMLNSMC: SourceRelationshipCompatibility.Value,
+			}
+		}
+		f.WorkBook.DecodeAlternateContent = nil
 		output, _ := xml.Marshal(f.WorkBook)
 		f.saveFileList(f.getWorkbookPath(), replaceRelationshipsBytes(f.replaceNameSpaceBytes(f.getWorkbookPath(), output)))
 	}

@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -901,12 +902,12 @@ func TestErrSheetNotExistError(t *testing.T) {
 
 func TestCheckRow(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
 	_, err := f.GetRows("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", false))
 	f = NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	delete(f.checked, "xl/worksheets/sheet1.xml")
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), newCellNameToCoordinatesError("-", newInvalidCellNameError("-")).Error())

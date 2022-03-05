@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"encoding/xml"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -38,7 +39,7 @@ func TestAddComments(t *testing.T) {
 	}
 
 	f.Comments["xl/comments2.xml"] = nil
-	f.Pkg.Store("xl/comments2.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
+	f.Pkg.Store("xl/comments2.xml", []byte(xml.Header+`<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
 	comments := f.GetComments()
 	assert.EqualValues(t, 2, len(comments["Sheet1"]))
 	assert.EqualValues(t, 1, len(comments["Sheet2"]))
