@@ -358,6 +358,7 @@ type formulaFuncs struct {
 //    CONCATENATE
 //    CONFIDENCE
 //    CONFIDENCE.NORM
+//    CORREL
 //    COS
 //    COSH
 //    COT
@@ -603,6 +604,9 @@ type formulaFuncs struct {
 //    SUM
 //    SUMIF
 //    SUMSQ
+//    SUMX2MY2
+//    SUMX2PY2
+//    SUMXMY2
 //    SWITCH
 //    SYD
 //    T
@@ -4945,6 +4949,63 @@ func (fn *formulaFuncs) SUMSQ(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sq)
 }
 
+// sumx is an implementation of the formula functions SUMX2MY2, SUMX2PY2 and
+// SUMXMY2.
+func (fn *formulaFuncs) sumx(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
+	}
+	array1 := argsList.Front().Value.(formulaArg)
+	array2 := argsList.Back().Value.(formulaArg)
+	left, right := array1.ToList(), array2.ToList()
+	n := len(left)
+	if n != len(right) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	result := 0.0
+	for i := 0; i < n; i++ {
+		if lhs, rhs := left[i].ToNumber(), right[i].ToNumber(); lhs.Number != 0 && rhs.Number != 0 {
+			switch name {
+			case "SUMX2MY2":
+				result += lhs.Number*lhs.Number - rhs.Number*rhs.Number
+			case "SUMX2PY2":
+				result += lhs.Number*lhs.Number + rhs.Number*rhs.Number
+			default:
+				result += (lhs.Number - rhs.Number) * (lhs.Number - rhs.Number)
+			}
+		}
+	}
+	return newNumberFormulaArg(result)
+}
+
+// SUMX2MY2 function returns the sum of the differences of squares of two
+// supplied sets of values. The syntax of the function is:
+//
+//    SUMX2MY2(array_x,array_y)
+//
+func (fn *formulaFuncs) SUMX2MY2(argsList *list.List) formulaArg {
+	return fn.sumx("SUMX2MY2", argsList)
+}
+
+// SUMX2PY2 function returns the sum of the sum of squares of two supplied sets
+// of values. The syntax of the function is:
+//
+//    SUMX2PY2(array_x,array_y)
+//
+func (fn *formulaFuncs) SUMX2PY2(argsList *list.List) formulaArg {
+	return fn.sumx("SUMX2PY2", argsList)
+}
+
+// SUMXMY2 function returns the sum of the squares of differences between
+// corresponding values in two supplied arrays. The syntax of the function
+// is:
+//
+//    SUMXMY2(array_x,array_y)
+//
+func (fn *formulaFuncs) SUMXMY2(argsList *list.List) formulaArg {
+	return fn.sumx("SUMXMY2", argsList)
+}
+
 // TAN function calculates the tangent of a given angle. The syntax of the
 // function is:
 //
@@ -5304,6 +5365,45 @@ func (fn *formulaFuncs) countSum(countText bool, args []formulaArg) (count, sum 
 		}
 	}
 	return
+}
+
+// CORREL function calculates the Pearson Product-Moment Correlation
+// Coefficient for two sets of values. The syntax of the function is:
+//
+//    CORREL(array1,array2)
+//
+func (fn *formulaFuncs) CORREL(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CORREL requires 2 arguments")
+	}
+	array1 := argsList.Front().Value.(formulaArg)
+	array2 := argsList.Back().Value.(formulaArg)
+	left, right := array1.ToList(), array2.ToList()
+	n := len(left)
+	if n != len(right) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	l1, l2, l3 := list.New(), list.New(), list.New()
+	for i := 0; i < n; i++ {
+		if lhs, rhs := left[i].ToNumber(), right[i].ToNumber(); lhs.Number != 0 && rhs.Number != 0 {
+			l1.PushBack(lhs)
+			l2.PushBack(rhs)
+		}
+	}
+	stdev1, stdev2 := fn.STDEV(l1), fn.STDEV(l2)
+	if stdev1.Number == 0 || stdev2.Number == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	mean1, mean2, skip := fn.AVERAGE(l1), fn.AVERAGE(l2), 0
+	for i := 0; i < n; i++ {
+		lhs, rhs := left[i].ToNumber(), right[i].ToNumber()
+		if lhs.Number == 0 || rhs.Number == 0 {
+			skip++
+			continue
+		}
+		l3.PushBack(newNumberFormulaArg((lhs.Number - mean1.Number) * (rhs.Number - mean2.Number)))
+	}
+	return newNumberFormulaArg(fn.SUM(l3).Number / float64(n-skip-1) / stdev1.Number / stdev2.Number)
 }
 
 // COUNT function returns the count of numeric values in a supplied set of

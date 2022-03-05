@@ -747,6 +747,12 @@ func TestCalcCellValue(t *testing.T) {
 		`=SUMSQ("",A1,B1,A2,B2,6)`: "82",
 		`=SUMSQ(1,SUMSQ(1))`:       "2",
 		"=SUMSQ(MUNIT(3))":         "0",
+		// SUMX2MY2
+		"=SUMX2MY2(A1:A4,B1:B4)": "-36",
+		// SUMX2PY2
+		"=SUMX2PY2(A1:A4,B1:B4)": "46",
+		// SUMXMY2
+		"=SUMXMY2(A1:A4,B1:B4)": "18",
 		// TAN
 		"=TAN(1.047197551)": "1.732050806782486",
 		"=TAN(0)":           "0",
@@ -785,6 +791,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=CONFIDENCE(0.05,0.07,100)": "0.0137197479028414",
 		// CONFIDENCE.NORM
 		"=CONFIDENCE.NORM(0.05,0.07,100)": "0.0137197479028414",
+		// CORREL
+		"=CORREL(A1:A5,B1:B5)": "1",
 		// COUNT
 		"=COUNT()":                        "0",
 		"=COUNT(E1:F2,\"text\",1,INT(2))": "3",
@@ -2238,6 +2246,15 @@ func TestCalcCellValue(t *testing.T) {
 		// SUMSQ
 		`=SUMSQ("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		"=SUMSQ(C1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
+		// SUMX2MY2
+		"=SUMX2MY2()":         "SUMX2MY2 requires 2 arguments",
+		"=SUMX2MY2(A1,B1:B2)": "#N/A",
+		// SUMX2PY2
+		"=SUMX2PY2()":         "SUMX2PY2 requires 2 arguments",
+		"=SUMX2PY2(A1,B1:B2)": "#N/A",
+		// SUMXMY2
+		"=SUMXMY2()":         "SUMXMY2 requires 2 arguments",
+		"=SUMXMY2(A1,B1:B2)": "#N/A",
 		// TAN
 		"=TAN()":    "TAN requires 1 numeric argument",
 		`=TAN("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -2284,6 +2301,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=CONFIDENCE.NORM(1,0.07,100)":     "#NUM!",
 		"=CONFIDENCE.NORM(0.05,0,100)":     "#NUM!",
 		"=CONFIDENCE.NORM(0.05,0.07,0.5)":  "#NUM!",
+		// CORREL
+		"=CORREL()":            "CORREL requires 2 arguments",
+		"=CORREL(A1:A3,B1:B5)": "#N/A",
+		"=CORREL(A1:A1,B1:B1)": "#DIV/0!",
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
