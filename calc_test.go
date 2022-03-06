@@ -851,6 +851,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXPONDIST(0.5,1,TRUE)":  "0.393469340287367",
 		"=EXPONDIST(0.5,1,FALSE)": "0.606530659712633",
 		"=EXPONDIST(2,1,TRUE)":    "0.864664716763387",
+		// FINV
+		"=FINV(0.2,1,2)":   "3.55555555555555",
+		"=FINV(0.6,1,2)":   "0.380952380952381",
+		"=FINV(0.6,2,2)":   "0.666666666666667",
+		"=FINV(0.6,4,4)":   "0.763454070045235",
+		"=FINV(0.5,4,8)":   "0.914645355977072",
+		"=FINV(0.1,79,86)": "1.32646097270444",
+		"=FINV(1,40,5)":    "0",
 		// NORM.DIST
 		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
 		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
@@ -2359,6 +2367,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXPONDIST(0,1,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=EXPONDIST(-1,1,TRUE)":   "#NUM!",
 		"=EXPONDIST(1,0,TRUE)":    "#NUM!",
+		// FINV
+		"=FINV()":           "FINV requires 3 arguments",
+		"=FINV(\"\",1,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FINV(0.2,\"\",2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FINV(0.2,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FINV(0,1,2)":      "#NUM!",
+		"=FINV(0.2,0.5,2)":  "#NUM!",
+		"=FINV(0.2,1,0.5)":  "#NUM!",
 		// NORM.DIST
 		"=NORM.DIST()": "NORM.DIST requires 4 arguments",
 		// NORMDIST
@@ -4218,6 +4234,38 @@ func TestGetYearDays(t *testing.T) {
 	for _, data := range [][]int{{2021, 0, 360}, {2000, 1, 366}, {2021, 1, 365}, {2000, 3, 365}} {
 		assert.Equal(t, data[2], getYearDays(data[0], data[1]))
 	}
+}
+
+func TestCalcD1mach(t *testing.T) {
+	assert.Equal(t, 0.0, d1mach(6))
+}
+
+func TestCalcChebyshevInit(t *testing.T) {
+	assert.Equal(t, 0, chebyshevInit(0, 0, nil))
+	assert.Equal(t, 0, chebyshevInit(1, 0, []float64{0}))
+}
+
+func TestCalcChebyshevEval(t *testing.T) {
+	assert.True(t, math.IsNaN(chebyshevEval(0, 0, nil)))
+}
+
+func TestCalcLgammacor(t *testing.T) {
+	assert.True(t, math.IsNaN(lgammacor(9)))
+	assert.Equal(t, 4.930380657631324e-32, lgammacor(3.7451940309632633e+306))
+	assert.Equal(t, 8.333333333333334e-10, lgammacor(10e+07))
+}
+
+func TestCalcLgammaerr(t *testing.T) {
+	assert.True(t, math.IsNaN(logrelerr(-2)))
+}
+
+func TestCalcLogBeta(t *testing.T) {
+	assert.True(t, math.IsNaN(logBeta(-1, -1)))
+	assert.Equal(t, math.MaxFloat64, logBeta(0, 0))
+}
+
+func TestCalcBetainvProbIterator(t *testing.T) {
+	assert.Equal(t, 1.0, betainvProbIterator(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, true))
 }
 
 func TestNestedFunctionsWithOperators(t *testing.T) {

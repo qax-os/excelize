@@ -39,10 +39,10 @@ type xlsxWorkbook struct {
 	Conformance            string                   `xml:"conformance,attr,omitempty"`
 	FileVersion            *xlsxFileVersion         `xml:"fileVersion"`
 	FileSharing            *xlsxExtLst              `xml:"fileSharing"`
-	AlternateContent       *xlsxAlternateContent    `xml:"mc:AlternateContent"`
-	DecodeAlternateContent *xlsxInnerXML            `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
 	WorkbookPr             *xlsxWorkbookPr          `xml:"workbookPr"`
 	WorkbookProtection     *xlsxWorkbookProtection  `xml:"workbookProtection"`
+	AlternateContent       *xlsxAlternateContent    `xml:"mc:AlternateContent"`
+	DecodeAlternateContent *xlsxInnerXML            `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
 	BookViews              *xlsxBookViews           `xml:"bookViews"`
 	Sheets                 xlsxSheets               `xml:"sheets"`
 	FunctionGroups         *xlsxExtLst              `xml:"functionGroups"`
