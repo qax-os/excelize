@@ -784,6 +784,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGEA(A1)":     "1",
 		"=AVERAGEA(A1:A2)":  "1.5",
 		"=AVERAGEA(D2:F9)":  "12671.375",
+		// BETAINV
+		"=BETAINV(0.2,4,5,0,1)": "0.303225844664082",
+		// BETA.INV
+		"=BETA.INV(0.2,4,5,0,1)": "0.303225844664082",
 		// CHIDIST
 		"=CHIDIST(0.5,3)": "0.918891411654676",
 		"=CHIDIST(8,3)":   "0.0460117056892315",
@@ -859,6 +863,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=FINV(0.5,4,8)":   "0.914645355977072",
 		"=FINV(0.1,79,86)": "1.32646097270444",
 		"=FINV(1,40,5)":    "0",
+		// F.INV.RT
+		"=F.INV.RT(0.2,1,2)":   "3.55555555555555",
+		"=F.INV.RT(0.6,1,2)":   "0.380952380952381",
+		"=F.INV.RT(0.6,2,2)":   "0.666666666666667",
+		"=F.INV.RT(0.6,4,4)":   "0.763454070045235",
+		"=F.INV.RT(0.5,4,8)":   "0.914645355977072",
+		"=F.INV.RT(0.1,79,86)": "1.32646097270444",
+		"=F.INV.RT(1,40,5)":    "0",
 		// NORM.DIST
 		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
 		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
@@ -2282,6 +2294,32 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGE(H1)": "AVERAGE divide by zero",
 		// AVERAGEA
 		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		// BETAINV
+		"=BETAINV()":               "BETAINV requires at least 3 arguments",
+		"=BETAINV(0.2,4,5,0,1,0)":  "BETAINV requires at most 5 arguments",
+		"=BETAINV(\"\",4,5,0,1)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETAINV(0.2,\"\",5,0,1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETAINV(0.2,4,\"\",0,1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETAINV(0.2,4,5,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETAINV(0.2,4,5,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETAINV(0,4,5,0,1)":      "#NUM!",
+		"=BETAINV(1,4,5,0,1)":      "#NUM!",
+		"=BETAINV(0.2,0,5,0,1)":    "#NUM!",
+		"=BETAINV(0.2,4,0,0,1)":    "#NUM!",
+		"=BETAINV(0.2,4,5,2,2)":    "#NUM!",
+		// BETA.INV
+		"=BETA.INV()":               "BETA.INV requires at least 3 arguments",
+		"=BETA.INV(0.2,4,5,0,1,0)":  "BETA.INV requires at most 5 arguments",
+		"=BETA.INV(\"\",4,5,0,1)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.INV(0.2,\"\",5,0,1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.INV(0.2,4,\"\",0,1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.INV(0.2,4,5,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.INV(0.2,4,5,0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.INV(0,4,5,0,1)":      "#NUM!",
+		"=BETA.INV(1,4,5,0,1)":      "#NUM!",
+		"=BETA.INV(0.2,0,5,0,1)":    "#NUM!",
+		"=BETA.INV(0.2,4,0,0,1)":    "#NUM!",
+		"=BETA.INV(0.2,4,5,2,2)":    "#NUM!",
 		// AVERAGEIF
 		"=AVERAGEIF()":                      "AVERAGEIF requires at least 2 arguments",
 		"=AVERAGEIF(H1,\"\")":               "AVERAGEIF divide by zero",
@@ -2375,6 +2413,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=FINV(0,1,2)":      "#NUM!",
 		"=FINV(0.2,0.5,2)":  "#NUM!",
 		"=FINV(0.2,1,0.5)":  "#NUM!",
+		// F.INV.RT
+		"=F.INV.RT()":           "F.INV.RT requires 3 arguments",
+		"=F.INV.RT(\"\",1,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.INV.RT(0.2,\"\",2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.INV.RT(0.2,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.INV.RT(0,1,2)":      "#NUM!",
+		"=F.INV.RT(0.2,0.5,2)":  "#NUM!",
+		"=F.INV.RT(0.2,1,0.5)":  "#NUM!",
 		// NORM.DIST
 		"=NORM.DIST()": "NORM.DIST requires 4 arguments",
 		// NORMDIST

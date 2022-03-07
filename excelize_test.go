@@ -130,14 +130,17 @@ func TestOpenFile(t *testing.T) {
 	// Test boolean write
 	booltest := []struct {
 		value    bool
+		raw      bool
 		expected string
 	}{
-		{false, "0"},
-		{true, "1"},
+		{false, true, "0"},
+		{true, true, "1"},
+		{false, false, "FALSE"},
+		{true, false, "TRUE"},
 	}
 	for _, test := range booltest {
 		assert.NoError(t, f.SetCellValue("Sheet2", "F16", test.value))
-		val, err := f.GetCellValue("Sheet2", "F16")
+		val, err := f.GetCellValue("Sheet2", "F16", Options{RawCellValue: test.raw})
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, val)
 	}

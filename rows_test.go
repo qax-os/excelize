@@ -950,6 +950,10 @@ func TestNumberFormats(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestRoundPrecision(t *testing.T) {
+	assert.Equal(t, "text", roundPrecision("text", 0))
+}
+
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {

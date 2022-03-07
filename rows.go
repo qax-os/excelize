@@ -429,6 +429,16 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	f.Lock()
 	defer f.Unlock()
 	switch c.T {
+	case "b":
+		if !raw {
+			if c.V == "1" {
+				return "TRUE", nil
+			}
+			if c.V == "0" {
+				return "FALSE", nil
+			}
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
 	case "s":
 		if c.V != "" {
 			xlsxSI := 0

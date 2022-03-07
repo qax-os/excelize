@@ -333,6 +333,8 @@ type formulaFuncs struct {
 //    BESSELJ
 //    BESSELK
 //    BESSELY
+//    BETAINV
+//    BETA.INV
 //    BIN2DEC
 //    BIN2HEX
 //    BIN2OCT
@@ -415,6 +417,7 @@ type formulaFuncs struct {
 //    FALSE
 //    FIND
 //    FINDB
+//    F.INV.RT
 //    FINV
 //    FISHER
 //    FISHERINV
@@ -5187,6 +5190,375 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sum / count)
 }
 
+// d1mach returns double precision real machine constants.
+func d1mach(i int) float64 {
+	arr := []float64{
+		2.2250738585072014e-308,
+		1.7976931348623158e+308,
+		1.1102230246251565e-16,
+		2.2204460492503131e-16,
+		0.301029995663981195,
+	}
+	if i > len(arr) {
+		return 0
+	}
+	return arr[i-1]
+}
+
+// chebyshevInit determines the number of terms for the double precision
+// orthogonal series "dos" needed to insure the error is no larger
+// than "eta". Ordinarily eta will be chosen to be one-tenth machine
+// precision.
+func chebyshevInit(nos int, eta float64, dos []float64) int {
+	i, e := 0, 0.0
+	if nos < 1 {
+		return 0
+	}
+	for ii := 1; ii <= nos; ii++ {
+		i = nos - ii
+		e += math.Abs(dos[i])
+		if e > eta {
+			return i
+		}
+	}
+	return i
+}
+
+// chebyshevEval evaluates the n-term Chebyshev series "a" at "x".
+func chebyshevEval(n int, x float64, a []float64) float64 {
+	if n < 1 || n > 1000 || x < -1.1 || x > 1.1 {
+		return math.NaN()
+	}
+	twox, b0, b1, b2 := x*2, 0.0, 0.0, 0.0
+	for i := 1; i <= n; i++ {
+		b2 = b1
+		b1 = b0
+		b0 = twox*b1 - b2 + a[n-i]
+	}
+	return (b0 - b2) * 0.5
+}
+
+// lgammacor is an implementation for the log(gamma) correction.
+func lgammacor(x float64) float64 {
+	algmcs := []float64{
+		0.1666389480451863247205729650822, -0.1384948176067563840732986059135e-4,
+		0.9810825646924729426157171547487e-8, -0.1809129475572494194263306266719e-10,
+		0.6221098041892605227126015543416e-13, -0.3399615005417721944303330599666e-15,
+		0.2683181998482698748957538846666e-17, -0.2868042435334643284144622399999e-19,
+		0.3962837061046434803679306666666e-21, -0.6831888753985766870111999999999e-23,
+		0.1429227355942498147573333333333e-24, -0.3547598158101070547199999999999e-26,
+		0.1025680058010470912000000000000e-27, -0.3401102254316748799999999999999e-29,
+		0.1276642195630062933333333333333e-30,
+	}
+	nalgm := chebyshevInit(15, d1mach(3), algmcs)
+	xbig := 1.0 / math.Sqrt(d1mach(3))
+	xmax := math.Exp(math.Min(math.Log(d1mach(2)/12.0), -math.Log(12.0*d1mach(1))))
+	if x < 10.0 {
+		return math.NaN()
+	} else if x >= xmax {
+		return 4.930380657631324e-32
+	} else if x < xbig {
+		tmp := 10.0 / x
+		return chebyshevEval(nalgm, tmp*tmp*2.0-1.0, algmcs) / x
+	}
+	return 1.0 / (x * 12.0)
+}
+
+// logrelerr compute the relative error logarithm.
+func logrelerr(x float64) float64 {
+	alnrcs := []float64{
+		0.10378693562743769800686267719098e+1, -0.13364301504908918098766041553133,
+		0.19408249135520563357926199374750e-1, -0.30107551127535777690376537776592e-2,
+		0.48694614797154850090456366509137e-3, -0.81054881893175356066809943008622e-4,
+		0.13778847799559524782938251496059e-4, -0.23802210894358970251369992914935e-5,
+		0.41640416213865183476391859901989e-6, -0.73595828378075994984266837031998e-7,
+		0.13117611876241674949152294345011e-7, -0.23546709317742425136696092330175e-8,
+		0.42522773276034997775638052962567e-9, -0.77190894134840796826108107493300e-10,
+		0.14075746481359069909215356472191e-10, -0.25769072058024680627537078627584e-11,
+		0.47342406666294421849154395005938e-12, -0.87249012674742641745301263292675e-13,
+		0.16124614902740551465739833119115e-13, -0.29875652015665773006710792416815e-14,
+		0.55480701209082887983041321697279e-15, -0.10324619158271569595141333961932e-15,
+		0.19250239203049851177878503244868e-16, -0.35955073465265150011189707844266e-17,
+		0.67264542537876857892194574226773e-18, -0.12602624168735219252082425637546e-18,
+		0.23644884408606210044916158955519e-19, -0.44419377050807936898878389179733e-20,
+		0.83546594464034259016241293994666e-21, -0.15731559416479562574899253521066e-21,
+		0.29653128740247422686154369706666e-22, -0.55949583481815947292156013226666e-23,
+		0.10566354268835681048187284138666e-23, -0.19972483680670204548314999466666e-24,
+		0.37782977818839361421049855999999e-25, -0.71531586889081740345038165333333e-26,
+		0.13552488463674213646502024533333e-26, -0.25694673048487567430079829333333e-27,
+		0.48747756066216949076459519999999e-28, -0.92542112530849715321132373333333e-29,
+		0.17578597841760239233269760000000e-29, -0.33410026677731010351377066666666e-30,
+		0.63533936180236187354180266666666e-31,
+	}
+	nlnrel := chebyshevInit(43, 0.1*d1mach(3), alnrcs)
+	if x <= -1 {
+		return math.NaN()
+	}
+	if math.Abs(x) <= 0.375 {
+		return x * (1.0 - x*chebyshevEval(nlnrel, x/0.375, alnrcs))
+	}
+	return math.Log(x + 1.0)
+}
+
+// logBeta is an implementation for the log of the beta distribution
+// function.
+func logBeta(a, b float64) float64 {
+	corr, p, q := 0.0, a, a
+	if b < p {
+		p = b
+	}
+	if b > q {
+		q = b
+	}
+	if p < 0 {
+		return math.NaN()
+	}
+	if p == 0 {
+		return math.MaxFloat64
+	}
+	if p >= 10.0 {
+		corr = lgammacor(p) + lgammacor(q) - lgammacor(p+q)
+		return math.Log(q)*-0.5 + 0.918938533204672741780329736406 + corr + (p-0.5)*math.Log(p/(p+q)) + q*logrelerr(-p/(p+q))
+	}
+	if q >= 10 {
+		corr = lgammacor(q) - lgammacor(p+q)
+		val, _ := math.Lgamma(p)
+		return val + corr + p - p*math.Log(p+q) + (q-0.5)*logrelerr(-p/(p+q))
+	}
+	return math.Log(math.Gamma(p) * (math.Gamma(q) / math.Gamma(p+q)))
+}
+
+// pbetaRaw is a part of pbeta for the beta distribution.
+func pbetaRaw(alnsml, ans, eps, p, pin, q, sml, x, y float64) float64 {
+	if q > 1.0 {
+		xb := p*math.Log(y) + q*math.Log(1.0-y) - logBeta(p, q) - math.Log(q)
+		ib := int(math.Max(xb/alnsml, 0.0))
+		term := math.Exp(xb - float64(ib)*alnsml)
+		c := 1.0 / (1.0 - y)
+		p1 := q * c / (p + q - 1.0)
+		finsum := 0.0
+		n := int(q)
+		if q == float64(n) {
+			n = n - 1
+		}
+		for i := 1; i <= n; i++ {
+			if p1 <= 1 && term/eps <= finsum {
+				break
+			}
+			xi := float64(i)
+			term = (q - xi + 1.0) * c * term / (p + q - xi)
+			if term > 1.0 {
+				ib = ib - 1
+				term = term * sml
+			}
+			if ib == 0 {
+				finsum = finsum + term
+			}
+		}
+		ans = ans + finsum
+	}
+	if y != x || p != pin {
+		ans = 1.0 - ans
+	}
+	ans = math.Max(math.Min(ans, 1.0), 0.0)
+	return ans
+}
+
+// pbeta returns distribution function of the beta distribution.
+func pbeta(x, pin, qin float64) (ans float64) {
+	eps := d1mach(3)
+	alneps := math.Log(eps)
+	sml := d1mach(1)
+	alnsml := math.Log(sml)
+	y := x
+	p := pin
+	q := qin
+	if p/(p+q) < x {
+		y = 1.0 - y
+		p = qin
+		q = pin
+	}
+	if (p+q)*y/(p+1.0) < eps {
+		xb := p*math.Log(math.Max(y, sml)) - math.Log(p) - logBeta(p, q)
+		if xb > alnsml && y != 0.0 {
+			ans = math.Exp(xb)
+		}
+		if y != x || p != pin {
+			ans = 1.0 - ans
+		}
+	} else {
+		ps := q - math.Floor(q)
+		if ps == 0.0 {
+			ps = 1.0
+		}
+		xb := p*math.Log(y) - logBeta(ps, p) - math.Log(p)
+		if xb >= alnsml {
+			ans = math.Exp(xb)
+			term := ans * p
+			if ps != 1.0 {
+				n := int(math.Max(alneps/math.Log(y), 4.0))
+				for i := 1; i <= n; i++ {
+					xi := float64(i)
+					term = term * (xi - ps) * y / xi
+					ans = ans + term/(p+xi)
+				}
+			}
+		}
+		ans = pbetaRaw(alnsml, ans, eps, p, pin, q, sml, x, y)
+	}
+	return ans
+}
+
+// betainvProbIterator is a part of betainv for the inverse of the beta
+// function.
+func betainvProbIterator(alpha1, alpha3, beta1, beta2, beta3, logbeta, lower, maxCumulative, prob1, prob2, upper float64, needSwap bool) float64 {
+	var i, j, prev, prop4 float64
+	j = 1
+	for prob := 0; prob < 1000; prob++ {
+		prop3 := pbeta(beta3, alpha1, beta1)
+		prop3 = (prop3 - prob1) * math.Exp(logbeta+prob2*math.Log(beta3)+beta2*math.Log(1.0-beta3))
+		if prop3*prop4 <= 0 {
+			prev = math.Max(math.Abs(j), maxCumulative)
+		}
+		h := 1.0
+		for iteratorCount := 0; iteratorCount < 1000; iteratorCount++ {
+			j = h * prop3
+			if math.Abs(j) < prev {
+				i = beta3 - j
+				if i >= 0 && i <= 1.0 {
+					if prev <= alpha3 {
+						return beta3
+					}
+					if math.Abs(prop3) <= alpha3 {
+						return beta3
+					}
+					if i != 0 && i != 1.0 {
+						break
+					}
+				}
+			}
+			h /= 3.0
+		}
+		if i == beta3 {
+			return beta3
+		}
+		beta3, prop4 = i, prop3
+	}
+	return beta3
+}
+
+// calcBetainv is an implementation for the quantile of the beta
+// distribution.
+func calcBetainv(probability, alpha, beta, lower, upper float64) float64 {
+	minCumulative, maxCumulative := 1.0e-300, 3.0e-308
+	lowerBound, upperBound := maxCumulative, 1.0-2.22e-16
+	needSwap := false
+	var alpha1, alpha2, beta1, beta2, beta3, prob1, x, y float64
+	if probability <= 0.5 {
+		prob1, alpha1, beta1 = probability, alpha, beta
+	} else {
+		prob1, alpha1, beta1, needSwap = 1.0-probability, beta, alpha, true
+	}
+	logbeta := logBeta(alpha, beta)
+	prob2 := math.Sqrt(-math.Log(prob1 * prob1))
+	prob3 := prob2 - (prob2*0.27061+2.3075)/(prob2*(prob2*0.04481+0.99229)+1)
+	if alpha1 > 1 && beta1 > 1 {
+		alpha2, beta2, prob2 = 1/(alpha1+alpha1-1), 1/(beta1+beta1-1), (prob3*prob3-3)/6
+		x = 2 / (alpha2 + beta2)
+		y = prob3*math.Sqrt(x+prob2)/x - (beta2-alpha2)*(prob2+5/6.0-2/(x*3))
+		beta3 = alpha1 / (alpha1 + beta1*math.Exp(y+y))
+	} else {
+		beta2, prob2 = 1/(beta1*9), beta1+beta1
+		beta2 = prob2 * math.Pow(1-beta2+prob3*math.Sqrt(beta2), 3)
+		if beta2 <= 0 {
+			beta3 = 1 - math.Exp((math.Log((1-prob1)*beta1)+logbeta)/beta1)
+		} else {
+			beta2 = (prob2 + alpha1*4 - 2) / beta2
+			if beta2 <= 1 {
+				beta3 = math.Exp((logbeta + math.Log(alpha1*prob1)) / alpha1)
+			} else {
+				beta3 = 1 - 2/(beta2+1)
+			}
+		}
+	}
+	beta2, prob2 = 1-beta1, 1-alpha1
+	if beta3 < lowerBound {
+		beta3 = lowerBound
+	} else if beta3 > upperBound {
+		beta3 = upperBound
+	}
+	alpha3 := math.Max(minCumulative, math.Pow(10.0, -13.0-2.5/(alpha1*alpha1)-0.5/(prob1*prob1)))
+	beta3 = betainvProbIterator(alpha1, alpha3, beta1, beta2, beta3, logbeta, lower, maxCumulative, prob1, prob2, upper, needSwap)
+	if needSwap {
+		beta3 = 1.0 - beta3
+	}
+	return (upper-lower)*beta3 + lower
+}
+
+// betainv is an implementation of the formula functions BETAINV and
+// BETA.INV.
+func (fn *formulaFuncs) betainv(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 3 arguments", name))
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at most 5 arguments", name))
+	}
+	probability := argsList.Front().Value.(formulaArg).ToNumber()
+	if probability.Type != ArgNumber {
+		return probability
+	}
+	if probability.Number <= 0 || probability.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	alpha := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if alpha.Type != ArgNumber {
+		return alpha
+	}
+	beta := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if beta.Type != ArgNumber {
+		return beta
+	}
+	if alpha.Number <= 0 || beta.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	a, b := newNumberFormulaArg(0), newNumberFormulaArg(1)
+	if argsList.Len() > 3 {
+		if a = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); a.Type != ArgNumber {
+			return a
+		}
+	}
+	if argsList.Len() == 5 {
+		if b = argsList.Back().Value.(formulaArg).ToNumber(); b.Type != ArgNumber {
+			return b
+		}
+	}
+	if a.Number == b.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(calcBetainv(probability.Number, alpha.Number, beta.Number, a.Number, b.Number))
+}
+
+// BETAINV function uses an iterative procedure to calculate the inverse of
+// the cumulative beta probability density function for a supplied
+// probability. The syntax of the function is:
+//
+//    BETAINV(probability,alpha,beta,[A],[B])
+//
+func (fn *formulaFuncs) BETAINV(argsList *list.List) formulaArg {
+	return fn.betainv("BETAINV", argsList)
+}
+
+// BETAdotINV function uses an iterative procedure to calculate the inverse of
+// the cumulative beta probability density function for a supplied
+// probability. The syntax of the function is:
+//
+//    BETA.INV(probability,alpha,beta,[A],[B])
+//
+func (fn *formulaFuncs) BETAdotINV(argsList *list.List) formulaArg {
+	return fn.betainv("BETA.INV", argsList)
+}
+
 // incompleteGamma is an implementation of the incomplete gamma function.
 func incompleteGamma(a, x float64) float64 {
 	max := 32
@@ -5836,317 +6208,10 @@ func (fn *formulaFuncs) EXPONDIST(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(lambda.Number * math.Exp(-lambda.Number*x.Number))
 }
 
-// d1mach returns double precision real machine constants.
-func d1mach(i int) float64 {
-	arr := []float64{
-		2.2250738585072014e-308,
-		1.7976931348623158e+308,
-		1.1102230246251565e-16,
-		2.2204460492503131e-16,
-		0.301029995663981195,
-	}
-	if i > len(arr) {
-		return 0
-	}
-	return arr[i-1]
-}
-
-// chebyshevInit determines the number of terms for the double precision
-// orthogonal series "dos" needed to insure the error is no larger
-// than "eta". Ordinarily eta will be chosen to be one-tenth machine
-// precision.
-func chebyshevInit(nos int, eta float64, dos []float64) int {
-	i, e := 0, 0.0
-	if nos < 1 {
-		return 0
-	}
-	for ii := 1; ii <= nos; ii++ {
-		i = nos - ii
-		e += math.Abs(dos[i])
-		if e > eta {
-			return i
-		}
-	}
-	return i
-}
-
-// chebyshevEval evaluates the n-term Chebyshev series "a" at "x".
-func chebyshevEval(n int, x float64, a []float64) float64 {
-	if n < 1 || n > 1000 || x < -1.1 || x > 1.1 {
-		return math.NaN()
-	}
-	twox, b0, b1, b2 := x*2, 0.0, 0.0, 0.0
-	for i := 1; i <= n; i++ {
-		b2 = b1
-		b1 = b0
-		b0 = twox*b1 - b2 + a[n-i]
-	}
-	return (b0 - b2) * 0.5
-}
-
-// lgammacor is an implementation for the log(gamma) correction.
-func lgammacor(x float64) float64 {
-	algmcs := []float64{
-		0.1666389480451863247205729650822, -0.1384948176067563840732986059135e-4,
-		0.9810825646924729426157171547487e-8, -0.1809129475572494194263306266719e-10,
-		0.6221098041892605227126015543416e-13, -0.3399615005417721944303330599666e-15,
-		0.2683181998482698748957538846666e-17, -0.2868042435334643284144622399999e-19,
-		0.3962837061046434803679306666666e-21, -0.6831888753985766870111999999999e-23,
-		0.1429227355942498147573333333333e-24, -0.3547598158101070547199999999999e-26,
-		0.1025680058010470912000000000000e-27, -0.3401102254316748799999999999999e-29,
-		0.1276642195630062933333333333333e-30,
-	}
-	nalgm := chebyshevInit(15, d1mach(3), algmcs)
-	xbig := 1.0 / math.Sqrt(d1mach(3))
-	xmax := math.Exp(math.Min(math.Log(d1mach(2)/12.0), -math.Log(12.0*d1mach(1))))
-	if x < 10.0 {
-		return math.NaN()
-	} else if x >= xmax {
-		return 4.930380657631324e-32
-	} else if x < xbig {
-		tmp := 10.0 / x
-		return chebyshevEval(nalgm, tmp*tmp*2.0-1.0, algmcs) / x
-	}
-	return 1.0 / (x * 12.0)
-}
-
-// logrelerr compute the relative error logarithm.
-func logrelerr(x float64) float64 {
-	alnrcs := []float64{
-		0.10378693562743769800686267719098e+1, -0.13364301504908918098766041553133,
-		0.19408249135520563357926199374750e-1, -0.30107551127535777690376537776592e-2,
-		0.48694614797154850090456366509137e-3, -0.81054881893175356066809943008622e-4,
-		0.13778847799559524782938251496059e-4, -0.23802210894358970251369992914935e-5,
-		0.41640416213865183476391859901989e-6, -0.73595828378075994984266837031998e-7,
-		0.13117611876241674949152294345011e-7, -0.23546709317742425136696092330175e-8,
-		0.42522773276034997775638052962567e-9, -0.77190894134840796826108107493300e-10,
-		0.14075746481359069909215356472191e-10, -0.25769072058024680627537078627584e-11,
-		0.47342406666294421849154395005938e-12, -0.87249012674742641745301263292675e-13,
-		0.16124614902740551465739833119115e-13, -0.29875652015665773006710792416815e-14,
-		0.55480701209082887983041321697279e-15, -0.10324619158271569595141333961932e-15,
-		0.19250239203049851177878503244868e-16, -0.35955073465265150011189707844266e-17,
-		0.67264542537876857892194574226773e-18, -0.12602624168735219252082425637546e-18,
-		0.23644884408606210044916158955519e-19, -0.44419377050807936898878389179733e-20,
-		0.83546594464034259016241293994666e-21, -0.15731559416479562574899253521066e-21,
-		0.29653128740247422686154369706666e-22, -0.55949583481815947292156013226666e-23,
-		0.10566354268835681048187284138666e-23, -0.19972483680670204548314999466666e-24,
-		0.37782977818839361421049855999999e-25, -0.71531586889081740345038165333333e-26,
-		0.13552488463674213646502024533333e-26, -0.25694673048487567430079829333333e-27,
-		0.48747756066216949076459519999999e-28, -0.92542112530849715321132373333333e-29,
-		0.17578597841760239233269760000000e-29, -0.33410026677731010351377066666666e-30,
-		0.63533936180236187354180266666666e-31,
-	}
-	nlnrel := chebyshevInit(43, 0.1*d1mach(3), alnrcs)
-	if x <= -1 {
-		return math.NaN()
-	}
-	if math.Abs(x) <= 0.375 {
-		return x * (1.0 - x*chebyshevEval(nlnrel, x/0.375, alnrcs))
-	}
-	return math.Log(x + 1.0)
-}
-
-// logBeta is an implementation for the log of the beta distribution
-// function.
-func logBeta(a, b float64) float64 {
-	corr, p, q := 0.0, a, a
-	if b < p {
-		p = b
-	}
-	if b > q {
-		q = b
-	}
-	if p < 0 {
-		return math.NaN()
-	}
-	if p == 0 {
-		return math.MaxFloat64
-	}
-	if p >= 10.0 {
-		corr = lgammacor(p) + lgammacor(q) - lgammacor(p+q)
-		return math.Log(q)*-0.5 + 0.918938533204672741780329736406 + corr + (p-0.5)*math.Log(p/(p+q)) + q*logrelerr(-p/(p+q))
-	}
-	if q >= 10 {
-		corr = lgammacor(q) - lgammacor(p+q)
-		val, _ := math.Lgamma(p)
-		return val + corr + p - p*math.Log(p+q) + (q-0.5)*logrelerr(-p/(p+q))
-	}
-	return math.Log(math.Gamma(p) * (math.Gamma(q) / math.Gamma(p+q)))
-}
-
-// pbetaRaw is a part of pbeta for the beta distribution.
-func pbetaRaw(alnsml, ans, eps, p, pin, q, sml, x, y float64) float64 {
-	if q > 1.0 {
-		xb := p*math.Log(y) + q*math.Log(1.0-y) - logBeta(p, q) - math.Log(q)
-		ib := int(math.Max(xb/alnsml, 0.0))
-		term := math.Exp(xb - float64(ib)*alnsml)
-		c := 1.0 / (1.0 - y)
-		p1 := q * c / (p + q - 1.0)
-		finsum := 0.0
-		n := int(q)
-		if q == float64(n) {
-			n = n - 1
-		}
-		for i := 1; i <= n; i++ {
-			if p1 <= 1 && term/eps <= finsum {
-				break
-			}
-			xi := float64(i)
-			term = (q - xi + 1.0) * c * term / (p + q - xi)
-			if term > 1.0 {
-				ib = ib - 1
-				term = term * sml
-			}
-			if ib == 0 {
-				finsum = finsum + term
-			}
-		}
-		ans = ans + finsum
-	}
-	if y != x || p != pin {
-		ans = 1.0 - ans
-	}
-	ans = math.Max(math.Min(ans, 1.0), 0.0)
-	return ans
-}
-
-// pbeta returns distribution function of the beta distribution.
-func pbeta(x, pin, qin float64) (ans float64) {
-	eps := d1mach(3)
-	alneps := math.Log(eps)
-	sml := d1mach(1)
-	alnsml := math.Log(sml)
-	y := x
-	p := pin
-	q := qin
-	if p/(p+q) < x {
-		y = 1.0 - y
-		p = qin
-		q = pin
-	}
-	if (p+q)*y/(p+1.0) < eps {
-		xb := p*math.Log(math.Max(y, sml)) - math.Log(p) - logBeta(p, q)
-		if xb > alnsml && y != 0.0 {
-			ans = math.Exp(xb)
-		}
-		if y != x || p != pin {
-			ans = 1.0 - ans
-		}
-	} else {
-		ps := q - math.Floor(q)
-		if ps == 0.0 {
-			ps = 1.0
-		}
-		xb := p*math.Log(y) - logBeta(ps, p) - math.Log(p)
-		if xb >= alnsml {
-			ans = math.Exp(xb)
-			term := ans * p
-			if ps != 1.0 {
-				n := int(math.Max(alneps/math.Log(y), 4.0))
-				for i := 1; i <= n; i++ {
-					xi := float64(i)
-					term = term * (xi - ps) * y / xi
-					ans = ans + term/(p+xi)
-				}
-			}
-		}
-		ans = pbetaRaw(alnsml, ans, eps, p, pin, q, sml, x, y)
-	}
-	return ans
-}
-
-// betainvProbIterator is a part of betainv for the inverse of the beta function.
-func betainvProbIterator(alpha1, alpha3, beta1, beta2, beta3, logbeta, lower, maxCumulative, prob1, prob2, upper float64, needSwap bool) float64 {
-	var i, j, prev, prop4 float64
-	j = 1
-	for prob := 0; prob < 1000; prob++ {
-		prop3 := pbeta(beta3, alpha1, beta1)
-		prop3 = (prop3 - prob1) * math.Exp(logbeta+prob2*math.Log(beta3)+beta2*math.Log(1.0-beta3))
-		if prop3*prop4 <= 0 {
-			prev = math.Max(math.Abs(j), maxCumulative)
-		}
-		h := 1.0
-		for iteratorCount := 0; iteratorCount < 1000; iteratorCount++ {
-			j = h * prop3
-			if math.Abs(j) < prev {
-				i = beta3 - j
-				if i >= 0 && i <= 1.0 {
-					if prev <= alpha3 {
-						return beta3
-					}
-					if math.Abs(prop3) <= alpha3 {
-						return beta3
-					}
-					if i != 0 && i != 1.0 {
-						break
-					}
-				}
-			}
-			h /= 3.0
-		}
-		if i == beta3 {
-			return beta3
-		}
-		beta3, prop4 = i, prop3
-	}
-	return beta3
-}
-
-// betainv is an implementation for the quantile of the beta distribution.
-func betainv(probability, alpha, beta, lower, upper float64) float64 {
-	minCumulative, maxCumulative := 1.0e-300, 3.0e-308
-	lowerBound, upperBound := maxCumulative, 1.0-2.22e-16
-	needSwap := false
-	var alpha1, alpha2, beta1, beta2, beta3, prob1, x, y float64
-	if probability <= 0.5 {
-		prob1, alpha1, beta1 = probability, alpha, beta
-	} else {
-		prob1, alpha1, beta1, needSwap = 1.0-probability, beta, alpha, true
-	}
-	logbeta := logBeta(alpha, beta)
-	prob2 := math.Sqrt(-math.Log(prob1 * prob1))
-	prob3 := prob2 - (prob2*0.27061+2.3075)/(prob2*(prob2*0.04481+0.99229)+1)
-	if alpha1 > 1 && beta1 > 1 {
-		alpha2, beta2, prob2 = 1/(alpha1+alpha1-1), 1/(beta1+beta1-1), (prob3*prob3-3)/6
-		x = 2 / (alpha2 + beta2)
-		y = prob3*math.Sqrt(x+prob2)/x - (beta2-alpha2)*(prob2+5/6.0-2/(x*3))
-		beta3 = alpha1 / (alpha1 + beta1*math.Exp(y+y))
-	} else {
-		beta2, prob2 = 1/(beta1*9), beta1+beta1
-		beta2 = prob2 * math.Pow(1-beta2+prob3*math.Sqrt(beta2), 3)
-		if beta2 <= 0 {
-			beta3 = 1 - math.Exp((math.Log((1-prob1)*beta1)+logbeta)/beta1)
-		} else {
-			beta2 = (prob2 + alpha1*4 - 2) / beta2
-			if beta2 <= 1 {
-				beta3 = math.Exp((logbeta + math.Log(alpha1*prob1)) / alpha1)
-			} else {
-				beta3 = 1 - 2/(beta2+1)
-			}
-		}
-	}
-	beta2, prob2 = 1-beta1, 1-alpha1
-	if beta3 < lowerBound {
-		beta3 = lowerBound
-	} else if beta3 > upperBound {
-		beta3 = upperBound
-	}
-	alpha3 := math.Max(minCumulative, math.Pow(10.0, -13.0-2.5/(alpha1*alpha1)-0.5/(prob1*prob1)))
-	beta3 = betainvProbIterator(alpha1, alpha3, beta1, beta2, beta3, logbeta, lower, maxCumulative, prob1, prob2, upper, needSwap)
-	if needSwap {
-		beta3 = 1.0 - beta3
-	}
-	return (upper-lower)*beta3 + lower
-}
-
-// FINV function calculates the inverse of the (right-tailed) F Probability
-// Distribution for a supplied probability. The syntax of the function is:
-//
-//    FINV(probability,deg_freedom1,deg_freedom2)
-//
-func (fn *formulaFuncs) FINV(argsList *list.List) formulaArg {
+// finv is an implementation of the formula functions F.INV.RT and FINV.
+func (fn *formulaFuncs) finv(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, "FINV requires 3 arguments")
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
 	}
 	var probability, d1, d2 formulaArg
 	if probability = argsList.Front().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
@@ -6167,7 +6232,26 @@ func (fn *formulaFuncs) FINV(argsList *list.List) formulaArg {
 	if d2.Number < 1 || d2.Number >= math.Pow10(10) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newNumberFormulaArg((1/betainv(1.0-(1.0-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1.0) * (d2.Number / d1.Number))
+	return newNumberFormulaArg((1/calcBetainv(1.0-(1.0-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1.0) * (d2.Number / d1.Number))
+}
+
+// FdotINVdotRT function calculates the inverse of the (right-tailed) F
+// Probability Distribution for a supplied probability. The syntax of the
+// function is:
+//
+//    F.INV.RT(probability,deg_freedom1,deg_freedom2)
+//
+func (fn *formulaFuncs) FdotINVdotRT(argsList *list.List) formulaArg {
+	return fn.finv("F.INV.RT", argsList)
+}
+
+// FINV function calculates the inverse of the (right-tailed) F Probability
+// Distribution for a supplied probability. The syntax of the function is:
+//
+//    FINV(probability,deg_freedom1,deg_freedom2)
+//
+func (fn *formulaFuncs) FINV(argsList *list.List) formulaArg {
+	return fn.finv("FINV", argsList)
 }
 
 // NORMdotDIST function calculates the Normal Probability Density Function or
