@@ -599,7 +599,7 @@ type formatChart struct {
 	ShowBlanksAs   string `json:"show_blanks_as"`
 	ShowHiddenData bool   `json:"show_hidden_data"`
 	SetRotation    int    `json:"set_rotation"`
-	HoleSize    int    `json:"hole_size"`
+	HoleSize       int    `json:"hole_size"`
 	order          int
 }
 
