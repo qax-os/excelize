@@ -513,13 +513,18 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 // drawDoughnutChart provides a function to draw the c:plotArea element for
 // doughnut chart by given format sets.
 func (f *File) drawDoughnutChart(formatSet *formatChart) *cPlotArea {
+	holeSize := 75
+	if formatSet.HoleSize > 0 && formatSet.HoleSize <= 90{
+		holeSize = formatSet.HoleSize
+	}
+
 	return &cPlotArea{
 		DoughnutChart: &cCharts{
 			VaryColors: &attrValBool{
 				Val: boolPtr(formatSet.VaryColors),
 			},
 			Ser:      f.drawChartSeries(formatSet),
-			HoleSize: &attrValInt{Val: intPtr(75)},
+			HoleSize: &attrValInt{Val: intPtr(holeSize)},
 		},
 	}
 }
