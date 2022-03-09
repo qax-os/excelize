@@ -417,6 +417,7 @@ type formulaFuncs struct {
 //    FALSE
 //    FIND
 //    FINDB
+//    F.INV
 //    F.INV.RT
 //    FINV
 //    FISHER
@@ -430,6 +431,7 @@ type formulaFuncs struct {
 //    FVSCHEDULE
 //    GAMMA
 //    GAMMALN
+//    GAUSS
 //    GCD
 //    GEOMEAN
 //    GESTEP
@@ -6064,6 +6066,28 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
 }
 
+// GAUSS function returns the probability that a member of a standard normal
+// population will fall between the mean and a specified number of standard
+// deviations from the mean. The syntax of the function is:
+//
+//    GAUSS(z)
+//
+func (fn *formulaFuncs) GAUSS(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAUSS requires 1 numeric argument")
+	}
+	args := list.New().Init()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 0})
+	args.PushBack(formulaArg{Type: ArgNumber, Number: 1})
+	args.PushBack(newBoolFormulaArg(true))
+	normdist := fn.NORMDIST(args)
+	if normdist.Type != ArgNumber {
+		return normdist
+	}
+	return newNumberFormulaArg(normdist.Number - 0.5)
+}
+
 // GEOMEAN function calculates the geometric mean of a supplied set of values.
 // The syntax of the function is:
 //
@@ -6208,8 +6232,9 @@ func (fn *formulaFuncs) EXPONDIST(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(lambda.Number * math.Exp(-lambda.Number*x.Number))
 }
 
-// finv is an implementation of the formula functions F.INV.RT and FINV.
-func (fn *formulaFuncs) finv(name string, argsList *list.List) formulaArg {
+// prepareFinvArgs checking and prepare arguments for the formula function
+// F.INV, F.INV.RT and FINV.
+func (fn *formulaFuncs) prepareFinvArgs(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
 	}
@@ -6232,7 +6257,21 @@ func (fn *formulaFuncs) finv(name string, argsList *list.List) formulaArg {
 	if d2.Number < 1 || d2.Number >= math.Pow10(10) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newNumberFormulaArg((1/calcBetainv(1.0-(1.0-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1.0) * (d2.Number / d1.Number))
+	return newListFormulaArg([]formulaArg{probability, d1, d2})
+}
+
+// FdotINV function calculates the inverse of the Cumulative F Distribution
+// for a supplied probability. The syntax of the F.Inv function is:
+//
+//    F.INV(probability,deg_freedom1,deg_freedom2)
+//
+func (fn *formulaFuncs) FdotINV(argsList *list.List) formulaArg {
+	args := fn.prepareFinvArgs("F.INV", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	probability, d1, d2 := args.List[0], args.List[1], args.List[2]
+	return newNumberFormulaArg((1/calcBetainv(1-probability.Number, d2.Number/2, d1.Number/2, 0, 1) - 1) * (d2.Number / d1.Number))
 }
 
 // FdotINVdotRT function calculates the inverse of the (right-tailed) F
@@ -6242,7 +6281,12 @@ func (fn *formulaFuncs) finv(name string, argsList *list.List) formulaArg {
 //    F.INV.RT(probability,deg_freedom1,deg_freedom2)
 //
 func (fn *formulaFuncs) FdotINVdotRT(argsList *list.List) formulaArg {
-	return fn.finv("F.INV.RT", argsList)
+	args := fn.prepareFinvArgs("F.INV.RT", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	probability, d1, d2 := args.List[0], args.List[1], args.List[2]
+	return newNumberFormulaArg((1/calcBetainv(1-(1-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1) * (d2.Number / d1.Number))
 }
 
 // FINV function calculates the inverse of the (right-tailed) F Probability
@@ -6251,7 +6295,12 @@ func (fn *formulaFuncs) FdotINVdotRT(argsList *list.List) formulaArg {
 //    FINV(probability,deg_freedom1,deg_freedom2)
 //
 func (fn *formulaFuncs) FINV(argsList *list.List) formulaArg {
-	return fn.finv("FINV", argsList)
+	args := fn.prepareFinvArgs("FINV", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	probability, d1, d2 := args.List[0], args.List[1], args.List[2]
+	return newNumberFormulaArg((1/calcBetainv(1-(1-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1) * (d2.Number / d1.Number))
 }
 
 // NORMdotDIST function calculates the Normal Probability Density Function or

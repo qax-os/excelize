@@ -838,6 +838,11 @@ func TestCalcCellValue(t *testing.T) {
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.45373657084244",
 		"=GAMMALN(INT(1))": "0",
+		// GAUSS
+		"=GAUSS(-5)":  "-0.499999713348428",
+		"=GAUSS(0)":   "0",
+		"=GAUSS(0.1)": "0.039827837277029",
+		"=GAUSS(2.5)": "0.493790334674224",
 		// GEOMEAN
 		"=GEOMEAN(2.5,3,0.5,1,3)": "1.6226711115996",
 		// HARMEAN
@@ -855,6 +860,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXPONDIST(0.5,1,TRUE)":  "0.393469340287367",
 		"=EXPONDIST(0.5,1,FALSE)": "0.606530659712633",
 		"=EXPONDIST(2,1,TRUE)":    "0.864664716763387",
+		// F.INV
+		"=F.INV(0.9,2,5)": "3.77971607877395",
 		// FINV
 		"=FINV(0.2,1,2)":   "3.55555555555555",
 		"=FINV(0.6,1,2)":   "0.380952380952381",
@@ -2380,6 +2387,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(0)":      "#N/A",
 		"=GAMMALN(INT(0))": "#N/A",
+		// GAUSS
+		"=GAUSS()":     "GAUSS requires 1 numeric argument",
+		"=GAUSS(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// GEOMEAN
 		"=GEOMEAN()":      "GEOMEAN requires at least 1 numeric argument",
 		"=GEOMEAN(0)":     "#NUM!",
@@ -2405,6 +2415,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXPONDIST(0,1,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=EXPONDIST(-1,1,TRUE)":   "#NUM!",
 		"=EXPONDIST(1,0,TRUE)":    "#NUM!",
+		// F.INV
+		"=F.INV()":           "F.INV requires 3 arguments",
+		"=F.INV(\"\",1,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.INV(0.2,\"\",2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.INV(0.2,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.INV(0,1,2)":      "#NUM!",
+		"=F.INV(0.2,0.5,2)":  "#NUM!",
+		"=F.INV(0.2,1,0.5)":  "#NUM!",
 		// FINV
 		"=FINV()":           "FINV requires 3 arguments",
 		"=FINV(\"\",1,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
