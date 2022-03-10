@@ -835,6 +835,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMA(INT(1))": "1",
 		"=GAMMA(1.5)":    "0.886226925452758",
 		"=GAMMA(5.5)":    "52.34277778455352",
+		// GAMMA.DIST
+		"=GAMMA.DIST(6,3,2,FALSE)": "0.112020903827694",
+		"=GAMMA.DIST(6,3,2,TRUE)":  "0.576809918873156",
+		// GAMMADIST
+		"=GAMMADIST(6,3,2,FALSE)": "0.112020903827694",
+		"=GAMMADIST(6,3,2,TRUE)":  "0.576809918873156",
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.45373657084244",
 		"=GAMMALN(INT(1))": "0",
@@ -2382,6 +2388,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMA(F1)":     "GAMMA requires 1 numeric argument",
 		"=GAMMA(0)":      "#N/A",
 		"=GAMMA(INT(0))": "#N/A",
+		// GAMMA.DIST
+		"=GAMMA.DIST()":               "GAMMA.DIST requires 4 arguments",
+		"=GAMMA.DIST(\"\",3,2,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMA.DIST(6,\"\",2,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMA.DIST(6,3,\"\",FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMA.DIST(6,3,2,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=GAMMA.DIST(-1,3,2,FALSE)":   "#NUM!",
+		"=GAMMA.DIST(6,0,2,FALSE)":    "#NUM!",
+		"=GAMMA.DIST(6,3,0,FALSE)":    "#NUM!",
+		// GAMMADIST
+		"=GAMMADIST()":               "GAMMADIST requires 4 arguments",
+		"=GAMMADIST(\"\",3,2,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMADIST(6,\"\",2,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMADIST(6,3,\"\",FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMADIST(6,3,2,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=GAMMADIST(-1,3,2,FALSE)":   "#NUM!",
+		"=GAMMADIST(6,0,2,FALSE)":    "#NUM!",
+		"=GAMMADIST(6,3,0,FALSE)":    "#NUM!",
 		// GAMMALN
 		"=GAMMALN()":       "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",

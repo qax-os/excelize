@@ -430,6 +430,8 @@ type formulaFuncs struct {
 //    FV
 //    FVSCHEDULE
 //    GAMMA
+//    GAMMA.DIST
+//    GAMMADIST
 //    GAMMALN
 //    GAUSS
 //    GCD
@@ -6036,6 +6038,54 @@ func (fn *formulaFuncs) GAMMA(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Gamma(token.Number))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMA requires 1 numeric argument")
+}
+
+// GAMMAdotDIST function returns the Gamma Distribution, which is frequently
+// used to provide probabilities for values that may have a skewed
+// distribution, such as queuing analysis.
+//
+//    GAMMA.DIST(x,alpha,beta,cumulative)
+//
+func (fn *formulaFuncs) GAMMAdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMA.DIST requires 4 arguments")
+	}
+	return fn.GAMMADIST(argsList)
+}
+
+// GAMMADIST function returns the Gamma Distribution, which is frequently used
+// to provide probabilities for values that may have a skewed distribution,
+// such as queuing analysis.
+//
+//    GAMMADIST(x,alpha,beta,cumulative)
+//
+func (fn *formulaFuncs) GAMMADIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMADIST requires 4 arguments")
+	}
+	var x, alpha, beta, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if x.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if alpha = argsList.Front().Next().Value.(formulaArg).ToNumber(); alpha.Type != ArgNumber {
+		return alpha
+	}
+	if beta = argsList.Back().Prev().Value.(formulaArg).ToNumber(); beta.Type != ArgNumber {
+		return beta
+	}
+	if alpha.Number <= 0 || beta.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(incompleteGamma(alpha.Number, x.Number/beta.Number) / math.Gamma(alpha.Number))
+	}
+	return newNumberFormulaArg((1 / (math.Pow(beta.Number, alpha.Number) * math.Gamma(alpha.Number))) * math.Pow(x.Number, (alpha.Number-1)) * math.Exp(0-(x.Number/beta.Number)))
 }
 
 // GAMMALN function returns the natural logarithm of the Gamma Function, Γ
