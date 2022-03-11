@@ -42,14 +42,61 @@ type xlsxIDmap struct {
 
 // xlsxShape directly maps the shape element.
 type xlsxShape struct {
-	XMLName     xml.Name `xml:"v:shape"`
-	ID          string   `xml:"id,attr"`
-	Type        string   `xml:"type,attr"`
-	Style       string   `xml:"style,attr"`
-	Fillcolor   string   `xml:"fillcolor,attr"`
-	Insetmode   string   `xml:"urn:schemas-microsoft-com:office:office insetmode,attr,omitempty"`
-	Strokecolor string   `xml:"strokecolor,attr,omitempty"`
-	Val         string   `xml:",innerxml"`
+	XMLName   xml.Name `xml:"v:shape"`
+	ID        string   `xml:"id,attr"`
+	Type      string   `xml:"type,attr"`
+	Style     string   `xml:"style,attr"`
+	Fillcolor string   `xml:"fillcolor,attr"`
+	// TODO: solve conflict
+	// Insetmode   string   `xml:"urn:schemas-microsoft-com:office:office insetmode,attr,omitempty"`
+	Insetmode   string `xml:"o:insetmode,attr"`
+	Strokecolor string `xml:"strokecolor,attr,omitempty"`
+	Button      string `xml:"o:button,attr"`
+	Val         string `xml:",innerxml"`
+}
+
+type vFillButton struct {
+	Color2           string `xml:"color2,attr"`
+	Detectmouseclick string `xml:"o:detectmouseclick,attr"`
+}
+
+type oLockButton struct {
+	Ext      string `xml:"v:ext,attr"`
+	Rotation string `xml:"rotation,attr"`
+}
+
+type vTextboxButton struct {
+	Style       string         `xml:"v:ext,attr"`
+	Singleclick string         `xml:"o:singleclick,attr"`
+	Div         *xlsxDivButton `xml:"div"`
+}
+type xlsxDivButton struct {
+	Style string      `xml:"style,attr"`
+	Font  *fontButton `xml:"font"`
+}
+
+type fontButton struct {
+	Face    string `xml:"face,attr"`
+	Size    string `xml:"size,attr"`
+	Color   string `xml:"color,attr"`
+	Caption string `xml:",chardata"`
+}
+
+type xClientDataButton struct {
+	ObjectType  string `xml:"ObjectType,attr"`
+	Anchor      string `xml:"x:Anchor"`
+	PrintObject string `xml:"x:PrintObject"`
+	AutoFill    string `xml:"x:AutoFill"`
+	FmlaMacro   string `xml:"x:FmlaMacro"`
+	TextHAlign  string `xml:"x:TextHAlign"`
+	TextVAlign  string `xml:"x:TextVAlign"`
+}
+
+type encodeShapeButton struct {
+	Fill       *vFillButton       `xml:"v:fill"`
+	Lock       *oLockButton       `xml:"o:lock"`
+	TextBox    *vTextboxButton    `xml:"v:textbox"`
+	ClientData *xClientDataButton `xml:"x:ClientData"`
 }
 
 // xlsxShapetype directly maps the shapetype element.
