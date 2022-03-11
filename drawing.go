@@ -514,7 +514,7 @@ func (f *File) drawBaseChart(formatSet *formatChart) *cPlotArea {
 // doughnut chart by given format sets.
 func (f *File) drawDoughnutChart(formatSet *formatChart) *cPlotArea {
 	holeSize := 75
-	if formatSet.HoleSize > 0 && formatSet.HoleSize <= 90{
+	if formatSet.HoleSize > 0 && formatSet.HoleSize <= 90 {
 		holeSize = formatSet.HoleSize
 	}
 

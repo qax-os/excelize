@@ -432,6 +432,8 @@ type formulaFuncs struct {
 //    GAMMA
 //    GAMMA.DIST
 //    GAMMADIST
+//    GAMMA.INV
+//    GAMMAINV
 //    GAMMALN
 //    GAUSS
 //    GCD
@@ -6086,6 +6088,75 @@ func (fn *formulaFuncs) GAMMADIST(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(incompleteGamma(alpha.Number, x.Number/beta.Number) / math.Gamma(alpha.Number))
 	}
 	return newNumberFormulaArg((1 / (math.Pow(beta.Number, alpha.Number) * math.Gamma(alpha.Number))) * math.Pow(x.Number, (alpha.Number-1)) * math.Exp(0-(x.Number/beta.Number)))
+}
+
+// gammainv returns the inverse of the Gamma distribution for the specified
+// value.
+func gammainv(probability, alpha, beta float64) float64 {
+	xLo, xHi := 0.0, alpha*beta*5
+	dx, x, xNew, result := 1024.0, 1.0, 1.0, 0.0
+	for i := 0; math.Abs(dx) > 8.88e-016 && i <= 256; i++ {
+		result = incompleteGamma(alpha, x/beta) / math.Gamma(alpha)
+		error := result - probability
+		if error == 0 {
+			dx = 0
+		} else if error < 0 {
+			xLo = x
+		} else {
+			xHi = x
+		}
+		pdf := (1 / (math.Pow(beta, alpha) * math.Gamma(alpha))) * math.Pow(x, (alpha-1)) * math.Exp(0-(x/beta))
+		if pdf != 0 {
+			dx = error / pdf
+			xNew = x - dx
+		}
+		if xNew < xLo || xNew > xHi || pdf == 0 {
+			xNew = (xLo + xHi) / 2
+			dx = xNew - x
+		}
+		x = xNew
+	}
+	return x
+}
+
+// GAMMAdotINV function returns the inverse of the Gamma Cumulative
+// Distribution. The syntax of the function is:
+//
+//    GAMMA.INV(probability,alpha,beta)
+//
+func (fn *formulaFuncs) GAMMAdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMA.INV requires 3 arguments")
+	}
+	return fn.GAMMAINV(argsList)
+}
+
+// GAMMAINV function returns the inverse of the Gamma Cumulative Distribution.
+// The syntax of the function is:
+//
+//    GAMMAINV(probability,alpha,beta)
+//
+func (fn *formulaFuncs) GAMMAINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMAINV requires 3 arguments")
+	}
+	var probability, alpha, beta formulaArg
+	if probability = argsList.Front().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if probability.Number < 0 || probability.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if alpha = argsList.Front().Next().Value.(formulaArg).ToNumber(); alpha.Type != ArgNumber {
+		return alpha
+	}
+	if beta = argsList.Back().Value.(formulaArg).ToNumber(); beta.Type != ArgNumber {
+		return beta
+	}
+	if alpha.Number <= 0 || beta.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(gammainv(probability.Number, alpha.Number, beta.Number))
 }
 
 // GAMMALN function returns the natural logarithm of the Gamma Function, Γ

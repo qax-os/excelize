@@ -841,6 +841,12 @@ func TestCalcCellValue(t *testing.T) {
 		// GAMMADIST
 		"=GAMMADIST(6,3,2,FALSE)": "0.112020903827694",
 		"=GAMMADIST(6,3,2,TRUE)":  "0.576809918873156",
+		// GAMMA.INV
+		"=GAMMA.INV(0.5,3,2)":   "5.348120627447122",
+		"=GAMMA.INV(0.5,0.5,1)": "0.227468211559786",
+		// GAMMAINV
+		"=GAMMAINV(0.5,3,2)":   "5.348120627447122",
+		"=GAMMAINV(0.5,0.5,1)": "0.227468211559786",
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.45373657084244",
 		"=GAMMALN(INT(1))": "0",
@@ -2406,6 +2412,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMADIST(-1,3,2,FALSE)":   "#NUM!",
 		"=GAMMADIST(6,0,2,FALSE)":    "#NUM!",
 		"=GAMMADIST(6,3,0,FALSE)":    "#NUM!",
+		// GAMMA.INV
+		"=GAMMA.INV()":           "GAMMA.INV requires 3 arguments",
+		"=GAMMA.INV(\"\",3,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMA.INV(0.5,\"\",2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMA.INV(0.5,3,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMA.INV(-1,3,2)":     "#NUM!",
+		"=GAMMA.INV(2,3,2)":      "#NUM!",
+		"=GAMMA.INV(0.5,0,2)":    "#NUM!",
+		"=GAMMA.INV(0.5,3,0)":    "#NUM!",
+		// GAMMAINV
+		"=GAMMAINV()":           "GAMMAINV requires 3 arguments",
+		"=GAMMAINV(\"\",3,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMAINV(0.5,\"\",2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMAINV(0.5,3,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=GAMMAINV(-1,3,2)":     "#NUM!",
+		"=GAMMAINV(2,3,2)":      "#NUM!",
+		"=GAMMAINV(0.5,0,2)":    "#NUM!",
+		"=GAMMAINV(0.5,3,0)":    "#NUM!",
 		// GAMMALN
 		"=GAMMALN()":       "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
