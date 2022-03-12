@@ -32,7 +32,8 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 			XScale:           1.0,
 			YScale:           1.0,
 		},
-		Line: formatLine{Width: 1},
+		Line:  formatLine{Width: 1},
+		Macro: "",
 	}
 	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err
@@ -369,6 +370,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 	shape := xdrSp{
+		Macro: formatSet.Macro,
 		NvSpPr: &xdrNvSpPr{
 			CNvPr: &xlsxCNvPr{
 				ID:   cNvPrID,
