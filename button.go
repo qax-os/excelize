@@ -8,16 +8,14 @@ import (
 	"strings"
 )
 
-// AddComment provides the method to add comment in a sheet by given worksheet
-// index, cell and format set (such as author and text). Note that the max
-// author length is 255 and the max text length is 32512. For example, add a
-// comment in Sheet1!$A$30:
+// AddButton provides the method to add button in a sheet by given worksheet
+// index, cell and format set (such as caption, macro, width, height).
+// For example, add a button in Sheet1!$A$30:
 //
-//    err := f.AddButton("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
+//    err := f.AddButton("Sheet1", "A30", `{"macro":"say_hello: ","caption":"Press Me","width": 80,"height": 30}`)
 //
 func (f *File) AddButton(sheet, cell, format string) error {
 	formatSet, err := parseFormatButtonSet(format)
-	fmt.Printf("%+v\n", formatSet)
 	if err != nil {
 		return err
 	}
@@ -27,35 +25,28 @@ func (f *File) AddButton(sheet, cell, format string) error {
 		return err
 	}
 	buttonID := f.countButtons() + 1
-	fmt.Println(buttonID)
 	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(buttonID) + ".vml"
-	fmt.Println(drawingVML)
 
 	sheetRelationshipsDrawingVML := "../drawings/vmlDrawing" + strconv.Itoa(buttonID) + ".vml"
 	if ws.LegacyDrawing != nil {
-		// The worksheet already has a comments relationships, use the relationships drawing ../drawings/vmlDrawing%d.vml.
+		// The worksheet already has a buttons relationships, use the relationships drawing ../drawings/vmlDrawing%d.vml.
 		sheetRelationshipsDrawingVML = f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
 		buttonID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
 		drawingVML = strings.Replace(sheetRelationshipsDrawingVML, "..", "xl", -1)
 	} else {
-		// Add first comment for given sheet.
+		// Add first button for given sheet.
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
-		// f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		f.addSheetNameSpace(sheet, SourceRelationship)
 		f.addSheetLegacyDrawing(sheet, rID)
 	}
-	// ctrlProps
-	err = f.addDrawingVMLButton(buttonID, drawingVML, cell, formatSet)
+
+	err = f.addDrawingVMLButton(sheet, buttonID, drawingVML, cell, formatSet)
 	if err != nil {
 		return err
 	}
 
-	// commentsXML := "xl/comments" + strconv.Itoa(buttonID) + ".xml"
-	// f.addComment(commentsXML, cell, formatSet)
-
 	f.addContentTypePart(buttonID, "comments")
-
 	return err
 }
 
@@ -66,6 +57,10 @@ func parseFormatButtonSet(formatSet string) (*formatButton, error) {
 		Caption: "Button 1",
 		Width:   160,
 		Height:  160,
+		OffsetX: 0,
+		OffsetY: 0,
+		ScaleX:  1.0,
+		ScaleY:  1.0,
 	}
 	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err
@@ -78,9 +73,9 @@ func (f *File) countButtons() int {
 	return 0
 }
 
-// addDrawingVML provides a function to create comment as
-// xl/drawings/vmlDrawing%d.vml by given commit ID and cell.
-func (f *File) addDrawingVMLButton(buttonID int, drawingVML, cell string, formatSet *formatButton) error {
+// addDrawingVML provides a function to create button as
+// xl/drawings/vmlDrawing%d.vml by given button ID and cell.
+func (f *File) addDrawingVMLButton(sheet string, buttonID int, drawingVML, cell string, formatSet *formatButton) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
@@ -89,12 +84,9 @@ func (f *File) addDrawingVMLButton(buttonID int, drawingVML, cell string, format
 	rowIdx := row - 1
 
 	width := int(float64(formatSet.Width) * formatSet.ScaleX)
-	widthStr := strconv.Itoa(width)
 	height := int(float64(formatSet.Height) * formatSet.ScaleY)
-	heightStr := strconv.Itoa(height)
 
-	// work on position parse
-	// colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
 
 	vml := f.VMLDrawing[drawingVML]
 	if vml == nil {
@@ -152,8 +144,8 @@ func (f *File) addDrawingVMLButton(buttonID int, drawingVML, cell string, format
 		ClientData: &xClientDataButton{
 			ObjectType: "Button",
 			Anchor: fmt.Sprintf(
-				"%d, 0, %d, 0, %d, %d, %d, 10",
-				1+colIdx, 1+rowIdx, 2+colIdx, colIdx, 2+rowIdx),
+				"%d, 0, %d, 0, %d, %d, %d, %d",
+				colStart, rowStart, colEnd, x2, rowEnd, y2),
 			PrintObject: "False",
 			AutoFill:    "False",
 			FmlaMacro:   "[0]!" + formatSet.Macro,
@@ -166,7 +158,7 @@ func (f *File) addDrawingVMLButton(buttonID int, drawingVML, cell string, format
 	shape := xlsxShape{
 		ID:          "_x0000_s1025",
 		Type:        "#_x0000_t201",
-		Style:       "position:absolute;margin-left:0pt;margin-top:0pt;width:" + widthStr + "pt;height:" + heightStr + "pt;z-index:1;mso-wrap-style:tight",
+		Style:       "position:absolute;margin-left:0pt;margin-top:0pt;width:60pt;height:22.5pt;z-index:1;mso-wrap-style:tight",
 		Button:      "t",
 		Fillcolor:   "buttonFace [67]",
 		Strokecolor: "windowText [64]",

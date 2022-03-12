@@ -42,17 +42,15 @@ type xlsxIDmap struct {
 
 // xlsxShape directly maps the shape element.
 type xlsxShape struct {
-	XMLName   xml.Name `xml:"v:shape"`
-	ID        string   `xml:"id,attr"`
-	Type      string   `xml:"type,attr"`
-	Style     string   `xml:"style,attr"`
-	Fillcolor string   `xml:"fillcolor,attr"`
-	// TODO: solve conflict
-	// Insetmode   string   `xml:"urn:schemas-microsoft-com:office:office insetmode,attr,omitempty"`
-	Insetmode   string `xml:"o:insetmode,attr"`
-	Strokecolor string `xml:"strokecolor,attr,omitempty"`
-	Button      string `xml:"o:button,attr"`
-	Val         string `xml:",innerxml"`
+	XMLName     xml.Name `xml:"v:shape"`
+	ID          string   `xml:"id,attr"`
+	Type        string   `xml:"type,attr"`
+	Style       string   `xml:"style,attr"`
+	Fillcolor   string   `xml:"fillcolor,attr"`
+	Insetmode   string   `xml:"o:insetmode,attr"`
+	Strokecolor string   `xml:"strokecolor,attr,omitempty"`
+	Button      string   `xml:"o:button,attr"`
+	Val         string   `xml:",innerxml"`
 }
 
 type vFillButton struct {
