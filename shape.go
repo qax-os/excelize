@@ -435,6 +435,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 			text = " "
 		}
 		paragraph := &aP{
+			PPr: &aPPr{Alg: getParagraphAligment(p.Alignment)},
 			R: &aR{
 				RPr: aRPr{
 					I:       p.Font.Italic,
@@ -469,6 +470,19 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)
 	return err
+}
+
+func getParagraphAligment(code string) string {
+	aligment := "l"
+	aligmentCode := map[string]string{
+		"center": "ctr",
+		"left":   "l",
+		"right":  "r",
+	}
+	if val, ok := aligmentCode[code]; ok {
+		aligment = val
+	}
+	return aligment
 }
 
 // setShapeRef provides a function to set color with hex model by given actual

@@ -116,7 +116,8 @@ type aP struct {
 // formatting, since they are directly applied to the paragraph and supersede
 // any formatting from styles.
 type aPPr struct {
-	DefRPr aRPr `xml:"a:defRPr"`
+	Alg    string `xml:"algn,attr"`
+	DefRPr aRPr   `xml:"a:defRPr"`
 }
 
 // aSolidFill (Solid Fill) directly maps the solidFill element. This element
