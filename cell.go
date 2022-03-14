@@ -673,8 +673,11 @@ type HyperlinkOpts struct {
 // SetCellHyperLink provides a function to set cell hyperlink by given
 // worksheet name and link URL address. LinkType defines two types of
 // hyperlink "External" for web site or "Location" for moving to one of cell
-// in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
-// below is example for external link.
+// in this workbook. Maximum limit hyperlinks in a worksheet is 65530. This
+// function is only used to set the hyperlink of the cell and doesn't affect
+// the value of the cell. If you need to set the value of the cell, please use
+// the other functions such as `SetCellStyle` or `SetSheetRow`. The below is
+// example for external link.
 //
 //    if err := f.SetCellHyperLink("Sheet1", "A3",
 //        "https://github.com/xuri/excelize", "External"); err != nil {

@@ -505,6 +505,8 @@ type formulaFuncs struct {
 //    LN
 //    LOG
 //    LOG10
+//    LOGINV
+//    LOGNORM.INV
 //    LOOKUP
 //    LOWER
 //    MATCH
@@ -6422,6 +6424,53 @@ func (fn *formulaFuncs) FINV(argsList *list.List) formulaArg {
 	}
 	probability, d1, d2 := args.List[0], args.List[1], args.List[2]
 	return newNumberFormulaArg((1/calcBetainv(1-(1-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1) * (d2.Number / d1.Number))
+}
+
+// LOGINV function calculates the inverse of the Cumulative Log-Normal
+// Distribution Function of x, for a supplied probability. The syntax of the
+// function is:
+//
+//    LOGINV(probability,mean,standard_dev)
+//
+func (fn *formulaFuncs) LOGINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOGINV requires 3 arguments")
+	}
+	var probability, mean, stdDev formulaArg
+	if probability = argsList.Front().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if mean = argsList.Front().Next().Value.(formulaArg).ToNumber(); mean.Type != ArgNumber {
+		return mean
+	}
+	if stdDev = argsList.Back().Value.(formulaArg).ToNumber(); stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if probability.Number <= 0 || probability.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New()
+	args.PushBack(probability)
+	args.PushBack(newNumberFormulaArg(0))
+	args.PushBack(newNumberFormulaArg(1))
+	norminv := fn.NORMINV(args)
+	return newNumberFormulaArg(math.Exp(mean.Number + stdDev.Number*norminv.Number))
+}
+
+// LOGNORMdotINV function calculates the inverse of the Cumulative Log-Normal
+// Distribution Function of x, for a supplied probability. The syntax of the
+// function is:
+//
+//    LOGNORM.INV(probability,mean,standard_dev)
+//
+func (fn *formulaFuncs) LOGNORMdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOGNORM.INV requires 3 arguments")
+	}
+	return fn.LOGINV(argsList)
 }
 
 // NORMdotDIST function calculates the Normal Probability Density Function or
