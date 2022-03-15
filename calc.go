@@ -506,6 +506,8 @@ type formulaFuncs struct {
 //    LOG
 //    LOG10
 //    LOGINV
+//    LOGNORM.DIST
+//    LOGNORMDIST
 //    LOGNORM.INV
 //    LOOKUP
 //    LOWER
@@ -6471,6 +6473,72 @@ func (fn *formulaFuncs) LOGNORMdotINV(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOGNORM.INV requires 3 arguments")
 	}
 	return fn.LOGINV(argsList)
+}
+
+// LOGNORMdotDIST function calculates the Log-Normal Probability Density
+// Function or the Cumulative Log-Normal Distribution Function for a supplied
+// value of x. The syntax of the function is:
+//
+//    LOGNORM.DIST(x,mean,standard_dev,cumulative)
+//
+func (fn *formulaFuncs) LOGNORMdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOGNORM.DIST requires 4 arguments")
+	}
+	var x, mean, stdDev, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if mean = argsList.Front().Next().Value.(formulaArg).ToNumber(); mean.Type != ArgNumber {
+		return mean
+	}
+	if stdDev = argsList.Back().Prev().Value.(formulaArg).ToNumber(); stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if x.Number <= 0 || stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative.Number == 1 {
+		args := list.New()
+		args.PushBack(newNumberFormulaArg((math.Log(x.Number) - mean.Number) / stdDev.Number))
+		args.PushBack(newNumberFormulaArg(0))
+		args.PushBack(newNumberFormulaArg(1))
+		args.PushBack(cumulative)
+		return fn.NORMDIST(args)
+	}
+	return newNumberFormulaArg((1 / (math.Sqrt(2*math.Pi) * stdDev.Number * x.Number)) *
+		math.Exp(0-(math.Pow((math.Log(x.Number)-mean.Number), 2)/(2*math.Pow(stdDev.Number, 2)))))
+
+}
+
+// LOGNORMDIST function calculates the Cumulative Log-Normal Distribution
+// Function at a supplied value of x. The syntax of the function is:
+//
+//    LOGNORMDIST(x,mean,standard_dev)
+//
+func (fn *formulaFuncs) LOGNORMDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "LOGNORMDIST requires 3 arguments")
+	}
+	var x, mean, stdDev formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if mean = argsList.Front().Next().Value.(formulaArg).ToNumber(); mean.Type != ArgNumber {
+		return mean
+	}
+	if stdDev = argsList.Back().Value.(formulaArg).ToNumber(); stdDev.Type != ArgNumber {
+		return stdDev
+	}
+	if x.Number <= 0 || stdDev.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New()
+	args.PushBack(newNumberFormulaArg((math.Log(x.Number) - mean.Number) / stdDev.Number))
+	return fn.NORMSDIST(args)
 }
 
 // NORMdotDIST function calculates the Normal Probability Density Function or

@@ -894,6 +894,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOGINV(0.3,2,0.2)": "6.6533460753367",
 		// LOGINV
 		"=LOGNORM.INV(0.3,2,0.2)": "6.6533460753367",
+		// LOGNORM.DIST
+		"=LOGNORM.DIST(0.5,10,5,FALSE)": "0.0162104821842127",
+		"=LOGNORM.DIST(12,10,5,TRUE)":   "0.0664171147992077",
+		// LOGNORMDIST
+		"=LOGNORMDIST(12,10,5)": "0.0664171147992077",
 		// NORM.DIST
 		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
 		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
@@ -2507,6 +2512,21 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOGNORM.INV(0,2,0.2)":      "#NUM!",
 		"=LOGNORM.INV(1,2,0.2)":      "#NUM!",
 		"=LOGNORM.INV(0.3,2,0)":      "#NUM!",
+		// LOGNORM.DIST
+		"=LOGNORM.DIST()":                  "LOGNORM.DIST requires 4 arguments",
+		"=LOGNORM.DIST(\"\",10,5,FALSE)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LOGNORM.DIST(0.5,\"\",5,FALSE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LOGNORM.DIST(0.5,10,\"\",FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LOGNORM.DIST(0.5,10,5,\"\")":     "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=LOGNORM.DIST(0,10,5,FALSE)":      "#NUM!",
+		"=LOGNORM.DIST(0.5,10,0,FALSE)":    "#NUM!",
+		// LOGNORMDIST
+		"=LOGNORMDIST()":           "LOGNORMDIST requires 3 arguments",
+		"=LOGNORMDIST(\"\",10,5)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LOGNORMDIST(12,\"\",5)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LOGNORMDIST(12,10,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=LOGNORMDIST(0,2,5)":      "#NUM!",
+		"=LOGNORMDIST(12,10,0)":    "#NUM!",
 		// NORM.DIST
 		"=NORM.DIST()": "NORM.DIST requires 4 arguments",
 		// NORMDIST
