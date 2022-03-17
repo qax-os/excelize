@@ -784,6 +784,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGEA(A1)":     "1",
 		"=AVERAGEA(A1:A2)":  "1.5",
 		"=AVERAGEA(D2:F9)":  "12671.375",
+		// BETADIST
+		"=BETADIST(0.4,4,5)":         "0.4059136",
+		"=BETADIST(0.4,4,5,0,1)":     "0.4059136",
+		"=BETADIST(0.4,4,5,0.4,1)":   "0",
+		"=BETADIST(1,2,2,1,3)":       "0",
+		"=BETADIST(0.4,4,5,0.2,0.4)": "1",
+		"=BETADIST(0.4,4,1)":         "0.0256",
+		"=BETADIST(0.4,1,5)":         "0.92224",
+		"=BETADIST(3,4,6,2,4)":       "0.74609375",
+		"=BETADIST(0.4,2,100)":       "1",
+		"=BETADIST(0.75,3,4)":        "0.96240234375",
+		"=BETADIST(0.2,0.7,4)":       "0.71794309318323",
+		"=BETADIST(0.01,3,4)":        "1.955359E-05",
+		"=BETADIST(0.75,130,140)":    "1",
 		// BETAINV
 		"=BETAINV(0.2,4,5,0,1)": "0.303225844664082",
 		// BETA.INV
@@ -791,6 +805,11 @@ func TestCalcCellValue(t *testing.T) {
 		// CHIDIST
 		"=CHIDIST(0.5,3)": "0.918891411654676",
 		"=CHIDIST(8,3)":   "0.0460117056892315",
+		// CHIINV
+		"=CHIINV(0.5,1)":  "0.454936423119572",
+		"=CHIINV(0.75,1)": "0.101531044267622",
+		"=CHIINV(0.1,2)":  "4.605170185988088",
+		"=CHIINV(0.8,2)":  "0.446287102628419",
 		// CONFIDENCE
 		"=CONFIDENCE(0.05,0.07,100)": "0.0137197479028414",
 		// CONFIDENCE.NORM
@@ -2322,6 +2341,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGE(H1)": "AVERAGE divide by zero",
 		// AVERAGEA
 		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		// BETADIST
+		"=BETADIST()":                "BETADIST requires at least 3 arguments",
+		"=BETADIST(0.4,4,5,0,1,0)":   "BETADIST requires at most 5 arguments",
+		"=BETADIST(\"\",4,5,0,1)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETADIST(0.4,\"\",5,0,1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETADIST(0.4,4,\"\",0,1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETADIST(0.4,4,5,\"\",1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETADIST(0.4,4,5,0,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETADIST(2,4,5,3,1)":       "#NUM!",
+		"=BETADIST(2,4,5,0,1)":       "#NUM!",
+		"=BETADIST(0.4,0,5,0,1)":     "#NUM!",
+		"=BETADIST(0.4,4,0,0,1)":     "#NUM!",
+		"=BETADIST(0.4,4,5,0.4,0.4)": "#NUM!",
 		// BETAINV
 		"=BETAINV()":               "BETAINV requires at least 3 arguments",
 		"=BETAINV(0.2,4,5,0,1,0)":  "BETAINV requires at most 5 arguments",
@@ -2357,6 +2389,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHIDIST()":         "CHIDIST requires 2 numeric arguments",
 		"=CHIDIST(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=CHIDIST(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// CHIINV
+		"=CHIINV()":         "CHIINV requires 2 numeric arguments",
+		"=CHIINV(\"\",1)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHIINV(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHIINV(0,1)":      "#NUM!",
+		"=CHIINV(2,1)":      "#NUM!",
+		"=CHIINV(0.5,0.5)":  "#NUM!",
 		// CONFIDENCE
 		"=CONFIDENCE()":               "CONFIDENCE requires 3 numeric arguments",
 		"=CONFIDENCE(\"\",0.07,100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -4386,6 +4425,15 @@ func TestGetYearDays(t *testing.T) {
 	for _, data := range [][]int{{2021, 0, 360}, {2000, 1, 366}, {2021, 1, 365}, {2000, 3, 365}} {
 		assert.Equal(t, data[2], getYearDays(data[0], data[1]))
 	}
+}
+
+func TestCalcGetBetaHelperContFrac(t *testing.T) {
+	assert.Equal(t, 1.0, getBetaHelperContFrac(1, 0, 1))
+}
+
+func TestCalcGetBetaDistPDF(t *testing.T) {
+	assert.Equal(t, 0.0, getBetaDistPDF(0.5, 2000, 3))
+	assert.Equal(t, 0.0, getBetaDistPDF(0, 1, 0))
 }
 
 func TestCalcD1mach(t *testing.T) {

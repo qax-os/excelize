@@ -333,6 +333,7 @@ type formulaFuncs struct {
 //    BESSELJ
 //    BESSELK
 //    BESSELY
+//    BETADIST
 //    BETAINV
 //    BETA.INV
 //    BIN2DEC
@@ -348,6 +349,7 @@ type formulaFuncs struct {
 //    CEILING.PRECISE
 //    CHAR
 //    CHIDIST
+//    CHIINV
 //    CHOOSE
 //    CLEAN
 //    CODE
@@ -5200,6 +5202,257 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sum / count)
 }
 
+// getBetaHelperContFrac continued fractions for the beta function.
+func getBetaHelperContFrac(fX, fA, fB float64) float64 {
+	var a1, b1, a2, b2, fnorm, cfnew, cf, rm float64
+	a1, b1, b2 = 1, 1, 1-(fA+fB)/(fA+1)*fX
+	if b2 == 0 {
+		a2, fnorm, cf = 0, 1, 1
+	} else {
+		a2, fnorm = 1, 1/b2
+		cf = a2 * fnorm
+	}
+	cfnew, rm = 1, 1
+	fMaxIter, fMachEps := 50000.0, 2.22045e-016
+	bfinished := false
+	for rm < fMaxIter && !bfinished {
+		apl2m := fA + 2*rm
+		d2m := rm * (fB - rm) * fX / ((apl2m - 1) * apl2m)
+		d2m1 := -(fA + rm) * (fA + fB + rm) * fX / (apl2m * (apl2m + 1))
+		a1 = (a2 + d2m*a1) * fnorm
+		b1 = (b2 + d2m*b1) * fnorm
+		a2 = a1 + d2m1*a2*fnorm
+		b2 = b1 + d2m1*b2*fnorm
+		if b2 != 0 {
+			fnorm = 1 / b2
+			cfnew = a2 * fnorm
+			bfinished = (math.Abs(cf-cfnew) < math.Abs(cf)*fMachEps)
+		}
+		cf = cfnew
+		rm += 1
+	}
+	return cf
+}
+
+// getLanczosSum uses a variant of the Lanczos sum with a rational function.
+func getLanczosSum(fZ float64) float64 {
+	num := []float64{
+		23531376880.41075968857200767445163675473,
+		42919803642.64909876895789904700198885093,
+		35711959237.35566804944018545154716670596,
+		17921034426.03720969991975575445893111267,
+		6039542586.35202800506429164430729792107,
+		1439720407.311721673663223072794912393972,
+		248874557.8620541565114603864132294232163,
+		31426415.58540019438061423162831820536287,
+		2876370.628935372441225409051620849613599,
+		186056.2653952234950402949897160456992822,
+		8071.672002365816210638002902272250613822,
+		210.8242777515793458725097339207133627117,
+		2.506628274631000270164908177133837338626,
+	}
+	denom := []float64{
+		0,
+		39916800,
+		120543840,
+		150917976,
+		105258076,
+		45995730,
+		13339535,
+		2637558,
+		357423,
+		32670,
+		1925,
+		66,
+		1,
+	}
+	var sumNum, sumDenom, zInv float64
+	if fZ <= 1 {
+		sumNum = num[12]
+		sumDenom = denom[12]
+		for i := 11; i >= 0; i-- {
+			sumNum *= fZ
+			sumNum += num[i]
+			sumDenom *= fZ
+			sumDenom += denom[i]
+		}
+	} else {
+		zInv = 1 / fZ
+		sumNum = num[0]
+		sumDenom = denom[0]
+		for i := 1; i <= 12; i++ {
+			sumNum *= zInv
+			sumNum += num[i]
+			sumDenom *= zInv
+			sumDenom += denom[i]
+		}
+	}
+	return sumNum / sumDenom
+}
+
+// getBeta return beta distribution.
+func getBeta(fAlpha, fBeta float64) float64 {
+	var fA, fB float64
+	if fAlpha > fBeta {
+		fA = fAlpha
+		fB = fBeta
+	} else {
+		fA = fBeta
+		fB = fAlpha
+	}
+	const maxGammaArgument = 171.624376956302
+	if fA+fB < maxGammaArgument {
+		return math.Gamma(fA) / math.Gamma(fA+fB) * math.Gamma(fB)
+	}
+	fg := 6.024680040776729583740234375
+	fgm := fg - 0.5
+	fLanczos := getLanczosSum(fA)
+	fLanczos /= getLanczosSum(fA + fB)
+	fLanczos *= getLanczosSum(fB)
+	fABgm := fA + fB + fgm
+	fLanczos *= math.Sqrt((fABgm / (fA + fgm)) / (fB + fgm))
+	fTempA := fB / (fA + fgm)
+	fTempB := fA / (fB + fgm)
+	fResult := math.Exp(-fA*math.Log1p(fTempA) - fB*math.Log1p(fTempB) - fgm)
+	fResult *= fLanczos
+	return fResult
+}
+
+// getBetaDistPDF is an implementation for the Beta probability density
+// function.
+func getBetaDistPDF(fX, fA, fB float64) float64 {
+	if fX <= 0 || fX >= 1 {
+		return 0
+	}
+	fLogDblMax, fLogDblMin := math.Log(1.79769e+308), math.Log(2.22507e-308)
+	fLogY := math.Log(0.5 - fX + 0.5)
+	if fX < 0.1 {
+		fLogY = math.Log1p(-fX)
+	}
+	fLogX := math.Log(fX)
+	fAm1LogX := (fA - 1) * fLogX
+	fBm1LogY := (fB - 1) * fLogY
+	fLogBeta := getLogBeta(fA, fB)
+	if fAm1LogX < fLogDblMax && fAm1LogX > fLogDblMin && fBm1LogY < fLogDblMax &&
+		fBm1LogY > fLogDblMin && fLogBeta < fLogDblMax && fLogBeta > fLogDblMin &&
+		fAm1LogX+fBm1LogY < fLogDblMax && fAm1LogX+fBm1LogY > fLogDblMin {
+		return math.Pow(fX, fA-1) * math.Pow(0.5-fX+0.5, fB-1) / getBeta(fA, fB)
+	}
+	return math.Exp(fAm1LogX + fBm1LogY - fLogBeta)
+}
+
+// getLogBeta return beta with logarithm.
+func getLogBeta(fAlpha, fBeta float64) float64 {
+	var fA, fB float64
+	if fAlpha > fBeta {
+		fA, fB = fAlpha, fBeta
+	} else {
+		fA, fB = fBeta, fAlpha
+	}
+	fg := 6.024680040776729583740234375
+	fgm := fg - 0.5
+	fLanczos := getLanczosSum(fA)
+	fLanczos /= getLanczosSum(fA + fB)
+	fLanczos *= getLanczosSum(fB)
+	fLogLanczos := math.Log(fLanczos)
+	fABgm := fA + fB + fgm
+	fLogLanczos += 0.5 * (math.Log(fABgm) - math.Log(fA+fgm) - math.Log(fB+fgm))
+	fTempA := fB / (fA + fgm)
+	fTempB := fA / (fB + fgm)
+	fResult := -fA*math.Log1p(fTempA) - fB*math.Log1p(fTempB) - fgm
+	fResult += fLogLanczos
+	return fResult
+}
+
+// getBetaDist is an implementation for the beta distribution function.
+func getBetaDist(fXin, fAlpha, fBeta float64) float64 {
+	if fXin <= 0 {
+		return 0
+	}
+	if fXin >= 1 {
+		return 1
+	}
+	if fBeta == 1 {
+		return math.Pow(fXin, fAlpha)
+	}
+	if fAlpha == 1 {
+		return -math.Expm1(fBeta * math.Log1p(-fXin))
+	}
+	var fResult float64
+	fY, flnY := (0.5-fXin)+0.5, math.Log1p(-fXin)
+	fX, flnX := fXin, math.Log(fXin)
+	fA, fB := fAlpha, fBeta
+	bReflect := fXin > fAlpha/(fAlpha+fBeta)
+	if bReflect {
+		fA = fBeta
+		fB = fAlpha
+		fX = fY
+		fY = fXin
+		flnX = flnY
+		flnY = math.Log(fXin)
+	}
+	fResult = getBetaHelperContFrac(fX, fA, fB) / fA
+	fP, fQ := fA/(fA+fB), fB/(fA+fB)
+	var fTemp float64
+	if fA > 1 && fB > 1 && fP < 0.97 && fQ < 0.97 {
+		fTemp = getBetaDistPDF(fX, fA, fB) * fX * fY
+	} else {
+		fTemp = math.Exp(fA*flnX + fB*flnY - getLogBeta(fA, fB))
+	}
+	fResult *= fTemp
+	if bReflect {
+		fResult = 0.5 - fResult + 0.5
+	}
+	return fResult
+}
+
+// BETADIST function calculates the cumulative beta probability density
+// function for a supplied set of parameters. The syntax of the function is:
+//
+//    BETADIST(x,alpha,beta,[A],[B])
+//
+func (fn *formulaFuncs) BETADIST(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BETADIST requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BETADIST requires at most 5 arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	alpha := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if alpha.Type != ArgNumber {
+		return alpha
+	}
+	beta := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if beta.Type != ArgNumber {
+		return beta
+	}
+	if alpha.Number <= 0 || beta.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	a, b := newNumberFormulaArg(0), newNumberFormulaArg(1)
+	if argsList.Len() > 3 {
+		if a = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); a.Type != ArgNumber {
+			return a
+		}
+	}
+	if argsList.Len() == 5 {
+		if b = argsList.Back().Value.(formulaArg).ToNumber(); b.Type != ArgNumber {
+			return b
+		}
+	}
+	if x.Number < a.Number || x.Number > b.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if a.Number == b.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(getBetaDist((x.Number-a.Number)/(b.Number-a.Number), alpha.Number, beta.Number))
+}
+
 // d1mach returns double precision real machine constants.
 func d1mach(i int) float64 {
 	arr := []float64{
@@ -5601,6 +5854,32 @@ func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
 		return degress
 	}
 	return newNumberFormulaArg(1 - (incompleteGamma(degress.Number/2, x.Number/2) / math.Gamma(degress.Number/2)))
+}
+
+// CHIINV function calculates the inverse of the right-tailed probability of
+// the Chi-Square Distribution. The syntax of the function is:
+//
+//    CHIINV(probability,degrees_freedom)
+//
+func (fn *formulaFuncs) CHIINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHIINV requires 2 numeric arguments")
+	}
+	probability := argsList.Front().Value.(formulaArg).ToNumber()
+	if probability.Type != ArgNumber {
+		return probability
+	}
+	if probability.Number <= 0 || probability.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	degress := argsList.Back().Value.(formulaArg).ToNumber()
+	if degress.Type != ArgNumber {
+		return degress
+	}
+	if degress.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(gammainv(1-probability.Number, 0.5*degress.Number, 2.0))
 }
 
 // confidence is an implementation of the formula functions CONFIDENCE and
@@ -6511,7 +6790,6 @@ func (fn *formulaFuncs) LOGNORMdotDIST(argsList *list.List) formulaArg {
 	}
 	return newNumberFormulaArg((1 / (math.Sqrt(2*math.Pi) * stdDev.Number * x.Number)) *
 		math.Exp(0-(math.Pow((math.Log(x.Number)-mean.Number), 2)/(2*math.Pow(stdDev.Number, 2)))))
-
 }
 
 // LOGNORMDIST function calculates the Cumulative Log-Normal Distribution
@@ -10812,7 +11090,8 @@ func (fn *formulaFuncs) prepareXlookupArgs(argsList *list.List) formulaArg {
 
 // xlookup is an implementation of the formula function XLOOKUP.
 func (fn *formulaFuncs) xlookup(lookupRows, lookupCols, returnArrayRows, returnArrayCols, matchIdx int,
-	condition1, condition2, condition3, condition4 bool, returnArray formulaArg) formulaArg {
+	condition1, condition2, condition3, condition4 bool, returnArray formulaArg,
+) formulaArg {
 	result := [][]formulaArg{}
 	for rowIdx, row := range returnArray.Matrix {
 		for colIdx, cell := range row {
