@@ -66,7 +66,7 @@ func TestCalcCellValue(t *testing.T) {
 		// Engineering Functions
 		// BESSELI
 		"=BESSELI(4.5,1)": "15.389222753735925",
-		"=BESSELI(32,1)":  "5.502845511211247e+12",
+		"=BESSELI(32,1)":  "5502845511211.25",
 		// BESSELJ
 		"=BESSELJ(1.9,2)": "0.329925727692387",
 		// BESSELK
@@ -457,7 +457,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=EVEN(-4)":   "-4",
 		"=EVEN((0))":  "0",
 		// EXP
-		"=EXP(100)":    "2.6881171418161356E+43",
+		"=EXP(100)":    "2.68811714181614E+43",
 		"=EXP(0.1)":    "1.10517091807565",
 		"=EXP(0)":      "1",
 		"=EXP(-5)":     "0.00673794699908547",
@@ -465,7 +465,7 @@ func TestCalcCellValue(t *testing.T) {
 		// FACT
 		"=FACT(3)":       "6",
 		"=FACT(6)":       "720",
-		"=FACT(10)":      "3.6288e+06",
+		"=FACT(10)":      "3628800",
 		"=FACT(FACT(3))": "720",
 		// FACTDOUBLE
 		"=FACTDOUBLE(5)":             "15",
@@ -915,9 +915,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOGNORM.INV(0.3,2,0.2)": "6.6533460753367",
 		// LOGNORM.DIST
 		"=LOGNORM.DIST(0.5,10,5,FALSE)": "0.0162104821842127",
-		"=LOGNORM.DIST(12,10,5,TRUE)":   "0.0664171147992077",
+		"=LOGNORM.DIST(12,10,5,TRUE)":   "0.0664171147992078",
 		// LOGNORMDIST
-		"=LOGNORMDIST(12,10,5)": "0.0664171147992077",
+		"=LOGNORMDIST(12,10,5)": "0.0664171147992078",
 		// NORM.DIST
 		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
 		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
@@ -1304,12 +1304,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=TIME(\"5\",\"44\",\"32\")": "0.239259259259259",
 		"=TIME(0,0,73)":              "0.000844907407407407",
 		// TIMEVALUE
-		"=TIMEVALUE(\"2:23\")":             "0.0993055555555556",
-		"=TIMEVALUE(\"2:23 am\")":          "0.0993055555555556",
-		"=TIMEVALUE(\"2:23 PM\")":          "0.599305555555555",
-		"=TIMEVALUE(\"14:23:00\")":         "0.599305555555555",
+		"=TIMEVALUE(\"2:23\")":             "0.0993055555555555",
+		"=TIMEVALUE(\"2:23 am\")":          "0.0993055555555555",
+		"=TIMEVALUE(\"2:23 PM\")":          "0.599305555555556",
+		"=TIMEVALUE(\"14:23:00\")":         "0.599305555555556",
 		"=TIMEVALUE(\"00:02:23\")":         "0.00165509259259259",
-		"=TIMEVALUE(\"01/01/2011 02:23\")": "0.0993055555555556",
+		"=TIMEVALUE(\"01/01/2011 02:23\")": "0.0993055555555555",
 		// WEEKDAY
 		"=WEEKDAY(0)":                 "7",
 		"=WEEKDAY(47119)":             "2",
@@ -4137,8 +4137,7 @@ func TestCalcXIRR(t *testing.T) {
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
 		"=XIRR(A1:A4,B1:B4)":     "-0.196743861298328",
-		"=XIRR(A1:A6,B1:B6)":     "0.09443907444452",
-		"=XIRR(A1:A6,B1:B6,0.1)": "0.0944390744445201",
+		"=XIRR(A1:A6,B1:B6,0.5)": "0.0944390744445204",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))

@@ -471,7 +471,7 @@ func roundPrecision(text string, prec int) string {
 	if _, ok := decimal.SetString(text); ok {
 		flt, _ := decimal.Float64()
 		if prec == -1 {
-			return decimal.Text('G', 15)
+			return strconv.FormatFloat(flt, 'G', 15, 64)
 		}
 		return strconv.FormatFloat(flt, 'f', -1, 64)
 	}
