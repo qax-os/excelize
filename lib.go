@@ -688,12 +688,15 @@ func isNumeric(s string) (bool, int) {
 			if i == 0 && v == '-' {
 				continue
 			}
-			if e && (v == '+' || v == '-') {
+			if e && v == '-' {
+				return true, 0
+			}
+			if e && v == '+' {
 				p = 15
 				continue
 			}
 			return false, 0
-		} else if dot {
+		} else {
 			p++
 		}
 		n = true

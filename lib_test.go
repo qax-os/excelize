@@ -342,7 +342,7 @@ func TestReadBytes(t *testing.T) {
 func TestUnzipToTemp(t *testing.T) {
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
-	assert.NoError(t, os.Chmod(os.TempDir(), 0444))
+	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))
 	f := NewFile()
 	data := []byte("PK\x03\x040000000PK\x01\x0200000" +
 		"0000000000000000000\x00" +
@@ -364,7 +364,7 @@ func TestUnzipToTemp(t *testing.T) {
 
 	_, err = f.unzipToTemp(z.File[0])
 	require.Error(t, err)
-	assert.NoError(t, os.Chmod(os.TempDir(), 0755))
+	assert.NoError(t, os.Chmod(os.TempDir(), 0o755))
 
 	_, err = f.unzipToTemp(z.File[0])
 	assert.EqualError(t, err, "EOF")

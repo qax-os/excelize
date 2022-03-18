@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -41,13 +42,15 @@ type numberFormat struct {
 var (
 	// supportedTokenTypes list the supported number format token types currently.
 	supportedTokenTypes = []string{
+		nfp.TokenSubTypeLanguageInfo,
+		nfp.TokenTypeColor,
 		nfp.TokenTypeCurrencyLanguage,
 		nfp.TokenTypeDateTimes,
 		nfp.TokenTypeElapsedDateTimes,
 		nfp.TokenTypeGeneral,
 		nfp.TokenTypeLiteral,
 		nfp.TokenTypeTextPlaceHolder,
-		nfp.TokenSubTypeLanguageInfo,
+		nfp.TokenTypeZeroPlaceHolder,
 	}
 	// supportedLanguageInfo directly maps the supported language ID and tags.
 	supportedLanguageInfo = map[string]languageInfo{
@@ -276,11 +279,9 @@ var (
 // prepareNumberic split the number into two before and after parts by a
 // decimal point.
 func (nf *numberFormat) prepareNumberic(value string) {
-	prec := 0
-	if nf.isNumberic, prec = isNumeric(value); !nf.isNumberic {
+	if nf.isNumberic, _ = isNumeric(value); !nf.isNumberic {
 		return
 	}
-	nf.beforePoint, nf.afterPoint = value[:len(value)-prec-1], value[len(value)-prec:]
 }
 
 // format provides a function to return a string parse by number format
@@ -335,6 +336,20 @@ func (nf *numberFormat) positiveHandler() (result string) {
 		if token.TType == nfp.TokenTypeLiteral {
 			nf.result += token.TValue
 			continue
+		}
+		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == "0" {
+			if isNum, precision := isNumeric(nf.value); isNum {
+				if nf.number < 1 {
+					nf.result += "0"
+					continue
+				}
+				if precision > 15 {
+					nf.result += roundPrecision(nf.value, 15)
+				} else {
+					nf.result += fmt.Sprintf("%.f", nf.number)
+				}
+				continue
+			}
 		}
 	}
 	result = nf.result
@@ -874,8 +889,33 @@ func (nf *numberFormat) secondsNext(i int) bool {
 
 // negativeHandler will be handling negative selection for a number format
 // expression.
-func (nf *numberFormat) negativeHandler() string {
-	return nf.value
+func (nf *numberFormat) negativeHandler() (result string) {
+	for _, token := range nf.section[nf.sectionIdx].Items {
+		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
+			result = nf.value
+			return
+		}
+		if token.TType == nfp.TokenTypeLiteral {
+			nf.result += token.TValue
+			continue
+		}
+		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == "0" {
+			if isNum, precision := isNumeric(nf.value); isNum {
+				if math.Abs(nf.number) < 1 {
+					nf.result += "0"
+					continue
+				}
+				if precision > 15 {
+					nf.result += strings.TrimLeft(roundPrecision(nf.value, 15), "-")
+				} else {
+					nf.result += fmt.Sprintf("%.f", math.Abs(nf.number))
+				}
+				continue
+			}
+		}
+	}
+	result = nf.result
+	return
 }
 
 // zeroHandler will be handling zero selection for a number format expression.

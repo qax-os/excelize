@@ -81,7 +81,7 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		return ErrWorkbookExt
 	}
 	f.setContentTypePartProjectExtensions(contentType)
-	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
+	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o600)
 	if err != nil {
 		return err
 	}

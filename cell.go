@@ -1088,22 +1088,12 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	if raw {
 		return v
 	}
-	precise := v
-	isNum, precision := isNumeric(v)
-	if isNum {
-		if precision > 15 {
-			precise = roundPrecision(v, 15)
-		}
-		if precision <= 15 {
-			precise = roundPrecision(v, -1)
-		}
-	}
 	if s == 0 {
-		return precise
+		return v
 	}
 	styleSheet := f.stylesReader()
 	if s >= len(styleSheet.CellXfs.Xf) {
-		return precise
+		return v
 	}
 	var numFmtID int
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
@@ -1112,17 +1102,17 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 
 	ok := builtInNumFmtFunc[numFmtID]
 	if ok != nil {
-		return ok(precise, builtInNumFmt[numFmtID])
+		return ok(v, builtInNumFmt[numFmtID])
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
-		return precise
+		return v
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(precise, xlsxFmt.FormatCode)
+			return format(v, xlsxFmt.FormatCode)
 		}
 	}
-	return precise
+	return v
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in
