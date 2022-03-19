@@ -784,6 +784,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGEA(A1)":     "1",
 		"=AVERAGEA(A1:A2)":  "1.5",
 		"=AVERAGEA(D2:F9)":  "12671.375",
+		// BETA.DIST
+		"=BETA.DIST(0.4,4,5,TRUE,0,1)":  "0.4059136",
+		"=BETA.DIST(0.6,4,5,FALSE,0,1)": "1.548288",
 		// BETADIST
 		"=BETADIST(0.4,4,5)":         "0.4059136",
 		"=BETADIST(0.4,4,5,0,1)":     "0.4059136",
@@ -796,12 +799,26 @@ func TestCalcCellValue(t *testing.T) {
 		"=BETADIST(0.4,2,100)":       "1",
 		"=BETADIST(0.75,3,4)":        "0.96240234375",
 		"=BETADIST(0.2,0.7,4)":       "0.71794309318323",
-		"=BETADIST(0.01,3,4)":        "1.9553589999999998e-05",
+		"=BETADIST(0.01,3,4)":        "1.955359E-05",
 		"=BETADIST(0.75,130,140)":    "1",
 		// BETAINV
 		"=BETAINV(0.2,4,5,0,1)": "0.303225844664082",
 		// BETA.INV
 		"=BETA.INV(0.2,4,5,0,1)": "0.303225844664082",
+		// BINOMDIST
+		"=BINOMDIST(10,100,0.5,FALSE)": "1.36554263874631E-17",
+		"=BINOMDIST(50,100,0.5,FALSE)": "0.0795892373871787",
+		"=BINOMDIST(65,100,0.5,FALSE)": "0.000863855665741652",
+		"=BINOMDIST(10,100,0.5,TRUE)":  "1.53164508771899E-17",
+		"=BINOMDIST(50,100,0.5,TRUE)":  "0.539794618693589",
+		"=BINOMDIST(65,100,0.5,TRUE)":  "0.999105034804256",
+		// BINOM.DIST
+		"=BINOM.DIST(10,100,0.5,FALSE)": "1.36554263874631E-17",
+		"=BINOM.DIST(50,100,0.5,FALSE)": "0.0795892373871787",
+		"=BINOM.DIST(65,100,0.5,FALSE)": "0.000863855665741652",
+		"=BINOM.DIST(10,100,0.5,TRUE)":  "1.53164508771899E-17",
+		"=BINOM.DIST(50,100,0.5,TRUE)":  "0.539794618693589",
+		"=BINOM.DIST(65,100,0.5,TRUE)":  "0.999105034804256",
 		// CHIDIST
 		"=CHIDIST(0.5,3)": "0.918891411654676",
 		"=CHIDIST(8,3)":   "0.0460117056892315",
@@ -1468,7 +1485,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=UPPER(\"TEST 123\")": "TEST 123",
 		// VALUE
 		"=VALUE(\"50\")":                  "50",
-		"=VALUE(\"1.0E-07\")":             "1e-07",
+		"=VALUE(\"1.0E-07\")":             "1E-07",
 		"=VALUE(\"5,000\")":               "5000",
 		"=VALUE(\"20%\")":                 "0.2",
 		"=VALUE(\"12:00:00\")":            "0.5",
@@ -2341,6 +2358,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVERAGE(H1)": "AVERAGE divide by zero",
 		// AVERAGEA
 		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		// AVERAGEIF
+		"=AVERAGEIF()":                      "AVERAGEIF requires at least 2 arguments",
+		"=AVERAGEIF(H1,\"\")":               "AVERAGEIF divide by zero",
+		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
+		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
+		// BETA.DIST
+		"=BETA.DIST()":                     "BETA.DIST requires at least 4 arguments",
+		"=BETA.DIST(0.4,4,5,TRUE,0,1,0)":   "BETA.DIST requires at most 6 arguments",
+		"=BETA.DIST(\"\",4,5,TRUE,0,1)":    "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.DIST(0.4,\"\",5,TRUE,0,1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.DIST(0.4,4,\"\",TRUE,0,1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.DIST(0.4,4,5,\"\",0,1)":     "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=BETA.DIST(0.4,4,5,TRUE,\"\",1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.DIST(0.4,4,5,TRUE,0,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BETA.DIST(0.4,0,5,TRUE,0,1)":     "#NUM!",
+		"=BETA.DIST(0.4,4,0,TRUE,0,0)":     "#NUM!",
+		"=BETA.DIST(0.4,4,5,TRUE,0.5,1)":   "#NUM!",
+		"=BETA.DIST(0.4,4,5,TRUE,0,0.3)":   "#NUM!",
+		"=BETA.DIST(0.4,4,5,TRUE,0.4,0.4)": "#NUM!",
 		// BETADIST
 		"=BETADIST()":                "BETADIST requires at least 3 arguments",
 		"=BETADIST(0.4,4,5,0,1,0)":   "BETADIST requires at most 5 arguments",
@@ -2380,11 +2416,26 @@ func TestCalcCellValue(t *testing.T) {
 		"=BETA.INV(0.2,0,5,0,1)":    "#NUM!",
 		"=BETA.INV(0.2,4,0,0,1)":    "#NUM!",
 		"=BETA.INV(0.2,4,5,2,2)":    "#NUM!",
-		// AVERAGEIF
-		"=AVERAGEIF()":                      "AVERAGEIF requires at least 2 arguments",
-		"=AVERAGEIF(H1,\"\")":               "AVERAGEIF divide by zero",
-		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
-		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
+		// BINOMDIST
+		"=BINOMDIST()":                   "BINOMDIST requires 4 arguments",
+		"=BINOMDIST(\"\",100,0.5,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BINOMDIST(10,\"\",0.5,FALSE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BINOMDIST(10,100,\"\",FALSE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BINOMDIST(10,100,0.5,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=BINOMDIST(-1,100,0.5,FALSE)":   "#NUM!",
+		"=BINOMDIST(110,100,0.5,FALSE)":  "#NUM!",
+		"=BINOMDIST(10,100,-1,FALSE)":    "#NUM!",
+		"=BINOMDIST(10,100,2,FALSE)":     "#NUM!",
+		// BINOM.DIST
+		"=BINOM.DIST()":                   "BINOM.DIST requires 4 arguments",
+		"=BINOM.DIST(\"\",100,0.5,FALSE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BINOM.DIST(10,\"\",0.5,FALSE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BINOM.DIST(10,100,\"\",FALSE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=BINOM.DIST(10,100,0.5,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=BINOM.DIST(-1,100,0.5,FALSE)":   "#NUM!",
+		"=BINOM.DIST(110,100,0.5,FALSE)":  "#NUM!",
+		"=BINOM.DIST(10,100,-1,FALSE)":    "#NUM!",
+		"=BINOM.DIST(10,100,2,FALSE)":     "#NUM!",
 		// CHIDIST
 		"=CHIDIST()":         "CHIDIST requires 2 numeric arguments",
 		"=CHIDIST(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",

@@ -334,11 +334,14 @@ type formulaFuncs struct {
 //    BESSELK
 //    BESSELY
 //    BETADIST
+//    BETA.DIST
 //    BETAINV
 //    BETA.INV
 //    BIN2DEC
 //    BIN2HEX
 //    BIN2OCT
+//    BINOMDIST
+//    BINOM.DIST
 //    BITAND
 //    BITLSHIFT
 //    BITOR
@@ -686,7 +689,7 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	}
 	result = token.TValue
 	isNum, precision := isNumeric(result)
-	if isNum && precision > 15 {
+	if isNum && (precision > 15 || precision == 0) {
 		num := roundPrecision(result, -1)
 		result = strings.ToUpper(num)
 	}
@@ -5406,6 +5409,74 @@ func getBetaDist(fXin, fAlpha, fBeta float64) float64 {
 	return fResult
 }
 
+// prepareBETAdotDISTArgs checking and prepare arguments for the formula
+// function BETA.DIST.
+func (fn *formulaFuncs) prepareBETAdotDISTArgs(argsList *list.List) formulaArg {
+	if argsList.Len() < 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BETA.DIST requires at least 4 arguments")
+	}
+	if argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BETA.DIST requires at most 6 arguments")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	alpha := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if alpha.Type != ArgNumber {
+		return alpha
+	}
+	beta := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if beta.Type != ArgNumber {
+		return beta
+	}
+	if alpha.Number <= 0 || beta.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	cumulative := argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool()
+	if cumulative.Type != ArgNumber {
+		return cumulative
+	}
+	a, b := newNumberFormulaArg(0), newNumberFormulaArg(1)
+	if argsList.Len() > 4 {
+		if a = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber(); a.Type != ArgNumber {
+			return a
+		}
+	}
+	if argsList.Len() == 6 {
+		if b = argsList.Back().Value.(formulaArg).ToNumber(); b.Type != ArgNumber {
+			return b
+		}
+	}
+	return newListFormulaArg([]formulaArg{x, alpha, beta, cumulative, a, b})
+}
+
+// BETAdotDIST function calculates the cumulative beta distribution function
+// or the probability density function of the Beta distribution, for a
+// supplied set of parameters. The syntax of the function is:
+//
+//    BETA.DIST(x,alpha,beta,cumulative,[A],[B])
+//
+func (fn *formulaFuncs) BETAdotDIST(argsList *list.List) formulaArg {
+	args := fn.prepareBETAdotDISTArgs(argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	x, alpha, beta, cumulative, a, b := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5]
+	if x.Number < a.Number || x.Number > b.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if a.Number == b.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	fScale := b.Number - a.Number
+	x.Number = (x.Number - a.Number) / fScale
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(getBetaDist(x.Number, alpha.Number, beta.Number))
+	}
+	return newNumberFormulaArg(getBetaDistPDF(x.Number, alpha.Number, beta.Number) / fScale)
+}
+
 // BETADIST function calculates the cumulative beta probability density
 // function for a supplied set of parameters. The syntax of the function is:
 //
@@ -5834,6 +5905,69 @@ func incompleteGamma(a, x float64) float64 {
 		summer += math.Pow(x, float64(n)) / divisor
 	}
 	return math.Pow(x, a) * math.Exp(0-x) * summer
+}
+
+// binomCoeff implement binomial coefficient calcuation.
+func binomCoeff(n, k float64) float64 {
+	return fact(n) / (fact(k) * fact(n-k))
+}
+
+// binomdist implement binomial distribution calcuation.
+func binomdist(x, n, p float64) float64 {
+	return binomCoeff(n, x) * math.Pow(p, x) * math.Pow(1-p, n-x)
+}
+
+// BINOMfotDIST function returns the Binomial Distribution probability for a
+// given number of successes from a specified number of trials. The syntax of
+// the function is:
+//
+//    BINOM.DIST(number_s,trials,probability_s,cumulative)
+//
+func (fn *formulaFuncs) BINOMdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BINOM.DIST requires 4 arguments")
+	}
+	return fn.BINOMDIST(argsList)
+}
+
+// BINOMDIST function returns the Binomial Distribution probability of a
+// specified number of successes out of a specified number of trials. The
+// syntax of the function is:
+//
+//    BINOMDIST(number_s,trials,probability_s,cumulative)
+//
+func (fn *formulaFuncs) BINOMDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BINOMDIST requires 4 arguments")
+	}
+	var s, trials, probability, cumulative formulaArg
+	if s = argsList.Front().Value.(formulaArg).ToNumber(); s.Type != ArgNumber {
+		return s
+	}
+	if trials = argsList.Front().Next().Value.(formulaArg).ToNumber(); trials.Type != ArgNumber {
+		return trials
+	}
+	if s.Number < 0 || s.Number > trials.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if probability = argsList.Back().Prev().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+
+	if probability.Number < 0 || probability.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if cumulative.Number == 1 {
+		bm := 0.0
+		for i := 0; i <= int(s.Number); i++ {
+			bm += binomdist(float64(i), trials.Number, probability.Number)
+		}
+		return newNumberFormulaArg(bm)
+	}
+	return newNumberFormulaArg(binomdist(s.Number, trials.Number, probability.Number))
 }
 
 // CHIDIST function calculates the right-tailed probability of the chi-square
@@ -11641,7 +11775,7 @@ func (fn *formulaFuncs) AMORLINC(argsList *list.List) formulaArg {
 	if int(period.Number) <= periods {
 		return newNumberFormulaArg(rate2)
 	} else if int(period.Number)-1 == periods {
-		return newNumberFormulaArg(delta - rate2*float64(periods) - rate1)
+		return newNumberFormulaArg(delta - rate2*float64(periods) - math.Nextafter(rate1, rate1))
 	}
 	return newNumberFormulaArg(0)
 }
@@ -13334,7 +13468,9 @@ func (fn *formulaFuncs) rate(nper, pmt, pv, fv, t, guess formulaArg, argsList *l
 		rt := rate*t.Number + 1
 		p0 := pmt.Number * (t1 - 1)
 		f1 := fv.Number + t1*pv.Number + p0*rt/rate
-		f2 := nper.Number*t2*pv.Number - p0*rt/math.Pow(rate, 2)
+		n1 := nper.Number * t2 * pv.Number
+		n2 := p0 * rt / math.Pow(rate, 2)
+		f2 := math.Nextafter(n1, n1) - math.Nextafter(n2, n2)
 		f3 := (nper.Number*pmt.Number*t2*rt + p0*t.Number) / rate
 		delta := f1 / (f2 + f3)
 		if math.Abs(delta) < epsMax {
