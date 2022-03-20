@@ -342,6 +342,8 @@ type formulaFuncs struct {
 //    BIN2OCT
 //    BINOMDIST
 //    BINOM.DIST
+//    BINOM.DIST.RANGE
+//    BINOM.INV
 //    BITAND
 //    BITLSHIFT
 //    BITOR
@@ -1985,13 +1987,27 @@ func (fn *formulaFuncs) COMPLEX(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(complex(real.Number, i.Number)), suffix))
+	return newStringFormulaArg(cmplx2str(complex(real.Number, i.Number), suffix))
 }
 
 // cmplx2str replace complex number string characters.
-func cmplx2str(c, suffix string) string {
-	if c == "(0+0i)" || c == "(-0+0i)" || c == "(0-0i)" || c == "(-0-0i)" {
-		return "0"
+func cmplx2str(num complex128, suffix string) string {
+	c := fmt.Sprint(num)
+	realPart, imagPart := fmt.Sprint(real(num)), fmt.Sprint(imag(num))
+	isNum, i := isNumeric(realPart)
+	if isNum && i > 15 {
+		realPart = roundPrecision(realPart, -1)
+	}
+	isNum, i = isNumeric(imagPart)
+	if isNum && i > 15 {
+		imagPart = roundPrecision(imagPart, -1)
+	}
+	c = realPart
+	if imag(num) > 0 {
+		c += "+"
+	}
+	if imag(num) != 0 {
+		c += imagPart + "i"
 	}
 	c = strings.TrimPrefix(c, "(")
 	c = strings.TrimPrefix(c, "+0+")
@@ -2325,7 +2341,8 @@ func (fn *formulaFuncs) IMABS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMABS requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2341,7 +2358,8 @@ func (fn *formulaFuncs) IMAGINARY(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMAGINARY requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2357,7 +2375,8 @@ func (fn *formulaFuncs) IMARGUMENT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMARGUMENT requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2373,11 +2392,12 @@ func (fn *formulaFuncs) IMCONJUGATE(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCONJUGATE requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Conj(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Conj(inumber), value[len(value)-1:]))
 }
 
 // IMCOS function returns the cosine of a supplied complex number. The syntax
@@ -2389,11 +2409,12 @@ func (fn *formulaFuncs) IMCOS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCOS requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Cos(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Cos(inumber), value[len(value)-1:]))
 }
 
 // IMCOSH function returns the hyperbolic cosine of a supplied complex number. The syntax
@@ -2405,11 +2426,12 @@ func (fn *formulaFuncs) IMCOSH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCOSH requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Cosh(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Cosh(inumber), value[len(value)-1:]))
 }
 
 // IMCOT function returns the cotangent of a supplied complex number. The syntax
@@ -2421,11 +2443,12 @@ func (fn *formulaFuncs) IMCOT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCOT requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Cot(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Cot(inumber), value[len(value)-1:]))
 }
 
 // IMCSC function returns the cosecant of a supplied complex number. The syntax
@@ -2437,7 +2460,8 @@ func (fn *formulaFuncs) IMCSC(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCSC requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2445,7 +2469,7 @@ func (fn *formulaFuncs) IMCSC(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
 // IMCSCH function returns the hyperbolic cosecant of a supplied complex
@@ -2457,7 +2481,8 @@ func (fn *formulaFuncs) IMCSCH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMCSCH requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2465,7 +2490,7 @@ func (fn *formulaFuncs) IMCSCH(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
 // IMDIV function calculates the quotient of two complex numbers (i.e. divides
@@ -2477,7 +2502,8 @@ func (fn *formulaFuncs) IMDIV(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMDIV requires 2 arguments")
 	}
-	inumber1, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber1, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2489,7 +2515,7 @@ func (fn *formulaFuncs) IMDIV(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
 // IMEXP function returns the exponential of a supplied complex number. The
@@ -2501,11 +2527,12 @@ func (fn *formulaFuncs) IMEXP(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMEXP requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Exp(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Exp(inumber), value[len(value)-1:]))
 }
 
 // IMLN function returns the natural logarithm of a supplied complex number.
@@ -2517,7 +2544,8 @@ func (fn *formulaFuncs) IMLN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMLN requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2525,7 +2553,7 @@ func (fn *formulaFuncs) IMLN(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
 // IMLOG10 function returns the common (base 10) logarithm of a supplied
@@ -2537,7 +2565,8 @@ func (fn *formulaFuncs) IMLOG10(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMLOG10 requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2545,7 +2574,7 @@ func (fn *formulaFuncs) IMLOG10(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
 // IMLOG2 function calculates the base 2 logarithm of a supplied complex
@@ -2557,7 +2586,8 @@ func (fn *formulaFuncs) IMLOG2(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMLOG2 requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2565,7 +2595,7 @@ func (fn *formulaFuncs) IMLOG2(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num/cmplx.Log(2)), "i"))
+	return newStringFormulaArg(cmplx2str(num/cmplx.Log(2), value[len(value)-1:]))
 }
 
 // IMPOWER function returns a supplied complex number, raised to a given
@@ -2577,7 +2607,8 @@ func (fn *formulaFuncs) IMPOWER(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMPOWER requires 2 arguments")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
@@ -2592,7 +2623,7 @@ func (fn *formulaFuncs) IMPOWER(argsList *list.List) formulaArg {
 	if cmplx.IsInf(num) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(num), "i"))
+	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
 // IMPRODUCT function calculates the product of two or more complex numbers.
@@ -2631,7 +2662,7 @@ func (fn *formulaFuncs) IMPRODUCT(argsList *list.List) formulaArg {
 			}
 		}
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(product), "i"))
+	return newStringFormulaArg(cmplx2str(product, "i"))
 }
 
 // IMREAL function returns the real coefficient of a supplied complex number.
@@ -2643,11 +2674,12 @@ func (fn *formulaFuncs) IMREAL(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMREAL requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(real(inumber)), "i"))
+	return newStringFormulaArg(fmt.Sprint(real(inumber)))
 }
 
 // IMSEC function returns the secant of a supplied complex number. The syntax
@@ -2659,11 +2691,12 @@ func (fn *formulaFuncs) IMSEC(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMSEC requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(1/cmplx.Cos(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(1/cmplx.Cos(inumber), value[len(value)-1:]))
 }
 
 // IMSECH function returns the hyperbolic secant of a supplied complex number.
@@ -2675,11 +2708,12 @@ func (fn *formulaFuncs) IMSECH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMSECH requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(1/cmplx.Cosh(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(1/cmplx.Cosh(inumber), value[len(value)-1:]))
 }
 
 // IMSIN function returns the Sine of a supplied complex number. The syntax of
@@ -2691,11 +2725,12 @@ func (fn *formulaFuncs) IMSIN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMSIN requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Sin(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Sin(inumber), value[len(value)-1:]))
 }
 
 // IMSINH function returns the hyperbolic sine of a supplied complex number.
@@ -2707,11 +2742,12 @@ func (fn *formulaFuncs) IMSINH(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMSINH requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Sinh(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Sinh(inumber), value[len(value)-1:]))
 }
 
 // IMSQRT function returns the square root of a supplied complex number. The
@@ -2723,11 +2759,12 @@ func (fn *formulaFuncs) IMSQRT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMSQRT requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Sqrt(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Sqrt(inumber), value[len(value)-1:]))
 }
 
 // IMSUB function calculates the difference between two complex numbers
@@ -2748,7 +2785,7 @@ func (fn *formulaFuncs) IMSUB(argsList *list.List) formulaArg {
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(i1-i2), "i"))
+	return newStringFormulaArg(cmplx2str(i1-i2, "i"))
 }
 
 // IMSUM function calculates the sum of two or more complex numbers. The
@@ -2769,7 +2806,7 @@ func (fn *formulaFuncs) IMSUM(argsList *list.List) formulaArg {
 		}
 		result += num
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(result), "i"))
+	return newStringFormulaArg(cmplx2str(result, "i"))
 }
 
 // IMTAN function returns the tangent of a supplied complex number. The syntax
@@ -2781,11 +2818,12 @@ func (fn *formulaFuncs) IMTAN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IMTAN requires 1 argument")
 	}
-	inumber, err := strconv.ParseComplex(str2cmplx(argsList.Front().Value.(formulaArg).Value()), 128)
+	value := argsList.Front().Value.(formulaArg).Value()
+	inumber, err := strconv.ParseComplex(str2cmplx(value), 128)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(fmt.Sprint(cmplx.Tan(inumber)), "i"))
+	return newStringFormulaArg(cmplx2str(cmplx.Tan(inumber), value[len(value)-1:]))
 }
 
 // OCT2BIN function converts an Octal (Base 8) number into a Binary (Base 2)
@@ -5652,7 +5690,8 @@ func logBeta(a, b float64) float64 {
 	}
 	if p >= 10.0 {
 		corr = lgammacor(p) + lgammacor(q) - lgammacor(p+q)
-		return math.Log(q)*-0.5 + 0.918938533204672741780329736406 + corr + (p-0.5)*math.Log(p/(p+q)) + q*logrelerr(-p/(p+q))
+		f1 := q * logrelerr(-p/(p+q))
+		return math.Log(q)*-0.5 + 0.918938533204672741780329736406 + corr + (p-0.5)*math.Log(p/(p+q)) + math.Nextafter(f1, f1)
 	}
 	if q >= 10 {
 		corr = lgammacor(q) - lgammacor(p+q)
@@ -5968,6 +6007,108 @@ func (fn *formulaFuncs) BINOMDIST(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(bm)
 	}
 	return newNumberFormulaArg(binomdist(s.Number, trials.Number, probability.Number))
+}
+
+// BINOMdotDISTdotRANGE function returns the Binomial Distribution probability
+// for the number of successes from a specified number of trials falling into
+// a specified range.
+//
+//    BINOM.DIST.RANGE(trials,probability_s,number_s,[number_s2])
+//
+func (fn *formulaFuncs) BINOMdotDISTdotRANGE(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BINOM.DIST.RANGE requires at least 3 arguments")
+	}
+	if argsList.Len() > 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BINOM.DIST.RANGE requires at most 4 arguments")
+	}
+	trials := argsList.Front().Value.(formulaArg).ToNumber()
+	if trials.Type != ArgNumber {
+		return trials
+	}
+	probability := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if probability.Type != ArgNumber {
+		return probability
+	}
+	if probability.Number < 0 || probability.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	num1 := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if num1.Type != ArgNumber {
+		return num1
+	}
+	if num1.Number < 0 || num1.Number > trials.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	num2 := num1
+	if argsList.Len() > 3 {
+		if num2 = argsList.Back().Value.(formulaArg).ToNumber(); num2.Type != ArgNumber {
+			return num2
+		}
+	}
+	if num2.Number < 0 || num2.Number > trials.Number {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	sumn := 0.0
+	for i := num1.Number; i <= num2.Number; i++ {
+		sumn += binomdist(i, trials.Number, probability.Number)
+	}
+	return newNumberFormulaArg(sumn)
+}
+
+// binominv implement inverse of the binomial distribution calcuation.
+func binominv(n, p, alpha float64) float64 {
+	q, i, sum, max := 1-p, 0.0, 0.0, 0.0
+	n = math.Floor(n)
+	if q > p {
+		factor := math.Pow(q, n)
+		sum = factor
+		for i = 0; i < n && sum < alpha; i++ {
+			factor *= (n - i) / (i + 1) * p / q
+			sum += factor
+		}
+		return i
+	}
+	factor := math.Pow(p, n)
+	sum, max = 1-factor, n
+	for i = 0; i < max && sum >= alpha; i++ {
+		factor *= (n - i) / (i + 1) * q / p
+		sum -= factor
+	}
+	return n - i
+}
+
+// BINOMdotINV function returns the inverse of the Cumulative Binomial
+// Distribution. The syntax of the function is:
+//
+//    BINOM.INV(trials,probability_s,alpha)
+//
+func (fn *formulaFuncs) BINOMdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BINOM.INV requires 3 numeric arguments")
+	}
+	trials := argsList.Front().Value.(formulaArg).ToNumber()
+	if trials.Type != ArgNumber {
+		return trials
+	}
+	if trials.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	probability := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if probability.Type != ArgNumber {
+		return probability
+	}
+	if probability.Number <= 0 || probability.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	alpha := argsList.Back().Value.(formulaArg).ToNumber()
+	if alpha.Type != ArgNumber {
+		return alpha
+	}
+	if alpha.Number <= 0 || alpha.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(binominv(trials.Number, probability.Number, alpha.Number))
 }
 
 // CHIDIST function calculates the right-tailed probability of the chi-square
@@ -7143,8 +7284,12 @@ func norminv(p float64) (float64, error) {
 		// Rational approximation for central region.
 		q := p - 0.5
 		r := q * q
-		return (((((a[1]*r+a[2])*r+a[3])*r+a[4])*r+a[5])*r + a[6]) * q /
-			(((((b[1]*r+b[2])*r+b[3])*r+b[4])*r+b[5])*r + 1), nil
+		f1 := ((((a[1]*r+a[2])*r+a[3])*r+a[4])*r + a[5]) * r
+		f2 := (b[1]*r + b[2]) * r
+		f3 := ((math.Nextafter(f2, f2)+b[3])*r + b[4]) * r
+		f4 := (math.Nextafter(f3, f3) + b[5]) * r
+		return (math.Nextafter(f1, f1) + a[6]) * q /
+			(math.Nextafter(f4, f4) + 1), nil
 	} else if pHigh < p && p < 1 {
 		// Rational approximation for upper region.
 		q := math.Sqrt(-2 * math.Log(1-p))
@@ -7506,7 +7651,7 @@ func (fn *formulaFuncs) PERCENTILEdotEXC(argsList *list.List) formulaArg {
 	idx := k.Number * (float64(cnt) + 1)
 	base := math.Floor(idx)
 	next := base - 1
-	proportion := idx - base
+	proportion := math.Nextafter(idx, idx) - base
 	return newNumberFormulaArg(numbers[int(next)] + ((numbers[int(base)] - numbers[int(next)]) * proportion))
 }
 
@@ -7559,7 +7704,7 @@ func (fn *formulaFuncs) PERCENTILE(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(numbers[int(idx)])
 	}
 	next := base + 1
-	proportion := idx - base
+	proportion := math.Nextafter(idx, idx) - base
 	return newNumberFormulaArg(numbers[int(base)] + ((numbers[int(next)] - numbers[int(base)]) * proportion))
 }
 
@@ -14052,7 +14197,8 @@ func (fn *formulaFuncs) yield(settlement, maturity, rate, pr, redemption, freque
 				yield2 = yieldN
 				price2 = priceN
 			}
-			yieldN.Number = yield2.Number - (yield2.Number-yield1.Number)*((pr.Number-price2.Number)/(price1.Number-price2.Number))
+			f1 := (yield2.Number - yield1.Number) * ((pr.Number - price2.Number) / (price1.Number - price2.Number))
+			yieldN.Number = yield2.Number - math.Nextafter(f1, f1)
 		}
 	}
 	return yieldN
@@ -14202,7 +14348,8 @@ func (fn *formulaFuncs) YIELDMAT(argsList *list.List) formulaArg {
 	}
 	dis := yearFrac(issue.Number, settlement.Number, int(basis.Number))
 	dsm := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
-	result := 1 + dim.Number*rate.Number
+	f1 := dim.Number * rate.Number
+	result := 1 + math.Nextafter(f1, f1)
 	result /= pr.Number/100 + dis.Number*rate.Number
 	result--
 	result /= dsm.Number
