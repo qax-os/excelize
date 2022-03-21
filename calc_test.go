@@ -867,6 +867,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
 		"=COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
 		"=COUNTIFS(F1:F9,\">60000\",D1:D9,\"Jan\")": "0",
+		// CRITBINOM
+		"=CRITBINOM(0,0.5,0.75)":   "0",
+		"=CRITBINOM(0.1,0.1,0.75)": "0",
+		"=CRITBINOM(0.6,0.4,0.75)": "0",
+		"=CRITBINOM(2,0.4,0.75)":   "1",
+		"=CRITBINOM(100,0.5,20%)":  "46",
+		"=CRITBINOM(100,0.5,50%)":  "50",
+		"=CRITBINOM(100,0.5,90%)":  "56",
 		// DEVSQ
 		"=DEVSQ(1,3,5,2,9,7)": "47.5",
 		"=DEVSQ(A1:D2)":       "10",
@@ -2514,6 +2522,17 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTIFS
 		"=COUNTIFS()":              "COUNTIFS requires at least 2 arguments",
 		"=COUNTIFS(A1:A9,2,D1:D9)": "#N/A",
+		// CRITBINOM
+		"=CRITBINOM()":             "CRITBINOM requires 3 numeric arguments",
+		"=CRITBINOM(\"\",0.5,20%)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CRITBINOM(100,\"\",20%)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CRITBINOM(100,0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CRITBINOM(-1,0.5,20%)":   "#NUM!",
+		"=CRITBINOM(100,-1,20%)":   "#NUM!",
+		"=CRITBINOM(100,2,20%)":    "#NUM!",
+		"=CRITBINOM(100,0.5,-1)":   "#NUM!",
+		"=CRITBINOM(100,0.5,2)":    "#NUM!",
+		"=CRITBINOM(1,1,20%)":      "#NUM!",
 		// DEVSQ
 		"=DEVSQ()":      "DEVSQ requires at least 1 numeric argument",
 		"=DEVSQ(D1:D2)": "#N/A",
@@ -4207,6 +4226,45 @@ func TestCalcMIRR(t *testing.T) {
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
 		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcSUMIFS(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Quarter", "Area", "Sales Rep.", "Sales"},
+		{1, "North", "Jeff", 223000},
+		{1, "North", "Chris", 125000},
+		{1, "South", "Carol", 456000},
+		{2, "North", "Jeff", 322000},
+		{2, "North", "Chris", 340000},
+		{2, "South", "Carol", 198000},
+		{3, "North", "Jeff", 310000},
+		{3, "North", "Chris", 250000},
+		{3, "South", "Carol", 460000},
+		{4, "North", "Jeff", 261000},
+		{4, "North", "Chris", 389000},
+		{4, "South", "Carol", 305000},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=SUMIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":     "348000",
+		"=SUMIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")": "571000",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=SUMIFS()":                       "SUMIFS requires at least 3 arguments",
+		"=SUMIFS(D2:D13,A2:A13,1,B2:B13)": "#N/A",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}

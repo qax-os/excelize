@@ -385,6 +385,7 @@ type formulaFuncs struct {
 //    COUPPCD
 //    COVAR
 //    COVARIANCE.P
+//    CRITBINOM
 //    CSC
 //    CSCH
 //    CUMIPMT
@@ -624,6 +625,7 @@ type formulaFuncs struct {
 //    SUBSTITUTE
 //    SUM
 //    SUMIF
+//    SUMIFS
 //    SUMSQ
 //    SUMX2MY2
 //    SUMX2PY2
@@ -4968,6 +4970,31 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sum)
 }
 
+// SUMIFS function finds values in one or more supplied arrays, that satisfy a
+// set of criteria, and returns the sum of the corresponding values in a
+// further supplied array. The syntax of the function is:
+//
+//    SUMIFS(sum_range,criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) SUMIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SUMIFS requires at least 3 arguments")
+	}
+	if argsList.Len()%2 != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	sum, sumRange, args := 0.0, argsList.Front().Value.(formulaArg).Matrix, []formulaArg{}
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	for _, ref := range formulaIfsMatch(args) {
+		if num := sumRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber {
+			sum += num.Number
+		}
+	}
+	return newNumberFormulaArg(sum)
+}
+
 // SUMSQ function returns the sum of squares of a supplied set of values. The
 // syntax of the function is:
 //
@@ -5956,7 +5983,7 @@ func binomdist(x, n, p float64) float64 {
 	return binomCoeff(n, x) * math.Pow(p, x) * math.Pow(1-p, n-x)
 }
 
-// BINOMfotDIST function returns the Binomial Distribution probability for a
+// BINOMdotDIST function returns the Binomial Distribution probability for a
 // given number of successes from a specified number of trials. The syntax of
 // the function is:
 //
@@ -6490,6 +6517,21 @@ func (fn *formulaFuncs) COUNTIFS(argsList *list.List) formulaArg {
 		args = append(args, arg.Value.(formulaArg))
 	}
 	return newNumberFormulaArg(float64(len(formulaIfsMatch(args))))
+}
+
+// CRITBINOM function returns the inverse of the Cumulative Binomial
+// Distribution. I.e. for a specific number of independent trials, the
+// function returns the smallest value (number of successes) for which the
+// cumulative binomial distribution is greater than or equal to a specified
+// value. The syntax of the function is:
+//
+//    CRITBINOM(trials,probability_s,alpha)
+//
+func (fn *formulaFuncs) CRITBINOM(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CRITBINOM requires 3 numeric arguments")
+	}
+	return fn.BINOMdotINV(argsList)
 }
 
 // DEVSQ function calculates the sum of the squared deviations from the sample
