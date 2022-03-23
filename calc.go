@@ -328,6 +328,7 @@ type formulaFuncs struct {
 //    AVERAGE
 //    AVERAGEA
 //    AVERAGEIF
+//    AVERAGEIFS
 //    BASE
 //    BESSELI
 //    BESSELJ
@@ -626,6 +627,7 @@ type formulaFuncs struct {
 //    SUM
 //    SUMIF
 //    SUMIFS
+//    SUMPRODUCT
 //    SUMSQ
 //    SUMX2MY2
 //    SUMX2PY2
@@ -4995,6 +4997,73 @@ func (fn *formulaFuncs) SUMIFS(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sum)
 }
 
+// sumproduct is an implementation of the formula function SUMPRODUCT.
+func (fn *formulaFuncs) sumproduct(argsList *list.List) formulaArg {
+	var (
+		argType ArgType
+		n       int
+		res     []float64
+		sum     float64
+	)
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		token := arg.Value.(formulaArg)
+		if argType == ArgUnknown {
+			argType = token.Type
+		}
+		if token.Type != argType {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		switch token.Type {
+		case ArgString, ArgNumber:
+			if num := token.ToNumber(); num.Type == ArgNumber {
+				sum = fn.PRODUCT(argsList).Number
+				continue
+			}
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		case ArgMatrix:
+			args := token.ToList()
+			if res == nil {
+				n = len(args)
+				res = make([]float64, n)
+				for i := range res {
+					res[i] = 1.0
+				}
+			}
+			if len(args) != n {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
+			for i, value := range args {
+				num := value.ToNumber()
+				if num.Type != ArgNumber && value.Value() != "" {
+					return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				}
+				res[i] = res[i] * num.Number
+			}
+		}
+	}
+	for _, r := range res {
+		sum += r
+	}
+	return newNumberFormulaArg(sum)
+}
+
+// SUMPRODUCT function returns the sum of the products of the corresponding
+// values in a set of supplied arrays. The syntax of the function is:
+//
+//    SUMPRODUCT(array1,[array2],[array3],...)
+//
+func (fn *formulaFuncs) SUMPRODUCT(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SUMPRODUCT requires at least 1 argument")
+	}
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		if token := arg.Value.(formulaArg); token.Type == ArgError {
+			return token
+		}
+	}
+	return fn.sumproduct(argsList)
+}
+
 // SUMSQ function returns the sum of squares of a supplied set of values. The
 // syntax of the function is:
 //
@@ -5264,6 +5333,37 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 		}
 	}
 	count, sum := fn.countSum(false, args)
+	if count == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEIF divide by zero")
+	}
+	return newNumberFormulaArg(sum / count)
+}
+
+// AVERAGEIFS function finds entries in one or more arrays, that satisfy a set
+// of supplied criteria, and returns the average (i.e. the statistical mean)
+// of the corresponding values in a further supplied array. The syntax of the
+// function is:
+//
+//    AVERAGEIFS(average_range,criteria_range1,criteria1,[criteria_range2,criteria2],...)
+//
+func (fn *formulaFuncs) AVERAGEIFS(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AVERAGEIFS requires at least 3 arguments")
+	}
+	if argsList.Len()%2 != 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	sum, sumRange, args := 0.0, argsList.Front().Value.(formulaArg).Matrix, []formulaArg{}
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		args = append(args, arg.Value.(formulaArg))
+	}
+	count := 0.0
+	for _, ref := range formulaIfsMatch(args) {
+		if num := sumRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber {
+			sum += num.Number
+			count++
+		}
+	}
 	if count == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEIF divide by zero")
 	}

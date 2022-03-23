@@ -741,6 +741,12 @@ func TestCalcCellValue(t *testing.T) {
 		`=SUMIF(E2:E9,"North 1",F2:F9)`: "66582",
 		`=SUMIF(E2:E9,"North*",F2:F9)`:  "138772",
 		"=SUMIF(D1:D3,\"Month\",D1:D3)": "0",
+		// SUMPRODUCT
+		"=SUMPRODUCT(A1,B1)":             "4",
+		"=SUMPRODUCT(A1:A2,B1:B2)":       "14",
+		"=SUMPRODUCT(A1:A3,B1:B3)":       "14",
+		"=SUMPRODUCT(A1:B3)":             "15",
+		"=SUMPRODUCT(A1:A3,B1:B3,B2:B4)": "20",
 		// SUMSQ
 		"=SUMSQ(A1:A4)":            "14",
 		"=SUMSQ(A1,B1,A2,B2,6)":    "82",
@@ -2351,6 +2357,13 @@ func TestCalcCellValue(t *testing.T) {
 		// SUMSQ
 		`=SUMSQ("X")`:   "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		"=SUMSQ(C1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
+		// SUMPRODUCT
+		"=SUMPRODUCT()":            "SUMPRODUCT requires at least 1 argument",
+		"=SUMPRODUCT(A1,B1:B2)":    "#VALUE!",
+		"=SUMPRODUCT(A1,D1)":       "#VALUE!",
+		"=SUMPRODUCT(A1:A3,D1:D3)": "#VALUE!",
+		"=SUMPRODUCT(A1:A2,B1:B3)": "#VALUE!",
+		"=SUMPRODUCT(A1,NA())":     "#N/A",
 		// SUMX2MY2
 		"=SUMX2MY2()":         "SUMX2MY2 requires 2 arguments",
 		"=SUMX2MY2(A1,B1:B2)": "#N/A",
@@ -4231,7 +4244,7 @@ func TestCalcMIRR(t *testing.T) {
 	}
 }
 
-func TestCalcSUMIFS(t *testing.T) {
+func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Quarter", "Area", "Sales Rep.", "Sales"},
 		{1, "North", "Jeff", 223000},
@@ -4249,8 +4262,10 @@ func TestCalcSUMIFS(t *testing.T) {
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"=SUMIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":     "348000",
-		"=SUMIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")": "571000",
+		"=AVERAGEIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":     "174000",
+		"=AVERAGEIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")": "285500",
+		"=SUMIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":         "348000",
+		"=SUMIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")":     "571000",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
@@ -4259,6 +4274,10 @@ func TestCalcSUMIFS(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string]string{
+		"=AVERAGEIFS()":                   "AVERAGEIFS requires at least 3 arguments",
+		"=AVERAGEIFS(H1,\"\")":            "AVERAGEIFS requires at least 3 arguments",
+		"=AVERAGEIFS(H1,\"\",TRUE,1)":     "#N/A",
+		"=AVERAGEIFS(H1,\"\",TRUE)":       "AVERAGEIF divide by zero",
 		"=SUMIFS()":                       "SUMIFS requires at least 3 arguments",
 		"=SUMIFS(D2:D13,A2:A13,1,B2:B13)": "#N/A",
 	}
