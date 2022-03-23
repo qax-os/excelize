@@ -40,8 +40,7 @@ type Cols struct {
 	sheetXML                               []byte
 }
 
-// GetCols return all the columns in a sheet by given worksheet name (case
-// sensitive). For example:
+// GetCols return all the columns in a sheet by given worksheet name (case-sensitive). For example:
 //
 //    cols, err := f.GetCols("Sheet1")
 //    if err != nil {
@@ -240,20 +239,18 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 //    visible, err := f.GetColVisible("Sheet1", "D")
 //
 func (f *File) GetColVisible(sheet, col string) (bool, error) {
-	visible := true
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {
-		return visible, err
+		return true, err
 	}
-
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return false, err
 	}
 	if ws.Cols == nil {
-		return visible, err
+		return true, err
 	}
-
+	visible := true
 	for c := range ws.Cols.Col {
 		colData := &ws.Cols.Col[c]
 		if colData.Min <= colNum && colNum <= colData.Max {
@@ -455,12 +452,12 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 //    f := excelize.NewFile()
 //    err := f.SetColWidth("Sheet1", "A", "H", 20)
 //
-func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error {
-	min, err := ColumnNameToNumber(startcol)
+func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
+	min, err := ColumnNameToNumber(startCol)
 	if err != nil {
 		return err
 	}
-	max, err := ColumnNameToNumber(endcol)
+	max, err := ColumnNameToNumber(endCol)
 	if err != nil {
 		return err
 	}
@@ -502,7 +499,7 @@ func (f *File) SetColWidth(sheet, startcol, endcol string, width float64) error 
 // flatCols provides a method for the column's operation functions to flatten
 // and check the worksheet columns.
 func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
-	fc := []xlsxCol{}
+	var fc []xlsxCol
 	for i := col.Min; i <= col.Max; i++ {
 		c := deepcopy.Copy(col).(xlsxCol)
 		c.Min, c.Max = i, i
@@ -547,7 +544,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 //    |     |            |     (x2,y2)|
 //    +-----+------------+------------+
 //
-// Example of an object that covers some of the area from cell A1 to B2.
+// Example of an object that covers some area from cell A1 to B2.
 //
 // Based on the width and height of the object we need to calculate 8 vars:
 //

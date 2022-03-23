@@ -36,7 +36,7 @@ import (
 // NewSheet provides the function to create a new sheet by given a worksheet
 // name and returns the index of the sheets in the workbook
 // (spreadsheet) after it appended. Note that the worksheet names are not
-// case sensitive, when creating a new spreadsheet file, the default
+// case-sensitive, when creating a new spreadsheet file, the default
 // worksheet named `Sheet1` will be created.
 func (f *File) NewSheet(name string) int {
 	// Check if the worksheet already exists
@@ -111,7 +111,7 @@ func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
 	sort.Slice(ws.Cols.Col, func(i, j int) bool {
 		return ws.Cols.Col[i].Min < ws.Cols.Col[j].Min
 	})
-	columns := []xlsxCol{}
+	var columns []xlsxCol
 	for i, n := 0, len(ws.Cols.Col); i < n; {
 		left := i
 		for i++; i < n && reflect.DeepEqual(
@@ -219,10 +219,10 @@ func (f *File) setSheet(index int, name string) {
 			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
 		},
 	}
-	path := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
-	f.sheetMap[trimSheetName(name)] = path
-	f.Sheet.Store(path, &ws)
-	f.xmlAttr[path] = []xml.Attr{NameSpaceSpreadSheet}
+	sheetXMLPath := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
+	f.sheetMap[trimSheetName(name)] = sheetXMLPath
+	f.Sheet.Store(sheetXMLPath, &ws)
+	f.xmlAttr[sheetXMLPath] = []xml.Attr{NameSpaceSpreadSheet}
 }
 
 // relsWriter provides a function to save relationships after
@@ -384,7 +384,7 @@ func (f *File) getSheetID(name string) int {
 }
 
 // GetSheetIndex provides a function to get a sheet index of the workbook by
-// the given sheet name, the sheet names are not case sensitive. If the given
+// the given sheet name, the sheet names are not case-sensitive. If the given
 // sheet name is invalid or sheet doesn't exist, it will return an integer
 // type value -1.
 func (f *File) GetSheetIndex(name string) int {
@@ -442,12 +442,12 @@ func (f *File) getSheetMap() map[string]string {
 	for _, v := range f.workbookReader().Sheets.Sheet {
 		for _, rel := range f.relsReader(f.getWorkbookRelsPath()).Relationships {
 			if rel.ID == v.ID {
-				path := f.getWorksheetPath(rel.Target)
-				if _, ok := f.Pkg.Load(path); ok {
-					maps[v.Name] = path
+				sheetXMLPath := f.getWorksheetPath(rel.Target)
+				if _, ok := f.Pkg.Load(sheetXMLPath); ok {
+					maps[v.Name] = sheetXMLPath
 				}
-				if _, ok := f.tempFiles.Load(path); ok {
-					maps[v.Name] = path
+				if _, ok := f.tempFiles.Load(sheetXMLPath); ok {
+					maps[v.Name] = sheetXMLPath
 				}
 			}
 		}
@@ -478,8 +478,8 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 }
 
 // DeleteSheet provides a function to delete worksheet in a workbook by given
-// worksheet name, the sheet names are not case sensitive.the sheet names are
-// not case sensitive. Use this method with caution, which will affect
+// worksheet name, the sheet names are not case-sensitive. The sheet names are
+// not case-sensitive. Use this method with caution, which will affect
 // changes in references such as formulas, charts, and so on. If there is any
 // referenced value of the deleted worksheet, it will cause a file error when
 // you open it. This function will be invalid when only the one worksheet is
@@ -601,14 +601,14 @@ func (f *File) copySheet(from, to int) error {
 	}
 	worksheet := deepcopy.Copy(sheet).(*xlsxWorksheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
-	path := "xl/worksheets/sheet" + toSheetID + ".xml"
+	sheetXMLPath := "xl/worksheets/sheet" + toSheetID + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
 		worksheet.SheetViews.SheetView[0].TabSelected = false
 	}
 	worksheet.Drawing = nil
 	worksheet.TableParts = nil
 	worksheet.PageSetUp = nil
-	f.Sheet.Store(path, worksheet)
+	f.Sheet.Store(sheetXMLPath, worksheet)
 	toRels := "xl/worksheets/_rels/sheet" + toSheetID + ".xml.rels"
 	fromRels := "xl/worksheets/_rels/sheet" + strconv.Itoa(f.getSheetID(fromSheet)) + ".xml.rels"
 	if rels, ok := f.Pkg.Load(fromRels); ok && rels != nil {
@@ -616,7 +616,7 @@ func (f *File) copySheet(from, to int) error {
 	}
 	fromSheetXMLPath := f.sheetMap[trimSheetName(fromSheet)]
 	fromSheetAttr := f.xmlAttr[fromSheetXMLPath]
-	f.xmlAttr[path] = fromSheetAttr
+	f.xmlAttr[sheetXMLPath] = fromSheetAttr
 	return err
 }
 
@@ -779,7 +779,7 @@ func (f *File) SetPanes(sheet, panes string) error {
 			ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = nil
 		}
 	}
-	s := []*xlsxSelection{}
+	var s []*xlsxSelection
 	for _, p := range fs.Panes {
 		s = append(s, &xlsxSelection{
 			ActiveCell: p.ActiveCell,
@@ -1207,7 +1207,7 @@ type (
 	// FitToWidth specified the number of horizontal pages to fit on.
 	FitToWidth int
 	// PageLayoutScale defines the print scaling. This attribute is restricted
-	// to values ranging from 10 (10%) to 400 (400%). This setting is
+	// to value ranging from 10 (10%) to 400 (400%). This setting is
 	// overridden when fitToWidth and/or fitToHeight are in use.
 	PageLayoutScale uint
 )
@@ -1534,7 +1534,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 				scope = f.GetSheetName(*dn.LocalSheetID)
 			}
 			if scope == definedName.Scope && dn.Name == definedName.Name {
-				return ErrDefinedNameduplicate
+				return ErrDefinedNameDuplicate
 			}
 		}
 		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
@@ -1616,7 +1616,7 @@ func (f *File) GroupSheets(sheets []string) error {
 		return ErrGroupSheets
 	}
 	// check worksheet exists
-	wss := []*xlsxWorksheet{}
+	var wss []*xlsxWorksheet
 	for _, sheet := range sheets {
 		worksheet, err := f.workSheetReader(sheet)
 		if err != nil {

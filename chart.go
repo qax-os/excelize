@@ -969,7 +969,7 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 // getFormatChart provides a function to check format set of the chart and
 // create chart format.
 func (f *File) getFormatChart(format string, combo []string) (*formatChart, []*formatChart, error) {
-	comboCharts := []*formatChart{}
+	var comboCharts []*formatChart
 	formatSet, err := parseFormatChartSet(format)
 	if err != nil {
 		return formatSet, comboCharts, err

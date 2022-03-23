@@ -47,7 +47,7 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 			target = "xl" + strings.TrimPrefix(target, "..")
 		}
 		if d := f.commentsReader(strings.TrimPrefix(target, "/")); d != nil {
-			sheetComments := []Comment{}
+			var sheetComments []Comment
 			for _, comment := range d.CommentList.Comment {
 				sheetComment := Comment{}
 				if comment.AuthorID < len(d.Authors.Author) {

@@ -353,7 +353,7 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		}
 		assert.True(t, ok, "Can't open the %s", chartPath)
 
-		err = xml.Unmarshal([]byte(xmlCharts[i]), &chartSpaces[i])
+		err = xml.Unmarshal(xmlCharts[i], &chartSpaces[i])
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}

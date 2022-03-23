@@ -212,10 +212,10 @@ func TestNewStyle(t *testing.T) {
 	assert.EqualError(t, err, ErrFontSize.Error())
 
 	// new numeric custom style
-	fmt := "####;####"
+	numFmt := "####;####"
 	f.Styles.NumFmts = nil
 	styleID, err = f.NewStyle(&Style{
-		CustomNumFmt: &fmt,
+		CustomNumFmt: &numFmt,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, styleID)

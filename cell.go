@@ -200,7 +200,7 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func setCellBool(value bool) (t string, v string) {
 	return
 }
 
-// SetCellFloat sets a floating point value into a cell. The prec parameter
+// SetCellFloat sets a floating point value into a cell. The precision parameter
 // specifies how many places after the decimal will be shown while -1 is a
 // special value that will use as many decimal places as necessary to
 // represent the number. bitSize is 32 or 64 depending on if a float32 or
@@ -308,26 +308,26 @@ func setCellBool(value bool) (t string, v string) {
 //    var x float32 = 1.325
 //    f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 //
-func (f *File) SetCellFloat(sheet, axis string, value float64, prec, bitSize int) error {
+func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSize int) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
 	ws.Lock()
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
-	cellData.T, cellData.V = setCellFloat(value, prec, bitSize)
+	cellData.T, cellData.V = setCellFloat(value, precision, bitSize)
 	return err
 }
 
 // setCellFloat prepares cell type and string type cell value by a given
 // float value.
-func setCellFloat(value float64, prec, bitSize int) (t string, v string) {
-	v = strconv.FormatFloat(value, 'f', prec, bitSize)
+func setCellFloat(value float64, precision, bitSize int) (t string, v string) {
+	v = strconv.FormatFloat(value, 'f', precision, bitSize)
 	return
 }
 
@@ -338,7 +338,7 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
@@ -436,7 +436,7 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
@@ -478,7 +478,7 @@ type FormulaOpts struct {
 }
 
 // SetCellFormula provides a function to set formula on the cell is taken
-// according to the given worksheet name (case sensitive) and cell formula
+// according to the given worksheet name (case-sensitive) and cell formula
 // settings. The result of the formula cell can be calculated when the
 // worksheet is opened by the Office Excel application or can be using
 // the "CalcCellValue" function also can get the calculated cell value. If
@@ -560,7 +560,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 	if err != nil {
 		return err
 	}
-	cellData, _, _, err := f.prepareCell(ws, sheet, axis)
+	cellData, _, _, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return err
 	}
@@ -672,12 +672,9 @@ type HyperlinkOpts struct {
 
 // SetCellHyperLink provides a function to set cell hyperlink by given
 // worksheet name and link URL address. LinkType defines two types of
-// hyperlink "External" for web site or "Location" for moving to one of cell
-// in this workbook. Maximum limit hyperlinks in a worksheet is 65530. This
-// function is only used to set the hyperlink of the cell and doesn't affect
-// the value of the cell. If you need to set the value of the cell, please use
-// the other functions such as `SetCellStyle` or `SetSheetRow`. The below is
-// example for external link.
+// hyperlink "External" for website or "Location" for moving to one of cell
+// in this workbook. Maximum limit hyperlinks in a worksheet is 65530. The
+// below is example for external link.
 //
 //    if err := f.SetCellHyperLink("Sheet1", "A3",
 //        "https://github.com/xuri/excelize", "External"); err != nil {
@@ -692,7 +689,7 @@ type HyperlinkOpts struct {
 //    }
 //    err = f.SetCellStyle("Sheet1", "A3", "A3", style)
 //
-// A this is another example for "Location":
+// This is another example for "Location":
 //
 //    err := f.SetCellHyperLink("Sheet1", "A3", "Sheet1!A40", "Location")
 //
@@ -759,7 +756,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 	if err != nil {
 		return
 	}
-	cellData, _, _, err := f.prepareCell(ws, sheet, cell)
+	cellData, _, _, err := f.prepareCell(ws, cell)
 	if err != nil {
 		return
 	}
@@ -940,7 +937,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	if err != nil {
 		return err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, cell)
+	cellData, col, row, err := f.prepareCell(ws, cell)
 	if err != nil {
 		return err
 	}
@@ -950,7 +947,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	si := xlsxSI{}
 	sst := f.sharedStringsReader()
-	textRuns := []xlsxR{}
+	var textRuns []xlsxR
 	totalCellChars := 0
 	for _, textRun := range runs {
 		totalCellChars += len(textRun.Text)
@@ -1000,8 +997,8 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 
 	for i := 0; i < v.Len(); i++ {
 		cell, err := CoordinatesToCellName(col+i, row)
-		// Error should never happens here. But keep checking to early detect regresions
-		// if it will be introduced in future.
+		// Error should never happen here. But keep checking to early detect regressions
+		// if it will be introduced in the future.
 		if err != nil {
 			return err
 		}
@@ -1013,7 +1010,7 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 }
 
 // getCellInfo does common preparation for all SetCell* methods.
-func (f *File) prepareCell(ws *xlsxWorksheet, sheet, cell string) (*xlsxC, int, int, error) {
+func (f *File) prepareCell(ws *xlsxWorksheet, cell string) (*xlsxC, int, int, error) {
 	var err error
 	cell, err = f.mergeCellsParser(ws, cell)
 	if err != nil {
@@ -1175,7 +1172,7 @@ func (f *File) checkCellInArea(cell, area string) (bool, error) {
 	return cellInRef([]int{col, row}, coordinates), err
 }
 
-// cellInRef provides a function to determine if a given range is within an
+// cellInRef provides a function to determine if a given range is within a
 // range.
 func cellInRef(cell, ref []int) bool {
 	return cell[0] >= ref[0] && cell[0] <= ref[2] && cell[1] >= ref[1] && cell[1] <= ref[3]
@@ -1241,7 +1238,7 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 // considered to be the same when their respective representations in
 // R1C1-reference notation, are the same.
 //
-// Note that this function not validate ref tag to check the cell if or not in
+// Note that this function not validate ref tag to check the cell whether in
 // allow area, and always return origin shared formula.
 func getSharedFormula(ws *xlsxWorksheet, si int, axis string) string {
 	for _, r := range ws.SheetData.Row {
@@ -1264,7 +1261,7 @@ func getSharedFormula(ws *xlsxWorksheet, si int, axis string) string {
 }
 
 // shiftCell returns the cell shifted according to dCol and dRow taking into
-// consideration of absolute references with dollar sign ($)
+// consideration absolute references with dollar sign ($)
 func shiftCell(cellID string, dCol, dRow int) string {
 	fCol, fRow, _ := CellNameToCoordinates(cellID)
 	signCol, signRow := "", ""

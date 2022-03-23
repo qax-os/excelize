@@ -14,7 +14,7 @@ package excelize
 import "encoding/xml"
 
 // xlsxTable directly maps the table element. A table helps organize and provide
-// structure to lists of information in a worksheet. Tables have clearly labeled
+// structure to list of information in a worksheet. Tables have clearly labeled
 // columns, rows, and data regions. Tables make it easier for users to sort,
 // analyze, format, manage, add, and delete information. This element is the
 // root element for a table that is not a single cell XML table.

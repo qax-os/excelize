@@ -135,7 +135,7 @@ func (o *View) getSheetViewOption(view *xlsxSheetView) {
 		*o = View(view.View)
 		return
 	}
-	*o = View("normal")
+	*o = "normal"
 }
 
 func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
@@ -143,7 +143,7 @@ func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
 }
 
 func (o *TopLeftCell) getSheetViewOption(view *xlsxSheetView) {
-	*o = TopLeftCell(string(view.TopLeftCell))
+	*o = TopLeftCell(view.TopLeftCell)
 }
 
 func (o ZoomScale) setSheetViewOption(view *xlsxSheetView) {

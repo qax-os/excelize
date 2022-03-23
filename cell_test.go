@@ -33,7 +33,7 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, f.SetSheetRow("Sheet1", "B6", &[]interface{}{
 				" Hello",
 				[]byte("World"), 42, int8(1<<8/2 - 1), int16(1<<16/2 - 1), int32(1<<32/2 - 1),
-				int64(1<<32/2 - 1), float32(42.65418), float64(-42.65418), float32(42), float64(42),
+				int64(1<<32/2 - 1), float32(42.65418), -42.65418, float32(42), float64(42),
 				uint(1<<32 - 1), uint8(1<<8 - 1), uint16(1<<16 - 1), uint32(1<<32 - 1),
 				uint64(1<<32 - 1), true, complex64(5 + 10i),
 			}))

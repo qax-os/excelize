@@ -40,11 +40,11 @@ func TestOpenFile(t *testing.T) {
 	}
 	assert.NoError(t, f.UpdateLinkedValue())
 
-	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(float64(100.1588), 'f', -1, 32)))
-	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64)))
+	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(100.1588, 'f', -1, 32)))
+	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(-100.1588, 'f', -1, 64)))
 
 	// Test set cell value with illegal row number.
-	assert.EqualError(t, f.SetCellDefault("Sheet2", "A", strconv.FormatFloat(float64(-100.1588), 'f', -1, 64)),
+	assert.EqualError(t, f.SetCellDefault("Sheet2", "A", strconv.FormatFloat(-100.1588, 'f', -1, 64)),
 		newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.SetCellInt("Sheet2", "A1", 100))
@@ -109,7 +109,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "F5", int32(1<<32/2-1)))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F6", int64(1<<32/2-1)))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F7", float32(42.65418)))
-	assert.NoError(t, f.SetCellValue("Sheet2", "F8", float64(-42.65418)))
+	assert.NoError(t, f.SetCellValue("Sheet2", "F8", -42.65418))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F9", float32(42)))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F10", float64(42)))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F11", uint(1<<32-1)))
@@ -1157,9 +1157,9 @@ func TestHSL(t *testing.T) {
 	assert.Equal(t, 0.0, hueToRGB(0, 0, 2.0/4))
 	t.Log(RGBToHSL(255, 255, 0))
 	h, s, l := RGBToHSL(0, 255, 255)
-	assert.Equal(t, float64(0.5), h)
-	assert.Equal(t, float64(1), s)
-	assert.Equal(t, float64(0.5), l)
+	assert.Equal(t, 0.5, h)
+	assert.Equal(t, 1.0, s)
+	assert.Equal(t, 0.5, l)
 	t.Log(RGBToHSL(250, 100, 50))
 	t.Log(RGBToHSL(50, 100, 250))
 	t.Log(RGBToHSL(250, 50, 100))

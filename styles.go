@@ -2465,7 +2465,7 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	cellData, col, row, err := f.prepareCell(ws, sheet, axis)
+	cellData, col, row, err := f.prepareCell(ws, axis)
 	if err != nil {
 		return 0, err
 	}
@@ -2851,7 +2851,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	if err != nil {
 		return err
 	}
-	cfRule := []*xlsxCfRule{}
+	var cfRule []*xlsxCfRule
 	for p, v := range format {
 		var vt, ct string
 		var ok bool
@@ -3052,7 +3052,7 @@ func ThemeColor(baseColor string, tint float64) string {
 		h, s, l = RGBToHSL(uint8(r), uint8(g), uint8(b))
 	}
 	if tint < 0 {
-		l *= (1 + tint)
+		l *= 1 + tint
 	} else {
 		l = l*(1-tint) + (1 - (1 - tint))
 	}

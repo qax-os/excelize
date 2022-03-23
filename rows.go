@@ -179,7 +179,7 @@ type ErrSheetNotExist struct {
 }
 
 func (err ErrSheetNotExist) Error() string {
-	return fmt.Sprintf("sheet %s is not exist", string(err.SheetName))
+	return fmt.Sprintf("sheet %s is not exist", err.SheetName)
 }
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.

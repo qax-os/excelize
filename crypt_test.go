@@ -34,7 +34,7 @@ func TestEncryptionMechanism(t *testing.T) {
 }
 
 func TestHashing(t *testing.T) {
-	assert.Equal(t, hashing("unsupportedHashAlgorithm", []byte{}), []uint8([]byte(nil)))
+	assert.Equal(t, hashing("unsupportedHashAlgorithm", []byte{}), []byte(nil))
 }
 
 func TestGenISOPasswdHash(t *testing.T) {

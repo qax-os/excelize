@@ -362,7 +362,7 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 // given formatting options. Sparklines are small charts that fit in a single
 // cell and are used to show trends in data. Sparklines are a feature of Excel
 // 2010 and later only. You can write them to an XLSX file that can be read by
-// Excel 2007 but they won't be displayed. For example, add a grouped
+// Excel 2007, but they won't be displayed. For example, add a grouped
 // sparkline. Changes are applied to all three:
 //
 //    err := f.AddSparkline("Sheet1", &excelize.SparklineOption{

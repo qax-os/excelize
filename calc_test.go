@@ -4629,7 +4629,7 @@ func TestCalcLogBeta(t *testing.T) {
 }
 
 func TestCalcBetainvProbIterator(t *testing.T) {
-	assert.Equal(t, 1.0, betainvProbIterator(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, true))
+	assert.Equal(t, 1.0, betainvProbIterator(1, 1, 1, 1, 1, 1, 1, 1, 1))
 }
 
 func TestNestedFunctionsWithOperators(t *testing.T) {

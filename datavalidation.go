@@ -129,27 +129,27 @@ func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 	var formula1, formula2 string
 	switch v := f1.(type) {
 	case int:
-		formula1 = fmt.Sprintf("<formula1>%d</formula1>", int(v))
+		formula1 = fmt.Sprintf("<formula1>%d</formula1>", v)
 	case float64:
-		if math.Abs(float64(v)) > math.MaxFloat32 {
+		if math.Abs(v) > math.MaxFloat32 {
 			return ErrDataValidationRange
 		}
-		formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", float64(v))
+		formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", v)
 	case string:
-		formula1 = fmt.Sprintf("<formula1>%s</formula1>", string(v))
+		formula1 = fmt.Sprintf("<formula1>%s</formula1>", v)
 	default:
 		return ErrParameterInvalid
 	}
 	switch v := f2.(type) {
 	case int:
-		formula2 = fmt.Sprintf("<formula2>%d</formula2>", int(v))
+		formula2 = fmt.Sprintf("<formula2>%d</formula2>", v)
 	case float64:
-		if math.Abs(float64(v)) > math.MaxFloat32 {
+		if math.Abs(v) > math.MaxFloat32 {
 			return ErrDataValidationRange
 		}
-		formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", float64(v))
+		formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", v)
 	case string:
-		formula2 = fmt.Sprintf("<formula2>%s</formula2>", string(v))
+		formula2 = fmt.Sprintf("<formula2>%s</formula2>", v)
 	default:
 		return ErrParameterInvalid
 	}
@@ -277,7 +277,7 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 	}
 	dv := ws.DataValidations
 	for i := 0; i < len(dv.DataValidation); i++ {
-		applySqref := []string{}
+		var applySqref []string
 		colCells, err := f.flatSqref(dv.DataValidation[i].Sqref)
 		if err != nil {
 			return err
@@ -314,7 +314,8 @@ func (f *File) squashSqref(cells [][]int) []string {
 	} else if len(cells) == 0 {
 		return []string{}
 	}
-	l, r, res := 0, 0, []string{}
+	var res []string
+	l, r := 0, 0
 	for i := 1; i < len(cells); i++ {
 		if cells[i][0] == cells[r][0] && cells[i][1]-cells[r][1] > 1 {
 			curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))

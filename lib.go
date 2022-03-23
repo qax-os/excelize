@@ -80,10 +80,13 @@ func (f *File) unzipToTemp(zipFile *zip.File) (string, error) {
 	if err != nil {
 		return tmp.Name(), err
 	}
-	_, err = io.Copy(tmp, rc)
-	rc.Close()
-	tmp.Close()
-	return tmp.Name(), err
+	if _, err = io.Copy(tmp, rc); err != nil {
+		return tmp.Name(), err
+	}
+	if err = rc.Close(); err != nil {
+		return tmp.Name(), err
+	}
+	return tmp.Name(), tmp.Close()
 }
 
 // readXML provides a function to read XML content as bytes.
@@ -109,7 +112,7 @@ func (f *File) readBytes(name string) []byte {
 	}
 	content, _ = ioutil.ReadAll(file)
 	f.Pkg.Store(name, content)
-	file.Close()
+	_ = file.Close()
 	return content
 }
 
@@ -437,9 +440,10 @@ func (avb attrValBool) MarshalXML(e *xml.Encoder, start xml.StartElement) error 
 		}
 	}
 	start.Attr = []xml.Attr{attr}
-	e.EncodeToken(start)
-	e.EncodeToken(start.End())
-	return nil
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+	return e.EncodeToken(start.End())
 }
 
 // UnmarshalXML convert the literal values true, false, 1, 0 of the XML
@@ -558,7 +562,7 @@ func genSheetPasswd(plaintext string) string {
 		charPos++
 		rotatedBits := value >> 15 // rotated bits beyond bit 15
 		value &= 0x7fff            // first 15 bits
-		password ^= (value | rotatedBits)
+		password ^= value | rotatedBits
 	}
 	password ^= int64(len(plaintext))
 	password ^= 0xCE4B
@@ -793,8 +797,8 @@ type Stack struct {
 
 // NewStack create a new stack.
 func NewStack() *Stack {
-	list := list.New()
-	return &Stack{list}
+	l := list.New()
+	return &Stack{l}
 }
 
 // Push a value onto the top of the stack.

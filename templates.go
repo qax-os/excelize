@@ -14,12 +14,6 @@
 
 package excelize
 
-import "encoding/xml"
-
-// XMLHeaderByte define an XML declaration can also contain a standalone
-// declaration.
-var XMLHeaderByte = []byte(xml.Header)
-
 const (
 	defaultXMLPathContentTypes  = "[Content_Types].xml"
 	defaultXMLPathDocPropsApp   = "docProps/app.xml"

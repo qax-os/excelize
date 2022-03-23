@@ -102,13 +102,16 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 	f, err := OpenReader(file, opt...)
 	if err != nil {
-		return nil, err
+		closeErr := file.Close()
+		if closeErr == nil {
+			return f, err
+		}
+		return f, closeErr
 	}
 	f.Path = filename
-	return f, nil
+	return f, file.Close()
 }
 
 // newFile is object builder

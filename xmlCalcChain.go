@@ -66,13 +66,13 @@ type xlsxCalcChain struct {
 //                              | same dependency level. Child chains are series of
 //                              | calculations that can be independently farmed out to
 //                              | other threads or processors.The possible values for
-//                              | this attribute are defined by the W3C XML Schema
+//                              | this attribute is defined by the W3C XML Schema
 //                              | boolean datatype.
 //                              |
 //     t (New Thread)           | A Boolean flag indicating whether the cell's formula
 //                              | starts a new thread. True if the cell's formula starts
 //                              | a new thread, false otherwise.The possible values for
-//                              | this attribute are defined by the W3C XML Schema
+//                              | this attribute is defined by the W3C XML Schema
 //                              | boolean datatype.
 //
 type xlsxCalcChainC struct {

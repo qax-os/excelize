@@ -235,15 +235,15 @@ func TestAddPivotTable(t *testing.T) {
 	_, err = f.getPivotFieldsOrder(&PivotTableOption{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot cache with empty data range
-	assert.EqualError(t, f.addPivotCache(0, "", &PivotTableOption{}, nil), "parameter 'DataRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotCache("", &PivotTableOption{}), "parameter 'DataRange' parsing error: parameter is required")
 	// Test add pivot cache with invalid data range
-	assert.EqualError(t, f.addPivotCache(0, "", &PivotTableOption{
+	assert.EqualError(t, f.addPivotCache("", &PivotTableOption{
 		DataRange:       "$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}, nil), "parameter 'DataRange' parsing error: parameter is invalid")
+	}), "parameter 'DataRange' parsing error: parameter is invalid")
 	// Test add pivot table with empty options
 	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOption{}), "parameter 'PivotTableRange' parsing error: parameter is required")
 	// Test add pivot table with invalid data range

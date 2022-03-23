@@ -132,7 +132,7 @@ type PivotTableField struct {
 //
 func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	// parameter validation
-	dataSheet, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opt)
+	_, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opt)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	sheetRelationshipsPivotTableXML := "../pivotTables/pivotTable" + strconv.Itoa(pivotTableID) + ".xml"
 	pivotTableXML := strings.Replace(sheetRelationshipsPivotTableXML, "..", "xl", -1)
 	pivotCacheXML := "xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(pivotCacheID) + ".xml"
-	err = f.addPivotCache(pivotCacheID, pivotCacheXML, opt, dataSheet)
+	err = f.addPivotCache(pivotCacheXML, opt)
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 // getPivotFieldsOrder provides a function to get order list of pivot table
 // fields.
 func (f *File) getPivotFieldsOrder(opt *PivotTableOption) ([]string, error) {
-	order := []string{}
+	var order []string
 	dataRange := f.getDefinedNameRefTo(opt.DataRange, opt.pivotTableSheetName)
 	if dataRange == "" {
 		dataRange = opt.DataRange
@@ -251,7 +251,7 @@ func (f *File) getPivotFieldsOrder(opt *PivotTableOption) ([]string, error) {
 }
 
 // addPivotCache provides a function to create a pivot cache by given properties.
-func (f *File) addPivotCache(pivotCacheID int, pivotCacheXML string, opt *PivotTableOption, ws *xlsxWorksheet) error {
+func (f *File) addPivotCache(pivotCacheXML string, opt *PivotTableOption) error {
 	// validate data range
 	definedNameRef := true
 	dataRange := f.getDefinedNameRefTo(opt.DataRange, opt.pivotTableSheetName)
@@ -626,7 +626,7 @@ func (f *File) countPivotCache() int {
 // getPivotFieldsIndex convert the column of the first row in the data region
 // to a sequential index by given fields and pivot option.
 func (f *File) getPivotFieldsIndex(fields []PivotTableField, opt *PivotTableOption) ([]int, error) {
-	pivotFieldsIndex := []int{}
+	var pivotFieldsIndex []int
 	orders, err := f.getPivotFieldsOrder(opt)
 	if err != nil {
 		return pivotFieldsIndex, err

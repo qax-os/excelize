@@ -136,7 +136,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique.
 //
-// Currently only one table is allowed for a StreamWriter. AddTable must be
+// Currently, only one table is allowed for a StreamWriter. AddTable must be
 // called after the rows are written but before Flush.
 //
 // See File.AddTable for details on the table format.

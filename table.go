@@ -383,7 +383,7 @@ func (f *File) writeAutoFilter(filter *xlsxAutoFilter, exp []int, tokens []strin
 		filter.FilterColumn[0].Filters = &xlsxFilters{Filter: filters}
 	} else if len(exp) == 3 && exp[0] == 2 && exp[1] == 1 && exp[2] == 2 {
 		// Double equality with "or" operator.
-		filters := []*xlsxFilter{}
+		var filters []*xlsxFilter
 		for _, v := range tokens {
 			filters = append(filters, &xlsxFilter{Val: v})
 		}
@@ -419,7 +419,7 @@ func (f *File) writeCustomFilter(filter *xlsxAutoFilter, operator int, val strin
 	if filter.FilterColumn[0].CustomFilters != nil {
 		filter.FilterColumn[0].CustomFilters.CustomFilter = append(filter.FilterColumn[0].CustomFilters.CustomFilter, &customFilter)
 	} else {
-		customFilters := []*xlsxCustomFilter{}
+		var customFilters []*xlsxCustomFilter
 		customFilters = append(customFilters, &customFilter)
 		filter.FilterColumn[0].CustomFilters = &xlsxCustomFilters{CustomFilter: customFilters}
 	}
@@ -435,8 +435,8 @@ func (f *File) writeCustomFilter(filter *xlsxAutoFilter, operator int, val strin
 //    ('x', '>',  2000, 'and', 'x', '<', 5000) -> exp1 and exp2
 //
 func (f *File) parseFilterExpression(expression string, tokens []string) ([]int, []string, error) {
-	expressions := []int{}
-	t := []string{}
+	var expressions []int
+	var t []string
 	if len(tokens) == 7 {
 		// The number of tokens will be either 3 (for 1 expression) or 7 (for 2
 		// expressions).

@@ -276,7 +276,7 @@ func TestDefinedName(t *testing.T) {
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
-	}), ErrDefinedNameduplicate.Error())
+	}), ErrDefinedNameDuplicate.Error())
 	assert.EqualError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "No Exist Defined Name",
 	}), ErrDefinedNameScope.Error())

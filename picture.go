@@ -76,7 +76,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //        }
 //    }
 //
-// The optional parameter "autofit" specifies if make image size auto fits the
+// The optional parameter "autofit" specifies if you make image size auto-fits the
 // cell, the default value of that is 'false'.
 //
 // The optional parameter "hyperlink" specifies the hyperlink of the image.
@@ -86,7 +86,7 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 // cells in this workbook. When the "hyperlink_type" is "Location",
 // coordinates need to start with "#".
 //
-// The optional parameter "positioning" defines two types of the position of a
+// The optional parameter "positioning" defines two types of the position of an
 // image in an Excel spreadsheet, "oneCell" (Move but don't size with
 // cells) or "absolute" (Don't move or size with cells). If you don't set this
 // parameter, the default positioning is move and size with cells.

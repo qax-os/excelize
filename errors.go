@@ -138,9 +138,9 @@ var (
 	// ErrDefinedNameScope defined the error message on not found defined name
 	// in the given scope.
 	ErrDefinedNameScope = errors.New("no defined name on the scope")
-	// ErrDefinedNameduplicate defined the error message on the same name
+	// ErrDefinedNameDuplicate defined the error message on the same name
 	// already exists on the scope.
-	ErrDefinedNameduplicate = errors.New("the same name already exists on the scope")
+	ErrDefinedNameDuplicate = errors.New("the same name already exists on the scope")
 	// ErrCustomNumFmt defined the error message on receive the empty custom number format.
 	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrFontLength defined the error message on the length of the font

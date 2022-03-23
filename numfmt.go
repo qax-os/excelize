@@ -456,7 +456,7 @@ func localMonthsNameIrish(t time.Time, abbr int) string {
 		}
 	}
 	if abbr == 4 {
-		return string([]rune(monthNamesIrish[int(t.Month())-1]))
+		return monthNamesIrish[int(t.Month())-1]
 	}
 	return string([]rune(monthNamesIrish[int(t.Month())-1])[:1])
 }
@@ -536,7 +536,7 @@ func localMonthsNameRussian(t time.Time, abbr int) string {
 		return string([]rune(month)[:3]) + "."
 	}
 	if abbr == 4 {
-		return string([]rune(monthNamesRussian[int(t.Month())-1]))
+		return monthNamesRussian[int(t.Month())-1]
 	}
 	return string([]rune(monthNamesRussian[int(t.Month())-1])[:1])
 }
@@ -559,7 +559,7 @@ func localMonthsNameThai(t time.Time, abbr int) string {
 		return string(r[:1]) + "." + string(r[len(r)-2:len(r)-1]) + "."
 	}
 	if abbr == 4 {
-		return string([]rune(monthNamesThai[int(t.Month())-1]))
+		return monthNamesThai[int(t.Month())-1]
 	}
 	return string([]rune(monthNamesThai[int(t.Month())-1])[:1])
 }
@@ -575,7 +575,7 @@ func localMonthsNameTibetan(t time.Time, abbr int) string {
 		}
 		return "\u0f5f"
 	}
-	return string(monthNamesTibetan[int(t.Month())-1])
+	return monthNamesTibetan[int(t.Month())-1]
 }
 
 // localMonthsNameTurkish returns the Turkish name of the month.
@@ -661,7 +661,7 @@ func localMonthsNameXhosa(t time.Time, abbr int) string {
 // localMonthsNameYi returns the Yi name of the month.
 func localMonthsNameYi(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return string([]rune(monthNamesYi[int(t.Month())-1])) + "\ua1aa"
+		return string(monthNamesYi[int(t.Month())-1]) + "\ua1aa"
 	}
 	return string([]rune(monthNamesYi[int(t.Month())-1])[:1])
 }

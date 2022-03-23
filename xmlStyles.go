@@ -197,7 +197,7 @@ type xlsxCellStyle struct {
 // contains the master formatting records (xf's) which define the formatting for
 // all named cell styles in this workbook. Master formatting records reference
 // individual elements of formatting (e.g., number format, font definitions,
-// cell fills, etc) by specifying a zero-based index into those collections.
+// cell fills, etc.) by specifying a zero-based index into those collections.
 // Master formatting records also specify whether to apply or ignore particular
 // aspects of formatting.
 type xlsxCellStyleXfs struct {

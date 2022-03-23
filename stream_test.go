@@ -223,7 +223,7 @@ func TestSetCellValFunc(t *testing.T) {
 	assert.NoError(t, sw.setCellValFunc(c, uint32(4294967295)))
 	assert.NoError(t, sw.setCellValFunc(c, uint64(18446744073709551615)))
 	assert.NoError(t, sw.setCellValFunc(c, float32(100.1588)))
-	assert.NoError(t, sw.setCellValFunc(c, float64(100.1588)))
+	assert.NoError(t, sw.setCellValFunc(c, 100.1588))
 	assert.NoError(t, sw.setCellValFunc(c, " Hello"))
 	assert.NoError(t, sw.setCellValFunc(c, []byte(" Hello")))
 	assert.NoError(t, sw.setCellValFunc(c, time.Now().UTC()))
