@@ -935,6 +935,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXPONDIST(0.5,1,TRUE)":  "0.393469340287367",
 		"=EXPONDIST(0.5,1,FALSE)": "0.606530659712633",
 		"=EXPONDIST(2,1,TRUE)":    "0.864664716763387",
+		// FDIST
+		"=FDIST(5,1,2)": "0.154845745271483",
+		// F.DIST
+		"=F.DIST(1,2,5,TRUE)":  "0.568798849628308",
+		"=F.DIST(1,2,5,FALSE)": "0.308000821694066",
 		// F.INV
 		"=F.INV(0.9,2,5)": "3.77971607877395",
 		// FINV
@@ -2631,6 +2636,27 @@ func TestCalcCellValue(t *testing.T) {
 		"=EXPONDIST(0,1,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=EXPONDIST(-1,1,TRUE)":   "#NUM!",
 		"=EXPONDIST(1,0,TRUE)":    "#NUM!",
+		// FDIST
+		"=FDIST()":                "FDIST requires 3 arguments",
+		"=FDIST(\"\",1,2)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FDIST(5,\"\",2)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FDIST(5,1,\"\")":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=FDIST(-1,1,2)":          "#NUM!",
+		"=FDIST(5,0,2)":           "#NUM!",
+		"=FDIST(5,10000000000,2)": "#NUM!",
+		"=FDIST(5,1,0)":           "#NUM!",
+		"=FDIST(5,1,10000000000)": "#NUM!",
+		// F.DIST
+		"=F.DIST()":                     "F.DIST requires 4 arguments",
+		"=F.DIST(\"\",2,5,TRUE)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.DIST(1,\"\",5,TRUE)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.DIST(1,2,\"\",TRUE)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.DIST(1,2,5,\"\")":           "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=F.DIST(-1,1,2,TRUE)":          "#NUM!",
+		"=F.DIST(5,0,2,TRUE)":           "#NUM!",
+		"=F.DIST(5,10000000000,2,TRUE)": "#NUM!",
+		"=F.DIST(5,1,0,TRUE)":           "#NUM!",
+		"=F.DIST(5,1,10000000000,TRUE)": "#NUM!",
 		// F.INV
 		"=F.INV()":           "F.INV requires 3 arguments",
 		"=F.INV(\"\",1,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",

@@ -69,7 +69,7 @@ const (
 	searchModeDescBinary    = -2
 
 	maxFinancialIterations = 128
-	financialPercision     = 1.0e-08
+	financialPrecision     = 1.0e-08
 	// Date and time format regular expressions
 	monthRe    = `((jan|january)|(feb|february)|(mar|march)|(apr|april)|(may)|(jun|june)|(jul|july)|(aug|august)|(sep|september)|(oct|october)|(nov|november)|(dec|december))`
 	df1        = `(([0-9])+)/(([0-9])+)/(([0-9])+)`
@@ -424,6 +424,8 @@ type formulaFuncs struct {
 //    FACT
 //    FACTDOUBLE
 //    FALSE
+//    F.DIST
+//    FDIST
 //    FIND
 //    FINDB
 //    F.INV
@@ -7056,6 +7058,85 @@ func (fn *formulaFuncs) EXPONDIST(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(lambda.Number * math.Exp(-lambda.Number*x.Number))
 }
 
+// FdotDIST function calculates the Probability Density Function or the
+// Cumulative Distribution Function for the F Distribution. This function is
+// frequently used used to measure the degree of diversity between two data
+// sets. The syntax of the function is:
+//
+//    F.DIST(x,deg_freedom1,deg_freedom2,cumulative)
+//
+func (fn *formulaFuncs) FdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "F.DIST requires 4 arguments")
+	}
+	var x, deg1, deg2, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if deg1 = argsList.Front().Next().Value.(formulaArg).ToNumber(); deg1.Type != ArgNumber {
+		return deg1
+	}
+	if deg2 = argsList.Front().Next().Next().Value.(formulaArg).ToNumber(); deg2.Type != ArgNumber {
+		return deg2
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if x.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	maxDeg := math.Pow10(10)
+	if deg1.Number < 1 || deg1.Number >= maxDeg {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if deg2.Number < 1 || deg2.Number >= maxDeg {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(1 - getBetaDist(deg2.Number/(deg2.Number+deg1.Number*x.Number), deg2.Number/2, deg1.Number/2))
+	}
+	return newNumberFormulaArg(math.Gamma((deg2.Number+deg1.Number)/2) / (math.Gamma(deg1.Number/2) * math.Gamma(deg2.Number/2)) * math.Pow(deg1.Number/deg2.Number, deg1.Number/2) * (math.Pow(x.Number, (deg1.Number-2)/2) / math.Pow(1+(deg1.Number/deg2.Number)*x.Number, (deg1.Number+deg2.Number)/2)))
+}
+
+// FDIST function calculates the (right-tailed) F Probability Distribution,
+// which measures the degree of diversity between two data sets. The syntax
+// of the function is:
+//
+//    FDIST(x,deg_freedom1,deg_freedom2)
+//
+func (fn *formulaFuncs) FDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FDIST requires 3 arguments")
+	}
+	var x, deg1, deg2 formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if deg1 = argsList.Front().Next().Value.(formulaArg).ToNumber(); deg1.Type != ArgNumber {
+		return deg1
+	}
+	if deg2 = argsList.Back().Value.(formulaArg).ToNumber(); deg2.Type != ArgNumber {
+		return deg2
+	}
+	if x.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	maxDeg := math.Pow10(10)
+	if deg1.Number < 1 || deg1.Number >= maxDeg {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if deg2.Number < 1 || deg2.Number >= maxDeg {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	args := list.New()
+	args.PushBack(newNumberFormulaArg(deg1.Number * x.Number / (deg1.Number*x.Number + deg2.Number)))
+	args.PushBack(newNumberFormulaArg(0.5 * deg1.Number))
+	args.PushBack(newNumberFormulaArg(0.5 * deg2.Number))
+	args.PushBack(newNumberFormulaArg(0))
+	args.PushBack(newNumberFormulaArg(1))
+	return newNumberFormulaArg(1 - fn.BETADIST(args).Number)
+}
+
 // prepareFinvArgs checking and prepare arguments for the formula function
 // F.INV, F.INV.RT and FINV.
 func (fn *formulaFuncs) prepareFinvArgs(name string, argsList *list.List) formulaArg {
@@ -12982,7 +13063,7 @@ func (fn *formulaFuncs) IRR(argsList *list.List) formulaArg {
 		if fMid <= 0 {
 			rtb = xMid
 		}
-		if math.Abs(fMid) < financialPercision || math.Abs(dx) < financialPercision {
+		if math.Abs(fMid) < financialPrecision || math.Abs(dx) < financialPrecision {
 			break
 		}
 	}
