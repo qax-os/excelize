@@ -425,6 +425,7 @@ type formulaFuncs struct {
 //    FACTDOUBLE
 //    FALSE
 //    F.DIST
+//    F.DIST.RT
 //    FDIST
 //    FIND
 //    FINDB
@@ -609,6 +610,7 @@ type formulaFuncs struct {
 //    SEC
 //    SECH
 //    SECOND
+//    SERIESSUM
 //    SHEET
 //    SHEETS
 //    SIGN
@@ -4655,6 +4657,40 @@ func (fn *formulaFuncs) SECH(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(1 / math.Cosh(number.Number))
 }
 
+// SERIESSUM function returns the sum of a power series. The syntax of the
+// function is:
+//
+//    SERIESSUM(x,n,m,coefficients)
+//
+func (fn *formulaFuncs) SERIESSUM(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SERIESSUM requires 4 arguments")
+	}
+	var x, n, m formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if n = argsList.Front().Next().Value.(formulaArg).ToNumber(); n.Type != ArgNumber {
+		return n
+	}
+	if m = argsList.Front().Next().Next().Value.(formulaArg).ToNumber(); m.Type != ArgNumber {
+		return m
+	}
+	var result, i float64
+	for _, coefficient := range argsList.Back().Value.(formulaArg).ToList() {
+		if coefficient.Value() == "" {
+			continue
+		}
+		num := coefficient.ToNumber()
+		if num.Type != ArgNumber {
+			return num
+		}
+		result += num.Number * math.Pow(x.Number, (n.Number+(m.Number*float64(i))))
+		i++
+	}
+	return newNumberFormulaArg(result)
+}
+
 // SIGN function returns the arithmetic sign (+1, -1 or 0) of a supplied
 // number. I.e. if the number is positive, the Sign function returns +1, if
 // the number is negative, the function returns -1 and if the number is 0
@@ -7135,6 +7171,19 @@ func (fn *formulaFuncs) FDIST(argsList *list.List) formulaArg {
 	args.PushBack(newNumberFormulaArg(0))
 	args.PushBack(newNumberFormulaArg(1))
 	return newNumberFormulaArg(1 - fn.BETADIST(args).Number)
+}
+
+// FdotDISTdotRT function calculates the (right-tailed) F Probability
+// Distribution, which measures the degree of diversity between two data sets.
+// The syntax of the function is:
+//
+//   F.DIST.RT(x,deg_freedom1,deg_freedom2)
+//
+func (fn *formulaFuncs) FdotDISTdotRT(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "F.DIST.RT requires 3 arguments")
+	}
+	return fn.FDIST(argsList)
 }
 
 // prepareFinvArgs checking and prepare arguments for the formula function
@@ -11431,7 +11480,7 @@ func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 	} else {
 		tableArray = lookupArray.Matrix[0]
 	}
-	var low, high, lastMatchIdx = 0, len(tableArray) - 1, -1
+	low, high, lastMatchIdx := 0, len(tableArray)-1, -1
 	count := high
 	for low <= high {
 		mid := low + (high-low)/2

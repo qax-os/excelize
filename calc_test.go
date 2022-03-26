@@ -668,6 +668,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=_xlfn.SECH(-3.14159265358979)": "0.0862667383340547",
 		"=_xlfn.SECH(0)":                 "1",
 		"=_xlfn.SECH(_xlfn.SECH(0))":     "0.648054273663885",
+		// SERIESSUM
+		"=SERIESSUM(1,2,3,A1:A4)": "6",
+		"=SERIESSUM(1,2,3,A1:B5)": "15",
 		// SIGN
 		"=SIGN(9.5)":        "1",
 		"=SIGN(-9.5)":       "-1",
@@ -940,6 +943,8 @@ func TestCalcCellValue(t *testing.T) {
 		// F.DIST
 		"=F.DIST(1,2,5,TRUE)":  "0.568798849628308",
 		"=F.DIST(1,2,5,FALSE)": "0.308000821694066",
+		// F.DIST.RT
+		"=F.DIST.RT(5,1,2)": "0.154845745271483",
 		// F.INV
 		"=F.INV(0.9,2,5)": "3.77971607877395",
 		// FINV
@@ -2315,6 +2320,12 @@ func TestCalcCellValue(t *testing.T) {
 		// _xlfn.SECH
 		"=_xlfn.SECH()":    "SECH requires 1 numeric argument",
 		`=_xlfn.SECH("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		// SERIESSUM
+		"=SERIESSUM()":               "SERIESSUM requires 4 arguments",
+		"=SERIESSUM(\"\",2,3,A1:A4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=SERIESSUM(1,\"\",3,A1:A4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=SERIESSUM(1,2,\"\",A1:A4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=SERIESSUM(1,2,3,A1:D1)":    "strconv.ParseFloat: parsing \"Month\": invalid syntax",
 		// SIGN
 		"=SIGN()":    "SIGN requires 1 numeric argument",
 		`=SIGN("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -2657,6 +2668,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=F.DIST(5,10000000000,2,TRUE)": "#NUM!",
 		"=F.DIST(5,1,0,TRUE)":           "#NUM!",
 		"=F.DIST(5,1,10000000000,TRUE)": "#NUM!",
+		// F.DIST.RT
+		"=F.DIST.RT()":                "F.DIST.RT requires 3 arguments",
+		"=F.DIST.RT(\"\",1,2)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.DIST.RT(5,\"\",2)":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.DIST.RT(5,1,\"\")":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=F.DIST.RT(-1,1,2)":          "#NUM!",
+		"=F.DIST.RT(5,0,2)":           "#NUM!",
+		"=F.DIST.RT(5,10000000000,2)": "#NUM!",
+		"=F.DIST.RT(5,1,0)":           "#NUM!",
+		"=F.DIST.RT(5,1,10000000000)": "#NUM!",
 		// F.INV
 		"=F.INV()":           "F.INV requires 3 arguments",
 		"=F.INV(\"\",1,2)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
