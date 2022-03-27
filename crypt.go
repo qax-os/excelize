@@ -128,7 +128,7 @@ type StandardEncryptionVerifier struct {
 	EncryptedVerifierHash []byte
 }
 
-// Decrypt API decrypt the CFB file format with ECMA-376 agile encryption and
+// Decrypt API decrypts the CFB file format with ECMA-376 agile encryption and
 // standard encryption. Support cryptographic algorithm: MD4, MD5, RIPEMD-160,
 // SHA1, SHA256, SHA384 and SHA512 currently.
 func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {

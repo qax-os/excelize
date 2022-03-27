@@ -843,7 +843,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=BINOM.INV(100,0.5,90%)":  "56",
 		// CHIDIST
 		"=CHIDIST(0.5,3)": "0.918891411654676",
-		"=CHIDIST(8,3)":   "0.0460117056892315",
+		"=CHIDIST(8,3)":   "0.0460117056892314",
+		"=CHIDIST(40,4)":  "4.32842260712097E-08",
+		"=CHIDIST(42,4)":  "1.66816329414062E-08",
 		// CHIINV
 		"=CHIINV(0.5,1)":  "0.454936423119572",
 		"=CHIINV(0.75,1)": "0.101531044267622",
@@ -4208,6 +4210,52 @@ func TestCalcHLOOKUP(t *testing.T) {
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
 		result, err := f.CalcCellValue("Sheet1", "B10")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcCHITESTandCHISQdotTEST(t *testing.T) {
+	cellData := [][]interface{}{
+		{nil, "Observed Frequencies", nil, nil, "Expected Frequencies"},
+		{nil, "men", "women", nil, nil, "men", "women"},
+		{"answer a", 33, 39, nil, "answer a", 26.25, 31.5},
+		{"answer b", 62, 62, nil, "answer b", 57.75, 61.95},
+		{"answer c", 10, 4, nil, "answer c", 21, 11.55},
+		{nil, -1, 0},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=CHITEST(B3:C5,F3:G5)":    "0.000699102758787672",
+		"=CHITEST(B3:C3,F3:G3)":    "0.0605802098655177",
+		"=CHITEST(B3:B4,F3:F4)":    "0.152357748933542",
+		"=CHITEST(B4:B6,F3:F5)":    "7.07076951440726E-25",
+		"=CHISQ.TEST(B3:C5,F3:G5)": "0.000699102758787672",
+		"=CHISQ.TEST(B3:C3,F3:G3)": "0.0605802098655177",
+		"=CHISQ.TEST(B3:B4,F3:F4)": "0.152357748933542",
+		"=CHISQ.TEST(B4:B6,F3:F5)": "7.07076951440726E-25",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "I1", formula))
+		result, err := f.CalcCellValue("Sheet1", "I1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=CHITEST()":               "CHITEST requires 2 arguments",
+		"=CHITEST(B3:C5,F3:F4)":    "#N/A",
+		"=CHITEST(B3:B3,F3:F3)":    "#N/A",
+		"=CHITEST(F3:F5,B4:B6)":    "#NUM!",
+		"=CHITEST(F3:F5,C4:C6)":    "#DIV/0!",
+		"=CHISQ.TEST()":            "CHISQ.TEST requires 2 arguments",
+		"=CHISQ.TEST(B3:C5,F3:F4)": "#N/A",
+		"=CHISQ.TEST(B3:B3,F3:F3)": "#N/A",
+		"=CHISQ.TEST(F3:F5,B4:B6)": "#NUM!",
+		"=CHISQ.TEST(F3:F5,C4:C6)": "#DIV/0!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "I1", formula))
+		result, err := f.CalcCellValue("Sheet1", "I1")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
 	}

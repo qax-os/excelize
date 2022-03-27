@@ -356,6 +356,8 @@ type formulaFuncs struct {
 //    CHAR
 //    CHIDIST
 //    CHIINV
+//    CHITEST
+//    CHISQ.TEST
 //    CHOOSE
 //    CLEAN
 //    CODE
@@ -1243,7 +1245,7 @@ func isOperatorPrefixToken(token efp.Token) bool {
 	return (token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix) || (ok && token.TType == efp.TokenTypeOperatorInfix)
 }
 
-// isOperand determine if the token is parse operand perand.
+// isOperand determine if the token is parse operand.
 func isOperand(token efp.Token) bool {
 	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText)
 }
@@ -4685,7 +4687,7 @@ func (fn *formulaFuncs) SERIESSUM(argsList *list.List) formulaArg {
 		if num.Type != ArgNumber {
 			return num
 		}
-		result += num.Number * math.Pow(x.Number, (n.Number+(m.Number*float64(i))))
+		result += num.Number * math.Pow(x.Number, n.Number+(m.Number*i))
 		i++
 	}
 	return newNumberFormulaArg(result)
@@ -6224,7 +6226,7 @@ func (fn *formulaFuncs) BINOMdotDISTdotRANGE(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(sum)
 }
 
-// binominv implement inverse of the binomial distribution calcuation.
+// binominv implement inverse of the binomial distribution calculation.
 func binominv(n, p, alpha float64) float64 {
 	q, i, sum, max := 1-p, 0.0, 0.0, 0.0
 	n = math.Floor(n)
@@ -6292,11 +6294,55 @@ func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
 	if x.Type != ArgNumber {
 		return x
 	}
-	degress := argsList.Back().Value.(formulaArg).ToNumber()
-	if degress.Type != ArgNumber {
-		return degress
+	degrees := argsList.Back().Value.(formulaArg).ToNumber()
+	if degrees.Type != ArgNumber {
+		return degrees
 	}
-	return newNumberFormulaArg(1 - (incompleteGamma(degress.Number/2, x.Number/2) / math.Gamma(degress.Number/2)))
+	logSqrtPi, sqrtPi := math.Log(math.Sqrt(math.Pi)), 1/math.Sqrt(math.Pi)
+	var e, s, z, c, y float64
+	a, x1, even := x.Number/2, x.Number, int(degrees.Number)%2 == 0
+	if degrees.Number > 1 {
+		y = math.Exp(-a)
+	}
+	args := list.New()
+	args.PushBack(newNumberFormulaArg(-math.Sqrt(x1)))
+	o := fn.NORMSDIST(args)
+	s = 2 * o.Number
+	if even {
+		s = y
+	}
+	if degrees.Number > 2 {
+		x1 = (degrees.Number - 1) / 2
+		z = 0.5
+		if even {
+			z = 1
+		}
+		if a > 20 {
+			e = logSqrtPi
+			if even {
+				e = 0
+			}
+			c = math.Log(a)
+			for z <= x1 {
+				e = math.Log(z) + e
+				s += math.Exp(c*z - a - e)
+				z += 1
+			}
+			return newNumberFormulaArg(s)
+		}
+		e = sqrtPi / math.Sqrt(a)
+		if even {
+			e = 1
+		}
+		c = 0
+		for z <= x1 {
+			e = e * (a / z)
+			c = c + e
+			z += 1
+		}
+		return newNumberFormulaArg(c*y + s)
+	}
+	return newNumberFormulaArg(s)
 }
 
 // CHIINV function calculates the inverse of the right-tailed probability of
@@ -6323,6 +6369,65 @@ func (fn *formulaFuncs) CHIINV(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(gammainv(1-probability.Number, 0.5*deg.Number, 2.0))
+}
+
+// CHITEST function uses the chi-square test to calculate the probability that
+// the differences between two supplied data sets (of observed and expected
+// frequencies), are likely to be simply due to sampling error, or if they are
+// likely to be real. The syntax of the function is:
+//
+//    CHITEST(actual_range,expected_range)
+//
+func (fn *formulaFuncs) CHITEST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHITEST requires 2 arguments")
+	}
+	actual, expected := argsList.Front().Value.(formulaArg), argsList.Back().Value.(formulaArg)
+	actualList, expectedList := actual.ToList(), expected.ToList()
+	rows := len(actual.Matrix)
+	columns := len(actualList) / rows
+	if len(actualList) != len(expectedList) || len(actualList) == 1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	var result float64
+	var degrees int
+	for i := 0; i < len(actualList); i++ {
+		a, e := actualList[i].ToNumber(), expectedList[i].ToNumber()
+		if a.Type == ArgNumber && e.Type == ArgNumber {
+			if e.Number == 0 {
+				return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+			}
+			if e.Number < 0 {
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			}
+			result += (a.Number - e.Number) * (a.Number - e.Number) / e.Number
+		}
+	}
+	if rows == 1 {
+		degrees = columns - 1
+	} else if columns == 1 {
+		degrees = rows - 1
+	} else {
+		degrees = (columns - 1) * (rows - 1)
+	}
+	args := list.New()
+	args.PushBack(newNumberFormulaArg(result))
+	args.PushBack(newNumberFormulaArg(float64(degrees)))
+	return fn.CHIDIST(args)
+}
+
+// CHISQdotTEST function performs the chi-square test on two supplied data sets
+// (of observed and expected frequencies), and returns the probability that
+// the differences between the sets are simply due to sampling error. The
+// syntax of the function is:
+//
+//    CHISQ.TEST(actual_range,expected_range)
+//
+func (fn *formulaFuncs) CHISQdotTEST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHISQ.TEST requires 2 arguments")
+	}
+	return fn.CHITEST(argsList)
 }
 
 // confidence is an implementation of the formula functions CONFIDENCE and
@@ -7096,7 +7201,7 @@ func (fn *formulaFuncs) EXPONDIST(argsList *list.List) formulaArg {
 
 // FdotDIST function calculates the Probability Density Function or the
 // Cumulative Distribution Function for the F Distribution. This function is
-// frequently used used to measure the degree of diversity between two data
+// frequently used to measure the degree of diversity between two data
 // sets. The syntax of the function is:
 //
 //    F.DIST(x,deg_freedom1,deg_freedom2,cumulative)
