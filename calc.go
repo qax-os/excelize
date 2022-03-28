@@ -443,6 +443,8 @@ type formulaFuncs struct {
 //    FLOOR.MATH
 //    FLOOR.PRECISE
 //    FORMULATEXT
+//    F.TEST
+//    FTEST
 //    FV
 //    FVSCHEDULE
 //    GAMMA
@@ -6468,7 +6470,7 @@ func getGammaContFraction(fA, fX float64) float64 {
 			fQk  = math.Nextafter(f3, f3) - math.Nextafter(f4, f4)
 		)
 		if fQk != 0 {
-			var fR = fPk / fQk
+			fR := fPk / fQk
 			bFinished = math.Abs((fApprox-fR)/fR) <= fHalfMachEps
 			fApprox = fR
 		}
@@ -6486,8 +6488,8 @@ func getGammaContFraction(fA, fX float64) float64 {
 
 // getLogGammaHelper is a part of implementation of the function getLogGamma.
 func getLogGammaHelper(fZ float64) float64 {
-	var _fg = 6.024680040776729583740234375
-	var zgHelp = fZ + _fg - 0.5
+	_fg := 6.024680040776729583740234375
+	zgHelp := fZ + _fg - 0.5
 	return math.Log(getLanczosSum(fZ)) + (fZ-0.5)*math.Log(zgHelp) - zgHelp
 }
 
@@ -6511,7 +6513,7 @@ func getGammaHelper(fZ float64) float64 {
 
 // getLogGamma calculates the natural logarithm of the gamma function.
 func getLogGamma(fZ float64) float64 {
-	var fMaxGammaArgument = 171.624376956302
+	fMaxGammaArgument := 171.624376956302
 	if fZ >= fMaxGammaArgument {
 		return getLogGammaHelper(fZ)
 	}
@@ -7576,6 +7578,77 @@ func (fn *formulaFuncs) FINV(argsList *list.List) formulaArg {
 	}
 	probability, d1, d2 := args.List[0], args.List[1], args.List[2]
 	return newNumberFormulaArg((1/calcBetainv(1-(1-probability.Number), d2.Number/2, d1.Number/2, 0, 1) - 1) * (d2.Number / d1.Number))
+}
+
+// FdotTEST function returns the F-Test for two supplied arrays. I.e. the
+// function returns the two-tailed probability that the variances in the two
+// supplied arrays are not significantly different. The syntax of the Ftest
+// function is:
+//
+//    F.TEST(array1,array2)
+//
+func (fn *formulaFuncs) FdotTEST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "F.TEST requires 2 arguments")
+	}
+	array1 := argsList.Front().Value.(formulaArg)
+	array2 := argsList.Back().Value.(formulaArg)
+	left, right := array1.ToList(), array2.ToList()
+	collectMatrix := func(args []formulaArg) (n, accu float64) {
+		var p, sum float64
+		for _, arg := range args {
+			if num := arg.ToNumber(); num.Type == ArgNumber {
+				x := num.Number - p
+				y := x / (n + 1)
+				p += y
+				accu += n * x * y
+				n++
+				sum += num.Number
+			}
+		}
+		return
+	}
+	nums, accu := collectMatrix(left)
+	f3 := nums - 1
+	if nums == 1 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	f1 := accu / (nums - 1)
+	if f1 == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	nums, accu = collectMatrix(right)
+	f4 := nums - 1
+	if nums == 1 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	f2 := accu / (nums - 1)
+	if f2 == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	args := list.New()
+	args.PushBack(newNumberFormulaArg(f1 / f2))
+	args.PushBack(newNumberFormulaArg(f3))
+	args.PushBack(newNumberFormulaArg(f4))
+	probability := (1 - fn.FDIST(args).Number) * 2
+	if probability > 1 {
+		probability = 2 - probability
+	}
+	return newNumberFormulaArg(probability)
+}
+
+// FTEST function returns the F-Test for two supplied arrays. I.e. the function
+// returns the two-tailed probability that the variances in the two supplied
+// arrays are not significantly different. The syntax of the Ftest function
+// is:
+//
+//    FTEST(array1,array2)
+//
+func (fn *formulaFuncs) FTEST(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FTEST requires 2 arguments")
+	}
+	return fn.FdotTEST(argsList)
 }
 
 // LOGINV function calculates the inverse of the Cumulative Log-Normal

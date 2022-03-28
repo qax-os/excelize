@@ -4292,6 +4292,51 @@ func TestCalcCHITESTandCHISQdotTEST(t *testing.T) {
 	}
 }
 
+func TestCalcFTEST(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Group 1", "Group 2"},
+		{3.5, 9.2},
+		{4.7, 8.2},
+		{6.2, 7.3},
+		{4.9, 6.1},
+		{3.8, 5.4},
+		{5.5, 7.8},
+		{7.1, 5.9},
+		{6.7, 8.4},
+		{3.9, 7.7},
+		{4.6, 6.6},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=FTEST(A2:A11,B2:B11)":  "0.95403555939413",
+		"=F.TEST(A2:A11,B2:B11)": "0.95403555939413",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=FTEST()":               "FTEST requires 2 arguments",
+		"=FTEST(A2:A2,B2:B2)":    "#DIV/0!",
+		"=FTEST(A12:A14,B2:B4)":  "#DIV/0!",
+		"=FTEST(A2:A4,B2:B2)":    "#DIV/0!",
+		"=FTEST(A2:A4,B12:B14)":  "#DIV/0!",
+		"=F.TEST()":              "F.TEST requires 2 arguments",
+		"=F.TEST(A2:A2,B2:B2)":   "#DIV/0!",
+		"=F.TEST(A12:A14,B2:B4)": "#DIV/0!",
+		"=F.TEST(A2:A4,B2:B2)":   "#DIV/0!",
+		"=F.TEST(A2:A4,B12:B14)": "#DIV/0!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcIRR(t *testing.T) {
 	cellData := [][]interface{}{{-1}, {0.2}, {0.24}, {0.288}, {0.3456}, {0.4147}}
 	f := prepareCalcData(cellData)
