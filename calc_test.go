@@ -851,6 +851,20 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHIINV(0.75,1)": "0.101531044267622",
 		"=CHIINV(0.1,2)":  "4.60517018598809",
 		"=CHIINV(0.8,2)":  "0.446287102628419",
+		// CHISQ.DIST
+		"=CHISQ.DIST(0,2,TRUE)":        "0",
+		"=CHISQ.DIST(4,1,TRUE)":        "0.954499736103642",
+		"=CHISQ.DIST(1180,1180,FALSE)": "0.00821093706387967",
+		"=CHISQ.DIST(2,1,FALSE)":       "0.103776874355149",
+		"=CHISQ.DIST(3,2,FALSE)":       "0.111565080074215",
+		"=CHISQ.DIST(2,3,FALSE)":       "0.207553748710297",
+		"=CHISQ.DIST(1425,1,FALSE)":    "3.88315098887099E-312",
+		"=CHISQ.DIST(3,2,TRUE)":        "0.77686983985157",
+		// CHISQ.DIST.RT
+		"=CHISQ.DIST.RT(0.5,3)": "0.918891411654676",
+		"=CHISQ.DIST.RT(8,3)":   "0.0460117056892314",
+		"=CHISQ.DIST.RT(40,4)":  "4.32842260712097E-08",
+		"=CHISQ.DIST.RT(42,4)":  "1.66816329414062E-08",
 		// CONFIDENCE
 		"=CONFIDENCE(0.05,0.07,100)": "0.0137197479028414",
 		// CONFIDENCE.NORM
@@ -918,6 +932,9 @@ func TestCalcCellValue(t *testing.T) {
 		// GAMMALN
 		"=GAMMALN(4.5)":    "2.45373657084244",
 		"=GAMMALN(INT(1))": "0",
+		// GAMMALN.PRECISE
+		"=GAMMALN.PRECISE(0.4)": "0.796677817701784",
+		"=GAMMALN.PRECISE(4.5)": "2.45373657084244",
 		// GAUSS
 		"=GAUSS(-5)":  "-0.499999713348428",
 		"=GAUSS(0)":   "0",
@@ -2523,6 +2540,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHIINV(0,1)":      "#NUM!",
 		"=CHIINV(2,1)":      "#NUM!",
 		"=CHIINV(0.5,0.5)":  "#NUM!",
+		// CHISQ.DIST
+		"=CHISQ.DIST()":            "CHISQ.DIST requires 3 arguments",
+		"=CHISQ.DIST(\"\",2,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.DIST(3,\"\",TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.DIST(3,2,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=CHISQ.DIST(-1,2,TRUE)":   "#NUM!",
+		"=CHISQ.DIST(3,0,TRUE)":    "#NUM!",
+		// CHISQ.DIST.RT
+		"=CHISQ.DIST.RT()":         "CHISQ.DIST.RT requires 2 numeric arguments",
+		"=CHISQ.DIST.RT(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.DIST.RT(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// CONFIDENCE
 		"=CONFIDENCE()":               "CONFIDENCE requires 3 numeric arguments",
 		"=CONFIDENCE(\"\",0.07,100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -2621,6 +2649,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMALN(F1)":     "GAMMALN requires 1 numeric argument",
 		"=GAMMALN(0)":      "#N/A",
 		"=GAMMALN(INT(0))": "#N/A",
+		// GAMMALN.PRECISE
+		"=GAMMALN.PRECISE()":     "GAMMALN.PRECISE requires 1 numeric argument",
+		"=GAMMALN.PRECISE(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// GAUSS
 		"=GAUSS()":     "GAUSS requires 1 numeric argument",
 		"=GAUSS(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",

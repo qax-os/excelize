@@ -357,6 +357,8 @@ type formulaFuncs struct {
 //    CHIDIST
 //    CHIINV
 //    CHITEST
+//    CHISQ.DIST
+//    CHISQ.DIST.RT
 //    CHISQ.TEST
 //    CHOOSE
 //    CLEAN
@@ -449,6 +451,7 @@ type formulaFuncs struct {
 //    GAMMA.INV
 //    GAMMAINV
 //    GAMMALN
+//    GAMMALN.PRECISE
 //    GAUSS
 //    GCD
 //    GEOMEAN
@@ -6416,6 +6419,200 @@ func (fn *formulaFuncs) CHITEST(argsList *list.List) formulaArg {
 	return fn.CHIDIST(args)
 }
 
+// getGammaSeries calculates a power-series of the gamma function.
+func getGammaSeries(fA, fX float64) float64 {
+	var (
+		fHalfMachEps = 2.22045e-016 / 2
+		fDenomfactor = fA
+		fSummand     = 1 / fA
+		fSum         = fSummand
+		nCount       = 1
+	)
+	for fSummand/fSum > fHalfMachEps && nCount <= 10000 {
+		fDenomfactor = fDenomfactor + 1
+		fSummand = fSummand * fX / fDenomfactor
+		fSum = fSum + fSummand
+		nCount = nCount + 1
+	}
+	return fSum
+}
+
+// getGammaContFraction returns continued fraction with odd items of the gamma
+// function.
+func getGammaContFraction(fA, fX float64) float64 {
+	var (
+		fBigInv      = 2.22045e-016
+		fHalfMachEps = fBigInv / 2
+		fBig         = 1 / fBigInv
+		fCount       = 0.0
+		fY           = 1 - fA
+		fDenom       = fX + 2 - fA
+		fPkm1        = fX + 1
+		fPkm2        = 1.0
+		fQkm1        = fDenom * fX
+		fQkm2        = fX
+		fApprox      = fPkm1 / fQkm1
+		bFinished    = false
+	)
+	for !bFinished && fCount < 10000 {
+		fCount = fCount + 1
+		fY = fY + 1
+		fDenom = fDenom + 2
+		var (
+			fNum = fY * fCount
+			f1   = fPkm1 * fDenom
+			f2   = fPkm2 * fNum
+			fPk  = math.Nextafter(f1, f1) - math.Nextafter(f2, f2)
+			f3   = fQkm1 * fDenom
+			f4   = fQkm2 * fNum
+			fQk  = math.Nextafter(f3, f3) - math.Nextafter(f4, f4)
+		)
+		if fQk != 0 {
+			var fR = fPk / fQk
+			bFinished = math.Abs((fApprox-fR)/fR) <= fHalfMachEps
+			fApprox = fR
+		}
+		fPkm2, fPkm1, fQkm2, fQkm1 = fPkm1, fPk, fQkm1, fQk
+		if math.Abs(fPk) > fBig {
+			// reduce a fraction does not change the value
+			fPkm2 = fPkm2 * fBigInv
+			fPkm1 = fPkm1 * fBigInv
+			fQkm2 = fQkm2 * fBigInv
+			fQkm1 = fQkm1 * fBigInv
+		}
+	}
+	return fApprox
+}
+
+// getLogGammaHelper is a part of implementation of the function getLogGamma.
+func getLogGammaHelper(fZ float64) float64 {
+	var _fg = 6.024680040776729583740234375
+	var zgHelp = fZ + _fg - 0.5
+	return math.Log(getLanczosSum(fZ)) + (fZ-0.5)*math.Log(zgHelp) - zgHelp
+}
+
+// getGammaHelper is a part of implementation of the function getLogGamma.
+func getGammaHelper(fZ float64) float64 {
+	var (
+		gamma  = getLanczosSum(fZ)
+		fg     = 6.024680040776729583740234375
+		zgHelp = fZ + fg - 0.5
+		// avoid intermediate overflow
+		halfpower = math.Pow(zgHelp, fZ/2-0.25)
+	)
+	gamma *= halfpower
+	gamma /= math.Exp(zgHelp)
+	gamma *= halfpower
+	if fZ <= 20 && fZ == math.Floor(fZ) {
+		gamma = math.Round(gamma)
+	}
+	return gamma
+}
+
+// getLogGamma calculates the natural logarithm of the gamma function.
+func getLogGamma(fZ float64) float64 {
+	var fMaxGammaArgument = 171.624376956302
+	if fZ >= fMaxGammaArgument {
+		return getLogGammaHelper(fZ)
+	}
+	if fZ >= 1.0 {
+		return math.Log(getGammaHelper(fZ))
+	}
+	if fZ >= 0.5 {
+		return math.Log(getGammaHelper(fZ+1) / fZ)
+	}
+	return getLogGammaHelper(fZ+2) - math.Log(fZ+1) - math.Log(fZ)
+}
+
+// getLowRegIGamma returns lower regularized incomplete gamma function.
+func getLowRegIGamma(fA, fX float64) float64 {
+	fLnFactor := fA*math.Log(fX) - fX - getLogGamma(fA)
+	fFactor := math.Exp(fLnFactor)
+	if fX > fA+1 {
+		return 1 - fFactor*getGammaContFraction(fA, fX)
+	}
+	return fFactor * getGammaSeries(fA, fX)
+}
+
+// getChiSqDistCDF returns left tail for the Chi-Square distribution.
+func getChiSqDistCDF(fX, fDF float64) float64 {
+	if fX <= 0 {
+		return 0
+	}
+	return getLowRegIGamma(fDF/2, fX/2)
+}
+
+// getChiSqDistPDF calculates the probability density function for the
+// Chi-Square distribution.
+func getChiSqDistPDF(fX, fDF float64) float64 {
+	if fDF*fX > 1391000 {
+		return math.Exp((0.5*fDF-1)*math.Log(fX*0.5) - 0.5*fX - math.Log(2) - getLogGamma(0.5*fDF))
+	}
+	var fCount, fValue float64
+	if math.Mod(fDF, 2) < 0.5 {
+		fValue = 0.5
+		fCount = 2
+	} else {
+		fValue = 1 / math.Sqrt(fX*2*math.Pi)
+		fCount = 1
+	}
+	for fCount < fDF {
+		fValue *= fX / fCount
+		fCount += 2
+	}
+	if fX >= 1425 {
+		fValue = math.Exp(math.Log(fValue) - fX/2)
+	} else {
+		fValue *= math.Exp(-fX / 2)
+	}
+	return fValue
+}
+
+// CHISQdotDIST function calculates the Probability Density Function or the
+// Cumulative Distribution Function for the Chi-Square Distribution. The
+// syntax of the function is:
+//
+//    CHISQ.DIST(x,degrees_freedom,cumulative)
+//
+func (fn *formulaFuncs) CHISQdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHISQ.DIST requires 3 arguments")
+	}
+	var x, degrees, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if degrees = argsList.Front().Next().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type == ArgError {
+		return cumulative
+	}
+	if x.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	maxDeg := math.Pow10(10)
+	if degrees.Number < 1 || degrees.Number >= maxDeg {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(getChiSqDistCDF(x.Number, degrees.Number))
+	}
+	return newNumberFormulaArg(getChiSqDistPDF(x.Number, degrees.Number))
+}
+
+// CHISQdotDISTdotRT function calculates the right-tailed probability of the
+// Chi-Square Distribution. The syntax of the function is:
+//
+//    CHISQ.DIST.RT(x,degrees_freedom)
+//
+func (fn *formulaFuncs) CHISQdotDISTdotRT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHISQ.DIST.RT requires 2 numeric arguments")
+	}
+	return fn.CHIDIST(argsList)
+}
+
 // CHISQdotTEST function performs the chi-square test on two supplied data sets
 // (of observed and expected frequencies), and returns the probability that
 // the differences between the sets are simply due to sampling error. The
@@ -7031,6 +7228,25 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+}
+
+// GAMMALNdotPRECISE function returns the natural logarithm of the Gamma
+// Function, Γ(n). The syntax of the function is:
+//
+//    GAMMALN.PRECISE(x)
+//
+func (fn *formulaFuncs) GAMMALNdotPRECISE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN.PRECISE requires 1 numeric argument")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	if x.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(getLogGamma(x.Number))
 }
 
 // GAUSS function returns the probability that a member of a standard normal
