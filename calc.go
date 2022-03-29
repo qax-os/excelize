@@ -464,6 +464,8 @@ type formulaFuncs struct {
 //    HEX2OCT
 //    HLOOKUP
 //    HOUR
+//    HYPGEOM.DIST
+//    HYPGEOMDIST
 //    IF
 //    IFERROR
 //    IFNA
@@ -7326,6 +7328,90 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 		cnt++
 	}
 	return newNumberFormulaArg(1 / (val / cnt))
+}
+
+// prepareHYPGEOMDISTArgs checking and prepare arguments for the formula
+// function HYPGEOMDIST and HYPGEOM.DIST.
+func (fn *formulaFuncs) prepareHYPGEOMDISTArgs(name string, argsList *list.List) formulaArg {
+	if name == "HYPGEOMDIST" && argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HYPGEOMDIST requires 4 numeric arguments")
+	}
+	if name == "HYPGEOM.DIST" && argsList.Len() != 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HYPGEOM.DIST requires 5 arguments")
+	}
+	var sampleS, numberSample, populationS, numberPop, cumulative formulaArg
+	if sampleS = argsList.Front().Value.(formulaArg).ToNumber(); sampleS.Type != ArgNumber {
+		return sampleS
+	}
+	if numberSample = argsList.Front().Next().Value.(formulaArg).ToNumber(); numberSample.Type != ArgNumber {
+		return numberSample
+	}
+	if populationS = argsList.Front().Next().Next().Value.(formulaArg).ToNumber(); populationS.Type != ArgNumber {
+		return populationS
+	}
+	if numberPop = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); numberPop.Type != ArgNumber {
+		return numberPop
+	}
+	if sampleS.Number < 0 ||
+		sampleS.Number > math.Min(numberSample.Number, populationS.Number) ||
+		sampleS.Number < math.Max(0, numberSample.Number-numberPop.Number+populationS.Number) ||
+		numberSample.Number <= 0 ||
+		numberSample.Number > numberPop.Number ||
+		populationS.Number <= 0 ||
+		populationS.Number > numberPop.Number ||
+		numberPop.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if name == "HYPGEOM.DIST" {
+		if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type != ArgNumber {
+			return cumulative
+		}
+	}
+	return newListFormulaArg([]formulaArg{sampleS, numberSample, populationS, numberPop, cumulative})
+}
+
+// HYPGEOMdotDIST function returns the value of the hypergeometric distribution
+// for a specified number of successes from a population sample. The function
+// can calculate the cumulative distribution or the probability density
+// function. The syntax of the function is:
+//
+//    HYPGEOM.DIST(sample_s,number_sample,population_s,number_pop,cumulative)
+//
+func (fn *formulaFuncs) HYPGEOMdotDIST(argsList *list.List) formulaArg {
+	args := fn.prepareHYPGEOMDISTArgs("HYPGEOM.DIST", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	sampleS, numberSample, populationS, numberPop, cumulative := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4]
+	if cumulative.Number == 1 {
+		var res float64
+		for i := 0; i <= int(sampleS.Number); i++ {
+			res += binomCoeff(populationS.Number, float64(i)) *
+				binomCoeff(numberPop.Number-populationS.Number, numberSample.Number-float64(i)) /
+				binomCoeff(numberPop.Number, numberSample.Number)
+		}
+		return newNumberFormulaArg(res)
+	}
+	return newNumberFormulaArg(binomCoeff(populationS.Number, sampleS.Number) *
+		binomCoeff(numberPop.Number-populationS.Number, numberSample.Number-sampleS.Number) /
+		binomCoeff(numberPop.Number, numberSample.Number))
+}
+
+// HYPGEOMDIST function returns the value of the hypergeometric distribution
+// for a given number of successes from a sample of a population. The syntax
+// of the function is:
+//
+//    HYPGEOMDIST(sample_s,number_sample,population_s,number_pop)
+//
+func (fn *formulaFuncs) HYPGEOMDIST(argsList *list.List) formulaArg {
+	args := fn.prepareHYPGEOMDISTArgs("HYPGEOMDIST", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	sampleS, numberSample, populationS, numberPop := args.List[0], args.List[1], args.List[2], args.List[3]
+	return newNumberFormulaArg(binomCoeff(populationS.Number, sampleS.Number) *
+		binomCoeff(numberPop.Number-populationS.Number, numberSample.Number-sampleS.Number) /
+		binomCoeff(numberPop.Number, numberSample.Number))
 }
 
 // KURT function calculates the kurtosis of a supplied set of values. The
