@@ -359,6 +359,8 @@ type formulaFuncs struct {
 //    CHITEST
 //    CHISQ.DIST
 //    CHISQ.DIST.RT
+//    CHISQ.INV
+//    CHISQ.INV.RT
 //    CHISQ.TEST
 //    CHOOSE
 //    CLEAN
@@ -6631,6 +6633,132 @@ func (fn *formulaFuncs) CHISQdotTEST(argsList *list.List) formulaArg {
 	return fn.CHITEST(argsList)
 }
 
+// hasChangeOfSign check if the sign has been changed.
+func hasChangeOfSign(u, w float64) bool {
+	return (u < 0 && w > 0) || (u > 0 && w < 0)
+}
+
+// calcInverseIterator directly maps the required parameters for inverse
+// distribution functions.
+type calcInverseIterator struct {
+	name    string
+	fp, fDF float64
+}
+
+// chiSqDist implements inverse distribution with left tail for the Chi-Square
+// distribution.
+func (iterator *calcInverseIterator) chiSqDist(x float64) float64 {
+	return iterator.fp - getChiSqDistCDF(x, iterator.fDF)
+}
+
+// inverseQuadraticInterpolation inverse quadratic interpolation with
+// additional brackets.
+func inverseQuadraticInterpolation(iterator calcInverseIterator, fAx, fAy, fBx, fBy float64) float64 {
+	fYEps := 1.0e-307
+	fXEps := 2.22045e-016
+	fPx, fPy, fQx, fQy, fRx, fRy := fAx, fAy, fBx, fBy, fAx, fAy
+	fSx := 0.5 * (fAx + fBx)
+	bHasToInterpolate := true
+	nCount := 0
+	for nCount < 500 && math.Abs(fRy) > fYEps && (fBx-fAx) > math.Max(math.Abs(fAx), math.Abs(fBx))*fXEps {
+		if bHasToInterpolate {
+			if fPy != fQy && fQy != fRy && fRy != fPy {
+				fSx = fPx*fRy*fQy/(fRy-fPy)/(fQy-fPy) + fRx*fQy*fPy/(fQy-fRy)/(fPy-fRy) +
+					fQx*fPy*fRy/(fPy-fQy)/(fRy-fQy)
+				bHasToInterpolate = (fAx < fSx) && (fSx < fBx)
+			} else {
+				bHasToInterpolate = false
+			}
+		}
+		if !bHasToInterpolate {
+			fSx = 0.5 * (fAx + fBx)
+			fQx, fQy = fBx, fBy
+			bHasToInterpolate = true
+		}
+		fPx, fQx, fRx, fPy, fQy = fQx, fRx, fSx, fQy, fRy
+		fRy = iterator.chiSqDist(fSx)
+		if hasChangeOfSign(fAy, fRy) {
+			fBx, fBy = fRx, fRy
+		} else {
+			fAx, fAy = fRx, fRy
+		}
+		bHasToInterpolate = bHasToInterpolate && (math.Abs(fRy)*2 <= math.Abs(fQy))
+		nCount++
+	}
+	return fRx
+}
+
+// calcIterateInverse function calculates the iteration for inverse
+// distributions.
+func calcIterateInverse(iterator calcInverseIterator, fAx, fBx float64) float64 {
+	fAy, fBy := iterator.chiSqDist(fAx), iterator.chiSqDist(fBx)
+	var fTemp float64
+	var nCount int
+	for nCount = 0; nCount < 1000 && !hasChangeOfSign(fAy, fBy); nCount++ {
+		if math.Abs(fAy) <= math.Abs(fBy) {
+			fTemp = fAx
+			fAx += 2 * (fAx - fBx)
+			if fAx < 0 {
+				fAx = 0
+			}
+			fBx = fTemp
+			fBy = fAy
+			fAy = iterator.chiSqDist(fAx)
+		} else {
+			fTemp = fBx
+			fBx += 2 * (fBx - fAx)
+			fAx = fTemp
+			fAy = fBy
+			fBy = iterator.chiSqDist(fBx)
+		}
+	}
+	if fAy == 0 || fBy == 0 {
+		return 0
+	}
+	return inverseQuadraticInterpolation(iterator, fAx, fAy, fBx, fBy)
+}
+
+// CHISQdotINV function calculates the inverse of the left-tailed probability
+// of the Chi-Square Distribution. The syntax of the function is:
+//
+//    CHISQ.INV(probability,degrees_freedom)
+//
+func (fn *formulaFuncs) CHISQdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHISQ.INV requires 2 numeric arguments")
+	}
+	var probability, degrees formulaArg
+	if probability = argsList.Front().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if degrees = argsList.Back().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if probability.Number < 0 || probability.Number >= 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if degrees.Number < 1 || degrees.Number > math.Pow10(10) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(calcIterateInverse(calcInverseIterator{
+		name: "CHISQ.INV",
+		fp:   probability.Number,
+		fDF:  degrees.Number,
+	}, degrees.Number/2, degrees.Number))
+}
+
+// CHISQdotINVdotRT function calculates the inverse of the right-tailed
+// probability of the Chi-Square Distribution. The syntax of the function is:
+//
+//    CHISQ.INV.RT(probability,degrees_freedom)
+//
+func (fn *formulaFuncs) CHISQdotINVdotRT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CHISQ.INV.RT requires 2 numeric arguments")
+	}
+	return fn.CHIINV(argsList)
+}
+
 // confidence is an implementation of the formula functions CONFIDENCE and
 // CONFIDENCE.NORM.
 func (fn *formulaFuncs) confidence(name string, argsList *list.List) formulaArg {
@@ -7330,8 +7458,21 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(1 / (val / cnt))
 }
 
-// prepareHYPGEOMDISTArgs checking and prepare arguments for the formula
-// function HYPGEOMDIST and HYPGEOM.DIST.
+// checkHYPGEOMDISTArgs checking arguments for the formula function HYPGEOMDIST
+// and HYPGEOM.DIST.
+func checkHYPGEOMDISTArgs(sampleS, numberSample, populationS, numberPop formulaArg) bool {
+	return sampleS.Number < 0 ||
+		sampleS.Number > math.Min(numberSample.Number, populationS.Number) ||
+		sampleS.Number < math.Max(0, numberSample.Number-numberPop.Number+populationS.Number) ||
+		numberSample.Number <= 0 ||
+		numberSample.Number > numberPop.Number ||
+		populationS.Number <= 0 ||
+		populationS.Number > numberPop.Number ||
+		numberPop.Number <= 0
+}
+
+// prepareHYPGEOMDISTArgs prepare arguments for the formula function
+// HYPGEOMDIST and HYPGEOM.DIST.
 func (fn *formulaFuncs) prepareHYPGEOMDISTArgs(name string, argsList *list.List) formulaArg {
 	if name == "HYPGEOMDIST" && argsList.Len() != 4 {
 		return newErrorFormulaArg(formulaErrorVALUE, "HYPGEOMDIST requires 4 numeric arguments")
@@ -7352,14 +7493,7 @@ func (fn *formulaFuncs) prepareHYPGEOMDISTArgs(name string, argsList *list.List)
 	if numberPop = argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber(); numberPop.Type != ArgNumber {
 		return numberPop
 	}
-	if sampleS.Number < 0 ||
-		sampleS.Number > math.Min(numberSample.Number, populationS.Number) ||
-		sampleS.Number < math.Max(0, numberSample.Number-numberPop.Number+populationS.Number) ||
-		numberSample.Number <= 0 ||
-		numberSample.Number > numberPop.Number ||
-		populationS.Number <= 0 ||
-		populationS.Number > numberPop.Number ||
-		numberPop.Number <= 0 {
+	if checkHYPGEOMDISTArgs(sampleS, numberSample, populationS, numberPop) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	if name == "HYPGEOM.DIST" {

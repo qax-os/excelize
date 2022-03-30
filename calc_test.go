@@ -865,6 +865,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHISQ.DIST.RT(8,3)":   "0.0460117056892314",
 		"=CHISQ.DIST.RT(40,4)":  "4.32842260712097E-08",
 		"=CHISQ.DIST.RT(42,4)":  "1.66816329414062E-08",
+		// CHISQ.INV
+		"=CHISQ.INV(0,2)":    "0",
+		"=CHISQ.INV(0.75,1)": "1.32330369693147",
+		"=CHISQ.INV(0.1,2)":  "0.210721031315653",
+		"=CHISQ.INV(0.8,2)":  "3.2188758248682",
+		"=CHISQ.INV(0.25,3)": "1.21253290304567",
+		// CHISQ.INV.RT
+		"=CHISQ.INV.RT(0.75,1)": "0.101531044267622",
+		"=CHISQ.INV.RT(0.1,2)":  "4.60517018598809",
+		"=CHISQ.INV.RT(0.8,2)":  "0.446287102628419",
 		// CONFIDENCE
 		"=CONFIDENCE(0.05,0.07,100)": "0.0137197479028414",
 		// CONFIDENCE.NORM
@@ -2565,6 +2575,21 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHISQ.DIST.RT()":         "CHISQ.DIST.RT requires 2 numeric arguments",
 		"=CHISQ.DIST.RT(\"\",3)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=CHISQ.DIST.RT(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// CHISQ.INV
+		"=CHISQ.INV()":                "CHISQ.INV requires 2 numeric arguments",
+		"=CHISQ.INV(\"\",1)":          "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.INV(0.5,\"\")":        "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.INV(-1,1)":            "#NUM!",
+		"=CHISQ.INV(1,1)":             "#NUM!",
+		"=CHISQ.INV(0.5,0.5)":         "#NUM!",
+		"=CHISQ.INV(0.5,10000000001)": "#NUM!",
+		// CHISQ.INV.RT
+		"=CHISQ.INV.RT()":         "CHISQ.INV.RT requires 2 numeric arguments",
+		"=CHISQ.INV.RT(\"\",1)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.INV.RT(0.5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CHISQ.INV.RT(0,1)":      "#NUM!",
+		"=CHISQ.INV.RT(2,1)":      "#NUM!",
+		"=CHISQ.INV.RT(0.5,0.5)":  "#NUM!",
 		// CONFIDENCE
 		"=CONFIDENCE()":               "CONFIDENCE requires 3 numeric arguments",
 		"=CONFIDENCE(\"\",0.07,100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
