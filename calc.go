@@ -555,6 +555,8 @@ type formulaFuncs struct {
 //    MUNIT
 //    N
 //    NA
+//    NEGBINOM.DIST
+//    NEGBINOMDIST
 //    NOMINAL
 //    NORM.DIST
 //    NORMDIST
@@ -7981,6 +7983,67 @@ func (fn *formulaFuncs) LOGNORMDIST(argsList *list.List) formulaArg {
 	args := list.New()
 	args.PushBack(newNumberFormulaArg((math.Log(x.Number) - mean.Number) / stdDev.Number))
 	return fn.NORMSDIST(args)
+}
+
+// NEGBINOMdotDIST function calculates the probability mass function or the
+// cumulative distribution function for the Negative Binomial Distribution.
+// This gives the probability that there will be a given number of failures
+// before a required number of successes is achieved. The syntax of the
+// function is:
+//
+//    NEGBINOM.DIST(number_f,number_s,probability_s,cumulative)
+//
+func (fn *formulaFuncs) NEGBINOMdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NEGBINOM.DIST requires 4 arguments")
+	}
+	var f, s, probability, cumulative formulaArg
+	if f = argsList.Front().Value.(formulaArg).ToNumber(); f.Type != ArgNumber {
+		return f
+	}
+	if s = argsList.Front().Next().Value.(formulaArg).ToNumber(); s.Type != ArgNumber {
+		return s
+	}
+	if probability = argsList.Front().Next().Next().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type != ArgNumber {
+		return cumulative
+	}
+	if f.Number < 0 || s.Number < 1 || probability.Number < 0 || probability.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative.Number == 1 {
+		return newNumberFormulaArg(1 - getBetaDist(1-probability.Number, f.Number+1, s.Number))
+	}
+	return newNumberFormulaArg(binomCoeff(f.Number+s.Number-1, s.Number-1) * math.Pow(probability.Number, s.Number) * math.Pow(1-probability.Number, f.Number))
+}
+
+// NEGBINOMDIST function calculates the Negative Binomial Distribution for a
+// given set of parameters. This gives the probability that there will be a
+// specified number of failures before a required number of successes is
+// achieved. The syntax of the function is:
+//
+//    NEGBINOMDIST(number_f,number_s,probability_s)
+//
+func (fn *formulaFuncs) NEGBINOMDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NEGBINOMDIST requires 3 arguments")
+	}
+	var f, s, probability formulaArg
+	if f = argsList.Front().Value.(formulaArg).ToNumber(); f.Type != ArgNumber {
+		return f
+	}
+	if s = argsList.Front().Next().Value.(formulaArg).ToNumber(); s.Type != ArgNumber {
+		return s
+	}
+	if probability = argsList.Back().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if f.Number < 0 || s.Number < 1 || probability.Number < 0 || probability.Number > 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(binomCoeff(f.Number+s.Number-1, s.Number-1) * math.Pow(probability.Number, s.Number) * math.Pow(1-probability.Number, f.Number))
 }
 
 // NORMdotDIST function calculates the Normal Probability Density Function or

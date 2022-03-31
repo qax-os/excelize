@@ -1015,6 +1015,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOGNORM.DIST(12,10,5,TRUE)":   "0.0664171147992078",
 		// LOGNORMDIST
 		"=LOGNORMDIST(12,10,5)": "0.0664171147992078",
+		// NEGBINOM.DIST
+		"=NEGBINOM.DIST(6,12,0.5,FALSE)":  "0.047210693359375",
+		"=NEGBINOM.DIST(12,12,0.5,FALSE)": "0.0805901288986206",
+		"=NEGBINOM.DIST(15,12,0.5,FALSE)": "0.057564377784729",
+		"=NEGBINOM.DIST(12,12,0.5,TRUE)":  "0.580590128898621",
+		"=NEGBINOM.DIST(15,12,0.5,TRUE)":  "0.778965830802917",
+		// NEGBINOMDIST
+		"=NEGBINOMDIST(6,12,0.5)":  "0.047210693359375",
+		"=NEGBINOMDIST(12,12,0.5)": "0.0805901288986206",
+		"=NEGBINOMDIST(15,12,0.5)": "0.057564377784729",
 		// NORM.DIST
 		"=NORM.DIST(0.8,1,0.3,TRUE)": "0.252492537546923",
 		"=NORM.DIST(50,40,20,FALSE)": "0.017603266338215",
@@ -2835,6 +2845,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOGNORMDIST(12,10,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=LOGNORMDIST(0,2,5)":      "#NUM!",
 		"=LOGNORMDIST(12,10,0)":    "#NUM!",
+		// NEGBINOM.DIST
+		"=NEGBINOM.DIST()":                 "NEGBINOM.DIST requires 4 arguments",
+		"=NEGBINOM.DIST(\"\",12,0.5,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NEGBINOM.DIST(6,\"\",0.5,TRUE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NEGBINOM.DIST(6,12,\"\",TRUE)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NEGBINOM.DIST(6,12,0.5,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=NEGBINOM.DIST(-1,12,0.5,TRUE)":   "#NUM!",
+		"=NEGBINOM.DIST(6,0,0.5,TRUE)":     "#NUM!",
+		"=NEGBINOM.DIST(6,12,-1,TRUE)":     "#NUM!",
+		"=NEGBINOM.DIST(6,12,2,TRUE)":      "#NUM!",
+		// NEGBINOMDIST
+		"=NEGBINOMDIST()":            "NEGBINOMDIST requires 3 arguments",
+		"=NEGBINOMDIST(\"\",12,0.5)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NEGBINOMDIST(6,\"\",0.5)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NEGBINOMDIST(6,12,\"\")":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=NEGBINOMDIST(-1,12,0.5)":   "#NUM!",
+		"=NEGBINOMDIST(6,0,0.5)":     "#NUM!",
+		"=NEGBINOMDIST(6,12,-1)":     "#NUM!",
+		"=NEGBINOMDIST(6,12,2)":      "#NUM!",
 		// NORM.DIST
 		"=NORM.DIST()": "NORM.DIST requires 4 arguments",
 		// NORMDIST
