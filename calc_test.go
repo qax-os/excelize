@@ -1155,6 +1155,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=STDEVP(A1:B2,6,-1)": "2.40947204913349",
 		// STDEV.P
 		"=STDEV.P(A1:B2,6,-1)": "2.40947204913349",
+		// T.DIST
+		"=T.DIST(1,10,TRUE)":   "0.82955343384897",
+		"=T.DIST(-1,10,TRUE)":  "0.17044656615103",
+		"=T.DIST(-1,10,FALSE)": "0.230361989229139",
+		// TDIST
+		"=TDIST(1,10,1)": "0.17044656615103",
+		"=TDIST(1,10,2)": "0.34089313230206",
 		// TRIMMEAN
 		"=TRIMMEAN(A1:B4,10%)": "2.5",
 		"=TRIMMEAN(A1:B4,70%)": "2.5",
@@ -3009,6 +3016,22 @@ func TestCalcCellValue(t *testing.T) {
 		// STDEV.P
 		"=STDEV.P()":     "STDEV.P requires at least 1 argument",
 		"=STDEV.P(\"\")": "#DIV/0!",
+		// T.DIST
+		"=T.DIST()":             "T.DIST requires 3 arguments",
+		"=T.DIST(\"\",10,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.DIST(1,\"\",TRUE)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.DIST(1,10,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=T.DIST(1,0,TRUE)":     "#NUM!",
+		"=T.DIST(1,-1,FALSE)":   "#NUM!",
+		"=T.DIST(1,0,FALSE)":    "#DIV/0!",
+		// TDIST
+		"=TDIST()":          "TDIST requires 3 arguments",
+		"=TDIST(\"\",10,1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TDIST(1,\"\",1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TDIST(1,10,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TDIST(-1,10,1)":   "#NUM!",
+		"=TDIST(1,0,1)":     "#NUM!",
+		"=TDIST(1,10,0)":    "#NUM!",
 		// TRIMMEAN
 		"=TRIMMEAN()":        "TRIMMEAN requires 2 arguments",
 		"=TRIMMEAN(A1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",

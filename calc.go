@@ -657,6 +657,8 @@ type formulaFuncs struct {
 //    TBILLEQ
 //    TBILLPRICE
 //    TBILLYIELD
+//    T.DIST
+//    TDIST
 //    TEXTJOIN
 //    TIME
 //    TIMEVALUE
@@ -9006,6 +9008,94 @@ func (fn *formulaFuncs) STDEVP(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) STDEVdotP(argsList *list.List) formulaArg {
 	return fn.stdevp("STDEV.P", argsList)
+}
+
+// getTDist is an implementation for the beta distribution probability density
+// function.
+func getTDist(T, fDF, nType float64) float64 {
+	var res float64
+	switch nType {
+	case 1:
+		res = 0.5 * getBetaDist(fDF/(fDF+T*T), fDF/2, 0.5)
+		break
+	case 2:
+		res = getBetaDist(fDF/(fDF+T*T), fDF/2, 0.5)
+		break
+	case 3:
+		res = math.Pow(1+(T*T/fDF), -(fDF+1)/2) / (math.Sqrt(fDF) * getBeta(0.5, fDF/2.0))
+		break
+	case 4:
+		X := fDF / (T*T + fDF)
+		R := 0.5 * getBetaDist(X, 0.5*fDF, 0.5)
+		res = 1 - R
+		if T < 0 {
+			res = R
+		}
+		break
+	}
+	return res
+}
+
+// TdotDIST function calculates the one-tailed Student's T Distribution, which
+// is a continuous probability distribution that is frequently used for
+// testing hypotheses on small sample data sets. The syntax of the function
+// is:
+//
+//    T.DIST(x,degrees_freedom,cumulative)
+//
+func (fn *formulaFuncs) TdotDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "T.DIST requires 3 arguments")
+	}
+	var x, degrees, cumulative formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if degrees = argsList.Front().Next().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if cumulative = argsList.Back().Value.(formulaArg).ToBool(); cumulative.Type != ArgNumber {
+		return cumulative
+	}
+	if cumulative.Number == 1 && degrees.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if cumulative.Number == 0 {
+		if degrees.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		if degrees.Number == 0 {
+			return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+		}
+		return newNumberFormulaArg(getTDist(x.Number, degrees.Number, 3))
+	}
+	return newNumberFormulaArg(getTDist(x.Number, degrees.Number, 4))
+}
+
+// TDIST function calculates the Student's T Distribution, which is a
+// continuous probability distribution that is frequently used for testing
+// hypotheses on small sample data sets. The syntax of the function is:
+//
+//    TDIST(x,degrees_freedom,tails)
+//
+func (fn *formulaFuncs) TDIST(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TDIST requires 3 arguments")
+	}
+	var x, degrees, tails formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if degrees = argsList.Front().Next().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if tails = argsList.Back().Value.(formulaArg).ToNumber(); tails.Type != ArgNumber {
+		return tails
+	}
+	if x.Number < 0 || degrees.Number < 1 || (tails.Number != 1 && tails.Number != 2) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(getTDist(x.Number, degrees.Number, tails.Number))
 }
 
 // TRIMMEAN function calculates the trimmed mean (or truncated mean) of a
