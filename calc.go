@@ -658,6 +658,8 @@ type formulaFuncs struct {
 //    TBILLPRICE
 //    TBILLYIELD
 //    T.DIST
+//    T.DIST.2T
+//    T.DIST.RT
 //    TDIST
 //    TEXTJOIN
 //    TIME
@@ -9070,6 +9072,58 @@ func (fn *formulaFuncs) TdotDIST(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(getTDist(x.Number, degrees.Number, 3))
 	}
 	return newNumberFormulaArg(getTDist(x.Number, degrees.Number, 4))
+}
+
+// TdotDISTdot2T function calculates the two-tailed Student's T Distribution,
+// which is a continuous probability distribution that is frequently used for
+// testing hypotheses on small sample data sets. The syntax of the function
+// is:
+//
+//    T.DIST.2T(x,degrees_freedom)
+//
+func (fn *formulaFuncs) TdotDISTdot2T(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "T.DIST.2T requires 2 arguments")
+	}
+	var x, degrees formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if degrees = argsList.Back().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if x.Number < 0 || degrees.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(getTDist(x.Number, degrees.Number, 2))
+}
+
+// TdotDISTdotRT function calculates the right-tailed Student's T Distribution,
+// which is a continuous probability distribution that is frequently used for
+// testing hypotheses on small sample data sets. The syntax of the function
+// is:
+//
+//    T.DIST.RT(x,degrees_freedom)
+//
+func (fn *formulaFuncs) TdotDISTdotRT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "T.DIST.RT requires 2 arguments")
+	}
+	var x, degrees formulaArg
+	if x = argsList.Front().Value.(formulaArg).ToNumber(); x.Type != ArgNumber {
+		return x
+	}
+	if degrees = argsList.Back().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if degrees.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	v := getTDist(x.Number, degrees.Number, 1)
+	if x.Number < 0 {
+		v = 1 - v
+	}
+	return newNumberFormulaArg(v)
 }
 
 // TDIST function calculates the Student's T Distribution, which is a

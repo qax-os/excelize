@@ -1159,6 +1159,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=T.DIST(1,10,TRUE)":   "0.82955343384897",
 		"=T.DIST(-1,10,TRUE)":  "0.17044656615103",
 		"=T.DIST(-1,10,FALSE)": "0.230361989229139",
+		// T.DIST.2T
+		"=T.DIST.2T(1,10)": "0.34089313230206",
+		// T.DIST.RT
+		"=T.DIST.RT(1,10)":  "0.17044656615103",
+		"=T.DIST.RT(-1,10)": "0.82955343384897",
 		// TDIST
 		"=TDIST(1,10,1)": "0.17044656615103",
 		"=TDIST(1,10,2)": "0.34089313230206",
@@ -3024,6 +3029,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=T.DIST(1,0,TRUE)":     "#NUM!",
 		"=T.DIST(1,-1,FALSE)":   "#NUM!",
 		"=T.DIST(1,0,FALSE)":    "#DIV/0!",
+		// T.DIST.2T
+		"=T.DIST.2T()":        "T.DIST.2T requires 2 arguments",
+		"=T.DIST.2T(\"\",10)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.DIST.2T(1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.DIST.2T(-1,10)":   "#NUM!",
+		"=T.DIST.2T(1,0)":     "#NUM!",
+		// T.DIST.RT
+		"=T.DIST.RT()":        "T.DIST.RT requires 2 arguments",
+		"=T.DIST.RT(\"\",10)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.DIST.RT(1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.DIST.RT(1,0)":     "#NUM!",
 		// TDIST
 		"=TDIST()":          "TDIST requires 3 arguments",
 		"=TDIST(\"\",10,1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
