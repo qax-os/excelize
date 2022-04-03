@@ -33,9 +33,9 @@ type languageInfo struct {
 type numberFormat struct {
 	section                                                                 []nfp.Section
 	t                                                                       time.Time
-	sectionIdx                                                              int
-	isNumberic, hours, seconds                                              bool
-	number                                                                  float64
+	sectionIdx                int
+	isNumeric, hours, seconds bool
+	number                    float64
 	ap, afterPoint, beforePoint, localCode, result, value, valueSectionType string
 }
 
@@ -279,7 +279,7 @@ var (
 // prepareNumberic split the number into two before and after parts by a
 // decimal point.
 func (nf *numberFormat) prepareNumberic(value string) {
-	if nf.isNumberic, _ = isNumeric(value); !nf.isNumberic {
+	if nf.isNumeric, _ = isNumeric(value); !nf.isNumeric {
 		return
 	}
 }
@@ -297,7 +297,7 @@ func format(value, numFmt string) string {
 		if section.Type != nf.valueSectionType {
 			continue
 		}
-		if nf.isNumberic {
+		if nf.isNumeric {
 			switch section.Type {
 			case nfp.TokenSectionPositive:
 				return nf.positiveHandler()

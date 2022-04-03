@@ -664,6 +664,8 @@ type formulaFuncs struct {
 //    TEXTJOIN
 //    TIME
 //    TIMEVALUE
+//    T.INV
+//    T.INV.2T
 //    TODAY
 //    TRANSPOSE
 //    TRIM
@@ -1263,27 +1265,6 @@ func isOperatorPrefixToken(token efp.Token) bool {
 // isOperand determine if the token is parse operand.
 func isOperand(token efp.Token) bool {
 	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText)
-}
-
-// getDefinedNameRefTo convert defined name to reference range.
-func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
-	var workbookRefTo, worksheetRefTo string
-	for _, definedName := range f.GetDefinedName() {
-		if definedName.Name == definedNameName {
-			// worksheet scope takes precedence over scope workbook when both definedNames exist
-			if definedName.Scope == "Workbook" {
-				workbookRefTo = definedName.RefersTo
-			}
-			if definedName.Scope == currentSheet {
-				worksheetRefTo = definedName.RefersTo
-			}
-		}
-	}
-	refTo = workbookRefTo
-	if worksheetRefTo != "" {
-		refTo = worksheetRefTo
-	}
-	return
 }
 
 // parseToken parse basic arithmetic operator priority and evaluate based on
@@ -6647,14 +6628,16 @@ func hasChangeOfSign(u, w float64) bool {
 // calcInverseIterator directly maps the required parameters for inverse
 // distribution functions.
 type calcInverseIterator struct {
-	name    string
-	fp, fDF float64
+	name        string
+	fp, fDF, nT float64
 }
 
-// chiSqDist implements inverse distribution with left tail for the Chi-Square
-// distribution.
-func (iterator *calcInverseIterator) chiSqDist(x float64) float64 {
-	return iterator.fp - getChiSqDistCDF(x, iterator.fDF)
+// callBack implements the callback function for the inverse iterator.
+func (iterator *calcInverseIterator) callBack(x float64) float64 {
+	if iterator.name == "CHISQ.INV" {
+		return iterator.fp - getChiSqDistCDF(x, iterator.fDF)
+	}
+	return iterator.fp - getTDist(x, iterator.fDF, iterator.nT)
 }
 
 // inverseQuadraticInterpolation inverse quadratic interpolation with
@@ -6682,7 +6665,7 @@ func inverseQuadraticInterpolation(iterator calcInverseIterator, fAx, fAy, fBx, 
 			bHasToInterpolate = true
 		}
 		fPx, fQx, fRx, fPy, fQy = fQx, fRx, fSx, fQy, fRy
-		fRy = iterator.chiSqDist(fSx)
+		fRy = iterator.callBack(fSx)
 		if hasChangeOfSign(fAy, fRy) {
 			fBx, fBy = fRx, fRy
 		} else {
@@ -6697,7 +6680,7 @@ func inverseQuadraticInterpolation(iterator calcInverseIterator, fAx, fAy, fBx, 
 // calcIterateInverse function calculates the iteration for inverse
 // distributions.
 func calcIterateInverse(iterator calcInverseIterator, fAx, fBx float64) float64 {
-	fAy, fBy := iterator.chiSqDist(fAx), iterator.chiSqDist(fBx)
+	fAy, fBy := iterator.callBack(fAx), iterator.callBack(fBx)
 	var fTemp float64
 	var nCount int
 	for nCount = 0; nCount < 1000 && !hasChangeOfSign(fAy, fBy); nCount++ {
@@ -6709,13 +6692,13 @@ func calcIterateInverse(iterator calcInverseIterator, fAx, fBx float64) float64 
 			}
 			fBx = fTemp
 			fBy = fAy
-			fAy = iterator.chiSqDist(fAx)
+			fAy = iterator.callBack(fAx)
 		} else {
 			fTemp = fBx
 			fBx += 2 * (fBx - fAx)
 			fAx = fTemp
 			fAy = fBy
-			fBy = iterator.chiSqDist(fBx)
+			fBy = iterator.callBack(fBx)
 		}
 	}
 	if fAy == 0 || fBy == 0 {
@@ -9150,6 +9133,72 @@ func (fn *formulaFuncs) TDIST(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(getTDist(x.Number, degrees.Number, tails.Number))
+}
+
+// TdotINV function calculates the left-tailed inverse of the Student's T
+// Distribution, which is a continuous probability distribution that is
+// frequently used for testing hypotheses on small sample data sets. The
+// syntax of the function is:
+//
+//    T.INV(probability,degrees_freedom)
+//
+func (fn *formulaFuncs) TdotINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "T.INV requires 2 arguments")
+	}
+	var probability, degrees formulaArg
+	if probability = argsList.Front().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if degrees = argsList.Back().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if probability.Number <= 0 || probability.Number >= 1 || degrees.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if probability.Number < 0.5 {
+		return newNumberFormulaArg(-calcIterateInverse(calcInverseIterator{
+			name: "T.INV",
+			fp:   1 - probability.Number,
+			fDF:  degrees.Number,
+			nT:   4,
+		}, degrees.Number/2, degrees.Number))
+	}
+	return newNumberFormulaArg(calcIterateInverse(calcInverseIterator{
+		name: "T.INV",
+		fp:   probability.Number,
+		fDF:  degrees.Number,
+		nT:   4,
+	}, degrees.Number/2, degrees.Number))
+}
+
+// TdotINVdot2T function calculates the inverse of the two-tailed Student's T
+// Distribution, which is a continuous probability distribution that is
+// frequently used for testing hypotheses on small sample data sets. The
+// syntax of the function is:
+//
+//    T.INV.2T(probability,degrees_freedom)
+//
+func (fn *formulaFuncs) TdotINVdot2T(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "T.INV.2T requires 2 arguments")
+	}
+	var probability, degrees formulaArg
+	if probability = argsList.Front().Value.(formulaArg).ToNumber(); probability.Type != ArgNumber {
+		return probability
+	}
+	if degrees = argsList.Back().Value.(formulaArg).ToNumber(); degrees.Type != ArgNumber {
+		return degrees
+	}
+	if probability.Number <= 0 || probability.Number > 1 || degrees.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(calcIterateInverse(calcInverseIterator{
+		name: "T.INV.2T",
+		fp:   probability.Number,
+		fDF:  degrees.Number,
+		nT:   2,
+	}, degrees.Number/2, degrees.Number))
 }
 
 // TRIMMEAN function calculates the trimmed mean (or truncated mean) of a

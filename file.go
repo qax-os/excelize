@@ -63,7 +63,7 @@ func (f *File) Save() error {
 	return f.SaveAs(f.Path)
 }
 
-// SaveAs provides a function to create or update to an spreadsheet at the
+// SaveAs provides a function to create or update to a spreadsheet at the
 // provided path.
 func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFileNameLength {
@@ -81,7 +81,7 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		return ErrWorkbookExt
 	}
 	f.setContentTypePartProjectExtensions(contentType)
-	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o600)
+	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return err
 	}

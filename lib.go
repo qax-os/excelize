@@ -132,7 +132,7 @@ func (f *File) saveFileList(name string, content []byte) {
 	f.Pkg.Store(name, append([]byte(xml.Header), content...))
 }
 
-// Read file content as string in a archive file.
+// Read file content as string in an archive file.
 func readFile(file *zip.File) ([]byte, error) {
 	rc, err := file.Open()
 	if err != nil {
@@ -157,8 +157,8 @@ func SplitCellName(cell string) (string, int, error) {
 	if strings.IndexFunc(cell, alpha) == 0 {
 		i := strings.LastIndexFunc(cell, alpha)
 		if i >= 0 && i < len(cell)-1 {
-			col, rowstr := strings.ReplaceAll(cell[:i+1], "$", ""), cell[i+1:]
-			if row, err := strconv.Atoi(rowstr); err == nil && row > 0 {
+			col, rowStr := strings.ReplaceAll(cell[:i+1], "$", ""), cell[i+1:]
+			if row, err := strconv.Atoi(rowStr); err == nil && row > 0 {
 				return col, row, nil
 			}
 		}
@@ -187,7 +187,7 @@ func JoinCellName(col string, row int) (string, error) {
 }
 
 // ColumnNameToNumber provides a function to convert Excel sheet column name
-// to int. Column name case insensitive. The function returns an error if
+// to int. Column name case-insensitive. The function returns an error if
 // column name incorrect.
 //
 // Example:
@@ -248,14 +248,14 @@ func ColumnNumberToName(num int) (string, error) {
 //    excelize.CellNameToCoordinates("Z3") // returns 26, 3, nil
 //
 func CellNameToCoordinates(cell string) (int, int, error) {
-	colname, row, err := SplitCellName(cell)
+	colName, row, err := SplitCellName(cell)
 	if err != nil {
 		return -1, -1, newCellNameToCoordinatesError(cell, err)
 	}
 	if row > TotalRows {
 		return -1, -1, ErrMaxRows
 	}
-	col, err := ColumnNameToNumber(colname)
+	col, err := ColumnNameToNumber(colName)
 	return col, row, err
 }
 
@@ -277,8 +277,8 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 			sign = "$"
 		}
 	}
-	colname, err := ColumnNumberToName(col)
-	return sign + colname + sign + strconv.Itoa(row), err
+	colName, err := ColumnNumberToName(col)
+	return sign + colName + sign + strconv.Itoa(row), err
 }
 
 // areaRefToCoordinates provides a function to convert area reference to a
@@ -336,6 +336,27 @@ func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
 	return firstCell + ":" + lastCell, err
 }
 
+// getDefinedNameRefTo convert defined name to reference range.
+func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
+	var workbookRefTo, worksheetRefTo string
+	for _, definedName := range f.GetDefinedName() {
+		if definedName.Name == definedNameName {
+			// worksheet scope takes precedence over scope workbook when both definedNames exist
+			if definedName.Scope == "Workbook" {
+				workbookRefTo = definedName.RefersTo
+			}
+			if definedName.Scope == currentSheet {
+				worksheetRefTo = definedName.RefersTo
+			}
+		}
+	}
+	refTo = workbookRefTo
+	if worksheetRefTo != "" {
+		refTo = worksheetRefTo
+	}
+	return
+}
+
 // flatSqref convert reference sequence to cell coordinates list.
 func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
 	var coordinates []int
@@ -365,7 +386,7 @@ func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
 	return
 }
 
-// inCoordinates provides a method to check if an coordinate is present in
+// inCoordinates provides a method to check if a coordinate is present in
 // coordinates array, and return the index of its location, otherwise
 // return -1.
 func inCoordinates(a [][]int, x []int) int {
@@ -391,7 +412,7 @@ func inStrSlice(a []string, x string, caseSensitive bool) int {
 	return -1
 }
 
-// inFloat64Slice provides a method to check if an element is present in an
+// inFloat64Slice provides a method to check if an element is present in a
 // float64 array, and return the index of its location, otherwise return -1.
 func inFloat64Slice(a []float64, x float64) int {
 	for idx, n := range a {
@@ -405,7 +426,7 @@ func inFloat64Slice(a []float64, x float64) int {
 // boolPtr returns a pointer to a bool with the given value.
 func boolPtr(b bool) *bool { return &b }
 
-// intPtr returns a pointer to a int with the given value.
+// intPtr returns a pointer to an int with the given value.
 func intPtr(i int) *int { return &i }
 
 // float64Ptr returns a pointer to a float64 with the given value.
@@ -626,7 +647,7 @@ func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte 
 	return bytesReplace(contentMarshal, oldXmlns, newXmlns, -1)
 }
 
-// addNameSpaces provides a function to add a XML attribute by the given
+// addNameSpaces provides a function to add an XML attribute by the given
 // component part path.
 func (f *File) addNameSpaces(path string, ns xml.Attr) {
 	exist := false
@@ -715,7 +736,7 @@ var (
 
 // bstrUnmarshal parses the binary basic string, this will trim escaped string
 // literal which not permitted in an XML 1.0 document. The basic string
-// variant type can store any valid Unicode character. Unicode characters
+// variant type can store any valid Unicode character. Unicode's characters
 // that cannot be directly represented in XML as defined by the XML 1.0
 // specification, shall be escaped using the Unicode numerical character
 // representation escape character format _xHHHH_, where H represents a

@@ -1167,6 +1167,12 @@ func TestCalcCellValue(t *testing.T) {
 		// TDIST
 		"=TDIST(1,10,1)": "0.17044656615103",
 		"=TDIST(1,10,2)": "0.34089313230206",
+		// T.INV
+		"=T.INV(0.25,10)": "-0.699812061312432",
+		"=T.INV(0.75,10)": "0.699812061312432",
+		// T.INV.2T
+		"=T.INV.2T(1,10)":   "0",
+		"=T.INV.2T(0.5,10)": "0.699812061312432",
 		// TRIMMEAN
 		"=TRIMMEAN(A1:B4,10%)": "2.5",
 		"=TRIMMEAN(A1:B4,70%)": "2.5",
@@ -3048,6 +3054,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=TDIST(-1,10,1)":   "#NUM!",
 		"=TDIST(1,0,1)":     "#NUM!",
 		"=TDIST(1,10,0)":    "#NUM!",
+		// T.INV
+		"=T.INV()":          "T.INV requires 2 arguments",
+		"=T.INV(\"\",10)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.INV(0.25,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.INV(0,10)":      "#NUM!",
+		"=T.INV(1,10)":      "#NUM!",
+		"=T.INV(0.25,0.5)":  "#NUM!",
+		// T.INV.2T
+		"=T.INV.2T()":          "T.INV.2T requires 2 arguments",
+		"=T.INV.2T(\"\",10)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.INV.2T(0.25,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.INV.2T(0,10)":      "#NUM!",
+		"=T.INV.2T(0.25,0.5)":  "#NUM!",
 		// TRIMMEAN
 		"=TRIMMEAN()":        "TRIMMEAN requires 2 arguments",
 		"=TRIMMEAN(A1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
