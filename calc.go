@@ -666,12 +666,14 @@ type formulaFuncs struct {
 //    TIMEVALUE
 //    T.INV
 //    T.INV.2T
+//    TINV
 //    TODAY
 //    TRANSPOSE
 //    TRIM
 //    TRIMMEAN
 //    TRUE
 //    TRUNC
+//    TTEST
 //    TYPE
 //    UNICHAR
 //    UNICODE
@@ -9199,6 +9201,145 @@ func (fn *formulaFuncs) TdotINVdot2T(argsList *list.List) formulaArg {
 		fDF:  degrees.Number,
 		nT:   2,
 	}, degrees.Number/2, degrees.Number))
+}
+
+// TINV function calculates the inverse of the two-tailed Student's T
+// Distribution, which is a continuous probability distribution that is
+// frequently used for testing hypotheses on small sample data sets. The
+// syntax of the function is:
+//
+//    TINV(probability,degrees_freedom)
+//
+func (fn *formulaFuncs) TINV(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TINV requires 2 arguments")
+	}
+	return fn.TdotINVdot2T(argsList)
+}
+
+// tTest calculates the probability associated with the Student's T Test.
+func tTest(bTemplin bool, pMat1, pMat2 [][]formulaArg, nC1, nC2, nR1, nR2 int, fT, fF float64) (float64, float64, bool) {
+	var fCount1, fCount2, fSum1, fSumSqr1, fSum2, fSumSqr2 float64
+	var fVal formulaArg
+	for i := 0; i < nC1; i++ {
+		for j := 0; j < nR1; j++ {
+			fVal = pMat1[i][j].ToNumber()
+			if fVal.Type == ArgNumber {
+				fSum1 += fVal.Number
+				fSumSqr1 += fVal.Number * fVal.Number
+				fCount1++
+			}
+		}
+	}
+	for i := 0; i < nC2; i++ {
+		for j := 0; j < nR2; j++ {
+			fVal = pMat2[i][j].ToNumber()
+			if fVal.Type == ArgNumber {
+				fSum2 += fVal.Number
+				fSumSqr2 += fVal.Number * fVal.Number
+				fCount2++
+			}
+		}
+	}
+	if fCount1 < 2.0 || fCount2 < 2.0 {
+		return 0, 0, false
+	}
+	if bTemplin {
+		fS1 := (fSumSqr1 - fSum1*fSum1/fCount1) / (fCount1 - 1) / fCount1
+		fS2 := (fSumSqr2 - fSum2*fSum2/fCount2) / (fCount2 - 1) / fCount2
+		if fS1+fS2 == 0 {
+			return 0, 0, false
+		}
+		c := fS1 / (fS1 + fS2)
+		fT = math.Abs(fSum1/fCount1-fSum2/fCount2) / math.Sqrt(fS1+fS2)
+		fF = 1 / (c*c/(fCount1-1) + (1-c)*(1-c)/(fCount2-1))
+		return fT, fF, true
+	}
+	fS1 := (fSumSqr1 - fSum1*fSum1/fCount1) / (fCount1 - 1)
+	fS2 := (fSumSqr2 - fSum2*fSum2/fCount2) / (fCount2 - 1)
+	fT = math.Abs(fSum1/fCount1-fSum2/fCount2) / math.Sqrt((fCount1-1)*fS1+(fCount2-1)*fS2) * math.Sqrt(fCount1*fCount2*(fCount1+fCount2-2)/(fCount1+fCount2))
+	fF = fCount1 + fCount2 - 2
+	return fT, fF, true
+}
+
+// tTest is an implementation of the formula function TTEST.
+func (fn *formulaFuncs) tTest(pMat1, pMat2 [][]formulaArg, fTails, fTyp float64) formulaArg {
+	var fT, fF float64
+	nC1 := len(pMat1)
+	nC2 := len(pMat2)
+	nR1 := len(pMat1[0])
+	nR2 := len(pMat2[0])
+	ok := true
+	if fTyp == 1 {
+		if nC1 != nC2 || nR1 != nR2 {
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+		var fCount, fSum1, fSum2, fSumSqrD float64
+		var fVal1, fVal2 formulaArg
+		for i := 0; i < nC1; i++ {
+			for j := 0; j < nR1; j++ {
+				fVal1 = pMat1[i][j].ToNumber()
+				fVal2 = pMat2[i][j].ToNumber()
+				if fVal1.Type != ArgNumber || fVal2.Type != ArgNumber {
+					continue
+				}
+				fSum1 += fVal1.Number
+				fSum2 += fVal2.Number
+				fSumSqrD += (fVal1.Number - fVal2.Number) * (fVal1.Number - fVal2.Number)
+				fCount++
+			}
+		}
+		if fCount < 1 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		fSumD := fSum1 - fSum2
+		fDivider := fCount*fSumSqrD - fSumD*fSumD
+		if fDivider == 0 {
+			return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+		}
+		fT = math.Abs(fSumD) * math.Sqrt((fCount-1)/fDivider)
+		fF = fCount - 1
+	} else if fTyp == 2 {
+		fT, fF, ok = tTest(false, pMat1, pMat2, nC1, nC2, nR1, nR2, fT, fF)
+	} else {
+		fT, fF, ok = tTest(true, pMat1, pMat2, nC1, nC2, nR1, nR2, fT, fF)
+	}
+	if !ok {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(getTDist(fT, fF, fTails))
+}
+
+// TTEST function calculates the probability associated with the Student's T
+// Test, which is commonly used for identifying whether two data sets are
+// likely to have come from the same two underlying populations with the same
+// mean. The syntax of the function is:
+//
+//    TTEST(array1,array2,tails,type)
+//
+func (fn *formulaFuncs) TTEST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TTEST requires 4 arguments")
+	}
+	var array1, array2, tails, typeArg formulaArg
+	array1 = argsList.Front().Value.(formulaArg)
+	array2 = argsList.Front().Next().Value.(formulaArg)
+	if tails = argsList.Front().Next().Next().Value.(formulaArg).ToNumber(); tails.Type != ArgNumber {
+		return tails
+	}
+	if typeArg = argsList.Back().Value.(formulaArg).ToNumber(); typeArg.Type != ArgNumber {
+		return typeArg
+	}
+	if len(array1.Matrix) == 0 || len(array2.Matrix) == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if tails.Number != 1 && tails.Number != 2 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if typeArg.Number != 1 && typeArg.Number != 2 && typeArg.Number != 3 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return fn.tTest(array1.Matrix, array2.Matrix, tails.Number, typeArg.Number)
 }
 
 // TRIMMEAN function calculates the trimmed mean (or truncated mean) of a

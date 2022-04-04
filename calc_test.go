@@ -1173,6 +1173,9 @@ func TestCalcCellValue(t *testing.T) {
 		// T.INV.2T
 		"=T.INV.2T(1,10)":   "0",
 		"=T.INV.2T(0.5,10)": "0.699812061312432",
+		// TINV
+		"=TINV(1,10)":   "0",
+		"=TINV(0.5,10)": "0.699812061312432",
 		// TRIMMEAN
 		"=TRIMMEAN(A1:B4,10%)": "2.5",
 		"=TRIMMEAN(A1:B4,70%)": "2.5",
@@ -3067,6 +3070,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=T.INV.2T(0.25,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=T.INV.2T(0,10)":      "#NUM!",
 		"=T.INV.2T(0.25,0.5)":  "#NUM!",
+		// TINV
+		"=TINV()":          "TINV requires 2 arguments",
+		"=TINV(\"\",10)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TINV(0.25,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TINV(0,10)":      "#NUM!",
+		"=TINV(0.25,0.5)":  "#NUM!",
 		// TRIMMEAN
 		"=TRIMMEAN()":        "TRIMMEAN requires 2 arguments",
 		"=TRIMMEAN(A1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -4885,6 +4894,58 @@ func TestCalcSHEETS(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "A1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcTTEST(t *testing.T) {
+	cellData := [][]interface{}{
+		{4, 8, nil, 1, 1},
+		{5, 3, nil, 1, 1},
+		{2, 7},
+		{5, 3},
+		{8, 5},
+		{9, 2},
+		{3, 2},
+		{2, 7},
+		{3, 9},
+		{8, 4},
+		{9, 4},
+		{5, 7},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=TTEST(A1:A12,B1:B12,1,1)": "0.44907068944428",
+		"=TTEST(A1:A12,B1:B12,1,2)": "0.436717306029283",
+		"=TTEST(A1:A12,B1:B12,1,3)": "0.436722015384755",
+		"=TTEST(A1:A12,B1:B12,2,1)": "0.898141378888559",
+		"=TTEST(A1:A12,B1:B12,2,2)": "0.873434612058567",
+		"=TTEST(A1:A12,B1:B12,2,3)": "0.873444030769511",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=TTEST()":                     "TTEST requires 4 arguments",
+		"=TTEST(\"\",B1:B12,1,1)":      "#NUM!",
+		"=TTEST(A1:A12,\"\",1,1)":      "#NUM!",
+		"=TTEST(A1:A12,B1:B12,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TTEST(A1:A12,B1:B12,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TTEST(A1:A12,B1:B12,0,1)":    "#NUM!",
+		"=TTEST(A1:A12,B1:B12,1,0)":    "#NUM!",
+		"=TTEST(A1:A2,B1:B1,1,1)":      "#N/A",
+		"=TTEST(A13:A14,B13:B14,1,1)":  "#NUM!",
+		"=TTEST(A12:A13,B12:B13,1,1)":  "#DIV/0!",
+		"=TTEST(A13:A14,B13:B14,1,2)":  "#NUM!",
+		"=TTEST(D1:D4,E1:E4,1,3)":      "#NUM!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
 	}
 }
 

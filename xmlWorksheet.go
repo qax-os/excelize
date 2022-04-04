@@ -58,9 +58,9 @@ type xlsxWorksheet struct {
 	OleObjects             *xlsxInnerXML                `xml:"oleObjects"`
 	Controls               *xlsxInnerXML                `xml:"controls"`
 	WebPublishItems        *xlsxInnerXML                `xml:"webPublishItems"`
+	AlternateContent       *xlsxAlternateContent        `xml:"mc:AlternateContent"`
 	TableParts             *xlsxTableParts              `xml:"tableParts"`
 	ExtLst                 *xlsxExtLst                  `xml:"extLst"`
-	AlternateContent       *xlsxAlternateContent        `xml:"mc:AlternateContent"`
 	DecodeAlternateContent *xlsxInnerXML                `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
 }
 
