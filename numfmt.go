@@ -33,9 +33,9 @@ type languageInfo struct {
 type numberFormat struct {
 	section                                                                 []nfp.Section
 	t                                                                       time.Time
-	sectionIdx                int
-	isNumeric, hours, seconds bool
-	number                    float64
+	sectionIdx                                                              int
+	isNumeric, hours, seconds                                               bool
+	number                                                                  float64
 	ap, afterPoint, beforePoint, localCode, result, value, valueSectionType string
 }
 

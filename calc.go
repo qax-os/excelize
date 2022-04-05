@@ -549,6 +549,7 @@ type formulaFuncs struct {
 //    MINUTE
 //    MIRR
 //    MOD
+//    MODE
 //    MONTH
 //    MROUND
 //    MULTINOMIAL
@@ -673,6 +674,7 @@ type formulaFuncs struct {
 //    TRIMMEAN
 //    TRUE
 //    TRUNC
+//    T.TEST
 //    TTEST
 //    TYPE
 //    UNICHAR
@@ -7974,6 +7976,51 @@ func (fn *formulaFuncs) LOGNORMDIST(argsList *list.List) formulaArg {
 	return fn.NORMSDIST(args)
 }
 
+// MODE function returns the statistical mode (the most frequently occurring
+// value) of a list of supplied numbers. If there are 2 or more most
+// frequently occurring values in the supplied data, the function returns the
+// lowest of these values The syntax of the function is:
+//
+//    MODE(number1,[number2],...)
+//
+func (fn *formulaFuncs) MODE(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MODE requires at least 1 argument")
+	}
+	var values []float64
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		cells := arg.Value.(formulaArg)
+		if cells.Type != ArgMatrix && cells.ToNumber().Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		for _, cell := range cells.ToList() {
+			if num := cell.ToNumber(); num.Type == ArgNumber {
+				values = append(values, num.Number)
+			}
+		}
+	}
+	sort.Float64s(values)
+	cnt := len(values)
+	var count, modeCnt int
+	var mode float64
+	for i := 0; i < cnt; i++ {
+		count = 0
+		for j := 0; j < cnt; j++ {
+			if j != i && values[j] == values[i] {
+				count++
+			}
+		}
+		if count > modeCnt {
+			modeCnt = count
+			mode = values[i]
+		}
+	}
+	if modeCnt == 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(mode)
+}
+
 // NEGBINOMdotDIST function calculates the probability mass function or the
 // cumulative distribution function for the Negative Binomial Distribution.
 // This gives the probability that there will be a given number of failures
@@ -9340,6 +9387,20 @@ func (fn *formulaFuncs) TTEST(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return fn.tTest(array1.Matrix, array2.Matrix, tails.Number, typeArg.Number)
+}
+
+// TdotTEST function calculates the probability associated with the Student's T
+// Test, which is commonly used for identifying whether two data sets are
+// likely to have come from the same two underlying populations with the same
+// mean. The syntax of the function is:
+//
+//    T.TEST(array1,array2,tails,type)
+//
+func (fn *formulaFuncs) TdotTEST(argsList *list.List) formulaArg {
+	if argsList.Len() != 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "T.TEST requires 4 arguments")
+	}
+	return fn.TTEST(argsList)
 }
 
 // TRIMMEAN function calculates the trimmed mean (or truncated mean) of a

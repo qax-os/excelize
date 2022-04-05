@@ -4865,6 +4865,43 @@ func TestCalcISFORMULA(t *testing.T) {
 	}
 }
 
+func TestCalcMODE(t *testing.T) {
+	cellData := [][]interface{}{
+		{1, 1},
+		{1, 1},
+		{2, 2},
+		{2, 2},
+		{3, 2},
+		{3},
+		{3},
+		{4},
+		{4},
+		{4},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=MODE(A1:A10)": "3",
+		"=MODE(B1:B6)":  "2",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=MODE()":       "MODE requires at least 1 argument",
+		"=MODE(0,\"\")": "#VALUE!",
+		"=MODE(D1:D3)":  "#N/A",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcSHEET(t *testing.T) {
 	f := NewFile()
 	f.NewSheet("Sheet2")
@@ -4914,12 +4951,18 @@ func TestCalcTTEST(t *testing.T) {
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"=TTEST(A1:A12,B1:B12,1,1)": "0.44907068944428",
-		"=TTEST(A1:A12,B1:B12,1,2)": "0.436717306029283",
-		"=TTEST(A1:A12,B1:B12,1,3)": "0.436722015384755",
-		"=TTEST(A1:A12,B1:B12,2,1)": "0.898141378888559",
-		"=TTEST(A1:A12,B1:B12,2,2)": "0.873434612058567",
-		"=TTEST(A1:A12,B1:B12,2,3)": "0.873444030769511",
+		"=TTEST(A1:A12,B1:B12,1,1)":  "0.44907068944428",
+		"=TTEST(A1:A12,B1:B12,1,2)":  "0.436717306029283",
+		"=TTEST(A1:A12,B1:B12,1,3)":  "0.436722015384755",
+		"=TTEST(A1:A12,B1:B12,2,1)":  "0.898141378888559",
+		"=TTEST(A1:A12,B1:B12,2,2)":  "0.873434612058567",
+		"=TTEST(A1:A12,B1:B12,2,3)":  "0.873444030769511",
+		"=T.TEST(A1:A12,B1:B12,1,1)": "0.44907068944428",
+		"=T.TEST(A1:A12,B1:B12,1,2)": "0.436717306029283",
+		"=T.TEST(A1:A12,B1:B12,1,3)": "0.436722015384755",
+		"=T.TEST(A1:A12,B1:B12,2,1)": "0.898141378888559",
+		"=T.TEST(A1:A12,B1:B12,2,2)": "0.873434612058567",
+		"=T.TEST(A1:A12,B1:B12,2,3)": "0.873444030769511",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
@@ -4928,18 +4971,30 @@ func TestCalcTTEST(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string]string{
-		"=TTEST()":                     "TTEST requires 4 arguments",
-		"=TTEST(\"\",B1:B12,1,1)":      "#NUM!",
-		"=TTEST(A1:A12,\"\",1,1)":      "#NUM!",
-		"=TTEST(A1:A12,B1:B12,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=TTEST(A1:A12,B1:B12,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=TTEST(A1:A12,B1:B12,0,1)":    "#NUM!",
-		"=TTEST(A1:A12,B1:B12,1,0)":    "#NUM!",
-		"=TTEST(A1:A2,B1:B1,1,1)":      "#N/A",
-		"=TTEST(A13:A14,B13:B14,1,1)":  "#NUM!",
-		"=TTEST(A12:A13,B12:B13,1,1)":  "#DIV/0!",
-		"=TTEST(A13:A14,B13:B14,1,2)":  "#NUM!",
-		"=TTEST(D1:D4,E1:E4,1,3)":      "#NUM!",
+		"=TTEST()":                      "TTEST requires 4 arguments",
+		"=TTEST(\"\",B1:B12,1,1)":       "#NUM!",
+		"=TTEST(A1:A12,\"\",1,1)":       "#NUM!",
+		"=TTEST(A1:A12,B1:B12,\"\",1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TTEST(A1:A12,B1:B12,1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TTEST(A1:A12,B1:B12,0,1)":     "#NUM!",
+		"=TTEST(A1:A12,B1:B12,1,0)":     "#NUM!",
+		"=TTEST(A1:A2,B1:B1,1,1)":       "#N/A",
+		"=TTEST(A13:A14,B13:B14,1,1)":   "#NUM!",
+		"=TTEST(A12:A13,B12:B13,1,1)":   "#DIV/0!",
+		"=TTEST(A13:A14,B13:B14,1,2)":   "#NUM!",
+		"=TTEST(D1:D4,E1:E4,1,3)":       "#NUM!",
+		"=T.TEST()":                     "T.TEST requires 4 arguments",
+		"=T.TEST(\"\",B1:B12,1,1)":      "#NUM!",
+		"=T.TEST(A1:A12,\"\",1,1)":      "#NUM!",
+		"=T.TEST(A1:A12,B1:B12,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.TEST(A1:A12,B1:B12,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.TEST(A1:A12,B1:B12,0,1)":    "#NUM!",
+		"=T.TEST(A1:A12,B1:B12,1,0)":    "#NUM!",
+		"=T.TEST(A1:A2,B1:B1,1,1)":      "#N/A",
+		"=T.TEST(A13:A14,B13:B14,1,1)":  "#NUM!",
+		"=T.TEST(A12:A13,B12:B13,1,1)":  "#DIV/0!",
+		"=T.TEST(A13:A14,B13:B14,1,2)":  "#NUM!",
+		"=T.TEST(D1:D4,E1:E4,1,3)":      "#NUM!",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))

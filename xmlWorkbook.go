@@ -40,9 +40,9 @@ type xlsxWorkbook struct {
 	FileVersion            *xlsxFileVersion         `xml:"fileVersion"`
 	FileSharing            *xlsxExtLst              `xml:"fileSharing"`
 	WorkbookPr             *xlsxWorkbookPr          `xml:"workbookPr"`
-	WorkbookProtection     *xlsxWorkbookProtection  `xml:"workbookProtection"`
 	AlternateContent       *xlsxAlternateContent    `xml:"mc:AlternateContent"`
 	DecodeAlternateContent *xlsxInnerXML            `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
+	WorkbookProtection     *xlsxWorkbookProtection  `xml:"workbookProtection"`
 	BookViews              *xlsxBookViews           `xml:"bookViews"`
 	Sheets                 xlsxSheets               `xml:"sheets"`
 	FunctionGroups         *xlsxExtLst              `xml:"functionGroups"`
