@@ -550,6 +550,8 @@ type formulaFuncs struct {
 //    MIRR
 //    MOD
 //    MODE
+//    MODE.MULT
+//    MODE.SNGL
 //    MONTH
 //    MROUND
 //    MULTINOMIAL
@@ -8019,6 +8021,67 @@ func (fn *formulaFuncs) MODE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(mode)
+}
+
+// MODEdotMULT function returns a vertical array of the statistical modes
+// (the most frequently occurring values) within a list of supplied numbers.
+// The syntax of the function is:
+//
+//    MODE.MULT(number1,[number2],...)
+//
+func (fn *formulaFuncs) MODEdotMULT(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MODE.MULT requires at least 1 argument")
+	}
+	var values []float64
+	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
+		cells := arg.Value.(formulaArg)
+		if cells.Type != ArgMatrix && cells.ToNumber().Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		for _, cell := range cells.ToList() {
+			if num := cell.ToNumber(); num.Type == ArgNumber {
+				values = append(values, num.Number)
+			}
+		}
+	}
+	sort.Float64s(values)
+	cnt := len(values)
+	var count, modeCnt int
+	var mtx [][]formulaArg
+	for i := 0; i < cnt; i++ {
+		count = 0
+		for j := i + 1; j < cnt; j++ {
+			if values[i] == values[j] {
+				count++
+			}
+		}
+		if count > modeCnt {
+			modeCnt = count
+			mtx = [][]formulaArg{}
+			mtx = append(mtx, []formulaArg{newNumberFormulaArg(values[i])})
+		} else if count == modeCnt {
+			mtx = append(mtx, []formulaArg{newNumberFormulaArg(values[i])})
+		}
+	}
+	if modeCnt == 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newMatrixFormulaArg(mtx)
+}
+
+// MODEdotSNGL function returns the statistical mode (the most frequently
+// occurring value) within a list of supplied numbers. If there are 2 or more
+// most frequently occurring values in the supplied data, the function returns
+// the lowest of these values. The syntax of the function is:
+//
+//    MODE.SNGL(number1,[number2],...)
+//
+func (fn *formulaFuncs) MODEdotSNGL(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MODE.SNGL requires at least 1 argument")
+	}
+	return fn.MODE(argsList)
 }
 
 // NEGBINOMdotDIST function calculates the probability mass function or the

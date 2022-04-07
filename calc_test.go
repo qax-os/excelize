@@ -4880,8 +4880,11 @@ func TestCalcMODE(t *testing.T) {
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"=MODE(A1:A10)": "3",
-		"=MODE(B1:B6)":  "2",
+		"=MODE(A1:A10)":      "3",
+		"=MODE(B1:B6)":       "2",
+		"=MODE.MULT(A1:A10)": "",
+		"=MODE.SNGL(A1:A10)": "3",
+		"=MODE.SNGL(B1:B6)":  "2",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
@@ -4890,9 +4893,15 @@ func TestCalcMODE(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string]string{
-		"=MODE()":       "MODE requires at least 1 argument",
-		"=MODE(0,\"\")": "#VALUE!",
-		"=MODE(D1:D3)":  "#N/A",
+		"=MODE()":            "MODE requires at least 1 argument",
+		"=MODE(0,\"\")":      "#VALUE!",
+		"=MODE(D1:D3)":       "#N/A",
+		"=MODE.MULT()":       "MODE.MULT requires at least 1 argument",
+		"=MODE.MULT(0,\"\")": "#VALUE!",
+		"=MODE.MULT(D1:D3)":  "#N/A",
+		"=MODE.SNGL()":       "MODE.SNGL requires at least 1 argument",
+		"=MODE.SNGL(0,\"\")": "#VALUE!",
+		"=MODE.SNGL(D1:D3)":  "#N/A",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
