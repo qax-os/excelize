@@ -957,13 +957,13 @@ func (f *File) drawChartSeriesDLbls(formatSet *formatChart) *cDLbls {
 
 // drawPlotAreaCatAx provides a function to draw the c:catAx element.
 func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
-	min := &attrValFloat{Val: float64Ptr(formatSet.XAxis.Minimum)}
-	max := &attrValFloat{Val: float64Ptr(formatSet.XAxis.Maximum)}
-	if formatSet.XAxis.Minimum == 0 {
-		min = nil
-	}
-	if formatSet.XAxis.Maximum == 0 {
+	max := &attrValFloat{Val: formatSet.XAxis.Maximum}
+	min := &attrValFloat{Val: formatSet.XAxis.Minimum}
+	if formatSet.XAxis.Maximum == nil {
 		max = nil
+	}
+	if formatSet.XAxis.Minimum == nil {
+		min = nil
 	}
 	axs := []*cAxs{
 		{
@@ -1006,13 +1006,13 @@ func (f *File) drawPlotAreaCatAx(formatSet *formatChart) []*cAxs {
 
 // drawPlotAreaValAx provides a function to draw the c:valAx element.
 func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
-	min := &attrValFloat{Val: float64Ptr(formatSet.YAxis.Minimum)}
-	max := &attrValFloat{Val: float64Ptr(formatSet.YAxis.Maximum)}
-	if formatSet.YAxis.Minimum == 0 {
-		min = nil
-	}
-	if formatSet.YAxis.Maximum == 0 {
+	max := &attrValFloat{Val: formatSet.YAxis.Maximum}
+	min := &attrValFloat{Val: formatSet.YAxis.Minimum}
+	if formatSet.YAxis.Maximum == nil {
 		max = nil
+	}
+	if formatSet.YAxis.Minimum == nil {
+		min = nil
 	}
 	var logBase *attrValFloat
 	if formatSet.YAxis.LogBase >= 2 && formatSet.YAxis.LogBase <= 1000 {
@@ -1060,13 +1060,13 @@ func (f *File) drawPlotAreaValAx(formatSet *formatChart) []*cAxs {
 
 // drawPlotAreaSerAx provides a function to draw the c:serAx element.
 func (f *File) drawPlotAreaSerAx(formatSet *formatChart) []*cAxs {
-	min := &attrValFloat{Val: float64Ptr(formatSet.YAxis.Minimum)}
-	max := &attrValFloat{Val: float64Ptr(formatSet.YAxis.Maximum)}
-	if formatSet.YAxis.Minimum == 0 {
-		min = nil
-	}
-	if formatSet.YAxis.Maximum == 0 {
+	max := &attrValFloat{Val: formatSet.YAxis.Maximum}
+	min := &attrValFloat{Val: formatSet.YAxis.Minimum}
+	if formatSet.YAxis.Maximum == nil {
 		max = nil
+	}
+	if formatSet.YAxis.Minimum == nil {
+		min = nil
 	}
 	return []*cAxs{
 		{

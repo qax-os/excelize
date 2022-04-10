@@ -374,6 +374,7 @@ type formulaFuncs struct {
 //    CONCATENATE
 //    CONFIDENCE
 //    CONFIDENCE.NORM
+//    CONFIDENCE.T
 //    CORREL
 //    COS
 //    COSH
@@ -588,6 +589,7 @@ type formulaFuncs struct {
 //    PERCENTRANK
 //    PERMUT
 //    PERMUTATIONA
+//    PHI
 //    PI
 //    PMT
 //    POISSON.DIST
@@ -6805,12 +6807,48 @@ func (fn *formulaFuncs) CONFIDENCE(argsList *list.List) formulaArg {
 // confidence value that can be used to construct the confidence interval for
 // a population mean, for a supplied probability and sample size. It is
 // assumed that the standard deviation of the population is known. The syntax
-// of the Confidence.Norm function is:
+// of the function is:
 //
 //    CONFIDENCE.NORM(alpha,standard_dev,size)
 //
 func (fn *formulaFuncs) CONFIDENCEdotNORM(argsList *list.List) formulaArg {
 	return fn.confidence("CONFIDENCE.NORM", argsList)
+}
+
+// CONFIDENCEdotT function uses a Student's T-Distribution to calculate a
+// confidence value that can be used to construct the confidence interval for
+// a population mean, for a supplied probablity and supplied sample size. It
+// is assumed that the standard deviation of the population is known. The
+// syntax of the function is:
+//
+//    CONFIDENCE.T(alpha,standard_dev,size)
+//
+func (fn *formulaFuncs) CONFIDENCEdotT(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CONFIDENCE.T requires 3 arguments")
+	}
+	var alpha, standardDev, size formulaArg
+	if alpha = argsList.Front().Value.(formulaArg).ToNumber(); alpha.Type != ArgNumber {
+		return alpha
+	}
+	if standardDev = argsList.Front().Next().Value.(formulaArg).ToNumber(); standardDev.Type != ArgNumber {
+		return standardDev
+	}
+	if size = argsList.Back().Value.(formulaArg).ToNumber(); size.Type != ArgNumber {
+		return size
+	}
+	if alpha.Number <= 0 || alpha.Number >= 1 || standardDev.Number <= 0 || size.Number < 1 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	if size.Number == 1 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	return newNumberFormulaArg(standardDev.Number * calcIterateInverse(calcInverseIterator{
+		name: "CONFIDENCE.T",
+		fp:   alpha.Number,
+		fDF:  size.Number - 1,
+		nT:   2,
+	}, size.Number/2, size.Number) / math.Sqrt(size.Number))
 }
 
 // COVAR function calculates the covariance of two supplied sets of values. The
@@ -8889,6 +8927,22 @@ func (fn *formulaFuncs) PERMUTATIONA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(math.Pow(num, numChosen))
+}
+
+// PHI function returns the value of the density function for a standard normal
+// distribution for a supplied number. The syntax of the function is:
+//
+//    PHI(x)
+//
+func (fn *formulaFuncs) PHI(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "PHI requires 1 argument")
+	}
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return x
+	}
+	return newNumberFormulaArg(0.39894228040143268 * math.Exp(-(x.Number*x.Number)/2))
 }
 
 // QUARTILE function returns a requested quartile of a supplied range of
@@ -13122,7 +13176,7 @@ func validateFrequency(freq float64) bool {
 	return freq == 1 || freq == 2 || freq == 4
 }
 
-// ACCRINT function returns the accrued interest for a security that pays
+// ACCRINT function returns the accrued interest in a security that pays
 // periodic interest. The syntax of the function is:
 //
 //    ACCRINT(issue,first_interest,settlement,rate,par,frequency,[basis],[calc_method])
@@ -13166,7 +13220,7 @@ func (fn *formulaFuncs) ACCRINT(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(par.Number * rate.Number * frac1.Number)
 }
 
-// ACCRINTM function returns the accrued interest for a security that pays
+// ACCRINTM function returns the accrued interest in a security that pays
 // interest at maturity. The syntax of the function is:
 //
 //    ACCRINTM(issue,settlement,rate,[par],[basis])

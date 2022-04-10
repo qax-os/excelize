@@ -520,23 +520,23 @@ type cPageMargins struct {
 
 // formatChartAxis directly maps the format settings of the chart axis.
 type formatChartAxis struct {
-	None                bool    `json:"none"`
-	Crossing            string  `json:"crossing"`
-	MajorGridlines      bool    `json:"major_grid_lines"`
-	MinorGridlines      bool    `json:"minor_grid_lines"`
-	MajorTickMark       string  `json:"major_tick_mark"`
-	MinorTickMark       string  `json:"minor_tick_mark"`
-	MinorUnitType       string  `json:"minor_unit_type"`
-	MajorUnit           float64 `json:"major_unit"`
-	MajorUnitType       string  `json:"major_unit_type"`
-	TickLabelSkip       int     `json:"tick_label_skip"`
-	DisplayUnits        string  `json:"display_units"`
-	DisplayUnitsVisible bool    `json:"display_units_visible"`
-	DateAxis            bool    `json:"date_axis"`
-	ReverseOrder        bool    `json:"reverse_order"`
-	Maximum             float64 `json:"maximum"`
-	Minimum             float64 `json:"minimum"`
-	NumFormat           string  `json:"num_format"`
+	None                bool     `json:"none"`
+	Crossing            string   `json:"crossing"`
+	MajorGridlines      bool     `json:"major_grid_lines"`
+	MinorGridlines      bool     `json:"minor_grid_lines"`
+	MajorTickMark       string   `json:"major_tick_mark"`
+	MinorTickMark       string   `json:"minor_tick_mark"`
+	MinorUnitType       string   `json:"minor_unit_type"`
+	MajorUnit           float64  `json:"major_unit"`
+	MajorUnitType       string   `json:"major_unit_type"`
+	TickLabelSkip       int      `json:"tick_label_skip"`
+	DisplayUnits        string   `json:"display_units"`
+	DisplayUnitsVisible bool     `json:"display_units_visible"`
+	DateAxis            bool     `json:"date_axis"`
+	ReverseOrder        bool     `json:"reverse_order"`
+	Maximum             *float64 `json:"maximum"`
+	Minimum             *float64 `json:"minimum"`
+	NumFormat           string   `json:"num_format"`
 	NumFont             struct {
 		Color     string `json:"color"`
 		Bold      bool   `json:"bold"`

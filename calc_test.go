@@ -879,6 +879,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=CONFIDENCE(0.05,0.07,100)": "0.0137197479028414",
 		// CONFIDENCE.NORM
 		"=CONFIDENCE.NORM(0.05,0.07,100)": "0.0137197479028414",
+		// CONFIDENCE.T
+		"=CONFIDENCE.T(0.05,0.07,100)": "0.0138895186611049",
 		// CORREL
 		"=CORREL(A1:A5,B1:B5)": "1",
 		// COUNT
@@ -1122,6 +1124,11 @@ func TestCalcCellValue(t *testing.T) {
 		// PERMUTATIONA
 		"=PERMUTATIONA(6,6)": "46656",
 		"=PERMUTATIONA(7,6)": "117649",
+		// PHI
+		"=PHI(-1.5)": "0.129517595665892",
+		"=PHI(0)":    "0.398942280401433",
+		"=PHI(0.1)":  "0.396952547477012",
+		"=PHI(1)":    "0.241970724519143",
 		// QUARTILE
 		"=QUARTILE(A1:A4,2)": "1.5",
 		// QUARTILE.EXC
@@ -2643,6 +2650,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=CORREL()":            "CORREL requires 2 arguments",
 		"=CORREL(A1:A3,B1:B5)": "#N/A",
 		"=CORREL(A1:A1,B1:B1)": "#DIV/0!",
+		// CONFIDENCE.T
+		"=CONFIDENCE.T()":               "CONFIDENCE.T requires 3 arguments",
+		"=CONFIDENCE.T(\"\",0.07,100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE.T(0.05,\"\",100)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE.T(0.05,0.07,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=CONFIDENCE.T(0,0.07,100)":     "#NUM!",
+		"=CONFIDENCE.T(1,0.07,100)":     "#NUM!",
+		"=CONFIDENCE.T(0.05,0,100)":     "#NUM!",
+		"=CONFIDENCE.T(0.05,0.07,0)":    "#NUM!",
+		"=CONFIDENCE.T(0.05,0.07,1)":    "#DIV/0!",
 		// COUNTBLANK
 		"=COUNTBLANK()":    "COUNTBLANK requires 1 argument",
 		"=COUNTBLANK(1,2)": "COUNTBLANK requires 1 argument",
@@ -2985,6 +3002,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=PERMUTATIONA(0,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=PERMUTATIONA(-1,0)":   "#N/A",
 		"=PERMUTATIONA(0,-1)":   "#N/A",
+		// PHI
+		"=PHI()":     "PHI requires 1 argument",
+		"=PHI(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// QUARTILE
 		"=QUARTILE()":           "QUARTILE requires 2 arguments",
 		"=QUARTILE(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
