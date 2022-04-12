@@ -393,6 +393,7 @@ type formulaFuncs struct {
 //    COUPPCD
 //    COVAR
 //    COVARIANCE.P
+//    COVARIANCE.S
 //    CRITBINOM
 //    CSC
 //    CSCH
@@ -645,6 +646,7 @@ type formulaFuncs struct {
 //    STDEV.S
 //    STDEVA
 //    STDEVP
+//    STDEVPA
 //    SUBSTITUTE
 //    SUM
 //    SUMIF
@@ -6851,14 +6853,11 @@ func (fn *formulaFuncs) CONFIDENCEdotT(argsList *list.List) formulaArg {
 	}, size.Number/2, size.Number) / math.Sqrt(size.Number))
 }
 
-// COVAR function calculates the covariance of two supplied sets of values. The
-// syntax of the function is:
-//
-//    COVAR(array1,array2)
-//
-func (fn *formulaFuncs) COVAR(argsList *list.List) formulaArg {
+// covar is an implementation of the formula functions COVAR, COVARIANCE.P and
+// COVARIANCE.S.
+func (fn *formulaFuncs) covar(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "COVAR requires 2 arguments")
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
 	}
 	array1 := argsList.Front().Value.(formulaArg)
 	array2 := argsList.Back().Value.(formulaArg)
@@ -6881,7 +6880,19 @@ func (fn *formulaFuncs) COVAR(argsList *list.List) formulaArg {
 		}
 		result += (arg1.Number - mean1.Number) * (arg2.Number - mean2.Number)
 	}
+	if name == "COVARIANCE.S" {
+		return newNumberFormulaArg(result / float64(n-skip-1))
+	}
 	return newNumberFormulaArg(result / float64(n-skip))
+}
+
+// COVAR function calculates the covariance of two supplied sets of values. The
+// syntax of the function is:
+//
+//    COVAR(array1,array2)
+//
+func (fn *formulaFuncs) COVAR(argsList *list.List) formulaArg {
+	return fn.covar("COVAR", argsList)
 }
 
 // COVARIANCEdotP function calculates the population covariance of two supplied
@@ -6890,10 +6901,16 @@ func (fn *formulaFuncs) COVAR(argsList *list.List) formulaArg {
 //    COVARIANCE.P(array1,array2)
 //
 func (fn *formulaFuncs) COVARIANCEdotP(argsList *list.List) formulaArg {
-	if argsList.Len() != 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "COVARIANCE.P requires 2 arguments")
-	}
-	return fn.COVAR(argsList)
+	return fn.covar("COVARIANCE.P", argsList)
+}
+
+// COVARIANCEdotS function calculates the sample covariance of two supplied
+// sets of values. The syntax of the function is:
+//
+//    COVARIANCE.S(array1,array2)
+//
+func (fn *formulaFuncs) COVARIANCEdotS(argsList *list.List) formulaArg {
+	return fn.covar("COVARIANCE.S", argsList)
 }
 
 // calcStringCountSum is part of the implementation countSum.
@@ -9131,12 +9148,17 @@ func (fn *formulaFuncs) STANDARDIZE(argsList *list.List) formulaArg {
 	return newNumberFormulaArg((x.Number - mean.Number) / stdDev.Number)
 }
 
-// stdevp is an implementation of the formula functions STDEVP and STDEV.P.
+// stdevp is an implementation of the formula functions STDEVP, STDEV.P and
+// STDEVPA.
 func (fn *formulaFuncs) stdevp(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
 	}
-	varp := fn.VARP(argsList)
+	fnName := "VARP"
+	if name == "STDEVPA" {
+		fnName = "VARPA"
+	}
+	varp := fn.vars(fnName, argsList)
 	if varp.Type != ArgNumber {
 		return varp
 	}
@@ -9159,6 +9181,15 @@ func (fn *formulaFuncs) STDEVP(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) STDEVdotP(argsList *list.List) formulaArg {
 	return fn.stdevp("STDEV.P", argsList)
+}
+
+// STDEVPA function calculates the standard deviation of a supplied set of
+// values. The syntax of the function is:
+//
+//    STDEVPA(number1,[number2],...)
+//
+func (fn *formulaFuncs) STDEVPA(argsList *list.List) formulaArg {
+	return fn.stdevp("STDEVPA", argsList)
 }
 
 // getTDist is an implementation for the beta distribution probability density
@@ -9576,6 +9607,9 @@ func (fn *formulaFuncs) vars(name string, argsList *list.List) formulaArg {
 	}
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		for _, token := range arg.Value.(formulaArg).ToList() {
+			if token.Value() == "" {
+				continue
+			}
 			num := token.ToNumber()
 			if token.Value() != "TRUE" && num.Type == ArgNumber {
 				summerA += num.Number * num.Number

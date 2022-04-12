@@ -1162,6 +1162,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=STDEVP(A1:B2,6,-1)": "2.40947204913349",
 		// STDEV.P
 		"=STDEV.P(A1:B2,6,-1)": "2.40947204913349",
+		// STDEVPA
+		"=STDEVPA(1,3,5,2)":               "1.4790199457749",
+		"=STDEVPA(1,3,5,2,1,0)":           "1.63299316185545",
+		"=STDEVPA(1,3,5,2,TRUE,\"text\")": "1.63299316185545",
 		// T.DIST
 		"=T.DIST(1,10,TRUE)":   "0.82955343384897",
 		"=T.DIST(-1,10,TRUE)":  "0.17044656615103",
@@ -1190,8 +1194,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=VAR(1,3,5,0,C1)":      "4.91666666666667",
 		"=VAR(1,3,5,0,C1,TRUE)": "4",
 		// VARA
-		"=VARA(1,3,5,0,C1)":      "4.7",
-		"=VARA(1,3,5,0,C1,TRUE)": "3.86666666666667",
+		"=VARA(1,3,5,0,C1)":      "4.91666666666667",
+		"=VARA(1,3,5,0,C1,TRUE)": "4",
 		// VARP
 		"=VARP(A1:A5)":           "1.25",
 		"=VARP(1,3,5,0,C1,TRUE)": "3.2",
@@ -1201,8 +1205,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=VAR.S(1,3,5,0,C1)":      "4.91666666666667",
 		"=VAR.S(1,3,5,0,C1,TRUE)": "4",
 		// VARPA
-		"=VARPA(1,3,5,0,C1)":      "3.76",
-		"=VARPA(1,3,5,0,C1,TRUE)": "3.22222222222222",
+		"=VARPA(1,3,5,0,C1)":      "3.6875",
+		"=VARPA(1,3,5,0,C1,TRUE)": "3.2",
 		// WEIBULL
 		"=WEIBULL(1,3,1,FALSE)":  "1.10363832351433",
 		"=WEIBULL(2,5,1.5,TRUE)": "0.985212776817482",
@@ -3050,6 +3054,9 @@ func TestCalcCellValue(t *testing.T) {
 		// STDEV.P
 		"=STDEV.P()":     "STDEV.P requires at least 1 argument",
 		"=STDEV.P(\"\")": "#DIV/0!",
+		// STDEVPA
+		"=STDEVPA()":     "STDEVPA requires at least 1 argument",
+		"=STDEVPA(\"\")": "#DIV/0!",
 		// T.DIST
 		"=T.DIST()":             "T.DIST requires 3 arguments",
 		"=T.DIST(\"\",10,TRUE)": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -4361,6 +4368,8 @@ func TestCalcCOVAR(t *testing.T) {
 		"=COVAR(A2:A9,B2:B9)":        "16.633125",
 		"=COVARIANCE.P(A1:A9,B1:B9)": "16.633125",
 		"=COVARIANCE.P(A2:A9,B2:B9)": "16.633125",
+		"=COVARIANCE.S(A1:A9,B1:B9)": "19.0092857142857",
+		"=COVARIANCE.S(A2:A9,B2:B9)": "19.0092857142857",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
@@ -4373,6 +4382,8 @@ func TestCalcCOVAR(t *testing.T) {
 		"=COVAR(A2:A9,B3:B3)":        "#N/A",
 		"=COVARIANCE.P()":            "COVARIANCE.P requires 2 arguments",
 		"=COVARIANCE.P(A2:A9,B3:B3)": "#N/A",
+		"=COVARIANCE.S()":            "COVARIANCE.S requires 2 arguments",
+		"=COVARIANCE.S(A2:A9,B3:B3)": "#N/A",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
