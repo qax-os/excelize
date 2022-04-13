@@ -549,7 +549,9 @@ type formulaFuncs struct {
 //    MINA
 //    MINIFS
 //    MINUTE
+//    MINVERSE
 //    MIRR
+//    MMULT
 //    MOD
 //    MODE
 //    MODE.MULT
@@ -4042,37 +4044,167 @@ func det(sqMtx [][]float64) float64 {
 	return res
 }
 
+// newNumberMatrix converts a formula arguments matrix to a number matrix.
+func newNumberMatrix(arg formulaArg, phalanx bool) (numMtx [][]float64, ele formulaArg) {
+	rows := len(arg.Matrix)
+	for r, row := range arg.Matrix {
+		if phalanx && len(row) != rows {
+			ele = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			return
+		}
+		numMtx = append(numMtx, make([]float64, len(row)))
+		for c, cell := range row {
+			if ele = cell.ToNumber(); ele.Type != ArgNumber {
+				return
+			}
+			numMtx[r][c] = ele.Number
+		}
+	}
+	return
+}
+
+// newFormulaArgMatrix converts the number formula arguments matrix to a
+// formula arguments matrix.
+func newFormulaArgMatrix(numMtx [][]float64) (arg [][]formulaArg) {
+	for r, row := range numMtx {
+		arg = append(arg, make([]formulaArg, len(row)))
+		for c, cell := range row {
+			arg[r][c] = newNumberFormulaArg(cell)
+		}
+	}
+	return
+}
+
 // MDETERM calculates the determinant of a square matrix. The
 // syntax of the function is:
 //
 //    MDETERM(array)
 //
 func (fn *formulaFuncs) MDETERM(argsList *list.List) (result formulaArg) {
-	var (
-		num    float64
-		numMtx [][]float64
-		err    error
-		strMtx [][]formulaArg
-	)
 	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "MDETERM requires at least 1 argument")
+		return newErrorFormulaArg(formulaErrorVALUE, "MDETERM requires 1 argument")
 	}
-	strMtx = argsList.Front().Value.(formulaArg).Matrix
-	rows := len(strMtx)
-	for _, row := range argsList.Front().Value.(formulaArg).Matrix {
-		if len(row) != rows {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		}
-		var numRow []float64
-		for _, ele := range row {
-			if num, err = strconv.ParseFloat(ele.String, 64); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
-			numRow = append(numRow, num)
-		}
-		numMtx = append(numMtx, numRow)
+	numMtx, errArg := newNumberMatrix(argsList.Front().Value.(formulaArg), true)
+	if errArg.Type == ArgError {
+		return errArg
 	}
 	return newNumberFormulaArg(det(numMtx))
+}
+
+// cofactorMatrix returns the matrix A of cofactors.
+func cofactorMatrix(i, j int, A [][]float64) float64 {
+	N, sign := len(A), -1.0
+	if (i+j)%2 == 0 {
+		sign = 1
+	}
+	var B [][]float64
+	for _, row := range A {
+		B = append(B, row)
+	}
+	for m := 0; m < N; m++ {
+		for n := j + 1; n < N; n++ {
+			B[m][n-1] = B[m][n]
+		}
+		B[m] = B[m][:len(B[m])-1]
+	}
+	for k := i + 1; k < N; k++ {
+		B[k-1] = B[k]
+	}
+	B = B[:len(B)-1]
+	return sign * det(B)
+}
+
+// adjugateMatrix returns transpose of the cofactor matrix A with Cramer's
+// rule.
+func adjugateMatrix(A [][]float64) (adjA [][]float64) {
+	N := len(A)
+	var B [][]float64
+	for i := 0; i < N; i++ {
+		adjA = append(adjA, make([]float64, N))
+		for j := 0; j < N; j++ {
+			for m := 0; m < N; m++ {
+				for n := 0; n < N; n++ {
+					for x := len(B); x <= m; x++ {
+						B = append(B, []float64{})
+					}
+					for k := len(B[m]); k <= n; k++ {
+						B[m] = append(B[m], 0)
+					}
+					B[m][n] = A[m][n]
+				}
+			}
+			adjA[i][j] = cofactorMatrix(j, i, B)
+		}
+	}
+	return
+}
+
+// MINVERSE function calculates the inverse of a square matrix. The syntax of
+// the function is:
+//
+//    MINVERSE(array)
+//
+func (fn *formulaFuncs) MINVERSE(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MINVERSE requires 1 argument")
+	}
+	numMtx, errArg := newNumberMatrix(argsList.Front().Value.(formulaArg), true)
+	if errArg.Type == ArgError {
+		return errArg
+	}
+	if detM := det(numMtx); detM != 0 {
+		datM, invertM := 1/detM, adjugateMatrix(numMtx)
+		for i := 0; i < len(invertM); i++ {
+			for j := 0; j < len(invertM[i]); j++ {
+				invertM[i][j] *= datM
+			}
+		}
+		return newMatrixFormulaArg(newFormulaArgMatrix(invertM))
+	}
+	return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+}
+
+// MMULT function calculates the matrix product of two arrays
+// (representing matrices). The syntax of the function is:
+//
+//    MMULT(array1,array2)
+//
+func (fn *formulaFuncs) MMULT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "MMULT requires 2 argument")
+	}
+	numMtx1, errArg1 := newNumberMatrix(argsList.Front().Value.(formulaArg), false)
+	if errArg1.Type == ArgError {
+		return errArg1
+	}
+	numMtx2, errArg2 := newNumberMatrix(argsList.Back().Value.(formulaArg), false)
+	if errArg2.Type == ArgError {
+		return errArg2
+	}
+	array2Rows, array2Cols := len(numMtx2), len(numMtx2[0])
+	if len(numMtx1[0]) != array2Rows {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	var numMtx [][]float64
+	var row1, row []float64
+	var sum float64
+	for i := 0; i < len(numMtx1); i++ {
+		numMtx = append(numMtx, []float64{})
+		row = []float64{}
+		row1 = numMtx1[i]
+		for j := 0; j < array2Cols; j++ {
+			sum = 0
+			for k := 0; k < array2Rows; k++ {
+				sum += row1[k] * numMtx2[k][j]
+			}
+			for l := len(row); l <= j; l++ {
+				row = append(row, 0)
+			}
+			row[j] = sum
+			numMtx[i] = row
+		}
+	}
+	return newMatrixFormulaArg(newFormulaArgMatrix(numMtx))
 }
 
 // MOD function returns the remainder of a division between two supplied

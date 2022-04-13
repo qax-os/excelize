@@ -571,6 +571,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMPRODUCT(\"1-i\",\"5+10i\",2)":       "30+10i",
 		"=IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"=IMPRODUCT(A1:C1)":                     "4",
+		// MINVERSE
+		"=MINVERSE(A1:B2)": "",
+		// MMULT
+		"=MMULT(A4:A4,A4:A4)": "",
 		// MOD
 		"=MOD(6,4)":        "2",
 		"=MOD(6,3)":        "0",
@@ -2336,7 +2340,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOG10()":    "LOG10 requires 1 numeric argument",
 		`=LOG10("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		// MDETERM
-		"MDETERM()": "MDETERM requires at least 1 argument",
+		"=MDETERM()": "MDETERM requires 1 argument",
+		// MINVERSE
+		"=MINVERSE()":      "MINVERSE requires 1 argument",
+		"=MINVERSE(B3:C4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MINVERSE(A1:C2)": "#VALUE!",
+		"=MINVERSE(A4:A4)": "#NUM!",
+		// MMULT
+		"=MMULT()":            "MMULT requires 2 argument",
+		"=MMULT(A1:B2,B3:C4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MMULT(B3:C4,A1:B2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MMULT(A1:A2,B1:B2)": "#VALUE!",
 		// MOD
 		"=MOD()":      "MOD requires 2 numeric arguments",
 		"=MOD(6,0)":   "MOD divide by zero",
