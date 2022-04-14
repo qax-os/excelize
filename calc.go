@@ -584,6 +584,7 @@ type formulaFuncs struct {
 //    ODDFPRICE
 //    OR
 //    PDURATION
+//    PEARSON
 //    PERCENTILE.EXC
 //    PERCENTILE.INC
 //    PERCENTILE
@@ -628,6 +629,7 @@ type formulaFuncs struct {
 //    ROW
 //    ROWS
 //    RRI
+//    RSQ
 //    SEC
 //    SECH
 //    SECOND
@@ -8858,6 +8860,56 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(min)
 }
 
+// pearsonProduct is an implementation of the formula functions PEARSON and
+// RSQ.
+func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
+	}
+	array1 := argsList.Front().Value.(formulaArg).ToList()
+	array2 := argsList.Back().Value.(formulaArg).ToList()
+	if len(array1) != len(array2) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	var sum, deltaX, deltaY, x, y, length float64
+	for i := 0; i < len(array1); i++ {
+		num1, num2 := array1[i].ToNumber(), array2[i].ToNumber()
+		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
+			continue
+		}
+		x += num1.Number
+		y += num2.Number
+		length++
+	}
+	x /= length
+	y /= length
+	for i := 0; i < len(array1); i++ {
+		num1, num2 := array1[i].ToNumber(), array2[i].ToNumber()
+		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
+			continue
+		}
+		sum += (num1.Number - x) * (num2.Number - y)
+		deltaX += (num1.Number - x) * (num1.Number - x)
+		deltaY += (num2.Number - y) * (num2.Number - y)
+	}
+	if deltaX == 0 || deltaY == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	if name == "RSQ" {
+		return newNumberFormulaArg(math.Pow(sum/math.Sqrt(deltaX*deltaY), 2))
+	}
+	return newNumberFormulaArg(sum / math.Sqrt(deltaX*deltaY))
+}
+
+// PEARSON function calculates the Pearson Product-Moment Correlation
+// Coefficient for two sets of values. The syntax of the function is:
+//
+//    PEARSON(array1,array2)
+//
+func (fn *formulaFuncs) PEARSON(argsList *list.List) formulaArg {
+	return fn.pearsonProduct("PEARSON", argsList)
+}
+
 // PERCENTILEdotEXC function returns the k'th percentile (i.e. the value below
 // which k% of the data values fall) for a supplied range of values and a
 // supplied k (between 0 & 1 exclusive).The syntax of the function is:
@@ -9204,6 +9256,16 @@ func (fn *formulaFuncs) RANKdotEQ(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) RANK(argsList *list.List) formulaArg {
 	return fn.rank("RANK", argsList)
+}
+
+// RSQ function calculates the square of the Pearson Product-Moment Correlation
+// Coefficient for two supplied sets of values. The syntax of the function
+// is:
+//
+//    RSQ(known_y's,known_x's)
+//
+func (fn *formulaFuncs) RSQ(argsList *list.List) formulaArg {
+	return fn.pearsonProduct("RSQ", argsList)
 }
 
 // SKEW function calculates the skewness of the distribution of a supplied set

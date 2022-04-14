@@ -1095,6 +1095,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
 		// MINIFS
 		"=MINIFS(F2:F4,A2:A4,\">0\")": "22100",
+		// PEARSON
+		"=PEARSON(A1:A4,B1:B4)": "1",
 		// PERCENTILE.EXC
 		"=PERCENTILE.EXC(A1:A4,0.2)": "0",
 		"=PERCENTILE.EXC(A1:A4,0.6)": "2",
@@ -1149,6 +1151,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=RANK.EQ(1,A1:B5)":   "5",
 		"=RANK.EQ(1,A1:B5,0)": "5",
 		"=RANK.EQ(1,A1:B5,1)": "2",
+		// RSQ
+		"=RSQ(A1:A4,B1:B4)": "1",
 		// SKEW
 		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
 		"=SKEW(A1:B2)":     "0",
@@ -2974,6 +2978,10 @@ func TestCalcCellValue(t *testing.T) {
 		// MINIFS
 		"=MINIFS()":                         "MINIFS requires at least 3 arguments",
 		"=MINIFS(F2:F4,A2:A4,\"<0\",D2:D9)": "#N/A",
+		// PEARSON
+		"=PEARSON()":            "PEARSON requires 2 arguments",
+		"=PEARSON(A1:A2,B1:B1)": "#N/A",
+		"=PEARSON(A4,A4)":       "#DIV/0!",
 		// PERCENTILE.EXC
 		"=PERCENTILE.EXC()":           "PERCENTILE.EXC requires 2 arguments",
 		"=PERCENTILE.EXC(A1:A4,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
@@ -3047,6 +3055,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=RANK.EQ(-1,A1:B5)":     "#N/A",
 		"=RANK.EQ(\"\",A1:B5)":   "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=RANK.EQ(1,A1:B5,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		// RSQ
+		"=RSQ()":            "RSQ requires 2 arguments",
+		"=RSQ(A1:A2,B1:B1)": "#N/A",
+		"=RSQ(A4,A4)":       "#DIV/0!",
 		// SKEW
 		"=SKEW()":     "SKEW requires at least 1 argument",
 		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
