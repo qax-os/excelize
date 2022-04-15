@@ -477,6 +477,7 @@ type formatPicture struct {
 
 // formatShape directly maps the format settings of the shape.
 type formatShape struct {
+	Macro     string                 `json:"macro"`
 	Type      string                 `json:"type"`
 	Width     int                    `json:"width"`
 	Height    int                    `json:"height"`
