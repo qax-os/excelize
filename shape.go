@@ -25,15 +25,10 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 		Height: 160,
 		Format: formatPicture{
 			FPrintsWithSheet: true,
-			FLocksWithSheet:  false,
-			NoChangeAspect:   false,
-			OffsetX:          0,
-			OffsetY:          0,
 			XScale:           1.0,
 			YScale:           1.0,
 		},
-		Line:  formatLine{Width: 1},
-		Macro: "",
+		Line: formatLine{Width: 1},
 	}
 	err := json.Unmarshal([]byte(formatSet), &format)
 	return &format, err

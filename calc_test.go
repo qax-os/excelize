@@ -1157,6 +1157,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=SKEW(1,2,3,4,3)": "-0.404796008910937",
 		"=SKEW(A1:B2)":     "0",
 		"=SKEW(A1:D3)":     "0",
+		// SKEW.P
+		"=SKEW.P(1,2,3,4,3)": "-0.27154541788364",
+		"=SKEW.P(A1:B2)":     "0",
+		"=SKEW.P(A1:D3)":     "0",
+		// SLOPE
+		"=SLOPE(A1:A4,B1:B4)": "1",
 		// SMALL
 		"=SMALL(A1:A5,1)": "0",
 		"=SMALL(A1:B5,2)": "1",
@@ -3063,6 +3069,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=SKEW()":     "SKEW requires at least 1 argument",
 		"=SKEW(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		"=SKEW(0)":    "#DIV/0!",
+		// SKEW.P
+		"=SKEW.P()":     "SKEW.P requires at least 1 argument",
+		"=SKEW.P(\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=SKEW.P(0)":    "#DIV/0!",
+		// SLOPE
+		"=SLOPE()":            "SLOPE requires 2 arguments",
+		"=SLOPE(A1:A2,B1:B1)": "#N/A",
+		"=SLOPE(A4,A4)":       "#DIV/0!",
 		// SMALL
 		"=SMALL()":           "SMALL requires 2 arguments",
 		"=SMALL(A1:A5,0)":    "k should be > 0",
@@ -4965,6 +4979,89 @@ func TestCalcMODE(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, expected, formula)
 		assert.Equal(t, "", result, formula)
+	}
+}
+
+func TestCalcPEARSON(t *testing.T) {
+	cellData := [][]interface{}{
+		{"x", "y"},
+		{1, 10.11},
+		{2, 22.9},
+		{2, 27.61},
+		{3, 27.61},
+		{4, 11.15},
+		{5, 31.08},
+		{6, 37.9},
+		{7, 33.49},
+		{8, 21.05},
+		{9, 27.01},
+		{10, 45.78},
+		{11, 31.32},
+		{12, 50.57},
+		{13, 45.48},
+		{14, 40.94},
+		{15, 53.76},
+		{16, 36.18},
+		{17, 49.77},
+		{18, 55.66},
+		{19, 63.83},
+		{20, 63.6},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=PEARSON(A2:A22,B2:B22)": "0.864129542184994",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcRSQ(t *testing.T) {
+	cellData := [][]interface{}{
+		{"known_y's", "known_x's"},
+		{2, 22.9},
+		{7, 33.49},
+		{8, 34.5},
+		{3, 27.61},
+		{4, 19.5},
+		{1, 10.11},
+		{6, 37.9},
+		{5, 31.08},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=RSQ(A2:A9,B2:B9)": "0.711666290486784",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcSLOP(t *testing.T) {
+	cellData := [][]interface{}{
+		{"known_x's", "known_y's"},
+		{1, 3},
+		{2, 7},
+		{3, 17},
+		{4, 20},
+		{5, 20},
+		{6, 27},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=SLOPE(A2:A7,B2:B7)": "0.200826446280992",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
 	}
 }
 

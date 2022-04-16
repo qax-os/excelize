@@ -640,7 +640,9 @@ type formulaFuncs struct {
 //    SIN
 //    SINH
 //    SKEW
+//    SKEW.P
 //    SLN
+//    SLOPE
 //    SMALL
 //    SQRT
 //    SQRTPI
@@ -8860,14 +8862,20 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(min)
 }
 
-// pearsonProduct is an implementation of the formula functions PEARSON and
-// RSQ.
+// pearsonProduct is an implementation of the formula functions PEARSON, RSQ
+// and SLOPE.
 func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
 	}
-	array1 := argsList.Front().Value.(formulaArg).ToList()
-	array2 := argsList.Back().Value.(formulaArg).ToList()
+	var array1, array2 []formulaArg
+	if name == "SLOPE" {
+		array1 = argsList.Back().Value.(formulaArg).ToList()
+		array2 = argsList.Front().Value.(formulaArg).ToList()
+	} else {
+		array1 = argsList.Front().Value.(formulaArg).ToList()
+		array2 = argsList.Back().Value.(formulaArg).ToList()
+	}
 	if len(array1) != len(array2) {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
@@ -8898,7 +8906,10 @@ func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formula
 	if name == "RSQ" {
 		return newNumberFormulaArg(math.Pow(sum/math.Sqrt(deltaX*deltaY), 2))
 	}
-	return newNumberFormulaArg(sum / math.Sqrt(deltaX*deltaY))
+	if name == "PEARSON" {
+		return newNumberFormulaArg(sum / math.Sqrt(deltaX*deltaY))
+	}
+	return newNumberFormulaArg(sum / deltaX)
 }
 
 // PEARSON function calculates the Pearson Product-Moment Correlation
@@ -9268,16 +9279,19 @@ func (fn *formulaFuncs) RSQ(argsList *list.List) formulaArg {
 	return fn.pearsonProduct("RSQ", argsList)
 }
 
-// SKEW function calculates the skewness of the distribution of a supplied set
-// of values. The syntax of the function is:
-//
-//    SKEW(number1,[number2],...)
-//
-func (fn *formulaFuncs) SKEW(argsList *list.List) formulaArg {
+// skew is an implementation of the formula functions SKEW and SKEW.P.
+func (fn *formulaFuncs) skew(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "SKEW requires at least 1 argument")
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
 	}
-	mean, stdDev, count, summer := fn.AVERAGE(argsList), fn.STDEV(argsList), 0.0, 0.0
+	mean := fn.AVERAGE(argsList)
+	var stdDev formulaArg
+	var count, summer float64
+	if name == "SKEW" {
+		stdDev = fn.STDEV(argsList)
+	} else {
+		stdDev = fn.STDEVP(argsList)
+	}
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
@@ -9300,9 +9314,41 @@ func (fn *formulaFuncs) SKEW(argsList *list.List) formulaArg {
 		}
 	}
 	if count > 2 {
-		return newNumberFormulaArg(summer * (count / ((count - 1) * (count - 2))))
+		if name == "SKEW" {
+			return newNumberFormulaArg(summer * (count / ((count - 1) * (count - 2))))
+		}
+		return newNumberFormulaArg(summer / count)
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+}
+
+// SKEW function calculates the skewness of the distribution of a supplied set
+// of values. The syntax of the function is:
+//
+//    SKEW(number1,[number2],...)
+//
+func (fn *formulaFuncs) SKEW(argsList *list.List) formulaArg {
+	return fn.skew("SKEW", argsList)
+}
+
+// SKEWdotP function calculates the skewness of the distribution of a supplied
+// set of values. The syntax of the function is:
+//
+//    SKEW.P(number1,[number2],...)
+//
+func (fn *formulaFuncs) SKEWdotP(argsList *list.List) formulaArg {
+	return fn.skew("SKEW.P", argsList)
+}
+
+// SLOPE returns the slope of the linear regression line through data points in
+// known_y's and known_x's. The slope is the vertical distance divided by the
+// horizontal distance between any two points on the line, which is the rate
+// of change along the regression line. The syntax of the function is:
+//
+//    SLOPE(known_y's,known_x's)
+//
+func (fn *formulaFuncs) SLOPE(argsList *list.List) formulaArg {
+	return fn.pearsonProduct("SLOPE", argsList)
 }
 
 // SMALL function returns the k'th smallest value from an array of numeric

@@ -23,10 +23,7 @@ import (
 // parseFormatTableSet provides a function to parse the format settings of the
 // table with default value.
 func parseFormatTableSet(formatSet string) (*formatTable, error) {
-	format := formatTable{
-		TableStyle:     "",
-		ShowRowStripes: true,
-	}
+	format := formatTable{ShowRowStripes: true}
 	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
 }

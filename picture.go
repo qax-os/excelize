@@ -31,11 +31,6 @@ import (
 func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 	format := formatPicture{
 		FPrintsWithSheet: true,
-		FLocksWithSheet:  false,
-		NoChangeAspect:   false,
-		Autofit:          false,
-		OffsetX:          0,
-		OffsetY:          0,
 		XScale:           1.0,
 		YScale:           1.0,
 	}
