@@ -572,9 +572,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"=IMPRODUCT(A1:C1)":                     "4",
 		// MINVERSE
-		"=MINVERSE(A1:B2)": "",
+		"=MINVERSE(A1:B2)": "-0",
 		// MMULT
-		"=MMULT(A4:A4,A4:A4)": "",
+		"=MMULT(A4:A4,A4:A4)": "0",
 		// MOD
 		"=MOD(6,4)":        "2",
 		"=MOD(6,3)":        "0",
@@ -597,7 +597,7 @@ func TestCalcCellValue(t *testing.T) {
 		`=MULTINOMIAL("",3,1,2,5)`:     "27720",
 		"=MULTINOMIAL(MULTINOMIAL(1))": "1",
 		// _xlfn.MUNIT
-		"=_xlfn.MUNIT(4)": "",
+		"=_xlfn.MUNIT(4)": "1",
 		// ODD
 		"=ODD(22)":     "23",
 		"=ODD(1.22)":   "3",
@@ -4444,6 +4444,83 @@ func TestCalcFORMULATEXT(t *testing.T) {
 	}
 }
 
+func TestCalcGROWTHandTREND(t *testing.T) {
+	cellData := [][]interface{}{
+		{"known_x's", "known_y's", 0, -1},
+		{1, 10, 1},
+		{2, 20, 1},
+		{3, 40},
+		{4, 80},
+		{},
+		{"new_x's", "new_y's"},
+		{5},
+		{6},
+		{7},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=GROWTH(A2:B2)":                    "1",
+		"=GROWTH(B2:B5,A2:A5,A8:A10)":       "160",
+		"=GROWTH(B2:B5,A2:A5,A8:A10,FALSE)": "467.84375",
+		"=GROWTH(A4:A5,A2:B3,A8:A10,FALSE)": "",
+		"=GROWTH(A3:A5,A2:B4,A2:B3)":        "2",
+		"=GROWTH(A4:A5,A2:B3)":              "",
+		"=GROWTH(A2:B2,A2:B3)":              "",
+		"=GROWTH(A2:B2,A2:B3,A2:B3,FALSE)":  "1.28399658203125",
+		"=GROWTH(A2:B2,A4:B5,A4:B5,FALSE)":  "1",
+		"=GROWTH(A3:C3,A2:C3,A2:B3)":        "2",
+		"=TREND(A2:B2)":                     "1",
+		"=TREND(B2:B5,A2:A5,A8:A10)":        "95",
+		"=TREND(B2:B5,A2:A5,A8:A10,FALSE)":  "81.66796875",
+		"=TREND(A4:A5,A2:B3,A8:A10,FALSE)":  "",
+		"=TREND(A4:A5,A2:B3,A2:B3,FALSE)":   "1.5",
+		"=TREND(A3:A5,A2:B4,A2:B3)":         "2",
+		"=TREND(A4:A5,A2:B3)":               "",
+		"=TREND(A2:B2,A2:B3)":               "",
+		"=TREND(A2:B2,A2:B3,A2:B3,FALSE)":   "1",
+		"=TREND(A2:B2,A4:B5,A4:B5,FALSE)":   "1",
+		"=TREND(A3:C3,A2:C3,A2:B3)":         "2",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=GROWTH()":                          "GROWTH requires at least 1 argument",
+		"=GROWTH(B2:B5,A2:A5,A8:A10,TRUE,0)": "GROWTH allows at most 4 arguments",
+		"=GROWTH(A1:B1,A2:A5,A8:A10,TRUE)":   "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=GROWTH(B2:B5,A1:B1,A8:A10,TRUE)":   "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=GROWTH(B2:B5,A2:A5,A1:B1,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=GROWTH(B2:B5,A2:A5,A8:A10,\"\")":   "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=GROWTH(A2:B3,A4:B4)":               "#REF!",
+		"=GROWTH(A4:B4,A2:A2)":               "#REF!",
+		"=GROWTH(A2:A2,A4:A5)":               "#REF!",
+		"=GROWTH(C1:C1,A2:A3)":               "#NUM!",
+		"=GROWTH(D1:D1,A2:A3)":               "#NUM!",
+		"=GROWTH(A2:A3,C1:C1)":               "#NUM!",
+		"=TREND()":                           "TREND requires at least 1 argument",
+		"=TREND(B2:B5,A2:A5,A8:A10,TRUE,0)":  "TREND allows at most 4 arguments",
+		"=TREND(A1:B1,A2:A5,A8:A10,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=TREND(B2:B5,A1:B1,A8:A10,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=TREND(B2:B5,A2:A5,A1:B1,TRUE)":     "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=TREND(B2:B5,A2:A5,A8:A10,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=TREND(A2:B3,A4:B4)":                "#REF!",
+		"=TREND(A4:B4,A2:A2)":                "#REF!",
+		"=TREND(A2:A2,A4:A5)":                "#REF!",
+		"=TREND(C1:C1,A2:A3)":                "#NUM!",
+		"=TREND(D1:D1,A2:A3)":                "#REF!",
+		"=TREND(A2:A3,C1:C1)":                "#NUM!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcHLOOKUP(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Example Result Table"},
@@ -4953,7 +5030,7 @@ func TestCalcMODE(t *testing.T) {
 	formulaList := map[string]string{
 		"=MODE(A1:A10)":      "3",
 		"=MODE(B1:B6)":       "2",
-		"=MODE.MULT(A1:A10)": "",
+		"=MODE.MULT(A1:A10)": "3",
 		"=MODE.SNGL(A1:A10)": "3",
 		"=MODE.SNGL(B1:B6)":  "2",
 	}

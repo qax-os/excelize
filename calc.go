@@ -462,6 +462,7 @@ type formulaFuncs struct {
 //    GCD
 //    GEOMEAN
 //    GESTEP
+//    GROWTH
 //    HARMEAN
 //    HEX2BIN
 //    HEX2DEC
@@ -682,6 +683,7 @@ type formulaFuncs struct {
 //    TINV
 //    TODAY
 //    TRANSPOSE
+//    TREND
 //    TRIM
 //    TRIMMEAN
 //    TRUE
@@ -960,7 +962,11 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 			argsStack.Peek().(*list.List).PushBack(arg)
 		}
 	} else {
-		opdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+		val := arg.Value()
+		if arg.Type == ArgMatrix && len(arg.Matrix) > 0 && len(arg.Matrix[0]) > 0 {
+			val = arg.Matrix[0][0].Value()
+		}
+		opdStack.Push(efp.Token{TValue: val, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
 	}
 	return nil
 }
@@ -2015,7 +2021,6 @@ func (fn *formulaFuncs) COMPLEX(argsList *list.List) formulaArg {
 
 // cmplx2str replace complex number string characters.
 func cmplx2str(num complex128, suffix string) string {
-	c := fmt.Sprint(num)
 	realPart, imagPart := fmt.Sprint(real(num)), fmt.Sprint(imag(num))
 	isNum, i := isNumeric(realPart)
 	if isNum && i > 15 {
@@ -2025,7 +2030,7 @@ func cmplx2str(num complex128, suffix string) string {
 	if isNum && i > 15 {
 		imagPart = roundPrecision(imagPart, -1)
 	}
-	c = realPart
+	c := realPart
 	if imag(num) > 0 {
 		c += "+"
 	}
@@ -4073,7 +4078,8 @@ func newFormulaArgMatrix(numMtx [][]float64) (arg [][]formulaArg) {
 	for r, row := range numMtx {
 		arg = append(arg, make([]formulaArg, len(row)))
 		for c, cell := range row {
-			arg[r][c] = newNumberFormulaArg(cell)
+			decimal, _ := big.NewFloat(cell).SetPrec(15).Float64()
+			arg[r][c] = newNumberFormulaArg(decimal)
 		}
 	}
 	return
@@ -5819,12 +5825,12 @@ func (fn *formulaFuncs) BETAdotDIST(argsList *list.List) formulaArg {
 	if a.Number == b.Number {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	fScale := b.Number - a.Number
-	x.Number = (x.Number - a.Number) / fScale
+	scale := b.Number - a.Number
+	x.Number = (x.Number - a.Number) / scale
 	if cumulative.Number == 1 {
 		return newNumberFormulaArg(getBetaDist(x.Number, alpha.Number, beta.Number))
 	}
-	return newNumberFormulaArg(getBetaDistPDF(x.Number, alpha.Number, beta.Number) / fScale)
+	return newNumberFormulaArg(getBetaDistPDF(x.Number, alpha.Number, beta.Number) / scale)
 }
 
 // BETADIST function calculates the cumulative beta probability density
@@ -6665,12 +6671,12 @@ func getLogGamma(fZ float64) float64 {
 
 // getLowRegIGamma returns lower regularized incomplete gamma function.
 func getLowRegIGamma(fA, fX float64) float64 {
-	fLnFactor := fA*math.Log(fX) - fX - getLogGamma(fA)
-	fFactor := math.Exp(fLnFactor)
+	lnFactor := fA*math.Log(fX) - fX - getLogGamma(fA)
+	factor := math.Exp(lnFactor)
 	if fX > fA+1 {
-		return 1 - fFactor*getGammaContFraction(fA, fX)
+		return 1 - factor*getGammaContFraction(fA, fX)
 	}
-	return fFactor * getGammaSeries(fA, fX)
+	return factor * getGammaSeries(fA, fX)
 }
 
 // getChiSqDistCDF returns left tail for the Chi-Square distribution.
@@ -7608,6 +7614,703 @@ func (fn *formulaFuncs) GEOMEAN(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Pow(product.Number, 1/count.Number))
 	}
 	return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+}
+
+// getNewMatrix create matrix by given columns and rows.
+func getNewMatrix(c, r int) (matrix [][]float64) {
+	for i := 0; i < c; i++ {
+		for j := 0; j < r; j++ {
+			for x := len(matrix); x <= i; x++ {
+				matrix = append(matrix, []float64{})
+			}
+			for y := len(matrix[i]); y <= j; y++ {
+				matrix[i] = append(matrix[i], 0)
+			}
+			matrix[i][j] = 0
+		}
+	}
+	return
+}
+
+// approxSub subtract two values, if signs are identical and the values are
+// equal, will be returns 0 instead of calculating the subtraction.
+func approxSub(a, b float64) float64 {
+	if ((a < 0 && b < 0) || (a > 0 && b > 0)) && math.Abs(a-b) < 2.22045e-016 {
+		return 0
+	}
+	return a - b
+}
+
+// matrixClone return a copy of all elements of the original matrix.
+func matrixClone(matrix [][]float64) (cloneMatrix [][]float64) {
+	for i := 0; i < len(matrix); i++ {
+		for j := 0; j < len(matrix[i]); j++ {
+			for x := len(cloneMatrix); x <= i; x++ {
+				cloneMatrix = append(cloneMatrix, []float64{})
+			}
+			for k := len(cloneMatrix[i]); k <= j; k++ {
+				cloneMatrix[i] = append(cloneMatrix[i], 0)
+			}
+			cloneMatrix[i][j] = matrix[i][j]
+		}
+	}
+	return
+}
+
+// trendGrowthMatrixInfo defined matrix checking result.
+type trendGrowthMatrixInfo struct {
+	trendType, nCX, nCY, nRX, nRY, M, N int
+	mtxX, mtxY                          [][]float64
+}
+
+// prepareTrendGrowthMtxX is a part of implementation of the trend growth prepare.
+func prepareTrendGrowthMtxX(mtxX [][]float64) [][]float64 {
+	var mtx [][]float64
+	for i := 0; i < len(mtxX); i++ {
+		for j := 0; j < len(mtxX[i]); j++ {
+			if mtxX[i][j] == 0 {
+				return nil
+			}
+			for x := len(mtx); x <= j; x++ {
+				mtx = append(mtx, []float64{})
+			}
+			for y := len(mtx[j]); y <= i; y++ {
+				mtx[j] = append(mtx[j], 0)
+			}
+			mtx[j][i] = mtxX[i][j]
+		}
+	}
+	return mtx
+}
+
+// prepareTrendGrowthMtxY is a part of implementation of the trend growth prepare.
+func prepareTrendGrowthMtxY(bLOG bool, mtxY [][]float64) [][]float64 {
+	var mtx [][]float64
+	for i := 0; i < len(mtxY); i++ {
+		for j := 0; j < len(mtxY[i]); j++ {
+			if mtxY[i][j] == 0 {
+				return nil
+			}
+			for x := len(mtx); x <= j; x++ {
+				mtx = append(mtx, []float64{})
+			}
+			for y := len(mtx[j]); y <= i; y++ {
+				mtx[j] = append(mtx[j], 0)
+			}
+			mtx[j][i] = mtxY[i][j]
+		}
+	}
+	if bLOG {
+		var pNewY [][]float64
+		for i := 0; i < len(mtxY); i++ {
+			for j := 0; j < len(mtxY[i]); j++ {
+				fVal := mtxY[i][j]
+				if fVal <= 0 {
+					return nil
+				}
+				for x := len(pNewY); x <= j; x++ {
+					pNewY = append(pNewY, []float64{})
+				}
+				for y := len(pNewY[j]); y <= i; y++ {
+					pNewY[j] = append(pNewY[j], 0)
+				}
+				pNewY[j][i] = math.Log(fVal)
+			}
+		}
+		mtx = pNewY
+	}
+	return mtx
+}
+
+// prepareTrendGrowth check and return the result.
+func prepareTrendGrowth(bLOG bool, mtxX, mtxY [][]float64) (*trendGrowthMatrixInfo, formulaArg) {
+	var nCX, nRX, M, N, trendType int
+	nRY, nCY := len(mtxY), len(mtxY[0])
+	cntY := nCY * nRY
+	newY := prepareTrendGrowthMtxY(bLOG, mtxY)
+	if newY == nil {
+		return nil, newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	var newX [][]float64
+	if len(mtxX) != 0 {
+		nRX, nCX = len(mtxX), len(mtxX[0])
+		if newX = prepareTrendGrowthMtxX(mtxX); newX == nil {
+			return nil, newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		if nCX == nCY && nRX == nRY {
+			trendType, M, N = 1, 1, cntY // simple regression
+		} else if nCY != 1 && nRY != 1 {
+			return nil, newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+		} else if nCY == 1 {
+			if nRX != nRY {
+				return nil, newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+			}
+			trendType, M, N = 2, nCX, nRY
+		} else if nCX != nCY {
+			return nil, newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+		} else {
+			trendType, M, N = 3, nRX, nCY
+		}
+	} else {
+		newX = getNewMatrix(nCY, nRY)
+		nCX, nRX = nCY, nRY
+		num := 1.0
+		for i := 0; i < nRY; i++ {
+			for j := 0; j < nCY; j++ {
+				newX[j][i] = num
+				num++
+			}
+		}
+		trendType, M, N = 1, 1, cntY
+	}
+	return &trendGrowthMatrixInfo{
+		trendType: trendType,
+		nCX:       nCX,
+		nCY:       nCY,
+		nRX:       nRX,
+		nRY:       nRY,
+		M:         M,
+		N:         N,
+		mtxX:      newX,
+		mtxY:      newY,
+	}, newEmptyFormulaArg()
+}
+
+// calcPosition calculate position for matrix by given index.
+func calcPosition(mtx [][]float64, idx int) (row, col int) {
+	rowSize := len(mtx[0])
+	col = idx
+	if rowSize > 1 {
+		col = idx / rowSize
+	}
+	row = idx - col*rowSize
+	return
+}
+
+// getDouble returns float64 data type value in the matrix by given index.
+func getDouble(mtx [][]float64, idx int) float64 {
+	row, col := calcPosition(mtx, idx)
+	return mtx[col][row]
+}
+
+// putDouble set a float64 data type value in the matrix by given index.
+func putDouble(mtx [][]float64, idx int, val float64) {
+	row, col := calcPosition(mtx, idx)
+	mtx[col][row] = val
+}
+
+// calcMeanOverAll returns mean of the given matrix by over all element.
+func calcMeanOverAll(mtx [][]float64, n int) float64 {
+	var sum float64
+	for i := 0; i < len(mtx); i++ {
+		for j := 0; j < len(mtx[i]); j++ {
+			sum += mtx[i][j]
+		}
+	}
+	return sum / float64(n)
+}
+
+// calcSumProduct returns uses the matrices as vectors of length M over all
+// element.
+func calcSumProduct(mtxA, mtxB [][]float64, m int) float64 {
+	sum := 0.0
+	for i := 0; i < m; i++ {
+		sum += getDouble(mtxA, i) * getDouble(mtxB, i)
+	}
+	return sum
+}
+
+// calcColumnMeans calculates means of the columns of matrix.
+func calcColumnMeans(mtxX, mtxRes [][]float64, c, r int) {
+	for i := 0; i < c; i++ {
+		var sum float64
+		for k := 0; k < r; k++ {
+			sum += mtxX[i][k]
+		}
+		putDouble(mtxRes, i, sum/float64(r))
+	}
+	return
+}
+
+// calcColumnsDelta calculates subtract of the columns of matrix.
+func calcColumnsDelta(mtx, columnMeans [][]float64, c, r int) {
+	for i := 0; i < c; i++ {
+		for k := 0; k < r; k++ {
+			mtx[i][k] = approxSub(mtx[i][k], getDouble(columnMeans, i))
+		}
+	}
+}
+
+// calcSign returns sign by given value, no mathematical signum, but used to
+// switch between adding and subtracting.
+func calcSign(val float64) float64 {
+	if val > 0 {
+		return 1
+	}
+	return -1
+}
+
+// calcColsMaximumNorm is a special version for use within QR
+// decomposition. Maximum norm of column index c starting in row index r;
+// matrix A has count n rows.
+func calcColsMaximumNorm(mtxA [][]float64, c, r, n int) float64 {
+	var norm float64
+	for row := r; row < n; row++ {
+		if norm < math.Abs(mtxA[c][row]) {
+			norm = math.Abs(mtxA[c][row])
+		}
+	}
+	return norm
+}
+
+// calcFastMult returns multiply n x m matrix A with m x l matrix B to n x l matrix R.
+func calcFastMult(mtxA, mtxB, mtxR [][]float64, n, m, l int) {
+	var sum float64
+	for row := 0; row < n; row++ {
+		for col := 0; col < l; col++ {
+			sum = 0.0
+			for k := 0; k < m; k++ {
+				sum += mtxA[k][row] * mtxB[col][k]
+			}
+			mtxR[col][row] = sum
+		}
+	}
+}
+
+// calcRowsEuclideanNorm is a special version for use within QR
+// decomposition. Euclidean norm of column index c starting in row index r;
+// matrix a has count n rows.
+func calcRowsEuclideanNorm(mtxA [][]float64, c, r, n int) float64 {
+	var norm float64
+	for row := r; row < n; row++ {
+		norm += mtxA[c][row] * mtxA[c][row]
+	}
+	return math.Sqrt(norm)
+}
+
+// calcRowsSumProduct is a special version for use within QR decomposition.
+// <A(a);B(b)> starting in row index r;
+// a and b are indices of columns, matrices A and B have count n rows.
+func calcRowsSumProduct(mtxA [][]float64, a int, mtxB [][]float64, b, r, n int) float64 {
+	var result float64
+	for row := r; row < n; row++ {
+		result += mtxA[a][row] * mtxB[b][row]
+	}
+	return result
+}
+
+// calcSolveWithUpperRightTriangle solve for X in R*X=S using back substitution.
+func calcSolveWithUpperRightTriangle(mtxA [][]float64, vecR []float64, mtxS [][]float64, k int, bIsTransposed bool) {
+	var row int
+	for rowp1 := k; rowp1 > 0; rowp1-- {
+		row = rowp1 - 1
+		sum := getDouble(mtxS, row)
+		for col := rowp1; col < k; col++ {
+			if bIsTransposed {
+				sum -= mtxA[row][col] * getDouble(mtxS, col)
+			} else {
+				sum -= mtxA[col][row] * getDouble(mtxS, col)
+			}
+		}
+		putDouble(mtxS, row, sum/vecR[row])
+	}
+}
+
+// calcRowQRDecomposition calculates a QR decomposition with Householder
+// reflection.
+func calcRowQRDecomposition(mtxA [][]float64, vecR []float64, k, n int) bool {
+	for col := 0; col < k; col++ {
+		scale := calcColsMaximumNorm(mtxA, col, col, n)
+		if scale == 0 {
+			return false
+		}
+		for row := col; row < n; row++ {
+			mtxA[col][row] = mtxA[col][row] / scale
+		}
+		euclid := calcRowsEuclideanNorm(mtxA, col, col, n)
+		factor := 1.0 / euclid / (euclid + math.Abs(mtxA[col][col]))
+		signum := calcSign(mtxA[col][col])
+		mtxA[col][col] = mtxA[col][col] + signum*euclid
+		vecR[col] = -signum * scale * euclid
+		// apply Householder transformation to A
+		for c := col + 1; c < k; c++ {
+			sum := calcRowsSumProduct(mtxA, col, mtxA, c, col, n)
+			for row := col; row < n; row++ {
+				mtxA[c][row] = mtxA[c][row] - sum*factor*mtxA[col][row]
+			}
+		}
+	}
+	return true
+}
+
+// calcApplyColsHouseholderTransformation transposed matrices A and Y.
+func calcApplyColsHouseholderTransformation(mtxA [][]float64, r int, mtxY [][]float64, n int) {
+	denominator := calcColsSumProduct(mtxA, r, mtxA, r, r, n)
+	numerator := calcColsSumProduct(mtxA, r, mtxY, 0, r, n)
+	factor := 2 * (numerator / denominator)
+	for col := r; col < n; col++ {
+		putDouble(mtxY, col, getDouble(mtxY, col)-factor*mtxA[col][r])
+	}
+}
+
+// calcRowMeans calculates means of the rows of matrix.
+func calcRowMeans(mtxX, mtxRes [][]float64, c, r int) {
+	for k := 0; k < r; k++ {
+		var fSum float64
+		for i := 0; i < c; i++ {
+			fSum += mtxX[i][k]
+		}
+		mtxRes[k][0] = fSum / float64(c)
+	}
+}
+
+// calcRowsDelta calculates subtract of the rows of matrix.
+func calcRowsDelta(mtx, rowMeans [][]float64, c, r int) {
+	for k := 0; k < r; k++ {
+		for i := 0; i < c; i++ {
+			mtx[i][k] = approxSub(mtx[i][k], rowMeans[k][0])
+		}
+	}
+}
+
+// calcColumnMaximumNorm returns maximum norm of row index R starting in col
+// index C; matrix A has count N columns.
+func calcColumnMaximumNorm(mtxA [][]float64, r, c, n int) float64 {
+	var norm float64
+	for col := c; col < n; col++ {
+		if norm < math.Abs(mtxA[col][r]) {
+			norm = math.Abs(mtxA[col][r])
+		}
+	}
+	return norm
+}
+
+// calcColsEuclideanNorm returns euclidean norm of row index R starting in
+// column index C; matrix A has count N columns.
+func calcColsEuclideanNorm(mtxA [][]float64, r, c, n int) float64 {
+	var norm float64
+	for col := c; col < n; col++ {
+		norm += (mtxA[col][r]) * (mtxA[col][r])
+	}
+	return math.Sqrt(norm)
+}
+
+// calcColsSumProduct returns sum product for given matrix.
+func calcColsSumProduct(mtxA [][]float64, a int, mtxB [][]float64, b, c, n int) float64 {
+	var result float64
+	for col := c; col < n; col++ {
+		result += mtxA[col][a] * mtxB[col][b]
+	}
+	return result
+}
+
+// calcColQRDecomposition same with transposed matrix A, N is count of
+// columns, k count of rows.
+func calcColQRDecomposition(mtxA [][]float64, vecR []float64, k, n int) bool {
+	var sum float64
+	for row := 0; row < k; row++ {
+		// calculate vector u of the householder transformation
+		scale := calcColumnMaximumNorm(mtxA, row, row, n)
+		if scale == 0 {
+			return false
+		}
+		for col := row; col < n; col++ {
+			mtxA[col][row] = mtxA[col][row] / scale
+		}
+		euclid := calcColsEuclideanNorm(mtxA, row, row, n)
+		factor := 1 / euclid / (euclid + math.Abs(mtxA[row][row]))
+		signum := calcSign(mtxA[row][row])
+		mtxA[row][row] = mtxA[row][row] + signum*euclid
+		vecR[row] = -signum * scale * euclid
+		// apply Householder transformation to A
+		for r := row + 1; r < k; r++ {
+			sum = calcColsSumProduct(mtxA, row, mtxA, r, row, n)
+			for col := row; col < n; col++ {
+				mtxA[col][r] = mtxA[col][r] - sum*factor*mtxA[col][row]
+			}
+		}
+	}
+	return true
+}
+
+// calcApplyRowsHouseholderTransformation applies a Householder transformation to a
+// column vector Y with is given as Nx1 Matrix. The vector u, from which the
+// Householder transformation is built, is the column part in matrix A, with
+// column index c, starting with row index c. A is the result of the QR
+// decomposition as obtained from calcRowQRDecomposition.
+func calcApplyRowsHouseholderTransformation(mtxA [][]float64, c int, mtxY [][]float64, n int) {
+	denominator := calcRowsSumProduct(mtxA, c, mtxA, c, c, n)
+	numerator := calcRowsSumProduct(mtxA, c, mtxY, 0, c, n)
+	factor := 2 * (numerator / denominator)
+	for row := c; row < n; row++ {
+		putDouble(mtxY, row, getDouble(mtxY, row)-factor*mtxA[c][row])
+	}
+}
+
+// calcTrendGrowthSimpleRegression calculate simple regression for the calcTrendGrowth.
+func calcTrendGrowthSimpleRegression(bConstant, bGrowth bool, mtxY, mtxX, newX, mtxRes [][]float64, meanY float64, N int) {
+	var meanX float64
+	if bConstant {
+		meanX = calcMeanOverAll(mtxX, N)
+		for i := 0; i < len(mtxX); i++ {
+			for j := 0; j < len(mtxX[i]); j++ {
+				mtxX[i][j] = approxSub(mtxX[i][j], meanX)
+			}
+		}
+	}
+	sumXY := calcSumProduct(mtxX, mtxY, N)
+	sumX2 := calcSumProduct(mtxX, mtxX, N)
+	slope := sumXY / sumX2
+	var help float64
+	var intercept float64
+	if bConstant {
+		intercept = meanY - slope*meanX
+		for i := 0; i < len(mtxRes); i++ {
+			for j := 0; j < len(mtxRes[i]); j++ {
+				help = newX[i][j]*slope + intercept
+				if bGrowth {
+					mtxRes[i][j] = math.Exp(help)
+				} else {
+					mtxRes[i][j] = help
+				}
+			}
+		}
+	} else {
+		for i := 0; i < len(mtxRes); i++ {
+			for j := 0; j < len(mtxRes[i]); j++ {
+				help = newX[i][j] * slope
+				if bGrowth {
+					mtxRes[i][j] = math.Exp(help)
+				} else {
+					mtxRes[i][j] = help
+				}
+			}
+		}
+	}
+}
+
+// calcTrendGrowthMultipleRegressionPart1 calculate multiple regression for the
+// calcTrendGrowth.
+func calcTrendGrowthMultipleRegressionPart1(bConstant, bGrowth bool, mtxY, mtxX, newX, mtxRes [][]float64, meanY float64, RXN, K, N int) {
+	vecR := make([]float64, N)   // for QR decomposition
+	means := getNewMatrix(K, 1)  // mean of each column
+	slopes := getNewMatrix(1, K) // from b1 to bK
+	if len(means) == 0 || len(slopes) == 0 {
+		return
+	}
+	if bConstant {
+		calcColumnMeans(mtxX, means, K, N)
+		calcColumnsDelta(mtxX, means, K, N)
+	}
+	if !calcRowQRDecomposition(mtxX, vecR, K, N) {
+		return
+	}
+	// Later on we will divide by elements of vecR, so make sure that they aren't zero.
+	bIsSingular := false
+	for row := 0; row < K && !bIsSingular; row++ {
+		bIsSingular = bIsSingular || vecR[row] == 0
+	}
+	if bIsSingular {
+		return
+	}
+	for col := 0; col < K; col++ {
+		calcApplyRowsHouseholderTransformation(mtxX, col, mtxY, N)
+	}
+	for col := 0; col < K; col++ {
+		putDouble(slopes, col, getDouble(mtxY, col))
+	}
+	calcSolveWithUpperRightTriangle(mtxX, vecR, slopes, K, false)
+	// Fill result matrix
+	calcFastMult(newX, slopes, mtxRes, RXN, K, 1)
+	if bConstant {
+		intercept := meanY - calcSumProduct(means, slopes, K)
+		for row := 0; row < RXN; row++ {
+			mtxRes[0][row] = mtxRes[0][row] + intercept
+		}
+	}
+	if bGrowth {
+		for i := 0; i < RXN; i++ {
+			putDouble(mtxRes, i, math.Exp(getDouble(mtxRes, i)))
+		}
+	}
+}
+
+// calcTrendGrowthMultipleRegressionPart2 calculate multiple regression for the
+// calcTrendGrowth.
+func calcTrendGrowthMultipleRegressionPart2(bConstant, bGrowth bool, mtxY, mtxX, newX, mtxRes [][]float64, meanY float64, nCXN, K, N int) {
+	vecR := make([]float64, N)   // for QR decomposition
+	means := getNewMatrix(K, 1)  // mean of each row
+	slopes := getNewMatrix(K, 1) // row from b1 to bK
+	if len(means) == 0 || len(slopes) == 0 {
+		return
+	}
+	if bConstant {
+		calcRowMeans(mtxX, means, N, K)
+		calcRowsDelta(mtxX, means, N, K)
+	}
+	if !calcColQRDecomposition(mtxX, vecR, K, N) {
+		return
+	}
+	// later on we will divide by elements of vecR, so make sure that they aren't zero
+	bIsSingular := false
+	for row := 0; row < K && !bIsSingular; row++ {
+		bIsSingular = bIsSingular || vecR[row] == 0
+	}
+	if bIsSingular {
+		return
+	}
+	for row := 0; row < K; row++ {
+		calcApplyColsHouseholderTransformation(mtxX, row, mtxY, N)
+	}
+	for col := 0; col < K; col++ {
+		putDouble(slopes, col, getDouble(mtxY, col))
+	}
+	calcSolveWithUpperRightTriangle(mtxX, vecR, slopes, K, true)
+	// fill result matrix
+	calcFastMult(slopes, newX, mtxRes, 1, K, nCXN)
+	if bConstant {
+		fIntercept := meanY - calcSumProduct(means, slopes, K)
+		for col := 0; col < nCXN; col++ {
+			mtxRes[col][0] = mtxRes[col][0] + fIntercept
+		}
+	}
+	if bGrowth {
+		for i := 0; i < nCXN; i++ {
+			putDouble(mtxRes, i, math.Exp(getDouble(mtxRes, i)))
+		}
+	}
+}
+
+// calcTrendGrowthRegression is a part of implementation of the calcTrendGrowth.
+func calcTrendGrowthRegression(bConstant, bGrowth bool, trendType, nCXN, nRXN, K, N int, mtxY, mtxX, newX, mtxRes [][]float64) {
+	if len(mtxRes) == 0 {
+		return
+	}
+	var meanY float64
+	if bConstant {
+		copyX, copyY := matrixClone(mtxX), matrixClone(mtxY)
+		mtxX, mtxY = copyX, copyY
+		meanY = calcMeanOverAll(mtxY, N)
+		for i := 0; i < len(mtxY); i++ {
+			for j := 0; j < len(mtxY[i]); j++ {
+				mtxY[i][j] = approxSub(mtxY[i][j], meanY)
+			}
+		}
+	}
+	switch trendType {
+	case 1:
+		calcTrendGrowthSimpleRegression(bConstant, bGrowth, mtxY, mtxX, newX, mtxRes, meanY, N)
+		break
+	case 2:
+		calcTrendGrowthMultipleRegressionPart1(bConstant, bGrowth, mtxY, mtxX, newX, mtxRes, meanY, nRXN, K, N)
+		break
+	default:
+		calcTrendGrowthMultipleRegressionPart2(bConstant, bGrowth, mtxY, mtxX, newX, mtxRes, meanY, nCXN, K, N)
+	}
+}
+
+// calcTrendGrowth returns values along a predicted exponential trend.
+func calcTrendGrowth(mtxY, mtxX, newX [][]float64, bConstant, bGrowth bool) ([][]float64, formulaArg) {
+	getMatrixParams, errArg := prepareTrendGrowth(bGrowth, mtxX, mtxY)
+	if errArg.Type != ArgEmpty {
+		return nil, errArg
+	}
+	trendType := getMatrixParams.trendType
+	nCX := getMatrixParams.nCX
+	nRX := getMatrixParams.nRX
+	K := getMatrixParams.M
+	N := getMatrixParams.N
+	mtxX = getMatrixParams.mtxX
+	mtxY = getMatrixParams.mtxY
+	// checking if data samples are enough
+	if (bConstant && (N < K+1)) || (!bConstant && (N < K)) || (N < 1) || (K < 1) {
+		return nil, errArg
+	}
+	// set the default newX if necessary
+	nCXN, nRXN := nCX, nRX
+	if len(newX) == 0 {
+		newX = matrixClone(mtxX) // mtxX will be changed to X-meanX
+	} else {
+		nRXN, nCXN = len(newX[0]), len(newX)
+		if (trendType == 2 && K != nCXN) || (trendType == 3 && K != nRXN) {
+			return nil, errArg
+		}
+	}
+	var mtxRes [][]float64
+	switch trendType {
+	case 1:
+		mtxRes = getNewMatrix(nCXN, nRXN)
+		break
+	case 2:
+		mtxRes = getNewMatrix(1, nRXN)
+		break
+	default:
+		mtxRes = getNewMatrix(nCXN, 1)
+	}
+	calcTrendGrowthRegression(bConstant, bGrowth, trendType, nCXN, nRXN, K, N, mtxY, mtxX, newX, mtxRes)
+	return mtxRes, errArg
+}
+
+// trendGrowth is an implementation of the formula functions GROWTH and TREND.
+func (fn *formulaFuncs) trendGrowth(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	if argsList.Len() > 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 4 arguments", name))
+	}
+	var knowY, knowX, newX [][]float64
+	var errArg formulaArg
+	constArg := newBoolFormulaArg(true)
+	knowY, errArg = newNumberMatrix(argsList.Front().Value.(formulaArg), false)
+	if errArg.Type == ArgError {
+		return errArg
+	}
+	if argsList.Len() > 1 {
+		knowX, errArg = newNumberMatrix(argsList.Front().Next().Value.(formulaArg), false)
+		if errArg.Type == ArgError {
+			return errArg
+		}
+	}
+	if argsList.Len() > 2 {
+		newX, errArg = newNumberMatrix(argsList.Front().Next().Next().Value.(formulaArg), false)
+		if errArg.Type == ArgError {
+			return errArg
+		}
+	}
+	if argsList.Len() > 3 {
+		if constArg = argsList.Back().Value.(formulaArg).ToBool(); constArg.Type != ArgNumber {
+			return constArg
+		}
+	}
+	var mtxNewX [][]float64
+	for i := 0; i < len(newX); i++ {
+		for j := 0; j < len(newX[i]); j++ {
+			for x := len(mtxNewX); x <= j; x++ {
+				mtxNewX = append(mtxNewX, []float64{})
+			}
+			for k := len(mtxNewX[j]); k <= i; k++ {
+				mtxNewX[j] = append(mtxNewX[j], 0)
+			}
+			mtxNewX[j][i] = newX[i][j]
+		}
+	}
+	mtx, errArg := calcTrendGrowth(knowY, knowX, mtxNewX, constArg.Number == 1, name == "GROWTH")
+	if errArg.Type != ArgEmpty {
+		return errArg
+	}
+	return newMatrixFormulaArg(newFormulaArgMatrix(mtx))
+}
+
+// GROWTH function calculates the exponential growth curve through a given set
+// of y-values and (optionally), one or more sets of x-values. The function
+// then extends the curve to calculate additional y-values for a further
+// supplied set of new x-values. The syntax of the function is:
+//
+//    GROWTH(known_y's,[known_x's],[new_x's],[const])
+//
+func (fn *formulaFuncs) GROWTH(argsList *list.List) formulaArg {
+	return fn.trendGrowth("GROWTH", argsList)
 }
 
 // HARMEAN function calculates the harmonic mean of a supplied set of values.
@@ -9652,92 +10355,98 @@ func (fn *formulaFuncs) TINV(argsList *list.List) formulaArg {
 	return fn.TdotINVdot2T(argsList)
 }
 
+// TREND function calculates the linear trend line through a given set of
+// y-values and (optionally), a given set of x-values. The function then
+// extends the linear trendline to calculate additional y-values for a further
+// supplied set of new x-values. The syntax of the function is:
+//
+//    TREND(known_y's,[known_x's],[new_x's],[const])
+//
+func (fn *formulaFuncs) TREND(argsList *list.List) formulaArg {
+	return fn.trendGrowth("TREND", argsList)
+}
+
 // tTest calculates the probability associated with the Student's T Test.
-func tTest(bTemplin bool, pMat1, pMat2 [][]formulaArg, nC1, nC2, nR1, nR2 int, fT, fF float64) (float64, float64, bool) {
-	var fCount1, fCount2, fSum1, fSumSqr1, fSum2, fSumSqr2 float64
+func tTest(bTemplin bool, mtx1, mtx2 [][]formulaArg, c1, c2, r1, r2 int, fT, fF float64) (float64, float64, bool) {
+	var cnt1, cnt2, sum1, sumSqr1, sum2, sumSqr2 float64
 	var fVal formulaArg
-	for i := 0; i < nC1; i++ {
-		for j := 0; j < nR1; j++ {
-			fVal = pMat1[i][j].ToNumber()
+	for i := 0; i < c1; i++ {
+		for j := 0; j < r1; j++ {
+			fVal = mtx1[i][j].ToNumber()
 			if fVal.Type == ArgNumber {
-				fSum1 += fVal.Number
-				fSumSqr1 += fVal.Number * fVal.Number
-				fCount1++
+				sum1 += fVal.Number
+				sumSqr1 += fVal.Number * fVal.Number
+				cnt1++
 			}
 		}
 	}
-	for i := 0; i < nC2; i++ {
-		for j := 0; j < nR2; j++ {
-			fVal = pMat2[i][j].ToNumber()
+	for i := 0; i < c2; i++ {
+		for j := 0; j < r2; j++ {
+			fVal = mtx2[i][j].ToNumber()
 			if fVal.Type == ArgNumber {
-				fSum2 += fVal.Number
-				fSumSqr2 += fVal.Number * fVal.Number
-				fCount2++
+				sum2 += fVal.Number
+				sumSqr2 += fVal.Number * fVal.Number
+				cnt2++
 			}
 		}
 	}
-	if fCount1 < 2.0 || fCount2 < 2.0 {
+	if cnt1 < 2.0 || cnt2 < 2.0 {
 		return 0, 0, false
 	}
 	if bTemplin {
-		fS1 := (fSumSqr1 - fSum1*fSum1/fCount1) / (fCount1 - 1) / fCount1
-		fS2 := (fSumSqr2 - fSum2*fSum2/fCount2) / (fCount2 - 1) / fCount2
+		fS1 := (sumSqr1 - sum1*sum1/cnt1) / (cnt1 - 1) / cnt1
+		fS2 := (sumSqr2 - sum2*sum2/cnt2) / (cnt2 - 1) / cnt2
 		if fS1+fS2 == 0 {
 			return 0, 0, false
 		}
 		c := fS1 / (fS1 + fS2)
-		fT = math.Abs(fSum1/fCount1-fSum2/fCount2) / math.Sqrt(fS1+fS2)
-		fF = 1 / (c*c/(fCount1-1) + (1-c)*(1-c)/(fCount2-1))
+		fT = math.Abs(sum1/cnt1-sum2/cnt2) / math.Sqrt(fS1+fS2)
+		fF = 1 / (c*c/(cnt1-1) + (1-c)*(1-c)/(cnt2-1))
 		return fT, fF, true
 	}
-	fS1 := (fSumSqr1 - fSum1*fSum1/fCount1) / (fCount1 - 1)
-	fS2 := (fSumSqr2 - fSum2*fSum2/fCount2) / (fCount2 - 1)
-	fT = math.Abs(fSum1/fCount1-fSum2/fCount2) / math.Sqrt((fCount1-1)*fS1+(fCount2-1)*fS2) * math.Sqrt(fCount1*fCount2*(fCount1+fCount2-2)/(fCount1+fCount2))
-	fF = fCount1 + fCount2 - 2
+	fS1 := (sumSqr1 - sum1*sum1/cnt1) / (cnt1 - 1)
+	fS2 := (sumSqr2 - sum2*sum2/cnt2) / (cnt2 - 1)
+	fT = math.Abs(sum1/cnt1-sum2/cnt2) / math.Sqrt((cnt1-1)*fS1+(cnt2-1)*fS2) * math.Sqrt(cnt1*cnt2*(cnt1+cnt2-2)/(cnt1+cnt2))
+	fF = cnt1 + cnt2 - 2
 	return fT, fF, true
 }
 
 // tTest is an implementation of the formula function TTEST.
-func (fn *formulaFuncs) tTest(pMat1, pMat2 [][]formulaArg, fTails, fTyp float64) formulaArg {
+func (fn *formulaFuncs) tTest(mtx1, mtx2 [][]formulaArg, fTails, fTyp float64) formulaArg {
 	var fT, fF float64
-	nC1 := len(pMat1)
-	nC2 := len(pMat2)
-	nR1 := len(pMat1[0])
-	nR2 := len(pMat2[0])
-	ok := true
+	c1, c2, r1, r2, ok := len(mtx1), len(mtx2), len(mtx1[0]), len(mtx2[0]), true
 	if fTyp == 1 {
-		if nC1 != nC2 || nR1 != nR2 {
+		if c1 != c2 || r1 != r2 {
 			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 		}
-		var fCount, fSum1, fSum2, fSumSqrD float64
+		var cnt, sum1, sum2, sumSqrD float64
 		var fVal1, fVal2 formulaArg
-		for i := 0; i < nC1; i++ {
-			for j := 0; j < nR1; j++ {
-				fVal1 = pMat1[i][j].ToNumber()
-				fVal2 = pMat2[i][j].ToNumber()
+		for i := 0; i < c1; i++ {
+			for j := 0; j < r1; j++ {
+				fVal1, fVal2 = mtx1[i][j].ToNumber(), mtx2[i][j].ToNumber()
 				if fVal1.Type != ArgNumber || fVal2.Type != ArgNumber {
 					continue
 				}
-				fSum1 += fVal1.Number
-				fSum2 += fVal2.Number
-				fSumSqrD += (fVal1.Number - fVal2.Number) * (fVal1.Number - fVal2.Number)
-				fCount++
+				sum1 += fVal1.Number
+				sum2 += fVal2.Number
+				sumSqrD += (fVal1.Number - fVal2.Number) * (fVal1.Number - fVal2.Number)
+				cnt++
 			}
 		}
-		if fCount < 1 {
+		if cnt < 1 {
 			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 		}
-		fSumD := fSum1 - fSum2
-		fDivider := fCount*fSumSqrD - fSumD*fSumD
-		if fDivider == 0 {
+		sumD := sum1 - sum2
+		divider := cnt*sumSqrD - sumD*sumD
+		if divider == 0 {
 			return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 		}
-		fT = math.Abs(fSumD) * math.Sqrt((fCount-1)/fDivider)
-		fF = fCount - 1
+		fT = math.Abs(sumD) * math.Sqrt((cnt-1)/divider)
+		fF = cnt - 1
 	} else if fTyp == 2 {
-		fT, fF, ok = tTest(false, pMat1, pMat2, nC1, nC2, nR1, nR2, fT, fF)
+		fT, fF, ok = tTest(false, mtx1, mtx2, c1, c2, r1, r2, fT, fF)
 	} else {
-		fT, fF, ok = tTest(true, pMat1, pMat2, nC1, nC2, nR1, nR2, fT, fF)
+		fT, fF, ok = tTest(true, mtx1, mtx2, c1, c2, r1, r2, fT, fF)
 	}
 	if !ok {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
