@@ -58,6 +58,20 @@ const (
 	criteriaErr
 	criteriaRegexp
 
+	catgoryWeightAndMass
+	catgoryDistance
+	catgoryTime
+	catgoryPressure
+	catgoryForce
+	catgoryEnergy
+	catgoryPower
+	catgoryMagnetism
+	catgoryTemperature
+	catgoryVolumeAndLiquidMeasure
+	catgoryArea
+	catgoryInformation
+	catgorySpeed
+
 	matchModeExact      = 0
 	matchModeMinGreater = 1
 	matchModeMaxLess    = -1
@@ -375,6 +389,7 @@ type formulaFuncs struct {
 //    CONFIDENCE
 //    CONFIDENCE.NORM
 //    CONFIDENCE.T
+//    CONVERT
 //    CORREL
 //    COS
 //    COSH
@@ -2061,6 +2076,529 @@ func str2cmplx(c string) string {
 	}
 	c = strings.NewReplacer("+i", "+1i", "-i", "-1i").Replace(c)
 	return c
+}
+
+// conversionUnit defined unit info for conversion.
+type conversionUnit struct {
+	group       uint8
+	allowPrefix bool
+}
+
+// conversionUnits maps info list for unit conversion, that can be used in
+// formula function CONVERT.
+var conversionUnits = map[string]conversionUnit{
+	// weight and mass
+	"g":        {group: catgoryWeightAndMass, allowPrefix: true},
+	"sg":       {group: catgoryWeightAndMass, allowPrefix: false},
+	"lbm":      {group: catgoryWeightAndMass, allowPrefix: false},
+	"u":        {group: catgoryWeightAndMass, allowPrefix: true},
+	"ozm":      {group: catgoryWeightAndMass, allowPrefix: false},
+	"grain":    {group: catgoryWeightAndMass, allowPrefix: false},
+	"cwt":      {group: catgoryWeightAndMass, allowPrefix: false},
+	"shweight": {group: catgoryWeightAndMass, allowPrefix: false},
+	"uk_cwt":   {group: catgoryWeightAndMass, allowPrefix: false},
+	"lcwt":     {group: catgoryWeightAndMass, allowPrefix: false},
+	"hweight":  {group: catgoryWeightAndMass, allowPrefix: false},
+	"stone":    {group: catgoryWeightAndMass, allowPrefix: false},
+	"ton":      {group: catgoryWeightAndMass, allowPrefix: false},
+	"uk_ton":   {group: catgoryWeightAndMass, allowPrefix: false},
+	"LTON":     {group: catgoryWeightAndMass, allowPrefix: false},
+	"brton":    {group: catgoryWeightAndMass, allowPrefix: false},
+	// distance
+	"m":         {group: catgoryDistance, allowPrefix: true},
+	"mi":        {group: catgoryDistance, allowPrefix: false},
+	"Nmi":       {group: catgoryDistance, allowPrefix: false},
+	"in":        {group: catgoryDistance, allowPrefix: false},
+	"ft":        {group: catgoryDistance, allowPrefix: false},
+	"yd":        {group: catgoryDistance, allowPrefix: false},
+	"ang":       {group: catgoryDistance, allowPrefix: true},
+	"ell":       {group: catgoryDistance, allowPrefix: false},
+	"ly":        {group: catgoryDistance, allowPrefix: false},
+	"parsec":    {group: catgoryDistance, allowPrefix: false},
+	"pc":        {group: catgoryDistance, allowPrefix: false},
+	"Pica":      {group: catgoryDistance, allowPrefix: false},
+	"Picapt":    {group: catgoryDistance, allowPrefix: false},
+	"pica":      {group: catgoryDistance, allowPrefix: false},
+	"survey_mi": {group: catgoryDistance, allowPrefix: false},
+	// time
+	"yr":  {group: catgoryTime, allowPrefix: false},
+	"day": {group: catgoryTime, allowPrefix: false},
+	"d":   {group: catgoryTime, allowPrefix: false},
+	"hr":  {group: catgoryTime, allowPrefix: false},
+	"mn":  {group: catgoryTime, allowPrefix: false},
+	"min": {group: catgoryTime, allowPrefix: false},
+	"sec": {group: catgoryTime, allowPrefix: true},
+	"s":   {group: catgoryTime, allowPrefix: true},
+	// pressure
+	"Pa":   {group: catgoryPressure, allowPrefix: true},
+	"p":    {group: catgoryPressure, allowPrefix: true},
+	"atm":  {group: catgoryPressure, allowPrefix: true},
+	"at":   {group: catgoryPressure, allowPrefix: true},
+	"mmHg": {group: catgoryPressure, allowPrefix: true},
+	"psi":  {group: catgoryPressure, allowPrefix: true},
+	"Torr": {group: catgoryPressure, allowPrefix: true},
+	// force
+	"N":    {group: catgoryForce, allowPrefix: true},
+	"dyn":  {group: catgoryForce, allowPrefix: true},
+	"dy":   {group: catgoryForce, allowPrefix: true},
+	"lbf":  {group: catgoryForce, allowPrefix: false},
+	"pond": {group: catgoryForce, allowPrefix: true},
+	// energy
+	"J":   {group: catgoryEnergy, allowPrefix: true},
+	"e":   {group: catgoryEnergy, allowPrefix: true},
+	"c":   {group: catgoryEnergy, allowPrefix: true},
+	"cal": {group: catgoryEnergy, allowPrefix: true},
+	"eV":  {group: catgoryEnergy, allowPrefix: true},
+	"ev":  {group: catgoryEnergy, allowPrefix: true},
+	"HPh": {group: catgoryEnergy, allowPrefix: false},
+	"hh":  {group: catgoryEnergy, allowPrefix: false},
+	"Wh":  {group: catgoryEnergy, allowPrefix: true},
+	"wh":  {group: catgoryEnergy, allowPrefix: true},
+	"flb": {group: catgoryEnergy, allowPrefix: false},
+	"BTU": {group: catgoryEnergy, allowPrefix: false},
+	"btu": {group: catgoryEnergy, allowPrefix: false},
+	// power
+	"HP": {group: catgoryPower, allowPrefix: false},
+	"h":  {group: catgoryPower, allowPrefix: false},
+	"W":  {group: catgoryPower, allowPrefix: true},
+	"w":  {group: catgoryPower, allowPrefix: true},
+	"PS": {group: catgoryPower, allowPrefix: false},
+	"T":  {group: catgoryMagnetism, allowPrefix: true},
+	"ga": {group: catgoryMagnetism, allowPrefix: true},
+	// temperature
+	"C":    {group: catgoryTemperature, allowPrefix: false},
+	"cel":  {group: catgoryTemperature, allowPrefix: false},
+	"F":    {group: catgoryTemperature, allowPrefix: false},
+	"fah":  {group: catgoryTemperature, allowPrefix: false},
+	"K":    {group: catgoryTemperature, allowPrefix: false},
+	"kel":  {group: catgoryTemperature, allowPrefix: false},
+	"Rank": {group: catgoryTemperature, allowPrefix: false},
+	"Reau": {group: catgoryTemperature, allowPrefix: false},
+	// volume
+	"l":        {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"L":        {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"lt":       {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"tsp":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"tspm":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"tbs":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"oz":       {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"cup":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"pt":       {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"us_pt":    {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"uk_pt":    {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"qt":       {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"uk_qt":    {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"gal":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"uk_gal":   {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"ang3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"ang^3":    {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"barrel":   {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"bushel":   {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"in3":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"in^3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"ft3":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"ft^3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"ly3":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"ly^3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"m3":       {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"m^3":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: true},
+	"mi3":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"mi^3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"yd3":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"yd^3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"Nmi3":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"Nmi^3":    {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"Pica3":    {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"Pica^3":   {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"Picapt3":  {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"Picapt^3": {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"GRT":      {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"regton":   {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	"MTON":     {group: catgoryVolumeAndLiquidMeasure, allowPrefix: false},
+	// area
+	"ha":       {group: catgoryArea, allowPrefix: true},
+	"uk_acre":  {group: catgoryArea, allowPrefix: false},
+	"us_acre":  {group: catgoryArea, allowPrefix: false},
+	"ang2":     {group: catgoryArea, allowPrefix: true},
+	"ang^2":    {group: catgoryArea, allowPrefix: true},
+	"ar":       {group: catgoryArea, allowPrefix: true},
+	"ft2":      {group: catgoryArea, allowPrefix: false},
+	"ft^2":     {group: catgoryArea, allowPrefix: false},
+	"in2":      {group: catgoryArea, allowPrefix: false},
+	"in^2":     {group: catgoryArea, allowPrefix: false},
+	"ly2":      {group: catgoryArea, allowPrefix: false},
+	"ly^2":     {group: catgoryArea, allowPrefix: false},
+	"m2":       {group: catgoryArea, allowPrefix: true},
+	"m^2":      {group: catgoryArea, allowPrefix: true},
+	"Morgen":   {group: catgoryArea, allowPrefix: false},
+	"mi2":      {group: catgoryArea, allowPrefix: false},
+	"mi^2":     {group: catgoryArea, allowPrefix: false},
+	"Nmi2":     {group: catgoryArea, allowPrefix: false},
+	"Nmi^2":    {group: catgoryArea, allowPrefix: false},
+	"Pica2":    {group: catgoryArea, allowPrefix: false},
+	"Pica^2":   {group: catgoryArea, allowPrefix: false},
+	"Picapt2":  {group: catgoryArea, allowPrefix: false},
+	"Picapt^2": {group: catgoryArea, allowPrefix: false},
+	"yd2":      {group: catgoryArea, allowPrefix: false},
+	"yd^2":     {group: catgoryArea, allowPrefix: false},
+	// information
+	"byte": {group: catgoryInformation, allowPrefix: true},
+	"bit":  {group: catgoryInformation, allowPrefix: true},
+	// speed
+	"m/s":   {group: catgorySpeed, allowPrefix: true},
+	"m/sec": {group: catgorySpeed, allowPrefix: true},
+	"m/h":   {group: catgorySpeed, allowPrefix: true},
+	"m/hr":  {group: catgorySpeed, allowPrefix: true},
+	"mph":   {group: catgorySpeed, allowPrefix: false},
+	"admkn": {group: catgorySpeed, allowPrefix: false},
+	"kn":    {group: catgorySpeed, allowPrefix: false},
+}
+
+// unitConversions maps details of the Units of measure conversion factors,
+// organised by group.
+var unitConversions = map[byte]map[string]float64{
+	// conversion uses gram (g) as an intermediate unit
+	catgoryWeightAndMass: {
+		"g":        1,
+		"sg":       6.85217658567918e-05,
+		"lbm":      2.20462262184878e-03,
+		"u":        6.02214179421676e+23,
+		"ozm":      3.52739619495804e-02,
+		"grain":    1.54323583529414e+01,
+		"cwt":      2.20462262184878e-05,
+		"shweight": 2.20462262184878e-05,
+		"uk_cwt":   1.96841305522212e-05,
+		"lcwt":     1.96841305522212e-05,
+		"hweight":  1.96841305522212e-05,
+		"stone":    1.57473044417770e-04,
+		"ton":      1.10231131092439e-06,
+		"uk_ton":   9.84206527611061e-07,
+		"LTON":     9.84206527611061e-07,
+		"brton":    9.84206527611061e-07,
+	},
+	// conversion uses meter (m) as an intermediate unit
+	catgoryDistance: {
+		"m":         1,
+		"mi":        6.21371192237334e-04,
+		"Nmi":       5.39956803455724e-04,
+		"in":        3.93700787401575e+01,
+		"ft":        3.28083989501312e+00,
+		"yd":        1.09361329833771e+00,
+		"ang":       1.0e+10,
+		"ell":       8.74890638670166e-01,
+		"ly":        1.05700083402462e-16,
+		"parsec":    3.24077928966473e-17,
+		"pc":        3.24077928966473e-17,
+		"Pica":      2.83464566929134e+03,
+		"Picapt":    2.83464566929134e+03,
+		"pica":      2.36220472440945e+02,
+		"survey_mi": 6.21369949494950e-04,
+	},
+	// conversion uses second (s) as an intermediate unit
+	catgoryTime: {
+		"yr":  3.16880878140289e-08,
+		"day": 1.15740740740741e-05,
+		"d":   1.15740740740741e-05,
+		"hr":  2.77777777777778e-04,
+		"mn":  1.66666666666667e-02,
+		"min": 1.66666666666667e-02,
+		"sec": 1,
+		"s":   1,
+	},
+	// conversion uses Pascal (Pa) as an intermediate unit
+	catgoryPressure: {
+		"Pa":   1,
+		"p":    1,
+		"atm":  9.86923266716013e-06,
+		"at":   9.86923266716013e-06,
+		"mmHg": 7.50063755419211e-03,
+		"psi":  1.45037737730209e-04,
+		"Torr": 7.50061682704170e-03,
+	},
+	// conversion uses Newton (N) as an intermediate unit
+	catgoryForce: {
+		"N":    1,
+		"dyn":  1.0e+5,
+		"dy":   1.0e+5,
+		"lbf":  2.24808923655339e-01,
+		"pond": 1.01971621297793e+02,
+	},
+	// conversion uses Joule (J) as an intermediate unit
+	catgoryEnergy: {
+		"J":   1,
+		"e":   9.99999519343231e+06,
+		"c":   2.39006249473467e-01,
+		"cal": 2.38846190642017e-01,
+		"eV":  6.24145700000000e+18,
+		"ev":  6.24145700000000e+18,
+		"HPh": 3.72506430801000e-07,
+		"hh":  3.72506430801000e-07,
+		"Wh":  2.77777916238711e-04,
+		"wh":  2.77777916238711e-04,
+		"flb": 2.37304222192651e+01,
+		"BTU": 9.47815067349015e-04,
+		"btu": 9.47815067349015e-04,
+	},
+	// conversion uses Horsepower (HP) as an intermediate unit
+	catgoryPower: {
+		"HP": 1,
+		"h":  1,
+		"W":  7.45699871582270e+02,
+		"w":  7.45699871582270e+02,
+		"PS": 1.01386966542400e+00,
+	},
+	// conversion uses Tesla (T) as an intermediate unit
+	catgoryMagnetism: {
+		"T":  1,
+		"ga": 10000,
+	},
+	// conversion uses litre (l) as an intermediate unit
+	catgoryVolumeAndLiquidMeasure: {
+		"l":        1,
+		"L":        1,
+		"lt":       1,
+		"tsp":      2.02884136211058e+02,
+		"tspm":     2.0e+02,
+		"tbs":      6.76280454036860e+01,
+		"oz":       3.38140227018430e+01,
+		"cup":      4.22675283773038e+00,
+		"pt":       2.11337641886519e+00,
+		"us_pt":    2.11337641886519e+00,
+		"uk_pt":    1.75975398639270e+00,
+		"qt":       1.05668820943259e+00,
+		"uk_qt":    8.79876993196351e-01,
+		"gal":      2.64172052358148e-01,
+		"uk_gal":   2.19969248299088e-01,
+		"ang3":     1.0e+27,
+		"ang^3":    1.0e+27,
+		"barrel":   6.28981077043211e-03,
+		"bushel":   2.83775932584017e-02,
+		"in3":      6.10237440947323e+01,
+		"in^3":     6.10237440947323e+01,
+		"ft3":      3.53146667214886e-02,
+		"ft^3":     3.53146667214886e-02,
+		"ly3":      1.18093498844171e-51,
+		"ly^3":     1.18093498844171e-51,
+		"m3":       1.0e-03,
+		"m^3":      1.0e-03,
+		"mi3":      2.39912758578928e-13,
+		"mi^3":     2.39912758578928e-13,
+		"yd3":      1.30795061931439e-03,
+		"yd^3":     1.30795061931439e-03,
+		"Nmi3":     1.57426214685811e-13,
+		"Nmi^3":    1.57426214685811e-13,
+		"Pica3":    2.27769904358706e+07,
+		"Pica^3":   2.27769904358706e+07,
+		"Picapt3":  2.27769904358706e+07,
+		"Picapt^3": 2.27769904358706e+07,
+		"GRT":      3.53146667214886e-04,
+		"regton":   3.53146667214886e-04,
+		"MTON":     8.82866668037215e-04,
+	},
+	// conversion uses hectare (ha) as an intermediate unit
+	catgoryArea: {
+		"ha":       1,
+		"uk_acre":  2.47105381467165e+00,
+		"us_acre":  2.47104393046628e+00,
+		"ang2":     1.0e+24,
+		"ang^2":    1.0e+24,
+		"ar":       1.0e+02,
+		"ft2":      1.07639104167097e+05,
+		"ft^2":     1.07639104167097e+05,
+		"in2":      1.55000310000620e+07,
+		"in^2":     1.55000310000620e+07,
+		"ly2":      1.11725076312873e-28,
+		"ly^2":     1.11725076312873e-28,
+		"m2":       1.0e+04,
+		"m^2":      1.0e+04,
+		"Morgen":   4.0e+00,
+		"mi2":      3.86102158542446e-03,
+		"mi^2":     3.86102158542446e-03,
+		"Nmi2":     2.91553349598123e-03,
+		"Nmi^2":    2.91553349598123e-03,
+		"Pica2":    8.03521607043214e+10,
+		"Pica^2":   8.03521607043214e+10,
+		"Picapt2":  8.03521607043214e+10,
+		"Picapt^2": 8.03521607043214e+10,
+		"yd2":      1.19599004630108e+04,
+		"yd^2":     1.19599004630108e+04,
+	},
+	// conversion uses bit (bit) as an intermediate unit
+	catgoryInformation: {
+		"bit":  1,
+		"byte": 0.125,
+	},
+	// conversion uses Meters per Second (m/s) as an intermediate unit
+	catgorySpeed: {
+		"m/s":   1,
+		"m/sec": 1,
+		"m/h":   3.60e+03,
+		"m/hr":  3.60e+03,
+		"mph":   2.23693629205440e+00,
+		"admkn": 1.94260256941567e+00,
+		"kn":    1.94384449244060e+00,
+	},
+}
+
+// conversionMultipliers maps details of the Multiplier prefixes that can be
+// used with Units of Measure in CONVERT.
+var conversionMultipliers = map[string]float64{
+	"Y":  1e24,
+	"Z":  1e21,
+	"E":  1e18,
+	"P":  1e15,
+	"T":  1e12,
+	"G":  1e9,
+	"M":  1e6,
+	"k":  1e3,
+	"h":  1e2,
+	"e":  1e1,
+	"da": 1e1,
+	"d":  1e-1,
+	"c":  1e-2,
+	"m":  1e-3,
+	"u":  1e-6,
+	"n":  1e-9,
+	"p":  1e-12,
+	"f":  1e-15,
+	"a":  1e-18,
+	"z":  1e-21,
+	"y":  1e-24,
+	"Yi": math.Pow(2, 80),
+	"Zi": math.Pow(2, 70),
+	"Ei": math.Pow(2, 60),
+	"Pi": math.Pow(2, 50),
+	"Ti": math.Pow(2, 40),
+	"Gi": math.Pow(2, 30),
+	"Mi": math.Pow(2, 20),
+	"ki": math.Pow(2, 10),
+}
+
+// getUnitDetails check and returns the unit of measure details.
+func getUnitDetails(uom string) (unit string, catgory byte, res float64, ok bool) {
+	if len(uom) == 0 {
+		ok = false
+		return
+	}
+	if unit, ok := conversionUnits[uom]; ok {
+		return uom, unit.group, 1, ok
+	}
+	// 1 character standard metric multiplier prefixes
+	multiplierType := uom[:1]
+	uom = uom[1:]
+	conversionUnit, ok1 := conversionUnits[uom]
+	multiplier, ok2 := conversionMultipliers[multiplierType]
+	if ok1 && ok2 {
+		if !conversionUnit.allowPrefix {
+			ok = false
+			return
+		}
+		unitCategory := conversionUnit.group
+		return uom, unitCategory, multiplier, true
+	}
+	// 2 character standard and binary metric multiplier prefixes
+	if len(uom) > 0 {
+		multiplierType += uom[:1]
+		uom = uom[1:]
+	}
+	conversionUnit, ok1 = conversionUnits[uom]
+	multiplier, ok2 = conversionMultipliers[multiplierType]
+	if ok1 && ok2 {
+		if !conversionUnit.allowPrefix {
+			ok = false
+			return
+		}
+		unitCategory := conversionUnit.group
+		return uom, unitCategory, multiplier, true
+	}
+	ok = false
+	return
+}
+
+// resolveTemperatureSynonyms returns unit of measure according to a given
+// temperature synonyms.
+func resolveTemperatureSynonyms(uom string) string {
+	switch uom {
+	case "fah":
+		return "F"
+	case "cel":
+		return "C"
+	case "kel":
+		return "K"
+	}
+	return uom
+}
+
+// convertTemperature returns converted temperature by a given unit of measure.
+func convertTemperature(fromUOM, toUOM string, value float64) float64 {
+	fromUOM = resolveTemperatureSynonyms(fromUOM)
+	toUOM = resolveTemperatureSynonyms(toUOM)
+	if fromUOM == toUOM {
+		return value
+	}
+	// convert to Kelvin
+	switch fromUOM {
+	case "F":
+		value = (value-32)/1.8 + 273.15
+		break
+	case "C":
+		value += 273.15
+		break
+	case "Rank":
+		value /= 1.8
+		break
+	case "Reau":
+		value = value*1.25 + 273.15
+		break
+	}
+	// convert from Kelvin
+	switch toUOM {
+	case "F":
+		value = (value-273.15)*1.8 + 32
+		break
+	case "C":
+		value -= 273.15
+		break
+	case "Rank":
+		value *= 1.8
+		break
+	case "Reau":
+		value = (value - 273.15) * 0.8
+		break
+	}
+	return value
+}
+
+// CONVERT function converts a number from one unit type (e.g. Yards) to
+// another unit type (e.g. Meters). The syntax of the function is:
+//
+//    CONVERT(number,from_unit,to_unit)
+//
+func (fn *formulaFuncs) CONVERT(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "CONVERT requires 3 arguments")
+	}
+	num := argsList.Front().Value.(formulaArg).ToNumber()
+	if num.Type != ArgNumber {
+		return num
+	}
+	fromUOM, fromCategory, fromMultiplier, ok1 := getUnitDetails(argsList.Front().Next().Value.(formulaArg).Value())
+	toUOM, toCategory, toMultiplier, ok2 := getUnitDetails(argsList.Back().Value.(formulaArg).Value())
+	if !ok1 || !ok2 || fromCategory != toCategory {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	val := num.Number * fromMultiplier
+	if fromUOM == toUOM && fromMultiplier == toMultiplier {
+		return newNumberFormulaArg(val / fromMultiplier)
+	} else if fromUOM == toUOM {
+		return newNumberFormulaArg(val / toMultiplier)
+	} else if fromCategory == catgoryTemperature {
+		return newNumberFormulaArg(convertTemperature(fromUOM, toUOM, val))
+	}
+	fromConversion, _ := unitConversions[fromCategory][fromUOM]
+	toConversion, _ := unitConversions[fromCategory][toUOM]
+	baseValue := val * (1 / fromConversion)
+	return newNumberFormulaArg((baseValue * toConversion) / toMultiplier)
 }
 
 // DEC2BIN function converts a decimal number into a Binary (Base 2) number.
