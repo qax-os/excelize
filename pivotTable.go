@@ -542,6 +542,7 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Name:            f.getPivotTableFieldName(name, opt.Rows),
 				Axis:            "axisRow",
+				DataField:       inPivotTableField(opt.Data, name) != -1,
 				Compact:         &rowOptions.Compact,
 				Outline:         &rowOptions.Outline,
 				DefaultSubtotal: &rowOptions.DefaultSubtotal,
@@ -554,8 +555,9 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 		}
 		if inPivotTableField(opt.Filter, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
-				Axis: "axisPage",
-				Name: f.getPivotTableFieldName(name, opt.Columns),
+				Axis:      "axisPage",
+				DataField: inPivotTableField(opt.Data, name) != -1,
+				Name:      f.getPivotTableFieldName(name, opt.Columns),
 				Items: &xlsxItems{
 					Count: 1,
 					Item: []*xlsxItem{
@@ -576,6 +578,7 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Name:            f.getPivotTableFieldName(name, opt.Columns),
 				Axis:            "axisCol",
+				DataField:       inPivotTableField(opt.Data, name) != -1,
 				Compact:         &columnOptions.Compact,
 				Outline:         &columnOptions.Outline,
 				DefaultSubtotal: &columnOptions.DefaultSubtotal,
