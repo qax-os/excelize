@@ -736,7 +736,7 @@ type formulaFuncs struct {
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	var (
 		formula string
-		token   efp.Token
+		token   formulaArg
 	)
 	if formula, err = f.GetCellFormula(sheet, cell); err != nil {
 		return
@@ -749,7 +749,7 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	if token, err = f.evalInfixExp(sheet, cell, tokens); err != nil {
 		return
 	}
-	result = token.TValue
+	result = token.Value()
 	isNum, precision := isNumeric(result)
 	if isNum && (precision > 15 || precision == 0) {
 		num := roundPrecision(result, -1)
@@ -826,7 +826,7 @@ func newEmptyFormulaArg() formulaArg {
 //
 // TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 //
-func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, error) {
+func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg, error) {
 	var err error
 	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
 	for i := 0; i < len(tokens); i++ {
@@ -835,7 +835,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 		// out of function stack
 		if opfStack.Len() == 0 {
 			if err = f.parseToken(sheet, token, opdStack, optStack); err != nil {
-				return efp.Token{}, err
+				return newEmptyFormulaArg(), err
 			}
 		}
 
@@ -864,16 +864,12 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 					// parse reference: must reference at here
 					result, err := f.parseReference(sheet, token.TValue)
 					if err != nil {
-						return efp.Token{TValue: formulaErrorNAME}, err
+						return result, err
 					}
 					if result.Type != ArgString {
-						return efp.Token{}, errors.New(formulaErrorVALUE)
+						return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE), errors.New(formulaErrorVALUE)
 					}
-					opfdStack.Push(efp.Token{
-						TType:    efp.TokenTypeOperand,
-						TSubType: efp.TokenSubTypeNumber,
-						TValue:   result.String,
-					})
+					opfdStack.Push(result)
 					continue
 				}
 				if nextToken.TType == efp.TokenTypeArgument || nextToken.TType == efp.TokenTypeFunction {
@@ -884,10 +880,10 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 					}
 					result, err := f.parseReference(sheet, token.TValue)
 					if err != nil {
-						return efp.Token{TValue: formulaErrorNAME}, err
+						return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE), err
 					}
 					if result.Type == ArgUnknown {
-						return efp.Token{}, errors.New(formulaErrorVALUE)
+						return newEmptyFormulaArg(), errors.New(formulaErrorVALUE)
 					}
 					argsStack.Peek().(*list.List).PushBack(result)
 					continue
@@ -896,18 +892,14 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 
 			if isEndParenthesesToken(token) && isBeginParenthesesToken(opftStack.Peek().(efp.Token)) {
 				if arg := argsStack.Peek().(*list.List).Back(); arg != nil {
-					opfdStack.Push(efp.Token{
-						TType:    efp.TokenTypeOperand,
-						TSubType: efp.TokenSubTypeNumber,
-						TValue:   arg.Value.(formulaArg).Value(),
-					})
+					opfdStack.Push(arg.Value.(formulaArg))
 					argsStack.Peek().(*list.List).Remove(arg)
 				}
 			}
 
 			// check current token is opft
 			if err = f.parseToken(sheet, token, opfdStack, opftStack); err != nil {
-				return efp.Token{}, err
+				return newEmptyFormulaArg(), err
 			}
 
 			// current token is arg
@@ -921,7 +913,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 					opftStack.Pop()
 				}
 				if !opfdStack.Empty() {
-					argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
+					argsStack.Peek().(*list.List).PushBack(opfdStack.Pop().(formulaArg))
 				}
 				continue
 			}
@@ -932,21 +924,21 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (efp.Token, 
 			}
 
 			if err = f.evalInfixExpFunc(sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
-				return efp.Token{}, err
+				return newEmptyFormulaArg(), err
 			}
 		}
 	}
 	for optStack.Len() != 0 {
 		topOpt := optStack.Peek().(efp.Token)
 		if err = calculate(opdStack, topOpt); err != nil {
-			return efp.Token{}, err
+			return newEmptyFormulaArg(), err
 		}
 		optStack.Pop()
 	}
 	if opdStack.Len() == 0 {
-		return efp.Token{}, ErrInvalidFormula
+		return newEmptyFormulaArg(), ErrInvalidFormula
 	}
-	return opdStack.Peek().(efp.Token), err
+	return opdStack.Peek().(formulaArg), err
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
@@ -968,11 +960,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 	if opfStack.Len() > 0 { // still in function stack
 		if nextToken.TType == efp.TokenTypeOperatorInfix || (opftStack.Len() > 1 && opfdStack.Len() > 0) {
 			// mathematics calculate in formula function
-			if arg.Type == ArgError {
-				opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeError})
-			} else {
-				opfdStack.Push(efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
-			}
+			opfdStack.Push(arg)
 		} else {
 			argsStack.Peek().(*list.List).PushBack(arg)
 		}
@@ -981,7 +969,7 @@ func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, 
 		if arg.Type == ArgMatrix && len(arg.Matrix) > 0 && len(arg.Matrix[0]) > 0 {
 			val = arg.Matrix[0][0].Value()
 		}
-		opdStack.Push(efp.Token{TValue: val, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+		opdStack.Push(newStringFormulaArg(val))
 	}
 	return nil
 }
@@ -1010,179 +998,166 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 	}
 	// push opfd to args
 	if argument && opfdStack.Len() > 0 {
-		argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(opfdStack.Pop().(efp.Token).TValue))
+		argsStack.Peek().(*list.List).PushBack(opfdStack.Pop().(formulaArg))
 	}
 }
 
 // calcPow evaluate exponentiation arithmetic operations.
-func calcPow(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-	if err != nil {
-		return err
+func calcPow(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	lOpdVal := lOpd.ToNumber()
+	if lOpdVal.Type != ArgNumber {
+		return errors.New(lOpdVal.Value())
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-	if err != nil {
-		return err
+	rOpdVal := rOpd.ToNumber()
+	if rOpdVal.Type != ArgNumber {
+		return errors.New(rOpdVal.Value())
 	}
-	result := math.Pow(lOpdVal, rOpdVal)
-	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(newNumberFormulaArg(math.Pow(lOpdVal.Number, rOpdVal.Number)))
 	return nil
 }
 
 // calcEq evaluate equal arithmetic operations.
-func calcEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd.TValue == lOpd.TValue)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	opdStack.Push(newBoolFormulaArg(rOpd.Value() == lOpd.Value()))
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
-func calcNEq(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(rOpd.TValue != lOpd.TValue)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcNEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	opdStack.Push(newBoolFormulaArg(rOpd.Value() != lOpd.Value()))
 	return nil
 }
 
 // calcL evaluate less than arithmetic operations.
-func calcL(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
-		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
-		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal < rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcL(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(lOpd.Number < rOpd.Number))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) == -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(strings.Compare(lOpd.Value(), rOpd.Value()) == -1))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(false))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(true))
 	}
 	return nil
 }
 
 // calcLe evaluate less than or equal arithmetic operations.
-func calcLe(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
-		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
-		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal <= rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcLe(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(lOpd.Number <= rOpd.Number))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) != 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(strings.Compare(lOpd.Value(), rOpd.Value()) != 1))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(false))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(true))
 	}
 	return nil
 }
 
 // calcG evaluate greater than or equal arithmetic operations.
-func calcG(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
-		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
-		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal > rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcG(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(lOpd.Number > rOpd.Number))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) == 1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(strings.Compare(lOpd.Value(), rOpd.Value()) == 1))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(true))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(false))
 	}
 	return nil
 }
 
 // calcGe evaluate greater than or equal arithmetic operations.
-func calcGe(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeNumber {
-		lOpdVal, _ := strconv.ParseFloat(lOpd.TValue, 64)
-		rOpdVal, _ := strconv.ParseFloat(rOpd.TValue, 64)
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(lOpdVal >= rOpdVal)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcGe(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(lOpd.Number >= rOpd.Number))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(strings.Compare(lOpd.TValue, rOpd.TValue) != -1)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(strings.Compare(lOpd.Value(), rOpd.Value()) != -1))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeNumber && lOpd.TSubType == efp.TokenSubTypeText {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(true)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgNumber && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(true))
 	}
-	if rOpd.TSubType == efp.TokenSubTypeText && lOpd.TSubType == efp.TokenSubTypeNumber {
-		opdStack.Push(efp.Token{TValue: strings.ToUpper(strconv.FormatBool(false)), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	if rOpd.Type == ArgString && lOpd.Type == ArgNumber {
+		opdStack.Push(newBoolFormulaArg(false))
 	}
 	return nil
 }
 
 // calcSplice evaluate splice '&' operations.
-func calcSplice(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	opdStack.Push(efp.Token{TValue: lOpd.TValue + rOpd.TValue, TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+func calcSplice(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	opdStack.Push(newStringFormulaArg(lOpd.Value() + rOpd.Value()))
 	return nil
 }
 
 // calcAdd evaluate addition arithmetic operations.
-func calcAdd(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-	if err != nil {
-		return err
+func calcAdd(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	lOpdVal := lOpd.ToNumber()
+	if lOpdVal.Type != ArgNumber {
+		return errors.New(lOpdVal.Value())
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-	if err != nil {
-		return err
+	rOpdVal := rOpd.ToNumber()
+	if rOpdVal.Type != ArgNumber {
+		return errors.New(rOpdVal.Value())
 	}
-	result := lOpdVal + rOpdVal
-	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(newNumberFormulaArg(lOpdVal.Number + rOpdVal.Number))
 	return nil
 }
 
 // calcSubtract evaluate subtraction arithmetic operations.
-func calcSubtract(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-	if err != nil {
-		return err
+func calcSubtract(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	lOpdVal := lOpd.ToNumber()
+	if lOpdVal.Type != ArgNumber {
+		return errors.New(lOpdVal.Value())
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-	if err != nil {
-		return err
+	rOpdVal := rOpd.ToNumber()
+	if rOpdVal.Type != ArgNumber {
+		return errors.New(rOpdVal.Value())
 	}
-	result := lOpdVal - rOpdVal
-	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(newNumberFormulaArg(lOpdVal.Number - rOpdVal.Number))
 	return nil
 }
 
 // calcMultiply evaluate multiplication arithmetic operations.
-func calcMultiply(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-	if err != nil {
-		return err
+func calcMultiply(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	lOpdVal := lOpd.ToNumber()
+	if lOpdVal.Type != ArgNumber {
+		return errors.New(lOpdVal.Value())
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-	if err != nil {
-		return err
+	rOpdVal := rOpd.ToNumber()
+	if rOpdVal.Type != ArgNumber {
+		return errors.New(rOpdVal.Value())
 	}
-	result := lOpdVal * rOpdVal
-	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(newNumberFormulaArg(lOpdVal.Number * rOpdVal.Number))
 	return nil
 }
 
 // calcDiv evaluate division arithmetic operations.
-func calcDiv(rOpd, lOpd efp.Token, opdStack *Stack) error {
-	lOpdVal, err := strconv.ParseFloat(lOpd.TValue, 64)
-	if err != nil {
-		return err
+func calcDiv(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	lOpdVal := lOpd.ToNumber()
+	if lOpdVal.Type != ArgNumber {
+		return errors.New(lOpdVal.Value())
 	}
-	rOpdVal, err := strconv.ParseFloat(rOpd.TValue, 64)
-	if err != nil {
-		return err
+	rOpdVal := rOpd.ToNumber()
+	if rOpdVal.Type != ArgNumber {
+		return errors.New(rOpdVal.Value())
 	}
-	result := lOpdVal / rOpdVal
-	if rOpdVal == 0 {
+	if rOpdVal.Number == 0 {
 		return errors.New(formulaErrorDIV)
 	}
-	opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+	opdStack.Push(newNumberFormulaArg(lOpdVal.Number / rOpdVal.Number))
 	return nil
 }
 
@@ -1192,25 +1167,20 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		if opdStack.Len() < 1 {
 			return ErrInvalidFormula
 		}
-		opd := opdStack.Pop().(efp.Token)
-		opdVal, err := strconv.ParseFloat(opd.TValue, 64)
-		if err != nil {
-			return err
-		}
-		result := 0 - opdVal
-		opdStack.Push(efp.Token{TValue: fmt.Sprintf("%g", result), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber})
+		opd := opdStack.Pop().(formulaArg)
+		opdStack.Push(newNumberFormulaArg(0 - opd.Number))
 	}
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
 		if opdStack.Len() < 2 {
 			return ErrInvalidFormula
 		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
+		rOpd := opdStack.Pop().(formulaArg)
+		lOpd := opdStack.Pop().(formulaArg)
 		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
 			return err
 		}
 	}
-	tokenCalcFunc := map[string]func(rOpd, lOpd efp.Token, opdStack *Stack) error{
+	tokenCalcFunc := map[string]func(rOpd, lOpd formulaArg, opdStack *Stack) error{
 		"^":  calcPow,
 		"*":  calcMultiply,
 		"/":  calcDiv,
@@ -1228,13 +1198,13 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		if opdStack.Len() < 2 {
 			return ErrInvalidFormula
 		}
-		rOpd := opdStack.Pop().(efp.Token)
-		lOpd := opdStack.Pop().(efp.Token)
-		if rOpd.TSubType == efp.TokenSubTypeError {
-			return errors.New(rOpd.TValue)
+		rOpd := opdStack.Pop().(formulaArg)
+		lOpd := opdStack.Pop().(formulaArg)
+		if rOpd.Type == ArgError {
+			return errors.New(rOpd.Value())
 		}
-		if lOpd.TSubType == efp.TokenSubTypeError {
-			return errors.New(lOpd.TValue)
+		if lOpd.Type == ArgError {
+			return errors.New(lOpd.Value())
 		}
 		if err := fn(rOpd, lOpd, opdStack); err != nil {
 			return err
@@ -1322,7 +1292,7 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 		}
 		token.TValue = result.String
 		token.TType = efp.TokenTypeOperand
-		token.TSubType = efp.TokenSubTypeNumber
+		token.TSubType = efp.TokenSubTypeText
 	}
 	if isOperatorPrefixToken(token) {
 		if err := f.parseOperatorPrefixToken(optStack, opdStack, token); err != nil {
@@ -1343,15 +1313,17 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 		optStack.Pop()
 	}
 	if token.TType == efp.TokenTypeOperatorPostfix && !opdStack.Empty() {
-		topOpd := opdStack.Pop().(efp.Token)
-		opd, err := strconv.ParseFloat(topOpd.TValue, 64)
-		topOpd.TValue = strconv.FormatFloat(opd/100, 'f', -1, 64)
-		opdStack.Push(topOpd)
-		return err
+		topOpd := opdStack.Pop().(formulaArg)
+		opdStack.Push(newNumberFormulaArg(topOpd.Number / 100))
 	}
 	// opd
 	if isOperand(token) {
-		opdStack.Push(token)
+		if token.TSubType == efp.TokenSubTypeNumber {
+			num, _ := strconv.ParseFloat(token.TValue, 64)
+			opdStack.Push(newNumberFormulaArg(num))
+		} else {
+			opdStack.Push(newStringFormulaArg(token.TValue))
+		}
 	}
 	return nil
 }
@@ -3723,7 +3695,7 @@ func (fn *formulaFuncs) BASE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "radix must be an integer >= 2 and <= 36")
 	}
 	if argsList.Len() > 2 {
-		if minLength, err = strconv.Atoi(argsList.Back().Value.(formulaArg).String); err != nil {
+		if minLength, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value()); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
 	}
@@ -4058,17 +4030,16 @@ func (fn *formulaFuncs) DECIMAL(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "DECIMAL requires 2 numeric arguments")
 	}
-	text := argsList.Front().Value.(formulaArg).String
-	var radix int
+	text := argsList.Front().Value.(formulaArg).Value()
 	var err error
-	radix, err = strconv.Atoi(argsList.Back().Value.(formulaArg).String)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	radix := argsList.Back().Value.(formulaArg).ToNumber()
+	if radix.Type != ArgNumber {
+		return radix
 	}
 	if len(text) > 2 && (strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X")) {
 		text = text[2:]
 	}
-	val, err := strconv.ParseInt(text, radix, 64)
+	val, err := strconv.ParseInt(text, int(radix.Number), 64)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 	}
@@ -4948,8 +4919,6 @@ func (fn *formulaFuncs) PRODUCT(argsList *list.List) formulaArg {
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
-		case ArgUnknown:
-			continue
 		case ArgString:
 			if token.String == "" {
 				continue
@@ -4963,13 +4932,13 @@ func (fn *formulaFuncs) PRODUCT(argsList *list.List) formulaArg {
 		case ArgMatrix:
 			for _, row := range token.Matrix {
 				for _, value := range row {
-					if value.String == "" {
+					if value.Value() == "" {
 						continue
 					}
 					if val, err = strconv.ParseFloat(value.String, 64); err != nil {
 						return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 					}
-					product = product * val
+					product *= val
 				}
 			}
 		}
@@ -5684,10 +5653,9 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 			ok, _ = formulaCriteriaEval(fromVal, criteria)
 			if ok {
 				if argsList.Len() == 3 {
-					if len(sumRange) <= rowIdx || len(sumRange[rowIdx]) <= colIdx {
-						continue
+					if len(sumRange) > rowIdx && len(sumRange[rowIdx]) > colIdx {
+						fromVal = sumRange[rowIdx][colIdx].String
 					}
-					fromVal = sumRange[rowIdx][colIdx].String
 				}
 				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
 					continue
@@ -5718,6 +5686,9 @@ func (fn *formulaFuncs) SUMIFS(argsList *list.List) formulaArg {
 		args = append(args, arg.Value.(formulaArg))
 	}
 	for _, ref := range formulaIfsMatch(args) {
+		if ref.Row >= len(sumRange) || ref.Col >= len(sumRange[ref.Row]) {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 		if num := sumRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber {
 			sum += num.Number
 		}
@@ -5812,14 +5783,14 @@ func (fn *formulaFuncs) SUMSQ(argsList *list.List) formulaArg {
 			}
 			sq += val * val
 		case ArgNumber:
-			sq += token.Number
+			sq += token.Number * token.Number
 		case ArgMatrix:
 			for _, row := range token.Matrix {
 				for _, value := range row {
-					if value.String == "" {
+					if value.Value() == "" {
 						continue
 					}
-					if val, err = strconv.ParseFloat(value.String, 64); err != nil {
+					if val, err = strconv.ParseFloat(value.Value(), 64); err != nil {
 						return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 					}
 					sq += val * val
@@ -6028,7 +5999,7 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "AVERAGEIF requires at least 2 arguments")
 	}
 	var (
-		criteria  = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+		criteria  = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).Value())
 		rangeMtx  = argsList.Front().Value.(formulaArg).Matrix
 		cellRange [][]formulaArg
 		args      []formulaArg
@@ -6041,17 +6012,16 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 	}
 	for rowIdx, row := range rangeMtx {
 		for colIdx, col := range row {
-			fromVal := col.String
-			if col.String == "" {
+			fromVal := col.Value()
+			if col.Value() == "" {
 				continue
 			}
 			ok, _ = formulaCriteriaEval(fromVal, criteria)
 			if ok {
 				if argsList.Len() == 3 {
-					if len(cellRange) <= rowIdx || len(cellRange[rowIdx]) <= colIdx {
-						continue
+					if len(cellRange) > rowIdx && len(cellRange[rowIdx]) > colIdx {
+						fromVal = cellRange[rowIdx][colIdx].Value()
 					}
-					fromVal = cellRange[rowIdx][colIdx].String
 				}
 				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
 					continue
@@ -7686,12 +7656,10 @@ func (fn *formulaFuncs) COUNT(argsList *list.List) formulaArg {
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
-		case ArgString:
+		case ArgString, ArgNumber:
 			if arg.ToNumber().Type != ArgError {
 				count++
 			}
-		case ArgNumber:
-			count++
 		case ArgMatrix:
 			for _, row := range arg.Matrix {
 				for _, value := range row {
@@ -7928,23 +7896,14 @@ func (fn *formulaFuncs) GAMMA(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "GAMMA requires 1 numeric argument")
 	}
-	token := argsList.Front().Value.(formulaArg)
-	switch token.Type {
-	case ArgString:
-		arg := token.ToNumber()
-		if arg.Type == ArgNumber {
-			if arg.Number <= 0 {
-				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-			}
-			return newNumberFormulaArg(math.Gamma(arg.Number))
-		}
-	case ArgNumber:
-		if token.Number <= 0 {
-			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-		}
-		return newNumberFormulaArg(math.Gamma(token.Number))
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMA requires 1 numeric argument")
 	}
-	return newErrorFormulaArg(formulaErrorVALUE, "GAMMA requires 1 numeric argument")
+	if number.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(math.Gamma(number.Number))
 }
 
 // GAMMAdotDIST function returns the Gamma Distribution, which is frequently
@@ -8073,23 +8032,14 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
 	}
-	token := argsList.Front().Value.(formulaArg)
-	switch token.Type {
-	case ArgString:
-		arg := token.ToNumber()
-		if arg.Type == ArgNumber {
-			if arg.Number <= 0 {
-				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-			}
-			return newNumberFormulaArg(math.Log(math.Gamma(arg.Number)))
-		}
-	case ArgNumber:
-		if token.Number <= 0 {
-			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-		}
-		return newNumberFormulaArg(math.Log(math.Gamma(token.Number)))
+	x := argsList.Front().Value.(formulaArg).ToNumber()
+	if x.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
 	}
-	return newErrorFormulaArg(formulaErrorVALUE, "GAMMALN requires 1 numeric argument")
+	if x.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(math.Log(math.Gamma(x.Number)))
 }
 
 // GAMMALNdotPRECISE function returns the natural logarithm of the Gamma
@@ -11709,11 +11659,7 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 	if argsList.Len() > 30 {
 		return newErrorFormulaArg(formulaErrorVALUE, "AND accepts at most 30 arguments")
 	}
-	var (
-		and = true
-		val float64
-		err error
-	)
+	and := true
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
@@ -11726,10 +11672,9 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 			if token.String == "FALSE" {
 				return newStringFormulaArg(token.String)
 			}
-			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
-			and = and && (val != 0)
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		case ArgNumber:
+			and = and && token.Number != 0
 		case ArgMatrix:
 			// TODO
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
@@ -11845,11 +11790,7 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 	if argsList.Len() > 30 {
 		return newErrorFormulaArg(formulaErrorVALUE, "OR accepts at most 30 arguments")
 	}
-	var (
-		or  bool
-		val float64
-		err error
-	)
+	var or bool
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
@@ -11863,10 +11804,9 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 				or = true
 				continue
 			}
-			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
-			or = val != 0
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		case ArgNumber:
+			or = token.Number != 0
 		case ArgMatrix:
 			// TODO
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
@@ -11931,20 +11871,6 @@ func calcXor(argsList *list.List) formulaArg {
 		switch token.Type {
 		case ArgError:
 			return token
-		case ArgString:
-			if b := token.ToBool(); b.Type == ArgNumber {
-				ok = true
-				if b.Number == 1 {
-					count++
-				}
-				continue
-			}
-			if num := token.ToNumber(); num.Type == ArgNumber {
-				ok = true
-				if num.Number != 0 {
-					count++
-				}
-			}
 		case ArgNumber:
 			ok = true
 			if token.Number != 0 {
@@ -12907,7 +12833,7 @@ func (fn *formulaFuncs) CLEAN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "CLEAN requires 1 argument")
 	}
 	b := bytes.Buffer{}
-	for _, c := range argsList.Front().Value.(formulaArg).String {
+	for _, c := range argsList.Front().Value.(formulaArg).Value() {
 		if c > 31 {
 			b.WriteRune(c)
 		}
@@ -13477,7 +13403,7 @@ func (fn *formulaFuncs) TRIM(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TRIM requires 1 argument")
 	}
-	return newStringFormulaArg(strings.TrimSpace(argsList.Front().Value.(formulaArg).String))
+	return newStringFormulaArg(strings.TrimSpace(argsList.Front().Value.(formulaArg).Value()))
 }
 
 // UNICHAR returns the Unicode character that is referenced by the given
@@ -13584,27 +13510,30 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		if cond, err = strconv.ParseBool(token.String); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
-		if argsList.Len() == 1 {
-			return newBoolFormulaArg(cond)
+	case ArgNumber:
+		cond = token.Number == 1
+	}
+
+	if argsList.Len() == 1 {
+		return newBoolFormulaArg(cond)
+	}
+	if cond {
+		value := argsList.Front().Next().Value.(formulaArg)
+		switch value.Type {
+		case ArgNumber:
+			result = value.ToNumber()
+		default:
+			result = newStringFormulaArg(value.String)
 		}
-		if cond {
-			value := argsList.Front().Next().Value.(formulaArg)
-			switch value.Type {
-			case ArgNumber:
-				result = value.ToNumber()
-			default:
-				result = newStringFormulaArg(value.String)
-			}
-			return result
-		}
-		if argsList.Len() == 3 {
-			value := argsList.Back().Value.(formulaArg)
-			switch value.Type {
-			case ArgNumber:
-				result = value.ToNumber()
-			default:
-				result = newStringFormulaArg(value.String)
-			}
+		return result
+	}
+	if argsList.Len() == 3 {
+		value := argsList.Back().Value.(formulaArg)
+		switch value.Type {
+		case ArgNumber:
+			result = value.ToNumber()
+		default:
+			result = newStringFormulaArg(value.String)
 		}
 	}
 	return result
@@ -13676,7 +13605,7 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "CHOOSE requires 2 arguments")
 	}
-	idx, err := strconv.Atoi(argsList.Front().Value.(formulaArg).String)
+	idx, err := strconv.Atoi(argsList.Front().Value.(formulaArg).Value())
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorVALUE, "CHOOSE requires first argument of type number")
 	}
@@ -14075,7 +14004,7 @@ func (fn *formulaFuncs) MATCH(argsList *list.List) formulaArg {
 	default:
 		return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
 	}
-	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg).String), lookupArray)
+	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg).Value()), lookupArray)
 }
 
 // TRANSPOSE function 'transposes' an array of cells (i.e. the function copies
@@ -14237,7 +14166,7 @@ func checkLookupArgs(argsList *list.List) (arrayForm bool, lookupValue, lookupVe
 		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires at most 3 arguments")
 		return
 	}
-	lookupValue = argsList.Front().Value.(formulaArg)
+	lookupValue = newStringFormulaArg(argsList.Front().Value.(formulaArg).Value())
 	lookupVector = argsList.Front().Next().Value.(formulaArg)
 	if lookupVector.Type != ArgMatrix && lookupVector.Type != ArgList {
 		errArg = newErrorFormulaArg(formulaErrorVALUE, "LOOKUP requires second argument of table array")
