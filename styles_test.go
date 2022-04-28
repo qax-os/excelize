@@ -271,14 +271,14 @@ func TestNewStyle(t *testing.T) {
 	f.Styles.CellXfs.Xf = nil
 	style4, err := f.NewStyle(&Style{NumFmt: 160, Lang: "unknown"})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, style4)
+	assert.Equal(t, 0, style4)
 
 	f = NewFile()
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = nil
 	style5, err := f.NewStyle(&Style{NumFmt: 160, Lang: "zh-cn"})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, style5)
+	assert.Equal(t, 0, style5)
 }
 
 func TestGetDefaultFont(t *testing.T) {

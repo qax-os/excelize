@@ -2443,7 +2443,7 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	if borderID != 0 {
 		xf.ApplyBorder = boolPtr(true)
 	}
-	style.CellXfs.Count++
+	style.CellXfs.Count = len(style.CellXfs.Xf) + 1
 	xf.Alignment = alignment
 	if alignment != nil {
 		xf.ApplyAlignment = boolPtr(applyAlignment)
