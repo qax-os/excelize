@@ -764,7 +764,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 		return
 	}
 	siIdx, err := strconv.Atoi(cellData.V)
-	if nil != err {
+	if err != nil || cellData.T != "s" {
 		return
 	}
 	sst := f.sharedStringsReader()
@@ -776,7 +776,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 		run := RichTextRun{
 			Text: v.T.Val,
 		}
-		if nil != v.RPr {
+		if v.RPr != nil {
 			font := Font{Underline: "none"}
 			font.Bold = v.RPr.B != nil
 			font.Italic = v.RPr.I != nil
@@ -793,7 +793,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 				font.Size = *v.RPr.Sz.Val
 			}
 			font.Strike = v.RPr.Strike != nil
-			if nil != v.RPr.Color {
+			if v.RPr.Color != nil {
 				font.Color = strings.TrimPrefix(v.RPr.Color.RGB, "FF")
 			}
 			run.Font = &font

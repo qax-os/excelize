@@ -502,8 +502,13 @@ func TestGetCellRichText(t *testing.T) {
 		},
 	}
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", runsSource))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", false))
 
-	runs, err := f.GetCellRichText("Sheet1", "A1")
+	runs, err := f.GetCellRichText("Sheet1", "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, []RichTextRun(nil), runs)
+
+	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 
 	assert.Equal(t, runsSource[0].Text, runs[0].Text)
