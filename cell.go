@@ -109,8 +109,12 @@ func (f *File) GetCellType(sheet, axis string) (CellType, error) {
 //    bool
 //    nil
 //
-// Note that default date format is m/d/yy h:mm of time.Time type value. You can
-// set numbers format by SetCellStyle() method.
+// Note that default date format is m/d/yy h:mm of time.Time type value. You
+// can set numbers format by SetCellStyle() method. If you need to set the
+// specialized date in Excel like January 0, 1900 or February 29, 1900, these
+// times can not representation in Go language time.Time data type. Please set
+// the cell value as number 0 or 60, then create and bind the date-time number
+// format style for the cell.
 func (f *File) SetCellValue(sheet, axis string, value interface{}) error {
 	var err error
 	switch v := value.(type) {
@@ -240,7 +244,7 @@ func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
 // setCellDuration prepares cell type and value by given Go time.Duration type
 // time duration.
 func setCellDuration(value time.Duration) (t string, v string) {
-	v = strconv.FormatFloat(value.Seconds()/86400.0, 'f', -1, 32)
+	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 32)
 	return
 }
 
@@ -752,26 +756,8 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	return nil
 }
 
-// GetCellRichText provides a function to get rich text of cell by given
-// worksheet.
-func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err error) {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return
-	}
-	cellData, _, _, err := f.prepareCell(ws, cell)
-	if err != nil {
-		return
-	}
-	siIdx, err := strconv.Atoi(cellData.V)
-	if err != nil || cellData.T != "s" {
-		return
-	}
-	sst := f.sharedStringsReader()
-	if len(sst.SI) <= siIdx || siIdx < 0 {
-		return
-	}
-	si := sst.SI[siIdx]
+// getCellRichText returns rich text of cell by given string item.
+func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 	for _, v := range si.R {
 		run := RichTextRun{
 			Text: v.T.Val,
@@ -800,6 +786,29 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 		}
 		runs = append(runs, run)
 	}
+	return
+}
+
+// GetCellRichText provides a function to get rich text of cell by given
+// worksheet.
+func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err error) {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return
+	}
+	cellData, _, _, err := f.prepareCell(ws, cell)
+	if err != nil {
+		return
+	}
+	siIdx, err := strconv.Atoi(cellData.V)
+	if err != nil || cellData.T != "s" {
+		return
+	}
+	sst := f.sharedStringsReader()
+	if len(sst.SI) <= siIdx || siIdx < 0 {
+		return
+	}
+	runs = getCellRichText(&sst.SI[siIdx])
 	return
 }
 
@@ -1099,17 +1108,20 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
 		numFmtID = *styleSheet.CellXfs.Xf[s].NumFmtID
 	}
-
+	date1904, wb := false, f.workbookReader()
+	if wb != nil && wb.WorkbookPr != nil {
+		date1904 = wb.WorkbookPr.Date1904
+	}
 	ok := builtInNumFmtFunc[numFmtID]
 	if ok != nil {
-		return ok(v, builtInNumFmt[numFmtID])
+		return ok(v, builtInNumFmt[numFmtID], date1904)
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
 		return v
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(v, xlsxFmt.FormatCode)
+			return format(v, xlsxFmt.FormatCode, date1904)
 		}
 	}
 	return v

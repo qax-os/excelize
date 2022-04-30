@@ -479,8 +479,8 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 		},
 		Format: formatPicture{
 			FPrintsWithSheet: true,
-			XScale:           1.0,
-			YScale:           1.0,
+			XScale:           1,
+			YScale:           1,
 		},
 		Legend: formatChartLegend{
 			Position: "bottom",

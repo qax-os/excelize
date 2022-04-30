@@ -25,8 +25,8 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 		Height: 160,
 		Format: formatPicture{
 			FPrintsWithSheet: true,
-			XScale:           1.0,
-			YScale:           1.0,
+			XScale:           1,
+			YScale:           1,
 		},
 		Line: formatLine{Width: 1},
 	}

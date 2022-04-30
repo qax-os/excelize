@@ -36,7 +36,7 @@ func timeToExcelTime(t time.Time) (float64, error) {
 	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
 
 	if t.Before(excelMinTime1900) {
-		return 0.0, nil
+		return 0, nil
 	}
 
 	tt := t
@@ -58,7 +58,7 @@ func timeToExcelTime(t time.Time) (float64, error) {
 	// program that had the majority market share at the time; Lotus 1-2-3.
 	// https://www.myonlinetraininghub.com/excel-date-and-time
 	if t.After(excelBuggyPeriodStart) {
-		result += 1.0
+		result++
 	}
 	return result, nil
 }

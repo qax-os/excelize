@@ -754,7 +754,7 @@ var currencyNumFmt = map[int]string{
 
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
 // code doesn't support currently and will return original string.
-var builtInNumFmtFunc = map[int]func(v string, format string) string{
+var builtInNumFmtFunc = map[int]func(v, format string, date1904 bool) string{
 	0:  format,
 	1:  formatToInt,
 	2:  formatToFloat,
@@ -847,7 +847,7 @@ var criteriaType = map[string]string{
 // formatToInt provides a function to convert original string to integer
 // format as string type by given built-in number formats code and cell
 // string.
-func formatToInt(v string, format string) string {
+func formatToInt(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -858,7 +858,7 @@ func formatToInt(v string, format string) string {
 // formatToFloat provides a function to convert original string to float
 // format as string type by given built-in number formats code and cell
 // string.
-func formatToFloat(v string, format string) string {
+func formatToFloat(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -868,7 +868,7 @@ func formatToFloat(v string, format string) string {
 
 // formatToA provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToA(v string, format string) string {
+func formatToA(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -883,7 +883,7 @@ func formatToA(v string, format string) string {
 
 // formatToB provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToB(v string, format string) string {
+func formatToB(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -896,7 +896,7 @@ func formatToB(v string, format string) string {
 
 // formatToC provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToC(v string, format string) string {
+func formatToC(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -907,7 +907,7 @@ func formatToC(v string, format string) string {
 
 // formatToD provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToD(v string, format string) string {
+func formatToD(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -918,7 +918,7 @@ func formatToD(v string, format string) string {
 
 // formatToE provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToE(v string, format string) string {
+func formatToE(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v

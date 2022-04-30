@@ -31,8 +31,8 @@ import (
 func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 	format := formatPicture{
 		FPrintsWithSheet: true,
-		XScale:           1.0,
-		YScale:           1.0,
+		XScale:           1,
+		YScale:           1,
 	}
 	err := json.Unmarshal(parseFormatSet(formatSet), &format)
 	return &format, err
