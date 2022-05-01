@@ -327,6 +327,28 @@ func checkSheetR0(ws *xlsxWorksheet, sheetData *xlsxSheetData, r0 *xlsxRow) {
 	ws.SheetData = *sheetData
 }
 
+// setRels provides a function to set relationships by given relationship ID,
+// XML path, relationship type, target and target mode.
+func (f *File) setRels(rID, relPath, relType, target, targetMode string) int {
+	rels := f.relsReader(relPath)
+	if rels == nil || rID == "" {
+		return f.addRels(relPath, relType, target, targetMode)
+	}
+	rels.Lock()
+	defer rels.Unlock()
+	var ID int
+	for i, rel := range rels.Relationships {
+		if rel.ID == rID {
+			rels.Relationships[i].Type = relType
+			rels.Relationships[i].Target = target
+			rels.Relationships[i].TargetMode = targetMode
+			ID, _ = strconv.Atoi(strings.TrimPrefix(rID, "rId"))
+			break
+		}
+	}
+	return ID
+}
+
 // addRels provides a function to add relationships by given XML path,
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {

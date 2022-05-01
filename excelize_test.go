@@ -336,9 +336,7 @@ func TestAddDrawingVML(t *testing.T) {
 
 func TestSetCellHyperLink(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if err != nil {
-		t.Log(err)
-	}
+	assert.NoError(t, err)
 	// Test set cell hyperlink in a work sheet already have hyperlinks.
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "B19", "https://github.com/xuri/excelize", "External"))
 	// Test add first hyperlink in a work sheet.
@@ -346,8 +344,7 @@ func TestSetCellHyperLink(t *testing.T) {
 	// Test add Location hyperlink in a work sheet.
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location"))
 	// Test add Location hyperlink with display & tooltip in a work sheet.
-	display := "Display value"
-	tooltip := "Hover text"
+	display, tooltip := "Display value", "Hover text"
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D7", "Sheet1!D9", "Location", HyperlinkOpts{
 		Display: &display,
 		Tooltip: &tooltip,
@@ -376,6 +373,15 @@ func TestSetCellHyperLink(t *testing.T) {
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	err = f.SetCellHyperLink("Sheet1", "A1", "https://github.com/xuri/excelize", "External")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+
+	// Test update cell hyperlink
+	f = NewFile()
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "https://github.com", "External"))
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "https://github.com/xuri/excelize", "External"))
+	link, target, err := f.GetCellHyperLink("Sheet1", "A1")
+	assert.Equal(t, link, true)
+	assert.Equal(t, "https://github.com/xuri/excelize", target)
+	assert.NoError(t, err)
 }
 
 func TestGetCellHyperLink(t *testing.T) {

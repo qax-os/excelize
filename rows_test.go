@@ -915,16 +915,19 @@ func TestCheckRow(t *testing.T) {
 
 func TestSetRowStyle(t *testing.T) {
 	f := NewFile()
-	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	style1, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#63BE7B"],"pattern":1}}`)
 	assert.NoError(t, err)
-	assert.EqualError(t, f.SetRowStyle("Sheet1", 10, -1, styleID), newInvalidRowNumberError(-1).Error())
-	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, styleID), ErrMaxRows.Error())
+	style2, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "B2", "B2", style1))
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 5, -1, style2), newInvalidRowNumberError(-1).Error())
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, style2), ErrMaxRows.Error())
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, -1), newInvalidStyleID(-1).Error())
-	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, styleID), "sheet SheetN is not exist")
-	assert.NoError(t, f.SetRowStyle("Sheet1", 10, 1, styleID))
+	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, style2), "sheet SheetN is not exist")
+	assert.NoError(t, f.SetRowStyle("Sheet1", 5, 1, style2))
 	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")
 	assert.NoError(t, err)
-	assert.Equal(t, styleID, cellStyleID)
+	assert.Equal(t, style2, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
 }
 

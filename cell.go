@@ -715,9 +715,16 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	}
 
 	var linkData xlsxHyperlink
-
+	idx := -1
 	if ws.Hyperlinks == nil {
 		ws.Hyperlinks = new(xlsxHyperlinks)
+	}
+	for i, hyperlink := range ws.Hyperlinks.Hyperlink {
+		if hyperlink.Ref == axis {
+			idx = i
+			linkData = hyperlink
+			break
+		}
 	}
 
 	if len(ws.Hyperlinks.Hyperlink) > TotalSheetHyperlinks {
@@ -726,12 +733,12 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 
 	switch linkType {
 	case "External":
+		sheetPath := f.sheetMap[trimSheetName(sheet)]
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
+		rID := f.setRels(linkData.RID, sheetRels, SourceRelationshipHyperLink, link, linkType)
 		linkData = xlsxHyperlink{
 			Ref: axis,
 		}
-		sheetPath := f.sheetMap[trimSheetName(sheet)]
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
-		rID := f.addRels(sheetRels, SourceRelationshipHyperLink, link, linkType)
 		linkData.RID = "rId" + strconv.Itoa(rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)
 	case "Location":
@@ -751,9 +758,12 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 			linkData.Tooltip = *o.Tooltip
 		}
 	}
-
-	ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink, linkData)
-	return nil
+	if idx == -1 {
+		ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink, linkData)
+		return err
+	}
+	ws.Hyperlinks.Hyperlink[idx] = linkData
+	return err
 }
 
 // getCellRichText returns rich text of cell by given string item.
