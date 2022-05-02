@@ -32,21 +32,19 @@ var (
 )
 
 // timeToExcelTime provides a function to convert time to Excel time.
-func timeToExcelTime(t time.Time) (float64, error) {
-	// TODO in future this should probably also handle date1904 and like TimeFromExcelTime
-
-	if t.Before(excelMinTime1900) {
+func timeToExcelTime(t time.Time, date1904 bool) (float64, error) {
+	date := excelMinTime1900
+	if date1904 {
+		date = excel1904Epoc
+	}
+	if t.Before(date) {
 		return 0, nil
 	}
-
-	tt := t
-	diff := t.Sub(excelMinTime1900)
-	result := float64(0)
-
+	tt, diff, result := t, t.Sub(date), 0.0
 	for diff >= maxDuration {
 		result += float64(maxDuration / dayNanoseconds)
 		tt = tt.Add(-maxDuration)
-		diff = tt.Sub(excelMinTime1900)
+		diff = tt.Sub(date)
 	}
 
 	rem := diff % dayNanoseconds
@@ -57,7 +55,7 @@ func timeToExcelTime(t time.Time) (float64, error) {
 	// Microsoft intentionally included this bug in Excel so that it would remain compatible with the spreadsheet
 	// program that had the majority market share at the time; Lotus 1-2-3.
 	// https://www.myonlinetraininghub.com/excel-date-and-time
-	if t.After(excelBuggyPeriodStart) {
+	if !date1904 && t.After(excelBuggyPeriodStart) {
 		result++
 	}
 	return result, nil

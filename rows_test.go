@@ -928,6 +928,11 @@ func TestSetRowStyle(t *testing.T) {
 	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")
 	assert.NoError(t, err)
 	assert.Equal(t, style2, cellStyleID)
+	// Test cell inheritance rows style
+	assert.NoError(t, f.SetCellValue("Sheet1", "C1", nil))
+	cellStyleID, err = f.GetCellStyle("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, style2, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
 }
 

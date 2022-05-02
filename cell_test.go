@@ -192,7 +192,7 @@ func TestSetCellTime(t *testing.T) {
 	} {
 		timezone, err := time.LoadLocation(location)
 		assert.NoError(t, err)
-		_, b, isNum, err := setCellTime(date.In(timezone))
+		_, b, isNum, err := setCellTime(date.In(timezone), false)
 		assert.NoError(t, err)
 		assert.Equal(t, true, isNum)
 		assert.Equal(t, expected, b)

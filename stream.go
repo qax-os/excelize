@@ -440,7 +440,11 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 		c.T, c.V = setCellDuration(val)
 	case time.Time:
 		var isNum bool
-		c.T, c.V, isNum, err = setCellTime(val)
+		date1904, wb := false, sw.File.workbookReader()
+		if wb != nil && wb.WorkbookPr != nil {
+			date1904 = wb.WorkbookPr.Date1904
+		}
+		c.T, c.V, isNum, err = setCellTime(val, date1904)
 		if isNum && c.S == 0 {
 			style, _ := sw.File.NewStyle(&Style{NumFmt: 22})
 			c.S = style

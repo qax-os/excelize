@@ -211,9 +211,12 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 	ws.Lock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	ws.Unlock()
-
+	date1904, wb := false, f.workbookReader()
+	if wb != nil && wb.WorkbookPr != nil {
+		date1904 = wb.WorkbookPr.Date1904
+	}
 	var isNum bool
-	cellData.T, cellData.V, isNum, err = setCellTime(value)
+	cellData.T, cellData.V, isNum, err = setCellTime(value, date1904)
 	if err != nil {
 		return err
 	}
@@ -225,11 +228,11 @@ func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
 
 // setCellTime prepares cell type and Excel time by given Go time.Time type
 // timestamp.
-func setCellTime(value time.Time) (t string, b string, isNum bool, err error) {
+func setCellTime(value time.Time, date1904 bool) (t string, b string, isNum bool, err error) {
 	var excelTime float64
 	_, offset := value.In(value.Location()).Zone()
 	value = value.Add(time.Duration(offset) * time.Second)
-	if excelTime, err = timeToExcelTime(value); err != nil {
+	if excelTime, err = timeToExcelTime(value, date1904); err != nil {
 		return
 	}
 	isNum = excelTime > 0
@@ -1122,8 +1125,7 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
-	ok := builtInNumFmtFunc[numFmtID]
-	if ok != nil {
+	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
 		return ok(v, builtInNumFmt[numFmtID], date1904)
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
@@ -1140,15 +1142,18 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 // prepareCellStyle provides a function to prepare style index of cell in
 // worksheet by given column index and style index.
 func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, row, style int) int {
-	if ws.Cols != nil && style == 0 {
+	if style != 0 {
+		return style
+	}
+	if ws.Cols != nil {
 		for _, c := range ws.Cols.Col {
 			if c.Min <= col && col <= c.Max && c.Style != 0 {
 				return c.Style
 			}
 		}
 	}
-	for rowIdx := range ws.SheetData.Row {
-		if styleID := ws.SheetData.Row[rowIdx].S; style == 0 && styleID != 0 {
+	if row <= len(ws.SheetData.Row) {
+		if styleID := ws.SheetData.Row[row-1].S; styleID != 0 {
 			return styleID
 		}
 	}

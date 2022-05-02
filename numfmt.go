@@ -939,10 +939,11 @@ func (nf *numberFormat) textHandler() (result string) {
 // getValueSectionType returns its applicable number format expression section
 // based on the given value.
 func (nf *numberFormat) getValueSectionType(value string) (float64, string) {
-	number, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return number, nfp.TokenSectionText
+	isNum, _ := isNumeric(value)
+	if !isNum {
+		return 0, nfp.TokenSectionText
 	}
+	number, _ := strconv.ParseFloat(value, 64)
 	if number > 0 {
 		return number, nfp.TokenSectionPositive
 	}
