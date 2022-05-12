@@ -113,7 +113,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportImageTypes[path.Ext(picture)]
+	ext, ok := supportedImageTypes[path.Ext(picture)]
 	if !ok {
 		return ErrImgExt
 	}
@@ -154,7 +154,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, file []byte) error {
 	var drawingHyperlinkRID int
 	var hyperlinkType string
-	ext, ok := supportImageTypes[extension]
+	ext, ok := supportedImageTypes[extension]
 	if !ok {
 		return ErrImgExt
 	}
@@ -366,23 +366,20 @@ func (f *File) addMedia(file []byte, ext string) string {
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
-	imageTypes := map[string]bool{"jpeg": false, "png": false, "gif": false, "tiff": false}
+	imageTypes := map[string]string{"jpeg": "image/", "png": "image/", "gif": "image/", "tiff": "image/", "emf": "image/x-"}
 	content := f.contentTypesReader()
 	content.Lock()
 	defer content.Unlock()
-	for _, v := range content.Defaults {
-		_, ok := imageTypes[v.Extension]
-		if ok {
-			imageTypes[v.Extension] = true
+	for _, file := range content.Defaults {
+		if _, ok := imageTypes[file.Extension]; ok {
+			delete(imageTypes, file.Extension)
 		}
 	}
-	for k, v := range imageTypes {
-		if !v {
-			content.Defaults = append(content.Defaults, xlsxDefault{
-				Extension:   k,
-				ContentType: "image/" + k,
-			})
-		}
+	for extension, prefix := range imageTypes {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   extension,
+			ContentType: prefix + extension,
+		})
 	}
 }
 
@@ -576,7 +573,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
+				if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
 					ret = filepath.Base(drawRel.Target)
 					if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
 						buf = buffer.([]byte)
@@ -605,7 +602,7 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 			if anchor.From.Col == col && anchor.From.Row == row {
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
-					if _, ok = supportImageTypes[filepath.Ext(drawRel.Target)]; ok {
+					if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
 						ret = filepath.Base(drawRel.Target)
 						if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
 							buf = buffer.([]byte)

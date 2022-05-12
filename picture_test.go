@@ -2,9 +2,11 @@ package excelize
 
 import (
 	"fmt"
+	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -66,7 +68,7 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), ""))
 
 	// Test write file to given path.
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture1.xlsx")))
 	assert.NoError(t, f.Close())
 }
 
@@ -89,7 +91,14 @@ func TestAddPictureErrors(t *testing.T) {
 
 	// Test add picture to worksheet with invalid file data.
 	err = f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
-	assert.EqualError(t, err, "image: unknown format")
+	assert.EqualError(t, err, image.ErrFormat.Error())
+
+	// Test add picture with custom image decoder and encoder.
+	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
+	decodeConfig := func(r io.Reader) (image.Config, error) { return image.Config{Height: 100, Width: 90}, nil }
+	image.RegisterFormat("emf", "", decode, decodeConfig)
+	assert.NoError(t, f.AddPicture("Sheet1", "Q1", filepath.Join("test", "images", "excel.emf"), ""))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
 	assert.NoError(t, f.Close())
 }
 

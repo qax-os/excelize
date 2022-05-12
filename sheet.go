@@ -463,7 +463,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportImageTypes[path.Ext(picture)]
+	ext, ok := supportedImageTypes[path.Ext(picture)]
 	if !ok {
 		return ErrImgExt
 	}
