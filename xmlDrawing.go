@@ -119,7 +119,7 @@ const (
 )
 
 // supportedImageTypes defined supported image types.
-var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf"}
+var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf"}
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional

@@ -97,7 +97,9 @@ func TestAddPictureErrors(t *testing.T) {
 	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
 	decodeConfig := func(r io.Reader) (image.Config, error) { return image.Config{Height: 100, Width: 90}, nil }
 	image.RegisterFormat("emf", "", decode, decodeConfig)
+	image.RegisterFormat("wmf", "", decode, decodeConfig)
 	assert.NoError(t, f.AddPicture("Sheet1", "Q1", filepath.Join("test", "images", "excel.emf"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q7", filepath.Join("test", "images", "excel.wmf"), ""))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
 	assert.NoError(t, f.Close())
 }
