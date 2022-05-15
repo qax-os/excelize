@@ -156,6 +156,21 @@ func TestSetCellValue(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test set cell value with column and row style inherit
+	style1, err := f.NewStyle(&Style{NumFmt: 2})
+	assert.NoError(t, err)
+	style2, err := f.NewStyle(&Style{NumFmt: 9})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetColStyle("Sheet1", "B", style1))
+	assert.NoError(t, f.SetRowStyle("Sheet1", 1, 1, style2))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", 0.5))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B2", 0.5))
+	B1, err := f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "50%", B1)
+	B2, err := f.GetCellValue("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "0.50", B2)
 }
 
 func TestSetCellValues(t *testing.T) {

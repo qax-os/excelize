@@ -901,7 +901,7 @@ func formatToC(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
-	f = f * 100
+	f *= 100
 	return fmt.Sprintf("%.f%%", f)
 }
 
@@ -912,7 +912,7 @@ func formatToD(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
-	f = f * 100
+	f *= 100
 	return fmt.Sprintf("%.2f%%", f)
 }
 

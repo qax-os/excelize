@@ -1145,16 +1145,16 @@ func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, row, style int) int {
 	if style != 0 {
 		return style
 	}
+	if row <= len(ws.SheetData.Row) {
+		if styleID := ws.SheetData.Row[row-1].S; styleID != 0 {
+			return styleID
+		}
+	}
 	if ws.Cols != nil {
 		for _, c := range ws.Cols.Col {
 			if c.Min <= col && col <= c.Max && c.Style != 0 {
 				return c.Style
 			}
-		}
-	}
-	if row <= len(ws.SheetData.Row) {
-		if styleID := ws.SheetData.Row[row-1].S; styleID != 0 {
-			return styleID
 		}
 	}
 	return style
