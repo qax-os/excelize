@@ -109,9 +109,9 @@ var (
 	// ErrWorkbookExt defined the error message on receive an unsupported
 	// workbook extension.
 	ErrWorkbookExt = errors.New("unsupported workbook extension")
-	// ErrMaxFileNameLength defined the error message on receive the file name
+	// ErrMaxFilePathLength defined the error message on receive the file path
 	// length overflow.
-	ErrMaxFileNameLength = errors.New("file name length exceeds maximum limit")
+	ErrMaxFilePathLength = errors.New("file path length exceeds maximum limit")
 	// ErrEncrypt defined the error message on encryption spreadsheet.
 	ErrEncrypt = errors.New("not support encryption currently")
 	// ErrUnknownEncryptMechanism defined the error message on unsupported
