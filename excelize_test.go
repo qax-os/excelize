@@ -170,7 +170,7 @@ func TestOpenFile(t *testing.T) {
 		assert.NoError(t, f.SetCellStr("Sheet2", "c"+strconv.Itoa(i), strconv.Itoa(i)))
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestOpenFile.xlsx")))
-	assert.EqualError(t, f.SaveAs(filepath.Join("test", strings.Repeat("c", 199), ".xlsx")), ErrMaxFileNameLength.Error())
+	assert.EqualError(t, f.SaveAs(filepath.Join("test", strings.Repeat("c", 199), ".xlsx")), ErrMaxFilePathLength.Error())
 	assert.NoError(t, f.Close())
 }
 

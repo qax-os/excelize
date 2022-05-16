@@ -66,8 +66,8 @@ func (f *File) Save() error {
 // SaveAs provides a function to create or update to a spreadsheet at the
 // provided path.
 func (f *File) SaveAs(name string, opt ...Options) error {
-	if len(name) > MaxFileNameLength {
-		return ErrMaxFileNameLength
+	if len(name) > MaxFilePathLength {
+		return ErrMaxFilePathLength
 	}
 	f.Path = name
 	contentType, ok := map[string]string{

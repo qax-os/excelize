@@ -103,7 +103,7 @@ const (
 	StreamChunkSize      = 1 << 24
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
-	MaxFileNameLength    = 207
+	MaxFilePathLength    = 207
 	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
