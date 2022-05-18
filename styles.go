@@ -874,11 +874,9 @@ func formatToA(v, format string, date1904 bool) string {
 		return v
 	}
 	if f < 0 {
-		t := int(math.Abs(f))
-		return fmt.Sprintf("(%d)", t)
+		return fmt.Sprintf("(%d)", int(math.Abs(f)))
 	}
-	t := int(f)
-	return fmt.Sprintf("%d", t)
+	return fmt.Sprintf("%d", int(f))
 }
 
 // formatToB provides a function to convert original string to special format
@@ -901,8 +899,7 @@ func formatToC(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
-	f *= 100
-	return fmt.Sprintf("%.f%%", f)
+	return fmt.Sprintf("%.f%%", f*100)
 }
 
 // formatToD provides a function to convert original string to special format
@@ -912,8 +909,7 @@ func formatToD(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
-	f *= 100
-	return fmt.Sprintf("%.2f%%", f)
+	return fmt.Sprintf("%.2f%%", f*100)
 }
 
 // formatToE provides a function to convert original string to special format

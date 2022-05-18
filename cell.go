@@ -686,8 +686,12 @@ type HyperlinkOpts struct {
 // the other functions such as `SetCellStyle` or `SetSheetRow`. The below is
 // example for external link.
 //
+//    display, tooltip := "https://github.com/xuri/excelize", "Excelize on GitHub"
 //    if err := f.SetCellHyperLink("Sheet1", "A3",
-//        "https://github.com/xuri/excelize", "External"); err != nil {
+//        "https://github.com/xuri/excelize", "External", excelize.HyperlinkOpts{
+//            Display: &display,
+//            Tooltip: &tooltip,
+//        }); err != nil {
 //        fmt.Println(err)
 //    }
 //    // Set underline and font color style for the cell.

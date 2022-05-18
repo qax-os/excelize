@@ -371,9 +371,7 @@ func (f *File) setContentTypePartImageExtensions() {
 	content.Lock()
 	defer content.Unlock()
 	for _, file := range content.Defaults {
-		if _, ok := imageTypes[file.Extension]; ok {
-			delete(imageTypes, file.Extension)
-		}
+		delete(imageTypes, file.Extension)
 	}
 	for extension, prefix := range imageTypes {
 		content.Defaults = append(content.Defaults, xlsxDefault{

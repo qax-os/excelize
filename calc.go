@@ -2512,31 +2512,23 @@ func convertTemperature(fromUOM, toUOM string, value float64) float64 {
 	switch fromUOM {
 	case "F":
 		value = (value-32)/1.8 + 273.15
-		break
 	case "C":
 		value += 273.15
-		break
 	case "Rank":
 		value /= 1.8
-		break
 	case "Reau":
 		value = value*1.25 + 273.15
-		break
 	}
 	// convert from Kelvin
 	switch toUOM {
 	case "F":
 		value = (value-273.15)*1.8 + 32
-		break
 	case "C":
 		value -= 273.15
-		break
 	case "Rank":
 		value *= 1.8
-		break
 	case "Reau":
 		value = (value - 273.15) * 0.8
-		break
 	}
 	return value
 }
@@ -2567,8 +2559,8 @@ func (fn *formulaFuncs) CONVERT(argsList *list.List) formulaArg {
 	} else if fromCategory == catgoryTemperature {
 		return newNumberFormulaArg(convertTemperature(fromUOM, toUOM, val))
 	}
-	fromConversion, _ := unitConversions[fromCategory][fromUOM]
-	toConversion, _ := unitConversions[fromCategory][toUOM]
+	fromConversion := unitConversions[fromCategory][fromUOM]
+	toConversion := unitConversions[fromCategory][toUOM]
 	baseValue := val * (1 / fromConversion)
 	return newNumberFormulaArg((baseValue * toConversion) / toMultiplier)
 }
@@ -4617,9 +4609,7 @@ func cofactorMatrix(i, j int, A [][]float64) float64 {
 		sign = 1
 	}
 	var B [][]float64
-	for _, row := range A {
-		B = append(B, row)
-	}
+	B = append(B, A...)
 	for m := 0; m < N; m++ {
 		for n := j + 1; n < N; n++ {
 			B[m][n-1] = B[m][n]
@@ -8317,7 +8307,6 @@ func calcColumnMeans(mtxX, mtxRes [][]float64, c, r int) {
 		}
 		putDouble(mtxRes, i, sum/float64(r))
 	}
-	return
 }
 
 // calcColumnsDelta calculates subtract of the columns of matrix.
@@ -8688,10 +8677,8 @@ func calcTrendGrowthRegression(bConstant, bGrowth bool, trendType, nCXN, nRXN, K
 	switch trendType {
 	case 1:
 		calcTrendGrowthSimpleRegression(bConstant, bGrowth, mtxY, mtxX, newX, mtxRes, meanY, N)
-		break
 	case 2:
 		calcTrendGrowthMultipleRegressionPart1(bConstant, bGrowth, mtxY, mtxX, newX, mtxRes, meanY, nRXN, K, N)
-		break
 	default:
 		calcTrendGrowthMultipleRegressionPart2(bConstant, bGrowth, mtxY, mtxX, newX, mtxRes, meanY, nCXN, K, N)
 	}
@@ -8728,10 +8715,8 @@ func calcTrendGrowth(mtxY, mtxX, newX [][]float64, bConstant, bGrowth bool) ([][
 	switch trendType {
 	case 1:
 		mtxRes = getNewMatrix(nCXN, nRXN)
-		break
 	case 2:
 		mtxRes = getNewMatrix(1, nRXN)
-		break
 	default:
 		mtxRes = getNewMatrix(nCXN, 1)
 	}
@@ -10630,13 +10615,10 @@ func getTDist(T, fDF, nType float64) float64 {
 	switch nType {
 	case 1:
 		res = 0.5 * getBetaDist(fDF/(fDF+T*T), fDF/2, 0.5)
-		break
 	case 2:
 		res = getBetaDist(fDF/(fDF+T*T), fDF/2, 0.5)
-		break
 	case 3:
 		res = math.Pow(1+(T*T/fDF), -(fDF+1)/2) / (math.Sqrt(fDF) * getBeta(0.5, fDF/2.0))
-		break
 	case 4:
 		X := fDF / (T*T + fDF)
 		R := 0.5 * getBetaDist(X, 0.5*fDF, 0.5)
@@ -10644,7 +10626,6 @@ func getTDist(T, fDF, nType float64) float64 {
 		if T < 0 {
 			res = R
 		}
-		break
 	}
 	return res
 }
@@ -10888,15 +10869,11 @@ func tTest(bTemplin bool, mtx1, mtx2 [][]formulaArg, c1, c2, r1, r2 int, fT, fF 
 			return 0, 0, false
 		}
 		c := fS1 / (fS1 + fS2)
-		fT = math.Abs(sum1/cnt1-sum2/cnt2) / math.Sqrt(fS1+fS2)
-		fF = 1 / (c*c/(cnt1-1) + (1-c)*(1-c)/(cnt2-1))
-		return fT, fF, true
+		return math.Abs(sum1/cnt1-sum2/cnt2) / math.Sqrt(fS1+fS2), 1 / (c*c/(cnt1-1) + (1-c)*(1-c)/(cnt2-1)), true
 	}
 	fS1 := (sumSqr1 - sum1*sum1/cnt1) / (cnt1 - 1)
 	fS2 := (sumSqr2 - sum2*sum2/cnt2) / (cnt2 - 1)
-	fT = math.Abs(sum1/cnt1-sum2/cnt2) / math.Sqrt((cnt1-1)*fS1+(cnt2-1)*fS2) * math.Sqrt(cnt1*cnt2*(cnt1+cnt2-2)/(cnt1+cnt2))
-	fF = cnt1 + cnt2 - 2
-	return fT, fF, true
+	return math.Abs(sum1/cnt1-sum2/cnt2) / math.Sqrt((cnt1-1)*fS1+(cnt2-1)*fS2) * math.Sqrt(cnt1*cnt2*(cnt1+cnt2-2)/(cnt1+cnt2)), cnt1 + cnt2 - 2, true
 }
 
 // tTest is an implementation of the formula function TTEST.

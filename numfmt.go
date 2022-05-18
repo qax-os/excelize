@@ -31,12 +31,12 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
-	section                                                                 []nfp.Section
-	t                                                                       time.Time
-	sectionIdx                                                              int
-	date1904, isNumeric, hours, seconds                                     bool
-	number                                                                  float64
-	ap, afterPoint, beforePoint, localCode, result, value, valueSectionType string
+	section                                        []nfp.Section
+	t                                              time.Time
+	sectionIdx                                     int
+	date1904, isNumeric, hours, seconds            bool
+	number                                         float64
+	ap, localCode, result, value, valueSectionType string
 }
 
 var (
