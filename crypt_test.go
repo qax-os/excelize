@@ -19,6 +19,9 @@ import (
 )
 
 func TestEncrypt(t *testing.T) {
+	_, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "passwd"})
+	assert.EqualError(t, err, ErrWorkbookPassword.Error())
+
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
 	assert.EqualError(t, f.SaveAs(filepath.Join("test", "BadEncrypt.xlsx"), Options{Password: "password"}), ErrEncrypt.Error())

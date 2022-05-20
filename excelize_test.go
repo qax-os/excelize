@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"encoding/xml"
@@ -179,7 +180,7 @@ func TestSaveFile(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	assert.EqualError(t, f.SaveAs(filepath.Join("test", "TestSaveFile.xlsb")), ErrWorkbookExt.Error())
+	assert.EqualError(t, f.SaveAs(filepath.Join("test", "TestSaveFile.xlsb")), ErrWorkbookFileFormat.Error())
 	for _, ext := range []string{".xlam", ".xlsm", ".xlsx", ".xltm", ".xltx"} {
 		assert.NoError(t, f.SaveAs(filepath.Join("test", fmt.Sprintf("TestSaveFile%s", ext))))
 	}
@@ -207,9 +208,9 @@ func TestCharsetTranscoder(t *testing.T) {
 
 func TestOpenReader(t *testing.T) {
 	_, err := OpenReader(strings.NewReader(""))
-	assert.EqualError(t, err, "zip: not a valid zip file")
+	assert.EqualError(t, err, zip.ErrFormat.Error())
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", UnzipXMLSizeLimit: UnzipSizeLimit + 1})
-	assert.EqualError(t, err, "decrypted file failed")
+	assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
 
 	// Test open spreadsheet with unzip size limit.
 	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
@@ -261,7 +262,7 @@ func TestOpenReader(t *testing.T) {
 		0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x41, 0x00, 0x00, 0x00, 0x5d, 0x00,
 		0x00, 0x00, 0x00, 0x00,
 	}))
-	assert.EqualError(t, err, "zip: unsupported compression algorithm")
+	assert.EqualError(t, err, zip.ErrAlgorithm.Error())
 }
 
 func TestBrokenFile(t *testing.T) {

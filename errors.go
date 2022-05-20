@@ -106,9 +106,9 @@ var (
 	// ErrImgExt defined the error message on receive an unsupported image
 	// extension.
 	ErrImgExt = errors.New("unsupported image extension")
-	// ErrWorkbookExt defined the error message on receive an unsupported
-	// workbook extension.
-	ErrWorkbookExt = errors.New("unsupported workbook extension")
+	// ErrWorkbookFileFormat defined the error message on receive an
+	// unsupported workbook file format.
+	ErrWorkbookFileFormat = errors.New("unsupported workbook file format")
 	// ErrMaxFilePathLength defined the error message on receive the file path
 	// length overflow.
 	ErrMaxFilePathLength = errors.New("file path length exceeds maximum limit")
@@ -191,4 +191,7 @@ var (
 	// ErrSparklineStyle defined the error message on receive the invalid
 	// sparkline Style parameters.
 	ErrSparklineStyle = errors.New("parameter 'Style' must between 0-35")
+	// ErrWorkbookPassword defined the error message on receiving the incorrect
+	// workbook password.
+	ErrWorkbookPassword = errors.New("the supplied open workbook password is not correct")
 )

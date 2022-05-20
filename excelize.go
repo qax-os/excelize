@@ -158,13 +158,15 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 		return nil, ErrOptionsUnzipSizeLimit
 	}
 	if bytes.Contains(b, oleIdentifier) {
-		b, err = Decrypt(b, f.options)
-		if err != nil {
-			return nil, fmt.Errorf("decrypted file failed")
+		if b, err = Decrypt(b, f.options); err != nil {
+			return nil, ErrWorkbookFileFormat
 		}
 	}
 	zr, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if err != nil {
+		if len(f.options.Password) > 0 {
+			return nil, ErrWorkbookPassword
+		}
 		return nil, err
 	}
 	file, sheetCount, err := f.ReadZipReader(zr)

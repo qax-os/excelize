@@ -78,7 +78,7 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 		".xltx": ContentTypeTemplate,
 	}[filepath.Ext(f.Path)]
 	if !ok {
-		return ErrWorkbookExt
+		return ErrWorkbookFileFormat
 	}
 	f.setContentTypePartProjectExtensions(contentType)
 	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
