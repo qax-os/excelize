@@ -2042,7 +2042,7 @@ func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) (fontID int) 
 // settings.
 func (f *File) newFont(style *Style) *xlsxFont {
 	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
-	if style.Font.Size < 1 {
+	if style.Font.Size < MinFontSize {
 		style.Font.Size = 11
 	}
 	if style.Font.Color == "" {

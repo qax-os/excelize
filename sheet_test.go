@@ -104,6 +104,12 @@ func TestSetPane(t *testing.T) {
 	assert.NoError(t, f.SetPanes("Panes 4", ""))
 	assert.EqualError(t, f.SetPanes("SheetN", ""), "sheet SheetN is not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
+	// Test add pane on empty sheet views worksheet
+	f = NewFile()
+	f.checked = nil
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
+	assert.NoError(t, f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`))
 }
 
 func TestPageLayoutOption(t *testing.T) {

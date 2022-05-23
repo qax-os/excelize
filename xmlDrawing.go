@@ -107,6 +107,7 @@ const (
 	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
+	MinFontSize          = 1
 	TotalRows            = 1048576
 	TotalColumns         = 16384
 	TotalSheetHyperlinks = 65529

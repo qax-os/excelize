@@ -773,6 +773,9 @@ func (f *File) SetPanes(sheet, panes string) error {
 	if fs.Freeze {
 		p.State = "frozen"
 	}
+	if ws.SheetViews == nil {
+		ws.SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{{}}}
+	}
 	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = p
 	if !(fs.Freeze) && !(fs.Split) {
 		if len(ws.SheetViews.SheetView) > 0 {

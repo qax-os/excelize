@@ -4579,8 +4579,7 @@ func newFormulaArgMatrix(numMtx [][]float64) (arg [][]formulaArg) {
 	for r, row := range numMtx {
 		arg = append(arg, make([]formulaArg, len(row)))
 		for c, cell := range row {
-			decimal, _ := big.NewFloat(cell).SetPrec(15).Float64()
-			arg[r][c] = newNumberFormulaArg(decimal)
+			arg[r][c] = newNumberFormulaArg(cell)
 		}
 	}
 	return

@@ -102,7 +102,7 @@ var (
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrMaxRowHeight defined the error message on receive an invalid row
 	// height.
-	ErrMaxRowHeight = errors.New("the height of the row must be smaller than or equal to 409 points")
+	ErrMaxRowHeight = fmt.Errorf("the height of the row must be smaller than or equal to %d points", MaxRowHeight)
 	// ErrImgExt defined the error message on receive an unsupported image
 	// extension.
 	ErrImgExt = errors.New("unsupported image extension")
@@ -145,9 +145,9 @@ var (
 	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.
-	ErrFontLength = errors.New("the length of the font family name must be smaller than or equal to 31")
+	ErrFontLength = fmt.Errorf("the length of the font family name must be smaller than or equal to %d", MaxFontFamilyLength)
 	// ErrFontSize defined the error message on the size of the font is invalid.
-	ErrFontSize = errors.New("font size must be between 1 and 409 points")
+	ErrFontSize = fmt.Errorf("font size must be between %d and %d points", MinFontSize, MaxFontSize)
 	// ErrSheetIdx defined the error message on receive the invalid worksheet
 	// index.
 	ErrSheetIdx = errors.New("invalid worksheet index")
@@ -161,7 +161,7 @@ var (
 	ErrGroupSheets = errors.New("group worksheet must contain an active worksheet")
 	// ErrDataValidationFormulaLength defined the error message for receiving a
 	// data validation formula length that exceeds the limit.
-	ErrDataValidationFormulaLength = errors.New("data validation must be 0-255 characters")
+	ErrDataValidationFormulaLength = fmt.Errorf("data validation must be 0-%d characters", MaxFieldLength)
 	// ErrDataValidationRange defined the error message on set decimal range
 	// exceeds limit.
 	ErrDataValidationRange = errors.New("data validation range exceeds limit")
