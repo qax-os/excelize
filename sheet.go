@@ -1069,12 +1069,12 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 	return err
 }
 
-// ProtectSheet provides a function to prevent other users from accidentally
-// or deliberately changing, moving, or deleting data in a worksheet. The
+// ProtectSheet provides a function to prevent other users from accidentally or
+// deliberately changing, moving, or deleting data in a worksheet. The
 // optional field AlgorithmName specified hash algorithm, support XOR, MD4,
-// MD5, SHA1, SHA256, SHA384, and SHA512 currently, if no hash algorithm
-// specified, will be using the XOR algorithm as default. For example,
-// protect Sheet1 with protection settings:
+// MD5, SHA-1, SHA2-56, SHA-384, and SHA-512 currently, if no hash algorithm
+// specified, will be using the XOR algorithm as default. For example, protect
+// Sheet1 with protection settings:
 //
 //    err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
 //        AlgorithmName: "SHA-512",

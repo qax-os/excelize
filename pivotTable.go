@@ -102,12 +102,12 @@ type PivotTableField struct {
 //        types := []string{"Meat", "Dairy", "Beverages", "Produce"}
 //        region := []string{"East", "West", "North", "South"}
 //        f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"})
-//        for i := 0; i < 30; i++ {
-//            f.SetCellValue("Sheet1", fmt.Sprintf("A%d", i+2), month[rand.Intn(12)])
-//            f.SetCellValue("Sheet1", fmt.Sprintf("B%d", i+2), year[rand.Intn(3)])
-//            f.SetCellValue("Sheet1", fmt.Sprintf("C%d", i+2), types[rand.Intn(4)])
-//            f.SetCellValue("Sheet1", fmt.Sprintf("D%d", i+2), rand.Intn(5000))
-//            f.SetCellValue("Sheet1", fmt.Sprintf("E%d", i+2), region[rand.Intn(4)])
+//        for row := 2; row < 32; row++ {
+//            f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[rand.Intn(12)])
+//            f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), year[rand.Intn(3)])
+//            f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[rand.Intn(4)])
+//            f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), rand.Intn(5000))
+//            f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[rand.Intn(4)])
 //        }
 //        if err := f.AddPivotTable(&excelize.PivotTableOption{
 //            DataRange:       "Sheet1!$A$1:$E$31",

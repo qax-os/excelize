@@ -829,6 +829,8 @@ func newEmptyFormulaArg() formulaArg {
 func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg, error) {
 	var err error
 	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
+	var inArray, inArrayRow bool
+	var arrayRow []formulaArg
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 
@@ -841,6 +843,14 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 
 		// function start
 		if isFunctionStartToken(token) {
+			if token.TValue == "ARRAY" {
+				inArray = true
+				continue
+			}
+			if token.TValue == "ARRAYROW" {
+				inArrayRow = true
+				continue
+			}
 			opfStack.Push(token)
 			argsStack.Push(list.New().Init())
 			opftStack.Push(token) // to know which operators belong to a function use the function as a separator
@@ -922,7 +932,19 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeLogical {
 				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
 			}
-
+			if inArrayRow && isOperand(token) {
+				arrayRow = append(arrayRow, tokenToFormulaArg(token))
+				continue
+			}
+			if inArrayRow && isFunctionStopToken(token) {
+				inArrayRow = false
+				continue
+			}
+			if inArray && isFunctionStopToken(token) {
+				argsStack.Peek().(*list.List).PushBack(opfdStack.Pop())
+				arrayRow, inArray = []formulaArg{}, false
+				continue
+			}
 			if err = f.evalInfixExpFunc(sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
 				return newEmptyFormulaArg(), err
 			}
@@ -1274,6 +1296,15 @@ func isOperand(token efp.Token) bool {
 	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText)
 }
 
+// tokenToFormulaArg create a formula argument by given token.
+func tokenToFormulaArg(token efp.Token) formulaArg {
+	if token.TSubType == efp.TokenSubTypeNumber {
+		num, _ := strconv.ParseFloat(token.TValue, 64)
+		return newNumberFormulaArg(num)
+	}
+	return newStringFormulaArg(token.TValue)
+}
+
 // parseToken parse basic arithmetic operator priority and evaluate based on
 // operators and operands.
 func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Stack) error {
@@ -1318,12 +1349,7 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 	}
 	// opd
 	if isOperand(token) {
-		if token.TSubType == efp.TokenSubTypeNumber {
-			num, _ := strconv.ParseFloat(token.TValue, 64)
-			opdStack.Push(newNumberFormulaArg(num))
-		} else {
-			opdStack.Push(newStringFormulaArg(token.TValue))
-		}
+		opdStack.Push(tokenToFormulaArg(token))
 	}
 	return nil
 }
