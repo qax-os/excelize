@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/richardlehane/mscfb v1.0.4
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/xuri/efp v0.0.0-20220407160117-ad0f7a785be8
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22
 	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
