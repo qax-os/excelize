@@ -13,18 +13,33 @@ package excelize
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEncrypt(t *testing.T) {
+	// Test decrypt spreadsheet with incorrect password
 	_, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "passwd"})
 	assert.EqualError(t, err, ErrWorkbookPassword.Error())
-
+	// Test decrypt spreadsheet with password
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
-	assert.EqualError(t, f.SaveAs(filepath.Join("test", "BadEncrypt.xlsx"), Options{Password: "password"}), ErrEncrypt.Error())
+	cell, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", cell)
+	assert.NoError(t, f.Close())
+	// Test encrypt spreadsheet with invalid password
+	assert.EqualError(t, f.SaveAs(filepath.Join("test", "Encryption.xlsx"), Options{Password: strings.Repeat("*", MaxFieldLength+1)}), ErrPasswordLengthInvalid.Error())
+	// Test encrypt spreadsheet with new password
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "Encryption.xlsx"), Options{Password: "passwd"}))
+	assert.NoError(t, f.Close())
+	f, err = OpenFile(filepath.Join("test", "Encryption.xlsx"), Options{Password: "passwd"})
+	assert.NoError(t, err)
+	cell, err = f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
 }
 

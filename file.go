@@ -60,6 +60,9 @@ func (f *File) Save() error {
 	if f.Path == "" {
 		return ErrSave
 	}
+	if f.options != nil {
+		return f.SaveAs(f.Path, *f.options)
+	}
 	return f.SaveAs(f.Path)
 }
 

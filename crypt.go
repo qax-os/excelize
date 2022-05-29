@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/hmac"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha1"
@@ -25,6 +24,7 @@ import (
 	"encoding/binary"
 	"encoding/xml"
 	"hash"
+	"math"
 	"reflect"
 	"strings"
 
@@ -36,17 +36,11 @@ import (
 
 var (
 	blockKey                   = []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6} // Block keys used for encryption
-	blockKeyHmacKey            = []byte{0x5f, 0xb2, 0xad, 0x01, 0x0c, 0xb9, 0xe1, 0xf6}
-	blockKeyHmacValue          = []byte{0xa0, 0x67, 0x7f, 0x02, 0xb2, 0x2c, 0x84, 0x33}
-	blockKeyVerifierHashInput  = []byte{0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79}
-	blockKeyVerifierHashValue  = []byte{0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e}
-	packageOffset              = 8 // First 8 bytes are the size of the stream
-	packageEncryptionChunkSize = 4096
+	oleIdentifier              = []byte{0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1}
 	iterCount                  = 50000
+	packageEncryptionChunkSize = 4096
+	packageOffset              = 8 // First 8 bytes are the size of the stream
 	sheetProtectionSpinCount   = 1e5
-	oleIdentifier              = []byte{
-		0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1,
-	}
 )
 
 // Encryption specifies the encryption structure, streams, and storages are
@@ -128,6 +122,14 @@ type StandardEncryptionVerifier struct {
 	EncryptedVerifierHash []byte
 }
 
+// encryptionInfo structure is used for standard encryption with SHA1
+// cryptographic algorithm.
+type encryption struct {
+	BlockSize, SaltSize                                                                  int
+	EncryptedKeyValue, EncryptedVerifierHashInput, EncryptedVerifierHashValue, SaltValue []byte
+	KeyBits                                                                              uint32
+}
+
 // Decrypt API decrypts the CFB file format with ECMA-376 agile encryption and
 // standard encryption. Support cryptographic algorithm: MD4, MD5, RIPEMD-160,
 // SHA1, SHA256, SHA384 and SHA512 currently.
@@ -154,125 +156,27 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 
 // Encrypt API encrypt data with the password.
 func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
-	// Generate a random key to use to encrypt the document. Excel uses 32 bytes. We'll use the password to encrypt this key.
-	packageKey, _ := randomBytes(32)
-	keyDataSaltValue, _ := randomBytes(16)
-	keyEncryptors, _ := randomBytes(16)
-	encryptionInfo := Encryption{
-		KeyData: KeyData{
-			BlockSize:       16,
-			KeyBits:         len(packageKey) * 8,
-			HashSize:        64,
-			CipherAlgorithm: "AES",
-			CipherChaining:  "ChainingModeCBC",
-			HashAlgorithm:   "SHA512",
-			SaltValue:       base64.StdEncoding.EncodeToString(keyDataSaltValue),
-		},
-		KeyEncryptors: KeyEncryptors{
-			KeyEncryptor: []KeyEncryptor{{
-				EncryptedKey: EncryptedKey{
-					SpinCount: 100000, KeyData: KeyData{
-						CipherAlgorithm: "AES",
-						CipherChaining:  "ChainingModeCBC",
-						HashAlgorithm:   "SHA512",
-						HashSize:        64,
-						BlockSize:       16,
-						KeyBits:         256,
-						SaltValue:       base64.StdEncoding.EncodeToString(keyEncryptors),
-					},
-				},
-			}},
-		},
+	encryptor := encryption{
+		EncryptedVerifierHashInput: make([]byte, 16),
+		EncryptedVerifierHashValue: make([]byte, 32),
+		SaltValue:                  make([]byte, 16),
+		BlockSize:                  16,
+		KeyBits:                    128,
+		SaltSize:                   16,
 	}
-
-	// Package Encryption
-
-	// Encrypt package using the package key.
-	encryptedPackage, err := cryptPackage(true, packageKey, raw, encryptionInfo)
-	if err != nil {
-		return
-	}
-
-	// Data Integrity
-
-	// Create the data integrity fields used by clients for integrity checks.
-	// Generate a random array of bytes to use in HMAC. The docs say to use the same length as the key salt, but Excel seems to use 64.
-	hmacKey, _ := randomBytes(64)
-	if err != nil {
-		return
-	}
-	// Create an initialization vector using the package encryption info and the appropriate block key.
-	hmacKeyIV, err := createIV(blockKeyHmacKey, encryptionInfo)
-	if err != nil {
-		return
-	}
-	// Use the package key and the IV to encrypt the HMAC key.
-	encryptedHmacKey, _ := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacKeyIV, hmacKey)
-	// Create the HMAC.
-	h := hmac.New(sha512.New, append(hmacKey, encryptedPackage...))
-	for _, buf := range [][]byte{hmacKey, encryptedPackage} {
-		_, _ = h.Write(buf)
-	}
-	hmacValue := h.Sum(nil)
-	// Generate an initialization vector for encrypting the resulting HMAC value.
-	hmacValueIV, err := createIV(blockKeyHmacValue, encryptionInfo)
-	if err != nil {
-		return
-	}
-	// Encrypt the value.
-	encryptedHmacValue, _ := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, packageKey, hmacValueIV, hmacValue)
-	// Put the encrypted key and value on the encryption info.
-	encryptionInfo.DataIntegrity.EncryptedHmacKey = base64.StdEncoding.EncodeToString(encryptedHmacKey)
-	encryptionInfo.DataIntegrity.EncryptedHmacValue = base64.StdEncoding.EncodeToString(encryptedHmacValue)
-
 	// Key Encryption
-
-	// Convert the password to an encryption key.
-	key, err := convertPasswdToKey(opt.Password, blockKey, encryptionInfo)
+	encryptionInfoBuffer, err := encryptor.standardKeyEncryption(opt.Password)
 	if err != nil {
-		return
+		return nil, err
 	}
-	// Encrypt the package key with the encryption key.
-	encryptedKeyValue, _ := crypt(true, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherAlgorithm, encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.CipherChaining, key, keyEncryptors, packageKey)
-	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedKeyValue = base64.StdEncoding.EncodeToString(encryptedKeyValue)
-
-	// Verifier hash
-
-	// Create a random byte array for hashing.
-	verifierHashInput, _ := randomBytes(16)
-	// Create an encryption key from the password for the input.
-	verifierHashInputKey, err := convertPasswdToKey(opt.Password, blockKeyVerifierHashInput, encryptionInfo)
-	if err != nil {
-		return
-	}
-	// Use the key to encrypt the verifier input.
-	encryptedVerifierHashInput, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, verifierHashInputKey, keyEncryptors, verifierHashInput)
-	if err != nil {
-		return
-	}
-	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedVerifierHashInput = base64.StdEncoding.EncodeToString(encryptedVerifierHashInput)
-	// Create a hash of the input.
-	verifierHashValue := hashing(encryptionInfo.KeyData.HashAlgorithm, verifierHashInput)
-	// Create an encryption key from the password for the hash.
-	verifierHashValueKey, err := convertPasswdToKey(opt.Password, blockKeyVerifierHashValue, encryptionInfo)
-	if err != nil {
-		return
-	}
-	// Use the key to encrypt the hash value.
-	encryptedVerifierHashValue, err := crypt(true, encryptionInfo.KeyData.CipherAlgorithm, encryptionInfo.KeyData.CipherChaining, verifierHashValueKey, keyEncryptors, verifierHashValue)
-	if err != nil {
-		return
-	}
-	encryptionInfo.KeyEncryptors.KeyEncryptor[0].EncryptedKey.EncryptedVerifierHashValue = base64.StdEncoding.EncodeToString(encryptedVerifierHashValue)
-	// Marshal the encryption info buffer.
-	encryptionInfoBuffer, err := xml.Marshal(encryptionInfo)
-	if err != nil {
-		return
-	}
-	// TODO: Create a new CFB.
-	_, _ = encryptedPackage, encryptionInfoBuffer
-	err = ErrEncrypt
-	return
+	// Package Encryption
+	encryptedPackage := make([]byte, 8)
+	binary.LittleEndian.PutUint64(encryptedPackage, uint64(len(raw)))
+	encryptedPackage = append(encryptedPackage, encryptor.encrypt(raw)...)
+	// Create a new CFB
+	compoundFile := cfb{}
+	packageBuf = compoundFile.Writer(encryptionInfoBuffer, encryptedPackage)
+	return packageBuf, nil
 }
 
 // extractPart extract data from storage by specified part name.
@@ -419,6 +323,68 @@ func standardXORBytes(a, b []byte) []byte {
 	return buf
 }
 
+// encrypt provides a function to encrypt given value with AES cryptographic
+// algorithm.
+func (e *encryption) encrypt(input []byte) []byte {
+	inputBytes := len(input)
+	if pad := inputBytes % e.BlockSize; pad != 0 {
+		inputBytes += e.BlockSize - pad
+	}
+	var output, chunk []byte
+	encryptedChunk := make([]byte, e.BlockSize)
+	for i := 0; i < inputBytes; i += e.BlockSize {
+		if i+e.BlockSize <= len(input) {
+			chunk = input[i : i+e.BlockSize]
+		} else {
+			chunk = input[i:]
+		}
+		chunk = append(chunk, make([]byte, e.BlockSize-len(chunk))...)
+		c, _ := aes.NewCipher(e.EncryptedKeyValue)
+		c.Encrypt(encryptedChunk, chunk)
+		output = append(output, encryptedChunk...)
+	}
+	return output
+}
+
+// standardKeyEncryption encrypt convert the password to an encryption key.
+func (e *encryption) standardKeyEncryption(password string) ([]byte, error) {
+	if len(password) == 0 || len(password) > MaxFieldLength {
+		return nil, ErrPasswordLengthInvalid
+	}
+	var storage cfb
+	storage.writeUint16(0x0003)
+	storage.writeUint16(0x0002)
+	storage.writeUint32(0x24)
+	storage.writeUint32(0xA4)
+	storage.writeUint32(0x24)
+	storage.writeUint32(0x00)
+	storage.writeUint32(0x660E)
+	storage.writeUint32(0x8004)
+	storage.writeUint32(0x80)
+	storage.writeUint32(0x18)
+	storage.writeUint64(0x00)
+	providerName := "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)"
+	storage.writeStrings(providerName)
+	storage.writeUint16(0x00)
+	storage.writeUint32(0x10)
+	keyDataSaltValue, _ := randomBytes(16)
+	verifierHashInput, _ := randomBytes(16)
+	e.SaltValue = keyDataSaltValue
+	e.EncryptedKeyValue, _ = standardConvertPasswdToKey(
+		StandardEncryptionHeader{KeySize: e.KeyBits},
+		StandardEncryptionVerifier{Salt: e.SaltValue},
+		&Options{Password: password})
+	verifierHashInputKey := hashing("sha1", verifierHashInput)
+	e.EncryptedVerifierHashInput = e.encrypt(verifierHashInput)
+	e.EncryptedVerifierHashValue = e.encrypt(verifierHashInputKey)
+	storage.writeBytes(e.SaltValue)
+	storage.writeBytes(e.EncryptedVerifierHashInput)
+	storage.writeUint32(0x14)
+	storage.writeBytes(e.EncryptedVerifierHashValue)
+	storage.position = 0
+	return storage.stream, nil
+}
+
 // ECMA-376 Agile Encryption
 
 // agileDecrypt decrypt the CFB file format with ECMA-376 agile encryption.
@@ -444,9 +410,9 @@ func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (
 	if err != nil {
 		return
 	}
-	packageKey, _ := crypt(false, encryptedKey.CipherAlgorithm, encryptedKey.CipherChaining, key, saltValue, encryptedKeyValue)
+	packageKey, _ := decrypt(key, saltValue, encryptedKeyValue)
 	// Use the package key to decrypt the package.
-	return cryptPackage(false, packageKey, encryptedPackageBuf, encryptionInfo)
+	return decryptPackage(packageKey, encryptedPackageBuf, encryptionInfo)
 }
 
 // convertPasswdToKey convert the password into an encryption key.
@@ -519,30 +485,21 @@ func parseEncryptionInfo(encryptionInfo []byte) (encryption Encryption, err erro
 	return
 }
 
-// crypt encrypt / decrypt input by given cipher algorithm, cipher chaining,
-// key and initialization vector.
-func crypt(encrypt bool, cipherAlgorithm, cipherChaining string, key, iv, input []byte) (packageKey []byte, err error) {
+// decrypt provides a function to decrypt input by given cipher algorithm,
+// cipher chaining, key and initialization vector.
+func decrypt(key, iv, input []byte) (packageKey []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return input, err
 	}
-	var stream cipher.BlockMode
-	if encrypt {
-		stream = cipher.NewCBCEncrypter(block, iv)
-	} else {
-		stream = cipher.NewCBCDecrypter(block, iv)
-	}
-	stream.CryptBlocks(input, input)
+	cipher.NewCBCDecrypter(block, iv).CryptBlocks(input, input)
 	return input, nil
 }
 
-// cryptPackage encrypt / decrypt package by given packageKey and encryption
+// decryptPackage decrypt package by given packageKey and encryption
 // info.
-func cryptPackage(encrypt bool, packageKey, input []byte, encryption Encryption) (outputChunks []byte, err error) {
+func decryptPackage(packageKey, input []byte, encryption Encryption) (outputChunks []byte, err error) {
 	encryptedKey, offset := encryption.KeyData, packageOffset
-	if encrypt {
-		offset = 0
-	}
 	var i, start, end int
 	var iv, outputChunk []byte
 	for end < len(input) {
@@ -570,16 +527,13 @@ func cryptPackage(encrypt bool, packageKey, input []byte, encryption Encryption)
 		if err != nil {
 			return
 		}
-		// Encrypt/decrypt the chunk and add it to the array
-		outputChunk, err = crypt(encrypt, encryptedKey.CipherAlgorithm, encryptedKey.CipherChaining, packageKey, iv, inputChunk)
+		// Decrypt the chunk and add it to the array
+		outputChunk, err = decrypt(packageKey, iv, inputChunk)
 		if err != nil {
 			return
 		}
 		outputChunks = append(outputChunks, outputChunk...)
 		i++
-	}
-	if encrypt {
-		outputChunks = append(createUInt32LEBuffer(len(input), 8), outputChunks...)
 	}
 	return
 }
@@ -661,4 +615,663 @@ func genISOPasswdHash(passwd, hashAlgorithm, salt string, spinCount int) (hashVa
 	}
 	hashValue, saltValue = base64.StdEncoding.EncodeToString(key), base64.StdEncoding.EncodeToString(s)
 	return
+}
+
+// Compound File Binary Implements
+
+// cfb structure is used for the compound file binary (CFB) file format writer.
+type cfb struct {
+	stream   []byte
+	position int
+}
+
+// writeBytes write bytes in the stream by a given value with an offset.
+func (c *cfb) writeBytes(value []byte) {
+	pos := c.position
+	for i := 0; i < len(value); i++ {
+		for j := len(c.stream); j <= i+pos; j++ {
+			c.stream = append(c.stream, 0)
+		}
+		c.stream[i+pos] = value[i]
+	}
+	c.position = pos + len(value)
+}
+
+// writeUint16 write an uint16 data type bytes in the stream by a given value
+// with an offset.
+func (c *cfb) writeUint16(value int) {
+	buf := make([]byte, 2)
+	binary.LittleEndian.PutUint16(buf, uint16(value))
+	c.writeBytes(buf)
+}
+
+// writeUint32 write an uint32 data type bytes in the stream by a given value
+// with an offset.
+func (c *cfb) writeUint32(value int) {
+	buf := make([]byte, 4)
+	binary.LittleEndian.PutUint32(buf, uint32(value))
+	c.writeBytes(buf)
+}
+
+// writeUint64 write an uint64 data type bytes in the stream by a given value
+// with an offset.
+func (c *cfb) writeUint64(value int) {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(value))
+	c.writeBytes(buf)
+}
+
+// writeBytes write strings in the stream by a given value with an offset.
+func (c *cfb) writeStrings(value string) {
+	encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
+	buffer, err := encoder.Bytes([]byte(value))
+	if err != nil {
+		return
+	}
+	c.writeBytes(buffer)
+}
+
+// writeVersionStream provides a function to write compound file version
+// stream.
+func (c *cfb) writeVersionStream() []byte {
+	var storage cfb
+	storage.writeUint32(0x3c)
+	storage.writeStrings("Microsoft.Container.DataSpaces")
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x01)
+	return storage.stream
+}
+
+// writeDataSpaceMapStream provides a function to write compound file
+// DataSpaceMap stream.
+func (c *cfb) writeDataSpaceMapStream() []byte {
+	var storage cfb
+	storage.writeUint32(0x08)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x68)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x00)
+	storage.writeUint32(0x20)
+	storage.writeStrings("EncryptedPackage")
+	storage.writeUint32(0x32)
+	storage.writeStrings("StrongEncryptionDataSpace")
+	storage.writeUint16(0x00)
+	return storage.stream
+}
+
+// writeStrongEncryptionDataSpaceStream provides a function to write compound
+// file StrongEncryptionDataSpace stream.
+func (c *cfb) writeStrongEncryptionDataSpaceStream() []byte {
+	var storage cfb
+	storage.writeUint32(0x08)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x32)
+	storage.writeStrings("StrongEncryptionTransform")
+	storage.writeUint16(0x00)
+	return storage.stream
+}
+
+// writePrimaryStream provides a function to write compound file Primary
+// stream.
+func (c *cfb) writePrimaryStream() []byte {
+	var storage cfb
+	storage.writeUint32(0x6C)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x4C)
+	storage.writeStrings("{FF9A3F03-56EF-4613-BDD5-5A41C1D07246}")
+	storage.writeUint32(0x4E)
+	storage.writeUint16(0x00)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x01)
+	storage.writeUint32(0x01)
+	storage.writeStrings("AES128")
+	storage.writeUint32(0x00)
+	storage.writeUint32(0x04)
+	return storage.stream
+}
+
+// writeFileStream provides a function to write encrypted package in compound
+// file by a given buffer and the short sector allocation table.
+func (c *cfb) writeFileStream(encryptionInfoBuffer []byte, SSAT []int) ([]byte, []int) {
+	var (
+		storage        cfb
+		miniProperties int
+		stream         = make([]byte, 0x100)
+	)
+	if encryptionInfoBuffer != nil {
+		copy(stream, encryptionInfoBuffer)
+	}
+	storage.writeBytes(stream)
+	streamBlocks := len(stream) / 64
+	if len(stream)%64 > 0 {
+		streamBlocks++
+	}
+	for i := 1; i < streamBlocks; i++ {
+		SSAT = append(SSAT, i)
+	}
+	SSAT = append(SSAT, -2)
+	miniProperties += streamBlocks
+	versionStream := make([]byte, 0x80)
+	version := c.writeVersionStream()
+	copy(versionStream, version)
+	storage.writeBytes(versionStream)
+	versionBlocks := len(versionStream) / 64
+	if len(versionStream)%64 > 0 {
+		versionBlocks++
+	}
+	for i := 1; i < versionBlocks; i++ {
+		SSAT = append(SSAT, i+miniProperties)
+	}
+	SSAT = append(SSAT, -2)
+	miniProperties += versionBlocks
+	dataSpaceMap := make([]byte, 0x80)
+	dataStream := c.writeDataSpaceMapStream()
+	copy(dataSpaceMap, dataStream)
+	storage.writeBytes(dataSpaceMap)
+	dataSpaceMapBlocks := len(dataSpaceMap) / 64
+	if len(dataSpaceMap)%64 > 0 {
+		dataSpaceMapBlocks++
+	}
+	for i := 1; i < dataSpaceMapBlocks; i++ {
+		SSAT = append(SSAT, i+miniProperties)
+	}
+	SSAT = append(SSAT, -2)
+	miniProperties += dataSpaceMapBlocks
+	dataSpaceStream := c.writeStrongEncryptionDataSpaceStream()
+	storage.writeBytes(dataSpaceStream)
+	dataSpaceStreamBlocks := len(dataSpaceStream) / 64
+	if len(dataSpaceStream)%64 > 0 {
+		dataSpaceStreamBlocks++
+	}
+	for i := 1; i < dataSpaceStreamBlocks; i++ {
+		SSAT = append(SSAT, i+miniProperties)
+	}
+	SSAT = append(SSAT, -2)
+	miniProperties += dataSpaceStreamBlocks
+	primaryStream := make([]byte, 0x1C0)
+	primary := c.writePrimaryStream()
+	copy(primaryStream, primary)
+	storage.writeBytes(primaryStream)
+	primaryBlocks := len(primary) / 64
+	if len(primary)%64 > 0 {
+		primaryBlocks++
+	}
+	for i := 1; i < primaryBlocks; i++ {
+		SSAT = append(SSAT, i+miniProperties)
+	}
+	SSAT = append(SSAT, -2)
+	if len(SSAT) < 128 {
+		for i := len(SSAT); i < 128; i++ {
+			SSAT = append(SSAT, -1)
+		}
+	}
+	storage.position = 0
+	return storage.stream, SSAT
+}
+
+// writeRootEntry provides a function to write compound file root directory
+// entry. The first entry in the first sector of the directory chain
+// (also referred to as the first element of the directory array, or stream
+// ID #0) is known as the root directory entry, and it is reserved for two
+// purposes. First, it provides a root parent for all objects that are
+// stationed at the root of the compound file. Second, its function is
+// overloaded to store the size and starting sector for the mini stream.
+func (c *cfb) writeRootEntry(customSectID int) []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("Root Entry")
+	storage.position = 0x40
+	storage.writeUint16(0x16)
+	storage.writeBytes([]byte{5, 0})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(customSectID)
+	storage.writeUint32(0x340)
+	return storage.stream
+}
+
+// writeEncryptionInfo provides a function to write compound file
+// writeEncryptionInfo stream. The writeEncryptionInfo stream contains
+// detailed information that is used to initialize the cryptography used to
+// encrypt the EncryptedPackage stream.
+func (c *cfb) writeEncryptionInfo() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("EncryptionInfo")
+	storage.position = 0x40
+	storage.writeUint16(0x1E)
+	storage.writeBytes([]byte{2, 1})
+	storage.writeUint32(0x03)
+	storage.writeUint32(0x02)
+	storage.writeUint32(-1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0xF8)
+	return storage.stream
+}
+
+// writeEncryptedPackage provides a function to write compound file
+// writeEncryptedPackage stream. The writeEncryptedPackage stream is an
+// encrypted stream of bytes containing the entire ECMA-376 source file in
+// compressed form.
+func (c *cfb) writeEncryptedPackage(propertyCount, size int) []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("EncryptedPackage")
+	storage.position = 0x40
+	storage.writeUint16(0x22)
+	storage.writeBytes([]byte{2, 0})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(propertyCount)
+	storage.writeUint32(size)
+	return storage.stream
+}
+
+// writeDataSpaces provides a function to write compound file writeDataSpaces
+// stream. The data spaces structure consists of a set of interrelated
+// storages and streams in an OLE compound file.
+func (c *cfb) writeDataSpaces() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeUint16(0x06)
+	storage.position = 0x40
+	storage.writeUint16(0x18)
+	storage.writeBytes([]byte{1, 0})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(5)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	return storage.stream
+}
+
+// writeVersion provides a function to write compound file version. The
+// writeVersion structure specifies the version of a product or feature. It
+// contains a major and a minor version number.
+func (c *cfb) writeVersion() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("Version")
+	storage.position = 0x40
+	storage.writeUint16(0x10)
+	storage.writeBytes([]byte{2, 1})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(4)
+	storage.writeUint32(76)
+	return storage.stream
+}
+
+// writeDataSpaceMap provides a function to write compound file
+// writeDataSpaceMap stream. The writeDataSpaceMap structure associates
+// protected content with data space definitions. The data space definition,
+// in turn, describes the series of transforms that MUST be applied to that
+// protected content to restore it to its original form. By using a map to
+// associate data space definitions with content, a single data space
+// definition can be used to define the transforms applied to more than one
+// piece of protected content. However, a given piece of protected content can
+// be referenced only by a single data space definition.
+func (c *cfb) writeDataSpaceMap() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("DataSpaceMap")
+	storage.position = 0x40
+	storage.writeUint16(0x1A)
+	storage.writeBytes([]byte{2, 1})
+	storage.writeUint32(0x04)
+	storage.writeUint32(0x06)
+	storage.writeUint32(-1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(6)
+	storage.writeUint32(112)
+	return storage.stream
+}
+
+// writeDataSpaceInfo provides a function to write compound file
+// writeDataSpaceInfo storage. The writeDataSpaceInfo is a storage containing
+// the data space definitions used in the file. This storage must contain one
+// or more streams, each of which contains a DataSpaceDefinition structure.
+// The storage must contain exactly one stream for each DataSpaceMapEntry
+// structure in the DataSpaceMap stream. The name of each stream must be equal
+// to the DataSpaceName field of exactly one DataSpaceMapEntry structure
+// contained in the DataSpaceMap stream.
+func (c *cfb) writeDataSpaceInfo() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("DataSpaceInfo")
+	storage.position = 0x40
+	storage.writeUint16(0x1C)
+	storage.writeBytes([]byte{1, 1})
+	storage.writeUint32(-1)
+	storage.writeUint32(8)
+	storage.writeUint32(7)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	return storage.stream
+}
+
+// writeStrongEncryptionDataSpace provides a function to write compound file
+// writeStrongEncryptionDataSpace stream.
+func (c *cfb) writeStrongEncryptionDataSpace() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("StrongEncryptionDataSpace")
+	storage.position = 0x40
+	storage.writeUint16(0x34)
+	storage.writeBytes([]byte{2, 1})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(8)
+	storage.writeUint32(64)
+	return storage.stream
+}
+
+// writeTransformInfo provides a function to write compound file
+// writeTransformInfo storage. writeTransformInfo is a storage containing
+// definitions for the transforms used in the data space definitions stored in
+// the DataSpaceInfo storage. The stream contains zero or more definitions for
+// the possible transforms that can be applied to the data in content
+// streams.
+func (c *cfb) writeTransformInfo() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("TransformInfo")
+	storage.position = 0x40
+	storage.writeUint16(0x1C)
+	storage.writeBytes([]byte{1, 0})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(9)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	return storage.stream
+}
+
+// writeStrongEncryptionTransform provides a function to write compound file
+// writeStrongEncryptionTransform storage.
+func (c *cfb) writeStrongEncryptionTransform() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeStrings("StrongEncryptionTransform")
+	storage.position = 0x40
+	storage.writeUint16(0x34)
+	storage.writeBytes([]byte{1})
+	storage.writeBytes([]byte{1})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(0x0A)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	return storage.stream
+}
+
+// writePrimary provides a function to write compound file writePrimary stream.
+func (c *cfb) writePrimary() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.writeUint16(0x06)
+	storage.writeStrings("Primary")
+	storage.position = 0x40
+	storage.writeUint16(0x12)
+	storage.writeBytes([]byte{2, 1})
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.position = 0x64
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(9)
+	storage.writeUint32(208)
+	return storage.stream
+}
+
+// writeNoneDir provides a function to write compound file writeNoneDir stream.
+func (c *cfb) writeNoneDir() []byte {
+	storage := cfb{stream: make([]byte, 128)}
+	storage.position = 0x40
+	storage.writeUint16(0x00)
+	storage.writeUint16(0x00)
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	storage.writeUint32(-1)
+	return storage.stream
+}
+
+// writeDirectoryEntry provides a function to write compound file directory
+// entries. The directory entry array is an array of directory entries that
+// are grouped into a directory sector. Each storage object or stream object
+// within a compound file is represented by a single directory entry. The
+// space for the directory sectors that are holding the array is allocated
+// from the FAT.
+func (c *cfb) writeDirectoryEntry(propertyCount, customSectID, size int) []byte {
+	var storage cfb
+	if size < 0 {
+		size = 0
+	}
+	for _, entry := range [][]byte{
+		c.writeRootEntry(customSectID),
+		c.writeEncryptionInfo(),
+		c.writeEncryptedPackage(propertyCount, size),
+		c.writeDataSpaces(),
+		c.writeVersion(),
+		c.writeDataSpaceMap(),
+		c.writeDataSpaceInfo(),
+		c.writeStrongEncryptionDataSpace(),
+		c.writeTransformInfo(),
+		c.writeStrongEncryptionTransform(),
+		c.writePrimary(),
+		c.writeNoneDir(),
+	} {
+		storage.writeBytes(entry)
+	}
+	return storage.stream
+}
+
+// writeMSAT provides a function to write compound file sector allocation
+// table.
+func (c *cfb) writeMSAT(MSATBlocks, SATBlocks int, MSAT []int) []int {
+	if MSATBlocks > 0 {
+		cnt, MSATIdx := MSATBlocks*128+109, 0
+		for i := 0; i < cnt; i++ {
+			if i < SATBlocks {
+				bufferSize := i - 109
+				if bufferSize > 0 && bufferSize%0x80 == 0 {
+					MSATIdx++
+					MSAT = append(MSAT, MSATIdx)
+				}
+				MSAT = append(MSAT, i+MSATBlocks)
+				continue
+			}
+			MSAT = append(MSAT, -1)
+		}
+	} else {
+		for i := 0; i < 109; i++ {
+			if i < SATBlocks {
+				MSAT = append(MSAT, i)
+				continue
+			}
+			MSAT = append(MSAT, -1)
+		}
+	}
+	return MSAT
+}
+
+// writeSAT provides a function to write compound file master sector allocation
+// table.
+func (c *cfb) writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileBlocks, streamBlocks int, SAT []int) (int, []int) {
+	var blocks int
+	if SATBlocks > 0 {
+		for i := 1; i <= MSATBlocks; i++ {
+			SAT = append(SAT, -4)
+		}
+		blocks = MSATBlocks
+		for i := 1; i <= SATBlocks; i++ {
+			SAT = append(SAT, -3)
+		}
+		blocks += SATBlocks
+		for i := 1; i < SSATBlocks; i++ {
+			SAT = append(SAT, i)
+		}
+		SAT = append(SAT, -2)
+		blocks += SSATBlocks
+		for i := 1; i < directoryBlocks; i++ {
+			SAT = append(SAT, i+blocks)
+		}
+		SAT = append(SAT, -2)
+		blocks += directoryBlocks
+		for i := 1; i < fileBlocks; i++ {
+			SAT = append(SAT, i+blocks)
+		}
+		SAT = append(SAT, -2)
+		blocks += fileBlocks
+		for i := 1; i < streamBlocks; i++ {
+			SAT = append(SAT, i+blocks)
+		}
+		SAT = append(SAT, -2)
+	}
+	return blocks, SAT
+}
+
+// Writer provides a function to create compound file with given info stream
+// and package stream.
+//
+//    MSAT - The master sector allocation table
+//    SSAT - The short sector allocation table
+//    SAT  - The sector allocation table
+//
+func (c *cfb) Writer(encryptionInfoBuffer, encryptedPackage []byte) []byte {
+	var (
+		storage                                 cfb
+		MSAT, SAT, SSAT                         []int
+		directoryBlocks, fileBlocks, SSATBlocks = 3, 2, 1
+		size                                    = int(math.Max(float64(len(encryptedPackage)), float64(packageEncryptionChunkSize)))
+		streamBlocks                            = len(encryptedPackage) / 0x200
+	)
+	if len(encryptedPackage)%0x200 > 0 {
+		streamBlocks++
+	}
+	propertyBlocks := directoryBlocks + fileBlocks + SSATBlocks
+	blockSize := (streamBlocks + propertyBlocks) * 4
+	SATBlocks := blockSize / 0x200
+	if blockSize%0x200 > 0 {
+		SATBlocks++
+	}
+	MSATBlocks, blocksChanged := 0, true
+	for blocksChanged {
+		var SATCap, MSATCap int
+		blocksChanged = false
+		blockSize = (streamBlocks + propertyBlocks + SATBlocks + MSATBlocks) * 4
+		SATCap = blockSize / 0x200
+		if blockSize%0x200 > 0 {
+			SATCap++
+		}
+		if SATCap > SATBlocks {
+			SATBlocks, blocksChanged = SATCap, true
+			continue
+		}
+		if SATBlocks > 109 {
+			blockRemains := (SATBlocks - 109) * 4
+			blockBuffer := blockRemains % 0x200
+			MSATCap = blockRemains / 0x200
+			if blockBuffer > 0 {
+				MSATCap++
+			}
+			if blockBuffer+(4*MSATCap) > 0x200 {
+				MSATCap++
+			}
+			if MSATCap > MSATBlocks {
+				MSATBlocks, blocksChanged = MSATCap, true
+			}
+		}
+	}
+	MSAT = c.writeMSAT(MSATBlocks, SATBlocks, MSAT)
+	blocks, SAT := c.writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileBlocks, streamBlocks, SAT)
+	storage.writeUint32(0xE011CFD0)
+	storage.writeUint32(0xE11AB1A1)
+	storage.writeUint64(0x00)
+	storage.writeUint64(0x00)
+	storage.writeUint16(0x003E)
+	storage.writeUint16(0x0003)
+	storage.writeUint16(-2)
+	storage.writeUint16(9)
+	storage.writeUint32(6)
+	storage.writeUint32(0)
+	storage.writeUint32(0)
+	storage.writeUint32(SATBlocks)
+	storage.writeUint32(MSATBlocks + SATBlocks + SSATBlocks)
+	storage.writeUint32(0)
+	storage.writeUint32(0x00001000)
+	storage.writeUint32(SATBlocks + MSATBlocks)
+	storage.writeUint32(SSATBlocks)
+	if MSATBlocks > 0 {
+		storage.writeUint32(0)
+		storage.writeUint32(MSATBlocks)
+	} else {
+		storage.writeUint32(-2)
+		storage.writeUint32(0)
+	}
+	for _, block := range MSAT {
+		storage.writeUint32(block)
+	}
+	for i := 0; i < SATBlocks*128; i++ {
+		if i < len(SAT) {
+			storage.writeUint32(SAT[i])
+			continue
+		}
+		storage.writeUint32(-1)
+	}
+	fileStream, SSATStream := c.writeFileStream(encryptionInfoBuffer, SSAT)
+	for _, block := range SSATStream {
+		storage.writeUint32(block)
+	}
+	directoryEntry := c.writeDirectoryEntry(blocks, blocks-fileBlocks, size)
+	storage.writeBytes(directoryEntry)
+	storage.writeBytes(fileStream)
+	storage.writeBytes(encryptedPackage)
+	return storage.stream
 }
