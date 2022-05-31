@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,6 +31,13 @@ func TestEncrypt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
+	// Test decrypt spreadsheet with unsupported encrypt mechanism
+	raw, err := ioutil.ReadFile(filepath.Join("test", "encryptAES.xlsx"))
+	assert.NoError(t, err)
+	raw[2050] = 3
+	_, err = Decrypt(raw, &Options{Password: "password"})
+	assert.EqualError(t, err, ErrUnsupportedEncryptMechanism.Error())
+
 	// Test encrypt spreadsheet with invalid password
 	assert.EqualError(t, f.SaveAs(filepath.Join("test", "Encryption.xlsx"), Options{Password: strings.Repeat("*", MaxFieldLength+1)}), ErrPasswordLengthInvalid.Error())
 	// Test encrypt spreadsheet with new password
@@ -49,6 +57,11 @@ func TestEncryptionMechanism(t *testing.T) {
 	assert.EqualError(t, err, ErrUnsupportedEncryptMechanism.Error())
 	_, err = encryptionMechanism([]byte{})
 	assert.EqualError(t, err, ErrUnknownEncryptMechanism.Error())
+}
+
+func TestEncryptionWriteDirectoryEntry(t *testing.T) {
+	cfb := cfb{}
+	assert.Equal(t, 1536, len(cfb.writeDirectoryEntry(0, 0, -1)))
 }
 
 func TestHashing(t *testing.T) {

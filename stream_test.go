@@ -129,6 +129,8 @@ func TestStreamWriter(t *testing.T) {
 	}
 	assert.NoError(t, rows.Close())
 	assert.Equal(t, 2559558, cells)
+	// Save spreadsheet with password.
+	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
 }
 

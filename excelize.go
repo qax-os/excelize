@@ -93,6 +93,7 @@ type Options struct {
 //        return
 //    }
 //
+// Close the file by Close function after opening the spreadsheet.
 func OpenFile(filename string, opt ...Options) (*File, error) {
 	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {

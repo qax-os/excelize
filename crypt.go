@@ -143,15 +143,10 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 	if err != nil || mechanism == "extensible" {
 		return
 	}
-	switch mechanism {
-	case "agile":
+	if mechanism == "agile" {
 		return agileDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
-	case "standard":
-		return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
-	default:
-		err = ErrUnsupportedEncryptMechanism
 	}
-	return
+	return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
 }
 
 // Encrypt API encrypt data with the password.
@@ -1112,7 +1107,7 @@ func (c *cfb) writeDirectoryEntry(propertyCount, customSectID, size int) []byte 
 	return storage.stream
 }
 
-// writeMSAT provides a function to write compound file sector allocation
+// writeMSAT provides a function to write compound file master sector allocation
 // table.
 func (c *cfb) writeMSAT(MSATBlocks, SATBlocks int, MSAT []int) []int {
 	if MSATBlocks > 0 {
@@ -1129,19 +1124,19 @@ func (c *cfb) writeMSAT(MSATBlocks, SATBlocks int, MSAT []int) []int {
 			}
 			MSAT = append(MSAT, -1)
 		}
-	} else {
-		for i := 0; i < 109; i++ {
-			if i < SATBlocks {
-				MSAT = append(MSAT, i)
-				continue
-			}
-			MSAT = append(MSAT, -1)
+		return MSAT
+	}
+	for i := 0; i < 109; i++ {
+		if i < SATBlocks {
+			MSAT = append(MSAT, i)
+			continue
 		}
+		MSAT = append(MSAT, -1)
 	}
 	return MSAT
 }
 
-// writeSAT provides a function to write compound file master sector allocation
+// writeSAT provides a function to write compound file sector allocation
 // table.
 func (c *cfb) writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileBlocks, streamBlocks int, SAT []int) (int, []int) {
 	var blocks int
