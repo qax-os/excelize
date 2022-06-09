@@ -1475,6 +1475,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(2,1)":                           "1",
 		"=DAYS(INT(2),INT(1))":                 "1",
 		"=DAYS(\"02/02/2015\",\"01/01/2015\")": "32",
+		// EDATE
+		"=EDATE(\"01/01/2021\",-1)": "44166",
+		"=EDATE(\"01/31/2020\",1)":  "43890",
+		"=EDATE(\"01/29/2020\",12)": "44225",
 		// HOUR
 		"=HOUR(1)":                    "0",
 		"=HOUR(43543.5032060185)":     "12",
@@ -3437,6 +3441,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(0,\"\")": "#VALUE!",
 		"=DAYS(NA(),0)": "#VALUE!",
 		"=DAYS(0,NA())": "#VALUE!",
+		// EDATE
+		"=EDATE()":                      "EDATE requires 2 arguments",
+		"=EDATE(0,\"\")":                "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EDATE(-1,0)":                  "#NUM!",
+		"=EDATE(\"\",0)":                "#VALUE!",
+		"=EDATE(\"January 25, 100\",0)": "#VALUE!",
 		// HOUR
 		"=HOUR()":             "HOUR requires exactly 1 argument",
 		"=HOUR(-1)":           "HOUR only accepts positive argument",

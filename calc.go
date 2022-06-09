@@ -433,6 +433,7 @@ type formulaFuncs struct {
 //    DOLLARFR
 //    DURATION
 //    EFFECT
+//    EDATE
 //    ENCODEURL
 //    ERF
 //    ERF.PRECISE
@@ -1544,7 +1545,7 @@ func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
 	if exp == "" {
 		return
 	}
-	if match := regexp.MustCompile(`^([0-9]+)$`).FindStringSubmatch(exp); len(match) > 1 {
+	if match := regexp.MustCompile(`^(\d+)$`).FindStringSubmatch(exp); len(match) > 1 {
 		fc.Type, fc.Condition = criteriaEq, match[1]
 		return
 	}
@@ -10862,7 +10863,7 @@ func (fn *formulaFuncs) TREND(argsList *list.List) formulaArg {
 }
 
 // tTest calculates the probability associated with the Student's T Test.
-func tTest(bTemplin bool, mtx1, mtx2 [][]formulaArg, c1, c2, r1, r2 int, fT, fF float64) (float64, float64, bool) {
+func tTest(bTemplin bool, mtx1, mtx2 [][]formulaArg, c1, c2, r1, r2 int) (float64, float64, bool) {
 	var cnt1, cnt2, sum1, sumSqr1, sum2, sumSqr2 float64
 	var fVal formulaArg
 	for i := 0; i < c1; i++ {
@@ -10935,9 +10936,9 @@ func (fn *formulaFuncs) tTest(mtx1, mtx2 [][]formulaArg, fTails, fTyp float64) f
 		fT = math.Abs(sumD) * math.Sqrt((cnt-1)/divider)
 		fF = cnt - 1
 	} else if fTyp == 2 {
-		fT, fF, ok = tTest(false, mtx1, mtx2, c1, c2, r1, r2, fT, fF)
+		fT, fF, ok = tTest(false, mtx1, mtx2, c1, c2, r1, r2)
 	} else {
-		fT, fF, ok = tTest(true, mtx1, mtx2, c1, c2, r1, r2, fT, fF)
+		fT, fF, ok = tTest(true, mtx1, mtx2, c1, c2, r1, r2)
 	}
 	if !ok {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -12349,6 +12350,58 @@ func (fn *formulaFuncs) ISOWEEKNUM(argsList *list.List) formulaArg {
 		_, weekNum = timeFromExcelTime(num.Number, false).ISOWeek()
 	}
 	return newNumberFormulaArg(float64(weekNum))
+}
+
+// EDATE function returns a date that is a specified number of months before or
+// after a supplied start date. The syntax of function is:
+//
+//    EDATE(start_date,months)
+//
+func (fn *formulaFuncs) EDATE(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EDATE requires 2 arguments")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	var dateTime time.Time
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(date.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		dateTime = time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.Now().Location())
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		dateTime = timeFromExcelTime(num.Number, false)
+	}
+	month := argsList.Back().Value.(formulaArg).ToNumber()
+	if month.Type != ArgNumber {
+		return month
+	}
+	y, d := dateTime.Year(), dateTime.Day()
+	m := int(dateTime.Month()) + int(month.Number)
+	if month.Number < 0 {
+		y -= int(math.Ceil(-1 * float64(m) / 12))
+	}
+	if month.Number > 11 {
+		y += int(math.Floor(float64(m) / 12))
+	}
+	m = int(math.Mod(float64(m), 12))
+	if d > 28 {
+		if days := getDaysInMonth(y, m); d > days {
+			d = days
+		}
+	}
+	result, _ := timeToExcelTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC), false)
+	return newNumberFormulaArg(result)
 }
 
 // HOUR function returns an integer representing the hour component of a
