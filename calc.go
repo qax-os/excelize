@@ -719,6 +719,7 @@ type formulaFuncs struct {
 //    VDB
 //    VLOOKUP
 //    WEEKDAY
+//    WEEKNUM
 //    WEIBULL
 //    WEIBULL.DIST
 //    XIRR
@@ -12801,6 +12802,86 @@ func (fn *formulaFuncs) WEEKDAY(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(float64((weekday+6-(returnType-10))%7 + 1))
 	}
 	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+}
+
+// weeknum is an implementation of the formula function WEEKNUM.
+func (fn *formulaFuncs) weeknum(snTime time.Time, returnType int) formulaArg {
+	days := snTime.YearDay()
+	weekMod, weekNum := days%7, math.Ceil(float64(days)/7)
+	if weekMod == 0 {
+		weekMod = 7
+	}
+	year := snTime.Year()
+	firstWeekday := int(time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC).Weekday())
+	var offset int
+	switch returnType {
+	case 1, 17:
+		offset = 0
+	case 2, 11, 21:
+		offset = 1
+	case 12, 13, 14, 15, 16:
+		offset = returnType - 10
+	default:
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	padding := offset + 7 - firstWeekday
+	if padding > 7 {
+		padding -= 7
+	}
+	if weekMod > padding {
+		weekNum++
+	}
+	if returnType == 21 && (firstWeekday == 0 || firstWeekday > 4) {
+		if weekNum--; weekNum < 1 {
+			if weekNum = 52; int(time.Date(year-1, time.January, 1, 0, 0, 0, 0, time.UTC).Weekday()) < 4 {
+				weekNum++
+			}
+		}
+	}
+	return newNumberFormulaArg(weekNum)
+}
+
+// WEEKNUM function returns an integer representing the week number (from 1 to
+// 53) of the year. The syntax of the function is:
+//
+//    WEEKNUM(serial_number,[return_type])
+//
+func (fn *formulaFuncs) WEEKNUM(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEEKNUM requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WEEKNUM allows at most 2 arguments")
+	}
+	sn := argsList.Front().Value.(formulaArg)
+	num, returnType := sn.ToNumber(), 1
+	var snTime time.Time
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(sn.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		snTime = time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.Now().Location())
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		snTime = timeFromExcelTime(num.Number, false)
+	}
+	if argsList.Len() == 2 {
+		returnTypeArg := argsList.Back().Value.(formulaArg).ToNumber()
+		if returnTypeArg.Type != ArgNumber {
+			return returnTypeArg
+		}
+		returnType = int(returnTypeArg.Number)
+	}
+	return fn.weeknum(snTime, returnType)
 }
 
 // Text Functions

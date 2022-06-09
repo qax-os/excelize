@@ -1560,6 +1560,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEEKDAY(\"12/25/2012\",15)": "5",
 		"=WEEKDAY(\"12/25/2012\",16)": "4",
 		"=WEEKDAY(\"12/25/2012\",17)": "3",
+		// WEEKNUM
+		"=WEEKNUM(\"01/01/2011\")":    "1",
+		"=WEEKNUM(\"01/03/2011\")":    "2",
+		"=WEEKNUM(\"01/13/2008\")":    "3",
+		"=WEEKNUM(\"01/21/2008\")":    "4",
+		"=WEEKNUM(\"01/30/2008\")":    "5",
+		"=WEEKNUM(\"02/04/2008\")":    "6",
+		"=WEEKNUM(\"01/02/2017\",2)":  "2",
+		"=WEEKNUM(\"01/02/2017\",12)": "1",
+		"=WEEKNUM(\"12/31/2017\",21)": "52",
+		"=WEEKNUM(\"01/01/2017\",21)": "52",
+		"=WEEKNUM(\"01/01/2021\",21)": "53",
 		// Text Functions
 		// CHAR
 		"=CHAR(65)": "A",
@@ -3484,6 +3496,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEEKDAY(0,0)":                 "#VALUE!",
 		"=WEEKDAY(\"January 25, 100\")": "#VALUE!",
 		"=WEEKDAY(-1,1)":                "#NUM!",
+		// WEEKNUM
+		"=WEEKNUM()":                    "WEEKNUM requires at least 1 argument",
+		"=WEEKNUM(0,1,0)":               "WEEKNUM allows at most 2 arguments",
+		"=WEEKNUM(0,\"\")":              "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=WEEKNUM(\"\",1)":              "#VALUE!",
+		"=WEEKNUM(\"January 25, 100\")": "#VALUE!",
+		"=WEEKNUM(0,0)":                 "#NUM!",
+		"=WEEKNUM(-1,1)":                "#NUM!",
 		// Text Functions
 		// CHAR
 		"=CHAR()":     "CHAR requires 1 argument",
