@@ -25,7 +25,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
+	"net/http" 			// https://github.com/ahah43
+"net/url"				// https://github.com/ahah43
 	"golang.org/x/net/html/charset"
 )
 
@@ -84,7 +85,7 @@ type Options struct {
 	UnzipXMLSizeLimit int64
 }
 
-// OpenFile take the name of an spreadsheet file and returns a populated
+// OpenFile take the name (or the url) of an spreadsheet file and returns a populated
 // spreadsheet file struct for it. For example, open spreadsheet with
 // password protection:
 //
@@ -95,10 +96,18 @@ type Options struct {
 //
 // Close the file by Close function after opening the spreadsheet.
 func OpenFile(filename string, opt ...Options) (*File, error) {
-	file, err := os.Open(filepath.Clean(filename))
-	if err != nil {
-		return nil, err
-	}
+	//////////////////////////////////////////////////////////////////
+	var err error							//
+	var file io.ReadCloser						//
+	if isValidUrl(filename){					//
+		resp, err := http.Get(filename)				// https://github.com/ahah43
+		if err != nil {return nil, err}				//
+		file = resp.Body					//
+		} else{ 						//
+			file, err = os.Open(filepath.Clean(filename))	//
+            if err != nil {return nil, err}				//
+	    	}							//
+	//////////////////////////////////////////////////////////////////
 	f, err := OpenReader(file, opt...)
 	if err != nil {
 		closeErr := file.Close()
@@ -110,7 +119,17 @@ func OpenFile(filename string, opt ...Options) (*File, error) {
 	f.Path = filename
 	return f, file.Close()
 }
-
+// isValidUrl takes a string and returns true if is a valid url,otherwise, it returns false. 
+// isValidUrl is to be used to decide the type of the file name in OpenFile function.
+// Source of this function is found at the following url: 
+// https://golangcode.com/how-to-check-if-a-string-is-a-url/
+func isValidUrl(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {return false}
+	u, err := url.Parse(toTest)
+	if err != nil || u.Scheme == "" || u.Host == "" {return false}
+	return true
+}
 // newFile is object builder
 func newFile() *File {
 	return &File{
