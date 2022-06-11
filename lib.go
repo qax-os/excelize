@@ -43,7 +43,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 		if unzipSize > f.options.UnzipSizeLimit {
 			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
 		}
-		fileName := strings.Replace(v.Name, "\\", "/", -1)
+		fileName := strings.ReplaceAll(v.Name, "\\", "/")
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
 			fileName = partName
 		}
@@ -284,7 +284,7 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 // areaRefToCoordinates provides a function to convert area reference to a
 // pair of coordinates.
 func areaRefToCoordinates(ref string) ([]int, error) {
-	rng := strings.Split(strings.Replace(ref, "$", "", -1), ":")
+	rng := strings.Split(strings.ReplaceAll(ref, "$", ""), ":")
 	if len(rng) < 2 {
 		return nil, ErrParameterInvalid
 	}

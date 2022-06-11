@@ -112,7 +112,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		// The worksheet already has a comments relationships, use the relationships drawing ../drawings/vmlDrawing%d.vml.
 		sheetRelationshipsDrawingVML = f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
 		commentID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
-		drawingVML = strings.Replace(sheetRelationshipsDrawingVML, "..", "xl", -1)
+		drawingVML = strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
 	} else {
 		// Add first comment for given sheet.
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"

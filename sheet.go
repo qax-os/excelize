@@ -99,9 +99,9 @@ func (f *File) contentTypesWriter() {
 // and /xl/worksheets/sheet%d.xml
 func (f *File) getWorksheetPath(relTarget string) (path string) {
 	path = filepath.ToSlash(strings.TrimPrefix(
-		strings.Replace(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), relTarget)), "\\", "/", -1), "/"))
+		strings.ReplaceAll(filepath.Clean(fmt.Sprintf("%s/%s", filepath.Dir(f.getWorkbookPath()), relTarget)), "\\", "/"), "/"))
 	if strings.HasPrefix(relTarget, "/") {
-		path = filepath.ToSlash(strings.TrimPrefix(strings.Replace(filepath.Clean(relTarget), "\\", "/", -1), "/"))
+		path = filepath.ToSlash(strings.TrimPrefix(strings.ReplaceAll(filepath.Clean(relTarget), "\\", "/"), "/"))
 	}
 	return path
 }

@@ -2123,7 +2123,7 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 		if !currency {
 			return setLangNumFmt(styleSheet, style)
 		}
-		fc = strings.Replace(fc, "0.00", dp, -1)
+		fc = strings.ReplaceAll(fc, "0.00", dp)
 		if style.NegRed {
 			fc = fc + ";[Red]" + fc
 		}
@@ -3018,7 +3018,7 @@ func drawConfFmtExp(p int, ct string, format *formatConditional) *xlsxCfRule {
 // getPaletteColor provides a function to convert the RBG color by given
 // string.
 func getPaletteColor(color string) string {
-	return "FF" + strings.Replace(strings.ToUpper(color), "#", "", -1)
+	return "FF" + strings.ReplaceAll(strings.ToUpper(color), "#", "")
 }
 
 // themeReader provides a function to get the pointer to the xl/theme/theme1.xml

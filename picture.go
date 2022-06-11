@@ -508,12 +508,12 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 		return "", nil, err
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
-	drawingXML := strings.Replace(target, "..", "xl", -1)
+	drawingXML := strings.ReplaceAll(target, "..", "xl")
 	if _, ok := f.Pkg.Load(drawingXML); !ok {
 		return "", nil, err
 	}
-	drawingRelationships := strings.Replace(
-		strings.Replace(target, "../drawings", "xl/drawings/_rels", -1), ".xml", ".xml.rels", -1)
+	drawingRelationships := strings.ReplaceAll(
+		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
 
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
@@ -535,7 +535,7 @@ func (f *File) DeletePicture(sheet, cell string) (err error) {
 	if ws.Drawing == nil {
 		return
 	}
-	drawingXML := strings.Replace(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl", -1)
+	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
 	return f.deleteDrawing(col, row, drawingXML, "Pic")
 }
 
@@ -573,7 +573,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
 					ret = filepath.Base(drawRel.Target)
-					if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
+					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 						buf = buffer.([]byte)
 					}
 					return
@@ -602,7 +602,7 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
 					if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
 						ret = filepath.Base(drawRel.Target)
-						if buffer, _ := f.Pkg.Load(strings.Replace(drawRel.Target, "..", "xl", -1)); buffer != nil {
+						if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 							buf = buffer.([]byte)
 						}
 						return

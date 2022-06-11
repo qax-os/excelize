@@ -206,7 +206,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 	}
 
 	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
-	tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
+	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
 
 	// Add first table for given sheet.
 	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]

@@ -141,7 +141,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	pivotCacheID := f.countPivotCache() + 1
 
 	sheetRelationshipsPivotTableXML := "../pivotTables/pivotTable" + strconv.Itoa(pivotTableID) + ".xml"
-	pivotTableXML := strings.Replace(sheetRelationshipsPivotTableXML, "..", "xl", -1)
+	pivotTableXML := strings.ReplaceAll(sheetRelationshipsPivotTableXML, "..", "xl")
 	pivotCacheXML := "xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(pivotCacheID) + ".xml"
 	err = f.addPivotCache(pivotCacheXML, opt)
 	if err != nil {
@@ -206,7 +206,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 	if len(rng) != 2 {
 		return "", []int{}, ErrParameterInvalid
 	}
-	trimRng := strings.Replace(rng[1], "$", "", -1)
+	trimRng := strings.ReplaceAll(rng[1], "$", "")
 	coordinates, err := areaRefToCoordinates(trimRng)
 	if err != nil {
 		return rng[0], []int{}, err

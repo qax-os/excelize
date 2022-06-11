@@ -30,7 +30,7 @@ func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXM
 		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
 		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
-		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
+		drawingXML = strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
 	} else {
 		// Add first picture for given sheet.
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
