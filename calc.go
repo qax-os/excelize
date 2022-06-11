@@ -1360,7 +1360,7 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 // parseReference parse reference and extract values by given reference
 // characters and default sheet name.
 func (f *File) parseReference(sheet, reference string) (arg formulaArg, err error) {
-	reference = strings.Replace(reference, "$", "", -1)
+	reference = strings.ReplaceAll(reference, "$", "")
 	refs, cellRanges, cellRefs := list.New(), list.New(), list.New()
 	for _, ref := range strings.Split(reference, ":") {
 		tokens := strings.Split(ref, "!")
@@ -2065,13 +2065,13 @@ func cmplx2str(num complex128, suffix string) string {
 	c = strings.TrimSuffix(c, "+0i")
 	c = strings.TrimSuffix(c, "-0i")
 	c = strings.NewReplacer("+1i", "+i", "-1i", "-i").Replace(c)
-	c = strings.Replace(c, "i", suffix, -1)
+	c = strings.ReplaceAll(c, "i", suffix)
 	return c
 }
 
 // str2cmplx convert complex number string characters.
 func str2cmplx(c string) string {
-	c = strings.Replace(c, "j", "i", -1)
+	c = strings.ReplaceAll(c, "j", "i")
 	if c == "i" {
 		c = "1i"
 	}
@@ -13489,7 +13489,7 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	text, oldText := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
 	newText, instanceNum := argsList.Front().Next().Next().Value.(formulaArg), 0
 	if argsList.Len() == 3 {
-		return newStringFormulaArg(strings.Replace(text.Value(), oldText.Value(), newText.Value(), -1))
+		return newStringFormulaArg(strings.ReplaceAll(text.Value(), oldText.Value(), newText.Value()))
 	}
 	instanceNumArg := argsList.Back().Value.(formulaArg).ToNumber()
 	if instanceNumArg.Type != ArgNumber {
@@ -14804,7 +14804,7 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ENCODEURL requires 1 argument")
 	}
 	token := argsList.Front().Value.(formulaArg).Value()
-	return newStringFormulaArg(strings.Replace(url.QueryEscape(token), "+", "%20", -1))
+	return newStringFormulaArg(strings.ReplaceAll(url.QueryEscape(token), "+", "%20"))
 }
 
 // Financial Functions

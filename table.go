@@ -83,7 +83,7 @@ func (f *File) AddTable(sheet, hCell, vCell, format string) error {
 
 	tableID := f.countTables() + 1
 	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
-	tableXML := strings.Replace(sheetRelationshipsTableXML, "..", "xl", -1)
+	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
 	// Add first table for given sheet.
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")

@@ -297,7 +297,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		// The worksheet already has a shape or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
 		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
-		drawingXML = strings.Replace(sheetRelationshipsDrawingXML, "..", "xl", -1)
+		drawingXML = strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
 	} else {
 		// Add first shape for given sheet.
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
@@ -448,7 +448,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 				Lang: "en-US",
 			},
 		}
-		srgbClr := strings.Replace(strings.ToUpper(p.Font.Color), "#", "", -1)
+		srgbClr := strings.ReplaceAll(strings.ToUpper(p.Font.Color), "#", "")
 		if len(srgbClr) == 6 {
 			paragraph.R.RPr.SolidFill = &aSolidFill{
 				SrgbClr: &attrValString{
@@ -484,7 +484,7 @@ func setShapeRef(color string, i int) *aRef {
 	return &aRef{
 		Idx: i,
 		SrgbClr: &attrValString{
-			Val: stringPtr(strings.Replace(strings.ToUpper(color), "#", "", -1)),
+			Val: stringPtr(strings.ReplaceAll(strings.ToUpper(color), "#", "")),
 		},
 	}
 }

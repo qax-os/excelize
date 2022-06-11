@@ -1001,7 +1001,7 @@ func (f *File) DeleteChart(sheet, cell string) (err error) {
 	if ws.Drawing == nil {
 		return
 	}
-	drawingXML := strings.Replace(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl", -1)
+	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
 	return f.deleteDrawing(col, row, drawingXML, "Chart")
 }
 
