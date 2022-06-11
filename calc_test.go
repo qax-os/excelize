@@ -1479,6 +1479,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=EDATE(\"01/01/2021\",-1)": "44166",
 		"=EDATE(\"01/31/2020\",1)":  "43890",
 		"=EDATE(\"01/29/2020\",12)": "44225",
+		"=EDATE(\"6/12/2021\",-14)": "43933",
+		// EOMONTH
+		"=EOMONTH(\"01/01/2021\",-1)":  "44196",
+		"=EOMONTH(\"01/29/2020\",12)":  "44227",
+		"=EOMONTH(\"01/12/2021\",-18)": "43677",
 		// HOUR
 		"=HOUR(1)":                    "0",
 		"=HOUR(43543.5032060185)":     "12",
@@ -3447,6 +3452,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=EDATE(-1,0)":                  "#NUM!",
 		"=EDATE(\"\",0)":                "#VALUE!",
 		"=EDATE(\"January 25, 100\",0)": "#VALUE!",
+		// EOMONTH
+		"=EOMONTH()":                      "EOMONTH requires 2 arguments",
+		"=EOMONTH(0,\"\")":                "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=EOMONTH(-1,0)":                  "#NUM!",
+		"=EOMONTH(\"\",0)":                "#VALUE!",
+		"=EOMONTH(\"January 25, 100\",0)": "#VALUE!",
 		// HOUR
 		"=HOUR()":             "HOUR requires exactly 1 argument",
 		"=HOUR(-1)":           "HOUR only accepts positive argument",

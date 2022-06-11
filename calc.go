@@ -435,6 +435,7 @@ type formulaFuncs struct {
 //    EFFECT
 //    EDATE
 //    ENCODEURL
+//    EOMONTH
 //    ERF
 //    ERF.PRECISE
 //    ERFC
@@ -12394,13 +12395,64 @@ func (fn *formulaFuncs) EDATE(argsList *list.List) formulaArg {
 	if month.Number > 11 {
 		y += int(math.Floor(float64(m) / 12))
 	}
-	m = int(math.Mod(float64(m), 12))
+	if m = m % 12; m < 0 {
+		m += 12
+	}
 	if d > 28 {
 		if days := getDaysInMonth(y, m); d > days {
 			d = days
 		}
 	}
 	result, _ := timeToExcelTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC), false)
+	return newNumberFormulaArg(result)
+}
+
+// EOMONTH function returns the last day of the month, that is a specified
+// number of months before or after an initial supplied start date. The syntax
+// of the function is:
+//
+//    EOMONTH(start_date,months)
+//
+func (fn *formulaFuncs) EOMONTH(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EOMONTH requires 2 arguments")
+	}
+	date := argsList.Front().Value.(formulaArg)
+	num := date.ToNumber()
+	var dateTime time.Time
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(date.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		dateTime = time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.Now().Location())
+	} else {
+		if num.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+		dateTime = timeFromExcelTime(num.Number, false)
+	}
+	months := argsList.Back().Value.(formulaArg).ToNumber()
+	if months.Type != ArgNumber {
+		return months
+	}
+	y, m := dateTime.Year(), int(dateTime.Month())+int(months.Number)-1
+	if m < 0 {
+		y -= int(math.Ceil(-1 * float64(m) / 12))
+	}
+	if m > 11 {
+		y += int(math.Floor(float64(m) / 12))
+	}
+	if m = m % 12; m < 0 {
+		m += 12
+	}
+	result, _ := timeToExcelTime(time.Date(y, time.Month(m+1), getDaysInMonth(y, m+1), 0, 0, 0, 0, time.UTC), false)
 	return newNumberFormulaArg(result)
 }
 
