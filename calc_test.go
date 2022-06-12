@@ -5379,6 +5379,72 @@ func TestCalcTTEST(t *testing.T) {
 	}
 }
 
+func TestCalcWORKDAYdotINTL(t *testing.T) {
+	cellData := [][]interface{}{
+		{"05/01/2019", 43586},
+		{"09/13/2019", 43721},
+		{"10/01/2019", 43739},
+		{"12/25/2019", 43824},
+		{"01/01/2020", 43831},
+		{"01/01/2020", 43831},
+		{"01/24/2020", 43854},
+		{"04/04/2020", 43925},
+		{"05/01/2020", 43952},
+		{"06/25/2020", 44007},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=WORKDAY.INTL(\"12/01/2015\",0)":              "42339",
+		"=WORKDAY.INTL(\"12/01/2015\",25)":             "42374",
+		"=WORKDAY.INTL(\"12/01/2015\",-25)":            "42304",
+		"=WORKDAY.INTL(\"12/01/2015\",25,1)":           "42374",
+		"=WORKDAY.INTL(\"12/01/2015\",25,2)":           "42374",
+		"=WORKDAY.INTL(\"12/01/2015\",25,3)":           "42372",
+		"=WORKDAY.INTL(\"12/01/2015\",25,4)":           "42373",
+		"=WORKDAY.INTL(\"12/01/2015\",25,5)":           "42374",
+		"=WORKDAY.INTL(\"12/01/2015\",25,6)":           "42374",
+		"=WORKDAY.INTL(\"12/01/2015\",25,7)":           "42374",
+		"=WORKDAY.INTL(\"12/01/2015\",25,11)":          "42368",
+		"=WORKDAY.INTL(\"12/01/2015\",25,12)":          "42368",
+		"=WORKDAY.INTL(\"12/01/2015\",25,13)":          "42368",
+		"=WORKDAY.INTL(\"12/01/2015\",25,14)":          "42369",
+		"=WORKDAY.INTL(\"12/01/2015\",25,15)":          "42368",
+		"=WORKDAY.INTL(\"12/01/2015\",25,16)":          "42368",
+		"=WORKDAY.INTL(\"12/01/2015\",25,17)":          "42368",
+		"=WORKDAY.INTL(\"12/01/2015\",25,\"0001100\")": "42374",
+		"=WORKDAY.INTL(\"01/01/2020\",-123,4)":         "43659",
+		"=WORKDAY.INTL(\"01/01/2020\",123,4,44010)":    "44002",
+		"=WORKDAY.INTL(\"01/01/2020\",-123,4,43640)":   "43659",
+		"=WORKDAY.INTL(\"01/01/2020\",-123,4,43660)":   "43658",
+		"=WORKDAY.INTL(\"01/01/2020\",-123,7,43660)":   "43657",
+		"=WORKDAY.INTL(\"01/01/2020\",123,4,A1:A12)":   "44008",
+		"=WORKDAY.INTL(\"01/01/2020\",123,4,B1:B12)":   "44008",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=WORKDAY.INTL()": "WORKDAY.INTL requires at least 2 arguments",
+		"=WORKDAY.INTL(\"01/01/2020\",123,4,A1:A12,\"\")": "WORKDAY.INTL requires at most 4 arguments",
+		"=WORKDAY.INTL(\"01/01/2020\",\"\",4,B1:B12)":     "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=WORKDAY.INTL(\"\",123,4,B1:B12)":                "#VALUE!",
+		"=WORKDAY.INTL(\"01/01/2020\",123,\"\",B1:B12)":   "#VALUE!",
+		"=WORKDAY.INTL(\"01/01/2020\",123,\"000000x\")":   "#VALUE!",
+		"=WORKDAY.INTL(\"01/01/2020\",123,\"0000002\")":   "#VALUE!",
+		"=WORKDAY.INTL(\"January 25, 100\",123)":          "#VALUE!",
+		"=WORKDAY.INTL(-1,123)":                           "#NUM!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcZTEST(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{4, 5, 2, 5, 8, 9, 3, 2, 3, 8, 9, 5}))

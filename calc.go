@@ -724,6 +724,7 @@ type formulaFuncs struct {
 //    WEEKNUM
 //    WEIBULL
 //    WEIBULL.DIST
+//    WORKDAY.INTL
 //    XIRR
 //    XLOOKUP
 //    XNPV
@@ -12550,6 +12551,197 @@ func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, "MONTH only accepts positive argument")
 	}
 	return newNumberFormulaArg(float64(timeFromExcelTime(num.Number, false).Month()))
+}
+
+// genWeekendMask generate weekend mask of a series of seven 0's and 1's which
+// represent the seven weekdays, starting from Monday.
+func genWeekendMask(weekend int) []byte {
+	mask := make([]byte, 7)
+	if masks, ok := map[int][]int{
+		1: {5, 6}, 2: {6, 0}, 3: {0, 1}, 4: {1, 2}, 5: {2, 3}, 6: {3, 4}, 7: {4, 5},
+		11: {6}, 12: {0}, 13: {1}, 14: {2}, 15: {3}, 16: {4}, 17: {5},
+	}[weekend]; ok {
+		for _, idx := range masks {
+			mask[idx] = 1
+		}
+	}
+	return mask
+}
+
+// isWorkday check if the date is workday.
+func isWorkday(weekendMask []byte, date float64) bool {
+	dateTime := timeFromExcelTime(date, false)
+	weekday := dateTime.Weekday()
+	if weekday == time.Sunday {
+		weekday = 7
+	}
+	return weekendMask[weekday-1] == 0
+}
+
+// prepareWorkday returns weekend mask and workdays pre week by given days
+// counted as weekend.
+func prepareWorkday(weekend formulaArg) ([]byte, int) {
+	weekendArg := weekend.ToNumber()
+	if weekendArg.Type != ArgNumber {
+		return nil, 0
+	}
+	var weekendMask []byte
+	var workdaysPerWeek int
+	if len(weekend.Value()) == 7 {
+		// possible string values for the weekend argument
+		for _, mask := range weekend.Value() {
+			if mask != '0' && mask != '1' {
+				return nil, 0
+			}
+			weekendMask = append(weekendMask, byte(mask)-48)
+		}
+	} else {
+		weekendMask = genWeekendMask(int(weekendArg.Number))
+	}
+	for _, mask := range weekendMask {
+		if mask == 0 {
+			workdaysPerWeek++
+		}
+	}
+	return weekendMask, workdaysPerWeek
+}
+
+// toExcelDateArg function converts a text representation of a time, into an
+// Excel date time number formula argument.
+func toExcelDateArg(arg formulaArg) formulaArg {
+	num := arg.ToNumber()
+	if num.Type != ArgNumber {
+		dateString := strings.ToLower(arg.Value())
+		if !isDateOnlyFmt(dateString) {
+			if _, _, _, _, _, err := strToTime(dateString); err.Type == ArgError {
+				return err
+			}
+		}
+		y, m, d, _, err := strToDate(dateString)
+		if err.Type == ArgError {
+			return err
+		}
+		num.Number, _ = timeToExcelTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC), false)
+		return newNumberFormulaArg(num.Number)
+	}
+	if arg.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return num
+}
+
+// prepareHolidays function converts array type formula arguments to into an
+// Excel date time number formula arguments list.
+func prepareHolidays(args formulaArg) []int {
+	var holidays []int
+	for _, arg := range args.ToList() {
+		num := toExcelDateArg(arg)
+		if num.Type != ArgNumber {
+			continue
+		}
+		holidays = append(holidays, int(math.Ceil(num.Number)))
+	}
+	return holidays
+}
+
+// workdayIntl is an implementation of the formula function WORKDAY.INTL.
+func workdayIntl(endDate, sign int, holidays []int, weekendMask []byte, startDate float64) int {
+	for i := 0; i < len(holidays); i++ {
+		holiday := holidays[i]
+		if sign > 0 {
+			if holiday > endDate {
+				break
+			}
+		} else {
+			if holiday < endDate {
+				break
+			}
+		}
+		if sign > 0 {
+			if holiday > int(math.Ceil(startDate)) {
+				if isWorkday(weekendMask, float64(holiday)) {
+					endDate += sign
+					for !isWorkday(weekendMask, float64(endDate)) {
+						endDate += sign
+					}
+				}
+			}
+		} else {
+			if holiday < int(math.Ceil(startDate)) {
+				if isWorkday(weekendMask, float64(holiday)) {
+					endDate += sign
+					for !isWorkday(weekendMask, float64(endDate)) {
+						endDate += sign
+					}
+				}
+			}
+		}
+	}
+	return endDate
+}
+
+// WORKDAYdotINTL function returns a date that is a supplied number of working
+// days (excluding weekends and holidays) ahead of a given start date. The
+// function allows the user to specify which days of the week are counted as
+// weekends. The syntax of the function is:
+//
+//    WORKDAY.INTL(start_date,days,[weekend],[holidays])
+//
+func (fn *formulaFuncs) WORKDAYdotINTL(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WORKDAY.INTL requires at least 2 arguments")
+	}
+	if argsList.Len() > 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WORKDAY.INTL requires at most 4 arguments")
+	}
+	startDate := toExcelDateArg(argsList.Front().Value.(formulaArg))
+	if startDate.Type != ArgNumber {
+		return startDate
+	}
+	days := argsList.Front().Next().Value.(formulaArg).ToNumber()
+	if days.Type != ArgNumber {
+		return days
+	}
+	weekend := newNumberFormulaArg(1)
+	if argsList.Len() > 2 {
+		weekend = argsList.Front().Next().Next().Value.(formulaArg)
+	}
+	var holidays []int
+	if argsList.Len() == 4 {
+		holidays = prepareHolidays(argsList.Back().Value.(formulaArg))
+		sort.Ints(holidays)
+	}
+	if days.Number == 0 {
+		return newNumberFormulaArg(math.Ceil(startDate.Number))
+	}
+	weekendMask, workdaysPerWeek := prepareWorkday(weekend)
+	if workdaysPerWeek == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	sign := 1
+	if days.Number < 0 {
+		sign = -1
+	}
+	offset := int(days.Number) / workdaysPerWeek
+	daysMod := int(days.Number) % workdaysPerWeek
+	endDate := int(math.Ceil(startDate.Number)) + offset*7
+	if daysMod == 0 {
+		for !isWorkday(weekendMask, float64(endDate)) {
+			endDate -= sign
+		}
+	} else {
+		for daysMod != 0 {
+			endDate += sign
+			if isWorkday(weekendMask, float64(endDate)) {
+				if daysMod < 0 {
+					daysMod++
+					continue
+				}
+				daysMod--
+			}
+		}
+	}
+	return newNumberFormulaArg(float64(workdayIntl(endDate, sign, holidays, weekendMask, startDate.Number)))
 }
 
 // YEAR function returns an integer representing the year of a supplied date.
