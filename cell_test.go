@@ -590,7 +590,7 @@ func TestSetCellRichText(t *testing.T) {
 			},
 		},
 		{
-			Text: "text with color and font-family,",
+			Text: "text with color and font-family, ",
 			Font: &Font{
 				Bold:   true,
 				Color:  "2354e8",
@@ -612,17 +612,32 @@ func TestSetCellRichText(t *testing.T) {
 			},
 		},
 		{
-			Text: " and ",
+			Text: " superscript",
 			Font: &Font{
-				Size:  14,
-				Color: "ad23e8",
+				Color:     "dbc21f",
+				VertAlign: "superscript",
 			},
 		},
 		{
-			Text: "underline.",
+			Text: " and ",
+			Font: &Font{
+				Size:      14,
+				Color:     "ad23e8",
+				VertAlign: "BASELINE",
+			},
+		},
+		{
+			Text: "underline",
 			Font: &Font{
 				Color:     "23e833",
 				Underline: "single",
+			},
+		},
+		{
+			Text: " subscript.",
+			Font: &Font{
+				Color:     "017505",
+				VertAlign: "subscript",
 			},
 		},
 	}

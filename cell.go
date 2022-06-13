@@ -848,7 +848,10 @@ func newRpr(fnt *Font) *xlsxRPr {
 	if fnt.Family != "" {
 		rpr.RFont = &attrValString{Val: &fnt.Family}
 	}
-	if fnt.Size > 0.0 {
+	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
+		rpr.VertAlign = &attrValString{Val: &fnt.VertAlign}
+	}
+	if fnt.Size > 0 {
 		rpr.Sz = &attrValFloat{Val: &fnt.Size}
 	}
 	if fnt.Color != "" {
@@ -895,7 +898,7 @@ func newRpr(fnt *Font) *xlsxRPr {
 //                },
 //            },
 //            {
-//                Text: " italic",
+//                Text: "italic ",
 //                Font: &excelize.Font{
 //                    Bold:   true,
 //                    Color:  "e83723",
@@ -926,17 +929,32 @@ func newRpr(fnt *Font) *xlsxRPr {
 //                },
 //            },
 //            {
-//                Text: " and ",
+//                Text: " superscript",
 //                Font: &excelize.Font{
-//                    Size:  14,
-//                    Color: "ad23e8",
+//                    Color:     "dbc21f",
+//                    VertAlign: "superscript",
 //                },
 //            },
 //            {
-//                Text: "underline.",
+//                Text: " and ",
+//                Font: &excelize.Font{
+//                    Size:      14,
+//                    Color:     "ad23e8",
+//                    VertAlign: "baseline",
+//                },
+//            },
+//            {
+//                Text: "underline",
 //                Font: &excelize.Font{
 //                    Color:     "23e833",
 //                    Underline: "single",
+//                },
+//            },
+//            {
+//                Text: " subscript.",
+//                Font: &excelize.Font{
+//                    Color:     "017505",
+//                    VertAlign: "subscript",
 //                },
 //            },
 //        }); err != nil {
