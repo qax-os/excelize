@@ -854,6 +854,9 @@ func newRpr(fnt *Font) *xlsxRPr {
 	if fnt.Color != "" {
 		rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
 	}
+	if fnt.VertAlign != "" {
+		rpr.VertAlign = &attrValString{Val:&fnt.VertAlign}
+	}
 	return &rpr
 }
 
