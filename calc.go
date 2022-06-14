@@ -899,6 +899,13 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 					if result.Type == ArgUnknown {
 						return newEmptyFormulaArg(), errors.New(formulaErrorVALUE)
 					}
+					// when thisToken is Range and  nextToken is Argument and opfdStack not Empty, should push value to  opfdStack and continue.
+					if nextToken.TType == efp.TokenTypeArgument {
+						if !opfdStack.Empty() {
+							opfdStack.Push(result)
+							continue
+						}
+					}
 					argsStack.Peek().(*list.List).PushBack(result)
 					continue
 				}
