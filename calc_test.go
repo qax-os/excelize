@@ -1399,9 +1399,10 @@ func TestCalcCellValue(t *testing.T) {
 		// FALSE
 		"=FALSE()": "FALSE",
 		// IFERROR
-		"=IFERROR(1/2,0)":       "0.5",
-		"=IFERROR(ISERROR(),0)": "0",
-		"=IFERROR(1/0,0)":       "0",
+		"=IFERROR(1/2,0)":             "0.5",
+		"=IFERROR(ISERROR(),0)":       "0",
+		"=IFERROR(1/0,0)":             "0",
+		"=IFERROR(B2/MROUND(A2,1),0)": "2.5",
 		// IFNA
 		"=IFNA(1,\"not found\")":    "1",
 		"=IFNA(NA(),\"not found\")": "not found",
