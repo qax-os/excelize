@@ -334,13 +334,3 @@ func (f *File) squashSqref(cells [][]int) []string {
 	}
 	return append(res, curr)
 }
-
-// ClearDataValidation clear data validation by given worksheet name.
-func (f *File) ClearDataValidation(sheet string) error {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
-	}
-	ws.DataValidations = nil
-	return nil
-}
