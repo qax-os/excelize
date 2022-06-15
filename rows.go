@@ -28,11 +28,11 @@ import (
 
 // GetRows return all the rows in a sheet by given worksheet name
 // (case sensitive), returned as a two-dimensional array, where the value of
-// the cell is converted to the string type. If the cell format can be
-// applied to the value of the cell, the applied value will be used,
-// otherwise the original value will be used. GetRows fetched the rows with
-// value or formula cells, the tail continuously empty cell will be skipped.
-// For example:
+// the cell is converted to the string type. If the cell format can be applied
+// to the value of the cell, the applied value will be used, otherwise the
+// original value will be used. GetRows fetched the rows with value or formula
+// cells, the continually blank cells in the tail of each row will be skipped,
+// so the length of each row may be inconsistent. For example:
 //
 //    rows, err := f.GetRows("Sheet1")
 //    if err != nil {
@@ -122,7 +122,9 @@ func (rows *Rows) Close() error {
 	return nil
 }
 
-// Columns return the current row's column values.
+// Columns return the current row's column values. This fetches the worksheet
+// data as a stream, returns each cell in a row as is, and will not skip empty
+// rows in the tail of the worksheet.
 func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	if rows.curRow > rows.seekRow {
 		return nil, nil

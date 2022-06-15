@@ -582,6 +582,8 @@ type formulaFuncs struct {
 //    NA
 //    NEGBINOM.DIST
 //    NEGBINOMDIST
+//    NETWORKDAYS
+//    NETWORKDAYS.INTL
 //    NOMINAL
 //    NORM.DIST
 //    NORMDIST
@@ -724,6 +726,7 @@ type formulaFuncs struct {
 //    WEEKNUM
 //    WEIBULL
 //    WEIBULL.DIST
+//    WORKDAY
 //    WORKDAY.INTL
 //    XIRR
 //    XLOOKUP
@@ -899,12 +902,11 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 					if result.Type == ArgUnknown {
 						return newEmptyFormulaArg(), errors.New(formulaErrorVALUE)
 					}
-					// when thisToken is Range and  nextToken is Argument and opfdStack not Empty, should push value to  opfdStack and continue.
-					if nextToken.TType == efp.TokenTypeArgument {
-						if !opfdStack.Empty() {
-							opfdStack.Push(result)
-							continue
-						}
+					// when current token is range, next token is argument and opfdStack not empty,
+					// should push value to opfdStack and continue
+					if nextToken.TType == efp.TokenTypeArgument && !opfdStack.Empty() {
+						opfdStack.Push(result)
+						continue
 					}
 					argsStack.Peek().(*list.List).PushBack(result)
 					continue
@@ -12563,16 +12565,17 @@ func (fn *formulaFuncs) MONTH(argsList *list.List) formulaArg {
 // genWeekendMask generate weekend mask of a series of seven 0's and 1's which
 // represent the seven weekdays, starting from Monday.
 func genWeekendMask(weekend int) []byte {
-	mask := make([]byte, 7)
 	if masks, ok := map[int][]int{
 		1: {5, 6}, 2: {6, 0}, 3: {0, 1}, 4: {1, 2}, 5: {2, 3}, 6: {3, 4}, 7: {4, 5},
 		11: {6}, 12: {0}, 13: {1}, 14: {2}, 15: {3}, 16: {4}, 17: {5},
 	}[weekend]; ok {
+		mask := make([]byte, 7)
 		for _, idx := range masks {
 			mask[idx] = 1
 		}
+		return mask
 	}
-	return mask
+	return nil
 }
 
 // isWorkday check if the date is workday.
@@ -12685,6 +12688,113 @@ func workdayIntl(endDate, sign int, holidays []int, weekendMask []byte, startDat
 		}
 	}
 	return endDate
+}
+
+// NETWORKDAYS function calculates the number of work days between two supplied
+// dates (including the start and end date). The calculation includes all
+// weekdays (Mon - Fri), excluding a supplied list of holidays. The syntax of
+// the function is:
+//
+//    NETWORKDAYS(start_date,end_date,[holidays])
+//
+func (fn *formulaFuncs) NETWORKDAYS(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NETWORKDAYS requires at least 2 arguments")
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NETWORKDAYS requires at most 3 arguments")
+	}
+	args := list.New()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	args.PushBack(newNumberFormulaArg(1))
+	if argsList.Len() == 3 {
+		args.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.NETWORKDAYSdotINTL(args)
+}
+
+// NETWORKDAYSdotINTL function calculates the number of whole work days between
+// two supplied dates, excluding weekends and holidays. The function allows
+// the user to specify which days are counted as weekends and holidays. The
+// syntax of the function is:
+//
+//    NETWORKDAYS.INTL(start_date,end_date,[weekend],[holidays])
+//
+func (fn *formulaFuncs) NETWORKDAYSdotINTL(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NETWORKDAYS.INTL requires at least 2 arguments")
+	}
+	if argsList.Len() > 4 {
+		return newErrorFormulaArg(formulaErrorVALUE, "NETWORKDAYS.INTL requires at most 4 arguments")
+	}
+	startDate := toExcelDateArg(argsList.Front().Value.(formulaArg))
+	if startDate.Type != ArgNumber {
+		return startDate
+	}
+	endDate := toExcelDateArg(argsList.Front().Next().Value.(formulaArg))
+	if endDate.Type != ArgNumber {
+		return endDate
+	}
+	weekend := newNumberFormulaArg(1)
+	if argsList.Len() > 2 {
+		weekend = argsList.Front().Next().Next().Value.(formulaArg)
+	}
+	var holidays []int
+	if argsList.Len() == 4 {
+		holidays = prepareHolidays(argsList.Back().Value.(formulaArg))
+		sort.Ints(holidays)
+	}
+	weekendMask, workdaysPerWeek := prepareWorkday(weekend)
+	if workdaysPerWeek == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	sign := 1
+	if startDate.Number > endDate.Number {
+		sign = -1
+		temp := startDate.Number
+		startDate.Number = endDate.Number
+		endDate.Number = temp
+	}
+	offset := endDate.Number - startDate.Number
+	count := int(math.Floor(offset/7) * float64(workdaysPerWeek))
+	daysMod := int(offset) % 7
+	for daysMod >= 0 {
+		if isWorkday(weekendMask, endDate.Number-float64(daysMod)) {
+			count++
+		}
+		daysMod--
+	}
+	for i := 0; i < len(holidays); i++ {
+		holiday := float64(holidays[i])
+		if isWorkday(weekendMask, holiday) && holiday >= startDate.Number && holiday <= endDate.Number {
+			count--
+		}
+	}
+	return newNumberFormulaArg(float64(sign * count))
+}
+
+// WORKDAY function returns a date that is a supplied number of working days
+// (excluding weekends and holidays) ahead of a given start date. The syntax
+// of the function is:
+//
+//    WORKDAY(start_date,days,[holidays])
+//
+func (fn *formulaFuncs) WORKDAY(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WORKDAY requires at least 2 arguments")
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "WORKDAY requires at most 3 arguments")
+	}
+	args := list.New()
+	args.PushBack(argsList.Front().Value.(formulaArg))
+	args.PushBack(argsList.Front().Next().Value.(formulaArg))
+	args.PushBack(newNumberFormulaArg(1))
+	if argsList.Len() == 3 {
+		args.PushBack(argsList.Back().Value.(formulaArg))
+	}
+	return fn.WORKDAYdotINTL(args)
 }
 
 // WORKDAYdotINTL function returns a date that is a supplied number of working
