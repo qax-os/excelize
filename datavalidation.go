@@ -262,8 +262,9 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 }
 
 // DeleteDataValidation delete data validation by given worksheet name and
-// reference sequence.
-func (f *File) DeleteDataValidation(sheet, sqref string) error {
+// reference sequence. All data validations in the worksheet will be deleted
+// if not specify reference sequence parameter.
+func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -271,7 +272,11 @@ func (f *File) DeleteDataValidation(sheet, sqref string) error {
 	if ws.DataValidations == nil {
 		return nil
 	}
-	delCells, err := f.flatSqref(sqref)
+	if sqref == nil {
+		ws.DataValidations = nil
+		return nil
+	}
+	delCells, err := f.flatSqref(sqref[0])
 	if err != nil {
 		return err
 	}
