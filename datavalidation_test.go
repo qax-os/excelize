@@ -171,4 +171,8 @@ func TestDeleteDataValidation(t *testing.T) {
 
 	// Test delete data validation on no exists worksheet.
 	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN is not exist")
+
+	// Test clear data validation
+	assert.NoError(t, f.DeleteDataValidation("Sheet1"))
+	assert.Nil(t, ws.(*xlsxWorksheet).DataValidations)
 }
