@@ -419,6 +419,7 @@ type formulaFuncs struct {
 //    DATEVALUE
 //    DAY
 //    DAYS
+//    DAYS360
 //    DB
 //    DDB
 //    DEC2BIN
@@ -12328,6 +12329,57 @@ func (fn *formulaFuncs) DAYS(argsList *list.List) formulaArg {
 	}
 	end, start := args.List[0], args.List[1]
 	return newNumberFormulaArg(end.Number - start.Number)
+}
+
+// DAYS360 function returns the number of days between 2 dates, based on a
+// 360-day year (12 x 30 months). The syntax of the function is:
+//
+//    DAYS360(start_date,end_date,[method])
+//
+func (fn *formulaFuncs) DAYS360(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAYS360 requires at least 2 arguments")
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DAYS360 requires at most 3 arguments")
+	}
+	startDate := toExcelDateArg(argsList.Front().Value.(formulaArg))
+	if startDate.Type != ArgNumber {
+		return startDate
+	}
+	endDate := toExcelDateArg(argsList.Front().Next().Value.(formulaArg))
+	if endDate.Type != ArgNumber {
+		return endDate
+	}
+	start, end := timeFromExcelTime(startDate.Number, false), timeFromExcelTime(endDate.Number, false)
+	sy, sm, sd, ey, em, ed := start.Year(), int(start.Month()), start.Day(), end.Year(), int(end.Month()), end.Day()
+	method := newBoolFormulaArg(false)
+	if argsList.Len() > 2 {
+		if method = argsList.Back().Value.(formulaArg).ToBool(); method.Type != ArgNumber {
+			return method
+		}
+	}
+	if method.Number == 1 {
+		if sd == 31 {
+			sd--
+		}
+		if ed == 31 {
+			ed--
+		}
+	} else {
+		if getDaysInMonth(sy, sm) == sd {
+			sd = 30
+		}
+		if ed > 30 {
+			if sd < 30 {
+				em++
+				ed = 1
+			} else {
+				ed = 30
+			}
+		}
+	}
+	return newNumberFormulaArg(float64(360*(ey-sy) + 30*(em-sm) + (ed - sd)))
 }
 
 // ISOWEEKNUM function returns the ISO week number of a supplied date. The

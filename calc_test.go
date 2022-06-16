@@ -1476,6 +1476,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(2,1)":                           "1",
 		"=DAYS(INT(2),INT(1))":                 "1",
 		"=DAYS(\"02/02/2015\",\"01/01/2015\")": "32",
+		// DAYS360
+		"=DAYS360(\"10/10/2020\", \"10/10/2020\")":       "0",
+		"=DAYS360(\"01/30/1999\", \"02/28/1999\")":       "28",
+		"=DAYS360(\"01/31/1999\", \"02/28/1999\")":       "28",
+		"=DAYS360(\"12/12/1999\", \"08/31/1999\")":       "-101",
+		"=DAYS360(\"12/12/1999\", \"11/30/1999\")":       "-12",
+		"=DAYS360(\"12/12/1999\", \"11/30/1999\",TRUE)":  "-12",
+		"=DAYS360(\"01/31/1999\", \"03/31/1999\",TRUE)":  "60",
+		"=DAYS360(\"01/31/1999\", \"03/31/2000\",FALSE)": "420",
 		// EDATE
 		"=EDATE(\"01/01/2021\",-1)": "44166",
 		"=EDATE(\"01/31/2020\",1)":  "43890",
@@ -3447,6 +3456,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=DAYS(0,\"\")": "#VALUE!",
 		"=DAYS(NA(),0)": "#VALUE!",
 		"=DAYS(0,NA())": "#VALUE!",
+		// DAYS360
+		"=DAYS360(\"12/12/1999\")":                           "DAYS360 requires at least 2 arguments",
+		"=DAYS360(\"12/12/1999\", \"11/30/1999\",TRUE,\"\")": "DAYS360 requires at most 3 arguments",
+		"=DAYS360(\"12/12/1999\", \"11/30/1999\",\"\")":      "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=DAYS360(\"12/12/1999\", \"\")":                     "#VALUE!",
+		"=DAYS360(\"\", \"11/30/1999\")":                     "#VALUE!",
 		// EDATE
 		"=EDATE()":                      "EDATE requires 2 arguments",
 		"=EDATE(0,\"\")":                "strconv.ParseFloat: parsing \"\": invalid syntax",
