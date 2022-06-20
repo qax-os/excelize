@@ -674,6 +674,7 @@ type formulaFuncs struct {
 //    STDEVA
 //    STDEVP
 //    STDEVPA
+//    STEYX
 //    SUBSTITUTE
 //    SUM
 //    SUMIF
@@ -10645,6 +10646,43 @@ func (fn *formulaFuncs) STDEVdotP(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) STDEVPA(argsList *list.List) formulaArg {
 	return fn.stdevp("STDEVPA", argsList)
+}
+
+// STEYX function calculates the standard error for the line of best fit,
+// through a supplied set of x- and y- values. The syntax of the function is:
+//
+//    STEYX(known_y's,known_x's)
+//
+func (fn *formulaFuncs) STEYX(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "STEYX requires 2 arguments")
+	}
+	array1 := argsList.Back().Value.(formulaArg).ToList()
+	array2 := argsList.Front().Value.(formulaArg).ToList()
+	if len(array1) != len(array2) {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	var count, sumX, sumY, squareX, squareY, sigmaXY float64
+	for i := 0; i < len(array1); i++ {
+		num1, num2 := array1[i].ToNumber(), array2[i].ToNumber()
+		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
+			continue
+		}
+		sumX += num1.Number
+		sumY += num2.Number
+		squareX += num1.Number * num1.Number
+		squareY += num2.Number * num2.Number
+		sigmaXY += num1.Number * num2.Number
+		count++
+	}
+	if count < 3 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
+	dx, dy := sumX/count, sumY/count
+	sigma1 := squareY - 2*dy*sumY + count*dy*dy
+	sigma2 := sigmaXY - dy*sumX - sumY*dx + count*dy*dx
+	sigma3 := squareX - 2*dx*sumX + count*dx*dx
+	return newNumberFormulaArg(math.Sqrt((sigma1 - (sigma2*sigma2)/sigma3) / (count - 2)))
 }
 
 // getTDist is an implementation for the beta distribution probability density

@@ -5325,6 +5325,42 @@ func TestCalcSHEETS(t *testing.T) {
 	}
 }
 
+func TestCalcSTEY(t *testing.T) {
+	cellData := [][]interface{}{
+		{"known_x's", "known_y's"},
+		{1, 3},
+		{2, 7.9},
+		{3, 8},
+		{4, 9.2},
+		{4.5, 12},
+		{5, 10.5},
+		{6, 15},
+		{7, 15.5},
+		{8, 17},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=STEYX(B2:B11,A2:A11)": "1.20118634668221",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=STEYX()":             "STEYX requires 2 arguments",
+		"=STEYX(B2:B11,A1:A9)": "#N/A",
+		"=STEYX(B2,A2)":        "#DIV/0!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcTTEST(t *testing.T) {
 	cellData := [][]interface{}{
 		{4, 8, nil, 1, 1},
