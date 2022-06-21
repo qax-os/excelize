@@ -280,7 +280,7 @@ func (f *File) SetActiveSheet(index int) {
 	for idx, name := range f.GetSheetList() {
 		ws, err := f.workSheetReader(name)
 		if err != nil {
-			// Chartsheet or dialogsheet
+			// Chartsheet, macrosheet or dialogsheet
 			return
 		}
 		if ws.SheetViews == nil {

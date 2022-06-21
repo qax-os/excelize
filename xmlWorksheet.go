@@ -78,18 +78,17 @@ type xlsxDrawing struct {
 // footers on the first page can differ from those on odd- and even-numbered
 // pages. In the latter case, the first page is not considered an odd page.
 type xlsxHeaderFooter struct {
-	XMLName          xml.Name       `xml:"headerFooter"`
-	AlignWithMargins bool           `xml:"alignWithMargins,attr,omitempty"`
-	DifferentFirst   bool           `xml:"differentFirst,attr,omitempty"`
-	DifferentOddEven bool           `xml:"differentOddEven,attr,omitempty"`
-	ScaleWithDoc     bool           `xml:"scaleWithDoc,attr,omitempty"`
-	OddHeader        string         `xml:"oddHeader,omitempty"`
-	OddFooter        string         `xml:"oddFooter,omitempty"`
-	EvenHeader       string         `xml:"evenHeader,omitempty"`
-	EvenFooter       string         `xml:"evenFooter,omitempty"`
-	FirstFooter      string         `xml:"firstFooter,omitempty"`
-	FirstHeader      string         `xml:"firstHeader,omitempty"`
-	DrawingHF        *xlsxDrawingHF `xml:"drawingHF"`
+	XMLName          xml.Name `xml:"headerFooter"`
+	DifferentOddEven bool     `xml:"differentOddEven,attr,omitempty"`
+	DifferentFirst   bool     `xml:"differentFirst,attr,omitempty"`
+	ScaleWithDoc     bool     `xml:"scaleWithDoc,attr,omitempty"`
+	AlignWithMargins bool     `xml:"alignWithMargins,attr,omitempty"`
+	OddHeader        string   `xml:"oddHeader,omitempty"`
+	OddFooter        string   `xml:"oddFooter,omitempty"`
+	EvenHeader       string   `xml:"evenHeader,omitempty"`
+	EvenFooter       string   `xml:"evenFooter,omitempty"`
+	FirstHeader      string   `xml:"firstHeader,omitempty"`
+	FirstFooter      string   `xml:"firstFooter,omitempty"`
 }
 
 // xlsxDrawingHF (Drawing Reference in Header Footer) specifies the usage of
@@ -147,12 +146,12 @@ type xlsxPrintOptions struct {
 // a sheet or a custom sheet view.
 type xlsxPageMargins struct {
 	XMLName xml.Name `xml:"pageMargins"`
-	Bottom  float64  `xml:"bottom,attr"`
-	Footer  float64  `xml:"footer,attr"`
-	Header  float64  `xml:"header,attr"`
 	Left    float64  `xml:"left,attr"`
 	Right   float64  `xml:"right,attr"`
 	Top     float64  `xml:"top,attr"`
+	Bottom  float64  `xml:"bottom,attr"`
+	Header  float64  `xml:"header,attr"`
+	Footer  float64  `xml:"footer,attr"`
 }
 
 // xlsxSheetFormatPr directly maps the sheetFormatPr element in the namespace
@@ -880,8 +879,8 @@ type FormatHeaderFooter struct {
 	OddFooter        string
 	EvenHeader       string
 	EvenFooter       string
-	FirstFooter      string
 	FirstHeader      string
+	FirstFooter      string
 }
 
 // FormatPageMargins directly maps the settings of page margins

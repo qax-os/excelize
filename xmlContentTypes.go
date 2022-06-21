@@ -22,8 +22,8 @@ import (
 type xlsxTypes struct {
 	sync.Mutex
 	XMLName   xml.Name       `xml:"http://schemas.openxmlformats.org/package/2006/content-types Types"`
-	Overrides []xlsxOverride `xml:"Override"`
 	Defaults  []xlsxDefault  `xml:"Default"`
+	Overrides []xlsxOverride `xml:"Override"`
 }
 
 // xlsxOverride directly maps the override element in the namespace

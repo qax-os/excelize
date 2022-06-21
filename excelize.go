@@ -234,9 +234,11 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		ws = worksheet.(*xlsxWorksheet)
 		return
 	}
-	if strings.HasPrefix(name, "xl/chartsheets") || strings.HasPrefix(name, "xl/macrosheet") {
-		err = fmt.Errorf("sheet %s is not a worksheet", sheet)
-		return
+	for _, sheetType := range []string{"xl/chartsheets", "xl/dialogsheet", "xl/macrosheet"} {
+		if strings.HasPrefix(name, sheetType) {
+			err = fmt.Errorf("sheet %s is not a worksheet", sheet)
+			return
+		}
 	}
 	ws = new(xlsxWorksheet)
 	if _, ok := f.xmlAttr[name]; !ok {
