@@ -442,6 +442,7 @@ type formulaFuncs struct {
 //    ERFC
 //    ERFC.PRECISE
 //    ERROR.TYPE
+//    EUROCONVERT
 //    EVEN
 //    EXACT
 //    EXP
@@ -16078,6 +16079,88 @@ func (fn *formulaFuncs) EFFECT(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(math.Pow(1+rate.Number/npery.Number, npery.Number) - 1)
+}
+
+// EUROCONVERT function convert a number to euro or from euro to a
+// participating currency. You can also use it to convert a number from one
+// participating currency to another by using the euro as an intermediary
+// (triangulation). The syntax of the function is:
+//
+//    EUROCONVERT(number,sourcecurrency,targetcurrency[,fullprecision,triangulationprecision])
+//
+func (fn *formulaFuncs) EUROCONVERT(argsList *list.List) formulaArg {
+	if argsList.Len() < 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EUROCONVERT requires at least 3 arguments")
+	}
+	if argsList.Len() > 5 {
+		return newErrorFormulaArg(formulaErrorVALUE, "EUROCONVERT allows at most 5 arguments")
+	}
+	number := argsList.Front().Value.(formulaArg).ToNumber()
+	if number.Type != ArgNumber {
+		return number
+	}
+	sourceCurrency := argsList.Front().Next().Value.(formulaArg).Value()
+	targetCurrency := argsList.Front().Next().Next().Value.(formulaArg).Value()
+	fullPrec, triangulationPrec := newBoolFormulaArg(false), newNumberFormulaArg(0)
+	if argsList.Len() >= 4 {
+		if fullPrec = argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool(); fullPrec.Type != ArgNumber {
+			return fullPrec
+		}
+	}
+	if argsList.Len() == 5 {
+		if triangulationPrec = argsList.Back().Value.(formulaArg).ToNumber(); triangulationPrec.Type != ArgNumber {
+			return triangulationPrec
+		}
+	}
+	convertTable := map[string][]float64{
+		"EUR": {1.0, 2},
+		"ATS": {13.7603, 2},
+		"BEF": {40.3399, 0},
+		"DEM": {1.95583, 2},
+		"ESP": {166.386, 0},
+		"FIM": {5.94573, 2},
+		"FRF": {6.55957, 2},
+		"IEP": {0.787564, 2},
+		"ITL": {1936.27, 0},
+		"LUF": {40.3399, 0},
+		"NLG": {2.20371, 2},
+		"PTE": {200.482, 2},
+		"GRD": {340.750, 2},
+		"SIT": {239.640, 2},
+		"MTL": {0.429300, 2},
+		"CYP": {0.585274, 2},
+		"SKK": {30.1260, 2},
+		"EEK": {15.6466, 2},
+		"LVL": {0.702804, 2},
+		"LTL": {3.45280, 2},
+	}
+	source, ok := convertTable[sourceCurrency]
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	target, ok := convertTable[targetCurrency]
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	if sourceCurrency == targetCurrency {
+		return number
+	}
+	var res float64
+	if sourceCurrency == "EUR" {
+		res = number.Number * target[0]
+	} else {
+		intermediate := number.Number / source[0]
+		if triangulationPrec.Number != 0 {
+			ratio := math.Pow(10, triangulationPrec.Number)
+			intermediate = math.Round(intermediate*ratio) / ratio
+		}
+		res = intermediate * target[0]
+	}
+	if fullPrec.Number != 1 {
+		ratio := math.Pow(10, target[1])
+		res = math.Round(res*ratio) / ratio
+	}
+	return newNumberFormulaArg(res)
 }
 
 // FV function calculates the Future Value of an investment with periodic
