@@ -14514,6 +14514,21 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
 }
 
+// HYPERLINK function creates a hyperlink to a specified location. The syntax
+// of the function is:
+//
+//    HYPERLINK(link_location,[friendly_name])
+//
+func (fn *formulaFuncs) HYPERLINK(argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HYPERLINK requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "HYPERLINK allows at most 2 arguments")
+	}
+	return newStringFormulaArg(argsList.Back().Value.(formulaArg).Value())
+}
+
 // calcMatch returns the position of the value by given match type, criteria
 // and lookup array for the formula function MATCH.
 func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
