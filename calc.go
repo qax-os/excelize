@@ -315,9 +315,10 @@ type formulaFuncs struct {
 	sheet, cell string
 }
 
-// CalcCellValue provides a function to get calculated cell value. This
-// feature is currently in working processing. Array formula, table formula
-// and some other formulas are not supported currently.
+// CalcCellValue provides a function to get calculated cell value. This feature
+// is currently in working processing. Iterative calculation, implicit
+// intersection, explicit intersection, array formula, table formula and some
+// other formulas are not supported currently.
 //
 // Supported formula functions:
 //
@@ -421,6 +422,8 @@ type formulaFuncs struct {
 //    DAYS
 //    DAYS360
 //    DB
+//    DCOUNT
+//    DCOUNTA
 //    DDB
 //    DEC2BIN
 //    DEC2HEX
@@ -488,6 +491,7 @@ type formulaFuncs struct {
 //    HEX2OCT
 //    HLOOKUP
 //    HOUR
+//    HYPERLINK
 //    HYPGEOM.DIST
 //    HYPGEOMDIST
 //    IF
@@ -1602,12 +1606,18 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	var value, expected float64
 	var e error
 	prepareValue := func(val, cond string) (value float64, expected float64, err error) {
+		percential := 1.0
+		if strings.HasSuffix(cond, "%") {
+			cond = strings.TrimSuffix(cond, "%")
+			percential /= 100
+		}
 		if value, err = strconv.ParseFloat(val, 64); err != nil {
 			return
 		}
-		if expected, err = strconv.ParseFloat(criteria.Condition, 64); err != nil {
+		if expected, err = strconv.ParseFloat(cond, 64); err != nil {
 			return
 		}
+		expected *= percential
 		return
 	}
 	switch criteria.Type {
@@ -17956,4 +17966,156 @@ func (fn *formulaFuncs) YIELDMAT(argsList *list.List) formulaArg {
 	result--
 	result /= dsm.Number
 	return newNumberFormulaArg(result)
+}
+
+// Database Functions
+
+// calcDatabase defines the structure for formula database.
+type calcDatabase struct {
+	col, row int
+	indexMap map[int]int
+	database [][]formulaArg
+	criteria [][]formulaArg
+}
+
+// newCalcDatabase function returns formula database by given data range of
+// cells containing the database, field and criteria range.
+func newCalcDatabase(database, field, criteria formulaArg) *calcDatabase {
+	db := calcDatabase{
+		indexMap: make(map[int]int),
+		database: database.Matrix,
+		criteria: criteria.Matrix,
+	}
+	exp := len(database.Matrix) < 2 || len(database.Matrix[0]) < 1 ||
+		len(criteria.Matrix) < 2 || len(criteria.Matrix[0]) < 1
+	if field.Type != ArgEmpty {
+		if db.col = db.columnIndex(database.Matrix, field); exp || db.col < 0 || len(db.database[0]) <= db.col {
+			return nil
+		}
+		return &db
+	}
+	if db.col = -1; exp {
+		return nil
+	}
+	return &db
+}
+
+// columnIndex return index by specifies column field within the database for
+// which user want to return the count of non-blank cells.
+func (db *calcDatabase) columnIndex(database [][]formulaArg, field formulaArg) int {
+	num := field.ToNumber()
+	if num.Type != ArgNumber && len(database) > 0 {
+		for i := 0; i < len(database[0]); i++ {
+			if title := database[0][i]; strings.EqualFold(title.Value(), field.Value()) {
+				return i
+			}
+		}
+		return -1
+	}
+	return int(num.Number - 1)
+}
+
+// criteriaEval evaluate formula criteria expression.
+func (db *calcDatabase) criteriaEval() bool {
+	var (
+		columns, rows = len(db.criteria[0]), len(db.criteria)
+		criteria      = db.criteria
+		k             int
+		matched       bool
+	)
+	if len(db.indexMap) == 0 {
+		fields := criteria[0]
+		for j := 0; j < columns; j++ {
+			if k = db.columnIndex(db.database, fields[j]); k < 0 {
+				return false
+			}
+			db.indexMap[j] = k
+		}
+	}
+	for i := 1; !matched && i < rows; i++ {
+		matched = true
+		for j := 0; matched && j < columns; j++ {
+			criteriaExp := db.criteria[i][j].Value()
+			if criteriaExp == "" {
+				continue
+			}
+			criteria := formulaCriteriaParser(criteriaExp)
+			cell := db.database[db.row][db.indexMap[j]].Value()
+			matched, _ = formulaCriteriaEval(cell, criteria)
+		}
+	}
+	return matched
+}
+
+// value returns the current cell value.
+func (db *calcDatabase) value() formulaArg {
+	if db.col == -1 {
+		return db.database[db.row][len(db.database[db.row])-1]
+	}
+	return db.database[db.row][db.col]
+}
+
+// next will return true if find the matched cell in the database.
+func (db *calcDatabase) next() bool {
+	matched, rows := false, len(db.database)
+	for !matched && db.row < rows {
+		if db.row++; db.row < rows {
+			matched = db.criteriaEval()
+		}
+	}
+	return matched
+}
+
+// dcount is an implementation of the formula functions DCOUNT and DCOUNTA.
+func (fn *formulaFuncs) dcount(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
+	}
+	if argsList.Len() > 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 3 arguments", name))
+	}
+	field := newEmptyFormulaArg()
+	criteria := argsList.Back().Value.(formulaArg)
+	if argsList.Len() > 2 {
+		field = argsList.Front().Next().Value.(formulaArg)
+	}
+	var count float64
+	database := argsList.Front().Value.(formulaArg)
+	db := newCalcDatabase(database, field, criteria)
+	if db == nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	for db.next() {
+		cell := db.value()
+		if cell.Value() == "" {
+			continue
+		}
+		if num := cell.ToNumber(); name == "DCOUNT" && num.Type != ArgNumber {
+			continue
+		}
+		count++
+	}
+	return newNumberFormulaArg(count)
+}
+
+// DOUNT function returns the number of cells containing numeric values, in a
+// field (column) of a database for selected records only. The records to be
+// included in the count are those that satisfy a set of one or more
+// user-specified criteria. The syntax of the function is:
+//
+//    DCOUNT(database,[field],criteria)
+//
+func (fn *formulaFuncs) DCOUNT(argsList *list.List) formulaArg {
+	return fn.dcount("DCOUNT", argsList)
+}
+
+// DCOUNTA function returns the number of non-blank cells, in a field
+// (column) of a database for selected records only. The records to be
+// included in the count are those that satisfy a set of one or more
+// user-specified criteria. The syntax of the function is:
+//
+//    DCOUNTA(database,[field],criteria)
+//
+func (fn *formulaFuncs) DCOUNTA(argsList *list.List) formulaArg {
+	return fn.dcount("DCOUNTA", argsList)
 }

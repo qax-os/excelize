@@ -4603,6 +4603,63 @@ func TestCalcCOVAR(t *testing.T) {
 	}
 }
 
+func TestCalcDCOUNTandDCOUNTA(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
+		{"=Apple", ">1000%", nil, nil, nil, "<16"},
+		{"=Pear"},
+		{"Tree", "Height", "Age", "Yield", "Profit"},
+		{"Apple", 18, 20, 14, 105},
+		{"Pear", 12, 12, 10, 96},
+		{"Cherry", 13, 14, 9, 105},
+		{"Apple", 14, nil, 10, 75},
+		{"Pear", 9, 8, 8, 77},
+		{"Apple", 12, 11, 6, 45},
+	}
+	f := prepareCalcData(cellData)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=\"=Apple\""))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "=\"=Pear\""))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C8", "=NA()"))
+	formulaList := map[string]string{
+		"=DCOUNT(A4:E10,\"Age\",A1:F2)":     "1",
+		"=DCOUNT(A4:E10,,A1:F2)":            "2",
+		"=DCOUNT(A4:E10,\"Profit\",A1:F2)":  "2",
+		"=DCOUNT(A4:E10,\"Tree\",A1:F2)":    "0",
+		"=DCOUNT(A4:E10,\"Age\",A2:F3)":     "0",
+		"=DCOUNTA(A4:E10,\"Age\",A1:F2)":    "1",
+		"=DCOUNTA(A4:E10,,A1:F2)":           "2",
+		"=DCOUNTA(A4:E10,\"Profit\",A1:F2)": "2",
+		"=DCOUNTA(A4:E10,\"Tree\",A1:F2)":   "2",
+		"=DCOUNTA(A4:E10,\"Age\",A2:F3)":    "0",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
+		result, err := f.CalcCellValue("Sheet1", "A11")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string]string{
+		"=DCOUNT()":                           "DCOUNT requires at least 2 arguments",
+		"=DCOUNT(A4:E10,\"Age\",A1:F2,\"\")":  "DCOUNT allows at most 3 arguments",
+		"=DCOUNT(A4,\"Age\",A1:F2)":           "#VALUE!",
+		"=DCOUNT(A4:E10,NA(),A1:F2)":          "#VALUE!",
+		"=DCOUNT(A4:E4,,A1:F2)":               "#VALUE!",
+		"=DCOUNT(A4:E10,\"x\",A2:F3)":         "#VALUE!",
+		"=DCOUNTA()":                          "DCOUNTA requires at least 2 arguments",
+		"=DCOUNTA(A4:E10,\"Age\",A1:F2,\"\")": "DCOUNTA allows at most 3 arguments",
+		"=DCOUNTA(A4,\"Age\",A1:F2)":          "#VALUE!",
+		"=DCOUNTA(A4:E10,NA(),A1:F2)":         "#VALUE!",
+		"=DCOUNTA(A4:E4,,A1:F2)":              "#VALUE!",
+		"=DCOUNTA(A4:E10,\"x\",A2:F3)":        "#VALUE!",
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
+		result, err := f.CalcCellValue("Sheet1", "A11")
+		assert.EqualError(t, err, expected, formula)
+		assert.Equal(t, "", result, formula)
+	}
+}
+
 func TestCalcFORMULATEXT(t *testing.T) {
 	f, formulaText := NewFile(), "=SUM(B1:C1)"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formulaText))

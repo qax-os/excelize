@@ -1226,10 +1226,10 @@ func (c *cfb) Writer(encryptionInfoBuffer, encryptedPackage []byte) []byte {
 	}
 	MSAT = c.writeMSAT(MSATBlocks, SATBlocks, MSAT)
 	blocks, SAT := c.writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileBlocks, streamBlocks, SAT)
-	storage.writeUint32(0xE011CFD0)
-	storage.writeUint32(0xE11AB1A1)
-	storage.writeUint64(0x00)
-	storage.writeUint64(0x00)
+	for i := 0; i < 8; i++ {
+		storage.writeBytes([]byte{oleIdentifier[i]})
+	}
+	storage.writeBytes(make([]byte, 16))
 	storage.writeUint16(0x003E)
 	storage.writeUint16(0x0003)
 	storage.writeUint16(-2)
