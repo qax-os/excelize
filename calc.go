@@ -433,6 +433,8 @@ type formulaFuncs struct {
 //    DELTA
 //    DEVSQ
 //    DISC
+//    DMAX
+//    DMIN
 //    DOLLARDE
 //    DOLLARFR
 //    DURATION
@@ -18098,7 +18100,7 @@ func (fn *formulaFuncs) dcount(name string, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(count)
 }
 
-// DOUNT function returns the number of cells containing numeric values, in a
+// DCOUNT function returns the number of cells containing numeric values, in a
 // field (column) of a database for selected records only. The records to be
 // included in the count are those that satisfy a set of one or more
 // user-specified criteria. The syntax of the function is:
@@ -18118,4 +18120,48 @@ func (fn *formulaFuncs) DCOUNT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) DCOUNTA(argsList *list.List) formulaArg {
 	return fn.dcount("DCOUNTA", argsList)
+}
+
+// dmaxmin is an implementation of the formula functions DMAX and DMIN.
+func (fn *formulaFuncs) dmaxmin(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
+	}
+	database := argsList.Front().Value.(formulaArg)
+	field := argsList.Front().Next().Value.(formulaArg)
+	criteria := argsList.Back().Value.(formulaArg)
+	db := newCalcDatabase(database, field, criteria)
+	if db == nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args := list.New()
+	for db.next() {
+		args.PushBack(db.value())
+	}
+	if name == "DMAX" {
+		return fn.MAX(args)
+	}
+	return fn.MIN(args)
+}
+
+// DMAX function finds the maximum value in a field (column) in a database for
+// selected records only. The records to be included in the calculation are
+// defined by a set of one or more user-specified criteria. The syntax of the
+// function is:
+//
+//    DMAX(database,field,criteria)
+//
+func (fn *formulaFuncs) DMAX(argsList *list.List) formulaArg {
+	return fn.dmaxmin("DMAX", argsList)
+}
+
+// DMIN function finds the minimum value in a field (column) in a database for
+// selected records only. The records to be included in the calculation are
+// defined by a set of one or more user-specified criteria. The syntax of the
+// function is:
+//
+//    DMIN(database,field,criteria)
+//
+func (fn *formulaFuncs) DMIN(argsList *list.List) formulaArg {
+	return fn.dmaxmin("DMIN", argsList)
 }

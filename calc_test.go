@@ -4603,7 +4603,7 @@ func TestCalcCOVAR(t *testing.T) {
 	}
 }
 
-func TestCalcDCOUNTandDCOUNTA(t *testing.T) {
+func TestCalcDCOUNTandDCOUNTAandDMAXandDMIN(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
 		{"=Apple", ">1000%", nil, nil, nil, "<16"},
@@ -4631,6 +4631,10 @@ func TestCalcDCOUNTandDCOUNTA(t *testing.T) {
 		"=DCOUNTA(A4:E10,\"Profit\",A1:F2)": "2",
 		"=DCOUNTA(A4:E10,\"Tree\",A1:F2)":   "2",
 		"=DCOUNTA(A4:E10,\"Age\",A2:F3)":    "0",
+		"=DMAX(A4:E10,\"Tree\",A1:F3)":      "0",
+		"=DMAX(A4:E10,\"Profit\",A1:F3)":    "96",
+		"=DMIN(A4:E10,\"Tree\",A1:F3)":      "0",
+		"=DMIN(A4:E10,\"Profit\",A1:F3)":    "45",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
@@ -4651,6 +4655,10 @@ func TestCalcDCOUNTandDCOUNTA(t *testing.T) {
 		"=DCOUNTA(A4:E10,NA(),A1:F2)":         "#VALUE!",
 		"=DCOUNTA(A4:E4,,A1:F2)":              "#VALUE!",
 		"=DCOUNTA(A4:E10,\"x\",A2:F3)":        "#VALUE!",
+		"=DMAX()":                             "DMAX requires 3 arguments",
+		"=DMAX(A4:E10,\"x\",A1:F3)":           "#VALUE!",
+		"=DMIN()":                             "DMIN requires 3 arguments",
+		"=DMIN(A4:E10,\"x\",A1:F3)":           "#VALUE!",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
