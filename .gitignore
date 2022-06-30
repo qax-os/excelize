@@ -12,3 +12,4 @@ test/excelize-*
 *.out
 *.test
 .idea
+.DS_Store

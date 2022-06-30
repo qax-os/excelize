@@ -2655,14 +2655,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=AVEDEV(\"\")":   "#VALUE!",
 		"=AVEDEV(1,\"\")": "#VALUE!",
 		// AVERAGE
-		"=AVERAGE(H1)": "AVERAGE divide by zero",
+		"=AVERAGE(H1)": "#DIV/0!",
 		// AVERAGEA
-		"=AVERAGEA(H1)": "AVERAGEA divide by zero",
+		"=AVERAGEA(H1)": "#DIV/0!",
 		// AVERAGEIF
 		"=AVERAGEIF()":                      "AVERAGEIF requires at least 2 arguments",
-		"=AVERAGEIF(H1,\"\")":               "AVERAGEIF divide by zero",
-		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
-		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "AVERAGEIF divide by zero",
+		"=AVERAGEIF(H1,\"\")":               "#DIV/0!",
+		"=AVERAGEIF(D1:D3,\"Month\",D1:D3)": "#DIV/0!",
+		"=AVERAGEIF(C1:C3,\"Month\",D1:D3)": "#DIV/0!",
 		// BETA.DIST
 		"=BETA.DIST()":                     "BETA.DIST requires at least 4 arguments",
 		"=BETA.DIST(0.4,4,5,TRUE,0,1,0)":   "BETA.DIST requires at most 6 arguments",
@@ -4603,7 +4603,7 @@ func TestCalcCOVAR(t *testing.T) {
 	}
 }
 
-func TestCalcDCOUNTandDCOUNTAandDMAXandDMIN(t *testing.T) {
+func TestCalcDatabase(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
 		{"=Apple", ">1000%", nil, nil, nil, "<16"},
@@ -4621,20 +4621,21 @@ func TestCalcDCOUNTandDCOUNTAandDMAXandDMIN(t *testing.T) {
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "=\"=Pear\""))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C8", "=NA()"))
 	formulaList := map[string]string{
-		"=DCOUNT(A4:E10,\"Age\",A1:F2)":     "1",
-		"=DCOUNT(A4:E10,,A1:F2)":            "2",
-		"=DCOUNT(A4:E10,\"Profit\",A1:F2)":  "2",
-		"=DCOUNT(A4:E10,\"Tree\",A1:F2)":    "0",
-		"=DCOUNT(A4:E10,\"Age\",A2:F3)":     "0",
-		"=DCOUNTA(A4:E10,\"Age\",A1:F2)":    "1",
-		"=DCOUNTA(A4:E10,,A1:F2)":           "2",
-		"=DCOUNTA(A4:E10,\"Profit\",A1:F2)": "2",
-		"=DCOUNTA(A4:E10,\"Tree\",A1:F2)":   "2",
-		"=DCOUNTA(A4:E10,\"Age\",A2:F3)":    "0",
-		"=DMAX(A4:E10,\"Tree\",A1:F3)":      "0",
-		"=DMAX(A4:E10,\"Profit\",A1:F3)":    "96",
-		"=DMIN(A4:E10,\"Tree\",A1:F3)":      "0",
-		"=DMIN(A4:E10,\"Profit\",A1:F3)":    "45",
+		"=DCOUNT(A4:E10,\"Age\",A1:F2)":      "1",
+		"=DCOUNT(A4:E10,,A1:F2)":             "2",
+		"=DCOUNT(A4:E10,\"Profit\",A1:F2)":   "2",
+		"=DCOUNT(A4:E10,\"Tree\",A1:F2)":     "0",
+		"=DCOUNT(A4:E10,\"Age\",A2:F3)":      "0",
+		"=DCOUNTA(A4:E10,\"Age\",A1:F2)":     "1",
+		"=DCOUNTA(A4:E10,,A1:F2)":            "2",
+		"=DCOUNTA(A4:E10,\"Profit\",A1:F2)":  "2",
+		"=DCOUNTA(A4:E10,\"Tree\",A1:F2)":    "2",
+		"=DCOUNTA(A4:E10,\"Age\",A2:F3)":     "0",
+		"=DMAX(A4:E10,\"Tree\",A1:F3)":       "0",
+		"=DMAX(A4:E10,\"Profit\",A1:F3)":     "96",
+		"=DMIN(A4:E10,\"Tree\",A1:F3)":       "0",
+		"=DMIN(A4:E10,\"Profit\",A1:F3)":     "45",
+		"=DAVERAGE(A4:E10,\"Profit\",A1:F3)": "73.25",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
@@ -4659,6 +4660,9 @@ func TestCalcDCOUNTandDCOUNTAandDMAXandDMIN(t *testing.T) {
 		"=DMAX(A4:E10,\"x\",A1:F3)":           "#VALUE!",
 		"=DMIN()":                             "DMIN requires 3 arguments",
 		"=DMIN(A4:E10,\"x\",A1:F3)":           "#VALUE!",
+		"=DAVERAGE()":                         "DAVERAGE requires 3 arguments",
+		"=DAVERAGE(A4:E10,\"x\",A1:F3)":       "#VALUE!",
+		"=DAVERAGE(A4:E10,\"Tree\",A1:F3)":    "#DIV/0!",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))

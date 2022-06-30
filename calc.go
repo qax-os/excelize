@@ -418,6 +418,7 @@ type formulaFuncs struct {
 //    DATE
 //    DATEDIF
 //    DATEVALUE
+//    DAVERAGE
 //    DAY
 //    DAYS
 //    DAYS360
@@ -6008,7 +6009,7 @@ func (fn *formulaFuncs) AVERAGE(argsList *list.List) formulaArg {
 	}
 	count, sum := fn.countSum(false, args)
 	if count == 0 {
-		return newErrorFormulaArg(formulaErrorDIV, "AVERAGE divide by zero")
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
 	return newNumberFormulaArg(sum / count)
 }
@@ -6025,7 +6026,7 @@ func (fn *formulaFuncs) AVERAGEA(argsList *list.List) formulaArg {
 	}
 	count, sum := fn.countSum(true, args)
 	if count == 0 {
-		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEA divide by zero")
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
 	return newNumberFormulaArg(sum / count)
 }
@@ -6075,7 +6076,7 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 	}
 	count, sum := fn.countSum(false, args)
 	if count == 0 {
-		return newErrorFormulaArg(formulaErrorDIV, "AVERAGEIF divide by zero")
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
 	return newNumberFormulaArg(sum / count)
 }
@@ -18068,6 +18069,42 @@ func (db *calcDatabase) next() bool {
 	return matched
 }
 
+// database is an implementation of the formula functions DAVERAGE, DMAX and DMIN.
+func (fn *formulaFuncs) database(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
+	}
+	database := argsList.Front().Value.(formulaArg)
+	field := argsList.Front().Next().Value.(formulaArg)
+	criteria := argsList.Back().Value.(formulaArg)
+	db := newCalcDatabase(database, field, criteria)
+	if db == nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	args := list.New()
+	for db.next() {
+		args.PushBack(db.value())
+	}
+	switch name {
+	case "DMAX":
+		return fn.MAX(args)
+	case "DMIN":
+		return fn.MIN(args)
+	default:
+		return fn.AVERAGE(args)
+	}
+}
+
+// DAVERAGE function calculates the average (statistical mean) of values in a
+// field (column) in a database for selected records, that satisfy
+// user-specified criteria. The syntax of the Excel Daverage function is:
+//
+//    DAVERAGE(database,field,criteria)
+//
+func (fn *formulaFuncs) DAVERAGE(argsList *list.List) formulaArg {
+	return fn.database("DAVERAGE", argsList)
+}
+
 // dcount is an implementation of the formula functions DCOUNT and DCOUNTA.
 func (fn *formulaFuncs) dcount(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
@@ -18081,23 +18118,19 @@ func (fn *formulaFuncs) dcount(name string, argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		field = argsList.Front().Next().Value.(formulaArg)
 	}
-	var count float64
 	database := argsList.Front().Value.(formulaArg)
 	db := newCalcDatabase(database, field, criteria)
 	if db == nil {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
+	args := list.New()
 	for db.next() {
-		cell := db.value()
-		if cell.Value() == "" {
-			continue
-		}
-		if num := cell.ToNumber(); name == "DCOUNT" && num.Type != ArgNumber {
-			continue
-		}
-		count++
+		args.PushBack(db.value())
 	}
-	return newNumberFormulaArg(count)
+	if name == "DCOUNT" {
+		return fn.COUNT(args)
+	}
+	return fn.COUNTA(args)
 }
 
 // DCOUNT function returns the number of cells containing numeric values, in a
@@ -18122,28 +18155,6 @@ func (fn *formulaFuncs) DCOUNTA(argsList *list.List) formulaArg {
 	return fn.dcount("DCOUNTA", argsList)
 }
 
-// dmaxmin is an implementation of the formula functions DMAX and DMIN.
-func (fn *formulaFuncs) dmaxmin(name string, argsList *list.List) formulaArg {
-	if argsList.Len() != 3 {
-		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
-	}
-	database := argsList.Front().Value.(formulaArg)
-	field := argsList.Front().Next().Value.(formulaArg)
-	criteria := argsList.Back().Value.(formulaArg)
-	db := newCalcDatabase(database, field, criteria)
-	if db == nil {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	args := list.New()
-	for db.next() {
-		args.PushBack(db.value())
-	}
-	if name == "DMAX" {
-		return fn.MAX(args)
-	}
-	return fn.MIN(args)
-}
-
 // DMAX function finds the maximum value in a field (column) in a database for
 // selected records only. The records to be included in the calculation are
 // defined by a set of one or more user-specified criteria. The syntax of the
@@ -18152,7 +18163,7 @@ func (fn *formulaFuncs) dmaxmin(name string, argsList *list.List) formulaArg {
 //    DMAX(database,field,criteria)
 //
 func (fn *formulaFuncs) DMAX(argsList *list.List) formulaArg {
-	return fn.dmaxmin("DMAX", argsList)
+	return fn.database("DMAX", argsList)
 }
 
 // DMIN function finds the minimum value in a field (column) in a database for
@@ -18163,5 +18174,5 @@ func (fn *formulaFuncs) DMAX(argsList *list.List) formulaArg {
 //    DMIN(database,field,criteria)
 //
 func (fn *formulaFuncs) DMIN(argsList *list.List) formulaArg {
-	return fn.dmaxmin("DMIN", argsList)
+	return fn.database("DMIN", argsList)
 }
