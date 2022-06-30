@@ -266,6 +266,7 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
+	cellData.F, cellData.IS = nil, nil
 	return err
 }
 
@@ -291,6 +292,7 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
+	cellData.F, cellData.IS = nil, nil
 	return err
 }
 
@@ -328,6 +330,7 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSiz
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, precision, bitSize)
+	cellData.F, cellData.IS = nil, nil
 	return err
 }
 
@@ -353,6 +356,7 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V, err = f.setCellString(value)
+	cellData.F, cellData.IS = nil, nil
 	return err
 }
 
@@ -451,6 +455,7 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
+	cellData.F, cellData.IS = nil, nil
 	return err
 }
 
@@ -599,7 +604,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 			cellData.F.Ref = *o.Ref
 		}
 	}
-
+	cellData.IS = nil
 	return err
 }
 
