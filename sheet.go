@@ -82,10 +82,10 @@ func (f *File) NewContentTypesReader() (*xlsxTypes, error) {
 		defer f.ContentTypes.Unlock()
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
 			Decode(f.ContentTypes); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %w", err)
+			return nil, fmt.Errorf("xml decode error: %w", err)
 		}
 	}
-	return f.ContentTypes, err
+	return f.ContentTypes, nil
 }
 
 // contentTypesReader provides a function to get the pointer to ContentTypes.
@@ -1858,6 +1858,7 @@ func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 				Decode(&c); err != nil && err != io.EOF {
 				return nil, fmt.Errorf("xml decode error: %w", err)
 			}
+			err = nil
 			f.Relationships.Store(path, &c)
 		}
 	}

@@ -3045,9 +3045,9 @@ func (f *File) NewThemeReader() (*xlsxTheme, error) {
 	)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")))).
 		Decode(&theme); err != nil && err != io.EOF {
-		return nil, fmt.Errorf("xml decoder error: %w", err)
+		return nil, fmt.Errorf("xml decode error: %w", err)
 	}
-	return &theme, err
+	return &theme, nil
 }
 
 // ThemeColor applied the color with tint value.

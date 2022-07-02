@@ -583,7 +583,8 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 			err = fmt.Errorf("xml decode error: %w", err)
 			return
 		}
-		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
+		err = nil
+		if deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel, err = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				if err != nil {

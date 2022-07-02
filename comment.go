@@ -365,7 +365,7 @@ func (f *File) decodeVMLDrawingReader(path string) (*decodeVmlDrawing, error) {
 			}
 		}
 	}
-	return f.DecodeVMLDrawing[path], err
+	return f.DecodeVMLDrawing[path], nil
 }
 
 // vmlDrawingWriter provides a function to save xl/drawings/vmlDrawing%d.xml

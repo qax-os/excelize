@@ -27,11 +27,11 @@ func (f *File) NewCalcChainReader() (*xlsxCalcChain, error) {
 		f.CalcChain = new(xlsxCalcChain)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathCalcChain)))).
 			Decode(f.CalcChain); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %w", err)
+			return nil, fmt.Errorf("xml decode error: %w", err)
 		}
 	}
 
-	return f.CalcChain, err
+	return f.CalcChain, nil
 }
 
 // calcChainReader provides a function to get the CalcChain.

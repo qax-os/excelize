@@ -80,6 +80,7 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
+	err = nil
 	fields = []string{"Application", "ScaleCrop", "DocSecurity", "Company", "LinksUpToDate", "HyperlinksChanged", "AppVersion"}
 	immutable, mutable = reflect.ValueOf(*appProperties), reflect.ValueOf(app).Elem()
 	for _, field = range fields {
@@ -110,6 +111,7 @@ func (f *File) GetAppProps() (ret *AppProperties, err error) {
 		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
+	err = nil
 	ret, err = &AppProperties{
 		Application:       app.Application,
 		ScaleCrop:         app.ScaleCrop,
@@ -189,6 +191,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
+	err = nil
 	newProps, err = &xlsxCoreProperties{
 		Dc:             NameSpaceDublinCore,
 		Dcterms:        NameSpaceDublinCoreTerms,
@@ -242,6 +245,7 @@ func (f *File) GetDocProps() (ret *DocProperties, err error) {
 		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
+	err = nil
 	ret, err = &DocProperties{
 		Category:       core.Category,
 		ContentStatus:  core.ContentStatus,

@@ -108,7 +108,7 @@ func (f *File) NewWorkbookReader() (*xlsxWorkbook, error) {
 		Decode(f.WorkBook); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("xml decode error: %w", err)
 	}
-	return f.WorkBook, err
+	return f.WorkBook, nil
 }
 
 // workbookReader provides a function to get the pointer to WorkBook.

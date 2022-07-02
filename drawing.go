@@ -1174,6 +1174,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int, error) {
 				Decode(&decodeWsDr); err != nil && err != io.EOF {
 				return nil, 0, fmt.Errorf("xml decode error: %w", err)
 			}
+			err = nil
 			content.R = decodeWsDr.R
 			for _, v := range decodeWsDr.AlternateContent {
 				content.AlternateContent = append(content.AlternateContent, &xlsxAlternateContent{
@@ -1335,7 +1336,7 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 		return
 	}
 	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && xdrCellAnchorFuncs[drawingType](wsDr.TwoCellAnchor[idx]) {
+		if wsDr.TwoCellAnchor[idx].From != nil && xdrCellAnchorFuncs[drawingType](wsDr.TwoCellAnchor[idx]) {
 			if wsDr.TwoCellAnchor[idx].From.Col == col && wsDr.TwoCellAnchor[idx].From.Row == row {
 				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
 				idx--
@@ -1349,7 +1350,8 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 			err = fmt.Errorf("xml decode error: %w", err)
 			return
 		}
-		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {
+		err = nil
+		if deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
 				idx--
