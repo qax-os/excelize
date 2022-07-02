@@ -29,7 +29,8 @@ var _ = []SheetPrOptionPtr{
 }
 
 func ExampleFile_SetSheetPrOptions() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	if err := f.SetSheetPrOptions(sheet,
@@ -47,7 +48,8 @@ func ExampleFile_SetSheetPrOptions() {
 }
 
 func ExampleFile_GetSheetPrOptions() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	var (
@@ -115,7 +117,8 @@ func TestSheetPrOptions(t *testing.T) {
 			val1 := deepcopy.Copy(def).(SheetPrOptionPtr)
 			val2 := deepcopy.Copy(def).(SheetPrOptionPtr)
 
-			f := NewFile()
+			f, err := NewFile()
+			assert.NoError(t, err)
 			// Get the default value
 			assert.NoError(t, f.GetSheetPrOptions(sheet, def), opt)
 			// Get again and check
@@ -153,14 +156,16 @@ func TestSheetPrOptions(t *testing.T) {
 }
 
 func TestSetSheetPrOptions(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColor("")))
 	// Test SetSheetPrOptions on not exists worksheet.
 	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetSheetPrOptions(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	// Test GetSheetPrOptions on not exists worksheet.
 	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
 }
@@ -184,7 +189,8 @@ var _ = []PageMarginsOptionsPtr{
 }
 
 func ExampleFile_SetPageMargins() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	if err := f.SetPageMargins(sheet,
@@ -201,7 +207,8 @@ func ExampleFile_SetPageMargins() {
 }
 
 func ExampleFile_GetPageMargins() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	var (
@@ -264,7 +271,8 @@ func TestPageMarginsOption(t *testing.T) {
 			val1 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
 			val2 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
 
-			f := NewFile()
+			f, err := NewFile()
+			assert.NoError(t, err)
 			// Get the default value
 			assert.NoError(t, f.GetPageMargins(sheet, def), opt)
 			// Get again and check
@@ -302,19 +310,22 @@ func TestPageMarginsOption(t *testing.T) {
 }
 
 func TestSetPageMargins(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	// Test set page margins on not exists worksheet.
 	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetPageMargins(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	// Test get page margins on not exists worksheet.
 	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN is not exist")
 }
 
 func ExampleFile_SetSheetFormatPr() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	if err := f.SetSheetFormatPr(sheet,
@@ -332,7 +343,8 @@ func ExampleFile_SetSheetFormatPr() {
 }
 
 func ExampleFile_GetSheetFormatPr() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	var (
@@ -400,7 +412,8 @@ func TestSheetFormatPrOptions(t *testing.T) {
 			val1 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
 			val2 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
 
-			f := NewFile()
+			f, err := NewFile()
+			assert.NoError(t, err)
 			// Get the default value
 			assert.NoError(t, f.GetSheetFormatPr(sheet, def), opt)
 			// Get again and check
@@ -438,7 +451,8 @@ func TestSheetFormatPrOptions(t *testing.T) {
 }
 
 func TestSetSheetFormatPr(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
@@ -449,7 +463,8 @@ func TestSetSheetFormatPr(t *testing.T) {
 }
 
 func TestGetSheetFormatPr(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)

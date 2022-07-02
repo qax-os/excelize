@@ -82,7 +82,9 @@ func TestRowsIterator(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Valued cell sparse distribution test
-	f, sheetName, rowCount, expectedNumRow = NewFile(), "Sheet1", 0, 3
+	f, err = NewFile()
+	assert.NoError(t, err)
+	sheetName, rowCount, expectedNumRow = "Sheet1", 0, 3
 	cells := []string{"C1", "E1", "A3", "B3", "C3", "D3", "E3"}
 	for _, cell := range cells {
 		assert.NoError(t, f.SetCellValue(sheetName, cell, 1))
@@ -107,12 +109,13 @@ func TestRowsError(t *testing.T) {
 }
 
 func TestRowHeight(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 
 	assert.EqualError(t, f.SetRowHeight(sheet1, 0, defaultRowHeightPixels+1.0), newInvalidRowNumberError(0).Error())
 
-	_, err := f.GetRowHeight("Sheet1", 0)
+	_, err = f.GetRowHeight("Sheet1", 0)
 	assert.EqualError(t, err, newInvalidRowNumberError(0).Error())
 
 	assert.NoError(t, f.SetRowHeight(sheet1, 1, 111.0))
@@ -165,7 +168,8 @@ func TestRowHeight(t *testing.T) {
 }
 
 func TestColumns(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	rows, err := f.Rows("Sheet1")
 	assert.NoError(t, err)
 
@@ -198,7 +202,8 @@ func TestColumns(t *testing.T) {
 }
 
 func TestSharedStringsReader(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	f.sharedStringsReader()
 	si := xlsxSI{}
@@ -232,7 +237,8 @@ func TestRowVisibility(t *testing.T) {
 }
 
 func TestRemoveRow(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
@@ -293,7 +299,8 @@ func TestRemoveRow(t *testing.T) {
 }
 
 func TestInsertRow(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
@@ -326,7 +333,8 @@ func TestInsertRow(t *testing.T) {
 // for insert workflow to be constant to avoid side effect with functions
 // related to internal structure.
 func TestInsertRowInEmptyFile(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
@@ -353,7 +361,8 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 	}
 
 	t.Run("FromSingleRow", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		assert.NoError(t, f.SetCellStr(sheet, "A1", cells["A1"]))
 		assert.NoError(t, f.SetCellStr(sheet, "B1", cells["B1"]))
 
@@ -406,7 +415,8 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 	}
 
 	t.Run("UpdateDuplicatedRows", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		assert.NoError(t, f.SetCellStr(sheet, "A1", cells["A1"]))
 		assert.NoError(t, f.SetCellStr(sheet, "B1", cells["B1"]))
 
@@ -446,7 +456,8 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 	}
 
 	newFileWithDefaults := func() *File {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		for cell, val := range cells {
 			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
@@ -482,7 +493,8 @@ func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("ZeroWithNoRows", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 
 		assert.EqualError(t, f.DuplicateRow(sheet, 0), newInvalidRowNumberError(0).Error())
 
@@ -524,7 +536,8 @@ func TestDuplicateRowMiddleRowOfEmptyFile(t *testing.T) {
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("MiddleRowOfEmptyFile", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 
 		assert.NoError(t, f.DuplicateRow(sheet, 99))
 
@@ -560,7 +573,8 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 	}
 
 	newFileWithDefaults := func() *File {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		for cell, val := range cells {
 			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
@@ -605,7 +619,8 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 	}
 
 	newFileWithDefaults := func() *File {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		for cell, val := range cells {
 			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
@@ -650,7 +665,8 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 	}
 
 	newFileWithDefaults := func() *File {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		for cell, val := range cells {
 			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
@@ -697,7 +713,8 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 	}
 
 	newFileWithDefaults := func() *File {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		for cell, val := range cells {
 			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
@@ -743,7 +760,8 @@ func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 	}
 
 	newFileWithDefaults := func() *File {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		for cell, val := range cells {
 			assert.NoError(t, f.SetCellStr(sheet, cell, val))
 		}
@@ -796,7 +814,8 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 	for _, row := range invalidIndexes {
 		name := fmt.Sprintf("%d", row)
 		t.Run(name, func(t *testing.T) {
-			f := NewFile()
+			f, err := NewFile()
+			assert.NoError(t, err)
 			for col, val := range cells {
 				assert.NoError(t, f.SetCellStr(sheet, col, val))
 			}
@@ -818,7 +837,8 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 		for _, row2 := range invalidIndexes {
 			name := fmt.Sprintf("[%d,%d]", row1, row2)
 			t.Run(name, func(t *testing.T) {
-				f := NewFile()
+				f, err := NewFile()
+				assert.NoError(t, err)
 				for col, val := range cells {
 					assert.NoError(t, f.SetCellStr(sheet, col, val))
 				}
@@ -839,7 +859,9 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 }
 
 func TestDuplicateRowTo(t *testing.T) {
-	f, sheetName := NewFile(), "Sheet1"
+	f, err := NewFile()
+	assert.NoError(t, err)
+	sheetName := "Sheet1"
 	// Test duplicate row with invalid target row number
 	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 0))
 	// Test duplicate row with equal source and target row number
@@ -867,7 +889,8 @@ func TestDuplicateMergeCells(t *testing.T) {
 
 func TestGetValueFromInlineStr(t *testing.T) {
 	c := &xlsxC{T: "inlineStr"}
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	d := &xlsxSST{}
 	val, err := c.getValueFrom(f, d, false)
 	assert.NoError(t, err)
@@ -876,7 +899,8 @@ func TestGetValueFromInlineStr(t *testing.T) {
 
 func TestGetValueFromNumber(t *testing.T) {
 	c := &xlsxC{T: "n"}
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	d := &xlsxSST{}
 	for input, expected := range map[string]string{
 		"2.2.":                     "2.2.",
@@ -901,12 +925,14 @@ func TestErrSheetNotExistError(t *testing.T) {
 }
 
 func TestCheckRow(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
-	_, err := f.GetRows("Sheet1")
+	_, err = f.GetRows("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", false))
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	delete(f.checked, "xl/worksheets/sheet1.xml")
@@ -914,7 +940,8 @@ func TestCheckRow(t *testing.T) {
 }
 
 func TestSetRowStyle(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	style1, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#63BE7B"],"pattern":1}}`)
 	assert.NoError(t, err)
 	style2, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)

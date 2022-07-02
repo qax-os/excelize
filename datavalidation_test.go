@@ -23,7 +23,8 @@ import (
 func TestDataValidation(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidation.xlsx")
 
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 
 	dvRange := NewDataValidation(true)
 	dvRange.Sqref = "A1:B2"
@@ -73,7 +74,8 @@ func TestDataValidation(t *testing.T) {
 func TestDataValidationError(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidationError.xlsx")
 
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStr("Sheet1", "E1", "E1"))
 	assert.NoError(t, f.SetCellStr("Sheet1", "E2", "E2"))
 	assert.NoError(t, f.SetCellStr("Sheet1", "E3", "E3"))
@@ -86,7 +88,7 @@ func TestDataValidationError(t *testing.T) {
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 
 	dvRange = NewDataValidation(true)
-	err := dvRange.SetDropList(make([]string, 258))
+	err = dvRange.SetDropList(make([]string, 258))
 	if dvRange.Formula1 != "" {
 		t.Errorf("data validation error. Formula1 must be empty!")
 		return
@@ -126,12 +128,14 @@ func TestDataValidationError(t *testing.T) {
 	assert.NoError(t, f.SaveAs(resultFile))
 
 	// Test add data validation on no exists worksheet.
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN is not exist")
 }
 
 func TestDeleteDataValidation(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.DeleteDataValidation("Sheet1", "A1:B2"))
 
 	dvRange := NewDataValidation(true)

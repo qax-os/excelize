@@ -40,7 +40,8 @@ func TestAddTable(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
 	// Test addTable with illegal cell coordinates.
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
 	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
 }
@@ -121,9 +122,10 @@ func TestAutoFilterError(t *testing.T) {
 }
 
 func TestParseFilterTokens(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test with unknown operator.
-	_, _, err := f.parseFilterTokens("", []string{"", "!"})
+	_, _, err = f.parseFilterTokens("", []string{"", "!"})
 	assert.EqualError(t, err, "unknown operator: !")
 	// Test invalid operator in context.
 	_, _, err = f.parseFilterTokens("", []string{"", "<", "x != blanks"})

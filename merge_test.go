@@ -70,7 +70,8 @@ func TestMergeCell(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCell.xlsx")))
 	assert.NoError(t, f.Close())
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
@@ -79,12 +80,13 @@ func TestMergeCell(t *testing.T) {
 }
 
 func TestMergeCellOverlap(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.MergeCell("Sheet1", "A1", "C2"))
 	assert.NoError(t, f.MergeCell("Sheet1", "B2", "D3"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestMergeCellOverlap.xlsx")))
 
-	f, err := OpenFile(filepath.Join("test", "TestMergeCellOverlap.xlsx"))
+	f, err = OpenFile(filepath.Join("test", "TestMergeCellOverlap.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -167,7 +169,8 @@ func TestUnmergeCell(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnmergeCell.xlsx")))
 	assert.NoError(t, f.Close())
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
 	// Test unmerged area on not exists worksheet.
 	assert.EqualError(t, f.UnmergeCell("SheetN", "A1", "A1"), "sheet SheetN is not exist")

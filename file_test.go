@@ -15,7 +15,8 @@ import (
 func BenchmarkWrite(b *testing.B) {
 	const s = "This is test data"
 	for i := 0; i < b.N; i++ {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(b, err)
 		for row := 1; row <= 10000; row++ {
 			for col := 1; col <= 20; col++ {
 				val, err := CoordinatesToCellName(col, row)
@@ -28,7 +29,7 @@ func BenchmarkWrite(b *testing.B) {
 			}
 		}
 		// Save spreadsheet by the given path.
-		err := f.SaveAs("./test.xlsx")
+		err = f.SaveAs("./test.xlsx")
 		if err != nil {
 			b.Error(err)
 		}
@@ -74,7 +75,8 @@ func TestWriteTo(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.tempFiles.Store("/d/", "/d/")
 	require.Error(t, f.Close())
 }

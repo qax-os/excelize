@@ -35,33 +35,45 @@ func TestAddComments(t *testing.T) {
 	// Test add comment on with illegal cell coordinates
 	assert.EqualError(t, f.AddComment("Sheet1", "A", `{"author":"Excelize: ","text":"This is a comment."}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	if assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
-		assert.Len(t, f.GetComments(), 2)
+		d, err := f.GetComments()
+		assert.NoError(t, err)
+		assert.Len(t, d, 2)
 	}
 
 	f.Comments["xl/comments2.xml"] = nil
 	f.Pkg.Store("xl/comments2.xml", []byte(xml.Header+`<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
-	comments := f.GetComments()
+	comments, err := f.GetComments()
+	assert.NoError(t, err)
 	assert.EqualValues(t, 2, len(comments["Sheet1"]))
 	assert.EqualValues(t, 1, len(comments["Sheet2"]))
-	assert.EqualValues(t, len(NewFile().GetComments()), 0)
+	xlsxFile, err := NewFile()
+	assert.NoError(t, err)
+	d, err := xlsxFile.GetComments()
+	assert.NoError(t, err)
+	assert.EqualValues(t, len(d), 0)
 }
 
 func TestDecodeVMLDrawingReader(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	path := "xl/drawings/vmlDrawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	f.decodeVMLDrawingReader(path)
+	_, err = f.decodeVMLDrawingReader(path)
+	assert.NoError(t, err)
 }
 
 func TestCommentsReader(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	path := "xl/comments1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	f.commentsReader(path)
+	_, err = f.commentsReader(path)
+	assert.NoError(t, err)
 }
 
 func TestCountComments(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.Comments["xl/comments1.xml"] = nil
 	assert.Equal(t, f.countComments(), 1)
 }

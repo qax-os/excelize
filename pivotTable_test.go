@@ -11,7 +11,8 @@ import (
 )
 
 func TestAddPivotTable(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Create some data in a sheet
 	month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 	year := []int{2017, 2018, 2019}
@@ -226,7 +227,7 @@ func TestAddPivotTable(t *testing.T) {
 	}))
 
 	// Test adjust range with invalid range
-	_, _, err := f.adjustRange("")
+	_, _, err = f.adjustRange("")
 	assert.EqualError(t, err, ErrParameterRequired.Error())
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")
@@ -262,7 +263,8 @@ func TestAddPivotTable(t *testing.T) {
 }
 
 func TestAddPivotRowFields(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test invalid data range
 	assert.EqualError(t, f.addPivotRowFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
 		DataRange: "Sheet1!$A$1:$A$1",
@@ -270,7 +272,8 @@ func TestAddPivotRowFields(t *testing.T) {
 }
 
 func TestAddPivotPageFields(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test invalid data range
 	assert.EqualError(t, f.addPivotPageFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
 		DataRange: "Sheet1!$A$1:$A$1",
@@ -278,7 +281,8 @@ func TestAddPivotPageFields(t *testing.T) {
 }
 
 func TestAddPivotDataFields(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test invalid data range
 	assert.EqualError(t, f.addPivotDataFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
 		DataRange: "Sheet1!$A$1:$A$1",
@@ -286,7 +290,8 @@ func TestAddPivotDataFields(t *testing.T) {
 }
 
 func TestAddPivotColFields(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test invalid data range
 	assert.EqualError(t, f.addPivotColFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
 		DataRange: "Sheet1!$A$1:$A$1",
@@ -295,13 +300,15 @@ func TestAddPivotColFields(t *testing.T) {
 }
 
 func TestGetPivotFieldsOrder(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test get pivot fields order with not exist worksheet
-	_, err := f.getPivotFieldsOrder(&PivotTableOption{DataRange: "SheetN!$A$1:$E$31"})
+	_, err = f.getPivotFieldsOrder(&PivotTableOption{DataRange: "SheetN!$A$1:$E$31"})
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 }
 
 func TestGetPivotTableFieldName(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.getPivotTableFieldName("-", []PivotTableField{})
 }

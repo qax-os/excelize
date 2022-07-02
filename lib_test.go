@@ -217,8 +217,9 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 }
 
 func TestCoordinatesToAreaRef(t *testing.T) {
-	f := NewFile()
-	_, err := f.coordinatesToAreaRef([]int{})
+	f, err := NewFile()
+	assert.NoError(t, err)
+	_, err = f.coordinatesToAreaRef([]int{})
 	assert.EqualError(t, err, ErrCoordinates.Error())
 	_, err = f.coordinatesToAreaRef([]int{1, -1, 1, 1})
 	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
@@ -277,7 +278,8 @@ func TestGetRootElement(t *testing.T) {
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.xmlAttr["xml_path"] = []xml.Attr{{}}
 	f.setIgnorableNameSpace("xml_path", 0, xml.Attr{Name: xml.Name{Local: "c14"}})
 	assert.EqualValues(t, "c14", f.xmlAttr["xml_path"][0].Value)
@@ -343,7 +345,8 @@ func TestUnzipToTemp(t *testing.T) {
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
 	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	data := []byte("PK\x03\x040000000PK\x01\x0200000" +
 		"0000000000000000000\x00" +
 		"\x00\x00\x00\x00\x00000000000000PK\x01" +

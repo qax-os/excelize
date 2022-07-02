@@ -26,7 +26,8 @@ func TestStyleFill(t *testing.T) {
 	}}
 
 	for _, testCase := range cases {
-		xl := NewFile()
+		xl, err := NewFile()
+		assert.NoError(t, err)
 		styleID, err := xl.NewStyle(testCase.format)
 		assert.NoError(t, err)
 
@@ -38,7 +39,8 @@ func TestStyleFill(t *testing.T) {
 			assert.Equal(t, *style.FillID, 0, testCase.label)
 		}
 	}
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	styleID1, err := f.NewStyle(`{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`)
 	assert.NoError(t, err)
 	styleID2, err := f.NewStyle(`{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`)
@@ -156,11 +158,12 @@ func TestSetConditionalFormat(t *testing.T) {
 	}}
 
 	for _, testCase := range cases {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		const sheet = "Sheet1"
 		const cellRange = "A1:A1"
 
-		err := f.SetConditionalFormat(sheet, cellRange, testCase.format)
+		err = f.SetConditionalFormat(sheet, cellRange, testCase.format)
 		if err != nil {
 			t.Fatalf("%s", err)
 		}
@@ -176,7 +179,8 @@ func TestSetConditionalFormat(t *testing.T) {
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	format, err := f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
@@ -190,7 +194,8 @@ func TestUnsetConditionalFormat(t *testing.T) {
 }
 
 func TestNewStyle(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
 	assert.NoError(t, err)
 	styles := f.stylesReader()
@@ -253,7 +258,8 @@ func TestNewStyle(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, [][]string{{"1.23E+00", "1.23E+00"}}, rows)
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	// Test currency number format
 	customNumFmt := "[$$-409]#,##0.00"
 	style1, err := f.NewStyle(&Style{CustomNumFmt: &customNumFmt})
@@ -266,14 +272,16 @@ func TestNewStyle(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, style3)
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = nil
 	style4, err := f.NewStyle(&Style{NumFmt: 160, Lang: "unknown"})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, style4)
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = nil
 	style5, err := f.NewStyle(&Style{NumFmt: 160, Lang: "zh-cn"})
@@ -282,13 +290,15 @@ func TestNewStyle(t *testing.T) {
 }
 
 func TestGetDefaultFont(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	s := f.GetDefaultFont()
 	assert.Equal(t, s, "Calibri", "Default font should be Calibri")
 }
 
 func TestSetDefaultFont(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.SetDefaultFont("Arial")
 	styles := f.stylesReader()
 	s := f.GetDefaultFont()
@@ -297,7 +307,8 @@ func TestSetDefaultFont(t *testing.T) {
 }
 
 func TestStylesReader(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test read styles with unsupported charset.
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
@@ -305,24 +316,32 @@ func TestStylesReader(t *testing.T) {
 }
 
 func TestThemeReader(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test read theme with unsupported charset.
 	f.Pkg.Store("xl/theme/theme1.xml", MacintoshCyrillicCharset)
-	assert.EqualValues(t, new(xlsxTheme), f.themeReader())
+	theme, err := f.NewThemeReader()
+	assert.NoError(t, err)
+	assert.EqualValues(t, new(xlsxTheme), theme)
 }
 
 func TestSetCellStyle(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test set cell style on not exists worksheet.
 	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN is not exist")
 }
 
 func TestGetStyleID(t *testing.T) {
-	assert.Equal(t, -1, NewFile().getStyleID(&xlsxStyleSheet{}, nil))
+	f, err := NewFile()
+	assert.NoError(t, err)
+	assert.Equal(t, -1, f.getStyleID(&xlsxStyleSheet{}, nil))
 }
 
 func TestGetFillID(t *testing.T) {
-	assert.Equal(t, -1, getFillID(NewFile().stylesReader(), &Style{Fill: Fill{Type: "unknown"}}))
+	f, err := NewFile()
+	assert.NoError(t, err)
+	assert.Equal(t, -1, getFillID(f.stylesReader(), &Style{Fill: Fill{Type: "unknown"}}))
 }
 
 func TestThemeColor(t *testing.T) {
@@ -339,7 +358,8 @@ func TestThemeColor(t *testing.T) {
 }
 
 func TestGetNumFmtID(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 
 	fs1, err := parseFormatStyleSet(`{"protection":{"hidden":false,"locked":false},"number_format":10}`)
 	assert.NoError(t, err)

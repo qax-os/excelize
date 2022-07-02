@@ -60,7 +60,8 @@ func TestAddShape(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape1.xlsx")))
 
 	// Test add first shape for given sheet.
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.AddShape("Sheet1", "A1", `{
 		"type": "ellipseRibbon",
 		"color":

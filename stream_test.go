@@ -15,7 +15,8 @@ import (
 )
 
 func BenchmarkStreamWriter(b *testing.B) {
-	file := NewFile()
+	file, err := NewFile()
+	assert.NoError(b, err)
 
 	row := make([]interface{}, 10)
 	for colID := 0; colID < 10; colID++ {
@@ -34,7 +35,8 @@ func BenchmarkStreamWriter(b *testing.B) {
 }
 
 func TestStreamWriter(t *testing.T) {
-	file := NewFile()
+	file, err := NewFile()
+	assert.NoError(t, err)
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 
@@ -78,7 +80,8 @@ func TestStreamWriter(t *testing.T) {
 	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
 
 	// Test close temporary file error.
-	file = NewFile()
+	file, err = NewFile()
+	assert.NoError(t, err)
 	streamWriter, err = file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	for rowID := 10; rowID <= 25600; rowID++ {
@@ -100,14 +103,16 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
 
 	// Test unsupported charset
-	file = NewFile()
+	file, err = NewFile()
+	assert.NoError(t, err)
 	file.Sheet.Delete("xl/worksheets/sheet1.xml")
 	file.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err = file.NewStreamWriter("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 
 	// Test read cell.
-	file = NewFile()
+	file, err = NewFile()
+	assert.NoError(t, err)
 	streamWriter, err = file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{Cell{StyleID: styleID, Value: "Data"}}))
@@ -135,7 +140,8 @@ func TestStreamWriter(t *testing.T) {
 }
 
 func TestStreamSetColWidth(t *testing.T) {
-	file := NewFile()
+	file, err := NewFile()
+	assert.NoError(t, err)
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetColWidth(3, 2, 20))
@@ -147,7 +153,8 @@ func TestStreamSetColWidth(t *testing.T) {
 }
 
 func TestStreamTable(t *testing.T) {
-	file := NewFile()
+	file, err := NewFile()
+	assert.NoError(t, err)
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 
@@ -181,7 +188,8 @@ func TestStreamTable(t *testing.T) {
 }
 
 func TestStreamMergeCells(t *testing.T) {
-	file := NewFile()
+	file, err := NewFile()
+	assert.NoError(t, err)
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.MergeCell("A1", "D1"))
@@ -194,8 +202,9 @@ func TestStreamMergeCells(t *testing.T) {
 
 func TestNewStreamWriter(t *testing.T) {
 	// Test error exceptions
-	file := NewFile()
-	_, err := file.NewStreamWriter("Sheet1")
+	file, err := NewFile()
+	assert.NoError(t, err)
+	_, err = file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
@@ -203,14 +212,16 @@ func TestNewStreamWriter(t *testing.T) {
 
 func TestSetRow(t *testing.T) {
 	// Test error exceptions
-	file := NewFile()
+	file, err := NewFile()
+	assert.NoError(t, err)
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetCellValFunc(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sw, err := f.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	c := &xlsxC{}
