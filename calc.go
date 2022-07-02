@@ -438,7 +438,13 @@ type formulaFuncs struct {
 //    DMIN
 //    DOLLARDE
 //    DOLLARFR
+//    DPRODUCT
+//    DSTDEV
+//    DSTDEVP
+//    DSUM
 //    DURATION
+//    DVAR
+//    DVARP
 //    EFFECT
 //    EDATE
 //    ENCODEURL
@@ -18090,6 +18096,18 @@ func (fn *formulaFuncs) database(name string, argsList *list.List) formulaArg {
 		return fn.MAX(args)
 	case "DMIN":
 		return fn.MIN(args)
+	case "DPRODUCT":
+		return fn.PRODUCT(args)
+	case "DSTDEV":
+		return fn.STDEV(args)
+	case "DSTDEVP":
+		return fn.STDEVP(args)
+	case "DSUM":
+		return fn.SUM(args)
+	case "DVAR":
+		return fn.VAR(args)
+	case "DVARP":
+		return fn.VARP(args)
 	default:
 		return fn.AVERAGE(args)
 	}
@@ -18175,4 +18193,68 @@ func (fn *formulaFuncs) DMAX(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) DMIN(argsList *list.List) formulaArg {
 	return fn.database("DMIN", argsList)
+}
+
+// DPRODUCT function calculates the product of a field (column) in a database
+// for selected records, that satisfy user-specified criteria. The syntax of
+// the function is:
+//
+//    DPRODUCT(database,field,criteria)
+//
+func (fn *formulaFuncs) DPRODUCT(argsList *list.List) formulaArg {
+	return fn.database("DPRODUCT", argsList)
+}
+
+// DSTDEV function calculates the sample standard deviation of a field
+// (column) in a database for selected records only. The records to be
+// included in the calculation are defined by a set of one or more
+// user-specified criteria. The syntax of the function is:
+//
+//    DSTDEV(database,field,criteria)
+//
+func (fn *formulaFuncs) DSTDEV(argsList *list.List) formulaArg {
+	return fn.database("DSTDEV", argsList)
+}
+
+// DSTDEVP function calculates the standard deviation of a field (column) in a
+// database for selected records only. The records to be included in the
+// calculation are defined by a set of one or more user-specified criteria.
+// The syntax of the function is:
+//
+//    DSTDEVP(database,field,criteria)
+//
+func (fn *formulaFuncs) DSTDEVP(argsList *list.List) formulaArg {
+	return fn.database("DSTDEVP", argsList)
+}
+
+// DSUM function calculates the sum of a field (column) in a database for
+// selected records, that satisfy user-specified criteria. The syntax of the
+// function is:
+//
+//    DSUM(database,field,criteria)
+//
+func (fn *formulaFuncs) DSUM(argsList *list.List) formulaArg {
+	return fn.database("DSUM", argsList)
+}
+
+// DVAR function calculates the sample variance of a field (column) in a
+// database for selected records only. The records to be included in the
+// calculation are defined by a set of one or more user-specified criteria.
+// The syntax of the function is:
+//
+//    DVAR(database,field,criteria)
+//
+func (fn *formulaFuncs) DVAR(argsList *list.List) formulaArg {
+	return fn.database("DVAR", argsList)
+}
+
+// DVARP function calculates the variance (for an entire population), of the
+// values in a field (column) in a database for selected records only. The
+// records to be included in the calculation are defined by a set of one or
+// more user-specified criteria. The syntax of the function is:
+//
+//    DVARP(database,field,criteria)
+//
+func (fn *formulaFuncs) DVARP(argsList *list.List) formulaArg {
+	return fn.database("DVARP", argsList)
 }

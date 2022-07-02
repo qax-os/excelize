@@ -4621,6 +4621,7 @@ func TestCalcDatabase(t *testing.T) {
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "=\"=Pear\""))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C8", "=NA()"))
 	formulaList := map[string]string{
+		"=DAVERAGE(A4:E10,\"Profit\",A1:F3)": "73.25",
 		"=DCOUNT(A4:E10,\"Age\",A1:F2)":      "1",
 		"=DCOUNT(A4:E10,,A1:F2)":             "2",
 		"=DCOUNT(A4:E10,\"Profit\",A1:F2)":   "2",
@@ -4635,7 +4636,12 @@ func TestCalcDatabase(t *testing.T) {
 		"=DMAX(A4:E10,\"Profit\",A1:F3)":     "96",
 		"=DMIN(A4:E10,\"Tree\",A1:F3)":       "0",
 		"=DMIN(A4:E10,\"Profit\",A1:F3)":     "45",
-		"=DAVERAGE(A4:E10,\"Profit\",A1:F3)": "73.25",
+		"=DPRODUCT(A4:E10,\"Profit\",A1:F3)": "24948000",
+		"=DSTDEV(A4:E10,\"Profit\",A1:F3)":   "21.077238908358",
+		"=DSTDEVP(A4:E10,\"Profit\",A1:F3)":  "18.2534243362718",
+		"=DSUM(A4:E10,\"Profit\",A1:F3)":     "293",
+		"=DVAR(A4:E10,\"Profit\",A1:F3)":     "444.25",
+		"=DVARP(A4:E10,\"Profit\",A1:F3)":    "333.1875",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
@@ -4644,6 +4650,9 @@ func TestCalcDatabase(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string]string{
+		"=DAVERAGE()":                         "DAVERAGE requires 3 arguments",
+		"=DAVERAGE(A4:E10,\"x\",A1:F3)":       "#VALUE!",
+		"=DAVERAGE(A4:E10,\"Tree\",A1:F3)":    "#DIV/0!",
 		"=DCOUNT()":                           "DCOUNT requires at least 2 arguments",
 		"=DCOUNT(A4:E10,\"Age\",A1:F2,\"\")":  "DCOUNT allows at most 3 arguments",
 		"=DCOUNT(A4,\"Age\",A1:F2)":           "#VALUE!",
@@ -4660,9 +4669,18 @@ func TestCalcDatabase(t *testing.T) {
 		"=DMAX(A4:E10,\"x\",A1:F3)":           "#VALUE!",
 		"=DMIN()":                             "DMIN requires 3 arguments",
 		"=DMIN(A4:E10,\"x\",A1:F3)":           "#VALUE!",
-		"=DAVERAGE()":                         "DAVERAGE requires 3 arguments",
-		"=DAVERAGE(A4:E10,\"x\",A1:F3)":       "#VALUE!",
-		"=DAVERAGE(A4:E10,\"Tree\",A1:F3)":    "#DIV/0!",
+		"=DPRODUCT()":                         "DPRODUCT requires 3 arguments",
+		"=DPRODUCT(A4:E10,\"x\",A1:F3)":       "#VALUE!",
+		"=DSTDEV()":                           "DSTDEV requires 3 arguments",
+		"=DSTDEV(A4:E10,\"x\",A1:F3)":         "#VALUE!",
+		"=DSTDEVP()":                          "DSTDEVP requires 3 arguments",
+		"=DSTDEVP(A4:E10,\"x\",A1:F3)":        "#VALUE!",
+		"=DSUM()":                             "DSUM requires 3 arguments",
+		"=DSUM(A4:E10,\"x\",A1:F3)":           "#VALUE!",
+		"=DVAR()":                             "DVAR requires 3 arguments",
+		"=DVAR(A4:E10,\"x\",A1:F3)":           "#VALUE!",
+		"=DVARP()":                            "DVARP requires 3 arguments",
+		"=DVARP(A4:E10,\"x\",A1:F3)":          "#VALUE!",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A11", formula))
