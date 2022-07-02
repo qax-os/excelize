@@ -211,15 +211,21 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 	// Add first table for given sheet.
 	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
-	rID := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+	rID, err := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+	if err != nil {
+		return err
+	}
 
 	sw.tableParts = fmt.Sprintf(`<tableParts count="1"><tablePart r:id="rId%d"></tablePart></tableParts>`, rID)
 
 	sw.File.addContentTypePart(tableID, "table")
 
-	b, _ := xml.Marshal(table)
+	b, err := xml.Marshal(table)
+	if err != nil {
+		return err
+	}
 	sw.File.saveFileList(tableXML, b)
-	return nil
+	return err
 }
 
 // Extract values from a row in the StreamWriter.

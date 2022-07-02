@@ -14,8 +14,8 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -54,8 +54,13 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 
 // getWorkbookPath provides a function to get the path of the workbook.xml in
 // the spreadsheet.
-func (f *File) getWorkbookPath() (path string) {
-	if rels := f.relsReader("_rels/.rels"); rels != nil {
+func (f *File) getWorkbookPath() (path string, err error) {
+	var rels *xlsxRelationships
+	rels, err = f.relsReader("_rels/.rels")
+	if err != nil {
+		return
+	}
+	if rels != nil {
 		rels.Lock()
 		defer rels.Unlock()
 		for _, rel := range rels.Relationships {
@@ -70,8 +75,12 @@ func (f *File) getWorkbookPath() (path string) {
 
 // getWorkbookRelsPath provides a function to get the path of the workbook.xml.rels
 // in the spreadsheet.
-func (f *File) getWorkbookRelsPath() (path string) {
-	wbPath := f.getWorkbookPath()
+func (f *File) getWorkbookRelsPath() (path string, err error) {
+	var wbPath string
+	wbPath, err = f.getWorkbookPath()
+	if err != nil {
+		return
+	}
 	wbDir := filepath.Dir(wbPath)
 	if wbDir == "." {
 		path = "_rels/" + filepath.Base(wbPath) + ".rels"
@@ -81,29 +90,35 @@ func (f *File) getWorkbookRelsPath() (path string) {
 	return
 }
 
-// workbookReader provides a function to get the pointer to the workbook.xml
+// NewWorkbookReader provides a function to get the pointer to the workbook.xml
 // structure after deserialization.
-func (f *File) workbookReader() *xlsxWorkbook {
+func (f *File) NewWorkbookReader() (*xlsxWorkbook, error) {
 	var err error
-	if f.WorkBook == nil {
-		wbPath := f.getWorkbookPath()
-		f.WorkBook = new(xlsxWorkbook)
-		if _, ok := f.xmlAttr[wbPath]; !ok {
-			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath))))
-			f.xmlAttr[wbPath] = append(f.xmlAttr[wbPath], getRootElement(d)...)
-			f.addNameSpaces(wbPath, SourceRelationship)
-		}
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath)))).
-			Decode(f.WorkBook); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
-		}
+	wbPath, err := f.getWorkbookPath()
+	if err != nil {
+		return nil, err
 	}
+	f.WorkBook = new(xlsxWorkbook)
+	if _, ok := f.xmlAttr[wbPath]; !ok {
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath))))
+		f.xmlAttr[wbPath] = append(f.xmlAttr[wbPath], getRootElement(d)...)
+		f.addNameSpaces(wbPath, SourceRelationship)
+	}
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath)))).
+		Decode(f.WorkBook); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("xml decode error: %w", err)
+	}
+	return f.WorkBook, err
+}
+
+// workbookReader provides a function to get the pointer to WorkBook.
+func (f *File) workbookReader() *xlsxWorkbook {
 	return f.WorkBook
 }
 
 // workBookWriter provides a function to save workbook.xml after serialize
 // structure.
-func (f *File) workBookWriter() {
+func (f *File) workBookWriter() error {
 	if f.WorkBook != nil {
 		if f.WorkBook.DecodeAlternateContent != nil {
 			f.WorkBook.AlternateContent = &xlsxAlternateContent{
@@ -112,9 +127,17 @@ func (f *File) workBookWriter() {
 			}
 		}
 		f.WorkBook.DecodeAlternateContent = nil
-		output, _ := xml.Marshal(f.WorkBook)
-		f.saveFileList(f.getWorkbookPath(), replaceRelationshipsBytes(f.replaceNameSpaceBytes(f.getWorkbookPath(), output)))
+		output, err := xml.Marshal(f.WorkBook)
+		if err != nil {
+			return err
+		}
+		wp, err := f.getWorkbookPath()
+		if err != nil {
+			return err
+		}
+		f.saveFileList(wp, replaceRelationshipsBytes(f.replaceNameSpaceBytes(wp, output)))
 	}
+	return nil
 }
 
 // SetWorkbookPrOptions provides a function to sets workbook properties.

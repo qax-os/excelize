@@ -14,33 +14,42 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
-	"log"
 )
 
-// calcChainReader provides a function to get the pointer to the structure
+// NewCalcChainReader provides a function to get the pointer to the structure
 // after deserialization of xl/calcChain.xml.
-func (f *File) calcChainReader() *xlsxCalcChain {
+func (f *File) NewCalcChainReader() (*xlsxCalcChain, error) {
 	var err error
 
 	if f.CalcChain == nil {
 		f.CalcChain = new(xlsxCalcChain)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathCalcChain)))).
 			Decode(f.CalcChain); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			err = fmt.Errorf("xml decode error: %w", err)
 		}
 	}
 
+	return f.CalcChain, err
+}
+
+// calcChainReader provides a function to get the CalcChain.
+func (f *File) calcChainReader() *xlsxCalcChain {
 	return f.CalcChain
 }
 
 // calcChainWriter provides a function to save xl/calcChain.xml after
 // serialize structure.
-func (f *File) calcChainWriter() {
+func (f *File) calcChainWriter() error {
 	if f.CalcChain != nil && f.CalcChain.C != nil {
-		output, _ := xml.Marshal(f.CalcChain)
+		output, err := xml.Marshal(f.CalcChain)
+		if err != nil {
+			return err
+		}
 		f.saveFileList(defaultXMLPathCalcChain, output)
 	}
+	return nil
 }
 
 // deleteCalcChain provides a function to remove cell reference on the

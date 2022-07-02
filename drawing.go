@@ -16,7 +16,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ import (
 
 // prepareDrawing provides a function to prepare drawing ID and XML by given
 // drawingID, worksheet name and default drawingXML.
-func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
+func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string, error) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	if ws.Drawing != nil {
 		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
@@ -34,28 +33,35 @@ func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXM
 	} else {
 		// Add first picture for given sheet.
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
-		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		rID, err := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		if err != nil {
+			return 0, "", err
+		}
 		f.addSheetDrawing(sheet, rID)
 	}
-	return drawingID, drawingXML
+	return drawingID, drawingXML, nil
 }
 
 // prepareChartSheetDrawing provides a function to prepare drawing ID and XML
 // by given drawingID, worksheet name and default drawingXML.
-func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet string) {
+func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet string) error {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	// Only allow one chart in a chartsheet.
 	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
-	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+	rID, err := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+	if err != nil {
+		return err
+	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	cs.Drawing = &xlsxDrawing{
 		RID: "rId" + strconv.Itoa(rID),
 	}
+	return err
 }
 
 // addChart provides a function to create chart as xl/charts/chart%d.xml by
 // given format sets.
-func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
+func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) error {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
 		XMLNSa:         NameSpaceDrawingML.Value,
@@ -256,9 +262,13 @@ func (f *File) addChart(formatSet *formatChart, comboCharts []*formatChart) {
 		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[comboCharts[idx].Type](comboCharts[idx]))
 		order += len(comboCharts[idx].Series)
 	}
-	chart, _ := xml.Marshal(xlsxChartSpace)
+	chart, err := xml.Marshal(xlsxChartSpace)
+	if err != nil {
+		return err
+	}
 	media := "xl/charts/chart" + strconv.Itoa(count+1) + ".xml"
 	f.saveFileList(media, chart)
+	return err
 }
 
 // drawBaseChart provides a function to draw the c:plotArea element for bar,
@@ -1148,7 +1158,7 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 // the problem that the label structure is changed after serialization and
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
-func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
+func (f *File) drawingParser(path string) (*xlsxWsDr, int, error) {
 	var (
 		err error
 		ok  bool
@@ -1162,7 +1172,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 			decodeWsDr := decodeWsDr{}
 			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
 				Decode(&decodeWsDr); err != nil && err != io.EOF {
-				log.Printf("xml decode error: %s", err)
+				return nil, 0, fmt.Errorf("xml decode error: %w", err)
 			}
 			content.R = decodeWsDr.R
 			for _, v := range decodeWsDr.AlternateContent {
@@ -1192,7 +1202,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 	}
 	wsDr.Lock()
 	defer wsDr.Unlock()
-	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2
+	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2, err
 }
 
 // addDrawingChart provides a function to add chart graphic frame by given
@@ -1208,7 +1218,10 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	width = int(float64(width) * formatSet.XScale)
 	height = int(float64(height) * formatSet.YScale)
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.OffsetX, formatSet.OffsetY, width, height)
-	content, cNvPrID := f.drawingParser(drawingXML)
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning
 	from := xlsxFrom{}
@@ -1242,7 +1255,10 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 			},
 		},
 	}
-	graphic, _ := xml.Marshal(graphicFrame)
+	graphic, err := xml.Marshal(graphicFrame)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor.GraphicFrame = string(graphic)
 	twoCellAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  formatSet.FLocksWithSheet,
@@ -1256,8 +1272,11 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 // addSheetDrawingChart provides a function to add chart graphic frame for
 // chartsheet by given sheet, drawingXML, width, height, relationship index
 // and format sets.
-func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *formatPicture) {
-	content, cNvPrID := f.drawingParser(drawingXML)
+func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *formatPicture) error {
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	absoluteAnchor := xdrCellAnchor{
 		EditAs: formatSet.Positioning,
 		Pos:    &xlsxPoint2D{},
@@ -1282,7 +1301,10 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *forma
 			},
 		},
 	}
-	graphic, _ := xml.Marshal(graphicFrame)
+	graphic, err := xml.Marshal(graphicFrame)
+	if err != nil {
+		return err
+	}
 	absoluteAnchor.GraphicFrame = string(graphic)
 	absoluteAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  formatSet.FLocksWithSheet,
@@ -1290,6 +1312,7 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, formatSet *forma
 	}
 	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
 	f.Drawings.Store(drawingXML, content)
+	return err
 }
 
 // deleteDrawing provides a function to delete chart graphic frame by given by
@@ -1307,7 +1330,10 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 		"Chart": func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic == nil },
 		"Pic":   func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic != nil },
 	}
-	wsDr, _ = f.drawingParser(drawingXML)
+	wsDr, _, err = f.drawingParser(drawingXML)
+	if err != nil {
+		return
+	}
 	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
 		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && xdrCellAnchorFuncs[drawingType](wsDr.TwoCellAnchor[idx]) {
 			if wsDr.TwoCellAnchor[idx].From.Col == col && wsDr.TwoCellAnchor[idx].From.Row == row {
@@ -1320,7 +1346,7 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
+			err = fmt.Errorf("xml decode error: %w", err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {

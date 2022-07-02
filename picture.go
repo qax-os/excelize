@@ -175,16 +175,25 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
-	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
+	drawingID, drawingXML, err = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
+	if err != nil {
+		return err
+	}
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	mediaStr := ".." + strings.TrimPrefix(f.addMedia(file, ext), "xl")
-	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
+	drawingRID, err := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
+	if err != nil {
+		return err
+	}
 	// Add picture with hyperlink.
 	if formatSet.Hyperlink != "" && formatSet.HyperlinkType != "" {
 		if formatSet.HyperlinkType == "External" {
 			hyperlinkType = formatSet.HyperlinkType
 		}
-		drawingHyperlinkRID = f.addRels(drawingRels, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
+		drawingHyperlinkRID, err = f.addRels(drawingRels, SourceRelationshipHyperLink, formatSet.Hyperlink, hyperlinkType)
+		if err != nil {
+			return err
+		}
 	}
 	ws.Unlock()
 	err = f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, formatSet)
@@ -205,7 +214,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.relsReader(rels)
+	sheetRels, _ := f.relsReader(rels)
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
@@ -284,7 +293,10 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	col--
 	row--
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, formatSet.OffsetX, formatSet.OffsetY, width, height)
-	content, cNvPrID := f.drawingParser(drawingXML)
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Positioning
 	from := xlsxFrom{}
@@ -455,7 +467,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.relsReader(rels)
+	sheetRels, _ := f.relsReader(rels)
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
@@ -550,14 +562,17 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		deTwoCellAnchor *decodeTwoCellAnchor
 	)
 
-	wsDr, _ = f.drawingParser(drawingXML)
-	if ret, buf = f.getPictureFromWsDr(row, col, drawingRelationships, wsDr); len(buf) > 0 {
+	wsDr, _, err = f.drawingParser(drawingXML)
+	if err != nil {
+		return
+	}
+	if ret, buf, err = f.getPictureFromWsDr(row, col, drawingRelationships, wsDr); len(buf) > 0 || err != nil {
 		return
 	}
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
 	err = nil
@@ -565,12 +580,15 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
+			err = fmt.Errorf("xml decode error: %w", err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+				drawRel, err = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+				if err != nil {
+					return
+				}
 				if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
 					ret = filepath.Base(drawRel.Target)
 					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
@@ -587,7 +605,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 // getPictureFromWsDr provides a function to get picture base name and raw
 // content in worksheet drawing by given coordinates and drawing
 // relationships.
-func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsDr *xlsxWsDr) (ret string, buf []byte) {
+func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsDr *xlsxWsDr) (ret string, buf []byte, err error) {
 	var (
 		ok      bool
 		anchor  *xdrCellAnchor
@@ -598,8 +616,11 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
 			if anchor.From.Col == col && anchor.From.Row == row {
-				if drawRel = f.getDrawingRelationships(drawingRelationships,
-					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
+				drawRel, err = f.getDrawingRelationships(drawingRelationships, anchor.Pic.BlipFill.Blip.Embed)
+				if err != nil {
+					return
+				}
+				if drawRel != nil {
 					if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
 						ret = filepath.Base(drawRel.Target)
 						if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
@@ -617,29 +638,40 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 // getDrawingRelationships provides a function to get drawing relationships
 // from xl/drawings/_rels/drawing%s.xml.rels by given file name and
 // relationship ID.
-func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
-	if drawingRels := f.relsReader(rels); drawingRels != nil {
+func (f *File) getDrawingRelationships(rels, rID string) (*xlsxRelationship, error) {
+	drawingRels, err := f.relsReader(rels)
+	if err != nil {
+		return nil, err
+	}
+	if drawingRels != nil {
 		drawingRels.Lock()
 		defer drawingRels.Unlock()
 		for _, v := range drawingRels.Relationships {
 			if v.ID == rID {
-				return &v
+				return &v, err
 			}
 		}
 	}
-	return nil
+	return nil, err
 }
 
 // drawingsWriter provides a function to save xl/drawings/drawing%d.xml after
 // serialize structure.
-func (f *File) drawingsWriter() {
+func (f *File) drawingsWriter() (firstError error) {
 	f.Drawings.Range(func(path, d interface{}) bool {
 		if d != nil {
-			v, _ := xml.Marshal(d.(*xlsxWsDr))
-			f.saveFileList(path.(string), v)
+			v, err := xml.Marshal(d.(*xlsxWsDr))
+			if err != nil {
+				if firstError == nil {
+					firstError = err
+				}
+			} else {
+				f.saveFileList(path.(string), v)
+			}
 		}
 		return true
 	})
+	return
 }
 
 // drawingResize calculate the height and width after resizing.

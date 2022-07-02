@@ -17,7 +17,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"reflect"
 	"strconv"
@@ -922,35 +921,48 @@ func formatToE(v, format string, date1904 bool) string {
 	return fmt.Sprintf("%.2E", f)
 }
 
-// stylesReader provides a function to get the pointer to the structure after
+// NewStylesReader provides a function to get the pointer to the structure after
 // deserialization of xl/styles.xml.
-func (f *File) stylesReader() *xlsxStyleSheet {
+func (f *File) NewStylesReader() (*xlsxStyleSheet, error) {
 	if f.Styles == nil {
 		f.Styles = new(xlsxStyleSheet)
 		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathStyles)))).
 			Decode(f.Styles); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			return nil, fmt.Errorf("xml decode error: %w", err)
 		}
 	}
+	return f.Styles, nil
+}
+
+// stylesReader provides a function to get the pointer to Styles.
+func (f *File) stylesReader() *xlsxStyleSheet {
 	return f.Styles
 }
 
 // styleSheetWriter provides a function to save xl/styles.xml after serialize
 // structure.
-func (f *File) styleSheetWriter() {
+func (f *File) styleSheetWriter() error {
 	if f.Styles != nil {
-		output, _ := xml.Marshal(f.Styles)
+		output, err := xml.Marshal(f.Styles)
+		if err != nil {
+			return err
+		}
 		f.saveFileList(defaultXMLPathStyles, f.replaceNameSpaceBytes(defaultXMLPathStyles, output))
 	}
+	return nil
 }
 
 // sharedStringsWriter provides a function to save xl/sharedStrings.xml after
 // serialize structure.
-func (f *File) sharedStringsWriter() {
+func (f *File) sharedStringsWriter() error {
 	if f.SharedStrings != nil {
-		output, _ := xml.Marshal(f.SharedStrings)
+		output, err := xml.Marshal(f.SharedStrings)
+		if err != nil {
+			return err
+		}
 		f.saveFileList(defaultXMLPathSharedStrings, f.replaceNameSpaceBytes(defaultXMLPathSharedStrings, output))
 	}
+	return nil
 }
 
 // parseFormatStyleSet provides a function to parse the format settings of the
@@ -1988,7 +2000,10 @@ func (f *File) NewConditionalStyle(style string) (int, error) {
 	if fs.Font != nil {
 		dxf.Font = f.newFont(fs)
 	}
-	dxfStr, _ := xml.Marshal(dxf)
+	dxfStr, err := xml.Marshal(dxf)
+	if err != nil {
+		return 0, err
+	}
 	if s.Dxfs == nil {
 		s.Dxfs = &xlsxDxfs{}
 	}
@@ -3021,18 +3036,18 @@ func getPaletteColor(color string) string {
 	return "FF" + strings.ReplaceAll(strings.ToUpper(color), "#", "")
 }
 
-// themeReader provides a function to get the pointer to the xl/theme/theme1.xml
+// NewThemeReader provides a function to get the pointer to the xl/theme/theme1.xml
 // structure after deserialization.
-func (f *File) themeReader() *xlsxTheme {
+func (f *File) NewThemeReader() (*xlsxTheme, error) {
 	var (
 		err   error
 		theme xlsxTheme
 	)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")))).
 		Decode(&theme); err != nil && err != io.EOF {
-		log.Printf("xml decoder error: %s", err)
+		return nil, fmt.Errorf("xml decoder error: %w", err)
 	}
-	return &theme
+	return &theme, err
 }
 
 // ThemeColor applied the color with tint value.

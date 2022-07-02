@@ -86,7 +86,10 @@ func (f *File) AddTable(sheet, hCell, vCell, format string) error {
 	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
 	// Add first table for given sheet.
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
-	rID := f.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+	rID, err := f.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+	if err != nil {
+		return err
+	}
 	if err = f.addSheetTable(sheet, rID); err != nil {
 		return err
 	}
@@ -152,13 +155,22 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 		if err != nil {
 			return err
 		}
-		name, _ := f.GetCellValue(sheet, cell)
+		name, err := f.GetCellValue(sheet, cell)
+		if err != nil {
+			return err
+		}
 		if _, err := strconv.Atoi(name); err == nil {
-			_ = f.SetCellStr(sheet, cell, name)
+			err = f.SetCellStr(sheet, cell, name)
+			if err != nil {
+				return err
+			}
 		}
 		if name == "" {
 			name = "Column" + strconv.Itoa(idx)
-			_ = f.SetCellStr(sheet, cell, name)
+			err = f.SetCellStr(sheet, cell, name)
+			if err != nil {
+				return err
+			}
 		}
 		tableColumn = append(tableColumn, &xlsxTableColumn{
 			ID:   idx,
@@ -190,9 +202,12 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 			ShowColumnStripes: formatSet.ShowColumnStripes,
 		},
 	}
-	table, _ := xml.Marshal(t)
+	table, err := xml.Marshal(t)
+	if err != nil {
+		return err
+	}
 	f.saveFileList(tableXML, table)
-	return nil
+	return err
 }
 
 // parseAutoFilterSet provides a function to parse the settings of the auto

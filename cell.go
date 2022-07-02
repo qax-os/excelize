@@ -62,8 +62,12 @@ var cellTypes = map[string]CellType{
 // returned, along with the raw value of the cell. All cells' values will be
 // the same in a merged range.
 func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error) {
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return "", err
+	}
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
-		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
+		val, err := c.getValueFrom(f, sst, parseOptions(opts...).RawCellValue)
 		return val, true, err
 	})
 }
@@ -404,7 +408,10 @@ func (f *File) setSharedString(val string) (int, error) {
 	if err := f.sharedStringsLoader(); err != nil {
 		return 0, err
 	}
-	sst := f.sharedStringsReader()
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return 0, err
+	}
 	f.Lock()
 	defer f.Unlock()
 	if i, ok := f.sharedStringsMap[val]; ok {
@@ -747,7 +754,10 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	case "External":
 		sheetPath := f.sheetMap[trimSheetName(sheet)]
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
-		rID := f.setRels(linkData.RID, sheetRels, SourceRelationshipHyperLink, link, linkType)
+		rID, err := f.setRels(linkData.RID, sheetRels, SourceRelationshipHyperLink, link, linkType)
+		if err != nil {
+			return err
+		}
 		linkData = xlsxHyperlink{
 			Ref: axis,
 		}
@@ -826,7 +836,10 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 	if err != nil || cellData.T != "s" {
 		return
 	}
-	sst := f.sharedStringsReader()
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return
+	}
 	if len(sst.SI) <= siIdx || siIdx < 0 {
 		return
 	}
@@ -998,7 +1011,10 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	}
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	si := xlsxSI{}
-	sst := f.sharedStringsReader()
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return err
+	}
 	var textRuns []xlsxR
 	totalCellChars := 0
 	for _, textRun := range runs {
@@ -1133,16 +1149,17 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
-func (f *File) formattedValue(s int, v string, raw bool) string {
+func (f *File) formattedValue(s int, v string, raw bool) (formatted string) {
+	formatted = v
 	if raw {
-		return v
+		return
 	}
 	if s == 0 {
-		return v
+		return
 	}
 	styleSheet := f.stylesReader()
 	if s >= len(styleSheet.CellXfs.Xf) {
-		return v
+		return
 	}
 	var numFmtID int
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
@@ -1153,17 +1170,19 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 		date1904 = wb.WorkbookPr.Date1904
 	}
 	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
-		return ok(v, builtInNumFmt[numFmtID], date1904)
+		formatted = ok(v, builtInNumFmt[numFmtID], date1904)
+		return
 	}
 	if styleSheet == nil || styleSheet.NumFmts == nil {
-		return v
+		return
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(v, xlsxFmt.FormatCode, date1904)
+			formatted = format(v, xlsxFmt.FormatCode, date1904)
+			return
 		}
 	}
-	return v
+	return
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in

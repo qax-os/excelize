@@ -77,7 +77,7 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 	app = new(xlsxProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
 	fields = []string{"Application", "ScaleCrop", "DocSecurity", "Company", "LinksUpToDate", "HyperlinksChanged", "AppVersion"}
@@ -95,6 +95,9 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 	}
 	app.Vt = NameSpaceDocumentPropertiesVariantTypes.Value
 	output, err = xml.Marshal(app)
+	if err != nil {
+		return
+	}
 	f.saveFileList(defaultXMLPathDocPropsApp, output)
 	return
 }
@@ -104,7 +107,7 @@ func (f *File) GetAppProps() (ret *AppProperties, err error) {
 	app := new(xlsxProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
 	ret, err = &AppProperties{
@@ -183,7 +186,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	core = new(decodeCoreProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
 	newProps, err = &xlsxCoreProperties{
@@ -222,6 +225,9 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		newProps.Modified.Text = docProperties.Modified
 	}
 	output, err = xml.Marshal(newProps)
+	if err != nil {
+		return
+	}
 	f.saveFileList(defaultXMLPathDocPropsCore, output)
 
 	return
@@ -233,7 +239,7 @@ func (f *File) GetDocProps() (ret *DocProperties, err error) {
 
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
 	ret, err = &DocProperties{

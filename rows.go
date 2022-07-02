@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"math/big"
 	"os"
@@ -131,7 +130,14 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	}
 	var rowIterator rowXMLIterator
 	var token xml.Token
-	rows.rawCellValue, rows.sst = parseOptions(opts...).RawCellValue, rows.f.sharedStringsReader()
+	rows.rawCellValue = parseOptions(opts...).RawCellValue
+
+	var err error
+	rows.sst, err = rows.f.sharedStringsReader()
+	if err != nil {
+		return nil, err
+	}
+
 	for {
 		if rows.token != nil {
 			token = rows.token
@@ -242,7 +248,10 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		worksheet.Lock()
 		defer worksheet.Unlock()
 		// flush data
-		output, _ := xml.Marshal(worksheet)
+		output, err := xml.Marshal(worksheet)
+		if err != nil {
+			return nil, err
+		}
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var err error
@@ -386,17 +395,20 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 
 // sharedStringsReader provides a function to get the pointer to the structure
 // after deserialization of xl/sharedStrings.xml.
-func (f *File) sharedStringsReader() *xlsxSST {
+func (f *File) sharedStringsReader() (*xlsxSST, error) {
 	var err error
 	f.Lock()
 	defer f.Unlock()
-	relPath := f.getWorkbookRelsPath()
+	relPath, err := f.getWorkbookRelsPath()
+	if err != nil {
+		return nil, err
+	}
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
 		ss := f.readXML(defaultXMLPathSharedStrings)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			return nil, fmt.Errorf("xml decode error: %s", err)
 		}
 		if sharedStrings.Count == 0 {
 			sharedStrings.Count = len(sharedStrings.SI)
@@ -411,17 +423,20 @@ func (f *File) sharedStringsReader() *xlsxSST {
 			}
 		}
 		f.addContentTypePart(0, "sharedStrings")
-		rels := f.relsReader(relPath)
+		rels, err := f.relsReader(relPath)
+		if err != nil {
+			return f.SharedStrings, err
+		}
 		for _, rel := range rels.Relationships {
 			if rel.Target == "/xl/sharedStrings.xml" {
-				return f.SharedStrings
+				return f.SharedStrings, nil
 			}
 		}
 		// Update workbook.xml.rels
 		f.addRels(relPath, SourceRelationshipSharedStrings, "/xl/sharedStrings.xml", "")
 	}
 
-	return f.SharedStrings
+	return f.SharedStrings, nil
 }
 
 // getValueFrom return a value from a column/row cell, this function is
