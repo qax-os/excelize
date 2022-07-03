@@ -433,6 +433,7 @@ type formulaFuncs struct {
 //    DEGREES
 //    DELTA
 //    DEVSQ
+//    DGET
 //    DISC
 //    DMAX
 //    DMIN
@@ -18171,6 +18172,32 @@ func (fn *formulaFuncs) DCOUNT(argsList *list.List) formulaArg {
 //
 func (fn *formulaFuncs) DCOUNTA(argsList *list.List) formulaArg {
 	return fn.dcount("DCOUNTA", argsList)
+}
+
+// DGET function returns a single value from a column of a database. The record
+// is selected via a set of one or more user-specified criteria. The syntax of
+// the function is:
+//
+//    DGET(database,field,criteria)
+//
+func (fn *formulaFuncs) DGET(argsList *list.List) formulaArg {
+	if argsList.Len() != 3 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DGET requires 3 arguments")
+	}
+	database := argsList.Front().Value.(formulaArg)
+	field := argsList.Front().Next().Value.(formulaArg)
+	criteria := argsList.Back().Value.(formulaArg)
+	db := newCalcDatabase(database, field, criteria)
+	if db == nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	value := newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	if db.next() {
+		if value = db.value(); db.next() {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return value
 }
 
 // DMAX function finds the maximum value in a field (column) in a database for
