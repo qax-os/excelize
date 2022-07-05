@@ -64,6 +64,10 @@ func newFieldLengthError(name string) error {
 	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
 }
 
+func newRangeLengthError(rangeValue string) error {
+	return fmt.Errorf("range %q is of length 1, minimum range length is 2", rangeValue)
+}
+
 // newCellNameToCoordinatesError defined the error message on converts
 // alphanumeric cell name to coordinates.
 func newCellNameToCoordinatesError(cell string, err error) error {
@@ -106,6 +110,8 @@ var (
 	// ErrImgExt defined the error message on receive an unsupported image
 	// extension.
 	ErrImgExt = errors.New("unsupported image extension")
+	// ErrIncompleteFileSetup defined the error message on invalid File setup.
+	ErrIncompleteFileSetup = errors.New("file is setup incorrectly")
 	// ErrWorkbookFileFormat defined the error message on receive an
 	// unsupported workbook file format.
 	ErrWorkbookFileFormat = errors.New("unsupported workbook file format")

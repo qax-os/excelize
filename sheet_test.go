@@ -403,6 +403,24 @@ func TestGetSheetMap(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestGetSheetNameBySheetXMLPath(t *testing.T) {
+	expectedNames := []string{"Sheet1", "Sheet2"}
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+
+	sheetMap, err := f.getSheetMap()
+	assert.NoError(t, err)
+
+	idx := 0
+	for _, v := range sheetMap {
+		sheet := f.getSheetNameBySheetXMLPath(v)
+		assert.Equal(t, expectedNames[idx], sheet)
+		idx++
+	}
+	assert.Equal(t, len(sheetMap), 2)
+	assert.NoError(t, f.Close())
+}
+
 func TestSetActiveSheet(t *testing.T) {
 	f, err := NewFile()
 	assert.NoError(t, err)

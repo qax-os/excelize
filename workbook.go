@@ -45,6 +45,9 @@ type (
 // characters are allowed in sheet title.
 func (f *File) setWorkbook(name string, sheetID, rid int) {
 	content := f.workbookReader()
+	if content == nil {
+		return
+	}
 	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
 		Name:    trimSheetName(name),
 		SheetID: sheetID,
@@ -148,6 +151,9 @@ func (f *File) workBookWriter() error {
 //   CodeName(string)
 func (f *File) SetWorkbookPrOptions(opts ...WorkbookPrOption) error {
 	wb := f.workbookReader()
+	if wb == nil {
+		return ErrIncompleteFileSetup
+	}
 	pr := wb.WorkbookPr
 	if pr == nil {
 		pr = new(xlsxWorkbookPr)
@@ -182,6 +188,9 @@ func (o CodeName) setWorkbookPrOption(pr *xlsxWorkbookPr) {
 //   CodeName(string)
 func (f *File) GetWorkbookPrOptions(opts ...WorkbookPrOptionPtr) error {
 	wb := f.workbookReader()
+	if wb == nil {
+		return ErrIncompleteFileSetup
+	}
 	pr := wb.WorkbookPr
 	for _, opt := range opts {
 		opt.getWorkbookPrOption(pr)

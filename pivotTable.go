@@ -131,6 +131,10 @@ type PivotTableField struct {
 //    }
 //
 func (f *File) AddPivotTable(opt *PivotTableOption) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	// parameter validation
 	_, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opt)
 	if err != nil {
@@ -718,6 +722,9 @@ func (f *File) getPivotTableFieldOptions(name string, fields []PivotTableField) 
 // addWorkbookPivotCache add the association ID of the pivot cache in workbook.xml.
 func (f *File) addWorkbookPivotCache(RID int) int {
 	wb := f.workbookReader()
+	if wb == nil {
+		return 0
+	}
 	if wb.PivotCaches == nil {
 		wb.PivotCaches = &xlsxPivotCaches{}
 	}

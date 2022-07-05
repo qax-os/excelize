@@ -38,6 +38,9 @@ import (
 // case-sensitive, when creating a new spreadsheet file, the default
 // worksheet named `Sheet1` will be created.
 func (f *File) NewSheet(name string) (int, error) {
+	if !f.IsValid() {
+		return -1, ErrIncompleteFileSetup
+	}
 	// Check if the worksheet already exists
 	index := f.GetSheetIndex(name)
 	if index != -1 {
@@ -167,7 +170,8 @@ func (f *File) workSheetWriter() (firstError error) {
 			if sheet.MergeCells != nil && len(sheet.MergeCells.Cells) > 0 {
 				err := f.mergeOverlapCells(sheet)
 				if err != nil && firstError == nil {
-					firstError = err
+					sheetName := f.getSheetNameBySheetXMLPath(p.(string))
+					firstError = fmt.Errorf("error in sheet %q: %w", sheetName, err)
 				}
 			}
 			if sheet.Cols != nil && len(sheet.Cols.Col) > 0 {
@@ -225,6 +229,9 @@ func trimCell(column []xlsxC) []xlsxC {
 // type of the spreadsheet.
 func (f *File) setContentTypes(partName, contentType string) {
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	content.Overrides = append(content.Overrides, xlsxOverride{
@@ -288,6 +295,9 @@ func replaceRelationshipsBytes(content []byte) []byte {
 // ID returned by function GetSheetMap(). It should be greater or equal to 0
 // and less than the total worksheet numbers.
 func (f *File) SetActiveSheet(index int) {
+	if !f.IsValid() {
+		return
+	}
 	if index < 0 {
 		index = 0
 	}
@@ -378,6 +388,9 @@ func (f *File) SetSheetName(oldName, newName string) {
 		return
 	}
 	content := f.workbookReader()
+	if content == nil {
+		return
+	}
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == oldName {
 			content.Sheets.Sheet[k].Name = newName
@@ -476,7 +489,11 @@ func (f *File) getSheetMap() (map[string]string, error) {
 	if err != nil {
 		return maps, err
 	}
-	for _, v := range f.workbookReader().Sheets.Sheet {
+	wb := f.workbookReader()
+	if wb == nil {
+		return maps, ErrIncompleteFileSetup
+	}
+	for _, v := range wb.Sheets.Sheet {
 		for _, rel := range wbRels.Relationships {
 			if rel.ID == v.ID {
 				sheetXMLPath, err := f.getWorksheetPath(rel.Target)
@@ -493,6 +510,22 @@ func (f *File) getSheetMap() (map[string]string, error) {
 		}
 	}
 	return maps, nil
+}
+
+// getSheetNameBySheetXMLPath provides a function to get worksheet name
+// by checking the sheet map against the given XML file path.
+func (f *File) getSheetNameBySheetXMLPath(sheetXMLPath string) (sheet string) {
+	sheetMap, err := f.getSheetMap()
+	if err != nil {
+		return
+	}
+	for k, v := range sheetMap {
+		if v == sheetXMLPath {
+			sheet = k
+			return
+		}
+	}
+	return
 }
 
 // SetSheetBackground provides a function to set background picture by given
@@ -531,6 +564,9 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 // you open it. This function will be invalid when only the one worksheet is
 // left.
 func (f *File) DeleteSheet(name string) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
 	if f.SheetCount == 1 || f.GetSheetIndex(name) == -1 {
 		return nil
 	}
@@ -633,6 +669,9 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 		target = "/xl/" + target
 	}
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	for k, v := range content.Overrides {
@@ -701,6 +740,9 @@ func (f *File) copySheet(from, to int) error {
 //    err := f.SetSheetVisible("Sheet1", false)
 //
 func (f *File) SetSheetVisible(name string, visible bool) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
 	name = trimSheetName(name)
 	content := f.workbookReader()
 	if visible {
@@ -868,6 +910,9 @@ func (f *File) SetPanes(sheet, panes string) error {
 //
 func (f *File) GetSheetVisible(name string) bool {
 	content := f.workbookReader()
+	if content == nil {
+		return false
+	}
 	visible := false
 	for k, v := range content.Sheets.Sheet {
 		if v.Name == trimSheetName(name) {
@@ -1600,6 +1645,9 @@ func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 //
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	wb := f.workbookReader()
+	if wb == nil {
+		return ErrIncompleteFileSetup
+	}
 	d := xlsxDefinedName{
 		Name:    definedName.Name,
 		Comment: definedName.Comment,
@@ -1640,6 +1688,9 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 //
 func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 	wb := f.workbookReader()
+	if wb == nil {
+		return ErrIncompleteFileSetup
+	}
 	if wb.DefinedNames != nil {
 		for idx, dn := range wb.DefinedNames.DefinedName {
 			scope := "Workbook"
@@ -1664,6 +1715,9 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 func (f *File) GetDefinedName() []DefinedName {
 	var definedNames []DefinedName
 	wb := f.workbookReader()
+	if wb == nil {
+		return definedNames
+	}
 	if wb.DefinedNames != nil {
 		for _, dn := range wb.DefinedNames.DefinedName {
 			definedName := DefinedName{

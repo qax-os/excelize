@@ -108,6 +108,10 @@ func (f *File) getSheetComments(sheetFile string) (string, error) {
 //    err := f.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
 //
 func (f *File) AddComment(sheet, cell, format string) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	formatSet, err := parseFormatCommentsSet(format)
 	if err != nil {
 		return err

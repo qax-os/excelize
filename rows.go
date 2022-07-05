@@ -404,6 +404,10 @@ func (f *File) sharedStringsReader() (*xlsxSST, error) {
 		return nil, err
 	}
 	if f.SharedStrings == nil {
+		if !f.IsValid() {
+			return nil, ErrIncompleteFileSetup
+		}
+
 		var sharedStrings xlsxSST
 		ss := f.readXML(defaultXMLPathSharedStrings)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
@@ -444,6 +448,9 @@ func (f *File) sharedStringsReader() (*xlsxSST, error) {
 // intended to be used with for range on rows an argument with the spreadsheet
 // opened file.
 func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
+	if !f.IsValid() {
+		return "", ErrIncompleteFileSetup
+	}
 	f.Lock()
 	defer f.Unlock()
 	switch c.T {

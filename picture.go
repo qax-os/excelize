@@ -152,6 +152,10 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //    }
 //
 func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, file []byte) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	var drawingHyperlinkRID int
 	var hyperlinkType string
 	ext, ok := supportedImageTypes[extension]
@@ -380,6 +384,9 @@ func (f *File) addMedia(file []byte, ext string) string {
 func (f *File) setContentTypePartImageExtensions() {
 	imageTypes := map[string]string{"jpeg": "image/", "png": "image/", "gif": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-"}
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, file := range content.Defaults {
@@ -398,6 +405,9 @@ func (f *File) setContentTypePartImageExtensions() {
 func (f *File) setContentTypePartVMLExtensions() {
 	vml := false
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, v := range content.Defaults {
@@ -445,6 +455,9 @@ func (f *File) addContentTypePart(index int, contentType string) {
 		s()
 	}
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, v := range content.Overrides {

@@ -315,7 +315,7 @@ func TestStylesReader(t *testing.T) {
 	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
 }
 
-func TestThemeReader(t *testing.T) {
+func TestNewThemeReader(t *testing.T) {
 	f, err := NewFile()
 	assert.NoError(t, err)
 	// Test read theme with unsupported charset.

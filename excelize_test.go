@@ -276,7 +276,7 @@ func TestBrokenFile(t *testing.T) {
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
 		// Test write file with broken file struct with given path.
-		assert.NoError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")))
+		assert.EqualError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")), ErrIncompleteFileSetup.Error())
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
@@ -1296,7 +1296,6 @@ func TestContentTypesReader(t *testing.T) {
 	assert.NoError(t, err)
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	f.contentTypesReader()
 }
 
 func TestWorkbookReader(t *testing.T) {
@@ -1305,7 +1304,6 @@ func TestWorkbookReader(t *testing.T) {
 	assert.NoError(t, err)
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
-	f.workbookReader()
 }
 
 func TestWorkSheetReader(t *testing.T) {

@@ -107,6 +107,9 @@ func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFilePathLength {
 		return ErrMaxFilePathLength
 	}
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
 	f.Path = name
 	contentType, ok := map[string]string{
 		".xlam": ContentTypeAddinMacro,

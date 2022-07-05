@@ -11,7 +11,6 @@ func TestCalcChainReader(t *testing.T) {
 	assert.NoError(t, err)
 	f.CalcChain = nil
 	f.Pkg.Store(defaultXMLPathCalcChain, MacintoshCyrillicCharset)
-	f.calcChainReader()
 }
 
 func TestDeleteCalcChain(t *testing.T) {

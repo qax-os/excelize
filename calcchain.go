@@ -61,10 +61,13 @@ func (f *File) deleteCalcChain(index int, axis string) {
 			return !((c.I == index && c.R == axis) || (c.I == index && axis == ""))
 		})
 	}
-	if len(calc.C) == 0 {
+	if calc == nil || len(calc.C) == 0 {
 		f.CalcChain = nil
 		f.Pkg.Delete(defaultXMLPathCalcChain)
 		content := f.contentTypesReader()
+		if content == nil {
+			return
+		}
 		content.Lock()
 		defer content.Unlock()
 		for k, v := range content.Overrides {

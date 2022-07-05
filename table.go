@@ -59,6 +59,10 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 //    TableStyleDark1 - TableStyleDark11
 //
 func (f *File) AddTable(sheet, hCell, vCell, format string) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	formatSet, err := parseFormatTableSet(format)
 	if err != nil {
 		return err
@@ -289,6 +293,10 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 //    Price < 2000
 //
 func (f *File) AutoFilter(sheet, hCell, vCell, format string) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	hCol, hRow, err := CellNameToCoordinates(hCell)
 	if err != nil {
 		return err

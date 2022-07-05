@@ -212,6 +212,11 @@ func parseOptions(opts ...Options) *Options {
 	return opt
 }
 
+func (f *File) IsValid() bool {
+	return f.CalcChain != nil && f.ContentTypes != nil && f.WorkBook != nil &&
+		f.sheetMap != nil && f.Styles != nil && f.Theme != nil
+}
+
 // CharsetTranscoder Set user defined codepage transcoder function for open
 // XLSX from non UTF-8 encoding.
 func (f *File) CharsetTranscoder(fn charsetTranscoderFn) *File { f.CharsetReader = fn; return f }
@@ -444,6 +449,9 @@ func (f *File) addRels(relPath, relType, target, targetMode string) (int, error)
 //
 func (f *File) UpdateLinkedValue() error {
 	wb := f.workbookReader()
+	if wb == nil {
+		return ErrIncompleteFileSetup
+	}
 	// recalculate formulas
 	wb.CalcPr = nil
 	for _, name := range f.GetSheetList() {
@@ -531,6 +539,9 @@ func (f *File) AddVBAProject(bin string) error {
 func (f *File) setContentTypePartProjectExtensions(contentType string) {
 	var ok bool
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, v := range content.Defaults {

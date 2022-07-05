@@ -141,6 +141,10 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 //
 // See File.AddTable for details on the table format.
 func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
+	if !sw.File.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	formatSet, err := parseFormatTableSet(format)
 	if err != nil {
 		return err

@@ -279,6 +279,10 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 //    wavyDbl
 //
 func (f *File) AddShape(sheet, cell, format string) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	formatSet, err := parseFormatShapeSet(format)
 	if err != nil {
 		return err
