@@ -152,7 +152,7 @@ func overlapRange(ws *xlsxWorksheet) (row, col int, err error) {
 			continue
 		}
 		if rect, err = mergeCell.Rect(); err != nil {
-			err = fmt.Errorf("%s: %w", ws.MergeCells.XMLName.Local, err)
+			err = fmt.Errorf("overlapRange: %w", err)
 			return
 		}
 		x1, y1, x2, y2 := rect[0], rect[1], rect[2], rect[3]

@@ -65,7 +65,7 @@ func newFieldLengthError(name string) error {
 }
 
 func newRangeLengthError(rangeValue string) error {
-	return fmt.Errorf("range %q is of length 1, minimum range length is 2", rangeValue)
+	return fmt.Errorf("%w: range of %q is smaller than minimum range length of 2", ErrRangeLength, rangeValue)
 }
 
 // newCellNameToCoordinatesError defined the error message on converts
@@ -172,6 +172,8 @@ var (
 	// ErrCellCharsLength defined the error message for receiving a cell
 	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
+	// ErrRangeLength defined the error message for handling a range of invalid length.
+	ErrRangeLength = fmt.Errorf("invalid range length")
 	// ErrOptionsUnzipSizeLimit defined the error message for receiving
 	// invalid UnzipSizeLimit and UnzipXMLSizeLimit.
 	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to UnzipXMLSizeLimit")

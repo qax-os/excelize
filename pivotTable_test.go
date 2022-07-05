@@ -231,7 +231,7 @@ func TestAddPivotTable(t *testing.T) {
 	assert.EqualError(t, err, ErrParameterRequired.Error())
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")
-	assert.EqualError(t, err, "parameter is invalid")
+	assert.ErrorIs(t, err, ErrRangeLength)
 	// Test get pivot fields order with empty data range
 	_, err = f.getPivotFieldsOrder(&PivotTableOption{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)

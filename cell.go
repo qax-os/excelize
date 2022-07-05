@@ -619,7 +619,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
 	coordinates, err := areaRefToCoordinates(ref)
 	if err != nil {
-		return err
+		return fmt.Errorf("setSharedFormula: %w", err)
 	}
 	_ = sortCoordinates(coordinates)
 	cnt := ws.countSharedFormula()
@@ -634,7 +634,7 @@ func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
 			cell.F.Si = &cnt
 		}
 	}
-	return err
+	return nil
 }
 
 // countSharedFormula count shared formula in the given worksheet.

@@ -212,8 +212,10 @@ func parseOptions(opts ...Options) *Options {
 	return opt
 }
 
+// IsValid returns true if the File's main components are initialized.
+// Note: CalcChain can be nil, in case there is no calculation chain.
 func (f *File) IsValid() bool {
-	return f.CalcChain != nil && f.ContentTypes != nil && f.WorkBook != nil &&
+	return f.ContentTypes != nil && f.WorkBook != nil &&
 		f.sheetMap != nil && f.Styles != nil && f.Theme != nil
 }
 

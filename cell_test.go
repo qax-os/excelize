@@ -502,7 +502,7 @@ func TestSetCellFormula(t *testing.T) {
 	ref = "D1:D5"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	ref = ""
-	assert.EqualError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}), ErrParameterInvalid.Error())
+	assert.ErrorIs(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}), ErrRangeLength)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula5.xlsx")))
 
 	// Test set table formula for the cells.

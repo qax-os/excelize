@@ -188,15 +188,15 @@ func TestUnmergeCell(t *testing.T) {
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
-	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), ErrParameterInvalid.Error())
+	assert.ErrorIs(t, f.UnmergeCell("Sheet1", "A2", "B3"), ErrRangeLength)
 
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), "overlapRange: "+newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestFlatMergedCells(t *testing.T) {
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}}
-	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), ErrParameterInvalid.Error())
+	assert.ErrorIs(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), ErrRangeLength)
 }
