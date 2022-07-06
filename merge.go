@@ -152,7 +152,6 @@ func overlapRange(ws *xlsxWorksheet) (row, col int, err error) {
 			continue
 		}
 		if rect, err = mergeCell.Rect(); err != nil {
-			err = fmt.Errorf("overlapRange: %w", err)
 			return
 		}
 		x1, y1, x2, y2 := rect[0], rect[1], rect[2], rect[3]
@@ -211,7 +210,7 @@ func flatMergedCells(ws *xlsxWorksheet, matrix [][]*xlsxMergeCell) error {
 func (f *File) mergeOverlapCells(ws *xlsxWorksheet) error {
 	rows, cols, err := overlapRange(ws)
 	if err != nil {
-		return err
+		return fmt.Errorf("merge overlapping cells: %w", err)
 	}
 	if rows == 0 || cols == 0 {
 		return nil

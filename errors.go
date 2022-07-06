@@ -64,6 +64,7 @@ func newFieldLengthError(name string) error {
 	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
 }
 
+// newRangeLengthError defined the error message on receiving the invalid range length.
 func newRangeLengthError(rangeValue string) error {
 	return fmt.Errorf("%w: range of %q is smaller than minimum range length of 2", ErrRangeLength, rangeValue)
 }

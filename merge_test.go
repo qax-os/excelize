@@ -193,7 +193,7 @@ func TestUnmergeCell(t *testing.T) {
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), "overlapRange: "+newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), "merge overlapping cells: "+newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestFlatMergedCells(t *testing.T) {
