@@ -331,6 +331,16 @@ func TestNewFile(t *testing.T) {
 	assert.NoError(t, f.Save())
 }
 
+func TestIsValid(t *testing.T) {
+	f, err := NewFile()
+	assert.NoError(t, err)
+	assert.EqualValues(t, true, f.IsValid(), "expected that new file is valid")
+
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	assert.EqualValues(t, true, f.IsValid(), "expected that new file is valid")
+}
+
 func TestAddDrawingVML(t *testing.T) {
 	// Test addDrawingVML with illegal cell coordinates.
 	f, err := NewFile()
