@@ -245,7 +245,10 @@ func (f *File) writeToZip(zw *zip.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	f.sharedStringsWriter()
+	err = f.sharedStringsWriter()
+	if err != nil {
+		return
+	}
 	err = f.styleSheetWriter()
 	if err != nil {
 		return
