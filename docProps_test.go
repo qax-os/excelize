@@ -53,7 +53,7 @@ func TestGetAppProps(t *testing.T) {
 	}
 	props, err := f.GetAppProps()
 	assert.NoError(t, err)
-	assert.Equal(t, props.Application, "Microsoft Macintosh Excel")
+	assert.NotEmpty(t, props.Application, "expected application name in app properties to be not empty")
 	f.Pkg.Store(defaultXMLPathDocPropsApp, nil)
 	_, err = f.GetAppProps()
 	assert.NoError(t, err)
