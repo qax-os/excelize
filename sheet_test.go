@@ -498,3 +498,10 @@ func newSheetWithSave() {
 	}
 	_ = file.Save()
 }
+
+func TestFile_getSheetID_CaseInsensitivity(t *testing.T) {
+	file := NewFile()
+	file.NewSheet("Sheet1")
+	id := file.getSheetID("sheet1")
+	assert.NotEqual(t, -1, id)
+}
