@@ -455,8 +455,8 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 // SetColWidth provides a function to set the width of a single column or
 // multiple columns. For example:
 //
-//    f := excelize.NewFile()
-//    err := f.SetColWidth("Sheet1", "A", "H", 20)
+//    f, err := excelize.NewFile()
+//    err = f.SetColWidth("Sheet1", "A", "H", 20)
 //
 func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
 	min, err := ColumnNameToNumber(startCol)

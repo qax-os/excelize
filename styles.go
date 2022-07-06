@@ -1846,7 +1846,11 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 // Excelize support set custom number format for cell. For example, set number
 // as date type in Uruguay (Spanish) format for Sheet1!A6:
 //
-//    f := excelize.NewFile()
+//    f, err := excelize.NewFile()
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
 //    f.SetCellValue("Sheet1", "A6", 42920.5)
 //    exp := "[$-380A]dddd\\,\\ dd\" de \"mmmm\" de \"yyyy;@"
 //    style, err := f.NewStyle(&excelize.Style{CustomNumFmt: &exp})

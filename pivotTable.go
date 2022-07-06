@@ -95,7 +95,11 @@ type PivotTableField struct {
 //    )
 //
 //    func main() {
-//        f := excelize.NewFile()
+//        f, err := excelize.NewFile()
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
 //        // Create some data in a sheet
 //        month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 //        year := []int{2017, 2018, 2019}

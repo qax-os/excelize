@@ -53,7 +53,11 @@ func parseFormatPictureSet(formatSet string) (*formatPicture, error) {
 //    )
 //
 //    func main() {
-//        f := excelize.NewFile()
+//        f, err := excelize.NewFile()
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
 //        // Insert a picture.
 //        if err := f.AddPicture("Sheet1", "A2", "image.jpg", ""); err != nil {
 //            fmt.Println(err)
@@ -137,7 +141,11 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //    )
 //
 //    func main() {
-//        f := excelize.NewFile()
+//        f, err := excelize.NewFile()
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
 //
 //        file, err := ioutil.ReadFile("image.jpg")
 //        if err != nil {

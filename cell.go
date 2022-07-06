@@ -551,7 +551,11 @@ type FormulaOpts struct {
 //    )
 //
 //    func main() {
-//        f := excelize.NewFile()
+//        f, err := excelize.NewFile()
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
 //        for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
 //            if err := f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row); err != nil {
 //            	fmt.Println(err)
@@ -891,7 +895,11 @@ func newRpr(fnt *Font) *xlsxRPr {
 //    )
 //
 //    func main() {
-//        f := excelize.NewFile()
+//        f, err := excelize.NewFile()
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
 //        if err := f.SetRowHeight("Sheet1", 1, 35); err != nil {
 //            fmt.Println(err)
 //            return
