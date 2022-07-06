@@ -465,6 +465,13 @@ func TestDeleteAndAdjustDefinedNames(t *testing.T) {
 	deleteAndAdjustDefinedNames(&xlsxWorkbook{}, 0)
 }
 
+func TestGetSheetID(t *testing.T) {
+	file := NewFile()
+	file.NewSheet("Sheet1")
+	id := file.getSheetID("sheet1")
+	assert.NotEqual(t, -1, id)
+}
+
 func BenchmarkNewSheet(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

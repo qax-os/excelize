@@ -376,7 +376,7 @@ func (f *File) GetSheetName(index int) (name string) {
 // integer type value -1.
 func (f *File) getSheetID(name string) int {
 	for sheetID, sheet := range f.GetSheetMap() {
-		if sheet == trimSheetName(name) {
+		if strings.EqualFold(sheet, trimSheetName(name)) {
 			return sheetID
 		}
 	}
