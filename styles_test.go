@@ -321,7 +321,7 @@ func TestNewThemeReader(t *testing.T) {
 	// Test read theme with unsupported charset.
 	f.Pkg.Store("xl/theme/theme1.xml", MacintoshCyrillicCharset)
 	theme, err := f.NewThemeReader()
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 	assert.EqualValues(t, new(xlsxTheme), theme)
 }
 

@@ -31,7 +31,7 @@ func TestDrawingParser(t *testing.T) {
 	assert.NoError(t, err)
 	// Test with unsupported charset
 	_, _, err = f.drawingParser("charset")
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 	// Test with alternate content
 	f.Drawings = sync.Map{}
 	f.Pkg.Store("wsDr", []byte(xml.Header+`<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></xdr:wsDr>`))

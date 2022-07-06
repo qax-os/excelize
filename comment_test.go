@@ -58,8 +58,9 @@ func TestDecodeVMLDrawingReader(t *testing.T) {
 	assert.NoError(t, err)
 	path := "xl/drawings/vmlDrawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	// Test unsupported charset.
 	_, err = f.decodeVMLDrawingReader(path)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestCommentsReader(t *testing.T) {
@@ -67,8 +68,9 @@ func TestCommentsReader(t *testing.T) {
 	assert.NoError(t, err)
 	path := "xl/comments1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	// Test unsupported charset.
 	_, err = f.commentsReader(path)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestCountComments(t *testing.T) {
