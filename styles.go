@@ -928,7 +928,7 @@ func (f *File) NewStylesReader() (*xlsxStyleSheet, error) {
 		f.Styles = new(xlsxStyleSheet)
 		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathStyles)))).
 			Decode(f.Styles); err != nil && err != io.EOF {
-			return nil, fmt.Errorf("xml decode error: %w", err)
+			return f.Styles, fmt.Errorf("xml decode error: %w", err)
 		}
 	}
 	return f.Styles, nil
@@ -3053,13 +3053,10 @@ func getPaletteColor(color string) string {
 // NewThemeReader provides a function to get the pointer to the xl/theme/theme1.xml
 // structure after deserialization.
 func (f *File) NewThemeReader() (*xlsxTheme, error) {
-	var (
-		err   error
-		theme xlsxTheme
-	)
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")))).
+	var theme xlsxTheme
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML("xl/theme/theme1.xml")))).
 		Decode(&theme); err != nil && err != io.EOF {
-		return nil, fmt.Errorf("xml decode error: %w", err)
+		return &theme, fmt.Errorf("xml decode error: %w", err)
 	}
 	return &theme, nil
 }

@@ -77,15 +77,13 @@ func (f *File) NewSheet(name string) (int, error) {
 
 // NewContentTypesReader provides a function to get the pointer to ContentTypes.
 func (f *File) NewContentTypesReader() (*xlsxTypes, error) {
-	var err error
-
 	if f.ContentTypes == nil {
 		f.ContentTypes = new(xlsxTypes)
 		f.ContentTypes.Lock()
 		defer f.ContentTypes.Unlock()
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
 			Decode(f.ContentTypes); err != nil && err != io.EOF {
-			return nil, fmt.Errorf("xml decode error: %w", err)
+			return f.ContentTypes, fmt.Errorf("xml decode error: %w", err)
 		}
 	}
 	return f.ContentTypes, nil
@@ -1903,23 +1901,21 @@ func (f *File) RemovePageBreak(sheet, cell string) (err error) {
 // relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
 func (f *File) relsReader(path string) (*xlsxRelationships, error) {
-	var err error
 	rels, _ := f.Relationships.Load(path)
 	if rels == nil {
 		if _, ok := f.Pkg.Load(path); ok {
 			c := xlsxRelationships{}
-			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
 				Decode(&c); err != nil && err != io.EOF {
 				return nil, fmt.Errorf("xml decode error: %w", err)
 			}
-			err = nil
 			f.Relationships.Store(path, &c)
 		}
 	}
 	if rels, _ = f.Relationships.Load(path); rels != nil {
-		return rels.(*xlsxRelationships), err
+		return rels.(*xlsxRelationships), nil
 	}
-	return nil, err
+	return nil, nil
 }
 
 // fillSheetData ensures there are enough rows, and columns in the chosen

@@ -27,7 +27,7 @@ func (f *File) NewCalcChainReader() (*xlsxCalcChain, error) {
 		f.CalcChain = new(xlsxCalcChain)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathCalcChain)))).
 			Decode(f.CalcChain); err != nil && err != io.EOF {
-			return nil, fmt.Errorf("xml decode error: %w", err)
+			return f.CalcChain, fmt.Errorf("xml decode error: %w", err)
 		}
 	}
 

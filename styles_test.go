@@ -312,7 +312,9 @@ func TestStylesReader(t *testing.T) {
 	// Test read styles with unsupported charset.
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	assert.EqualValues(t, new(xlsxStyleSheet), f.stylesReader())
+	stylesReader, err := f.NewStylesReader()
+	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualValues(t, new(xlsxStyleSheet), stylesReader)
 }
 
 func TestNewThemeReader(t *testing.T) {

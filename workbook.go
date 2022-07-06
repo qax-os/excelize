@@ -96,7 +96,6 @@ func (f *File) getWorkbookRelsPath() (path string, err error) {
 // NewWorkbookReader provides a function to get the pointer to the workbook.xml
 // structure after deserialization.
 func (f *File) NewWorkbookReader() (*xlsxWorkbook, error) {
-	var err error
 	wbPath, err := f.getWorkbookPath()
 	if err != nil {
 		return nil, err
@@ -109,7 +108,7 @@ func (f *File) NewWorkbookReader() (*xlsxWorkbook, error) {
 	}
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath)))).
 		Decode(f.WorkBook); err != nil && err != io.EOF {
-		return nil, fmt.Errorf("xml decode error: %w", err)
+		return f.WorkBook, fmt.Errorf("xml decode error: %w", err)
 	}
 	return f.WorkBook, nil
 }
