@@ -63,6 +63,9 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 
 // Options define the options for open and reading spreadsheet.
 //
+// MaxCalcIterations specifies the maximum iterations for iterative
+// calculation, the default value is 0.
+//
 // Password specifies the password of the spreadsheet in plain text.
 //
 // RawCellValue specifies if apply the number format for the cell value or get
@@ -78,6 +81,7 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
 type Options struct {
+	MaxCalcIterations uint
 	Password          string
 	RawCellValue      bool
 	UnzipSizeLimit    int64

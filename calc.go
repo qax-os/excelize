@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unsafe"
@@ -193,6 +194,13 @@ var (
 	}
 )
 
+// calcContext defines the formula execution context.
+type calcContext struct {
+	sync.Mutex
+	entry      string
+	iterations map[string]uint
+}
+
 // cellRef defines the structure of a cell reference.
 type cellRef struct {
 	Col   int
@@ -312,6 +320,7 @@ func (fa formulaArg) ToList() []formulaArg {
 // formulaFuncs is the type of the formula functions.
 type formulaFuncs struct {
 	f           *File
+	ctx         *calcContext
 	sheet, cell string
 }
 
@@ -758,6 +767,13 @@ type formulaFuncs struct {
 //    ZTEST
 //
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
+	return f.calcCellValue(&calcContext{
+		entry:      fmt.Sprintf("%s!%s", sheet, cell),
+		iterations: make(map[string]uint),
+	}, sheet, cell)
+}
+
+func (f *File) calcCellValue(ctx *calcContext, sheet, cell string) (result string, err error) {
 	var (
 		formula string
 		token   formulaArg
@@ -770,7 +786,7 @@ func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
 	if tokens == nil {
 		return
 	}
-	if token, err = f.evalInfixExp(sheet, cell, tokens); err != nil {
+	if token, err = f.evalInfixExp(ctx, sheet, cell, tokens); err != nil {
 		return
 	}
 	result = token.Value()
@@ -850,7 +866,7 @@ func newEmptyFormulaArg() formulaArg {
 //
 // TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 //
-func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg, error) {
+func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.Token) (formulaArg, error) {
 	var err error
 	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
 	var inArray, inArrayRow bool
@@ -860,7 +876,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 
 		// out of function stack
 		if opfStack.Len() == 0 {
-			if err = f.parseToken(sheet, token, opdStack, optStack); err != nil {
+			if err = f.parseToken(ctx, sheet, token, opdStack, optStack); err != nil {
 				return newEmptyFormulaArg(), err
 			}
 		}
@@ -896,7 +912,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 						token.TValue = refTo
 					}
 					// parse reference: must reference at here
-					result, err := f.parseReference(sheet, token.TValue)
+					result, err := f.parseReference(ctx, sheet, token.TValue)
 					if err != nil {
 						return result, err
 					}
@@ -912,7 +928,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 					if refTo != "" {
 						token.TValue = refTo
 					}
-					result, err := f.parseReference(sheet, token.TValue)
+					result, err := f.parseReference(ctx, sheet, token.TValue)
 					if err != nil {
 						return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE), err
 					}
@@ -938,7 +954,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 			}
 
 			// check current token is opft
-			if err = f.parseToken(sheet, token, opfdStack, opftStack); err != nil {
+			if err = f.parseToken(ctx, sheet, token, opfdStack, opftStack); err != nil {
 				return newEmptyFormulaArg(), err
 			}
 
@@ -975,7 +991,7 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 				arrayRow, inArray = []formulaArg{}, false
 				continue
 			}
-			if err = f.evalInfixExpFunc(sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
+			if err = f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
 				return newEmptyFormulaArg(), err
 			}
 		}
@@ -994,13 +1010,13 @@ func (f *File) evalInfixExp(sheet, cell string, tokens []efp.Token) (formulaArg,
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
-func (f *File) evalInfixExpFunc(sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
+func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
 	if !isFunctionStopToken(token) {
 		return nil
 	}
 	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
-	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell}, strings.NewReplacer(
+	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx}, strings.NewReplacer(
 		"_xlfn.", "", ".", "dot").Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
@@ -1337,14 +1353,14 @@ func tokenToFormulaArg(token efp.Token) formulaArg {
 
 // parseToken parse basic arithmetic operator priority and evaluate based on
 // operators and operands.
-func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Stack) error {
+func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdStack, optStack *Stack) error {
 	// parse reference: must reference at here
 	if token.TSubType == efp.TokenSubTypeRange {
 		refTo := f.getDefinedNameRefTo(token.TValue, sheet)
 		if refTo != "" {
 			token.TValue = refTo
 		}
-		result, err := f.parseReference(sheet, token.TValue)
+		result, err := f.parseReference(ctx, sheet, token.TValue)
 		if err != nil {
 			return errors.New(formulaErrorNAME)
 		}
@@ -1386,7 +1402,7 @@ func (f *File) parseToken(sheet string, token efp.Token, opdStack, optStack *Sta
 
 // parseReference parse reference and extract values by given reference
 // characters and default sheet name.
-func (f *File) parseReference(sheet, reference string) (arg formulaArg, err error) {
+func (f *File) parseReference(ctx *calcContext, sheet, reference string) (arg formulaArg, err error) {
 	reference = strings.ReplaceAll(reference, "$", "")
 	refs, cellRanges, cellRefs := list.New(), list.New(), list.New()
 	for _, ref := range strings.Split(reference, ":") {
@@ -1430,7 +1446,7 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 				To:   cellRef{Sheet: sheet, Col: cr.Col, Row: TotalRows},
 			})
 			cellRefs.Init()
-			arg, err = f.rangeResolver(cellRefs, cellRanges)
+			arg, err = f.rangeResolver(ctx, cellRefs, cellRanges)
 			return
 		}
 		e := refs.Back()
@@ -1450,7 +1466,7 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 		cellRefs.PushBack(e.Value.(cellRef))
 		refs.Remove(e)
 	}
-	arg, err = f.rangeResolver(cellRefs, cellRanges)
+	arg, err = f.rangeResolver(ctx, cellRefs, cellRanges)
 	return
 }
 
@@ -1486,10 +1502,27 @@ func prepareValueRef(cr cellRef, valueRange []int) {
 	}
 }
 
+// cellResolver calc cell value by given worksheet name, cell reference and context.
+func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (string, error) {
+	var value string
+	ref := fmt.Sprintf("%s!%s", sheet, cell)
+	if formula, _ := f.GetCellFormula(sheet, cell); len(formula) != 0 {
+		ctx.Lock()
+		if ctx.entry != ref && ctx.iterations[ref] <= f.options.MaxCalcIterations {
+			ctx.iterations[ref]++
+			ctx.Unlock()
+			value, _ = f.calcCellValue(ctx, sheet, cell)
+			return value, nil
+		}
+		ctx.Unlock()
+	}
+	return f.GetCellValue(sheet, cell, Options{RawCellValue: true})
+}
+
 // rangeResolver extract value as string from given reference and range list.
 // This function will not ignore the empty cell. For example, A1:A2:A2:B3 will
 // be reference A1:B3.
-func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, err error) {
+func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) (arg formulaArg, err error) {
 	arg.cellRefs, arg.cellRanges = cellRefs, cellRanges
 	// value range order: from row, to row, from column, to column
 	valueRange := []int{0, 0, 0, 0}
@@ -1525,7 +1558,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 				if cell, err = CoordinatesToCellName(col, row); err != nil {
 					return
 				}
-				if value, err = f.GetCellValue(sheet, cell, Options{RawCellValue: true}); err != nil {
+				if value, err = f.cellResolver(ctx, sheet, cell); err != nil {
 					return
 				}
 				matrixRow = append(matrixRow, formulaArg{
@@ -1544,7 +1577,7 @@ func (f *File) rangeResolver(cellRefs, cellRanges *list.List) (arg formulaArg, e
 		if cell, err = CoordinatesToCellName(cr.Col, cr.Row); err != nil {
 			return
 		}
-		if arg.String, err = f.GetCellValue(cr.Sheet, cell, Options{RawCellValue: true}); err != nil {
+		if arg.String, err = f.cellResolver(ctx, cr.Sheet, cell); err != nil {
 			return
 		}
 		arg.Type = ArgString
@@ -15092,7 +15125,7 @@ func (fn *formulaFuncs) INDIRECT(argsList *list.List) formulaArg {
 		}
 		return newStringFormulaArg(value)
 	}
-	arg, _ := fn.f.parseReference(fn.sheet, fromRef+":"+toRef)
+	arg, _ := fn.f.parseReference(fn.ctx, fn.sheet, fromRef+":"+toRef)
 	return arg
 }
 

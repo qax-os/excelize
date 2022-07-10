@@ -4606,8 +4606,8 @@ func TestCalcCOVAR(t *testing.T) {
 func TestCalcDatabase(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
-		{"=Apple", ">1000%", nil, nil, nil, "<16"},
-		{"=Pear"},
+		{nil, ">1000%", nil, nil, nil, "<16"},
+		{},
 		{"Tree", "Height", "Age", "Yield", "Profit"},
 		{"Apple", 18, 20, 14, 105},
 		{"Pear", 12, 12, 10, 96},
