@@ -163,6 +163,11 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 	if err != nil {
 		return nil, err
 	}
+	if ws.SheetViews == nil {
+		ws.SheetViews = &xlsxSheetViews{
+			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+		}
+	}
 	if viewIndex < 0 {
 		if viewIndex < -len(ws.SheetViews.SheetView) {
 			return nil, fmt.Errorf("view index %d out of range", viewIndex)

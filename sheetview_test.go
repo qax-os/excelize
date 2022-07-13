@@ -210,4 +210,9 @@ func TestSheetViewOptionsErrors(t *testing.T) {
 	assert.NoError(t, f.SetSheetViewOptions(sheet, -1))
 	assert.Error(t, f.SetSheetViewOptions(sheet, 1))
 	assert.Error(t, f.SetSheetViewOptions(sheet, -2))
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = nil
+	assert.NoError(t, f.GetSheetViewOptions(sheet, 0))
 }

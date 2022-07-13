@@ -204,7 +204,12 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		Category:       core.Category,
 		Version:        core.Version,
 	}, nil
-	newProps.Created.Text, newProps.Created.Type, newProps.Modified.Text, newProps.Modified.Type = core.Created.Text, core.Created.Type, core.Modified.Text, core.Modified.Type
+	if core.Created != nil {
+		newProps.Created = &xlsxDcTerms{Type: core.Created.Type, Text: core.Created.Text}
+	}
+	if core.Modified != nil {
+		newProps.Modified = &xlsxDcTerms{Type: core.Modified.Type, Text: core.Modified.Text}
+	}
 	fields = []string{
 		"Category", "ContentStatus", "Creator", "Description", "Identifier", "Keywords",
 		"LastModifiedBy", "Revision", "Subject", "Title", "Language", "Version",
@@ -216,10 +221,10 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		}
 	}
 	if docProperties.Created != "" {
-		newProps.Created.Text = docProperties.Created
+		newProps.Created = &xlsxDcTerms{Type: "dcterms:W3CDTF", Text: docProperties.Created}
 	}
 	if docProperties.Modified != "" {
-		newProps.Modified.Text = docProperties.Modified
+		newProps.Modified = &xlsxDcTerms{Type: "dcterms:W3CDTF", Text: docProperties.Modified}
 	}
 	output, err = xml.Marshal(newProps)
 	f.saveFileList(defaultXMLPathDocPropsCore, output)
@@ -239,19 +244,22 @@ func (f *File) GetDocProps() (ret *DocProperties, err error) {
 	ret, err = &DocProperties{
 		Category:       core.Category,
 		ContentStatus:  core.ContentStatus,
-		Created:        core.Created.Text,
 		Creator:        core.Creator,
 		Description:    core.Description,
 		Identifier:     core.Identifier,
 		Keywords:       core.Keywords,
 		LastModifiedBy: core.LastModifiedBy,
-		Modified:       core.Modified.Text,
 		Revision:       core.Revision,
 		Subject:        core.Subject,
 		Title:          core.Title,
 		Language:       core.Language,
 		Version:        core.Version,
 	}, nil
-
+	if core.Created != nil {
+		ret.Created = core.Created.Text
+	}
+	if core.Modified != nil {
+		ret.Modified = core.Modified.Text
+	}
 	return
 }
