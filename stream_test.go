@@ -75,7 +75,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
 	// Test set cell column overflow.
-	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
+	assert.ErrorIs(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber)
 
 	// Test close temporary file error.
 	file = NewFile()
@@ -139,8 +139,8 @@ func TestStreamSetColWidth(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetColWidth(3, 2, 20))
-	assert.EqualError(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber.Error())
-	assert.EqualError(t, streamWriter.SetColWidth(TotalColumns+1, 3, 20), ErrColumnNumber.Error())
+	assert.ErrorIs(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber)
+	assert.ErrorIs(t, streamWriter.SetColWidth(MaxColumns+1, 3, 20), ErrColumnNumber)
 	assert.EqualError(t, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1), ErrColumnWidth.Error())
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
 	assert.EqualError(t, streamWriter.SetColWidth(2, 3, 20), ErrStreamSetColWidth.Error())

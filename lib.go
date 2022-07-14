@@ -211,7 +211,7 @@ func ColumnNameToNumber(name string) (int, error) {
 		}
 		multi *= 26
 	}
-	if col > TotalColumns {
+	if col > MaxColumns {
 		return -1, ErrColumnNumber
 	}
 	return col, nil
@@ -225,10 +225,7 @@ func ColumnNameToNumber(name string) (int, error) {
 //     excelize.ColumnNumberToName(37) // returns "AK", nil
 //
 func ColumnNumberToName(num int) (string, error) {
-	if num < 1 {
-		return "", fmt.Errorf("incorrect column number %d", num)
-	}
-	if num > TotalColumns {
+	if num < MinColumns || num > MaxColumns {
 		return "", ErrColumnNumber
 	}
 	var col string

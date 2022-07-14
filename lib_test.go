@@ -79,7 +79,7 @@ func TestColumnNameToNumber_Error(t *testing.T) {
 		}
 	}
 	_, err := ColumnNameToNumber("XFE")
-	assert.EqualError(t, err, ErrColumnNumber.Error())
+	assert.ErrorIs(t, err, ErrColumnNumber)
 }
 
 func TestColumnNumberToName_OK(t *testing.T) {
@@ -103,8 +103,8 @@ func TestColumnNumberToName_Error(t *testing.T) {
 		assert.Equal(t, "", out)
 	}
 
-	_, err = ColumnNumberToName(TotalColumns + 1)
-	assert.EqualError(t, err, ErrColumnNumber.Error())
+	_, err = ColumnNumberToName(MaxColumns + 1)
+	assert.ErrorIs(t, err, ErrColumnNumber)
 }
 
 func TestSplitCellName_OK(t *testing.T) {

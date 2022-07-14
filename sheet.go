@@ -256,7 +256,7 @@ func replaceRelationshipsBytes(content []byte) []byte {
 
 // SetActiveSheet provides a function to set the default active sheet of the
 // workbook by a given index. Note that the active index is different from the
-// ID returned by function GetSheetMap(). It should be greater or equal to 0
+// ID returned by function GetSheetMap(). It should be greater than or equal to 0
 // and less than the total worksheet numbers.
 func (f *File) SetActiveSheet(index int) {
 	if index < 0 {

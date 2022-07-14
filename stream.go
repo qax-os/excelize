@@ -387,10 +387,7 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	if sw.sheetWritten {
 		return ErrStreamSetColWidth
 	}
-	if min > TotalColumns || max > TotalColumns {
-		return ErrColumnNumber
-	}
-	if min < 1 || max < 1 {
+	if min < MinColumns || min > MaxColumns || max < MinColumns || max > MaxColumns {
 		return ErrColumnNumber
 	}
 	if width > MaxColumnWidth {
