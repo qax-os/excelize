@@ -79,7 +79,8 @@ func TestConcurrency(t *testing.T) {
 }
 
 func TestCheckCellInArea(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	expectedTrueCellInAreaList := [][2]string{
 		{"c2", "A1:AAZ32"},
 		{"B9", "A1:B9"},
@@ -122,7 +123,8 @@ func TestCheckCellInArea(t *testing.T) {
 func TestSetCellFloat(t *testing.T) {
 	sheet := "Sheet1"
 	t.Run("with no decimal", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.0, -1, 64))
 		assert.NoError(t, f.SetCellFloat(sheet, "A2", 123.0, 1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
@@ -134,7 +136,8 @@ func TestSetCellFloat(t *testing.T) {
 	})
 
 	t.Run("with a decimal and precision limit", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.42, 1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
@@ -142,18 +145,21 @@ func TestSetCellFloat(t *testing.T) {
 	})
 
 	t.Run("with a decimal and no limit", func(t *testing.T) {
-		f := NewFile()
+		f, err := NewFile()
+		assert.NoError(t, err)
 		assert.NoError(t, f.SetCellFloat(sheet, "A1", 123.42, -1, 64))
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
 		assert.Equal(t, "123.42", val, "A1 should be 123.42")
 	})
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.SetCellFloat(sheet, "A", 123.42, -1, 64), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetCellValue(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test set cell value with column and row style inherit
@@ -174,8 +180,9 @@ func TestSetCellValue(t *testing.T) {
 }
 
 func TestSetCellValues(t *testing.T) {
-	f := NewFile()
-	err := f.SetCellValue("Sheet1", "A1", time.Date(2010, time.December, 31, 0, 0, 0, 0, time.UTC))
+	f, err := NewFile()
+	assert.NoError(t, err)
+	err = f.SetCellValue("Sheet1", "A1", time.Date(2010, time.December, 31, 0, 0, 0, 0, time.UTC))
 	assert.NoError(t, err)
 
 	v, err := f.GetCellValue("Sheet1", "A1")
@@ -192,7 +199,8 @@ func TestSetCellValues(t *testing.T) {
 }
 
 func TestSetCellBool(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.SetCellBool("Sheet1", "A", true), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
@@ -216,7 +224,8 @@ func TestSetCellTime(t *testing.T) {
 
 func TestGetCellValue(t *testing.T) {
 	// Test get cell value without r attribute of the row.
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
@@ -349,7 +358,8 @@ func TestGetCellValue(t *testing.T) {
 }
 
 func TestGetCellType(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	cellType, err := f.GetCellType("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, CellTypeUnset, cellType)
@@ -362,17 +372,21 @@ func TestGetCellType(t *testing.T) {
 }
 
 func TestGetValueFrom(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	c := xlsxC{T: "s"}
-	value, err := c.getValueFrom(f, f.sharedStringsReader(), false)
+	sst, err := f.sharedStringsReader()
+	assert.NoError(t, err)
+	value, err := c.getValueFrom(f, sst, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
 }
 
 func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
-	f := NewFile()
-	_, err := f.GetCellFormula("SheetN", "A1")
+	f, err := NewFile()
+	assert.NoError(t, err)
+	_, err = f.GetCellFormula("SheetN", "A1")
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	// Test get cell formula on no formula cell.
@@ -381,7 +395,8 @@ func TestGetCellFormula(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test get cell shared formula
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><f>2*A1</f></c></row><row r="2"><c r="A2"><v>2</v></c><c r="B2"><f t="shared" ref="B2:B7" si="0">%s</f></c></row><row r="3"><c r="A3"><v>3</v></c><c r="B3"><f t="shared" si="0"/></c></row><row r="4"><c r="A4"><v>4</v></c><c r="B4"><f t="shared" si="0"/></c></row><row r="5"><c r="A5"><v>5</v></c><c r="B5"><f t="shared" si="0"/></c></row><row r="6"><c r="A6"><v>6</v></c><c r="B6"><f t="shared" si="0"/></c></row><row r="7"><c r="A7"><v>7</v></c><c r="B7"><f t="shared" si="0"/></c></row></sheetData></worksheet>`
 
 	for sharedFormula, expected := range map[string]string{
@@ -404,7 +419,10 @@ func TestGetCellFormula(t *testing.T) {
 }
 
 func ExampleFile_SetCellFloat() {
-	f := NewFile()
+	f, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	x := 3.14159265
 	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
 		fmt.Println(err)
@@ -417,7 +435,8 @@ func ExampleFile_SetCellFloat() {
 func BenchmarkSetCellValue(b *testing.B) {
 	values := []string{"First", "Second", "Third", "Fourth", "Fifth", "Sixth"}
 	cols := []string{"A", "B", "C", "D", "E", "F"}
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(b, err)
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
 		for j := 0; j < len(values); j++ {
@@ -468,7 +487,8 @@ func TestSetCellFormula(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Test set shared formula for the cells.
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	for r := 1; r <= 5; r++ {
 		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", r), &[]interface{}{r, r + 1}))
 	}
@@ -482,11 +502,12 @@ func TestSetCellFormula(t *testing.T) {
 	ref = "D1:D5"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	ref = ""
-	assert.EqualError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}), ErrParameterInvalid.Error())
+	assert.ErrorIs(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}), ErrRangeLength)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula5.xlsx")))
 
 	// Test set table formula for the cells.
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
 		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row))
 	}
@@ -497,7 +518,8 @@ func TestSetCellFormula(t *testing.T) {
 }
 
 func TestGetCellRichText(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 
 	runsSource := []RichTextRun{
 		{
@@ -562,7 +584,8 @@ func TestGetCellRichText(t *testing.T) {
 }
 
 func TestSetCellRichText(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))
 	assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 44))
 	richTextRun := []RichTextRun{
@@ -661,7 +684,8 @@ func TestSetCellRichText(t *testing.T) {
 }
 
 func TestFormattedValue2(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	v := f.formattedValue(0, "43528", false)
 	assert.Equal(t, "43528", v)
 
@@ -671,7 +695,7 @@ func TestFormattedValue2(t *testing.T) {
 	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
 	customNumFmt := "[$-409]MM/DD/YYYY"
-	_, err := f.NewStyle(&Style{
+	_, err = f.NewStyle(&Style{
 		CustomNumFmt: &customNumFmt,
 	})
 	assert.NoError(t, err)

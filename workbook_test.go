@@ -8,7 +8,10 @@ import (
 )
 
 func ExampleFile_SetWorkbookPrOptions() {
-	f := NewFile()
+	f, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	if err := f.SetWorkbookPrOptions(
 		Date1904(false),
 		FilterPrivacy(false),
@@ -20,7 +23,10 @@ func ExampleFile_SetWorkbookPrOptions() {
 }
 
 func ExampleFile_GetWorkbookPrOptions() {
-	f := NewFile()
+	f, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	var (
 		date1904      Date1904
 		filterPrivacy FilterPrivacy
@@ -47,7 +53,8 @@ func ExampleFile_GetWorkbookPrOptions() {
 }
 
 func TestWorkbookPr(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	wb := f.workbookReader()
 	wb.WorkbookPr = nil
 	var date1904 Date1904

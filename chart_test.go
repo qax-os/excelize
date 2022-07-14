@@ -11,7 +11,8 @@ import (
 )
 
 func TestChartSize(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 
 	categories := map[string]string{
@@ -93,7 +94,8 @@ func TestChartSize(t *testing.T) {
 }
 
 func TestAddDrawingChart(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.addDrawingChart("SheetN", "", "", 0, 0, 0, nil), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 }
 
@@ -212,7 +214,8 @@ func TestAddChart(t *testing.T) {
 func TestAddChartSheet(t *testing.T) {
 	categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
 	values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	for k, v := range categories {
 		assert.NoError(t, f.SetCellValue("Sheet1", k, v))
 	}
@@ -254,13 +257,16 @@ func TestDeleteChart(t *testing.T) {
 	// Test delete chart with invalid coordinates.
 	assert.EqualError(t, f.DeleteChart("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	// Test delete chart on no chart worksheet.
-	assert.NoError(t, NewFile().DeleteChart("Sheet1", "A1"))
+	xlsxFile, err := NewFile()
+	assert.NoError(t, err)
+	assert.NoError(t, xlsxFile.DeleteChart("Sheet1", "A1"))
 	assert.NoError(t, f.Close())
 }
 
 func TestChartWithLogarithmicBase(t *testing.T) {
 	// Create test XLSX file with data
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 	categories := map[string]float64{
 		"A1":  1,

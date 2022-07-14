@@ -13,7 +13,10 @@ import (
 )
 
 func ExampleFile_SetPageLayout() {
-	f := NewFile()
+	f, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	if err := f.SetPageLayout(
 		"Sheet1",
 		BlackAndWhite(true),
@@ -30,7 +33,10 @@ func ExampleFile_SetPageLayout() {
 }
 
 func ExampleFile_GetPageLayout() {
-	f := NewFile()
+	f, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	var (
 		blackAndWhite   BlackAndWhite
 		firstPageNumber FirstPageNumber
@@ -81,19 +87,26 @@ func ExampleFile_GetPageLayout() {
 }
 
 func TestNewSheet(t *testing.T) {
-	f := NewFile()
-	f.NewSheet("Sheet2")
-	sheetID := f.NewSheet("sheet2")
+	f, err := NewFile()
+	assert.NoError(t, err)
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	sheetID, err := f.NewSheet("sheet2")
+	assert.NoError(t, err)
 	f.SetActiveSheet(sheetID)
 	// delete original sheet
-	f.DeleteSheet(f.GetSheetName(f.GetSheetIndex("Sheet1")))
+	err = f.DeleteSheet(f.GetSheetName(f.GetSheetIndex("Sheet1")))
+	assert.NoError(t, err)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
 	// create new worksheet with already exists name
-	assert.Equal(t, f.GetSheetIndex("Sheet2"), f.NewSheet("Sheet2"))
+	sheetID, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	assert.Equal(t, f.GetSheetIndex("Sheet2"), sheetID)
 }
 
 func TestSetPane(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetPanes("Sheet1", `{"freeze":false,"split":false}`))
 	f.NewSheet("Panes 2")
 	assert.NoError(t, f.SetPanes("Panes 2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`))
@@ -105,7 +118,8 @@ func TestSetPane(t *testing.T) {
 	assert.EqualError(t, f.SetPanes("SheetN", ""), "sheet SheetN is not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
 	// Test add pane on empty sheet views worksheet
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.checked = nil
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
@@ -137,7 +151,8 @@ func TestPageLayoutOption(t *testing.T) {
 			val1 := deepcopy.Copy(def).(PageLayoutOptionPtr)
 			val2 := deepcopy.Copy(def).(PageLayoutOptionPtr)
 
-			f := NewFile()
+			f, err := NewFile()
+			assert.NoError(t, err)
 			// Get the default value
 			assert.NoError(t, f.GetPageLayout(sheet, def), opt)
 			// Get again and check
@@ -198,12 +213,14 @@ func TestSearchSheet(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Test search worksheet data after set cell value
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
 	_, err = f.SearchSheet("Sheet1", "")
 	assert.NoError(t, err)
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>A</v></c></row></sheetData></worksheet>`))
 	f.checked = nil
@@ -223,19 +240,22 @@ func TestSearchSheet(t *testing.T) {
 }
 
 func TestSetPageLayout(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test set page layout on not exists worksheet.
 	assert.EqualError(t, f.SetPageLayout("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestGetPageLayout(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test get page layout on not exists worksheet.
 	assert.EqualError(t, f.GetPageLayout("SheetN"), "sheet SheetN is not exist")
 }
 
 func TestSetHeaderFooter(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet.
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN is not exist")
@@ -266,7 +286,8 @@ func TestSetHeaderFooter(t *testing.T) {
 }
 
 func TestDefinedName(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetDefinedName(&DefinedName{
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
@@ -296,7 +317,8 @@ func TestDefinedName(t *testing.T) {
 }
 
 func TestGroupSheets(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheets := []string{"Sheet2", "Sheet3"}
 	for _, sheet := range sheets {
 		f.NewSheet(sheet)
@@ -308,7 +330,8 @@ func TestGroupSheets(t *testing.T) {
 }
 
 func TestUngroupSheets(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheets := []string{"Sheet2", "Sheet3", "Sheet4", "Sheet5"}
 	for _, sheet := range sheets {
 		f.NewSheet(sheet)
@@ -317,7 +340,8 @@ func TestUngroupSheets(t *testing.T) {
 }
 
 func TestInsertPageBreak(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "A1"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "B2"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
@@ -328,7 +352,8 @@ func TestInsertPageBreak(t *testing.T) {
 }
 
 func TestRemovePageBreak(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.RemovePageBreak("Sheet1", "A2"))
 
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "A2"))
@@ -378,8 +403,28 @@ func TestGetSheetMap(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestGetSheetNameBySheetXMLPath(t *testing.T) {
+	expectedNames := map[string]string{
+		"xl/worksheets/sheet1.xml": "Sheet1",
+		"xl/worksheets/sheet2.xml": "Sheet2",
+	}
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+
+	sheetMap, err := f.getSheetMap()
+	assert.NoError(t, err)
+
+	for _, v := range sheetMap {
+		sheet := f.getSheetNameBySheetXMLPath(v)
+		assert.Equal(t, expectedNames[v], sheet)
+	}
+	assert.Equal(t, len(sheetMap), 2)
+	assert.NoError(t, f.Close())
+}
+
 func TestSetActiveSheet(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.WorkBook.BookViews = nil
 	f.SetActiveSheet(1)
 	f.WorkBook.BookViews = &xlsxBookViews{WorkBookView: []xlsxWorkBookView{}}
@@ -391,13 +436,16 @@ func TestSetActiveSheet(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetViews = nil
 	f.SetActiveSheet(1)
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.SetActiveSheet(-1)
 	assert.Equal(t, f.GetActiveSheetIndex(), 0)
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.WorkBook.BookViews = nil
-	idx := f.NewSheet("Sheet2")
+	idx, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet2.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
@@ -405,48 +453,61 @@ func TestSetActiveSheet(t *testing.T) {
 }
 
 func TestSetSheetName(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test set worksheet with the same name.
 	f.SetSheetName("Sheet1", "Sheet1")
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 }
 
 func TestWorksheetWriter(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test set cell value with alternate content
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	worksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(worksheet, 1)))
 	f.checked = nil
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
-	f.workSheetWriter()
+	err = f.workSheetWriter()
+	assert.NoError(t, err)
 	value, ok := f.Pkg.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	assert.Equal(t, fmt.Sprintf(worksheet, 2), string(value.([]byte)))
 }
 
 func TestGetWorkbookPath(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.Pkg.Delete("_rels/.rels")
-	assert.Equal(t, "", f.getWorkbookPath())
+	wp, err := f.getWorkbookPath()
+	assert.NoError(t, err)
+	assert.Equal(t, "", wp)
 }
 
 func TestGetWorkbookRelsPath(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.Pkg.Delete("xl/_rels/.rels")
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`))
-	assert.Equal(t, "_rels/workbook.xml.rels", f.getWorkbookRelsPath())
+	wrp, err := f.getWorkbookRelsPath()
+	assert.NoError(t, err)
+	assert.Equal(t, "_rels/workbook.xml.rels", wrp)
 }
 
 func TestDeleteSheet(t *testing.T) {
-	f := NewFile()
-	f.SetActiveSheet(f.NewSheet("Sheet2"))
+	f, err := NewFile()
+	assert.NoError(t, err)
+	sheet, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	f.SetActiveSheet(sheet)
 	f.NewSheet("Sheet3")
 	f.DeleteSheet("Sheet1")
 	assert.Equal(t, "Sheet2", f.GetSheetName(f.GetActiveSheetIndex()))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet.xlsx")))
 	// Test with auto filter defined names
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.NewSheet("Sheet2")
 	f.NewSheet("Sheet3")
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A"))
@@ -481,7 +542,10 @@ func BenchmarkNewSheet(b *testing.B) {
 }
 
 func newSheetWithSet() {
-	file := NewFile()
+	file, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	file.NewSheet("sheet1")
 	for i := 0; i < 1000; i++ {
 		_ = file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
@@ -498,7 +562,10 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 }
 
 func newSheetWithSave() {
-	file := NewFile()
+	file, err := NewFile()
+	if err != nil {
+		fmt.Println(err)
+	}
 	file.NewSheet("sheet1")
 	for i := 0; i < 1000; i++ {
 		_ = file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)

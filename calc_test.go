@@ -11,7 +11,10 @@ import (
 )
 
 func prepareCalcData(cellData [][]interface{}) *File {
-	f := NewFile()
+	f, err := NewFile()
+	if err != nil {
+		return nil
+	}
 	for r, row := range cellData {
 		for c, value := range row {
 			cell, _ := CoordinatesToCellName(c+1, r+1)
@@ -4695,7 +4698,9 @@ func TestCalcDatabase(t *testing.T) {
 }
 
 func TestCalcFORMULATEXT(t *testing.T) {
-	f, formulaText := NewFile(), "=SUM(B1:C1)"
+	f, err := NewFile()
+	assert.NoError(t, err)
+	formulaText := "=SUM(B1:C1)"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formulaText))
 	for _, formula := range []string{"=FORMULATEXT(A1)", "=FORMULATEXT(A:A)", "=FORMULATEXT(A1:B1)"} {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula), formula)
@@ -4940,7 +4945,8 @@ func TestCalcIRR(t *testing.T) {
 }
 
 func TestCalcMAXMINIFS(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	for cell, row := range map[string][]interface{}{
 		"A1": {1, -math.MaxFloat64 - 1},
 		"A2": {2, -math.MaxFloat64 - 2},
@@ -5224,7 +5230,8 @@ func TestCalcXNPV(t *testing.T) {
 }
 
 func TestCalcMATCH(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	for cell, row := range map[string][]interface{}{
 		"A1": {"cccc", 7, 4, 16},
 		"A2": {"dddd", 2, 6, 11},
@@ -5266,7 +5273,8 @@ func TestCalcMATCH(t *testing.T) {
 }
 
 func TestCalcISFORMULA(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=ISFORMULA(A1)"))
 	for _, formula := range []string{"=NA()", "=SUM(A1:A3)"} {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formula))
@@ -5406,7 +5414,8 @@ func TestCalcSLOP(t *testing.T) {
 }
 
 func TestCalcSHEET(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.NewSheet("Sheet2")
 	formulaList := map[string]string{
 		"=SHEET(\"Sheet2\")":   "2",
@@ -5422,7 +5431,8 @@ func TestCalcSHEET(t *testing.T) {
 }
 
 func TestCalcSHEETS(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.NewSheet("Sheet2")
 	formulaList := map[string]string{
 		"=SHEETS(Sheet1!A1:B1)":        "1",
@@ -5651,7 +5661,8 @@ func TestCalcNETWORKDAYSandWORKDAY(t *testing.T) {
 }
 
 func TestCalcZTEST(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{4, 5, 2, 5, 8, 9, 3, 2, 3, 8, 9, 5}))
 	formulaList := map[string]string{
 		"=Z.TEST(A1:L1,5)":   "0.371103278558538",
@@ -5722,7 +5733,8 @@ func TestCalcBetainvProbIterator(t *testing.T) {
 }
 
 func TestNestedFunctionsWithOperators(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	formulaList := map[string]string{
 		`=LEN("KEEP")`:                                               "4",
 		`=LEN("REMOVEKEEP") - LEN("REMOVE")`:                         "4",

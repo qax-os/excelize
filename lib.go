@@ -283,7 +283,7 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 func areaRefToCoordinates(ref string) ([]int, error) {
 	rng := strings.Split(strings.ReplaceAll(ref, "$", ""), ":")
 	if len(rng) < 2 {
-		return nil, ErrParameterInvalid
+		return nil, newRangeLengthError(ref)
 	}
 	return areaRangeToCoordinates(rng[0], rng[1])
 }

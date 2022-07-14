@@ -279,6 +279,10 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 //    wavyDbl
 //
 func (f *File) AddShape(sheet, cell, format string) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	formatSet, err := parseFormatShapeSet(format)
 	if err != nil {
 		return err
@@ -301,7 +305,10 @@ func (f *File) AddShape(sheet, cell, format string) error {
 	} else {
 		// Add first shape for given sheet.
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
-		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		rID, err := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
+		if err != nil {
+			return err
+		}
 		f.addSheetDrawing(sheet, rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)
 	}
@@ -349,7 +356,10 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.Format.OffsetX, formatSet.Format.OffsetY,
 		width, height)
-	content, cNvPrID := f.drawingParser(drawingXML)
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = formatSet.Format.Positioning
 	from := xlsxFrom{}

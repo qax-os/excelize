@@ -41,7 +41,8 @@ func TestCols(t *testing.T) {
 	}
 	assert.NoError(t, f.Close())
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	cells := []string{"C2", "C3", "C4"}
 	for _, cell := range cells {
 		assert.NoError(t, f.SetCellValue("Sheet1", cell, 1))
@@ -73,7 +74,9 @@ func TestColumnsIterator(t *testing.T) {
 	assert.Equal(t, expectedNumCol, colCount)
 	assert.NoError(t, f.Close())
 
-	f, sheetName, colCount, expectedNumCol = NewFile(), "Sheet1", 0, 4
+	xlsxFile, err := NewFile()
+	assert.NoError(t, err)
+	f, sheetName, colCount, expectedNumCol = xlsxFile, "Sheet1", 0, 4
 	cells := []string{"C2", "C3", "C4", "D2", "D3", "D4"}
 	for _, cell := range cells {
 		assert.NoError(t, f.SetCellValue(sheetName, cell, 1))
@@ -107,7 +110,8 @@ func TestGetColsError(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 	assert.NoError(t, f.Close())
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`))
 	f.checked = nil
@@ -118,7 +122,8 @@ func TestGetColsError(t *testing.T) {
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	cols, err := f.Cols("Sheet1")
 	assert.NoError(t, err)
 	cols.totalRows = 2
@@ -135,10 +140,11 @@ func TestGetColsError(t *testing.T) {
 }
 
 func TestColsRows(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.NewSheet("Sheet1")
 
-	_, err := f.Cols("Sheet1")
+	_, err = f.Cols("Sheet1")
 	assert.NoError(t, err)
 
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
@@ -148,13 +154,15 @@ func TestColsRows(t *testing.T) {
 		},
 	})
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	f.Pkg.Store("xl/worksheets/sheet1.xml", nil)
 	_, err = f.Cols("Sheet1")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	cols, err := f.Cols("Sheet1")
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -229,7 +237,8 @@ func TestColumnVisibility(t *testing.T) {
 }
 
 func TestOutlineLevel(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	level, err := f.GetColOutlineLevel("Sheet1", "D")
 	assert.Equal(t, uint8(0), level)
 	assert.NoError(t, err)
@@ -287,7 +296,8 @@ func TestOutlineLevel(t *testing.T) {
 }
 
 func TestSetColStyle(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "B2", "Hello"))
 	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
 	assert.NoError(t, err)
@@ -311,7 +321,8 @@ func TestSetColStyle(t *testing.T) {
 }
 
 func TestColWidth(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetColWidth("Sheet1", "B", "A", 12))
 	assert.NoError(t, f.SetColWidth("Sheet1", "A", "B", 12))
 	width, err := f.GetColWidth("Sheet1", "A")
@@ -340,7 +351,8 @@ func TestColWidth(t *testing.T) {
 }
 
 func TestInsertCol(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 
 	fillCells(f, sheet1, 10, 10)
@@ -358,7 +370,8 @@ func TestInsertCol(t *testing.T) {
 }
 
 func TestRemoveCol(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	sheet1 := f.GetSheetName(0)
 
 	fillCells(f, sheet1, 10, 15)

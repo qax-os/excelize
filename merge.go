@@ -11,7 +11,10 @@
 
 package excelize
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Rect gets merged cell rectangle coordinates sequence.
 func (mc *xlsxMergeCell) Rect() ([]int, error) {
@@ -207,7 +210,7 @@ func flatMergedCells(ws *xlsxWorksheet, matrix [][]*xlsxMergeCell) error {
 func (f *File) mergeOverlapCells(ws *xlsxWorksheet) error {
 	rows, cols, err := overlapRange(ws)
 	if err != nil {
-		return err
+		return fmt.Errorf("merge overlapping cells: %w", err)
 	}
 	if rows == 0 || cols == 0 {
 		return nil

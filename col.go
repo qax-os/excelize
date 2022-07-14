@@ -90,7 +90,10 @@ func (cols *Cols) Rows(opts ...Options) ([]string, error) {
 		return rows, err
 	}
 	cols.rawCellValue = parseOptions(opts...).RawCellValue
-	d := cols.f.sharedStringsReader()
+	d, err := cols.f.sharedStringsReader()
+	if err != nil {
+		return rows, err
+	}
 	decoder := cols.f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
 	for {
 		token, _ := decoder.Token()
@@ -204,7 +207,10 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		worksheet := ws.(*xlsxWorksheet)
 		worksheet.Lock()
 		defer worksheet.Unlock()
-		output, _ := xml.Marshal(worksheet)
+		output, err := xml.Marshal(worksheet)
+		if err != nil {
+			return nil, err
+		}
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var colIterator columnXMLIterator
@@ -449,8 +455,8 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 // SetColWidth provides a function to set the width of a single column or
 // multiple columns. For example:
 //
-//    f := excelize.NewFile()
-//    err := f.SetColWidth("Sheet1", "A", "H", 20)
+//    f, err := excelize.NewFile()
+//    err = f.SetColWidth("Sheet1", "A", "H", 20)
 //
 func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
 	min, err := ColumnNameToNumber(startCol)

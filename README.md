@@ -43,7 +43,11 @@ import (
 )
 
 func main() {
-    f := excelize.NewFile()
+    f, err := excelize.NewFile()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
     // Create a new sheet.
     index := f.NewSheet("Sheet2")
     // Set value of a cell.
@@ -126,7 +130,11 @@ func main() {
         "B1": "Apple", "C1": "Orange", "D1": "Pear"}
     values := map[string]int{
         "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
-    f := excelize.NewFile()
+    f, err := excelize.NewFile()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
     for k, v := range categories {
         f.SetCellValue("Sheet1", k, v)
     }

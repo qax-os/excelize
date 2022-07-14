@@ -45,7 +45,8 @@ var _ = []SheetViewOptionPtr{
 }
 
 func ExampleFile_SetSheetViewOptions() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	if err := f.SetSheetViewOptions(sheet, 0,
@@ -98,7 +99,8 @@ func ExampleFile_SetSheetViewOptions() {
 }
 
 func ExampleFile_GetSheetViewOptions() {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	const sheet = "Sheet1"
 
 	var (
@@ -199,7 +201,8 @@ func ExampleFile_GetSheetViewOptions() {
 }
 
 func TestSheetViewOptionsErrors(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	const sheet = "Sheet1"
 
 	assert.NoError(t, f.GetSheetViewOptions(sheet, 0))

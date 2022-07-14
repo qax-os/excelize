@@ -273,7 +273,8 @@ func TestAddSparkline(t *testing.T) {
 
 func TestAppendSparkline(t *testing.T) {
 	// Test unsupported charset.
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	ws, err := f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
 	ws.ExtLst = &xlsxExtLst{Ext: string(MacintoshCyrillicCharset)}
@@ -281,7 +282,8 @@ func TestAppendSparkline(t *testing.T) {
 }
 
 func prepareSparklineDataset() *File {
-	f := NewFile()
+	f, err := NewFile()
+	fmt.Println(err)
 	sheet2 := [][]int{
 		{-2, 2, 3, -1, 0},
 		{30, 20, 33, 20, 15},

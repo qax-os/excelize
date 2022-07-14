@@ -19,7 +19,8 @@ import (
 )
 
 func BenchmarkAddPictureFromBytes(b *testing.B) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(b, err)
 	imgFile, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
 	if err != nil {
 		b.Error("unable to load image for benchmark")
@@ -134,8 +135,10 @@ func TestGetPicture(t *testing.T) {
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
-	f.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
-	f.getDrawingRelationships("", "")
+	_, err = f.getDrawingRelationships("xl/worksheets/_rels/sheet1.xml.rels", "rId8")
+	assert.NoError(t, err)
+	_, err = f.getDrawingRelationships("", "")
+	assert.NoError(t, err)
 	f.getSheetRelationshipsTargetByID("", "")
 	f.deleteSheetRelationships("", "")
 
@@ -160,7 +163,8 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	// Test get picture from none drawing worksheet.
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	file, raw, err = f.GetPicture("Sheet1", "F22")
 	assert.NoError(t, err)
 	assert.Empty(t, file)
@@ -174,12 +178,14 @@ func TestGetPicture(t *testing.T) {
 
 func TestAddDrawingPicture(t *testing.T) {
 	// testing addDrawingPicture with illegal cell coordinates.
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestAddPictureFromBytes(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	imgFile, err := ioutil.ReadFile("logo.png")
 	assert.NoError(t, err, "Unable to load logo for test")
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile))
@@ -208,13 +214,16 @@ func TestDeletePicture(t *testing.T) {
 	assert.EqualError(t, f.DeletePicture("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	assert.NoError(t, f.Close())
 	// Test delete picture on no chart worksheet.
-	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
+	xlsxFile, err := NewFile()
+	assert.NoError(t, err)
+	assert.NoError(t, xlsxFile.DeletePicture("Sheet1", "A1"))
 }
 
 func TestDrawingResize(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// Test calculate drawing resize on not exists worksheet.
-	_, _, _, _, err := f.drawingResize("SheetN", "A1", 1, 1, nil)
+	_, _, _, _, err = f.drawingResize("SheetN", "A1", 1, 1, nil)
 	assert.EqualError(t, err, "sheet SheetN is not exist")
 	// Test calculate drawing resize with invalid coordinates.
 	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
@@ -222,5 +231,5 @@ func TestDrawingResize(t *testing.T) {
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), "merge overlapping cells: "+newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }

@@ -178,10 +178,31 @@ func OpenReader(r io.Reader, opt ...Options) (*File, error) {
 	for k, v := range file {
 		f.Pkg.Store(k, v)
 	}
-	f.CalcChain = f.calcChainReader()
-	f.sheetMap = f.getSheetMap()
-	f.Styles = f.stylesReader()
-	f.Theme = f.themeReader()
+	f.CalcChain, err = f.NewCalcChainReader()
+	if err != nil {
+		return nil, err
+	}
+	f.ContentTypes, err = f.NewContentTypesReader()
+	if err != nil {
+		return nil, err
+	}
+	f.WorkBook, err = f.NewWorkbookReader()
+	if err != nil {
+		return nil, err
+	}
+	f.sheetMap, err = f.getSheetMap()
+	if err != nil {
+		return nil, err
+	}
+	f.Styles, err = f.NewStylesReader()
+	if err != nil {
+		return nil, err
+	}
+	f.Theme, err = f.NewThemeReader()
+	if err != nil {
+		return nil, err
+	}
+
 	return f, nil
 }
 
@@ -193,6 +214,13 @@ func parseOptions(opts ...Options) *Options {
 		opt = &o
 	}
 	return opt
+}
+
+// IsValid returns true if the File's main components are initialized.
+// Note: CalcChain can be nil, in case there is no calculation chain.
+func (f *File) IsValid() bool {
+	return f.ContentTypes != nil && f.WorkBook != nil &&
+		f.sheetMap != nil && f.Styles != nil && f.Theme != nil
 }
 
 // CharsetTranscoder Set user defined codepage transcoder function for open
@@ -251,7 +279,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = fmt.Errorf("xml decode error: %w", err)
 		return
 	}
 	err = nil
@@ -334,9 +362,9 @@ func checkSheetR0(ws *xlsxWorksheet, sheetData *xlsxSheetData, r0 *xlsxRow) {
 
 // setRels provides a function to set relationships by given relationship ID,
 // XML path, relationship type, target and target mode.
-func (f *File) setRels(rID, relPath, relType, target, targetMode string) int {
-	rels := f.relsReader(relPath)
-	if rels == nil || rID == "" {
+func (f *File) setRels(rID, relPath, relType, target, targetMode string) (int, error) {
+	rels, err := f.relsReader(relPath)
+	if err != nil || rels == nil || rID == "" {
 		return f.addRels(relPath, relType, target, targetMode)
 	}
 	rels.Lock()
@@ -351,18 +379,19 @@ func (f *File) setRels(rID, relPath, relType, target, targetMode string) int {
 			break
 		}
 	}
-	return ID
+	return ID, err
 }
 
 // addRels provides a function to add relationships by given XML path,
 // relationship type, target and target mode.
-func (f *File) addRels(relPath, relType, target, targetMode string) int {
+func (f *File) addRels(relPath, relType, target, targetMode string) (int, error) {
 	uniqPart := map[string]string{
 		SourceRelationshipSharedStrings: "/xl/sharedStrings.xml",
 	}
-	rels := f.relsReader(relPath)
-	if rels == nil {
+	rels, err := f.relsReader(relPath)
+	if err != nil || rels == nil {
 		rels = &xlsxRelationships{}
+		err = nil
 	}
 	rels.Lock()
 	defer rels.Unlock()
@@ -375,14 +404,20 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 		if relType == rel.Type {
 			if partName, ok := uniqPart[rel.Type]; ok {
 				rels.Relationships[idx].Target = partName
-				return rID
+				return rID, err
 			}
 		}
 	}
 	rID++
 	var ID bytes.Buffer
-	ID.WriteString("rId")
-	ID.WriteString(strconv.Itoa(rID))
+	_, err = ID.WriteString("rId")
+	if err != nil {
+		return rID, err
+	}
+	_, err = ID.WriteString(strconv.Itoa(rID))
+	if err != nil {
+		return rID, err
+	}
 	rels.Relationships = append(rels.Relationships, xlsxRelationship{
 		ID:         ID.String(),
 		Type:       relType,
@@ -390,7 +425,7 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 		TargetMode: targetMode,
 	})
 	f.Relationships.Store(relPath, rels)
-	return rID
+	return rID, err
 }
 
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
@@ -420,6 +455,9 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 //
 func (f *File) UpdateLinkedValue() error {
 	wb := f.workbookReader()
+	if wb == nil {
+		return ErrIncompleteFileSetup
+	}
 	// recalculate formulas
 	wb.CalcPr = nil
 	for _, name := range f.GetSheetList() {
@@ -464,7 +502,14 @@ func (f *File) AddVBAProject(bin string) error {
 	if path.Ext(bin) != ".bin" {
 		return ErrAddVBAProject
 	}
-	wb := f.relsReader(f.getWorkbookRelsPath())
+	wrp, err := f.getWorkbookRelsPath()
+	if err != nil {
+		return err
+	}
+	wb, err := f.relsReader(wrp)
+	if err != nil {
+		return err
+	}
 	wb.Lock()
 	defer wb.Unlock()
 	var rID int
@@ -487,7 +532,10 @@ func (f *File) AddVBAProject(bin string) error {
 			Type:   SourceRelationshipVBAProject,
 		})
 	}
-	file, _ := ioutil.ReadFile(filepath.Clean(bin))
+	file, err := ioutil.ReadFile(filepath.Clean(bin))
+	if err != nil {
+		return err
+	}
 	f.Pkg.Store("xl/vbaProject.bin", file)
 	return err
 }
@@ -497,6 +545,9 @@ func (f *File) AddVBAProject(bin string) error {
 func (f *File) setContentTypePartProjectExtensions(contentType string) {
 	var ok bool
 	content := f.contentTypesReader()
+	if content == nil {
+		return
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, v := range content.Defaults {

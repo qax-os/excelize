@@ -26,8 +26,8 @@ import (
 //
 //    f := NewFile()
 //
-func NewFile() *File {
-	f := newFile()
+func NewFile() (f *File, err error) {
+	f = newFile()
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
 	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
@@ -38,21 +38,56 @@ func NewFile() *File {
 	f.Pkg.Store(defaultXMLPathWorkbook, []byte(xml.Header+templateWorkbook))
 	f.Pkg.Store(defaultXMLPathContentTypes, []byte(xml.Header+templateContentTypes))
 	f.SheetCount = 1
-	f.CalcChain = f.calcChainReader()
+
+	handleFailure := func() {
+		f.Close()
+		f = nil
+	}
+
+	f.CalcChain, err = f.NewCalcChainReader()
+	if err != nil {
+		handleFailure()
+		return
+	}
 	f.Comments = make(map[string]*xlsxComments)
-	f.ContentTypes = f.contentTypesReader()
+	f.ContentTypes, err = f.NewContentTypesReader()
+	if err != nil {
+		handleFailure()
+		return
+	}
 	f.Drawings = sync.Map{}
-	f.Styles = f.stylesReader()
+	f.Styles, err = f.NewStylesReader()
+	if err != nil {
+		handleFailure()
+		return
+	}
 	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
 	f.VMLDrawing = make(map[string]*vmlDrawing)
-	f.WorkBook = f.workbookReader()
+	f.WorkBook, err = f.NewWorkbookReader()
+	if err != nil {
+		handleFailure()
+		return
+	}
 	f.Relationships = sync.Map{}
-	f.Relationships.Store("xl/_rels/workbook.xml.rels", f.relsReader("xl/_rels/workbook.xml.rels"))
+	rels, err := f.relsReader("xl/_rels/workbook.xml.rels")
+	if err != nil {
+		handleFailure()
+		return
+	}
+	f.Relationships.Store("xl/_rels/workbook.xml.rels", rels)
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
-	ws, _ := f.workSheetReader("Sheet1")
+	ws, err := f.workSheetReader("Sheet1")
+	if err != nil {
+		handleFailure()
+		return
+	}
 	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
-	f.Theme = f.themeReader()
-	return f
+	f.Theme, err = f.NewThemeReader()
+	if err != nil {
+		handleFailure()
+		return
+	}
+	return
 }
 
 // Save provides a function to override the spreadsheet with origin path.
@@ -71,6 +106,9 @@ func (f *File) Save() error {
 func (f *File) SaveAs(name string, opt ...Options) error {
 	if len(name) > MaxFilePathLength {
 		return ErrMaxFilePathLength
+	}
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
 	}
 	f.Path = name
 	contentType, ok := map[string]string{
@@ -170,37 +208,70 @@ func (f *File) writeDirectToWriter(w io.Writer) error {
 }
 
 // writeToZip provides a function to write to zip.Writer
-func (f *File) writeToZip(zw *zip.Writer) error {
-	f.calcChainWriter()
-	f.commentsWriter()
-	f.contentTypesWriter()
-	f.drawingsWriter()
-	f.vmlDrawingWriter()
-	f.workBookWriter()
-	f.workSheetWriter()
-	f.relsWriter()
-	f.sharedStringsLoader()
-	f.sharedStringsWriter()
-	f.styleSheetWriter()
+func (f *File) writeToZip(zw *zip.Writer) (err error) {
+	err = f.calcChainWriter()
+	if err != nil {
+		return
+	}
+	err = f.commentsWriter()
+	if err != nil {
+		return
+	}
+	err = f.contentTypesWriter()
+	if err != nil {
+		return
+	}
+	err = f.drawingsWriter()
+	if err != nil {
+		return
+	}
+	err = f.vmlDrawingWriter()
+	if err != nil {
+		return
+	}
+	err = f.workBookWriter()
+	if err != nil {
+		return
+	}
+	err = f.workSheetWriter()
+	if err != nil {
+		return
+	}
+	err = f.relsWriter()
+	if err != nil {
+		return
+	}
+	err = f.sharedStringsLoader()
+	if err != nil {
+		return
+	}
+	err = f.sharedStringsWriter()
+	if err != nil {
+		return
+	}
+	err = f.styleSheetWriter()
+	if err != nil {
+		return
+	}
 
 	for path, stream := range f.streams {
-		fi, err := zw.Create(path)
+		var fi io.Writer
+		fi, err = zw.Create(path)
 		if err != nil {
-			return err
+			return
 		}
 		var from io.Reader
 		from, err = stream.rawData.Reader()
 		if err != nil {
 			_ = stream.rawData.Close()
-			return err
+			return
 		}
 		_, err = io.Copy(fi, from)
 		if err != nil {
-			return err
+			return
 		}
 		_ = stream.rawData.Close()
 	}
-	var err error
 	f.Pkg.Range(func(path, content interface{}) bool {
 		if err != nil {
 			return false
@@ -214,7 +285,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			return false
 		}
 		_, err = fi.Write(content.([]byte))
-		return true
+		return err == nil
 	})
 	f.tempFiles.Range(func(path, content interface{}) bool {
 		if _, ok := f.Pkg.Load(path); ok {
@@ -226,7 +297,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			return false
 		}
 		_, err = fi.Write(f.readBytes(path.(string)))
-		return true
+		return err == nil
 	})
-	return err
+	return
 }

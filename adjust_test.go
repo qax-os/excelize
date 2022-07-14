@@ -7,7 +7,8 @@ import (
 )
 
 func TestAdjustMergeCells(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	// testing adjustAutoFilter with illegal cell coordinates.
 	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
@@ -264,7 +265,8 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.Equal(t, 0, len(c.ws.MergeCells.Cells), c.label)
 	}
 
-	f = NewFile()
+	f, err = NewFile()
+	assert.NoError(t, err)
 	p1, p2 := f.adjustMergeCellsHelper(2, 1, 0, 0)
 	assert.Equal(t, 1, p1)
 	assert.Equal(t, 2, p2)
@@ -272,7 +274,8 @@ func TestAdjustMergeCells(t *testing.T) {
 }
 
 func TestAdjustAutoFilter(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	assert.NoError(t, f.adjustAutoFilter(&xlsxWorksheet{
 		SheetData: xlsxSheetData{
 			Row: []xlsxRow{{Hidden: true, R: 2}},
@@ -295,7 +298,8 @@ func TestAdjustAutoFilter(t *testing.T) {
 }
 
 func TestAdjustHelper(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.NewSheet("Sheet2")
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}},
@@ -311,7 +315,8 @@ func TestAdjustHelper(t *testing.T) {
 }
 
 func TestAdjustCalcChain(t *testing.T) {
-	f := NewFile()
+	f, err := NewFile()
+	assert.NoError(t, err)
 	f.CalcChain = &xlsxCalcChain{
 		C: []xlsxCalcChainC{
 			{R: "B2", I: 2}, {R: "B2", I: 1},

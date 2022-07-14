@@ -95,7 +95,11 @@ type PivotTableField struct {
 //    )
 //
 //    func main() {
-//        f := excelize.NewFile()
+//        f, err := excelize.NewFile()
+//        if err != nil {
+//            fmt.Println(err)
+//            return
+//        }
 //        // Create some data in a sheet
 //        month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 //        year := []int{2017, 2018, 2019}
@@ -131,6 +135,10 @@ type PivotTableField struct {
 //    }
 //
 func (f *File) AddPivotTable(opt *PivotTableOption) error {
+	if !f.IsValid() {
+		return ErrIncompleteFileSetup
+	}
+
 	// parameter validation
 	_, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opt)
 	if err != nil {
@@ -148,23 +156,36 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 		return err
 	}
 
+	wrp, err := f.getWorkbookRelsPath()
+	if err != nil {
+		return err
+	}
 	// workbook pivot cache
-	workBookPivotCacheRID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipPivotCache, fmt.Sprintf("/xl/pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	workBookPivotCacheRID, err := f.addRels(wrp, SourceRelationshipPivotCache, fmt.Sprintf("/xl/pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	if err != nil {
+		return err
+	}
 	cacheID := f.addWorkbookPivotCache(workBookPivotCacheRID)
 
 	pivotCacheRels := "xl/pivotTables/_rels/pivotTable" + strconv.Itoa(pivotTableID) + ".xml.rels"
 	// rId not used
-	_ = f.addRels(pivotCacheRels, SourceRelationshipPivotCache, fmt.Sprintf("../pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	_, err = f.addRels(pivotCacheRels, SourceRelationshipPivotCache, fmt.Sprintf("../pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	if err != nil {
+		return err
+	}
 	err = f.addPivotTable(cacheID, pivotTableID, pivotTableXML, opt)
 	if err != nil {
 		return err
 	}
 	pivotTableSheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(pivotTableSheetPath, "xl/worksheets/") + ".rels"
-	f.addRels(pivotTableSheetRels, SourceRelationshipPivotTable, sheetRelationshipsPivotTableXML, "")
+	_, err = f.addRels(pivotTableSheetRels, SourceRelationshipPivotTable, sheetRelationshipsPivotTableXML, "")
+	if err != nil {
+		return err
+	}
 	f.addContentTypePart(pivotTableID, "pivotTable")
 	f.addContentTypePart(pivotCacheID, "pivotCache")
 
-	return nil
+	return err
 }
 
 // parseFormatPivotTableSet provides a function to validate pivot table
@@ -307,6 +328,9 @@ func (f *File) addPivotCache(pivotCacheXML string, opt *PivotTableOption) error 
 	}
 	pc.CacheFields.Count = len(pc.CacheFields.CacheField)
 	pivotCache, err := xml.Marshal(pc)
+	if err != nil {
+		return err
+	}
 	f.saveFileList(pivotCacheXML, pivotCache)
 	return err
 }
@@ -386,6 +410,9 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	_ = f.addPivotDataFields(&pt, opt)
 
 	pivotTable, err := xml.Marshal(pt)
+	if err != nil {
+		return err
+	}
 	f.saveFileList(pivotTableXML, pivotTable)
 	return err
 }
@@ -699,6 +726,9 @@ func (f *File) getPivotTableFieldOptions(name string, fields []PivotTableField) 
 // addWorkbookPivotCache add the association ID of the pivot cache in workbook.xml.
 func (f *File) addWorkbookPivotCache(RID int) int {
 	wb := f.workbookReader()
+	if wb == nil {
+		return 0
+	}
 	if wb.PivotCaches == nil {
 		wb.PivotCaches = &xlsxPivotCaches{}
 	}
