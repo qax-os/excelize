@@ -61,7 +61,7 @@ func newInvalidStyleID(styleID int) error {
 // newFieldLengthError defined the error message on receiving the field length
 // overflow.
 func newFieldLengthError(name string) error {
-	return fmt.Errorf("field %s must be less or equal than 255 characters", name)
+	return fmt.Errorf("field %s must be less than or equal to 255 characters", name)
 }
 
 // newCellNameToCoordinatesError defined the error message on converts
@@ -76,10 +76,10 @@ var (
 	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
 	// ErrColumnNumber defined the error message on receive an invalid column
 	// number.
-	ErrColumnNumber = errors.New("column number exceeds maximum limit")
+	ErrColumnNumber = fmt.Errorf(`the column number must be greater than or equal to %d and less than or equal to %d`, MinColumns, MaxColumns)
 	// ErrColumnWidth defined the error message on receive an invalid column
 	// width.
-	ErrColumnWidth = fmt.Errorf("the width of the column must be smaller than or equal to %d characters", MaxColumnWidth)
+	ErrColumnWidth = fmt.Errorf("the width of the column must be less than or equal to %d characters", MaxColumnWidth)
 	// ErrOutlineLevel defined the error message on receive an invalid outline
 	// level number.
 	ErrOutlineLevel = errors.New("invalid outline level")
@@ -102,7 +102,7 @@ var (
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrMaxRowHeight defined the error message on receive an invalid row
 	// height.
-	ErrMaxRowHeight = fmt.Errorf("the height of the row must be smaller than or equal to %d points", MaxRowHeight)
+	ErrMaxRowHeight = fmt.Errorf("the height of the row must be less than or equal to %d points", MaxRowHeight)
 	// ErrImgExt defined the error message on receive an unsupported image
 	// extension.
 	ErrImgExt = errors.New("unsupported image extension")
@@ -143,7 +143,7 @@ var (
 	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.
-	ErrFontLength = fmt.Errorf("the length of the font family name must be smaller than or equal to %d", MaxFontFamilyLength)
+	ErrFontLength = fmt.Errorf("the length of the font family name must be less than or equal to %d", MaxFontFamilyLength)
 	// ErrFontSize defined the error message on the size of the font is invalid.
 	ErrFontSize = fmt.Errorf("font size must be between %d and %d points", MinFontSize, MaxFontSize)
 	// ErrSheetIdx defined the error message on receive the invalid worksheet

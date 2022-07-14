@@ -1403,7 +1403,7 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 						err = newInvalidColumnNameError(tokens[1])
 						return
 					}
-					cr.Col = TotalColumns
+					cr.Col = MaxColumns
 				}
 			}
 			if refs.Len() > 0 {
@@ -1423,7 +1423,7 @@ func (f *File) parseReference(sheet, reference string) (arg formulaArg, err erro
 					err = newInvalidColumnNameError(tokens[0])
 					return
 				}
-				cr.Col = TotalColumns
+				cr.Col = MaxColumns
 			}
 			cellRanges.PushBack(cellRange{
 				From: cellRef{Sheet: sheet, Col: cr.Col, Row: 1},
@@ -14424,8 +14424,8 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "COLUMNS requires 1 argument")
 	}
 	min, max := calcColumnsMinMax(argsList)
-	if max == TotalColumns {
-		return newNumberFormulaArg(float64(TotalColumns))
+	if max == MaxColumns {
+		return newNumberFormulaArg(float64(MaxColumns))
 	}
 	result := max - min + 1
 	if max == min {
