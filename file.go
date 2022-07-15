@@ -21,8 +21,8 @@ import (
 	"sync"
 )
 
-// NewFile provides a function to create new file by default template. For
-// example:
+// NewFile provides a function to create new file by default template.
+// For example:
 //
 //    f := NewFile()
 //
