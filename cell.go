@@ -169,6 +169,21 @@ func (c *xlsxC) hasValue() bool {
 	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
+// removeFormula delete formula for the cell.
+func (c *xlsxC) removeFormula(ws *xlsxWorksheet) {
+	if c.F != nil && c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
+		si := c.F.Si
+		for r, row := range ws.SheetData.Row {
+			for col, cell := range row.C {
+				if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
+					ws.SheetData.Row[r].C[col].F = nil
+				}
+			}
+		}
+	}
+	c.F = nil
+}
+
 // setCellIntFunc is a wrapper of SetCellInt.
 func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
 	var err error
@@ -266,7 +281,8 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
-	cellData.F, cellData.IS = nil, nil
+	cellData.removeFormula(ws)
+	cellData.IS = nil
 	return err
 }
 
@@ -292,7 +308,8 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
-	cellData.F, cellData.IS = nil, nil
+	cellData.removeFormula(ws)
+	cellData.IS = nil
 	return err
 }
 
@@ -330,7 +347,8 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSiz
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, precision, bitSize)
-	cellData.F, cellData.IS = nil, nil
+	cellData.removeFormula(ws)
+	cellData.IS = nil
 	return err
 }
 
@@ -356,7 +374,8 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V, err = f.setCellString(value)
-	cellData.F, cellData.IS = nil, nil
+	cellData.removeFormula(ws)
+	cellData.IS = nil
 	return err
 }
 
@@ -455,7 +474,8 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
-	cellData.F, cellData.IS = nil, nil
+	cellData.removeFormula(ws)
+	cellData.IS = nil
 	return err
 }
 

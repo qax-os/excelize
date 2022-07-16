@@ -11,6 +11,13 @@
 
 package excelize
 
+import (
+	"bytes"
+	"encoding/xml"
+	"io"
+	"strings"
+)
+
 type adjustDirection bool
 
 const (
@@ -41,6 +48,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		f.adjustColDimensions(ws, num, offset)
 	}
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
+	f.adjustTable(ws, sheet, dir, num, offset)
 	if err = f.adjustMergeCells(ws, dir, num, offset); err != nil {
 		return err
 	}
@@ -138,6 +146,54 @@ func (f *File) adjustHyperlinks(ws *xlsxWorksheet, sheet string, dir adjustDirec
 	}
 }
 
+// adjustTable provides a function to update the table when inserting or
+// deleting rows or columns.
+func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) {
+	if ws.TableParts == nil || len(ws.TableParts.TableParts) == 0 {
+		return
+	}
+	for idx := 0; idx < len(ws.TableParts.TableParts); idx++ {
+		tbl := ws.TableParts.TableParts[idx]
+		target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
+		tableXML := strings.ReplaceAll(target, "..", "xl")
+		content, ok := f.Pkg.Load(tableXML)
+		if !ok {
+			continue
+		}
+		t := xlsxTable{}
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
+			Decode(&t); err != nil && err != io.EOF {
+			return
+		}
+		coordinates, err := areaRefToCoordinates(t.Ref)
+		if err != nil {
+			return
+		}
+		// Remove the table when deleting the header row of the table
+		if dir == rows && num == coordinates[0] {
+			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
+			ws.TableParts.Count = len(ws.TableParts.TableParts)
+			idx--
+			continue
+		}
+		coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
+		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+		if y2-y1 < 2 || x2-x1 < 1 {
+			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
+			ws.TableParts.Count = len(ws.TableParts.TableParts)
+			idx--
+			continue
+		}
+		t.Ref, _ = f.coordinatesToAreaRef([]int{x1, y1, x2, y2})
+		if t.AutoFilter != nil {
+			t.AutoFilter.Ref = t.Ref
+		}
+		_, _ = f.setTableHeader(sheet, x1, y1, x2)
+		table, _ := xml.Marshal(t)
+		f.saveFileList(tableXML, table)
+	}
+}
+
 // adjustAutoFilter provides a function to update the auto filter when
 // inserting or deleting rows or columns.
 func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
@@ -182,10 +238,13 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 		if coordinates[3] >= num {
 			coordinates[3] += offset
 		}
-	} else {
-		if coordinates[2] >= num {
-			coordinates[2] += offset
-		}
+		return coordinates
+	}
+	if coordinates[0] >= num {
+		coordinates[0] += offset
+	}
+	if coordinates[2] >= num {
+		coordinates[2] += offset
 	}
 	return coordinates
 }

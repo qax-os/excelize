@@ -1,6 +1,8 @@
 package excelize
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -281,7 +283,7 @@ func TestAdjustAutoFilter(t *testing.T) {
 			Ref: "A1:A3",
 		},
 	}, rows, 1, -1))
-	// testing adjustAutoFilter with illegal cell coordinates.
+	// Test adjustAutoFilter with illegal cell coordinates.
 	assert.EqualError(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A:B1",
@@ -294,6 +296,36 @@ func TestAdjustAutoFilter(t *testing.T) {
 	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 }
 
+func TestAdjustTable(t *testing.T) {
+	f, sheetName := NewFile(), "Sheet1"
+	for idx, tableRange := range [][]string{{"B2", "C3"}, {"E3", "F5"}, {"H5", "H8"}, {"J5", "K9"}} {
+		assert.NoError(t, f.AddTable(sheetName, tableRange[0], tableRange[1], fmt.Sprintf(`{
+	      "table_name": "table%d",
+	      "table_style": "TableStyleMedium2",
+	      "show_first_column": true,
+	      "show_last_column": true,
+	      "show_row_stripes": false,
+	      "show_column_stripes": true
+	  }`, idx)))
+	}
+	assert.NoError(t, f.RemoveRow(sheetName, 2))
+	assert.NoError(t, f.RemoveRow(sheetName, 3))
+	assert.NoError(t, f.RemoveCol(sheetName, "H"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustTable.xlsx")))
+
+	f = NewFile()
+	assert.NoError(t, f.AddTable(sheetName, "A1", "D5", ""))
+	// Test adjust table with non-table part
+	f.Pkg.Delete("xl/tables/table1.xml")
+	assert.NoError(t, f.RemoveRow(sheetName, 1))
+	// Test adjust table with unsupported charset
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	assert.NoError(t, f.RemoveRow(sheetName, 1))
+	// Test adjust table with invalid table range reference
+	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
+	assert.NoError(t, f.RemoveRow(sheetName, 1))
+}
+
 func TestAdjustHelper(t *testing.T) {
 	f := NewFile()
 	f.NewSheet("Sheet2")
@@ -303,10 +335,10 @@ func TestAdjustHelper(t *testing.T) {
 	f.Sheet.Store("xl/worksheets/sheet2.xml", &xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{Ref: "A1:B"},
 	})
-	// testing adjustHelper with illegal cell coordinates.
+	// Test adjustHelper with illegal cell coordinates.
 	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
-	// testing adjustHelper on not exists worksheet.
+	// Test adjustHelper on not exists worksheet.
 	assert.EqualError(t, f.adjustHelper("SheetN", rows, 0, 0), "sheet SheetN is not exist")
 }
 

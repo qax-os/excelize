@@ -173,7 +173,7 @@ func TestGetPicture(t *testing.T) {
 }
 
 func TestAddDrawingPicture(t *testing.T) {
-	// testing addDrawingPicture with illegal cell coordinates.
+	// Test addDrawingPicture with illegal cell coordinates.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }

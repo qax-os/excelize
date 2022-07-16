@@ -322,7 +322,7 @@ func TestInsertRow(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRow.xlsx")))
 }
 
-// Testing internal structure state after insert operations. It is important
+// Test internal structure state after insert operations. It is important
 // for insert workflow to be constant to avoid side effect with functions
 // related to internal structure.
 func TestInsertRowInEmptyFile(t *testing.T) {

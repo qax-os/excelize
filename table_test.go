@@ -45,6 +45,12 @@ func TestAddTable(t *testing.T) {
 	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
 }
 
+func TestSetTableHeader(t *testing.T) {
+	f := NewFile()
+	_, err := f.setTableHeader("Sheet1", 1, 0, 1)
+	assert.EqualError(t, err, "invalid cell coordinates [1, 0]")
+}
+
 func TestAutoFilter(t *testing.T) {
 	outFile := filepath.Join("test", "TestAutoFilter%d.xlsx")
 
@@ -72,7 +78,7 @@ func TestAutoFilter(t *testing.T) {
 		})
 	}
 
-	// testing AutoFilter with illegal cell coordinates.
+	// Test AutoFilter with illegal cell coordinates.
 	assert.EqualError(t, f.AutoFilter("Sheet1", "A", "B1", ""), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.AutoFilter("Sheet1", "A1", "B", ""), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 }

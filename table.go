@@ -129,6 +129,35 @@ func (f *File) addSheetTable(sheet string, rID int) error {
 	return err
 }
 
+// setTableHeader provides a function to set cells value in header row for the
+// table.
+func (f *File) setTableHeader(sheet string, x1, y1, x2 int) ([]*xlsxTableColumn, error) {
+	var (
+		tableColumns []*xlsxTableColumn
+		idx          int
+	)
+	for i := x1; i <= x2; i++ {
+		idx++
+		cell, err := CoordinatesToCellName(i, y1)
+		if err != nil {
+			return tableColumns, err
+		}
+		name, _ := f.GetCellValue(sheet, cell)
+		if _, err := strconv.Atoi(name); err == nil {
+			_ = f.SetCellStr(sheet, cell, name)
+		}
+		if name == "" {
+			name = "Column" + strconv.Itoa(idx)
+			_ = f.SetCellStr(sheet, cell, name)
+		}
+		tableColumns = append(tableColumns, &xlsxTableColumn{
+			ID:   idx,
+			Name: name,
+		})
+	}
+	return tableColumns, nil
+}
+
 // addTable provides a function to add table by given worksheet name,
 // coordinate area and format set.
 func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet *formatTable) error {
@@ -142,29 +171,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 	if err != nil {
 		return err
 	}
-
-	var tableColumn []*xlsxTableColumn
-
-	idx := 0
-	for i := x1; i <= x2; i++ {
-		idx++
-		cell, err := CoordinatesToCellName(i, y1)
-		if err != nil {
-			return err
-		}
-		name, _ := f.GetCellValue(sheet, cell)
-		if _, err := strconv.Atoi(name); err == nil {
-			_ = f.SetCellStr(sheet, cell, name)
-		}
-		if name == "" {
-			name = "Column" + strconv.Itoa(idx)
-			_ = f.SetCellStr(sheet, cell, name)
-		}
-		tableColumn = append(tableColumn, &xlsxTableColumn{
-			ID:   idx,
-			Name: name,
-		})
-	}
+	tableColumns, _ := f.setTableHeader(sheet, x1, y1, x2)
 	name := formatSet.TableName
 	if name == "" {
 		name = "Table" + strconv.Itoa(i)
@@ -179,8 +186,8 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 			Ref: ref,
 		},
 		TableColumns: &xlsxTableColumns{
-			Count:       idx,
-			TableColumn: tableColumn,
+			Count:       len(tableColumns),
+			TableColumn: tableColumns,
 		},
 		TableStyleInfo: &xlsxTableStyleInfo{
 			Name:              formatSet.TableStyle,

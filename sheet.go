@@ -478,12 +478,11 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 }
 
 // DeleteSheet provides a function to delete worksheet in a workbook by given
-// worksheet name, the sheet names are not case-sensitive. The sheet names are
-// not case-sensitive. Use this method with caution, which will affect
-// changes in references such as formulas, charts, and so on. If there is any
-// referenced value of the deleted worksheet, it will cause a file error when
-// you open it. This function will be invalid when only the one worksheet is
-// left.
+// worksheet name, the sheet names are not case-sensitive. Use this method
+// with caution, which will affect changes in references such as formulas,
+// charts, and so on. If there is any referenced value of the deleted
+// worksheet, it will cause a file error when you open it. This function will
+// be invalid when only one worksheet is left
 func (f *File) DeleteSheet(name string) {
 	if f.SheetCount == 1 || f.GetSheetIndex(name) == -1 {
 		return
