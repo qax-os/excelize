@@ -200,8 +200,8 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 //
 //    err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
 //
-func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOption) error {
-	view, err := f.getSheetView(name, viewIndex)
+func (f *File) SetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOption) error {
+	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
 		return err
 	}
@@ -233,8 +233,8 @@ func (f *File) SetSheetViewOptions(name string, viewIndex int, opts ...SheetView
 //    var showGridLines excelize.ShowGridLines
 //    err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
 //
-func (f *File) GetSheetViewOptions(name string, viewIndex int, opts ...SheetViewOptionPtr) error {
-	view, err := f.getSheetView(name, viewIndex)
+func (f *File) GetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOptionPtr) error {
+	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
 		return err
 	}

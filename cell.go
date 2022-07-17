@@ -170,18 +170,21 @@ func (c *xlsxC) hasValue() bool {
 }
 
 // removeFormula delete formula for the cell.
-func (c *xlsxC) removeFormula(ws *xlsxWorksheet) {
-	if c.F != nil && c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
-		si := c.F.Si
-		for r, row := range ws.SheetData.Row {
-			for col, cell := range row.C {
-				if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
-					ws.SheetData.Row[r].C[col].F = nil
+func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) {
+	if c.F != nil && c.Vm == nil {
+		f.deleteCalcChain(f.getSheetID(sheet), c.R)
+		if c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
+			si := c.F.Si
+			for r, row := range ws.SheetData.Row {
+				for col, cell := range row.C {
+					if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
+						ws.SheetData.Row[r].C[col].F = nil
+					}
 				}
 			}
 		}
+		c.F = nil
 	}
-	c.F = nil
 }
 
 // setCellIntFunc is a wrapper of SetCellInt.
@@ -281,8 +284,8 @@ func (f *File) SetCellInt(sheet, axis string, value int) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellInt(value)
-	cellData.removeFormula(ws)
 	cellData.IS = nil
+	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -308,8 +311,8 @@ func (f *File) SetCellBool(sheet, axis string, value bool) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellBool(value)
-	cellData.removeFormula(ws)
 	cellData.IS = nil
+	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -347,8 +350,8 @@ func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSiz
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellFloat(value, precision, bitSize)
-	cellData.removeFormula(ws)
 	cellData.IS = nil
+	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -374,8 +377,8 @@ func (f *File) SetCellStr(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V, err = f.setCellString(value)
-	cellData.removeFormula(ws)
 	cellData.IS = nil
+	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -474,8 +477,8 @@ func (f *File) SetCellDefault(sheet, axis, value string) error {
 	defer ws.Unlock()
 	cellData.S = f.prepareCellStyle(ws, col, row, cellData.S)
 	cellData.T, cellData.V = setCellDefault(value)
-	cellData.removeFormula(ws)
 	cellData.IS = nil
+	f.removeFormula(cellData, ws, sheet)
 	return err
 }
 
@@ -510,13 +513,12 @@ type FormulaOpts struct {
 }
 
 // SetCellFormula provides a function to set formula on the cell is taken
-// according to the given worksheet name (case-sensitive) and cell formula
-// settings. The result of the formula cell can be calculated when the
-// worksheet is opened by the Office Excel application or can be using
-// the "CalcCellValue" function also can get the calculated cell value. If
-// the Excel application doesn't calculate the formula automatically when the
-// workbook has been opened, please call "UpdateLinkedValue" after setting
-// the cell formula functions.
+// according to the given worksheet name and cell formula settings. The result
+// of the formula cell can be calculated when the worksheet is opened by the
+// Office Excel application or can be using the "CalcCellValue" function also
+// can get the calculated cell value. If the Excel application doesn't
+// calculate the formula automatically when the workbook has been opened,
+// please call "UpdateLinkedValue" after setting the cell formula functions.
 //
 // Example 1, set normal formula "=SUM(A1,B1)" for the cell "A3" on "Sheet1":
 //
@@ -662,11 +664,12 @@ func (ws *xlsxWorksheet) countSharedFormula() (count int) {
 	return
 }
 
-// GetCellHyperLink provides a function to get cell hyperlink by given
-// worksheet name and axis. Boolean type value link will be true if the cell
-// has a hyperlink and the target is the address of the hyperlink. Otherwise,
-// the value of link will be false and the value of the target will be a blank
-// string. For example get hyperlink of Sheet1!H6:
+// GetCellHyperLink gets a cell hyperlink based on the given worksheet name and
+// cell coordinates. If the cell has a hyperlink, it will return 'true' and
+// the link address, otherwise it will return 'false' and an empty link
+// address.
+//
+// For example, get a hyperlink to a 'H6' cell on a worksheet named 'Sheet1':
 //
 //    link, target, err := f.GetCellHyperLink("Sheet1", "H6")
 //
@@ -765,7 +768,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 
 	switch linkType {
 	case "External":
-		sheetPath := f.sheetMap[trimSheetName(sheet)]
+		sheetPath, _ := f.getSheetXMLPath(sheet)
 		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
 		rID := f.setRels(linkData.RID, sheetRels, SourceRelationshipHyperLink, link, linkType)
 		linkData = xlsxHyperlink{

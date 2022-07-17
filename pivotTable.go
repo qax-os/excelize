@@ -190,7 +190,7 @@ func (f *File) parseFormatPivotTableSet(opt *PivotTableOption) (*xlsxWorksheet, 
 	if err != nil {
 		return dataSheet, "", err
 	}
-	pivotTableSheetPath, ok := f.sheetMap[trimSheetName(pivotTableSheetName)]
+	pivotTableSheetPath, ok := f.getSheetXMLPath(pivotTableSheetName)
 	if !ok {
 		return dataSheet, pivotTableSheetPath, fmt.Errorf("sheet %s is not exist", pivotTableSheetName)
 	}

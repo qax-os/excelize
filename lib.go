@@ -187,8 +187,8 @@ func JoinCellName(col string, row int) (string, error) {
 }
 
 // ColumnNameToNumber provides a function to convert Excel sheet column name
-// to int. Column name case-insensitive. The function returns an error if
-// column name incorrect.
+// (case-insensitive) to int. The function returns an error if column name
+// incorrect.
 //
 // Example:
 //
@@ -690,7 +690,7 @@ func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 
 // addSheetNameSpace add XML attribute for worksheet.
 func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
-	name := f.sheetMap[trimSheetName(sheet)]
+	name, _ := f.getSheetXMLPath(sheet)
 	f.addNameSpaces(name, ns)
 }
 

@@ -49,7 +49,7 @@ func (f *File) deleteCalcChain(index int, axis string) {
 	calc := f.calcChainReader()
 	if calc != nil {
 		calc.C = xlsxCalcChainCollection(calc.C).Filter(func(c xlsxCalcChainC) bool {
-			return !((c.I == index && c.R == axis) || (c.I == index && axis == ""))
+			return !((c.I == index && c.R == axis) || (c.I == index && axis == "") || (c.I == 0 && c.R == axis))
 		})
 	}
 	if len(calc.C) == 0 {

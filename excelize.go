@@ -230,7 +230,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		name string
 		ok   bool
 	)
-	if name, ok = f.sheetMap[trimSheetName(sheet)]; !ok {
+	if name, ok = f.getSheetXMLPath(sheet); !ok {
 		err = fmt.Errorf("sheet %s is not exist", sheet)
 		return
 	}

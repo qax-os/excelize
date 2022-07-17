@@ -300,7 +300,8 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		drawingXML = strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
 	} else {
 		// Add first shape for given sheet.
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
+		sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)

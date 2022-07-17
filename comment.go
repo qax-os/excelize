@@ -115,7 +115,8 @@ func (f *File) AddComment(sheet, cell, format string) error {
 		drawingVML = strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
 	} else {
 		// Add first comment for given sheet.
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
+		sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
 		f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		f.addSheetNameSpace(sheet, SourceRelationship)

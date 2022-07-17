@@ -465,9 +465,12 @@ type xlsxC struct {
 	R        string   `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
 	S        int      `xml:"s,attr,omitempty"` // Style reference.
 	// Str string `xml:"str,attr,omitempty"` // Style reference.
-	T  string  `xml:"t,attr,omitempty"` // Type.
-	F  *xlsxF  `xml:"f,omitempty"`      // Formula
-	V  string  `xml:"v,omitempty"`      // Value
+	T  string  `xml:"t,attr,omitempty"`  // Type.
+	Cm *uint   `xml:"cm,attr,omitempty"` //
+	Vm *uint   `xml:"vm,attr,omitempty"` //
+	Ph *bool   `xml:"ph,attr,omitempty"` //
+	F  *xlsxF  `xml:"f,omitempty"`       // Formula
+	V  string  `xml:"v,omitempty"`       // Value
 	IS *xlsxSI `xml:"is"`
 }
 

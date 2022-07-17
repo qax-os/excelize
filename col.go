@@ -40,7 +40,15 @@ type Cols struct {
 	sheetXML                               []byte
 }
 
-// GetCols return all the columns in a sheet by given worksheet name (case-sensitive). For example:
+// GetCols gets the value of all cells by columns on the worksheet based on the
+// given worksheet name, returned as a two-dimensional array, where the value
+// of the cell is converted to the `string` type. If the cell format can be
+// applied to the value of the cell, the applied value will be used, otherwise
+// the original value will be used.
+//
+// For example, get and traverse the value of all cells by columns on a
+// worksheet named
+// 'Sheet1':
 //
 //    cols, err := f.GetCols("Sheet1")
 //    if err != nil {
@@ -196,7 +204,7 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 //    }
 //
 func (f *File) Cols(sheet string) (*Cols, error) {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}

@@ -200,7 +200,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, format, name, extension string, 
 // xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) deleteSheetRelationships(sheet, rID string) {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
 	}
@@ -450,7 +450,7 @@ func (f *File) addContentTypePart(index int, contentType string) {
 // value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
 // relationship index.
 func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		name = strings.ToLower(sheet) + ".xml"
 	}

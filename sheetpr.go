@@ -181,8 +181,8 @@ func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 //   FitToPage(bool)
 //   AutoPageBreaks(bool)
 //   OutlineSummaryBelow(bool)
-func (f *File) SetSheetPrOptions(name string, opts ...SheetPrOption) error {
-	ws, err := f.workSheetReader(name)
+func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -207,8 +207,8 @@ func (f *File) SetSheetPrOptions(name string, opts ...SheetPrOption) error {
 //   FitToPage(bool)
 //   AutoPageBreaks(bool)
 //   OutlineSummaryBelow(bool)
-func (f *File) GetSheetPrOptions(name string, opts ...SheetPrOptionPtr) error {
-	ws, err := f.workSheetReader(name)
+func (f *File) GetSheetPrOptions(sheet string, opts ...SheetPrOptionPtr) error {
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}

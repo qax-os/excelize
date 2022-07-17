@@ -33,7 +33,8 @@ func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXM
 		drawingXML = strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
 	} else {
 		// Add first picture for given sheet.
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
+		sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 		f.addSheetDrawing(sheet, rID)
 	}
@@ -45,7 +46,8 @@ func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXM
 func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	// Only allow one chart in a chartsheet.
-	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/chartsheets/") + ".rels"
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+	sheetRels := "xl/chartsheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/chartsheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipDrawingML, sheetRelationshipsDrawingXML, "")
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	cs.Drawing = &xlsxDrawing{

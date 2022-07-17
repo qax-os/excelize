@@ -34,17 +34,16 @@ import (
 )
 
 // NewSheet provides the function to create a new sheet by given a worksheet
-// name and returns the index of the sheets in the workbook
-// (spreadsheet) after it appended. Note that the worksheet names are not
-// case-sensitive, when creating a new spreadsheet file, the default
-// worksheet named `Sheet1` will be created.
-func (f *File) NewSheet(name string) int {
+// name and returns the index of the sheets in the workbook after it appended.
+// Note that when creating a new workbook, the default worksheet named
+// `Sheet1` will be created.
+func (f *File) NewSheet(sheet string) int {
 	// Check if the worksheet already exists
-	index := f.GetSheetIndex(name)
+	index := f.GetSheetIndex(sheet)
 	if index != -1 {
 		return index
 	}
-	f.DeleteSheet(name)
+	f.DeleteSheet(sheet)
 	f.SheetCount++
 	wb := f.workbookReader()
 	sheetID := 0
@@ -59,12 +58,12 @@ func (f *File) NewSheet(name string) int {
 	// Update [Content_Types].xml
 	f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
-	f.setSheet(sheetID, name)
+	f.setSheet(sheetID, sheet)
 	// Update workbook.xml.rels
 	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
-	f.setWorkbook(name, sheetID, rID)
-	return f.GetSheetIndex(name)
+	f.setWorkbook(sheet, sheetID, rID)
+	return f.GetSheetIndex(sheet)
 }
 
 // contentTypesReader provides a function to get the pointer to the
@@ -345,7 +344,7 @@ func (f *File) getActiveSheetID() int {
 func (f *File) SetSheetName(oldName, newName string) {
 	oldName = trimSheetName(oldName)
 	newName = trimSheetName(newName)
-	if newName == oldName {
+	if strings.EqualFold(newName, oldName) {
 		return
 	}
 	content := f.workbookReader()
@@ -374,9 +373,10 @@ func (f *File) GetSheetName(index int) (name string) {
 // getSheetID provides a function to get worksheet ID of the spreadsheet by
 // given sheet name. If given worksheet name is invalid, will return an
 // integer type value -1.
-func (f *File) getSheetID(name string) int {
-	for sheetID, sheet := range f.GetSheetMap() {
-		if strings.EqualFold(sheet, trimSheetName(name)) {
+func (f *File) getSheetID(sheet string) int {
+	sheetName := trimSheetName(sheet)
+	for sheetID, name := range f.GetSheetMap() {
+		if strings.EqualFold(name, sheetName) {
 			return sheetID
 		}
 	}
@@ -384,12 +384,12 @@ func (f *File) getSheetID(name string) int {
 }
 
 // GetSheetIndex provides a function to get a sheet index of the workbook by
-// the given sheet name, the sheet names are not case-sensitive. If the given
-// sheet name is invalid or sheet doesn't exist, it will return an integer
-// type value -1.
-func (f *File) GetSheetIndex(name string) int {
-	for index, sheet := range f.GetSheetList() {
-		if strings.EqualFold(sheet, trimSheetName(name)) {
+// the given sheet name. If the given sheet name is invalid or sheet doesn't
+// exist, it will return an integer type value -1.
+func (f *File) GetSheetIndex(sheet string) int {
+	sheetName := trimSheetName(sheet)
+	for index, name := range f.GetSheetList() {
+		if strings.EqualFold(name, sheetName) {
 			return index
 		}
 	}
@@ -455,6 +455,22 @@ func (f *File) getSheetMap() map[string]string {
 	return maps
 }
 
+// getSheetXMLPath provides a function to get XML file path by given sheet
+// name.
+func (f *File) getSheetXMLPath(sheet string) (string, bool) {
+	var (
+		name string
+		ok   bool
+	)
+	for sheetName, filePath := range f.sheetMap {
+		if strings.EqualFold(sheetName, sheet) {
+			name, ok = filePath, true
+			break
+		}
+	}
+	return name, ok
+}
+
 // SetSheetBackground provides a function to set background picture by given
 // worksheet name and file path.
 func (f *File) SetSheetBackground(sheet, picture string) error {
@@ -469,7 +485,8 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	}
 	file, _ := ioutil.ReadFile(filepath.Clean(picture))
 	name := f.addMedia(file, ext)
-	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[trimSheetName(sheet)], "xl/worksheets/") + ".rels"
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
 	f.addSheetPicture(sheet, rID)
 	f.addSheetNameSpace(sheet, SourceRelationship)
@@ -478,24 +495,23 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 }
 
 // DeleteSheet provides a function to delete worksheet in a workbook by given
-// worksheet name, the sheet names are not case-sensitive. Use this method
-// with caution, which will affect changes in references such as formulas,
-// charts, and so on. If there is any referenced value of the deleted
-// worksheet, it will cause a file error when you open it. This function will
-// be invalid when only one worksheet is left
-func (f *File) DeleteSheet(name string) {
-	if f.SheetCount == 1 || f.GetSheetIndex(name) == -1 {
+// worksheet name. Use this method with caution, which will affect changes in
+// references such as formulas, charts, and so on. If there is any referenced
+// value of the deleted worksheet, it will cause a file error when you open
+// it. This function will be invalid when only one worksheet is left.
+func (f *File) DeleteSheet(sheet string) {
+	if f.SheetCount == 1 || f.GetSheetIndex(sheet) == -1 {
 		return
 	}
-	sheetName := trimSheetName(name)
+	sheetName := trimSheetName(sheet)
 	wb := f.workbookReader()
 	wbRels := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
-	deleteLocalSheetID := f.GetSheetIndex(name)
+	deleteLocalSheetID := f.GetSheetIndex(sheet)
 	deleteAndAdjustDefinedNames(wb, deleteLocalSheetID)
 
-	for idx, sheet := range wb.Sheets.Sheet {
-		if !strings.EqualFold(sheet.Name, sheetName) {
+	for idx, v := range wb.Sheets.Sheet {
+		if !strings.EqualFold(v.Name, sheetName) {
 			continue
 		}
 
@@ -503,16 +519,17 @@ func (f *File) DeleteSheet(name string) {
 		var sheetXML, rels string
 		if wbRels != nil {
 			for _, rel := range wbRels.Relationships {
-				if rel.ID == sheet.ID {
+				if rel.ID == v.ID {
 					sheetXML = f.getWorksheetPath(rel.Target)
-					rels = "xl/worksheets/_rels/" + strings.TrimPrefix(f.sheetMap[sheetName], "xl/worksheets/") + ".rels"
+					sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+					rels = "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 				}
 			}
 		}
-		target := f.deleteSheetFromWorkbookRels(sheet.ID)
+		target := f.deleteSheetFromWorkbookRels(v.ID)
 		f.deleteSheetFromContentTypes(target)
-		f.deleteCalcChain(sheet.SheetID, "")
-		delete(f.sheetMap, sheet.Name)
+		f.deleteCalcChain(f.getSheetID(sheet), "")
+		delete(f.sheetMap, v.Name)
 		f.Pkg.Delete(sheetXML)
 		f.Pkg.Delete(rels)
 		f.Relationships.Delete(rels)
@@ -613,7 +630,7 @@ func (f *File) copySheet(from, to int) error {
 	if rels, ok := f.Pkg.Load(fromRels); ok && rels != nil {
 		f.Pkg.Store(toRels, rels.([]byte))
 	}
-	fromSheetXMLPath := f.sheetMap[trimSheetName(fromSheet)]
+	fromSheetXMLPath, _ := f.getSheetXMLPath(fromSheet)
 	fromSheetAttr := f.xmlAttr[fromSheetXMLPath]
 	f.xmlAttr[sheetXMLPath] = fromSheetAttr
 	return err
@@ -632,12 +649,12 @@ func (f *File) copySheet(from, to int) error {
 //
 //    err := f.SetSheetVisible("Sheet1", false)
 //
-func (f *File) SetSheetVisible(name string, visible bool) error {
-	name = trimSheetName(name)
+func (f *File) SetSheetVisible(sheet string, visible bool) error {
+	sheet = trimSheetName(sheet)
 	content := f.workbookReader()
 	if visible {
 		for k, v := range content.Sheets.Sheet {
-			if v.Name == name {
+			if strings.EqualFold(v.Name, sheet) {
 				content.Sheets.Sheet[k].State = ""
 			}
 		}
@@ -658,7 +675,7 @@ func (f *File) SetSheetVisible(name string, visible bool) error {
 		if len(ws.SheetViews.SheetView) > 0 {
 			tabSelected = ws.SheetViews.SheetView[0].TabSelected
 		}
-		if v.Name == name && count > 1 && !tabSelected {
+		if strings.EqualFold(v.Name, sheet) && count > 1 && !tabSelected {
 			content.Sheets.Sheet[k].State = "hidden"
 		}
 	}
@@ -798,11 +815,10 @@ func (f *File) SetPanes(sheet, panes string) error {
 //
 //    f.GetSheetVisible("Sheet1")
 //
-func (f *File) GetSheetVisible(name string) bool {
-	content := f.workbookReader()
-	visible := false
+func (f *File) GetSheetVisible(sheet string) bool {
+	content, name, visible := f.workbookReader(), trimSheetName(sheet), false
 	for k, v := range content.Sheets.Sheet {
-		if v.Name == trimSheetName(name) {
+		if strings.EqualFold(v.Name, name) {
 			if content.Sheets.Sheet[k].State == "" || content.Sheets.Sheet[k].State == "visible" {
 				visible = true
 			}
@@ -834,7 +850,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	for _, r := range reg {
 		regSearch = r
 	}
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		return result, ErrSheetNotExist{sheet}
 	}
@@ -1609,7 +1625,7 @@ func (f *File) GroupSheets(sheets []string) error {
 	sheetMap := f.GetSheetList()
 	for idx, sheetName := range sheetMap {
 		for _, s := range sheets {
-			if s == sheetName && idx == activeSheet {
+			if strings.EqualFold(s, sheetName) && idx == activeSheet {
 				inActiveSheet = true
 			}
 		}

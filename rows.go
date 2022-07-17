@@ -26,13 +26,16 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
-// GetRows return all the rows in a sheet by given worksheet name
-// (case sensitive), returned as a two-dimensional array, where the value of
-// the cell is converted to the string type. If the cell format can be applied
-// to the value of the cell, the applied value will be used, otherwise the
-// original value will be used. GetRows fetched the rows with value or formula
-// cells, the continually blank cells in the tail of each row will be skipped,
-// so the length of each row may be inconsistent. For example:
+// GetRows return all the rows in a sheet by given worksheet name, returned as
+// a two-dimensional array, where the value of the cell is converted to the
+// string type. If the cell format can be applied to the value of the cell,
+// the applied value will be used, otherwise the original value will be used.
+// GetRows fetched the rows with value or formula cells, the continually blank
+// cells in the tail of each row will be skipped, so the length of each row
+// may be inconsistent.
+//
+// For example, get and traverse the value of all cells by rows on a worksheet
+// named 'Sheet1':
 //
 //    rows, err := f.GetRows("Sheet1")
 //    if err != nil {
@@ -233,7 +236,7 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 //    }
 //
 func (f *File) Rows(sheet string) (*Rows, error) {
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
