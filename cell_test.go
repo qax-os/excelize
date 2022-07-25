@@ -224,7 +224,7 @@ func TestGetCellValue(t *testing.T) {
 	f.checked = nil
 	cells := []string{"A3", "A4", "B4", "A7", "B7"}
 	rows, err := f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{nil, nil, {"A3"}, {"A4", "B4"}, nil, nil, {"A7", "B7"}, {"A8", "B8"}}, rows)
+	assert.Equal(t, [][]Cell{nil, nil, {Cell{Value: "A3"}}, {Cell{Value: "A4"}, Cell{Value: "B4"}}, nil, nil, {Cell{Value: "A7"}, Cell{Value: "B7"}}, {Cell{Value: "A8"}, Cell{Value: "B8"}}}, rows)
 	assert.NoError(t, err)
 	for _, cell := range cells {
 		value, err := f.GetCellValue("Sheet1", cell)
@@ -246,21 +246,21 @@ func TestGetCellValue(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{nil, {"A2", "B2"}}, rows)
+	assert.Equal(t, [][]Cell{nil, {Cell{Value: "A2"}, Cell{Value: "B2"}}}, rows)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="str"><v>A1</v></c></row><row r="1"><c r="B1" t="str"><v>B1</v></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{{"A1", "B1"}}, rows)
+	assert.Equal(t, [][]Cell{{Cell{Value: "A1"}, Cell{Value: "B1"}}}, rows)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{{"A3"}, {"A4", "B4"}, nil, nil, nil, nil, {"A7", "B7"}, {"A8", "B8"}}, rows)
+	assert.Equal(t, [][]Cell{{Cell{Value: "A3"}}, {Cell{Value: "A4"}, Cell{Value: "B4"}}, nil, nil, nil, nil, {Cell{Value: "A7"}, Cell{Value: "B7"}}, {Cell{Value: "A8"}, Cell{Value: "B8"}}}, rows)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
@@ -270,13 +270,13 @@ func TestGetCellValue(t *testing.T) {
 	assert.Equal(t, "H6", cell)
 	assert.NoError(t, err)
 	rows, err = f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{
-		{"A6", "B6", "C6"},
+	assert.Equal(t, [][]Cell{
+		{Cell{Value: "A6"}, Cell{Value: "B6"}, Cell{Value: "C6"}},
 		nil,
-		{"100", "B3"},
-		{"", "", "", "", "", "F4"},
+		{Cell{Value: int64(100)}, Cell{Value: "B3"}},
+		{Cell{}, Cell{}, Cell{}, Cell{}, Cell{}, Cell{Value: "F4"}},
 		nil,
-		{"", "", "", "", "", "", "", "H6"},
+		{Cell{}, Cell{}, Cell{}, Cell{}, Cell{}, Cell{}, Cell{}, Cell{Value: "H6"}},
 	}, rows)
 	assert.NoError(t, err)
 
@@ -314,36 +314,36 @@ func TestGetCellValue(t *testing.T) {
 </row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{{
-		"2422.3",
-		"2422.3",
-		"12.4",
-		"964",
-		"1101.6",
-		"275.4",
-		"68.9",
-		"44385.2083333333",
-		"5.1",
-		"5.11",
-		"5.1",
-		"5.111",
-		"5.1111",
-		"2422.012345678",
-		"2422.0123456789",
-		"12.012345678901",
-		"964",
-		"1101.6",
-		"275.4",
-		"68.9",
-		"0.08888",
-		"0.00004",
-		"2422.3",
-		"1101.6",
-		"275.4",
-		"68.9",
-		"1.1",
-		"1234567890123_4",
-		"123456789_0123_4",
+	assert.Equal(t, [][]Cell{{
+		Cell{Value: 2422.3},
+		Cell{Value: 2422.3},
+		Cell{Value: 12.4},
+		Cell{Value: int64(964)},
+		Cell{Value: 1101.6},
+		Cell{Value: 275.4},
+		Cell{Value: 68.9},
+		Cell{Value: 44385.2083333333},
+		Cell{Value: 5.1},
+		Cell{Value: 5.11},
+		Cell{Value: 5.1},
+		Cell{Value: 5.111},
+		Cell{Value: 5.1111},
+		Cell{Value: 2422.012345678},
+		Cell{Value: 2422.0123456789},
+		Cell{Value: 12.012345678901},
+		Cell{Value: int64(964)},
+		Cell{Value: 1101.6},
+		Cell{Value: 275.4},
+		Cell{Value: 68.9},
+		Cell{Value: 0.08888},
+		Cell{Value: 0.00004},
+		Cell{Value: 2422.3},
+		Cell{Value: 1101.6},
+		Cell{Value: 275.4},
+		Cell{Value: 68.9},
+		Cell{Value: 1.1},
+		Cell{Value: "1234567890123_4"},
+		Cell{Value: "123456789_0123_4"},
 	}}, rows)
 	assert.NoError(t, err)
 }

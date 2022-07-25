@@ -24,11 +24,11 @@ func TestRows(t *testing.T) {
 		t.FailNow()
 	}
 
-	var collectedRows [][]string
+	var collectedRows [][]Cell
 	for rows.Next() {
 		columns, err := rows.Columns()
 		assert.NoError(t, err)
-		collectedRows = append(collectedRows, trimSliceSpace(columns))
+		collectedRows = append(collectedRows, columns)
 	}
 	if !assert.NoError(t, rows.Error()) {
 		t.FailNow()
@@ -37,9 +37,6 @@ func TestRows(t *testing.T) {
 
 	returnedRows, err := f.GetRows(sheet2)
 	assert.NoError(t, err)
-	for i := range returnedRows {
-		returnedRows[i] = trimSliceSpace(returnedRows[i])
-	}
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
