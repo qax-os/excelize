@@ -1169,6 +1169,63 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 	return "", nil
 }
 
+type SRCell struct {
+	Formula     string
+	Value       string
+	SharedIndex *int
+	Row         int
+	Col         int
+	StyleIndex  int
+	CellName    string
+}
+
+func (f *File) GetSheetData(sheet string) ([][]SRCell, error) {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return nil, err
+	}
+
+	ws.Lock()
+	defer ws.Unlock()
+
+	sheetData := [][]SRCell{}
+	sharedStringsReader := f.sharedStringsReader()
+	totalCells := 0
+	for rowIdx := range ws.SheetData.Row {
+		sheetData = append(sheetData, []SRCell{})
+		rowData := &ws.SheetData.Row[rowIdx]
+		for colIdx := range rowData.C {
+			cellData := &rowData.C[colIdx]
+			srCell := SRCell{}
+			if cellData.F != nil {
+				if cellData.F.T == STCellFormulaTypeShared && cellData.F.Si != nil {
+					//srCell.Formula = getSharedFormula(ws, *cellData.F.Si, cellData.R)
+					srCell.SharedIndex = cellData.F.Si
+				} else {
+					srCell.Formula = cellData.F.Content
+				}
+			}
+
+			val, _ := cellData.getValueFrom(f, sharedStringsReader, true)
+			srCell.Value = val
+			col, row, _ := CellNameToCoordinates(cellData.R)
+			srCell.Row = row - 1
+			srCell.Col = col - 1
+			srCell.StyleIndex = cellData.S
+			srCell.CellName = cellData.R
+
+			totalCells++
+
+			if totalCells%10000 == 0 {
+				fmt.Println("CellCount: ", totalCells)
+			}
+
+			sheetData[rowIdx] = append(sheetData[rowIdx], srCell)
+		}
+	}
+	return sheetData, nil
+}
+
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
