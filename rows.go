@@ -74,7 +74,8 @@ type Rows struct {
 	err                     error
 	curRow, seekRow         int
 	needClose, rawCellValue bool
-	sheet                   string
+	sheetPath               string
+	sheetName               string
 	f                       *File
 	tempFile                *os.File
 	sst                     *xlsxSST
@@ -230,9 +231,13 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 		//	rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
 		//}
 		blank := rowIterator.cellCol - len(rowIterator.columns)
-		if val, _ := colCell.getTypedValueFrom(rows.f, rows.sst); val != "" || colCell.F != nil {
-			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), Cell{Value: val, StyleID: colCell.S})
+		var formula string
+		if colCell.F != nil {
+			formula, _ = rows.f.GetCellFormula(rows.sheetName, colCell.R)
 		}
+		//if val, _ := colCell.getTypedValueFrom(rows.f, rows.sst); val != "" || colCell.F != nil {
+		val, _ := colCell.getTypedValueFrom(rows.f, rows.sst)
+		rowIterator.columns = append(appendSpace(blank, rowIterator.columns), Cell{Value: val, StyleID: colCell.S, Formula: formula})
 	}
 }
 
@@ -272,7 +277,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var err error
-	rows := Rows{f: f, sheet: name}
+	rows := Rows{f: f, sheetPath: name, sheetName: sheet}
 	rows.needClose, rows.decoder, rows.tempFile, err = f.xmlDecoder(name)
 	return &rows, err
 }
@@ -544,6 +549,8 @@ func (c *xlsxC) getTypedValueFrom(f *File, d *xlsxSST) (interface{}, error) {
 			} else {
 				return precisionV, nil
 			}
+		} else {
+			return nil, nil
 		}
 		// TODO: add support for other possible values of T (https://stackoverflow.com/questions/18334314/what-do-excel-xml-cell-attribute-values-mean)
 	}
