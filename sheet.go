@@ -928,6 +928,34 @@ func attrValToInt(name string, attrs []xml.Attr) (val int, err error) {
 	return
 }
 
+// attrValToFloat provides a function to convert the local names to a float64
+// by given XML attributes and specified names.
+func attrValToFloat(name string, attrs []xml.Attr) (val float64, err error) {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			val, err = strconv.ParseFloat(attr.Value, 64)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// attrValToBool provides a function to convert the local names to a boolean
+// by given XML attributes and specified names.
+func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			val, err = strconv.ParseBool(attr.Value)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
 // SetHeaderFooter provides a function to set headers and footers by given
 // worksheet name and the control characters.
 //

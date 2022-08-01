@@ -80,12 +80,14 @@ type Rows struct {
 	sst                     *xlsxSST
 	decoder                 *xml.Decoder
 	token                   xml.Token
+	curRowOpts, seekRowOpts RowOpts
 }
 
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
 	rows.seekRow++
 	if rows.curRow >= rows.seekRow {
+		rows.curRowOpts = rows.seekRowOpts
 		return true
 	}
 	for {
@@ -101,6 +103,7 @@ func (rows *Rows) Next() bool {
 					rows.curRow = rowNum
 				}
 				rows.token = token
+				rows.curRowOpts = extractRowOpts(xmlElement.Attr)
 				return true
 			}
 		case xml.EndElement:
@@ -109,6 +112,11 @@ func (rows *Rows) Next() bool {
 			}
 		}
 	}
+}
+
+// GetRowOpts will return the RowOpts of the current row.
+func (rows *Rows) GetRowOpts() RowOpts {
+	return rows.curRowOpts
 }
 
 // Error will return the error when the error occurs.
@@ -151,6 +159,8 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 				} else if rows.token == nil {
 					rows.curRow++
 				}
+				rows.token = token
+				rows.seekRowOpts = extractRowOpts(xmlElement.Attr)
 				if rows.curRow > rows.seekRow {
 					rows.token = nil
 					return rowIterator.columns, rowIterator.err
@@ -168,6 +178,20 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 		}
 	}
 	return rowIterator.columns, rowIterator.err
+}
+
+func extractRowOpts(attrs []xml.Attr) RowOpts {
+	rowOpts := RowOpts{Height: defaultRowHeight}
+	if styleID, err := attrValToInt("s", attrs); err == nil && styleID > 0 && styleID < MaxCellStyles {
+		rowOpts.StyleID = styleID
+	}
+	if hidden, err := attrValToBool("hidden", attrs); err == nil {
+		rowOpts.Hidden = hidden
+	}
+	if height, err := attrValToFloat("ht", attrs); err == nil {
+		rowOpts.Height = height
+	}
+	return rowOpts
 }
 
 // appendSpace append blank characters to slice by given length and source slice.
