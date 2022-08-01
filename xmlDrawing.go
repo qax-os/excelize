@@ -107,6 +107,7 @@ const (
 	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
+	MaxCellStyles        = 64000
 	MinFontSize          = 1
 	TotalRows            = 1048576
 	MinColumns           = 1

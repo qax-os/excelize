@@ -80,6 +80,7 @@ type Rows struct {
 	sst                     *xlsxSST
 	decoder                 *xml.Decoder
 	token                   xml.Token
+	rowOpts                 RowOpts
 }
 
 // Next will return true if find the next row element.
@@ -101,6 +102,17 @@ func (rows *Rows) Next() bool {
 					rows.curRow = rowNum
 				}
 				rows.token = token
+				ro := RowOpts{}
+				if styleID, err := attrValToInt("s", xmlElement.Attr); err == nil && styleID > 0 && styleID < MaxCellStyles {
+					ro.StyleID = styleID
+				}
+				if hidden, err := attrValToBool("hidden", xmlElement.Attr); err == nil {
+					ro.Hidden = hidden
+				}
+				if height, err := attrValToFloat("ht", xmlElement.Attr); err == nil {
+					ro.Height = height
+				}
+				rows.rowOpts = ro
 				return true
 			}
 		case xml.EndElement:
@@ -109,6 +121,13 @@ func (rows *Rows) Next() bool {
 			}
 		}
 	}
+}
+
+// GetStyleID will return the RowOpts of the current row.
+//
+//    rowOpts := rows.GetRowOpts()
+func (rows *Rows) GetRowOpts() RowOpts {
+	return rows.rowOpts
 }
 
 // Error will return the error when the error occurs.
