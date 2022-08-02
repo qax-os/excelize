@@ -53,8 +53,6 @@ func (f *File) NewSheet(sheet string) int {
 		}
 	}
 	sheetID++
-	// Update docProps/app.xml
-	f.setAppXML()
 	// Update [Content_Types].xml
 	f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
@@ -237,11 +235,6 @@ func (f *File) relsWriter() {
 		}
 		return true
 	})
-}
-
-// setAppXML update docProps/app.xml file of XML.
-func (f *File) setAppXML() {
-	f.saveFileList(defaultXMLPathDocPropsApp, []byte(templateDocpropsApp))
 }
 
 // replaceRelationshipsBytes; Some tools that read spreadsheet files have very
