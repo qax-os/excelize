@@ -209,6 +209,17 @@ func TestSetRow(t *testing.T) {
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
+func TestSetRowNilValues(t *testing.T) {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}})
+	streamWriter.Flush()
+	ws, err := file.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NotEqual(t, ws.SheetData.Row[0].C[0].XMLName.Local, "c")
+}
+
 func TestSetCellValFunc(t *testing.T) {
 	f := NewFile()
 	sw, err := f.NewStreamWriter("Sheet1")
