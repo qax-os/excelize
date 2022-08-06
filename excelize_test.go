@@ -1114,12 +1114,12 @@ func TestSharedStrings(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	assert.Equal(t, "A", rows[0][0])
+	assert.Equal(t, Cell{Value: "A"}, rows[0][0])
 	rows, err = f.GetRows("Sheet2")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
-	assert.Equal(t, "Test Weight (Kgs)", rows[0][0])
+	assert.Equal(t, Cell{Value: "Test Weight (Kgs)"}, rows[0][0])
 	assert.NoError(t, f.Close())
 }
 

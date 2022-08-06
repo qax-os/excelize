@@ -49,12 +49,12 @@ import (
 //        fmt.Println()
 //    }
 //
-func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
+func (f *File) GetRows(sheet string, opts ...Options) ([][]Cell, error) {
 	rows, err := f.Rows(sheet)
 	if err != nil {
 		return nil, err
 	}
-	results, cur, max := make([][]string, 0, 64), 0, 0
+	results, cur, max := make([][]Cell, 0, 64), 0, 0
 	for rows.Next() {
 		cur++
 		row, err := rows.Columns(opts...)
@@ -74,12 +74,14 @@ type Rows struct {
 	err                     error
 	curRow, seekRow         int
 	needClose, rawCellValue bool
-	sheet                   string
+	sheetPath               string
+	sheetName               string
 	f                       *File
 	tempFile                *os.File
 	sst                     *xlsxSST
 	decoder                 *xml.Decoder
 	token                   xml.Token
+	rowOpts                 RowOpts
 }
 
 // Next will return true if find the next row element.
@@ -101,6 +103,17 @@ func (rows *Rows) Next() bool {
 					rows.curRow = rowNum
 				}
 				rows.token = token
+				ro := RowOpts{}
+				if styleID, err := attrValToInt("s", xmlElement.Attr); err == nil && styleID > 0 && styleID < MaxCellStyles {
+					ro.StyleID = styleID
+				}
+				if hidden, err := attrValToBool("hidden", xmlElement.Attr); err == nil {
+					ro.Hidden = hidden
+				}
+				if height, err := attrValToFloat("ht", xmlElement.Attr); err == nil {
+					ro.Height = height
+				}
+				rows.rowOpts = ro
 				return true
 			}
 		case xml.EndElement:
@@ -109,6 +122,13 @@ func (rows *Rows) Next() bool {
 			}
 		}
 	}
+}
+
+// GetStyleID will return the RowOpts of the current row.
+//
+//    rowOpts := rows.GetRowOpts()
+func (rows *Rows) GetRowOpts() RowOpts {
+	return rows.rowOpts
 }
 
 // Error will return the error when the error occurs.
@@ -128,7 +148,7 @@ func (rows *Rows) Close() error {
 // Columns return the current row's column values. This fetches the worksheet
 // data as a stream, returns each cell in a row as is, and will not skip empty
 // rows in the tail of the worksheet.
-func (rows *Rows) Columns(opts ...Options) ([]string, error) {
+func (rows *Rows) Columns(opts ...Options) ([]Cell, error) {
 	if rows.curRow > rows.seekRow {
 		return nil, nil
 	}
@@ -171,9 +191,9 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 }
 
 // appendSpace append blank characters to slice by given length and source slice.
-func appendSpace(l int, s []string) []string {
+func appendSpace(l int, s []Cell) []Cell {
 	for i := 1; i < l; i++ {
-		s = append(s, "")
+		s = append(s, Cell{})
 	}
 	return s
 }
@@ -192,7 +212,7 @@ type rowXMLIterator struct {
 	err       error
 	inElement string
 	cellCol   int
-	columns   []string
+	columns   []Cell
 }
 
 // rowXMLHandler parse the row XML element of the worksheet.
@@ -206,10 +226,18 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 				return
 			}
 		}
+		//blank := rowIterator.cellCol - len(rowIterator.columns)
+		//if val, _ := colCell.getValueFrom(rows.f, rows.sst, raw); val != "" || colCell.F != nil {
+		//	rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
+		//}
 		blank := rowIterator.cellCol - len(rowIterator.columns)
-		if val, _ := colCell.getValueFrom(rows.f, rows.sst, raw); val != "" || colCell.F != nil {
-			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
+		var formula string
+		if colCell.F != nil {
+			formula, _ = rows.f.GetCellFormula(rows.sheetName, colCell.R)
 		}
+		//if val, _ := colCell.getTypedValueFrom(rows.f, rows.sst); val != "" || colCell.F != nil {
+		val, _ := colCell.getTypedValueFrom(rows.f, rows.sst)
+		rowIterator.columns = append(appendSpace(blank, rowIterator.columns), Cell{Value: val, StyleID: colCell.S, Formula: formula})
 	}
 }
 
@@ -249,7 +277,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var err error
-	rows := Rows{f: f, sheet: name}
+	rows := Rows{f: f, sheetPath: name, sheetName: sheet}
 	rows.needClose, rows.decoder, rows.tempFile, err = f.xmlDecoder(name)
 	return &rows, err
 }
@@ -473,6 +501,61 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		}
 		return f.formattedValue(c.S, c.V, raw), nil
 	}
+}
+
+func (c *xlsxC) getTypedValueFrom(f *File, d *xlsxSST) (interface{}, error) {
+	f.Lock()
+	defer f.Unlock()
+	switch c.T {
+	case "b":
+		if c.V == "1" {
+			return true, nil
+		} else if c.V == "0" {
+			return false, nil
+		}
+	case "s":
+		if c.V != "" {
+			xlsxSI := 0
+			xlsxSI, _ = strconv.Atoi(c.V)
+			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
+				return f.getFromStringItem(xlsxSI), nil
+			}
+			if len(d.SI) > xlsxSI {
+				return d.SI[xlsxSI].String(), nil
+			}
+		}
+	case "str":
+		return c.V, nil
+	case "inlineStr":
+		if c.IS != nil {
+			return c.IS.String(), nil
+		}
+		return c.V, nil
+	default:
+		if isNum, precision := isNumeric(c.V); isNum {
+			var precisionV string
+			if precision == 0 {
+				precisionV = roundPrecision(c.V, 15)
+			} else {
+				precisionV = roundPrecision(c.V, -1)
+			}
+
+			vi, erri := strconv.ParseInt(precisionV, 10, 64)
+			vf, errf := strconv.ParseFloat(precisionV, 64)
+			if erri == nil {
+				return vi, nil
+			} else if errf == nil {
+				return vf, nil
+			} else {
+				return precisionV, nil
+			}
+		} else {
+			return nil, nil
+		}
+		// TODO: add support for other possible values of T (https://stackoverflow.com/questions/18334314/what-do-excel-xml-cell-attribute-values-mean)
+	}
+
+	return c.V, nil
 }
 
 // roundPrecision provides a function to format floating-point number text

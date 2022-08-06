@@ -24,11 +24,11 @@ func TestRows(t *testing.T) {
 		t.FailNow()
 	}
 
-	var collectedRows [][]string
+	var collectedRows [][]Cell
 	for rows.Next() {
 		columns, err := rows.Columns()
 		assert.NoError(t, err)
-		collectedRows = append(collectedRows, trimSliceSpace(columns))
+		collectedRows = append(collectedRows, columns)
 	}
 	if !assert.NoError(t, rows.Error()) {
 		t.FailNow()
@@ -37,9 +37,6 @@ func TestRows(t *testing.T) {
 
 	returnedRows, err := f.GetRows(sheet2)
 	assert.NoError(t, err)
-	for i := range returnedRows {
-		returnedRows[i] = trimSliceSpace(returnedRows[i])
-	}
 	if !assert.Equal(t, collectedRows, returnedRows) {
 		t.FailNow()
 	}
@@ -72,12 +69,30 @@ func TestRowsIterator(t *testing.T) {
 
 	rows, err := f.Rows(sheetName)
 	require.NoError(t, err)
+	expectedCells := [][]Cell{
+		{Cell{Value: "Monitor", StyleID: 1}, Cell{StyleID: 1}, Cell{Value: "Brand", StyleID: 2}, Cell{StyleID: 2}, Cell{Value: "inlineStr"}},
+		{Cell{Value: "> 23 Inch", StyleID: 1}, Cell{Value: int64(19), StyleID: 1}, Cell{Value: "HP", StyleID: 3}, Cell{Value: int64(200), StyleID: 4}},
+		{Cell{Value: "20-23 Inch", StyleID: 1}, Cell{Value: int64(24), StyleID: 1}, Cell{Value: "DELL", StyleID: 3}, Cell{Value: int64(450), StyleID: 4}},
+		{Cell{Value: "17-20 Inch", StyleID: 1}, Cell{Value: int64(56), StyleID: 1}, Cell{Value: "Lenove", StyleID: 3}, Cell{Value: int64(200), StyleID: 4}},
+		{Cell{Value: "< 17 Inch", StyleID: 5}, Cell{Value: int64(21), StyleID: 1}, Cell{Value: "SONY", StyleID: 3}, Cell{Value: int64(510), StyleID: 4}},
+		{Cell{}, Cell{}, Cell{Value: "Acer", StyleID: 3}, Cell{Value: int64(315), StyleID: 4}},
+		{Cell{}, Cell{}, Cell{Value: "IBM", StyleID: 3}, Cell{Value: int64(127), StyleID: 4}},
+		{Cell{}, Cell{}, Cell{Value: "ASUS", StyleID: 4}, Cell{Value: int64(89), StyleID: 4}},
+		{Cell{}, Cell{}, Cell{Value: "Apple", StyleID: 4}, Cell{Value: int64(348), StyleID: 4}},
+		{Cell{}, Cell{}, Cell{Value: "SAMSUNG", StyleID: 4}, Cell{Value: int64(53), StyleID: 4}},
+		{Cell{}, Cell{}, Cell{Value: "Other", StyleID: 4}, Cell{Value: int64(37), StyleID: 4}, Cell{Formula: "B2+B3", StyleID: 4}, Cell{Formula: "IF(B2>0, (D2/B2)*100, 0)", StyleID: 4}, Cell{Formula: "IF(B2>0, (D2/B2)*100, 0)", StyleID: 4}, Cell{Formula: "IF(D2>0, (F2/D2)*100, 0)", StyleID: 4}, Cell{Formula: "IF(D2>0, (F2/D2)*100, 0)", StyleID: 4}},
+	}
+	gotCells := [][]Cell{}
 
 	for rows.Next() {
 		rowCount++
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
+		cols, err := rows.Columns()
+		require.NoError(t, err)
+		gotCells = append(gotCells, cols)
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
+	assert.Equal(t, expectedCells, gotCells)
 	assert.NoError(t, rows.Close())
 	assert.NoError(t, f.Close())
 
@@ -94,6 +109,28 @@ func TestRowsIterator(t *testing.T) {
 		require.True(t, rowCount <= expectedNumRow, "rowCount is greater than expected")
 	}
 	assert.Equal(t, expectedNumRow, rowCount)
+}
+
+func TestRowsGetRowOpts(t *testing.T) {
+	sheetName := "Sheet2"
+	expectedRowStyleID1 := RowOpts{Height: 17.0, Hidden: false, StyleID: 1}
+	expectedRowStyleID2 := RowOpts{Height: 17.0, Hidden: false, StyleID: 0}
+	expectedRowStyleID3 := RowOpts{Height: 17.0, Hidden: false, StyleID: 2}
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	require.NoError(t, err)
+
+	rows, err := f.Rows(sheetName)
+	require.NoError(t, err)
+
+	rows.Next()
+	got := rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID1, got)
+	rows.Next()
+	got = rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID2, got)
+	rows.Next()
+	got = rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID3, got)
 }
 
 func TestRowsError(t *testing.T) {

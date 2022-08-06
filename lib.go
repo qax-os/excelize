@@ -698,6 +698,9 @@ func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
 // the precision for the numeric.
 func isNumeric(s string) (bool, int) {
 	dot, e, n, p := false, false, false, 0
+	if s == "" {
+		return false, 0
+	}
 	for i, v := range s {
 		if v == '.' {
 			if dot {
