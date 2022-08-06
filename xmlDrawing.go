@@ -120,6 +120,26 @@ const (
 	pivotTableVersion = 3
 )
 
+// ColorMappingType is the type of color transformation.
+type ColorMappingType byte
+
+// Color transformation types enumeration.
+const (
+	ColorMappingTypeLight1 ColorMappingType = iota
+	ColorMappingTypeDark1
+	ColorMappingTypeLight2
+	ColorMappingTypeDark2
+	ColorMappingTypeAccent1
+	ColorMappingTypeAccent2
+	ColorMappingTypeAccent3
+	ColorMappingTypeAccent4
+	ColorMappingTypeAccent5
+	ColorMappingTypeAccent6
+	ColorMappingTypeHyperlink
+	ColorMappingTypeFollowedHyperlink
+	ColorMappingTypeUnset int = -1
+)
+
 // supportedImageTypes defined supported image types.
 var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf"}
 

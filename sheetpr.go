@@ -47,23 +47,6 @@ type (
 	OutlineSummaryBelow bool
 )
 
-const (
-	TabColorThemeLight1 int = iota // Inverted compared to the spec because that's how Excel maps them
-	TabColorThemeDark1
-	TabColorThemeLight2
-	TabColorThemeDark2
-	TabColorThemeAccent1
-	TabColorThemeAccent2
-	TabColorThemeAccent3
-	TabColorThemeAccent4
-	TabColorThemeAccent5
-	TabColorThemeAccent6
-	TabColorThemeHyperlink
-	TabColorThemeFollowedHyperlink
-
-	TabColorUnsetValue int = -1
-)
-
 // setSheetPrOption implements the SheetPrOption interface.
 func (o OutlineSummaryBelow) setSheetPrOption(pr *xlsxSheetPr) {
 	if pr.OutlinePr == nil {
@@ -165,7 +148,7 @@ func (o TabColorIndexed) setSheetPrOption(pr *xlsxSheetPr) {
 // TabColor Indexed. Defaults to -1 if no indexed has been set.
 func (o *TabColorIndexed) getSheetPrOption(pr *xlsxSheetPr) {
 	if pr == nil || pr.TabColor == nil {
-		*o = TabColorIndexed(TabColorUnsetValue)
+		*o = TabColorIndexed(ColorMappingTypeUnset)
 		return
 	}
 	*o = TabColorIndexed(pr.TabColor.Indexed)
@@ -206,7 +189,7 @@ func (o TabColorTheme) setSheetPrOption(pr *xlsxSheetPr) {
 // TabColor Theme. Defaults to -1 if no theme has been set.
 func (o *TabColorTheme) getSheetPrOption(pr *xlsxSheetPr) {
 	if pr == nil || pr.TabColor == nil {
-		*o = TabColorTheme(TabColorUnsetValue)
+		*o = TabColorTheme(ColorMappingTypeUnset)
 		return
 	}
 	*o = TabColorTheme(pr.TabColor.Theme)
