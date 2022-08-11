@@ -107,17 +107,19 @@ func TestRowsGetRowOpts(t *testing.T) {
 	rows, err := f.Rows(sheetName)
 	require.NoError(t, err)
 
-	rows.Next()
-	rows.Columns() // Columns() may change the XML iterator, so better check with and without calling it
-	got := rows.GetRowOpts()
-	assert.Equal(t, expectedRowStyleID1, got)
-	rows.Next()
-	got = rows.GetRowOpts()
-	assert.Equal(t, expectedRowStyleID2, got)
-	rows.Next()
-	rows.Columns()
-	got = rows.GetRowOpts()
-	assert.Equal(t, expectedRowStyleID3, got)
+	assert.Equal(t, true, rows.Next())
+	_, err = rows.Columns()
+	require.NoError(t, err)
+	rowOpts := rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID1, rowOpts)
+	assert.Equal(t, true, rows.Next())
+	rowOpts = rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID2, rowOpts)
+	assert.Equal(t, true, rows.Next())
+	_, err = rows.Columns()
+	require.NoError(t, err)
+	rowOpts = rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID3, rowOpts)
 }
 
 func TestRowsError(t *testing.T) {

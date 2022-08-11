@@ -242,6 +242,10 @@ func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 //   EnableFormatConditionsCalculation(bool)
 //   Published(bool)
 //   FitToPage(bool)
+//   TabColorIndexed(int)
+//   TabColorRGB(string)
+//   TabColorTheme(int)
+//   TabColorTint(float64)
 //   AutoPageBreaks(bool)
 //   OutlineSummaryBelow(bool)
 func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
@@ -268,6 +272,10 @@ func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
 //   EnableFormatConditionsCalculation(bool)
 //   Published(bool)
 //   FitToPage(bool)
+//   TabColorIndexed(int)
+//   TabColorRGB(string)
+//   TabColorTheme(int)
+//   TabColorTint(float64)
 //   AutoPageBreaks(bool)
 //   OutlineSummaryBelow(bool)
 func (f *File) GetSheetPrOptions(sheet string, opts ...SheetPrOptionPtr) error {
