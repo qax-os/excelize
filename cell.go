@@ -1170,6 +1170,7 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 }
 
 type SRCell struct {
+	Date1904       bool
 	Formula        string
 	FormattedValue string
 	RawValue       string
@@ -1178,18 +1179,22 @@ type SRCell struct {
 	Col            int
 	StyleIndex     int
 	CellName       string
+	CellType       CellType
 }
 
-func (f *File) GetSheetData(sheet string) ([][]SRCell, error) {
+func (f *File) GetSheetData(sheet string) ([][]SRCell, bool, error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-
+	date1904, wb := false, f.workbookReader()
+	if wb != nil && wb.WorkbookPr != nil {
+		date1904 = wb.WorkbookPr.Date1904
+	}
 	ws.Lock()
 	defer ws.Unlock()
 
-	sheetData := [][]SRCell{}
+  sheetData := [][]SRCell{}
 	sharedStringsReader := f.sharedStringsReader()
 	for rowIdx := range ws.SheetData.Row {
 		sheetData = append(sheetData, []SRCell{})
@@ -1205,7 +1210,6 @@ func (f *File) GetSheetData(sheet string) ([][]SRCell, error) {
 					srCell.Formula = cellData.F.Content
 				}
 			}
-
 			val, _ := cellData.getValueFrom(f, sharedStringsReader, true)
 			srCell.RawValue = val
 			val, _ = cellData.getValueFrom(f, sharedStringsReader, false)
@@ -1213,12 +1217,23 @@ func (f *File) GetSheetData(sheet string) ([][]SRCell, error) {
 			col, row, _ := CellNameToCoordinates(cellData.R)
 			srCell.Row = row - 1
 			srCell.Col = col - 1
-			srCell.StyleIndex = cellData.S
+			srCell.StyleIndex = f.prepareCellStyle(ws, col, row, cellData.S)
 			srCell.CellName = cellData.R
+			srCell.CellType = cellTypes[cellData.T]
 			sheetData[rowIdx] = append(sheetData[rowIdx], srCell)
 		}
 	}
-	return sheetData, nil
+	return sheetData, date1904, nil
+}
+
+func SRGetFormattedValue(v string, numFmtID int, formatCode string, date1904 bool) string {
+	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
+		return ok(v, builtInNumFmt[numFmtID], date1904)
+	}
+	return format(v, formatCode, date1904)
+}
+func (f *File) SRBuiltInNumFmtCode(numFmtID int) string {
+	return builtInNumFmt[numFmtID]
 }
 
 // formattedValue provides a function to returns a value after formatted. If
