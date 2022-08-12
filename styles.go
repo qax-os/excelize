@@ -2872,6 +2872,32 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	return err
 }
 
+// GetConditionalFormat() retrieves all comments and returns a map of worksheet name to
+// the worksheet conditioanl formats in xml string.
+func (f *File) GetConditionalFormat() (map[string][]string, error) {
+	resultCF := map[string][]string{}
+	for sheet := range f.sheetMap {
+		ws, err := f.workSheetReader(sheet)
+		if err != nil {
+			return resultCF, err
+		}
+
+		resultCF[sheet] = []string{}
+		for _, cf := range ws.ConditionalFormatting {
+			cfRule := CfRule{SQRef: cf.SQRef}
+			for _, cr := range cf.CfRule {
+				cfRule.CfRule = *cr
+				cfRuleBytes, err := xml.Marshal(cfRule)
+				if err != nil {
+					return resultCF, err
+				}
+				resultCF[sheet] = append(resultCF[sheet], string(cfRuleBytes))
+			}
+		}
+	}
+	return resultCF, nil
+}
+
 // UnsetConditionalFormat provides a function to unset the conditional format
 // by given worksheet name and range.
 func (f *File) UnsetConditionalFormat(sheet, area string) error {

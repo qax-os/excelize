@@ -32,6 +32,11 @@ func TestDataValidation(t *testing.T) {
 	dvRange.SetError(DataValidationErrorStyleWarning, "error title", "error body")
 	dvRange.SetError(DataValidationErrorStyleInformation, "error title", "error body")
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+
+	getDvRange, err := f.GetDataValidation()
+	assert.NoError(t, err)
+	assert.Equal(t, len(getDvRange["Sheet1"]), 1)
+
 	assert.NoError(t, f.SaveAs(resultFile))
 
 	dvRange = NewDataValidation(true)
@@ -39,6 +44,11 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, dvRange.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
 	dvRange.SetInput("input title", "input body")
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+
+	getDvRange, err = f.GetDataValidation()
+	assert.NoError(t, err)
+	assert.Equal(t, len(getDvRange["Sheet1"]), 2)
+
 	assert.NoError(t, f.SaveAs(resultFile))
 
 	f.NewSheet("Sheet2")
@@ -49,6 +59,10 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, dvRange.SetRange("INDIRECT($A$2)", "INDIRECT($A$3)", DataValidationTypeWhole, DataValidationOperatorBetween))
 	dvRange.SetError(DataValidationErrorStyleStop, "error title", "error body")
 	assert.NoError(t, f.AddDataValidation("Sheet2", dvRange))
+	getDvRange, err = f.GetDataValidation()
+	assert.NoError(t, err)
+	assert.Equal(t, len(getDvRange["Sheet1"]), 2)
+	assert.Equal(t, len(getDvRange["Sheet2"]), 1)
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
@@ -67,6 +81,11 @@ func TestDataValidation(t *testing.T) {
 	}
 	assert.Equal(t, `<formula1>"A&lt;,B&gt;,C"",D	,E',F"</formula1>`, dvRange.Formula1)
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
+
+	getDvRange, err = f.GetDataValidation()
+	assert.NoError(t, err)
+	assert.Equal(t, len(getDvRange["Sheet1"]), 3)
+
 	assert.NoError(t, f.SaveAs(resultFile))
 }
 
