@@ -505,3 +505,29 @@ func newSheetWithSave() {
 	}
 	_ = file.Save()
 }
+
+func TestAttrValToBool(t *testing.T) {
+	_, err := attrValToBool("hidden", []xml.Attr{
+		{Name: xml.Name{Local: "hidden"}},
+	})
+	assert.EqualError(t, err, `strconv.ParseBool: parsing "": invalid syntax`)
+
+	got, err := attrValToBool("hidden", []xml.Attr{
+		{Name: xml.Name{Local: "hidden"}, Value: "1"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, true, got)
+}
+
+func TestAttrValToFloat(t *testing.T) {
+	_, err := attrValToFloat("ht", []xml.Attr{
+		{Name: xml.Name{Local: "ht"}},
+	})
+	assert.EqualError(t, err, `strconv.ParseFloat: parsing "": invalid syntax`)
+
+	got, err := attrValToFloat("ht", []xml.Attr{
+		{Name: xml.Name{Local: "ht"}, Value: "42.1"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 42.1, got)
+}

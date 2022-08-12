@@ -327,6 +327,9 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 	}
 	fmt.Fprintf(&sw.rawData, `<row r="%d"%s>`, row, attrs)
 	for i, val := range values {
+		if val == nil {
+			continue
+		}
 		axis, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
 			return err

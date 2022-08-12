@@ -53,8 +53,6 @@ func (f *File) NewSheet(sheet string) int {
 		}
 	}
 	sheetID++
-	// Update docProps/app.xml
-	f.setAppXML()
 	// Update [Content_Types].xml
 	f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
@@ -237,11 +235,6 @@ func (f *File) relsWriter() {
 		}
 		return true
 	})
-}
-
-// setAppXML update docProps/app.xml file of XML.
-func (f *File) setAppXML() {
-	f.saveFileList(defaultXMLPathDocPropsApp, []byte(templateDocpropsApp))
 }
 
 // replaceRelationshipsBytes; Some tools that read spreadsheet files have very
@@ -927,6 +920,34 @@ func attrValToInt(name string, attrs []xml.Attr) (val int, err error) {
 	for _, attr := range attrs {
 		if attr.Name.Local == name {
 			val, err = strconv.Atoi(attr.Value)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// attrValToFloat provides a function to convert the local names to a float64
+// by given XML attributes and specified names.
+func attrValToFloat(name string, attrs []xml.Attr) (val float64, err error) {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			val, err = strconv.ParseFloat(attr.Value, 64)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// attrValToBool provides a function to convert the local names to a boolean
+// by given XML attributes and specified names.
+func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			val, err = strconv.ParseBool(attr.Value)
 			if err != nil {
 				return
 			}

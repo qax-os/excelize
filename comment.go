@@ -178,6 +178,21 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 				},
 			},
 		}
+		// load exist comment shapes from xl/drawings/vmlDrawing%d.vml (only once)
+		d := f.decodeVMLDrawingReader(drawingVML)
+		if d != nil {
+			for _, v := range d.Shape {
+				s := xlsxShape{
+					ID:          "_x0000_s1025",
+					Type:        "#_x0000_t202",
+					Style:       "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden",
+					Fillcolor:   "#fbf6d6",
+					Strokecolor: "#edeaa1",
+					Val:         v.Val,
+				}
+				vml.Shape = append(vml.Shape, s)
+			}
+		}
 	}
 	sp := encodeShape{
 		Fill: &vFill{
@@ -221,20 +236,6 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 		Fillcolor:   "#fbf6d6",
 		Strokecolor: "#edeaa1",
 		Val:         string(s[13 : len(s)-14]),
-	}
-	d := f.decodeVMLDrawingReader(drawingVML)
-	if d != nil {
-		for _, v := range d.Shape {
-			s := xlsxShape{
-				ID:          "_x0000_s1025",
-				Type:        "#_x0000_t202",
-				Style:       "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden",
-				Fillcolor:   "#fbf6d6",
-				Strokecolor: "#edeaa1",
-				Val:         v.Val,
-			}
-			vml.Shape = append(vml.Shape, s)
-		}
 	}
 	vml.Shape = append(vml.Shape, shape)
 	f.VMLDrawing[drawingVML] = vml

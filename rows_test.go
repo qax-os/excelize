@@ -96,6 +96,32 @@ func TestRowsIterator(t *testing.T) {
 	assert.Equal(t, expectedNumRow, rowCount)
 }
 
+func TestRowsGetRowOpts(t *testing.T) {
+	sheetName := "Sheet2"
+	expectedRowStyleID1 := RowOpts{Height: 17.0, Hidden: false, StyleID: 1}
+	expectedRowStyleID2 := RowOpts{Height: 17.0, Hidden: false, StyleID: 0}
+	expectedRowStyleID3 := RowOpts{Height: 17.0, Hidden: false, StyleID: 2}
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	require.NoError(t, err)
+
+	rows, err := f.Rows(sheetName)
+	require.NoError(t, err)
+
+	assert.Equal(t, true, rows.Next())
+	_, err = rows.Columns()
+	require.NoError(t, err)
+	rowOpts := rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID1, rowOpts)
+	assert.Equal(t, true, rows.Next())
+	rowOpts = rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID2, rowOpts)
+	assert.Equal(t, true, rows.Next())
+	_, err = rows.Columns()
+	require.NoError(t, err)
+	rowOpts = rows.GetRowOpts()
+	assert.Equal(t, expectedRowStyleID3, rowOpts)
+}
+
 func TestRowsError(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {

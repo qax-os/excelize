@@ -337,7 +337,7 @@ func (nf *numberFormat) positiveHandler() (result string) {
 			nf.result += token.TValue
 			continue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == "0" {
+		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
 			if isNum, precision := isNumeric(nf.value); isNum {
 				if nf.number < 1 {
 					nf.result += "0"
@@ -899,7 +899,7 @@ func (nf *numberFormat) negativeHandler() (result string) {
 			nf.result += token.TValue
 			continue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == "0" {
+		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
 			if isNum, precision := isNumeric(nf.value); isNum {
 				if math.Abs(nf.number) < 1 {
 					nf.result += "0"

@@ -107,6 +107,7 @@ const (
 	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
+	MaxCellStyles        = 64000
 	MinFontSize          = 1
 	TotalRows            = 1048576
 	MinColumns           = 1
@@ -118,6 +119,26 @@ const (
 	// Excel 2007 or in compatibility mode. Slicer can only be used with
 	// PivotTables created in Excel 2007 or a newer version of Excel.
 	pivotTableVersion = 3
+)
+
+// ColorMappingType is the type of color transformation.
+type ColorMappingType byte
+
+// Color transformation types enumeration.
+const (
+	ColorMappingTypeLight1 ColorMappingType = iota
+	ColorMappingTypeDark1
+	ColorMappingTypeLight2
+	ColorMappingTypeDark2
+	ColorMappingTypeAccent1
+	ColorMappingTypeAccent2
+	ColorMappingTypeAccent3
+	ColorMappingTypeAccent4
+	ColorMappingTypeAccent5
+	ColorMappingTypeAccent6
+	ColorMappingTypeHyperlink
+	ColorMappingTypeFollowedHyperlink
+	ColorMappingTypeUnset int = -1
 )
 
 // supportedImageTypes defined supported image types.
