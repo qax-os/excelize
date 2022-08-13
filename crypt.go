@@ -1175,10 +1175,9 @@ func (c *cfb) writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileB
 // Writer provides a function to create compound file with given info stream
 // and package stream.
 //
-//    MSAT - The master sector allocation table
-//    SSAT - The short sector allocation table
-//    SAT  - The sector allocation table
-//
+//	MSAT - The master sector allocation table
+//	SSAT - The short sector allocation table
+//	SAT  - The sector allocation table
 func (c *cfb) Writer(encryptionInfoBuffer, encryptedPackage []byte) []byte {
 	var (
 		storage                                 cfb

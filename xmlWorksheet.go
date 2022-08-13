@@ -449,16 +449,15 @@ type DataValidation struct {
 //
 // This simple type is restricted to the values listed in the following table:
 //
-//      Enumeration Value         | Description
-//     ---------------------------+---------------------------------
-//      b (Boolean)               | Cell containing a boolean.
-//      d (Date)                  | Cell contains a date in the ISO 8601 format.
-//      e (Error)                 | Cell containing an error.
-//      inlineStr (Inline String) | Cell containing an (inline) rich string, i.e., one not in the shared string table. If this cell type is used, then the cell value is in the is element rather than the v element in the cell (c element).
-//      n (Number)                | Cell containing a number.
-//      s (Shared String)         | Cell containing a shared string.
-//      str (String)              | Cell containing a formula string.
-//
+//	 Enumeration Value         | Description
+//	---------------------------+---------------------------------
+//	 b (Boolean)               | Cell containing a boolean.
+//	 d (Date)                  | Cell contains a date in the ISO 8601 format.
+//	 e (Error)                 | Cell containing an error.
+//	 inlineStr (Inline String) | Cell containing an (inline) rich string, i.e., one not in the shared string table. If this cell type is used, then the cell value is in the is element rather than the v element in the cell (c element).
+//	 n (Number)                | Cell containing a number.
+//	 s (Shared String)         | Cell containing a shared string.
+//	 str (String)              | Cell containing a formula string.
 type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
@@ -644,13 +643,12 @@ type xlsxHyperlink struct {
 // size of the sample. To reference the table, just add the tableParts element,
 // of course after having created and stored the table part. For example:
 //
-//    <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-//        ...
-//        <tableParts count="1">
-// 		      <tablePart r:id="rId1" />
-//        </tableParts>
-//    </worksheet>
-//
+//	   <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+//	       ...
+//	       <tableParts count="1">
+//			      <tablePart r:id="rId1" />
+//	       </tableParts>
+//	   </worksheet>
 type xlsxTableParts struct {
 	XMLName    xml.Name         `xml:"tableParts"`
 	Count      int              `xml:"count,attr,omitempty"`
@@ -667,8 +665,7 @@ type xlsxTablePart struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main - Background sheet
 // image. For example:
 //
-//    <picture r:id="rId1"/>
-//
+//	<picture r:id="rId1"/>
 type xlsxPicture struct {
 	XMLName xml.Name `xml:"picture"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`

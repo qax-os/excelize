@@ -120,9 +120,10 @@ func (f *File) workBookWriter() {
 // SetWorkbookPrOptions provides a function to sets workbook properties.
 //
 // Available options:
-//   Date1904(bool)
-//   FilterPrivacy(bool)
-//   CodeName(string)
+//
+//	Date1904(bool)
+//	FilterPrivacy(bool)
+//	CodeName(string)
 func (f *File) SetWorkbookPrOptions(opts ...WorkbookPrOption) error {
 	wb := f.workbookReader()
 	pr := wb.WorkbookPr
@@ -154,9 +155,10 @@ func (o CodeName) setWorkbookPrOption(pr *xlsxWorkbookPr) {
 // GetWorkbookPrOptions provides a function to gets workbook properties.
 //
 // Available options:
-//   Date1904(bool)
-//   FilterPrivacy(bool)
-//   CodeName(string)
+//
+//	Date1904(bool)
+//	FilterPrivacy(bool)
+//	CodeName(string)
 func (f *File) GetWorkbookPrOptions(opts ...WorkbookPrOptionPtr) error {
 	wb := f.workbookReader()
 	pr := wb.WorkbookPr

@@ -37,18 +37,17 @@ import (
 // For example, get and traverse the value of all cells by rows on a worksheet
 // named 'Sheet1':
 //
-//    rows, err := f.GetRows("Sheet1")
-//    if err != nil {
-//        fmt.Println(err)
-//        return
-//    }
-//    for _, row := range rows {
-//        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
-//        }
-//        fmt.Println()
-//    }
-//
+//	rows, err := f.GetRows("Sheet1")
+//	if err != nil {
+//	    fmt.Println(err)
+//	    return
+//	}
+//	for _, row := range rows {
+//	    for _, colCell := range row {
+//	        fmt.Print(colCell, "\t")
+//	    }
+//	    fmt.Println()
+//	}
 func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 	rows, err := f.Rows(sheet)
 	if err != nil {
@@ -240,25 +239,24 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 // Rows returns a rows iterator, used for streaming reading data for a
 // worksheet with a large data. For example:
 //
-//    rows, err := f.Rows("Sheet1")
-//    if err != nil {
-//        fmt.Println(err)
-//        return
-//    }
-//    for rows.Next() {
-//        row, err := rows.Columns()
-//        if err != nil {
-//            fmt.Println(err)
-//        }
-//        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
-//        }
-//        fmt.Println()
-//    }
-//    if err = rows.Close(); err != nil {
-//        fmt.Println(err)
-//    }
-//
+//	rows, err := f.Rows("Sheet1")
+//	if err != nil {
+//	    fmt.Println(err)
+//	    return
+//	}
+//	for rows.Next() {
+//	    row, err := rows.Columns()
+//	    if err != nil {
+//	        fmt.Println(err)
+//	    }
+//	    for _, colCell := range row {
+//	        fmt.Print(colCell, "\t")
+//	    }
+//	    fmt.Println()
+//	}
+//	if err = rows.Close(); err != nil {
+//	    fmt.Println(err)
+//	}
 func (f *File) Rows(sheet string) (*Rows, error) {
 	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
@@ -344,8 +342,7 @@ func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 // SetRowHeight provides a function to set the height of a single row. For
 // example, set the height of the first row in Sheet1:
 //
-//    err := f.SetRowHeight("Sheet1", 1, 50)
-//
+//	err := f.SetRowHeight("Sheet1", 1, 50)
 func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
@@ -385,8 +382,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 // GetRowHeight provides a function to get row height by given worksheet name
 // and row number. For example, get the height of the first row in Sheet1:
 //
-//    height, err := f.GetRowHeight("Sheet1", 1)
-//
+//	height, err := f.GetRowHeight("Sheet1", 1)
 func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
@@ -517,8 +513,7 @@ func roundPrecision(text string, prec int) string {
 // SetRowVisible provides a function to set visible of a single row by given
 // worksheet name and Excel row number. For example, hide row 2 in Sheet1:
 //
-//    err := f.SetRowVisible("Sheet1", 2, false)
-//
+//	err := f.SetRowVisible("Sheet1", 2, false)
 func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
@@ -537,8 +532,7 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 // worksheet name and Excel row number. For example, get visible state of row
 // 2 in Sheet1:
 //
-//    visible, err := f.GetRowVisible("Sheet1", 2)
-//
+//	visible, err := f.GetRowVisible("Sheet1", 2)
 func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 	if row < 1 {
 		return false, newInvalidRowNumberError(row)
@@ -558,8 +552,7 @@ func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 // single row by given worksheet name and Excel row number. The value of
 // parameter 'level' is 1-7. For example, outline row 2 in Sheet1 to level 1:
 //
-//    err := f.SetRowOutlineLevel("Sheet1", 2, 1)
-//
+//	err := f.SetRowOutlineLevel("Sheet1", 2, 1)
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
@@ -580,8 +573,7 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 // single row by given worksheet name and Excel row number. For example, get
 // outline number of row 2 in Sheet1:
 //
-//    level, err := f.GetRowOutlineLevel("Sheet1", 2)
-//
+//	level, err := f.GetRowOutlineLevel("Sheet1", 2)
 func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 	if row < 1 {
 		return 0, newInvalidRowNumberError(row)
@@ -599,7 +591,7 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 // RemoveRow provides a function to remove single row by given worksheet name
 // and Excel row number. For example, remove row 3 in Sheet1:
 //
-//    err := f.RemoveRow("Sheet1", 3)
+//	err := f.RemoveRow("Sheet1", 3)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -633,7 +625,7 @@ func (f *File) RemoveRow(sheet string, row int) error {
 // number starting from 1. For example, create a new row before row 3 in
 // Sheet1:
 //
-//    err := f.InsertRow("Sheet1", 3)
+//	err := f.InsertRow("Sheet1", 3)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -648,7 +640,7 @@ func (f *File) InsertRow(sheet string, row int) error {
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below
 //
-//    err := f.DuplicateRow("Sheet1", 2)
+//	err := f.DuplicateRow("Sheet1", 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -661,7 +653,7 @@ func (f *File) DuplicateRow(sheet string, row int) error {
 // DuplicateRowTo inserts a copy of specified row by it Excel number
 // to specified row position moving down exists rows after target position
 //
-//    err := f.DuplicateRowTo("Sheet1", 2, 7)
+//	err := f.DuplicateRowTo("Sheet1", 2, 7)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -758,24 +750,24 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 // checkRow provides a function to check and fill each column element for all
 // rows and make that is continuous in a worksheet of XML. For example:
 //
-//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//        <c r="A15" s="2" />
-//        <c r="B15" s="2" />
-//        <c r="F15" s="1" />
-//        <c r="G15" s="1" />
-//    </row>
+//	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//	    <c r="A15" s="2" />
+//	    <c r="B15" s="2" />
+//	    <c r="F15" s="1" />
+//	    <c r="G15" s="1" />
+//	</row>
 //
 // in this case, we should to change it to
 //
-//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//        <c r="A15" s="2" />
-//        <c r="B15" s="2" />
-//        <c r="C15" s="2" />
-//        <c r="D15" s="2" />
-//        <c r="E15" s="2" />
-//        <c r="F15" s="1" />
-//        <c r="G15" s="1" />
-//    </row>
+//	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//	    <c r="A15" s="2" />
+//	    <c r="B15" s="2" />
+//	    <c r="C15" s="2" />
+//	    <c r="D15" s="2" />
+//	    <c r="E15" s="2" />
+//	    <c r="F15" s="1" />
+//	    <c r="G15" s="1" />
+//	</row>
 //
 // Noteice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
@@ -843,12 +835,11 @@ func checkRow(ws *xlsxWorksheet) error {
 //
 // For example set style of row 1 on Sheet1:
 //
-//    err = f.SetRowStyle("Sheet1", 1, 1, styleID)
+//	err = f.SetRowStyle("Sheet1", 1, 1, styleID)
 //
 // Set style of rows 1 to 10 on Sheet1:
 //
-//    err = f.SetRowStyle("Sheet1", 1, 10, styleID)
-//
+//	err = f.SetRowStyle("Sheet1", 1, 10, styleID)
 func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if end < start {
 		start, end = end, start
