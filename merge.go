@@ -27,25 +27,24 @@ func (mc *xlsxMergeCell) Rect() ([]int, error) {
 // discards the other values. For example create a merged cell of D3:E9 on
 // Sheet1:
 //
-//    err := f.MergeCell("Sheet1", "D3", "E9")
+//	err := f.MergeCell("Sheet1", "D3", "E9")
 //
 // If you create a merged cell that overlaps with another existing merged cell,
 // those merged cells that already exist will be removed. The cell coordinates
 // tuple after merging in the following range will be: A1(x3,y1) D1(x2,y1)
 // A8(x3,y4) D8(x2,y4)
 //
-//                 B1(x1,y1)      D1(x2,y1)
-//               +------------------------+
-//               |                        |
-//     A4(x3,y3) |    C4(x4,y3)           |
-//    +------------------------+          |
-//    |          |             |          |
-//    |          |B5(x1,y2)    | D5(x2,y2)|
-//    |          +------------------------+
-//    |                        |
-//    |A8(x3,y4)      C8(x4,y4)|
-//    +------------------------+
-//
+//	             B1(x1,y1)      D1(x2,y1)
+//	           +------------------------+
+//	           |                        |
+//	 A4(x3,y3) |    C4(x4,y3)           |
+//	+------------------------+          |
+//	|          |             |          |
+//	|          |B5(x1,y2)    | D5(x2,y2)|
+//	|          +------------------------+
+//	|                        |
+//	|A8(x3,y4)      C8(x4,y4)|
+//	+------------------------+
 func (f *File) MergeCell(sheet, hCell, vCell string) error {
 	rect, err := areaRefToCoordinates(hCell + ":" + vCell)
 	if err != nil {
@@ -74,7 +73,7 @@ func (f *File) MergeCell(sheet, hCell, vCell string) error {
 // UnmergeCell provides a function to unmerge a given coordinate area.
 // For example unmerge area D3:E9 on Sheet1:
 //
-//    err := f.UnmergeCell("Sheet1", "D3", "E9")
+//	err := f.UnmergeCell("Sheet1", "D3", "E9")
 //
 // Attention: overlapped areas will also be unmerged.
 func (f *File) UnmergeCell(sheet string, hCell, vCell string) error {

@@ -92,8 +92,7 @@ func (f *File) getSheetComments(sheetFile string) string {
 // author length is 255 and the max text length is 32512. For example, add a
 // comment in Sheet1!$A$30:
 //
-//    err := f.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
-//
+//	err := f.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
 func (f *File) AddComment(sheet, cell, format string) error {
 	formatSet, err := parseFormatCommentsSet(format)
 	if err != nil {

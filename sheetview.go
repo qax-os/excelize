@@ -185,21 +185,20 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 //
 // Available options:
 //
-//    DefaultGridColor(bool)
-//    ShowFormulas(bool)
-//    ShowGridLines(bool)
-//    ShowRowColHeaders(bool)
-//    ShowZeros(bool)
-//    RightToLeft(bool)
-//    ShowRuler(bool)
-//    View(string)
-//    TopLeftCell(string)
-//    ZoomScale(float64)
+//	DefaultGridColor(bool)
+//	ShowFormulas(bool)
+//	ShowGridLines(bool)
+//	ShowRowColHeaders(bool)
+//	ShowZeros(bool)
+//	RightToLeft(bool)
+//	ShowRuler(bool)
+//	View(string)
+//	TopLeftCell(string)
+//	ZoomScale(float64)
 //
 // Example:
 //
-//    err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
-//
+//	err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
 func (f *File) SetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOption) error {
 	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
@@ -217,22 +216,21 @@ func (f *File) SetSheetViewOptions(sheet string, viewIndex int, opts ...SheetVie
 //
 // Available options:
 //
-//    DefaultGridColor(bool)
-//    ShowFormulas(bool)
-//    ShowGridLines(bool)
-//    ShowRowColHeaders(bool)
-//    ShowZeros(bool)
-//    RightToLeft(bool)
-//    ShowRuler(bool)
-//    View(string)
-//    TopLeftCell(string)
-//    ZoomScale(float64)
+//	DefaultGridColor(bool)
+//	ShowFormulas(bool)
+//	ShowGridLines(bool)
+//	ShowRowColHeaders(bool)
+//	ShowZeros(bool)
+//	RightToLeft(bool)
+//	ShowRuler(bool)
+//	View(string)
+//	TopLeftCell(string)
+//	ZoomScale(float64)
 //
 // Example:
 //
-//    var showGridLines excelize.ShowGridLines
-//    err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
-//
+//	var showGridLines excelize.ShowGridLines
+//	err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
 func (f *File) GetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOptionPtr) error {
 	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {

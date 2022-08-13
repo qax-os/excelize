@@ -92,10 +92,10 @@ type Options struct {
 // spreadsheet file struct for it. For example, open spreadsheet with
 // password protection:
 //
-//    f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
-//    if err != nil {
-//        return
-//    }
+//	f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
+//	if err != nil {
+//	    return
+//	}
 //
 // Close the file by Close function after opening the spreadsheet.
 func OpenFile(filename string, opt ...Options) (*File, error) {
@@ -403,21 +403,20 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 //
 // For example:
 //
-//    <row r="19" spans="2:2">
-//        <c r="B19">
-//            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//            <v>100</v>
-//         </c>
-//    </row>
+//	<row r="19" spans="2:2">
+//	    <c r="B19">
+//	        <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//	        <v>100</v>
+//	     </c>
+//	</row>
 //
 // to
 //
-//    <row r="19" spans="2:2">
-//        <c r="B19">
-//            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//        </c>
-//    </row>
-//
+//	<row r="19" spans="2:2">
+//	    <c r="B19">
+//	        <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//	    </c>
+//	</row>
 func (f *File) UpdateLinkedValue() error {
 	wb := f.workbookReader()
 	// recalculate formulas
@@ -445,16 +444,15 @@ func (f *File) UpdateLinkedValue() error {
 // AddVBAProject provides the method to add vbaProject.bin file which contains
 // functions and/or macros. The file extension should be .xlsm. For example:
 //
-//    if err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1")); err != nil {
-//        fmt.Println(err)
-//    }
-//    if err := f.AddVBAProject("vbaProject.bin"); err != nil {
-//        fmt.Println(err)
-//    }
-//    if err := f.SaveAs("macros.xlsm"); err != nil {
-//        fmt.Println(err)
-//    }
-//
+//	if err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1")); err != nil {
+//	    fmt.Println(err)
+//	}
+//	if err := f.AddVBAProject("vbaProject.bin"); err != nil {
+//	    fmt.Println(err)
+//	}
+//	if err := f.SaveAs("macros.xlsm"); err != nil {
+//	    fmt.Println(err)
+//	}
 func (f *File) AddVBAProject(bin string) error {
 	var err error
 	// Check vbaProject.bin exists first.

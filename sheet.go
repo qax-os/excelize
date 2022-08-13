@@ -392,19 +392,18 @@ func (f *File) GetSheetIndex(sheet string) int {
 // GetSheetMap provides a function to get worksheets, chart sheets, dialog
 // sheets ID and name map of the workbook. For example:
 //
-//    f, err := excelize.OpenFile("Book1.xlsx")
-//    if err != nil {
-//        return
-//    }
-//    defer func() {
-//        if err := f.Close(); err != nil {
-//            fmt.Println(err)
-//        }
-//    }()
-//    for index, name := range f.GetSheetMap() {
-//        fmt.Println(index, name)
-//    }
-//
+//	f, err := excelize.OpenFile("Book1.xlsx")
+//	if err != nil {
+//	    return
+//	}
+//	defer func() {
+//	    if err := f.Close(); err != nil {
+//	        fmt.Println(err)
+//	    }
+//	}()
+//	for index, name := range f.GetSheetMap() {
+//	    fmt.Println(index, name)
+//	}
 func (f *File) GetSheetMap() map[int]string {
 	wb := f.workbookReader()
 	sheetMap := map[int]string{}
@@ -588,11 +587,10 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 // target worksheet index. Note that currently doesn't support duplicate
 // workbooks that contain tables, charts or pictures. For Example:
 //
-//    // Sheet1 already exists...
-//    index := f.NewSheet("Sheet2")
-//    err := f.CopySheet(1, index)
-//    return err
-//
+//	// Sheet1 already exists...
+//	index := f.NewSheet("Sheet2")
+//	err := f.CopySheet(1, index)
+//	return err
 func (f *File) CopySheet(from, to int) error {
 	if from < 0 || to < 0 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return ErrSheetIdx
@@ -634,14 +632,13 @@ func (f *File) copySheet(from, to int) error {
 // worksheet has been activated, this setting will be invalidated. Sheet state
 // values as defined by https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetstatevalues
 //
-//    visible
-//    hidden
-//    veryHidden
+//	visible
+//	hidden
+//	veryHidden
 //
 // For example, hide Sheet1:
 //
-//    err := f.SetSheetVisible("Sheet1", false)
-//
+//	err := f.SetSheetVisible("Sheet1", false)
 func (f *File) SetSheetVisible(sheet string, visible bool) error {
 	sheet = trimSheetName(sheet)
 	content := f.workbookReader()
@@ -688,50 +685,50 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 // activePane defines the pane that is active. The possible values for this
 // attribute are defined in the following table:
 //
-//     Enumeration Value              | Description
-//    --------------------------------+-------------------------------------------------------------
-//     bottomLeft (Bottom Left Pane)  | Bottom left pane, when both vertical and horizontal
-//                                    | splits are applied.
-//                                    |
-//                                    | This value is also used when only a horizontal split has
-//                                    | been applied, dividing the pane into upper and lower
-//                                    | regions. In that case, this value specifies the bottom
-//                                    | pane.
-//                                    |
-//    bottomRight (Bottom Right Pane) | Bottom right pane, when both vertical and horizontal
-//                                    | splits are applied.
-//                                    |
-//    topLeft (Top Left Pane)         | Top left pane, when both vertical and horizontal splits
-//                                    | are applied.
-//                                    |
-//                                    | This value is also used when only a horizontal split has
-//                                    | been applied, dividing the pane into upper and lower
-//                                    | regions. In that case, this value specifies the top pane.
-//                                    |
-//                                    | This value is also used when only a vertical split has
-//                                    | been applied, dividing the pane into right and left
-//                                    | regions. In that case, this value specifies the left pane
-//                                    |
-//    topRight (Top Right Pane)       | Top right pane, when both vertical and horizontal
-//                                    | splits are applied.
-//                                    |
-//                                    | This value is also used when only a vertical split has
-//                                    | been applied, dividing the pane into right and left
-//                                    | regions. In that case, this value specifies the right
-//                                    | pane.
+//	 Enumeration Value              | Description
+//	--------------------------------+-------------------------------------------------------------
+//	 bottomLeft (Bottom Left Pane)  | Bottom left pane, when both vertical and horizontal
+//	                                | splits are applied.
+//	                                |
+//	                                | This value is also used when only a horizontal split has
+//	                                | been applied, dividing the pane into upper and lower
+//	                                | regions. In that case, this value specifies the bottom
+//	                                | pane.
+//	                                |
+//	bottomRight (Bottom Right Pane) | Bottom right pane, when both vertical and horizontal
+//	                                | splits are applied.
+//	                                |
+//	topLeft (Top Left Pane)         | Top left pane, when both vertical and horizontal splits
+//	                                | are applied.
+//	                                |
+//	                                | This value is also used when only a horizontal split has
+//	                                | been applied, dividing the pane into upper and lower
+//	                                | regions. In that case, this value specifies the top pane.
+//	                                |
+//	                                | This value is also used when only a vertical split has
+//	                                | been applied, dividing the pane into right and left
+//	                                | regions. In that case, this value specifies the left pane
+//	                                |
+//	topRight (Top Right Pane)       | Top right pane, when both vertical and horizontal
+//	                                | splits are applied.
+//	                                |
+//	                                | This value is also used when only a vertical split has
+//	                                | been applied, dividing the pane into right and left
+//	                                | regions. In that case, this value specifies the right
+//	                                | pane.
 //
 // Pane state type is restricted to the values supported currently listed in the following table:
 //
-//     Enumeration Value              | Description
-//    --------------------------------+-------------------------------------------------------------
-//     frozen (Frozen)                | Panes are frozen, but were not split being frozen. In
-//                                    | this state, when the panes are unfrozen again, a single
-//                                    | pane results, with no split.
-//                                    |
-//                                    | In this state, the split bars are not adjustable.
-//                                    |
-//     split (Split)                  | Panes are split, but not frozen. In this state, the split
-//                                    | bars are adjustable by the user.
+//	 Enumeration Value              | Description
+//	--------------------------------+-------------------------------------------------------------
+//	 frozen (Frozen)                | Panes are frozen, but were not split being frozen. In
+//	                                | this state, when the panes are unfrozen again, a single
+//	                                | pane results, with no split.
+//	                                |
+//	                                | In this state, the split bars are not adjustable.
+//	                                |
+//	 split (Split)                  | Panes are split, but not frozen. In this state, the split
+//	                                | bars are adjustable by the user.
 //
 // x_split (Horizontal Split Position): Horizontal position of the split, in
 // 1/20th of a point; 0 (zero) if none. If the pane is frozen, this value
@@ -751,22 +748,21 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 // An example of how to freeze column A in the Sheet1 and set the active cell on
 // Sheet1!K16:
 //
-//    f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
+//	f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`)
 //
 // An example of how to freeze rows 1 to 9 in the Sheet1 and set the active cell
 // ranges on Sheet1!A11:XFD11:
 //
-//    f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
+//	f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`)
 //
 // An example of how to create split panes in the Sheet1 and set the active cell
 // on Sheet1!J60:
 //
-//    f.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
+//	f.SetPanes("Sheet1", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`)
 //
 // An example of how to unfreeze and remove all panes on Sheet1:
 //
-//    f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
-//
+//	f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 func (f *File) SetPanes(sheet, panes string) error {
 	fs, _ := parseFormatPanesSet(panes)
 	ws, err := f.workSheetReader(sheet)
@@ -806,8 +802,7 @@ func (f *File) SetPanes(sheet, panes string) error {
 // GetSheetVisible provides a function to get worksheet visible by given worksheet
 // name. For example, get visible state of Sheet1:
 //
-//    f.GetSheetVisible("Sheet1")
-//
+//	f.GetSheetVisible("Sheet1")
 func (f *File) GetSheetVisible(sheet string) bool {
 	content, name, visible := f.workbookReader(), trimSheetName(sheet), false
 	for k, v := range content.Sheets.Sheet {
@@ -828,13 +823,12 @@ func (f *File) GetSheetVisible(sheet string) bool {
 //
 // An example of search the coordinates of the value of "100" on Sheet1:
 //
-//    result, err := f.SearchSheet("Sheet1", "100")
+//	result, err := f.SearchSheet("Sheet1", "100")
 //
 // An example of search the coordinates where the numerical value in the range
 // of "0-9" of Sheet1 is described:
 //
-//    result, err := f.SearchSheet("Sheet1", "[0-9]", true)
-//
+//	result, err := f.SearchSheet("Sheet1", "[0-9]", true)
 func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	var (
 		regSearch bool
@@ -961,95 +955,95 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 //
 // Headers and footers are specified using the following settings fields:
 //
-//     Fields           | Description
-//    ------------------+-----------------------------------------------------------
-//     AlignWithMargins | Align header footer margins with page margins
-//     DifferentFirst   | Different first-page header and footer indicator
-//     DifferentOddEven | Different odd and even page headers and footers indicator
-//     ScaleWithDoc     | Scale header and footer with document scaling
-//     OddFooter        | Odd Page Footer
-//     OddHeader        | Odd Header
-//     EvenFooter       | Even Page Footer
-//     EvenHeader       | Even Page Header
-//     FirstFooter      | First Page Footer
-//     FirstHeader      | First Page Header
+//	 Fields           | Description
+//	------------------+-----------------------------------------------------------
+//	 AlignWithMargins | Align header footer margins with page margins
+//	 DifferentFirst   | Different first-page header and footer indicator
+//	 DifferentOddEven | Different odd and even page headers and footers indicator
+//	 ScaleWithDoc     | Scale header and footer with document scaling
+//	 OddFooter        | Odd Page Footer
+//	 OddHeader        | Odd Header
+//	 EvenFooter       | Even Page Footer
+//	 EvenHeader       | Even Page Header
+//	 FirstFooter      | First Page Footer
+//	 FirstHeader      | First Page Header
 //
 // The following formatting codes can be used in 6 string type fields:
 // OddHeader, OddFooter, EvenHeader, EvenFooter, FirstFooter, FirstHeader
 //
-//     Formatting Code        | Description
-//    ------------------------+-------------------------------------------------------------------------
-//     &&                     | The character "&"
-//                            |
-//     &font-size             | Size of the text font, where font-size is a decimal font size in points
-//                            |
-//     &"font name,font type" | A text font-name string, font name, and a text font-type string,
-//                            | font type
-//                            |
-//     &"-,Regular"           | Regular text format. Toggles bold and italic modes to off
-//                            |
-//     &A                     | Current worksheet's tab name
-//                            |
-//     &B or &"-,Bold"        | Bold text format, from off to on, or vice versa. The default mode is off
-//                            |
-//     &D                     | Current date
-//                            |
-//     &C                     | Center section
-//                            |
-//     &E                     | Double-underline text format
-//                            |
-//     &F                     | Current workbook's file name
-//                            |
-//     &G                     | Drawing object as background
-//                            |
-//     &H                     | Shadow text format
-//                            |
-//     &I or &"-,Italic"      | Italic text format
-//                            |
-//     &K                     | Text font color
-//                            |
-//                            | An RGB Color is specified as RRGGBB
-//                            |
-//                            | A Theme Color is specified as TTSNNN where TT is the theme color Id,
-//                            | S is either "+" or "-" of the tint/shade value, and NNN is the
-//                            | tint/shade value
-//                            |
-//     &L                     | Left section
-//                            |
-//     &N                     | Total number of pages
-//                            |
-//     &O                     | Outline text format
-//                            |
-//     &P[[+|-]n]             | Without the optional suffix, the current page number in decimal
-//                            |
-//     &R                     | Right section
-//                            |
-//     &S                     | Strikethrough text format
-//                            |
-//     &T                     | Current time
-//                            |
-//     &U                     | Single-underline text format. If double-underline mode is on, the next
-//                            | occurrence in a section specifier toggles double-underline mode to off;
-//                            | otherwise, it toggles single-underline mode, from off to on, or vice
-//                            | versa. The default mode is off
-//                            |
-//     &X                     | Superscript text format
-//                            |
-//     &Y                     | Subscript text format
-//                            |
-//     &Z                     | Current workbook's file path
+//	 Formatting Code        | Description
+//	------------------------+-------------------------------------------------------------------------
+//	 &&                     | The character "&"
+//	                        |
+//	 &font-size             | Size of the text font, where font-size is a decimal font size in points
+//	                        |
+//	 &"font name,font type" | A text font-name string, font name, and a text font-type string,
+//	                        | font type
+//	                        |
+//	 &"-,Regular"           | Regular text format. Toggles bold and italic modes to off
+//	                        |
+//	 &A                     | Current worksheet's tab name
+//	                        |
+//	 &B or &"-,Bold"        | Bold text format, from off to on, or vice versa. The default mode is off
+//	                        |
+//	 &D                     | Current date
+//	                        |
+//	 &C                     | Center section
+//	                        |
+//	 &E                     | Double-underline text format
+//	                        |
+//	 &F                     | Current workbook's file name
+//	                        |
+//	 &G                     | Drawing object as background
+//	                        |
+//	 &H                     | Shadow text format
+//	                        |
+//	 &I or &"-,Italic"      | Italic text format
+//	                        |
+//	 &K                     | Text font color
+//	                        |
+//	                        | An RGB Color is specified as RRGGBB
+//	                        |
+//	                        | A Theme Color is specified as TTSNNN where TT is the theme color Id,
+//	                        | S is either "+" or "-" of the tint/shade value, and NNN is the
+//	                        | tint/shade value
+//	                        |
+//	 &L                     | Left section
+//	                        |
+//	 &N                     | Total number of pages
+//	                        |
+//	 &O                     | Outline text format
+//	                        |
+//	 &P[[+|-]n]             | Without the optional suffix, the current page number in decimal
+//	                        |
+//	 &R                     | Right section
+//	                        |
+//	 &S                     | Strikethrough text format
+//	                        |
+//	 &T                     | Current time
+//	                        |
+//	 &U                     | Single-underline text format. If double-underline mode is on, the next
+//	                        | occurrence in a section specifier toggles double-underline mode to off;
+//	                        | otherwise, it toggles single-underline mode, from off to on, or vice
+//	                        | versa. The default mode is off
+//	                        |
+//	 &X                     | Superscript text format
+//	                        |
+//	 &Y                     | Subscript text format
+//	                        |
+//	 &Z                     | Current workbook's file path
 //
 // For example:
 //
-//    err := f.SetHeaderFooter("Sheet1", &excelize.FormatHeaderFooter{
-//        DifferentFirst:   true,
-//        DifferentOddEven: true,
-//        OddHeader:        "&R&P",
-//        OddFooter:        "&C&F",
-//        EvenHeader:       "&L&P",
-//        EvenFooter:       "&L&D&R&T",
-//        FirstHeader:      `&CCenter &"-,Bold"Bold&"-,Regular"HeaderU+000A&D`,
-//    })
+//	err := f.SetHeaderFooter("Sheet1", &excelize.FormatHeaderFooter{
+//	    DifferentFirst:   true,
+//	    DifferentOddEven: true,
+//	    OddHeader:        "&R&P",
+//	    OddFooter:        "&C&F",
+//	    EvenHeader:       "&L&P",
+//	    EvenFooter:       "&L&D&R&T",
+//	    FirstHeader:      `&CCenter &"-,Bold"Bold&"-,Regular"HeaderU+000A&D`,
+//	})
 //
 // This example shows:
 //
@@ -1071,7 +1065,6 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 // that same page
 //
 // - No footer on the first page
-//
 func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1112,12 +1105,11 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 // specified, will be using the XOR algorithm as default. For example, protect
 // Sheet1 with protection settings:
 //
-//    err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
-//        AlgorithmName: "SHA-512",
-//        Password:      "password",
-//        EditScenarios: false,
-//    })
-//
+//	err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//	    AlgorithmName: "SHA-512",
+//	    Password:      "password",
+//	    EditScenarios: false,
+//	})
 func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1377,135 +1369,134 @@ func (p *PageLayoutScale) getPageLayout(ps *xlsxPageSetUp) {
 //
 // Available options:
 //
-//    BlackAndWhite(bool)
-//    FirstPageNumber(uint)
-//    PageLayoutOrientation(string)
-//    PageLayoutPaperSize(int)
-//    FitToHeight(int)
-//    FitToWidth(int)
-//    PageLayoutScale(uint)
+//	BlackAndWhite(bool)
+//	FirstPageNumber(uint)
+//	PageLayoutOrientation(string)
+//	PageLayoutPaperSize(int)
+//	FitToHeight(int)
+//	FitToWidth(int)
+//	PageLayoutScale(uint)
 //
 // The following shows the paper size sorted by excelize index number:
 //
-//     Index | Paper Size
-//    -------+-----------------------------------------------
-//       1   | Letter paper (8.5 in. by 11 in.)
-//       2   | Letter small paper (8.5 in. by 11 in.)
-//       3   | Tabloid paper (11 in. by 17 in.)
-//       4   | Ledger paper (17 in. by 11 in.)
-//       5   | Legal paper (8.5 in. by 14 in.)
-//       6   | Statement paper (5.5 in. by 8.5 in.)
-//       7   | Executive paper (7.25 in. by 10.5 in.)
-//       8   | A3 paper (297 mm by 420 mm)
-//       9   | A4 paper (210 mm by 297 mm)
-//       10  | A4 small paper (210 mm by 297 mm)
-//       11  | A5 paper (148 mm by 210 mm)
-//       12  | B4 paper (250 mm by 353 mm)
-//       13  | B5 paper (176 mm by 250 mm)
-//       14  | Folio paper (8.5 in. by 13 in.)
-//       15  | Quarto paper (215 mm by 275 mm)
-//       16  | Standard paper (10 in. by 14 in.)
-//       17  | Standard paper (11 in. by 17 in.)
-//       18  | Note paper (8.5 in. by 11 in.)
-//       19  | #9 envelope (3.875 in. by 8.875 in.)
-//       20  | #10 envelope (4.125 in. by 9.5 in.)
-//       21  | #11 envelope (4.5 in. by 10.375 in.)
-//       22  | #12 envelope (4.75 in. by 11 in.)
-//       23  | #14 envelope (5 in. by 11.5 in.)
-//       24  | C paper (17 in. by 22 in.)
-//       25  | D paper (22 in. by 34 in.)
-//       26  | E paper (34 in. by 44 in.)
-//       27  | DL envelope (110 mm by 220 mm)
-//       28  | C5 envelope (162 mm by 229 mm)
-//       29  | C3 envelope (324 mm by 458 mm)
-//       30  | C4 envelope (229 mm by 324 mm)
-//       31  | C6 envelope (114 mm by 162 mm)
-//       32  | C65 envelope (114 mm by 229 mm)
-//       33  | B4 envelope (250 mm by 353 mm)
-//       34  | B5 envelope (176 mm by 250 mm)
-//       35  | B6 envelope (176 mm by 125 mm)
-//       36  | Italy envelope (110 mm by 230 mm)
-//       37  | Monarch envelope (3.875 in. by 7.5 in.).
-//       38  | 6 3/4 envelope (3.625 in. by 6.5 in.)
-//       39  | US standard fanfold (14.875 in. by 11 in.)
-//       40  | German standard fanfold (8.5 in. by 12 in.)
-//       41  | German legal fanfold (8.5 in. by 13 in.)
-//       42  | ISO B4 (250 mm by 353 mm)
-//       43  | Japanese postcard (100 mm by 148 mm)
-//       44  | Standard paper (9 in. by 11 in.)
-//       45  | Standard paper (10 in. by 11 in.)
-//       46  | Standard paper (15 in. by 11 in.)
-//       47  | Invite envelope (220 mm by 220 mm)
-//       50  | Letter extra paper (9.275 in. by 12 in.)
-//       51  | Legal extra paper (9.275 in. by 15 in.)
-//       52  | Tabloid extra paper (11.69 in. by 18 in.)
-//       53  | A4 extra paper (236 mm by 322 mm)
-//       54  | Letter transverse paper (8.275 in. by 11 in.)
-//       55  | A4 transverse paper (210 mm by 297 mm)
-//       56  | Letter extra transverse paper (9.275 in. by 12 in.)
-//       57  | SuperA/SuperA/A4 paper (227 mm by 356 mm)
-//       58  | SuperB/SuperB/A3 paper (305 mm by 487 mm)
-//       59  | Letter plus paper (8.5 in. by 12.69 in.)
-//       60  | A4 plus paper (210 mm by 330 mm)
-//       61  | A5 transverse paper (148 mm by 210 mm)
-//       62  | JIS B5 transverse paper (182 mm by 257 mm)
-//       63  | A3 extra paper (322 mm by 445 mm)
-//       64  | A5 extra paper (174 mm by 235 mm)
-//       65  | ISO B5 extra paper (201 mm by 276 mm)
-//       66  | A2 paper (420 mm by 594 mm)
-//       67  | A3 transverse paper (297 mm by 420 mm)
-//       68  | A3 extra transverse paper (322 mm by 445 mm)
-//       69  | Japanese Double Postcard (200 mm x 148 mm)
-//       70  | A6 (105 mm x 148 mm)
-//       71  | Japanese Envelope Kaku #2
-//       72  | Japanese Envelope Kaku #3
-//       73  | Japanese Envelope Chou #3
-//       74  | Japanese Envelope Chou #4
-//       75  | Letter Rotated (11in x 8 1/2 11 in)
-//       76  | A3 Rotated (420 mm x 297 mm)
-//       77  | A4 Rotated (297 mm x 210 mm)
-//       78  | A5 Rotated (210 mm x 148 mm)
-//       79  | B4 (JIS) Rotated (364 mm x 257 mm)
-//       80  | B5 (JIS) Rotated (257 mm x 182 mm)
-//       81  | Japanese Postcard Rotated (148 mm x 100 mm)
-//       82  | Double Japanese Postcard Rotated (148 mm x 200 mm)
-//       83  | A6 Rotated (148 mm x 105 mm)
-//       84  | Japanese Envelope Kaku #2 Rotated
-//       85  | Japanese Envelope Kaku #3 Rotated
-//       86  | Japanese Envelope Chou #3 Rotated
-//       87  | Japanese Envelope Chou #4 Rotated
-//       88  | B6 (JIS) (128 mm x 182 mm)
-//       89  | B6 (JIS) Rotated (182 mm x 128 mm)
-//       90  | (12 in x 11 in)
-//       91  | Japanese Envelope You #4
-//       92  | Japanese Envelope You #4 Rotated
-//       93  | PRC 16K (146 mm x 215 mm)
-//       94  | PRC 32K (97 mm x 151 mm)
-//       95  | PRC 32K(Big) (97 mm x 151 mm)
-//       96  | PRC Envelope #1 (102 mm x 165 mm)
-//       97  | PRC Envelope #2 (102 mm x 176 mm)
-//       98  | PRC Envelope #3 (125 mm x 176 mm)
-//       99  | PRC Envelope #4 (110 mm x 208 mm)
-//       100 | PRC Envelope #5 (110 mm x 220 mm)
-//       101 | PRC Envelope #6 (120 mm x 230 mm)
-//       102 | PRC Envelope #7 (160 mm x 230 mm)
-//       103 | PRC Envelope #8 (120 mm x 309 mm)
-//       104 | PRC Envelope #9 (229 mm x 324 mm)
-//       105 | PRC Envelope #10 (324 mm x 458 mm)
-//       106 | PRC 16K Rotated
-//       107 | PRC 32K Rotated
-//       108 | PRC 32K(Big) Rotated
-//       109 | PRC Envelope #1 Rotated (165 mm x 102 mm)
-//       110 | PRC Envelope #2 Rotated (176 mm x 102 mm)
-//       111 | PRC Envelope #3 Rotated (176 mm x 125 mm)
-//       112 | PRC Envelope #4 Rotated (208 mm x 110 mm)
-//       113 | PRC Envelope #5 Rotated (220 mm x 110 mm)
-//       114 | PRC Envelope #6 Rotated (230 mm x 120 mm)
-//       115 | PRC Envelope #7 Rotated (230 mm x 160 mm)
-//       116 | PRC Envelope #8 Rotated (309 mm x 120 mm)
-//       117 | PRC Envelope #9 Rotated (324 mm x 229 mm)
-//       118 | PRC Envelope #10 Rotated (458 mm x 324 mm)
-//
+//	 Index | Paper Size
+//	-------+-----------------------------------------------
+//	   1   | Letter paper (8.5 in. by 11 in.)
+//	   2   | Letter small paper (8.5 in. by 11 in.)
+//	   3   | Tabloid paper (11 in. by 17 in.)
+//	   4   | Ledger paper (17 in. by 11 in.)
+//	   5   | Legal paper (8.5 in. by 14 in.)
+//	   6   | Statement paper (5.5 in. by 8.5 in.)
+//	   7   | Executive paper (7.25 in. by 10.5 in.)
+//	   8   | A3 paper (297 mm by 420 mm)
+//	   9   | A4 paper (210 mm by 297 mm)
+//	   10  | A4 small paper (210 mm by 297 mm)
+//	   11  | A5 paper (148 mm by 210 mm)
+//	   12  | B4 paper (250 mm by 353 mm)
+//	   13  | B5 paper (176 mm by 250 mm)
+//	   14  | Folio paper (8.5 in. by 13 in.)
+//	   15  | Quarto paper (215 mm by 275 mm)
+//	   16  | Standard paper (10 in. by 14 in.)
+//	   17  | Standard paper (11 in. by 17 in.)
+//	   18  | Note paper (8.5 in. by 11 in.)
+//	   19  | #9 envelope (3.875 in. by 8.875 in.)
+//	   20  | #10 envelope (4.125 in. by 9.5 in.)
+//	   21  | #11 envelope (4.5 in. by 10.375 in.)
+//	   22  | #12 envelope (4.75 in. by 11 in.)
+//	   23  | #14 envelope (5 in. by 11.5 in.)
+//	   24  | C paper (17 in. by 22 in.)
+//	   25  | D paper (22 in. by 34 in.)
+//	   26  | E paper (34 in. by 44 in.)
+//	   27  | DL envelope (110 mm by 220 mm)
+//	   28  | C5 envelope (162 mm by 229 mm)
+//	   29  | C3 envelope (324 mm by 458 mm)
+//	   30  | C4 envelope (229 mm by 324 mm)
+//	   31  | C6 envelope (114 mm by 162 mm)
+//	   32  | C65 envelope (114 mm by 229 mm)
+//	   33  | B4 envelope (250 mm by 353 mm)
+//	   34  | B5 envelope (176 mm by 250 mm)
+//	   35  | B6 envelope (176 mm by 125 mm)
+//	   36  | Italy envelope (110 mm by 230 mm)
+//	   37  | Monarch envelope (3.875 in. by 7.5 in.).
+//	   38  | 6 3/4 envelope (3.625 in. by 6.5 in.)
+//	   39  | US standard fanfold (14.875 in. by 11 in.)
+//	   40  | German standard fanfold (8.5 in. by 12 in.)
+//	   41  | German legal fanfold (8.5 in. by 13 in.)
+//	   42  | ISO B4 (250 mm by 353 mm)
+//	   43  | Japanese postcard (100 mm by 148 mm)
+//	   44  | Standard paper (9 in. by 11 in.)
+//	   45  | Standard paper (10 in. by 11 in.)
+//	   46  | Standard paper (15 in. by 11 in.)
+//	   47  | Invite envelope (220 mm by 220 mm)
+//	   50  | Letter extra paper (9.275 in. by 12 in.)
+//	   51  | Legal extra paper (9.275 in. by 15 in.)
+//	   52  | Tabloid extra paper (11.69 in. by 18 in.)
+//	   53  | A4 extra paper (236 mm by 322 mm)
+//	   54  | Letter transverse paper (8.275 in. by 11 in.)
+//	   55  | A4 transverse paper (210 mm by 297 mm)
+//	   56  | Letter extra transverse paper (9.275 in. by 12 in.)
+//	   57  | SuperA/SuperA/A4 paper (227 mm by 356 mm)
+//	   58  | SuperB/SuperB/A3 paper (305 mm by 487 mm)
+//	   59  | Letter plus paper (8.5 in. by 12.69 in.)
+//	   60  | A4 plus paper (210 mm by 330 mm)
+//	   61  | A5 transverse paper (148 mm by 210 mm)
+//	   62  | JIS B5 transverse paper (182 mm by 257 mm)
+//	   63  | A3 extra paper (322 mm by 445 mm)
+//	   64  | A5 extra paper (174 mm by 235 mm)
+//	   65  | ISO B5 extra paper (201 mm by 276 mm)
+//	   66  | A2 paper (420 mm by 594 mm)
+//	   67  | A3 transverse paper (297 mm by 420 mm)
+//	   68  | A3 extra transverse paper (322 mm by 445 mm)
+//	   69  | Japanese Double Postcard (200 mm x 148 mm)
+//	   70  | A6 (105 mm x 148 mm)
+//	   71  | Japanese Envelope Kaku #2
+//	   72  | Japanese Envelope Kaku #3
+//	   73  | Japanese Envelope Chou #3
+//	   74  | Japanese Envelope Chou #4
+//	   75  | Letter Rotated (11in x 8 1/2 11 in)
+//	   76  | A3 Rotated (420 mm x 297 mm)
+//	   77  | A4 Rotated (297 mm x 210 mm)
+//	   78  | A5 Rotated (210 mm x 148 mm)
+//	   79  | B4 (JIS) Rotated (364 mm x 257 mm)
+//	   80  | B5 (JIS) Rotated (257 mm x 182 mm)
+//	   81  | Japanese Postcard Rotated (148 mm x 100 mm)
+//	   82  | Double Japanese Postcard Rotated (148 mm x 200 mm)
+//	   83  | A6 Rotated (148 mm x 105 mm)
+//	   84  | Japanese Envelope Kaku #2 Rotated
+//	   85  | Japanese Envelope Kaku #3 Rotated
+//	   86  | Japanese Envelope Chou #3 Rotated
+//	   87  | Japanese Envelope Chou #4 Rotated
+//	   88  | B6 (JIS) (128 mm x 182 mm)
+//	   89  | B6 (JIS) Rotated (182 mm x 128 mm)
+//	   90  | (12 in x 11 in)
+//	   91  | Japanese Envelope You #4
+//	   92  | Japanese Envelope You #4 Rotated
+//	   93  | PRC 16K (146 mm x 215 mm)
+//	   94  | PRC 32K (97 mm x 151 mm)
+//	   95  | PRC 32K(Big) (97 mm x 151 mm)
+//	   96  | PRC Envelope #1 (102 mm x 165 mm)
+//	   97  | PRC Envelope #2 (102 mm x 176 mm)
+//	   98  | PRC Envelope #3 (125 mm x 176 mm)
+//	   99  | PRC Envelope #4 (110 mm x 208 mm)
+//	   100 | PRC Envelope #5 (110 mm x 220 mm)
+//	   101 | PRC Envelope #6 (120 mm x 230 mm)
+//	   102 | PRC Envelope #7 (160 mm x 230 mm)
+//	   103 | PRC Envelope #8 (120 mm x 309 mm)
+//	   104 | PRC Envelope #9 (229 mm x 324 mm)
+//	   105 | PRC Envelope #10 (324 mm x 458 mm)
+//	   106 | PRC 16K Rotated
+//	   107 | PRC 32K Rotated
+//	   108 | PRC 32K(Big) Rotated
+//	   109 | PRC Envelope #1 Rotated (165 mm x 102 mm)
+//	   110 | PRC Envelope #2 Rotated (176 mm x 102 mm)
+//	   111 | PRC Envelope #3 Rotated (176 mm x 125 mm)
+//	   112 | PRC Envelope #4 Rotated (208 mm x 110 mm)
+//	   113 | PRC Envelope #5 Rotated (220 mm x 110 mm)
+//	   114 | PRC Envelope #6 Rotated (230 mm x 120 mm)
+//	   115 | PRC Envelope #7 Rotated (230 mm x 160 mm)
+//	   116 | PRC Envelope #8 Rotated (309 mm x 120 mm)
+//	   117 | PRC Envelope #9 Rotated (324 mm x 229 mm)
+//	   118 | PRC Envelope #10 Rotated (458 mm x 324 mm)
 func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1526,10 +1517,11 @@ func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
 // GetPageLayout provides a function to gets worksheet page layout.
 //
 // Available options:
-//   PageLayoutOrientation(string)
-//   PageLayoutPaperSize(int)
-//   FitToHeight(int)
-//   FitToWidth(int)
+//
+//	PageLayoutOrientation(string)
+//	PageLayoutPaperSize(int)
+//	FitToHeight(int)
+//	FitToWidth(int)
 func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1547,13 +1539,12 @@ func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
 // or worksheet. If not specified scope, the default scope is workbook.
 // For example:
 //
-//    f.SetDefinedName(&excelize.DefinedName{
-//        Name:     "Amount",
-//        RefersTo: "Sheet1!$A$2:$D$5",
-//        Comment:  "defined name comment",
-//        Scope:    "Sheet2",
-//    })
-//
+//	f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "Amount",
+//	    RefersTo: "Sheet1!$A$2:$D$5",
+//	    Comment:  "defined name comment",
+//	    Scope:    "Sheet2",
+//	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	wb := f.workbookReader()
 	d := xlsxDefinedName{
@@ -1589,11 +1580,10 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 // workbook or worksheet. If not specified scope, the default scope is
 // workbook. For example:
 //
-//    f.DeleteDefinedName(&excelize.DefinedName{
-//        Name:     "Amount",
-//        Scope:    "Sheet2",
-//    })
-//
+//	f.DeleteDefinedName(&excelize.DefinedName{
+//	    Name:     "Amount",
+//	    Scope:    "Sheet2",
+//	})
 func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 	wb := f.workbookReader()
 	if wb.DefinedNames != nil {
