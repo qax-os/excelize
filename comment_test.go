@@ -46,6 +46,23 @@ func TestAddComments(t *testing.T) {
 	assert.EqualValues(t, len(NewFile().GetComments()), 0)
 }
 
+func TestDelComments(t *testing.T) {
+	f, err := prepareTestBook1()
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.NoError(t, f.AddComment("Sheet2", "A40", `{"author":"Excelize: ","text":"This is a comment1."}`))
+	assert.NoError(t, f.AddComment("Sheet2", "A41", `{"author":"Excelize: ","text":"This is a comment2."}`))
+	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment2."}`))
+
+	assert.NoError(t, f.DelComment("Sheet2", "A40"))
+
+	comments := f.GetComments()
+	assert.EqualValues(t, 2, len(comments["Sheet2"]))
+	assert.EqualValues(t, len(NewFile().GetComments()), 0)
+}
+
 func TestDecodeVMLDrawingReader(t *testing.T) {
 	f := NewFile()
 	path := "xl/drawings/vmlDrawing1.xml"

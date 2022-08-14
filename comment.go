@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -138,6 +139,35 @@ func (f *File) AddComment(sheet, cell, format string) error {
 	f.addComment(commentsXML, cell, formatSet)
 	f.addContentTypePart(commentID, "comments")
 	return err
+}
+
+// DelComment provides the method to delete comment in a sheet by given worksheet
+//
+//	err := f.DelComment("Sheet1", "A30")
+func (f *File) DelComment(sheet, cell string) (err error) {
+	sheetFile, sheetExist := f.sheetMap[sheet]
+
+	if !sheetExist {
+		err = errors.New(sheet + "is not exist")
+		return
+	}
+
+	target := f.getSheetComments(filepath.Base(sheetFile))
+
+	if target == "" {
+		err = errors.New("comment target is null")
+		return
+	}
+
+	if !strings.HasPrefix(target, "/") {
+		target = "xl" + strings.TrimPrefix(target, "..")
+	}
+
+	path := strings.TrimPrefix(target, "/")
+
+	f.delComment(path, cell)
+
+	return
 }
 
 // addDrawingVML provides a function to create comment as
@@ -296,6 +326,27 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)
 	f.Comments[commentsXML] = comments
+}
+
+// delComment provides a function to delete comment
+func (f *File) delComment(path, cell string) {
+	if comments := f.commentsReader(path); comments != nil {
+		for k, v := range comments.CommentList.Comment {
+			if v.Ref == cell {
+				l := len(comments.CommentList.Comment)
+				if l > 1 {
+					comments.CommentList.Comment = append(
+						comments.CommentList.Comment[:k],
+						comments.CommentList.Comment[k+1:]...,
+					)
+				} else {
+					comments.CommentList.Comment = []xlsxComment{}
+				}
+
+			}
+		}
+		f.Comments[path] = comments
+	}
 }
 
 // countComments provides a function to get comments files count storage in
