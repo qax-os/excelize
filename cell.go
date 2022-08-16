@@ -1078,6 +1078,38 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 	return err
 }
 
+// SetSheetCol writes an array to column by given worksheet name, starting
+// coordinate and a pointer to array type 'slice'. For example, writes an
+// array to column B start with the cell B6 on Sheet1:
+//
+//	err := f.SetSheetCol("Sheet1", "B6", &[]interface{}{"1", nil, 2})
+func (f *File) SetSheetCol(sheet, axis string, slice interface{}) error {
+	col, row, err := CellNameToCoordinates(axis)
+	if err != nil {
+		return err
+	}
+
+	// Make sure 'slice' is a Ptr to Slice
+	v := reflect.ValueOf(slice)
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
+		return ErrParameterInvalid
+	}
+	v = v.Elem()
+
+	for i := 0; i < v.Len(); i++ {
+		cell, err := CoordinatesToCellName(col, row+i)
+		// Error should never happen here. But keep checking to early detect regressions
+		// if it will be introduced in the future.
+		if err != nil {
+			return err
+		}
+		if err := f.SetCellValue(sheet, cell, v.Index(i).Interface()); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
 // getCellInfo does common preparation for all SetCell* methods.
 func (f *File) prepareCell(ws *xlsxWorksheet, cell string) (*xlsxC, int, int, error) {
 	var err error
