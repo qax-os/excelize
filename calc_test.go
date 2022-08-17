@@ -491,6 +491,7 @@ func TestCalcCellValue(t *testing.T) {
 		// COS
 		"=COS(0.785398163)": "0.707106781467586",
 		"=COS(0)":           "1",
+		"=-COS(0)":          "-1",
 		"=COS(COS(0))":      "0.54030230586814",
 		// COSH
 		"=COSH(0)":       "1",

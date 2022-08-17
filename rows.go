@@ -179,6 +179,7 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	return rowIterator.columns, rowIterator.err
 }
 
+// extractRowOpts extract row element attributes.
 func extractRowOpts(attrs []xml.Attr) RowOpts {
 	rowOpts := RowOpts{Height: defaultRowHeight}
 	if styleID, err := attrValToInt("s", attrs); err == nil && styleID > 0 && styleID < MaxCellStyles {
