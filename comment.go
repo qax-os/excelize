@@ -177,7 +177,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 				},
 			},
 		}
-		// load exist comment shapes from xl/drawings/vmlDrawing%d.vml (only once)
+		// load exist comment shapes from xl/drawings/vmlDrawing%d.vml
 		d := f.decodeVMLDrawingReader(drawingVML)
 		if d != nil {
 			for _, v := range d.Shape {

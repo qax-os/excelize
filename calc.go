@@ -1234,7 +1234,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 			return ErrInvalidFormula
 		}
 		opd := opdStack.Pop().(formulaArg)
-		opdStack.Push(newNumberFormulaArg(0 - opd.Number))
+		opdStack.Push(newNumberFormulaArg(0 - opd.ToNumber().Number))
 	}
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
 		if opdStack.Len() < 2 {
@@ -1647,10 +1647,10 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 	var value, expected float64
 	var e error
 	prepareValue := func(val, cond string) (value float64, expected float64, err error) {
-		percential := 1.0
+		percentile := 1.0
 		if strings.HasSuffix(cond, "%") {
 			cond = strings.TrimSuffix(cond, "%")
-			percential /= 100
+			percentile /= 100
 		}
 		if value, err = strconv.ParseFloat(val, 64); err != nil {
 			return
@@ -1658,7 +1658,7 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 		if expected, err = strconv.ParseFloat(cond, 64); err != nil {
 			return
 		}
-		expected *= percential
+		expected *= percentile
 		return
 	}
 	switch criteria.Type {
