@@ -14,7 +14,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"log"
 	"reflect"
@@ -1322,7 +1321,7 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
+			err = newDecodeXMLError(err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {

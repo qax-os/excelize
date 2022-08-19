@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"image"
 	"io"
 	"io/ioutil"
@@ -554,7 +553,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = newDecodeXMLError(err)
 		return
 	}
 	err = nil
@@ -562,7 +561,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
+			err = newDecodeXMLError(err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {

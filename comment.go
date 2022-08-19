@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -141,32 +140,36 @@ func (f *File) AddComment(sheet, cell, format string) error {
 	return err
 }
 
-// DelComment provides the method to delete comment in a sheet by given worksheet
+// DeleteComment provides the method to delete comment in a sheet by given
+// worksheet. For example, delete the comment in Sheet1!$A$30:
 //
-//	err := f.DelComment("Sheet1", "A30")
-func (f *File) DelComment(sheet, cell string) (err error) {
-	sheetFile, sheetExist := f.sheetMap[sheet]
-
-	if !sheetExist {
-		err = errors.New(sheet + "is not exist")
+//	err := f.DeleteComment("Sheet1", "A30")
+func (f *File) DeleteComment(sheet, cell string) (err error) {
+	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		err = newNoExistSheetError(sheet)
 		return
 	}
-
-	target := f.getSheetComments(filepath.Base(sheetFile))
-
-	if target == "" {
-		err = errors.New("comment target is null")
-		return
+	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
+	if !strings.HasPrefix(commentsXML, "/") {
+		commentsXML = "xl" + strings.TrimPrefix(commentsXML, "..")
 	}
-
-	if !strings.HasPrefix(target, "/") {
-		target = "xl" + strings.TrimPrefix(target, "..")
+	commentsXML = strings.TrimPrefix(commentsXML, "/")
+	if comments := f.commentsReader(commentsXML); comments != nil {
+		for i, cmt := range comments.CommentList.Comment {
+			if cmt.Ref == cell {
+				if len(comments.CommentList.Comment) > 1 {
+					comments.CommentList.Comment = append(
+						comments.CommentList.Comment[:i],
+						comments.CommentList.Comment[i+1:]...,
+					)
+					continue
+				}
+				comments.CommentList.Comment = nil
+			}
+		}
+		f.Comments[commentsXML] = comments
 	}
-
-	path := strings.TrimPrefix(target, "/")
-
-	f.delComment(path, cell)
-
 	return
 }
 
@@ -207,7 +210,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 				},
 			},
 		}
-		// load exist comment shapes from xl/drawings/vmlDrawing%d.vml (only once)
+		// load exist comment shapes from xl/drawings/vmlDrawing%d.vml
 		d := f.decodeVMLDrawingReader(drawingVML)
 		if d != nil {
 			for _, v := range d.Shape {
@@ -326,27 +329,6 @@ func (f *File) addComment(commentsXML, cell string, formatSet *formatComment) {
 	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)
 	f.Comments[commentsXML] = comments
-}
-
-// delComment provides a function to delete comment
-func (f *File) delComment(path, cell string) {
-	if comments := f.commentsReader(path); comments != nil {
-		for k, v := range comments.CommentList.Comment {
-			if v.Ref == cell {
-				l := len(comments.CommentList.Comment)
-				if l > 1 {
-					comments.CommentList.Comment = append(
-						comments.CommentList.Comment[:k],
-						comments.CommentList.Comment[k+1:]...,
-					)
-				} else {
-					comments.CommentList.Comment = []xlsxComment{}
-				}
-
-			}
-		}
-		f.Comments[path] = comments
-	}
 }
 
 // countComments provides a function to get comments files count storage in

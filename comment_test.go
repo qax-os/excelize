@@ -46,7 +46,7 @@ func TestAddComments(t *testing.T) {
 	assert.EqualValues(t, len(NewFile().GetComments()), 0)
 }
 
-func TestDelComments(t *testing.T) {
+func TestDeleteComment(t *testing.T) {
 	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -54,13 +54,22 @@ func TestDelComments(t *testing.T) {
 
 	assert.NoError(t, f.AddComment("Sheet2", "A40", `{"author":"Excelize: ","text":"This is a comment1."}`))
 	assert.NoError(t, f.AddComment("Sheet2", "A41", `{"author":"Excelize: ","text":"This is a comment2."}`))
-	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment2."}`))
+	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3."}`))
 
-	assert.NoError(t, f.DelComment("Sheet2", "A40"))
+	assert.NoError(t, f.DeleteComment("Sheet2", "A40"))
 
-	comments := f.GetComments()
-	assert.EqualValues(t, 2, len(comments["Sheet2"]))
+	assert.EqualValues(t, 2, len(f.GetComments()["Sheet2"]))
 	assert.EqualValues(t, len(NewFile().GetComments()), 0)
+
+	// Test delete all comments in a worksheet
+	assert.NoError(t, f.DeleteComment("Sheet2", "A41"))
+	assert.NoError(t, f.DeleteComment("Sheet2", "C41"))
+	assert.EqualValues(t, 0, len(f.GetComments()["Sheet2"]))
+	// Test delete comment on not exists worksheet
+	assert.EqualError(t, f.DeleteComment("SheetN", "A1"), "sheet SheetN is not exist")
+	// Test delete comment with worksheet part
+	f.Pkg.Delete("xl/worksheets/sheet1.xml")
+	assert.NoError(t, f.DeleteComment("Sheet1", "A22"))
 }
 
 func TestDecodeVMLDrawingReader(t *testing.T) {
