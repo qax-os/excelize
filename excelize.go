@@ -231,7 +231,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		ok   bool
 	)
 	if name, ok = f.getSheetXMLPath(sheet); !ok {
-		err = fmt.Errorf("sheet %s is not exist", sheet)
+		err = newNoExistSheetError(sheet)
 		return
 	}
 	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
@@ -240,7 +240,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	for _, sheetType := range []string{"xl/chartsheets", "xl/dialogsheet", "xl/macrosheet"} {
 		if strings.HasPrefix(name, sheetType) {
-			err = fmt.Errorf("sheet %s is not a worksheet", sheet)
+			err = newNotWorksheetError(sheet)
 			return
 		}
 	}
@@ -251,7 +251,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = newDecodeXMLError(err)
 		return
 	}
 	err = nil
@@ -424,7 +424,7 @@ func (f *File) UpdateLinkedValue() error {
 	for _, name := range f.GetSheetList() {
 		ws, err := f.workSheetReader(name)
 		if err != nil {
-			if err.Error() == fmt.Sprintf("sheet %s is not a worksheet", trimSheetName(name)) {
+			if err.Error() == newNotWorksheetError(name).Error() {
 				continue
 			}
 			return err

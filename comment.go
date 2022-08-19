@@ -140,6 +140,39 @@ func (f *File) AddComment(sheet, cell, format string) error {
 	return err
 }
 
+// DeleteComment provides the method to delete comment in a sheet by given
+// worksheet. For example, delete the comment in Sheet1!$A$30:
+//
+//	err := f.DeleteComment("Sheet1", "A30")
+func (f *File) DeleteComment(sheet, cell string) (err error) {
+	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		err = newNoExistSheetError(sheet)
+		return
+	}
+	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
+	if !strings.HasPrefix(commentsXML, "/") {
+		commentsXML = "xl" + strings.TrimPrefix(commentsXML, "..")
+	}
+	commentsXML = strings.TrimPrefix(commentsXML, "/")
+	if comments := f.commentsReader(commentsXML); comments != nil {
+		for i, cmt := range comments.CommentList.Comment {
+			if cmt.Ref == cell {
+				if len(comments.CommentList.Comment) > 1 {
+					comments.CommentList.Comment = append(
+						comments.CommentList.Comment[:i],
+						comments.CommentList.Comment[i+1:]...,
+					)
+					continue
+				}
+				comments.CommentList.Comment = nil
+			}
+		}
+		f.Comments[commentsXML] = comments
+	}
+	return
+}
+
 // addDrawingVML provides a function to create comment as
 // xl/drawings/vmlDrawing%d.vml by given commit ID and cell.
 func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, colCount int) error {
