@@ -59,11 +59,6 @@ func TestEncryptionMechanism(t *testing.T) {
 	assert.EqualError(t, err, ErrUnknownEncryptMechanism.Error())
 }
 
-func TestEncryptionWriteDirectoryEntry(t *testing.T) {
-	cfb := cfb{}
-	assert.Equal(t, 1536, len(cfb.writeDirectoryEntry(0, 0, -1)))
-}
-
 func TestHashing(t *testing.T) {
 	assert.Equal(t, hashing("unsupportedHashAlgorithm", []byte{}), []byte(nil))
 }

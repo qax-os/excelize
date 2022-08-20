@@ -25,7 +25,9 @@ import (
 	"encoding/xml"
 	"hash"
 	"math"
+	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/richardlehane/mscfb"
@@ -37,6 +39,10 @@ import (
 var (
 	blockKey                   = []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6} // Block keys used for encryption
 	oleIdentifier              = []byte{0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1}
+	headerCLSID                = make([]byte, 16)
+	difSect                    = -4
+	endOfChain                 = -2
+	fatSect                    = -3
 	iterCount                  = 50000
 	packageEncryptionChunkSize = 4096
 	packageOffset              = 8 // First 8 bytes are the size of the stream
@@ -150,7 +156,7 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 }
 
 // Encrypt API encrypt data with the password.
-func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
+func Encrypt(raw []byte, opt *Options) ([]byte, error) {
 	encryptor := encryption{
 		EncryptedVerifierHashInput: make([]byte, 16),
 		EncryptedVerifierHashValue: make([]byte, 32),
@@ -169,9 +175,13 @@ func Encrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 	binary.LittleEndian.PutUint64(encryptedPackage, uint64(len(raw)))
 	encryptedPackage = append(encryptedPackage, encryptor.encrypt(raw)...)
 	// Create a new CFB
-	compoundFile := cfb{}
-	packageBuf = compoundFile.Writer(encryptionInfoBuffer, encryptedPackage)
-	return packageBuf, nil
+	compoundFile := &cfb{
+		paths:   []string{"Root Entry/"},
+		sectors: []sector{{name: "Root Entry", typeID: 5}},
+	}
+	compoundFile.put("EncryptionInfo", encryptionInfoBuffer)
+	compoundFile.put("EncryptedPackage", encryptedPackage)
+	return compoundFile.write(), nil
 }
 
 // extractPart extract data from storage by specified part name.
@@ -618,6 +628,15 @@ func genISOPasswdHash(passwd, hashAlgorithm, salt string, spinCount int) (hashVa
 type cfb struct {
 	stream   []byte
 	position int
+	paths    []string
+	sectors  []sector
+}
+
+// sector structure used for FAT, directory, miniFAT, and miniStream sectors.
+type sector struct {
+	clsID, content                             []byte
+	name                                       string
+	C, L, R, color, size, start, state, typeID int
 }
 
 // writeBytes write bytes in the stream by a given value with an offset.
@@ -666,415 +685,156 @@ func (c *cfb) writeStrings(value string) {
 	c.writeBytes(buffer)
 }
 
-// writeVersionStream provides a function to write compound file version
-// stream.
-func (c *cfb) writeVersionStream() []byte {
-	var storage cfb
-	storage.writeUint32(0x3c)
-	storage.writeStrings("Microsoft.Container.DataSpaces")
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x01)
-	return storage.stream
+// put provides a function to add an entry to compound file by given entry name
+// and raw bytes.
+func (c *cfb) put(name string, content []byte) {
+	path := c.paths[0]
+	if len(path) <= len(name) && name[:len(path)] == path {
+		path = name
+	} else {
+		if len(path) > 0 && string(path[len(path)-1]) != "/" {
+			path += "/"
+		}
+		path = strings.ReplaceAll(path+name, "//", "/")
+	}
+	file := sector{name: path, typeID: 2, content: content, size: len(content)}
+	c.sectors = append(c.sectors, file)
+	c.paths = append(c.paths, path)
 }
 
-// writeDataSpaceMapStream provides a function to write compound file
-// DataSpaceMap stream.
-func (c *cfb) writeDataSpaceMapStream() []byte {
-	var storage cfb
-	storage.writeUint32(0x08)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x68)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x00)
-	storage.writeUint32(0x20)
-	storage.writeStrings("EncryptedPackage")
-	storage.writeUint32(0x32)
-	storage.writeStrings("StrongEncryptionDataSpace")
-	storage.writeUint16(0x00)
-	return storage.stream
-}
-
-// writeStrongEncryptionDataSpaceStream provides a function to write compound
-// file StrongEncryptionDataSpace stream.
-func (c *cfb) writeStrongEncryptionDataSpaceStream() []byte {
-	var storage cfb
-	storage.writeUint32(0x08)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x32)
-	storage.writeStrings("StrongEncryptionTransform")
-	storage.writeUint16(0x00)
-	return storage.stream
-}
-
-// writePrimaryStream provides a function to write compound file Primary
-// stream.
-func (c *cfb) writePrimaryStream() []byte {
-	var storage cfb
-	storage.writeUint32(0x6C)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x4C)
-	storage.writeStrings("{FF9A3F03-56EF-4613-BDD5-5A41C1D07246}")
-	storage.writeUint32(0x4E)
-	storage.writeUint16(0x00)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x01)
-	storage.writeUint32(0x01)
-	storage.writeStrings("AES128")
-	storage.writeUint32(0x00)
-	storage.writeUint32(0x04)
-	return storage.stream
-}
-
-// writeFileStream provides a function to write encrypted package in compound
-// file by a given buffer and the short sector allocation table.
-func (c *cfb) writeFileStream(encryptionInfoBuffer []byte, SSAT []int) ([]byte, []int) {
-	var (
-		storage        cfb
-		miniProperties int
-		stream         = make([]byte, 0x100)
-	)
-	if encryptionInfoBuffer != nil {
-		copy(stream, encryptionInfoBuffer)
-	}
-	storage.writeBytes(stream)
-	streamBlocks := len(stream) / 64
-	if len(stream)%64 > 0 {
-		streamBlocks++
-	}
-	for i := 1; i < streamBlocks; i++ {
-		SSAT = append(SSAT, i)
-	}
-	SSAT = append(SSAT, -2)
-	miniProperties += streamBlocks
-	versionStream := make([]byte, 0x80)
-	version := c.writeVersionStream()
-	copy(versionStream, version)
-	storage.writeBytes(versionStream)
-	versionBlocks := len(versionStream) / 64
-	if len(versionStream)%64 > 0 {
-		versionBlocks++
-	}
-	for i := 1; i < versionBlocks; i++ {
-		SSAT = append(SSAT, i+miniProperties)
-	}
-	SSAT = append(SSAT, -2)
-	miniProperties += versionBlocks
-	dataSpaceMap := make([]byte, 0x80)
-	dataStream := c.writeDataSpaceMapStream()
-	copy(dataSpaceMap, dataStream)
-	storage.writeBytes(dataSpaceMap)
-	dataSpaceMapBlocks := len(dataSpaceMap) / 64
-	if len(dataSpaceMap)%64 > 0 {
-		dataSpaceMapBlocks++
-	}
-	for i := 1; i < dataSpaceMapBlocks; i++ {
-		SSAT = append(SSAT, i+miniProperties)
-	}
-	SSAT = append(SSAT, -2)
-	miniProperties += dataSpaceMapBlocks
-	dataSpaceStream := c.writeStrongEncryptionDataSpaceStream()
-	storage.writeBytes(dataSpaceStream)
-	dataSpaceStreamBlocks := len(dataSpaceStream) / 64
-	if len(dataSpaceStream)%64 > 0 {
-		dataSpaceStreamBlocks++
-	}
-	for i := 1; i < dataSpaceStreamBlocks; i++ {
-		SSAT = append(SSAT, i+miniProperties)
-	}
-	SSAT = append(SSAT, -2)
-	miniProperties += dataSpaceStreamBlocks
-	primaryStream := make([]byte, 0x1C0)
-	primary := c.writePrimaryStream()
-	copy(primaryStream, primary)
-	storage.writeBytes(primaryStream)
-	primaryBlocks := len(primary) / 64
-	if len(primary)%64 > 0 {
-		primaryBlocks++
-	}
-	for i := 1; i < primaryBlocks; i++ {
-		SSAT = append(SSAT, i+miniProperties)
-	}
-	SSAT = append(SSAT, -2)
-	if len(SSAT) < 128 {
-		for i := len(SSAT); i < 128; i++ {
-			SSAT = append(SSAT, -1)
+// compare provides a function to compare object path, each set of sibling
+// objects in one level of the containment hierarchy (all child objects under
+// a storage object) is represented as a red-black tree. The parent object of
+// this set of siblings will have a pointer to the top of this tree.
+func (c *cfb) compare(left, right string) int {
+	L, R, i, j := strings.Split(left, "/"), strings.Split(right, "/"), 0, 0
+	for Z := int(math.Min(float64(len(L)), float64(len(R)))); i < Z; i++ {
+		if j = len(L[i]) - len(R[i]); j != 0 {
+			return j
+		}
+		if L[i] != R[i] {
+			if L[i] < R[i] {
+				return -1
+			}
+			return 1
 		}
 	}
-	storage.position = 0
-	return storage.stream, SSAT
+	return len(L) - len(R)
 }
 
-// writeRootEntry provides a function to write compound file root directory
-// entry. The first entry in the first sector of the directory chain
-// (also referred to as the first element of the directory array, or stream
-// ID #0) is known as the root directory entry, and it is reserved for two
-// purposes. First, it provides a root parent for all objects that are
-// stationed at the root of the compound file. Second, its function is
-// overloaded to store the size and starting sector for the mini stream.
-func (c *cfb) writeRootEntry(customSectID int) []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("Root Entry")
-	storage.position = 0x40
-	storage.writeUint16(0x16)
-	storage.writeBytes([]byte{5, 0})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(customSectID)
-	storage.writeUint32(0x340)
-	return storage.stream
+// prepare provides a function to prepare object before write stream.
+func (c *cfb) prepare() {
+	type object struct {
+		path   string
+		sector sector
+	}
+	var objects []object
+	for i := 0; i < len(c.paths); i++ {
+		if c.sectors[i].typeID == 0 {
+			continue
+		}
+		objects = append(objects, object{path: c.paths[i], sector: c.sectors[i]})
+	}
+	sort.Slice(objects, func(i, j int) bool {
+		return c.compare(objects[i].path, objects[j].path) == 0
+	})
+	c.paths, c.sectors = []string{}, []sector{}
+	for i := 0; i < len(objects); i++ {
+		c.paths = append(c.paths, objects[i].path)
+		c.sectors = append(c.sectors, objects[i].sector)
+	}
+	for i := 0; i < len(objects); i++ {
+		sector, path := &c.sectors[i], c.paths[i]
+		sector.name, sector.color = filepath.Base(path), 1
+		sector.L, sector.R, sector.C = -1, -1, -1
+		sector.size, sector.start = len(sector.content), 0
+		if len(sector.clsID) == 0 {
+			sector.clsID = headerCLSID
+		}
+		if i == 0 {
+			sector.C = -1
+			if len(objects) > 1 {
+				sector.C = 1
+			}
+			sector.size, sector.typeID = 0, 5
+		} else {
+			if len(c.paths) > i+1 && filepath.Dir(c.paths[i+1]) == filepath.Dir(path) {
+				sector.R = i + 1
+			}
+			sector.typeID = 2
+		}
+	}
 }
 
-// writeEncryptionInfo provides a function to write compound file
-// writeEncryptionInfo stream. The writeEncryptionInfo stream contains
-// detailed information that is used to initialize the cryptography used to
-// encrypt the EncryptedPackage stream.
-func (c *cfb) writeEncryptionInfo() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("EncryptionInfo")
-	storage.position = 0x40
-	storage.writeUint16(0x1E)
-	storage.writeBytes([]byte{2, 1})
-	storage.writeUint32(0x03)
-	storage.writeUint32(0x02)
-	storage.writeUint32(-1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0xF8)
-	return storage.stream
+// locate provides a function to locate sectors location and size of the
+// compound file.
+func (c *cfb) locate() []int {
+	var miniStreamSectorSize, FATSectorSize int
+	for i := 0; i < len(c.sectors); i++ {
+		sector := c.sectors[i]
+		if len(sector.content) == 0 {
+			continue
+		}
+		size := len(sector.content)
+		if size > 0 {
+			if size < 0x1000 {
+				miniStreamSectorSize += (size + 0x3F) >> 6
+			} else {
+				FATSectorSize += (size + 0x01FF) >> 9
+			}
+		}
+	}
+	directorySectors := (len(c.paths) + 3) >> 2
+	miniStreamSectors := (miniStreamSectorSize + 7) >> 3
+	miniFATSectors := (miniStreamSectorSize + 0x7F) >> 7
+	sectors := miniStreamSectors + FATSectorSize + directorySectors + miniFATSectors
+	FATSectors := (sectors + 0x7F) >> 7
+	DIFATSectors := 0
+	if FATSectors > 109 {
+		DIFATSectors = int(math.Ceil((float64(FATSectors) - 109) / 0x7F))
+	}
+	for ((sectors + FATSectors + DIFATSectors + 0x7F) >> 7) > FATSectors {
+		FATSectors++
+		if FATSectors <= 109 {
+			DIFATSectors = 0
+		} else {
+			DIFATSectors = int(math.Ceil((float64(FATSectors) - 109) / 0x7F))
+		}
+	}
+	location := []int{1, DIFATSectors, FATSectors, miniFATSectors, directorySectors, FATSectorSize, miniStreamSectorSize, 0}
+	c.sectors[0].size = miniStreamSectorSize << 6
+	c.sectors[0].start = location[0] + location[1] + location[2] + location[3] + location[4] + location[5]
+	location[7] = c.sectors[0].start + ((location[6] + 7) >> 3)
+	return location
 }
 
-// writeEncryptedPackage provides a function to write compound file
-// writeEncryptedPackage stream. The writeEncryptedPackage stream is an
-// encrypted stream of bytes containing the entire ECMA-376 source file in
-// compressed form.
-func (c *cfb) writeEncryptedPackage(propertyCount, size int) []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("EncryptedPackage")
-	storage.position = 0x40
-	storage.writeUint16(0x22)
-	storage.writeBytes([]byte{2, 0})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(propertyCount)
-	storage.writeUint32(size)
-	return storage.stream
-}
-
-// writeDataSpaces provides a function to write compound file writeDataSpaces
-// stream. The data spaces structure consists of a set of interrelated
-// storages and streams in an OLE compound file.
-func (c *cfb) writeDataSpaces() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeUint16(0x06)
-	storage.position = 0x40
-	storage.writeUint16(0x18)
-	storage.writeBytes([]byte{1, 0})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(5)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	return storage.stream
-}
-
-// writeVersion provides a function to write compound file version. The
-// writeVersion structure specifies the version of a product or feature. It
-// contains a major and a minor version number.
-func (c *cfb) writeVersion() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("Version")
-	storage.position = 0x40
-	storage.writeUint16(0x10)
-	storage.writeBytes([]byte{2, 1})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(4)
-	storage.writeUint32(76)
-	return storage.stream
-}
-
-// writeDataSpaceMap provides a function to write compound file
-// writeDataSpaceMap stream. The writeDataSpaceMap structure associates
-// protected content with data space definitions. The data space definition,
-// in turn, describes the series of transforms that MUST be applied to that
-// protected content to restore it to its original form. By using a map to
-// associate data space definitions with content, a single data space
-// definition can be used to define the transforms applied to more than one
-// piece of protected content. However, a given piece of protected content can
-// be referenced only by a single data space definition.
-func (c *cfb) writeDataSpaceMap() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("DataSpaceMap")
-	storage.position = 0x40
-	storage.writeUint16(0x1A)
-	storage.writeBytes([]byte{2, 1})
-	storage.writeUint32(0x04)
-	storage.writeUint32(0x06)
-	storage.writeUint32(-1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(6)
-	storage.writeUint32(112)
-	return storage.stream
-}
-
-// writeDataSpaceInfo provides a function to write compound file
-// writeDataSpaceInfo storage. The writeDataSpaceInfo is a storage containing
-// the data space definitions used in the file. This storage must contain one
-// or more streams, each of which contains a DataSpaceDefinition structure.
-// The storage must contain exactly one stream for each DataSpaceMapEntry
-// structure in the DataSpaceMap stream. The name of each stream must be equal
-// to the DataSpaceName field of exactly one DataSpaceMapEntry structure
-// contained in the DataSpaceMap stream.
-func (c *cfb) writeDataSpaceInfo() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("DataSpaceInfo")
-	storage.position = 0x40
-	storage.writeUint16(0x1C)
-	storage.writeBytes([]byte{1, 1})
-	storage.writeUint32(-1)
-	storage.writeUint32(8)
-	storage.writeUint32(7)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	return storage.stream
-}
-
-// writeStrongEncryptionDataSpace provides a function to write compound file
-// writeStrongEncryptionDataSpace stream.
-func (c *cfb) writeStrongEncryptionDataSpace() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("StrongEncryptionDataSpace")
-	storage.position = 0x40
-	storage.writeUint16(0x34)
-	storage.writeBytes([]byte{2, 1})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(8)
-	storage.writeUint32(64)
-	return storage.stream
-}
-
-// writeTransformInfo provides a function to write compound file
-// writeTransformInfo storage. writeTransformInfo is a storage containing
-// definitions for the transforms used in the data space definitions stored in
-// the DataSpaceInfo storage. The stream contains zero or more definitions for
-// the possible transforms that can be applied to the data in content
-// streams.
-func (c *cfb) writeTransformInfo() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("TransformInfo")
-	storage.position = 0x40
-	storage.writeUint16(0x1C)
-	storage.writeBytes([]byte{1, 0})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(9)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	return storage.stream
-}
-
-// writeStrongEncryptionTransform provides a function to write compound file
-// writeStrongEncryptionTransform storage.
-func (c *cfb) writeStrongEncryptionTransform() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeStrings("StrongEncryptionTransform")
-	storage.position = 0x40
-	storage.writeUint16(0x34)
-	storage.writeBytes([]byte{1})
-	storage.writeBytes([]byte{1})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(0x0A)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	return storage.stream
-}
-
-// writePrimary provides a function to write compound file writePrimary stream.
-func (c *cfb) writePrimary() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.writeUint16(0x06)
-	storage.writeStrings("Primary")
-	storage.position = 0x40
-	storage.writeUint16(0x12)
-	storage.writeBytes([]byte{2, 1})
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.position = 0x64
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(9)
-	storage.writeUint32(208)
-	return storage.stream
-}
-
-// writeNoneDir provides a function to write compound file writeNoneDir stream.
-func (c *cfb) writeNoneDir() []byte {
-	storage := cfb{stream: make([]byte, 128)}
-	storage.position = 0x40
-	storage.writeUint16(0x00)
-	storage.writeUint16(0x00)
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	storage.writeUint32(-1)
-	return storage.stream
+// writeMSAT provides a function to write compound file master sector allocation
+// table.
+func (c *cfb) writeMSAT(location []int) {
+	var i, offset int
+	for i = 0; i < 109; i++ {
+		if i < location[2] {
+			c.writeUint32(location[1] + i)
+		} else {
+			c.writeUint32(-1)
+		}
+	}
+	if location[1] != 0 {
+		for offset = 0; offset < location[1]; offset++ {
+			for ; i < 236+offset*127; i++ {
+				if i < location[2] {
+					c.writeUint32(location[1] + i)
+				} else {
+					c.writeUint32(-1)
+				}
+			}
+			if offset == location[1]-1 {
+				c.writeUint32(endOfChain)
+			} else {
+				c.writeUint32(offset + 1)
+			}
+		}
+	}
 }
 
 // writeDirectoryEntry provides a function to write compound file directory
@@ -1083,189 +843,175 @@ func (c *cfb) writeNoneDir() []byte {
 // within a compound file is represented by a single directory entry. The
 // space for the directory sectors that are holding the array is allocated
 // from the FAT.
-func (c *cfb) writeDirectoryEntry(propertyCount, customSectID, size int) []byte {
-	var storage cfb
-	if size < 0 {
-		size = 0
-	}
-	for _, entry := range [][]byte{
-		c.writeRootEntry(customSectID),
-		c.writeEncryptionInfo(),
-		c.writeEncryptedPackage(propertyCount, size),
-		c.writeDataSpaces(),
-		c.writeVersion(),
-		c.writeDataSpaceMap(),
-		c.writeDataSpaceInfo(),
-		c.writeStrongEncryptionDataSpace(),
-		c.writeTransformInfo(),
-		c.writeStrongEncryptionTransform(),
-		c.writePrimary(),
-		c.writeNoneDir(),
-	} {
-		storage.writeBytes(entry)
-	}
-	return storage.stream
-}
-
-// writeMSAT provides a function to write compound file master sector allocation
-// table.
-func (c *cfb) writeMSAT(MSATBlocks, SATBlocks int, MSAT []int) []int {
-	if MSATBlocks > 0 {
-		cnt, MSATIdx := MSATBlocks*128+109, 0
-		for i := 0; i < cnt; i++ {
-			if i < SATBlocks {
-				bufferSize := i - 109
-				if bufferSize > 0 && bufferSize%0x80 == 0 {
-					MSATIdx++
-					MSAT = append(MSAT, MSATIdx)
-				}
-				MSAT = append(MSAT, i+MSATBlocks)
-				continue
-			}
-			MSAT = append(MSAT, -1)
+func (c *cfb) writeDirectoryEntry(location []int) {
+	var sector sector
+	var j, sectorSize int
+	for i := 0; i < location[4]<<2; i++ {
+		var path string
+		if i < len(c.paths) {
+			path = c.paths[i]
 		}
-		return MSAT
-	}
-	for i := 0; i < 109; i++ {
-		if i < SATBlocks {
-			MSAT = append(MSAT, i)
+		if i >= len(c.paths) || len(path) == 0 {
+			for j = 0; j < 17; j++ {
+				c.writeUint32(0)
+			}
+			for j = 0; j < 3; j++ {
+				c.writeUint32(-1)
+			}
+			for j = 0; j < 12; j++ {
+				c.writeUint32(0)
+			}
 			continue
 		}
-		MSAT = append(MSAT, -1)
+		sector = c.sectors[i]
+		if i == 0 {
+			if sector.size > 0 {
+				sector.start = sector.start - 1
+			} else {
+				sector.start = endOfChain
+			}
+		}
+		name := sector.name
+		sectorSize = 2 * (len(name) + 1)
+		c.writeStrings(name)
+		c.position += 64 - 2*(len(name))
+		c.writeUint16(sectorSize)
+		c.writeBytes([]byte(string(rune(sector.typeID))))
+		c.writeBytes([]byte(string(rune(sector.color))))
+		c.writeUint32(sector.L)
+		c.writeUint32(sector.R)
+		c.writeUint32(sector.C)
+		if len(sector.clsID) == 0 {
+			for j = 0; j < 4; j++ {
+				c.writeUint32(0)
+			}
+		} else {
+			c.writeBytes(sector.clsID)
+		}
+		c.writeUint32(sector.state)
+		c.writeUint32(0)
+		c.writeUint32(0)
+		c.writeUint32(0)
+		c.writeUint32(0)
+		c.writeUint32(sector.start)
+		c.writeUint32(sector.size)
+		c.writeUint32(0)
 	}
-	return MSAT
 }
 
-// writeSAT provides a function to write compound file sector allocation
-// table.
-func (c *cfb) writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileBlocks, streamBlocks int, SAT []int) (int, []int) {
-	var blocks int
-	if SATBlocks > 0 {
-		for i := 1; i <= MSATBlocks; i++ {
-			SAT = append(SAT, -4)
+// writeSectorChains provides a function to write compound file sector chains.
+func (c *cfb) writeSectorChains(location []int) sector {
+	var i, j, offset, sectorSize int
+	writeSectorChain := func(head, offset int) int {
+		for offset += head; i < offset-1; i++ {
+			c.writeUint32(i + 1)
 		}
-		blocks = MSATBlocks
-		for i := 1; i <= SATBlocks; i++ {
-			SAT = append(SAT, -3)
+		if head != 0 {
+			i++
+			c.writeUint32(endOfChain)
 		}
-		blocks += SATBlocks
-		for i := 1; i < SSATBlocks; i++ {
-			SAT = append(SAT, i)
-		}
-		SAT = append(SAT, -2)
-		blocks += SSATBlocks
-		for i := 1; i < directoryBlocks; i++ {
-			SAT = append(SAT, i+blocks)
-		}
-		SAT = append(SAT, -2)
-		blocks += directoryBlocks
-		for i := 1; i < fileBlocks; i++ {
-			SAT = append(SAT, i+blocks)
-		}
-		SAT = append(SAT, -2)
-		blocks += fileBlocks
-		for i := 1; i < streamBlocks; i++ {
-			SAT = append(SAT, i+blocks)
-		}
-		SAT = append(SAT, -2)
+		return offset
 	}
-	return blocks, SAT
-}
-
-// Writer provides a function to create compound file with given info stream
-// and package stream.
-//
-//	MSAT - The master sector allocation table
-//	SSAT - The short sector allocation table
-//	SAT  - The sector allocation table
-func (c *cfb) Writer(encryptionInfoBuffer, encryptedPackage []byte) []byte {
-	var (
-		storage                                 cfb
-		MSAT, SAT, SSAT                         []int
-		directoryBlocks, fileBlocks, SSATBlocks = 3, 2, 1
-		size                                    = int(math.Max(float64(len(encryptedPackage)), float64(packageEncryptionChunkSize)))
-		streamBlocks                            = len(encryptedPackage) / 0x200
-	)
-	if len(encryptedPackage)%0x200 > 0 {
-		streamBlocks++
+	for offset += location[1]; i < offset; i++ {
+		c.writeUint32(difSect)
 	}
-	propertyBlocks := directoryBlocks + fileBlocks + SSATBlocks
-	blockSize := (streamBlocks + propertyBlocks) * 4
-	SATBlocks := blockSize / 0x200
-	if blockSize%0x200 > 0 {
-		SATBlocks++
+	for offset += location[2]; i < offset; i++ {
+		c.writeUint32(fatSect)
 	}
-	MSATBlocks, blocksChanged := 0, true
-	for blocksChanged {
-		var SATCap, MSATCap int
-		blocksChanged = false
-		blockSize = (streamBlocks + propertyBlocks + SATBlocks + MSATBlocks) * 4
-		SATCap = blockSize / 0x200
-		if blockSize%0x200 > 0 {
-			SATCap++
-		}
-		if SATCap > SATBlocks {
-			SATBlocks, blocksChanged = SATCap, true
+	offset = writeSectorChain(location[3], offset)
+	offset = writeSectorChain(location[4], offset)
+	sector := c.sectors[0]
+	for ; j < len(c.sectors); j++ {
+		if sector = c.sectors[j]; len(sector.content) == 0 {
 			continue
 		}
-		if SATBlocks > 109 {
-			blockRemains := (SATBlocks - 109) * 4
-			blockBuffer := blockRemains % 0x200
-			MSATCap = blockRemains / 0x200
-			if blockBuffer > 0 {
-				MSATCap++
-			}
-			if blockBuffer+(4*MSATCap) > 0x200 {
-				MSATCap++
-			}
-			if MSATCap > MSATBlocks {
-				MSATBlocks, blocksChanged = MSATCap, true
-			}
+		if sectorSize = len(sector.content); sectorSize < 0x1000 {
+			continue
 		}
+		c.sectors[j].start = offset
+		offset = writeSectorChain((sectorSize+0x01FF)>>9, offset)
 	}
-	MSAT = c.writeMSAT(MSATBlocks, SATBlocks, MSAT)
-	blocks, SAT := c.writeSAT(MSATBlocks, SATBlocks, SSATBlocks, directoryBlocks, fileBlocks, streamBlocks, SAT)
-	for i := 0; i < 8; i++ {
-		storage.writeBytes([]byte{oleIdentifier[i]})
+	writeSectorChain((location[6]+7)>>3, offset)
+	for c.position&0x1FF != 0 {
+		c.writeUint32(endOfChain)
 	}
-	storage.writeBytes(make([]byte, 16))
-	storage.writeUint16(0x003E)
-	storage.writeUint16(0x0003)
-	storage.writeUint16(-2)
-	storage.writeUint16(9)
-	storage.writeUint32(6)
-	storage.writeUint32(0)
-	storage.writeUint32(0)
-	storage.writeUint32(SATBlocks)
-	storage.writeUint32(MSATBlocks + SATBlocks + SSATBlocks)
-	storage.writeUint32(0)
-	storage.writeUint32(0x00001000)
-	storage.writeUint32(SATBlocks + MSATBlocks)
-	storage.writeUint32(SSATBlocks)
-	if MSATBlocks > 0 {
-		storage.writeUint32(0)
-		storage.writeUint32(MSATBlocks)
+	i, offset = 0, 0
+	for j = 0; j < len(c.sectors); j++ {
+		if sector = c.sectors[j]; len(sector.content) == 0 {
+			continue
+		}
+		if sectorSize = len(sector.content); sectorSize == 0 || sectorSize >= 0x1000 {
+			continue
+		}
+		sector.start = offset
+		offset = writeSectorChain((sectorSize+0x3F)>>6, offset)
+	}
+	for c.position&0x1FF != 0 {
+		c.writeUint32(endOfChain)
+	}
+	return sector
+}
+
+// write provides a function to create compound file package stream.
+func (c *cfb) write() []byte {
+	c.prepare()
+	location := c.locate()
+	c.stream = make([]byte, location[7]<<9)
+	var i, j int
+	for i = 0; i < 8; i++ {
+		c.writeBytes([]byte{oleIdentifier[i]})
+	}
+	c.writeBytes(make([]byte, 16))
+	c.writeUint16(0x003E)
+	c.writeUint16(0x0003)
+	c.writeUint16(0xFFFE)
+	c.writeUint16(0x0009)
+	c.writeUint16(0x0006)
+	c.writeBytes(make([]byte, 10))
+	c.writeUint32(location[2])
+	c.writeUint32(location[0] + location[1] + location[2] + location[3] - 1)
+	c.writeUint32(0)
+	c.writeUint32(1 << 12)
+	if location[3] != 0 {
+		c.writeUint32(location[0] + location[1] + location[2] - 1)
 	} else {
-		storage.writeUint32(-2)
-		storage.writeUint32(0)
+		c.writeUint32(endOfChain)
 	}
-	for _, block := range MSAT {
-		storage.writeUint32(block)
+	c.writeUint32(location[3])
+	if location[1] != 0 {
+		c.writeUint32(location[0] - 1)
+	} else {
+		c.writeUint32(endOfChain)
 	}
-	for i := 0; i < SATBlocks*128; i++ {
-		if i < len(SAT) {
-			storage.writeUint32(SAT[i])
-			continue
+	c.writeUint32(location[1])
+	c.writeMSAT(location)
+	sector := c.writeSectorChains(location)
+	c.writeDirectoryEntry(location)
+	for i = 1; i < len(c.sectors); i++ {
+		sector = c.sectors[i]
+		if sector.size >= 0x1000 {
+			c.position = (sector.start + 1) << 9
+			for j = 0; j < sector.size; j++ {
+				c.writeBytes([]byte{sector.content[j]})
+			}
+			for ; j&0x1FF != 0; j++ {
+				c.writeBytes([]byte{0})
+			}
 		}
-		storage.writeUint32(-1)
 	}
-	fileStream, SSATStream := c.writeFileStream(encryptionInfoBuffer, SSAT)
-	for _, block := range SSATStream {
-		storage.writeUint32(block)
+	for i = 1; i < len(c.sectors); i++ {
+		sector = c.sectors[i]
+		if sector.size > 0 && sector.size < 0x1000 {
+			for j = 0; j < sector.size; j++ {
+				c.writeBytes([]byte{sector.content[j]})
+			}
+			for ; j&0x3F != 0; j++ {
+				c.writeBytes([]byte{0})
+			}
+		}
 	}
-	directoryEntry := c.writeDirectoryEntry(blocks, blocks-fileBlocks, size)
-	storage.writeBytes(directoryEntry)
-	storage.writeBytes(fileStream)
-	storage.writeBytes(encryptedPackage)
-	return storage.stream
+	for c.position < len(c.stream) {
+		c.writeBytes([]byte{0})
+	}
+	return c.stream
 }
