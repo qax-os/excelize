@@ -363,7 +363,7 @@ func (f *File) addMedia(file []byte, ext string) string {
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
-	imageTypes := map[string]string{"jpeg": "image/", "png": "image/", "gif": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-"}
+	imageTypes := map[string]string{"jpeg": "image/", "png": "image/", "gif": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-", "emz": "image/x-", "wmz": "image/x-"}
 	content := f.contentTypesReader()
 	content.Lock()
 	defer content.Unlock()
