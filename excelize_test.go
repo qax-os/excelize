@@ -1150,7 +1150,7 @@ func TestSetSheetRow(t *testing.T) {
 
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "", &[]interface{}{"cell", nil, 2}),
 		newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
-		
+
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", &f), ErrParameterInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetRow.xlsx")))
