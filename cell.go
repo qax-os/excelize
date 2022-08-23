@@ -1052,30 +1052,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 //
 //	err := f.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
 func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
-	col, row, err := CellNameToCoordinates(axis)
-	if err != nil {
-		return err
-	}
-
-	// Make sure 'slice' is a Ptr to Slice
-	v := reflect.ValueOf(slice)
-	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
-		return ErrParameterInvalid
-	}
-	v = v.Elem()
-
-	for i := 0; i < v.Len(); i++ {
-		cell, err := CoordinatesToCellName(col+i, row)
-		// Error should never happen here. But keep checking to early detect regressions
-		// if it will be introduced in the future.
-		if err != nil {
-			return err
-		}
-		if err := f.SetCellValue(sheet, cell, v.Index(i).Interface()); err != nil {
-			return err
-		}
-	}
-	return err
+	return f.setSheetCells(sheet, axis, slice, rows)
 }
 
 // SetSheetCol writes an array to column by given worksheet name, starting
@@ -1084,20 +1061,29 @@ func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {
 //
 //	err := f.SetSheetCol("Sheet1", "B6", &[]interface{}{"1", nil, 2})
 func (f *File) SetSheetCol(sheet, axis string, slice interface{}) error {
+	return f.setSheetCells(sheet, axis, slice, columns)
+}
+
+// setSheetCells provides a function to set worksheet cells value.
+func (f *File) setSheetCells(sheet, axis string, slice interface{}, dir adjustDirection) error {
 	col, row, err := CellNameToCoordinates(axis)
 	if err != nil {
 		return err
 	}
-
 	// Make sure 'slice' is a Ptr to Slice
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Slice {
 		return ErrParameterInvalid
 	}
 	v = v.Elem()
-
 	for i := 0; i < v.Len(); i++ {
-		cell, err := CoordinatesToCellName(col, row+i)
+		var cell string
+		var err error
+		if dir == rows {
+			cell, err = CoordinatesToCellName(col+i, row)
+		} else {
+			cell, err = CoordinatesToCellName(col, row+i)
+		}
 		// Error should never happen here. But keep checking to early detect regressions
 		// if it will be introduced in the future.
 		if err != nil {
