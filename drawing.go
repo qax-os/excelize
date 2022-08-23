@@ -543,9 +543,6 @@ func (f *File) drawLineChart(formatSet *formatChart) *cPlotArea {
 			},
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
-			Smooth: &attrValBool{
-				Val: boolPtr(false),
-			},
 			AxID: []*attrValInt{
 				{Val: intPtr(754001152)},
 				{Val: intPtr(753999904)},
@@ -757,6 +754,7 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 			DLbls:            f.drawChartSeriesDLbls(formatSet),
 			InvertIfNegative: &attrValBool{Val: boolPtr(false)},
 			Cat:              f.drawChartSeriesCat(formatSet.Series[k], formatSet),
+			Smooth:           &attrValBool{Val: boolPtr(formatSet.Series[k].Line.Smooth)},
 			Val:              f.drawChartSeriesVal(formatSet.Series[k], formatSet),
 			XVal:             f.drawChartSeriesXVal(formatSet.Series[k], formatSet),
 			YVal:             f.drawChartSeriesYVal(formatSet.Series[k], formatSet),

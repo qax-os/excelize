@@ -852,7 +852,7 @@ func formatToInt(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
-	return fmt.Sprintf("%d", int64(f))
+	return fmt.Sprintf("%d", int64(math.Round(f)))
 }
 
 // formatToFloat provides a function to convert original string to float
