@@ -33,9 +33,9 @@ func TestDataValidation(t *testing.T) {
 	dvRange.SetError(DataValidationErrorStyleInformation, "error title", "error body")
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 
-	getDvRange, err := f.GetDataValidation()
+	dataValidations, err := f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(getDvRange["Sheet1"]), 1)
+	assert.Equal(t, len(dataValidations), 1)
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
@@ -45,9 +45,9 @@ func TestDataValidation(t *testing.T) {
 	dvRange.SetInput("input title", "input body")
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 
-	getDvRange, err = f.GetDataValidation()
+	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(getDvRange["Sheet1"]), 2)
+	assert.Equal(t, len(dataValidations), 2)
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
@@ -59,10 +59,12 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, dvRange.SetRange("INDIRECT($A$2)", "INDIRECT($A$3)", DataValidationTypeWhole, DataValidationOperatorBetween))
 	dvRange.SetError(DataValidationErrorStyleStop, "error title", "error body")
 	assert.NoError(t, f.AddDataValidation("Sheet2", dvRange))
-	getDvRange, err = f.GetDataValidation()
+	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(getDvRange["Sheet1"]), 2)
-	assert.Equal(t, len(getDvRange["Sheet2"]), 1)
+	assert.Equal(t, len(dataValidations), 2)
+	dataValidations, err = f.GetDataValidations("Sheet2")
+	assert.NoError(t, err)
+	assert.Equal(t, len(dataValidations), 1)
 
 	dvRange = NewDataValidation(true)
 	dvRange.Sqref = "A5:B6"
@@ -82,11 +84,21 @@ func TestDataValidation(t *testing.T) {
 	assert.Equal(t, `<formula1>"A&lt;,B&gt;,C"",D	,E',F"</formula1>`, dvRange.Formula1)
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 
-	getDvRange, err = f.GetDataValidation()
+	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(getDvRange["Sheet1"]), 3)
+	assert.Equal(t, len(dataValidations), 3)
+
+	// Test get data validation on no exists worksheet
+	_, err = f.GetDataValidations("SheetN")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
 
 	assert.NoError(t, f.SaveAs(resultFile))
+
+	// Test get data validation on a worksheet without data validation settings
+	f = NewFile()
+	dataValidations, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []*DataValidation(nil), dataValidations)
 }
 
 func TestDataValidationError(t *testing.T) {
