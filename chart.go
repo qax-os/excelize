@@ -500,152 +500,152 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 // properties set. For example, create 3D clustered column chart with data
 // Sheet1!$E$1:$L$15:
 //
-//    package main
+//	package main
 //
-//    import (
-//        "fmt"
+//	import (
+//	    "fmt"
 //
-//        "github.com/xuri/excelize/v2"
-//    )
+//	    "github.com/xuri/excelize/v2"
+//	)
 //
-//    func main() {
-//        categories := map[string]string{
-//            "A2": "Small", "A3": "Normal", "A4": "Large",
-//            "B1": "Apple", "C1": "Orange", "D1": "Pear"}
-//        values := map[string]int{
-//            "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
-//        f := excelize.NewFile()
-//        for k, v := range categories {
-//            f.SetCellValue("Sheet1", k, v)
-//        }
-//        for k, v := range values {
-//            f.SetCellValue("Sheet1", k, v)
-//        }
-//        if err := f.AddChart("Sheet1", "E1", `{
-//            "type": "col3DClustered",
-//            "series": [
-//            {
-//                "name": "Sheet1!$A$2",
-//                "categories": "Sheet1!$B$1:$D$1",
-//                "values": "Sheet1!$B$2:$D$2"
-//            },
-//            {
-//                "name": "Sheet1!$A$3",
-//                "categories": "Sheet1!$B$1:$D$1",
-//                "values": "Sheet1!$B$3:$D$3"
-//            },
-//            {
-//                "name": "Sheet1!$A$4",
-//                "categories": "Sheet1!$B$1:$D$1",
-//                "values": "Sheet1!$B$4:$D$4"
-//            }],
-//            "title":
-//            {
-//                "name": "Fruit 3D Clustered Column Chart"
-//            },
-//            "legend":
-//            {
-//                "none": false,
-//                "position": "bottom",
-//                "show_legend_key": false
-//            },
-//            "plotarea":
-//            {
-//                "show_bubble_size": true,
-//                "show_cat_name": false,
-//                "show_leader_lines": false,
-//                "show_percent": true,
-//                "show_series_name": true,
-//                "show_val": true
-//            },
-//            "show_blanks_as": "zero",
-//            "x_axis":
-//            {
-//                "reverse_order": true
-//            },
-//            "y_axis":
-//            {
-//                "maximum": 7.5,
-//                "minimum": 0.5
-//            }
-//        }`); err != nil {
-//            fmt.Println(err)
-//            return
-//        }
-//        // Save spreadsheet by the given path.
-//        if err := f.SaveAs("Book1.xlsx"); err != nil {
-//            fmt.Println(err)
-//        }
-//    }
+//	func main() {
+//	    categories := map[string]string{
+//	        "A2": "Small", "A3": "Normal", "A4": "Large",
+//	        "B1": "Apple", "C1": "Orange", "D1": "Pear"}
+//	    values := map[string]int{
+//	        "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
+//	    f := excelize.NewFile()
+//	    for k, v := range categories {
+//	        f.SetCellValue("Sheet1", k, v)
+//	    }
+//	    for k, v := range values {
+//	        f.SetCellValue("Sheet1", k, v)
+//	    }
+//	    if err := f.AddChart("Sheet1", "E1", `{
+//	        "type": "col3DClustered",
+//	        "series": [
+//	        {
+//	            "name": "Sheet1!$A$2",
+//	            "categories": "Sheet1!$B$1:$D$1",
+//	            "values": "Sheet1!$B$2:$D$2"
+//	        },
+//	        {
+//	            "name": "Sheet1!$A$3",
+//	            "categories": "Sheet1!$B$1:$D$1",
+//	            "values": "Sheet1!$B$3:$D$3"
+//	        },
+//	        {
+//	            "name": "Sheet1!$A$4",
+//	            "categories": "Sheet1!$B$1:$D$1",
+//	            "values": "Sheet1!$B$4:$D$4"
+//	        }],
+//	        "title":
+//	        {
+//	            "name": "Fruit 3D Clustered Column Chart"
+//	        },
+//	        "legend":
+//	        {
+//	            "none": false,
+//	            "position": "bottom",
+//	            "show_legend_key": false
+//	        },
+//	        "plotarea":
+//	        {
+//	            "show_bubble_size": true,
+//	            "show_cat_name": false,
+//	            "show_leader_lines": false,
+//	            "show_percent": true,
+//	            "show_series_name": true,
+//	            "show_val": true
+//	        },
+//	        "show_blanks_as": "zero",
+//	        "x_axis":
+//	        {
+//	            "reverse_order": true
+//	        },
+//	        "y_axis":
+//	        {
+//	            "maximum": 7.5,
+//	            "minimum": 0.5
+//	        }
+//	    }`); err != nil {
+//	        fmt.Println(err)
+//	        return
+//	    }
+//	    // Save spreadsheet by the given path.
+//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
+//	        fmt.Println(err)
+//	    }
+//	}
 //
 // The following shows the type of chart supported by excelize:
 //
-//     Type                        | Chart
-//    -----------------------------+------------------------------
-//     area                        | 2D area chart
-//     areaStacked                 | 2D stacked area chart
-//     areaPercentStacked          | 2D 100% stacked area chart
-//     area3D                      | 3D area chart
-//     area3DStacked               | 3D stacked area chart
-//     area3DPercentStacked        | 3D 100% stacked area chart
-//     bar                         | 2D clustered bar chart
-//     barStacked                  | 2D stacked bar chart
-//     barPercentStacked           | 2D 100% stacked bar chart
-//     bar3DClustered              | 3D clustered bar chart
-//     bar3DStacked                | 3D stacked bar chart
-//     bar3DPercentStacked         | 3D 100% stacked bar chart
-//     bar3DConeClustered          | 3D cone clustered bar chart
-//     bar3DConeStacked            | 3D cone stacked bar chart
-//     bar3DConePercentStacked     | 3D cone percent bar chart
-//     bar3DPyramidClustered       | 3D pyramid clustered bar chart
-//     bar3DPyramidStacked         | 3D pyramid stacked bar chart
-//     bar3DPyramidPercentStacked  | 3D pyramid percent stacked bar chart
-//     bar3DCylinderClustered      | 3D cylinder clustered bar chart
-//     bar3DCylinderStacked        | 3D cylinder stacked bar chart
-//     bar3DCylinderPercentStacked | 3D cylinder percent stacked bar chart
-//     col                         | 2D clustered column chart
-//     colStacked                  | 2D stacked column chart
-//     colPercentStacked           | 2D 100% stacked column chart
-//     col3DClustered              | 3D clustered column chart
-//     col3D                       | 3D column chart
-//     col3DStacked                | 3D stacked column chart
-//     col3DPercentStacked         | 3D 100% stacked column chart
-//     col3DCone                   | 3D cone column chart
-//     col3DConeClustered          | 3D cone clustered column chart
-//     col3DConeStacked            | 3D cone stacked column chart
-//     col3DConePercentStacked     | 3D cone percent stacked column chart
-//     col3DPyramid                | 3D pyramid column chart
-//     col3DPyramidClustered       | 3D pyramid clustered column chart
-//     col3DPyramidStacked         | 3D pyramid stacked column chart
-//     col3DPyramidPercentStacked  | 3D pyramid percent stacked column chart
-//     col3DCylinder               | 3D cylinder column chart
-//     col3DCylinderClustered      | 3D cylinder clustered column chart
-//     col3DCylinderStacked        | 3D cylinder stacked column chart
-//     col3DCylinderPercentStacked | 3D cylinder percent stacked column chart
-//     doughnut                    | doughnut chart
-//     line                        | line chart
-//     pie                         | pie chart
-//     pie3D                       | 3D pie chart
-//     pieOfPie                    | pie of pie chart
-//     barOfPie                    | bar of pie chart
-//     radar                       | radar chart
-//     scatter                     | scatter chart
-//     surface3D                   | 3D surface chart
-//     wireframeSurface3D          | 3D wireframe surface chart
-//     contour                     | contour chart
-//     wireframeContour            | wireframe contour chart
-//     bubble                      | bubble chart
-//     bubble3D                    | 3D bubble chart
+//	 Type                        | Chart
+//	-----------------------------+------------------------------
+//	 area                        | 2D area chart
+//	 areaStacked                 | 2D stacked area chart
+//	 areaPercentStacked          | 2D 100% stacked area chart
+//	 area3D                      | 3D area chart
+//	 area3DStacked               | 3D stacked area chart
+//	 area3DPercentStacked        | 3D 100% stacked area chart
+//	 bar                         | 2D clustered bar chart
+//	 barStacked                  | 2D stacked bar chart
+//	 barPercentStacked           | 2D 100% stacked bar chart
+//	 bar3DClustered              | 3D clustered bar chart
+//	 bar3DStacked                | 3D stacked bar chart
+//	 bar3DPercentStacked         | 3D 100% stacked bar chart
+//	 bar3DConeClustered          | 3D cone clustered bar chart
+//	 bar3DConeStacked            | 3D cone stacked bar chart
+//	 bar3DConePercentStacked     | 3D cone percent bar chart
+//	 bar3DPyramidClustered       | 3D pyramid clustered bar chart
+//	 bar3DPyramidStacked         | 3D pyramid stacked bar chart
+//	 bar3DPyramidPercentStacked  | 3D pyramid percent stacked bar chart
+//	 bar3DCylinderClustered      | 3D cylinder clustered bar chart
+//	 bar3DCylinderStacked        | 3D cylinder stacked bar chart
+//	 bar3DCylinderPercentStacked | 3D cylinder percent stacked bar chart
+//	 col                         | 2D clustered column chart
+//	 colStacked                  | 2D stacked column chart
+//	 colPercentStacked           | 2D 100% stacked column chart
+//	 col3DClustered              | 3D clustered column chart
+//	 col3D                       | 3D column chart
+//	 col3DStacked                | 3D stacked column chart
+//	 col3DPercentStacked         | 3D 100% stacked column chart
+//	 col3DCone                   | 3D cone column chart
+//	 col3DConeClustered          | 3D cone clustered column chart
+//	 col3DConeStacked            | 3D cone stacked column chart
+//	 col3DConePercentStacked     | 3D cone percent stacked column chart
+//	 col3DPyramid                | 3D pyramid column chart
+//	 col3DPyramidClustered       | 3D pyramid clustered column chart
+//	 col3DPyramidStacked         | 3D pyramid stacked column chart
+//	 col3DPyramidPercentStacked  | 3D pyramid percent stacked column chart
+//	 col3DCylinder               | 3D cylinder column chart
+//	 col3DCylinderClustered      | 3D cylinder clustered column chart
+//	 col3DCylinderStacked        | 3D cylinder stacked column chart
+//	 col3DCylinderPercentStacked | 3D cylinder percent stacked column chart
+//	 doughnut                    | doughnut chart
+//	 line                        | line chart
+//	 pie                         | pie chart
+//	 pie3D                       | 3D pie chart
+//	 pieOfPie                    | pie of pie chart
+//	 barOfPie                    | bar of pie chart
+//	 radar                       | radar chart
+//	 scatter                     | scatter chart
+//	 surface3D                   | 3D surface chart
+//	 wireframeSurface3D          | 3D wireframe surface chart
+//	 contour                     | contour chart
+//	 wireframeContour            | wireframe contour chart
+//	 bubble                      | bubble chart
+//	 bubble3D                    | 3D bubble chart
 //
 // In Excel a chart series is a collection of information that defines which data is plotted such as values, axis labels and formatting.
 //
 // The series options that can be set are:
 //
-//    name
-//    categories
-//    values
-//    line
-//    marker
+//	name
+//	categories
+//	values
+//	line
+//	marker
 //
 // name: Set the name for the series. The name is displayed in the chart legend and in the formula bar. The name property is optional and if it isn't supplied it will default to Series 1..n. The name can also be a formula such as Sheet1!$A$1
 //
@@ -657,48 +657,48 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // marker: This sets the marker of the line chart and scatter chart. The range of optional field 'size' is 2-72 (default value is 5). The enumeration value of optional field 'symbol' are (default value is 'auto'):
 //
-//    circle
-//    dash
-//    diamond
-//    dot
-//    none
-//    picture
-//    plus
-//    square
-//    star
-//    triangle
-//    x
-//    auto
+//	circle
+//	dash
+//	diamond
+//	dot
+//	none
+//	picture
+//	plus
+//	square
+//	star
+//	triangle
+//	x
+//	auto
 //
 // Set properties of the chart legend. The options that can be set are:
 //
-//    none
-//    position
-//    show_legend_key
+//	none
+//	position
+//	show_legend_key
 //
 // none: Specified if show the legend without overlapping the chart. The default value is 'false'.
 //
 // position: Set the position of the chart legend. The default legend position is right. This parameter only takes effect when 'none' is false. The available positions are:
 //
-//    top
-//    bottom
-//    left
-//    right
-//    top_right
+//	top
+//	bottom
+//	left
+//	right
+//	top_right
 //
 // show_legend_key: Set the legend keys shall be shown in data labels. The default value is false.
 //
 // Set properties of the chart title. The properties that can be set are:
 //
-//    title
+//	title
 //
 // name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as Sheet1!$A$1 or a list with a sheetname. The name property is optional. The default is to have no chart title.
 //
 // Specifies how blank cells are plotted on the chart by show_blanks_as. The default value is gap. The options that can be set are:
 //
-//    gap
-//    span
-//    zero
+//	gap
+//	span
+//	zero
 //
 // gap: Specifies that blank values shall be left as a gap.
 //
@@ -712,12 +712,12 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // Set the position of the chart plot area by plotarea. The properties that can be set are:
 //
-//    show_bubble_size
-//    show_cat_name
-//    show_leader_lines
-//    show_percent
-//    show_series_name
-//    show_val
+//	show_bubble_size
+//	show_cat_name
+//	show_leader_lines
+//	show_percent
+//	show_series_name
+//	show_val
 //
 // show_bubble_size: Specifies the bubble size shall be shown in a data label. The show_bubble_size property is optional. The default value is false.
 //
@@ -733,23 +733,23 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //
 // Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties of x_axis that can be set are:
 //
-//    none
-//    major_grid_lines
-//    minor_grid_lines
-//    tick_label_skip
-//    reverse_order
-//    maximum
-//    minimum
+//	none
+//	major_grid_lines
+//	minor_grid_lines
+//	tick_label_skip
+//	reverse_order
+//	maximum
+//	minimum
 //
 // The properties of y_axis that can be set are:
 //
-//    none
-//    major_grid_lines
-//    minor_grid_lines
-//    major_unit
-//    reverse_order
-//    maximum
-//    minimum
+//	none
+//	major_grid_lines
+//	minor_grid_lines
+//	major_unit
+//	reverse_order
+//	maximum
+//	minimum
 //
 // none: Disable axes.
 //
@@ -773,115 +773,114 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 // in a single chart. For example, create a clustered column - line chart with
 // data Sheet1!$E$1:$L$15:
 //
-//    package main
+//	package main
 //
-//    import (
-//        "fmt"
+//	import (
+//	    "fmt"
 //
-//        "github.com/xuri/excelize/v2"
-//    )
+//	    "github.com/xuri/excelize/v2"
+//	)
 //
-//    func main() {
-//        categories := map[string]string{
-//            "A2": "Small", "A3": "Normal", "A4": "Large",
-//            "B1": "Apple", "C1": "Orange", "D1": "Pear"}
-//        values := map[string]int{
-//            "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
-//        f := excelize.NewFile()
-//        for k, v := range categories {
-//            f.SetCellValue("Sheet1", k, v)
-//        }
-//        for k, v := range values {
-//            f.SetCellValue("Sheet1", k, v)
-//        }
-//        if err := f.AddChart("Sheet1", "E1", `{
-//            "type": "col",
-//            "series": [
-//            {
-//                "name": "Sheet1!$A$2",
-//                "categories": "",
-//                "values": "Sheet1!$B$2:$D$2"
-//            },
-//            {
-//                "name": "Sheet1!$A$3",
-//                "categories": "Sheet1!$B$1:$D$1",
-//                "values": "Sheet1!$B$3:$D$3"
-//            }],
-//            "format":
-//            {
-//                "x_scale": 1.0,
-//                "y_scale": 1.0,
-//                "x_offset": 15,
-//                "y_offset": 10,
-//                "print_obj": true,
-//                "lock_aspect_ratio": false,
-//                "locked": false
-//            },
-//            "title":
-//            {
-//                "name": "Clustered Column - Line Chart"
-//            },
-//            "legend":
-//            {
-//                "position": "left",
-//                "show_legend_key": false
-//            },
-//            "plotarea":
-//            {
-//                "show_bubble_size": true,
-//                "show_cat_name": false,
-//                "show_leader_lines": false,
-//                "show_percent": true,
-//                "show_series_name": true,
-//                "show_val": true
-//            }
-//        }`, `{
-//            "type": "line",
-//            "series": [
-//            {
-//                "name": "Sheet1!$A$4",
-//                "categories": "Sheet1!$B$1:$D$1",
-//                "values": "Sheet1!$B$4:$D$4",
-//                "marker":
-//                {
-//                    "symbol": "none",
-//                    "size": 10
-//                }
-//            }],
-//            "format":
-//            {
-//                "x_scale": 1,
-//                "y_scale": 1,
-//                "x_offset": 15,
-//                "y_offset": 10,
-//                "print_obj": true,
-//                "lock_aspect_ratio": false,
-//                "locked": false
-//            },
-//            "legend":
-//            {
-//                "position": "right",
-//                "show_legend_key": false
-//            },
-//            "plotarea":
-//            {
-//                "show_bubble_size": true,
-//                "show_cat_name": false,
-//                "show_leader_lines": false,
-//                "show_percent": true,
-//                "show_series_name": true,
-//                "show_val": true
-//            }
-//        }`); err != nil {
-//            fmt.Println(err)
-//            return
-//        }
-//        // Save spreadsheet file by the given path.
-//        if err := f.SaveAs("Book1.xlsx"); err != nil {
-//            fmt.Println(err)
-//        }
-//    }
-//
+//	func main() {
+//	    categories := map[string]string{
+//	        "A2": "Small", "A3": "Normal", "A4": "Large",
+//	        "B1": "Apple", "C1": "Orange", "D1": "Pear"}
+//	    values := map[string]int{
+//	        "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
+//	    f := excelize.NewFile()
+//	    for k, v := range categories {
+//	        f.SetCellValue("Sheet1", k, v)
+//	    }
+//	    for k, v := range values {
+//	        f.SetCellValue("Sheet1", k, v)
+//	    }
+//	    if err := f.AddChart("Sheet1", "E1", `{
+//	        "type": "col",
+//	        "series": [
+//	        {
+//	            "name": "Sheet1!$A$2",
+//	            "categories": "",
+//	            "values": "Sheet1!$B$2:$D$2"
+//	        },
+//	        {
+//	            "name": "Sheet1!$A$3",
+//	            "categories": "Sheet1!$B$1:$D$1",
+//	            "values": "Sheet1!$B$3:$D$3"
+//	        }],
+//	        "format":
+//	        {
+//	            "x_scale": 1.0,
+//	            "y_scale": 1.0,
+//	            "x_offset": 15,
+//	            "y_offset": 10,
+//	            "print_obj": true,
+//	            "lock_aspect_ratio": false,
+//	            "locked": false
+//	        },
+//	        "title":
+//	        {
+//	            "name": "Clustered Column - Line Chart"
+//	        },
+//	        "legend":
+//	        {
+//	            "position": "left",
+//	            "show_legend_key": false
+//	        },
+//	        "plotarea":
+//	        {
+//	            "show_bubble_size": true,
+//	            "show_cat_name": false,
+//	            "show_leader_lines": false,
+//	            "show_percent": true,
+//	            "show_series_name": true,
+//	            "show_val": true
+//	        }
+//	    }`, `{
+//	        "type": "line",
+//	        "series": [
+//	        {
+//	            "name": "Sheet1!$A$4",
+//	            "categories": "Sheet1!$B$1:$D$1",
+//	            "values": "Sheet1!$B$4:$D$4",
+//	            "marker":
+//	            {
+//	                "symbol": "none",
+//	                "size": 10
+//	            }
+//	        }],
+//	        "format":
+//	        {
+//	            "x_scale": 1,
+//	            "y_scale": 1,
+//	            "x_offset": 15,
+//	            "y_offset": 10,
+//	            "print_obj": true,
+//	            "lock_aspect_ratio": false,
+//	            "locked": false
+//	        },
+//	        "legend":
+//	        {
+//	            "position": "right",
+//	            "show_legend_key": false
+//	        },
+//	        "plotarea":
+//	        {
+//	            "show_bubble_size": true,
+//	            "show_cat_name": false,
+//	            "show_leader_lines": false,
+//	            "show_percent": true,
+//	            "show_series_name": true,
+//	            "show_val": true
+//	        }
+//	    }`); err != nil {
+//	        fmt.Println(err)
+//	        return
+//	    }
+//	    // Save spreadsheet file by the given path.
+//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
+//	        fmt.Println(err)
+//	    }
+//	}
 func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	// Read sheet data.
 	ws, err := f.workSheetReader(sheet)

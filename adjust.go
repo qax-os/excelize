@@ -35,7 +35,6 @@ const (
 // offset: Number of rows/column to insert/delete negative values indicate deletion
 //
 // TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
-//
 func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {

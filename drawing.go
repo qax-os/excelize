@@ -14,7 +14,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"log"
 	"reflect"
@@ -544,9 +543,6 @@ func (f *File) drawLineChart(formatSet *formatChart) *cPlotArea {
 			},
 			Ser:   f.drawChartSeries(formatSet),
 			DLbls: f.drawChartDLbls(formatSet),
-			Smooth: &attrValBool{
-				Val: boolPtr(false),
-			},
 			AxID: []*attrValInt{
 				{Val: intPtr(754001152)},
 				{Val: intPtr(753999904)},
@@ -758,6 +754,7 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 			DLbls:            f.drawChartSeriesDLbls(formatSet),
 			InvertIfNegative: &attrValBool{Val: boolPtr(false)},
 			Cat:              f.drawChartSeriesCat(formatSet.Series[k], formatSet),
+			Smooth:           &attrValBool{Val: boolPtr(formatSet.Series[k].Line.Smooth)},
 			Val:              f.drawChartSeriesVal(formatSet.Series[k], formatSet),
 			XVal:             f.drawChartSeriesXVal(formatSet.Series[k], formatSet),
 			YVal:             f.drawChartSeriesYVal(formatSet.Series[k], formatSet),
@@ -1322,7 +1319,7 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (err 
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = fmt.Errorf("xml decode error: %s", err)
+			err = newDecodeXMLError(err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {

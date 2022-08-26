@@ -166,11 +166,10 @@ func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 // Sheet1!A7:B8 with validation criteria source Sheet1!E1:E3 settings, create
 // in-cell dropdown by allowing list source:
 //
-//     dvRange := excelize.NewDataValidation(true)
-//     dvRange.Sqref = "A7:B8"
-//     dvRange.SetSqrefDropList("$E$1:$E$3")
-//     f.AddDataValidation("Sheet1", dvRange)
-//
+//	dvRange := excelize.NewDataValidation(true)
+//	dvRange.Sqref = "A7:B8"
+//	dvRange.SetSqrefDropList("$E$1:$E$3")
+//	f.AddDataValidation("Sheet1", dvRange)
 func (dd *DataValidation) SetSqrefDropList(sqref string) {
 	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
 	dd.Type = convDataValidationType(typeList)
@@ -225,29 +224,28 @@ func convDataValidationOperator(o DataValidationOperator) string {
 // settings, show error alert after invalid data is entered with "Stop" style
 // and custom title "error body":
 //
-//     dvRange := excelize.NewDataValidation(true)
-//     dvRange.Sqref = "A1:B2"
-//     dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorBetween)
-//     dvRange.SetError(excelize.DataValidationErrorStyleStop, "error title", "error body")
-//     err := f.AddDataValidation("Sheet1", dvRange)
+//	dvRange := excelize.NewDataValidation(true)
+//	dvRange.Sqref = "A1:B2"
+//	dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorBetween)
+//	dvRange.SetError(excelize.DataValidationErrorStyleStop, "error title", "error body")
+//	err := f.AddDataValidation("Sheet1", dvRange)
 //
 // Example 2, set data validation on Sheet1!A3:B4 with validation criteria
 // settings, and show input message when cell is selected:
 //
-//     dvRange = excelize.NewDataValidation(true)
-//     dvRange.Sqref = "A3:B4"
-//     dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorGreaterThan)
-//     dvRange.SetInput("input title", "input body")
-//     err = f.AddDataValidation("Sheet1", dvRange)
+//	dvRange = excelize.NewDataValidation(true)
+//	dvRange.Sqref = "A3:B4"
+//	dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorGreaterThan)
+//	dvRange.SetInput("input title", "input body")
+//	err = f.AddDataValidation("Sheet1", dvRange)
 //
 // Example 3, set data validation on Sheet1!A5:B6 with validation criteria
 // settings, create in-cell dropdown by allowing list source:
 //
-//     dvRange = excelize.NewDataValidation(true)
-//     dvRange.Sqref = "A5:B6"
-//     dvRange.SetDropList([]string{"1", "2", "3"})
-//     err = f.AddDataValidation("Sheet1", dvRange)
-//
+//	dvRange = excelize.NewDataValidation(true)
+//	dvRange.Sqref = "A5:B6"
+//	dvRange.SetDropList([]string{"1", "2", "3"})
+//	err = f.AddDataValidation("Sheet1", dvRange)
 func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {

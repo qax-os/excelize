@@ -1123,6 +1123,23 @@ func TestSharedStrings(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestSetSheetCol(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.NoError(t, f.SetSheetCol("Sheet1", "B27", &[]interface{}{"cell", nil, int32(42), float64(42), time.Now().UTC()}))
+
+	assert.EqualError(t, f.SetSheetCol("Sheet1", "", &[]interface{}{"cell", nil, 2}),
+		newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
+
+	assert.EqualError(t, f.SetSheetCol("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.SetSheetCol("Sheet1", "B27", &f), ErrParameterInvalid.Error())
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetCol.xlsx")))
+	assert.NoError(t, f.Close())
+}
+
 func TestSetSheetRow(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {

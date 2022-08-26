@@ -699,6 +699,14 @@ func TestFormattedValue2(t *testing.T) {
 	})
 	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
+
+	// formatted decimal value with build-in number format ID
+	styleID, err := f.NewStyle(&Style{
+		NumFmt: 1,
+	})
+	assert.NoError(t, err)
+	v = f.formattedValue(styleID, "310.56", false)
+	assert.Equal(t, "311", v)
 }
 
 func TestSharedStringsError(t *testing.T) {

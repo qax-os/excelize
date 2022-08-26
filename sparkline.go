@@ -365,29 +365,28 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 // Excel 2007, but they won't be displayed. For example, add a grouped
 // sparkline. Changes are applied to all three:
 //
-//    err := f.AddSparkline("Sheet1", &excelize.SparklineOption{
-//        Location: []string{"A1", "A2", "A3"},
-//        Range:    []string{"Sheet2!A1:J1", "Sheet2!A2:J2", "Sheet2!A3:J3"},
-//        Markers:  true,
-//    })
+//	err := f.AddSparkline("Sheet1", &excelize.SparklineOption{
+//	    Location: []string{"A1", "A2", "A3"},
+//	    Range:    []string{"Sheet2!A1:J1", "Sheet2!A2:J2", "Sheet2!A3:J3"},
+//	    Markers:  true,
+//	})
 //
 // The following shows the formatting options of sparkline supported by excelize:
 //
-//     Parameter | Description
-//    -----------+--------------------------------------------
-//     Location  | Required, must have the same number with 'Range' parameter
-//     Range     | Required, must have the same number with 'Location' parameter
-//     Type      | Enumeration value: line, column, win_loss
-//     Style     | Value range: 0 - 35
-//     Hight     | Toggle sparkline high points
-//     Low       | Toggle sparkline low points
-//     First     | Toggle sparkline first points
-//     Last      | Toggle sparkline last points
-//     Negative  | Toggle sparkline negative points
-//     Markers   | Toggle sparkline markers
-//     ColorAxis | An RGB Color is specified as RRGGBB
-//     Axis      | Show sparkline axis
-//
+//	 Parameter | Description
+//	-----------+--------------------------------------------
+//	 Location  | Required, must have the same number with 'Range' parameter
+//	 Range     | Required, must have the same number with 'Location' parameter
+//	 Type      | Enumeration value: line, column, win_loss
+//	 Style     | Value range: 0 - 35
+//	 Hight     | Toggle sparkline high points
+//	 Low       | Toggle sparkline low points
+//	 First     | Toggle sparkline first points
+//	 Last      | Toggle sparkline last points
+//	 Negative  | Toggle sparkline negative points
+//	 Markers   | Toggle sparkline markers
+//	 ColorAxis | An RGB Color is specified as RRGGBB
+//	 Axis      | Show sparkline axis
 func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
 	var (
 		ws                             *xlsxWorksheet

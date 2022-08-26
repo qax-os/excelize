@@ -238,16 +238,17 @@ func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 // SetSheetPrOptions provides a function to sets worksheet properties.
 //
 // Available options:
-//   CodeName(string)
-//   EnableFormatConditionsCalculation(bool)
-//   Published(bool)
-//   FitToPage(bool)
-//   TabColorIndexed(int)
-//   TabColorRGB(string)
-//   TabColorTheme(int)
-//   TabColorTint(float64)
-//   AutoPageBreaks(bool)
-//   OutlineSummaryBelow(bool)
+//
+//	CodeName(string)
+//	EnableFormatConditionsCalculation(bool)
+//	Published(bool)
+//	FitToPage(bool)
+//	TabColorIndexed(int)
+//	TabColorRGB(string)
+//	TabColorTheme(int)
+//	TabColorTint(float64)
+//	AutoPageBreaks(bool)
+//	OutlineSummaryBelow(bool)
 func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -268,16 +269,17 @@ func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
 // GetSheetPrOptions provides a function to gets worksheet properties.
 //
 // Available options:
-//   CodeName(string)
-//   EnableFormatConditionsCalculation(bool)
-//   Published(bool)
-//   FitToPage(bool)
-//   TabColorIndexed(int)
-//   TabColorRGB(string)
-//   TabColorTheme(int)
-//   TabColorTint(float64)
-//   AutoPageBreaks(bool)
-//   OutlineSummaryBelow(bool)
+//
+//	CodeName(string)
+//	EnableFormatConditionsCalculation(bool)
+//	Published(bool)
+//	FitToPage(bool)
+//	TabColorIndexed(int)
+//	TabColorRGB(string)
+//	TabColorTheme(int)
+//	TabColorTint(float64)
+//	AutoPageBreaks(bool)
+//	OutlineSummaryBelow(bool)
 func (f *File) GetSheetPrOptions(sheet string, opts ...SheetPrOptionPtr) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -412,12 +414,13 @@ type PageMarginsOptionsPtr interface {
 // SetPageMargins provides a function to set worksheet page margins.
 //
 // Available options:
-//   PageMarginBottom(float64)
-//   PageMarginFooter(float64)
-//   PageMarginHeader(float64)
-//   PageMarginLeft(float64)
-//   PageMarginRight(float64)
-//   PageMarginTop(float64)
+//
+//	PageMarginBottom(float64)
+//	PageMarginFooter(float64)
+//	PageMarginHeader(float64)
+//	PageMarginLeft(float64)
+//	PageMarginRight(float64)
+//	PageMarginTop(float64)
 func (f *File) SetPageMargins(sheet string, opts ...PageMarginsOptions) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -438,12 +441,13 @@ func (f *File) SetPageMargins(sheet string, opts ...PageMarginsOptions) error {
 // GetPageMargins provides a function to get worksheet page margins.
 //
 // Available options:
-//   PageMarginBottom(float64)
-//   PageMarginFooter(float64)
-//   PageMarginHeader(float64)
-//   PageMarginLeft(float64)
-//   PageMarginRight(float64)
-//   PageMarginTop(float64)
+//
+//	PageMarginBottom(float64)
+//	PageMarginFooter(float64)
+//	PageMarginHeader(float64)
+//	PageMarginLeft(float64)
+//	PageMarginRight(float64)
+//	PageMarginTop(float64)
 func (f *File) GetPageMargins(sheet string, opts ...PageMarginsOptionsPtr) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -605,13 +609,14 @@ func (p *ThickBottom) getSheetFormatPr(fp *xlsxSheetFormatPr) {
 // SetSheetFormatPr provides a function to set worksheet formatting properties.
 //
 // Available options:
-//   BaseColWidth(uint8)
-//   DefaultColWidth(float64)
-//   DefaultRowHeight(float64)
-//   CustomHeight(bool)
-//   ZeroHeight(bool)
-//   ThickTop(bool)
-//   ThickBottom(bool)
+//
+//	BaseColWidth(uint8)
+//	DefaultColWidth(float64)
+//	DefaultRowHeight(float64)
+//	CustomHeight(bool)
+//	ZeroHeight(bool)
+//	ThickTop(bool)
+//	ThickBottom(bool)
 func (f *File) SetSheetFormatPr(sheet string, opts ...SheetFormatPrOptions) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -631,13 +636,14 @@ func (f *File) SetSheetFormatPr(sheet string, opts ...SheetFormatPrOptions) erro
 // GetSheetFormatPr provides a function to get worksheet formatting properties.
 //
 // Available options:
-//   BaseColWidth(uint8)
-//   DefaultColWidth(float64)
-//   DefaultRowHeight(float64)
-//   CustomHeight(bool)
-//   ZeroHeight(bool)
-//   ThickTop(bool)
-//   ThickBottom(bool)
+//
+//	BaseColWidth(uint8)
+//	DefaultColWidth(float64)
+//	DefaultRowHeight(float64)
+//	CustomHeight(bool)
+//	ZeroHeight(bool)
+//	ThickTop(bool)
+//	ThickBottom(bool)
 func (f *File) GetSheetFormatPr(sheet string, opts ...SheetFormatPrOptionsPtr) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {

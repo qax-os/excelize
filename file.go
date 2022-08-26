@@ -24,8 +24,7 @@ import (
 // NewFile provides a function to create new file by default template.
 // For example:
 //
-//    f := NewFile()
-//
+//	f := NewFile()
 func NewFile() *File {
 	f := newFile()
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
