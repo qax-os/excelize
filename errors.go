@@ -70,6 +70,23 @@ func newCellNameToCoordinatesError(cell string, err error) error {
 	return fmt.Errorf("cannot convert cell %q to coordinates: %v", cell, err)
 }
 
+// newNoExistSheetError defined the error message on receiving the not exist
+// sheet name.
+func newNoExistSheetError(name string) error {
+	return fmt.Errorf("sheet %s is not exist", name)
+}
+
+// newNotWorksheetError defined the error message on receiving a sheet which
+// not a worksheet.
+func newNotWorksheetError(name string) error {
+	return fmt.Errorf("sheet %s is not a worksheet", name)
+}
+
+// newDecodeXMLError defined the error message on decode XML error.
+func newDecodeXMLError(err error) error {
+	return fmt.Errorf("xml decode error: %s", err)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.

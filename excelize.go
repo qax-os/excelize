@@ -92,10 +92,10 @@ type Options struct {
 // spreadsheet file struct for it. For example, open spreadsheet with
 // password protection:
 //
-//    f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
-//    if err != nil {
-//        return
-//    }
+//	f, err := excelize.OpenFile("Book1.xlsx", excelize.Options{Password: "password"})
+//	if err != nil {
+//	    return
+//	}
 //
 // Close the file by Close function after opening the spreadsheet.
 func OpenFile(filename string, opt ...Options) (*File, error) {
@@ -231,7 +231,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		ok   bool
 	)
 	if name, ok = f.getSheetXMLPath(sheet); !ok {
-		err = fmt.Errorf("sheet %s is not exist", sheet)
+		err = newNoExistSheetError(sheet)
 		return
 	}
 	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
@@ -240,7 +240,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	for _, sheetType := range []string{"xl/chartsheets", "xl/dialogsheet", "xl/macrosheet"} {
 		if strings.HasPrefix(name, sheetType) {
-			err = fmt.Errorf("sheet %s is not a worksheet", sheet)
+			err = newNotWorksheetError(sheet)
 			return
 		}
 	}
@@ -251,7 +251,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
-		err = fmt.Errorf("xml decode error: %s", err)
+		err = newDecodeXMLError(err)
 		return
 	}
 	err = nil
@@ -394,30 +394,29 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 }
 
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
-// Office Excel 2007 and 2010. This function will be remove value tag when met a
+// Office Excel application. This function will be remove value tag when met a
 // cell have a linked value. Reference
 // https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating
 //
-// Notice: after open XLSX file Excel will be update linked value and generate
-// new value and will prompt save file or not.
+// Notice: after opening generated workbook, Excel will update the linked value
+// and generate a new value and will prompt to save the file or not.
 //
 // For example:
 //
-//    <row r="19" spans="2:2">
-//        <c r="B19">
-//            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//            <v>100</v>
-//         </c>
-//    </row>
+//	<row r="19" spans="2:2">
+//	    <c r="B19">
+//	        <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//	        <v>100</v>
+//	     </c>
+//	</row>
 //
 // to
 //
-//    <row r="19" spans="2:2">
-//        <c r="B19">
-//            <f>SUM(Sheet2!D2,Sheet2!D11)</f>
-//        </c>
-//    </row>
-//
+//	<row r="19" spans="2:2">
+//	    <c r="B19">
+//	        <f>SUM(Sheet2!D2,Sheet2!D11)</f>
+//	    </c>
+//	</row>
 func (f *File) UpdateLinkedValue() error {
 	wb := f.workbookReader()
 	// recalculate formulas
@@ -425,7 +424,7 @@ func (f *File) UpdateLinkedValue() error {
 	for _, name := range f.GetSheetList() {
 		ws, err := f.workSheetReader(name)
 		if err != nil {
-			if err.Error() == fmt.Sprintf("sheet %s is not a worksheet", trimSheetName(name)) {
+			if err.Error() == newNotWorksheetError(name).Error() {
 				continue
 			}
 			return err
@@ -445,16 +444,15 @@ func (f *File) UpdateLinkedValue() error {
 // AddVBAProject provides the method to add vbaProject.bin file which contains
 // functions and/or macros. The file extension should be .xlsm. For example:
 //
-//    if err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1")); err != nil {
-//        fmt.Println(err)
-//    }
-//    if err := f.AddVBAProject("vbaProject.bin"); err != nil {
-//        fmt.Println(err)
-//    }
-//    if err := f.SaveAs("macros.xlsm"); err != nil {
-//        fmt.Println(err)
-//    }
-//
+//	if err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1")); err != nil {
+//	    fmt.Println(err)
+//	}
+//	if err := f.AddVBAProject("vbaProject.bin"); err != nil {
+//	    fmt.Println(err)
+//	}
+//	if err := f.SaveAs("macros.xlsm"); err != nil {
+//	    fmt.Println(err)
+//	}
 func (f *File) AddVBAProject(bin string) error {
 	var err error
 	// Check vbaProject.bin exists first.
