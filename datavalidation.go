@@ -259,6 +259,18 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	return err
 }
 
+// GetDataValidations returns data validations list by given worksheet name.
+func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return nil, err
+	}
+	if ws.DataValidations == nil || len(ws.DataValidations.DataValidation) == 0 {
+		return nil, err
+	}
+	return ws.DataValidations.DataValidation, err
+}
+
 // DeleteDataValidation delete data validation by given worksheet name and
 // reference sequence. All data validations in the worksheet will be deleted
 // if not specify reference sequence parameter.
