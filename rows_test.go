@@ -345,6 +345,13 @@ func TestInsertRow(t *testing.T) {
 		t.FailNow()
 	}
 
+	assert.NoError(t, f.InsertRows(sheet1, 4, 2))
+	if !assert.Len(t, r.SheetData.Row, rowCount+4) {
+		t.FailNow()
+	}
+
+	assert.EqualError(t, f.InsertRows(sheet1, 4, 0), ErrParameterInvalid.Error())
+
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRow.xlsx")))
 }
 

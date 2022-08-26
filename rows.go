@@ -633,10 +633,27 @@ func (f *File) RemoveRow(sheet string, row int) error {
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) InsertRow(sheet string, row int) error {
+	return f.InsertRows(sheet, row, 1)
+}
+
+// InsertRows provides a function to insert a new rows after given Excel row
+// number starting from 1. For example, create two rows before row 3 in
+// Sheet1:
+//
+//	err := f.InsertRows("Sheet1", 3, 2)
+//
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
+func (f *File) InsertRows(sheet string, row int, n int) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-	return f.adjustHelper(sheet, rows, row, 1)
+	if n < 1 {
+		return ErrParameterInvalid
+	}
+	return f.adjustHelper(sheet, rows, row, n)
 }
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below
