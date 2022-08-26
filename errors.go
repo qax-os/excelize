@@ -70,10 +70,10 @@ func newCellNameToCoordinatesError(cell string, err error) error {
 	return fmt.Errorf("cannot convert cell %q to coordinates: %v", cell, err)
 }
 
-// newNoExistSheetError defined the error message on receiving the not exist
+// newNoExistSheetError defined the error message on receiving the non existing
 // sheet name.
 func newNoExistSheetError(name string) error {
-	return fmt.Errorf("sheet %s is not exist", name)
+	return fmt.Errorf("sheet %s does not exist", name)
 }
 
 // newNotWorksheetError defined the error message on receiving a sheet which

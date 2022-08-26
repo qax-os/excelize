@@ -31,7 +31,7 @@ func TestAddComments(t *testing.T) {
 	assert.NoError(t, f.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`))
 
 	// Test add comment on not exists worksheet.
-	assert.EqualError(t, f.AddComment("SheetN", "B7", `{"author":"Excelize: ","text":"This is a comment."}`), "sheet SheetN is not exist")
+	assert.EqualError(t, f.AddComment("SheetN", "B7", `{"author":"Excelize: ","text":"This is a comment."}`), "sheet SheetN does not exist")
 	// Test add comment on with illegal cell coordinates
 	assert.EqualError(t, f.AddComment("Sheet1", "A", `{"author":"Excelize: ","text":"This is a comment."}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	if assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
@@ -66,7 +66,7 @@ func TestDeleteComment(t *testing.T) {
 	assert.NoError(t, f.DeleteComment("Sheet2", "C41"))
 	assert.EqualValues(t, 0, len(f.GetComments()["Sheet2"]))
 	// Test delete comment on not exists worksheet
-	assert.EqualError(t, f.DeleteComment("SheetN", "A1"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.DeleteComment("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete comment with worksheet part
 	f.Pkg.Delete("xl/worksheets/sheet1.xml")
 	assert.NoError(t, f.DeleteComment("Sheet1", "A22"))

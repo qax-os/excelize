@@ -184,7 +184,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format)))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	// Test unset conditional format on not exists worksheet.
-	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Save spreadsheet by the given path.
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }
@@ -314,7 +314,7 @@ func TestThemeReader(t *testing.T) {
 func TestSetCellStyle(t *testing.T) {
 	f := NewFile()
 	// Test set cell style on not exists worksheet.
-	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN does not exist")
 }
 
 func TestGetStyleID(t *testing.T) {

@@ -29,7 +29,7 @@ func TestOpenFile(t *testing.T) {
 
 	// Test get all the rows in a not exists worksheet.
 	_, err = f.GetRows("Sheet4")
-	assert.EqualError(t, err, "sheet Sheet4 is not exist")
+	assert.EqualError(t, err, "sheet Sheet4 does not exist")
 	// Test get all the rows in a worksheet.
 	rows, err := f.GetRows("Sheet2")
 	assert.NoError(t, err)
@@ -59,9 +59,9 @@ func TestOpenFile(t *testing.T) {
 	f.NewSheet(":\\/?*[]Maximum 31 characters allowed in sheet title.")
 	// Test set worksheet name with illegal name.
 	f.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")
-	assert.EqualError(t, f.SetCellInt("Sheet3", "A23", 10), "sheet Sheet3 is not exist")
-	assert.EqualError(t, f.SetCellStr("Sheet3", "b230", "10"), "sheet Sheet3 is not exist")
-	assert.EqualError(t, f.SetCellStr("Sheet10", "b230", "10"), "sheet Sheet10 is not exist")
+	assert.EqualError(t, f.SetCellInt("Sheet3", "A23", 10), "sheet Sheet3 does not exist")
+	assert.EqualError(t, f.SetCellStr("Sheet3", "b230", "10"), "sheet Sheet3 does not exist")
+	assert.EqualError(t, f.SetCellStr("Sheet10", "b230", "10"), "sheet Sheet10 does not exist")
 
 	// Test set cell string value with illegal row number.
 	assert.EqualError(t, f.SetCellStr("Sheet1", "A", "10"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
@@ -122,11 +122,11 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "F17", complex64(5+10i)))
 
 	// Test on not exists worksheet.
-	assert.EqualError(t, f.SetCellDefault("SheetN", "A1", ""), "sheet SheetN is not exist")
-	assert.EqualError(t, f.SetCellFloat("SheetN", "A1", 42.65418, 2, 32), "sheet SheetN is not exist")
-	assert.EqualError(t, f.SetCellBool("SheetN", "A1", true), "sheet SheetN is not exist")
-	assert.EqualError(t, f.SetCellFormula("SheetN", "A1", ""), "sheet SheetN is not exist")
-	assert.EqualError(t, f.SetCellHyperLink("SheetN", "A1", "Sheet1!A40", "Location"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetCellDefault("SheetN", "A1", ""), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetCellFloat("SheetN", "A1", 42.65418, 2, 32), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetCellBool("SheetN", "A1", true), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetCellFormula("SheetN", "A1", ""), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetCellHyperLink("SheetN", "A1", "Sheet1!A40", "Location"), "sheet SheetN does not exist")
 
 	// Test boolean write
 	booltest := []struct {
@@ -151,7 +151,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now()))
 
 	assert.NoError(t, f.SetCellValue("Sheet2", "G4", time.Now().UTC()))
-	assert.EqualError(t, f.SetCellValue("SheetN", "A1", time.Now()), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetCellValue("SheetN", "A1", time.Now()), "sheet SheetN does not exist")
 	// 02:46:40
 	assert.NoError(t, f.SetCellValue("Sheet2", "G5", time.Duration(1e13)))
 	// Test completion column.
@@ -401,7 +401,7 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.NoError(t, err)
 	t.Log(link, target)
 	link, target, err = f.GetCellHyperLink("Sheet3", "H3")
-	assert.EqualError(t, err, "sheet Sheet3 is not exist")
+	assert.EqualError(t, err, "sheet Sheet3 does not exist")
 	t.Log(link, target)
 	assert.NoError(t, f.Close())
 
@@ -968,7 +968,7 @@ func TestCopySheetError(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.EqualError(t, f.copySheet(-1, -2), "sheet  is not exist")
+	assert.EqualError(t, f.copySheet(-1, -2), "sheet  does not exist")
 	if !assert.EqualError(t, f.CopySheet(-1, -2), "invalid worksheet index") {
 		t.FailNow()
 	}
@@ -984,7 +984,7 @@ func TestGetSheetComments(t *testing.T) {
 func TestSetSheetVisible(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.Sheets.Sheet[0].Name = "SheetN"
-	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "sheet SheetN does not exist")
 }
 
 func TestGetActiveSheetIndex(t *testing.T) {
@@ -1002,7 +1002,7 @@ func TestRelsWriter(t *testing.T) {
 func TestGetSheetView(t *testing.T) {
 	f := NewFile()
 	_, err := f.getSheetView("SheetN", 0)
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
 func TestConditionalFormat(t *testing.T) {
@@ -1067,7 +1067,7 @@ func TestConditionalFormat(t *testing.T) {
 	// Test set invalid format set in conditional format.
 	assert.EqualError(t, f.SetConditionalFormat(sheet1, "L1:L10", ""), "unexpected end of JSON input")
 	// Set conditional format on not exists worksheet.
-	assert.EqualError(t, f.SetConditionalFormat("SheetN", "L1:L10", "[]"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetConditionalFormat("SheetN", "L1:L10", "[]"), "sheet SheetN does not exist")
 
 	err = f.SaveAs(filepath.Join("test", "TestConditionalFormat.xlsx"))
 	if !assert.NoError(t, err) {
@@ -1230,7 +1230,7 @@ func TestProtectSheet(t *testing.T) {
 		Password:      "password",
 	}), ErrUnsupportedHashAlgorithm.Error())
 	// Test protect not exists worksheet.
-	assert.EqualError(t, f.ProtectSheet("SheetN", nil), "sheet SheetN is not exist")
+	assert.EqualError(t, f.ProtectSheet("SheetN", nil), "sheet SheetN does not exist")
 }
 
 func TestUnprotectSheet(t *testing.T) {
@@ -1239,7 +1239,7 @@ func TestUnprotectSheet(t *testing.T) {
 		t.FailNow()
 	}
 	// Test remove protection on not exists worksheet.
-	assert.EqualError(t, f.UnprotectSheet("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.UnprotectSheet("SheetN"), "sheet SheetN does not exist")
 
 	assert.NoError(t, f.UnprotectSheet("Sheet1"))
 	assert.EqualError(t, f.UnprotectSheet("Sheet1", "password"), ErrUnprotectSheet.Error())
@@ -1267,7 +1267,7 @@ func TestUnprotectSheet(t *testing.T) {
 func TestSetDefaultTimeStyle(t *testing.T) {
 	f := NewFile()
 	// Test set default time style on not exists worksheet.
-	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN is not exist")
+	assert.EqualError(t, f.setDefaultTimeStyle("SheetN", "", 0), "sheet SheetN does not exist")
 
 	// Test set default time style on invalid cell
 	assert.EqualError(t, f.setDefaultTimeStyle("Sheet1", "", 42), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())

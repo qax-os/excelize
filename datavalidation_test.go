@@ -127,7 +127,7 @@ func TestDataValidationError(t *testing.T) {
 
 	// Test add data validation on no exists worksheet.
 	f = NewFile()
-	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN is not exist")
+	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN does not exist")
 }
 
 func TestDeleteDataValidation(t *testing.T) {
@@ -170,7 +170,7 @@ func TestDeleteDataValidation(t *testing.T) {
 	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:B2"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	// Test delete data validation on no exists worksheet.
-	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN does not exist")
 
 	// Test delete all data validations in the worksheet.
 	assert.NoError(t, f.DeleteDataValidation("Sheet1"))
