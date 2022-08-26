@@ -1182,7 +1182,6 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 }
 
 type SRCell struct {
-	Date1904       bool
 	Formula        string
 	FormattedValue string
 	RawValue       string
@@ -1194,23 +1193,47 @@ type SRCell struct {
 	CellType       CellType
 }
 
-func (f *File) GetSheetData(sheet string) ([][]SRCell, bool, error) {
+type SRSheetData struct {
+	DefaultColWidth float64
+	ColWidths map[int]float64
+	DefaultRowHeight float64
+	RowHeights map[int]float64
+	Date1904    bool
+	Cells       [][]SRCell
+}
+
+func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	date1904, wb := false, f.workbookReader()
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
+	srSheetData := &SRSheetData{
+     Date1904: date1904,
+		 RowHeights: map[int]float64{},
+		 ColWidths: map[int]float64{},
+	}
 	ws.Lock()
 	defer ws.Unlock()
-
-  sheetData := [][]SRCell{}
+	cells := [][]SRCell{}
 	sharedStringsReader := f.sharedStringsReader()
+	srSheetData.DefaultRowHeight = defaultRowHeight
+  srSheetData.DefaultColWidth = defaultColWidth
 	for rowIdx := range ws.SheetData.Row {
-		sheetData = append(sheetData, []SRCell{})
+		cells = append(cells, []SRCell{})
 		rowData := &ws.SheetData.Row[rowIdx]
+		ht := defaultRowHeight
+		if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
+			ht = ws.SheetFormatPr.DefaultRowHeight
+		}
+		if rowData.Ht != 0 {
+			ht = rowData.Ht
+		}
+		srSheetData.RowHeights[rowIdx]=ht
+		colWidthSet := map[int]bool{}
 		for colIdx := range rowData.C {
 			cellData := &rowData.C[colIdx]
 			srCell := SRCell{}
@@ -1227,15 +1250,20 @@ func (f *File) GetSheetData(sheet string) ([][]SRCell, bool, error) {
 			val, _ = cellData.getValueFrom(f, sharedStringsReader, false)
 			srCell.FormattedValue = val
 			col, row, _ := CellNameToCoordinates(cellData.R)
+			if !colWidthSet[col] {
+				srSheetData.ColWidths[col] = f.SRGetColWidth(ws, col)
+			  colWidthSet[col]=true
+			}
 			srCell.Row = row - 1
 			srCell.Col = col - 1
 			srCell.StyleIndex = f.prepareCellStyle(ws, col, row, cellData.S)
 			srCell.CellName = cellData.R
 			srCell.CellType = cellTypes[cellData.T]
-			sheetData[rowIdx] = append(sheetData[rowIdx], srCell)
+			cells[rowIdx] = append(cells[rowIdx], srCell)
 		}
 	}
-	return sheetData, date1904, nil
+	srSheetData.Cells = cells
+	return srSheetData, nil
 }
 
 func SRGetFormattedValue(v string, numFmtID int, formatCode string, date1904 bool) string {
@@ -1244,6 +1272,7 @@ func SRGetFormattedValue(v string, numFmtID int, formatCode string, date1904 boo
 	}
 	return format(v, formatCode, date1904)
 }
+
 func (f *File) SRBuiltInNumFmtCode(numFmtID int) string {
 	return builtInNumFmt[numFmtID]
 }
