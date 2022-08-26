@@ -2894,32 +2894,6 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	return err
 }
 
-// GetConditionalFormat() retrieves all comments and returns a map of worksheet name to
-// the worksheet conditioanl formats in xml string.
-func (f *File) GetConditionalFormat() (map[string][]string, error) {
-	resultCF := map[string][]string{}
-	for sheet := range f.sheetMap {
-		ws, err := f.workSheetReader(sheet)
-		if err != nil {
-			return resultCF, err
-		}
-
-		resultCF[sheet] = []string{}
-		for _, cf := range ws.ConditionalFormatting {
-			cfRule := CfRule{SQRef: cf.SQRef}
-			for _, cr := range cf.CfRule {
-				cfRule.CfRule = *cr
-				cfRuleBytes, err := xml.Marshal(cfRule)
-				if err != nil {
-					return resultCF, err
-				}
-				resultCF[sheet] = append(resultCF[sheet], string(cfRuleBytes))
-			}
-		}
-	}
-	return resultCF, nil
-}
-
 // extractCondFmtCellIs provides a function to extract conditional format
 // settings for cell value (include between, not between, equal, not equal,
 // greater than and less than) by given conditional formatting rule.

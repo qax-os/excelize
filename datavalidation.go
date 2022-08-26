@@ -259,29 +259,6 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	return err
 }
 
-// GetDataValidation retrieves all comments and returns a map of worksheet name to
-// the worksheet data validations.
-func (f *File) GetDataValidation() (map[string][]*DataValidation, error) {
-	resultDVs := map[string][]*DataValidation{}
-	for sheet := range f.sheetMap {
-		ws, err := f.workSheetReader(sheet)
-		if err != nil {
-			return nil, err
-		}
-
-		// No data validaion on this sheet
-		if ws.DataValidations == nil {
-			return resultDVs, nil
-		}
-
-		for _, item := range ws.DataValidations.DataValidation {
-			dv := *item
-			resultDVs[sheet] = append(resultDVs[sheet], &dv)
-		}
-	}
-	return resultDVs, nil
-}
-
 // GetDataValidations returns data validations list by given worksheet name.
 func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 	ws, err := f.workSheetReader(sheet)
