@@ -826,10 +826,10 @@ type formatPanes struct {
 // formatConditional directly maps the conditional format settings of the cells.
 type formatConditional struct {
 	Type         string `json:"type"`
-	AboveAverage bool   `json:"above_average"`
-	Percent      bool   `json:"percent"`
-	Format       int    `json:"format"`
-	Criteria     string `json:"criteria"`
+	AboveAverage bool   `json:"above_average,omitempty"`
+	Percent      bool   `json:"percent,omitempty"`
+	Format       int    `json:"format,omitempty"`
+	Criteria     string `json:"criteria,omitempty"`
 	Value        string `json:"value,omitempty"`
 	Minimum      string `json:"minimum,omitempty"`
 	Maximum      string `json:"maximum,omitempty"`
