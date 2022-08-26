@@ -566,11 +566,6 @@ type xlsxCfRule struct {
 	ExtLst       *xlsxExtLst     `xml:"extLst"`
 }
 
-type CfRule struct {
-	CfRule xlsxCfRule
-	SQRef  string `xml:"sqref,attr,omitempty"`
-}
-
 // xlsxColorScale (Color Scale) describes a gradated color scale in this
 // conditional formatting rule.
 type xlsxColorScale struct {
