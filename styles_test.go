@@ -199,7 +199,7 @@ func TestGetConditionalFormats(t *testing.T) {
 	// Test get conditional formats on no exists worksheet
 	f := NewFile()
 	_, err := f.GetConditionalFormats("SheetN")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {

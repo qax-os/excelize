@@ -90,7 +90,7 @@ func TestDataValidation(t *testing.T) {
 
 	// Test get data validation on no exists worksheet
 	_, err = f.GetDataValidations("SheetN")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
