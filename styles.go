@@ -1966,7 +1966,7 @@ var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 }
 
 // getStyleID provides a function to get styleID by given style. If given
-// style is not exist, will return -1.
+// style does not exist, will return -1.
 func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (styleID int) {
 	styleID = -1
 	if ss.CellXfs == nil {
@@ -2047,7 +2047,7 @@ func (f *File) readDefaultFont() *xlsxFont {
 }
 
 // getFontID provides a function to get font ID.
-// If given font is not exist, will return -1.
+// If given font does not exist, will return -1.
 func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) (fontID int) {
 	fontID = -1
 	if styleSheet.Fonts == nil || style.Font == nil {
@@ -2098,7 +2098,7 @@ func (f *File) newFont(style *Style) *xlsxFont {
 }
 
 // getNumFmtID provides a function to get number format code ID.
-// If given number format code is not exist, will return -1.
+// If given number format code does not exist, will return -1.
 func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (numFmtID int) {
 	numFmtID = -1
 	if _, ok := builtInNumFmt[style.NumFmt]; ok {
@@ -2195,7 +2195,7 @@ func setCustomNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 }
 
 // getCustomNumFmtID provides a function to get custom number format code ID.
-// If given custom number format code is not exist, will return -1.
+// If given custom number format code does not exist, will return -1.
 func getCustomNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (customNumFmtID int) {
 	customNumFmtID = -1
 	if styleSheet.NumFmts == nil {

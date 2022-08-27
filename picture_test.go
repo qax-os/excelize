@@ -128,7 +128,7 @@ func TestGetPicture(t *testing.T) {
 
 	// Try to get picture from a worksheet that doesn't contain any images.
 	file, raw, err = f.GetPicture("Sheet3", "I9")
-	assert.EqualError(t, err, "sheet Sheet3 is not exist")
+	assert.EqualError(t, err, "sheet Sheet3 does not exist")
 	assert.Empty(t, file)
 	assert.Empty(t, raw)
 
@@ -196,7 +196,7 @@ func TestAddPictureFromBytes(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
-	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN is not exist")
+	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN does not exist")
 }
 
 func TestDeletePicture(t *testing.T) {
@@ -207,7 +207,7 @@ func TestDeletePicture(t *testing.T) {
 	assert.NoError(t, f.DeletePicture("Sheet1", "P1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture.xlsx")))
 	// Test delete picture on not exists worksheet.
-	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete picture with invalid coordinates.
 	assert.EqualError(t, f.DeletePicture("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	assert.NoError(t, f.Close())
@@ -219,7 +219,7 @@ func TestDrawingResize(t *testing.T) {
 	f := NewFile()
 	// Test calculate drawing resize on not exists worksheet.
 	_, _, _, _, err := f.drawingResize("SheetN", "A1", 1, 1, nil)
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test calculate drawing resize with invalid coordinates.
 	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
 	assert.EqualError(t, err, newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())

@@ -373,7 +373,7 @@ func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
 	f := NewFile()
 	_, err := f.GetCellFormula("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 
 	// Test get cell formula on no formula cell.
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
@@ -555,7 +555,7 @@ func TestGetCellRichText(t *testing.T) {
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
 	// Test set cell rich text on not exists worksheet
 	_, err = f.GetCellRichText("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test set cell rich text with illegal cell coordinates
 	_, err = f.GetCellRichText("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
@@ -652,7 +652,7 @@ func TestSetCellRichText(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
 	// Test set cell rich text on not exists worksheet
-	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN does not exist")
 	// Test set cell rich text with illegal cell coordinates
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}

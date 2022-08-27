@@ -180,13 +180,13 @@ func TestSetSheetPrOptions(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColorRGB("")))
 	// Test SetSheetPrOptions on not exists worksheet.
-	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN does not exist")
 }
 
 func TestGetSheetPrOptions(t *testing.T) {
 	f := NewFile()
 	// Test GetSheetPrOptions on not exists worksheet.
-	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN does not exist")
 }
 
 var _ = []PageMarginsOptions{
@@ -328,13 +328,13 @@ func TestPageMarginsOption(t *testing.T) {
 func TestSetPageMargins(t *testing.T) {
 	f := NewFile()
 	// Test set page margins on not exists worksheet.
-	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN does not exist")
 }
 
 func TestGetPageMargins(t *testing.T) {
 	f := NewFile()
 	// Test get page margins on not exists worksheet.
-	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN does not exist")
 }
 
 func ExampleFile_SetSheetFormatPr() {
@@ -469,7 +469,7 @@ func TestSetSheetFormatPr(t *testing.T) {
 	ws.(*xlsxWorksheet).SheetFormatPr = nil
 	assert.NoError(t, f.SetSheetFormatPr("Sheet1", BaseColWidth(1.0)))
 	// Test set formatting properties on not exists worksheet.
-	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN does not exist")
 }
 
 func TestGetSheetFormatPr(t *testing.T) {
@@ -497,5 +497,5 @@ func TestGetSheetFormatPr(t *testing.T) {
 		&thickBottom,
 	))
 	// Test get formatting properties on not exists worksheet.
-	assert.EqualError(t, f.GetSheetFormatPr("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.GetSheetFormatPr("SheetN"), "sheet SheetN does not exist")
 }

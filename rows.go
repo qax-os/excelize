@@ -202,13 +202,13 @@ func appendSpace(l int, s []string) []string {
 	return s
 }
 
-// ErrSheetNotExist defines an error of sheet is not exist
+// ErrSheetNotExist defines an error of sheet that does not exist
 type ErrSheetNotExist struct {
 	SheetName string
 }
 
 func (err ErrSheetNotExist) Error() string {
-	return fmt.Sprintf("sheet %s is not exist", err.SheetName)
+	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
 }
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.

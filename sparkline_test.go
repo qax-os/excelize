@@ -218,7 +218,7 @@ func TestAddSparkline(t *testing.T) {
 	assert.EqualError(t, f.AddSparkline("SheetN", &SparklineOption{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
-	}), "sheet SheetN is not exist")
+	}), "sheet SheetN does not exist")
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", nil), ErrParameterRequired.Error())
 
