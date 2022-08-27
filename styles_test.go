@@ -175,6 +175,33 @@ func TestSetConditionalFormat(t *testing.T) {
 	}
 }
 
+func TestGetConditionalFormats(t *testing.T) {
+	for _, format := range []string{
+		`[{"type":"cell","format":1,"criteria":"greater than","value":"6"}]`,
+		`[{"type":"cell","format":1,"criteria":"between","minimum":"6","maximum":"8"}]`,
+		`[{"type":"top","format":1,"criteria":"=","value":"6"}]`,
+		`[{"type":"bottom","format":1,"criteria":"=","value":"6"}]`,
+		`[{"type":"average","above_average":true,"format":1,"criteria":"="}]`,
+		`[{"type":"duplicate","format":1,"criteria":"="}]`,
+		`[{"type":"unique","format":1,"criteria":"="}]`,
+		`[{"type":"3_color_scale","criteria":"=","min_type":"num","mid_type":"num","max_type":"num","min_value":"-10","mid_value":"50","max_value":"10","min_color":"#FF0000","mid_color":"#00FF00","max_color":"#0000FF"}]`,
+		`[{"type":"2_color_scale","criteria":"=","min_type":"num","max_type":"num","min_color":"#FF0000","max_color":"#0000FF"}]`,
+		`[{"type":"data_bar","criteria":"=","min_type":"min","max_type":"max","bar_color":"#638EC6"}]`,
+		`[{"type":"formula","format":1,"criteria":"="}]`,
+	} {
+		f := NewFile()
+		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)
+		assert.NoError(t, err)
+		formatSet, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, format, formatSet["A1:A2"])
+	}
+	// Test get conditional formats on no exists worksheet
+	f := NewFile()
+	_, err := f.GetConditionalFormats("SheetN")
+	assert.EqualError(t, err, "sheet SheetN is not exist")
+}
+
 func TestUnsetConditionalFormat(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
