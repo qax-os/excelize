@@ -622,21 +622,27 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	return f.adjustHelper(sheet, rows, row, -1)
 }
 
-// InsertRow provides a function to insert a new row after given Excel row
-// number starting from 1. For example, create a new row before row 3 in
-// Sheet1:
+// InsertRows provides a function to insert new rows after the given Excel row
+// number starting from 1 and number of rows. For example, create two rows
+// before row 3 in Sheet1:
 //
-//	err := f.InsertRow("Sheet1", 3)
+//	err := f.InsertRows("Sheet1", 3, 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
-func (f *File) InsertRow(sheet string, row int) error {
+func (f *File) InsertRows(sheet string, row, n int) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-	return f.adjustHelper(sheet, rows, row, 1)
+	if row >= TotalRows || n >= TotalRows {
+		return ErrMaxRows
+	}
+	if n < 1 {
+		return ErrParameterInvalid
+	}
+	return f.adjustHelper(sheet, rows, row, n)
 }
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below

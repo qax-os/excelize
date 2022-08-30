@@ -339,7 +339,7 @@ func TestColWidth(t *testing.T) {
 	convertRowHeightToPixels(0)
 }
 
-func TestInsertCol(t *testing.T) {
+func TestInsertCols(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 
@@ -349,12 +349,16 @@ func TestInsertCol(t *testing.T) {
 	assert.NoError(t, f.MergeCell(sheet1, "A1", "C3"))
 
 	assert.NoError(t, f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`))
-	assert.NoError(t, f.InsertCol(sheet1, "A"))
+	assert.NoError(t, f.InsertCols(sheet1, "A", 1))
 
 	// Test insert column with illegal cell coordinates.
-	assert.EqualError(t, f.InsertCol("Sheet1", "*"), newInvalidColumnNameError("*").Error())
+	assert.EqualError(t, f.InsertCols(sheet1, "*", 1), newInvalidColumnNameError("*").Error())
 
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertCol.xlsx")))
+	assert.EqualError(t, f.InsertCols(sheet1, "A", 0), ErrColumnNumber.Error())
+	assert.EqualError(t, f.InsertCols(sheet1, "A", MaxColumns), ErrColumnNumber.Error())
+	assert.EqualError(t, f.InsertCols(sheet1, "A", MaxColumns-10), ErrColumnNumber.Error())
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertCols.xlsx")))
 }
 
 func TestRemoveCol(t *testing.T) {

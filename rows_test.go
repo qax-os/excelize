@@ -318,7 +318,7 @@ func TestRemoveRow(t *testing.T) {
 	assert.EqualError(t, f.RemoveRow("SheetN", 1), `sheet SheetN does not exist`)
 }
 
-func TestInsertRow(t *testing.T) {
+func TestInsertRows(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
@@ -331,36 +331,44 @@ func TestInsertRow(t *testing.T) {
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
-	assert.EqualError(t, f.InsertRow(sheet1, -1), newInvalidRowNumberError(-1).Error())
-
-	assert.EqualError(t, f.InsertRow(sheet1, 0), newInvalidRowNumberError(0).Error())
-
-	assert.NoError(t, f.InsertRow(sheet1, 1))
+	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, f.InsertRow(sheet1, 4))
+	assert.NoError(t, f.InsertRows(sheet1, 4, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRow.xlsx")))
+	assert.NoError(t, f.InsertRows(sheet1, 4, 2))
+	if !assert.Len(t, r.SheetData.Row, rowCount+4) {
+		t.FailNow()
+	}
+
+	assert.EqualError(t, f.InsertRows(sheet1, -1, 1), newInvalidRowNumberError(-1).Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 0, 1), newInvalidRowNumberError(0).Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 4, 0), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 4, TotalRows), ErrMaxRows.Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 4, TotalRows-5), ErrMaxRows.Error())
+	assert.EqualError(t, f.InsertRows(sheet1, TotalRows, 1), ErrMaxRows.Error())
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRows.xlsx")))
 }
 
 // Test internal structure state after insert operations. It is important
 // for insert workflow to be constant to avoid side effect with functions
 // related to internal structure.
-func TestInsertRowInEmptyFile(t *testing.T) {
+func TestInsertRowsInEmptyFile(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	r, err := f.workSheetReader(sheet1)
 	assert.NoError(t, err)
-	assert.NoError(t, f.InsertRow(sheet1, 1))
+	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
 	assert.Len(t, r.SheetData.Row, 0)
-	assert.NoError(t, f.InsertRow(sheet1, 2))
+	assert.NoError(t, f.InsertRows(sheet1, 2, 1))
 	assert.Len(t, r.SheetData.Row, 0)
-	assert.NoError(t, f.InsertRow(sheet1, 99))
+	assert.NoError(t, f.InsertRows(sheet1, 99, 1))
 	assert.Len(t, r.SheetData.Row, 0)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }

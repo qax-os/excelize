@@ -657,16 +657,25 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	return defaultColWidth, err
 }
 
-// InsertCol provides a function to insert a new column before given column
-// index. For example, create a new column before column C in Sheet1:
+// InsertCols provides a function to insert new columns before the given column
+// name and number of columns. For example, create two columns before column
+// C in Sheet1:
 //
-//	err := f.InsertCol("Sheet1", "C")
-func (f *File) InsertCol(sheet, col string) error {
+//	err := f.InsertCols("Sheet1", "C", 2)
+//
+// Use this method with caution, which will affect changes in references such
+// as formulas, charts, and so on. If there is any referenced value of the
+// worksheet, it will cause a file error when you open it. The excelize only
+// partially updates these references currently.
+func (f *File) InsertCols(sheet, col string, n int) error {
 	num, err := ColumnNameToNumber(col)
 	if err != nil {
 		return err
 	}
-	return f.adjustHelper(sheet, columns, num, 1)
+	if n < 1 || n > MaxColumns {
+		return ErrColumnNumber
+	}
+	return f.adjustHelper(sheet, columns, num, n)
 }
 
 // RemoveCol provides a function to remove single column by given worksheet

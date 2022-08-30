@@ -42,9 +42,12 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	}
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
-		f.adjustRowDimensions(ws, num, offset)
+		err = f.adjustRowDimensions(ws, num, offset)
 	} else {
-		f.adjustColDimensions(ws, num, offset)
+		err = f.adjustColDimensions(ws, num, offset)
+	}
+	if err != nil {
+		return err
 	}
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
 	f.adjustTable(ws, sheet, dir, num, offset)
@@ -69,28 +72,36 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 
 // adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) {
+func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 	for rowIdx := range ws.SheetData.Row {
 		for colIdx, v := range ws.SheetData.Row[rowIdx].C {
 			cellCol, cellRow, _ := CellNameToCoordinates(v.R)
 			if col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
+					if newCol > MaxColumns {
+						return ErrColumnNumber
+					}
 					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
 				}
 			}
 		}
 	}
+	return nil
 }
 
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) {
+func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
 	for i := range ws.SheetData.Row {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
+			if newRow >= TotalRows {
+				return ErrMaxRows
+			}
 			f.adjustSingleRowDimensions(r, newRow)
 		}
 	}
+	return nil
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
