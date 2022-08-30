@@ -331,10 +331,6 @@ func TestInsertRows(t *testing.T) {
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
-	assert.EqualError(t, f.InsertRows(sheet1, -1, 1), newInvalidRowNumberError(-1).Error())
-
-	assert.EqualError(t, f.InsertRows(sheet1, 0, 1), newInvalidRowNumberError(0).Error())
-
 	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
 	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
 		t.FailNow()
@@ -350,7 +346,12 @@ func TestInsertRows(t *testing.T) {
 		t.FailNow()
 	}
 
+	assert.EqualError(t, f.InsertRows(sheet1, -1, 1), newInvalidRowNumberError(-1).Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 0, 1), newInvalidRowNumberError(0).Error())
 	assert.EqualError(t, f.InsertRows(sheet1, 4, 0), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 4, TotalRows), ErrMaxRows.Error())
+	assert.EqualError(t, f.InsertRows(sheet1, 4, TotalRows-5), ErrMaxRows.Error())
+	assert.EqualError(t, f.InsertRows(sheet1, TotalRows, 1), ErrMaxRows.Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRows.xlsx")))
 }

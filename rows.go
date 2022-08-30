@@ -636,6 +636,9 @@ func (f *File) InsertRows(sheet string, row, n int) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
+	if row >= TotalRows || n >= TotalRows {
+		return ErrMaxRows
+	}
 	if n < 1 {
 		return ErrParameterInvalid
 	}

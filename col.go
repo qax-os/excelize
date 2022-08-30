@@ -658,10 +658,10 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 }
 
 // InsertCols provides a function to insert new columns before the given column
-// name and number of columns. For example, create a new column before column
+// name and number of columns. For example, create two columns before column
 // C in Sheet1:
 //
-//	err := f.InsertCols("Sheet1", "C", 1)
+//	err := f.InsertCols("Sheet1", "C", 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -672,8 +672,8 @@ func (f *File) InsertCols(sheet, col string, n int) error {
 	if err != nil {
 		return err
 	}
-	if n < 1 {
-		return ErrParameterInvalid
+	if n < 1 || n > MaxColumns {
+		return ErrColumnNumber
 	}
 	return f.adjustHelper(sheet, columns, num, n)
 }

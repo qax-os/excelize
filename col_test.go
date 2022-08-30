@@ -354,7 +354,9 @@ func TestInsertCols(t *testing.T) {
 	// Test insert column with illegal cell coordinates.
 	assert.EqualError(t, f.InsertCols(sheet1, "*", 1), newInvalidColumnNameError("*").Error())
 
-	assert.EqualError(t, f.InsertCols(sheet1, "A", 0), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.InsertCols(sheet1, "A", 0), ErrColumnNumber.Error())
+	assert.EqualError(t, f.InsertCols(sheet1, "A", MaxColumns), ErrColumnNumber.Error())
+	assert.EqualError(t, f.InsertCols(sheet1, "A", MaxColumns-10), ErrColumnNumber.Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertCols.xlsx")))
 }
