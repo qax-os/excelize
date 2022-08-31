@@ -415,6 +415,13 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if err != nil {
 		return err
 	}
+	s := f.stylesReader()
+	s.Lock()
+	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
+		s.Unlock()
+		return newInvalidStyleID(styleID)
+	}
+	s.Unlock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err

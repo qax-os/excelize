@@ -32,13 +32,22 @@ func TestOpenFile(t *testing.T) {
 	assert.EqualError(t, err, "sheet Sheet4 does not exist")
 	// Test get all the rows in a worksheet.
 	rows, err := f.GetRows("Sheet2")
-	assert.NoError(t, err)
-	for _, row := range rows {
-		for _, cell := range row {
-			t.Log(cell, "\t")
-		}
-		t.Log("\r\n")
+	expected := [][]string{
+		{"Monitor", "", "Brand", "", "inlineStr"},
+		{"> 23 Inch", "19", "HP", "200"},
+		{"20-23 Inch", "24", "DELL", "450"},
+		{"17-20 Inch", "56", "Lenove", "200"},
+		{"< 17 Inch", "21", "SONY", "510"},
+		{"", "", "Acer", "315"},
+		{"", "", "IBM", "127"},
+		{"", "", "ASUS", "89"},
+		{"", "", "Apple", "348"},
+		{"", "", "SAMSUNG", "53"},
+		{"", "", "Other", "37", "", "", "", "", ""},
 	}
+	assert.NoError(t, err)
+	assert.Equal(t, expected, rows)
+
 	assert.NoError(t, f.UpdateLinkedValue())
 
 	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(100.1588, 'f', -1, 32)))
@@ -396,13 +405,19 @@ func TestGetCellHyperLink(t *testing.T) {
 
 	link, target, err := f.GetCellHyperLink("Sheet1", "A22")
 	assert.NoError(t, err)
-	t.Log(link, target)
+	assert.Equal(t, link, true)
+	assert.Equal(t, target, "https://github.com/xuri/excelize")
+
 	link, target, err = f.GetCellHyperLink("Sheet2", "D6")
 	assert.NoError(t, err)
-	t.Log(link, target)
+	assert.Equal(t, link, false)
+	assert.Equal(t, target, "")
+
 	link, target, err = f.GetCellHyperLink("Sheet3", "H3")
 	assert.EqualError(t, err, "sheet Sheet3 does not exist")
-	t.Log(link, target)
+	assert.Equal(t, link, false)
+	assert.Equal(t, target, "")
+
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
@@ -709,6 +724,14 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	col := []string{"L", "M", "N", "O", "P"}
 	data := []int{0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
 	value := []string{"37947.7500001", "-37947.7500001", "0.007", "2.1", "String"}
+	expected := [][]string{
+		{"37947.7500001", "37948", "37947.75", "37948", "37947.75", "3794775%", "3794775.00%", "3.79E+04", "37947.7500001", "37947.7500001", "11-22-03", "22-Nov-03", "22-Nov", "Nov-03", "6:00 pm", "6:00:00 pm", "18:00", "18:00:00", "11/22/03 18:00", "37947", "37947", "37947.75", "37947.75", "37947.7500001", "37947.7500001", "37947.7500001", "37947.7500001", "00:00", "910746:00:00", "37947.7500001", "3.79E+04", "37947.7500001"},
+		{"-37947.7500001", "-37948", "-37947.75", "-37948", "-37947.75", "-3794775%", "-3794775.00%", "-3.79E+04", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "(37947)", "(37947)", "(-37947.75)", "(-37947.75)", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-3.79E+04", "-37947.7500001"},
+		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0.007", "0.007", "12-30-99", "30-Dec-99", "30-Dec", "Dec-99", "0:10 am", "0:10:04 am", "00:10", "00:10:04", "12/30/99 00:10", "0", "0", "0.01", "0.01", "0.007", "0.007", "0.007", "0.007", "10:04", "0:10:04", "0.007", "7.00E-03", "0.007"},
+		{"2.1", "2", "2.10", "2", "2.10", "210%", "210.00%", "2.10E+00", "2.1", "2.1", "01-01-00", "1-Jan-00", "1-Jan", "Jan-00", "2:24 am", "2:24:00 am", "02:24", "02:24:00", "1/1/00 02:24", "2", "2", "2.10", "2.10", "2.1", "2.1", "2.1", "2.1", "24:00", "50:24:00", "2.1", "2.10E+00", "2.1"},
+		{"String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String"},
+	}
+
 	for i, v := range value {
 		for k, d := range data {
 			c := col[i] + strconv.Itoa(k+1)
@@ -724,7 +747,9 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 				t.FailNow()
 			}
 			assert.NoError(t, f.SetCellStyle("Sheet2", c, c, style))
-			t.Log(f.GetCellValue("Sheet2", c))
+			cellValue, err := f.GetCellValue("Sheet2", c)
+			assert.Equal(t, expected[i][k], cellValue)
+			assert.NoError(t, err)
 		}
 	}
 	var style int

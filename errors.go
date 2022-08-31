@@ -55,7 +55,7 @@ func newUnzipSizeLimitError(unzipSizeLimit int64) error {
 // newInvalidStyleID defined the error message on receiving the invalid style
 // ID.
 func newInvalidStyleID(styleID int) error {
-	return fmt.Errorf("invalid style ID %d, negative values are not supported", styleID)
+	return fmt.Errorf("invalid style ID %d", styleID)
 }
 
 // newFieldLengthError defined the error message on receiving the field length

@@ -6037,7 +6037,7 @@ func getBetaHelperContFrac(fX, fA, fB float64) float64 {
 			bfinished = math.Abs(cf-cfnew) < math.Abs(cf)*fMachEps
 		}
 		cf = cfnew
-		rm += 1
+		rm++
 	}
 	return cf
 }
@@ -6914,7 +6914,7 @@ func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
 			for z <= x1 {
 				e = math.Log(z) + e
 				s += math.Exp(c*z - a - e)
-				z += 1
+				z++
 			}
 			return newNumberFormulaArg(s)
 		}
@@ -6926,7 +6926,7 @@ func (fn *formulaFuncs) CHIDIST(argsList *list.List) formulaArg {
 		for z <= x1 {
 			e = e * (a / z)
 			c = c + e
-			z += 1
+			z++
 		}
 		return newNumberFormulaArg(c*y + s)
 	}
@@ -15286,10 +15286,10 @@ func (fn *formulaFuncs) coupons(name string, arg formulaArg) formulaArg {
 		month -= coupon
 	}
 	if month > 11 {
-		year += 1
+		year++
 		month -= 12
 	} else if month < 0 {
-		year -= 1
+		year--
 		month += 12
 	}
 	day, lastDay := maturity.Day(), time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)

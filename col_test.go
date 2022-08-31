@@ -296,6 +296,10 @@ func TestSetColStyle(t *testing.T) {
 	// Test set column style with illegal cell coordinates.
 	assert.EqualError(t, f.SetColStyle("Sheet1", "*", styleID), newInvalidColumnNameError("*").Error())
 	assert.EqualError(t, f.SetColStyle("Sheet1", "A:*", styleID), newInvalidColumnNameError("*").Error())
+	// Test set column style with invalid style ID.
+	assert.EqualError(t, f.SetColStyle("Sheet1", "B", -1), newInvalidStyleID(-1).Error())
+	// Test set column style with not exists style ID.
+	assert.EqualError(t, f.SetColStyle("Sheet1", "B", 10), newInvalidStyleID(10).Error())
 
 	assert.NoError(t, f.SetColStyle("Sheet1", "B", styleID))
 	// Test set column style with already exists column with style.

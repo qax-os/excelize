@@ -956,7 +956,10 @@ func TestSetRowStyle(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "B2", "B2", style1))
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 5, -1, style2), newInvalidRowNumberError(-1).Error())
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, style2), ErrMaxRows.Error())
+	// Test set row style with invalid style ID.
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, -1), newInvalidStyleID(-1).Error())
+	// Test set row style with not exists style ID.
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, 10), newInvalidStyleID(10).Error())
 	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, style2), "sheet SheetN does not exist")
 	assert.NoError(t, f.SetRowStyle("Sheet1", 5, 1, style2))
 	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")

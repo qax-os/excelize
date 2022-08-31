@@ -2629,6 +2629,14 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 	makeContiguousColumns(ws, hRow, vRow, vCol)
 	ws.Lock()
 	defer ws.Unlock()
+
+	s := f.stylesReader()
+	s.Lock()
+	defer s.Unlock()
+	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
+		return newInvalidStyleID(styleID)
+	}
+
 	for r := hRowIdx; r <= vRowIdx; r++ {
 		for k := hColIdx; k <= vColIdx; k++ {
 			ws.SheetData.Row[r].C[k].S = styleID

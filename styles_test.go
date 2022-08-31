@@ -342,6 +342,10 @@ func TestSetCellStyle(t *testing.T) {
 	f := NewFile()
 	// Test set cell style on not exists worksheet.
 	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN does not exist")
+	// Test set cell style with invalid style ID.
+	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", -1), newInvalidStyleID(-1).Error())
+	// Test set cell style with not exists style ID.
+	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", 10), newInvalidStyleID(10).Error())
 }
 
 func TestGetStyleID(t *testing.T) {

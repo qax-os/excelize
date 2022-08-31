@@ -857,7 +857,10 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if end > TotalRows {
 		return ErrMaxRows
 	}
-	if styleID < 0 {
+	s := f.stylesReader()
+	s.Lock()
+	defer s.Unlock()
+	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}
 	ws, err := f.workSheetReader(sheet)
