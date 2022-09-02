@@ -1165,6 +1165,109 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 	return "", nil
 }
 
+type SRCell struct {
+	Formula        string
+	FormattedValue string
+	RawValue       string
+	SharedIndex    *int
+	Row            int
+	Col            int
+	StyleIndex     int
+	CellName       string
+	CellType       CellType
+}
+
+type SRSheetData struct {
+	DefaultColWidth float64
+	ColWidths map[int]float64
+	DefaultRowHeight float64
+	RowHeights map[int]float64
+	Date1904    bool
+	Cells       [][]SRCell
+}
+
+func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
+	ws, err := f.SRWorkSheetReader(sheet, true)
+	if err != nil {
+		return nil, err
+	}
+	date1904, wb := false, f.workbookReader()
+	if wb != nil && wb.WorkbookPr != nil {
+		date1904 = wb.WorkbookPr.Date1904
+	}
+	srSheetData := &SRSheetData{
+     Date1904: date1904,
+		 RowHeights: map[int]float64{},
+		 ColWidths: map[int]float64{},
+	}
+	ws.Lock()
+	defer ws.Unlock()
+	cells := [][]SRCell{}
+	sharedStringsReader := f.sharedStringsReader()
+	srSheetData.DefaultRowHeight = defaultRowHeight
+  srSheetData.DefaultColWidth = defaultColWidth
+	for rowIdx := range ws.SheetData.Row {
+		cells = append(cells, []SRCell{})
+		rowData := &ws.SheetData.Row[rowIdx]
+		colCount := len(rowData.C)
+		if colCount > 0 {
+			err := SRCheckRow(ws, rowIdx, rowData)
+			if err != nil {
+				return nil, err
+			}
+		}
+		ht := defaultRowHeight
+		if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
+			ht = ws.SheetFormatPr.DefaultRowHeight
+		}
+		if rowData.Ht != 0 {
+			ht = rowData.Ht
+		}
+		srSheetData.RowHeights[rowIdx]=ht
+		colWidthSet := map[int]bool{}
+		for colIdx := range rowData.C {
+			cellData := &rowData.C[colIdx]
+			srCell := SRCell{}
+			if cellData.F != nil {
+				if cellData.F.T == STCellFormulaTypeShared && cellData.F.Si != nil {
+					//srCell.Formula = getSharedFormula(ws, *cellData.F.Si, cellData.R)
+					srCell.SharedIndex = cellData.F.Si
+				} else {
+					srCell.Formula = cellData.F.Content
+				}
+			}
+			val, _ := cellData.getValueFrom(f, sharedStringsReader, true)
+			srCell.RawValue = val
+			val, _ = cellData.getValueFrom(f, sharedStringsReader, false)
+			srCell.FormattedValue = val
+			col, row, _ := CellNameToCoordinates(cellData.R)
+			if !colWidthSet[col] {
+				srSheetData.ColWidths[col] = f.SRGetColWidth(ws, col)
+			  colWidthSet[col]=true
+			}
+			srCell.Row = row - 1
+			srCell.Col = col - 1
+			srCell.StyleIndex = f.prepareCellStyle(ws, col, row, cellData.S)
+			srCell.CellName = cellData.R
+			srCell.CellType = cellTypes[cellData.T]
+			cells[rowIdx] = append(cells[rowIdx], srCell)
+		}
+	}
+	srSheetData.Cells = cells
+	return srSheetData, nil
+}
+
+func SRGetFormattedValue(v string, numFmtID int, formatCode string, date1904 bool) string {
+	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
+		return ok(v, builtInNumFmt[numFmtID], date1904)
+	}
+	return format(v, formatCode, date1904)
+}
+
+func (f *File) SRBuiltInNumFmtCode(numFmtID int) string {
+	return builtInNumFmt[numFmtID]
+}
+
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
