@@ -33,8 +33,14 @@ type (
 	Published bool
 	// FitToPage is a SheetPrOption
 	FitToPage bool
-	// TabColor is a SheetPrOption
-	TabColor string
+	// TabColorIndexed is a TabColor option, within SheetPrOption
+	TabColorIndexed int
+	// TabColorRGB is a TabColor option, within SheetPrOption
+	TabColorRGB string
+	// TabColorTheme is a TabColor option, within SheetPrOption
+	TabColorTheme int
+	// TabColorTint is a TabColor option, within SheetPrOption
+	TabColorTint float64
 	// AutoPageBreaks is a SheetPrOption
 	AutoPageBreaks bool
 	// OutlineSummaryBelow is an outlinePr, within SheetPr option
@@ -129,9 +135,28 @@ func (o *FitToPage) getSheetPrOption(pr *xlsxSheetPr) {
 	*o = FitToPage(pr.PageSetUpPr.FitToPage)
 }
 
+// setSheetPrOption implements the SheetPrOption interface and sets the
+// TabColor Indexed.
+func (o TabColorIndexed) setSheetPrOption(pr *xlsxSheetPr) {
+	if pr.TabColor == nil {
+		pr.TabColor = new(xlsxTabColor)
+	}
+	pr.TabColor.Indexed = int(o)
+}
+
+// getSheetPrOption implements the SheetPrOptionPtr interface and gets the
+// TabColor Indexed. Defaults to -1 if no indexed has been set.
+func (o *TabColorIndexed) getSheetPrOption(pr *xlsxSheetPr) {
+	if pr == nil || pr.TabColor == nil {
+		*o = TabColorIndexed(ColorMappingTypeUnset)
+		return
+	}
+	*o = TabColorIndexed(pr.TabColor.Indexed)
+}
+
 // setSheetPrOption implements the SheetPrOption interface and specifies a
 // stable name of the sheet.
-func (o TabColor) setSheetPrOption(pr *xlsxSheetPr) {
+func (o TabColorRGB) setSheetPrOption(pr *xlsxSheetPr) {
 	if pr.TabColor == nil {
 		if string(o) == "" {
 			return
@@ -143,12 +168,50 @@ func (o TabColor) setSheetPrOption(pr *xlsxSheetPr) {
 
 // getSheetPrOption implements the SheetPrOptionPtr interface and get the
 // stable name of the sheet.
-func (o *TabColor) getSheetPrOption(pr *xlsxSheetPr) {
+func (o *TabColorRGB) getSheetPrOption(pr *xlsxSheetPr) {
 	if pr == nil || pr.TabColor == nil {
 		*o = ""
 		return
 	}
-	*o = TabColor(strings.TrimPrefix(pr.TabColor.RGB, "FF"))
+	*o = TabColorRGB(strings.TrimPrefix(pr.TabColor.RGB, "FF"))
+}
+
+// setSheetPrOption implements the SheetPrOption interface and sets the
+// TabColor Theme. Warning: it does not create a clrScheme!
+func (o TabColorTheme) setSheetPrOption(pr *xlsxSheetPr) {
+	if pr.TabColor == nil {
+		pr.TabColor = new(xlsxTabColor)
+	}
+	pr.TabColor.Theme = int(o)
+}
+
+// getSheetPrOption implements the SheetPrOptionPtr interface and gets the
+// TabColor Theme. Defaults to -1 if no theme has been set.
+func (o *TabColorTheme) getSheetPrOption(pr *xlsxSheetPr) {
+	if pr == nil || pr.TabColor == nil {
+		*o = TabColorTheme(ColorMappingTypeUnset)
+		return
+	}
+	*o = TabColorTheme(pr.TabColor.Theme)
+}
+
+// setSheetPrOption implements the SheetPrOption interface and sets the
+// TabColor Tint.
+func (o TabColorTint) setSheetPrOption(pr *xlsxSheetPr) {
+	if pr.TabColor == nil {
+		pr.TabColor = new(xlsxTabColor)
+	}
+	pr.TabColor.Tint = float64(o)
+}
+
+// getSheetPrOption implements the SheetPrOptionPtr interface and gets the
+// TabColor Tint. Defaults to 0.0 if no tint has been set.
+func (o *TabColorTint) getSheetPrOption(pr *xlsxSheetPr) {
+	if pr == nil || pr.TabColor == nil {
+		*o = 0.0
+		return
+	}
+	*o = TabColorTint(pr.TabColor.Tint)
 }
 
 // setSheetPrOption implements the SheetPrOption interface.
@@ -175,12 +238,17 @@ func (o *AutoPageBreaks) getSheetPrOption(pr *xlsxSheetPr) {
 // SetSheetPrOptions provides a function to sets worksheet properties.
 //
 // Available options:
-//   CodeName(string)
-//   EnableFormatConditionsCalculation(bool)
-//   Published(bool)
-//   FitToPage(bool)
-//   AutoPageBreaks(bool)
-//   OutlineSummaryBelow(bool)
+//
+//	CodeName(string)
+//	EnableFormatConditionsCalculation(bool)
+//	Published(bool)
+//	FitToPage(bool)
+//	TabColorIndexed(int)
+//	TabColorRGB(string)
+//	TabColorTheme(int)
+//	TabColorTint(float64)
+//	AutoPageBreaks(bool)
+//	OutlineSummaryBelow(bool)
 func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -201,12 +269,17 @@ func (f *File) SetSheetPrOptions(sheet string, opts ...SheetPrOption) error {
 // GetSheetPrOptions provides a function to gets worksheet properties.
 //
 // Available options:
-//   CodeName(string)
-//   EnableFormatConditionsCalculation(bool)
-//   Published(bool)
-//   FitToPage(bool)
-//   AutoPageBreaks(bool)
-//   OutlineSummaryBelow(bool)
+//
+//	CodeName(string)
+//	EnableFormatConditionsCalculation(bool)
+//	Published(bool)
+//	FitToPage(bool)
+//	TabColorIndexed(int)
+//	TabColorRGB(string)
+//	TabColorTheme(int)
+//	TabColorTint(float64)
+//	AutoPageBreaks(bool)
+//	OutlineSummaryBelow(bool)
 func (f *File) GetSheetPrOptions(sheet string, opts ...SheetPrOptionPtr) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -341,12 +414,13 @@ type PageMarginsOptionsPtr interface {
 // SetPageMargins provides a function to set worksheet page margins.
 //
 // Available options:
-//   PageMarginBottom(float64)
-//   PageMarginFooter(float64)
-//   PageMarginHeader(float64)
-//   PageMarginLeft(float64)
-//   PageMarginRight(float64)
-//   PageMarginTop(float64)
+//
+//	PageMarginBottom(float64)
+//	PageMarginFooter(float64)
+//	PageMarginHeader(float64)
+//	PageMarginLeft(float64)
+//	PageMarginRight(float64)
+//	PageMarginTop(float64)
 func (f *File) SetPageMargins(sheet string, opts ...PageMarginsOptions) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -367,12 +441,13 @@ func (f *File) SetPageMargins(sheet string, opts ...PageMarginsOptions) error {
 // GetPageMargins provides a function to get worksheet page margins.
 //
 // Available options:
-//   PageMarginBottom(float64)
-//   PageMarginFooter(float64)
-//   PageMarginHeader(float64)
-//   PageMarginLeft(float64)
-//   PageMarginRight(float64)
-//   PageMarginTop(float64)
+//
+//	PageMarginBottom(float64)
+//	PageMarginFooter(float64)
+//	PageMarginHeader(float64)
+//	PageMarginLeft(float64)
+//	PageMarginRight(float64)
+//	PageMarginTop(float64)
 func (f *File) GetPageMargins(sheet string, opts ...PageMarginsOptionsPtr) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -534,13 +609,14 @@ func (p *ThickBottom) getSheetFormatPr(fp *xlsxSheetFormatPr) {
 // SetSheetFormatPr provides a function to set worksheet formatting properties.
 //
 // Available options:
-//   BaseColWidth(uint8)
-//   DefaultColWidth(float64)
-//   DefaultRowHeight(float64)
-//   CustomHeight(bool)
-//   ZeroHeight(bool)
-//   ThickTop(bool)
-//   ThickBottom(bool)
+//
+//	BaseColWidth(uint8)
+//	DefaultColWidth(float64)
+//	DefaultRowHeight(float64)
+//	CustomHeight(bool)
+//	ZeroHeight(bool)
+//	ThickTop(bool)
+//	ThickBottom(bool)
 func (f *File) SetSheetFormatPr(sheet string, opts ...SheetFormatPrOptions) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -560,13 +636,14 @@ func (f *File) SetSheetFormatPr(sheet string, opts ...SheetFormatPrOptions) erro
 // GetSheetFormatPr provides a function to get worksheet formatting properties.
 //
 // Available options:
-//   BaseColWidth(uint8)
-//   DefaultColWidth(float64)
-//   DefaultRowHeight(float64)
-//   CustomHeight(bool)
-//   ZeroHeight(bool)
-//   ThickTop(bool)
-//   ThickBottom(bool)
+//
+//	BaseColWidth(uint8)
+//	DefaultColWidth(float64)
+//	DefaultRowHeight(float64)
+//	CustomHeight(bool)
+//	ZeroHeight(bool)
+//	ThickTop(bool)
+//	ThickBottom(bool)
 func (f *File) GetSheetFormatPr(sheet string, opts ...SheetFormatPrOptionsPtr) error {
 	s, err := f.workSheetReader(sheet)
 	if err != nil {

@@ -114,7 +114,7 @@ func TestAddChart(t *testing.T) {
 	assert.EqualError(t, f.AddChart("Sheet1", "P1", ""), "unexpected end of JSON input")
 
 	// Test add chart on not exists worksheet.
-	assert.EqualError(t, f.AddChart("SheetN", "P1", "{}"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.AddChart("SheetN", "P1", "{}"), "sheet SheetN does not exist")
 
 	assert.NoError(t, f.AddChart("Sheet1", "P1", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"none":true,"show_legend_key":true},"title":{"name":"2D Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`))
 	assert.NoError(t, f.AddChart("Sheet1", "X1", `{"type":"colStacked","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"2D Stacked Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`))
@@ -250,7 +250,7 @@ func TestDeleteChart(t *testing.T) {
 	assert.NoError(t, f.DeleteChart("Sheet1", "P1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteChart.xlsx")))
 	// Test delete chart on not exists worksheet.
-	assert.EqualError(t, f.DeleteChart("SheetN", "A1"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.DeleteChart("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete chart with invalid coordinates.
 	assert.EqualError(t, f.DeleteChart("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
 	// Test delete chart on no chart worksheet.

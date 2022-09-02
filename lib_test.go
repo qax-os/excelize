@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -340,6 +341,9 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
+	if strings.HasPrefix(runtime.Version(), "go1.19") {
+		t.Skip()
+	}
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
 	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))

@@ -491,6 +491,7 @@ func TestCalcCellValue(t *testing.T) {
 		// COS
 		"=COS(0.785398163)": "0.707106781467586",
 		"=COS(0)":           "1",
+		"=-COS(0)":          "-1",
 		"=COS(COS(0))":      "0.54030230586814",
 		// COSH
 		"=COSH(0)":       "1",
@@ -4329,7 +4330,7 @@ func TestCalcCellValue(t *testing.T) {
 	// Test get calculated cell value on not exists worksheet.
 	f = prepareCalcData(cellData)
 	_, err = f.CalcCellValue("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get calculated cell value with not support formula.
 	f = prepareCalcData(cellData)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=UNSUPPORT(A1)"))

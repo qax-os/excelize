@@ -107,6 +107,7 @@ const (
 	MaxFieldLength       = 255
 	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
+	MaxCellStyles        = 64000
 	MinFontSize          = 1
 	TotalRows            = 1048576
 	MinColumns           = 1
@@ -120,8 +121,28 @@ const (
 	pivotTableVersion = 3
 )
 
+// ColorMappingType is the type of color transformation.
+type ColorMappingType byte
+
+// Color transformation types enumeration.
+const (
+	ColorMappingTypeLight1 ColorMappingType = iota
+	ColorMappingTypeDark1
+	ColorMappingTypeLight2
+	ColorMappingTypeDark2
+	ColorMappingTypeAccent1
+	ColorMappingTypeAccent2
+	ColorMappingTypeAccent3
+	ColorMappingTypeAccent4
+	ColorMappingTypeAccent5
+	ColorMappingTypeAccent6
+	ColorMappingTypeHyperlink
+	ColorMappingTypeFollowedHyperlink
+	ColorMappingTypeUnset int = -1
+)
+
 // supportedImageTypes defined supported image types.
-var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf"}
+var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf", ".emz": ".emz", ".wmz": ".wmz"}
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional

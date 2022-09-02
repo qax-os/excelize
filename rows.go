@@ -37,18 +37,17 @@ import (
 // For example, get and traverse the value of all cells by rows on a worksheet
 // named 'Sheet1':
 //
-//    rows, err := f.GetRows("Sheet1")
-//    if err != nil {
-//        fmt.Println(err)
-//        return
-//    }
-//    for _, row := range rows {
-//        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
-//        }
-//        fmt.Println()
-//    }
-//
+//	rows, err := f.GetRows("Sheet1")
+//	if err != nil {
+//	    fmt.Println(err)
+//	    return
+//	}
+//	for _, row := range rows {
+//	    for _, colCell := range row {
+//	        fmt.Print(colCell, "\t")
+//	    }
+//	    fmt.Println()
+//	}
 func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 	rows, err := f.Rows(sheet)
 	if err != nil {
@@ -80,12 +79,14 @@ type Rows struct {
 	sst                     *xlsxSST
 	decoder                 *xml.Decoder
 	token                   xml.Token
+	curRowOpts, seekRowOpts RowOpts
 }
 
 // Next will return true if find the next row element.
 func (rows *Rows) Next() bool {
 	rows.seekRow++
 	if rows.curRow >= rows.seekRow {
+		rows.curRowOpts = rows.seekRowOpts
 		return true
 	}
 	for {
@@ -101,6 +102,7 @@ func (rows *Rows) Next() bool {
 					rows.curRow = rowNum
 				}
 				rows.token = token
+				rows.curRowOpts = extractRowOpts(xmlElement.Attr)
 				return true
 			}
 		case xml.EndElement:
@@ -109,6 +111,11 @@ func (rows *Rows) Next() bool {
 			}
 		}
 	}
+}
+
+// GetRowOpts will return the RowOpts of the current row.
+func (rows *Rows) GetRowOpts() RowOpts {
+	return rows.curRowOpts
 }
 
 // Error will return the error when the error occurs.
@@ -151,6 +158,8 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 				} else if rows.token == nil {
 					rows.curRow++
 				}
+				rows.token = token
+				rows.seekRowOpts = extractRowOpts(xmlElement.Attr)
 				if rows.curRow > rows.seekRow {
 					rows.token = nil
 					return rowIterator.columns, rowIterator.err
@@ -170,6 +179,21 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	return rowIterator.columns, rowIterator.err
 }
 
+// extractRowOpts extract row element attributes.
+func extractRowOpts(attrs []xml.Attr) RowOpts {
+	rowOpts := RowOpts{Height: defaultRowHeight}
+	if styleID, err := attrValToInt("s", attrs); err == nil && styleID > 0 && styleID < MaxCellStyles {
+		rowOpts.StyleID = styleID
+	}
+	if hidden, err := attrValToBool("hidden", attrs); err == nil {
+		rowOpts.Hidden = hidden
+	}
+	if height, err := attrValToFloat("ht", attrs); err == nil {
+		rowOpts.Height = height
+	}
+	return rowOpts
+}
+
 // appendSpace append blank characters to slice by given length and source slice.
 func appendSpace(l int, s []string) []string {
 	for i := 1; i < l; i++ {
@@ -178,13 +202,13 @@ func appendSpace(l int, s []string) []string {
 	return s
 }
 
-// ErrSheetNotExist defines an error of sheet is not exist
+// ErrSheetNotExist defines an error of sheet that does not exist
 type ErrSheetNotExist struct {
 	SheetName string
 }
 
 func (err ErrSheetNotExist) Error() string {
-	return fmt.Sprintf("sheet %s is not exist", err.SheetName)
+	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
 }
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.
@@ -216,25 +240,24 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 // Rows returns a rows iterator, used for streaming reading data for a
 // worksheet with a large data. For example:
 //
-//    rows, err := f.Rows("Sheet1")
-//    if err != nil {
-//        fmt.Println(err)
-//        return
-//    }
-//    for rows.Next() {
-//        row, err := rows.Columns()
-//        if err != nil {
-//            fmt.Println(err)
-//        }
-//        for _, colCell := range row {
-//            fmt.Print(colCell, "\t")
-//        }
-//        fmt.Println()
-//    }
-//    if err = rows.Close(); err != nil {
-//        fmt.Println(err)
-//    }
-//
+//	rows, err := f.Rows("Sheet1")
+//	if err != nil {
+//	    fmt.Println(err)
+//	    return
+//	}
+//	for rows.Next() {
+//	    row, err := rows.Columns()
+//	    if err != nil {
+//	        fmt.Println(err)
+//	    }
+//	    for _, colCell := range row {
+//	        fmt.Print(colCell, "\t")
+//	    }
+//	    fmt.Println()
+//	}
+//	if err = rows.Close(); err != nil {
+//	    fmt.Println(err)
+//	}
 func (f *File) Rows(sheet string) (*Rows, error) {
 	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
@@ -320,8 +343,7 @@ func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 // SetRowHeight provides a function to set the height of a single row. For
 // example, set the height of the first row in Sheet1:
 //
-//    err := f.SetRowHeight("Sheet1", 1, 50)
-//
+//	err := f.SetRowHeight("Sheet1", 1, 50)
 func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
@@ -361,8 +383,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 // GetRowHeight provides a function to get row height by given worksheet name
 // and row number. For example, get the height of the first row in Sheet1:
 //
-//    height, err := f.GetRowHeight("Sheet1", 1)
-//
+//	height, err := f.GetRowHeight("Sheet1", 1)
 func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 	if row < 1 {
 		return defaultRowHeightPixels, newInvalidRowNumberError(row)
@@ -493,8 +514,7 @@ func roundPrecision(text string, prec int) string {
 // SetRowVisible provides a function to set visible of a single row by given
 // worksheet name and Excel row number. For example, hide row 2 in Sheet1:
 //
-//    err := f.SetRowVisible("Sheet1", 2, false)
-//
+//	err := f.SetRowVisible("Sheet1", 2, false)
 func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
@@ -513,8 +533,7 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 // worksheet name and Excel row number. For example, get visible state of row
 // 2 in Sheet1:
 //
-//    visible, err := f.GetRowVisible("Sheet1", 2)
-//
+//	visible, err := f.GetRowVisible("Sheet1", 2)
 func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 	if row < 1 {
 		return false, newInvalidRowNumberError(row)
@@ -534,8 +553,7 @@ func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 // single row by given worksheet name and Excel row number. The value of
 // parameter 'level' is 1-7. For example, outline row 2 in Sheet1 to level 1:
 //
-//    err := f.SetRowOutlineLevel("Sheet1", 2, 1)
-//
+//	err := f.SetRowOutlineLevel("Sheet1", 2, 1)
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
@@ -556,8 +574,7 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 // single row by given worksheet name and Excel row number. For example, get
 // outline number of row 2 in Sheet1:
 //
-//    level, err := f.GetRowOutlineLevel("Sheet1", 2)
-//
+//	level, err := f.GetRowOutlineLevel("Sheet1", 2)
 func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 	if row < 1 {
 		return 0, newInvalidRowNumberError(row)
@@ -575,7 +592,7 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 // RemoveRow provides a function to remove single row by given worksheet name
 // and Excel row number. For example, remove row 3 in Sheet1:
 //
-//    err := f.RemoveRow("Sheet1", 3)
+//	err := f.RemoveRow("Sheet1", 3)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -605,26 +622,32 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	return f.adjustHelper(sheet, rows, row, -1)
 }
 
-// InsertRow provides a function to insert a new row after given Excel row
-// number starting from 1. For example, create a new row before row 3 in
-// Sheet1:
+// InsertRows provides a function to insert new rows after the given Excel row
+// number starting from 1 and number of rows. For example, create two rows
+// before row 3 in Sheet1:
 //
-//    err := f.InsertRow("Sheet1", 3)
+//	err := f.InsertRows("Sheet1", 3, 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
-func (f *File) InsertRow(sheet string, row int) error {
+func (f *File) InsertRows(sheet string, row, n int) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-	return f.adjustHelper(sheet, rows, row, 1)
+	if row >= TotalRows || n >= TotalRows {
+		return ErrMaxRows
+	}
+	if n < 1 {
+		return ErrParameterInvalid
+	}
+	return f.adjustHelper(sheet, rows, row, n)
 }
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below
 //
-//    err := f.DuplicateRow("Sheet1", 2)
+//	err := f.DuplicateRow("Sheet1", 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -637,7 +660,7 @@ func (f *File) DuplicateRow(sheet string, row int) error {
 // DuplicateRowTo inserts a copy of specified row by it Excel number
 // to specified row position moving down exists rows after target position
 //
-//    err := f.DuplicateRowTo("Sheet1", 2, 7)
+//	err := f.DuplicateRowTo("Sheet1", 2, 7)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
@@ -730,28 +753,76 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 	}
 	return nil
 }
+func SRCheckRow(ws *xlsxWorksheet, rowIdx int, rowData *xlsxRow) error {
+		colCount := len(rowData.C)
+		if colCount == 0 {
+			return nil
+		}
+		// check and fill the cell without r attribute in a row element
+		rCount := 0
+		for idx, cell := range rowData.C {
+			rCount++
+			if cell.R != "" {
+				lastR, _, err := CellNameToCoordinates(cell.R)
+				if err != nil {
+					return err
+				}
+				if lastR > rCount {
+					rCount = lastR
+				}
+				continue
+			}
+			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
+		}
+		lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
+		if err != nil {
+			return err
+		}
+		if colCount < lastCol {
+			oldList := rowData.C
+			newlist := make([]xlsxC, 0, lastCol)
+			rowData.C = ws.SheetData.Row[rowIdx].C[:0]
+			for colIdx := 0; colIdx < lastCol; colIdx++ {
+				cellName, err := CoordinatesToCellName(colIdx+1, rowIdx+1)
+				if err != nil {
+					return err
+				}
+				newlist = append(newlist, xlsxC{R: cellName})
+			}
+			rowData.C = newlist
+			for colIdx := range oldList {
+				colData := &oldList[colIdx]
+				colNum, _, err := CellNameToCoordinates(colData.R)
+				if err != nil {
+					return err
+				}
+				ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
+			}
+		}
+		return nil
+}
 
 // checkRow provides a function to check and fill each column element for all
 // rows and make that is continuous in a worksheet of XML. For example:
 //
-//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//        <c r="A15" s="2" />
-//        <c r="B15" s="2" />
-//        <c r="F15" s="1" />
-//        <c r="G15" s="1" />
-//    </row>
+//	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//	    <c r="A15" s="2" />
+//	    <c r="B15" s="2" />
+//	    <c r="F15" s="1" />
+//	    <c r="G15" s="1" />
+//	</row>
 //
 // in this case, we should to change it to
 //
-//    <row r="15" spans="1:22" x14ac:dyDescent="0.2">
-//        <c r="A15" s="2" />
-//        <c r="B15" s="2" />
-//        <c r="C15" s="2" />
-//        <c r="D15" s="2" />
-//        <c r="E15" s="2" />
-//        <c r="F15" s="1" />
-//        <c r="G15" s="1" />
-//    </row>
+//	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//	    <c r="A15" s="2" />
+//	    <c r="B15" s="2" />
+//	    <c r="C15" s="2" />
+//	    <c r="D15" s="2" />
+//	    <c r="E15" s="2" />
+//	    <c r="F15" s="1" />
+//	    <c r="G15" s="1" />
+//	</row>
 //
 // Noteice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
@@ -819,12 +890,11 @@ func checkRow(ws *xlsxWorksheet) error {
 //
 // For example set style of row 1 on Sheet1:
 //
-//    err = f.SetRowStyle("Sheet1", 1, 1, styleID)
+//	err = f.SetRowStyle("Sheet1", 1, 1, styleID)
 //
 // Set style of rows 1 to 10 on Sheet1:
 //
-//    err = f.SetRowStyle("Sheet1", 1, 10, styleID)
-//
+//	err = f.SetRowStyle("Sheet1", 1, 10, styleID)
 func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if end < start {
 		start, end = end, start
@@ -835,7 +905,10 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if end > TotalRows {
 		return ErrMaxRows
 	}
-	if styleID < 0 {
+	s := f.stylesReader()
+	s.Lock()
+	defer s.Unlock()
+	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}
 	ws, err := f.workSheetReader(sheet)

@@ -30,7 +30,7 @@ func TestAddTable(t *testing.T) {
 	}
 
 	// Test add table in not exist worksheet.
-	assert.EqualError(t, f.AddTable("SheetN", "B26", "A21", `{}`), "sheet SheetN is not exist")
+	assert.EqualError(t, f.AddTable("SheetN", "B26", "A21", `{}`), "sheet SheetN does not exist")
 	// Test add table with illegal formatset.
 	assert.EqualError(t, f.AddTable("Sheet1", "B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
 	// Test add table with illegal cell coordinates.
@@ -111,7 +111,7 @@ func TestAutoFilterError(t *testing.T) {
 	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &formatAutoFilter{
 		Column:     "A",
 		Expression: "",
-	}), "sheet SheetN is not exist")
+	}), "sheet SheetN does not exist")
 	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
 		Column:     "-",
 		Expression: "-",

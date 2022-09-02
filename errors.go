@@ -55,7 +55,7 @@ func newUnzipSizeLimitError(unzipSizeLimit int64) error {
 // newInvalidStyleID defined the error message on receiving the invalid style
 // ID.
 func newInvalidStyleID(styleID int) error {
-	return fmt.Errorf("invalid style ID %d, negative values are not supported", styleID)
+	return fmt.Errorf("invalid style ID %d", styleID)
 }
 
 // newFieldLengthError defined the error message on receiving the field length
@@ -68,6 +68,23 @@ func newFieldLengthError(name string) error {
 // alphanumeric cell name to coordinates.
 func newCellNameToCoordinatesError(cell string, err error) error {
 	return fmt.Errorf("cannot convert cell %q to coordinates: %v", cell, err)
+}
+
+// newNoExistSheetError defined the error message on receiving the non existing
+// sheet name.
+func newNoExistSheetError(name string) error {
+	return fmt.Errorf("sheet %s does not exist", name)
+}
+
+// newNotWorksheetError defined the error message on receiving a sheet which
+// not a worksheet.
+func newNotWorksheetError(name string) error {
+	return fmt.Errorf("sheet %s is not a worksheet", name)
+}
+
+// newDecodeXMLError defined the error message on decode XML error.
+func newDecodeXMLError(err error) error {
+	return fmt.Errorf("xml decode error: %s", err)
 }
 
 var (

@@ -198,7 +198,7 @@ func TestNewStreamWriter(t *testing.T) {
 	_, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
 func TestSetRow(t *testing.T) {
@@ -207,6 +207,17 @@ func TestSetRow(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+}
+
+func TestSetRowNilValues(t *testing.T) {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}})
+	streamWriter.Flush()
+	ws, err := file.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NotEqual(t, ws.SheetData.Row[0].C[0].XMLName.Local, "c")
 }
 
 func TestSetCellValFunc(t *testing.T) {

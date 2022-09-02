@@ -339,7 +339,7 @@ func TestAdjustHelper(t *testing.T) {
 	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test adjustHelper on not exists worksheet.
-	assert.EqualError(t, f.adjustHelper("SheetN", rows, 0, 0), "sheet SheetN is not exist")
+	assert.EqualError(t, f.adjustHelper("SheetN", rows, 0, 0), "sheet SheetN does not exist")
 }
 
 func TestAdjustCalcChain(t *testing.T) {
@@ -349,11 +349,11 @@ func TestAdjustCalcChain(t *testing.T) {
 			{R: "B2", I: 2}, {R: "B2", I: 1},
 		},
 	}
-	assert.NoError(t, f.InsertCol("Sheet1", "A"))
-	assert.NoError(t, f.InsertRow("Sheet1", 1))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
 
 	f.CalcChain.C[1].R = "invalid coordinates"
-	assert.EqualError(t, f.InsertCol("Sheet1", "A"), newCellNameToCoordinatesError("invalid coordinates", newInvalidCellNameError("invalid coordinates")).Error())
+	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), newCellNameToCoordinatesError("invalid coordinates", newInvalidCellNameError("invalid coordinates")).Error())
 	f.CalcChain = nil
-	assert.NoError(t, f.InsertCol("Sheet1", "A"))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 }
