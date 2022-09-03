@@ -491,6 +491,22 @@ func setCellDefault(value string) (t string, v string) {
 	return
 }
 
+// SRGetCellFormula extends GetCellFormula by returning SI int value as well
+func (f *File) SRGetCellFormula(sheet, axis string) (string, int, error) {
+	si := -1
+	content, err := f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+		if c.F == nil {
+			return "", false, nil
+		}
+		if c.F.T == STCellFormulaTypeShared && c.F.Si != nil {
+			si = *c.F.Si
+			return getSharedFormula(x, *c.F.Si, c.R), true, nil
+		}
+		return c.F.Content, true, nil
+	})
+	return content, si, err
+}
+
 // GetCellFormula provides a function to get formula from cell by given
 // worksheet name and axis in XLSX file.
 func (f *File) GetCellFormula(sheet, axis string) (string, error) {

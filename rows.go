@@ -67,6 +67,17 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 	}
 	return results[:max], rows.Close()
 }
+func (f *File) SRGetTotalRows(sheet string) (int, error) {
+	rows, err := f.Rows(sheet)
+	cursor := 0
+	if err != nil {
+		return cursor, err
+	}
+	for rows.Next() {
+		cursor++
+	}
+	return cursor, rows.Close()
+}
 
 // Rows defines an iterator to a sheet.
 type Rows struct {
