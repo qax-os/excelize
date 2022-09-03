@@ -213,13 +213,13 @@ func appendSpace(l int, s []string) []string {
 	return s
 }
 
-// ErrSheetNotExist defines an error of sheet is not exist
+// ErrSheetNotExist defines an error of sheet that does not exist
 type ErrSheetNotExist struct {
 	SheetName string
 }
 
 func (err ErrSheetNotExist) Error() string {
-	return fmt.Sprintf("sheet %s is not exist", err.SheetName)
+	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
 }
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.
@@ -633,21 +633,27 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	return f.adjustHelper(sheet, rows, row, -1)
 }
 
-// InsertRow provides a function to insert a new row after given Excel row
-// number starting from 1. For example, create a new row before row 3 in
-// Sheet1:
+// InsertRows provides a function to insert new rows after the given Excel row
+// number starting from 1 and number of rows. For example, create two rows
+// before row 3 in Sheet1:
 //
-//	err := f.InsertRow("Sheet1", 3)
+//	err := f.InsertRows("Sheet1", 3, 2)
 //
 // Use this method with caution, which will affect changes in references such
 // as formulas, charts, and so on. If there is any referenced value of the
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
-func (f *File) InsertRow(sheet string, row int) error {
+func (f *File) InsertRows(sheet string, row, n int) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
-	return f.adjustHelper(sheet, rows, row, 1)
+	if row >= TotalRows || n >= TotalRows {
+		return ErrMaxRows
+	}
+	if n < 1 {
+		return ErrParameterInvalid
+	}
+	return f.adjustHelper(sheet, rows, row, n)
 }
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below
@@ -758,6 +764,54 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 	}
 	return nil
 }
+func SRCheckRow(ws *xlsxWorksheet, rowIdx int, rowData *xlsxRow) error {
+		colCount := len(rowData.C)
+		if colCount == 0 {
+			return nil
+		}
+		// check and fill the cell without r attribute in a row element
+		rCount := 0
+		for idx, cell := range rowData.C {
+			rCount++
+			if cell.R != "" {
+				lastR, _, err := CellNameToCoordinates(cell.R)
+				if err != nil {
+					return err
+				}
+				if lastR > rCount {
+					rCount = lastR
+				}
+				continue
+			}
+			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
+		}
+		lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
+		if err != nil {
+			return err
+		}
+		if colCount < lastCol {
+			oldList := rowData.C
+			newlist := make([]xlsxC, 0, lastCol)
+			rowData.C = ws.SheetData.Row[rowIdx].C[:0]
+			for colIdx := 0; colIdx < lastCol; colIdx++ {
+				cellName, err := CoordinatesToCellName(colIdx+1, rowIdx+1)
+				if err != nil {
+					return err
+				}
+				newlist = append(newlist, xlsxC{R: cellName})
+			}
+			rowData.C = newlist
+			for colIdx := range oldList {
+				colData := &oldList[colIdx]
+				colNum, _, err := CellNameToCoordinates(colData.R)
+				if err != nil {
+					return err
+				}
+				ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
+			}
+		}
+		return nil
+}
 
 // checkRow provides a function to check and fill each column element for all
 // rows and make that is continuous in a worksheet of XML. For example:
@@ -862,7 +916,10 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if end > TotalRows {
 		return ErrMaxRows
 	}
-	if styleID < 0 {
+	s := f.stylesReader()
+	s.Lock()
+	defer s.Unlock()
+	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}
 	ws, err := f.workSheetReader(sheet)

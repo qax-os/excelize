@@ -4330,7 +4330,7 @@ func TestCalcCellValue(t *testing.T) {
 	// Test get calculated cell value on not exists worksheet.
 	f = prepareCalcData(cellData)
 	_, err = f.CalcCellValue("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get calculated cell value with not support formula.
 	f = prepareCalcData(cellData)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=UNSUPPORT(A1)"))

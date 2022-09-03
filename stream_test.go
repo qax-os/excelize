@@ -198,7 +198,7 @@ func TestNewStreamWriter(t *testing.T) {
 	_, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
 func TestSetRow(t *testing.T) {

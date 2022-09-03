@@ -36,7 +36,7 @@ func TestAddShape(t *testing.T) {
 			}
 		}],
 		"height": 90
-	}`), "sheet Sheet3 is not exist")
+	}`), "sheet Sheet3 does not exist")
 	assert.EqualError(t, f.AddShape("Sheet3", "H1", ""), "unexpected end of JSON input")
 	assert.EqualError(t, f.AddShape("Sheet1", "A", `{
 		"type": "rect",

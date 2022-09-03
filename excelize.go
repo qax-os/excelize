@@ -221,9 +221,13 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 	return err
 }
 
+func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
+ return f.SRWorkSheetReader(sheet, false)
+}
+
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
+func (f *File) SRWorkSheetReader(sheet string, skipCheckRow bool) (ws *xlsxWorksheet, err error) {
 	f.Lock()
 	defer f.Unlock()
 	var (
@@ -260,9 +264,11 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	if ok = f.checked[name]; !ok {
 		checkSheet(ws)
-		if err = checkRow(ws); err != nil {
-			return
-		}
+    if !skipCheckRow {
+		  if err = checkRow(ws); err != nil {
+			 return
+		  }
+	  }
 		f.checked[name] = true
 	}
 	f.Sheet.Store(name, ws)

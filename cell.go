@@ -1203,7 +1203,7 @@ type SRSheetData struct {
 }
 
 func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRWorkSheetReader(sheet, true)
 	if err != nil {
 		return nil, err
 	}
@@ -1225,6 +1225,13 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 	for rowIdx := range ws.SheetData.Row {
 		cells = append(cells, []SRCell{})
 		rowData := &ws.SheetData.Row[rowIdx]
+		colCount := len(rowData.C)
+		if colCount > 0 {
+			err := SRCheckRow(ws, rowIdx, rowData)
+			if err != nil {
+				return nil, err
+			}
+		}
 		ht := defaultRowHeight
 		if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
 			ht = ws.SheetFormatPr.DefaultRowHeight

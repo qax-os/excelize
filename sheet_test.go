@@ -102,7 +102,7 @@ func TestSetPane(t *testing.T) {
 	f.NewSheet("Panes 4")
 	assert.NoError(t, f.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`))
 	assert.NoError(t, f.SetPanes("Panes 4", ""))
-	assert.EqualError(t, f.SetPanes("SheetN", ""), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetPanes("SheetN", ""), "sheet SheetN does not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
 	// Test add pane on empty sheet views worksheet
 	f = NewFile()
@@ -181,7 +181,7 @@ func TestSearchSheet(t *testing.T) {
 	}
 	// Test search in a not exists worksheet.
 	_, err = f.SearchSheet("Sheet4", "")
-	assert.EqualError(t, err, "sheet Sheet4 is not exist")
+	assert.EqualError(t, err, "sheet Sheet4 does not exist")
 	var expected []string
 	// Test search a not exists value.
 	result, err := f.SearchSheet("Sheet1", "X")
@@ -225,20 +225,20 @@ func TestSearchSheet(t *testing.T) {
 func TestSetPageLayout(t *testing.T) {
 	f := NewFile()
 	// Test set page layout on not exists worksheet.
-	assert.EqualError(t, f.SetPageLayout("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetPageLayout("SheetN"), "sheet SheetN does not exist")
 }
 
 func TestGetPageLayout(t *testing.T) {
 	f := NewFile()
 	// Test get page layout on not exists worksheet.
-	assert.EqualError(t, f.GetPageLayout("SheetN"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.GetPageLayout("SheetN"), "sheet SheetN does not exist")
 }
 
 func TestSetHeaderFooter(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet.
-	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN does not exist")
 	// Test set header and footer with illegal setting.
 	assert.EqualError(t, f.SetHeaderFooter("Sheet1", &FormatHeaderFooter{
 		OddHeader: strings.Repeat("c", MaxFieldLength+1),
@@ -301,7 +301,7 @@ func TestGroupSheets(t *testing.T) {
 	for _, sheet := range sheets {
 		f.NewSheet(sheet)
 	}
-	assert.EqualError(t, f.GroupSheets([]string{"Sheet1", "SheetN"}), "sheet SheetN is not exist")
+	assert.EqualError(t, f.GroupSheets([]string{"Sheet1", "SheetN"}), "sheet SheetN does not exist")
 	assert.EqualError(t, f.GroupSheets([]string{"Sheet2", "Sheet3"}), "group worksheet must contain an active worksheet")
 	assert.NoError(t, f.GroupSheets([]string{"Sheet1", "Sheet2"}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGroupSheets.xlsx")))
@@ -323,7 +323,7 @@ func TestInsertPageBreak(t *testing.T) {
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
 	assert.NoError(t, f.InsertPageBreak("Sheet1", "C3"))
 	assert.EqualError(t, f.InsertPageBreak("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.InsertPageBreak("SheetN", "C3"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.InsertPageBreak("SheetN", "C3"), "sheet SheetN does not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertPageBreak.xlsx")))
 }
 
@@ -349,7 +349,7 @@ func TestRemovePageBreak(t *testing.T) {
 	assert.NoError(t, f.RemovePageBreak("Sheet2", "B2"))
 
 	assert.EqualError(t, f.RemovePageBreak("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.RemovePageBreak("SheetN", "C3"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.RemovePageBreak("SheetN", "C3"), "sheet SheetN does not exist")
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemovePageBreak.xlsx")))
 }
 
