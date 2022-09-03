@@ -696,7 +696,7 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 			nextHours := nf.hoursNext(i)
 			aps := strings.Split(nf.localAmPm(token.TValue), "/")
 			nf.ap = aps[0]
-			if nextHours > 12 {
+			if nextHours >= 12 {
 				nf.ap = aps[1]
 			}
 		}
@@ -777,9 +777,11 @@ func (nf *numberFormat) hoursHandler(i int, token nfp.Token) {
 		ap, ok := nf.apNext(i)
 		if ok {
 			nf.ap = ap[0]
+			if h >= 12 {
+				nf.ap = ap[1]
+			}
 			if h > 12 {
 				h -= 12
-				nf.ap = ap[1]
 			}
 		}
 		if nf.ap != "" && nf.hoursNext(i) == -1 && h > 12 {
