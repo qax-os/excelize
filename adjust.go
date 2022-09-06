@@ -74,13 +74,18 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 // inserting or deleting rows or columns.
 func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 	for rowIdx := range ws.SheetData.Row {
+		for _, v := range ws.SheetData.Row[rowIdx].C {
+			if cellCol, _, _ := CellNameToCoordinates(v.R); col <= cellCol {
+				if newCol := cellCol + offset; newCol > 0 && newCol > MaxColumns {
+					return ErrColumnNumber
+				}
+			}
+		}
+	}
+	for rowIdx := range ws.SheetData.Row {
 		for colIdx, v := range ws.SheetData.Row[rowIdx].C {
-			cellCol, cellRow, _ := CellNameToCoordinates(v.R)
-			if col <= cellCol {
+			if cellCol, cellRow, _ := CellNameToCoordinates(v.R); col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
-					if newCol > MaxColumns {
-						return ErrColumnNumber
-					}
 					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
 				}
 			}
@@ -92,12 +97,17 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
 func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
-	for i := range ws.SheetData.Row {
+	totalRows := len(ws.SheetData.Row)
+	if totalRows == 0 {
+		return nil
+	}
+	lastRow := &ws.SheetData.Row[totalRows-1]
+	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow >= TotalRows {
+		return ErrMaxRows
+	}
+	for i := 0; i < len(ws.SheetData.Row); i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			if newRow >= TotalRows {
-				return ErrMaxRows
-			}
 			f.adjustSingleRowDimensions(r, newRow)
 		}
 	}

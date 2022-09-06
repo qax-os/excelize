@@ -638,6 +638,30 @@ func (f *File) getColWidth(sheet string, col int) int {
 	return int(defaultColWidthPixels)
 }
 
+// GetColStyle provides a function to get column style ID by given worksheet
+// name and column name.
+func (f *File) GetColStyle(sheet, col string) (int, error) {
+	var styleID int
+	colNum, err := ColumnNameToNumber(col)
+	if err != nil {
+		return styleID, err
+	}
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return styleID, err
+	}
+	ws.Lock()
+	defer ws.Unlock()
+	if ws.Cols != nil {
+		for _, v := range ws.Cols.Col {
+			if v.Min <= colNum && colNum <= v.Max {
+				styleID = v.Style
+			}
+		}
+	}
+	return styleID, err
+}
+
 // GetColWidth provides a function to get column width by given worksheet name
 // and column name.
 func (f *File) GetColWidth(sheet, col string) (float64, error) {
@@ -649,6 +673,8 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	if err != nil {
 		return defaultColWidth, err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	if ws.Cols != nil {
 		var width float64
 		for _, v := range ws.Cols.Col {
