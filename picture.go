@@ -505,9 +505,6 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.ReplaceAll(target, "..", "xl")
-	if _, ok := f.Pkg.Load(drawingXML); !ok {
-		return "", nil, err
-	}
 	drawingRelationships := strings.ReplaceAll(
 		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
 

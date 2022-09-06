@@ -8,7 +8,6 @@ import (
 	_ "image/png"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,9 +33,7 @@ func BenchmarkAddPictureFromBytes(b *testing.B) {
 
 func TestAddPicture(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	// Test add picture to worksheet with offset and location hyperlink.
 	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
@@ -77,21 +74,14 @@ func TestAddPictureErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test add picture to worksheet with invalid file path.
-	err = f.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), "")
-	if assert.Error(t, err) {
-		assert.True(t, os.IsNotExist(err), "Expected os.IsNotExist(err) == true")
-	}
+	assert.Error(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), ""))
 
 	// Test add picture to worksheet with unsupported file type.
-	err = f.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), "")
-	assert.EqualError(t, err, ErrImgExt.Error())
-
-	err = f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1))
-	assert.EqualError(t, err, ErrImgExt.Error())
+	assert.EqualError(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), ""), ErrImgExt.Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1)), ErrImgExt.Error())
 
 	// Test add picture to worksheet with invalid file data.
-	err = f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1))
-	assert.EqualError(t, err, image.ErrFormat.Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1)), image.ErrFormat.Error())
 
 	// Test add picture with custom image decoder and encoder.
 	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
@@ -109,7 +99,14 @@ func TestAddPictureErrors(t *testing.T) {
 }
 
 func TestGetPicture(t *testing.T) {
-	f, err := prepareTestBook1()
+	f := NewFile()
+	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), ""))
+	name, content, err := f.GetPicture("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 13233, len(content))
+	assert.Equal(t, "image1.png", name)
+
+	f, err = prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -118,7 +115,6 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
 		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0o644)) {
-
 		t.FailNow()
 	}
 
