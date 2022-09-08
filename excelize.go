@@ -136,13 +136,13 @@ func newFile() *File {
 
 // OpenReader read data stream from io.Reader and return a populated
 // spreadsheet file.
-func OpenReader(r io.Reader, opt ...Options) (*File, error) {
+func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 	f := newFile()
-	f.options = parseOptions(opt...)
+	f.options = parseOptions(opts...)
 	if f.options.UnzipSizeLimit == 0 {
 		f.options.UnzipSizeLimit = UnzipSizeLimit
 		if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {

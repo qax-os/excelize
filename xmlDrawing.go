@@ -144,6 +144,15 @@ const (
 // supportedImageTypes defined supported image types.
 var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf", ".emz": ".emz", ".wmz": ".wmz"}
 
+// supportedContentType defined supported file format types.
+var supportedContentType = map[string]string{
+	".xlam": ContentTypeAddinMacro,
+	".xlsm": ContentTypeMacro,
+	".xlsx": ContentTypeSheetML,
+	".xltm": ContentTypeTemplateMacro,
+	".xltx": ContentTypeTemplate,
+}
+
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional
 // information that does not affect the appearance of the picture to be stored.

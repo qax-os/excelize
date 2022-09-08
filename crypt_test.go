@@ -48,6 +48,8 @@ func TestEncrypt(t *testing.T) {
 	cell, err = f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", cell)
+	// Test remove password by save workbook with options
+	assert.NoError(t, f.Save(Options{Password: ""}))
 	assert.NoError(t, f.Close())
 }
 

@@ -71,6 +71,14 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, "zip: FileHeader.Name too long")
 	}
+	// Test write with unsupported workbook file format
+	{
+		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f.Pkg.Store("/d", []byte("s"))
+		f.Path = "Book1.xls"
+		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
+	}
 }
 
 func TestClose(t *testing.T) {

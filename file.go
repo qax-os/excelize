@@ -55,44 +55,32 @@ func NewFile() *File {
 }
 
 // Save provides a function to override the spreadsheet with origin path.
-func (f *File) Save() error {
+func (f *File) Save(opts ...Options) error {
 	if f.Path == "" {
 		return ErrSave
 	}
-	if f.options != nil {
-		return f.SaveAs(f.Path, *f.options)
+	for i := range opts {
+		f.options = &opts[i]
 	}
-	return f.SaveAs(f.Path)
+	return f.SaveAs(f.Path, *f.options)
 }
 
 // SaveAs provides a function to create or update to a spreadsheet at the
 // provided path.
-func (f *File) SaveAs(name string, opt ...Options) error {
+func (f *File) SaveAs(name string, opts ...Options) error {
 	if len(name) > MaxFilePathLength {
 		return ErrMaxFilePathLength
 	}
 	f.Path = name
-	contentType, ok := map[string]string{
-		".xlam": ContentTypeAddinMacro,
-		".xlsm": ContentTypeMacro,
-		".xlsx": ContentTypeSheetML,
-		".xltm": ContentTypeTemplateMacro,
-		".xltx": ContentTypeTemplate,
-	}[filepath.Ext(f.Path)]
-	if !ok {
+	if _, ok := supportedContentType[filepath.Ext(f.Path)]; !ok {
 		return ErrWorkbookFileFormat
 	}
-	f.setContentTypePartProjectExtensions(contentType)
 	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	f.options = nil
-	for i := range opt {
-		f.options = &opt[i]
-	}
-	return f.Write(file)
+	return f.Write(file, opts...)
 }
 
 // Close closes and cleanup the open temporary file for the spreadsheet.
@@ -113,13 +101,23 @@ func (f *File) Close() error {
 }
 
 // Write provides a function to write to an io.Writer.
-func (f *File) Write(w io.Writer) error {
-	_, err := f.WriteTo(w)
+func (f *File) Write(w io.Writer, opts ...Options) error {
+	_, err := f.WriteTo(w, opts...)
 	return err
 }
 
 // WriteTo implements io.WriterTo to write the file.
-func (f *File) WriteTo(w io.Writer) (int64, error) {
+func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
+	for i := range opts {
+		f.options = &opts[i]
+	}
+	if len(f.Path) != 0 {
+		contentType, ok := supportedContentType[filepath.Ext(f.Path)]
+		if !ok {
+			return 0, ErrWorkbookFileFormat
+		}
+		f.setContentTypePartProjectExtensions(contentType)
+	}
 	if f.options != nil && f.options.Password != "" {
 		buf, err := f.WriteToBuffer()
 		if err != nil {
