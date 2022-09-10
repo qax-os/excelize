@@ -1005,8 +1005,9 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 	return &fs, err
 }
 
-// NewStyle provides a function to create the style for cells by given JSON or
-// structure pointer. Note that the color field uses RGB color code.
+// NewStyle provides a function to create the style for cells by given
+// structure pointer or JSON. This function is concurrency safe. Note that the
+// color field uses RGB color code.
 //
 // The following shows the border styles sorted by excelize index number:
 //
@@ -2493,10 +2494,10 @@ func (f *File) GetCellStyle(sheet, axis string) (int, error) {
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given
-// worksheet name, coordinate area and style ID. Note that diagonalDown and
-// diagonalUp type border should be use same color in the same coordinate
-// area. SetCellStyle will overwrite the existing styles for the cell, it
-// won't append or merge style with existing styles.
+// worksheet name, coordinate area and style ID. This function is concurrency
+// safe. Note that diagonalDown and diagonalUp type border should be use same
+// color in the same coordinate area. SetCellStyle will overwrite the existing
+// styles for the cell, it won't append or merge style with existing styles.
 //
 // For example create a borders of cell H9 on Sheet1:
 //

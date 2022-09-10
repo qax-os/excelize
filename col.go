@@ -184,7 +184,8 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 }
 
 // Cols returns a columns iterator, used for streaming reading data for a
-// worksheet with a large data. For example:
+// worksheet with a large data. This function is concurrency safe. For
+// example:
 //
 //	cols, err := f.Cols("Sheet1")
 //	if err != nil {
@@ -239,8 +240,8 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 }
 
 // GetColVisible provides a function to get visible of a single column by given
-// worksheet name and column name. For example, get visible state of column D
-// in Sheet1:
+// worksheet name and column name. This function is concurrency safe. For
+// example, get visible state of column D in Sheet1:
 //
 //	visible, err := f.GetColVisible("Sheet1", "D")
 func (f *File) GetColVisible(sheet, col string) (bool, error) {
@@ -252,6 +253,8 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	if ws.Cols == nil {
 		return true, err
 	}
@@ -266,7 +269,7 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 }
 
 // SetColVisible provides a function to set visible columns by given worksheet
-// name, columns range and visibility.
+// name, columns range and visibility. This function is concurrency safe.
 //
 // For example hide column D on Sheet1:
 //
@@ -284,6 +287,8 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	colData := xlsxCol{
 		Min:         start,
 		Max:         end,
@@ -399,9 +404,9 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 }
 
 // SetColStyle provides a function to set style of columns by given worksheet
-// name, columns range and style ID. Note that this will overwrite the
-// existing styles for the columns, it won't append or merge style with
-// existing styles.
+// name, columns range and style ID. This function is concurrency safe. Note
+// that this will overwrite the existing styles for the columns, it won't
+// append or merge style with existing styles.
 //
 // For example set style of column H on Sheet1:
 //
@@ -426,6 +431,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if err != nil {
 		return err
 	}
+	ws.Lock()
 	if ws.Cols == nil {
 		ws.Cols = &xlsxCols{}
 	}
@@ -444,6 +450,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		fc.Width = c.Width
 		return fc
 	})
+	ws.Unlock()
 	if rows := len(ws.SheetData.Row); rows > 0 {
 		for col := start; col <= end; col++ {
 			from, _ := CoordinatesToCellName(col, 1)
@@ -455,7 +462,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 }
 
 // SetColWidth provides a function to set the width of a single column or
-// multiple columns. For example:
+// multiple columns. This function is concurrency safe. For example:
 //
 //	f := excelize.NewFile()
 //	err := f.SetColWidth("Sheet1", "A", "H", 20)
@@ -479,6 +486,8 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	if err != nil {
 		return err
 	}
+	ws.Lock()
+	defer ws.Unlock()
 	col := xlsxCol{
 		Min:         min,
 		Max:         max,
@@ -623,6 +632,8 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 // sheet name and column number.
 func (f *File) getColWidth(sheet string, col int) int {
 	ws, _ := f.workSheetReader(sheet)
+	ws.Lock()
+	defer ws.Unlock()
 	if ws.Cols != nil {
 		var width float64
 		for _, v := range ws.Cols.Col {
@@ -639,7 +650,7 @@ func (f *File) getColWidth(sheet string, col int) int {
 }
 
 // GetColStyle provides a function to get column style ID by given worksheet
-// name and column name.
+// name and column name. This function is concurrency safe.
 func (f *File) GetColStyle(sheet, col string) (int, error) {
 	var styleID int
 	colNum, err := ColumnNameToNumber(col)
@@ -663,7 +674,7 @@ func (f *File) GetColStyle(sheet, col string) (int, error) {
 }
 
 // GetColWidth provides a function to get column width by given worksheet name
-// and column name.
+// and column name. This function is concurrency safe.
 func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	colNum, err := ColumnNameToNumber(col)
 	if err != nil {

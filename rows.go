@@ -238,7 +238,8 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 }
 
 // Rows returns a rows iterator, used for streaming reading data for a
-// worksheet with a large data. For example:
+// worksheet with a large data. This function is concurrency safe. For
+// example:
 //
 //	rows, err := f.Rows("Sheet1")
 //	if err != nil {

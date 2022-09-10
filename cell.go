@@ -60,7 +60,7 @@ var cellTypes = map[string]CellType{
 // worksheet name and axis in spreadsheet file. If it is possible to apply a
 // format to the cell value, it will do so, if not then an error will be
 // returned, along with the raw value of the cell. All cells' values will be
-// the same in a merged range.
+// the same in a merged range. This function is concurrency safe.
 func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error) {
 	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
@@ -85,10 +85,10 @@ func (f *File) GetCellType(sheet, axis string) (CellType, error) {
 	return cellType, err
 }
 
-// SetCellValue provides a function to set the value of a cell. The specified
-// coordinates should not be in the first row of the table, a complex number
-// can be set with string text. The following shows the supported data
-// types:
+// SetCellValue provides a function to set the value of a cell. This function
+// is concurrency safe. The specified coordinates should not be in the first
+// row of the table, a complex number can be set with string text. The
+// following shows the supported data types:
 //
 //	int
 //	int8
@@ -1047,8 +1047,9 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 }
 
 // SetSheetRow writes an array to row by given worksheet name, starting
-// coordinate and a pointer to array type 'slice'. For example, writes an
-// array to row 6 start with the cell B6 on Sheet1:
+// coordinate and a pointer to array type 'slice'. This function is
+// concurrency safe. For example, writes an array to row 6 start with the cell
+// B6 on Sheet1:
 //
 //	err := f.SetSheetRow("Sheet1", "B6", &[]interface{}{"1", nil, 2})
 func (f *File) SetSheetRow(sheet, axis string, slice interface{}) error {

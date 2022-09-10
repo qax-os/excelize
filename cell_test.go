@@ -64,7 +64,24 @@ func TestConcurrency(t *testing.T) {
 				_, err := cols.Rows()
 				assert.NoError(t, err)
 			}
-
+			// Concurrency set columns style
+			assert.NoError(t, f.SetColStyle("Sheet1", "C:E", style))
+			// Concurrency get columns style
+			styleID, err := f.GetColStyle("Sheet1", "D")
+			assert.NoError(t, err)
+			assert.Equal(t, style, styleID)
+			// Concurrency set columns width
+			assert.NoError(t, f.SetColWidth("Sheet1", "A", "B", 10))
+			// Concurrency get columns width
+			width, err := f.GetColWidth("Sheet1", "A")
+			assert.NoError(t, err)
+			assert.Equal(t, 10.0, width)
+			// Concurrency set columns visible
+			assert.NoError(t, f.SetColVisible("Sheet1", "A:B", true))
+			// Concurrency get columns visible
+			visible, err := f.GetColVisible("Sheet1", "A")
+			assert.NoError(t, err)
+			assert.Equal(t, true, visible)
 			wg.Done()
 		}(i, t)
 	}
