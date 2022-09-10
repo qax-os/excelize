@@ -156,17 +156,20 @@ func (f *File) DeleteComment(sheet, cell string) (err error) {
 	}
 	commentsXML = strings.TrimPrefix(commentsXML, "/")
 	if comments := f.commentsReader(commentsXML); comments != nil {
-		for i, cmt := range comments.CommentList.Comment {
-			if cmt.Ref == cell {
-				if len(comments.CommentList.Comment) > 1 {
-					comments.CommentList.Comment = append(
-						comments.CommentList.Comment[:i],
-						comments.CommentList.Comment[i+1:]...,
-					)
-					continue
-				}
-				comments.CommentList.Comment = nil
+		for i := 0; i < len(comments.CommentList.Comment); i++ {
+			cmt := comments.CommentList.Comment[i]
+			if cmt.Ref != cell {
+				continue
 			}
+			if len(comments.CommentList.Comment) > 1 {
+				comments.CommentList.Comment = append(
+					comments.CommentList.Comment[:i],
+					comments.CommentList.Comment[i+1:]...,
+				)
+				i--
+				continue
+			}
+			comments.CommentList.Comment = nil
 		}
 		f.Comments[commentsXML] = comments
 	}

@@ -55,15 +55,19 @@ func TestDeleteComment(t *testing.T) {
 	assert.NoError(t, f.AddComment("Sheet2", "A40", `{"author":"Excelize: ","text":"This is a comment1."}`))
 	assert.NoError(t, f.AddComment("Sheet2", "A41", `{"author":"Excelize: ","text":"This is a comment2."}`))
 	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3."}`))
+	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3-1."}`))
+	assert.NoError(t, f.AddComment("Sheet2", "C42", `{"author":"Excelize: ","text":"This is a comment4."}`))
+	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3-2."}`))
 
 	assert.NoError(t, f.DeleteComment("Sheet2", "A40"))
 
-	assert.EqualValues(t, 2, len(f.GetComments()["Sheet2"]))
+	assert.EqualValues(t, 5, len(f.GetComments()["Sheet2"]))
 	assert.EqualValues(t, len(NewFile().GetComments()), 0)
 
 	// Test delete all comments in a worksheet
 	assert.NoError(t, f.DeleteComment("Sheet2", "A41"))
 	assert.NoError(t, f.DeleteComment("Sheet2", "C41"))
+	assert.NoError(t, f.DeleteComment("Sheet2", "C42"))
 	assert.EqualValues(t, 0, len(f.GetComments()["Sheet2"]))
 	// Test delete comment on not exists worksheet
 	assert.EqualError(t, f.DeleteComment("SheetN", "A1"), "sheet SheetN does not exist")
