@@ -768,6 +768,16 @@ func (f *File) drawChartSeries(formatSet *formatChart) *[]cSer {
 // drawChartSeriesSpPr provides a function to draw the c:spPr element by given
 // format sets.
 func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
+	var srgbClr *attrValString
+	var schemeClr *aSchemeClr
+
+	if color := stringPtr(formatSet.Series[i].Line.Color); *color != "" {
+		*color = strings.TrimPrefix(*color, "#")
+		srgbClr = &attrValString{Val: color}
+	} else {
+		schemeClr = &aSchemeClr{Val: "accent" + strconv.Itoa((formatSet.order+i)%6+1)}
+	}
+
 	spPrScatter := &cSpPr{
 		Ln: &aLn{
 			W:      25400,
@@ -779,7 +789,8 @@ func (f *File) drawChartSeriesSpPr(i int, formatSet *formatChart) *cSpPr {
 			W:   f.ptToEMUs(formatSet.Series[i].Line.Width),
 			Cap: "rnd", // rnd, sq, flat
 			SolidFill: &aSolidFill{
-				SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((formatSet.order+i)%6+1)},
+				SchemeClr: schemeClr,
+				SrgbClr:   srgbClr,
 			},
 		},
 	}
