@@ -1245,11 +1245,16 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 			cellData := &rowData.C[colIdx]
 			srCell := SRCell{}
 			if cellData.F != nil {
+				formulaMissing := false
 				if cellData.F.T == STCellFormulaTypeShared && cellData.F.Si != nil {
-					//srCell.Formula = getSharedFormula(ws, *cellData.F.Si, cellData.R)
-					srCell.SharedIndex = cellData.F.Si
-				} else {
-					srCell.Formula = cellData.F.Content
+					srCell.SharedIndex = cellData.F.Si		
+					//cells with Refs are originals that contain the formula text
+					if cellData.F.Ref == "" {
+						formulaMissing = true
+					}
+				} 
+				if !formulaMissing {
+				srCell.Formula = cellData.F.Content
 				}
 			}
 			val, _ := cellData.getValueFrom(f, sharedStringsReader, true)
