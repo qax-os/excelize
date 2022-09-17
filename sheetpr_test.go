@@ -132,8 +132,8 @@ func TestSheetPrOptions(t *testing.T) {
 
 	for i, test := range testData {
 		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opt := test.nonDefault
-			t.Logf("option %T", opt)
+			opts := test.nonDefault
+			t.Logf("option %T", opts)
 
 			def := deepcopy.Copy(test.container).(SheetPrOptionPtr)
 			val1 := deepcopy.Copy(def).(SheetPrOptionPtr)
@@ -141,34 +141,34 @@ func TestSheetPrOptions(t *testing.T) {
 
 			f := NewFile()
 			// Get the default value
-			assert.NoError(t, f.GetSheetPrOptions(sheet, def), opt)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, def), opts)
 			// Get again and check
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, opt) {
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, opts) {
 				t.FailNow()
 			}
 			// Set the same value
-			assert.NoError(t, f.SetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetPrOptions(sheet, val1), opts)
 			// Get again and check
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Set a different value
-			assert.NoError(t, f.SetSheetPrOptions(sheet, test.nonDefault), opt)
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetPrOptions(sheet, test.nonDefault), opts)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
 			// Get again and compare
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val2), opt)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val2), opts)
+			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opt) {
+			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
 				t.FailNow()
 			}
 			// Restore the default value
-			assert.NoError(t, f.SetSheetPrOptions(sheet, def), opt)
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetPrOptions(sheet, def), opts)
+			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
 			if !assert.Equal(t, def, val1) {
 				t.FailNow()
 			}
@@ -281,8 +281,8 @@ func TestPageMarginsOption(t *testing.T) {
 
 	for i, test := range testData {
 		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opt := test.nonDefault
-			t.Logf("option %T", opt)
+			opts := test.nonDefault
+			t.Logf("option %T", opts)
 
 			def := deepcopy.Copy(test.container).(PageMarginsOptionsPtr)
 			val1 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
@@ -290,34 +290,34 @@ func TestPageMarginsOption(t *testing.T) {
 
 			f := NewFile()
 			// Get the default value
-			assert.NoError(t, f.GetPageMargins(sheet, def), opt)
+			assert.NoError(t, f.GetPageMargins(sheet, def), opts)
 			// Get again and check
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, opt) {
+			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, opts) {
 				t.FailNow()
 			}
 			// Set the same value
-			assert.NoError(t, f.SetPageMargins(sheet, val1), opt)
+			assert.NoError(t, f.SetPageMargins(sheet, val1), opts)
 			// Get again and check
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Set a different value
-			assert.NoError(t, f.SetPageMargins(sheet, test.nonDefault), opt)
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opt)
+			assert.NoError(t, f.SetPageMargins(sheet, test.nonDefault), opts)
+			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
 			// Get again and compare
-			assert.NoError(t, f.GetPageMargins(sheet, val2), opt)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetPageMargins(sheet, val2), opts)
+			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opt) {
+			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
 				t.FailNow()
 			}
 			// Restore the default value
-			assert.NoError(t, f.SetPageMargins(sheet, def), opt)
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opt)
+			assert.NoError(t, f.SetPageMargins(sheet, def), opts)
+			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
 			if !assert.Equal(t, def, val1) {
 				t.FailNow()
 			}
@@ -417,8 +417,8 @@ func TestSheetFormatPrOptions(t *testing.T) {
 
 	for i, test := range testData {
 		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opt := test.nonDefault
-			t.Logf("option %T", opt)
+			opts := test.nonDefault
+			t.Logf("option %T", opts)
 
 			def := deepcopy.Copy(test.container).(SheetFormatPrOptionsPtr)
 			val1 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
@@ -426,34 +426,34 @@ func TestSheetFormatPrOptions(t *testing.T) {
 
 			f := NewFile()
 			// Get the default value
-			assert.NoError(t, f.GetSheetFormatPr(sheet, def), opt)
+			assert.NoError(t, f.GetSheetFormatPr(sheet, def), opts)
 			// Get again and check
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, opt) {
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, opts) {
 				t.FailNow()
 			}
 			// Set the same value
-			assert.NoError(t, f.SetSheetFormatPr(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetFormatPr(sheet, val1), opts)
 			// Get again and check
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Set a different value
-			assert.NoError(t, f.SetSheetFormatPr(sheet, test.nonDefault), opt)
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetFormatPr(sheet, test.nonDefault), opts)
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
 			// Get again and compare
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val2), opt)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val2), opts)
+			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opt) {
+			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
 				t.FailNow()
 			}
 			// Restore the default value
-			assert.NoError(t, f.SetSheetFormatPr(sheet, def), opt)
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opt)
+			assert.NoError(t, f.SetSheetFormatPr(sheet, def), opts)
+			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
 			if !assert.Equal(t, def, val1) {
 				t.FailNow()
 			}

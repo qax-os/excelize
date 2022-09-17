@@ -98,12 +98,12 @@ type Options struct {
 //	}
 //
 // Close the file by Close function after opening the spreadsheet.
-func OpenFile(filename string, opt ...Options) (*File, error) {
+func OpenFile(filename string, opts ...Options) (*File, error) {
 	file, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
-	f, err := OpenReader(file, opt...)
+	f, err := OpenReader(file, opts...)
 	if err != nil {
 		closeErr := file.Close()
 		if closeErr == nil {
@@ -188,11 +188,11 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 // parseOptions provides a function to parse the optional settings for open
 // and reading spreadsheet.
 func parseOptions(opts ...Options) *Options {
-	opt := &Options{}
-	for _, o := range opts {
-		opt = &o
+	options := &Options{}
+	for _, opt := range opts {
+		options = &opt
 	}
-	return opt
+	return options
 }
 
 // CharsetTranscoder Set user defined codepage transcoder function for open
@@ -207,16 +207,16 @@ func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {
 }
 
 // setDefaultTimeStyle provides a function to set default numbers format for
-// time.Time type cell value by given worksheet name, cell coordinates and
+// time.Time type cell value by given worksheet name, cell reference and
 // number format code.
-func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
-	s, err := f.GetCellStyle(sheet, axis)
+func (f *File) setDefaultTimeStyle(sheet, cell string, format int) error {
+	s, err := f.GetCellStyle(sheet, cell)
 	if err != nil {
 		return err
 	}
 	if s == 0 {
 		style, _ := f.NewStyle(&Style{NumFmt: format})
-		err = f.SetCellStyle(sheet, axis, axis, style)
+		err = f.SetCellStyle(sheet, cell, cell, style)
 	}
 	return err
 }

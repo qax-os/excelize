@@ -165,7 +165,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "G5", time.Duration(1e13)))
 	// Test completion column.
 	assert.NoError(t, f.SetCellValue("Sheet2", "M2", nil))
-	// Test read cell value with given axis large than exists row.
+	// Test read cell value with given cell reference large than exists row.
 	_, err = f.GetCellValue("Sheet2", "E231")
 	assert.NoError(t, err)
 	// Test get active worksheet of spreadsheet and get worksheet name of spreadsheet by given worksheet index.
@@ -336,7 +336,7 @@ func TestNewFile(t *testing.T) {
 }
 
 func TestAddDrawingVML(t *testing.T) {
-	// Test addDrawingVML with illegal cell coordinates.
+	// Test addDrawingVML with illegal cell reference.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
 }

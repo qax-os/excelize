@@ -387,7 +387,7 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 //	 Markers   | Toggle sparkline markers
 //	 ColorAxis | An RGB Color is specified as RRGGBB
 //	 Axis      | Show sparkline axis
-func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
+func (f *File) AddSparkline(sheet string, opts *SparklineOption) (err error) {
 	var (
 		ws                             *xlsxWorksheet
 		sparkType                      string
@@ -400,39 +400,39 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
 	)
 
 	// parameter validation
-	if ws, err = f.parseFormatAddSparklineSet(sheet, opt); err != nil {
+	if ws, err = f.parseFormatAddSparklineSet(sheet, opts); err != nil {
 		return
 	}
 	// Handle the sparkline type
 	sparkType = "line"
 	sparkTypes = map[string]string{"line": "line", "column": "column", "win_loss": "stacked"}
-	if opt.Type != "" {
-		if specifiedSparkTypes, ok = sparkTypes[opt.Type]; !ok {
+	if opts.Type != "" {
+		if specifiedSparkTypes, ok = sparkTypes[opts.Type]; !ok {
 			err = ErrSparklineType
 			return
 		}
 		sparkType = specifiedSparkTypes
 	}
-	group = f.addSparklineGroupByStyle(opt.Style)
+	group = f.addSparklineGroupByStyle(opts.Style)
 	group.Type = sparkType
 	group.ColorAxis = &xlsxColor{RGB: "FF000000"}
 	group.DisplayEmptyCellsAs = "gap"
-	group.High = opt.High
-	group.Low = opt.Low
-	group.First = opt.First
-	group.Last = opt.Last
-	group.Negative = opt.Negative
-	group.DisplayXAxis = opt.Axis
-	group.Markers = opt.Markers
-	if opt.SeriesColor != "" {
+	group.High = opts.High
+	group.Low = opts.Low
+	group.First = opts.First
+	group.Last = opts.Last
+	group.Negative = opts.Negative
+	group.DisplayXAxis = opts.Axis
+	group.Markers = opts.Markers
+	if opts.SeriesColor != "" {
 		group.ColorSeries = &xlsxTabColor{
-			RGB: getPaletteColor(opt.SeriesColor),
+			RGB: getPaletteColor(opts.SeriesColor),
 		}
 	}
-	if opt.Reverse {
-		group.RightToLeft = opt.Reverse
+	if opts.Reverse {
+		group.RightToLeft = opts.Reverse
 	}
-	f.addSparkline(opt, group)
+	f.addSparkline(opts, group)
 	if ws.ExtLst.Ext != "" { // append mode ext
 		if err = f.appendSparkline(ws, group, groups); err != nil {
 			return
@@ -459,25 +459,25 @@ func (f *File) AddSparkline(sheet string, opt *SparklineOption) (err error) {
 
 // parseFormatAddSparklineSet provides a function to validate sparkline
 // properties.
-func (f *File) parseFormatAddSparklineSet(sheet string, opt *SparklineOption) (*xlsxWorksheet, error) {
+func (f *File) parseFormatAddSparklineSet(sheet string, opts *SparklineOption) (*xlsxWorksheet, error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return ws, err
 	}
-	if opt == nil {
+	if opts == nil {
 		return ws, ErrParameterRequired
 	}
-	if len(opt.Location) < 1 {
+	if len(opts.Location) < 1 {
 		return ws, ErrSparklineLocation
 	}
-	if len(opt.Range) < 1 {
+	if len(opts.Range) < 1 {
 		return ws, ErrSparklineRange
 	}
-	// The ranges and locations must match.\
-	if len(opt.Location) != len(opt.Range) {
+	// The range and locations must match
+	if len(opts.Location) != len(opts.Range) {
 		return ws, ErrSparkline
 	}
-	if opt.Style < 0 || opt.Style > 35 {
+	if opts.Style < 0 || opts.Style > 35 {
 		return ws, ErrSparklineStyle
 	}
 	if ws.ExtLst == nil {
@@ -488,10 +488,10 @@ func (f *File) parseFormatAddSparklineSet(sheet string, opt *SparklineOption) (*
 
 // addSparkline provides a function to create a sparkline in a sparkline group
 // by given properties.
-func (f *File) addSparkline(opt *SparklineOption, group *xlsxX14SparklineGroup) {
-	for idx, location := range opt.Location {
+func (f *File) addSparkline(opts *SparklineOption, group *xlsxX14SparklineGroup) {
+	for idx, location := range opts.Location {
 		group.Sparklines.Sparkline = append(group.Sparklines.Sparkline, &xlsxX14Sparkline{
-			F:     opt.Range[idx],
+			F:     opts.Range[idx],
 			Sqref: location,
 		})
 	}

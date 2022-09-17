@@ -10,7 +10,7 @@ import (
 
 func TestAdjustMergeCells(t *testing.T) {
 	f := NewFile()
-	// testing adjustAutoFilter with illegal cell coordinates.
+	// testing adjustAutoFilter with illegal cell reference.
 	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -283,7 +283,7 @@ func TestAdjustAutoFilter(t *testing.T) {
 			Ref: "A1:A3",
 		},
 	}, rows, 1, -1))
-	// Test adjustAutoFilter with illegal cell coordinates.
+	// Test adjustAutoFilter with illegal cell reference.
 	assert.EqualError(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A:B1",
@@ -335,7 +335,7 @@ func TestAdjustHelper(t *testing.T) {
 	f.Sheet.Store("xl/worksheets/sheet2.xml", &xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{Ref: "A1:B"},
 	})
-	// Test adjustHelper with illegal cell coordinates.
+	// Test adjustHelper with illegal cell reference.
 	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test adjustHelper on not exists worksheet.

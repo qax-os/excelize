@@ -329,23 +329,23 @@ func (f *File) getActiveSheetID() int {
 	return 0
 }
 
-// SetSheetName provides a function to set the worksheet name by given old and
-// new worksheet names. Maximum 31 characters are allowed in sheet title and
+// SetSheetName provides a function to set the worksheet name by given source and
+// target worksheet names. Maximum 31 characters are allowed in sheet title and
 // this function only changes the name of the sheet and will not update the
 // sheet name in the formula or reference associated with the cell. So there
 // may be problem formula error or reference missing.
-func (f *File) SetSheetName(oldName, newName string) {
-	oldName = trimSheetName(oldName)
-	newName = trimSheetName(newName)
-	if strings.EqualFold(newName, oldName) {
+func (f *File) SetSheetName(source, target string) {
+	source = trimSheetName(source)
+	target = trimSheetName(target)
+	if strings.EqualFold(target, source) {
 		return
 	}
 	content := f.workbookReader()
 	for k, v := range content.Sheets.Sheet {
-		if v.Name == oldName {
-			content.Sheets.Sheet[k].Name = newName
-			f.sheetMap[newName] = f.sheetMap[oldName]
-			delete(f.sheetMap, oldName)
+		if v.Name == source {
+			content.Sheets.Sheet[k].Name = target
+			f.sheetMap[target] = f.sheetMap[source]
+			delete(f.sheetMap, source)
 		}
 	}
 }
@@ -815,17 +815,17 @@ func (f *File) GetSheetVisible(sheet string) bool {
 	return visible
 }
 
-// SearchSheet provides a function to get coordinates by given worksheet name,
+// SearchSheet provides a function to get cell reference by given worksheet name,
 // cell value, and regular expression. The function doesn't support searching
 // on the calculated result, formatted numbers and conditional lookup
-// currently. If it is a merged cell, it will return the coordinates of the
-// upper left corner of the merged area.
+// currently. If it is a merged cell, it will return the cell reference of the
+// upper left cell of the merged range reference.
 //
-// An example of search the coordinates of the value of "100" on Sheet1:
+// An example of search the cell reference of the value of "100" on Sheet1:
 //
 //	result, err := f.SearchSheet("Sheet1", "100")
 //
-// An example of search the coordinates where the numerical value in the range
+// An example of search the cell reference where the numerical value in the range
 // of "0-9" of Sheet1 is described:
 //
 //	result, err := f.SearchSheet("Sheet1", "[0-9]", true)
@@ -849,8 +849,8 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 	return f.searchSheet(name, value, regSearch)
 }
 
-// searchSheet provides a function to get coordinates by given worksheet name,
-// cell value, and regular expression.
+// searchSheet provides a function to get cell reference by given worksheet
+// name, cell value, and regular expression.
 func (f *File) searchSheet(name, value string, regSearch bool) (result []string, err error) {
 	var (
 		cellName, inElement string
@@ -1684,7 +1684,7 @@ func (f *File) UngroupSheets() error {
 }
 
 // InsertPageBreak create a page break to determine where the printed page
-// ends and where begins the next one by given worksheet name and axis, so the
+// ends and where begins the next one by given worksheet name and cell reference, so the
 // content before the page break will be printed on one page and after the
 // page break on another.
 func (f *File) InsertPageBreak(sheet, cell string) (err error) {
@@ -1741,7 +1741,8 @@ func (f *File) InsertPageBreak(sheet, cell string) (err error) {
 	return
 }
 
-// RemovePageBreak remove a page break by given worksheet name and axis.
+// RemovePageBreak remove a page break by given worksheet name and cell
+// reference.
 func (f *File) RemovePageBreak(sheet, cell string) (err error) {
 	var ws *xlsxWorksheet
 	var row, col int

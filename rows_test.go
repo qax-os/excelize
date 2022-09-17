@@ -880,7 +880,7 @@ func TestDuplicateRowTo(t *testing.T) {
 	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 1))
 	// Test duplicate row on the blank worksheet
 	assert.Equal(t, nil, f.DuplicateRowTo(sheetName, 1, 2))
-	// Test duplicate row on the worksheet with illegal cell coordinates
+	// Test duplicate row on the worksheet with illegal cell reference
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}},
 	})

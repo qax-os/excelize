@@ -207,7 +207,7 @@ func TestColumnVisibility(t *testing.T) {
 		_, err = f.GetColVisible("SheetN", "F")
 		assert.EqualError(t, err, "sheet SheetN does not exist")
 
-		// Test get column visible with illegal cell coordinates.
+		// Test get column visible with illegal cell reference.
 		_, err = f.GetColVisible("Sheet1", "*")
 		assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
 		assert.EqualError(t, f.SetColVisible("Sheet1", "*", false), newInvalidColumnNameError("*").Error())
@@ -258,7 +258,7 @@ func TestOutlineLevel(t *testing.T) {
 	_, err = f.GetRowOutlineLevel("SheetN", 1)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 
-	// Test set and get column outline level with illegal cell coordinates.
+	// Test set and get column outline level with illegal cell reference.
 	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "*", 1), newInvalidColumnNameError("*").Error())
 	_, err = f.GetColOutlineLevel("Sheet1", "*")
 	assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
@@ -329,7 +329,7 @@ func TestColWidth(t *testing.T) {
 	assert.Equal(t, defaultColWidth, width)
 	assert.NoError(t, err)
 
-	// Test set and get column width with illegal cell coordinates.
+	// Test set and get column width with illegal cell reference.
 	width, err = f.GetColWidth("Sheet1", "*")
 	assert.Equal(t, defaultColWidth, width)
 	assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
@@ -373,7 +373,7 @@ func TestInsertCols(t *testing.T) {
 	assert.NoError(t, f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`))
 	assert.NoError(t, f.InsertCols(sheet1, "A", 1))
 
-	// Test insert column with illegal cell coordinates.
+	// Test insert column with illegal cell reference.
 	assert.EqualError(t, f.InsertCols(sheet1, "*", 1), newInvalidColumnNameError("*").Error())
 
 	assert.EqualError(t, f.InsertCols(sheet1, "A", 0), ErrColumnNumber.Error())
@@ -398,7 +398,7 @@ func TestRemoveCol(t *testing.T) {
 	assert.NoError(t, f.RemoveCol(sheet1, "A"))
 	assert.NoError(t, f.RemoveCol(sheet1, "A"))
 
-	// Test remove column with illegal cell coordinates.
+	// Test remove column with illegal cell reference.
 	assert.EqualError(t, f.RemoveCol("Sheet1", "*"), newInvalidColumnNameError("*").Error())
 
 	// Test remove column on not exists worksheet.

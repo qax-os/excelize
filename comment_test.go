@@ -32,7 +32,7 @@ func TestAddComments(t *testing.T) {
 
 	// Test add comment on not exists worksheet.
 	assert.EqualError(t, f.AddComment("SheetN", "B7", `{"author":"Excelize: ","text":"This is a comment."}`), "sheet SheetN does not exist")
-	// Test add comment on with illegal cell coordinates
+	// Test add comment on with illegal cell reference
 	assert.EqualError(t, f.AddComment("Sheet1", "A", `{"author":"Excelize: ","text":"This is a comment."}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	if assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
 		assert.Len(t, f.GetComments(), 2)

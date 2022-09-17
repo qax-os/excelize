@@ -130,8 +130,8 @@ func TestPageLayoutOption(t *testing.T) {
 
 	for i, test := range testData {
 		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opt := test.nonDefault
-			t.Logf("option %T", opt)
+			opts := test.nonDefault
+			t.Logf("option %T", opts)
 
 			def := deepcopy.Copy(test.container).(PageLayoutOptionPtr)
 			val1 := deepcopy.Copy(def).(PageLayoutOptionPtr)
@@ -139,34 +139,34 @@ func TestPageLayoutOption(t *testing.T) {
 
 			f := NewFile()
 			// Get the default value
-			assert.NoError(t, f.GetPageLayout(sheet, def), opt)
+			assert.NoError(t, f.GetPageLayout(sheet, def), opts)
 			// Get again and check
-			assert.NoError(t, f.GetPageLayout(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, opt) {
+			assert.NoError(t, f.GetPageLayout(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, opts) {
 				t.FailNow()
 			}
 			// Set the same value
-			assert.NoError(t, f.SetPageLayout(sheet, val1), opt)
+			assert.NoError(t, f.SetPageLayout(sheet, val1), opts)
 			// Get again and check
-			assert.NoError(t, f.GetPageLayout(sheet, val1), opt)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetPageLayout(sheet, val1), opts)
+			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Set a different value
-			assert.NoError(t, f.SetPageLayout(sheet, test.nonDefault), opt)
-			assert.NoError(t, f.GetPageLayout(sheet, val1), opt)
+			assert.NoError(t, f.SetPageLayout(sheet, test.nonDefault), opts)
+			assert.NoError(t, f.GetPageLayout(sheet, val1), opts)
 			// Get again and compare
-			assert.NoError(t, f.GetPageLayout(sheet, val2), opt)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opt) {
+			assert.NoError(t, f.GetPageLayout(sheet, val2), opts)
+			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
 				t.FailNow()
 			}
 			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opt) {
+			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
 				t.FailNow()
 			}
 			// Restore the default value
-			assert.NoError(t, f.SetPageLayout(sheet, def), opt)
-			assert.NoError(t, f.GetPageLayout(sheet, val1), opt)
+			assert.NoError(t, f.SetPageLayout(sheet, def), opts)
+			assert.NoError(t, f.GetPageLayout(sheet, val1), opts)
 			if !assert.Equal(t, def, val1) {
 				t.FailNow()
 			}
@@ -218,7 +218,7 @@ func TestSearchSheet(t *testing.T) {
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="str"><v>A</v></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
-	assert.EqualError(t, err, "invalid cell coordinates [1, 0]")
+	assert.EqualError(t, err, "invalid cell reference [1, 0]")
 	assert.Equal(t, []string(nil), result)
 }
 

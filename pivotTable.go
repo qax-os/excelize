@@ -27,26 +27,26 @@ import (
 //	PivotStyleDark1 - PivotStyleDark28
 type PivotTableOption struct {
 	pivotTableSheetName string
-	DataRange           string
-	PivotTableRange     string
-	Rows                []PivotTableField
-	Columns             []PivotTableField
-	Data                []PivotTableField
-	Filter              []PivotTableField
-	RowGrandTotals      bool
-	ColGrandTotals      bool
-	ShowDrill           bool
-	UseAutoFormatting   bool
-	PageOverThenDown    bool
-	MergeItem           bool
-	CompactData         bool
-	ShowError           bool
-	ShowRowHeaders      bool
-	ShowColHeaders      bool
-	ShowRowStripes      bool
-	ShowColStripes      bool
-	ShowLastColumn      bool
-	PivotTableStyleName string
+	DataRange           string            `json:"data_range"`
+	PivotTableRange     string            `json:"pivot_table_range"`
+	Rows                []PivotTableField `json:"rows"`
+	Columns             []PivotTableField `json:"columns"`
+	Data                []PivotTableField `json:"data"`
+	Filter              []PivotTableField `json:"filter"`
+	RowGrandTotals      bool              `json:"row_grand_totals"`
+	ColGrandTotals      bool              `json:"col_grand_totals"`
+	ShowDrill           bool              `json:"show_drill"`
+	UseAutoFormatting   bool              `json:"use_auto_formatting"`
+	PageOverThenDown    bool              `json:"page_over_then_down"`
+	MergeItem           bool              `json:"merge_item"`
+	CompactData         bool              `json:"compact_data"`
+	ShowError           bool              `json:"show_error"`
+	ShowRowHeaders      bool              `json:"show_row_headers"`
+	ShowColHeaders      bool              `json:"show_col_headers"`
+	ShowRowStripes      bool              `json:"show_row_stripes"`
+	ShowColStripes      bool              `json:"show_col_stripes"`
+	ShowLastColumn      bool              `json:"show_last_column"`
+	PivotTableStyleName string            `json:"pivot_table_style_name"`
 }
 
 // PivotTableField directly maps the field settings of the pivot table.
@@ -69,12 +69,12 @@ type PivotTableOption struct {
 // Name specifies the name of the data field. Maximum 255 characters
 // are allowed in data field name, excess characters will be truncated.
 type PivotTableField struct {
-	Compact         bool
-	Data            string
-	Name            string
-	Outline         bool
-	Subtotal        string
-	DefaultSubtotal bool
+	Compact         bool   `json:"compact"`
+	Data            string `json:"data"`
+	Name            string `json:"name"`
+	Outline         bool   `json:"outline"`
+	Subtotal        string `json:"subtotal"`
+	DefaultSubtotal bool   `json:"default_subtotal"`
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
@@ -128,9 +128,9 @@ type PivotTableField struct {
 //	        fmt.Println(err)
 //	    }
 //	}
-func (f *File) AddPivotTable(opt *PivotTableOption) error {
+func (f *File) AddPivotTable(opts *PivotTableOption) error {
 	// parameter validation
-	_, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opt)
+	_, pivotTableSheetPath, err := f.parseFormatPivotTableSet(opts)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	sheetRelationshipsPivotTableXML := "../pivotTables/pivotTable" + strconv.Itoa(pivotTableID) + ".xml"
 	pivotTableXML := strings.ReplaceAll(sheetRelationshipsPivotTableXML, "..", "xl")
 	pivotCacheXML := "xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(pivotCacheID) + ".xml"
-	err = f.addPivotCache(pivotCacheXML, opt)
+	err = f.addPivotCache(pivotCacheXML, opts)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 	pivotCacheRels := "xl/pivotTables/_rels/pivotTable" + strconv.Itoa(pivotTableID) + ".xml.rels"
 	// rId not used
 	_ = f.addRels(pivotCacheRels, SourceRelationshipPivotCache, fmt.Sprintf("../pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
-	err = f.addPivotTable(cacheID, pivotTableID, pivotTableXML, opt)
+	err = f.addPivotTable(cacheID, pivotTableID, pivotTableXML, opts)
 	if err != nil {
 		return err
 	}
@@ -167,18 +167,18 @@ func (f *File) AddPivotTable(opt *PivotTableOption) error {
 
 // parseFormatPivotTableSet provides a function to validate pivot table
 // properties.
-func (f *File) parseFormatPivotTableSet(opt *PivotTableOption) (*xlsxWorksheet, string, error) {
-	if opt == nil {
+func (f *File) parseFormatPivotTableSet(opts *PivotTableOption) (*xlsxWorksheet, string, error) {
+	if opts == nil {
 		return nil, "", ErrParameterRequired
 	}
-	pivotTableSheetName, _, err := f.adjustRange(opt.PivotTableRange)
+	pivotTableSheetName, _, err := f.adjustRange(opts.PivotTableRange)
 	if err != nil {
 		return nil, "", fmt.Errorf("parameter 'PivotTableRange' parsing error: %s", err.Error())
 	}
-	opt.pivotTableSheetName = pivotTableSheetName
-	dataRange := f.getDefinedNameRefTo(opt.DataRange, pivotTableSheetName)
+	opts.pivotTableSheetName = pivotTableSheetName
+	dataRange := f.getDefinedNameRefTo(opts.DataRange, pivotTableSheetName)
 	if dataRange == "" {
-		dataRange = opt.DataRange
+		dataRange = opts.DataRange
 	}
 	dataSheetName, _, err := f.adjustRange(dataRange)
 	if err != nil {
@@ -214,7 +214,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 		return rng[0], []int{}, ErrParameterInvalid
 	}
 
-	// Correct the coordinate area, such correct C1:B3 to B1:C3.
+	// Correct the range, such correct C1:B3 to B1:C3.
 	if x2 < x1 {
 		x1, x2 = x2, x1
 	}
@@ -227,11 +227,11 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 
 // getPivotFieldsOrder provides a function to get order list of pivot table
 // fields.
-func (f *File) getPivotFieldsOrder(opt *PivotTableOption) ([]string, error) {
+func (f *File) getPivotFieldsOrder(opts *PivotTableOption) ([]string, error) {
 	var order []string
-	dataRange := f.getDefinedNameRefTo(opt.DataRange, opt.pivotTableSheetName)
+	dataRange := f.getDefinedNameRefTo(opts.DataRange, opts.pivotTableSheetName)
 	if dataRange == "" {
-		dataRange = opt.DataRange
+		dataRange = opts.DataRange
 	}
 	dataSheet, coordinates, err := f.adjustRange(dataRange)
 	if err != nil {
@@ -249,20 +249,20 @@ func (f *File) getPivotFieldsOrder(opt *PivotTableOption) ([]string, error) {
 }
 
 // addPivotCache provides a function to create a pivot cache by given properties.
-func (f *File) addPivotCache(pivotCacheXML string, opt *PivotTableOption) error {
+func (f *File) addPivotCache(pivotCacheXML string, opts *PivotTableOption) error {
 	// validate data range
 	definedNameRef := true
-	dataRange := f.getDefinedNameRefTo(opt.DataRange, opt.pivotTableSheetName)
+	dataRange := f.getDefinedNameRefTo(opts.DataRange, opts.pivotTableSheetName)
 	if dataRange == "" {
 		definedNameRef = false
-		dataRange = opt.DataRange
+		dataRange = opts.DataRange
 	}
 	dataSheet, coordinates, err := f.adjustRange(dataRange)
 	if err != nil {
 		return fmt.Errorf("parameter 'DataRange' parsing error: %s", err.Error())
 	}
 	// data range has been checked
-	order, _ := f.getPivotFieldsOrder(opt)
+	order, _ := f.getPivotFieldsOrder(opts)
 	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
@@ -281,11 +281,11 @@ func (f *File) addPivotCache(pivotCacheXML string, opt *PivotTableOption) error 
 		CacheFields: &xlsxCacheFields{},
 	}
 	if definedNameRef {
-		pc.CacheSource.WorksheetSource = &xlsxWorksheetSource{Name: opt.DataRange}
+		pc.CacheSource.WorksheetSource = &xlsxWorksheetSource{Name: opts.DataRange}
 	}
 	for _, name := range order {
-		rowOptions, rowOk := f.getPivotTableFieldOptions(name, opt.Rows)
-		columnOptions, colOk := f.getPivotTableFieldOptions(name, opt.Columns)
+		rowOptions, rowOk := f.getPivotTableFieldOptions(name, opts.Rows)
+		columnOptions, colOk := f.getPivotTableFieldOptions(name, opts.Columns)
 		sharedItems := xlsxSharedItems{
 			Count: 0,
 		}
@@ -311,9 +311,9 @@ func (f *File) addPivotCache(pivotCacheXML string, opt *PivotTableOption) error 
 
 // addPivotTable provides a function to create a pivot table by given pivot
 // table ID and properties.
-func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, opt *PivotTableOption) error {
+func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, opts *PivotTableOption) error {
 	// validate pivot table range
-	_, coordinates, err := f.adjustRange(opt.PivotTableRange)
+	_, coordinates, err := f.adjustRange(opts.PivotTableRange)
 	if err != nil {
 		return fmt.Errorf("parameter 'PivotTableRange' parsing error: %s", err.Error())
 	}
@@ -322,25 +322,25 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 
 	pivotTableStyle := func() string {
-		if opt.PivotTableStyleName == "" {
+		if opts.PivotTableStyleName == "" {
 			return "PivotStyleLight16"
 		}
-		return opt.PivotTableStyleName
+		return opts.PivotTableStyleName
 	}
 	pt := xlsxPivotTableDefinition{
 		Name:                  fmt.Sprintf("Pivot Table%d", pivotTableID),
 		CacheID:               cacheID,
-		RowGrandTotals:        &opt.RowGrandTotals,
-		ColGrandTotals:        &opt.ColGrandTotals,
+		RowGrandTotals:        &opts.RowGrandTotals,
+		ColGrandTotals:        &opts.ColGrandTotals,
 		UpdatedVersion:        pivotTableVersion,
 		MinRefreshableVersion: pivotTableVersion,
-		ShowDrill:             &opt.ShowDrill,
-		UseAutoFormatting:     &opt.UseAutoFormatting,
-		PageOverThenDown:      &opt.PageOverThenDown,
-		MergeItem:             &opt.MergeItem,
+		ShowDrill:             &opts.ShowDrill,
+		UseAutoFormatting:     &opts.UseAutoFormatting,
+		PageOverThenDown:      &opts.PageOverThenDown,
+		MergeItem:             &opts.MergeItem,
 		CreatedVersion:        pivotTableVersion,
-		CompactData:           &opt.CompactData,
-		ShowError:             &opt.ShowError,
+		CompactData:           &opts.CompactData,
+		ShowError:             &opts.ShowError,
 		DataCaption:           "Values",
 		Location: &xlsxLocation{
 			Ref:            hCell + ":" + vCell,
@@ -363,25 +363,25 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		},
 		PivotTableStyleInfo: &xlsxPivotTableStyleInfo{
 			Name:           pivotTableStyle(),
-			ShowRowHeaders: opt.ShowRowHeaders,
-			ShowColHeaders: opt.ShowColHeaders,
-			ShowRowStripes: opt.ShowRowStripes,
-			ShowColStripes: opt.ShowColStripes,
-			ShowLastColumn: opt.ShowLastColumn,
+			ShowRowHeaders: opts.ShowRowHeaders,
+			ShowColHeaders: opts.ShowColHeaders,
+			ShowRowStripes: opts.ShowRowStripes,
+			ShowColStripes: opts.ShowColStripes,
+			ShowLastColumn: opts.ShowLastColumn,
 		},
 	}
 
 	// pivot fields
-	_ = f.addPivotFields(&pt, opt)
+	_ = f.addPivotFields(&pt, opts)
 
 	// count pivot fields
 	pt.PivotFields.Count = len(pt.PivotFields.PivotField)
 
 	// data range has been checked
-	_ = f.addPivotRowFields(&pt, opt)
-	_ = f.addPivotColFields(&pt, opt)
-	_ = f.addPivotPageFields(&pt, opt)
-	_ = f.addPivotDataFields(&pt, opt)
+	_ = f.addPivotRowFields(&pt, opts)
+	_ = f.addPivotColFields(&pt, opts)
+	_ = f.addPivotPageFields(&pt, opts)
+	_ = f.addPivotDataFields(&pt, opts)
 
 	pivotTable, err := xml.Marshal(pt)
 	f.saveFileList(pivotTableXML, pivotTable)
@@ -390,9 +390,9 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 
 // addPivotRowFields provides a method to add row fields for pivot table by
 // given pivot table options.
-func (f *File) addPivotRowFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
+func (f *File) addPivotRowFields(pt *xlsxPivotTableDefinition, opts *PivotTableOption) error {
 	// row fields
-	rowFieldsIndex, err := f.getPivotFieldsIndex(opt.Rows, opt)
+	rowFieldsIndex, err := f.getPivotFieldsIndex(opts.Rows, opts)
 	if err != nil {
 		return err
 	}
@@ -414,13 +414,13 @@ func (f *File) addPivotRowFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 
 // addPivotPageFields provides a method to add page fields for pivot table by
 // given pivot table options.
-func (f *File) addPivotPageFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
+func (f *File) addPivotPageFields(pt *xlsxPivotTableDefinition, opts *PivotTableOption) error {
 	// page fields
-	pageFieldsIndex, err := f.getPivotFieldsIndex(opt.Filter, opt)
+	pageFieldsIndex, err := f.getPivotFieldsIndex(opts.Filter, opts)
 	if err != nil {
 		return err
 	}
-	pageFieldsName := f.getPivotTableFieldsName(opt.Filter)
+	pageFieldsName := f.getPivotTableFieldsName(opts.Filter)
 	for idx, pageField := range pageFieldsIndex {
 		if pt.PageFields == nil {
 			pt.PageFields = &xlsxPageFields{}
@@ -440,14 +440,14 @@ func (f *File) addPivotPageFields(pt *xlsxPivotTableDefinition, opt *PivotTableO
 
 // addPivotDataFields provides a method to add data fields for pivot table by
 // given pivot table options.
-func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
+func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTableOption) error {
 	// data fields
-	dataFieldsIndex, err := f.getPivotFieldsIndex(opt.Data, opt)
+	dataFieldsIndex, err := f.getPivotFieldsIndex(opts.Data, opts)
 	if err != nil {
 		return err
 	}
-	dataFieldsSubtotals := f.getPivotTableFieldsSubtotal(opt.Data)
-	dataFieldsName := f.getPivotTableFieldsName(opt.Data)
+	dataFieldsSubtotals := f.getPivotTableFieldsSubtotal(opts.Data)
+	dataFieldsName := f.getPivotTableFieldsName(opts.Data)
 	for idx, dataField := range dataFieldsIndex {
 		if pt.DataFields == nil {
 			pt.DataFields = &xlsxDataFields{}
@@ -480,9 +480,9 @@ func inPivotTableField(a []PivotTableField, x string) int {
 
 // addPivotColFields create pivot column fields by given pivot table
 // definition and option.
-func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
-	if len(opt.Columns) == 0 {
-		if len(opt.Data) <= 1 {
+func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opts *PivotTableOption) error {
+	if len(opts.Columns) == 0 {
+		if len(opts.Data) <= 1 {
 			return nil
 		}
 		pt.ColFields = &xlsxColFields{}
@@ -497,7 +497,7 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 	pt.ColFields = &xlsxColFields{}
 
 	// col fields
-	colFieldsIndex, err := f.getPivotFieldsIndex(opt.Columns, opt)
+	colFieldsIndex, err := f.getPivotFieldsIndex(opts.Columns, opts)
 	if err != nil {
 		return err
 	}
@@ -508,7 +508,7 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 	}
 
 	// in order to create pivot in case there is many Columns and Data
-	if len(opt.Data) > 1 {
+	if len(opts.Data) > 1 {
 		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
 			X: -2,
 		})
@@ -521,15 +521,15 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opt *PivotTableOp
 
 // addPivotFields create pivot fields based on the column order of the first
 // row in the data region by given pivot table definition and option.
-func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOption) error {
-	order, err := f.getPivotFieldsOrder(opt)
+func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOption) error {
+	order, err := f.getPivotFieldsOrder(opts)
 	if err != nil {
 		return err
 	}
 	x := 0
 	for _, name := range order {
-		if inPivotTableField(opt.Rows, name) != -1 {
-			rowOptions, ok := f.getPivotTableFieldOptions(name, opt.Rows)
+		if inPivotTableField(opts.Rows, name) != -1 {
+			rowOptions, ok := f.getPivotTableFieldOptions(name, opts.Rows)
 			var items []*xlsxItem
 			if !ok || !rowOptions.DefaultSubtotal {
 				items = append(items, &xlsxItem{X: &x})
@@ -538,9 +538,9 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			}
 
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
-				Name:            f.getPivotTableFieldName(name, opt.Rows),
+				Name:            f.getPivotTableFieldName(name, opts.Rows),
 				Axis:            "axisRow",
-				DataField:       inPivotTableField(opt.Data, name) != -1,
+				DataField:       inPivotTableField(opts.Data, name) != -1,
 				Compact:         &rowOptions.Compact,
 				Outline:         &rowOptions.Outline,
 				DefaultSubtotal: &rowOptions.DefaultSubtotal,
@@ -551,11 +551,11 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			})
 			continue
 		}
-		if inPivotTableField(opt.Filter, name) != -1 {
+		if inPivotTableField(opts.Filter, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				Axis:      "axisPage",
-				DataField: inPivotTableField(opt.Data, name) != -1,
-				Name:      f.getPivotTableFieldName(name, opt.Columns),
+				DataField: inPivotTableField(opts.Data, name) != -1,
+				Name:      f.getPivotTableFieldName(name, opts.Columns),
 				Items: &xlsxItems{
 					Count: 1,
 					Item: []*xlsxItem{
@@ -565,8 +565,8 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			})
 			continue
 		}
-		if inPivotTableField(opt.Columns, name) != -1 {
-			columnOptions, ok := f.getPivotTableFieldOptions(name, opt.Columns)
+		if inPivotTableField(opts.Columns, name) != -1 {
+			columnOptions, ok := f.getPivotTableFieldOptions(name, opts.Columns)
 			var items []*xlsxItem
 			if !ok || !columnOptions.DefaultSubtotal {
 				items = append(items, &xlsxItem{X: &x})
@@ -574,9 +574,9 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 				items = append(items, &xlsxItem{T: "default"})
 			}
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
-				Name:            f.getPivotTableFieldName(name, opt.Columns),
+				Name:            f.getPivotTableFieldName(name, opts.Columns),
 				Axis:            "axisCol",
-				DataField:       inPivotTableField(opt.Data, name) != -1,
+				DataField:       inPivotTableField(opts.Data, name) != -1,
 				Compact:         &columnOptions.Compact,
 				Outline:         &columnOptions.Outline,
 				DefaultSubtotal: &columnOptions.DefaultSubtotal,
@@ -587,7 +587,7 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opt *PivotTableOptio
 			})
 			continue
 		}
-		if inPivotTableField(opt.Data, name) != -1 {
+		if inPivotTableField(opts.Data, name) != -1 {
 			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
 				DataField: true,
 			})
@@ -626,9 +626,9 @@ func (f *File) countPivotCache() int {
 
 // getPivotFieldsIndex convert the column of the first row in the data region
 // to a sequential index by given fields and pivot option.
-func (f *File) getPivotFieldsIndex(fields []PivotTableField, opt *PivotTableOption) ([]int, error) {
+func (f *File) getPivotFieldsIndex(fields []PivotTableField, opts *PivotTableOption) ([]int, error) {
 	var pivotFieldsIndex []int
-	orders, err := f.getPivotFieldsOrder(opt)
+	orders, err := f.getPivotFieldsOrder(opts)
 	if err != nil {
 		return pivotFieldsIndex, err
 	}

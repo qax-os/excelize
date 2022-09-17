@@ -117,7 +117,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 }
 
 // AddTable creates an Excel table for the StreamWriter using the given
-// coordinate area and format set. For example, create a table of A1:D5:
+// cell range and format set. For example, create a table of A1:D5:
 //
 //	err := sw.AddTable("A1", "D5", "")
 //
@@ -156,7 +156,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 		coordinates[3]++
 	}
 
-	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
+	// Correct table reference range, such correct C1:B3 to B1:C3.
 	ref, err := sw.File.coordinatesToAreaRef(coordinates)
 	if err != nil {
 		return err
@@ -308,8 +308,8 @@ type RowOpts struct {
 //
 // As a special case, if Cell is used as a value, then the Cell.StyleID will be
 // applied to that cell.
-func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpts) error {
-	col, row, err := CellNameToCoordinates(axis)
+func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpts) error {
+	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
 	}
@@ -329,11 +329,11 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 		if val == nil {
 			continue
 		}
-		axis, err := CoordinatesToCellName(col+i, row)
+		ref, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: axis}
+		c := xlsxC{R: ref}
 		if v, ok := val.(Cell); ok {
 			c.S = v.StyleID
 			val = v.Value
@@ -355,24 +355,24 @@ func (sw *StreamWriter) SetRow(axis string, values []interface{}, opts ...RowOpt
 
 // marshalRowAttrs prepare attributes of the row by given options.
 func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
-	var opt *RowOpts
+	var options *RowOpts
 	for i := range opts {
-		opt = &opts[i]
+		options = &opts[i]
 	}
-	if opt == nil {
+	if options == nil {
 		return
 	}
-	if opt.Height > MaxRowHeight {
+	if options.Height > MaxRowHeight {
 		err = ErrMaxRowHeight
 		return
 	}
-	if opt.StyleID > 0 {
-		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, opt.StyleID)
+	if options.StyleID > 0 {
+		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, options.StyleID)
 	}
-	if opt.Height > 0 {
-		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, opt.Height)
+	if options.Height > 0 {
+		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, options.Height)
 	}
-	if opt.Hidden {
+	if options.Hidden {
 		attrs += ` hidden="true"`
 	}
 	return
@@ -401,7 +401,7 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	return nil
 }
 
-// MergeCell provides a function to merge cells by a given coordinate area for
+// MergeCell provides a function to merge cells by a given range reference for
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
 func (sw *StreamWriter) MergeCell(hCell, vCell string) error {

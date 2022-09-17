@@ -1408,7 +1408,7 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (arg fo
 		cr := cellRef{}
 		if len(tokens) == 2 { // have a worksheet name
 			cr.Sheet = tokens[0]
-			// cast to cell coordinates
+			// cast to cell reference
 			if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[1]); err != nil {
 				// cast to column
 				if cr.Col, err = ColumnNameToNumber(tokens[1]); err != nil {
@@ -1428,7 +1428,7 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (arg fo
 			refs.PushBack(cr)
 			continue
 		}
-		// cast to cell coordinates
+		// cast to cell reference
 		if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[0]); err != nil {
 			// cast to column
 			if cr.Col, err = ColumnNameToNumber(tokens[0]); err != nil {

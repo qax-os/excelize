@@ -29,7 +29,7 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 }
 
 // AddTable provides the method to add table in a worksheet by given worksheet
-// name, coordinate area and format set. For example, create a table of A1:D5
+// name, range reference and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
 //	err := f.AddTable("Sheet1", "A1", "D5", "")
@@ -159,14 +159,14 @@ func (f *File) setTableHeader(sheet string, x1, y1, x2 int) ([]*xlsxTableColumn,
 }
 
 // addTable provides a function to add table by given worksheet name,
-// coordinate area and format set.
+// range reference and format set.
 func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet *formatTable) error {
 	// Correct the minimum number of rows, the table at least two lines.
 	if y1 == y2 {
 		y2++
 	}
 
-	// Correct table reference coordinate area, such correct C1:B3 to B1:C3.
+	// Correct table range reference, such correct C1:B3 to B1:C3.
 	ref, err := f.coordinatesToAreaRef([]int{x1, y1, x2, y2})
 	if err != nil {
 		return err
@@ -211,17 +211,17 @@ func parseAutoFilterSet(formatSet string) (*formatAutoFilter, error) {
 }
 
 // AutoFilter provides the method to add auto filter in a worksheet by given
-// worksheet name, coordinate area and settings. An autofilter in Excel is a
+// worksheet name, range reference and settings. An auto filter in Excel is a
 // way of filtering a 2D range of data based on some simple criteria. For
-// example applying an autofilter to a cell range A1:D4 in the Sheet1:
+// example applying an auto filter to a cell range A1:D4 in the Sheet1:
 //
 //	err := f.AutoFilter("Sheet1", "A1", "D4", "")
 //
-// Filter data in an autofilter:
+// Filter data in an auto filter:
 //
 //	err := f.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
 //
-// column defines the filter columns in a autofilter range based on simple
+// column defines the filter columns in a auto filter range based on simple
 // criteria
 //
 // It isn't sufficient to just specify the filter condition. You must also

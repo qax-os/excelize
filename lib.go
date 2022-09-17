@@ -261,7 +261,7 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 //	excelize.CoordinatesToCellName(1, 1, true) // returns "$A$1", nil
 func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if col < 1 || row < 1 {
-		return "", fmt.Errorf("invalid cell coordinates [%d, %d]", col, row)
+		return "", fmt.Errorf("invalid cell reference [%d, %d]", col, row)
 	}
 	sign := ""
 	for _, a := range abs {
@@ -273,7 +273,7 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	return sign + colName + sign + strconv.Itoa(row), err
 }
 
-// areaRefToCoordinates provides a function to convert area reference to a
+// areaRefToCoordinates provides a function to convert range reference to a
 // pair of coordinates.
 func areaRefToCoordinates(ref string) ([]int, error) {
 	rng := strings.Split(strings.ReplaceAll(ref, "$", ""), ":")
@@ -296,7 +296,7 @@ func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
 	return coordinates, err
 }
 
-// sortCoordinates provides a function to correct the coordinate area, such
+// sortCoordinates provides a function to correct the cell range, such
 // correct C1:B3 to B1:C3.
 func sortCoordinates(coordinates []int) error {
 	if len(coordinates) != 4 {
@@ -349,7 +349,7 @@ func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) 
 	return
 }
 
-// flatSqref convert reference sequence to cell coordinates list.
+// flatSqref convert reference sequence to cell reference list.
 func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
 	var coordinates []int
 	cells = make(map[int][][]int)
@@ -524,14 +524,14 @@ func namespaceStrictToTransitional(content []byte) []byte {
 	return content
 }
 
-// bytesReplace replace old bytes with given new.
-func bytesReplace(s, old, new []byte, n int) []byte {
+// bytesReplace replace source bytes with given target.
+func bytesReplace(s, source, target []byte, n int) []byte {
 	if n == 0 {
 		return s
 	}
 
-	if len(old) < len(new) {
-		return bytes.Replace(s, old, new, n)
+	if len(source) < len(target) {
+		return bytes.Replace(s, source, target, n)
 	}
 
 	if n < 0 {
@@ -540,14 +540,14 @@ func bytesReplace(s, old, new []byte, n int) []byte {
 
 	var wid, i, j, w int
 	for i, j = 0, 0; i < len(s) && j < n; j++ {
-		wid = bytes.Index(s[i:], old)
+		wid = bytes.Index(s[i:], source)
 		if wid < 0 {
 			break
 		}
 
 		w += copy(s[w:], s[i:i+wid])
-		w += copy(s[w:], new)
-		i += wid + len(old)
+		w += copy(s[w:], target)
+		i += wid + len(source)
 	}
 
 	w += copy(s[w:], s[i:])

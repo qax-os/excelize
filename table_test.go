@@ -33,22 +33,22 @@ func TestAddTable(t *testing.T) {
 	assert.EqualError(t, f.AddTable("SheetN", "B26", "A21", `{}`), "sheet SheetN does not exist")
 	// Test add table with illegal formatset.
 	assert.EqualError(t, f.AddTable("Sheet1", "B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
-	// Test add table with illegal cell coordinates.
+	// Test add table with illegal cell reference.
 	assert.EqualError(t, f.AddTable("Sheet1", "A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.AddTable("Sheet1", "A1", "B", `{}`), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
-	// Test addTable with illegal cell coordinates.
+	// Test addTable with illegal cell reference.
 	f = NewFile()
-	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
-	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell coordinates [0, 0]")
+	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
+	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell reference [0, 0]")
 }
 
 func TestSetTableHeader(t *testing.T) {
 	f := NewFile()
 	_, err := f.setTableHeader("Sheet1", 1, 0, 1)
-	assert.EqualError(t, err, "invalid cell coordinates [1, 0]")
+	assert.EqualError(t, err, "invalid cell reference [1, 0]")
 }
 
 func TestAutoFilter(t *testing.T) {
@@ -78,7 +78,7 @@ func TestAutoFilter(t *testing.T) {
 		})
 	}
 
-	// Test AutoFilter with illegal cell coordinates.
+	// Test AutoFilter with illegal cell reference.
 	assert.EqualError(t, f.AutoFilter("Sheet1", "A", "B1", ""), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.AutoFilter("Sheet1", "A1", "B", ""), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 }

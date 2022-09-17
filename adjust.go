@@ -248,8 +248,8 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 }
 
 // adjustAutoFilterHelper provides a function for adjusting auto filter to
-// compare and calculate cell axis by the given adjust direction, operation
-// axis and offset.
+// compare and calculate cell reference by the given adjust direction, operation
+// reference and offset.
 func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, num, offset int) []int {
 	if dir == rows {
 		if coordinates[1] >= num {
@@ -314,7 +314,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 }
 
 // adjustMergeCellsHelper provides a function for adjusting merge cells to
-// compare and calculate cell axis by the given pivot, operation axis and
+// compare and calculate cell reference by the given pivot, operation reference and
 // offset.
 func (f *File) adjustMergeCellsHelper(p1, p2, num, offset int) (int, int) {
 	if p2 < p1 {

@@ -984,8 +984,8 @@ func (f *File) getFormatChart(format string, combo []string) (*formatChart, []*f
 	return formatSet, comboCharts, err
 }
 
-// DeleteChart provides a function to delete chart in XLSX by given worksheet
-// and cell name.
+// DeleteChart provides a function to delete chart in spreadsheet by given
+// worksheet name and cell reference.
 func (f *File) DeleteChart(sheet, cell string) (err error) {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {

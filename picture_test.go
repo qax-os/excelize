@@ -57,7 +57,7 @@ func TestAddPicture(t *testing.T) {
 
 	// Test add picture to worksheet from bytes.
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
-	// Test add picture to worksheet from bytes with illegal cell coordinates.
+	// Test add picture to worksheet from bytes with illegal cell reference.
 	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".png", file), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), ""))
@@ -118,7 +118,7 @@ func TestGetPicture(t *testing.T) {
 		t.FailNow()
 	}
 
-	// Try to get picture from a worksheet with illegal cell coordinates.
+	// Try to get picture from a worksheet with illegal cell reference.
 	_, _, err = f.GetPicture("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
@@ -173,7 +173,7 @@ func TestGetPicture(t *testing.T) {
 }
 
 func TestAddDrawingPicture(t *testing.T) {
-	// Test addDrawingPicture with illegal cell coordinates.
+	// Test addDrawingPicture with illegal cell reference.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }

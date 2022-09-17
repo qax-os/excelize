@@ -175,7 +175,7 @@ func TestStreamTable(t *testing.T) {
 
 	// Test add table with illegal formatset.
 	assert.EqualError(t, streamWriter.AddTable("B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
-	// Test add table with illegal cell coordinates.
+	// Test add table with illegal cell reference.
 	assert.EqualError(t, streamWriter.AddTable("A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, streamWriter.AddTable("A1", "B", `{}`), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 }
@@ -185,7 +185,7 @@ func TestStreamMergeCells(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.MergeCell("A1", "D1"))
-	// Test merge cells with illegal cell coordinates.
+	// Test merge cells with illegal cell reference.
 	assert.EqualError(t, streamWriter.MergeCell("A", "D1"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.NoError(t, streamWriter.Flush())
 	// Save spreadsheet by the given path.

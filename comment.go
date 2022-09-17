@@ -141,7 +141,7 @@ func (f *File) AddComment(sheet, cell, format string) error {
 }
 
 // DeleteComment provides the method to delete comment in a sheet by given
-// worksheet. For example, delete the comment in Sheet1!$A$30:
+// worksheet name. For example, delete the comment in Sheet1!$A$30:
 //
 //	err := f.DeleteComment("Sheet1", "A30")
 func (f *File) DeleteComment(sheet, cell string) (err error) {

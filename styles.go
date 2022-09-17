@@ -1992,9 +1992,9 @@ func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (styleID int) {
 }
 
 // NewConditionalStyle provides a function to create style for conditional
-// format by given style format. The parameters are the same as function
-// NewStyle(). Note that the color field uses RGB color code and only support
-// to set font, fills, alignment and borders currently.
+// format by given style format. The parameters are the same with the NewStyle
+// function. Note that the color field uses RGB color code and only support to
+// set font, fills, alignment and borders currently.
 func (f *File) NewConditionalStyle(style string) (int, error) {
 	s := f.stylesReader()
 	fs, err := parseFormatStyleSet(style)
@@ -2480,23 +2480,23 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 }
 
 // GetCellStyle provides a function to get cell style index by given worksheet
-// name and cell coordinates.
-func (f *File) GetCellStyle(sheet, axis string) (int, error) {
+// name and cell reference.
+func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return 0, err
 	}
-	cellData, col, row, err := f.prepareCell(ws, axis)
+	c, col, row, err := f.prepareCell(ws, cell)
 	if err != nil {
 		return 0, err
 	}
-	return f.prepareCellStyle(ws, col, row, cellData.S), err
+	return f.prepareCellStyle(ws, col, row, c.S), err
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given
-// worksheet name, coordinate area and style ID. This function is concurrency
+// worksheet name, range reference and style ID. This function is concurrency
 // safe. Note that diagonalDown and diagonalUp type border should be use same
-// color in the same coordinate area. SetCellStyle will overwrite the existing
+// color in the same range. SetCellStyle will overwrite the existing
 // styles for the cell, it won't append or merge style with existing styles.
 //
 // For example create a borders of cell H9 on Sheet1:
@@ -2607,7 +2607,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 		return err
 	}
 
-	// Normalize the coordinate area, such correct C1:B3 to B1:C3.
+	// Normalize the range, such correct C1:B3 to B1:C3.
 	if vCol < hCol {
 		vCol, hCol = hCol, vCol
 	}
@@ -3050,14 +3050,14 @@ func (f *File) GetConditionalFormats(sheet string) (map[string]string, error) {
 }
 
 // UnsetConditionalFormat provides a function to unset the conditional format
-// by given worksheet name and range.
-func (f *File) UnsetConditionalFormat(sheet, area string) error {
+// by given worksheet name and range reference.
+func (f *File) UnsetConditionalFormat(sheet, reference string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	for i, cf := range ws.ConditionalFormatting {
-		if cf.SQRef == area {
+		if cf.SQRef == reference {
 			ws.ConditionalFormatting = append(ws.ConditionalFormatting[:i], ws.ConditionalFormatting[i+1:]...)
 			return nil
 		}

@@ -139,7 +139,7 @@ type encryption struct {
 // Decrypt API decrypts the CFB file format with ECMA-376 agile encryption and
 // standard encryption. Support cryptographic algorithm: MD4, MD5, RIPEMD-160,
 // SHA1, SHA256, SHA384 and SHA512 currently.
-func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
+func Decrypt(raw []byte, opts *Options) (packageBuf []byte, err error) {
 	doc, err := mscfb.New(bytes.NewReader(raw))
 	if err != nil {
 		return
@@ -150,13 +150,13 @@ func Decrypt(raw []byte, opt *Options) (packageBuf []byte, err error) {
 		return
 	}
 	if mechanism == "agile" {
-		return agileDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
+		return agileDecrypt(encryptionInfoBuf, encryptedPackageBuf, opts)
 	}
-	return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opt)
+	return standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, opts)
 }
 
 // Encrypt API encrypt data with the password.
-func Encrypt(raw []byte, opt *Options) ([]byte, error) {
+func Encrypt(raw []byte, opts *Options) ([]byte, error) {
 	encryptor := encryption{
 		EncryptedVerifierHashInput: make([]byte, 16),
 		EncryptedVerifierHashValue: make([]byte, 32),
@@ -166,7 +166,7 @@ func Encrypt(raw []byte, opt *Options) ([]byte, error) {
 		SaltSize:                   16,
 	}
 	// Key Encryption
-	encryptionInfoBuffer, err := encryptor.standardKeyEncryption(opt.Password)
+	encryptionInfoBuffer, err := encryptor.standardKeyEncryption(opts.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func encryptionMechanism(buffer []byte) (mechanism string, err error) {
 // ECMA-376 Standard Encryption
 
 // standardDecrypt decrypt the CFB file format with ECMA-376 standard encryption.
-func standardDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) ([]byte, error) {
+func standardDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opts *Options) ([]byte, error) {
 	encryptionHeaderSize := binary.LittleEndian.Uint32(encryptionInfoBuf[8:12])
 	block := encryptionInfoBuf[12 : 12+encryptionHeaderSize]
 	header := StandardEncryptionHeader{
@@ -254,7 +254,7 @@ func standardDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options
 		algorithm = "RC4"
 	}
 	verifier := standardEncryptionVerifier(algorithm, block)
-	secretKey, err := standardConvertPasswdToKey(header, verifier, opt)
+	secretKey, err := standardConvertPasswdToKey(header, verifier, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -289,9 +289,9 @@ func standardEncryptionVerifier(algorithm string, blob []byte) StandardEncryptio
 }
 
 // standardConvertPasswdToKey generate intermediate key from given password.
-func standardConvertPasswdToKey(header StandardEncryptionHeader, verifier StandardEncryptionVerifier, opt *Options) ([]byte, error) {
+func standardConvertPasswdToKey(header StandardEncryptionHeader, verifier StandardEncryptionVerifier, opts *Options) ([]byte, error) {
 	encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
-	passwordBuffer, err := encoder.Bytes([]byte(opt.Password))
+	passwordBuffer, err := encoder.Bytes([]byte(opts.Password))
 	if err != nil {
 		return nil, err
 	}
@@ -395,13 +395,13 @@ func (e *encryption) standardKeyEncryption(password string) ([]byte, error) {
 // agileDecrypt decrypt the CFB file format with ECMA-376 agile encryption.
 // Support cryptographic algorithm: MD4, MD5, RIPEMD-160, SHA1, SHA256,
 // SHA384 and SHA512.
-func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opt *Options) (packageBuf []byte, err error) {
+func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opts *Options) (packageBuf []byte, err error) {
 	var encryptionInfo Encryption
 	if encryptionInfo, err = parseEncryptionInfo(encryptionInfoBuf[8:]); err != nil {
 		return
 	}
 	// Convert the password into an encryption key.
-	key, err := convertPasswdToKey(opt.Password, blockKey, encryptionInfo)
+	key, err := convertPasswdToKey(opts.Password, blockKey, encryptionInfo)
 	if err != nil {
 		return
 	}
