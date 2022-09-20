@@ -302,6 +302,37 @@ type RowOpts struct {
 	StyleID int
 }
 
+// marshalAttrs prepare attributes of the row.
+func (r *RowOpts) marshalAttrs() (attrs string, err error) {
+	if r == nil {
+		return
+	}
+	if r.Height > MaxRowHeight {
+		err = ErrMaxRowHeight
+		return
+	}
+	if r.StyleID > 0 {
+		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, r.StyleID)
+	}
+	if r.Height > 0 {
+		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, r.Height)
+	}
+	if r.Hidden {
+		attrs += ` hidden="true"`
+	}
+	return
+}
+
+// parseRowOpts provides a function to parse the optional settings for
+// *StreamWriter.SetRow.
+func parseRowOpts(opts ...RowOpts) *RowOpts {
+	options := &RowOpts{}
+	for _, opt := range opts {
+		options = &opt
+	}
+	return options
+}
+
 // SetRow writes an array to stream rows by giving a worksheet name, starting
 // coordinate and a pointer to an array of values. Note that you must call the
 // 'Flush' method to end the streaming writing process.
@@ -320,11 +351,12 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
 	}
-	attrs, err := marshalRowAttrs(opts...)
+	options := parseRowOpts(opts...)
+	attrs, err := options.marshalAttrs()
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(&sw.rawData, `<row r="%d"%s>`, row, attrs)
+	_, _ = fmt.Fprintf(&sw.rawData, `<row r="%d"%s>`, row, attrs)
 	for i, val := range values {
 		if val == nil {
 			continue
@@ -333,7 +365,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: ref}
+		c := xlsxC{R: ref, S: options.StyleID}
 		if v, ok := val.(Cell); ok {
 			c.S = v.StyleID
 			val = v.Value
@@ -351,31 +383,6 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
-}
-
-// marshalRowAttrs prepare attributes of the row by given options.
-func marshalRowAttrs(opts ...RowOpts) (attrs string, err error) {
-	var options *RowOpts
-	for i := range opts {
-		options = &opts[i]
-	}
-	if options == nil {
-		return
-	}
-	if options.Height > MaxRowHeight {
-		err = ErrMaxRowHeight
-		return
-	}
-	if options.StyleID > 0 {
-		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, options.StyleID)
-	}
-	if options.Height > 0 {
-		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, options.Height)
-	}
-	if options.Hidden {
-		attrs += ` hidden="true"`
-	}
-	return
 }
 
 // SetColWidth provides a function to set the width of a single column or
