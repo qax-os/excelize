@@ -55,7 +55,7 @@ func TestStreamWriter(t *testing.T) {
 	// Test set cell with style.
 	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
 	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}), RowOpts{Height: 45, StyleID: styleID})
+	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}, RowOpts{Height: 45, StyleID: styleID}))
 	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
 	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: 20, Hidden: true, StyleID: styleID}))
@@ -201,7 +201,14 @@ func TestNewStreamWriter(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
-func TestSetRow(t *testing.T) {
+func TestStreamMarshalAttrs(t *testing.T) {
+	var r *RowOpts
+	attrs, err := r.marshalAttrs()
+	assert.NoError(t, err)
+	assert.Empty(t, attrs)
+}
+
+func TestStreamSetRow(t *testing.T) {
 	// Test error exceptions
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
@@ -209,7 +216,7 @@ func TestSetRow(t *testing.T) {
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
-func TestSetRowNilValues(t *testing.T) {
+func TestStreamSetRowNilValues(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
@@ -220,7 +227,36 @@ func TestSetRowNilValues(t *testing.T) {
 	assert.NotEqual(t, ws.SheetData.Row[0].C[0].XMLName.Local, "c")
 }
 
-func TestSetCellValFunc(t *testing.T) {
+func TestStreamSetRowWithStyle(t *testing.T) {
+	file := NewFile()
+	zeroStyleID := 0
+	grayStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
+	assert.NoError(t, err)
+	blueStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#0000FF"}})
+	assert.NoError(t, err)
+
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{
+		"value1",
+		Cell{Value: "value2"},
+		&Cell{Value: "value2"},
+		Cell{StyleID: blueStyleID, Value: "value3"},
+		&Cell{StyleID: blueStyleID, Value: "value3"},
+	}, RowOpts{StyleID: grayStyleID}))
+	err = streamWriter.Flush()
+	assert.NoError(t, err)
+
+	ws, err := file.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, grayStyleID, ws.SheetData.Row[0].C[0].S)
+	assert.Equal(t, zeroStyleID, ws.SheetData.Row[0].C[1].S)
+	assert.Equal(t, zeroStyleID, ws.SheetData.Row[0].C[2].S)
+	assert.Equal(t, blueStyleID, ws.SheetData.Row[0].C[3].S)
+	assert.Equal(t, blueStyleID, ws.SheetData.Row[0].C[4].S)
+}
+
+func TestStreamSetCellValFunc(t *testing.T) {
 	f := NewFile()
 	sw, err := f.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
