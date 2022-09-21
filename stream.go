@@ -538,7 +538,7 @@ func (sw *StreamWriter) Flush() error {
 		_, _ = mergeCells.WriteString(sw.mergeCells.String())
 		_, _ = mergeCells.WriteString(`</mergeCells>`)
 	}
-	_, _ = sw.rawData.WriteString(sw.mergeCells.String())
+	_, _ = sw.rawData.WriteString(mergeCells.String())
 	bulkAppendFields(&sw.rawData, sw.worksheet, 17, 38)
 	_, _ = sw.rawData.WriteString(sw.tableParts)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
