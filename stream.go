@@ -34,7 +34,7 @@ type StreamWriter struct {
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
 	mergeCellsCount int
-	mergeCells      string
+	mergeCells      strings.Builder
 	tableParts      string
 }
 
@@ -417,7 +417,11 @@ func (sw *StreamWriter) MergeCell(hCell, vCell string) error {
 		return err
 	}
 	sw.mergeCellsCount++
-	sw.mergeCells += fmt.Sprintf(`<mergeCell ref="%s:%s"/>`, hCell, vCell)
+	_, _ = sw.mergeCells.WriteString(`<mergeCell ref="`)
+	_, _ = sw.mergeCells.WriteString(hCell)
+	_, _ = sw.mergeCells.WriteString(`:`)
+	_, _ = sw.mergeCells.WriteString(vCell)
+	_, _ = sw.mergeCells.WriteString(`"/>`)
 	return nil
 }
 
@@ -526,10 +530,15 @@ func (sw *StreamWriter) Flush() error {
 	}
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
+	mergeCells := strings.Builder{}
 	if sw.mergeCellsCount > 0 {
-		sw.mergeCells = fmt.Sprintf(`<mergeCells count="%d">%s</mergeCells>`, sw.mergeCellsCount, sw.mergeCells)
+		_, _ = mergeCells.WriteString(`<mergeCells count="`)
+		_, _ = mergeCells.WriteString(strconv.Itoa(sw.mergeCellsCount))
+		_, _ = mergeCells.WriteString(`">`)
+		_, _ = mergeCells.WriteString(sw.mergeCells.String())
+		_, _ = mergeCells.WriteString(`</mergeCells>`)
 	}
-	_, _ = sw.rawData.WriteString(sw.mergeCells)
+	_, _ = sw.rawData.WriteString(mergeCells.String())
 	bulkAppendFields(&sw.rawData, sw.worksheet, 17, 38)
 	_, _ = sw.rawData.WriteString(sw.tableParts)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
