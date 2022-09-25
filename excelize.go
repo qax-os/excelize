@@ -222,56 +222,71 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 }
 
 func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
- return f.SRWorkSheetReader(sheet, false)
+	return nil, nil
+}
+
+func (f *File) SRworkSheetReader(sheet string) (ws *SRxlsxWorksheet, err error) {
+	return f.SRWorkSheetReader(sheet, false)
 }
 
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
-func (f *File) SRWorkSheetReader(sheet string, skipCheckRow bool) (ws *xlsxWorksheet, err error) {
+func (f *File) SRWorkSheetReader(sheet string, skipCheckRow bool) (ws *SRxlsxWorksheet, err error) {
 	f.Lock()
 	defer f.Unlock()
+	fmt.Println("READER_FOR: ", sheet)
+	fmt.Println("READER_A")
 	var (
 		name string
 		ok   bool
 	)
+	fmt.Println("READER_B")
 	if name, ok = f.getSheetXMLPath(sheet); !ok {
 		err = newNoExistSheetError(sheet)
 		return
 	}
+	fmt.Println("READER_C")
 	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
-		ws = worksheet.(*xlsxWorksheet)
+		ws = worksheet.(*SRxlsxWorksheet)
 		return
 	}
+	fmt.Println("READER_D")
 	for _, sheetType := range []string{"xl/chartsheets", "xl/dialogsheet", "xl/macrosheet"} {
 		if strings.HasPrefix(name, sheetType) {
 			err = newNotWorksheetError(sheet)
 			return
 		}
 	}
-	ws = new(xlsxWorksheet)
+	fmt.Println("READER_E")
+	ws = new(SRxlsxWorksheet)
+	fmt.Println("READER_F")
 	if _, ok := f.xmlAttr[name]; !ok {
 		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
 		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
 	}
+	fmt.Println("READER_G")
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
 		err = newDecodeXMLError(err)
 		return
 	}
+	fmt.Println("READER_H")
 	err = nil
 	if f.checked == nil {
 		f.checked = make(map[string]bool)
 	}
 	if ok = f.checked[name]; !ok {
-		checkSheet(ws)
-    if !skipCheckRow {
-		  if err = checkRow(ws); err != nil {
-			 return
-		  }
-	  }
+		SRcheckSheet(ws)
+		if !skipCheckRow {
+			if err = SRcheckRow(ws); err != nil {
+				return
+			}
+		}
 		f.checked[name] = true
 	}
+	fmt.Println("READER_I")
 	f.Sheet.Store(name, ws)
+	fmt.Println("READER_J")
 	return
 }
 
@@ -316,6 +331,45 @@ func checkSheet(ws *xlsxWorksheet) {
 	checkSheetR0(ws, &sheetData, &r0)
 }
 
+func SRcheckSheet(ws *SRxlsxWorksheet) {
+	var row int
+	var r0 SRxlsxRow
+	for i, r := range ws.SheetData.Row {
+		if i == 0 && r.R == 0 {
+			r0 = r
+			ws.SheetData.Row = ws.SheetData.Row[1:]
+			continue
+		}
+		if r.R != 0 && r.R > row {
+			row = r.R
+			continue
+		}
+		if r.R != row {
+			row++
+		}
+	}
+	sheetData := SRxlsxSheetData{Row: make([]SRxlsxRow, row)}
+	row = 0
+	for _, r := range ws.SheetData.Row {
+		if r.R == row && row > 0 {
+			sheetData.Row[r.R-1].C = append(sheetData.Row[r.R-1].C, r.C...)
+			continue
+		}
+		if r.R != 0 {
+			sheetData.Row[r.R-1] = r
+			row = r.R
+			continue
+		}
+		row++
+		r.R = row
+		sheetData.Row[row-1] = r
+	}
+	for i := 1; i <= row; i++ {
+		sheetData.Row[i-1].R = i
+	}
+	SRcheckSheetR0(ws, &sheetData, &r0)
+}
+
 // checkSheetR0 handle the row element with r="0" attribute, cells in this row
 // could be disorderly, the cell in this row can be used as the value of
 // which cell is empty in the normal rows.
@@ -329,6 +383,25 @@ func checkSheetR0(ws *xlsxWorksheet, sheetData *xlsxSheetData, r0 *xlsxRow) {
 			columns, colIdx := len(sheetData.Row[rowIdx].C), col-1
 			for c := columns; c < col; c++ {
 				sheetData.Row[rowIdx].C = append(sheetData.Row[rowIdx].C, xlsxC{})
+			}
+			if !sheetData.Row[rowIdx].C[colIdx].hasValue() {
+				sheetData.Row[rowIdx].C[colIdx] = cell
+			}
+		}
+	}
+	ws.SheetData = *sheetData
+}
+
+func SRcheckSheetR0(ws *SRxlsxWorksheet, sheetData *SRxlsxSheetData, r0 *SRxlsxRow) {
+	for _, cell := range r0.C {
+		if col, row, err := CellNameToCoordinates(cell.R); err == nil {
+			rows, rowIdx := len(sheetData.Row), row-1
+			for r := rows; r < row; r++ {
+				sheetData.Row = append(sheetData.Row, SRxlsxRow{R: r + 1})
+			}
+			columns, colIdx := len(sheetData.Row[rowIdx].C), col-1
+			for c := columns; c < col; c++ {
+				sheetData.Row[rowIdx].C = append(sheetData.Row[rowIdx].C, SRxlsxC{})
 			}
 			if !sheetData.Row[rowIdx].C[colIdx].hasValue() {
 				sheetData.Row[rowIdx].C[colIdx] = cell

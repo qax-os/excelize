@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -166,6 +167,10 @@ func (x xlsxSI) String() string {
 
 // hasValue determine if cell non-blank value.
 func (c *xlsxC) hasValue() bool {
+	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
+}
+
+func (c *SRxlsxC) hasValue() bool {
 	return c.S != 0 || c.V != "" || c.F != nil || c.T != ""
 }
 
@@ -1194,36 +1199,40 @@ type SRCell struct {
 }
 
 type SRSheetData struct {
-	DefaultColWidth float64
-	ColWidths map[int]float64
+	DefaultColWidth  float64
+	ColWidths        map[int]float64
 	DefaultRowHeight float64
-	RowHeights map[int]float64
-	Date1904    bool
-	Cells       [][]SRCell
+	RowHeights       map[int]float64
+	Date1904         bool
+	Cells            []SRCell
 }
 
 func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
+	fmt.Println("IMPORT_A")
 	ws, err := f.SRWorkSheetReader(sheet, true)
+	fmt.Println("IMPORT_B")
 	if err != nil {
 		return nil, err
 	}
 	date1904, wb := false, f.workbookReader()
+	fmt.Println("IMPORT_C")
+
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
 	srSheetData := &SRSheetData{
-     Date1904: date1904,
-		 RowHeights: map[int]float64{},
-		 ColWidths: map[int]float64{},
+		Date1904:   date1904,
+		RowHeights: map[int]float64{},
+		ColWidths:  map[int]float64{},
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	cells := [][]SRCell{}
+	cells := []SRCell{}
 	sharedStringsReader := f.sharedStringsReader()
 	srSheetData.DefaultRowHeight = defaultRowHeight
-  srSheetData.DefaultColWidth = defaultColWidth
+	srSheetData.DefaultColWidth = defaultColWidth
+	fmt.Println("IMPORT_C")
 	for rowIdx := range ws.SheetData.Row {
-		cells = append(cells, []SRCell{})
 		rowData := &ws.SheetData.Row[rowIdx]
 		colCount := len(rowData.C)
 		if colCount > 0 {
@@ -1232,6 +1241,7 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 				return nil, err
 			}
 		}
+
 		ht := defaultRowHeight
 		if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
 			ht = ws.SheetFormatPr.DefaultRowHeight
@@ -1239,7 +1249,7 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 		if rowData.Ht != 0 {
 			ht = rowData.Ht
 		}
-		srSheetData.RowHeights[rowIdx]=ht
+		srSheetData.RowHeights[rowIdx] = ht
 		colWidthSet := map[int]bool{}
 		for colIdx := range rowData.C {
 			cellData := &rowData.C[colIdx]
@@ -1247,14 +1257,14 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 			if cellData.F != nil {
 				formulaMissing := false
 				if cellData.F.T == STCellFormulaTypeShared && cellData.F.Si != nil {
-					srCell.SharedIndex = cellData.F.Si		
+					srCell.SharedIndex = cellData.F.Si
 					//cells with Refs are originals that contain the formula text
 					if cellData.F.Ref == "" {
 						formulaMissing = true
 					}
-				} 
+				}
 				if !formulaMissing {
-				srCell.Formula = cellData.F.Content
+					srCell.Formula = cellData.F.Content
 				}
 			}
 			val, _ := cellData.getValueFrom(f, sharedStringsReader, true)
@@ -1264,14 +1274,27 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 			col, row, _ := CellNameToCoordinates(cellData.R)
 			if !colWidthSet[col] {
 				srSheetData.ColWidths[col] = f.SRGetColWidth(ws, col)
-			  colWidthSet[col]=true
+				colWidthSet[col] = true
 			}
 			srCell.Row = row - 1
 			srCell.Col = col - 1
-			srCell.StyleIndex = f.prepareCellStyle(ws, col, row, cellData.S)
+			srCell.StyleIndex = f.SRprepareCellStyle(ws, col, row, cellData.S)
 			srCell.CellName = cellData.R
 			srCell.CellType = cellTypes[cellData.T]
-			cells[rowIdx] = append(cells[rowIdx], srCell)
+			cells = append(cells, srCell)
+		}
+
+		if rowIdx%10000 == 0 {
+			size := 0
+			for _, c := range cells {
+				size += 16
+				size += len(c.Formula)
+				size += len(c.FormattedValue)
+				size += len(c.RawValue)
+				size += len(c.CellName)
+			}
+			runtime.GC()
+			fmt.Println("reading row: ", rowIdx, " len(cells): ", len(cells), ", total size in bytes: ", size)
 		}
 	}
 	srSheetData.Cells = cells
@@ -1328,6 +1351,27 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 // prepareCellStyle provides a function to prepare style index of cell in
 // worksheet by given column index and style index.
 func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, row, style int) int {
+	if style != 0 {
+		return style
+	}
+	if row <= len(ws.SheetData.Row) {
+		if styleID := ws.SheetData.Row[row-1].S; styleID != 0 {
+			return styleID
+		}
+	}
+	if ws.Cols != nil {
+		for _, c := range ws.Cols.Col {
+			if c.Min <= col && col <= c.Max && c.Style != 0 {
+				return c.Style
+			}
+		}
+	}
+	return style
+}
+
+// prepareCellStyle provides a function to prepare style index of cell in
+// worksheet by given column index and style index.
+func (f *File) SRprepareCellStyle(ws *SRxlsxWorksheet, col, row, style int) int {
 	if style != 0 {
 		return style
 	}

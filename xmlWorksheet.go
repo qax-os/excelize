@@ -64,6 +64,16 @@ type xlsxWorksheet struct {
 	DecodeAlternateContent *xlsxInnerXML                `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
 }
 
+// xlsxWorksheet directly maps the worksheet element in the namespace
+// http://schemas.openxmlformats.org/spreadsheetml/2006/main.
+type SRxlsxWorksheet struct {
+	sync.Mutex
+	Cols          *xlsxCols          `xml:"cols"`
+	SheetData     SRxlsxSheetData    `xml:"sheetData"`
+	SheetFormatPr *xlsxSheetFormatPr `xml:"sheetFormatPr"`
+	MergeCells    *xlsxMergeCells    `xml:"mergeCells"`
+}
+
 // xlsxDrawing change r:id to rid in the namespace.
 type xlsxDrawing struct {
 	XMLName xml.Name `xml:"drawing"`
@@ -312,6 +322,11 @@ type xlsxSheetData struct {
 	Row     []xlsxRow `xml:"row"`
 }
 
+type SRxlsxSheetData struct {
+	XMLName xml.Name    `xml:"sheetData"`
+	Row     []SRxlsxRow `xml:"row"`
+}
+
 // xlsxRow directly maps the row element. The element expresses information
 // about an entire row of a worksheet, and contains all cell definitions for a
 // particular row in the worksheet.
@@ -329,6 +344,22 @@ type xlsxRow struct {
 	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
 	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
 	Ph           bool    `xml:"ph,attr,omitempty"`
+}
+
+type SRxlsxRow struct {
+	C []SRxlsxC `xml:"c"`
+	R int       `xml:"r,attr,omitempty"`
+	//Spans string  `xml:"spans,attr,omitempty"`
+	S int `xml:"s,attr,omitempty"`
+	//CustomFormat bool    `xml:"customFormat,attr,omitempty"`
+	Ht float64 `xml:"ht,attr,omitempty"`
+	//Hidden       bool    `xml:"hidden,attr,omitempty"`
+	//CustomHeight bool    `xml:"customHeight,attr,omitempty"`
+	//OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
+	//Collapsed    bool    `xml:"collapsed,attr,omitempty"`
+	//ThickTop     bool    `xml:"thickTop,attr,omitempty"`
+	//ThickBot     bool    `xml:"thickBot,attr,omitempty"`
+	//Ph bool `xml:"ph,attr,omitempty"`
 }
 
 // xlsxSortState directly maps the sortState element. This collection
@@ -471,6 +502,39 @@ type xlsxC struct {
 	F  *xlsxF  `xml:"f,omitempty"`       // Formula
 	V  string  `xml:"v,omitempty"`       // Value
 	IS *xlsxSI `xml:"is"`
+}
+
+type SRxlsxC struct {
+	//XMLName xml.Name `xml:"c"`
+	//XMLSpace xml.Attr `xml:"space,attr,omitempty"`
+	R string `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
+	S int    `xml:"s,attr,omitempty"` // Style reference.
+	// Str string `xml:"str,attr,omitempty"` // Style reference.
+	T string `xml:"t,attr,omitempty"` // Type.
+	//Cm *uint  `xml:"cm,attr,omitempty"` //
+	//Vm *uint  `xml:"vm,attr,omitempty"` //
+	//Ph *bool   `xml:"ph,attr,omitempty"` //
+	F  *SRxlsxF `xml:"f,omitempty"` // Formula
+	V  string   `xml:"v,omitempty"` // Value
+	IS *xlsxSI  `xml:"is"`
+}
+
+// xlsxF represents a formula for the cell. The formula expression is
+// contained in the character node of this element.
+type SRxlsxF struct {
+	Content string `xml:",chardata"`
+	T       string `xml:"t,attr,omitempty"` // Formula type
+	Aca     bool   `xml:"aca,attr,omitempty"`
+	Ref     string `xml:"ref,attr,omitempty"` // Shared formula ref
+	//Dt2D    bool   `xml:"dt2D,attr,omitempty"`
+	//Dtr     bool   `xml:"dtr,attr,omitempty"`
+	//Del1    bool   `xml:"del1,attr,omitempty"`
+	//Del2    bool   `xml:"del2,attr,omitempty"`
+	//R1      string `xml:"r1,attr,omitempty"`
+	//R2      string `xml:"r2,attr,omitempty"`
+	//Ca      bool   `xml:"ca,attr,omitempty"`
+	Si *int `xml:"si,attr"` // Shared formula index
+	//Bx      bool   `xml:"bx,attr,omitempty"`
 }
 
 // xlsxF represents a formula for the cell. The formula expression is

@@ -507,6 +507,51 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	}
 }
 
+func (c *SRxlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
+	f.Lock()
+	defer f.Unlock()
+	switch c.T {
+	case "b":
+		if !raw {
+			if c.V == "1" {
+				return "TRUE", nil
+			}
+			if c.V == "0" {
+				return "FALSE", nil
+			}
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	case "s":
+		if c.V != "" {
+			xlsxSI := 0
+			xlsxSI, _ = strconv.Atoi(c.V)
+			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
+				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw), nil
+			}
+			if len(d.SI) > xlsxSI {
+				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil
+			}
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	case "str":
+		return f.formattedValue(c.S, c.V, raw), nil
+	case "inlineStr":
+		if c.IS != nil {
+			return f.formattedValue(c.S, c.IS.String(), raw), nil
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	default:
+		if isNum, precision := isNumeric(c.V); isNum && !raw {
+			if precision == 0 {
+				c.V = roundPrecision(c.V, 15)
+			} else {
+				c.V = roundPrecision(c.V, -1)
+			}
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	}
+}
+
 // roundPrecision provides a function to format floating-point number text
 // with precision, if the given text couldn't be parsed to float, this will
 // return the original string.
@@ -764,53 +809,53 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 	}
 	return nil
 }
-func SRCheckRow(ws *xlsxWorksheet, rowIdx int, rowData *xlsxRow) error {
-		colCount := len(rowData.C)
-		if colCount == 0 {
-			return nil
-		}
-		// check and fill the cell without r attribute in a row element
-		rCount := 0
-		for idx, cell := range rowData.C {
-			rCount++
-			if cell.R != "" {
-				lastR, _, err := CellNameToCoordinates(cell.R)
-				if err != nil {
-					return err
-				}
-				if lastR > rCount {
-					rCount = lastR
-				}
-				continue
-			}
-			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
-		}
-		lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
-		if err != nil {
-			return err
-		}
-		if colCount < lastCol {
-			oldList := rowData.C
-			newlist := make([]xlsxC, 0, lastCol)
-			rowData.C = ws.SheetData.Row[rowIdx].C[:0]
-			for colIdx := 0; colIdx < lastCol; colIdx++ {
-				cellName, err := CoordinatesToCellName(colIdx+1, rowIdx+1)
-				if err != nil {
-					return err
-				}
-				newlist = append(newlist, xlsxC{R: cellName})
-			}
-			rowData.C = newlist
-			for colIdx := range oldList {
-				colData := &oldList[colIdx]
-				colNum, _, err := CellNameToCoordinates(colData.R)
-				if err != nil {
-					return err
-				}
-				ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
-			}
-		}
+func SRCheckRow(ws *SRxlsxWorksheet, rowIdx int, rowData *SRxlsxRow) error {
+	colCount := len(rowData.C)
+	if colCount == 0 {
 		return nil
+	}
+	// check and fill the cell without r attribute in a row element
+	rCount := 0
+	for idx, cell := range rowData.C {
+		rCount++
+		if cell.R != "" {
+			lastR, _, err := CellNameToCoordinates(cell.R)
+			if err != nil {
+				return err
+			}
+			if lastR > rCount {
+				rCount = lastR
+			}
+			continue
+		}
+		rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
+	}
+	lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
+	if err != nil {
+		return err
+	}
+	if colCount < lastCol {
+		oldList := rowData.C
+		newlist := make([]SRxlsxC, 0, lastCol)
+		rowData.C = ws.SheetData.Row[rowIdx].C[:0]
+		for colIdx := 0; colIdx < lastCol; colIdx++ {
+			cellName, err := CoordinatesToCellName(colIdx+1, rowIdx+1)
+			if err != nil {
+				return err
+			}
+			newlist = append(newlist, SRxlsxC{R: cellName})
+		}
+		rowData.C = newlist
+		for colIdx := range oldList {
+			colData := &oldList[colIdx]
+			colNum, _, err := CellNameToCoordinates(colData.R)
+			if err != nil {
+				return err
+			}
+			ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
+		}
+	}
+	return nil
 }
 
 // checkRow provides a function to check and fill each column element for all
@@ -878,6 +923,64 @@ func checkRow(ws *xlsxWorksheet) error {
 					return err
 				}
 				newlist = append(newlist, xlsxC{R: cellName})
+			}
+
+			rowData.C = newlist
+
+			for colIdx := range oldList {
+				colData := &oldList[colIdx]
+				colNum, _, err := CellNameToCoordinates(colData.R)
+				if err != nil {
+					return err
+				}
+				ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
+			}
+		}
+	}
+	return nil
+}
+
+func SRcheckRow(ws *SRxlsxWorksheet) error {
+	for rowIdx := range ws.SheetData.Row {
+		rowData := &ws.SheetData.Row[rowIdx]
+
+		colCount := len(rowData.C)
+		if colCount == 0 {
+			continue
+		}
+		// check and fill the cell without r attribute in a row element
+		rCount := 0
+		for idx, cell := range rowData.C {
+			rCount++
+			if cell.R != "" {
+				lastR, _, err := CellNameToCoordinates(cell.R)
+				if err != nil {
+					return err
+				}
+				if lastR > rCount {
+					rCount = lastR
+				}
+				continue
+			}
+			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
+		}
+		lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
+		if err != nil {
+			return err
+		}
+
+		if colCount < lastCol {
+			oldList := rowData.C
+			newlist := make([]SRxlsxC, 0, lastCol)
+
+			rowData.C = ws.SheetData.Row[rowIdx].C[:0]
+
+			for colIdx := 0; colIdx < lastCol; colIdx++ {
+				cellName, err := CoordinatesToCellName(colIdx+1, rowIdx+1)
+				if err != nil {
+					return err
+				}
+				newlist = append(newlist, SRxlsxC{R: cellName})
 			}
 
 			rowData.C = newlist

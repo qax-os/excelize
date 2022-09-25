@@ -120,12 +120,12 @@ func (f *File) UnmergeCell(sheet string, hCell, vCell string) error {
 // currently.
 func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	var mergeCells []MergeCell
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return mergeCells, err
 	}
 	if ws.MergeCells != nil {
-		if err = f.mergeOverlapCells(ws); err != nil {
+		if err = f.SRmergeOverlapCells(ws); err != nil {
 			return mergeCells, err
 		}
 		mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
@@ -142,6 +142,34 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 // overlapRange calculate overlap range of merged cells, and returns max
 // column and rows of the range.
 func overlapRange(ws *xlsxWorksheet) (row, col int, err error) {
+	var rect []int
+	for _, mergeCell := range ws.MergeCells.Cells {
+		if mergeCell == nil {
+			continue
+		}
+		if rect, err = mergeCell.Rect(); err != nil {
+			return
+		}
+		x1, y1, x2, y2 := rect[0], rect[1], rect[2], rect[3]
+		if x1 > col {
+			col = x1
+		}
+		if x2 > col {
+			col = x2
+		}
+		if y1 > row {
+			row = y1
+		}
+		if y2 > row {
+			row = y2
+		}
+	}
+	return
+}
+
+// overlapRange calculate overlap range of merged cells, and returns max
+// column and rows of the range.
+func SRoverlapRange(ws *SRxlsxWorksheet) (row, col int, err error) {
 	var rect []int
 	for _, mergeCell := range ws.MergeCells.Cells {
 		if mergeCell == nil {
@@ -202,6 +230,41 @@ func flatMergedCells(ws *xlsxWorksheet, matrix [][]*xlsxMergeCell) error {
 	return nil
 }
 
+// flatMergedCells convert merged cells range reference to cell-matrix.
+func SRflatMergedCells(ws *SRxlsxWorksheet, matrix [][]*xlsxMergeCell) error {
+	for i, cell := range ws.MergeCells.Cells {
+		rect, err := cell.Rect()
+		if err != nil {
+			return err
+		}
+		x1, y1, x2, y2 := rect[0]-1, rect[1]-1, rect[2]-1, rect[3]-1
+		var overlapCells []*xlsxMergeCell
+		for x := x1; x <= x2; x++ {
+			for y := y1; y <= y2; y++ {
+				if matrix[x][y] != nil {
+					overlapCells = append(overlapCells, matrix[x][y])
+				}
+				matrix[x][y] = cell
+			}
+		}
+		if len(overlapCells) != 0 {
+			newCell := cell
+			for _, overlapCell := range overlapCells {
+				newCell = mergeCell(cell, overlapCell)
+			}
+			newRect, _ := newCell.Rect()
+			x1, y1, x2, y2 := newRect[0]-1, newRect[1]-1, newRect[2]-1, newRect[3]-1
+			for x := x1; x <= x2; x++ {
+				for y := y1; y <= y2; y++ {
+					matrix[x][y] = newCell
+				}
+			}
+			ws.MergeCells.Cells[i] = newCell
+		}
+	}
+	return nil
+}
+
 // mergeOverlapCells merge overlap cells.
 func (f *File) mergeOverlapCells(ws *xlsxWorksheet) error {
 	rows, cols, err := overlapRange(ws)
@@ -216,6 +279,37 @@ func (f *File) mergeOverlapCells(ws *xlsxWorksheet) error {
 		matrix[i] = make([]*xlsxMergeCell, rows)
 	}
 	_ = flatMergedCells(ws, matrix)
+	mergeCells := ws.MergeCells.Cells[:0]
+	for _, cell := range ws.MergeCells.Cells {
+		rect, _ := cell.Rect()
+		x1, y1, x2, y2 := rect[0]-1, rect[1]-1, rect[2]-1, rect[3]-1
+		if matrix[x1][y1] == cell {
+			mergeCells = append(mergeCells, cell)
+			for x := x1; x <= x2; x++ {
+				for y := y1; y <= y2; y++ {
+					matrix[x][y] = nil
+				}
+			}
+		}
+	}
+	ws.MergeCells.Count, ws.MergeCells.Cells = len(mergeCells), mergeCells
+	return nil
+}
+
+// mergeOverlapCells merge overlap cells.
+func (f *File) SRmergeOverlapCells(ws *SRxlsxWorksheet) error {
+	rows, cols, err := SRoverlapRange(ws)
+	if err != nil {
+		return err
+	}
+	if rows == 0 || cols == 0 {
+		return nil
+	}
+	matrix := make([][]*xlsxMergeCell, cols)
+	for i := range matrix {
+		matrix[i] = make([]*xlsxMergeCell, rows)
+	}
+	_ = SRflatMergedCells(ws, matrix)
 	mergeCells := ws.MergeCells.Cells[:0]
 	for _, cell := range ws.MergeCells.Cells {
 		rect, _ := cell.Rect()
