@@ -333,7 +333,7 @@ func (f *File) squashSqref(cells [][]int) []string {
 	l, r := 0, 0
 	for i := 1; i < len(cells); i++ {
 		if cells[i][0] == cells[r][0] && cells[i][1]-cells[r][1] > 1 {
-			curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+			curr, _ := f.coordinatesToRangeRef(append(cells[l], cells[r]...))
 			if l == r {
 				curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 			}
@@ -343,7 +343,7 @@ func (f *File) squashSqref(cells [][]int) []string {
 			r++
 		}
 	}
-	curr, _ := f.coordinatesToAreaRef(append(cells[l], cells[r]...))
+	curr, _ := f.coordinatesToRangeRef(append(cells[l], cells[r]...))
 	if l == r {
 		curr, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 	}

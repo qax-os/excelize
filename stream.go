@@ -145,7 +145,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 		return err
 	}
 
-	coordinates, err := areaRangeToCoordinates(hCell, vCell)
+	coordinates, err := cellRefsToCoordinates(hCell, vCell)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 	}
 
 	// Correct table reference range, such correct C1:B3 to B1:C3.
-	ref, err := sw.File.coordinatesToAreaRef(coordinates)
+	ref, err := sw.File.coordinatesToRangeRef(coordinates)
 	if err != nil {
 		return err
 	}
@@ -412,7 +412,7 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
 func (sw *StreamWriter) MergeCell(hCell, vCell string) error {
-	_, err := areaRangeToCoordinates(hCell, vCell)
+	_, err := cellRefsToCoordinates(hCell, vCell)
 	if err != nil {
 		return err
 	}

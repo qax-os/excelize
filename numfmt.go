@@ -279,7 +279,7 @@ var (
 // prepareNumberic split the number into two before and after parts by a
 // decimal point.
 func (nf *numberFormat) prepareNumberic(value string) {
-	if nf.isNumeric, _ = isNumeric(value); !nf.isNumeric {
+	if nf.isNumeric, _, _ = isNumeric(value); !nf.isNumeric {
 		return
 	}
 }
@@ -338,13 +338,13 @@ func (nf *numberFormat) positiveHandler() (result string) {
 			continue
 		}
 		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
-			if isNum, precision := isNumeric(nf.value); isNum {
+			if isNum, precision, decimal := isNumeric(nf.value); isNum {
 				if nf.number < 1 {
 					nf.result += "0"
 					continue
 				}
 				if precision > 15 {
-					nf.result += roundPrecision(nf.value, 15)
+					nf.result += strconv.FormatFloat(decimal, 'f', -1, 64)
 				} else {
 					nf.result += fmt.Sprintf("%.f", nf.number)
 				}
@@ -902,13 +902,13 @@ func (nf *numberFormat) negativeHandler() (result string) {
 			continue
 		}
 		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
-			if isNum, precision := isNumeric(nf.value); isNum {
+			if isNum, precision, decimal := isNumeric(nf.value); isNum {
 				if math.Abs(nf.number) < 1 {
 					nf.result += "0"
 					continue
 				}
 				if precision > 15 {
-					nf.result += strings.TrimLeft(roundPrecision(nf.value, 15), "-")
+					nf.result += strings.TrimLeft(strconv.FormatFloat(decimal, 'f', -1, 64), "-")
 				} else {
 					nf.result += fmt.Sprintf("%.f", math.Abs(nf.number))
 				}
@@ -941,7 +941,7 @@ func (nf *numberFormat) textHandler() (result string) {
 // getValueSectionType returns its applicable number format expression section
 // based on the given value.
 func (nf *numberFormat) getValueSectionType(value string) (float64, string) {
-	isNum, _ := isNumeric(value)
+	isNum, _, _ := isNumeric(value)
 	if !isNum {
 		return 0, nfp.TokenSectionText
 	}

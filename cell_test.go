@@ -95,43 +95,43 @@ func TestConcurrency(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
-func TestCheckCellInArea(t *testing.T) {
+func TestCheckCellInRangeRef(t *testing.T) {
 	f := NewFile()
-	expectedTrueCellInAreaList := [][2]string{
+	expectedTrueCellInRangeRefList := [][2]string{
 		{"c2", "A1:AAZ32"},
 		{"B9", "A1:B9"},
 		{"C2", "C2:C2"},
 	}
 
-	for _, expectedTrueCellInArea := range expectedTrueCellInAreaList {
-		cell := expectedTrueCellInArea[0]
-		area := expectedTrueCellInArea[1]
-		ok, err := f.checkCellInArea(cell, area)
+	for _, expectedTrueCellInRangeRef := range expectedTrueCellInRangeRefList {
+		cell := expectedTrueCellInRangeRef[0]
+		reference := expectedTrueCellInRangeRef[1]
+		ok, err := f.checkCellInRangeRef(cell, reference)
 		assert.NoError(t, err)
 		assert.Truef(t, ok,
-			"Expected cell %v to be in area %v, got false\n", cell, area)
+			"Expected cell %v to be in range reference %v, got false\n", cell, reference)
 	}
 
-	expectedFalseCellInAreaList := [][2]string{
+	expectedFalseCellInRangeRefList := [][2]string{
 		{"c2", "A4:AAZ32"},
 		{"C4", "D6:A1"}, // weird case, but you never know
 		{"AEF42", "BZ40:AEF41"},
 	}
 
-	for _, expectedFalseCellInArea := range expectedFalseCellInAreaList {
-		cell := expectedFalseCellInArea[0]
-		area := expectedFalseCellInArea[1]
-		ok, err := f.checkCellInArea(cell, area)
+	for _, expectedFalseCellInRangeRef := range expectedFalseCellInRangeRefList {
+		cell := expectedFalseCellInRangeRef[0]
+		reference := expectedFalseCellInRangeRef[1]
+		ok, err := f.checkCellInRangeRef(cell, reference)
 		assert.NoError(t, err)
 		assert.Falsef(t, ok,
-			"Expected cell %v not to be inside of area %v, but got true\n", cell, area)
+			"Expected cell %v not to be inside of range reference %v, but got true\n", cell, reference)
 	}
 
-	ok, err := f.checkCellInArea("A1", "A:B")
+	ok, err := f.checkCellInRangeRef("A1", "A:B")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.False(t, ok)
 
-	ok, err = f.checkCellInArea("AA0", "Z0:AB1")
+	ok, err = f.checkCellInRangeRef("AA0", "Z0:AB1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("AA0", newInvalidCellNameError("AA0")).Error())
 	assert.False(t, ok)
 }
@@ -326,8 +326,10 @@ func TestGetCellValue(t *testing.T) {
     <c r="Y1"><v>275.39999999999998</v></c>
     <c r="Z1"><v>68.900000000000006</v></c>
     <c r="AA1"><v>1.1000000000000001</v></c>
-    <c r="AA2"><v>1234567890123_4</v></c>
-    <c r="AA3"><v>123456789_0123_4</v></c>
+    <c r="AB1" t="str"><v>1234567890123_4</v></c>
+    <c r="AC1" t="str"><v>123456789_0123_4</v></c>
+    <c r="AD1"><v>+0.0000000000000000002399999999999992E-4</v></c>
+    <c r="AE1"><v>7.2399999999999992E-2</v></c>
 </row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
@@ -361,6 +363,8 @@ func TestGetCellValue(t *testing.T) {
 		"1.1",
 		"1234567890123_4",
 		"123456789_0123_4",
+		"2.39999999999999E-23",
+		"0.0724",
 	}}, rows)
 	assert.NoError(t, err)
 }

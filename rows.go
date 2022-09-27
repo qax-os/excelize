@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"math/big"
 	"os"
 	"strconv"
 
@@ -486,30 +485,15 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		}
 		return f.formattedValue(c.S, c.V, raw), nil
 	default:
-		if isNum, precision := isNumeric(c.V); isNum && !raw {
-			if precision == 0 {
-				c.V = roundPrecision(c.V, 15)
+		if isNum, precision, decimal := isNumeric(c.V); isNum && !raw {
+			if precision > 15 {
+				c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
 			} else {
-				c.V = roundPrecision(c.V, -1)
+				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
 			}
 		}
 		return f.formattedValue(c.S, c.V, raw), nil
 	}
-}
-
-// roundPrecision provides a function to format floating-point number text
-// with precision, if the given text couldn't be parsed to float, this will
-// return the original string.
-func roundPrecision(text string, prec int) string {
-	decimal := big.Float{}
-	if _, ok := decimal.SetString(text); ok {
-		flt, _ := decimal.Float64()
-		if prec == -1 {
-			return strconv.FormatFloat(flt, 'G', 15, 64)
-		}
-		return strconv.FormatFloat(flt, 'f', -1, 64)
-	}
-	return text
 }
 
 // SetRowVisible provides a function to set visible of a single row by given
@@ -732,7 +716,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 		row++
 	}
 	for _, rng := range ws.MergeCells.Cells {
-		coordinates, err := areaRefToCoordinates(rng.Ref)
+		coordinates, err := rangeRefToCoordinates(rng.Ref)
 		if err != nil {
 			return err
 		}
@@ -741,8 +725,8 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 		}
 	}
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
-		areaData := ws.MergeCells.Cells[i]
-		coordinates, _ := areaRefToCoordinates(areaData.Ref)
+		mergedCells := ws.MergeCells.Cells[i]
+		coordinates, _ := rangeRefToCoordinates(mergedCells.Ref)
 		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 		if y1 == y2 && y1 == row {
 			from, _ := CoordinatesToCellName(x1, row2)

@@ -560,7 +560,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 //	|     |            |     (x2,y2)|
 //	+-----+------------+------------+
 //
-// Example of an object that covers some area from cell A1 to B2.
+// Example of an object that covers some range reference from cell A1 to B2.
 //
 // Based on the width and height of the object we need to calculate 8 vars:
 //

@@ -81,8 +81,9 @@ type PivotTableField struct {
 // options. Note that the same fields can not in Columns, Rows and Filter
 // fields at the same time.
 //
-// For example, create a pivot table on the Sheet1!$G$2:$M$34 area with the
-// region Sheet1!$A$1:$E$31 as the data source, summarize by sum for sales:
+// For example, create a pivot table on the Sheet1!$G$2:$M$34 range reference
+// with the region Sheet1!$A$1:$E$31 as the data source, summarize by sum for
+// sales:
 //
 //	package main
 //
@@ -205,7 +206,7 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 		return "", []int{}, ErrParameterInvalid
 	}
 	trimRng := strings.ReplaceAll(rng[1], "$", "")
-	coordinates, err := areaRefToCoordinates(trimRng)
+	coordinates, err := rangeRefToCoordinates(trimRng)
 	if err != nil {
 		return rng[0], []int{}, err
 	}

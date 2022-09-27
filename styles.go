@@ -2486,11 +2486,14 @@ func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	c, col, row, err := f.prepareCell(ws, cell)
+	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return 0, err
 	}
-	return f.prepareCellStyle(ws, col, row, c.S), err
+	prepareSheetXML(ws, col, row)
+	ws.Lock()
+	defer ws.Unlock()
+	return f.prepareCellStyle(ws, col, row, ws.SheetData.Row[row-1].C[col-1].S), err
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given
@@ -2856,7 +2859,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 // max_color - Same as min_color, see above.
 //
 // bar_color - Used for data_bar. Same as min_color, see above.
-func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
+func (f *File) SetConditionalFormat(sheet, reference, formatSet string) error {
 	var format []*formatConditional
 	err := json.Unmarshal([]byte(formatSet), &format)
 	if err != nil {
@@ -2897,7 +2900,7 @@ func (f *File) SetConditionalFormat(sheet, area, formatSet string) error {
 	}
 
 	ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
-		SQRef:  area,
+		SQRef:  reference,
 		CfRule: cfRule,
 	})
 	return err

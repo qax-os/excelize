@@ -185,7 +185,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			Decode(&t); err != nil && err != io.EOF {
 			return
 		}
-		coordinates, err := areaRefToCoordinates(t.Ref)
+		coordinates, err := rangeRefToCoordinates(t.Ref)
 		if err != nil {
 			return
 		}
@@ -204,7 +204,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			idx--
 			continue
 		}
-		t.Ref, _ = f.coordinatesToAreaRef([]int{x1, y1, x2, y2})
+		t.Ref, _ = f.coordinatesToRangeRef([]int{x1, y1, x2, y2})
 		if t.AutoFilter != nil {
 			t.AutoFilter.Ref = t.Ref
 		}
@@ -221,7 +221,7 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 		return nil
 	}
 
-	coordinates, err := areaRefToCoordinates(ws.AutoFilter.Ref)
+	coordinates, err := rangeRefToCoordinates(ws.AutoFilter.Ref)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 	coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
 	x1, y1, x2, y2 = coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
-	if ws.AutoFilter.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
+	if ws.AutoFilter.Ref, err = f.coordinatesToRangeRef([]int{x1, y1, x2, y2}); err != nil {
 		return err
 	}
 	return nil
@@ -277,8 +277,8 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 	}
 
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
-		areaData := ws.MergeCells.Cells[i]
-		coordinates, err := areaRefToCoordinates(areaData.Ref)
+		mergedCells := ws.MergeCells.Cells[i]
+		coordinates, err := rangeRefToCoordinates(mergedCells.Ref)
 		if err != nil {
 			return err
 		}
@@ -305,8 +305,8 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 			i--
 			continue
 		}
-		areaData.rect = []int{x1, y1, x2, y2}
-		if areaData.Ref, err = f.coordinatesToAreaRef([]int{x1, y1, x2, y2}); err != nil {
+		mergedCells.rect = []int{x1, y1, x2, y2}
+		if mergedCells.Ref, err = f.coordinatesToRangeRef([]int{x1, y1, x2, y2}); err != nil {
 			return err
 		}
 	}

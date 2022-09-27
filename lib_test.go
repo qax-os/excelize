@@ -217,15 +217,15 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 	}
 }
 
-func TestCoordinatesToAreaRef(t *testing.T) {
+func TestCoordinatesToRangeRef(t *testing.T) {
 	f := NewFile()
-	_, err := f.coordinatesToAreaRef([]int{})
+	_, err := f.coordinatesToRangeRef([]int{})
 	assert.EqualError(t, err, ErrCoordinates.Error())
-	_, err = f.coordinatesToAreaRef([]int{1, -1, 1, 1})
+	_, err = f.coordinatesToRangeRef([]int{1, -1, 1, 1})
 	assert.EqualError(t, err, "invalid cell reference [1, -1]")
-	_, err = f.coordinatesToAreaRef([]int{1, 1, 1, -1})
+	_, err = f.coordinatesToRangeRef([]int{1, 1, 1, -1})
 	assert.EqualError(t, err, "invalid cell reference [1, -1]")
-	ref, err := f.coordinatesToAreaRef([]int{1, 1, 1, 1})
+	ref, err := f.coordinatesToRangeRef([]int{1, 1, 1, 1})
 	assert.NoError(t, err)
 	assert.EqualValues(t, ref, "A1:A1")
 }

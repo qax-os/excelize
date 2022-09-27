@@ -17,7 +17,7 @@ import "strings"
 func (mc *xlsxMergeCell) Rect() ([]int, error) {
 	var err error
 	if mc.rect == nil {
-		mc.rect, err = areaRefToCoordinates(mc.Ref)
+		mc.rect, err = rangeRefToCoordinates(mc.Ref)
 	}
 	return mc.rect, err
 }
@@ -46,7 +46,7 @@ func (mc *xlsxMergeCell) Rect() ([]int, error) {
 //	|A8(x3,y4)      C8(x4,y4)|
 //	+------------------------+
 func (f *File) MergeCell(sheet, hCell, vCell string) error {
-	rect, err := areaRefToCoordinates(hCell + ":" + vCell)
+	rect, err := rangeRefToCoordinates(hCell + ":" + vCell)
 	if err != nil {
 		return err
 	}
@@ -73,11 +73,11 @@ func (f *File) MergeCell(sheet, hCell, vCell string) error {
 }
 
 // UnmergeCell provides a function to unmerge a given range reference.
-// For example unmerge area D3:E9 on Sheet1:
+// For example unmerge range reference D3:E9 on Sheet1:
 //
 //	err := f.UnmergeCell("Sheet1", "D3", "E9")
 //
-// Attention: overlapped areas will also be unmerged.
+// Attention: overlapped range will also be unmerged.
 func (f *File) UnmergeCell(sheet, hCell, vCell string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -85,7 +85,7 @@ func (f *File) UnmergeCell(sheet, hCell, vCell string) error {
 	}
 	ws.Lock()
 	defer ws.Unlock()
-	rect1, err := areaRefToCoordinates(hCell + ":" + vCell)
+	rect1, err := rangeRefToCoordinates(hCell + ":" + vCell)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (f *File) UnmergeCell(sheet, hCell, vCell string) error {
 		if mergeCell == nil {
 			continue
 		}
-		rect2, _ := areaRefToCoordinates(mergeCell.Ref)
+		rect2, _ := rangeRefToCoordinates(mergeCell.Ref)
 		if isOverlap(rect1, rect2) {
 			continue
 		}

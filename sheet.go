@@ -39,6 +39,9 @@ import (
 // `Sheet1` will be created.
 func (f *File) NewSheet(sheet string) int {
 	// Check if the worksheet already exists
+	if trimSheetName(sheet) == "" {
+		return -1
+	}
 	index := f.GetSheetIndex(sheet)
 	if index != -1 {
 		return index

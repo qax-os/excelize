@@ -90,6 +90,8 @@ func TestNewSheet(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
 	// create new worksheet with already exists name
 	assert.Equal(t, f.GetSheetIndex("Sheet2"), f.NewSheet("Sheet2"))
+	// create new worksheet with empty sheet name
+	assert.Equal(t, -1, f.NewSheet(":\\/?*[]"))
 }
 
 func TestSetPane(t *testing.T) {

@@ -48,7 +48,7 @@ func parseFormatTableSet(formatSet string) (*formatTable, error) {
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique, and must set the
 // header row data of the table before calling the AddTable function. Multiple
-// tables coordinate areas that can't have an intersection.
+// tables range reference that can't have an intersection.
 //
 // table_name: The name of the table, in the same worksheet name of the table should be unique
 //
@@ -167,7 +167,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, formatSet
 	}
 
 	// Correct table range reference, such correct C1:B3 to B1:C3.
-	ref, err := f.coordinatesToAreaRef([]int{x1, y1, x2, y2})
+	ref, err := f.coordinatesToRangeRef([]int{x1, y1, x2, y2})
 	if err != nil {
 		return err
 	}

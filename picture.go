@@ -652,11 +652,11 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, formatSe
 		if inMergeCell {
 			continue
 		}
-		if inMergeCell, err = f.checkCellInArea(cell, mergeCell[0]); err != nil {
+		if inMergeCell, err = f.checkCellInRangeRef(cell, mergeCell[0]); err != nil {
 			return
 		}
 		if inMergeCell {
-			rng, _ = areaRangeToCoordinates(mergeCell.GetStartAxis(), mergeCell.GetEndAxis())
+			rng, _ = cellRefsToCoordinates(mergeCell.GetStartAxis(), mergeCell.GetEndAxis())
 			_ = sortCoordinates(rng)
 		}
 	}

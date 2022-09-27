@@ -615,7 +615,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 
 	var style int
 
-	// Test set border on overlapping area with vertical variants shading styles gradient fill.
+	// Test set border on overlapping range with vertical variants shading styles gradient fill.
 	style, err = f.NewStyle(&Style{
 		Border: []Border{
 			{Type: "left", Color: "0000FF", Style: 3},

@@ -485,7 +485,7 @@ func (f *File) SetCellDefault(sheet, cell, value string) error {
 // setCellDefault prepares cell type and string type cell value by a given
 // string.
 func setCellDefault(value string) (t string, v string) {
-	if ok, _ := isNumeric(value); !ok {
+	if ok, _, _ := isNumeric(value); !ok {
 		t = "str"
 	}
 	v = value
@@ -631,7 +631,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 
 // setSharedFormula set shared formula for the cells.
 func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
-	coordinates, err := areaRefToCoordinates(ref)
+	coordinates, err := rangeRefToCoordinates(ref)
 	if err != nil {
 		return err
 	}
@@ -1098,7 +1098,7 @@ func (f *File) setSheetCells(sheet, cell string, slice interface{}, dir adjustDi
 	return err
 }
 
-// getCellInfo does common preparation for all SetCell* methods.
+// getCellInfo does common preparation for all set cell value functions.
 func (f *File) prepareCell(ws *xlsxWorksheet, cell string) (*xlsxC, int, int, error) {
 	var err error
 	cell, err = f.mergeCellsParser(ws, cell)
@@ -1116,8 +1116,9 @@ func (f *File) prepareCell(ws *xlsxWorksheet, cell string) (*xlsxC, int, int, er
 	return &ws.SheetData.Row[row-1].C[col-1], col, row, err
 }
 
-// getCellStringFunc does common value extraction workflow for all GetCell*
-// methods. Passed function implements specific part of required logic.
+// getCellStringFunc does common value extraction workflow for all get cell
+// value function. Passed function implements specific part of required
+// logic.
 func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c *xlsxC) (string, bool, error)) (string, error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1235,7 +1236,7 @@ func (f *File) mergeCellsParser(ws *xlsxWorksheet, cell string) (string, error) 
 				i--
 				continue
 			}
-			ok, err := f.checkCellInArea(cell, ws.MergeCells.Cells[i].Ref)
+			ok, err := f.checkCellInRangeRef(cell, ws.MergeCells.Cells[i].Ref)
 			if err != nil {
 				return cell, err
 			}
@@ -1247,18 +1248,18 @@ func (f *File) mergeCellsParser(ws *xlsxWorksheet, cell string) (string, error) 
 	return cell, nil
 }
 
-// checkCellInArea provides a function to determine if a given cell reference
+// checkCellInRangeRef provides a function to determine if a given cell reference
 // in a range.
-func (f *File) checkCellInArea(cell, area string) (bool, error) {
+func (f *File) checkCellInRangeRef(cell, reference string) (bool, error) {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return false, err
 	}
 
-	if rng := strings.Split(area, ":"); len(rng) != 2 {
+	if rng := strings.Split(reference, ":"); len(rng) != 2 {
 		return false, err
 	}
-	coordinates, err := areaRefToCoordinates(area)
+	coordinates, err := rangeRefToCoordinates(reference)
 	if err != nil {
 		return false, err
 	}
@@ -1333,7 +1334,7 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 // R1C1-reference notation, are the same.
 //
 // Note that this function not validate ref tag to check the cell whether in
-// allow area, and always return origin shared formula.
+// allow range reference, and always return origin shared formula.
 func getSharedFormula(ws *xlsxWorksheet, si int, cell string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {

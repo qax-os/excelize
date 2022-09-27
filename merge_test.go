@@ -169,7 +169,7 @@ func TestUnmergeCell(t *testing.T) {
 
 	f = NewFile()
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
-	// Test unmerged area on not exists worksheet.
+	// Test unmerged range reference on not exists worksheet.
 	assert.EqualError(t, f.UnmergeCell("SheetN", "A1", "A1"), "sheet SheetN does not exist")
 
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")

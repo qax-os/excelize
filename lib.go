@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"regexp"
 	"strconv"
@@ -273,19 +274,19 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	return sign + colName + sign + strconv.Itoa(row), err
 }
 
-// areaRefToCoordinates provides a function to convert range reference to a
+// rangeRefToCoordinates provides a function to convert range reference to a
 // pair of coordinates.
-func areaRefToCoordinates(ref string) ([]int, error) {
+func rangeRefToCoordinates(ref string) ([]int, error) {
 	rng := strings.Split(strings.ReplaceAll(ref, "$", ""), ":")
 	if len(rng) < 2 {
 		return nil, ErrParameterInvalid
 	}
-	return areaRangeToCoordinates(rng[0], rng[1])
+	return cellRefsToCoordinates(rng[0], rng[1])
 }
 
-// areaRangeToCoordinates provides a function to convert cell range to a
+// cellRefsToCoordinates provides a function to convert cell range to a
 // pair of coordinates.
-func areaRangeToCoordinates(firstCell, lastCell string) ([]int, error) {
+func cellRefsToCoordinates(firstCell, lastCell string) ([]int, error) {
 	coordinates := make([]int, 4)
 	var err error
 	coordinates[0], coordinates[1], err = CellNameToCoordinates(firstCell)
@@ -311,9 +312,9 @@ func sortCoordinates(coordinates []int) error {
 	return nil
 }
 
-// coordinatesToAreaRef provides a function to convert a pair of coordinates
-// to area reference.
-func (f *File) coordinatesToAreaRef(coordinates []int) (string, error) {
+// coordinatesToRangeRef provides a function to convert a pair of coordinates
+// to range reference.
+func (f *File) coordinatesToRangeRef(coordinates []int) (string, error) {
 	if len(coordinates) != 4 {
 		return "", ErrCoordinates
 	}
@@ -364,7 +365,7 @@ func (f *File) flatSqref(sqref string) (cells map[int][][]int, err error) {
 			}
 			cells[col] = append(cells[col], []int{col, row})
 		case 2:
-			if coordinates, err = areaRefToCoordinates(ref); err != nil {
+			if coordinates, err = rangeRefToCoordinates(ref); err != nil {
 				return
 			}
 			_ = sortCoordinates(coordinates)
@@ -691,34 +692,16 @@ func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
 
 // isNumeric determines whether an expression is a valid numeric type and get
 // the precision for the numeric.
-func isNumeric(s string) (bool, int) {
-	dot, e, n, p := false, false, false, 0
-	for i, v := range s {
-		if v == '.' {
-			if dot {
-				return false, 0
-			}
-			dot = true
-		} else if v == 'E' || v == 'e' {
-			e = true
-		} else if v < '0' || v > '9' {
-			if i == 0 && v == '-' {
-				continue
-			}
-			if e && v == '-' {
-				return true, 0
-			}
-			if e && v == '+' {
-				p = 15
-				continue
-			}
-			return false, 0
-		} else {
-			p++
-		}
-		n = true
+func isNumeric(s string) (bool, int, float64) {
+	var decimal big.Float
+	_, ok := decimal.SetString(s)
+	if !ok {
+		return false, 0, 0
 	}
-	return n, p
+	var noScientificNotation string
+	flt, _ := decimal.Float64()
+	noScientificNotation = strconv.FormatFloat(flt, 'f', -1, 64)
+	return true, len(strings.ReplaceAll(noScientificNotation, ".", "")), flt
 }
 
 var (

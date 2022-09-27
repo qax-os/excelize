@@ -1736,7 +1736,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=UPPER(\"TEST 123\")": "TEST 123",
 		// VALUE
 		"=VALUE(\"50\")":                  "50",
-		"=VALUE(\"1.0E-07\")":             "1E-07",
+		"=VALUE(\"1.0E-07\")":             "0.0000001",
 		"=VALUE(\"5,000\")":               "5000",
 		"=VALUE(\"20%\")":                 "0.2",
 		"=VALUE(\"12:00:00\")":            "0.5",
