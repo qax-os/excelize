@@ -14,9 +14,9 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -1204,41 +1204,40 @@ type SRSheetData struct {
 	DefaultRowHeight float64
 	RowHeights       map[int]float64
 	Date1904         bool
-	Cells            []SRCell
+	//Cells            []SRCell
+	CellBatchIterator *SRCellsIterator
 }
 
-func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
-	fmt.Println("IMPORT_A")
-	ws, err := f.SRWorkSheetReader(sheet, true)
-	fmt.Println("IMPORT_B")
-	if err != nil {
-		return nil, err
-	}
-	date1904, wb := false, f.workbookReader()
-	fmt.Println("IMPORT_C")
+type SRCellsIterator struct {
+	Worksheet           *SRxlsxWorksheet
+	SRSheetData         *SRSheetData
+	File                *File
+	SharedStringsReader *xlsxSST
+	currentIdx          int
+	CurrentBatch        []SRCell
+}
 
-	if wb != nil && wb.WorkbookPr != nil {
-		date1904 = wb.WorkbookPr.Date1904
+func (srIter *SRCellsIterator) Next() bool {
+	if srIter.currentIdx >= len(srIter.Worksheet.SheetData.Row) {
+		srIter.CurrentBatch = nil
+		return false
 	}
-	srSheetData := &SRSheetData{
-		Date1904:   date1904,
-		RowHeights: map[int]float64{},
-		ColWidths:  map[int]float64{},
-	}
-	ws.Lock()
-	defer ws.Unlock()
+
+	startRow := srIter.currentIdx
+	ws := srIter.Worksheet
+	sharedStringsReader := srIter.SharedStringsReader
+
+	endRow := int(math.Min(float64(len(ws.SheetData.Row)), float64(startRow+1000)))
+	srIter.currentIdx = endRow
 	cells := []SRCell{}
-	sharedStringsReader := f.sharedStringsReader()
-	srSheetData.DefaultRowHeight = defaultRowHeight
-	srSheetData.DefaultColWidth = defaultColWidth
-	fmt.Println("IMPORT_C")
-	for rowIdx := range ws.SheetData.Row {
-		rowData := &ws.SheetData.Row[rowIdx]
+
+	for rowIdx, rowData := range ws.SheetData.Row[startRow:endRow] {
 		colCount := len(rowData.C)
 		if colCount > 0 {
-			err := SRCheckRow(ws, rowIdx, rowData)
+			err := SRCheckRow(ws, startRow+rowIdx, &rowData)
 			if err != nil {
-				return nil, err
+				fmt.Println("SRCheckRow Error: ", err)
+				return false
 			}
 		}
 
@@ -1249,7 +1248,7 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 		if rowData.Ht != 0 {
 			ht = rowData.Ht
 		}
-		srSheetData.RowHeights[rowIdx] = ht
+		srIter.SRSheetData.RowHeights[rowIdx] = ht
 		colWidthSet := map[int]bool{}
 		for colIdx := range rowData.C {
 			cellData := &rowData.C[colIdx]
@@ -1267,37 +1266,51 @@ func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
 					srCell.Formula = cellData.F.Content
 				}
 			}
-			val, _ := cellData.getValueFrom(f, sharedStringsReader, true)
+			val, _ := cellData.getValueFrom(srIter.File, sharedStringsReader, true)
 			srCell.RawValue = val
-			val, _ = cellData.getValueFrom(f, sharedStringsReader, false)
+			val, _ = cellData.getValueFrom(srIter.File, sharedStringsReader, false)
 			srCell.FormattedValue = val
 			col, row, _ := CellNameToCoordinates(cellData.R)
 			if !colWidthSet[col] {
-				srSheetData.ColWidths[col] = f.SRGetColWidth(ws, col)
+				srIter.SRSheetData.ColWidths[col] = srIter.File.SRGetColWidth(ws, col)
 				colWidthSet[col] = true
 			}
 			srCell.Row = row - 1
 			srCell.Col = col - 1
-			srCell.StyleIndex = f.SRprepareCellStyle(ws, col, row, cellData.S)
+			srCell.StyleIndex = srIter.File.SRprepareCellStyle(ws, col, row, cellData.S)
 			srCell.CellName = cellData.R
 			srCell.CellType = cellTypes[cellData.T]
 			cells = append(cells, srCell)
 		}
 
-		if rowIdx%10000 == 0 {
-			size := 0
-			for _, c := range cells {
-				size += 16
-				size += len(c.Formula)
-				size += len(c.FormattedValue)
-				size += len(c.RawValue)
-				size += len(c.CellName)
-			}
-			runtime.GC()
-			fmt.Println("reading row: ", rowIdx, " len(cells): ", len(cells), ", total size in bytes: ", size)
-		}
+		srIter.CurrentBatch = cells
 	}
-	srSheetData.Cells = cells
+
+	return true
+}
+
+func (f *File) GetSheetData(sheet string) (*SRSheetData, error) {
+	ws, err := f.SRWorkSheetReader(sheet, true)
+	if err != nil {
+		return nil, err
+	}
+	date1904, wb := false, f.workbookReader()
+
+	if wb != nil && wb.WorkbookPr != nil {
+		date1904 = wb.WorkbookPr.Date1904
+	}
+	srSheetData := &SRSheetData{
+		Date1904:   date1904,
+		RowHeights: map[int]float64{},
+		ColWidths:  map[int]float64{},
+	}
+	ws.Lock()
+	defer ws.Unlock()
+	sharedStringsReader := f.sharedStringsReader()
+	srSheetData.DefaultRowHeight = defaultRowHeight
+	srSheetData.DefaultColWidth = defaultColWidth
+
+	srSheetData.CellBatchIterator = &SRCellsIterator{Worksheet: ws, SRSheetData: srSheetData, File: f, SharedStringsReader: sharedStringsReader}
 	return srSheetData, nil
 }
 
