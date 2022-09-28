@@ -234,43 +234,41 @@ func (f *File) SRworkSheetReader(sheet string) (ws *SRxlsxWorksheet, err error) 
 func (f *File) SRWorkSheetReader(sheet string, skipCheckRow bool) (ws *SRxlsxWorksheet, err error) {
 	f.Lock()
 	defer f.Unlock()
-	fmt.Println("READER_FOR: ", sheet)
-	fmt.Println("READER_A")
 	var (
 		name string
 		ok   bool
 	)
-	fmt.Println("READER_B")
+
 	if name, ok = f.getSheetXMLPath(sheet); !ok {
 		err = newNoExistSheetError(sheet)
 		return
 	}
-	fmt.Println("READER_C")
+
 	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
 		ws = worksheet.(*SRxlsxWorksheet)
 		return
 	}
-	fmt.Println("READER_D")
+
 	for _, sheetType := range []string{"xl/chartsheets", "xl/dialogsheet", "xl/macrosheet"} {
 		if strings.HasPrefix(name, sheetType) {
 			err = newNotWorksheetError(sheet)
 			return
 		}
 	}
-	fmt.Println("READER_E")
+
 	ws = new(SRxlsxWorksheet)
-	fmt.Println("READER_F")
+
 	if _, ok := f.xmlAttr[name]; !ok {
 		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
 		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
 	}
-	fmt.Println("READER_G")
+
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
 		err = newDecodeXMLError(err)
 		return
 	}
-	fmt.Println("READER_H")
+
 	err = nil
 	if f.checked == nil {
 		f.checked = make(map[string]bool)
@@ -284,9 +282,8 @@ func (f *File) SRWorkSheetReader(sheet string, skipCheckRow bool) (ws *SRxlsxWor
 		}
 		f.checked[name] = true
 	}
-	fmt.Println("READER_I")
+
 	f.Sheet.Store(name, ws)
-	fmt.Println("READER_J")
 	return
 }
 
