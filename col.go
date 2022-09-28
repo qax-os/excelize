@@ -638,7 +638,7 @@ func (f *File) getColWidth(sheet string, col int) int {
 	return int(defaultColWidthPixels)
 }
 
-func(f *File) SRGetColWidth(ws *xlsxWorksheet, colNum int)float64 {
+func (f *File) SRGetColWidth(ws *SRxlsxWorksheet, colNum int) float64 {
 	if ws.Cols != nil {
 		var width float64
 		for _, v := range ws.Cols.Col {
@@ -650,8 +650,8 @@ func(f *File) SRGetColWidth(ws *xlsxWorksheet, colNum int)float64 {
 			return width
 		}
 	}
-		// Optimization for when the column widths haven't changed.
-		return defaultColWidth
+	// Optimization for when the column widths haven't changed.
+	return defaultColWidth
 }
 
 // GetColWidth provides a function to get column width by given worksheet name
