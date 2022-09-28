@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sheetrocks/nfp"
+	"github.com/xuri/nfp"
 )
 
 // languageInfo defined the required fields of localization support for number format.
