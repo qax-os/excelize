@@ -2621,12 +2621,12 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 	vColIdx := vCol - 1
 	vRowIdx := vRow - 1
 
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(ws, vCol, vRow)
-	makeContiguousColumns(ws, hRow, vRow, vCol)
+	SRprepareSheetXML(ws, vCol, vRow)
+	SRmakeContiguousColumns(ws, hRow, vRow, vCol)
 	ws.Lock()
 	defer ws.Unlock()
 

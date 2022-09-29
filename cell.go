@@ -69,6 +69,13 @@ func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error)
 	})
 }
 
+func (f *File) SRGetCellValue(sheet, axis string, opts ...Options) (string, error) {
+	return f.SRgetCellStringFunc(sheet, axis, func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error) {
+		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
+		return val, true, err
+	})
+}
+
 // GetCellType provides a function to get the cell's data type by given
 // worksheet name and axis in spreadsheet file.
 func (f *File) GetCellType(sheet, axis string) (CellType, error) {
@@ -1186,6 +1193,55 @@ func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c
 	return "", nil
 }
 
+func (f *File) SRgetCellStringFunc(sheet, axis string, fn func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error)) (string, error) {
+	ws, err := f.SRworkSheetReader(sheet)
+	if err != nil {
+		return "", err
+	}
+	axis, err = f.SRmergeCellsParser(ws, axis)
+	if err != nil {
+		return "", err
+	}
+	_, row, err := CellNameToCoordinates(axis)
+	if err != nil {
+		return "", err
+	}
+
+	ws.Lock()
+	defer ws.Unlock()
+
+	lastRowNum := 0
+	if l := len(ws.SheetData.Row); l > 0 {
+		lastRowNum = ws.SheetData.Row[l-1].R
+	}
+
+	// keep in mind: row starts from 1
+	if row > lastRowNum {
+		return "", nil
+	}
+
+	for rowIdx := range ws.SheetData.Row {
+		rowData := &ws.SheetData.Row[rowIdx]
+		if rowData.R != row {
+			continue
+		}
+		for colIdx := range rowData.C {
+			colData := &rowData.C[colIdx]
+			if axis != colData.R {
+				continue
+			}
+			val, ok, err := fn(ws, colData)
+			if err != nil {
+				return "", err
+			}
+			if ok {
+				return val, nil
+			}
+		}
+	}
+	return "", nil
+}
+
 type SRCell struct {
 	Formula        string
 	FormattedValue string
@@ -1231,16 +1287,9 @@ func (srIter *SRCellsIterator) Next() bool {
 	srIter.currentIdx = endRow
 	cells := []SRCell{}
 
-	for rowIdx, rowData := range ws.SheetData.Row[startRow:endRow] {
-		colCount := len(rowData.C)
-		if colCount > 0 {
-			err := SRCheckRow(ws, startRow+rowIdx, &rowData)
-			if err != nil {
-				fmt.Println("SRCheckRow Error: ", err)
-				return false
-			}
-		}
+	maxCol := 0
 
+	for rowIdx, rowData := range ws.SheetData.Row[startRow:endRow] {
 		ht := defaultRowHeight
 		if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
 			ht = ws.SheetFormatPr.DefaultRowHeight
@@ -1249,7 +1298,6 @@ func (srIter *SRCellsIterator) Next() bool {
 			ht = rowData.Ht
 		}
 		srIter.SRSheetData.RowHeights[rowIdx] = ht
-		colWidthSet := map[int]bool{}
 		for colIdx := range rowData.C {
 			cellData := &rowData.C[colIdx]
 			srCell := SRCell{}
@@ -1271,19 +1319,24 @@ func (srIter *SRCellsIterator) Next() bool {
 			val, _ = cellData.getValueFrom(srIter.File, sharedStringsReader, false)
 			srCell.FormattedValue = val
 			col, row, _ := CellNameToCoordinates(cellData.R)
-			if !colWidthSet[col] {
-				srIter.SRSheetData.ColWidths[col] = srIter.File.SRGetColWidth(ws, col)
-				colWidthSet[col] = true
-			}
+
 			srCell.Row = row - 1
 			srCell.Col = col - 1
 			srCell.StyleIndex = srIter.File.SRprepareCellStyle(ws, col, row, cellData.S)
 			srCell.CellName = cellData.R
 			srCell.CellType = cellTypes[cellData.T]
+
+			if srCell.Col > maxCol {
+				maxCol = srCell.Col
+			}
 			cells = append(cells, srCell)
 		}
 
 		srIter.CurrentBatch = cells
+	}
+
+	for colIdx := 0; colIdx <= maxCol; colIdx++ {
+		srIter.SRSheetData.ColWidths[colIdx+1] = srIter.File.SRGetColWidth(ws, colIdx+1)
 	}
 
 	return true
@@ -1406,6 +1459,27 @@ func (f *File) SRprepareCellStyle(ws *SRxlsxWorksheet, col, row, style int) int 
 // mergeCellsParser provides a function to check merged cells in worksheet by
 // given axis.
 func (f *File) mergeCellsParser(ws *xlsxWorksheet, axis string) (string, error) {
+	axis = strings.ToUpper(axis)
+	if ws.MergeCells != nil {
+		for i := 0; i < len(ws.MergeCells.Cells); i++ {
+			if ws.MergeCells.Cells[i] == nil {
+				ws.MergeCells.Cells = append(ws.MergeCells.Cells[:i], ws.MergeCells.Cells[i+1:]...)
+				i--
+				continue
+			}
+			ok, err := f.checkCellInArea(axis, ws.MergeCells.Cells[i].Ref)
+			if err != nil {
+				return axis, err
+			}
+			if ok {
+				axis = strings.Split(ws.MergeCells.Cells[i].Ref, ":")[0]
+			}
+		}
+	}
+	return axis, nil
+}
+
+func (f *File) SRmergeCellsParser(ws *SRxlsxWorksheet, axis string) (string, error) {
 	axis = strings.ToUpper(axis)
 	if ws.MergeCells != nil {
 		for i := 0; i < len(ws.MergeCells.Cells); i++ {

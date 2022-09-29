@@ -132,7 +132,7 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 		for i := range ws.MergeCells.Cells {
 			ref := ws.MergeCells.Cells[i].Ref
 			axis := strings.Split(ref, ":")[0]
-			val, _ := f.GetCellValue(sheet, axis)
+			val, _ := f.SRGetCellValue(sheet, axis)
 			mergeCells = append(mergeCells, []string{ref, val})
 		}
 	}

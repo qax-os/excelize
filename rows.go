@@ -852,6 +852,7 @@ func SRCheckRow(ws *SRxlsxWorksheet, rowIdx int, rowData *SRxlsxRow) error {
 			if err != nil {
 				return err
 			}
+
 			ws.SheetData.Row[rowIdx].C[colNum-1] = *colData
 		}
 	}

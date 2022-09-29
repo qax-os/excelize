@@ -1840,6 +1840,39 @@ func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
 	fillColumns(rowData, col, row)
 }
 
+func SRprepareSheetXML(ws *SRxlsxWorksheet, col int, row int) {
+	ws.Lock()
+	defer ws.Unlock()
+	rowCount := len(ws.SheetData.Row)
+	sizeHint := 0
+	var ht float64
+	if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
+		ht = ws.SheetFormatPr.DefaultRowHeight
+	}
+	if rowCount > 0 {
+		sizeHint = len(ws.SheetData.Row[rowCount-1].C)
+	}
+	if rowCount < row {
+		// append missing rows
+		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
+			ws.SheetData.Row = append(ws.SheetData.Row, SRxlsxRow{R: rowIdx + 1, Ht: ht, C: make([]SRxlsxC, 0, sizeHint)})
+		}
+	}
+	rowData := &ws.SheetData.Row[row-1]
+	SRfillColumns(rowData, col, row)
+}
+
+// fillColumns fill cells in the column of the row as contiguous.
+func SRfillColumns(rowData *SRxlsxRow, col, row int) {
+	cellCount := len(rowData.C)
+	if cellCount < col {
+		for colIdx := cellCount; colIdx < col; colIdx++ {
+			cellName, _ := CoordinatesToCellName(colIdx+1, row)
+			rowData.C = append(rowData.C, SRxlsxC{R: cellName})
+		}
+	}
+}
+
 // fillColumns fill cells in the column of the row as contiguous.
 func fillColumns(rowData *xlsxRow, col, row int) {
 	cellCount := len(rowData.C)
@@ -1858,5 +1891,14 @@ func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
 	for ; fromRow < toRow; fromRow++ {
 		rowData := &ws.SheetData.Row[fromRow-1]
 		fillColumns(rowData, colCount, fromRow)
+	}
+}
+
+func SRmakeContiguousColumns(ws *SRxlsxWorksheet, fromRow, toRow, colCount int) {
+	ws.Lock()
+	defer ws.Unlock()
+	for ; fromRow < toRow; fromRow++ {
+		rowData := &ws.SheetData.Row[fromRow-1]
+		SRfillColumns(rowData, colCount, fromRow)
 	}
 }
