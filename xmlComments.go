@@ -72,8 +72,8 @@ type xlsxPhoneticRun struct {
 	T  string `xml:"t"`
 }
 
-// formatComment directly maps the format settings of the comment.
-type formatComment struct {
+// commentOptions directly maps the format settings of the comment.
+type commentOptions struct {
 	Author string `json:"author"`
 	Text   string `json:"text"`
 }

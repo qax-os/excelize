@@ -165,10 +165,10 @@ func TestRowHeight(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 
 	// Test get row height with custom default row height.
-	assert.NoError(t, f.SetSheetFormatPr(sheet1,
-		DefaultRowHeight(30.0),
-		CustomHeight(true),
-	))
+	assert.NoError(t, f.SetSheetProps(sheet1, &SheetPropsOptions{
+		DefaultRowHeight: float64Ptr(30.0),
+		CustomHeight:     boolPtr(true),
+	}))
 	height, err = f.GetRowHeight(sheet1, 100)
 	assert.NoError(t, err)
 	assert.Equal(t, 30.0, height)

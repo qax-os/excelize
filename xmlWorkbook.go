@@ -308,8 +308,15 @@ type xlsxCustomWorkbookView struct {
 // DefinedName directly maps the name for a cell or cell range on a
 // worksheet.
 type DefinedName struct {
-	Name     string
-	Comment  string
-	RefersTo string
-	Scope    string
+	Name     string `json:"name,omitempty"`
+	Comment  string `json:"comment,omitempty"`
+	RefersTo string `json:"refers_to,omitempty"`
+	Scope    string `json:"scope,omitempty"`
+}
+
+// WorkbookPropsOptions directly maps the settings of workbook proprieties.
+type WorkbookPropsOptions struct {
+	Date1904      *bool   `json:"date_1994,omitempty"`
+	FilterPrivacy *bool   `json:"filter_privacy,omitempty"`
+	CodeName      *string `json:"code_name,omitempty"`
 }

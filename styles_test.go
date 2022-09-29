@@ -192,9 +192,9 @@ func TestGetConditionalFormats(t *testing.T) {
 		f := NewFile()
 		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)
 		assert.NoError(t, err)
-		formatSet, err := f.GetConditionalFormats("Sheet1")
+		opts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)
-		assert.Equal(t, format, formatSet["A1:A2"])
+		assert.Equal(t, format, opts["A1:A2"])
 	}
 	// Test get conditional formats on no exists worksheet
 	f := NewFile()

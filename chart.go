@@ -469,30 +469,30 @@ var (
 	}
 )
 
-// parseFormatChartSet provides a function to parse the format settings of the
+// parseChartOptions provides a function to parse the format settings of the
 // chart with default value.
-func parseFormatChartSet(formatSet string) (*formatChart, error) {
-	format := formatChart{
-		Dimension: formatChartDimension{
+func parseChartOptions(opts string) (*chartOptions, error) {
+	options := chartOptions{
+		Dimension: chartDimensionOptions{
 			Width:  480,
 			Height: 290,
 		},
-		Format: formatPicture{
+		Format: pictureOptions{
 			FPrintsWithSheet: true,
 			XScale:           1,
 			YScale:           1,
 		},
-		Legend: formatChartLegend{
+		Legend: chartLegendOptions{
 			Position: "bottom",
 		},
-		Title: formatChartTitle{
+		Title: chartTitleOptions{
 			Name: " ",
 		},
 		VaryColors:   true,
 		ShowBlanksAs: "gap",
 	}
-	err := json.Unmarshal([]byte(formatSet), &format)
-	return &format, err
+	err := json.Unmarshal([]byte(opts), &options)
+	return &options, err
 }
 
 // AddChart provides the method to add chart in a sheet by given chart format
@@ -881,13 +881,13 @@ func parseFormatChartSet(formatSet string) (*formatChart, error) {
 //	        fmt.Println(err)
 //	    }
 //	}
-func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
+func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
 	// Read sheet data.
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	formatSet, comboCharts, err := f.getFormatChart(format, combo)
+	options, comboCharts, err := f.getChartOptions(opts, combo)
 	if err != nil {
 		return err
 	}
@@ -898,11 +898,11 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	err = f.addDrawingChart(sheet, drawingXML, cell, formatSet.Dimension.Width, formatSet.Dimension.Height, drawingRID, &formatSet.Format)
+	err = f.addDrawingChart(sheet, drawingXML, cell, options.Dimension.Width, options.Dimension.Height, drawingRID, &options.Format)
 	if err != nil {
 		return err
 	}
-	f.addChart(formatSet, comboCharts)
+	f.addChart(options, comboCharts)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(drawingID, "drawings")
 	f.addSheetNameSpace(sheet, SourceRelationship)
@@ -913,12 +913,12 @@ func (f *File) AddChart(sheet, cell, format string, combo ...string) error {
 // format set (such as offset, scale, aspect ratio setting and print settings)
 // and properties set. In Excel a chartsheet is a worksheet that only contains
 // a chart.
-func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
+func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 	// Check if the worksheet already exists
 	if f.GetSheetIndex(sheet) != -1 {
 		return ErrExistsWorksheet
 	}
-	formatSet, comboCharts, err := f.getFormatChart(format, combo)
+	options, comboCharts, err := f.getChartOptions(opts, combo)
 	if err != nil {
 		return err
 	}
@@ -945,8 +945,8 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	f.prepareChartSheetDrawing(&cs, drawingID, sheet)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	f.addSheetDrawingChart(drawingXML, drawingRID, &formatSet.Format)
-	f.addChart(formatSet, comboCharts)
+	f.addSheetDrawingChart(drawingXML, drawingRID, &options.Format)
+	f.addChart(options, comboCharts)
 	f.addContentTypePart(chartID, "chart")
 	f.addContentTypePart(sheetID, "chartsheet")
 	f.addContentTypePart(drawingID, "drawings")
@@ -960,45 +960,45 @@ func (f *File) AddChartSheet(sheet, format string, combo ...string) error {
 	return err
 }
 
-// getFormatChart provides a function to check format set of the chart and
+// getChartOptions provides a function to check format set of the chart and
 // create chart format.
-func (f *File) getFormatChart(format string, combo []string) (*formatChart, []*formatChart, error) {
-	var comboCharts []*formatChart
-	formatSet, err := parseFormatChartSet(format)
+func (f *File) getChartOptions(opts string, combo []string) (*chartOptions, []*chartOptions, error) {
+	var comboCharts []*chartOptions
+	options, err := parseChartOptions(opts)
 	if err != nil {
-		return formatSet, comboCharts, err
+		return options, comboCharts, err
 	}
 	for _, comboFormat := range combo {
-		comboChart, err := parseFormatChartSet(comboFormat)
+		comboChart, err := parseChartOptions(comboFormat)
 		if err != nil {
-			return formatSet, comboCharts, err
+			return options, comboCharts, err
 		}
 		if _, ok := chartValAxNumFmtFormatCode[comboChart.Type]; !ok {
-			return formatSet, comboCharts, newUnsupportedChartType(comboChart.Type)
+			return options, comboCharts, newUnsupportedChartType(comboChart.Type)
 		}
 		comboCharts = append(comboCharts, comboChart)
 	}
-	if _, ok := chartValAxNumFmtFormatCode[formatSet.Type]; !ok {
-		return formatSet, comboCharts, newUnsupportedChartType(formatSet.Type)
+	if _, ok := chartValAxNumFmtFormatCode[options.Type]; !ok {
+		return options, comboCharts, newUnsupportedChartType(options.Type)
 	}
-	return formatSet, comboCharts, err
+	return options, comboCharts, err
 }
 
 // DeleteChart provides a function to delete chart in spreadsheet by given
 // worksheet name and cell reference.
-func (f *File) DeleteChart(sheet, cell string) (err error) {
+func (f *File) DeleteChart(sheet, cell string) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
-		return
+		return err
 	}
 	col--
 	row--
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return
+		return err
 	}
 	if ws.Drawing == nil {
-		return
+		return err
 	}
 	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
 	return f.deleteDrawing(col, row, drawingXML, "Chart")

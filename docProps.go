@@ -64,19 +64,20 @@ import (
 //	    HyperlinksChanged: true,
 //	    AppVersion:        "16.0000",
 //	})
-func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
+func (f *File) SetAppProps(appProperties *AppProperties) error {
 	var (
 		app                *xlsxProperties
-		fields             []string
-		output             []byte
-		immutable, mutable reflect.Value
+		err                error
 		field              string
+		fields             []string
+		immutable, mutable reflect.Value
+		output             []byte
 	)
 	app = new(xlsxProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
 		err = newDecodeXMLError(err)
-		return
+		return err
 	}
 	fields = []string{"Application", "ScaleCrop", "DocSecurity", "Company", "LinksUpToDate", "HyperlinksChanged", "AppVersion"}
 	immutable, mutable = reflect.ValueOf(*appProperties), reflect.ValueOf(app).Elem()
@@ -94,7 +95,7 @@ func (f *File) SetAppProps(appProperties *AppProperties) (err error) {
 	app.Vt = NameSpaceDocumentPropertiesVariantTypes.Value
 	output, err = xml.Marshal(app)
 	f.saveFileList(defaultXMLPathDocPropsApp, output)
-	return
+	return err
 }
 
 // GetAppProps provides a function to get document application properties.
@@ -167,23 +168,24 @@ func (f *File) GetAppProps() (ret *AppProperties, err error) {
 //	    Language:       "en-US",
 //	    Version:        "1.0.0",
 //	})
-func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
+func (f *File) SetDocProps(docProperties *DocProperties) error {
 	var (
 		core               *decodeCoreProperties
-		newProps           *xlsxCoreProperties
-		fields             []string
-		output             []byte
-		immutable, mutable reflect.Value
+		err                error
 		field, val         string
+		fields             []string
+		immutable, mutable reflect.Value
+		newProps           *xlsxCoreProperties
+		output             []byte
 	)
 
 	core = new(decodeCoreProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
 		err = newDecodeXMLError(err)
-		return
+		return err
 	}
-	newProps, err = &xlsxCoreProperties{
+	newProps = &xlsxCoreProperties{
 		Dc:             NameSpaceDublinCore,
 		Dcterms:        NameSpaceDublinCoreTerms,
 		Dcmitype:       NameSpaceDublinCoreMetadataInitiative,
@@ -200,7 +202,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 		ContentStatus:  core.ContentStatus,
 		Category:       core.Category,
 		Version:        core.Version,
-	}, nil
+	}
 	if core.Created != nil {
 		newProps.Created = &xlsxDcTerms{Type: core.Created.Type, Text: core.Created.Text}
 	}
@@ -226,7 +228,7 @@ func (f *File) SetDocProps(docProperties *DocProperties) (err error) {
 	output, err = xml.Marshal(newProps)
 	f.saveFileList(defaultXMLPathDocPropsCore, output)
 
-	return
+	return err
 }
 
 // GetDocProps provides a function to get document core properties.

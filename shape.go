@@ -17,21 +17,21 @@ import (
 	"strings"
 )
 
-// parseFormatShapeSet provides a function to parse the format settings of the
+// parseShapeOptions provides a function to parse the format settings of the
 // shape with default value.
-func parseFormatShapeSet(formatSet string) (*formatShape, error) {
-	format := formatShape{
+func parseShapeOptions(opts string) (*shapeOptions, error) {
+	options := shapeOptions{
 		Width:  160,
 		Height: 160,
-		Format: formatPicture{
+		Format: pictureOptions{
 			FPrintsWithSheet: true,
 			XScale:           1,
 			YScale:           1,
 		},
-		Line: formatLine{Width: 1},
+		Line: lineOptions{Width: 1},
 	}
-	err := json.Unmarshal([]byte(formatSet), &format)
-	return &format, err
+	err := json.Unmarshal([]byte(opts), &options)
+	return &options, err
 }
 
 // AddShape provides the method to add shape in a sheet by given worksheet
@@ -277,8 +277,8 @@ func parseFormatShapeSet(formatSet string) (*formatShape, error) {
 //	wavy
 //	wavyHeavy
 //	wavyDbl
-func (f *File) AddShape(sheet, cell, format string) error {
-	formatSet, err := parseFormatShapeSet(format)
+func (f *File) AddShape(sheet, cell, opts string) error {
+	options, err := parseShapeOptions(opts)
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 		f.addSheetDrawing(sheet, rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)
 	}
-	err = f.addDrawingShape(sheet, drawingXML, cell, formatSet)
+	err = f.addDrawingShape(sheet, drawingXML, cell, options)
 	if err != nil {
 		return err
 	}
@@ -315,7 +315,7 @@ func (f *File) AddShape(sheet, cell, format string) error {
 
 // addDrawingShape provides a function to add preset geometry by given sheet,
 // drawingXMLand format sets.
-func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *formatShape) error {
+func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOptions) error {
 	fromCol, fromRow, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
@@ -344,19 +344,19 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		"wavyDbl":         true,
 	}
 
-	width := int(float64(formatSet.Width) * formatSet.Format.XScale)
-	height := int(float64(formatSet.Height) * formatSet.Format.YScale)
+	width := int(float64(opts.Width) * opts.Format.XScale)
+	height := int(float64(opts.Height) * opts.Format.YScale)
 
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, formatSet.Format.OffsetX, formatSet.Format.OffsetY,
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, opts.Format.OffsetX, opts.Format.OffsetY,
 		width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
-	twoCellAnchor.EditAs = formatSet.Format.Positioning
+	twoCellAnchor.EditAs = opts.Format.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
-	from.ColOff = formatSet.Format.OffsetX * EMU
+	from.ColOff = opts.Format.OffsetX * EMU
 	from.Row = rowStart
-	from.RowOff = formatSet.Format.OffsetY * EMU
+	from.RowOff = opts.Format.OffsetY * EMU
 	to := xlsxTo{}
 	to.Col = colEnd
 	to.ColOff = x2 * EMU
@@ -365,7 +365,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 	shape := xdrSp{
-		Macro: formatSet.Macro,
+		Macro: opts.Macro,
 		NvSpPr: &xdrNvSpPr{
 			CNvPr: &xlsxCNvPr{
 				ID:   cNvPrID,
@@ -377,13 +377,13 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 		},
 		SpPr: &xlsxSpPr{
 			PrstGeom: xlsxPrstGeom{
-				Prst: formatSet.Type,
+				Prst: opts.Type,
 			},
 		},
 		Style: &xdrStyle{
-			LnRef:     setShapeRef(formatSet.Color.Line, 2),
-			FillRef:   setShapeRef(formatSet.Color.Fill, 1),
-			EffectRef: setShapeRef(formatSet.Color.Effect, 0),
+			LnRef:     setShapeRef(opts.Color.Line, 2),
+			FillRef:   setShapeRef(opts.Color.Fill, 1),
+			EffectRef: setShapeRef(opts.Color.Effect, 0),
 			FontRef: &aFontRef{
 				Idx: "minor",
 				SchemeClr: &attrValString{
@@ -401,13 +401,13 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 			},
 		},
 	}
-	if formatSet.Line.Width != 1 {
+	if opts.Line.Width != 1 {
 		shape.SpPr.Ln = xlsxLineProperties{
-			W: f.ptToEMUs(formatSet.Line.Width),
+			W: f.ptToEMUs(opts.Line.Width),
 		}
 	}
-	if len(formatSet.Paragraph) < 1 {
-		formatSet.Paragraph = []formatShapeParagraph{
+	if len(opts.Paragraph) < 1 {
+		opts.Paragraph = []shapeParagraphOptions{
 			{
 				Font: Font{
 					Bold:      false,
@@ -421,7 +421,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 			},
 		}
 	}
-	for _, p := range formatSet.Paragraph {
+	for _, p := range opts.Paragraph {
 		u := p.Font.Underline
 		_, ok := textUnderlineType[u]
 		if !ok {
@@ -460,8 +460,8 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, formatSet *format
 	}
 	twoCellAnchor.Sp = &shape
 	twoCellAnchor.ClientData = &xdrClientData{
-		FLocksWithSheet:  formatSet.Format.FLocksWithSheet,
-		FPrintsWithSheet: formatSet.Format.FPrintsWithSheet,
+		FLocksWithSheet:  opts.Format.FLocksWithSheet,
+		FPrintsWithSheet: opts.Format.FPrintsWithSheet,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)

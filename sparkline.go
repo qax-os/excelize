@@ -387,8 +387,9 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 //	 Markers   | Toggle sparkline markers
 //	 ColorAxis | An RGB Color is specified as RRGGBB
 //	 Axis      | Show sparkline axis
-func (f *File) AddSparkline(sheet string, opts *SparklineOption) (err error) {
+func (f *File) AddSparkline(sheet string, opts *SparklineOptions) error {
 	var (
+		err                            error
 		ws                             *xlsxWorksheet
 		sparkType                      string
 		sparkTypes                     map[string]string
@@ -401,7 +402,7 @@ func (f *File) AddSparkline(sheet string, opts *SparklineOption) (err error) {
 
 	// parameter validation
 	if ws, err = f.parseFormatAddSparklineSet(sheet, opts); err != nil {
-		return
+		return err
 	}
 	// Handle the sparkline type
 	sparkType = "line"
@@ -409,7 +410,7 @@ func (f *File) AddSparkline(sheet string, opts *SparklineOption) (err error) {
 	if opts.Type != "" {
 		if specifiedSparkTypes, ok = sparkTypes[opts.Type]; !ok {
 			err = ErrSparklineType
-			return
+			return err
 		}
 		sparkType = specifiedSparkTypes
 	}
@@ -435,7 +436,7 @@ func (f *File) AddSparkline(sheet string, opts *SparklineOption) (err error) {
 	f.addSparkline(opts, group)
 	if ws.ExtLst.Ext != "" { // append mode ext
 		if err = f.appendSparkline(ws, group, groups); err != nil {
-			return
+			return err
 		}
 	} else {
 		groups = &xlsxX14SparklineGroups{
@@ -443,23 +444,23 @@ func (f *File) AddSparkline(sheet string, opts *SparklineOption) (err error) {
 			SparklineGroups: []*xlsxX14SparklineGroup{group},
 		}
 		if sparklineGroupsBytes, err = xml.Marshal(groups); err != nil {
-			return
+			return err
 		}
 		if extBytes, err = xml.Marshal(&xlsxWorksheetExt{
 			URI:     ExtURISparklineGroups,
 			Content: string(sparklineGroupsBytes),
 		}); err != nil {
-			return
+			return err
 		}
 		ws.ExtLst.Ext = string(extBytes)
 	}
 	f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
-	return
+	return err
 }
 
 // parseFormatAddSparklineSet provides a function to validate sparkline
 // properties.
-func (f *File) parseFormatAddSparklineSet(sheet string, opts *SparklineOption) (*xlsxWorksheet, error) {
+func (f *File) parseFormatAddSparklineSet(sheet string, opts *SparklineOptions) (*xlsxWorksheet, error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return ws, err
@@ -488,7 +489,7 @@ func (f *File) parseFormatAddSparklineSet(sheet string, opts *SparklineOption) (
 
 // addSparkline provides a function to create a sparkline in a sparkline group
 // by given properties.
-func (f *File) addSparkline(opts *SparklineOption, group *xlsxX14SparklineGroup) {
+func (f *File) addSparkline(opts *SparklineOptions, group *xlsxX14SparklineGroup) {
 	for idx, location := range opts.Location {
 		group.Sparklines.Sparkline = append(group.Sparklines.Sparkline, &xlsxX14Sparkline{
 			F:     opts.Range[idx],
@@ -499,8 +500,9 @@ func (f *File) addSparkline(opts *SparklineOption, group *xlsxX14SparklineGroup)
 
 // appendSparkline provides a function to append sparkline to sparkline
 // groups.
-func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, groups *xlsxX14SparklineGroups) (err error) {
+func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, groups *xlsxX14SparklineGroups) error {
 	var (
+		err                                                    error
 		idx                                                    int
 		decodeExtLst                                           *decodeWorksheetExt
 		decodeSparklineGroups                                  *decodeX14SparklineGroups
@@ -510,17 +512,17 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 	decodeExtLst = new(decodeWorksheetExt)
 	if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
 		Decode(decodeExtLst); err != nil && err != io.EOF {
-		return
+		return err
 	}
 	for idx, ext = range decodeExtLst.Ext {
 		if ext.URI == ExtURISparklineGroups {
 			decodeSparklineGroups = new(decodeX14SparklineGroups)
 			if err = f.xmlNewDecoder(strings.NewReader(ext.Content)).
 				Decode(decodeSparklineGroups); err != nil && err != io.EOF {
-				return
+				return err
 			}
 			if sparklineGroupBytes, err = xml.Marshal(group); err != nil {
-				return
+				return err
 			}
 			if groups == nil {
 				groups = &xlsxX14SparklineGroups{}
@@ -528,16 +530,16 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 			groups.XMLNSXM = NameSpaceSpreadSheetExcel2006Main.Value
 			groups.Content = decodeSparklineGroups.Content + string(sparklineGroupBytes)
 			if sparklineGroupsBytes, err = xml.Marshal(groups); err != nil {
-				return
+				return err
 			}
 			decodeExtLst.Ext[idx].Content = string(sparklineGroupsBytes)
 		}
 	}
 	if extLstBytes, err = xml.Marshal(decodeExtLst); err != nil {
-		return
+		return err
 	}
 	ws.ExtLst = &xlsxExtLst{
 		Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>"),
 	}
-	return
+	return err
 }

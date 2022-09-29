@@ -422,19 +422,14 @@ func boolPtr(b bool) *bool { return &b }
 // intPtr returns a pointer to an int with the given value.
 func intPtr(i int) *int { return &i }
 
+// uintPtr returns a pointer to an int with the given value.
+func uintPtr(i uint) *uint { return &i }
+
 // float64Ptr returns a pointer to a float64 with the given value.
 func float64Ptr(f float64) *float64 { return &f }
 
 // stringPtr returns a pointer to a string with the given value.
 func stringPtr(s string) *string { return &s }
-
-// defaultTrue returns true if b is nil, or the pointed value.
-func defaultTrue(b *bool) bool {
-	if b == nil {
-		return true
-	}
-	return *b
-}
 
 // MarshalXML convert the boolean data type to literal values 0 or 1 on
 // serialization.
@@ -499,11 +494,11 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	return nil
 }
 
-// parseFormatSet provides a method to convert format string to []byte and
+// fallbackOptions provides a method to convert format string to []byte and
 // handle empty string.
-func parseFormatSet(formatSet string) []byte {
-	if formatSet != "" {
-		return []byte(formatSet)
+func fallbackOptions(opts string) []byte {
+	if opts != "" {
+		return []byte(opts)
 	}
 	return []byte("{}")
 }

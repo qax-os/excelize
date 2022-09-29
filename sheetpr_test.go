@@ -1,501 +1,107 @@
 package excelize
 
 import (
-	"fmt"
+	"path/filepath"
 	"testing"
 
-	"github.com/mohae/deepcopy"
 	"github.com/stretchr/testify/assert"
 )
 
-var _ = []SheetPrOption{
-	CodeName("hello"),
-	EnableFormatConditionsCalculation(false),
-	Published(false),
-	FitToPage(true),
-	TabColorIndexed(42),
-	TabColorRGB("#FFFF00"),
-	TabColorTheme(ColorMappingTypeLight2),
-	TabColorTint(0.5),
-	AutoPageBreaks(true),
-	OutlineSummaryBelow(true),
-}
-
-var _ = []SheetPrOptionPtr{
-	(*CodeName)(nil),
-	(*EnableFormatConditionsCalculation)(nil),
-	(*Published)(nil),
-	(*FitToPage)(nil),
-	(*TabColorIndexed)(nil),
-	(*TabColorRGB)(nil),
-	(*TabColorTheme)(nil),
-	(*TabColorTint)(nil),
-	(*AutoPageBreaks)(nil),
-	(*OutlineSummaryBelow)(nil),
-}
-
-func ExampleFile_SetSheetPrOptions() {
-	f := NewFile()
-	const sheet = "Sheet1"
-
-	if err := f.SetSheetPrOptions(sheet,
-		CodeName("code"),
-		EnableFormatConditionsCalculation(false),
-		Published(false),
-		FitToPage(true),
-		TabColorIndexed(42),
-		TabColorRGB("#FFFF00"),
-		TabColorTheme(ColorMappingTypeLight2),
-		TabColorTint(0.5),
-		AutoPageBreaks(true),
-		OutlineSummaryBelow(false),
-	); err != nil {
-		fmt.Println(err)
-	}
-	// Output:
-}
-
-func ExampleFile_GetSheetPrOptions() {
-	f := NewFile()
-	const sheet = "Sheet1"
-
-	var (
-		codeName                          CodeName
-		enableFormatConditionsCalculation EnableFormatConditionsCalculation
-		published                         Published
-		fitToPage                         FitToPage
-		tabColorIndexed                   TabColorIndexed
-		tabColorRGB                       TabColorRGB
-		tabColorTheme                     TabColorTheme
-		tabColorTint                      TabColorTint
-		autoPageBreaks                    AutoPageBreaks
-		outlineSummaryBelow               OutlineSummaryBelow
-	)
-
-	if err := f.GetSheetPrOptions(sheet,
-		&codeName,
-		&enableFormatConditionsCalculation,
-		&published,
-		&fitToPage,
-		&tabColorIndexed,
-		&tabColorRGB,
-		&tabColorTheme,
-		&tabColorTint,
-		&autoPageBreaks,
-		&outlineSummaryBelow,
-	); err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Defaults:")
-	fmt.Printf("- codeName: %q\n", codeName)
-	fmt.Println("- enableFormatConditionsCalculation:", enableFormatConditionsCalculation)
-	fmt.Println("- published:", published)
-	fmt.Println("- fitToPage:", fitToPage)
-	fmt.Printf("- tabColorIndexed: %d\n", tabColorIndexed)
-	fmt.Printf("- tabColorRGB: %q\n", tabColorRGB)
-	fmt.Printf("- tabColorTheme: %d\n", tabColorTheme)
-	fmt.Printf("- tabColorTint: %f\n", tabColorTint)
-	fmt.Println("- autoPageBreaks:", autoPageBreaks)
-	fmt.Println("- outlineSummaryBelow:", outlineSummaryBelow)
-	// Output:
-	// Defaults:
-	// - codeName: ""
-	// - enableFormatConditionsCalculation: true
-	// - published: true
-	// - fitToPage: false
-	// - tabColorIndexed: -1
-	// - tabColorRGB: ""
-	// - tabColorTheme: -1
-	// - tabColorTint: 0.000000
-	// - autoPageBreaks: false
-	// - outlineSummaryBelow: true
-}
-
-func TestSheetPrOptions(t *testing.T) {
-	const sheet = "Sheet1"
-
-	testData := []struct {
-		container  SheetPrOptionPtr
-		nonDefault SheetPrOption
-	}{
-		{new(CodeName), CodeName("xx")},
-		{new(EnableFormatConditionsCalculation), EnableFormatConditionsCalculation(false)},
-		{new(Published), Published(false)},
-		{new(FitToPage), FitToPage(true)},
-		{new(TabColorIndexed), TabColorIndexed(42)},
-		{new(TabColorRGB), TabColorRGB("FFFF00")},
-		{new(TabColorTheme), TabColorTheme(ColorMappingTypeLight2)},
-		{new(TabColorTint), TabColorTint(0.5)},
-		{new(AutoPageBreaks), AutoPageBreaks(true)},
-		{new(OutlineSummaryBelow), OutlineSummaryBelow(false)},
-	}
-
-	for i, test := range testData {
-		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opts := test.nonDefault
-			t.Logf("option %T", opts)
-
-			def := deepcopy.Copy(test.container).(SheetPrOptionPtr)
-			val1 := deepcopy.Copy(def).(SheetPrOptionPtr)
-			val2 := deepcopy.Copy(def).(SheetPrOptionPtr)
-
-			f := NewFile()
-			// Get the default value
-			assert.NoError(t, f.GetSheetPrOptions(sheet, def), opts)
-			// Get again and check
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
-			if !assert.Equal(t, val1, def, opts) {
-				t.FailNow()
-			}
-			// Set the same value
-			assert.NoError(t, f.SetSheetPrOptions(sheet, val1), opts)
-			// Get again and check
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
-				t.FailNow()
-			}
-			// Set a different value
-			assert.NoError(t, f.SetSheetPrOptions(sheet, test.nonDefault), opts)
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
-			// Get again and compare
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val2), opts)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
-				t.FailNow()
-			}
-			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
-				t.FailNow()
-			}
-			// Restore the default value
-			assert.NoError(t, f.SetSheetPrOptions(sheet, def), opts)
-			assert.NoError(t, f.GetSheetPrOptions(sheet, val1), opts)
-			if !assert.Equal(t, def, val1) {
-				t.FailNow()
-			}
-		})
-	}
-}
-
-func TestSetSheetPrOptions(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.SetSheetPrOptions("Sheet1", TabColorRGB("")))
-	// Test SetSheetPrOptions on not exists worksheet.
-	assert.EqualError(t, f.SetSheetPrOptions("SheetN"), "sheet SheetN does not exist")
-}
-
-func TestGetSheetPrOptions(t *testing.T) {
-	f := NewFile()
-	// Test GetSheetPrOptions on not exists worksheet.
-	assert.EqualError(t, f.GetSheetPrOptions("SheetN"), "sheet SheetN does not exist")
-}
-
-var _ = []PageMarginsOptions{
-	PageMarginBottom(1.0),
-	PageMarginFooter(1.0),
-	PageMarginHeader(1.0),
-	PageMarginLeft(1.0),
-	PageMarginRight(1.0),
-	PageMarginTop(1.0),
-}
-
-var _ = []PageMarginsOptionsPtr{
-	(*PageMarginBottom)(nil),
-	(*PageMarginFooter)(nil),
-	(*PageMarginHeader)(nil),
-	(*PageMarginLeft)(nil),
-	(*PageMarginRight)(nil),
-	(*PageMarginTop)(nil),
-}
-
-func ExampleFile_SetPageMargins() {
-	f := NewFile()
-	const sheet = "Sheet1"
-
-	if err := f.SetPageMargins(sheet,
-		PageMarginBottom(1.0),
-		PageMarginFooter(1.0),
-		PageMarginHeader(1.0),
-		PageMarginLeft(1.0),
-		PageMarginRight(1.0),
-		PageMarginTop(1.0),
-	); err != nil {
-		fmt.Println(err)
-	}
-	// Output:
-}
-
-func ExampleFile_GetPageMargins() {
-	f := NewFile()
-	const sheet = "Sheet1"
-
-	var (
-		marginBottom PageMarginBottom
-		marginFooter PageMarginFooter
-		marginHeader PageMarginHeader
-		marginLeft   PageMarginLeft
-		marginRight  PageMarginRight
-		marginTop    PageMarginTop
-	)
-
-	if err := f.GetPageMargins(sheet,
-		&marginBottom,
-		&marginFooter,
-		&marginHeader,
-		&marginLeft,
-		&marginRight,
-		&marginTop,
-	); err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Defaults:")
-	fmt.Println("- marginBottom:", marginBottom)
-	fmt.Println("- marginFooter:", marginFooter)
-	fmt.Println("- marginHeader:", marginHeader)
-	fmt.Println("- marginLeft:", marginLeft)
-	fmt.Println("- marginRight:", marginRight)
-	fmt.Println("- marginTop:", marginTop)
-	// Output:
-	// Defaults:
-	// - marginBottom: 0.75
-	// - marginFooter: 0.3
-	// - marginHeader: 0.3
-	// - marginLeft: 0.7
-	// - marginRight: 0.7
-	// - marginTop: 0.75
-}
-
-func TestPageMarginsOption(t *testing.T) {
-	const sheet = "Sheet1"
-
-	testData := []struct {
-		container  PageMarginsOptionsPtr
-		nonDefault PageMarginsOptions
-	}{
-		{new(PageMarginTop), PageMarginTop(1.0)},
-		{new(PageMarginBottom), PageMarginBottom(1.0)},
-		{new(PageMarginLeft), PageMarginLeft(1.0)},
-		{new(PageMarginRight), PageMarginRight(1.0)},
-		{new(PageMarginHeader), PageMarginHeader(1.0)},
-		{new(PageMarginFooter), PageMarginFooter(1.0)},
-	}
-
-	for i, test := range testData {
-		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opts := test.nonDefault
-			t.Logf("option %T", opts)
-
-			def := deepcopy.Copy(test.container).(PageMarginsOptionsPtr)
-			val1 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
-			val2 := deepcopy.Copy(def).(PageMarginsOptionsPtr)
-
-			f := NewFile()
-			// Get the default value
-			assert.NoError(t, f.GetPageMargins(sheet, def), opts)
-			// Get again and check
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
-			if !assert.Equal(t, val1, def, opts) {
-				t.FailNow()
-			}
-			// Set the same value
-			assert.NoError(t, f.SetPageMargins(sheet, val1), opts)
-			// Get again and check
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
-				t.FailNow()
-			}
-			// Set a different value
-			assert.NoError(t, f.SetPageMargins(sheet, test.nonDefault), opts)
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
-			// Get again and compare
-			assert.NoError(t, f.GetPageMargins(sheet, val2), opts)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
-				t.FailNow()
-			}
-			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
-				t.FailNow()
-			}
-			// Restore the default value
-			assert.NoError(t, f.SetPageMargins(sheet, def), opts)
-			assert.NoError(t, f.GetPageMargins(sheet, val1), opts)
-			if !assert.Equal(t, def, val1) {
-				t.FailNow()
-			}
-		})
-	}
-}
-
 func TestSetPageMargins(t *testing.T) {
 	f := NewFile()
+	assert.NoError(t, f.SetPageMargins("Sheet1", nil))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).PageMargins = nil
+	ws.(*xlsxWorksheet).PrintOptions = nil
+	expected := PageLayoutMarginsOptions{
+		Bottom:       float64Ptr(1.0),
+		Footer:       float64Ptr(1.0),
+		Header:       float64Ptr(1.0),
+		Left:         float64Ptr(1.0),
+		Right:        float64Ptr(1.0),
+		Top:          float64Ptr(1.0),
+		Horizontally: boolPtr(true),
+		Vertically:   boolPtr(true),
+	}
+	assert.NoError(t, f.SetPageMargins("Sheet1", &expected))
+	opts, err := f.GetPageMargins("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
 	// Test set page margins on not exists worksheet.
-	assert.EqualError(t, f.SetPageMargins("SheetN"), "sheet SheetN does not exist")
+	assert.EqualError(t, f.SetPageMargins("SheetN", nil), "sheet SheetN does not exist")
 }
 
 func TestGetPageMargins(t *testing.T) {
 	f := NewFile()
 	// Test get page margins on not exists worksheet.
-	assert.EqualError(t, f.GetPageMargins("SheetN"), "sheet SheetN does not exist")
+	_, err := f.GetPageMargins("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
-func ExampleFile_SetSheetFormatPr() {
+func TestDebug(t *testing.T) {
 	f := NewFile()
-	const sheet = "Sheet1"
-
-	if err := f.SetSheetFormatPr(sheet,
-		BaseColWidth(1.0),
-		DefaultColWidth(1.0),
-		DefaultRowHeight(1.0),
-		CustomHeight(true),
-		ZeroHeight(true),
-		ThickTop(true),
-		ThickBottom(true),
-	); err != nil {
-		fmt.Println(err)
-	}
-	// Output:
-}
-
-func ExampleFile_GetSheetFormatPr() {
-	f := NewFile()
-	const sheet = "Sheet1"
-
-	var (
-		baseColWidth     BaseColWidth
-		defaultColWidth  DefaultColWidth
-		defaultRowHeight DefaultRowHeight
-		customHeight     CustomHeight
-		zeroHeight       ZeroHeight
-		thickTop         ThickTop
-		thickBottom      ThickBottom
-	)
-
-	if err := f.GetSheetFormatPr(sheet,
-		&baseColWidth,
-		&defaultColWidth,
-		&defaultRowHeight,
-		&customHeight,
-		&zeroHeight,
-		&thickTop,
-		&thickBottom,
-	); err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Defaults:")
-	fmt.Println("- baseColWidth:", baseColWidth)
-	fmt.Println("- defaultColWidth:", defaultColWidth)
-	fmt.Println("- defaultRowHeight:", defaultRowHeight)
-	fmt.Println("- customHeight:", customHeight)
-	fmt.Println("- zeroHeight:", zeroHeight)
-	fmt.Println("- thickTop:", thickTop)
-	fmt.Println("- thickBottom:", thickBottom)
-	// Output:
-	// Defaults:
-	// - baseColWidth: 0
-	// - defaultColWidth: 0
-	// - defaultRowHeight: 15
-	// - customHeight: false
-	// - zeroHeight: false
-	// - thickTop: false
-	// - thickBottom: false
-}
-
-func TestSheetFormatPrOptions(t *testing.T) {
-	const sheet = "Sheet1"
-
-	testData := []struct {
-		container  SheetFormatPrOptionsPtr
-		nonDefault SheetFormatPrOptions
-	}{
-		{new(BaseColWidth), BaseColWidth(1.0)},
-		{new(DefaultColWidth), DefaultColWidth(1.0)},
-		{new(DefaultRowHeight), DefaultRowHeight(1.0)},
-		{new(CustomHeight), CustomHeight(true)},
-		{new(ZeroHeight), ZeroHeight(true)},
-		{new(ThickTop), ThickTop(true)},
-		{new(ThickBottom), ThickBottom(true)},
-	}
-
-	for i, test := range testData {
-		t.Run(fmt.Sprintf("TestData%d", i), func(t *testing.T) {
-			opts := test.nonDefault
-			t.Logf("option %T", opts)
-
-			def := deepcopy.Copy(test.container).(SheetFormatPrOptionsPtr)
-			val1 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
-			val2 := deepcopy.Copy(def).(SheetFormatPrOptionsPtr)
-
-			f := NewFile()
-			// Get the default value
-			assert.NoError(t, f.GetSheetFormatPr(sheet, def), opts)
-			// Get again and check
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
-			if !assert.Equal(t, val1, def, opts) {
-				t.FailNow()
-			}
-			// Set the same value
-			assert.NoError(t, f.SetSheetFormatPr(sheet, val1), opts)
-			// Get again and check
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
-			if !assert.Equal(t, val1, def, "%T: value should not have changed", opts) {
-				t.FailNow()
-			}
-			// Set a different value
-			assert.NoError(t, f.SetSheetFormatPr(sheet, test.nonDefault), opts)
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
-			// Get again and compare
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val2), opts)
-			if !assert.Equal(t, val1, val2, "%T: value should not have changed", opts) {
-				t.FailNow()
-			}
-			// Value should not be the same as the default
-			if !assert.NotEqual(t, def, val1, "%T: value should have changed from default", opts) {
-				t.FailNow()
-			}
-			// Restore the default value
-			assert.NoError(t, f.SetSheetFormatPr(sheet, def), opts)
-			assert.NoError(t, f.GetSheetFormatPr(sheet, val1), opts)
-			if !assert.Equal(t, def, val1) {
-				t.FailNow()
-			}
-		})
-	}
-}
-
-func TestSetSheetFormatPr(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
+	assert.NoError(t, f.SetSheetProps("Sheet1", nil))
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
+	ws.(*xlsxWorksheet).PageMargins = nil
+	ws.(*xlsxWorksheet).PrintOptions = nil
+	ws.(*xlsxWorksheet).SheetPr = nil
 	ws.(*xlsxWorksheet).SheetFormatPr = nil
-	assert.NoError(t, f.SetSheetFormatPr("Sheet1", BaseColWidth(1.0)))
-	// Test set formatting properties on not exists worksheet.
-	assert.EqualError(t, f.SetSheetFormatPr("SheetN"), "sheet SheetN does not exist")
+	// w := uint8(10)
+	// f.SetSheetProps("Sheet1", &SheetPropsOptions{BaseColWidth: &w})
+	f.SetPageMargins("Sheet1", &PageLayoutMarginsOptions{Horizontally: boolPtr(true)})
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDebug.xlsx")))
 }
 
-func TestGetSheetFormatPr(t *testing.T) {
+func TestSetSheetProps(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.GetSheetFormatPr("Sheet1"))
+	assert.NoError(t, f.SetSheetProps("Sheet1", nil))
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetPr = nil
 	ws.(*xlsxWorksheet).SheetFormatPr = nil
-	var (
-		baseColWidth     BaseColWidth
-		defaultColWidth  DefaultColWidth
-		defaultRowHeight DefaultRowHeight
-		customHeight     CustomHeight
-		zeroHeight       ZeroHeight
-		thickTop         ThickTop
-		thickBottom      ThickBottom
-	)
-	assert.NoError(t, f.GetSheetFormatPr("Sheet1",
-		&baseColWidth,
-		&defaultColWidth,
-		&defaultRowHeight,
-		&customHeight,
-		&zeroHeight,
-		&thickTop,
-		&thickBottom,
-	))
-	// Test get formatting properties on not exists worksheet.
-	assert.EqualError(t, f.GetSheetFormatPr("SheetN"), "sheet SheetN does not exist")
+	baseColWidth := uint8(8)
+	expected := SheetPropsOptions{
+		CodeName:                          stringPtr("code"),
+		EnableFormatConditionsCalculation: boolPtr(true),
+		Published:                         boolPtr(true),
+		AutoPageBreaks:                    boolPtr(true),
+		FitToPage:                         boolPtr(true),
+		TabColorIndexed:                   intPtr(1),
+		TabColorRGB:                       stringPtr("#FFFF00"),
+		TabColorTheme:                     intPtr(1),
+		TabColorTint:                      float64Ptr(1),
+		OutlineSummaryBelow:               boolPtr(true),
+		BaseColWidth:                      &baseColWidth,
+		DefaultColWidth:                   float64Ptr(10),
+		DefaultRowHeight:                  float64Ptr(10),
+		CustomHeight:                      boolPtr(true),
+		ZeroHeight:                        boolPtr(true),
+		ThickTop:                          boolPtr(true),
+		ThickBottom:                       boolPtr(true),
+	}
+	assert.NoError(t, f.SetSheetProps("Sheet1", &expected))
+	opts, err := f.GetSheetProps("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
+
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{FitToPage: boolPtr(true)}))
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorRGB: stringPtr("#FFFF00")}))
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorTheme: intPtr(1)}))
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorTint: float64Ptr(1)}))
+
+	// Test SetSheetProps on not exists worksheet.
+	assert.EqualError(t, f.SetSheetProps("SheetN", nil), "sheet SheetN does not exist")
+}
+
+func TestGetSheetProps(t *testing.T) {
+	f := NewFile()
+	// Test GetSheetProps on not exists worksheet.
+	_, err := f.GetSheetProps("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }

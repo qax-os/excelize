@@ -31,7 +31,7 @@ func TestAddTable(t *testing.T) {
 
 	// Test add table in not exist worksheet.
 	assert.EqualError(t, f.AddTable("SheetN", "B26", "A21", `{}`), "sheet SheetN does not exist")
-	// Test add table with illegal formatset.
+	// Test add table with illegal options.
 	assert.EqualError(t, f.AddTable("Sheet1", "B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
 	// Test add table with illegal cell reference.
 	assert.EqualError(t, f.AddTable("Sheet1", "A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
@@ -108,19 +108,19 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &formatAutoFilter{
+	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &autoFilterOptions{
 		Column:     "A",
 		Expression: "",
 	}), "sheet SheetN does not exist")
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &autoFilterOptions{
 		Column:     "-",
 		Expression: "-",
 	}), newInvalidColumnNameError("-").Error())
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &formatAutoFilter{
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &autoFilterOptions{
 		Column:     "A",
 		Expression: "-",
 	}), `incorrect index of column 'A'`)
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &formatAutoFilter{
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &autoFilterOptions{
 		Column:     "A",
 		Expression: "-",
 	}), `incorrect number of tokens in criteria '-'`)

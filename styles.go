@@ -2859,13 +2859,13 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 // max_color - Same as min_color, see above.
 //
 // bar_color - Used for data_bar. Same as min_color, see above.
-func (f *File) SetConditionalFormat(sheet, reference, formatSet string) error {
-	var format []*formatConditional
-	err := json.Unmarshal([]byte(formatSet), &format)
+func (f *File) SetConditionalFormat(sheet, reference, opts string) error {
+	var format []*conditionalOptions
+	err := json.Unmarshal([]byte(opts), &format)
 	if err != nil {
 		return err
 	}
-	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *formatConditional) *xlsxCfRule{
+	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *conditionalOptions) *xlsxCfRule{
 		"cellIs":          drawCondFmtCellIs,
 		"top10":           drawCondFmtTop10,
 		"aboveAverage":    drawCondFmtAboveAverage,
@@ -2909,8 +2909,8 @@ func (f *File) SetConditionalFormat(sheet, reference, formatSet string) error {
 // extractCondFmtCellIs provides a function to extract conditional format
 // settings for cell value (include between, not between, equal, not equal,
 // greater than and less than) by given conditional formatting rule.
-func extractCondFmtCellIs(c *xlsxCfRule) *formatConditional {
-	format := formatConditional{Type: "cell", Criteria: operatorType[c.Operator], Format: *c.DxfID}
+func extractCondFmtCellIs(c *xlsxCfRule) *conditionalOptions {
+	format := conditionalOptions{Type: "cell", Criteria: operatorType[c.Operator], Format: *c.DxfID}
 	if len(c.Formula) == 2 {
 		format.Minimum, format.Maximum = c.Formula[0], c.Formula[1]
 		return &format
@@ -2922,8 +2922,8 @@ func extractCondFmtCellIs(c *xlsxCfRule) *formatConditional {
 // extractCondFmtTop10 provides a function to extract conditional format
 // settings for top N (default is top 10) by given conditional formatting
 // rule.
-func extractCondFmtTop10(c *xlsxCfRule) *formatConditional {
-	format := formatConditional{
+func extractCondFmtTop10(c *xlsxCfRule) *conditionalOptions {
+	format := conditionalOptions{
 		Type:     "top",
 		Criteria: "=",
 		Format:   *c.DxfID,
@@ -2939,8 +2939,8 @@ func extractCondFmtTop10(c *xlsxCfRule) *formatConditional {
 // extractCondFmtAboveAverage provides a function to extract conditional format
 // settings for above average and below average by given conditional formatting
 // rule.
-func extractCondFmtAboveAverage(c *xlsxCfRule) *formatConditional {
-	return &formatConditional{
+func extractCondFmtAboveAverage(c *xlsxCfRule) *conditionalOptions {
+	return &conditionalOptions{
 		Type:         "average",
 		Criteria:     "=",
 		Format:       *c.DxfID,
@@ -2951,8 +2951,8 @@ func extractCondFmtAboveAverage(c *xlsxCfRule) *formatConditional {
 // extractCondFmtDuplicateUniqueValues provides a function to extract
 // conditional format settings for duplicate and unique values by given
 // conditional formatting rule.
-func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule) *formatConditional {
-	return &formatConditional{
+func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule) *conditionalOptions {
+	return &conditionalOptions{
 		Type: map[string]string{
 			"duplicateValues": "duplicate",
 			"uniqueValues":    "unique",
@@ -2965,8 +2965,8 @@ func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule) *formatConditional {
 // extractCondFmtColorScale provides a function to extract conditional format
 // settings for color scale (include 2 color scale and 3 color scale) by given
 // conditional formatting rule.
-func extractCondFmtColorScale(c *xlsxCfRule) *formatConditional {
-	var format formatConditional
+func extractCondFmtColorScale(c *xlsxCfRule) *conditionalOptions {
+	var format conditionalOptions
 	format.Type, format.Criteria = "2_color_scale", "="
 	values := len(c.ColorScale.Cfvo)
 	colors := len(c.ColorScale.Color)
@@ -3000,8 +3000,8 @@ func extractCondFmtColorScale(c *xlsxCfRule) *formatConditional {
 
 // extractCondFmtDataBar provides a function to extract conditional format
 // settings for data bar by given conditional formatting rule.
-func extractCondFmtDataBar(c *xlsxCfRule) *formatConditional {
-	format := formatConditional{Type: "data_bar", Criteria: "="}
+func extractCondFmtDataBar(c *xlsxCfRule) *conditionalOptions {
+	format := conditionalOptions{Type: "data_bar", Criteria: "="}
 	if c.DataBar != nil {
 		format.MinType = c.DataBar.Cfvo[0].Type
 		format.MaxType = c.DataBar.Cfvo[1].Type
@@ -3012,8 +3012,8 @@ func extractCondFmtDataBar(c *xlsxCfRule) *formatConditional {
 
 // extractCondFmtExp provides a function to extract conditional format settings
 // for expression by given conditional formatting rule.
-func extractCondFmtExp(c *xlsxCfRule) *formatConditional {
-	format := formatConditional{Type: "formula", Format: *c.DxfID}
+func extractCondFmtExp(c *xlsxCfRule) *conditionalOptions {
+	format := conditionalOptions{Type: "formula", Format: *c.DxfID}
 	if len(c.Formula) > 0 {
 		format.Criteria = c.Formula[0]
 	}
@@ -3023,7 +3023,7 @@ func extractCondFmtExp(c *xlsxCfRule) *formatConditional {
 // GetConditionalFormats returns conditional format settings by given worksheet
 // name.
 func (f *File) GetConditionalFormats(sheet string) (map[string]string, error) {
-	extractContFmtFunc := map[string]func(c *xlsxCfRule) *formatConditional{
+	extractContFmtFunc := map[string]func(c *xlsxCfRule) *conditionalOptions{
 		"cellIs":          extractCondFmtCellIs,
 		"top10":           extractCondFmtTop10,
 		"aboveAverage":    extractCondFmtAboveAverage,
@@ -3040,14 +3040,14 @@ func (f *File) GetConditionalFormats(sheet string) (map[string]string, error) {
 		return conditionalFormats, err
 	}
 	for _, cf := range ws.ConditionalFormatting {
-		var format []*formatConditional
+		var opts []*conditionalOptions
 		for _, cr := range cf.CfRule {
 			if extractFunc, ok := extractContFmtFunc[cr.Type]; ok {
-				format = append(format, extractFunc(cr))
+				opts = append(opts, extractFunc(cr))
 			}
 		}
-		formatSet, _ := json.Marshal(format)
-		conditionalFormats[cf.SQRef] = string(formatSet)
+		options, _ := json.Marshal(opts)
+		conditionalFormats[cf.SQRef] = string(options)
 	}
 	return conditionalFormats, err
 }
@@ -3071,7 +3071,7 @@ func (f *File) UnsetConditionalFormat(sheet, reference string) error {
 // drawCondFmtCellIs provides a function to create conditional formatting rule
 // for cell value (include between, not between, equal, not equal, greater
 // than and less than) by given priority, criteria type and format settings.
-func drawCondFmtCellIs(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtCellIs(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	c := &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],
@@ -3094,7 +3094,7 @@ func drawCondFmtCellIs(p int, ct string, format *formatConditional) *xlsxCfRule 
 // drawCondFmtTop10 provides a function to create conditional formatting rule
 // for top N (default is top 10) by given priority, criteria type and format
 // settings.
-func drawCondFmtTop10(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtTop10(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	c := &xlsxCfRule{
 		Priority: p + 1,
 		Bottom:   format.Type == "bottom",
@@ -3113,7 +3113,7 @@ func drawCondFmtTop10(p int, ct string, format *formatConditional) *xlsxCfRule {
 // drawCondFmtAboveAverage provides a function to create conditional
 // formatting rule for above average and below average by given priority,
 // criteria type and format settings.
-func drawCondFmtAboveAverage(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtAboveAverage(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority:     p + 1,
 		Type:         validType[format.Type],
@@ -3125,7 +3125,7 @@ func drawCondFmtAboveAverage(p int, ct string, format *formatConditional) *xlsxC
 // drawCondFmtDuplicateUniqueValues provides a function to create conditional
 // formatting rule for duplicate and unique values by given priority, criteria
 // type and format settings.
-func drawCondFmtDuplicateUniqueValues(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtDuplicateUniqueValues(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],
@@ -3136,7 +3136,7 @@ func drawCondFmtDuplicateUniqueValues(p int, ct string, format *formatConditiona
 // drawCondFmtColorScale provides a function to create conditional formatting
 // rule for color scale (include 2 color scale and 3 color scale) by given
 // priority, criteria type and format settings.
-func drawCondFmtColorScale(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtColorScale(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	minValue := format.MinValue
 	if minValue == "" {
 		minValue = "0"
@@ -3173,7 +3173,7 @@ func drawCondFmtColorScale(p int, ct string, format *formatConditional) *xlsxCfR
 
 // drawCondFmtDataBar provides a function to create conditional formatting
 // rule for data bar by given priority, criteria type and format settings.
-func drawCondFmtDataBar(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtDataBar(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],
@@ -3186,7 +3186,7 @@ func drawCondFmtDataBar(p int, ct string, format *formatConditional) *xlsxCfRule
 
 // drawCondFmtExp provides a function to create conditional formatting rule
 // for expression by given priority, criteria type and format settings.
-func drawCondFmtExp(p int, ct string, format *formatConditional) *xlsxCfRule {
+func drawCondFmtExp(p int, ct string, format *conditionalOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],

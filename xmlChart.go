@@ -518,8 +518,8 @@ type cPageMargins struct {
 	T      float64 `xml:"t,attr"`
 }
 
-// formatChartAxis directly maps the format settings of the chart axis.
-type formatChartAxis struct {
+// chartAxisOptions directly maps the format settings of the chart axis.
+type chartAxisOptions struct {
 	None                bool     `json:"none"`
 	Crossing            string   `json:"crossing"`
 	MajorGridlines      bool     `json:"major_grid_lines"`
@@ -543,26 +543,27 @@ type formatChartAxis struct {
 		Italic    bool   `json:"italic"`
 		Underline bool   `json:"underline"`
 	} `json:"num_font"`
-	LogBase    float64      `json:"logbase"`
-	NameLayout formatLayout `json:"name_layout"`
+	LogBase    float64       `json:"logbase"`
+	NameLayout layoutOptions `json:"name_layout"`
 }
 
-type formatChartDimension struct {
+// chartDimensionOptions directly maps the dimension of the chart.
+type chartDimensionOptions struct {
 	Width  int `json:"width"`
 	Height int `json:"height"`
 }
 
-// formatChart directly maps the format settings of the chart.
-type formatChart struct {
-	Type       string               `json:"type"`
-	Series     []formatChartSeries  `json:"series"`
-	Format     formatPicture        `json:"format"`
-	Dimension  formatChartDimension `json:"dimension"`
-	Legend     formatChartLegend    `json:"legend"`
-	Title      formatChartTitle     `json:"title"`
-	VaryColors bool                 `json:"vary_colors"`
-	XAxis      formatChartAxis      `json:"x_axis"`
-	YAxis      formatChartAxis      `json:"y_axis"`
+// chartOptions directly maps the format settings of the chart.
+type chartOptions struct {
+	Type       string                `json:"type"`
+	Series     []chartSeriesOptions  `json:"series"`
+	Format     pictureOptions        `json:"format"`
+	Dimension  chartDimensionOptions `json:"dimension"`
+	Legend     chartLegendOptions    `json:"legend"`
+	Title      chartTitleOptions     `json:"title"`
+	VaryColors bool                  `json:"vary_colors"`
+	XAxis      chartAxisOptions      `json:"x_axis"`
+	YAxis      chartAxisOptions      `json:"y_axis"`
 	Chartarea  struct {
 		Border struct {
 			None bool `json:"none"`
@@ -594,7 +595,7 @@ type formatChart struct {
 		Fill struct {
 			Color string `json:"color"`
 		} `json:"fill"`
-		Layout formatLayout `json:"layout"`
+		Layout layoutOptions `json:"layout"`
 	} `json:"plotarea"`
 	ShowBlanksAs   string `json:"show_blanks_as"`
 	ShowHiddenData bool   `json:"show_hidden_data"`
@@ -603,19 +604,19 @@ type formatChart struct {
 	order          int
 }
 
-// formatChartLegend directly maps the format settings of the chart legend.
-type formatChartLegend struct {
-	None            bool         `json:"none"`
-	DeleteSeries    []int        `json:"delete_series"`
-	Font            Font         `json:"font"`
-	Layout          formatLayout `json:"layout"`
-	Position        string       `json:"position"`
-	ShowLegendEntry bool         `json:"show_legend_entry"`
-	ShowLegendKey   bool         `json:"show_legend_key"`
+// chartLegendOptions directly maps the format settings of the chart legend.
+type chartLegendOptions struct {
+	None            bool          `json:"none"`
+	DeleteSeries    []int         `json:"delete_series"`
+	Font            Font          `json:"font"`
+	Layout          layoutOptions `json:"layout"`
+	Position        string        `json:"position"`
+	ShowLegendEntry bool          `json:"show_legend_entry"`
+	ShowLegendKey   bool          `json:"show_legend_key"`
 }
 
-// formatChartSeries directly maps the format settings of the chart series.
-type formatChartSeries struct {
+// chartSeriesOptions directly maps the format settings of the chart series.
+type chartSeriesOptions struct {
 	Name       string `json:"name"`
 	Categories string `json:"categories"`
 	Values     string `json:"values"`
@@ -640,16 +641,16 @@ type formatChartSeries struct {
 	} `json:"marker"`
 }
 
-// formatChartTitle directly maps the format settings of the chart title.
-type formatChartTitle struct {
-	None    bool         `json:"none"`
-	Name    string       `json:"name"`
-	Overlay bool         `json:"overlay"`
-	Layout  formatLayout `json:"layout"`
+// chartTitleOptions directly maps the format settings of the chart title.
+type chartTitleOptions struct {
+	None    bool          `json:"none"`
+	Name    string        `json:"name"`
+	Overlay bool          `json:"overlay"`
+	Layout  layoutOptions `json:"layout"`
 }
 
-// formatLayout directly maps the format settings of the element layout.
-type formatLayout struct {
+// layoutOptions directly maps the format settings of the element layout.
+type layoutOptions struct {
 	X      float64 `json:"x"`
 	Y      float64 `json:"y"`
 	Width  float64 `json:"width"`

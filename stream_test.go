@@ -173,7 +173,7 @@ func TestStreamTable(t *testing.T) {
 
 	assert.NoError(t, streamWriter.AddTable("A1", "C1", ``))
 
-	// Test add table with illegal formatset.
+	// Test add table with illegal options.
 	assert.EqualError(t, streamWriter.AddTable("B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
 	// Test add table with illegal cell reference.
 	assert.EqualError(t, streamWriter.AddTable("A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())

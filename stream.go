@@ -139,8 +139,8 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // called after the rows are written but before Flush.
 //
 // See File.AddTable for details on the table format.
-func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
-	formatSet, err := parseFormatTableSet(format)
+func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
+	options, err := parseTableOptions(opts)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 
 	tableID := sw.File.countTables() + 1
 
-	name := formatSet.TableName
+	name := options.TableName
 	if name == "" {
 		name = "Table" + strconv.Itoa(tableID)
 	}
@@ -196,11 +196,11 @@ func (sw *StreamWriter) AddTable(hCell, vCell, format string) error {
 			TableColumn: tableColumn,
 		},
 		TableStyleInfo: &xlsxTableStyleInfo{
-			Name:              formatSet.TableStyle,
-			ShowFirstColumn:   formatSet.ShowFirstColumn,
-			ShowLastColumn:    formatSet.ShowLastColumn,
-			ShowRowStripes:    formatSet.ShowRowStripes,
-			ShowColumnStripes: formatSet.ShowColumnStripes,
+			Name:              options.TableStyle,
+			ShowFirstColumn:   options.ShowFirstColumn,
+			ShowLastColumn:    options.ShowLastColumn,
+			ShowRowStripes:    options.ShowRowStripes,
+			ShowColumnStripes: options.ShowColumnStripes,
 		},
 	}
 

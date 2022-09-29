@@ -454,7 +454,11 @@ type DataValidation struct {
 //	 b (Boolean)               | Cell containing a boolean.
 //	 d (Date)                  | Cell contains a date in the ISO 8601 format.
 //	 e (Error)                 | Cell containing an error.
-//	 inlineStr (Inline String) | Cell containing an (inline) rich string, i.e., one not in the shared string table. If this cell type is used, then the cell value is in the is element rather than the v element in the cell (c element).
+//	 inlineStr (Inline String) | Cell containing an (inline) rich string, i.e.,
+//	                           | one not in the shared string table. If this
+//	                           | cell type is used, then the cell value is in
+//	                           | the is element rather than the v element in
+//	                           | the cell (c element).
 //	 n (Number)                | Cell containing a number.
 //	 s (Shared String)         | Cell containing a shared string.
 //	 str (String)              | Cell containing a formula string.
@@ -777,39 +781,39 @@ type xlsxX14Sparkline struct {
 	Sqref string `xml:"xm:sqref"`
 }
 
-// SparklineOption directly maps the settings of the sparkline.
-type SparklineOption struct {
-	Location      []string
-	Range         []string
-	Max           int
-	CustMax       int
-	Min           int
-	CustMin       int
-	Type          string
-	Weight        float64
-	DateAxis      bool
-	Markers       bool
-	High          bool
-	Low           bool
-	First         bool
-	Last          bool
-	Negative      bool
-	Axis          bool
-	Hidden        bool
-	Reverse       bool
-	Style         int
-	SeriesColor   string
-	NegativeColor string
-	MarkersColor  string
-	FirstColor    string
-	LastColor     string
-	HightColor    string
-	LowColor      string
-	EmptyCells    string
+// SparklineOptions directly maps the settings of the sparkline.
+type SparklineOptions struct {
+	Location      []string `json:"location"`
+	Range         []string `json:"range"`
+	Max           int      `json:"max"`
+	CustMax       int      `json:"cust_max"`
+	Min           int      `json:"min"`
+	CustMin       int      `json:"cust_min"`
+	Type          string   `json:"hype"`
+	Weight        float64  `json:"weight"`
+	DateAxis      bool     `json:"date_axis"`
+	Markers       bool     `json:"markers"`
+	High          bool     `json:"high"`
+	Low           bool     `json:"low"`
+	First         bool     `json:"first"`
+	Last          bool     `json:"last"`
+	Negative      bool     `json:"negative"`
+	Axis          bool     `json:"axis"`
+	Hidden        bool     `json:"hidden"`
+	Reverse       bool     `json:"reverse"`
+	Style         int      `json:"style"`
+	SeriesColor   string   `json:"series_color"`
+	NegativeColor string   `json:"negative_color"`
+	MarkersColor  string   `json:"markers_color"`
+	FirstColor    string   `json:"first_color"`
+	LastColor     string   `json:"last_color"`
+	HightColor    string   `json:"hight_color"`
+	LowColor      string   `json:"low_color"`
+	EmptyCells    string   `json:"empty_cells"`
 }
 
-// formatPanes directly maps the settings of the panes.
-type formatPanes struct {
+// panesOptions directly maps the settings of the panes.
+type panesOptions struct {
 	Freeze      bool   `json:"freeze"`
 	Split       bool   `json:"split"`
 	XSplit      int    `json:"x_split"`
@@ -823,8 +827,8 @@ type formatPanes struct {
 	} `json:"panes"`
 }
 
-// formatConditional directly maps the conditional format settings of the cells.
-type formatConditional struct {
+// conditionalOptions directly maps the conditional format settings of the cells.
+type conditionalOptions struct {
 	Type         string `json:"type"`
 	AboveAverage bool   `json:"above_average,omitempty"`
 	Percent      bool   `json:"percent,omitempty"`
@@ -848,47 +852,163 @@ type formatConditional struct {
 	BarColor     string `json:"bar_color,omitempty"`
 }
 
-// FormatSheetProtection directly maps the settings of worksheet protection.
-type FormatSheetProtection struct {
-	AlgorithmName       string
-	AutoFilter          bool
-	DeleteColumns       bool
-	DeleteRows          bool
-	EditObjects         bool
-	EditScenarios       bool
-	FormatCells         bool
-	FormatColumns       bool
-	FormatRows          bool
-	InsertColumns       bool
-	InsertHyperlinks    bool
-	InsertRows          bool
-	Password            string
-	PivotTables         bool
-	SelectLockedCells   bool
-	SelectUnlockedCells bool
-	Sort                bool
+// SheetProtectionOptions directly maps the settings of worksheet protection.
+type SheetProtectionOptions struct {
+	AlgorithmName       string `json:"algorithm_name,omitempty"`
+	AutoFilter          bool   `json:"auto_filter,omitempty"`
+	DeleteColumns       bool   `json:"delete_columns,omitempty"`
+	DeleteRows          bool   `json:"delete_rows,omitempty"`
+	EditObjects         bool   `json:"edit_objects,omitempty"`
+	EditScenarios       bool   `json:"edit_scenarios,omitempty"`
+	FormatCells         bool   `json:"format_cells,omitempty"`
+	FormatColumns       bool   `json:"format_columns,omitempty"`
+	FormatRows          bool   `json:"format_rows,omitempty"`
+	InsertColumns       bool   `json:"insert_columns,omitempty"`
+	InsertHyperlinks    bool   `json:"insert_hyperlinks,omitempty"`
+	InsertRows          bool   `json:"insert_rows,omitempty"`
+	Password            string `json:"password,omitempty"`
+	PivotTables         bool   `json:"pivot_tables,omitempty"`
+	SelectLockedCells   bool   `json:"select_locked_cells,omitempty"`
+	SelectUnlockedCells bool   `json:"select_unlocked_cells,omitempty"`
+	Sort                bool   `json:"sort,omitempty"`
 }
 
-// FormatHeaderFooter directly maps the settings of header and footer.
-type FormatHeaderFooter struct {
-	AlignWithMargins bool
-	DifferentFirst   bool
-	DifferentOddEven bool
-	ScaleWithDoc     bool
-	OddHeader        string
-	OddFooter        string
-	EvenHeader       string
-	EvenFooter       string
-	FirstHeader      string
-	FirstFooter      string
+// HeaderFooterOptions directly maps the settings of header and footer.
+type HeaderFooterOptions struct {
+	AlignWithMargins bool   `json:"align_with_margins,omitempty"`
+	DifferentFirst   bool   `json:"different_first,omitempty"`
+	DifferentOddEven bool   `json:"different_odd_even,omitempty"`
+	ScaleWithDoc     bool   `json:"scale_with_doc,omitempty"`
+	OddHeader        string `json:"odd_header,omitempty"`
+	OddFooter        string `json:"odd_footer,omitempty"`
+	EvenHeader       string `json:"even_header,omitempty"`
+	EvenFooter       string `json:"even_footer,omitempty"`
+	FirstHeader      string `json:"first_header,omitempty"`
+	FirstFooter      string `json:"first_footer,omitempty"`
 }
 
-// FormatPageMargins directly maps the settings of page margins
-type FormatPageMargins struct {
-	Bottom string
-	Footer string
-	Header string
-	Left   string
-	Right  string
-	Top    string
+// PageLayoutMarginsOptions directly maps the settings of page layout margins.
+type PageLayoutMarginsOptions struct {
+	Bottom       *float64 `json:"bottom,omitempty"`
+	Footer       *float64 `json:"footer,omitempty"`
+	Header       *float64 `json:"header,omitempty"`
+	Left         *float64 `json:"left,omitempty"`
+	Right        *float64 `json:"right,omitempty"`
+	Top          *float64 `json:"top,omitempty"`
+	Horizontally *bool    `json:"horizontally,omitempty"`
+	Vertically   *bool    `json:"vertically,omitempty"`
+}
+
+// PageLayoutOptions directly maps the settings of page layout.
+type PageLayoutOptions struct {
+	// Size defines the paper size of the worksheet.
+	Size *int `json:"size,omitempty"`
+	// Orientation defines the orientation of page layout for a worksheet.
+	Orientation *string `json:"orientation,omitempty"`
+	// FirstPageNumber specified the first printed page number. If no value is
+	// specified, then 'automatic' is assumed.
+	FirstPageNumber *uint `json:"first_page_number,omitempty"`
+	// AdjustTo defines the print scaling. This attribute is restricted to
+	// value ranging from 10 (10%) to 400 (400%). This setting is overridden
+	// when fitToWidth and/or fitToHeight are in use.
+	AdjustTo *uint `json:"adjust_to,omitempty"`
+	// FitToHeight specified the number of vertical pages to fit on.
+	FitToHeight *int `json:"fit_to_height,omitempty"`
+	// FitToWidth specified the number of horizontal pages to fit on.
+	FitToWidth *int `json:"fit_to_width,omitempty"`
+	// BlackAndWhite specified print black and white.
+	BlackAndWhite *bool `json:"black_and_white,omitempty"`
+}
+
+// ViewOptions directly maps the settings of sheet view.
+type ViewOptions struct {
+	// DefaultGridColor indicating that the consuming application should use
+	// the default grid lines color(system dependent). Overrides any color
+	// specified in colorId.
+	DefaultGridColor *bool `json:"default_grid_color,omitempty"`
+	// RightToLeft indicating whether the sheet is in 'right to left' display
+	// mode. When in this mode, Column A is on the far right, Column B; is one
+	// column left of Column A, and so on. Also, information in cells is
+	// displayed in the Right to Left format.
+	RightToLeft *bool `json:"right_to_left,omitempty"`
+	// ShowFormulas indicating whether this sheet should display formulas.
+	ShowFormulas *bool `json:"show_formulas,omitempty"`
+	// ShowGridLines indicating whether this sheet should display grid lines.
+	ShowGridLines *bool `json:"show_grid_lines,omitempty"`
+	// ShowRowColHeaders indicating whether the sheet should display row and
+	// column headings.
+	ShowRowColHeaders *bool `json:"show_row_col_headers,omitempty"`
+	// ShowRuler indicating this sheet should display ruler.
+	ShowRuler *bool `json:"show_ruler,omitempty"`
+	// ShowZeros indicating whether to "show a zero in cells that have zero
+	// value". When using a formula to reference another cell which is empty,
+	// the referenced value becomes 0 when the flag is true. (Default setting
+	// is true.)
+	ShowZeros *bool `json:"show_zeros,omitempty"`
+	// TopLeftCell specifies a location of the top left visible cell Location
+	// of the top left visible cell in the bottom right pane (when in
+	// Left-to-Right mode).
+	TopLeftCell *string `json:"top_left_cell,omitempty"`
+	// View indicating how sheet is displayed, by default it uses empty string
+	// available options: normal, pageLayout, pageBreakPreview
+	View *string `json:"low_color,omitempty"`
+	// ZoomScale specifies a window zoom magnification for current view
+	// representing percent values. This attribute is restricted to values
+	// ranging from 10 to 400. Horizontal & Vertical scale together.
+	ZoomScale *float64 `json:"zoom_scale,omitempty"`
+}
+
+// SheetPropsOptions directly maps the settings of sheet view.
+type SheetPropsOptions struct {
+	// Specifies a stable name of the sheet, which should not change over time,
+	// and does not change from user input. This name should be used by code
+	// to reference a particular sheet.
+	CodeName *string `json:"code_name,omitempty"`
+	// EnableFormatConditionsCalculation indicating whether the conditional
+	// formatting calculations shall be evaluated. If set to false, then the
+	// min/max values of color scales or data bars or threshold values in Top N
+	// rules shall not be updated. Essentially the conditional
+	// formatting "calc" is off.
+	EnableFormatConditionsCalculation *bool `json:"enable_format_conditions_calculation,omitempty"`
+	// Published indicating whether the worksheet is published.
+	Published *bool `json:"published,omitempty"`
+	// AutoPageBreaks indicating whether the sheet displays Automatic Page
+	// Breaks.
+	AutoPageBreaks *bool `json:"auto_page_breaks,omitempty"`
+	// FitToPage indicating whether the Fit to Page print option is enabled.
+	FitToPage *bool `json:"fit_to_page,omitempty"`
+	// TabColorIndexed represents the indexed color value.
+	TabColorIndexed *int `json:"tab_color_indexed,omitempty"`
+	// TabColorRGB represents the standard Alpha Red Green Blue color value.
+	TabColorRGB *string `json:"tab_color_rgb,omitempty"`
+	// TabColorTheme represents the zero-based index into the collection,
+	// referencing a particular value expressed in the Theme part.
+	TabColorTheme *int `json:"tab_color_theme,omitempty"`
+	// TabColorTint specifies the tint value applied to the color.
+	TabColorTint *float64 `json:"tab_color_tint,omitempty"`
+	// OutlineSummaryBelow indicating whether summary rows appear below detail
+	// in an outline, when applying an outline.
+	OutlineSummaryBelow *bool `json:"outline_summary_below,omitempty"`
+	// BaseColWidth specifies the number of characters of the maximum digit
+	// width of the normal style's font. This value does not include margin
+	// padding or extra padding for grid lines. It is only the number of
+	// characters.
+	BaseColWidth *uint8 `json:"base_col_width,omitempty"`
+	// DefaultColWidth specifies the default column width measured as the
+	// number of characters of the maximum digit width of the normal style's
+	// font.
+	DefaultColWidth *float64 `json:"default_col_width,omitempty"`
+	// DefaultRowHeight specifies the default row height measured in point
+	// size. Optimization so we don't have to write the height on all rows.
+	// This can be written out if most rows have custom height, to achieve the
+	// optimization.
+	DefaultRowHeight *float64 `json:"default_row_height,omitempty"`
+	// CustomHeight specifies the custom height.
+	CustomHeight *bool `json:"custom_height,omitempty"`
+	// ZeroHeight specifies if rows are hidden.
+	ZeroHeight *bool `json:"zero_height,omitempty"`
+	// ThickTop specifies if rows have a thick top border by default.
+	ThickTop *bool `json:"thick_top,omitempty"`
+	// ThickBottom specifies if rows have a thick bottom border by default.
+	ThickBottom *bool `json:"thick_bottom,omitempty"`
 }

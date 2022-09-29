@@ -38,10 +38,10 @@ import (
 // Note that when creating a new workbook, the default worksheet named
 // `Sheet1` will be created.
 func (f *File) NewSheet(sheet string) int {
-	// Check if the worksheet already exists
 	if trimSheetName(sheet) == "" {
 		return -1
 	}
+	// Check if the worksheet already exists
 	index := f.GetSheetIndex(sheet)
 	if index != -1 {
 		return index
@@ -675,10 +675,10 @@ func (f *File) SetSheetVisible(sheet string, visible bool) error {
 	return nil
 }
 
-// parseFormatPanesSet provides a function to parse the panes settings.
-func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
-	format := formatPanes{}
-	err := json.Unmarshal([]byte(formatSet), &format)
+// parsePanesOptions provides a function to parse the panes settings.
+func parsePanesOptions(opts string) (*panesOptions, error) {
+	format := panesOptions{}
+	err := json.Unmarshal([]byte(opts), &format)
 	return &format, err
 }
 
@@ -767,7 +767,7 @@ func parseFormatPanesSet(formatSet string) (*formatPanes, error) {
 //
 //	f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 func (f *File) SetPanes(sheet, panes string) error {
-	fs, _ := parseFormatPanesSet(panes)
+	fs, _ := parsePanesOptions(panes)
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -1021,7 +1021,7 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 //	                        |
 //	 &R                     | Right section
 //	                        |
-//	 &S                     | Strikethrough text format
+//	 &S                     | Strike through text format
 //	                        |
 //	 &T                     | Current time
 //	                        |
@@ -1068,7 +1068,7 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 // that same page
 //
 // - No footer on the first page
-func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error {
+func (f *File) SetHeaderFooter(sheet string, settings *HeaderFooterOptions) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -1113,13 +1113,13 @@ func (f *File) SetHeaderFooter(sheet string, settings *FormatHeaderFooter) error
 //	    Password:      "password",
 //	    EditScenarios: false,
 //	})
-func (f *File) ProtectSheet(sheet string, settings *FormatSheetProtection) error {
+func (f *File) ProtectSheet(sheet string, settings *SheetProtectionOptions) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	if settings == nil {
-		settings = &FormatSheetProtection{
+		settings = &SheetProtectionOptions{
 			EditObjects:       true,
 			EditScenarios:     true,
 			SelectLockedCells: true,
@@ -1213,172 +1213,7 @@ func trimSheetName(name string) string {
 	return name
 }
 
-// PageLayoutOption is an option of a page layout of a worksheet. See
-// SetPageLayout().
-type PageLayoutOption interface {
-	setPageLayout(layout *xlsxPageSetUp)
-}
-
-// PageLayoutOptionPtr is a writable PageLayoutOption. See GetPageLayout().
-type PageLayoutOptionPtr interface {
-	PageLayoutOption
-	getPageLayout(layout *xlsxPageSetUp)
-}
-
-type (
-	// BlackAndWhite specified print black and white.
-	BlackAndWhite bool
-	// FirstPageNumber specified the first printed page number. If no value is
-	// specified, then 'automatic' is assumed.
-	FirstPageNumber uint
-	// PageLayoutOrientation defines the orientation of page layout for a
-	// worksheet.
-	PageLayoutOrientation string
-	// PageLayoutPaperSize defines the paper size of the worksheet.
-	PageLayoutPaperSize int
-	// FitToHeight specified the number of vertical pages to fit on.
-	FitToHeight int
-	// FitToWidth specified the number of horizontal pages to fit on.
-	FitToWidth int
-	// PageLayoutScale defines the print scaling. This attribute is restricted
-	// to value ranging from 10 (10%) to 400 (400%). This setting is
-	// overridden when fitToWidth and/or fitToHeight are in use.
-	PageLayoutScale uint
-)
-
-const (
-	// OrientationPortrait indicates page layout orientation id portrait.
-	OrientationPortrait = "portrait"
-	// OrientationLandscape indicates page layout orientation id landscape.
-	OrientationLandscape = "landscape"
-)
-
-// setPageLayout provides a method to set the print black and white for the
-// worksheet.
-func (p BlackAndWhite) setPageLayout(ps *xlsxPageSetUp) {
-	ps.BlackAndWhite = bool(p)
-}
-
-// getPageLayout provides a method to get the print black and white for the
-// worksheet.
-func (p *BlackAndWhite) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil {
-		*p = false
-		return
-	}
-	*p = BlackAndWhite(ps.BlackAndWhite)
-}
-
-// setPageLayout provides a method to set the first printed page number for
-// the worksheet.
-func (p FirstPageNumber) setPageLayout(ps *xlsxPageSetUp) {
-	if 0 < int(p) {
-		ps.FirstPageNumber = strconv.Itoa(int(p))
-		ps.UseFirstPageNumber = true
-	}
-}
-
-// getPageLayout provides a method to get the first printed page number for
-// the worksheet.
-func (p *FirstPageNumber) getPageLayout(ps *xlsxPageSetUp) {
-	if ps != nil && ps.UseFirstPageNumber {
-		if number, _ := strconv.Atoi(ps.FirstPageNumber); number != 0 {
-			*p = FirstPageNumber(number)
-			return
-		}
-	}
-	*p = 1
-}
-
-// setPageLayout provides a method to set the orientation for the worksheet.
-func (o PageLayoutOrientation) setPageLayout(ps *xlsxPageSetUp) {
-	ps.Orientation = string(o)
-}
-
-// getPageLayout provides a method to get the orientation for the worksheet.
-func (o *PageLayoutOrientation) getPageLayout(ps *xlsxPageSetUp) {
-	// Excel default: portrait
-	if ps == nil || ps.Orientation == "" {
-		*o = OrientationPortrait
-		return
-	}
-	*o = PageLayoutOrientation(ps.Orientation)
-}
-
-// setPageLayout provides a method to set the paper size for the worksheet.
-func (p PageLayoutPaperSize) setPageLayout(ps *xlsxPageSetUp) {
-	ps.PaperSize = intPtr(int(p))
-}
-
-// getPageLayout provides a method to get the paper size for the worksheet.
-func (p *PageLayoutPaperSize) getPageLayout(ps *xlsxPageSetUp) {
-	// Excel default: 1
-	if ps == nil || ps.PaperSize == nil {
-		*p = 1
-		return
-	}
-	*p = PageLayoutPaperSize(*ps.PaperSize)
-}
-
-// setPageLayout provides a method to set the fit to height for the worksheet.
-func (p FitToHeight) setPageLayout(ps *xlsxPageSetUp) {
-	if int(p) > 0 {
-		ps.FitToHeight = intPtr(int(p))
-	}
-}
-
-// getPageLayout provides a method to get the fit to height for the worksheet.
-func (p *FitToHeight) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil || ps.FitToHeight == nil {
-		*p = 1
-		return
-	}
-	*p = FitToHeight(*ps.FitToHeight)
-}
-
-// setPageLayout provides a method to set the fit to width for the worksheet.
-func (p FitToWidth) setPageLayout(ps *xlsxPageSetUp) {
-	if int(p) > 0 {
-		ps.FitToWidth = intPtr(int(p))
-	}
-}
-
-// getPageLayout provides a method to get the fit to width for the worksheet.
-func (p *FitToWidth) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil || ps.FitToWidth == nil {
-		*p = 1
-		return
-	}
-	*p = FitToWidth(*ps.FitToWidth)
-}
-
-// setPageLayout provides a method to set the scale for the worksheet.
-func (p PageLayoutScale) setPageLayout(ps *xlsxPageSetUp) {
-	if 10 <= int(p) && int(p) <= 400 {
-		ps.Scale = int(p)
-	}
-}
-
-// getPageLayout provides a method to get the scale for the worksheet.
-func (p *PageLayoutScale) getPageLayout(ps *xlsxPageSetUp) {
-	if ps == nil || ps.Scale < 10 || ps.Scale > 400 {
-		*p = 100
-		return
-	}
-	*p = PageLayoutScale(ps.Scale)
-}
-
 // SetPageLayout provides a function to sets worksheet page layout.
-//
-// Available options:
-//
-//	BlackAndWhite(bool)
-//	FirstPageNumber(uint)
-//	PageLayoutOrientation(string)
-//	PageLayoutPaperSize(int)
-//	FitToHeight(int)
-//	FitToWidth(int)
-//	PageLayoutScale(uint)
 //
 // The following shows the paper size sorted by excelize index number:
 //
@@ -1500,42 +1335,93 @@ func (p *PageLayoutScale) getPageLayout(ps *xlsxPageSetUp) {
 //	   116 | PRC Envelope #8 Rotated (309 mm x 120 mm)
 //	   117 | PRC Envelope #9 Rotated (324 mm x 229 mm)
 //	   118 | PRC Envelope #10 Rotated (458 mm x 324 mm)
-func (f *File) SetPageLayout(sheet string, opts ...PageLayoutOption) error {
-	s, err := f.workSheetReader(sheet)
+func (f *File) SetPageLayout(sheet string, opts *PageLayoutOptions) error {
+	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	ps := s.PageSetUp
-	if ps == nil {
-		ps = new(xlsxPageSetUp)
-		s.PageSetUp = ps
+	if opts == nil {
+		return err
 	}
-
-	for _, opt := range opts {
-		opt.setPageLayout(ps)
-	}
+	ws.setPageSetUp(opts)
 	return err
 }
 
-// GetPageLayout provides a function to gets worksheet page layout.
-//
-// Available options:
-//
-//	PageLayoutOrientation(string)
-//	PageLayoutPaperSize(int)
-//	FitToHeight(int)
-//	FitToWidth(int)
-func (f *File) GetPageLayout(sheet string, opts ...PageLayoutOptionPtr) error {
-	s, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
+// newPageSetUp initialize page setup settings for the worksheet if which not
+// exist.
+func (ws *xlsxWorksheet) newPageSetUp() {
+	if ws.PageSetUp == nil {
+		ws.PageSetUp = new(xlsxPageSetUp)
 	}
-	ps := s.PageSetUp
+}
 
-	for _, opt := range opts {
-		opt.getPageLayout(ps)
+// setPageSetUp set page setup settings for the worksheet by given options.
+func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
+	if opts.Size != nil {
+		ws.newPageSetUp()
+		ws.PageSetUp.PaperSize = opts.Size
 	}
-	return err
+	if opts.Orientation != nil && (*opts.Orientation == "portrait" || *opts.Orientation == "landscape") {
+		ws.newPageSetUp()
+		ws.PageSetUp.Orientation = *opts.Orientation
+	}
+	if opts.FirstPageNumber != nil && *opts.FirstPageNumber > 0 {
+		ws.newPageSetUp()
+		ws.PageSetUp.FirstPageNumber = strconv.Itoa(int(*opts.FirstPageNumber))
+		ws.PageSetUp.UseFirstPageNumber = true
+	}
+	if opts.AdjustTo != nil && 10 <= *opts.AdjustTo && *opts.AdjustTo <= 400 {
+		ws.newPageSetUp()
+		ws.PageSetUp.Scale = int(*opts.AdjustTo)
+	}
+	if opts.FitToHeight != nil {
+		ws.newPageSetUp()
+		ws.PageSetUp.FitToHeight = opts.FitToHeight
+	}
+	if opts.FitToWidth != nil {
+		ws.newPageSetUp()
+		ws.PageSetUp.FitToWidth = opts.FitToWidth
+	}
+	if opts.BlackAndWhite != nil {
+		ws.newPageSetUp()
+		ws.PageSetUp.BlackAndWhite = *opts.BlackAndWhite
+	}
+}
+
+// GetPageLayout provides a function to gets worksheet page layout.
+func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
+	opts := PageLayoutOptions{
+		Size:            intPtr(0),
+		Orientation:     stringPtr("portrait"),
+		FirstPageNumber: uintPtr(1),
+		AdjustTo:        uintPtr(100),
+	}
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return opts, err
+	}
+	if ws.PageSetUp != nil {
+		if ws.PageSetUp.PaperSize != nil {
+			opts.Size = ws.PageSetUp.PaperSize
+		}
+		if ws.PageSetUp.Orientation != "" {
+			opts.Orientation = stringPtr(ws.PageSetUp.Orientation)
+		}
+		if num, _ := strconv.Atoi(ws.PageSetUp.FirstPageNumber); num != 0 {
+			opts.FirstPageNumber = uintPtr(uint(num))
+		}
+		if ws.PageSetUp.Scale >= 10 && ws.PageSetUp.Scale <= 400 {
+			opts.AdjustTo = uintPtr(uint(ws.PageSetUp.Scale))
+		}
+		if ws.PageSetUp.FitToHeight != nil {
+			opts.FitToHeight = ws.PageSetUp.FitToHeight
+		}
+		if ws.PageSetUp.FitToWidth != nil {
+			opts.FitToWidth = ws.PageSetUp.FitToWidth
+		}
+		opts.BlackAndWhite = boolPtr(ws.PageSetUp.BlackAndWhite)
+	}
+	return opts, err
 }
 
 // SetDefinedName provides a function to set the defined names of the workbook
@@ -1690,20 +1576,23 @@ func (f *File) UngroupSheets() error {
 // ends and where begins the next one by given worksheet name and cell reference, so the
 // content before the page break will be printed on one page and after the
 // page break on another.
-func (f *File) InsertPageBreak(sheet, cell string) (err error) {
-	var ws *xlsxWorksheet
-	var row, col int
+func (f *File) InsertPageBreak(sheet, cell string) error {
+	var (
+		ws       *xlsxWorksheet
+		row, col int
+		err      error
+	)
 	rowBrk, colBrk := -1, -1
 	if ws, err = f.workSheetReader(sheet); err != nil {
-		return
+		return err
 	}
 	if col, row, err = CellNameToCoordinates(cell); err != nil {
-		return
+		return err
 	}
 	col--
 	row--
 	if col == row && col == 0 {
-		return
+		return err
 	}
 	if ws.RowBreaks == nil {
 		ws.RowBreaks = &xlsxBreaks{}
@@ -1741,24 +1630,27 @@ func (f *File) InsertPageBreak(sheet, cell string) (err error) {
 	}
 	ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
 	ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
-	return
+	return err
 }
 
 // RemovePageBreak remove a page break by given worksheet name and cell
 // reference.
-func (f *File) RemovePageBreak(sheet, cell string) (err error) {
-	var ws *xlsxWorksheet
-	var row, col int
+func (f *File) RemovePageBreak(sheet, cell string) error {
+	var (
+		ws       *xlsxWorksheet
+		row, col int
+		err      error
+	)
 	if ws, err = f.workSheetReader(sheet); err != nil {
-		return
+		return err
 	}
 	if col, row, err = CellNameToCoordinates(cell); err != nil {
-		return
+		return err
 	}
 	col--
 	row--
 	if col == row && col == 0 {
-		return
+		return err
 	}
 	removeBrk := func(ID int, brks []*xlsxBrk) []*xlsxBrk {
 		for i, brk := range brks {
@@ -1769,7 +1661,7 @@ func (f *File) RemovePageBreak(sheet, cell string) (err error) {
 		return brks
 	}
 	if ws.RowBreaks == nil || ws.ColBreaks == nil {
-		return
+		return err
 	}
 	rowBrks := len(ws.RowBreaks.Brk)
 	colBrks := len(ws.ColBreaks.Brk)
@@ -1780,20 +1672,20 @@ func (f *File) RemovePageBreak(sheet, cell string) (err error) {
 		ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
 		ws.RowBreaks.ManualBreakCount--
 		ws.ColBreaks.ManualBreakCount--
-		return
+		return err
 	}
 	if rowBrks > 0 && rowBrks > colBrks {
 		ws.RowBreaks.Brk = removeBrk(row, ws.RowBreaks.Brk)
 		ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
 		ws.RowBreaks.ManualBreakCount--
-		return
+		return err
 	}
 	if colBrks > 0 && colBrks > rowBrks {
 		ws.ColBreaks.Brk = removeBrk(col, ws.ColBreaks.Brk)
 		ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
 		ws.ColBreaks.ManualBreakCount--
 	}
-	return
+	return err
 }
 
 // relsReader provides a function to get the pointer to the structure

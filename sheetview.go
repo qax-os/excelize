@@ -13,150 +13,6 @@ package excelize
 
 import "fmt"
 
-// SheetViewOption is an option of a view of a worksheet. See
-// SetSheetViewOptions().
-type SheetViewOption interface {
-	setSheetViewOption(view *xlsxSheetView)
-}
-
-// SheetViewOptionPtr is a writable SheetViewOption. See
-// GetSheetViewOptions().
-type SheetViewOptionPtr interface {
-	SheetViewOption
-	getSheetViewOption(view *xlsxSheetView)
-}
-
-type (
-	// DefaultGridColor is a SheetViewOption. It specifies a flag indicating
-	// that the consuming application should use the default grid lines color
-	// (system dependent). Overrides any color specified in colorId.
-	DefaultGridColor bool
-	// ShowFormulas is a SheetViewOption. It specifies a flag indicating
-	// whether this sheet should display formulas.
-	ShowFormulas bool
-	// ShowGridLines is a SheetViewOption. It specifies a flag indicating
-	// whether this sheet should display gridlines.
-	ShowGridLines bool
-	// ShowRowColHeaders is a SheetViewOption. It specifies a flag indicating
-	// whether the sheet should display row and column headings.
-	ShowRowColHeaders bool
-	// ShowZeros is a SheetViewOption. It specifies a flag indicating whether
-	// to "show a zero in cells that have zero value". When using a formula to
-	// reference another cell which is empty, the referenced value becomes 0
-	// when the flag is true. (Default setting is true.)
-	ShowZeros bool
-	// RightToLeft is a SheetViewOption. It specifies a flag indicating whether
-	// the sheet is in 'right to left' display mode. When in this mode, Column
-	// A is on the far right, Column B ;is one column left of Column A, and so
-	// on. Also, information in cells is displayed in the Right to Left format.
-	RightToLeft bool
-	// ShowRuler is a SheetViewOption. It specifies a flag indicating this
-	// sheet should display ruler.
-	ShowRuler bool
-	// View is a SheetViewOption. It specifies a flag indicating how sheet is
-	// displayed, by default it uses empty string available options: normal,
-	// pageLayout, pageBreakPreview
-	View string
-	// TopLeftCell is a SheetViewOption. It specifies a location of the top
-	// left visible cell Location of the top left visible cell in the bottom
-	// right pane (when in Left-to-Right mode).
-	TopLeftCell string
-	// ZoomScale is a SheetViewOption. It specifies a window zoom magnification
-	// for current view representing percent values. This attribute is
-	// restricted to values ranging from 10 to 400. Horizontal & Vertical
-	// scale together.
-	ZoomScale float64
-)
-
-// Defaults for each option are described in XML schema for CT_SheetView
-
-func (o DefaultGridColor) setSheetViewOption(view *xlsxSheetView) {
-	view.DefaultGridColor = boolPtr(bool(o))
-}
-
-func (o *DefaultGridColor) getSheetViewOption(view *xlsxSheetView) {
-	*o = DefaultGridColor(defaultTrue(view.DefaultGridColor)) // Excel default: true
-}
-
-func (o ShowFormulas) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowFormulas = bool(o) // Excel default: false
-}
-
-func (o *ShowFormulas) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowFormulas(view.ShowFormulas) // Excel default: false
-}
-
-func (o ShowGridLines) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowGridLines = boolPtr(bool(o))
-}
-
-func (o *ShowGridLines) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowGridLines(defaultTrue(view.ShowGridLines)) // Excel default: true
-}
-
-func (o ShowRowColHeaders) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowRowColHeaders = boolPtr(bool(o))
-}
-
-func (o *ShowRowColHeaders) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowRowColHeaders(defaultTrue(view.ShowRowColHeaders)) // Excel default: true
-}
-
-func (o ShowZeros) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowZeros = boolPtr(bool(o))
-}
-
-func (o *ShowZeros) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowZeros(defaultTrue(view.ShowZeros)) // Excel default: true
-}
-
-func (o RightToLeft) setSheetViewOption(view *xlsxSheetView) {
-	view.RightToLeft = bool(o) // Excel default: false
-}
-
-func (o *RightToLeft) getSheetViewOption(view *xlsxSheetView) {
-	*o = RightToLeft(view.RightToLeft)
-}
-
-func (o ShowRuler) setSheetViewOption(view *xlsxSheetView) {
-	view.ShowRuler = boolPtr(bool(o))
-}
-
-func (o *ShowRuler) getSheetViewOption(view *xlsxSheetView) {
-	*o = ShowRuler(defaultTrue(view.ShowRuler)) // Excel default: true
-}
-
-func (o View) setSheetViewOption(view *xlsxSheetView) {
-	view.View = string(o)
-}
-
-func (o *View) getSheetViewOption(view *xlsxSheetView) {
-	if view.View != "" {
-		*o = View(view.View)
-		return
-	}
-	*o = "normal"
-}
-
-func (o TopLeftCell) setSheetViewOption(view *xlsxSheetView) {
-	view.TopLeftCell = string(o)
-}
-
-func (o *TopLeftCell) getSheetViewOption(view *xlsxSheetView) {
-	*o = TopLeftCell(view.TopLeftCell)
-}
-
-func (o ZoomScale) setSheetViewOption(view *xlsxSheetView) {
-	// This attribute is restricted to values ranging from 10 to 400.
-	if float64(o) >= 10 && float64(o) <= 400 {
-		view.ZoomScale = float64(o)
-	}
-}
-
-func (o *ZoomScale) getSheetViewOption(view *xlsxSheetView) {
-	*o = ZoomScale(view.ZoomScale)
-}
-
 // getSheetView returns the SheetView object
 func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error) {
 	ws, err := f.workSheetReader(sheet)
@@ -180,65 +36,100 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 	return &(ws.SheetViews.SheetView[viewIndex]), err
 }
 
-// SetSheetViewOptions sets sheet view options. The viewIndex may be negative
-// and if so is counted backward (-1 is the last view).
-//
-// Available options:
-//
-//	DefaultGridColor(bool)
-//	ShowFormulas(bool)
-//	ShowGridLines(bool)
-//	ShowRowColHeaders(bool)
-//	ShowZeros(bool)
-//	RightToLeft(bool)
-//	ShowRuler(bool)
-//	View(string)
-//	TopLeftCell(string)
-//	ZoomScale(float64)
-//
-// Example:
-//
-//	err = f.SetSheetViewOptions("Sheet1", -1, ShowGridLines(false))
-func (f *File) SetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOption) error {
+// setSheetView set sheet view by given options.
+func (view *xlsxSheetView) setSheetView(opts *ViewOptions) {
+	if opts.DefaultGridColor != nil {
+		view.DefaultGridColor = opts.DefaultGridColor
+	}
+	if opts.RightToLeft != nil {
+		view.RightToLeft = *opts.RightToLeft
+	}
+	if opts.ShowFormulas != nil {
+		view.ShowFormulas = *opts.ShowFormulas
+	}
+	if opts.ShowGridLines != nil {
+		view.ShowGridLines = opts.ShowGridLines
+	}
+	if opts.ShowRowColHeaders != nil {
+		view.ShowRowColHeaders = opts.ShowRowColHeaders
+	}
+	if opts.ShowRuler != nil {
+		view.ShowRuler = opts.ShowRuler
+	}
+	if opts.ShowZeros != nil {
+		view.ShowZeros = opts.ShowZeros
+	}
+	if opts.TopLeftCell != nil {
+		view.TopLeftCell = *opts.TopLeftCell
+	}
+	if opts.View != nil {
+		if _, ok := map[string]interface{}{
+			"normal":           nil,
+			"pageLayout":       nil,
+			"pageBreakPreview": nil,
+		}[*opts.View]; ok {
+			view.View = *opts.View
+		}
+	}
+	if opts.ZoomScale != nil && *opts.ZoomScale >= 10 && *opts.ZoomScale <= 400 {
+		view.ZoomScale = *opts.ZoomScale
+	}
+}
+
+// SetSheetView sets sheet view options. The viewIndex may be negative and if
+// so is counted backward (-1 is the last view).
+func (f *File) SetSheetView(sheet string, viewIndex int, opts *ViewOptions) error {
 	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
 		return err
 	}
-
-	for _, opt := range opts {
-		opt.setSheetViewOption(view)
+	if opts == nil {
+		return err
 	}
+	view.setSheetView(opts)
 	return nil
 }
 
-// GetSheetViewOptions gets the value of sheet view options. The viewIndex may
-// be negative and if so is counted backward (-1 is the last view).
-//
-// Available options:
-//
-//	DefaultGridColor(bool)
-//	ShowFormulas(bool)
-//	ShowGridLines(bool)
-//	ShowRowColHeaders(bool)
-//	ShowZeros(bool)
-//	RightToLeft(bool)
-//	ShowRuler(bool)
-//	View(string)
-//	TopLeftCell(string)
-//	ZoomScale(float64)
-//
-// Example:
-//
-//	var showGridLines excelize.ShowGridLines
-//	err = f.GetSheetViewOptions("Sheet1", -1, &showGridLines)
-func (f *File) GetSheetViewOptions(sheet string, viewIndex int, opts ...SheetViewOptionPtr) error {
+// GetSheetView gets the value of sheet view options. The viewIndex may be
+// negative and if so is counted backward (-1 is the last view).
+func (f *File) GetSheetView(sheet string, viewIndex int) (ViewOptions, error) {
+	opts := ViewOptions{
+		DefaultGridColor:  boolPtr(true),
+		ShowFormulas:      boolPtr(true),
+		ShowGridLines:     boolPtr(true),
+		ShowRowColHeaders: boolPtr(true),
+		ShowRuler:         boolPtr(true),
+		ShowZeros:         boolPtr(true),
+		View:              stringPtr("normal"),
+		ZoomScale:         float64Ptr(100),
+	}
 	view, err := f.getSheetView(sheet, viewIndex)
 	if err != nil {
-		return err
+		return opts, err
 	}
-
-	for _, opt := range opts {
-		opt.getSheetViewOption(view)
+	if view.DefaultGridColor != nil {
+		opts.DefaultGridColor = view.DefaultGridColor
 	}
-	return nil
+	opts.RightToLeft = boolPtr(view.RightToLeft)
+	opts.ShowFormulas = boolPtr(view.ShowFormulas)
+	if view.ShowGridLines != nil {
+		opts.ShowGridLines = view.ShowGridLines
+	}
+	if view.ShowRowColHeaders != nil {
+		opts.ShowRowColHeaders = view.ShowRowColHeaders
+	}
+	if view.ShowRuler != nil {
+		opts.ShowRuler = view.ShowRuler
+	}
+	if view.ShowZeros != nil {
+		opts.ShowZeros = view.ShowZeros
+	}
+	opts.TopLeftCell = stringPtr(view.TopLeftCell)
+	if view.View != "" {
+		opts.View = stringPtr(view.View)
+	}
+	if view.ZoomScale >= 10 && view.ZoomScale <= 400 {
+		opts.ZoomScale = float64Ptr(view.ZoomScale)
+	}
+	return opts, err
 }

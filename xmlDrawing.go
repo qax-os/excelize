@@ -493,8 +493,8 @@ type xdrTxBody struct {
 	P      []*aP    `xml:"a:p"`
 }
 
-// formatPicture directly maps the format settings of the picture.
-type formatPicture struct {
+// pictureOptions directly maps the format settings of the picture.
+type pictureOptions struct {
 	FPrintsWithSheet bool    `json:"print_obj"`
 	FLocksWithSheet  bool    `json:"locked"`
 	NoChangeAspect   bool    `json:"lock_aspect_ratio"`
@@ -508,33 +508,33 @@ type formatPicture struct {
 	Positioning      string  `json:"positioning"`
 }
 
-// formatShape directly maps the format settings of the shape.
-type formatShape struct {
-	Macro     string                 `json:"macro"`
-	Type      string                 `json:"type"`
-	Width     int                    `json:"width"`
-	Height    int                    `json:"height"`
-	Format    formatPicture          `json:"format"`
-	Color     formatShapeColor       `json:"color"`
-	Line      formatLine             `json:"line"`
-	Paragraph []formatShapeParagraph `json:"paragraph"`
+// shapeOptions directly maps the format settings of the shape.
+type shapeOptions struct {
+	Macro     string                  `json:"macro"`
+	Type      string                  `json:"type"`
+	Width     int                     `json:"width"`
+	Height    int                     `json:"height"`
+	Format    pictureOptions          `json:"format"`
+	Color     shapeColorOptions       `json:"color"`
+	Line      lineOptions             `json:"line"`
+	Paragraph []shapeParagraphOptions `json:"paragraph"`
 }
 
-// formatShapeParagraph directly maps the format settings of the paragraph in
+// shapeParagraphOptions directly maps the format settings of the paragraph in
 // the shape.
-type formatShapeParagraph struct {
+type shapeParagraphOptions struct {
 	Font Font   `json:"font"`
 	Text string `json:"text"`
 }
 
-// formatShapeColor directly maps the color settings of the shape.
-type formatShapeColor struct {
+// shapeColorOptions directly maps the color settings of the shape.
+type shapeColorOptions struct {
 	Line   string `json:"line"`
 	Fill   string `json:"fill"`
 	Effect string `json:"effect"`
 }
 
-// formatLine directly maps the line settings of the shape.
-type formatLine struct {
+// lineOptions directly maps the line settings of the shape.
+type lineOptions struct {
 	Width float64 `json:"width"`
 }

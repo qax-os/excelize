@@ -25,7 +25,7 @@ func TestAddPivotTable(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), rand.Intn(5000)))
 		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[rand.Intn(4)]))
 	}
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$G$2:$M$34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -41,7 +41,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowError:       true,
 	}))
 	// Use different order of coordinate tests
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -55,7 +55,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowLastColumn:  true,
 	}))
 
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$W$2:$AC$34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -68,7 +68,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$G$37:$W$50",
 		Rows:            []PivotTableField{{Data: "Month"}},
@@ -81,7 +81,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$AE$2:$AG$33",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -94,7 +94,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowLastColumn:  true,
 	}))
 	// Create pivot table with empty subtotal field name and specified style
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:           "Sheet1!$A$1:$E$31",
 		PivotTableRange:     "Sheet1!$AJ$2:$AP1$35",
 		Rows:                []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -110,7 +110,7 @@ func TestAddPivotTable(t *testing.T) {
 		PivotTableStyleName: "PivotStyleLight19",
 	}))
 	f.NewSheet("Sheet2")
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet2!$A$1:$AR$15",
 		Rows:            []PivotTableField{{Data: "Month"}},
@@ -123,7 +123,7 @@ func TestAddPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet2!$A$18:$AR$54",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Type"}},
@@ -143,7 +143,7 @@ func TestAddPivotTable(t *testing.T) {
 		Comment:  "Pivot Table Data Range",
 		Scope:    "Sheet2",
 	}))
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "dataRange",
 		PivotTableRange: "Sheet2!$A$57:$AJ$91",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -160,7 +160,7 @@ func TestAddPivotTable(t *testing.T) {
 	// Test empty pivot table options
 	assert.EqualError(t, f.AddPivotTable(nil), ErrParameterRequired.Error())
 	// Test invalid data range
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$A$1",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -168,7 +168,7 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 	// Test the data range of the worksheet that is not declared
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -176,7 +176,7 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 	// Test the worksheet declared in the data range does not exist
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "SheetN!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -184,7 +184,7 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), "sheet SheetN does not exist")
 	// Test the pivot table range of the worksheet that is not declared
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -192,7 +192,7 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), `parameter 'PivotTableRange' parsing error: parameter is invalid`)
 	// Test the worksheet declared in the pivot table range does not exist
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "SheetN!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -200,7 +200,7 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), "sheet SheetN does not exist")
 	// Test not exists worksheet in data range
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "SheetN!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -208,7 +208,7 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), "sheet SheetN does not exist")
 	// Test invalid row number in data range
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOption{
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$0:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -217,7 +217,7 @@ func TestAddPivotTable(t *testing.T) {
 	}), `parameter 'DataRange' parsing error: cannot convert cell "A0" to coordinates: invalid cell name "A0"`)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable1.xlsx")))
 	// Test with field names that exceed the length limit and invalid subtotal
-	assert.NoError(t, f.AddPivotTable(&PivotTableOption{
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet1!$G$2:$M$34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -232,12 +232,12 @@ func TestAddPivotTable(t *testing.T) {
 	_, _, err = f.adjustRange("sheet1!")
 	assert.EqualError(t, err, "parameter is invalid")
 	// Test get pivot fields order with empty data range
-	_, err = f.getPivotFieldsOrder(&PivotTableOption{})
+	_, err = f.getPivotFieldsOrder(&PivotTableOptions{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot cache with empty data range
-	assert.EqualError(t, f.addPivotCache("", &PivotTableOption{}), "parameter 'DataRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is required")
 	// Test add pivot cache with invalid data range
-	assert.EqualError(t, f.addPivotCache("", &PivotTableOption{
+	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{
 		DataRange:       "$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -245,11 +245,11 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), "parameter 'DataRange' parsing error: parameter is invalid")
 	// Test add pivot table with empty options
-	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOption{}), "parameter 'PivotTableRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOptions{}), "parameter 'PivotTableRange' parsing error: parameter is required")
 	// Test add pivot table with invalid data range
-	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOption{}), "parameter 'PivotTableRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOptions{}), "parameter 'PivotTableRange' parsing error: parameter is required")
 	// Test add pivot fields with empty data range
-	assert.EqualError(t, f.addPivotFields(nil, &PivotTableOption{
+	assert.EqualError(t, f.addPivotFields(nil, &PivotTableOptions{
 		DataRange:       "$A$1:$E$31",
 		PivotTableRange: "Sheet1!$U$34:$O$2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
@@ -257,14 +257,14 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales"}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 	// Test get pivot fields index with empty data range
-	_, err = f.getPivotFieldsIndex([]PivotTableField{}, &PivotTableOption{})
+	_, err = f.getPivotFieldsIndex([]PivotTableField{}, &PivotTableOptions{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 }
 
 func TestAddPivotRowFields(t *testing.T) {
 	f := NewFile()
 	// Test invalid data range
-	assert.EqualError(t, f.addPivotRowFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+	assert.EqualError(t, f.addPivotRowFields(&xlsxPivotTableDefinition{}, &PivotTableOptions{
 		DataRange: "Sheet1!$A$1:$A$1",
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 }
@@ -272,7 +272,7 @@ func TestAddPivotRowFields(t *testing.T) {
 func TestAddPivotPageFields(t *testing.T) {
 	f := NewFile()
 	// Test invalid data range
-	assert.EqualError(t, f.addPivotPageFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+	assert.EqualError(t, f.addPivotPageFields(&xlsxPivotTableDefinition{}, &PivotTableOptions{
 		DataRange: "Sheet1!$A$1:$A$1",
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 }
@@ -280,7 +280,7 @@ func TestAddPivotPageFields(t *testing.T) {
 func TestAddPivotDataFields(t *testing.T) {
 	f := NewFile()
 	// Test invalid data range
-	assert.EqualError(t, f.addPivotDataFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+	assert.EqualError(t, f.addPivotDataFields(&xlsxPivotTableDefinition{}, &PivotTableOptions{
 		DataRange: "Sheet1!$A$1:$A$1",
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 }
@@ -288,7 +288,7 @@ func TestAddPivotDataFields(t *testing.T) {
 func TestAddPivotColFields(t *testing.T) {
 	f := NewFile()
 	// Test invalid data range
-	assert.EqualError(t, f.addPivotColFields(&xlsxPivotTableDefinition{}, &PivotTableOption{
+	assert.EqualError(t, f.addPivotColFields(&xlsxPivotTableDefinition{}, &PivotTableOptions{
 		DataRange: "Sheet1!$A$1:$A$1",
 		Columns:   []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
@@ -297,7 +297,7 @@ func TestAddPivotColFields(t *testing.T) {
 func TestGetPivotFieldsOrder(t *testing.T) {
 	f := NewFile()
 	// Test get pivot fields order with not exist worksheet
-	_, err := f.getPivotFieldsOrder(&PivotTableOption{DataRange: "SheetN!$A$1:$E$31"})
+	_, err := f.getPivotFieldsOrder(&PivotTableOptions{DataRange: "SheetN!$A$1:$E$31"})
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 

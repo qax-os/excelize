@@ -319,13 +319,13 @@ func TestNewFile(t *testing.T) {
 		t.FailNow()
 	}
 
-	// Test add picture to worksheet without formatset.
+	// Test add picture to worksheet without options.
 	err = f.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), "")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	// Test add picture to worksheet with invalid formatset.
+	// Test add picture to worksheet with invalid options.
 	err = f.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), `{`)
 	if !assert.Error(t, err) {
 		t.FailNow()
@@ -1021,12 +1021,6 @@ func TestRelsWriter(t *testing.T) {
 	f.relsWriter()
 }
 
-func TestGetSheetView(t *testing.T) {
-	f := NewFile()
-	_, err := f.getSheetView("SheetN", 0)
-	assert.EqualError(t, err, "sheet SheetN does not exist")
-}
-
 func TestConditionalFormat(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
@@ -1228,7 +1222,7 @@ func TestProtectSheet(t *testing.T) {
 	sheetName := f.GetSheetName(0)
 	assert.NoError(t, f.ProtectSheet(sheetName, nil))
 	// Test protect worksheet with XOR hash algorithm
-	assert.NoError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{
+	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		Password:      "password",
 		EditScenarios: false,
 	}))
@@ -1237,7 +1231,7 @@ func TestProtectSheet(t *testing.T) {
 	assert.Equal(t, "83AF", ws.SheetProtection.Password)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestProtectSheet.xlsx")))
 	// Test protect worksheet with SHA-512 hash algorithm
-	assert.NoError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{
+	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "SHA-512",
 		Password:      "password",
 	}))
@@ -1251,15 +1245,15 @@ func TestProtectSheet(t *testing.T) {
 	// Test remove sheet protection with password verification
 	assert.NoError(t, f.UnprotectSheet(sheetName, "password"))
 	// Test protect worksheet with empty password
-	assert.NoError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{}))
+	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{}))
 	assert.Equal(t, "", ws.SheetProtection.Password)
 	// Test protect worksheet with password exceeds the limit length
-	assert.EqualError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{
+	assert.EqualError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "MD4",
 		Password:      strings.Repeat("s", MaxFieldLength+1),
 	}), ErrPasswordLengthInvalid.Error())
 	// Test protect worksheet with unsupported hash algorithm
-	assert.EqualError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{
+	assert.EqualError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "RIPEMD-160",
 		Password:      "password",
 	}), ErrUnsupportedHashAlgorithm.Error())
@@ -1282,13 +1276,13 @@ func TestUnprotectSheet(t *testing.T) {
 
 	f = NewFile()
 	sheetName := f.GetSheetName(0)
-	assert.NoError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{Password: "password"}))
+	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{Password: "password"}))
 	// Test remove sheet protection with an incorrect password
 	assert.EqualError(t, f.UnprotectSheet(sheetName, "wrongPassword"), ErrUnprotectSheetPassword.Error())
 	// Test remove sheet protection with password verification
 	assert.NoError(t, f.UnprotectSheet(sheetName, "password"))
 	// Test with invalid salt value
-	assert.NoError(t, f.ProtectSheet(sheetName, &FormatSheetProtection{
+	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "SHA-512",
 		Password:      "password",
 	}))
@@ -1309,7 +1303,7 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 
 func TestAddVBAProject(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.SetSheetPrOptions("Sheet1", CodeName("Sheet1")))
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
 	assert.EqualError(t, f.AddVBAProject("macros.bin"), "stat macros.bin: no such file or directory")
 	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "Book1.xlsx")), ErrAddVBAProject.Error())
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
