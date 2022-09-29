@@ -222,7 +222,49 @@ func (f *File) setDefaultTimeStyle(sheet, axis string, format int) error {
 }
 
 func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
-	return nil, nil
+	f.Lock()
+	defer f.Unlock()
+	var (
+		name string
+		ok   bool
+	)
+	if name, ok = f.getSheetXMLPath(sheet); !ok {
+		err = newNoExistSheetError(sheet)
+		return
+	}
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
+		ws = worksheet.(*xlsxWorksheet)
+		return
+	}
+	for _, sheetType := range []string{"xl/chartsheets", "xl/dialogsheet", "xl/macrosheet"} {
+		if strings.HasPrefix(name, sheetType) {
+			err = newNotWorksheetError(sheet)
+			return
+		}
+	}
+	ws = new(xlsxWorksheet)
+	if _, ok := f.xmlAttr[name]; !ok {
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
+		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
+	}
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
+		Decode(ws); err != nil && err != io.EOF {
+		err = newDecodeXMLError(err)
+		return
+	}
+	err = nil
+	if f.checked == nil {
+		f.checked = make(map[string]bool)
+	}
+	if ok = f.checked[name]; !ok {
+		checkSheet(ws)
+		if err = checkRow(ws); err != nil {
+			return
+		}
+		f.checked[name] = true
+	}
+	f.Sheet.Store(name, ws)
+	return
 }
 
 func (f *File) SRworkSheetReader(sheet string) (ws *SRxlsxWorksheet, err error) {
