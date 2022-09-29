@@ -275,11 +275,6 @@ func (f *File) SRWorkSheetReader(sheet string, skipCheckRow bool) (ws *SRxlsxWor
 	}
 	if ok = f.checked[name]; !ok {
 		SRcheckSheet(ws)
-		if !skipCheckRow {
-			if err = SRcheckRow(ws); err != nil {
-				return
-			}
-		}
 		f.checked[name] = true
 	}
 
