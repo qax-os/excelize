@@ -457,6 +457,7 @@ func (f *File) getSheetXMLPath(sheet string) (string, bool) {
 		name string
 		ok   bool
 	)
+	sheet = trimSheetName(sheet)
 	for sheetName, filePath := range f.sheetMap {
 		if strings.EqualFold(sheetName, sheet) {
 			name, ok = filePath, true
