@@ -365,7 +365,7 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 // Excel 2007, but they won't be displayed. For example, add a grouped
 // sparkline. Changes are applied to all three:
 //
-//	err := f.AddSparkline("Sheet1", &excelize.SparklineOption{
+//	err := f.AddSparkline("Sheet1", &excelize.SparklineOptions{
 //	    Location: []string{"A1", "A2", "A3"},
 //	    Range:    []string{"Sheet2!A1:J1", "Sheet2!A2:J2", "Sheet2!A3:J3"},
 //	    Markers:  true,

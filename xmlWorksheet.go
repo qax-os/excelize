@@ -250,9 +250,9 @@ type xlsxSheetPr struct {
 // adjust the direction of grouper controls.
 type xlsxOutlinePr struct {
 	ApplyStyles        *bool `xml:"applyStyles,attr"`
-	SummaryBelow       bool  `xml:"summaryBelow,attr"`
-	SummaryRight       bool  `xml:"summaryRight,attr"`
-	ShowOutlineSymbols bool  `xml:"showOutlineSymbols,attr"`
+	SummaryBelow       *bool `xml:"summaryBelow,attr"`
+	SummaryRight       *bool `xml:"summaryRight,attr"`
+	ShowOutlineSymbols *bool `xml:"showOutlineSymbols,attr"`
 }
 
 // xlsxPageSetUpPr expresses page setup properties of the worksheet.
@@ -989,6 +989,9 @@ type SheetPropsOptions struct {
 	// OutlineSummaryBelow indicating whether summary rows appear below detail
 	// in an outline, when applying an outline.
 	OutlineSummaryBelow *bool `json:"outline_summary_below,omitempty"`
+	// OutlineSummaryRight indicating whether summary columns appear to the
+	// right of detail in an outline, when applying an outline.
+	OutlineSummaryRight *bool `json:"outline_summary_right,omitempty"`
 	// BaseColWidth specifies the number of characters of the maximum digit
 	// width of the normal style's font. This value does not include margin
 	// padding or extra padding for grid lines. It is only the number of

@@ -444,9 +444,12 @@ func (f *File) UpdateLinkedValue() error {
 // AddVBAProject provides the method to add vbaProject.bin file which contains
 // functions and/or macros. The file extension should be .xlsm. For example:
 //
-//	if err := f.SetSheetPrOptions("Sheet1", excelize.CodeName("Sheet1")); err != nil {
-//	    fmt.Println(err)
-//	}
+//  codeName := "Sheet1"
+//  if err := f.SetSheetProps("Sheet1", &excelize.SheetPropsOptions{
+//      CodeName: &codeName,
+//  }); err != nil {
+//      fmt.Println(err)
+//  }
 //	if err := f.AddVBAProject("vbaProject.bin"); err != nil {
 //	    fmt.Println(err)
 //	}

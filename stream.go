@@ -40,12 +40,12 @@ type StreamWriter struct {
 
 // NewStreamWriter return stream writer struct by given worksheet name for
 // generate new worksheet with large amounts of data. Note that after set
-// rows, you must call the 'Flush' method to end the streaming writing
-// process and ensure that the order of line numbers is ascending, the common
-// API and stream API can't be work mixed to writing data on the worksheets,
-// you can't get cell value when in-memory chunks data over 16MB. For
-// example, set data for worksheet of size 102400 rows x 50 columns with
-// numbers and style:
+// rows, you must call the 'Flush' method to end the streaming writing process
+// and ensure that the order of line numbers is ascending, the normal mode
+// functions and stream mode functions can't be work mixed to writing data on
+// the worksheets, you can't get cell value when in-memory chunks data over
+// 16MB. For example, set data for worksheet of size 102400 rows x 50 columns
+// with numbers and style:
 //
 //	file := excelize.NewFile()
 //	streamWriter, err := file.NewStreamWriter("Sheet1")

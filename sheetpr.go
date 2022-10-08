@@ -106,41 +106,55 @@ func (f *File) GetPageMargins(sheet string) (PageLayoutMarginsOptions, error) {
 	return opts, err
 }
 
-// setSheetProps set worksheet format properties by given options.
-func (ws *xlsxWorksheet) setSheetProps(opts *SheetPropsOptions) {
-	prepareSheetPr := func(ws *xlsxWorksheet) {
-		if ws.SheetPr == nil {
-			ws.SheetPr = new(xlsxSheetPr)
-		}
+// prepareSheetPr sheetPr element if which not exist.
+func (ws *xlsxWorksheet) prepareSheetPr() {
+	if ws.SheetPr == nil {
+		ws.SheetPr = new(xlsxSheetPr)
 	}
-	preparePageSetUpPr := func(ws *xlsxWorksheet) {
-		prepareSheetPr(ws)
-		if ws.SheetPr.PageSetUpPr == nil {
-			ws.SheetPr.PageSetUpPr = new(xlsxPageSetUpPr)
-		}
-	}
+}
+
+// setSheetOutlinePr set worksheet outline properties by given options.
+func (ws *xlsxWorksheet) setSheetOutlineProps(opts *SheetPropsOptions) {
 	prepareOutlinePr := func(ws *xlsxWorksheet) {
-		prepareSheetPr(ws)
+		ws.prepareSheetPr()
 		if ws.SheetPr.OutlinePr == nil {
 			ws.SheetPr.OutlinePr = new(xlsxOutlinePr)
 		}
 	}
+	if opts.OutlineSummaryBelow != nil {
+		prepareOutlinePr(ws)
+		ws.SheetPr.OutlinePr.SummaryBelow = opts.OutlineSummaryBelow
+	}
+	if opts.OutlineSummaryRight != nil {
+		prepareOutlinePr(ws)
+		ws.SheetPr.OutlinePr.SummaryRight = opts.OutlineSummaryRight
+	}
+}
+
+// setSheetProps set worksheet format properties by given options.
+func (ws *xlsxWorksheet) setSheetProps(opts *SheetPropsOptions) {
+	preparePageSetUpPr := func(ws *xlsxWorksheet) {
+		ws.prepareSheetPr()
+		if ws.SheetPr.PageSetUpPr == nil {
+			ws.SheetPr.PageSetUpPr = new(xlsxPageSetUpPr)
+		}
+	}
 	prepareTabColor := func(ws *xlsxWorksheet) {
-		prepareSheetPr(ws)
+		ws.prepareSheetPr()
 		if ws.SheetPr.TabColor == nil {
 			ws.SheetPr.TabColor = new(xlsxTabColor)
 		}
 	}
 	if opts.CodeName != nil {
-		prepareSheetPr(ws)
+		ws.prepareSheetPr()
 		ws.SheetPr.CodeName = *opts.CodeName
 	}
 	if opts.EnableFormatConditionsCalculation != nil {
-		prepareSheetPr(ws)
+		ws.prepareSheetPr()
 		ws.SheetPr.EnableFormatConditionsCalculation = opts.EnableFormatConditionsCalculation
 	}
 	if opts.Published != nil {
-		prepareSheetPr(ws)
+		ws.prepareSheetPr()
 		ws.SheetPr.Published = opts.Published
 	}
 	if opts.AutoPageBreaks != nil {
@@ -151,10 +165,7 @@ func (ws *xlsxWorksheet) setSheetProps(opts *SheetPropsOptions) {
 		preparePageSetUpPr(ws)
 		ws.SheetPr.PageSetUpPr.FitToPage = *opts.FitToPage
 	}
-	if opts.OutlineSummaryBelow != nil {
-		prepareOutlinePr(ws)
-		ws.SheetPr.OutlinePr.SummaryBelow = *opts.OutlineSummaryBelow
-	}
+	ws.setSheetOutlineProps(opts)
 	if opts.TabColorIndexed != nil {
 		prepareTabColor(ws)
 		ws.SheetPr.TabColor.Indexed = *opts.TabColorIndexed
@@ -237,7 +248,8 @@ func (f *File) GetSheetProps(sheet string) (SheetPropsOptions, error) {
 			opts.FitToPage = boolPtr(ws.SheetPr.PageSetUpPr.FitToPage)
 		}
 		if ws.SheetPr.OutlinePr != nil {
-			opts.OutlineSummaryBelow = boolPtr(ws.SheetPr.OutlinePr.SummaryBelow)
+			opts.OutlineSummaryBelow = ws.SheetPr.OutlinePr.SummaryBelow
+			opts.OutlineSummaryRight = ws.SheetPr.OutlinePr.SummaryRight
 		}
 		if ws.SheetPr.TabColor != nil {
 			opts.TabColorIndexed = intPtr(ws.SheetPr.TabColor.Indexed)

@@ -1132,7 +1132,7 @@ func calcLe(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	return nil
 }
 
-// calcG evaluate greater than or equal arithmetic operations.
+// calcG evaluate greater than arithmetic operations.
 func calcG(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
 		opdStack.Push(newBoolFormulaArg(lOpd.Number > rOpd.Number))
@@ -1287,28 +1287,28 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Token) (err error) {
 	if optStack.Len() == 0 {
 		optStack.Push(token)
-	} else {
-		tokenPriority := getPriority(token)
-		topOpt := optStack.Peek().(efp.Token)
-		topOptPriority := getPriority(topOpt)
-		if tokenPriority > topOptPriority {
-			optStack.Push(token)
-		} else {
-			for tokenPriority <= topOptPriority {
-				optStack.Pop()
-				if err = calculate(opdStack, topOpt); err != nil {
-					return
-				}
-				if optStack.Len() > 0 {
-					topOpt = optStack.Peek().(efp.Token)
-					topOptPriority = getPriority(topOpt)
-					continue
-				}
-				break
-			}
-			optStack.Push(token)
-		}
+		return
 	}
+	tokenPriority := getPriority(token)
+	topOpt := optStack.Peek().(efp.Token)
+	topOptPriority := getPriority(topOpt)
+	if tokenPriority > topOptPriority {
+		optStack.Push(token)
+		return
+	}
+	for tokenPriority <= topOptPriority {
+		optStack.Pop()
+		if err = calculate(opdStack, topOpt); err != nil {
+			return
+		}
+		if optStack.Len() > 0 {
+			topOpt = optStack.Peek().(efp.Token)
+			topOptPriority = getPriority(topOpt)
+			continue
+		}
+		break
+	}
+	optStack.Push(token)
 	return
 }
 

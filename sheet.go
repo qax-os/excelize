@@ -1039,7 +1039,7 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 //
 // For example:
 //
-//	err := f.SetHeaderFooter("Sheet1", &excelize.FormatHeaderFooter{
+//	err := f.SetHeaderFooter("Sheet1", &excelize.HeaderFooterOptions{
 //	    DifferentFirst:   true,
 //	    DifferentOddEven: true,
 //	    OddHeader:        "&R&P",
@@ -1109,7 +1109,7 @@ func (f *File) SetHeaderFooter(sheet string, settings *HeaderFooterOptions) erro
 // specified, will be using the XOR algorithm as default. For example, protect
 // Sheet1 with protection settings:
 //
-//	err := f.ProtectSheet("Sheet1", &excelize.FormatSheetProtection{
+//	err := f.ProtectSheet("Sheet1", &excelize.SheetProtectionOptions{
 //	    AlgorithmName: "SHA-512",
 //	    Password:      "password",
 //	    EditScenarios: false,

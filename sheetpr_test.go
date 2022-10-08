@@ -61,25 +61,26 @@ func TestSetSheetProps(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetPr = nil
 	ws.(*xlsxWorksheet).SheetFormatPr = nil
-	baseColWidth := uint8(8)
+	baseColWidth, enable := uint8(8), boolPtr(true)
 	expected := SheetPropsOptions{
 		CodeName:                          stringPtr("code"),
-		EnableFormatConditionsCalculation: boolPtr(true),
-		Published:                         boolPtr(true),
-		AutoPageBreaks:                    boolPtr(true),
-		FitToPage:                         boolPtr(true),
+		EnableFormatConditionsCalculation: enable,
+		Published:                         enable,
+		AutoPageBreaks:                    enable,
+		FitToPage:                         enable,
 		TabColorIndexed:                   intPtr(1),
 		TabColorRGB:                       stringPtr("#FFFF00"),
 		TabColorTheme:                     intPtr(1),
 		TabColorTint:                      float64Ptr(1),
-		OutlineSummaryBelow:               boolPtr(true),
+		OutlineSummaryBelow:               enable,
+		OutlineSummaryRight:               enable,
 		BaseColWidth:                      &baseColWidth,
 		DefaultColWidth:                   float64Ptr(10),
 		DefaultRowHeight:                  float64Ptr(10),
-		CustomHeight:                      boolPtr(true),
-		ZeroHeight:                        boolPtr(true),
-		ThickTop:                          boolPtr(true),
-		ThickBottom:                       boolPtr(true),
+		CustomHeight:                      enable,
+		ZeroHeight:                        enable,
+		ThickTop:                          enable,
+		ThickBottom:                       enable,
 	}
 	assert.NoError(t, f.SetSheetProps("Sheet1", &expected))
 	opts, err := f.GetSheetProps("Sheet1")
@@ -87,7 +88,7 @@ func TestSetSheetProps(t *testing.T) {
 	assert.Equal(t, expected, opts)
 
 	ws.(*xlsxWorksheet).SheetPr = nil
-	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{FitToPage: boolPtr(true)}))
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{FitToPage: enable}))
 	ws.(*xlsxWorksheet).SheetPr = nil
 	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorRGB: stringPtr("#FFFF00")}))
 	ws.(*xlsxWorksheet).SheetPr = nil
