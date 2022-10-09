@@ -30,11 +30,13 @@ func TestConcurrency(t *testing.T) {
 			_, err := f.GetCellValue("Sheet1", fmt.Sprintf("A%d", val))
 			assert.NoError(t, err)
 			// Concurrency set rows
-			assert.NoError(t, f.SetSheetRow("Sheet1", "B6", &[]interface{}{" Hello",
+			assert.NoError(t, f.SetSheetRow("Sheet1", "B6", &[]interface{}{
+				" Hello",
 				[]byte("World"), 42, int8(1<<8/2 - 1), int16(1<<16/2 - 1), int32(1<<32/2 - 1),
-				int64(1<<32/2 - 1), float32(42.65418), float64(-42.65418), float32(42), float64(42),
+				int64(1<<32/2 - 1), float32(42.65418), -42.65418, float32(42), float64(42),
 				uint(1<<32 - 1), uint8(1<<8 - 1), uint16(1<<16 - 1), uint32(1<<32 - 1),
-				uint64(1<<32 - 1), true, complex64(5 + 10i)}))
+				uint64(1<<32 - 1), true, complex64(5 + 10i),
+			}))
 			// Concurrency create style
 			style, err := f.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
 			assert.NoError(t, err)
@@ -62,7 +64,24 @@ func TestConcurrency(t *testing.T) {
 				_, err := cols.Rows()
 				assert.NoError(t, err)
 			}
-
+			// Concurrency set columns style
+			assert.NoError(t, f.SetColStyle("Sheet1", "C:E", style))
+			// Concurrency get columns style
+			styleID, err := f.GetColStyle("Sheet1", "D")
+			assert.NoError(t, err)
+			assert.Equal(t, style, styleID)
+			// Concurrency set columns width
+			assert.NoError(t, f.SetColWidth("Sheet1", "A", "B", 10))
+			// Concurrency get columns width
+			width, err := f.GetColWidth("Sheet1", "A")
+			assert.NoError(t, err)
+			assert.Equal(t, 10.0, width)
+			// Concurrency set columns visible
+			assert.NoError(t, f.SetColVisible("Sheet1", "A:B", true))
+			// Concurrency get columns visible
+			visible, err := f.GetColVisible("Sheet1", "A")
+			assert.NoError(t, err)
+			assert.Equal(t, true, visible)
 			wg.Done()
 		}(i, t)
 	}
@@ -76,43 +95,43 @@ func TestConcurrency(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
-func TestCheckCellInArea(t *testing.T) {
+func TestCheckCellInRangeRef(t *testing.T) {
 	f := NewFile()
-	expectedTrueCellInAreaList := [][2]string{
+	expectedTrueCellInRangeRefList := [][2]string{
 		{"c2", "A1:AAZ32"},
 		{"B9", "A1:B9"},
 		{"C2", "C2:C2"},
 	}
 
-	for _, expectedTrueCellInArea := range expectedTrueCellInAreaList {
-		cell := expectedTrueCellInArea[0]
-		area := expectedTrueCellInArea[1]
-		ok, err := f.checkCellInArea(cell, area)
+	for _, expectedTrueCellInRangeRef := range expectedTrueCellInRangeRefList {
+		cell := expectedTrueCellInRangeRef[0]
+		reference := expectedTrueCellInRangeRef[1]
+		ok, err := f.checkCellInRangeRef(cell, reference)
 		assert.NoError(t, err)
 		assert.Truef(t, ok,
-			"Expected cell %v to be in area %v, got false\n", cell, area)
+			"Expected cell %v to be in range reference %v, got false\n", cell, reference)
 	}
 
-	expectedFalseCellInAreaList := [][2]string{
+	expectedFalseCellInRangeRefList := [][2]string{
 		{"c2", "A4:AAZ32"},
 		{"C4", "D6:A1"}, // weird case, but you never know
 		{"AEF42", "BZ40:AEF41"},
 	}
 
-	for _, expectedFalseCellInArea := range expectedFalseCellInAreaList {
-		cell := expectedFalseCellInArea[0]
-		area := expectedFalseCellInArea[1]
-		ok, err := f.checkCellInArea(cell, area)
+	for _, expectedFalseCellInRangeRef := range expectedFalseCellInRangeRefList {
+		cell := expectedFalseCellInRangeRef[0]
+		reference := expectedFalseCellInRangeRef[1]
+		ok, err := f.checkCellInRangeRef(cell, reference)
 		assert.NoError(t, err)
 		assert.Falsef(t, ok,
-			"Expected cell %v not to be inside of area %v, but got true\n", cell, area)
+			"Expected cell %v not to be inside of range reference %v, but got true\n", cell, reference)
 	}
 
-	ok, err := f.checkCellInArea("A1", "A:B")
+	ok, err := f.checkCellInRangeRef("A1", "A:B")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.False(t, ok)
 
-	ok, err = f.checkCellInArea("AA0", "Z0:AB1")
+	ok, err = f.checkCellInRangeRef("AA0", "Z0:AB1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("AA0", newInvalidCellNameError("AA0")).Error())
 	assert.False(t, ok)
 }
@@ -128,7 +147,7 @@ func TestSetCellFloat(t *testing.T) {
 		assert.Equal(t, "123", val, "A1 should be 123")
 		val, err = f.GetCellValue(sheet, "A2")
 		assert.NoError(t, err)
-		assert.Equal(t, "123.0", val, "A2 should be 123.0")
+		assert.Equal(t, "123", val, "A2 should be 123")
 	})
 
 	t.Run("with a decimal and precision limit", func(t *testing.T) {
@@ -154,6 +173,21 @@ func TestSetCellValue(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test set cell value with column and row style inherit
+	style1, err := f.NewStyle(&Style{NumFmt: 2})
+	assert.NoError(t, err)
+	style2, err := f.NewStyle(&Style{NumFmt: 9})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetColStyle("Sheet1", "B", style1))
+	assert.NoError(t, f.SetRowStyle("Sheet1", 1, 1, style2))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", 0.5))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B2", 0.5))
+	B1, err := f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "50%", B1)
+	B2, err := f.GetCellValue("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "0.50", B2)
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -190,7 +224,7 @@ func TestSetCellTime(t *testing.T) {
 	} {
 		timezone, err := time.LoadLocation(location)
 		assert.NoError(t, err)
-		_, b, isNum, err := setCellTime(date.In(timezone))
+		_, b, isNum, err := setCellTime(date.In(timezone), false)
 		assert.NoError(t, err)
 		assert.Equal(t, true, isNum)
 		assert.Equal(t, expected, b)
@@ -286,12 +320,16 @@ func TestGetCellValue(t *testing.T) {
     <c r="S1"><v>275.39999999999998</v></c>
     <c r="T1"><v>68.900000000000006</v></c>
     <c r="U1"><v>8.8880000000000001E-2</v></c>
-    <c r="V1"><v>4.0000000000000003E-5</v></c>
+    <c r="V1"><v>4.0000000000000003e-5</v></c>
     <c r="W1"><v>2422.3000000000002</v></c>
     <c r="X1"><v>1101.5999999999999</v></c>
     <c r="Y1"><v>275.39999999999998</v></c>
     <c r="Z1"><v>68.900000000000006</v></c>
     <c r="AA1"><v>1.1000000000000001</v></c>
+    <c r="AB1" t="str"><v>1234567890123_4</v></c>
+    <c r="AC1" t="str"><v>123456789_0123_4</v></c>
+    <c r="AD1"><v>+0.0000000000000000002399999999999992E-4</v></c>
+    <c r="AE1"><v>7.2399999999999992E-2</v></c>
 </row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
@@ -323,6 +361,10 @@ func TestGetCellValue(t *testing.T) {
 		"275.4",
 		"68.9",
 		"1.1",
+		"1234567890123_4",
+		"123456789_0123_4",
+		"2.39999999999999E-23",
+		"0.0724",
 	}}, rows)
 	assert.NoError(t, err)
 }
@@ -340,11 +382,19 @@ func TestGetCellType(t *testing.T) {
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
+func TestGetValueFrom(t *testing.T) {
+	f := NewFile()
+	c := xlsxC{T: "s"}
+	value, err := c.getValueFrom(f, f.sharedStringsReader(), false)
+	assert.NoError(t, err)
+	assert.Equal(t, "", value)
+}
+
 func TestGetCellFormula(t *testing.T) {
 	// Test get cell formula on not exist worksheet.
 	f := NewFile()
 	_, err := f.GetCellFormula("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 
 	// Test get cell formula on no formula cell.
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
@@ -376,7 +426,7 @@ func TestGetCellFormula(t *testing.T) {
 
 func ExampleFile_SetCellFloat() {
 	f := NewFile()
-	var x = 3.14159265
+	x := 3.14159265
 	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
 		fmt.Println(err)
 	}
@@ -488,8 +538,13 @@ func TestGetCellRichText(t *testing.T) {
 		},
 	}
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", runsSource))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", false))
 
-	runs, err := f.GetCellRichText("Sheet1", "A1")
+	runs, err := f.GetCellRichText("Sheet1", "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, []RichTextRun(nil), runs)
+
+	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 
 	assert.Equal(t, runsSource[0].Text, runs[0].Text)
@@ -521,11 +576,12 @@ func TestGetCellRichText(t *testing.T) {
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
 	// Test set cell rich text on not exists worksheet
 	_, err = f.GetCellRichText("SheetN", "A1")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
-	// Test set cell rich text with illegal cell coordinates
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test set cell rich text with illegal cell reference
 	_, err = f.GetCellRichText("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
+
 func TestSetCellRichText(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))
@@ -555,7 +611,7 @@ func TestSetCellRichText(t *testing.T) {
 			},
 		},
 		{
-			Text: "text with color and font-family,",
+			Text: "text with color and font-family, ",
 			Font: &Font{
 				Bold:   true,
 				Color:  "2354e8",
@@ -577,17 +633,32 @@ func TestSetCellRichText(t *testing.T) {
 			},
 		},
 		{
-			Text: " and ",
+			Text: " superscript",
 			Font: &Font{
-				Size:  14,
-				Color: "ad23e8",
+				Color:     "dbc21f",
+				VertAlign: "superscript",
 			},
 		},
 		{
-			Text: "underline.",
+			Text: " and ",
+			Font: &Font{
+				Size:      14,
+				Color:     "ad23e8",
+				VertAlign: "BASELINE",
+			},
+		},
+		{
+			Text: "underline",
 			Font: &Font{
 				Color:     "23e833",
 				Underline: "single",
+			},
+		},
+		{
+			Text: " subscript.",
+			Font: &Font{
+				Color:     "017505",
+				VertAlign: "subscript",
 			},
 		},
 	}
@@ -602,8 +673,8 @@ func TestSetCellRichText(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
 	// Test set cell rich text on not exists worksheet
-	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN is not exist")
-	// Test set cell rich text with illegal cell coordinates
+	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN does not exist")
+	// Test set cell rich text with illegal cell reference
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
 	// Test set cell rich text with characters over the maximum limit
@@ -649,6 +720,14 @@ func TestFormattedValue2(t *testing.T) {
 	})
 	v = f.formattedValue(1, "43528", false)
 	assert.Equal(t, "43528", v)
+
+	// formatted decimal value with build-in number format ID
+	styleID, err := f.NewStyle(&Style{
+		NumFmt: 1,
+	})
+	assert.NoError(t, err)
+	v = f.formattedValue(styleID, "310.56", false)
+	assert.Equal(t, "311", v)
 }
 
 func TestSharedStringsError(t *testing.T) {
@@ -674,8 +753,10 @@ func TestSharedStringsError(t *testing.T) {
 	rows, err := f.Rows("Sheet1")
 	assert.NoError(t, err)
 	const maxUint16 = 1<<16 - 1
+	currentRow := 0
 	for rows.Next() {
-		if rows.CurrentRow() == 19 {
+		currentRow++
+		if currentRow == 19 {
 			_, err := rows.Columns()
 			assert.NoError(t, err)
 			// Test get cell value from string item with invalid offset
@@ -697,8 +778,10 @@ func TestSharedStringsError(t *testing.T) {
 	assert.NoError(t, err)
 	rows, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
+	currentRow = 0
 	for rows.Next() {
-		if rows.CurrentRow() == 19 {
+		currentRow++
+		if currentRow == 19 {
 			_, err := rows.Columns()
 			assert.NoError(t, err)
 			break

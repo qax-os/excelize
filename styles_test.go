@@ -175,6 +175,33 @@ func TestSetConditionalFormat(t *testing.T) {
 	}
 }
 
+func TestGetConditionalFormats(t *testing.T) {
+	for _, format := range []string{
+		`[{"type":"cell","format":1,"criteria":"greater than","value":"6"}]`,
+		`[{"type":"cell","format":1,"criteria":"between","minimum":"6","maximum":"8"}]`,
+		`[{"type":"top","format":1,"criteria":"=","value":"6"}]`,
+		`[{"type":"bottom","format":1,"criteria":"=","value":"6"}]`,
+		`[{"type":"average","above_average":true,"format":1,"criteria":"="}]`,
+		`[{"type":"duplicate","format":1,"criteria":"="}]`,
+		`[{"type":"unique","format":1,"criteria":"="}]`,
+		`[{"type":"3_color_scale","criteria":"=","min_type":"num","mid_type":"num","max_type":"num","min_value":"-10","mid_value":"50","max_value":"10","min_color":"#FF0000","mid_color":"#00FF00","max_color":"#0000FF"}]`,
+		`[{"type":"2_color_scale","criteria":"=","min_type":"num","max_type":"num","min_color":"#FF0000","max_color":"#0000FF"}]`,
+		`[{"type":"data_bar","criteria":"=","min_type":"min","max_type":"max","bar_color":"#638EC6"}]`,
+		`[{"type":"formula","format":1,"criteria":"="}]`,
+	} {
+		f := NewFile()
+		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)
+		assert.NoError(t, err)
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, format, opts["A1:A2"])
+	}
+	// Test get conditional formats on no exists worksheet
+	f := NewFile()
+	_, err := f.GetConditionalFormats("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+}
+
 func TestUnsetConditionalFormat(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
@@ -184,7 +211,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format)))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	// Test unset conditional format on not exists worksheet.
-	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN is not exist")
+	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Save spreadsheet by the given path.
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }
@@ -212,10 +239,10 @@ func TestNewStyle(t *testing.T) {
 	assert.EqualError(t, err, ErrFontSize.Error())
 
 	// new numeric custom style
-	fmt := "####;####"
+	numFmt := "####;####"
 	f.Styles.NumFmts = nil
 	styleID, err = f.NewStyle(&Style{
-		CustomNumFmt: &fmt,
+		CustomNumFmt: &numFmt,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, styleID)
@@ -271,14 +298,14 @@ func TestNewStyle(t *testing.T) {
 	f.Styles.CellXfs.Xf = nil
 	style4, err := f.NewStyle(&Style{NumFmt: 160, Lang: "unknown"})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, style4)
+	assert.Equal(t, 0, style4)
 
 	f = NewFile()
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = nil
 	style5, err := f.NewStyle(&Style{NumFmt: 160, Lang: "zh-cn"})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, style5)
+	assert.Equal(t, 0, style5)
 }
 
 func TestGetDefaultFont(t *testing.T) {
@@ -314,7 +341,11 @@ func TestThemeReader(t *testing.T) {
 func TestSetCellStyle(t *testing.T) {
 	f := NewFile()
 	// Test set cell style on not exists worksheet.
-	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN is not exist")
+	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN does not exist")
+	// Test set cell style with invalid style ID.
+	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", -1), newInvalidStyleID(-1).Error())
+	// Test set cell style with not exists style ID.
+	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", 10), newInvalidStyleID(10).Error())
 }
 
 func TestGetStyleID(t *testing.T) {
@@ -323,26 +354,6 @@ func TestGetStyleID(t *testing.T) {
 
 func TestGetFillID(t *testing.T) {
 	assert.Equal(t, -1, getFillID(NewFile().stylesReader(), &Style{Fill: Fill{Type: "unknown"}}))
-}
-
-func TestParseTime(t *testing.T) {
-	assert.Equal(t, "2019", parseTime("43528", "YYYY"))
-	assert.Equal(t, "43528", parseTime("43528", ""))
-
-	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss"))
-	assert.Equal(t, "2019-03-04 05:05:42", parseTime("43528.2123", "YYYY-MM-DD hh:mm:ss;YYYY-MM-DD hh:mm:ss"))
-	assert.Equal(t, "3/4/2019 5:5:42", parseTime("43528.2123", "M/D/YYYY h:m:s"))
-	assert.Equal(t, "3/4/2019 0:5:42", parseTime("43528.003958333335", "m/d/yyyy h:m:s"))
-	assert.Equal(t, "3/4/2019 0:05:42", parseTime("43528.003958333335", "M/D/YYYY h:mm:s"))
-	assert.Equal(t, "3:30:00 PM", parseTime("0.64583333333333337", "h:mm:ss am/pm"))
-	assert.Equal(t, "0:05", parseTime("43528.003958333335", "h:mm"))
-	assert.Equal(t, "0:0", parseTime("6.9444444444444444E-5", "h:m"))
-	assert.Equal(t, "0:00", parseTime("6.9444444444444444E-5", "h:mm"))
-	assert.Equal(t, "0:0", parseTime("6.9444444444444444E-5", "h:m"))
-	assert.Equal(t, "12:1", parseTime("0.50070601851851848", "h:m"))
-	assert.Equal(t, "23:30", parseTime("0.97952546296296295", "h:m"))
-	assert.Equal(t, "March", parseTime("43528", "mmmm"))
-	assert.Equal(t, "Monday", parseTime("43528", "dddd"))
 }
 
 func TestThemeColor(t *testing.T) {
