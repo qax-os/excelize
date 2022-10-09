@@ -56,7 +56,14 @@ type StreamWriter struct {
 //	if err != nil {
 //	    fmt.Println(err)
 //	}
-//	if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Data"}},
+//	if err := streamWriter.SetRow("A1",
+//	    []interface{}{
+//	        excelize.Cell{StyleID: styleID, Value: "Data"},
+//	        []excelize.RichTextRun{
+//	            {Text: "Rich ", Font: &excelize.Font{Color: "2354e8"}},
+//	            {Text: "Text", Font: &excelize.Font{Color: "e83723"}},
+//	        },
+//	    },
 //	    excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
 //	    fmt.Println(err)
 //	}
@@ -433,7 +440,8 @@ func setCellFormula(c *xlsxC, formula string) {
 }
 
 // setCellValFunc provides a function to set value of a cell.
-func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
+func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
+	var err error
 	switch val := val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		err = setCellIntFunc(c, val)
@@ -462,6 +470,9 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 		c.T, c.V = setCellBool(val)
 	case nil:
 		c.T, c.V, c.XMLSpace = setCellStr("")
+	case []RichTextRun:
+		c.T, c.IS = "inlineStr", &xlsxSI{}
+		c.IS.R, err = setRichText(val)
 	default:
 		c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 	}
@@ -518,6 +529,12 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 		_, _ = buf.WriteString(`<v>`)
 		_ = xml.EscapeText(buf, []byte(c.V))
 		_, _ = buf.WriteString(`</v>`)
+	}
+	if c.IS != nil {
+		is, _ := xml.Marshal(c.IS.R)
+		_, _ = buf.WriteString(`<is>`)
+		_, _ = buf.Write(is)
+		_, _ = buf.WriteString(`</is>`)
 	}
 	_, _ = buf.WriteString(`</c>`)
 }

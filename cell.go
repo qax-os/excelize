@@ -885,6 +885,28 @@ func newRpr(fnt *Font) *xlsxRPr {
 	return &rpr
 }
 
+// setRichText provides a function to set rich text of a cell.
+func setRichText(runs []RichTextRun) ([]xlsxR, error) {
+	var (
+		textRuns       []xlsxR
+		totalCellChars int
+	)
+	for _, textRun := range runs {
+		totalCellChars += len(textRun.Text)
+		if totalCellChars > TotalCellChars {
+			return textRuns, ErrCellCharsLength
+		}
+		run := xlsxR{T: &xlsxT{}}
+		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
+		fnt := textRun.Font
+		if fnt != nil {
+			run.RPr = newRpr(fnt)
+		}
+		textRuns = append(textRuns, run)
+	}
+	return textRuns, nil
+}
+
 // SetCellRichText provides a function to set cell with rich text by given
 // worksheet. For example, set rich text on the A1 cell of the worksheet named
 // Sheet1:
@@ -1016,24 +1038,10 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		return err
 	}
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
-	si := xlsxSI{}
-	sst := f.sharedStringsReader()
-	var textRuns []xlsxR
-	totalCellChars := 0
-	for _, textRun := range runs {
-		totalCellChars += len(textRun.Text)
-		if totalCellChars > TotalCellChars {
-			return ErrCellCharsLength
-		}
-		run := xlsxR{T: &xlsxT{}}
-		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
-		fnt := textRun.Font
-		if fnt != nil {
-			run.RPr = newRpr(fnt)
-		}
-		textRuns = append(textRuns, run)
+	si, sst := xlsxSI{}, f.sharedStringsReader()
+	if si.R, err = setRichText(runs); err != nil {
+		return err
 	}
-	si.R = textRuns
 	for idx, strItem := range sst.SI {
 		if reflect.DeepEqual(strItem, si) {
 			c.T, c.V = "s", strconv.Itoa(idx)

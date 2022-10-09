@@ -52,11 +52,14 @@ func TestStreamWriter(t *testing.T) {
 	row[0] = []byte("Word")
 	assert.NoError(t, streamWriter.SetRow("A3", row))
 
-	// Test set cell with style.
+	// Test set cell with style and rich text.
 	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}, RowOpts{Height: 45, StyleID: styleID}))
-	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
+	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}, []RichTextRun{
+		{Text: "Rich ", Font: &Font{Color: "2354e8"}},
+		{Text: "Text", Font: &Font{Color: "e83723"}},
+	}}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
 	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: 20, Hidden: true, StyleID: styleID}))
 	assert.EqualError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
@@ -128,7 +131,7 @@ func TestStreamWriter(t *testing.T) {
 		cells += len(row)
 	}
 	assert.NoError(t, rows.Close())
-	assert.Equal(t, 2559558, cells)
+	assert.Equal(t, 2559559, cells)
 	// Save spreadsheet with password.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
