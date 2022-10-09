@@ -57,14 +57,14 @@ type StreamWriter struct {
 //	    fmt.Println(err)
 //	}
 //	if err := streamWriter.SetRow("A1",
-//	[]interface{}{
-//	    excelize.Cell{StyleID: styleID, Value: "Data"},
-//	    []excelize.RichTextRun{
-//	        {Text: "Rich ", Font: &excelize.Font{Color: "2354e8"}},
-//	        {Text: "Text", Font: &excelize.Font{Color: "e83723"}},
+//	    []interface{}{
+//	        excelize.Cell{StyleID: styleID, Value: "Data"},
+//	        []excelize.RichTextRun{
+//	            {Text: "Rich ", Font: &excelize.Font{Color: "2354e8"}},
+//	            {Text: "Text", Font: &excelize.Font{Color: "e83723"}},
+//	        },
 //	    },
-//	},
-//	excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
+//	    excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
 //	    fmt.Println(err)
 //	}
 //	for rowID := 2; rowID <= 102400; rowID++ {
