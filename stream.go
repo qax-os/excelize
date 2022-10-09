@@ -56,8 +56,15 @@ type StreamWriter struct {
 //	if err != nil {
 //	    fmt.Println(err)
 //	}
-//	if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Data"}},
-//	    excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
+//	if err := streamWriter.SetRow("A1",
+//	[]interface{}{
+//	    excelize.Cell{StyleID: styleID, Value: "Data"},
+//	    []excelize.RichTextRun{
+//	        {Text: "Rich ", Font: &excelize.Font{Color: "2354e8"}},
+//	        {Text: "Text", Font: &excelize.Font{Color: "e83723"}},
+//	    },
+//	},
+//	excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
 //	    fmt.Println(err)
 //	}
 //	for rowID := 2; rowID <= 102400; rowID++ {
@@ -433,7 +440,8 @@ func setCellFormula(c *xlsxC, formula string) {
 }
 
 // setCellValFunc provides a function to set value of a cell.
-func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
+func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
+	var err error
 	switch val := val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		err = setCellIntFunc(c, val)
@@ -463,31 +471,12 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) (err error) {
 	case nil:
 		c.T, c.V, c.XMLSpace = setCellStr("")
 	case []RichTextRun:
-		sst := sw.File.sharedStringsReader()
-		si := xlsxSI{}
-		si.R = transformRichTextRun(val)
-		sst.SI = append(sst.SI, si)
-		sst.Count++
-		sst.UniqueCount++
-		c.T, c.V = "s", strconv.Itoa(len(sst.SI)-1)
+		c.T, c.IS = "inlineStr", &xlsxSI{}
+		c.IS.R, err = setRichText(val)
 	default:
 		c.T, c.V, c.XMLSpace = setCellStr(fmt.Sprint(val))
 	}
 	return err
-}
-
-func transformRichTextRun(runs []RichTextRun) []xlsxR {
-	var result = make([]xlsxR, 0, len(runs))
-	for _, textRun := range runs {
-		run := xlsxR{T: &xlsxT{}}
-		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
-		fnt := textRun.Font
-		if fnt != nil {
-			run.RPr = newRpr(fnt)
-		}
-		result = append(result, run)
-	}
-	return result
 }
 
 // setCellIntFunc is a wrapper of SetCellInt.
@@ -540,6 +529,12 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 		_, _ = buf.WriteString(`<v>`)
 		_ = xml.EscapeText(buf, []byte(c.V))
 		_, _ = buf.WriteString(`</v>`)
+	}
+	if c.IS != nil {
+		is, _ := xml.Marshal(c.IS.R)
+		_, _ = buf.WriteString(`<is>`)
+		_, _ = buf.Write(is)
+		_, _ = buf.WriteString(`</is>`)
 	}
 	_, _ = buf.WriteString(`</c>`)
 }

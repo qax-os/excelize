@@ -46,8 +46,9 @@ type xlsxSI struct {
 // properties are defined in the rPr element, and the text displayed to the
 // user is defined in the Text (t) element.
 type xlsxR struct {
-	RPr *xlsxRPr `xml:"rPr"`
-	T   *xlsxT   `xml:"t"`
+	XMLName xml.Name `xml:"r"`
+	RPr     *xlsxRPr `xml:"rPr"`
+	T       *xlsxT   `xml:"t"`
 }
 
 // xlsxT directly maps the t element in the run properties.

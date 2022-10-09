@@ -52,77 +52,17 @@ func TestStreamWriter(t *testing.T) {
 	row[0] = []byte("Word")
 	assert.NoError(t, streamWriter.SetRow("A3", row))
 
-	// Test set cell with style.
+	// Test set cell with style and rich text.
 	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
 	assert.NoError(t, err)
-	var richTextCell = []RichTextRun{
-		{
-			Text: "bold",
-			Font: &Font{
-				Bold:   true,
-				Color:  "2354e8",
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: " and ",
-			Font: &Font{
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: " italic",
-			Font: &Font{
-				Bold:   true,
-				Color:  "e83723",
-				Italic: true,
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: "text with color and font-family,",
-			Font: &Font{
-				Bold:   true,
-				Color:  "2354e8",
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: "\r\nlarge text with ",
-			Font: &Font{
-				Size:  14,
-				Color: "ad23e8",
-			},
-		},
-		{
-			Text: "strike",
-			Font: &Font{
-				Color:  "e89923",
-				Strike: true,
-			},
-		},
-		{
-			Text: " and ",
-			Font: &Font{
-				Size:  14,
-				Color: "ad23e8",
-			},
-		},
-		{
-			Text: "underline.",
-			Font: &Font{
-				Color:     "23e833",
-				Underline: "single",
-			},
-		},
-	}
-
-	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}), RowOpts{Height: 45, StyleID: styleID})
-	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
+	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}, RowOpts{Height: 45, StyleID: styleID}))
+	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}, []RichTextRun{
+		{Text: "Rich ", Font: &Font{Color: "2354e8"}},
+		{Text: "Text", Font: &Font{Color: "e83723"}},
+	}}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
 	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: 20, Hidden: true, StyleID: styleID}))
 	assert.EqualError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
-	assert.NoError(t, streamWriter.SetRow("A8", []interface{}{richTextCell}, RowOpts{Height: 45, StyleID: styleID}))
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
@@ -192,6 +132,8 @@ func TestStreamWriter(t *testing.T) {
 	}
 	assert.NoError(t, rows.Close())
 	assert.Equal(t, 2559559, cells)
+	// Save spreadsheet with password.
+	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
 }
 

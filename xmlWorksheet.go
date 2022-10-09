@@ -466,15 +466,14 @@ type xlsxC struct {
 	XMLName  xml.Name `xml:"c"`
 	XMLSpace xml.Attr `xml:"space,attr,omitempty"`
 	R        string   `xml:"r,attr,omitempty"` // Cell ID, e.g. A1
-	S        int      `xml:"s,attr,omitempty"` // Style reference.
-	// Str string `xml:"str,attr,omitempty"` // Style reference.
-	T  string  `xml:"t,attr,omitempty"`  // Type.
-	Cm *uint   `xml:"cm,attr,omitempty"` //
-	Vm *uint   `xml:"vm,attr,omitempty"` //
-	Ph *bool   `xml:"ph,attr,omitempty"` //
-	F  *xlsxF  `xml:"f,omitempty"`       // Formula
-	V  string  `xml:"v,omitempty"`       // Value
-	IS *xlsxSI `xml:"is"`
+	S        int      `xml:"s,attr,omitempty"` // Style reference
+	T        string   `xml:"t,attr,omitempty"` // Type
+	Cm       *uint    `xml:"cm,attr"`
+	Vm       *uint    `xml:"vm,attr"`
+	Ph       *bool    `xml:"ph,attr"`
+	F        *xlsxF   `xml:"f"`           // Formula
+	V        string   `xml:"v,omitempty"` // Value
+	IS       *xlsxSI  `xml:"is"`
 }
 
 // xlsxF represents a formula for the cell. The formula expression is
