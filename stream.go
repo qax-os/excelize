@@ -29,6 +29,7 @@ type StreamWriter struct {
 	File            *File
 	Sheet           string
 	SheetID         int
+	sheetWritten    bool
 	cols            string
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
@@ -117,6 +118,8 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	}
 	f.streams[sheetXMLPath] = sw
 
+	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 3)
 	return sw, err
 }
 
@@ -348,13 +351,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	if err != nil {
 		return err
 	}
-	if !sw.sheetWritten {
-		if len(sw.cols) > 0 {
-			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
-		}
-		_, _ = sw.rawData.WriteString(`<sheetData>`)
-		sw.sheetWritten = true
-	}
+	sw.writeSheetData()
 	options := parseRowOpts(opts...)
 	attrs, err := options.marshalAttrs()
 	if err != nil {
@@ -390,15 +387,16 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 }
 
 // SetColWidth provides a function to set the width of a single column or
-// multiple columns for the StreamWriter. For example set
+// multiple columns for the StreamWriter. Note that you must call
+// the 'SetColWidth' function before the 'SetRow' function. For example set
 // the width column B:C as 20:
 //
 //	err := streamWriter.SetColWidth(2, 3, 20)
 func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
-	if min > TotalColumns || max > TotalColumns {
-		return ErrColumnNumber
+	if sw.sheetWritten {
+		return ErrStreamSetColWidth
 	}
-	if min < 1 || max < 1 {
+	if min < MinColumns || min > MaxColumns || max < MinColumns || max > MaxColumns {
 		return ErrColumnNumber
 	}
 	if width > MaxColumnWidth {
@@ -411,22 +409,17 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	return nil
 }
 
-// SetPanes provides a function to create and remove freeze panes and split panes
-// on a StreamWriter
-//
-// see File.SetPanes for more details
-func (sw *StreamWriter) SetPanes(panes string) {
-	sw.worksheet.setPanes(panes)
+// SetPanes provides a function to create and remove freeze panes and split
+// panes by given worksheet name and panes options for the StreamWriter. Note
+// that you must call the 'SetPanes' function before the 'SetRow' function.
+func (sw *StreamWriter) SetPanes(panes string) error {
+	if sw.sheetWritten {
+		return ErrStreamSetPanes
+	}
+	return sw.worksheet.setPanes(panes)
 }
 
-// AutoFilter provides the method to add auto filter in a worksheet
-//
-// see File.AutoFilter for more details
-func (sw *StreamWriter) AutoFilter(hCell, vCell, format string) error {
-	return sw.File.setupAutofilter(sw.Sheet, hCell, vCell, format, sw.worksheet)
-}
-
-// MergeCell provides a function to merge cells by a given coordinate area for
+// MergeCell provides a function to merge cells by a given range reference for
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
 func (sw *StreamWriter) MergeCell(hCell, vCell string) error {
@@ -518,6 +511,7 @@ func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
 	return
 }
 
+// writeCell constructs a cell XML and writes it to the buffer.
 func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
@@ -550,18 +544,22 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`</c>`)
 }
 
+// writeSheetData prepares the element preceding sheetData and writes the
+// sheetData XML start element to the buffer.
+func (sw *StreamWriter) writeSheetData() {
+	if !sw.sheetWritten {
+		bulkAppendFields(&sw.rawData, sw.worksheet, 4, 5)
+		if len(sw.cols) > 0 {
+			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+		}
+		_, _ = sw.rawData.WriteString(`<sheetData>`)
+		sw.sheetWritten = true
+	}
+}
+
 // Flush ending the streaming writing process.
 func (sw *StreamWriter) Flush() error {
-	hw := sw.rawData.HeaderWriter()
-
-	io.WriteString(hw, xml.Header+`<worksheet`+templateNamespaceIDMap)
-	bulkAppendFields(hw, sw.worksheet, 2, 5)
-
-	if len(sw.cols) > 0 {
-		io.WriteString(hw, "<cols>"+sw.cols+"</cols>")
-	}
-	io.WriteString(hw, `<sheetData>`)
-
+	sw.writeSheetData()
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
 	mergeCells := strings.Builder{}
@@ -606,9 +604,8 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 // is written to the temp file with Sync, which may return an error.
 // Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
-	tmp    *os.File
-	buf    bytes.Buffer
-	header bytes.Buffer
+	tmp *os.File
+	buf bytes.Buffer
 }
 
 // Write to the in-memory buffer. The err is always nil.
@@ -621,18 +618,10 @@ func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
 	return bw.buf.WriteString(p)
 }
 
-func (bw *bufferedWriter) HeaderWriter() io.Writer {
-	return &bw.header
-}
-
 // Reader provides read-access to the underlying buffer/file.
 func (bw *bufferedWriter) Reader() (io.Reader, error) {
-	//header reader
-	hr := bytes.NewReader(bw.header.Bytes())
-
 	if bw.tmp == nil {
-		mr := bytes.NewReader(bw.buf.Bytes())
-		return io.MultiReader(hr, mr), nil
+		return bytes.NewReader(bw.buf.Bytes()), nil
 	}
 	if err := bw.Flush(); err != nil {
 		return nil, err
@@ -641,11 +630,8 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// os.File.ReadAt does not affect the cursor position and is safe to use here
-	fr := io.NewSectionReader(bw.tmp, 0, fi.Size())
-
-	return io.MultiReader(hr, fr), nil
+	return io.NewSectionReader(bw.tmp, 0, fi.Size()), nil
 }
 
 // Sync will write the in-memory buffer to a temp file, if the in-memory

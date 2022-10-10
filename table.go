@@ -341,7 +341,7 @@ func (f *File) autoFilter(sheet, ref string, refRange, col int, opts *autoFilter
 	if ws.SheetPr != nil {
 		ws.SheetPr.FilterMode = true
 	}
-	ws.SheetPr = &xlsxSheetPr{FilterMode: true} //this overwrites the values already set, TODO file a bug report or fix
+	ws.SheetPr = &xlsxSheetPr{FilterMode: true}
 	filter := &xlsxAutoFilter{
 		Ref: ref,
 	}

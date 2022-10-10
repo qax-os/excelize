@@ -96,9 +96,7 @@ func (f *File) readXML(name string) []byte {
 		return content.([]byte)
 	}
 	if content, ok := f.streams[name]; ok {
-		sr, _ := content.rawData.Reader()
-		b, _ := ioutil.ReadAll(sr)
-		return b
+		return content.rawData.buf.Bytes()
 	}
 	return []byte{}
 }

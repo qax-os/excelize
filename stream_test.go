@@ -146,12 +146,17 @@ func TestStreamSetColWidth(t *testing.T) {
 	assert.ErrorIs(t, streamWriter.SetColWidth(MaxColumns+1, 3, 20), ErrColumnNumber)
 	assert.EqualError(t, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1), ErrColumnWidth.Error())
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
-	assert.NoError(t, streamWriter.SetColWidth(2, 3, 20))
-	assert.NoError(t, streamWriter.Flush())
+	assert.ErrorIs(t, streamWriter.SetColWidth(2, 3, 20), ErrStreamSetColWidth)
+}
 
-	width, err := file.GetColWidth("Sheet1", "C")
+func TestStreamSetPanes(t *testing.T) {
+	file, paneOpts := NewFile(), `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`
+	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
-	assert.InDelta(t, 20, width, 0.01)
+	assert.NoError(t, streamWriter.SetPanes(paneOpts))
+	assert.EqualError(t, streamWriter.SetPanes(""), "unexpected end of JSON input")
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
+	assert.ErrorIs(t, streamWriter.SetPanes(paneOpts), ErrStreamSetPanes)
 }
 
 func TestStreamTable(t *testing.T) {
