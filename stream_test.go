@@ -52,11 +52,14 @@ func TestStreamWriter(t *testing.T) {
 	row[0] = []byte("Word")
 	assert.NoError(t, streamWriter.SetRow("A3", row))
 
-	// Test set cell with style.
+	// Test set cell with style and rich text.
 	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
 	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}), RowOpts{Height: 45, StyleID: styleID})
-	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}}))
+	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{Cell{StyleID: styleID}, Cell{Formula: "SUM(A10,B10)"}}, RowOpts{Height: 45, StyleID: styleID}))
+	assert.NoError(t, streamWriter.SetRow("A5", []interface{}{&Cell{StyleID: styleID, Value: "cell"}, &Cell{Formula: "SUM(A10,B10)"}, []RichTextRun{
+		{Text: "Rich ", Font: &Font{Color: "2354e8"}},
+		{Text: "Text", Font: &Font{Color: "e83723"}},
+	}}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
 	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: 20, Hidden: true, StyleID: styleID}))
 	assert.EqualError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
@@ -75,7 +78,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
 	// Test set cell column overflow.
-	assert.EqualError(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber.Error())
+	assert.ErrorIs(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber)
 
 	// Test close temporary file error.
 	file = NewFile()
@@ -128,7 +131,9 @@ func TestStreamWriter(t *testing.T) {
 		cells += len(row)
 	}
 	assert.NoError(t, rows.Close())
-	assert.Equal(t, 2559558, cells)
+	assert.Equal(t, 2559559, cells)
+	// Save spreadsheet with password.
+	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
 }
 
@@ -137,8 +142,8 @@ func TestStreamSetColWidth(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetColWidth(3, 2, 20))
-	assert.EqualError(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber.Error())
-	assert.EqualError(t, streamWriter.SetColWidth(TotalColumns+1, 3, 20), ErrColumnNumber.Error())
+	assert.ErrorIs(t, streamWriter.SetColWidth(0, 3, 20), ErrColumnNumber)
+	assert.ErrorIs(t, streamWriter.SetColWidth(MaxColumns+1, 3, 20), ErrColumnNumber)
 	assert.EqualError(t, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1), ErrColumnWidth.Error())
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
 	assert.NoError(t, streamWriter.SetColWidth(2, 3, 20))
@@ -176,9 +181,9 @@ func TestStreamTable(t *testing.T) {
 
 	assert.NoError(t, streamWriter.AddTable("A1", "C1", ``))
 
-	// Test add table with illegal formatset.
+	// Test add table with illegal options.
 	assert.EqualError(t, streamWriter.AddTable("B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
-	// Test add table with illegal cell coordinates.
+	// Test add table with illegal cell reference.
 	assert.EqualError(t, streamWriter.AddTable("A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, streamWriter.AddTable("A1", "B", `{}`), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 }
@@ -188,7 +193,7 @@ func TestStreamMergeCells(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.MergeCell("A1", "D1"))
-	// Test merge cells with illegal cell coordinates.
+	// Test merge cells with illegal cell reference.
 	assert.EqualError(t, streamWriter.MergeCell("A", "D1"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.NoError(t, streamWriter.Flush())
 	// Save spreadsheet by the given path.
@@ -201,10 +206,17 @@ func TestNewStreamWriter(t *testing.T) {
 	_, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
-	assert.EqualError(t, err, "sheet SheetN is not exist")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
-func TestSetRow(t *testing.T) {
+func TestStreamMarshalAttrs(t *testing.T) {
+	var r *RowOpts
+	attrs, err := r.marshalAttrs()
+	assert.NoError(t, err)
+	assert.Empty(t, attrs)
+}
+
+func TestStreamSetRow(t *testing.T) {
 	// Test error exceptions
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
@@ -212,7 +224,47 @@ func TestSetRow(t *testing.T) {
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
-func TestSetCellValFunc(t *testing.T) {
+func TestStreamSetRowNilValues(t *testing.T) {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}})
+	streamWriter.Flush()
+	ws, err := file.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NotEqual(t, ws.SheetData.Row[0].C[0].XMLName.Local, "c")
+}
+
+func TestStreamSetRowWithStyle(t *testing.T) {
+	file := NewFile()
+	zeroStyleID := 0
+	grayStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
+	assert.NoError(t, err)
+	blueStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#0000FF"}})
+	assert.NoError(t, err)
+
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{
+		"value1",
+		Cell{Value: "value2"},
+		&Cell{Value: "value2"},
+		Cell{StyleID: blueStyleID, Value: "value3"},
+		&Cell{StyleID: blueStyleID, Value: "value3"},
+	}, RowOpts{StyleID: grayStyleID}))
+	err = streamWriter.Flush()
+	assert.NoError(t, err)
+
+	ws, err := file.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, grayStyleID, ws.SheetData.Row[0].C[0].S)
+	assert.Equal(t, zeroStyleID, ws.SheetData.Row[0].C[1].S)
+	assert.Equal(t, zeroStyleID, ws.SheetData.Row[0].C[2].S)
+	assert.Equal(t, blueStyleID, ws.SheetData.Row[0].C[3].S)
+	assert.Equal(t, blueStyleID, ws.SheetData.Row[0].C[4].S)
+}
+
+func TestStreamSetCellValFunc(t *testing.T) {
 	f := NewFile()
 	sw, err := f.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
@@ -228,7 +280,7 @@ func TestSetCellValFunc(t *testing.T) {
 	assert.NoError(t, sw.setCellValFunc(c, uint32(4294967295)))
 	assert.NoError(t, sw.setCellValFunc(c, uint64(18446744073709551615)))
 	assert.NoError(t, sw.setCellValFunc(c, float32(100.1588)))
-	assert.NoError(t, sw.setCellValFunc(c, float64(100.1588)))
+	assert.NoError(t, sw.setCellValFunc(c, 100.1588))
 	assert.NoError(t, sw.setCellValFunc(c, " Hello"))
 	assert.NoError(t, sw.setCellValFunc(c, []byte(" Hello")))
 	assert.NoError(t, sw.setCellValFunc(c, time.Now().UTC()))

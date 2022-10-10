@@ -1,11 +1,15 @@
 ~$*.xlsx
-test/Test*.xlsx
+test/Test*.xlam
 test/Test*.xlsm
+test/Test*.xlsx
+test/Test*.xltm
+test/Test*.xltx
 # generated files
-test/BadEncrypt.xlsx
+test/Encryption*.xlsx
 test/BadWorkbook.SaveAsEmptyStruct.xlsx
 test/*.png
 test/excelize-*
 *.out
 *.test
 .idea
+.DS_Store

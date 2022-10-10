@@ -3,12 +3,16 @@ module github.com/xuri/excelize/v2
 go 1.15
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/richardlehane/mscfb v1.0.3
-	github.com/stretchr/testify v1.7.0
-	github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
-	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
+	github.com/richardlehane/mscfb v1.0.4
+	github.com/richardlehane/msoleps v1.0.3 // indirect
+	github.com/stretchr/testify v1.7.1
+	github.com/xuri/efp v0.0.0-20220603152613-6918739fd470
+	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22
+	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
+	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
+	golang.org/x/net v0.0.0-20221004154528-8021a29435af
 	golang.org/x/text v0.3.7
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
