@@ -91,6 +91,9 @@ var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
 	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
+	// ErrStreamSetPanes defined the error message on set panes in stream
+	// writing mode.
+	ErrStreamSetPanes = errors.New("must call the SetPanes function before the SetRow function")
 	// ErrColumnNumber defined the error message on receive an invalid column
 	// number.
 	ErrColumnNumber = fmt.Errorf(`the column number must be greater than or equal to %d and less than or equal to %d`, MinColumns, MaxColumns)

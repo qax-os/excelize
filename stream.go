@@ -119,7 +119,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXMLPath] = sw
 
 	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 5)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 3)
 	return sw, err
 }
 
@@ -351,13 +351,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	if err != nil {
 		return err
 	}
-	if !sw.sheetWritten {
-		if len(sw.cols) > 0 {
-			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
-		}
-		_, _ = sw.rawData.WriteString(`<sheetData>`)
-		sw.sheetWritten = true
-	}
+	sw.writeSheetData()
 	options := parseRowOpts(opts...)
 	attrs, err := options.marshalAttrs()
 	if err != nil {
@@ -413,6 +407,16 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	}
 	sw.cols += fmt.Sprintf(`<col min="%d" max="%d" width="%f" customWidth="1"/>`, min, max, width)
 	return nil
+}
+
+// SetPanes provides a function to create and remove freeze panes and split
+// panes by given worksheet name and panes options for the StreamWriter. Note
+// that you must call the 'SetPanes' function before the 'SetRow' function.
+func (sw *StreamWriter) SetPanes(panes string) error {
+	if sw.sheetWritten {
+		return ErrStreamSetPanes
+	}
+	return sw.worksheet.setPanes(panes)
 }
 
 // MergeCell provides a function to merge cells by a given range reference for
@@ -507,6 +511,7 @@ func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
 	return
 }
 
+// writeCell constructs a cell XML and writes it to the buffer.
 func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
@@ -539,12 +544,22 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`</c>`)
 }
 
-// Flush ending the streaming writing process.
-func (sw *StreamWriter) Flush() error {
+// writeSheetData prepares the element preceding sheetData and writes the
+// sheetData XML start element to the buffer.
+func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
+		bulkAppendFields(&sw.rawData, sw.worksheet, 4, 5)
+		if len(sw.cols) > 0 {
+			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
 	}
+}
+
+// Flush ending the streaming writing process.
+func (sw *StreamWriter) Flush() error {
+	sw.writeSheetData()
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
 	mergeCells := strings.Builder{}

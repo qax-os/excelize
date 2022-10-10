@@ -683,8 +683,44 @@ func parsePanesOptions(opts string) (*panesOptions, error) {
 	return &format, err
 }
 
+// setPanes set create freeze panes and split panes by given options.
+func (ws *xlsxWorksheet) setPanes(panes string) error {
+	opts, err := parsePanesOptions(panes)
+	if err != nil {
+		return err
+	}
+	p := &xlsxPane{
+		ActivePane:  opts.ActivePane,
+		TopLeftCell: opts.TopLeftCell,
+		XSplit:      float64(opts.XSplit),
+		YSplit:      float64(opts.YSplit),
+	}
+	if opts.Freeze {
+		p.State = "frozen"
+	}
+	if ws.SheetViews == nil {
+		ws.SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{{}}}
+	}
+	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = p
+	if !(opts.Freeze) && !(opts.Split) {
+		if len(ws.SheetViews.SheetView) > 0 {
+			ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = nil
+		}
+	}
+	var s []*xlsxSelection
+	for _, p := range opts.Panes {
+		s = append(s, &xlsxSelection{
+			ActiveCell: p.ActiveCell,
+			Pane:       p.Pane,
+			SQRef:      p.SQRef,
+		})
+	}
+	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Selection = s
+	return err
+}
+
 // SetPanes provides a function to create and remove freeze panes and split panes
-// by given worksheet name and panes format set.
+// by given worksheet name and panes options.
 //
 // activePane defines the pane that is active. The possible values for this
 // attribute are defined in the following table:
@@ -768,39 +804,11 @@ func parsePanesOptions(opts string) (*panesOptions, error) {
 //
 //	f.SetPanes("Sheet1", `{"freeze":false,"split":false}`)
 func (f *File) SetPanes(sheet, panes string) error {
-	fs, _ := parsePanesOptions(panes)
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	p := &xlsxPane{
-		ActivePane:  fs.ActivePane,
-		TopLeftCell: fs.TopLeftCell,
-		XSplit:      float64(fs.XSplit),
-		YSplit:      float64(fs.YSplit),
-	}
-	if fs.Freeze {
-		p.State = "frozen"
-	}
-	if ws.SheetViews == nil {
-		ws.SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{{}}}
-	}
-	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = p
-	if !(fs.Freeze) && !(fs.Split) {
-		if len(ws.SheetViews.SheetView) > 0 {
-			ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Pane = nil
-		}
-	}
-	var s []*xlsxSelection
-	for _, p := range fs.Panes {
-		s = append(s, &xlsxSelection{
-			ActiveCell: p.ActiveCell,
-			Pane:       p.Pane,
-			SQRef:      p.SQRef,
-		})
-	}
-	ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1].Selection = s
-	return err
+	return ws.setPanes(panes)
 }
 
 // GetSheetVisible provides a function to get worksheet visible by given worksheet
