@@ -63,6 +63,7 @@ const (
 	Col3DCylinderPercentStacked = "col3DCylinderPercentStacked"
 	Doughnut                    = "doughnut"
 	Line                        = "line"
+	Line3D                      = "line3D"
 	Pie                         = "pie"
 	Pie3D                       = "pie3D"
 	PieOfPieChart               = "pieOfPie"
@@ -122,6 +123,7 @@ var (
 		Col3DCylinderPercentStacked: 15,
 		Doughnut:                    0,
 		Line:                        0,
+		Line3D:                      20,
 		Pie:                         0,
 		Pie3D:                       30,
 		PieOfPieChart:               0,
@@ -176,6 +178,7 @@ var (
 		Col3DCylinderPercentStacked: 20,
 		Doughnut:                    0,
 		Line:                        0,
+		Line3D:                      15,
 		Pie:                         0,
 		Pie3D:                       0,
 		PieOfPieChart:               0,
@@ -194,6 +197,7 @@ var (
 		ColPercentStacked: 100,
 	}
 	chartView3DPerspective = map[string]int{
+		Line3D:           30,
 		Contour:          0,
 		WireframeContour: 0,
 	}
@@ -240,6 +244,7 @@ var (
 		Col3DCylinderPercentStacked: 1,
 		Doughnut:                    0,
 		Line:                        0,
+		Line3D:                      0,
 		Pie:                         0,
 		Pie3D:                       0,
 		PieOfPieChart:               0,
@@ -302,6 +307,7 @@ var (
 		Col3DCylinderPercentStacked: "0%",
 		Doughnut:                    "General",
 		Line:                        "General",
+		Line3D:                      "General",
 		Pie:                         "General",
 		Pie3D:                       "General",
 		PieOfPieChart:               "General",
@@ -358,6 +364,7 @@ var (
 		Col3DCylinderPercentStacked: "between",
 		Doughnut:                    "between",
 		Line:                        "between",
+		Line3D:                      "between",
 		Pie:                         "between",
 		Pie3D:                       "between",
 		PieOfPieChart:               "between",
@@ -413,6 +420,7 @@ var (
 		Col3DCylinderStacked:        "stacked",
 		Col3DCylinderPercentStacked: "percentStacked",
 		Line:                        "standard",
+		Line3D:                      "standard",
 	}
 	plotAreaChartBarDir = map[string]string{
 		Bar:                         "bar",
@@ -450,6 +458,7 @@ var (
 		Col3DCylinderStacked:        "col",
 		Col3DCylinderPercentStacked: "col",
 		Line:                        "standard",
+		Line3D:                      "standard",
 	}
 	orientation = map[bool]string{
 		true:  "maxMin",
@@ -624,6 +633,7 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //	 col3DCylinderPercentStacked | 3D cylinder percent stacked column chart
 //	 doughnut                    | doughnut chart
 //	 line                        | line chart
+//	 line3D                      | 3D line chart
 //	 pie                         | pie chart
 //	 pie3D                       | 3D pie chart
 //	 pieOfPie                    | pie of pie chart

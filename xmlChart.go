@@ -309,6 +309,7 @@ type cPlotArea struct {
 	BubbleChart    *cCharts `xml:"bubbleChart"`
 	DoughnutChart  *cCharts `xml:"doughnutChart"`
 	LineChart      *cCharts `xml:"lineChart"`
+	Line3DChart    *cCharts `xml:"line3DChart"`
 	PieChart       *cCharts `xml:"pieChart"`
 	Pie3DChart     *cCharts `xml:"pie3DChart"`
 	OfPieChart     *cCharts `xml:"ofPieChart"`

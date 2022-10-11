@@ -873,6 +873,9 @@ var operatorType = map[string]string{
 // format as string type by given built-in number formats code and cell
 // string.
 func formatToInt(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -884,6 +887,9 @@ func formatToInt(v, format string, date1904 bool) string {
 // format as string type by given built-in number formats code and cell
 // string.
 func formatToFloat(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -894,6 +900,9 @@ func formatToFloat(v, format string, date1904 bool) string {
 // formatToA provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
 func formatToA(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -907,6 +916,9 @@ func formatToA(v, format string, date1904 bool) string {
 // formatToB provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
 func formatToB(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -920,6 +932,9 @@ func formatToB(v, format string, date1904 bool) string {
 // formatToC provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
 func formatToC(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -930,6 +945,9 @@ func formatToC(v, format string, date1904 bool) string {
 // formatToD provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
 func formatToD(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
@@ -940,6 +958,9 @@ func formatToD(v, format string, date1904 bool) string {
 // formatToE provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
 func formatToE(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v

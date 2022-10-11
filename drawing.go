@@ -224,8 +224,9 @@ func (f *File) addChart(opts *chartOptions, comboCharts []*chartOptions) {
 		Col3DCylinderPercentStacked: f.drawBaseChart,
 		Doughnut:                    f.drawDoughnutChart,
 		Line:                        f.drawLineChart,
-		Pie3D:                       f.drawPie3DChart,
+		Line3D:                      f.drawLine3DChart,
 		Pie:                         f.drawPieChart,
+		Pie3D:                       f.drawPie3DChart,
 		PieOfPieChart:               f.drawPieOfPieChart,
 		BarOfPieChart:               f.drawBarOfPieChart,
 		Radar:                       f.drawRadarChart,
@@ -535,6 +536,29 @@ func (f *File) drawDoughnutChart(opts *chartOptions) *cPlotArea {
 func (f *File) drawLineChart(opts *chartOptions) *cPlotArea {
 	return &cPlotArea{
 		LineChart: &cCharts{
+			Grouping: &attrValString{
+				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+			},
+			VaryColors: &attrValBool{
+				Val: boolPtr(false),
+			},
+			Ser:   f.drawChartSeries(opts),
+			DLbls: f.drawChartDLbls(opts),
+			AxID: []*attrValInt{
+				{Val: intPtr(754001152)},
+				{Val: intPtr(753999904)},
+			},
+		},
+		CatAx: f.drawPlotAreaCatAx(opts),
+		ValAx: f.drawPlotAreaValAx(opts),
+	}
+}
+
+// drawLine3DChart provides a function to draw the c:plotArea element for line
+// chart by given format sets.
+func (f *File) drawLine3DChart(opts *chartOptions) *cPlotArea {
+	return &cPlotArea{
+		Line3DChart: &cCharts{
 			Grouping: &attrValString{
 				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
 			},

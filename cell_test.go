@@ -683,51 +683,48 @@ func TestSetCellRichText(t *testing.T) {
 
 func TestFormattedValue2(t *testing.T) {
 	f := NewFile()
-	v := f.formattedValue(0, "43528", false)
-	assert.Equal(t, "43528", v)
+	assert.Equal(t, "43528", f.formattedValue(0, "43528", false))
 
-	v = f.formattedValue(15, "43528", false)
-	assert.Equal(t, "43528", v)
+	assert.Equal(t, "43528", f.formattedValue(15, "43528", false))
 
-	v = f.formattedValue(1, "43528", false)
-	assert.Equal(t, "43528", v)
+	assert.Equal(t, "43528", f.formattedValue(1, "43528", false))
 	customNumFmt := "[$-409]MM/DD/YYYY"
 	_, err := f.NewStyle(&Style{
 		CustomNumFmt: &customNumFmt,
 	})
 	assert.NoError(t, err)
-	v = f.formattedValue(1, "43528", false)
-	assert.Equal(t, "03/04/2019", v)
+	assert.Equal(t, "03/04/2019", f.formattedValue(1, "43528", false))
 
 	// formatted value with no built-in number format ID
 	numFmtID := 5
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	v = f.formattedValue(2, "43528", false)
-	assert.Equal(t, "43528", v)
+	assert.Equal(t, "43528", f.formattedValue(2, "43528", false))
 
 	// formatted value with invalid number format ID
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: nil,
 	})
-	_ = f.formattedValue(3, "43528", false)
+	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
 
 	// formatted value with empty number format
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	v = f.formattedValue(1, "43528", false)
-	assert.Equal(t, "43528", v)
+	assert.Equal(t, "43528", f.formattedValue(1, "43528", false))
 
 	// formatted decimal value with build-in number format ID
 	styleID, err := f.NewStyle(&Style{
 		NumFmt: 1,
 	})
 	assert.NoError(t, err)
-	v = f.formattedValue(styleID, "310.56", false)
-	assert.Equal(t, "311", v)
+	assert.Equal(t, "311", f.formattedValue(styleID, "310.56", false))
+
+	for _, fn := range builtInNumFmtFunc {
+		assert.Equal(t, "0_0", fn("0_0", "", false))
+	}
 }
 
 func TestSharedStringsError(t *testing.T) {

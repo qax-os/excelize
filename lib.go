@@ -688,6 +688,9 @@ func (f *File) addSheetNameSpace(sheet string, ns xml.Attr) {
 // isNumeric determines whether an expression is a valid numeric type and get
 // the precision for the numeric.
 func isNumeric(s string) (bool, int, float64) {
+	if strings.Contains(s, "_") {
+		return false, 0, 0
+	}
 	var decimal big.Float
 	_, ok := decimal.SetString(s)
 	if !ok {
