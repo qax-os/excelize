@@ -3,7 +3,6 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -95,7 +94,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.rawData.Close())
 	assert.Error(t, streamWriter.Flush())
 
-	streamWriter.rawData.tmp, err = ioutil.TempFile(os.TempDir(), "excelize-")
+	streamWriter.rawData.tmp, err = os.CreateTemp(os.TempDir(), "excelize-")
 	assert.NoError(t, err)
 	_, err = streamWriter.rawData.Reader()
 	assert.NoError(t, err)

@@ -17,7 +17,6 @@ import (
 	"encoding/xml"
 	"image"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -115,7 +114,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	if !ok {
 		return ErrImgExt
 	}
-	file, _ := ioutil.ReadFile(filepath.Clean(picture))
+	file, _ := os.ReadFile(filepath.Clean(picture))
 	_, name := filepath.Split(picture)
 	return f.AddPictureFromBytes(sheet, cell, format, name, ext, file)
 }
@@ -129,7 +128,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //	import (
 //	    "fmt"
 //	    _ "image/jpeg"
-//	    "io/ioutil"
+//	    "os"
 //
 //	    "github.com/xuri/excelize/v2"
 //	)
@@ -137,7 +136,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //	func main() {
 //	    f := excelize.NewFile()
 //
-//	    file, err := ioutil.ReadFile("image.jpg")
+//	    file, err := os.ReadFile("image.jpg")
 //	    if err != nil {
 //	        fmt.Println(err)
 //	    }
@@ -486,7 +485,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //	    fmt.Println(err)
 //	    return
 //	}
-//	if err := ioutil.WriteFile(file, raw, 0644); err != nil {
+//	if err := os.WriteFile(file, raw, 0644); err != nil {
 //	    fmt.Println(err)
 //	}
 func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {

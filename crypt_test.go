@@ -12,7 +12,7 @@
 package excelize
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,7 +32,7 @@ func TestEncrypt(t *testing.T) {
 	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
 	// Test decrypt spreadsheet with unsupported encrypt mechanism
-	raw, err := ioutil.ReadFile(filepath.Join("test", "encryptAES.xlsx"))
+	raw, err := os.ReadFile(filepath.Join("test", "encryptAES.xlsx"))
 	assert.NoError(t, err)
 	raw[2050] = 3
 	_, err = Decrypt(raw, &Options{Password: "password"})

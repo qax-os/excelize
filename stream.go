@@ -16,7 +16,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
@@ -30,7 +29,7 @@ type StreamWriter struct {
 	Sheet           string
 	SheetID         int
 	sheetWritten    bool
-	cols            string
+	cols            strings.Builder
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
 	mergeCellsCount int
@@ -310,24 +309,32 @@ type RowOpts struct {
 }
 
 // marshalAttrs prepare attributes of the row.
-func (r *RowOpts) marshalAttrs() (attrs string, err error) {
+func (r *RowOpts) marshalAttrs() (strings.Builder, error) {
+	var (
+		err   error
+		attrs strings.Builder
+	)
 	if r == nil {
-		return
+		return attrs, err
 	}
 	if r.Height > MaxRowHeight {
 		err = ErrMaxRowHeight
-		return
+		return attrs, err
 	}
 	if r.StyleID > 0 {
-		attrs += fmt.Sprintf(` s="%d" customFormat="true"`, r.StyleID)
+		attrs.WriteString(` s="`)
+		attrs.WriteString(strconv.Itoa(r.StyleID))
+		attrs.WriteString(`" customFormat="1"`)
 	}
 	if r.Height > 0 {
-		attrs += fmt.Sprintf(` ht="%v" customHeight="true"`, r.Height)
+		attrs.WriteString(` ht="`)
+		attrs.WriteString(strconv.FormatFloat(r.Height, 'f', -1, 64))
+		attrs.WriteString(`" customHeight="1"`)
 	}
 	if r.Hidden {
-		attrs += ` hidden="true"`
+		attrs.WriteString(` hidden="1"`)
 	}
-	return
+	return attrs, err
 }
 
 // parseRowOpts provides a function to parse the optional settings for
@@ -357,7 +364,11 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(&sw.rawData, `<row r="%d"%s>`, row, attrs)
+	sw.rawData.WriteString(`<row r="`)
+	sw.rawData.WriteString(strconv.Itoa(row))
+	sw.rawData.WriteString(`"`)
+	sw.rawData.WriteString(attrs.String())
+	sw.rawData.WriteString(`>`)
 	for i, val := range values {
 		if val == nil {
 			continue
@@ -405,7 +416,14 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	if min > max {
 		min, max = max, min
 	}
-	sw.cols += fmt.Sprintf(`<col min="%d" max="%d" width="%f" customWidth="1"/>`, min, max, width)
+
+	sw.cols.WriteString(`<col min="`)
+	sw.cols.WriteString(strconv.Itoa(min))
+	sw.cols.WriteString(`" max="`)
+	sw.cols.WriteString(strconv.Itoa(max))
+	sw.cols.WriteString(`" width="`)
+	sw.cols.WriteString(strconv.FormatFloat(width, 'f', -1, 64))
+	sw.cols.WriteString(`" customWidth="1"/>`)
 	return nil
 }
 
@@ -515,14 +533,24 @@ func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
 func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
-		fmt.Fprintf(buf, ` xml:%s="%s"`, c.XMLSpace.Name.Local, c.XMLSpace.Value)
+		_, _ = buf.WriteString(` xml:`)
+		_, _ = buf.WriteString(c.XMLSpace.Name.Local)
+		_, _ = buf.WriteString(`="`)
+		_, _ = buf.WriteString(c.XMLSpace.Value)
+		_, _ = buf.WriteString(`"`)
 	}
-	fmt.Fprintf(buf, ` r="%s"`, c.R)
+	_, _ = buf.WriteString(` r="`)
+	_, _ = buf.WriteString(c.R)
+	_, _ = buf.WriteString(`"`)
 	if c.S != 0 {
-		fmt.Fprintf(buf, ` s="%d"`, c.S)
+		_, _ = buf.WriteString(` s="`)
+		_, _ = buf.WriteString(strconv.Itoa(c.S))
+		_, _ = buf.WriteString(`"`)
 	}
 	if c.T != "" {
-		fmt.Fprintf(buf, ` t="%s"`, c.T)
+		_, _ = buf.WriteString(` t="`)
+		_, _ = buf.WriteString(c.T)
+		_, _ = buf.WriteString(`"`)
 	}
 	_, _ = buf.WriteString(`>`)
 	if c.F != nil {
@@ -549,8 +577,10 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
 		bulkAppendFields(&sw.rawData, sw.worksheet, 4, 5)
-		if len(sw.cols) > 0 {
-			_, _ = sw.rawData.WriteString("<cols>" + sw.cols + "</cols>")
+		if sw.cols.Len() > 0 {
+			_, _ = sw.rawData.WriteString("<cols>")
+			_, _ = sw.rawData.WriteString(sw.cols.String())
+			_, _ = sw.rawData.WriteString("</cols>")
 		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
@@ -642,7 +672,7 @@ func (bw *bufferedWriter) Sync() (err error) {
 		return nil
 	}
 	if bw.tmp == nil {
-		bw.tmp, err = ioutil.TempFile(os.TempDir(), "excelize-")
+		bw.tmp, err = os.CreateTemp(os.TempDir(), "excelize-")
 		if err != nil {
 			// can not use local storage
 			return nil

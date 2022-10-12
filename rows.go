@@ -16,7 +16,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -296,7 +295,7 @@ func (f *File) getFromStringItem(index int) string {
 		defer tempFile.Close()
 	}
 	f.sharedStringItem = [][]uint{}
-	f.sharedStringTemp, _ = ioutil.TempFile(os.TempDir(), "excelize-")
+	f.sharedStringTemp, _ = os.CreateTemp(os.TempDir(), "excelize-")
 	f.tempFiles.Store(defaultTempFileSST, f.sharedStringTemp.Name())
 	var (
 		inElement string

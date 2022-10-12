@@ -7,7 +7,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -19,7 +19,7 @@ import (
 
 func BenchmarkAddPictureFromBytes(b *testing.B) {
 	f := NewFile()
-	imgFile, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
+	imgFile, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
 	if err != nil {
 		b.Error("unable to load image for benchmark")
 	}
@@ -42,7 +42,7 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
 
-	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.png"))
+	file, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)
 
 	// Test add picture to worksheet with autofit.
@@ -114,7 +114,7 @@ func TestGetPicture(t *testing.T) {
 	file, raw, err := f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
-		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0o644)) {
+		!assert.NoError(t, os.WriteFile(filepath.Join("test", file), raw, 0o644)) {
 		t.FailNow()
 	}
 
@@ -148,7 +148,7 @@ func TestGetPicture(t *testing.T) {
 	file, raw, err = f.GetPicture("Sheet1", "F21")
 	assert.NoError(t, err)
 	if !assert.NotEmpty(t, filepath.Join("test", file)) || !assert.NotEmpty(t, raw) ||
-		!assert.NoError(t, ioutil.WriteFile(filepath.Join("test", file), raw, 0o644)) {
+		!assert.NoError(t, os.WriteFile(filepath.Join("test", file), raw, 0o644)) {
 		t.FailNow()
 	}
 
@@ -180,7 +180,7 @@ func TestAddDrawingPicture(t *testing.T) {
 
 func TestAddPictureFromBytes(t *testing.T) {
 	f := NewFile()
-	imgFile, err := ioutil.ReadFile("logo.png")
+	imgFile, err := os.ReadFile("logo.png")
 	assert.NoError(t, err, "Unable to load logo for test")
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile))
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile))

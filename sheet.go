@@ -17,7 +17,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -479,7 +478,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	if !ok {
 		return ErrImgExt
 	}
-	file, _ := ioutil.ReadFile(filepath.Clean(picture))
+	file, _ := os.ReadFile(filepath.Clean(picture))
 	name := f.addMedia(file, ext)
 	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"

@@ -18,7 +18,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"regexp"
@@ -73,7 +72,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 // unzipToTemp unzip the zip entity to the system temporary directory and
 // returned the unzipped file path.
 func (f *File) unzipToTemp(zipFile *zip.File) (string, error) {
-	tmp, err := ioutil.TempFile(os.TempDir(), "excelize-")
+	tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +110,7 @@ func (f *File) readBytes(name string) []byte {
 	if err != nil {
 		return content
 	}
-	content, _ = ioutil.ReadAll(file)
+	content, _ = io.ReadAll(file)
 	f.Pkg.Store(name, content)
 	_ = file.Close()
 	return content

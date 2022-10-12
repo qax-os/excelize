@@ -10,7 +10,6 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -1388,7 +1387,7 @@ func prepareTestBook1() (*File, error) {
 		return nil, err
 	}
 
-	file, err := ioutil.ReadFile(filepath.Join("test", "images", "excel.jpg"))
+	file, err := os.ReadFile(filepath.Join("test", "images", "excel.jpg"))
 	if err != nil {
 		return nil, err
 	}
