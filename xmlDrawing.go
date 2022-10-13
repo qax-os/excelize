@@ -144,13 +144,23 @@ const (
 // supportedImageTypes defined supported image types.
 var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf", ".emz": ".emz", ".wmz": ".wmz"}
 
-// supportedContentType defined supported file format types.
-var supportedContentType = map[string]string{
+// supportedContentTypes defined supported file format types.
+var supportedContentTypes = map[string]string{
 	".xlam": ContentTypeAddinMacro,
 	".xlsm": ContentTypeMacro,
 	".xlsx": ContentTypeSheetML,
 	".xltm": ContentTypeTemplateMacro,
 	".xltx": ContentTypeTemplate,
+}
+
+// supportedUnderlineTypes defined supported underline types.
+var supportedUnderlineTypes = []string{"none", "single", "double"}
+
+// supportedDrawingUnderlineTypes defined supported underline types in drawing
+// markup language.
+var supportedDrawingUnderlineTypes = []string{
+	"none", "words", "sng", "dbl", "heavy", "dotted", "dottedHeavy", "dash", "dashHeavy", "dashLong", "dashLongHeavy", "dotDash", "dotDashHeavy", "dotDotDash", "dotDotDashHeavy", "wavy", "wavyHeavy",
+	"wavyDbl",
 }
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This

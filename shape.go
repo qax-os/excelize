@@ -323,27 +323,6 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 	colIdx := fromCol - 1
 	rowIdx := fromRow - 1
 
-	textUnderlineType := map[string]bool{
-		"none":            true,
-		"words":           true,
-		"sng":             true,
-		"dbl":             true,
-		"heavy":           true,
-		"dotted":          true,
-		"dottedHeavy":     true,
-		"dash":            true,
-		"dashHeavy":       true,
-		"dashLong":        true,
-		"dashLongHeavy":   true,
-		"dotDash":         true,
-		"dotDashHeavy":    true,
-		"dotDotDash":      true,
-		"dotDotDashHeavy": true,
-		"wavy":            true,
-		"wavyHeavy":       true,
-		"wavyDbl":         true,
-	}
-
 	width := int(float64(opts.Width) * opts.Format.XScale)
 	height := int(float64(opts.Height) * opts.Format.YScale)
 
@@ -422,10 +401,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 		}
 	}
 	for _, p := range opts.Paragraph {
-		u := p.Font.Underline
-		_, ok := textUnderlineType[u]
-		if !ok {
-			u = "none"
+		u := "none"
+		if idx := inStrSlice(supportedDrawingUnderlineTypes, p.Font.Underline, true); idx != -1 {
+			u = supportedDrawingUnderlineTypes[idx]
 		}
 		text := p.Text
 		if text == "" {

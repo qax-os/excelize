@@ -2087,7 +2087,6 @@ func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) (fontID int) 
 // newFont provides a function to add font style by given cell format
 // settings.
 func (f *File) newFont(style *Style) *xlsxFont {
-	fontUnderlineType := map[string]string{"single": "single", "double": "double"}
 	if style.Font.Size < MinFontSize {
 		style.Font.Size = 11
 	}
@@ -2112,9 +2111,8 @@ func (f *File) newFont(style *Style) *xlsxFont {
 	if style.Font.Strike {
 		fnt.Strike = &attrValBool{Val: &style.Font.Strike}
 	}
-	val, ok := fontUnderlineType[style.Font.Underline]
-	if ok {
-		fnt.U = &attrValString{Val: stringPtr(val)}
+	if idx := inStrSlice(supportedUnderlineTypes, style.Font.Underline, true); idx != -1 {
+		fnt.U = &attrValString{Val: stringPtr(supportedUnderlineTypes[idx])}
 	}
 	return &fnt
 }
@@ -3100,13 +3098,10 @@ func drawCondFmtCellIs(p int, ct string, format *conditionalOptions) *xlsxCfRule
 		DxfID:    &format.Format,
 	}
 	// "between" and "not between" criteria require 2 values.
-	_, ok := map[string]bool{"between": true, "notBetween": true}[ct]
-	if ok {
-		c.Formula = append(c.Formula, format.Minimum)
-		c.Formula = append(c.Formula, format.Maximum)
+	if ct == "between" || ct == "notBetween" {
+		c.Formula = append(c.Formula, []string{format.Minimum, format.Maximum}...)
 	}
-	_, ok = map[string]bool{"equal": true, "notEqual": true, "greaterThan": true, "lessThan": true, "greaterThanOrEqual": true, "lessThanOrEqual": true, "containsText": true, "notContains": true, "beginsWith": true, "endsWith": true}[ct]
-	if ok {
+	if idx := inStrSlice([]string{"equal", "notEqual", "greaterThan", "lessThan", "greaterThanOrEqual", "lessThanOrEqual", "containsText", "notContains", "beginsWith", "endsWith"}, ct, true); idx != -1 {
 		c.Formula = append(c.Formula, format.Value)
 	}
 	return c
@@ -3124,8 +3119,7 @@ func drawCondFmtTop10(p int, ct string, format *conditionalOptions) *xlsxCfRule 
 		DxfID:    &format.Format,
 		Percent:  format.Percent,
 	}
-	rank, err := strconv.Atoi(format.Value)
-	if err == nil {
+	if rank, err := strconv.Atoi(format.Value); err == nil {
 		c.Rank = rank
 	}
 	return c

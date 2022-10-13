@@ -516,7 +516,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 			}
 		}
 	}
-	// if the string token contains an Excel match character then change the
+	// If the string token contains an Excel match character then change the
 	// operator type to indicate a non "simple" equality.
 	re, _ = regexp.Match("[*?]", []byte(token))
 	if operator == 2 && re {

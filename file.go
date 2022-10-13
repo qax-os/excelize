@@ -72,7 +72,7 @@ func (f *File) SaveAs(name string, opts ...Options) error {
 		return ErrMaxFilePathLength
 	}
 	f.Path = name
-	if _, ok := supportedContentType[filepath.Ext(f.Path)]; !ok {
+	if _, ok := supportedContentTypes[filepath.Ext(f.Path)]; !ok {
 		return ErrWorkbookFileFormat
 	}
 	file, err := os.OpenFile(filepath.Clean(name), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
@@ -112,7 +112,7 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 		f.options = &opts[i]
 	}
 	if len(f.Path) != 0 {
-		contentType, ok := supportedContentType[filepath.Ext(f.Path)]
+		contentType, ok := supportedContentTypes[filepath.Ext(f.Path)]
 		if !ok {
 			return 0, ErrWorkbookFileFormat
 		}

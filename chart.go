@@ -750,22 +750,24 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //	reverse_order
 //	maximum
 //	minimum
+//	number_font
 //
 // The properties of y_axis that can be set are:
 //
 //	none
 //	major_grid_lines
 //	minor_grid_lines
-//	major_unit
+//	tick_label_skip
 //	reverse_order
 //	maximum
 //	minimum
+//	number_font
 //
 // none: Disable axes.
 //
-// major_grid_lines: Specifies major gridlines.
+// major_grid_lines: Specifies major grid lines.
 //
-// minor_grid_lines: Specifies minor gridlines.
+// minor_grid_lines: Specifies minor grid lines.
 //
 // major_unit: Specifies the distance between major ticks. Shall contain a positive floating-point number. The major_unit property is optional. The default value is auto.
 //
@@ -776,6 +778,17 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 // maximum: Specifies that the fixed maximum, 0 is auto. The maximum property is optional. The default value is auto.
 //
 // minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
+//
+// number_font: Specifies that the font of the horizontal and vertical axis. The properties of number_font that can be set are:
+//
+//	bold
+//	italic
+//	underline
+//	family
+//	size
+//	strike
+//	color
+//	vertAlign
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.
 //

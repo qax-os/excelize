@@ -1017,7 +1017,7 @@ func (f *File) drawPlotAreaCatAx(opts *chartOptions) []*cAxs {
 			MinorTickMark: &attrValString{Val: stringPtr("none")},
 			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
 			SpPr:          f.drawPlotAreaSpPr(),
-			TxPr:          f.drawPlotAreaTxPr(),
+			TxPr:          f.drawPlotAreaTxPr(&opts.YAxis),
 			CrossAx:       &attrValInt{Val: intPtr(753999904)},
 			Crosses:       &attrValString{Val: stringPtr("autoZero")},
 			Auto:          &attrValBool{Val: boolPtr(true)},
@@ -1071,7 +1071,7 @@ func (f *File) drawPlotAreaValAx(opts *chartOptions) []*cAxs {
 			MinorTickMark: &attrValString{Val: stringPtr("none")},
 			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
 			SpPr:          f.drawPlotAreaSpPr(),
-			TxPr:          f.drawPlotAreaTxPr(),
+			TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
 			CrossAx:       &attrValInt{Val: intPtr(754001152)},
 			Crosses:       &attrValString{Val: stringPtr("autoZero")},
 			CrossBetween:  &attrValString{Val: stringPtr(chartValAxCrossBetween[opts.Type])},
@@ -1114,7 +1114,7 @@ func (f *File) drawPlotAreaSerAx(opts *chartOptions) []*cAxs {
 			AxPos:      &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
 			TickLblPos: &attrValString{Val: stringPtr("nextTo")},
 			SpPr:       f.drawPlotAreaSpPr(),
-			TxPr:       f.drawPlotAreaTxPr(),
+			TxPr:       f.drawPlotAreaTxPr(nil),
 			CrossAx:    &attrValInt{Val: intPtr(753999904)},
 		},
 	}
@@ -1140,8 +1140,8 @@ func (f *File) drawPlotAreaSpPr() *cSpPr {
 }
 
 // drawPlotAreaTxPr provides a function to draw the c:txPr element.
-func (f *File) drawPlotAreaTxPr() *cTxPr {
-	return &cTxPr{
+func (f *File) drawPlotAreaTxPr(opts *chartAxisOptions) *cTxPr {
+	cTxPr := &cTxPr{
 		BodyPr: aBodyPr{
 			Rot:              -60000000,
 			SpcFirstLastPara: true,
@@ -1176,6 +1176,18 @@ func (f *File) drawPlotAreaTxPr() *cTxPr {
 			EndParaRPr: &aEndParaRPr{Lang: "en-US"},
 		},
 	}
+	if opts != nil {
+		cTxPr.P.PPr.DefRPr.B = opts.NumFont.Bold
+		cTxPr.P.PPr.DefRPr.I = opts.NumFont.Italic
+		if idx := inStrSlice(supportedDrawingUnderlineTypes, opts.NumFont.Underline, true); idx != -1 {
+			cTxPr.P.PPr.DefRPr.U = supportedDrawingUnderlineTypes[idx]
+		}
+		if opts.NumFont.Color != "" {
+			cTxPr.P.PPr.DefRPr.SolidFill.SchemeClr = nil
+			cTxPr.P.PPr.DefRPr.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(opts.NumFont.Color), "#", ""))}
+		}
+	}
+	return cTxPr
 }
 
 // drawingParser provides a function to parse drawingXML. In order to solve
