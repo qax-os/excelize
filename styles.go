@@ -2084,21 +2084,42 @@ func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) (fontID int) 
 	return
 }
 
+// newFontColor set font color by given styles.
+func newFontColor(font *Font) *xlsxColor {
+	var fontColor *xlsxColor
+	prepareFontColor := func() {
+		if fontColor != nil {
+			return
+		}
+		fontColor = &xlsxColor{}
+	}
+	if font.Color != "" {
+		prepareFontColor()
+		fontColor.RGB = getPaletteColor(font.Color)
+	}
+	if font.ColorTheme != nil {
+		prepareFontColor()
+		fontColor.Theme = font.ColorTheme
+	}
+	if font.ColorTint != 0 {
+		prepareFontColor()
+		fontColor.Tint = font.ColorTint
+	}
+	return fontColor
+}
+
 // newFont provides a function to add font style by given cell format
 // settings.
 func (f *File) newFont(style *Style) *xlsxFont {
 	if style.Font.Size < MinFontSize {
 		style.Font.Size = 11
 	}
-	if style.Font.Color == "" {
-		style.Font.Color = "#000000"
-	}
 	fnt := xlsxFont{
 		Sz:     &attrValFloat{Val: float64Ptr(style.Font.Size)},
-		Color:  &xlsxColor{RGB: getPaletteColor(style.Font.Color)},
 		Name:   &attrValString{Val: stringPtr(style.Font.Family)},
 		Family: &attrValInt{Val: intPtr(2)},
 	}
+	fnt.Color = newFontColor(style.Font)
 	if style.Font.Bold {
 		fnt.B = &attrValBool{Val: &style.Font.Bold}
 	}

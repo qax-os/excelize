@@ -518,7 +518,7 @@ func TestSetCellFormula(t *testing.T) {
 }
 
 func TestGetCellRichText(t *testing.T) {
-	f := NewFile()
+	f, theme := NewFile(), 1
 
 	runsSource := []RichTextRun{
 		{
@@ -527,13 +527,15 @@ func TestGetCellRichText(t *testing.T) {
 		{
 			Text: "b",
 			Font: &Font{
-				Underline: "single",
-				Color:     "ff0000",
-				Bold:      true,
-				Italic:    true,
-				Family:    "Times New Roman",
-				Size:      100,
-				Strike:    true,
+				Underline:  "single",
+				Color:      "ff0000",
+				ColorTheme: &theme,
+				ColorTint:  0.5,
+				Bold:       true,
+				Italic:     true,
+				Family:     "Times New Roman",
+				Size:       100,
+				Strike:     true,
 			},
 		},
 	}
@@ -580,6 +582,10 @@ func TestGetCellRichText(t *testing.T) {
 	// Test set cell rich text with illegal cell reference
 	_, err = f.GetCellRichText("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test set rich text color theme without tint
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", []RichTextRun{{Font: &Font{ColorTheme: &theme}}}))
+	// Test set rich text color tint without theme
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", []RichTextRun{{Font: &Font{ColorTint: 0.5}}}))
 }
 
 func TestSetCellRichText(t *testing.T) {
