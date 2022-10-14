@@ -823,6 +823,10 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 			font.Strike = v.RPr.Strike != nil
 			if v.RPr.Color != nil {
 				font.Color = strings.TrimPrefix(v.RPr.Color.RGB, "FF")
+				if v.RPr.Color.Theme != nil {
+					font.ColorTheme = v.RPr.Color.Theme
+				}
+				font.ColorTint = v.RPr.Color.Tint
 			}
 			run.Font = &font
 		}
@@ -879,9 +883,7 @@ func newRpr(fnt *Font) *xlsxRPr {
 	if fnt.Size > 0 {
 		rpr.Sz = &attrValFloat{Val: &fnt.Size}
 	}
-	if fnt.Color != "" {
-		rpr.Color = &xlsxColor{RGB: getPaletteColor(fnt.Color)}
-	}
+	rpr.Color = newFontColor(fnt)
 	return &rpr
 }
 

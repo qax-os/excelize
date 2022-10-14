@@ -1177,14 +1177,14 @@ func (f *File) drawPlotAreaTxPr(opts *chartAxisOptions) *cTxPr {
 		},
 	}
 	if opts != nil {
-		cTxPr.P.PPr.DefRPr.B = opts.NumFont.Bold
-		cTxPr.P.PPr.DefRPr.I = opts.NumFont.Italic
-		if idx := inStrSlice(supportedDrawingUnderlineTypes, opts.NumFont.Underline, true); idx != -1 {
+		cTxPr.P.PPr.DefRPr.B = opts.Font.Bold
+		cTxPr.P.PPr.DefRPr.I = opts.Font.Italic
+		if idx := inStrSlice(supportedDrawingUnderlineTypes, opts.Font.Underline, true); idx != -1 {
 			cTxPr.P.PPr.DefRPr.U = supportedDrawingUnderlineTypes[idx]
 		}
-		if opts.NumFont.Color != "" {
+		if opts.Font.Color != "" {
 			cTxPr.P.PPr.DefRPr.SolidFill.SchemeClr = nil
-			cTxPr.P.PPr.DefRPr.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(opts.NumFont.Color), "#", ""))}
+			cTxPr.P.PPr.DefRPr.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(opts.Font.Color), "#", ""))}
 		}
 	}
 	return cTxPr

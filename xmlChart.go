@@ -476,7 +476,7 @@ type cNumCache struct {
 	PtCount    *attrValInt `xml:"ptCount"`
 }
 
-// cDLbls (Data Lables) directly maps the dLbls element. This element serves
+// cDLbls (Data Labels) directly maps the dLbls element. This element serves
 // as a root element that specifies the settings for the data labels for an
 // entire series or the entire chart. It contains child elements that specify
 // the specific formatting and positioning settings.
@@ -538,7 +538,7 @@ type chartAxisOptions struct {
 	Maximum             *float64      `json:"maximum"`
 	Minimum             *float64      `json:"minimum"`
 	NumFormat           string        `json:"number_format"`
-	NumFont             Font          `json:"number_font"`
+	Font                Font          `json:"font"`
 	LogBase             float64       `json:"logbase"`
 	NameLayout          layoutOptions `json:"name_layout"`
 }

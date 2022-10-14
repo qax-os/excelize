@@ -702,7 +702,7 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //
 //	title
 //
-// name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as Sheet1!$A$1 or a list with a sheetname. The name property is optional. The default is to have no chart title.
+// name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as Sheet1!$A$1 or a list with a sheet name. The name property is optional. The default is to have no chart title.
 //
 // Specifies how blank cells are plotted on the chart by show_blanks_as. The default value is gap. The options that can be set are:
 //
@@ -750,18 +750,19 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //	reverse_order
 //	maximum
 //	minimum
-//	number_font
+//	font
 //
 // The properties of y_axis that can be set are:
 //
 //	none
 //	major_grid_lines
 //	minor_grid_lines
+//	major_unit
 //	tick_label_skip
 //	reverse_order
 //	maximum
 //	minimum
-//	number_font
+//	font
 //
 // none: Disable axes.
 //
@@ -779,7 +780,7 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //
 // minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
 //
-// number_font: Specifies that the font of the horizontal and vertical axis. The properties of number_font that can be set are:
+// font: Specifies that the font of the horizontal and vertical axis. The properties of font that can be set are:
 //
 //	bold
 //	italic
