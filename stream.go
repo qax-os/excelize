@@ -32,6 +32,7 @@ type StreamWriter struct {
 	cols            strings.Builder
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
+	rows            int
 	mergeCellsCount int
 	mergeCells      strings.Builder
 	tableParts      string
@@ -40,7 +41,7 @@ type StreamWriter struct {
 // NewStreamWriter return stream writer struct by given worksheet name for
 // generate new worksheet with large amounts of data. Note that after set
 // rows, you must call the 'Flush' method to end the streaming writing process
-// and ensure that the order of line numbers is ascending, the normal mode
+// and ensure that the order of row numbers is ascending, the normal mode
 // functions and stream mode functions can't be work mixed to writing data on
 // the worksheets, you can't get cell value when in-memory chunks data over
 // 16MB. For example, set data for worksheet of size 102400 rows x 50 columns
@@ -358,6 +359,10 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	if err != nil {
 		return err
 	}
+	if row <= sw.rows {
+		return newStreamSetRowError(row)
+	}
+	sw.rows = row
 	sw.writeSheetData()
 	options := parseRowOpts(opts...)
 	attrs, err := options.marshalAttrs()

@@ -758,7 +758,7 @@ var builtInNumFmtFunc = map[int]func(v, format string, date1904 bool) string{
 	0:  format,
 	1:  formatToInt,
 	2:  formatToFloat,
-	3:  formatToInt,
+	3:  formatToIntSeparator,
 	4:  formatToFloat,
 	9:  formatToC,
 	10: formatToD,
@@ -869,6 +869,26 @@ var operatorType = map[string]string{
 	"greaterThanOrEqual": "greater than or equal to",
 }
 
+// printCommaSep format number with thousands separator.
+func printCommaSep(text string) string {
+	var (
+		target strings.Builder
+		subStr = strings.Split(text, ".")
+		length = len(subStr[0])
+	)
+	for i := 0; i < length; i++ {
+		if i > 0 && (length-i)%3 == 0 {
+			target.WriteString(",")
+		}
+		target.WriteString(string(text[i]))
+	}
+	if len(subStr) == 2 {
+		target.WriteString(".")
+		target.WriteString(subStr[1])
+	}
+	return target.String()
+}
+
 // formatToInt provides a function to convert original string to integer
 // format as string type by given built-in number formats code and cell
 // string.
@@ -880,7 +900,7 @@ func formatToInt(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
-	return fmt.Sprintf("%d", int64(math.Round(f)))
+	return strconv.FormatFloat(math.Round(f), 'f', -1, 64)
 }
 
 // formatToFloat provides a function to convert original string to float
@@ -894,7 +914,25 @@ func formatToFloat(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
+	source := strconv.FormatFloat(f, 'f', -1, 64)
+	if !strings.Contains(source, ".") {
+		return source + ".00"
+	}
 	return fmt.Sprintf("%.2f", f)
+}
+
+// formatToIntSeparator provides a function to convert original string to
+// integer format as string type by given built-in number formats code and cell
+// string.
+func formatToIntSeparator(v, format string, date1904 bool) string {
+	if strings.Contains(v, "_") {
+		return v
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return v
+	}
+	return printCommaSep(strconv.FormatFloat(math.Round(f), 'f', -1, 64))
 }
 
 // formatToA provides a function to convert original string to special format
@@ -907,10 +945,17 @@ func formatToA(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
+	var target strings.Builder
 	if f < 0 {
-		return fmt.Sprintf("(%d)", int(math.Abs(f)))
+		target.WriteString("(")
 	}
-	return fmt.Sprintf("%d", int(f))
+	target.WriteString(printCommaSep(strconv.FormatFloat(math.Abs(math.Round(f)), 'f', -1, 64)))
+	if f < 0 {
+		target.WriteString(")")
+	} else {
+		target.WriteString(" ")
+	}
+	return target.String()
 }
 
 // formatToB provides a function to convert original string to special format
@@ -923,10 +968,24 @@ func formatToB(v, format string, date1904 bool) string {
 	if err != nil {
 		return v
 	}
+	var target strings.Builder
 	if f < 0 {
-		return fmt.Sprintf("(%.2f)", f)
+		target.WriteString("(")
 	}
-	return fmt.Sprintf("%.2f", f)
+	source := strconv.FormatFloat(math.Abs(f), 'f', -1, 64)
+	var text string
+	if !strings.Contains(source, ".") {
+		text = printCommaSep(source + ".00")
+	} else {
+		text = printCommaSep(fmt.Sprintf("%.2f", math.Abs(f)))
+	}
+	target.WriteString(text)
+	if f < 0 {
+		target.WriteString(")")
+	} else {
+		target.WriteString(" ")
+	}
+	return target.String()
 }
 
 // formatToC provides a function to convert original string to special format
@@ -938,6 +997,10 @@ func formatToC(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
+	}
+	source := strconv.FormatFloat(f, 'f', -1, 64)
+	if !strings.Contains(source, ".") {
+		return source + "00%"
 	}
 	return fmt.Sprintf("%.f%%", f*100)
 }
@@ -951,6 +1014,10 @@ func formatToD(v, format string, date1904 bool) string {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		return v
+	}
+	source := strconv.FormatFloat(f, 'f', -1, 64)
+	if !strings.Contains(source, ".") {
+		return source + "00.00%"
 	}
 	return fmt.Sprintf("%.2f%%", f*100)
 }

@@ -87,6 +87,12 @@ func newDecodeXMLError(err error) error {
 	return fmt.Errorf("xml decode error: %s", err)
 }
 
+// newStreamSetRowError defined the error message on the stream writer
+// receiving the non-ascending row number.
+func newStreamSetRowError(row int) error {
+	return fmt.Errorf("row %d has already been written", row)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.

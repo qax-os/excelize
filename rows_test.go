@@ -993,6 +993,68 @@ func TestNumberFormats(t *testing.T) {
 	}
 	assert.Equal(t, []string{"", "200", "450", "200", "510", "315", "127", "89", "348", "53", "37"}, cells[3])
 	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	numFmt1, err := f.NewStyle(&Style{NumFmt: 1})
+	assert.NoError(t, err)
+	numFmt2, err := f.NewStyle(&Style{NumFmt: 2})
+	assert.NoError(t, err)
+	numFmt3, err := f.NewStyle(&Style{NumFmt: 3})
+	assert.NoError(t, err)
+	numFmt9, err := f.NewStyle(&Style{NumFmt: 9})
+	assert.NoError(t, err)
+	numFmt10, err := f.NewStyle(&Style{NumFmt: 10})
+	assert.NoError(t, err)
+	numFmt37, err := f.NewStyle(&Style{NumFmt: 37})
+	assert.NoError(t, err)
+	numFmt38, err := f.NewStyle(&Style{NumFmt: 38})
+	assert.NoError(t, err)
+	numFmt39, err := f.NewStyle(&Style{NumFmt: 39})
+	assert.NoError(t, err)
+	numFmt40, err := f.NewStyle(&Style{NumFmt: 40})
+	assert.NoError(t, err)
+	for _, cases := range [][]interface{}{
+		{"A1", numFmt1, 8.8888666665555493e+19, "88888666665555500000"},
+		{"A2", numFmt1, 8.8888666665555487, "9"},
+		{"A3", numFmt2, 8.8888666665555493e+19, "88888666665555500000.00"},
+		{"A4", numFmt2, 8.8888666665555487, "8.89"},
+		{"A5", numFmt3, 8.8888666665555493e+19, "88,888,666,665,555,500,000"},
+		{"A6", numFmt3, 8.8888666665555487, "9"},
+		{"A7", numFmt3, 123, "123"},
+		{"A8", numFmt3, -1234, "-1,234"},
+		{"A9", numFmt9, 8.8888666665555493e+19, "8888866666555550000000%"},
+		{"A10", numFmt9, -8.8888666665555493e+19, "-8888866666555550000000%"},
+		{"A11", numFmt9, 8.8888666665555487, "889%"},
+		{"A12", numFmt9, -8.8888666665555487, "-889%"},
+		{"A13", numFmt10, 8.8888666665555493e+19, "8888866666555550000000.00%"},
+		{"A14", numFmt10, -8.8888666665555493e+19, "-8888866666555550000000.00%"},
+		{"A15", numFmt10, 8.8888666665555487, "888.89%"},
+		{"A16", numFmt10, -8.8888666665555487, "-888.89%"},
+		{"A17", numFmt37, 8.8888666665555493e+19, "88,888,666,665,555,500,000 "},
+		{"A18", numFmt37, -8.8888666665555493e+19, "(88,888,666,665,555,500,000)"},
+		{"A19", numFmt37, 8.8888666665555487, "9 "},
+		{"A20", numFmt37, -8.8888666665555487, "(9)"},
+		{"A21", numFmt38, 8.8888666665555493e+19, "88,888,666,665,555,500,000 "},
+		{"A22", numFmt38, -8.8888666665555493e+19, "(88,888,666,665,555,500,000)"},
+		{"A23", numFmt38, 8.8888666665555487, "9 "},
+		{"A24", numFmt38, -8.8888666665555487, "(9)"},
+		{"A25", numFmt39, 8.8888666665555493e+19, "88,888,666,665,555,500,000.00 "},
+		{"A26", numFmt39, -8.8888666665555493e+19, "(88,888,666,665,555,500,000.00)"},
+		{"A27", numFmt39, 8.8888666665555487, "8.89 "},
+		{"A28", numFmt39, -8.8888666665555487, "(8.89)"},
+		{"A29", numFmt40, 8.8888666665555493e+19, "88,888,666,665,555,500,000.00 "},
+		{"A30", numFmt40, -8.8888666665555493e+19, "(88,888,666,665,555,500,000.00)"},
+		{"A31", numFmt40, 8.8888666665555487, "8.89 "},
+		{"A32", numFmt40, -8.8888666665555487, "(8.89)"},
+	} {
+		cell, styleID, value, expected := cases[0].(string), cases[1].(int), cases[2], cases[3].(string)
+		f.SetCellStyle("Sheet1", cell, cell, styleID)
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+		result, err := f.GetCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNumberFormats.xlsx")))
 }
 
 func BenchmarkRows(b *testing.B) {
@@ -1016,6 +1078,7 @@ func BenchmarkRows(b *testing.B) {
 	}
 }
 
+// trimSliceSpace trim continually blank element in the tail of slice.
 func trimSliceSpace(s []string) []string {
 	for {
 		if len(s) > 0 && s[len(s)-1] == "" {

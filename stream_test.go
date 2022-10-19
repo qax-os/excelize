@@ -61,7 +61,7 @@ func TestStreamWriter(t *testing.T) {
 	}}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
 	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: 20, Hidden: true, StyleID: styleID}))
-	assert.EqualError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
+	assert.EqualError(t, streamWriter.SetRow("A8", nil, RowOpts{Height: MaxRowHeight + 1}), ErrMaxRowHeight.Error())
 
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
@@ -77,7 +77,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriter.xlsx")))
 
 	// Test set cell column overflow.
-	assert.ErrorIs(t, streamWriter.SetRow("XFD1", []interface{}{"A", "B", "C"}), ErrColumnNumber)
+	assert.ErrorIs(t, streamWriter.SetRow("XFD51201", []interface{}{"A", "B", "C"}), ErrColumnNumber)
 
 	// Test close temporary file error.
 	file = NewFile()
@@ -226,6 +226,9 @@ func TestStreamSetRow(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test set row with non-ascending row number
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{}))
+	assert.EqualError(t, streamWriter.SetRow("A1", []interface{}{}), newStreamSetRowError(1).Error())
 }
 
 func TestStreamSetRowNilValues(t *testing.T) {
