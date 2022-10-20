@@ -1421,6 +1421,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=OR(0)":                  "FALSE",
 		"=OR(1=2,2=2)":            "TRUE",
 		"=OR(1=2,2=3)":            "FALSE",
+		"=OR(1=1,2=3)":            "TRUE",
 		"=OR(\"TRUE\",\"FALSE\")": "TRUE",
 		// SWITCH
 		"=SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",

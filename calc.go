@@ -11623,6 +11623,9 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		case ArgNumber:
 			or = token.Number != 0
+			if or {
+				return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
+			}
 		case ArgMatrix:
 			// TODO
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
