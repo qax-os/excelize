@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,21 +36,6 @@ func TestGetPageMargins(t *testing.T) {
 	// Test get page margins on not exists worksheet.
 	_, err := f.GetPageMargins("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-}
-
-func TestDebug(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.SetSheetProps("Sheet1", nil))
-	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
-	assert.True(t, ok)
-	ws.(*xlsxWorksheet).PageMargins = nil
-	ws.(*xlsxWorksheet).PrintOptions = nil
-	ws.(*xlsxWorksheet).SheetPr = nil
-	ws.(*xlsxWorksheet).SheetFormatPr = nil
-	// w := uint8(10)
-	// f.SetSheetProps("Sheet1", &SheetPropsOptions{BaseColWidth: &w})
-	f.SetPageMargins("Sheet1", &PageLayoutMarginsOptions{Horizontally: boolPtr(true)})
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDebug.xlsx")))
 }
 
 func TestSetSheetProps(t *testing.T) {

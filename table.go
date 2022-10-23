@@ -221,7 +221,7 @@ func parseAutoFilterOptions(opts string) (*autoFilterOptions, error) {
 //
 //	err := f.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
 //
-// column defines the filter columns in a auto filter range based on simple
+// column defines the filter columns in an auto filter range based on simple
 // criteria
 //
 // It isn't sufficient to just specify the filter condition. You must also

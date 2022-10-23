@@ -339,6 +339,7 @@ type formulaFuncs struct {
 //	ACOT
 //	ACOTH
 //	ADDRESS
+//	AGGREGATE
 //	AMORDEGRC
 //	AMORLINC
 //	AND
@@ -700,6 +701,7 @@ type formulaFuncs struct {
 //	STDEVPA
 //	STEYX
 //	SUBSTITUTE
+//	SUBTOTAL
 //	SUM
 //	SUMIF
 //	SUMIFS
@@ -872,7 +874,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 	var err error
 	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
 	var inArray, inArrayRow bool
-	var arrayRow []formulaArg
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 
@@ -981,7 +982,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
 			}
 			if inArrayRow && isOperand(token) {
-				arrayRow = append(arrayRow, tokenToFormulaArg(token))
 				continue
 			}
 			if inArrayRow && isFunctionStopToken(token) {
@@ -990,7 +990,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 			}
 			if inArray && isFunctionStopToken(token) {
 				argsStack.Peek().(*list.List).PushBack(opfdStack.Pop())
-				arrayRow, inArray = []formulaArg{}, false
+				inArray = false
 				continue
 			}
 			if err = f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
@@ -3559,6 +3559,56 @@ func (fn *formulaFuncs) ACOTH(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(math.Atanh(1 / arg.Number))
 }
 
+// AGGREGATE function returns the result of a specified operation or function,
+// applied to a list or database of values. The syntax of the function is:
+//
+//	AGGREGATE(function_num,options,ref1,[ref2],...)
+func (fn *formulaFuncs) AGGREGATE(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AGGREGATE requires at least 3 arguments")
+	}
+	var fnNum, opts formulaArg
+	if fnNum = argsList.Front().Value.(formulaArg).ToNumber(); fnNum.Type != ArgNumber {
+		return fnNum
+	}
+	subFn, ok := map[int]func(argsList *list.List) formulaArg{
+		1:  fn.AVERAGE,
+		2:  fn.COUNT,
+		3:  fn.COUNTA,
+		4:  fn.MAX,
+		5:  fn.MIN,
+		6:  fn.PRODUCT,
+		7:  fn.STDEVdotS,
+		8:  fn.STDEVdotP,
+		9:  fn.SUM,
+		10: fn.VARdotS,
+		11: fn.VARdotP,
+		12: fn.MEDIAN,
+		13: fn.MODEdotSNGL,
+		14: fn.LARGE,
+		15: fn.SMALL,
+		16: fn.PERCENTILEdotINC,
+		17: fn.QUARTILEdotINC,
+		18: fn.PERCENTILEdotEXC,
+		19: fn.QUARTILEdotEXC,
+	}[int(fnNum.Number)]
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, "AGGREGATE has invalid function_num")
+	}
+	if opts = argsList.Front().Next().Value.(formulaArg).ToNumber(); opts.Type != ArgNumber {
+		return opts
+	}
+	// TODO: apply option argument values to be ignored during the calculation
+	if int(opts.Number) < 0 || int(opts.Number) > 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, "AGGREGATE has invalid options")
+	}
+	subArgList := list.New().Init()
+	for arg := argsList.Front().Next().Next(); arg != nil; arg = arg.Next() {
+		subArgList.PushBack(arg.Value.(formulaArg))
+	}
+	return subFn(subArgList)
+}
+
 // ARABIC function converts a Roman numeral into an Arabic numeral. The syntax
 // of the function is:
 //
@@ -5553,6 +5603,41 @@ func (fn *formulaFuncs) POISSON(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(math.Exp(0-mean.Number) * summer)
 	}
 	return newNumberFormulaArg(math.Exp(0-mean.Number) * math.Pow(mean.Number, x.Number) / fact(x.Number))
+}
+
+// SUBTOTAL function performs a specified calculation (e.g. the sum, product,
+// average, etc.) for a supplied set of values. The syntax of the function is:
+//
+//	SUBTOTAL(function_num,ref1,[ref2],...)
+func (fn *formulaFuncs) SUBTOTAL(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SUBTOTAL requires at least 2 arguments")
+	}
+	var fnNum formulaArg
+	if fnNum = argsList.Front().Value.(formulaArg).ToNumber(); fnNum.Type != ArgNumber {
+		return fnNum
+	}
+	subFn, ok := map[int]func(argsList *list.List) formulaArg{
+		1: fn.AVERAGE, 101: fn.AVERAGE,
+		2: fn.COUNT, 102: fn.COUNT,
+		3: fn.COUNTA, 103: fn.COUNTA,
+		4: fn.MAX, 104: fn.MAX,
+		5: fn.MIN, 105: fn.MIN,
+		6: fn.PRODUCT, 106: fn.PRODUCT,
+		7: fn.STDEV, 107: fn.STDEV,
+		8: fn.STDEVP, 108: fn.STDEVP,
+		9: fn.SUM, 109: fn.SUM,
+		10: fn.VAR, 110: fn.VAR,
+		11: fn.VARP, 111: fn.VARP,
+	}[int(fnNum.Number)]
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, "SUBTOTAL has invalid function_num")
+	}
+	subArgList := list.New().Init()
+	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
+		subArgList.PushBack(arg.Value.(formulaArg))
+	}
+	return subFn(subArgList)
 }
 
 // SUM function adds together a supplied set of numbers and returns the sum of
@@ -11622,8 +11707,7 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 			}
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		case ArgNumber:
-			or = token.Number != 0
-			if or {
+			if or = token.Number != 0; or {
 				return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
 			}
 		case ArgMatrix:

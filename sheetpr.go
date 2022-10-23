@@ -80,24 +80,12 @@ func (f *File) GetPageMargins(sheet string) (PageLayoutMarginsOptions, error) {
 		return opts, err
 	}
 	if ws.PageMargins != nil {
-		if ws.PageMargins.Bottom != 0 {
-			opts.Bottom = float64Ptr(ws.PageMargins.Bottom)
-		}
-		if ws.PageMargins.Footer != 0 {
-			opts.Footer = float64Ptr(ws.PageMargins.Footer)
-		}
-		if ws.PageMargins.Header != 0 {
-			opts.Header = float64Ptr(ws.PageMargins.Header)
-		}
-		if ws.PageMargins.Left != 0 {
-			opts.Left = float64Ptr(ws.PageMargins.Left)
-		}
-		if ws.PageMargins.Right != 0 {
-			opts.Right = float64Ptr(ws.PageMargins.Right)
-		}
-		if ws.PageMargins.Top != 0 {
-			opts.Top = float64Ptr(ws.PageMargins.Top)
-		}
+		opts.Bottom = float64Ptr(ws.PageMargins.Bottom)
+		opts.Footer = float64Ptr(ws.PageMargins.Footer)
+		opts.Header = float64Ptr(ws.PageMargins.Header)
+		opts.Left = float64Ptr(ws.PageMargins.Left)
+		opts.Right = float64Ptr(ws.PageMargins.Right)
+		opts.Top = float64Ptr(ws.PageMargins.Top)
 	}
 	if ws.PrintOptions != nil {
 		opts.Horizontally = boolPtr(ws.PrintOptions.HorizontalCentered)
@@ -106,7 +94,7 @@ func (f *File) GetPageMargins(sheet string) (PageLayoutMarginsOptions, error) {
 	return opts, err
 }
 
-// prepareSheetPr sheetPr element if which not exist.
+// prepareSheetPr create sheetPr element which not exist.
 func (ws *xlsxWorksheet) prepareSheetPr() {
 	if ws.SheetPr == nil {
 		ws.SheetPr = new(xlsxSheetPr)

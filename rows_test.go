@@ -1048,7 +1048,7 @@ func TestNumberFormats(t *testing.T) {
 		{"A32", numFmt40, -8.8888666665555487, "(8.89)"},
 	} {
 		cell, styleID, value, expected := cases[0].(string), cases[1].(int), cases[2], cases[3].(string)
-		f.SetCellStyle("Sheet1", cell, cell, styleID)
+		assert.NoError(t, f.SetCellStyle("Sheet1", cell, cell, styleID))
 		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
 		result, err := f.GetCellValue("Sheet1", cell)
 		assert.NoError(t, err)

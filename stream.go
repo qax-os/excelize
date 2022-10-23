@@ -369,11 +369,11 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	if err != nil {
 		return err
 	}
-	sw.rawData.WriteString(`<row r="`)
-	sw.rawData.WriteString(strconv.Itoa(row))
-	sw.rawData.WriteString(`"`)
-	sw.rawData.WriteString(attrs.String())
-	sw.rawData.WriteString(`>`)
+	_, _ = sw.rawData.WriteString(`<row r="`)
+	_, _ = sw.rawData.WriteString(strconv.Itoa(row))
+	_, _ = sw.rawData.WriteString(`"`)
+	_, _ = sw.rawData.WriteString(attrs.String())
+	_, _ = sw.rawData.WriteString(`>`)
 	for i, val := range values {
 		if val == nil {
 			continue
@@ -643,12 +643,12 @@ type bufferedWriter struct {
 	buf bytes.Buffer
 }
 
-// Write to the in-memory buffer. The err is always nil.
+// Write to the in-memory buffer. The error is always nil.
 func (bw *bufferedWriter) Write(p []byte) (n int, err error) {
 	return bw.buf.Write(p)
 }
 
-// WriteString wite to the in-memory buffer. The err is always nil.
+// WriteString write to the in-memory buffer. The error is always nil.
 func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
 	return bw.buf.WriteString(p)
 }

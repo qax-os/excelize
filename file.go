@@ -176,7 +176,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 	f.workBookWriter()
 	f.workSheetWriter()
 	f.relsWriter()
-	f.sharedStringsLoader()
+	_ = f.sharedStringsLoader()
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 

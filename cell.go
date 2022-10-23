@@ -826,6 +826,7 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 				if v.RPr.Color.Theme != nil {
 					font.ColorTheme = v.RPr.Color.Theme
 				}
+				font.ColorIndexed = v.RPr.Color.Indexed
 				font.ColorTint = v.RPr.Color.Tint
 			}
 			run.Font = &font

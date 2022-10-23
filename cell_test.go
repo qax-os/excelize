@@ -298,42 +298,46 @@ func TestGetCellValue(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="1">
-    <c r="A1"><v>2422.3000000000002</v></c>
-    <c r="B1"><v>2422.3000000000002</v></c>
-    <c r="C1"><v>12.4</v></c>
-    <c r="D1"><v>964</v></c>
-    <c r="E1"><v>1101.5999999999999</v></c>
-    <c r="F1"><v>275.39999999999998</v></c>
-    <c r="G1"><v>68.900000000000006</v></c>
-    <c r="H1"><v>44385.208333333336</v></c>
-    <c r="I1"><v>5.0999999999999996</v></c>
-    <c r="J1"><v>5.1100000000000003</v></c>
-    <c r="K1"><v>5.0999999999999996</v></c>
-    <c r="L1"><v>5.1109999999999998</v></c>
-    <c r="M1"><v>5.1111000000000004</v></c>
-    <c r="N1"><v>2422.012345678</v></c>
-    <c r="O1"><v>2422.0123456789</v></c>
-    <c r="P1"><v>12.012345678901</v></c>
-    <c r="Q1"><v>964</v></c>
-    <c r="R1"><v>1101.5999999999999</v></c>
-    <c r="S1"><v>275.39999999999998</v></c>
-    <c r="T1"><v>68.900000000000006</v></c>
-    <c r="U1"><v>8.8880000000000001E-2</v></c>
-    <c r="V1"><v>4.0000000000000003e-5</v></c>
-    <c r="W1"><v>2422.3000000000002</v></c>
-    <c r="X1"><v>1101.5999999999999</v></c>
-    <c r="Y1"><v>275.39999999999998</v></c>
-    <c r="Z1"><v>68.900000000000006</v></c>
-    <c r="AA1"><v>1.1000000000000001</v></c>
-    <c r="AB1" t="str"><v>1234567890123_4</v></c>
-    <c r="AC1" t="str"><v>123456789_0123_4</v></c>
-    <c r="AD1"><v>+0.0000000000000000002399999999999992E-4</v></c>
-    <c r="AE1"><v>7.2399999999999992E-2</v></c>
-</row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `
+	<row r="1"><c r="A1"><v>2422.3000000000002</v></c></row>
+	<row r="2"><c r="A2"><v>2422.3000000000002</v></c></row>
+	<row r="3"><c r="A3"><v>12.4</v></c></row>
+	<row r="4"><c r="A4"><v>964</v></c></row>
+	<row r="5"><c r="A5"><v>1101.5999999999999</v></c></row>
+	<row r="6"><c r="A6"><v>275.39999999999998</v></c></row>
+	<row r="7"><c r="A7"><v>68.900000000000006</v></c></row>
+	<row r="8"><c r="A8"><v>44385.208333333336</v></c></row>
+	<row r="9"><c r="A9"><v>5.0999999999999996</v></c></row>
+	<row r="10"><c r="A10"><v>5.1100000000000003</v></c></row>
+	<row r="11"><c r="A11"><v>5.0999999999999996</v></c></row>
+	<row r="12"><c r="A12"><v>5.1109999999999998</v></c></row>
+	<row r="13"><c r="A13"><v>5.1111000000000004</v></c></row>
+	<row r="14"><c r="A14"><v>2422.012345678</v></c></row>
+	<row r="15"><c r="A15"><v>2422.0123456789</v></c></row>
+	<row r="16"><c r="A16"><v>12.012345678901</v></c></row>
+	<row r="17"><c r="A17"><v>964</v></c></row>
+	<row r="18"><c r="A18"><v>1101.5999999999999</v></c></row>
+	<row r="19"><c r="A19"><v>275.39999999999998</v></c></row>
+	<row r="20"><c r="A20"><v>68.900000000000006</v></c></row>
+	<row r="21"><c r="A21"><v>8.8880000000000001E-2</v></c></row>
+	<row r="22"><c r="A22"><v>4.0000000000000003e-5</v></c></row>
+	<row r="23"><c r="A23"><v>2422.3000000000002</v></c></row>
+	<row r="24"><c r="A24"><v>1101.5999999999999</v></c></row>
+	<row r="25"><c r="A25"><v>275.39999999999998</v></c></row>
+	<row r="26"><c r="A26"><v>68.900000000000006</v></c></row>
+	<row r="27"><c r="A27"><v>1.1000000000000001</v></c></row>
+	<row r="28"><c r="A28" t="str"><v>1234567890123_4</v></c></row>
+	<row r="29"><c r="A29" t="str"><v>123456789_0123_4</v></c></row>
+	<row r="30"><c r="A30"><v>+0.0000000000000000002399999999999992E-4</v></c></row>
+	<row r="31"><c r="A31"><v>7.2399999999999992E-2</v></c></row>
+	<row r="32"><c r="A32" t="d"><v>20200208T080910.123</v></c></row>
+	<row r="33"><c r="A33" t="d"><v>20200208T080910,123</v></c></row>
+	<row r="34"><c r="A34" t="d"><v>20221022T150529Z</v></c></row>
+	<row r="35"><c r="A35" t="d"><v>2022-10-22T15:05:29Z</v></c></row>
+	<row r="36"><c r="A36" t="d"><v>2020-07-10 15:00:00.000</v></c></row>`)))
 	f.checked = nil
-	rows, err = f.GetRows("Sheet1")
-	assert.Equal(t, [][]string{{
+	rows, err = f.GetCols("Sheet1")
+	assert.Equal(t, []string{
 		"2422.3",
 		"2422.3",
 		"12.4",
@@ -365,7 +369,12 @@ func TestGetCellValue(t *testing.T) {
 		"123456789_0123_4",
 		"2.39999999999999E-23",
 		"0.0724",
-	}}, rows)
+		"43869.3397004977",
+		"43869.3397004977",
+		"44856.6288078704",
+		"44856.6288078704",
+		"2020-07-10 15:00:00.000",
+	}, rows[0])
 	assert.NoError(t, err)
 }
 
@@ -596,9 +605,10 @@ func TestSetCellRichText(t *testing.T) {
 		{
 			Text: "bold",
 			Font: &Font{
-				Bold:   true,
-				Color:  "2354e8",
-				Family: "Times New Roman",
+				Bold:         true,
+				Color:        "2354e8",
+				ColorIndexed: 0,
+				Family:       "Times New Roman",
 			},
 		},
 		{
@@ -742,7 +752,7 @@ func TestSharedStringsError(t *testing.T) {
 	assert.Equal(t, "1", f.getFromStringItem(1))
 	// Cleanup undelete temporary files
 	assert.NoError(t, os.Remove(tempFile.(string)))
-	// Test reload the file error on set cell cell and rich text. The error message was different between macOS and Windows.
+	// Test reload the file error on set cell value and rich text. The error message was different between macOS and Windows.
 	err = f.SetCellValue("Sheet1", "A19", "A19")
 	assert.Error(t, err)
 

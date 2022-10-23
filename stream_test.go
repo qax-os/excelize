@@ -235,7 +235,7 @@ func TestStreamSetRowNilValues(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
-	streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}})
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}}))
 	streamWriter.Flush()
 	ws, err := file.workSheetReader("Sheet1")
 	assert.NoError(t, err)

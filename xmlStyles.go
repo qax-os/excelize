@@ -334,16 +334,17 @@ type Border struct {
 
 // Font directly maps the font settings of the fonts.
 type Font struct {
-	Bold       bool    `json:"bold"`
-	Italic     bool    `json:"italic"`
-	Underline  string  `json:"underline"`
-	Family     string  `json:"family"`
-	Size       float64 `json:"size"`
-	Strike     bool    `json:"strike"`
-	Color      string  `json:"color"`
-	ColorTheme *int    `json:"color_theme"`
-	ColorTint  float64 `json:"color_tint"`
-	VertAlign  string  `json:"vertAlign"`
+	Bold         bool    `json:"bold"`
+	Italic       bool    `json:"italic"`
+	Underline    string  `json:"underline"`
+	Family       string  `json:"family"`
+	Size         float64 `json:"size"`
+	Strike       bool    `json:"strike"`
+	Color        string  `json:"color"`
+	ColorIndexed int     `json:"color_indexed"`
+	ColorTheme   *int    `json:"color_theme"`
+	ColorTint    float64 `json:"color_tint"`
+	VertAlign    string  `json:"vertAlign"`
 }
 
 // Fill directly maps the fill settings of the cells.

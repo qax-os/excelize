@@ -2164,6 +2164,10 @@ func newFontColor(font *Font) *xlsxColor {
 		prepareFontColor()
 		fontColor.RGB = getPaletteColor(font.Color)
 	}
+	if font.ColorIndexed >= 0 && font.ColorIndexed <= len(IndexedColorMapping)+1 {
+		prepareFontColor()
+		fontColor.Indexed = font.ColorIndexed
+	}
 	if font.ColorTheme != nil {
 		prepareFontColor()
 		fontColor.Theme = font.ColorTheme

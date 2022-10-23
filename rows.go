@@ -20,6 +20,8 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/mohae/deepcopy"
 )
@@ -447,6 +449,39 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	return f.SharedStrings
 }
 
+// getCellDate parse cell value which containing a boolean.
+func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
+	if !raw {
+		if c.V == "1" {
+			return "TRUE", nil
+		}
+		if c.V == "0" {
+			return "FALSE", nil
+		}
+	}
+	return f.formattedValue(c.S, c.V, raw), nil
+}
+
+// getCellDate parse cell value which contains a date in the ISO 8601 format.
+func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
+	if !raw {
+		layout := "20060102T150405.999"
+		if strings.HasSuffix(c.V, "Z") {
+			layout = "20060102T150405Z"
+			if strings.Contains(c.V, "-") {
+				layout = "2006-01-02T15:04:05Z"
+			}
+		} else if strings.Contains(c.V, "-") {
+			layout = "2006-01-02 15:04:05Z"
+		}
+		if timestamp, err := time.Parse(layout, strings.ReplaceAll(c.V, ",", ".")); err == nil {
+			excelTime, _ := timeToExcelTime(timestamp, false)
+			c.V = strconv.FormatFloat(excelTime, 'G', 15, 64)
+		}
+	}
+	return f.formattedValue(c.S, c.V, raw), nil
+}
+
 // getValueFrom return a value from a column/row cell, this function is
 // intended to be used with for range on rows an argument with the spreadsheet
 // opened file.
@@ -455,15 +490,9 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	defer f.Unlock()
 	switch c.T {
 	case "b":
-		if !raw {
-			if c.V == "1" {
-				return "TRUE", nil
-			}
-			if c.V == "0" {
-				return "FALSE", nil
-			}
-		}
-		return f.formattedValue(c.S, c.V, raw), nil
+		return c.getCellBool(f, raw)
+	case "d":
+		return c.getCellDate(f, raw)
 	case "s":
 		if c.V != "" {
 			xlsxSI := 0
@@ -760,7 +789,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 //	    <c r="G15" s="1" />
 //	</row>
 //
-// Noteice: this method could be very slow for large spreadsheets (more than
+// Notice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
 func checkRow(ws *xlsxWorksheet) error {
 	for rowIdx := range ws.SheetData.Row {
@@ -793,7 +822,7 @@ func checkRow(ws *xlsxWorksheet) error {
 
 		if colCount < lastCol {
 			oldList := rowData.C
-			newlist := make([]xlsxC, 0, lastCol)
+			newList := make([]xlsxC, 0, lastCol)
 
 			rowData.C = ws.SheetData.Row[rowIdx].C[:0]
 
@@ -802,10 +831,10 @@ func checkRow(ws *xlsxWorksheet) error {
 				if err != nil {
 					return err
 				}
-				newlist = append(newlist, xlsxC{R: cellName})
+				newList = append(newList, xlsxC{R: cellName})
 			}
 
-			rowData.C = newlist
+			rowData.C = newList
 
 			for colIdx := range oldList {
 				colData := &oldList[colIdx]
