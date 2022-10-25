@@ -5223,8 +5223,8 @@ func TestCalcXLOOKUP(t *testing.T) {
 		"=XLOOKUP(29,C2:H2,C3:H3,NA(),-1,1)":  "D3",
 	}
 	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "D3", formula))
-		result, err := f.CalcCellValue("Sheet1", "D3")
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D4", formula))
+		result, err := f.CalcCellValue("Sheet1", "D4")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}

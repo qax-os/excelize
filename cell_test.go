@@ -224,10 +224,11 @@ func TestSetCellTime(t *testing.T) {
 	} {
 		timezone, err := time.LoadLocation(location)
 		assert.NoError(t, err)
-		_, b, isNum, err := setCellTime(date.In(timezone), false)
+		c := &xlsxC{}
+		isNum, err := c.setCellTime(date.In(timezone), false)
 		assert.NoError(t, err)
 		assert.Equal(t, true, isNum)
-		assert.Equal(t, expected, b)
+		assert.Equal(t, expected, c.V)
 	}
 }
 
@@ -237,7 +238,7 @@ func TestGetCellValue(t *testing.T) {
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="3"><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="3"><c t="inlineStr"><is><t>A3</t></is></c></row><row><c t="inlineStr"><is><t>A4</t></is></c><c t="inlineStr"><is><t>B4</t></is></c></row><row r="7"><c t="inlineStr"><is><t>A7</t></is></c><c t="inlineStr"><is><t>B7</t></is></c></row><row><c t="inlineStr"><is><t>A8</t></is></c><c t="inlineStr"><is><t>B8</t></is></c></row>`)))
 	f.checked = nil
 	cells := []string{"A3", "A4", "B4", "A7", "B7"}
 	rows, err := f.GetRows("Sheet1")
@@ -253,35 +254,35 @@ func TestGetCellValue(t *testing.T) {
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="inlineStr"><is><t>A2</t></is></c></row><row r="2"><c r="B2" t="inlineStr"><is><t>B2</t></is></c></row>`)))
 	f.checked = nil
 	cell, err := f.GetCellValue("Sheet1", "A2")
 	assert.Equal(t, "A2", cell)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="str"><v>A2</v></c></row><row r="2"><c r="B2" t="str"><v>B2</v></c></row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c r="A2" t="inlineStr"><is><t>A2</t></is></c></row><row r="2"><c r="B2" t="inlineStr"><is><t>B2</t></is></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{nil, {"A2", "B2"}}, rows)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="str"><v>A1</v></c></row><row r="1"><c r="B1" t="str"><v>B1</v></c></row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="1"><c r="A1" t="inlineStr"><is><t>A1</t></is></c></row><row r="1"><c r="B1" t="inlineStr"><is><t>B1</t></is></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{{"A1", "B1"}}, rows)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row><c t="str"><v>A3</v></c></row><row><c t="str"><v>A4</v></c><c t="str"><v>B4</v></c></row><row r="7"><c t="str"><v>A7</v></c><c t="str"><v>B7</v></c></row><row><c t="str"><v>A8</v></c><c t="str"><v>B8</v></c></row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row><c t="inlineStr"><is><t>A3</t></is></c></row><row><c t="inlineStr"><is><t>A4</t></is></c><c t="inlineStr"><is><t>B4</t></is></c></row><row r="7"><c t="inlineStr"><is><t>A7</t></is></c><c t="inlineStr"><is><t>B7</t></is></c></row><row><c t="inlineStr"><is><t>A8</t></is></c><c t="inlineStr"><is><t>B8</t></is></c></row>`)))
 	f.checked = nil
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{{"A3"}, {"A4", "B4"}, nil, nil, nil, nil, {"A7", "B7"}, {"A8", "B8"}}, rows)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="0"><c r="H6" t="str"><v>H6</v></c><c r="A1" t="str"><v>r0A6</v></c><c r="F4" t="str"><v>F4</v></c></row><row><c r="A1" t="str"><v>A6</v></c><c r="B1" t="str"><v>B6</v></c><c r="C1" t="str"><v>C6</v></c></row><row r="3"><c r="A3"><v>100</v></c><c r="B3" t="str"><v>B3</v></c></row>`)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="0"><c r="H6" t="inlineStr"><is><t>H6</t></is></c><c r="A1" t="inlineStr"><is><t>r0A6</t></is></c><c r="F4" t="inlineStr"><is><t>F4</t></is></c></row><row><c r="A1" t="inlineStr"><is><t>A6</t></is></c><c r="B1" t="inlineStr"><is><t>B6</t></is></c><c r="C1" t="inlineStr"><is><t>C6</t></is></c></row><row r="3"><c r="A3"><v>100</v></c><c r="B3" t="inlineStr"><is><t>B3</t></is></c></row>`)))
 	f.checked = nil
 	cell, err = f.GetCellValue("Sheet1", "H6")
 	assert.Equal(t, "H6", cell)
@@ -326,8 +327,8 @@ func TestGetCellValue(t *testing.T) {
 	<row r="25"><c r="A25"><v>275.39999999999998</v></c></row>
 	<row r="26"><c r="A26"><v>68.900000000000006</v></c></row>
 	<row r="27"><c r="A27"><v>1.1000000000000001</v></c></row>
-	<row r="28"><c r="A28" t="str"><v>1234567890123_4</v></c></row>
-	<row r="29"><c r="A29" t="str"><v>123456789_0123_4</v></c></row>
+	<row r="28"><c r="A28" t="inlineStr"><is><t>1234567890123_4</t></is></c></row>
+	<row r="29"><c r="A29" t="inlineStr"><is><t>123456789_0123_4</t></is></c></row>
 	<row r="30"><c r="A30"><v>+0.0000000000000000002399999999999992E-4</v></c></row>
 	<row r="31"><c r="A31"><v>7.2399999999999992E-2</v></c></row>
 	<row r="32"><c r="A32" t="d"><v>20200208T080910.123</v></c></row>
@@ -386,7 +387,7 @@ func TestGetCellType(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A1"))
 	cellType, err = f.GetCellType("Sheet1", "A1")
 	assert.NoError(t, err)
-	assert.Equal(t, CellTypeString, cellType)
+	assert.Equal(t, CellTypeSharedString, cellType)
 	_, err = f.GetCellType("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }

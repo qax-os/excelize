@@ -76,18 +76,18 @@ func TestSearchSheet(t *testing.T) {
 
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>A</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
 	f.checked = nil
 	result, err = f.SearchSheet("Sheet1", "A")
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"A\": invalid syntax")
 	assert.Equal(t, []string(nil), result)
 
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.Equal(t, []string(nil), result)
 
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="str"><v>A</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
 	assert.EqualError(t, err, "invalid cell reference [1, 0]")
 	assert.Equal(t, []string(nil), result)

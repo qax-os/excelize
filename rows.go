@@ -20,8 +20,6 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/mohae/deepcopy"
 )
@@ -447,81 +445,6 @@ func (f *File) sharedStringsReader() *xlsxSST {
 	}
 
 	return f.SharedStrings
-}
-
-// getCellDate parse cell value which containing a boolean.
-func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
-	if !raw {
-		if c.V == "1" {
-			return "TRUE", nil
-		}
-		if c.V == "0" {
-			return "FALSE", nil
-		}
-	}
-	return f.formattedValue(c.S, c.V, raw), nil
-}
-
-// getCellDate parse cell value which contains a date in the ISO 8601 format.
-func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
-	if !raw {
-		layout := "20060102T150405.999"
-		if strings.HasSuffix(c.V, "Z") {
-			layout = "20060102T150405Z"
-			if strings.Contains(c.V, "-") {
-				layout = "2006-01-02T15:04:05Z"
-			}
-		} else if strings.Contains(c.V, "-") {
-			layout = "2006-01-02 15:04:05Z"
-		}
-		if timestamp, err := time.Parse(layout, strings.ReplaceAll(c.V, ",", ".")); err == nil {
-			excelTime, _ := timeToExcelTime(timestamp, false)
-			c.V = strconv.FormatFloat(excelTime, 'G', 15, 64)
-		}
-	}
-	return f.formattedValue(c.S, c.V, raw), nil
-}
-
-// getValueFrom return a value from a column/row cell, this function is
-// intended to be used with for range on rows an argument with the spreadsheet
-// opened file.
-func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
-	f.Lock()
-	defer f.Unlock()
-	switch c.T {
-	case "b":
-		return c.getCellBool(f, raw)
-	case "d":
-		return c.getCellDate(f, raw)
-	case "s":
-		if c.V != "" {
-			xlsxSI := 0
-			xlsxSI, _ = strconv.Atoi(c.V)
-			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw), nil
-			}
-			if len(d.SI) > xlsxSI {
-				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil
-			}
-		}
-		return f.formattedValue(c.S, c.V, raw), nil
-	case "str":
-		return f.formattedValue(c.S, c.V, raw), nil
-	case "inlineStr":
-		if c.IS != nil {
-			return f.formattedValue(c.S, c.IS.String(), raw), nil
-		}
-		return f.formattedValue(c.S, c.V, raw), nil
-	default:
-		if isNum, precision, decimal := isNumeric(c.V); isNum && !raw {
-			if precision > 15 {
-				c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
-			} else {
-				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
-			}
-		}
-		return f.formattedValue(c.S, c.V, raw), nil
-	}
 }
 
 // SetRowVisible provides a function to set visible of a single row by given

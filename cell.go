@@ -30,8 +30,10 @@ const (
 	CellTypeBool
 	CellTypeDate
 	CellTypeError
+	CellTypeFormula
+	CellTypeInlineString
 	CellTypeNumber
-	CellTypeString
+	CellTypeSharedString
 )
 
 const (
@@ -51,9 +53,9 @@ var cellTypes = map[string]CellType{
 	"d":         CellTypeDate,
 	"n":         CellTypeNumber,
 	"e":         CellTypeError,
-	"s":         CellTypeString,
-	"str":       CellTypeString,
-	"inlineStr": CellTypeString,
+	"s":         CellTypeSharedString,
+	"str":       CellTypeFormula,
+	"inlineStr": CellTypeInlineString,
 }
 
 // GetCellValue provides a function to get formatted value from cell by given
@@ -235,8 +237,7 @@ func (f *File) setCellTimeFunc(sheet, cell string, value time.Time) error {
 		date1904 = wb.WorkbookPr.Date1904
 	}
 	var isNum bool
-	c.T, c.V, isNum, err = setCellTime(value, date1904)
-	if err != nil {
+	if isNum, err = c.setCellTime(value, date1904); err != nil {
 		return err
 	}
 	if isNum {
@@ -247,7 +248,7 @@ func (f *File) setCellTimeFunc(sheet, cell string, value time.Time) error {
 
 // setCellTime prepares cell type and Excel time by given Go time.Time type
 // timestamp.
-func setCellTime(value time.Time, date1904 bool) (t string, b string, isNum bool, err error) {
+func (c *xlsxC) setCellTime(value time.Time, date1904 bool) (isNum bool, err error) {
 	var excelTime float64
 	_, offset := value.In(value.Location()).Zone()
 	value = value.Add(time.Duration(offset) * time.Second)
@@ -256,9 +257,9 @@ func setCellTime(value time.Time, date1904 bool) (t string, b string, isNum bool
 	}
 	isNum = excelTime > 0
 	if isNum {
-		t, b = setCellDefault(strconv.FormatFloat(excelTime, 'f', -1, 64))
+		c.setCellDefault(strconv.FormatFloat(excelTime, 'f', -1, 64))
 	} else {
-		t, b = setCellDefault(value.Format(time.RFC3339Nano))
+		c.setCellDefault(value.Format(time.RFC3339Nano))
 	}
 	return
 }
@@ -435,14 +436,14 @@ func (f *File) setSharedString(val string) (int, error) {
 	sst.Count++
 	sst.UniqueCount++
 	t := xlsxT{Val: val}
-	_, val, t.Space = setCellStr(val)
+	val, t.Space = trimCellValue(val)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1, nil
 }
 
-// setCellStr provides a function to set string type to cell.
-func setCellStr(value string) (t string, v string, ns xml.Attr) {
+// trimCellValue provides a function to set string type to cell.
+func trimCellValue(value string) (v string, ns xml.Attr) {
 	if len(value) > TotalCellChars {
 		value = value[:TotalCellChars]
 	}
@@ -458,8 +459,115 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 			}
 		}
 	}
-	t, v = "str", bstrMarshal(value)
+	v = bstrMarshal(value)
 	return
+}
+
+// setCellValue set cell data type and value for (inline) rich string cell or
+// formula cell.
+func (c *xlsxC) setCellValue(val string) {
+	if c.F != nil {
+		c.setStr(val)
+		return
+	}
+	c.setInlineStr(val)
+}
+
+// setInlineStr set cell data type and value which containing an (inline) rich
+// string.
+func (c *xlsxC) setInlineStr(val string) {
+	c.T, c.V, c.IS = "inlineStr", "", &xlsxSI{T: &xlsxT{}}
+	c.IS.T.Val, c.IS.T.Space = trimCellValue(val)
+}
+
+// setStr set cell data type and value which containing a formula string.
+func (c *xlsxC) setStr(val string) {
+	c.T, c.IS = "str", nil
+	c.V, c.XMLSpace = trimCellValue(val)
+}
+
+// getCellDate parse cell value which containing a boolean.
+func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
+	if !raw {
+		if c.V == "1" {
+			return "TRUE", nil
+		}
+		if c.V == "0" {
+			return "FALSE", nil
+		}
+	}
+	return f.formattedValue(c.S, c.V, raw), nil
+}
+
+// setCellDefault prepares cell type and string type cell value by a given
+// string.
+func (c *xlsxC) setCellDefault(value string) {
+	if ok, _, _ := isNumeric(value); !ok {
+		c.setInlineStr(value)
+		c.IS.T.Val = value
+		return
+	}
+	c.V = value
+}
+
+// getCellDate parse cell value which contains a date in the ISO 8601 format.
+func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
+	if !raw {
+		layout := "20060102T150405.999"
+		if strings.HasSuffix(c.V, "Z") {
+			layout = "20060102T150405Z"
+			if strings.Contains(c.V, "-") {
+				layout = "2006-01-02T15:04:05Z"
+			}
+		} else if strings.Contains(c.V, "-") {
+			layout = "2006-01-02 15:04:05Z"
+		}
+		if timestamp, err := time.Parse(layout, strings.ReplaceAll(c.V, ",", ".")); err == nil {
+			excelTime, _ := timeToExcelTime(timestamp, false)
+			c.V = strconv.FormatFloat(excelTime, 'G', 15, 64)
+		}
+	}
+	return f.formattedValue(c.S, c.V, raw), nil
+}
+
+// getValueFrom return a value from a column/row cell, this function is
+// intended to be used with for range on rows an argument with the spreadsheet
+// opened file.
+func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
+	f.Lock()
+	defer f.Unlock()
+	switch c.T {
+	case "b":
+		return c.getCellBool(f, raw)
+	case "d":
+		return c.getCellDate(f, raw)
+	case "s":
+		if c.V != "" {
+			xlsxSI := 0
+			xlsxSI, _ = strconv.Atoi(c.V)
+			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
+				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw), nil
+			}
+			if len(d.SI) > xlsxSI {
+				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil
+			}
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	case "inlineStr":
+		if c.IS != nil {
+			return f.formattedValue(c.S, c.IS.String(), raw), nil
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	default:
+		if isNum, precision, decimal := isNumeric(c.V); isNum && !raw {
+			if precision > 15 {
+				c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
+			} else {
+				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
+			}
+		}
+		return f.formattedValue(c.S, c.V, raw), nil
+	}
 }
 
 // SetCellDefault provides a function to set string type value of a cell as
@@ -476,20 +584,9 @@ func (f *File) SetCellDefault(sheet, cell, value string) error {
 	ws.Lock()
 	defer ws.Unlock()
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
-	c.T, c.V = setCellDefault(value)
-	c.IS = nil
+	c.setCellDefault(value)
 	f.removeFormula(c, ws, sheet)
 	return err
-}
-
-// setCellDefault prepares cell type and string type cell value by a given
-// string.
-func setCellDefault(value string) (t string, v string) {
-	if ok, _, _ := isNumeric(value); !ok {
-		t = "str"
-	}
-	v = value
-	return
 }
 
 // GetCellFormula provides a function to get formula from cell by given
@@ -625,7 +722,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 			c.F.Ref = *opt.Ref
 		}
 	}
-	c.IS = nil
+	c.T, c.IS = "str", nil
 	return err
 }
 
@@ -900,7 +997,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 			return textRuns, ErrCellCharsLength
 		}
 		run := xlsxR{T: &xlsxT{}}
-		_, run.T.Val, run.T.Space = setCellStr(textRun.Text)
+		run.T.Val, run.T.Space = trimCellValue(textRun.Text)
 		fnt := textRun.Font
 		if fnt != nil {
 			run.RPr = newRpr(fnt)

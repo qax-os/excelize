@@ -109,12 +109,12 @@ func TestGetColsError(t *testing.T) {
 
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="str"><v>B</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`))
 	f.checked = nil
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="str"><v>B</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`))
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
@@ -124,7 +124,7 @@ func TestGetColsError(t *testing.T) {
 	cols.totalRows = 2
 	cols.totalCols = 2
 	cols.curCol = 1
-	cols.sheetXML = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="str"><v>A</v></c></row></sheetData></worksheet>`)
+	cols.sheetXML = []byte(`<worksheet><sheetData><row r="1"><c r="A" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`)
 	_, err = cols.Rows()
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
