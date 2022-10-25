@@ -47,6 +47,15 @@ func TestAdjustMergeCells(t *testing.T) {
 			},
 		},
 	}, columns, 1, -1))
+	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
+		MergeCells: &xlsxMergeCells{
+			Cells: []*xlsxMergeCell{
+				{
+					Ref: "A2",
+				},
+			},
+		},
+	}, columns, 1, -1))
 
 	// testing adjustMergeCells
 	var cases []struct {

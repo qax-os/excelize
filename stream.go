@@ -48,6 +48,11 @@ type StreamWriter struct {
 // with numbers and style:
 //
 //	file := excelize.NewFile()
+//	defer func() {
+//	    if err := file.Close(); err != nil {
+//	        fmt.Println(err)
+//	    }
+//	}()
 //	streamWriter, err := file.NewStreamWriter("Sheet1")
 //	if err != nil {
 //	    fmt.Println(err)

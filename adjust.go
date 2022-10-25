@@ -278,7 +278,11 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 
 	for i := 0; i < len(ws.MergeCells.Cells); i++ {
 		mergedCells := ws.MergeCells.Cells[i]
-		coordinates, err := rangeRefToCoordinates(mergedCells.Ref)
+		mergedCellsRef := mergedCells.Ref
+		if !strings.Contains(mergedCellsRef, ":") {
+			mergedCellsRef += ":" + mergedCellsRef
+		}
+		coordinates, err := rangeRefToCoordinates(mergedCellsRef)
 		if err != nil {
 			return err
 		}

@@ -152,19 +152,19 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 
 // String extracts characters from a string item.
 func (x xlsxSI) String() string {
-	if len(x.R) > 0 {
-		var rows strings.Builder
-		for _, s := range x.R {
-			if s.T != nil {
-				rows.WriteString(s.T.Val)
-			}
-		}
-		return bstrUnmarshal(rows.String())
-	}
+	var value strings.Builder
 	if x.T != nil {
-		return bstrUnmarshal(x.T.Val)
+		value.WriteString(x.T.Val)
 	}
-	return ""
+	for _, s := range x.R {
+		if s.T != nil {
+			value.WriteString(s.T.Val)
+		}
+	}
+	if value.Len() == 0 {
+		return ""
+	}
+	return bstrUnmarshal(value.String())
 }
 
 // hasValue determine if cell non-blank value.

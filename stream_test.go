@@ -15,7 +15,11 @@ import (
 
 func BenchmarkStreamWriter(b *testing.B) {
 	file := NewFile()
-
+	defer func() {
+		if err := file.Close(); err != nil {
+			b.Error(err)
+		}
+	}()
 	row := make([]interface{}, 10)
 	for colID := 0; colID < 10; colID++ {
 		row[colID] = colID
@@ -78,6 +82,7 @@ func TestStreamWriter(t *testing.T) {
 
 	// Test set cell column overflow.
 	assert.ErrorIs(t, streamWriter.SetRow("XFD51201", []interface{}{"A", "B", "C"}), ErrColumnNumber)
+	assert.NoError(t, file.Close())
 
 	// Test close temporary file error.
 	file = NewFile()
@@ -107,6 +112,7 @@ func TestStreamWriter(t *testing.T) {
 	file.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err = file.NewStreamWriter("Sheet1")
 	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, file.Close())
 
 	// Test read cell.
 	file = NewFile()
@@ -138,6 +144,9 @@ func TestStreamWriter(t *testing.T) {
 
 func TestStreamSetColWidth(t *testing.T) {
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetColWidth(3, 2, 20))
@@ -150,6 +159,9 @@ func TestStreamSetColWidth(t *testing.T) {
 
 func TestStreamSetPanes(t *testing.T) {
 	file, paneOpts := NewFile(), `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetPanes(paneOpts))
@@ -160,6 +172,9 @@ func TestStreamSetPanes(t *testing.T) {
 
 func TestStreamTable(t *testing.T) {
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 
@@ -194,6 +209,9 @@ func TestStreamTable(t *testing.T) {
 
 func TestStreamMergeCells(t *testing.T) {
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.MergeCell("A1", "D1"))
@@ -207,6 +225,9 @@ func TestStreamMergeCells(t *testing.T) {
 func TestNewStreamWriter(t *testing.T) {
 	// Test error exceptions
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	_, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
@@ -223,6 +244,9 @@ func TestStreamMarshalAttrs(t *testing.T) {
 func TestStreamSetRow(t *testing.T) {
 	// Test error exceptions
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
@@ -233,6 +257,9 @@ func TestStreamSetRow(t *testing.T) {
 
 func TestStreamSetRowNilValues(t *testing.T) {
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}}))
@@ -244,6 +271,9 @@ func TestStreamSetRowNilValues(t *testing.T) {
 
 func TestStreamSetRowWithStyle(t *testing.T) {
 	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
 	zeroStyleID := 0
 	grayStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
 	assert.NoError(t, err)
@@ -273,6 +303,9 @@ func TestStreamSetRowWithStyle(t *testing.T) {
 
 func TestStreamSetCellValFunc(t *testing.T) {
 	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
 	sw, err := f.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	c := &xlsxC{}
