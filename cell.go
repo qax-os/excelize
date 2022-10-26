@@ -1287,6 +1287,9 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 		return v
 	}
 	styleSheet := f.stylesReader()
+	if styleSheet.CellXfs == nil {
+		return v	
+	}
 	if s >= len(styleSheet.CellXfs.Xf) {
 		return v
 	}
@@ -1301,7 +1304,7 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
 		return ok(v, builtInNumFmt[numFmtID], date1904)
 	}
-	if styleSheet == nil || styleSheet.NumFmts == nil {
+	if styleSheet.NumFmts == nil {
 		return v
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
