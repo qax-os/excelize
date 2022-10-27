@@ -243,9 +243,9 @@ func (f *File) relsWriter() {
 // strict requirements about the structure of the input XML. This function is
 // a horrible hack to fix that after the XML marshalling is completed.
 func replaceRelationshipsBytes(content []byte) []byte {
-	oldXmlns := []byte(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
-	newXmlns := []byte("r")
-	return bytesReplace(content, oldXmlns, newXmlns, -1)
+	sourceXmlns := []byte(`xmlns:relationships="http://schemas.openxmlformats.org/officeDocument/2006/relationships" relationships`)
+	targetXmlns := []byte("r")
+	return bytesReplace(content, sourceXmlns, targetXmlns, -1)
 }
 
 // SetActiveSheet provides a function to set the default active sheet of the
@@ -1623,7 +1623,7 @@ func (f *File) InsertPageBreak(sheet, cell string) error {
 	if row != 0 && rowBrk == -1 {
 		ws.RowBreaks.Brk = append(ws.RowBreaks.Brk, &xlsxBrk{
 			ID:  row,
-			Max: 16383,
+			Max: MaxColumns - 1,
 			Man: true,
 		})
 		ws.RowBreaks.ManualBreakCount++
@@ -1631,7 +1631,7 @@ func (f *File) InsertPageBreak(sheet, cell string) error {
 	if col != 0 && colBrk == -1 {
 		ws.ColBreaks.Brk = append(ws.ColBreaks.Brk, &xlsxBrk{
 			ID:  col,
-			Max: 1048575,
+			Max: TotalRows - 1,
 			Man: true,
 		})
 		ws.ColBreaks.ManualBreakCount++

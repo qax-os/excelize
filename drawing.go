@@ -91,7 +91,7 @@ func (f *File) addChart(opts *chartOptions, comboCharts []*chartOptions) {
 									Cs: &aCs{
 										Typeface: "+mn-cs",
 									},
-									Latin: &aLatin{
+									Latin: &xlsxCTTextFont{
 										Typeface: "+mn-lt",
 									},
 								},
@@ -1168,7 +1168,7 @@ func (f *File) drawPlotAreaTxPr(opts *chartAxisOptions) *cTxPr {
 							LumOff: &attrValInt{Val: intPtr(85000)},
 						},
 					},
-					Latin: &aLatin{Typeface: "+mn-lt"},
+					Latin: &xlsxCTTextFont{Typeface: "+mn-lt"},
 					Ea:    &aEa{Typeface: "+mn-ea"},
 					Cs:    &aCs{Typeface: "+mn-cs"},
 				},

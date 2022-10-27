@@ -17,7 +17,11 @@ import "strings"
 func (mc *xlsxMergeCell) Rect() ([]int, error) {
 	var err error
 	if mc.rect == nil {
-		mc.rect, err = rangeRefToCoordinates(mc.Ref)
+		mergedCellsRef := mc.Ref
+		if !strings.Contains(mergedCellsRef, ":") {
+			mergedCellsRef += ":" + mergedCellsRef
+		}
+		mc.rect, err = rangeRefToCoordinates(mergedCellsRef)
 	}
 	return mc.rect, err
 }
@@ -105,7 +109,11 @@ func (f *File) UnmergeCell(sheet, hCell, vCell string) error {
 		if mergeCell == nil {
 			continue
 		}
-		rect2, _ := rangeRefToCoordinates(mergeCell.Ref)
+		mergedCellsRef := mergeCell.Ref
+		if !strings.Contains(mergedCellsRef, ":") {
+			mergedCellsRef += ":" + mergedCellsRef
+		}
+		rect2, _ := rangeRefToCoordinates(mergedCellsRef)
 		if isOverlap(rect1, rect2) {
 			continue
 		}

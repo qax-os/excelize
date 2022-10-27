@@ -185,7 +185,7 @@ func TestUnmergeCell(t *testing.T) {
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
-	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), ErrParameterInvalid.Error())
+	assert.NoError(t, f.UnmergeCell("Sheet1", "A2", "B3"))
 
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
@@ -194,6 +194,6 @@ func TestUnmergeCell(t *testing.T) {
 }
 
 func TestFlatMergedCells(t *testing.T) {
-	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}}
-	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), ErrParameterInvalid.Error())
+	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ""}}}}
+	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
 }

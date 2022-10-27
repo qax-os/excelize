@@ -159,6 +159,7 @@ var IndexedColorMapping = []string{
 	"00CCFF", "CCFFFF", "CCFFCC", "FFFF99", "99CCFF", "FF99CC", "CC99FF", "FFCC99",
 	"3366FF", "33CCCC", "99CC00", "FFCC00", "FF9900", "FF6600", "666699", "969696",
 	"003366", "339966", "003300", "333300", "993300", "993366", "333399", "333333",
+	"000000", "FFFFFF",
 }
 
 // supportedImageTypes defined supported image types.

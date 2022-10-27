@@ -11,8 +11,6 @@
 
 package excelize
 
-import "fmt"
-
 // getSheetView returns the SheetView object
 func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error) {
 	ws, err := f.workSheetReader(sheet)
@@ -26,11 +24,11 @@ func (f *File) getSheetView(sheet string, viewIndex int) (*xlsxSheetView, error)
 	}
 	if viewIndex < 0 {
 		if viewIndex < -len(ws.SheetViews.SheetView) {
-			return nil, fmt.Errorf("view index %d out of range", viewIndex)
+			return nil, newViewIdxError(viewIndex)
 		}
 		viewIndex = len(ws.SheetViews.SheetView) + viewIndex
 	} else if viewIndex >= len(ws.SheetViews.SheetView) {
-		return nil, fmt.Errorf("view index %d out of range", viewIndex)
+		return nil, newViewIdxError(viewIndex)
 	}
 
 	return &(ws.SheetViews.SheetView[viewIndex]), err

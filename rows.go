@@ -744,8 +744,8 @@ func checkRow(ws *xlsxWorksheet) error {
 		}
 
 		if colCount < lastCol {
-			oldList := rowData.C
-			newList := make([]xlsxC, 0, lastCol)
+			sourceList := rowData.C
+			targetList := make([]xlsxC, 0, lastCol)
 
 			rowData.C = ws.SheetData.Row[rowIdx].C[:0]
 
@@ -754,13 +754,13 @@ func checkRow(ws *xlsxWorksheet) error {
 				if err != nil {
 					return err
 				}
-				newList = append(newList, xlsxC{R: cellName})
+				targetList = append(targetList, xlsxC{R: cellName})
 			}
 
-			rowData.C = newList
+			rowData.C = targetList
 
-			for colIdx := range oldList {
-				colData := &oldList[colIdx]
+			for colIdx := range sourceList {
+				colData := &sourceList[colIdx]
 				colNum, _, err := CellNameToCoordinates(colData.R)
 				if err != nil {
 					return err
