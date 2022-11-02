@@ -139,9 +139,11 @@ func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
 // workSheetWriter provides a function to save xl/worksheets/sheet%d.xml after
 // serialize structure.
 func (f *File) workSheetWriter() {
-	var arr []byte
-	buffer := bytes.NewBuffer(arr)
-	encoder := xml.NewEncoder(buffer)
+	var (
+		arr     []byte
+		buffer  = bytes.NewBuffer(arr)
+		encoder = xml.NewEncoder(buffer)
+	)
 	f.Sheet.Range(func(p, ws interface{}) bool {
 		if ws != nil {
 			sheet := ws.(*xlsxWorksheet)
@@ -151,9 +153,7 @@ func (f *File) workSheetWriter() {
 			if sheet.Cols != nil && len(sheet.Cols.Col) > 0 {
 				f.mergeExpandedCols(sheet)
 			}
-			for k, v := range sheet.SheetData.Row {
-				sheet.SheetData.Row[k].C = trimCell(v.C)
-			}
+			sheet.SheetData.Row = trimRow(&sheet.SheetData)
 			if sheet.SheetPr != nil || sheet.Drawing != nil || sheet.Hyperlinks != nil || sheet.Picture != nil || sheet.TableParts != nil {
 				f.addNameSpaces(p.(string), SourceRelationship)
 			}
@@ -176,6 +176,21 @@ func (f *File) workSheetWriter() {
 		}
 		return true
 	})
+}
+
+// trimRow provides a function to trim empty rows.
+func trimRow(sheetData *xlsxSheetData) []xlsxRow {
+	var (
+		row  xlsxRow
+		rows []xlsxRow
+	)
+	for k, v := range sheetData.Row {
+		row = sheetData.Row[k]
+		if row.C = trimCell(v.C); len(row.C) != 0 || row.hasAttr() {
+			rows = append(rows, row)
+		}
+	}
+	return rows
 }
 
 // trimCell provides a function to trim blank cells which created by fillColumns.

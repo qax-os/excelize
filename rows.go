@@ -772,6 +772,13 @@ func checkRow(ws *xlsxWorksheet) error {
 	return nil
 }
 
+// hasAttr determine if row non-default attributes.
+func (r *xlsxRow) hasAttr() bool {
+	return r.Spans != "" || r.S != 0 || r.CustomFormat || r.Ht != 0 ||
+		r.Hidden || r.CustomHeight || r.OutlineLevel != 0 || r.Collapsed ||
+		r.ThickTop || r.ThickBot || r.Ph
+}
+
 // SetRowStyle provides a function to set the style of rows by given worksheet
 // name, row range, and style ID. Note that this will overwrite the existing
 // styles for the rows, it won't append or merge style with existing styles.
