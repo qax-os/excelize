@@ -26,14 +26,14 @@ func TestAddComments(t *testing.T) {
 		t.FailNow()
 	}
 
-	s := strings.Repeat("c", 32768)
-	assert.NoError(t, f.AddComment("Sheet1", "A30", `{"author":"`+s+`","text":"`+s+`"}`))
-	assert.NoError(t, f.AddComment("Sheet2", "B7", `{"author":"Excelize: ","text":"This is a comment."}`))
+	s := strings.Repeat("c", TotalCellChars+1)
+	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A30", Author: s, Text: s, Runs: []RichTextRun{{Text: s}, {Text: s}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "B7", Author: "Excelize", Text: s[:TotalCellChars-1], Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
 
 	// Test add comment on not exists worksheet.
-	assert.EqualError(t, f.AddComment("SheetN", "B7", `{"author":"Excelize: ","text":"This is a comment."}`), "sheet SheetN does not exist")
+	assert.EqualError(t, f.AddComment("SheetN", Comment{Cell: "B7", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), "sheet SheetN does not exist")
 	// Test add comment on with illegal cell reference
-	assert.EqualError(t, f.AddComment("Sheet1", "A", `{"author":"Excelize: ","text":"This is a comment."}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	if assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
 		assert.Len(t, f.GetComments(), 2)
 	}
@@ -52,12 +52,12 @@ func TestDeleteComment(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.NoError(t, f.AddComment("Sheet2", "A40", `{"author":"Excelize: ","text":"This is a comment1."}`))
-	assert.NoError(t, f.AddComment("Sheet2", "A41", `{"author":"Excelize: ","text":"This is a comment2."}`))
-	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3."}`))
-	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3-1."}`))
-	assert.NoError(t, f.AddComment("Sheet2", "C42", `{"author":"Excelize: ","text":"This is a comment4."}`))
-	assert.NoError(t, f.AddComment("Sheet2", "C41", `{"author":"Excelize: ","text":"This is a comment3-2."}`))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "A40", Text: "Excelize: This is a comment1."}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "A41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment2."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment3."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment3-1."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C42", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment4."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment2."}}}))
 
 	assert.NoError(t, f.DeleteComment("Sheet2", "A40"))
 

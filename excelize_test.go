@@ -946,8 +946,7 @@ func TestSetDeleteSheet(t *testing.T) {
 			t.FailNow()
 		}
 		f.DeleteSheet("Sheet1")
-		assert.EqualError(t, f.AddComment("Sheet1", "A1", ""), "unexpected end of JSON input")
-		assert.NoError(t, f.AddComment("Sheet1", "A1", `{"author":"Excelize: ","text":"This is a comment."}`))
+		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A1", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDeleteSheet.TestBook4.xlsx")))
 	})
 }

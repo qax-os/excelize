@@ -83,6 +83,6 @@ type xlsxRPr struct {
 
 // RichTextRun directly maps the settings of the rich text run.
 type RichTextRun struct {
-	Font *Font
-	Text string
+	Font *Font  `json:"font"`
+	Text string `json:"text"`
 }

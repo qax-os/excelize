@@ -29,6 +29,7 @@ var (
 	NameSpaceDrawingML                      = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
 	NameSpaceDrawingMLChart                 = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
 	NameSpaceDrawingMLSpreadSheet           = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
+	NameSpaceDrawing2016SVG                 = xml.Attr{Name: xml.Name{Local: "asvg", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2016/SVG/main"}
 	NameSpaceSpreadSheetX15                 = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
 	NameSpaceSpreadSheetExcel2006Main       = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
 	NameSpaceMacExcel2008Main               = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
@@ -95,6 +96,7 @@ const (
 	ExtURITimelineRefs           = "{7E03D99C-DC04-49d9-9315-930204A7B6E9}"
 	ExtURIDrawingBlip            = "{28A0092B-C50C-407E-A947-70E740481C1C}"
 	ExtURIMacExcelMX             = "{64002731-A6B0-56B0-2670-7721B7C09600}"
+	ExtURISVG                    = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
 )
 
 // Excel specifications and limits
@@ -163,7 +165,11 @@ var IndexedColorMapping = []string{
 }
 
 // supportedImageTypes defined supported image types.
-var supportedImageTypes = map[string]string{".gif": ".gif", ".jpg": ".jpeg", ".jpeg": ".jpeg", ".png": ".png", ".tif": ".tiff", ".tiff": ".tiff", ".emf": ".emf", ".wmf": ".wmf", ".emz": ".emz", ".wmz": ".wmz"}
+var supportedImageTypes = map[string]string{
+	".emf": ".emf", ".emz": ".emz", ".gif": ".gif", ".jpeg": ".jpeg",
+	".jpg": ".jpeg", ".png": ".png", ".svg": ".svg", ".tif": ".tiff",
+	".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
+}
 
 // supportedContentTypes defined supported file format types.
 var supportedContentTypes = map[string]string{
@@ -231,9 +237,10 @@ type xlsxPicLocks struct {
 // xlsxBlip element specifies the existence of an image (binary large image or
 // picture) and contains a reference to the image data.
 type xlsxBlip struct {
-	Embed  string `xml:"r:embed,attr"`
-	Cstate string `xml:"cstate,attr,omitempty"`
-	R      string `xml:"xmlns:r,attr"`
+	Embed   string                        `xml:"r:embed,attr"`
+	Cstate  string                        `xml:"cstate,attr,omitempty"`
+	R       string                        `xml:"xmlns:r,attr"`
+	ExtList *xlsxEGOfficeArtExtensionList `xml:"a:extLst"`
 }
 
 // xlsxStretch directly maps the stretch element. This element specifies that a
@@ -291,6 +298,28 @@ type xlsxCNvPicPr struct {
 type xlsxNvPicPr struct {
 	CNvPr    xlsxCNvPr    `xml:"xdr:cNvPr"`
 	CNvPicPr xlsxCNvPicPr `xml:"xdr:cNvPicPr"`
+}
+
+// xlsxCTSVGBlip specifies a graphic element in Scalable Vector Graphics (SVG)
+// format.
+type xlsxCTSVGBlip struct {
+	XMLNSaAVG string `xml:"xmlns:asvg,attr"`
+	Embed     string `xml:"r:embed,attr"`
+	Link      string `xml:"r:link,attr,omitempty"`
+}
+
+// xlsxCTOfficeArtExtension used for future extensibility and is seen elsewhere
+// throughout the drawing area.
+type xlsxCTOfficeArtExtension struct {
+	XMLName xml.Name      `xml:"a:ext"`
+	URI     string        `xml:"uri,attr"`
+	SVGBlip xlsxCTSVGBlip `xml:"asvg:svgBlip"`
+}
+
+// xlsxEGOfficeArtExtensionList used for future extensibility and is seen
+// elsewhere throughout the drawing area.
+type xlsxEGOfficeArtExtensionList struct {
+	Ext []xlsxCTOfficeArtExtension `xml:"ext"`
 }
 
 // xlsxBlipFill directly maps the blipFill (Picture Fill). This element
