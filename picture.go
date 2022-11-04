@@ -183,7 +183,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, opts, name, extension string, fi
 		drawingHyperlinkRID = f.addRels(drawingRels, SourceRelationshipHyperLink, options.Hyperlink, hyperlinkType)
 	}
 	ws.Unlock()
-	err = f.addDrawingPicture(sheet, drawingXML, cell, name, img.Width, img.Height, drawingRID, drawingHyperlinkRID, options)
+	err = f.addDrawingPicture(sheet, drawingXML, cell, name, ext, drawingRID, drawingHyperlinkRID, img, options)
 	if err != nil {
 		return err
 	}
@@ -263,11 +263,12 @@ func (f *File) countDrawings() (count int) {
 // addDrawingPicture provides a function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
-func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, height, rID, hyperlinkRID int, opts *pictureOptions) error {
+func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID, hyperlinkRID int, img image.Config, opts *pictureOptions) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
 	}
+	width, height := img.Width, img.Height
 	if opts.Autofit {
 		width, height, col, row, err = f.drawingResize(sheet, cell, float64(width), float64(height), opts)
 		if err != nil {
@@ -308,6 +309,19 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	pic.BlipFill.Blip.R = SourceRelationship.Value
 	pic.BlipFill.Blip.Embed = "rId" + strconv.Itoa(rID)
+	if ext == ".svg" {
+		pic.BlipFill.Blip.ExtList = &xlsxEGOfficeArtExtensionList{
+			Ext: []xlsxCTOfficeArtExtension{
+				{
+					URI: ExtURISVG,
+					SVGBlip: xlsxCTSVGBlip{
+						XMLNSaAVG: NameSpaceDrawing2016SVG.Value,
+						Embed:     pic.BlipFill.Blip.Embed,
+					},
+				},
+			},
+		}
+	}
 	pic.SpPr.PrstGeom.Prst = "rect"
 
 	twoCellAnchor.Pic = &pic
@@ -362,7 +376,10 @@ func (f *File) addMedia(file []byte, ext string) string {
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() {
-	imageTypes := map[string]string{"jpeg": "image/", "png": "image/", "gif": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-", "emz": "image/x-", "wmz": "image/x-"}
+	imageTypes := map[string]string{
+		"jpeg": "image/", "png": "image/", "gif": "image/", "svg": "image/", "tiff": "image/",
+		"emf": "image/x-", "wmf": "image/x-", "emz": "image/x-", "wmz": "image/x-",
+	}
 	content := f.contentTypesReader()
 	content.Lock()
 	defer content.Unlock()

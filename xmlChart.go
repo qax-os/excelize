@@ -171,12 +171,11 @@ type aEa struct {
 	Typeface string `xml:"typeface,attr"`
 }
 
-// aLatin (Latin Font) directly maps the a:latin element. This element
-// specifies that a Latin font be used for a specific run of text. This font is
-// specified with a typeface attribute much like the others but is specifically
-// classified as a Latin font.
-type aLatin struct {
-	Typeface string `xml:"typeface,attr"`
+type xlsxCTTextFont struct {
+	Typeface    string `xml:"typeface,attr"`
+	Panose      string `xml:"panose,attr,omitempty"`
+	PitchFamily string `xml:"pitchFamily,attr,omitempty"`
+	Charset     string `xml:"Charset,attr,omitempty"`
 }
 
 // aR directly maps the a:r element.
@@ -191,29 +190,29 @@ type aR struct {
 // properties are defined as direct formatting, since they are directly applied
 // to the run and supersede any formatting from styles.
 type aRPr struct {
-	AltLang    string      `xml:"altLang,attr,omitempty"`
-	B          bool        `xml:"b,attr"`
-	Baseline   int         `xml:"baseline,attr"`
-	Bmk        string      `xml:"bmk,attr,omitempty"`
-	Cap        string      `xml:"cap,attr,omitempty"`
-	Dirty      bool        `xml:"dirty,attr,omitempty"`
-	Err        bool        `xml:"err,attr,omitempty"`
-	I          bool        `xml:"i,attr"`
-	Kern       int         `xml:"kern,attr"`
-	Kumimoji   bool        `xml:"kumimoji,attr,omitempty"`
-	Lang       string      `xml:"lang,attr,omitempty"`
-	NoProof    bool        `xml:"noProof,attr,omitempty"`
-	NormalizeH bool        `xml:"normalizeH,attr,omitempty"`
-	SmtClean   bool        `xml:"smtClean,attr,omitempty"`
-	SmtID      uint64      `xml:"smtId,attr,omitempty"`
-	Spc        int         `xml:"spc,attr"`
-	Strike     string      `xml:"strike,attr,omitempty"`
-	Sz         float64     `xml:"sz,attr,omitempty"`
-	U          string      `xml:"u,attr,omitempty"`
-	SolidFill  *aSolidFill `xml:"a:solidFill"`
-	Latin      *aLatin     `xml:"a:latin"`
-	Ea         *aEa        `xml:"a:ea"`
-	Cs         *aCs        `xml:"a:cs"`
+	AltLang    string          `xml:"altLang,attr,omitempty"`
+	B          bool            `xml:"b,attr"`
+	Baseline   int             `xml:"baseline,attr"`
+	Bmk        string          `xml:"bmk,attr,omitempty"`
+	Cap        string          `xml:"cap,attr,omitempty"`
+	Dirty      bool            `xml:"dirty,attr,omitempty"`
+	Err        bool            `xml:"err,attr,omitempty"`
+	I          bool            `xml:"i,attr"`
+	Kern       int             `xml:"kern,attr"`
+	Kumimoji   bool            `xml:"kumimoji,attr,omitempty"`
+	Lang       string          `xml:"lang,attr,omitempty"`
+	NoProof    bool            `xml:"noProof,attr,omitempty"`
+	NormalizeH bool            `xml:"normalizeH,attr,omitempty"`
+	SmtClean   bool            `xml:"smtClean,attr,omitempty"`
+	SmtID      uint64          `xml:"smtId,attr,omitempty"`
+	Spc        int             `xml:"spc,attr"`
+	Strike     string          `xml:"strike,attr,omitempty"`
+	Sz         float64         `xml:"sz,attr,omitempty"`
+	U          string          `xml:"u,attr,omitempty"`
+	SolidFill  *aSolidFill     `xml:"a:solidFill"`
+	Latin      *xlsxCTTextFont `xml:"a:latin"`
+	Ea         *aEa            `xml:"a:ea"`
+	Cs         *aCs            `xml:"a:cs"`
 }
 
 // cSpPr (Shape Properties) directly maps the spPr element. This element

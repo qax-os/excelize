@@ -90,10 +90,12 @@ func TestAddPictureErrors(t *testing.T) {
 	image.RegisterFormat("wmf", "", decode, decodeConfig)
 	image.RegisterFormat("emz", "", decode, decodeConfig)
 	image.RegisterFormat("wmz", "", decode, decodeConfig)
+	image.RegisterFormat("svg", "", decode, decodeConfig)
 	assert.NoError(t, f.AddPicture("Sheet1", "Q1", filepath.Join("test", "images", "excel.emf"), ""))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q7", filepath.Join("test", "images", "excel.wmf"), ""))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q13", filepath.Join("test", "images", "excel.emz"), ""))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q19", filepath.Join("test", "images", "excel.wmz"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", `{"x_scale": 2.1}`))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
 	assert.NoError(t, f.Close())
 }
@@ -175,7 +177,7 @@ func TestGetPicture(t *testing.T) {
 func TestAddDrawingPicture(t *testing.T) {
 	// Test addDrawingPicture with illegal cell reference.
 	f := NewFile()
-	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, 0, 0, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", "", 0, 0, image.Config{}, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestAddPictureFromBytes(t *testing.T) {

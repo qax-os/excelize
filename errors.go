@@ -93,6 +93,12 @@ func newStreamSetRowError(row int) error {
 	return fmt.Errorf("row %d has already been written", row)
 }
 
+// newViewIdxError defined the error message on receiving a invalid sheet view
+// index.
+func newViewIdxError(viewIndex int) error {
+	return fmt.Errorf("view index %d out of range", viewIndex)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.

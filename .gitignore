@@ -1,15 +1,15 @@
+.DS_Store
+.idea
+*.json
+*.out
+*.test
 ~$*.xlsx
+test/*.png
+test/BadWorkbook.SaveAsEmptyStruct.xlsx
+test/Encryption*.xlsx
+test/excelize-*
 test/Test*.xlam
 test/Test*.xlsm
 test/Test*.xlsx
 test/Test*.xltm
 test/Test*.xltx
-# generated files
-test/Encryption*.xlsx
-test/BadWorkbook.SaveAsEmptyStruct.xlsx
-test/*.png
-test/excelize-*
-*.out
-*.test
-.idea
-.DS_Store

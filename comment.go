@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -22,17 +21,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// parseCommentOptions provides a function to parse the format settings of
-// the comment with default value.
-func parseCommentOptions(opts string) (*commentOptions, error) {
-	options := commentOptions{
-		Author: "Author:",
-		Text:   " ",
-	}
-	err := json.Unmarshal([]byte(opts), &options)
-	return &options, err
-}
 
 // GetComments retrieves all comments and returns a map of worksheet name to
 // the worksheet comments.
@@ -53,14 +41,18 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 				if comment.AuthorID < len(d.Authors.Author) {
 					sheetComment.Author = d.Authors.Author[comment.AuthorID]
 				}
-				sheetComment.Ref = comment.Ref
+				sheetComment.Cell = comment.Ref
 				sheetComment.AuthorID = comment.AuthorID
 				if comment.Text.T != nil {
 					sheetComment.Text += *comment.Text.T
 				}
 				for _, text := range comment.Text.R {
 					if text.T != nil {
-						sheetComment.Text += text.T.Val
+						run := RichTextRun{Text: text.T.Val}
+						if text.RPr != nil {
+							run.Font = newFont(text.RPr)
+						}
+						sheetComment.Runs = append(sheetComment.Runs, run)
 					}
 				}
 				sheetComments = append(sheetComments, sheetComment)
@@ -92,12 +84,15 @@ func (f *File) getSheetComments(sheetFile string) string {
 // author length is 255 and the max text length is 32512. For example, add a
 // comment in Sheet1!$A$30:
 //
-//	err := f.AddComment("Sheet1", "A30", `{"author":"Excelize: ","text":"This is a comment."}`)
-func (f *File) AddComment(sheet, cell, opts string) error {
-	options, err := parseCommentOptions(opts)
-	if err != nil {
-		return err
-	}
+//	err := f.AddComment(sheet, excelize.Comment{
+//	    Cell:   "A12",
+//	    Author: "Excelize",
+//	    Runs: []excelize.RichTextRun{
+//	        {Text: "Excelize: ", Font: &excelize.Font{Bold: true}},
+//	        {Text: "This is a comment."},
+//	    },
+//	})
+func (f *File) AddComment(sheet string, comment Comment) error {
 	// Read sheet data.
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -122,20 +117,19 @@ func (f *File) AddComment(sheet, cell, opts string) error {
 		f.addSheetLegacyDrawing(sheet, rID)
 	}
 	commentsXML := "xl/comments" + strconv.Itoa(commentID) + ".xml"
-	var colCount int
-	for i, l := range strings.Split(options.Text, "\n") {
-		if ll := len(l); ll > colCount {
-			if i == 0 {
-				ll += len(options.Author)
+	var rows, cols int
+	for _, runs := range comment.Runs {
+		for _, subStr := range strings.Split(runs.Text, "\n") {
+			rows++
+			if chars := len(subStr); chars > cols {
+				cols = chars
 			}
-			colCount = ll
 		}
 	}
-	err = f.addDrawingVML(commentID, drawingVML, cell, strings.Count(options.Text, "\n")+1, colCount)
-	if err != nil {
+	if err = f.addDrawingVML(commentID, drawingVML, comment.Cell, rows+1, cols); err != nil {
 		return err
 	}
-	f.addComment(commentsXML, cell, options)
+	f.addComment(commentsXML, comment)
 	f.addContentTypePart(commentID, "comments")
 	return err
 }
@@ -280,56 +274,59 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 
 // addComment provides a function to create chart as xl/comments%d.xml by
 // given cell and format sets.
-func (f *File) addComment(commentsXML, cell string, opts *commentOptions) {
-	a := opts.Author
-	t := opts.Text
-	if len(a) > MaxFieldLength {
-		a = a[:MaxFieldLength]
+func (f *File) addComment(commentsXML string, comment Comment) {
+	if comment.Author == "" {
+		comment.Author = "Author"
 	}
-	if len(t) > 32512 {
-		t = t[:32512]
+	if len(comment.Author) > MaxFieldLength {
+		comment.Author = comment.Author[:MaxFieldLength]
 	}
-	comments := f.commentsReader(commentsXML)
-	authorID := 0
+	comments, authorID := f.commentsReader(commentsXML), 0
 	if comments == nil {
-		comments = &xlsxComments{Authors: xlsxAuthor{Author: []string{opts.Author}}}
+		comments = &xlsxComments{Authors: xlsxAuthor{Author: []string{comment.Author}}}
 	}
-	if inStrSlice(comments.Authors.Author, opts.Author, true) == -1 {
-		comments.Authors.Author = append(comments.Authors.Author, opts.Author)
+	if inStrSlice(comments.Authors.Author, comment.Author, true) == -1 {
+		comments.Authors.Author = append(comments.Authors.Author, comment.Author)
 		authorID = len(comments.Authors.Author) - 1
 	}
-	defaultFont := f.GetDefaultFont()
-	bold := ""
-	cmt := xlsxComment{
-		Ref:      cell,
+	defaultFont, chars, cmt := f.GetDefaultFont(), 0, xlsxComment{
+		Ref:      comment.Cell,
 		AuthorID: authorID,
-		Text: xlsxText{
-			R: []xlsxR{
-				{
-					RPr: &xlsxRPr{
-						B:  &bold,
-						Sz: &attrValFloat{Val: float64Ptr(9)},
-						Color: &xlsxColor{
-							Indexed: 81,
-						},
-						RFont:  &attrValString{Val: stringPtr(defaultFont)},
-						Family: &attrValInt{Val: intPtr(2)},
-					},
-					T: &xlsxT{Val: a},
+		Text:     xlsxText{R: []xlsxR{}},
+	}
+	if comment.Text != "" {
+		if len(comment.Text) > TotalCellChars {
+			comment.Text = comment.Text[:TotalCellChars]
+		}
+		cmt.Text.T = stringPtr(comment.Text)
+		chars += len(comment.Text)
+	}
+	for _, run := range comment.Runs {
+		if chars == TotalCellChars {
+			break
+		}
+		if chars+len(run.Text) > TotalCellChars {
+			run.Text = run.Text[:TotalCellChars-chars]
+		}
+		chars += len(run.Text)
+		r := xlsxR{
+			RPr: &xlsxRPr{
+				Sz: &attrValFloat{Val: float64Ptr(9)},
+				Color: &xlsxColor{
+					Indexed: 81,
 				},
-				{
-					RPr: &xlsxRPr{
-						Sz: &attrValFloat{Val: float64Ptr(9)},
-						Color: &xlsxColor{
-							Indexed: 81,
-						},
-						RFont:  &attrValString{Val: stringPtr(defaultFont)},
-						Family: &attrValInt{Val: intPtr(2)},
-					},
-					T: &xlsxT{Val: t},
-				},
+				RFont:  &attrValString{Val: stringPtr(defaultFont)},
+				Family: &attrValInt{Val: intPtr(2)},
 			},
-		},
+			T: &xlsxT{Val: run.Text, Space: xml.Attr{
+				Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
+				Value: "preserve",
+			}},
+		}
+		if run.Font != nil {
+			r.RPr = newRpr(run.Font)
+		}
+		cmt.Text.R = append(cmt.Text.R, r)
 	}
 	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)
 	f.Comments[commentsXML] = comments

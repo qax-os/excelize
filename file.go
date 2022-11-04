@@ -182,6 +182,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 	_ = f.sharedStringsLoader()
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
+	f.themeWriter()
 
 	for path, stream := range f.streams {
 		fi, err := zw.Create(path)

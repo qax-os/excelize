@@ -418,7 +418,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 					AltLang: "en-US",
 					U:       u,
 					Sz:      p.Font.Size * 100,
-					Latin:   &aLatin{Typeface: p.Font.Family},
+					Latin:   &xlsxCTTextFont{Typeface: p.Font.Family},
 				},
 				T: text,
 			},

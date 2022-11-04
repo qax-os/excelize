@@ -902,31 +902,7 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 			Text: v.T.Val,
 		}
 		if v.RPr != nil {
-			font := Font{Underline: "none"}
-			font.Bold = v.RPr.B != nil
-			font.Italic = v.RPr.I != nil
-			if v.RPr.U != nil {
-				font.Underline = "single"
-				if v.RPr.U.Val != nil {
-					font.Underline = *v.RPr.U.Val
-				}
-			}
-			if v.RPr.RFont != nil && v.RPr.RFont.Val != nil {
-				font.Family = *v.RPr.RFont.Val
-			}
-			if v.RPr.Sz != nil && v.RPr.Sz.Val != nil {
-				font.Size = *v.RPr.Sz.Val
-			}
-			font.Strike = v.RPr.Strike != nil
-			if v.RPr.Color != nil {
-				font.Color = strings.TrimPrefix(v.RPr.Color.RGB, "FF")
-				if v.RPr.Color.Theme != nil {
-					font.ColorTheme = v.RPr.Color.Theme
-				}
-				font.ColorIndexed = v.RPr.Color.Indexed
-				font.ColorTint = v.RPr.Color.Tint
-			}
-			run.Font = &font
+			run.Font = newFont(v.RPr)
 		}
 		runs = append(runs, run)
 	}
@@ -983,6 +959,35 @@ func newRpr(fnt *Font) *xlsxRPr {
 	}
 	rpr.Color = newFontColor(fnt)
 	return &rpr
+}
+
+// newFont create font format by given run properties for the rich text.
+func newFont(rPr *xlsxRPr) *Font {
+	font := Font{Underline: "none"}
+	font.Bold = rPr.B != nil
+	font.Italic = rPr.I != nil
+	if rPr.U != nil {
+		font.Underline = "single"
+		if rPr.U.Val != nil {
+			font.Underline = *rPr.U.Val
+		}
+	}
+	if rPr.RFont != nil && rPr.RFont.Val != nil {
+		font.Family = *rPr.RFont.Val
+	}
+	if rPr.Sz != nil && rPr.Sz.Val != nil {
+		font.Size = *rPr.Sz.Val
+	}
+	font.Strike = rPr.Strike != nil
+	if rPr.Color != nil {
+		font.Color = strings.TrimPrefix(rPr.Color.RGB, "FF")
+		if rPr.Color.Theme != nil {
+			font.ColorTheme = rPr.Color.Theme
+		}
+		font.ColorIndexed = rPr.Color.Indexed
+		font.ColorTint = rPr.Color.Tint
+	}
+	return &font
 }
 
 // setRichText provides a function to set rich text of a cell.

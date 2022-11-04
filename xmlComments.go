@@ -72,16 +72,11 @@ type xlsxPhoneticRun struct {
 	T  string `xml:"t"`
 }
 
-// commentOptions directly maps the format settings of the comment.
-type commentOptions struct {
-	Author string `json:"author"`
-	Text   string `json:"text"`
-}
-
 // Comment directly maps the comment information.
 type Comment struct {
-	Author   string `json:"author"`
-	AuthorID int    `json:"author_id"`
-	Ref      string `json:"ref"`
-	Text     string `json:"text"`
+	Author   string        `json:"author"`
+	AuthorID int           `json:"author_id"`
+	Cell     string        `json:"cell"`
+	Text     string        `json:"string"`
+	Runs     []RichTextRun `json:"runs"`
 }
