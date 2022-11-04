@@ -1288,7 +1288,7 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 	}
 	styleSheet := f.stylesReader()
 	if styleSheet.CellXfs == nil {
-		return v	
+		return v
 	}
 	if s >= len(styleSheet.CellXfs.Xf) {
 		return v
