@@ -512,6 +512,101 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	return err
 }
 
+// SetColAutoWidth provides a function to autofit from startCol to endCol columns according to their text content
+//
+//	f := excelize.NewFile()
+//	err := f.SetColAutoWidth("Sheet1", "A", "H")
+func (f *File) SetColAutoWidth(sheetName string, startCol, endCol string) error {
+	startColIdx, err := ColumnNameToNumber(startCol)
+	if err != nil {
+		return err
+	}
+
+	endColIdx, err := ColumnNameToNumber(endCol)
+	if err != nil {
+		return err
+	}
+
+	if startColIdx > endColIdx {
+		startColIdx, endColIdx = endColIdx, startColIdx
+	}
+
+	cols, err := f.Cols(sheetName)
+	if err != nil {
+		return err
+	}
+
+	colIdx := 1
+	for cols.Next() {
+		if colIdx >= startColIdx && colIdx <= endColIdx {
+			rowCells, _ := cols.Rows()
+			max := defaultColWidth
+			for i := range rowCells {
+				rowCell := rowCells[i]
+				cellWidth := float64(len(rowCell) + 3) // + 3 for margin
+				if cellWidth > max && cellWidth < MaxColumnWidth {
+					max = cellWidth
+				}
+			}
+
+			name, err := ColumnNumberToName(colIdx)
+			if err != nil {
+				return err
+			}
+
+			if err := f.SetColWidth(sheetName, name, name, float64(max)); err != nil {
+				return err
+			}
+		}
+
+		// fast go away
+		if colIdx == endColIdx {
+			break
+		}
+
+		colIdx++
+	}
+
+	return nil
+}
+
+// SetAllColAutoWidth provides a function to autofit all columns according to their text content
+//
+//	f := excelize.NewFile()
+//	err := f.SetAllColAutoWidth("Sheet1")
+func (f *File) SetAllColAutoWidth(sheetName string) error {
+	cols, err := f.Cols(sheetName)
+	if err != nil {
+		return err
+	}
+
+	colIdx := 1
+	for cols.Next() {
+		rowCells, _ := cols.Rows()
+		max := defaultColWidth
+		for i := range rowCells {
+			rowCell := rowCells[i]
+			cellWidth := float64(len(rowCell) + 3) // + 3 for margin
+			if cellWidth > max && cellWidth < MaxColumnWidth {
+				max = cellWidth
+			}
+		}
+
+		name, err := ColumnNumberToName(colIdx)
+		if err != nil {
+			return err
+		}
+
+		if err := f.SetColWidth(sheetName, name, name, float64(max)); err != nil {
+			return err
+		}
+
+		colIdx++
+	}
+
+	return nil
+}
+
 // flatCols provides a method for the column's operation functions to flatten
 // and check the worksheet columns.
 func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
