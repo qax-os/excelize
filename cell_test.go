@@ -744,6 +744,35 @@ func TestFormattedValue2(t *testing.T) {
 	}
 }
 
+func TestFormattedValueNilXfs(t *testing.T) {
+	// Set the CellXfs to nil and verify that the formattedValue function does not crash.
+	f := NewFile()
+	f.Styles.CellXfs = nil
+	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+}
+
+func TestFormattedValueNilNumFmts(t *testing.T) {
+	// Set the NumFmts value to nil and verify that the formattedValue function does not crash.
+	f := NewFile()
+	f.Styles.NumFmts = nil
+	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+}
+
+func TestFormattedValueNilWorkbook(t *testing.T) {
+	// Set the Workbook value to nil and verify that the formattedValue function does not crash.
+	f := NewFile()
+	f.WorkBook = nil
+	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+}
+
+func TestFormattedValueNilWorkbookPr(t *testing.T) {
+	// Set the WorkBook.WorkbookPr value to nil and verify that the formattedValue function does not
+	// crash.
+	f := NewFile()
+	f.WorkBook.WorkbookPr = nil
+	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+}
+
 func TestSharedStringsError(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
 	assert.NoError(t, err)
