@@ -386,6 +386,23 @@ func TestAutoFitColWidth(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
+	// Test All columns
+	f.SetCellValue("sheet1", "C2", randStr(10))
+	f.SetCellValue("sheet1", "D2", randStr(20))
+	f.SetCellValue("sheet1", "E2", randStr(30))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "XFD:D"))
+	width, err = f.GetColWidth("Sheet1", "C")
+	assert.Equal(t, defaultColWidth, width)
+	assert.NoError(t, err)
+
+	width, err = f.GetColWidth("Sheet1", "D")
+	assert.Equal(t, float64(23), width)
+	assert.NoError(t, err)
+
+	width, err = f.GetColWidth("Sheet1", "E")
+	assert.Equal(t, float64(33), width)
+	assert.NoError(t, err)
+
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoColWidth.xlsx")))
 	convertRowHeightToPixels(0)
 }
