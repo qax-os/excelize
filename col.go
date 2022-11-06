@@ -467,19 +467,17 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 //	f := excelize.NewFile()
 //	err := f.SetColWidth("Sheet1", "A", "H", 20)
 func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
-	min, err := ColumnNameToNumber(startCol)
+	min, max, err := f.parseColRange(startCol + ":" + endCol)
 	if err != nil {
 		return err
 	}
-	max, err := ColumnNameToNumber(endCol)
-	if err != nil {
-		return err
-	}
+
+	return f.setColWidth(sheet, min, max, width)
+}
+
+func (f *File) setColWidth(sheet string, min, max int, width float64) error {
 	if width > MaxColumnWidth {
 		return ErrColumnWidth
-	}
-	if min > max {
-		min, max = max, min
 	}
 
 	ws, err := f.workSheetReader(sheet)
@@ -512,23 +510,20 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	return err
 }
 
-// SetColAutoWidth provides a function to autofit from startCol to endCol columns according to their text content
+// AutoFitColWidth provides a function to autofit columns according to
+// their text content
 //
-//	f := excelize.NewFile()
-//	err := f.SetColAutoWidth("Sheet1", "A", "H")
-func (f *File) SetColAutoWidth(sheetName string, startCol, endCol string) error {
-	startColIdx, err := ColumnNameToNumber(startCol)
+// For example set column of column H on Sheet1:
+//
+// err = f.AutoFitColWidth("Sheet1", "H")
+//
+// Set style of columns C:F on Sheet1:
+//
+// err = f.AutoFitColWidth("Sheet1", "C:F", style)
+func (f *File) AutoFitColWidth(sheetName string, columns string) error {
+	startColIdx, endColIdx, err := f.parseColRange(columns)
 	if err != nil {
 		return err
-	}
-
-	endColIdx, err := ColumnNameToNumber(endCol)
-	if err != nil {
-		return err
-	}
-
-	if startColIdx > endColIdx {
-		startColIdx, endColIdx = endColIdx, startColIdx
 	}
 
 	cols, err := f.Cols(sheetName)
@@ -544,17 +539,15 @@ func (f *File) SetColAutoWidth(sheetName string, startCol, endCol string) error 
 			for i := range rowCells {
 				rowCell := rowCells[i]
 				cellWidth := float64(len(rowCell) + 3) // + 3 for margin
+
 				if cellWidth > max && cellWidth < MaxColumnWidth {
 					max = cellWidth
+				} else if cellWidth >= MaxColumnWidth {
+					max = MaxColumnWidth
 				}
 			}
 
-			name, err := ColumnNumberToName(colIdx)
-			if err != nil {
-				return err
-			}
-
-			if err := f.SetColWidth(sheetName, name, name, float64(max)); err != nil {
+			if err := f.setColWidth(sheetName, colIdx, colIdx, max); err != nil {
 				return err
 			}
 		}
@@ -562,43 +555,6 @@ func (f *File) SetColAutoWidth(sheetName string, startCol, endCol string) error 
 		// fast go away
 		if colIdx == endColIdx {
 			break
-		}
-
-		colIdx++
-	}
-
-	return nil
-}
-
-// SetAllColAutoWidth provides a function to autofit all columns according to their text content
-//
-//	f := excelize.NewFile()
-//	err := f.SetAllColAutoWidth("Sheet1")
-func (f *File) SetAllColAutoWidth(sheetName string) error {
-	cols, err := f.Cols(sheetName)
-	if err != nil {
-		return err
-	}
-
-	colIdx := 1
-	for cols.Next() {
-		rowCells, _ := cols.Rows()
-		max := defaultColWidth
-		for i := range rowCells {
-			rowCell := rowCells[i]
-			cellWidth := float64(len(rowCell) + 3) // + 3 for margin
-			if cellWidth > max && cellWidth < MaxColumnWidth {
-				max = cellWidth
-			}
-		}
-
-		name, err := ColumnNumberToName(colIdx)
-		if err != nil {
-			return err
-		}
-
-		if err := f.SetColWidth(sheetName, name, name, float64(max)); err != nil {
-			return err
 		}
 
 		colIdx++

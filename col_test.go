@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"math/rand"
 	"path/filepath"
 	"testing"
 
@@ -344,6 +345,48 @@ func TestColWidth(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestColWidth.xlsx")))
+	convertRowHeightToPixels(0)
+}
+
+func TestAutoFitColWidth(t *testing.T) {
+	randStr := func(n int) string {
+		var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+		b := make([]rune, n)
+		for i := range b {
+			b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		}
+		return string(b)
+	}
+
+	f := NewFile()
+	// Test null data columns
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "A"))
+	width, err := f.GetColWidth("Sheet1", "A")
+	assert.Equal(t, defaultColWidth, width)
+	assert.NoError(t, err)
+
+	// Test some data
+	for _, max := range []int{1, 10, 100, 1000} {
+		f.SetCellValue("Sheet1", "B2", randStr(max/2))
+		f.SetCellValue("Sheet1", "B3", randStr(max))
+		assert.NoError(t, f.AutoFitColWidth("Sheet1", "B:A"))
+		width, err = f.GetColWidth("Sheet1", "A")
+		assert.Equal(t, defaultColWidth, width)
+		assert.NoError(t, err)
+
+		width, err = f.GetColWidth("Sheet1", "B")
+		if float64(max) < defaultColWidth {
+			assert.Equal(t, defaultColWidth, width)
+		} else if max > MaxColumnWidth {
+			assert.Equal(t, float64(MaxColumnWidth), width)
+		} else {
+			assert.Equal(t, float64(max+3), width)
+		}
+		assert.NoError(t, err)
+	}
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoColWidth.xlsx")))
 	convertRowHeightToPixels(0)
 }
 
