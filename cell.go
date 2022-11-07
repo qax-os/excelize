@@ -175,13 +175,15 @@ func (c *xlsxC) hasValue() bool {
 // removeFormula delete formula for the cell.
 func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) {
 	if c.F != nil && c.Vm == nil {
-		f.deleteCalcChain(f.getSheetID(sheet), c.R)
+		sheetID := f.getSheetID(sheet)
+		f.deleteCalcChain(sheetID, c.R)
 		if c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
 			si := c.F.Si
 			for r, row := range ws.SheetData.Row {
 				for col, cell := range row.C {
 					if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
 						ws.SheetData.Row[r].C[col].F = nil
+						f.deleteCalcChain(sheetID, cell.R)
 					}
 				}
 			}

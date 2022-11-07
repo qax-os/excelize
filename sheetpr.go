@@ -11,6 +11,8 @@
 
 package excelize
 
+import "reflect"
+
 // SetPageMargins provides a function to set worksheet page margins.
 func (f *File) SetPageMargins(sheet string, opts *PageLayoutMarginsOptions) error {
 	ws, err := f.workSheetReader(sheet)
@@ -30,29 +32,13 @@ func (f *File) SetPageMargins(sheet string, opts *PageLayoutMarginsOptions) erro
 			ws.PrintOptions = new(xlsxPrintOptions)
 		}
 	}
-	if opts.Bottom != nil {
-		preparePageMargins(ws)
-		ws.PageMargins.Bottom = *opts.Bottom
-	}
-	if opts.Footer != nil {
-		preparePageMargins(ws)
-		ws.PageMargins.Footer = *opts.Footer
-	}
-	if opts.Header != nil {
-		preparePageMargins(ws)
-		ws.PageMargins.Header = *opts.Header
-	}
-	if opts.Left != nil {
-		preparePageMargins(ws)
-		ws.PageMargins.Left = *opts.Left
-	}
-	if opts.Right != nil {
-		preparePageMargins(ws)
-		ws.PageMargins.Right = *opts.Right
-	}
-	if opts.Top != nil {
-		preparePageMargins(ws)
-		ws.PageMargins.Top = *opts.Top
+	s := reflect.ValueOf(opts).Elem()
+	for i := 0; i < 6; i++ {
+		if !s.Field(i).IsNil() {
+			preparePageMargins(ws)
+			name := s.Type().Field(i).Name
+			reflect.ValueOf(ws.PageMargins).Elem().FieldByName(name).Set(s.Field(i).Elem())
+		}
 	}
 	if opts.Horizontally != nil {
 		preparePrintOptions(ws)
@@ -154,21 +140,13 @@ func (ws *xlsxWorksheet) setSheetProps(opts *SheetPropsOptions) {
 		ws.SheetPr.PageSetUpPr.FitToPage = *opts.FitToPage
 	}
 	ws.setSheetOutlineProps(opts)
-	if opts.TabColorIndexed != nil {
-		prepareTabColor(ws)
-		ws.SheetPr.TabColor.Indexed = *opts.TabColorIndexed
-	}
-	if opts.TabColorRGB != nil {
-		prepareTabColor(ws)
-		ws.SheetPr.TabColor.RGB = *opts.TabColorRGB
-	}
-	if opts.TabColorTheme != nil {
-		prepareTabColor(ws)
-		ws.SheetPr.TabColor.Theme = *opts.TabColorTheme
-	}
-	if opts.TabColorTint != nil {
-		prepareTabColor(ws)
-		ws.SheetPr.TabColor.Tint = *opts.TabColorTint
+	s := reflect.ValueOf(opts).Elem()
+	for i := 5; i < 9; i++ {
+		if !s.Field(i).IsNil() {
+			prepareTabColor(ws)
+			name := s.Type().Field(i).Name
+			reflect.ValueOf(ws.SheetPr.TabColor).Elem().FieldByName(name[8:]).Set(s.Field(i).Elem())
+		}
 	}
 }
 
