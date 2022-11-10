@@ -163,26 +163,12 @@ func (f *File) SetSheetProps(sheet string, opts *SheetPropsOptions) error {
 	if ws.SheetFormatPr == nil {
 		ws.SheetFormatPr = &xlsxSheetFormatPr{DefaultRowHeight: defaultRowHeight}
 	}
-	if opts.BaseColWidth != nil {
-		ws.SheetFormatPr.BaseColWidth = *opts.BaseColWidth
-	}
-	if opts.DefaultColWidth != nil {
-		ws.SheetFormatPr.DefaultColWidth = *opts.DefaultColWidth
-	}
-	if opts.DefaultRowHeight != nil {
-		ws.SheetFormatPr.DefaultRowHeight = *opts.DefaultRowHeight
-	}
-	if opts.CustomHeight != nil {
-		ws.SheetFormatPr.CustomHeight = *opts.CustomHeight
-	}
-	if opts.ZeroHeight != nil {
-		ws.SheetFormatPr.ZeroHeight = *opts.ZeroHeight
-	}
-	if opts.ThickTop != nil {
-		ws.SheetFormatPr.ThickTop = *opts.ThickTop
-	}
-	if opts.ThickBottom != nil {
-		ws.SheetFormatPr.ThickBottom = *opts.ThickBottom
+	s := reflect.ValueOf(opts).Elem()
+	for i := 11; i < 18; i++ {
+		if !s.Field(i).IsNil() {
+			name := s.Type().Field(i).Name
+			reflect.ValueOf(ws.SheetFormatPr).Elem().FieldByName(name).Set(s.Field(i).Elem())
+		}
 	}
 	return err
 }

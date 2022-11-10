@@ -279,7 +279,7 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 //
 //	err := f.SetColVisible("Sheet1", "D:F", false)
 func (f *File) SetColVisible(sheet, columns string, visible bool) error {
-	start, end, err := f.parseColRange(columns)
+	min, max, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
@@ -290,8 +290,8 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	ws.Lock()
 	defer ws.Unlock()
 	colData := xlsxCol{
-		Min:         start,
-		Max:         end,
+		Min:         min,
+		Max:         max,
 		Width:       defaultColWidth, // default width
 		Hidden:      !visible,
 		CustomWidth: true,
@@ -343,20 +343,20 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 }
 
 // parseColRange parse and convert column range with column name to the column number.
-func (f *File) parseColRange(columns string) (start, end int, err error) {
+func (f *File) parseColRange(columns string) (min, max int, err error) {
 	colsTab := strings.Split(columns, ":")
-	start, err = ColumnNameToNumber(colsTab[0])
+	min, err = ColumnNameToNumber(colsTab[0])
 	if err != nil {
 		return
 	}
-	end = start
+	max = min
 	if len(colsTab) == 2 {
-		if end, err = ColumnNameToNumber(colsTab[1]); err != nil {
+		if max, err = ColumnNameToNumber(colsTab[1]); err != nil {
 			return
 		}
 	}
-	if end < start {
-		start, end = end, start
+	if max < min {
+		min, max = max, min
 	}
 	return
 }
@@ -416,7 +416,7 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 //
 //	err = f.SetColStyle("Sheet1", "C:F", style)
 func (f *File) SetColStyle(sheet, columns string, styleID int) error {
-	start, end, err := f.parseColRange(columns)
+	min, max, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
@@ -436,8 +436,8 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		ws.Cols = &xlsxCols{}
 	}
 	ws.Cols.Col = flatCols(xlsxCol{
-		Min:   start,
-		Max:   end,
+		Min:   min,
+		Max:   max,
 		Width: defaultColWidth,
 		Style: styleID,
 	}, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
@@ -452,7 +452,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	})
 	ws.Unlock()
 	if rows := len(ws.SheetData.Row); rows > 0 {
-		for col := start; col <= end; col++ {
+		for col := min; col <= max; col++ {
 			from, _ := CoordinatesToCellName(col, 1)
 			to, _ := CoordinatesToCellName(col, rows)
 			err = f.SetCellStyle(sheet, from, to, styleID)
@@ -467,21 +467,13 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 //	f := excelize.NewFile()
 //	err := f.SetColWidth("Sheet1", "A", "H", 20)
 func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
-	min, err := ColumnNameToNumber(startCol)
-	if err != nil {
-		return err
-	}
-	max, err := ColumnNameToNumber(endCol)
+	min, max, err := f.parseColRange(startCol + ":" + endCol)
 	if err != nil {
 		return err
 	}
 	if width > MaxColumnWidth {
 		return ErrColumnWidth
 	}
-	if min > max {
-		min, max = max, min
-	}
-
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
