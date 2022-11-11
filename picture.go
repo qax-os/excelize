@@ -281,7 +281,10 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID,
 	col--
 	row--
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
-	content, cNvPrID := f.drawingParser(drawingXML)
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = opts.Positioning
 	from := xlsxFrom{}
@@ -559,14 +562,15 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		deTwoCellAnchor *decodeTwoCellAnchor
 	)
 
-	wsDr, _ = f.drawingParser(drawingXML)
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return
+	}
 	if ret, buf = f.getPictureFromWsDr(row, col, drawingRelationships, wsDr); len(buf) > 0 {
 		return
 	}
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
 		return
 	}
 	err = nil
@@ -574,7 +578,6 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = newDecodeXMLError(err)
 			return
 		}
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {

@@ -188,6 +188,11 @@ func TestSetCellValue(t *testing.T) {
 	B2, err := f.GetCellValue("Sheet1", "B2")
 	assert.NoError(t, err)
 	assert.Equal(t, "0.50", B2)
+
+	// Test set cell value with unsupported charset shared strings table
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", "A1"), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -199,7 +204,7 @@ func TestSetCellValues(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, v, "12/31/10 00:00")
 
-	// test date value lower than min date supported by Excel
+	// Test date value lower than min date supported by Excel
 	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
 	assert.NoError(t, err)
 
@@ -377,6 +382,12 @@ func TestGetCellValue(t *testing.T) {
 		"2020-07-10 15:00:00.000",
 	}, rows[0])
 	assert.NoError(t, err)
+
+	// Test get cell value with unsupported charset shared strings table.
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	_, value := f.GetCellValue("Sheet1", "A1")
+	assert.EqualError(t, value, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetCellType(t *testing.T) {
@@ -395,7 +406,9 @@ func TestGetCellType(t *testing.T) {
 func TestGetValueFrom(t *testing.T) {
 	f := NewFile()
 	c := xlsxC{T: "s"}
-	value, err := c.getValueFrom(f, f.sharedStringsReader(), false)
+	sst, err := f.sharedStringsReader()
+	assert.NoError(t, err)
+	value, err := c.getValueFrom(f, sst, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
 }
@@ -566,36 +579,46 @@ func TestGetCellRichText(t *testing.T) {
 	runsSource[1].Font.Color = strings.ToUpper(runsSource[1].Font.Color)
 	assert.True(t, reflect.DeepEqual(runsSource[1].Font, runs[1].Font), "should get the same font")
 
-	// Test get cell rich text when string item index overflow
+	// Test get cell rich text when string item index overflow.
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "2"
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
-	// Test get cell rich text when string item index is negative
+	// Test get cell rich text when string item index is negative.
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "-1"
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
-	// Test get cell rich text on invalid string item index
+	// Test get cell rich text on invalid string item index.
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "x"
 	_, err = f.GetCellRichText("Sheet1", "A1")
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
-	// Test set cell rich text on not exists worksheet
+	// Test set cell rich text on not exists worksheet.
 	_, err = f.GetCellRichText("SheetN", "A1")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-	// Test set cell rich text with illegal cell reference
+	// Test set cell rich text with illegal cell reference.
 	_, err = f.GetCellRichText("Sheet1", "A")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	// Test set rich text color theme without tint
+	// Test set rich text color theme without tint.
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", []RichTextRun{{Font: &Font{ColorTheme: &theme}}}))
-	// Test set rich text color tint without theme
+	// Test set rich text color tint without theme.
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", []RichTextRun{{Font: &Font{ColorTint: 0.5}}}))
+
+	// Test set cell rich text with unsupported charset shared strings table.
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetCellRichText("Sheet1", "A1", runsSource), "XML syntax error on line 1: invalid UTF-8")
+	// Test get cell rich text with unsupported charset shared strings table.
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	_, err = f.GetCellRichText("Sheet1", "A1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetCellRichText(t *testing.T) {
@@ -689,80 +712,108 @@ func TestSetCellRichText(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
-	// Test set cell rich text on not exists worksheet
+	// Test set cell rich text on not exists worksheet.
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN does not exist")
-	// Test set cell rich text with illegal cell reference
+	// Test set cell rich text with illegal cell reference.
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A", richTextRun), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	richTextRun = []RichTextRun{{Text: strings.Repeat("s", TotalCellChars+1)}}
-	// Test set cell rich text with characters over the maximum limit
+	// Test set cell rich text with characters over the maximum limit.
 	assert.EqualError(t, f.SetCellRichText("Sheet1", "A1", richTextRun), ErrCellCharsLength.Error())
 }
 
-func TestFormattedValue2(t *testing.T) {
+func TestFormattedValue(t *testing.T) {
 	f := NewFile()
-	assert.Equal(t, "43528", f.formattedValue(0, "43528", false))
+	result, err := f.formattedValue(0, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 
-	assert.Equal(t, "43528", f.formattedValue(15, "43528", false))
+	result, err = f.formattedValue(15, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 
-	assert.Equal(t, "43528", f.formattedValue(1, "43528", false))
+	result, err = f.formattedValue(1, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 	customNumFmt := "[$-409]MM/DD/YYYY"
-	_, err := f.NewStyle(&Style{
+	_, err = f.NewStyle(&Style{
 		CustomNumFmt: &customNumFmt,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "03/04/2019", f.formattedValue(1, "43528", false))
+	result, err = f.formattedValue(1, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "03/04/2019", result)
 
-	// formatted value with no built-in number format ID
+	// Test format value with no built-in number format ID.
 	numFmtID := 5
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	assert.Equal(t, "43528", f.formattedValue(2, "43528", false))
+	result, err = f.formattedValue(2, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 
-	// formatted value with invalid number format ID
+	// Test format value with invalid number format ID.
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: nil,
 	})
-	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+	result, err = f.formattedValue(3, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 
-	// formatted value with empty number format
+	// Test format value with empty number format.
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	assert.Equal(t, "43528", f.formattedValue(1, "43528", false))
+	result, err = f.formattedValue(1, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 
-	// formatted decimal value with build-in number format ID
+	// Test format decimal value with build-in number format ID.
 	styleID, err := f.NewStyle(&Style{
 		NumFmt: 1,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "311", f.formattedValue(styleID, "310.56", false))
+	result, err = f.formattedValue(styleID, "310.56", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "311", result)
 
 	for _, fn := range builtInNumFmtFunc {
 		assert.Equal(t, "0_0", fn("0_0", "", false))
 	}
+
+	// Test format value with unsupported charset style sheet.
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	_, err = f.formattedValue(1, "43528", false)
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestFormattedValueNilXfs(t *testing.T) {
 	// Set the CellXfs to nil and verify that the formattedValue function does not crash.
 	f := NewFile()
 	f.Styles.CellXfs = nil
-	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+	result, err := f.formattedValue(3, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 }
 
 func TestFormattedValueNilNumFmts(t *testing.T) {
 	// Set the NumFmts value to nil and verify that the formattedValue function does not crash.
 	f := NewFile()
 	f.Styles.NumFmts = nil
-	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+	result, err := f.formattedValue(3, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 }
 
 func TestFormattedValueNilWorkbook(t *testing.T) {
 	// Set the Workbook value to nil and verify that the formattedValue function does not crash.
 	f := NewFile()
 	f.WorkBook = nil
-	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+	result, err := f.formattedValue(3, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 }
 
 func TestFormattedValueNilWorkbookPr(t *testing.T) {
@@ -770,7 +821,9 @@ func TestFormattedValueNilWorkbookPr(t *testing.T) {
 	// crash.
 	f := NewFile()
 	f.WorkBook.WorkbookPr = nil
-	assert.Equal(t, "43528", f.formattedValue(3, "43528", false))
+	result, err := f.formattedValue(3, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
 }
 
 func TestSharedStringsError(t *testing.T) {

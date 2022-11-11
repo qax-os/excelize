@@ -95,6 +95,24 @@ func TestChartSize(t *testing.T) {
 func TestAddDrawingChart(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingChart("SheetN", "", "", 0, 0, 0, nil), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
+
+	path := "xl/drawings/drawing1.xml"
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addDrawingChart("Sheet1", path, "A1", 0, 0, 0, &pictureOptions{}), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestAddSheetDrawingChart(t *testing.T) {
+	f := NewFile()
+	path := "xl/drawings/drawing1.xml"
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addSheetDrawingChart(path, 0, &pictureOptions{}), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestDeleteDrawing(t *testing.T) {
+	f := NewFile()
+	path := "xl/drawings/drawing1.xml"
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteDrawing(0, 0, path, "Chart"), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddChart(t *testing.T) {

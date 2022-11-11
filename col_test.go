@@ -56,6 +56,15 @@ func TestCols(t *testing.T) {
 	})
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
+
+	// Test columns iterator with unsupported charset shared strings table.
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	cols, err = f.Cols("Sheet1")
+	assert.NoError(t, err)
+	cols.Next()
+	_, err = cols.Rows()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestColumnsIterator(t *testing.T) {
@@ -316,6 +325,10 @@ func TestSetColStyle(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, styleID, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetColStyle.xlsx")))
+	// Test set column style with unsupported charset style sheet.
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetColStyle("Sheet1", "C:F", styleID), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestColWidth(t *testing.T) {

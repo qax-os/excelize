@@ -91,6 +91,12 @@ func TestSearchSheet(t *testing.T) {
 	result, err = f.SearchSheet("Sheet1", "A")
 	assert.EqualError(t, err, "invalid cell reference [1, 0]")
 	assert.Equal(t, []string(nil), result)
+
+	// Test search sheet with unsupported charset shared strings table.
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	_, err = f.SearchSheet("Sheet1", "A")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetPageLayout(t *testing.T) {

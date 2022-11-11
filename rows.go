@@ -16,7 +16,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
 	"strconv"
@@ -139,7 +138,10 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	}
 	var rowIterator rowXMLIterator
 	var token xml.Token
-	rows.rawCellValue, rows.sst = parseOptions(opts...).RawCellValue, rows.f.sharedStringsReader()
+	rows.rawCellValue = parseOptions(opts...).RawCellValue
+	if rows.sst, rowIterator.err = rows.f.sharedStringsReader(); rowIterator.err != nil {
+		return rowIterator.cells, rowIterator.err
+	}
 	for {
 		if rows.token != nil {
 			token = rows.token
@@ -160,21 +162,21 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 				rows.seekRowOpts = extractRowOpts(xmlElement.Attr)
 				if rows.curRow > rows.seekRow {
 					rows.token = nil
-					return rowIterator.columns, rowIterator.err
+					return rowIterator.cells, rowIterator.err
 				}
 			}
 			if rows.rowXMLHandler(&rowIterator, &xmlElement, rows.rawCellValue); rowIterator.err != nil {
 				rows.token = nil
-				return rowIterator.columns, rowIterator.err
+				return rowIterator.cells, rowIterator.err
 			}
 			rows.token = nil
 		case xml.EndElement:
 			if xmlElement.Name.Local == "sheetData" {
-				return rowIterator.columns, rowIterator.err
+				return rowIterator.cells, rowIterator.err
 			}
 		}
 	}
-	return rowIterator.columns, rowIterator.err
+	return rowIterator.cells, rowIterator.err
 }
 
 // extractRowOpts extract row element attributes.
@@ -211,10 +213,10 @@ func (err ErrSheetNotExist) Error() string {
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.
 type rowXMLIterator struct {
-	err       error
-	inElement string
-	cellCol   int
-	columns   []string
+	err              error
+	inElement        string
+	cellCol, cellRow int
+	cells            []string
 }
 
 // rowXMLHandler parse the row XML element of the worksheet.
@@ -228,9 +230,9 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 				return
 			}
 		}
-		blank := rowIterator.cellCol - len(rowIterator.columns)
+		blank := rowIterator.cellCol - len(rowIterator.cells)
 		if val, _ := colCell.getValueFrom(rows.f, rows.sst, raw); val != "" || colCell.F != nil {
-			rowIterator.columns = append(appendSpace(blank, rowIterator.columns), val)
+			rowIterator.cells = append(appendSpace(blank, rowIterator.cells), val)
 		}
 	}
 }
@@ -409,7 +411,7 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 
 // sharedStringsReader provides a function to get the pointer to the structure
 // after deserialization of xl/sharedStrings.xml.
-func (f *File) sharedStringsReader() *xlsxSST {
+func (f *File) sharedStringsReader() (*xlsxSST, error) {
 	var err error
 	f.Lock()
 	defer f.Unlock()
@@ -419,7 +421,7 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		ss := f.readXML(defaultXMLPathSharedStrings)
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(ss))).
 			Decode(&sharedStrings); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			return f.SharedStrings, err
 		}
 		if sharedStrings.Count == 0 {
 			sharedStrings.Count = len(sharedStrings.SI)
@@ -437,14 +439,14 @@ func (f *File) sharedStringsReader() *xlsxSST {
 		rels := f.relsReader(relPath)
 		for _, rel := range rels.Relationships {
 			if rel.Target == "/xl/sharedStrings.xml" {
-				return f.SharedStrings
+				return f.SharedStrings, nil
 			}
 		}
 		// Update workbook.xml.rels
 		f.addRels(relPath, SourceRelationshipSharedStrings, "/xl/sharedStrings.xml", "")
 	}
 
-	return f.SharedStrings
+	return f.SharedStrings, nil
 }
 
 // SetRowVisible provides a function to set visible of a single row by given
@@ -800,7 +802,10 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if end > TotalRows {
 		return ErrMaxRows
 	}
-	s := f.stylesReader()
+	s, err := f.stylesReader()
+	if err != nil {
+		return err
+	}
 	s.Lock()
 	defer s.Unlock()
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {

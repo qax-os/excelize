@@ -305,8 +305,7 @@ func (f *File) AddShape(sheet, cell, opts string) error {
 		f.addSheetDrawing(sheet, rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)
 	}
-	err = f.addDrawingShape(sheet, drawingXML, cell, options)
-	if err != nil {
+	if err = f.addDrawingShape(sheet, drawingXML, cell, options); err != nil {
 		return err
 	}
 	f.addContentTypePart(drawingID, "drawings")
@@ -328,7 +327,10 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, opts.Format.OffsetX, opts.Format.OffsetY,
 		width, height)
-	content, cNvPrID := f.drawingParser(drawingXML)
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = opts.Format.Positioning
 	from := xlsxFrom{}
@@ -385,6 +387,10 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 			W: f.ptToEMUs(opts.Line.Width),
 		}
 	}
+	defaultFont, err := f.GetDefaultFont()
+	if err != nil {
+		return err
+	}
 	if len(opts.Paragraph) < 1 {
 		opts.Paragraph = []shapeParagraphOptions{
 			{
@@ -392,7 +398,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 					Bold:      false,
 					Italic:    false,
 					Underline: "none",
-					Family:    f.GetDefaultFont(),
+					Family:    defaultFont,
 					Size:      11,
 					Color:     "#000000",
 				},

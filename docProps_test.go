@@ -42,7 +42,7 @@ func TestSetAppProps(t *testing.T) {
 	// Test unsupported charset
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.SetAppProps(&AppProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.SetAppProps(&AppProperties{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetAppProps(t *testing.T) {
@@ -58,11 +58,11 @@ func TestGetAppProps(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
-	// Test unsupported charset
+	// Test get application properties with unsupported charset.
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
 	_, err = f.GetAppProps()
-	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetDocProps(t *testing.T) {
@@ -94,7 +94,7 @@ func TestSetDocProps(t *testing.T) {
 	// Test unsupported charset
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetDocProps(t *testing.T) {
@@ -110,9 +110,9 @@ func TestGetDocProps(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
-	// Test unsupported charset
+	// Test get workbook properties with unsupported charset.
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()
-	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }

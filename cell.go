@@ -66,7 +66,11 @@ var cellTypes = map[string]CellType{
 // values will be the same in a merged range.
 func (f *File) GetCellValue(sheet, cell string, opts ...Options) (string, error) {
 	return f.getCellStringFunc(sheet, cell, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
-		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
+		sst, err := f.sharedStringsReader()
+		if err != nil {
+			return "", true, err
+		}
+		val, err := c.getValueFrom(f, sst, parseOptions(opts...).RawCellValue)
 		return val, true, err
 	})
 }
@@ -173,23 +177,26 @@ func (c *xlsxC) hasValue() bool {
 }
 
 // removeFormula delete formula for the cell.
-func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) {
+func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) error {
 	if c.F != nil && c.Vm == nil {
 		sheetID := f.getSheetID(sheet)
-		f.deleteCalcChain(sheetID, c.R)
+		if err := f.deleteCalcChain(sheetID, c.R); err != nil {
+			return err
+		}
 		if c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
 			si := c.F.Si
 			for r, row := range ws.SheetData.Row {
 				for col, cell := range row.C {
 					if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
 						ws.SheetData.Row[r].C[col].F = nil
-						f.deleteCalcChain(sheetID, cell.R)
+						_ = f.deleteCalcChain(sheetID, cell.R)
 					}
 				}
 			}
 		}
 		c.F = nil
 	}
+	return nil
 }
 
 // setCellIntFunc is a wrapper of SetCellInt.
@@ -289,8 +296,7 @@ func (f *File) SetCellInt(sheet, cell string, value int) error {
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
 	c.T, c.V = setCellInt(value)
 	c.IS = nil
-	f.removeFormula(c, ws, sheet)
-	return err
+	return f.removeFormula(c, ws, sheet)
 }
 
 // setCellInt prepares cell type and string type cell value by a given
@@ -316,8 +322,7 @@ func (f *File) SetCellBool(sheet, cell string, value bool) error {
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
 	c.T, c.V = setCellBool(value)
 	c.IS = nil
-	f.removeFormula(c, ws, sheet)
-	return err
+	return f.removeFormula(c, ws, sheet)
 }
 
 // setCellBool prepares cell type and string type cell value by a given
@@ -354,8 +359,7 @@ func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSiz
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
 	c.T, c.V = setCellFloat(value, precision, bitSize)
 	c.IS = nil
-	f.removeFormula(c, ws, sheet)
-	return err
+	return f.removeFormula(c, ws, sheet)
 }
 
 // setCellFloat prepares cell type and string type cell value by a given
@@ -379,10 +383,11 @@ func (f *File) SetCellStr(sheet, cell, value string) error {
 	ws.Lock()
 	defer ws.Unlock()
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
-	c.T, c.V, err = f.setCellString(value)
+	if c.T, c.V, err = f.setCellString(value); err != nil {
+		return err
+	}
 	c.IS = nil
-	f.removeFormula(c, ws, sheet)
-	return err
+	return f.removeFormula(c, ws, sheet)
 }
 
 // setCellString provides a function to set string type to shared string
@@ -429,7 +434,10 @@ func (f *File) setSharedString(val string) (int, error) {
 	if err := f.sharedStringsLoader(); err != nil {
 		return 0, err
 	}
-	sst := f.sharedStringsReader()
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return 0, err
+	}
 	f.Lock()
 	defer f.Unlock()
 	if i, ok := f.sharedStringsMap[val]; ok {
@@ -498,7 +506,7 @@ func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
 			return "FALSE", nil
 		}
 	}
-	return f.formattedValue(c.S, c.V, raw), nil
+	return f.formattedValue(c.S, c.V, raw)
 }
 
 // setCellDefault prepares cell type and string type cell value by a given
@@ -529,7 +537,7 @@ func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
 			c.V = strconv.FormatFloat(excelTime, 'G', 15, 64)
 		}
 	}
-	return f.formattedValue(c.S, c.V, raw), nil
+	return f.formattedValue(c.S, c.V, raw)
 }
 
 // getValueFrom return a value from a column/row cell, this function is
@@ -548,18 +556,18 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 			xlsxSI := 0
 			xlsxSI, _ = strconv.Atoi(c.V)
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw), nil
+				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw)
 			}
 			if len(d.SI) > xlsxSI {
-				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw), nil
+				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw)
 			}
 		}
-		return f.formattedValue(c.S, c.V, raw), nil
+		return f.formattedValue(c.S, c.V, raw)
 	case "inlineStr":
 		if c.IS != nil {
-			return f.formattedValue(c.S, c.IS.String(), raw), nil
+			return f.formattedValue(c.S, c.IS.String(), raw)
 		}
-		return f.formattedValue(c.S, c.V, raw), nil
+		return f.formattedValue(c.S, c.V, raw)
 	default:
 		if isNum, precision, decimal := isNumeric(c.V); isNum && !raw {
 			if precision > 15 {
@@ -568,7 +576,7 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
 			}
 		}
-		return f.formattedValue(c.S, c.V, raw), nil
+		return f.formattedValue(c.S, c.V, raw)
 	}
 }
 
@@ -587,8 +595,7 @@ func (f *File) SetCellDefault(sheet, cell, value string) error {
 	defer ws.Unlock()
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
 	c.setCellDefault(value)
-	f.removeFormula(c, ws, sheet)
-	return err
+	return f.removeFormula(c, ws, sheet)
 }
 
 // GetCellFormula provides a function to get formula from cell by given
@@ -698,8 +705,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 	}
 	if formula == "" {
 		c.F = nil
-		f.deleteCalcChain(f.getSheetID(sheet), cell)
-		return err
+		return f.deleteCalcChain(f.getSheetID(sheet), cell)
 	}
 
 	if c.F != nil {
@@ -926,7 +932,10 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 	if err != nil || c.T != "s" {
 		return
 	}
-	sst := f.sharedStringsReader()
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return
+	}
 	if len(sst.SI) <= siIdx || siIdx < 0 {
 		return
 	}
@@ -1145,7 +1154,11 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 		return err
 	}
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
-	si, sst := xlsxSI{}, f.sharedStringsReader()
+	si := xlsxSI{}
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return err
+	}
 	if si.R, err = setRichText(runs); err != nil {
 		return err
 	}
@@ -1286,19 +1299,22 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
-func (f *File) formattedValue(s int, v string, raw bool) string {
+func (f *File) formattedValue(s int, v string, raw bool) (string, error) {
 	if raw {
-		return v
+		return v, nil
 	}
 	if s == 0 {
-		return v
+		return v, nil
 	}
-	styleSheet := f.stylesReader()
+	styleSheet, err := f.stylesReader()
+	if err != nil {
+		return v, err
+	}
 	if styleSheet.CellXfs == nil {
-		return v
+		return v, err
 	}
 	if s >= len(styleSheet.CellXfs.Xf) {
-		return v
+		return v, err
 	}
 	var numFmtID int
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
@@ -1309,17 +1325,17 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 		date1904 = wb.WorkbookPr.Date1904
 	}
 	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
-		return ok(v, builtInNumFmt[numFmtID], date1904)
+		return ok(v, builtInNumFmt[numFmtID], date1904), err
 	}
 	if styleSheet.NumFmts == nil {
-		return v
+		return v, err
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(v, xlsxFmt.FormatCode, date1904)
+			return format(v, xlsxFmt.FormatCode, date1904), err
 		}
 	}
-	return v
+	return v, err
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in

@@ -87,4 +87,15 @@ func TestAddShape(t *testing.T) {
 		}
 	}`))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
+	// Test set row style with unsupported charset style sheet.
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddShape("Sheet1", "B30", `{"type":"rect","paragraph":[{"text":"Rectangle"},{}]}`), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestAddDrawingShape(t *testing.T) {
+	f := NewFile()
+	path := "xl/drawings/drawing1.xml"
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addDrawingShape("sheet1", path, "A1", &shapeOptions{}), "XML syntax error on line 1: invalid UTF-8")
 }

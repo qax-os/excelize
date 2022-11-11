@@ -15,6 +15,8 @@ import (
 	"encoding/xml"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDrawingParser(t *testing.T) {
@@ -24,12 +26,15 @@ func TestDrawingParser(t *testing.T) {
 	}
 	f.Pkg.Store("charset", MacintoshCyrillicCharset)
 	f.Pkg.Store("wsDr", []byte(xml.Header+`<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><xdr:oneCellAnchor><xdr:graphicFrame/></xdr:oneCellAnchor></xdr:wsDr>`))
-	// Test with one cell anchor
-	f.drawingParser("wsDr")
-	// Test with unsupported charset
-	f.drawingParser("charset")
-	// Test with alternate content
+	// Test with one cell anchor.
+	_, _, err := f.drawingParser("wsDr")
+	assert.NoError(t, err)
+	// Test with unsupported charset.
+	_, _, err = f.drawingParser("charset")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test with alternate content.
 	f.Drawings = sync.Map{}
 	f.Pkg.Store("wsDr", []byte(xml.Header+`<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></xdr:wsDr>`))
-	f.drawingParser("wsDr")
+	_, _, err = f.drawingParser("wsDr")
+	assert.NoError(t, err)
 }

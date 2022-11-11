@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
-	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1194,7 +1193,7 @@ func (f *File) drawPlotAreaTxPr(opts *chartAxisOptions) *cTxPr {
 // the problem that the label structure is changed after serialization and
 // deserialization, two different structures: decodeWsDr and encodeWsDr are
 // defined.
-func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
+func (f *File) drawingParser(path string) (*xlsxWsDr, int, error) {
 	var (
 		err error
 		ok  bool
@@ -1208,7 +1207,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 			decodeWsDr := decodeWsDr{}
 			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
 				Decode(&decodeWsDr); err != nil && err != io.EOF {
-				log.Printf("xml decode error: %s", err)
+				return nil, 0, err
 			}
 			content.R = decodeWsDr.R
 			for _, v := range decodeWsDr.AlternateContent {
@@ -1238,7 +1237,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int) {
 	}
 	wsDr.Lock()
 	defer wsDr.Unlock()
-	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2
+	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2, nil
 }
 
 // addDrawingChart provides a function to add chart graphic frame by given
@@ -1254,7 +1253,10 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	width = int(float64(width) * opts.XScale)
 	height = int(float64(height) * opts.YScale)
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, opts.OffsetX, opts.OffsetY, width, height)
-	content, cNvPrID := f.drawingParser(drawingXML)
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = opts.Positioning
 	from := xlsxFrom{}
@@ -1302,8 +1304,11 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 // addSheetDrawingChart provides a function to add chart graphic frame for
 // chartsheet by given sheet, drawingXML, width, height, relationship index
 // and format sets.
-func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *pictureOptions) {
-	content, cNvPrID := f.drawingParser(drawingXML)
+func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *pictureOptions) error {
+	content, cNvPrID, err := f.drawingParser(drawingXML)
+	if err != nil {
+		return err
+	}
 	absoluteAnchor := xdrCellAnchor{
 		EditAs: opts.Positioning,
 		Pos:    &xlsxPoint2D{},
@@ -1336,6 +1341,7 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *pictureOpt
 	}
 	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
 	f.Drawings.Store(drawingXML, content)
+	return err
 }
 
 // deleteDrawing provides a function to delete chart graphic frame by given by
@@ -1354,7 +1360,9 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) error
 		"Chart": func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic == nil },
 		"Pic":   func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic != nil },
 	}
-	wsDr, _ = f.drawingParser(drawingXML)
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return err
+	}
 	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
 		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && xdrCellAnchorFuncs[drawingType](wsDr.TwoCellAnchor[idx]) {
 			if wsDr.TwoCellAnchor[idx].From.Col == col && wsDr.TwoCellAnchor[idx].From.Row == row {
@@ -1367,7 +1375,6 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) error
 		deTwoCellAnchor = new(decodeTwoCellAnchor)
 		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			err = newDecodeXMLError(err)
 			return err
 		}
 		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {

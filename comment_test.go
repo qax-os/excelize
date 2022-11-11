@@ -34,16 +34,37 @@ func TestAddComments(t *testing.T) {
 	assert.EqualError(t, f.AddComment("SheetN", Comment{Cell: "B7", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), "sheet SheetN does not exist")
 	// Test add comment on with illegal cell reference
 	assert.EqualError(t, f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	comments, err := f.GetComments()
+	assert.NoError(t, err)
 	if assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx"))) {
-		assert.Len(t, f.GetComments(), 2)
+		assert.Len(t, comments, 2)
 	}
 
 	f.Comments["xl/comments2.xml"] = nil
 	f.Pkg.Store("xl/comments2.xml", []byte(xml.Header+`<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
-	comments := f.GetComments()
+	comments, err = f.GetComments()
+	assert.NoError(t, err)
 	assert.EqualValues(t, 2, len(comments["Sheet1"]))
 	assert.EqualValues(t, 1, len(comments["Sheet2"]))
-	assert.EqualValues(t, len(NewFile().GetComments()), 0)
+	comments, err = NewFile().GetComments()
+	assert.NoError(t, err)
+	assert.EqualValues(t, len(comments), 0)
+
+	// Test add comments with unsupported charset.
+	f.Comments["xl/comments2.xml"] = nil
+	f.Pkg.Store("xl/comments2.xml", MacintoshCyrillicCharset)
+	_, err = f.GetComments()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	// Test add comments with unsupported charset.
+	f.Comments["xl/comments2.xml"] = nil
+	f.Pkg.Store("xl/comments2.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddComment("Sheet2", Comment{Cell: "A30", Text: "Comment"}), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test add comments with unsupported charset style sheet.
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddComment("Sheet2", Comment{Cell: "A30", Text: "Comment"}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestDeleteComment(t *testing.T) {
@@ -61,19 +82,30 @@ func TestDeleteComment(t *testing.T) {
 
 	assert.NoError(t, f.DeleteComment("Sheet2", "A40"))
 
-	assert.EqualValues(t, 5, len(f.GetComments()["Sheet2"]))
-	assert.EqualValues(t, len(NewFile().GetComments()), 0)
+	comments, err := f.GetComments()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 5, len(comments["Sheet2"]))
+
+	comments, err = NewFile().GetComments()
+	assert.NoError(t, err)
+	assert.EqualValues(t, len(comments), 0)
 
 	// Test delete all comments in a worksheet
 	assert.NoError(t, f.DeleteComment("Sheet2", "A41"))
 	assert.NoError(t, f.DeleteComment("Sheet2", "C41"))
 	assert.NoError(t, f.DeleteComment("Sheet2", "C42"))
-	assert.EqualValues(t, 0, len(f.GetComments()["Sheet2"]))
+	comments, err = f.GetComments()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 0, len(comments["Sheet2"]))
 	// Test delete comment on not exists worksheet
 	assert.EqualError(t, f.DeleteComment("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete comment with worksheet part
 	f.Pkg.Delete("xl/worksheets/sheet1.xml")
 	assert.NoError(t, f.DeleteComment("Sheet1", "A22"))
+
+	f.Comments["xl/comments2.xml"] = nil
+	f.Pkg.Store("xl/comments2.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteComment("Sheet2", "A41"), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestDecodeVMLDrawingReader(t *testing.T) {
@@ -85,9 +117,11 @@ func TestDecodeVMLDrawingReader(t *testing.T) {
 
 func TestCommentsReader(t *testing.T) {
 	f := NewFile()
+	// Test read comments with unsupported charset.
 	path := "xl/comments1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	f.commentsReader(path)
+	_, err := f.commentsReader(path)
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestCountComments(t *testing.T) {

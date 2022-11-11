@@ -55,7 +55,7 @@ func TestRows(t *testing.T) {
 	value, err := f.GetCellValue("Sheet1", "A19")
 	assert.NoError(t, err)
 	assert.Equal(t, "Total:", value)
-	// Test load shared string table to memory
+	// Test load shared string table to memory.
 	err = f.SetCellValue("Sheet1", "A19", "A19")
 	assert.NoError(t, err)
 	value, err = f.GetCellValue("Sheet1", "A19")
@@ -63,6 +63,14 @@ func TestRows(t *testing.T) {
 	assert.Equal(t, "A19", value)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRow.xlsx")))
 	assert.NoError(t, f.Close())
+
+	// Test rows iterator with unsupported charset shared strings table.
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	rows, err = f.Rows(sheet2)
+	assert.NoError(t, err)
+	_, err = rows.Columns()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestRowsIterator(t *testing.T) {
@@ -225,6 +233,7 @@ func TestColumns(t *testing.T) {
 
 func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
+	// Test read shared string with unsupported charset.
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	f.sharedStringsReader()
 	si := xlsxSI{}
@@ -965,12 +974,16 @@ func TestSetRowStyle(t *testing.T) {
 	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")
 	assert.NoError(t, err)
 	assert.Equal(t, style2, cellStyleID)
-	// Test cell inheritance rows style
+	// Test cell inheritance rows style.
 	assert.NoError(t, f.SetCellValue("Sheet1", "C1", nil))
 	cellStyleID, err = f.GetCellStyle("Sheet1", "C1")
 	assert.NoError(t, err)
 	assert.Equal(t, style2, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
+	// Test set row style with unsupported charset style sheet.
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, cellStyleID), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestNumberFormats(t *testing.T) {

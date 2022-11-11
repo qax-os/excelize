@@ -10,7 +10,7 @@ import (
 
 func TestAdjustMergeCells(t *testing.T) {
 	f := NewFile()
-	// testing adjustAutoFilter with illegal cell reference.
+	// Test adjustAutoFilter with illegal cell reference.
 	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -57,7 +57,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}, columns, 1, -1))
 
-	// testing adjustMergeCells
+	// Test adjustMergeCells.
 	var cases []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -68,7 +68,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		expectRect []int
 	}
 
-	// testing insert
+	// Test insert.
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -139,7 +139,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.Equal(t, c.expectRect, c.ws.MergeCells.Cells[0].rect, c.label)
 	}
 
-	// testing delete
+	// Test delete,
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -227,7 +227,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.label)
 	}
 
-	// testing delete one row/column
+	// Test delete one row or column
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -324,13 +324,13 @@ func TestAdjustTable(t *testing.T) {
 
 	f = NewFile()
 	assert.NoError(t, f.AddTable(sheetName, "A1", "D5", ""))
-	// Test adjust table with non-table part
+	// Test adjust table with non-table part.
 	f.Pkg.Delete("xl/tables/table1.xml")
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
-	// Test adjust table with unsupported charset
+	// Test adjust table with unsupported charset.
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
-	// Test adjust table with invalid table range reference
+	// Test adjust table with invalid table range reference.
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
 }
