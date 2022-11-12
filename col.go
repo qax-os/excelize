@@ -520,6 +520,8 @@ func (f *File) setColWidth(sheet string, min, max int, width float64) error {
 
 // AutoFitColWidth provides a function to autofit columns according to
 // their text content
+// Note: this only works on the column with cells which not contains
+// formula cell and style with a number format.
 //
 // For example set column of column H on Sheet1:
 //
