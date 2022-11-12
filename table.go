@@ -94,8 +94,7 @@ func (f *File) AddTable(sheet, hCell, vCell, opts string) error {
 	if err = f.addTable(sheet, tableXML, hCol, hRow, vCol, vRow, tableID, options); err != nil {
 		return err
 	}
-	f.addContentTypePart(tableID, "table")
-	return err
+	return f.addContentTypePart(tableID, "table")
 }
 
 // countTables provides a function to get table files count storage in the
@@ -301,7 +300,10 @@ func (f *File) AutoFilter(sheet, hCell, vCell, opts string) error {
 	cellStart, _ := CoordinatesToCellName(hCol, hRow, true)
 	cellEnd, _ := CoordinatesToCellName(vCol, vRow, true)
 	ref, filterDB := cellStart+":"+cellEnd, "_xlnm._FilterDatabase"
-	wb := f.workbookReader()
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
 	sheetID := f.GetSheetIndex(sheet)
 	filterRange := fmt.Sprintf("'%s'!%s", sheet, ref)
 	d := xlsxDefinedName{

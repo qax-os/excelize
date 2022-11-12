@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
-	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -23,7 +22,10 @@ import (
 
 // SetWorkbookProps provides a function to sets workbook properties.
 func (f *File) SetWorkbookProps(opts *WorkbookPropsOptions) error {
-	wb := f.workbookReader()
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
 	if wb.WorkbookPr == nil {
 		wb.WorkbookPr = new(xlsxWorkbookPr)
 	}
@@ -44,20 +46,24 @@ func (f *File) SetWorkbookProps(opts *WorkbookPropsOptions) error {
 
 // GetWorkbookProps provides a function to gets workbook properties.
 func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
-	wb, opts := f.workbookReader(), WorkbookPropsOptions{}
+	var opts WorkbookPropsOptions
+	wb, err := f.workbookReader()
+	if err != nil {
+		return opts, err
+	}
 	if wb.WorkbookPr != nil {
 		opts.Date1904 = boolPtr(wb.WorkbookPr.Date1904)
 		opts.FilterPrivacy = boolPtr(wb.WorkbookPr.FilterPrivacy)
 		opts.CodeName = stringPtr(wb.WorkbookPr.CodeName)
 	}
-	return opts, nil
+	return opts, err
 }
 
 // setWorkbook update workbook property of the spreadsheet. Maximum 31
 // characters are allowed in sheet title.
 func (f *File) setWorkbook(name string, sheetID, rid int) {
-	content := f.workbookReader()
-	content.Sheets.Sheet = append(content.Sheets.Sheet, xlsxSheet{
+	wb, _ := f.workbookReader()
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet, xlsxSheet{
 		Name:    trimSheetName(name),
 		SheetID: sheetID,
 		ID:      "rId" + strconv.Itoa(rid),
@@ -67,7 +73,7 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 // getWorkbookPath provides a function to get the path of the workbook.xml in
 // the spreadsheet.
 func (f *File) getWorkbookPath() (path string) {
-	if rels := f.relsReader("_rels/.rels"); rels != nil {
+	if rels, _ := f.relsReader("_rels/.rels"); rels != nil {
 		rels.Lock()
 		defer rels.Unlock()
 		for _, rel := range rels.Relationships {
@@ -95,7 +101,7 @@ func (f *File) getWorkbookRelsPath() (path string) {
 
 // workbookReader provides a function to get the pointer to the workbook.xml
 // structure after deserialization.
-func (f *File) workbookReader() *xlsxWorkbook {
+func (f *File) workbookReader() (*xlsxWorkbook, error) {
 	var err error
 	if f.WorkBook == nil {
 		wbPath := f.getWorkbookPath()
@@ -107,10 +113,10 @@ func (f *File) workbookReader() *xlsxWorkbook {
 		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath)))).
 			Decode(f.WorkBook); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			return f.WorkBook, err
 		}
 	}
-	return f.WorkBook
+	return f.WorkBook, err
 }
 
 // workBookWriter provides a function to save workbook.xml after serialize

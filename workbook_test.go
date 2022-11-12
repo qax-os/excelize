@@ -9,7 +9,8 @@ import (
 func TestWorkbookProps(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetWorkbookProps(nil))
-	wb := f.workbookReader()
+	wb, err := f.workbookReader()
+	assert.NoError(t, err)
 	wb.WorkbookPr = nil
 	expected := WorkbookPropsOptions{
 		Date1904:      boolPtr(true),
@@ -20,4 +21,13 @@ func TestWorkbookProps(t *testing.T) {
 	opts, err := f.GetWorkbookProps()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, opts)
+	// Test set workbook properties with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetWorkbookProps(&expected), "XML syntax error on line 1: invalid UTF-8")
+	// Test get workbook properties with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	_, err = f.GetWorkbookProps()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }

@@ -186,7 +186,7 @@ func TestStreamTable(t *testing.T) {
 	}
 
 	// Write a table.
-	assert.NoError(t, streamWriter.AddTable("A1", "C2", ``))
+	assert.NoError(t, streamWriter.AddTable("A1", "C2", ""))
 	assert.NoError(t, streamWriter.Flush())
 
 	// Verify the table has names.
@@ -198,13 +198,17 @@ func TestStreamTable(t *testing.T) {
 	assert.Equal(t, "B", table.TableColumns.TableColumn[1].Name)
 	assert.Equal(t, "C", table.TableColumns.TableColumn[2].Name)
 
-	assert.NoError(t, streamWriter.AddTable("A1", "C1", ``))
+	assert.NoError(t, streamWriter.AddTable("A1", "C1", ""))
 
 	// Test add table with illegal options.
 	assert.EqualError(t, streamWriter.AddTable("B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
 	// Test add table with illegal cell reference.
 	assert.EqualError(t, streamWriter.AddTable("A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, streamWriter.AddTable("A1", "B", `{}`), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	// Test add table with unsupported charset content types.
+	file.ContentTypes = nil
+	file.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, streamWriter.AddTable("A1", "C2", ""), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestStreamMergeCells(t *testing.T) {
@@ -242,7 +246,7 @@ func TestStreamMarshalAttrs(t *testing.T) {
 }
 
 func TestStreamSetRow(t *testing.T) {
-	// Test error exceptions
+	// Test error exceptions.
 	file := NewFile()
 	defer func() {
 		assert.NoError(t, file.Close())
@@ -250,9 +254,13 @@ func TestStreamSetRow(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.EqualError(t, streamWriter.SetRow("A", []interface{}{}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	// Test set row with non-ascending row number
+	// Test set row with non-ascending row number.
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{}))
 	assert.EqualError(t, streamWriter.SetRow("A1", []interface{}{}), newStreamSetRowError(1).Error())
+	// Test set row with unsupported charset workbook.
+	file.WorkBook = nil
+	file.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, streamWriter.SetRow("A2", []interface{}{time.Now()}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestStreamSetRowNilValues(t *testing.T) {

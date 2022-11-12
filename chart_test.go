@@ -226,6 +226,11 @@ func TestAddChart(t *testing.T) {
 	// Test add combo chart with unsupported chart type
 	assert.EqualError(t, f.AddChart("Sheet2", "BD64", `{"type":"barOfPie","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Bar of Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"major_grid_lines":true},"y_axis":{"major_grid_lines":true}}`, `{"type":"unknown","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$A$30:$D$37","values":"Sheet1!$B$30:$B$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"Bar of Pie Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero","x_axis":{"major_grid_lines":true},"y_axis":{"major_grid_lines":true}}`), "unsupported chart type unknown")
 	assert.NoError(t, f.Close())
+
+	// Test add chart with unsupported charset content types.
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddChart("Sheet1", "P1", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"}],"title":{"name":"2D Column Chart"}}`), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddChartSheet(t *testing.T) {
@@ -259,6 +264,14 @@ func TestAddChartSheet(t *testing.T) {
 	assert.NoError(t, f.UpdateLinkedValue())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddChartSheet.xlsx")))
+	// Test add chart sheet with unsupported charset drawing XML.
+	f.Pkg.Store("xl/drawings/drawing4.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddChartSheet("Chart3", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"}],"title":{"name":"2D Column Chart"}}`), "XML syntax error on line 1: invalid UTF-8")
+	// Test add chart sheet with unsupported charset content types.
+	f = NewFile()
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddChartSheet("Chart4", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"}],"title":{"name":"2D Column Chart"}}`), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestDeleteChart(t *testing.T) {

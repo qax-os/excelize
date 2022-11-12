@@ -366,7 +366,9 @@ func TestThemeReader(t *testing.T) {
 	f := NewFile()
 	// Test read theme with unsupported charset.
 	f.Pkg.Store(defaultXMLPathTheme, MacintoshCyrillicCharset)
-	assert.EqualValues(t, &xlsxTheme{XMLNSa: NameSpaceDrawingML.Value, XMLNSr: SourceRelationship.Value}, f.themeReader())
+	theme, err := f.themeReader()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualValues(t, &xlsxTheme{XMLNSa: NameSpaceDrawingML.Value, XMLNSr: SourceRelationship.Value}, theme)
 }
 
 func TestSetCellStyle(t *testing.T) {

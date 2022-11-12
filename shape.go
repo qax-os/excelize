@@ -308,8 +308,7 @@ func (f *File) AddShape(sheet, cell, opts string) error {
 	if err = f.addDrawingShape(sheet, drawingXML, cell, options); err != nil {
 		return err
 	}
-	f.addContentTypePart(drawingID, "drawings")
-	return err
+	return f.addContentTypePart(drawingID, "drawings")
 }
 
 // addDrawingShape provides a function to add preset geometry by given sheet,

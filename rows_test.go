@@ -235,9 +235,20 @@ func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
 	// Test read shared string with unsupported charset.
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
-	f.sharedStringsReader()
-	si := xlsxSI{}
-	assert.EqualValues(t, "", si.String())
+	_, err := f.sharedStringsReader()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test read shared strings with unsupported charset content types.
+	f = NewFile()
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	_, err = f.sharedStringsReader()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test read shared strings with unsupported charset workbook relationships.
+	f = NewFile()
+	f.Relationships.Delete(defaultXMLPathWorkbookRels)
+	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
+	_, err = f.sharedStringsReader()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestRowVisibility(t *testing.T) {

@@ -17,7 +17,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"reflect"
 	"strconv"
@@ -3357,16 +3356,16 @@ func getPaletteColor(color string) string {
 
 // themeReader provides a function to get the pointer to the xl/theme/theme1.xml
 // structure after deserialization.
-func (f *File) themeReader() *xlsxTheme {
+func (f *File) themeReader() (*xlsxTheme, error) {
 	if _, ok := f.Pkg.Load(defaultXMLPathTheme); !ok {
-		return nil
+		return nil, nil
 	}
 	theme := xlsxTheme{XMLNSa: NameSpaceDrawingML.Value, XMLNSr: SourceRelationship.Value}
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathTheme)))).
 		Decode(&theme); err != nil && err != io.EOF {
-		log.Printf("xml decoder error: %s", err)
+		return &theme, err
 	}
-	return &theme
+	return &theme, nil
 }
 
 // ThemeColor applied the color with tint value.

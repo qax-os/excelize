@@ -17,7 +17,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -47,7 +46,7 @@ func (f *File) NewSheet(sheet string) int {
 	}
 	f.DeleteSheet(sheet)
 	f.SheetCount++
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	sheetID := 0
 	for _, v := range wb.Sheets.Sheet {
 		if v.SheetID > sheetID {
@@ -56,7 +55,7 @@ func (f *File) NewSheet(sheet string) int {
 	}
 	sheetID++
 	// Update [Content_Types].xml
-	f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
+	_ = f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(sheetID, sheet)
 	// Update workbook.xml.rels
@@ -68,19 +67,17 @@ func (f *File) NewSheet(sheet string) int {
 
 // contentTypesReader provides a function to get the pointer to the
 // [Content_Types].xml structure after deserialization.
-func (f *File) contentTypesReader() *xlsxTypes {
-	var err error
-
+func (f *File) contentTypesReader() (*xlsxTypes, error) {
 	if f.ContentTypes == nil {
 		f.ContentTypes = new(xlsxTypes)
 		f.ContentTypes.Lock()
 		defer f.ContentTypes.Unlock()
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
 			Decode(f.ContentTypes); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			return f.ContentTypes, err
 		}
 	}
-	return f.ContentTypes
+	return f.ContentTypes, nil
 }
 
 // contentTypesWriter provides a function to save [Content_Types].xml after
@@ -215,14 +212,18 @@ func trimCell(column []xlsxC) []xlsxC {
 
 // setContentTypes provides a function to read and update property of contents
 // type of the spreadsheet.
-func (f *File) setContentTypes(partName, contentType string) {
-	content := f.contentTypesReader()
+func (f *File) setContentTypes(partName, contentType string) error {
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
 	content.Lock()
 	defer content.Unlock()
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    partName,
 		ContentType: contentType,
 	})
+	return err
 }
 
 // setSheet provides a function to update sheet property by given index.
@@ -271,7 +272,7 @@ func (f *File) SetActiveSheet(index int) {
 	if index < 0 {
 		index = 0
 	}
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	for activeTab := range wb.Sheets.Sheet {
 		if activeTab == index {
 			if wb.BookViews == nil {
@@ -316,7 +317,7 @@ func (f *File) SetActiveSheet(index int) {
 // spreadsheet. If not found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() (index int) {
 	sheetID := f.getActiveSheetID()
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	if wb != nil {
 		for idx, sheet := range wb.Sheets.Sheet {
 			if sheet.SheetID == sheetID {
@@ -331,7 +332,7 @@ func (f *File) GetActiveSheetIndex() (index int) {
 // getActiveSheetID provides a function to get active sheet ID of the
 // spreadsheet. If not found the active sheet will be return integer 0.
 func (f *File) getActiveSheetID() int {
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	if wb != nil {
 		if wb.BookViews != nil && len(wb.BookViews.WorkBookView) > 0 {
 			activeTab := wb.BookViews.WorkBookView[0].ActiveTab
@@ -357,10 +358,10 @@ func (f *File) SetSheetName(source, target string) {
 	if strings.EqualFold(target, source) {
 		return
 	}
-	content := f.workbookReader()
-	for k, v := range content.Sheets.Sheet {
+	wb, _ := f.workbookReader()
+	for k, v := range wb.Sheets.Sheet {
 		if v.Name == source {
-			content.Sheets.Sheet[k].Name = target
+			wb.Sheets.Sheet[k].Name = target
 			f.sheetMap[target] = f.sheetMap[source]
 			delete(f.sheetMap, source)
 		}
@@ -422,7 +423,7 @@ func (f *File) GetSheetIndex(sheet string) int {
 //	    fmt.Println(index, name)
 //	}
 func (f *File) GetSheetMap() map[int]string {
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	sheetMap := map[int]string{}
 	if wb != nil {
 		for _, sheet := range wb.Sheets.Sheet {
@@ -435,7 +436,7 @@ func (f *File) GetSheetMap() map[int]string {
 // GetSheetList provides a function to get worksheets, chart sheets, and
 // dialog sheets name list of the workbook.
 func (f *File) GetSheetList() (list []string) {
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	if wb != nil {
 		for _, sheet := range wb.Sheets.Sheet {
 			list = append(list, sheet.Name)
@@ -448,8 +449,10 @@ func (f *File) GetSheetList() (list []string) {
 // of the spreadsheet.
 func (f *File) getSheetMap() map[string]string {
 	maps := map[string]string{}
-	for _, v := range f.workbookReader().Sheets.Sheet {
-		for _, rel := range f.relsReader(f.getWorkbookRelsPath()).Relationships {
+	wb, _ := f.workbookReader()
+	rels, _ := f.relsReader(f.getWorkbookRelsPath())
+	for _, v := range wb.Sheets.Sheet {
+		for _, rel := range rels.Relationships {
 			if rel.ID == v.ID {
 				sheetXMLPath := f.getWorksheetPath(rel.Target)
 				if _, ok := f.Pkg.Load(sheetXMLPath); ok {
@@ -498,10 +501,11 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
-	f.addSheetPicture(sheet, rID)
+	if err = f.addSheetPicture(sheet, rID); err != nil {
+		return err
+	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
-	f.setContentTypePartImageExtensions()
-	return err
+	return f.setContentTypePartImageExtensions()
 }
 
 // DeleteSheet provides a function to delete worksheet in a workbook by given
@@ -514,8 +518,8 @@ func (f *File) DeleteSheet(sheet string) {
 		return
 	}
 	sheetName := trimSheetName(sheet)
-	wb := f.workbookReader()
-	wbRels := f.relsReader(f.getWorkbookRelsPath())
+	wb, _ := f.workbookReader()
+	wbRels, _ := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	deleteLocalSheetID := f.GetSheetIndex(sheet)
 	deleteAndAdjustDefinedNames(wb, deleteLocalSheetID)
@@ -537,8 +541,8 @@ func (f *File) DeleteSheet(sheet string) {
 			}
 		}
 		target := f.deleteSheetFromWorkbookRels(v.ID)
-		f.deleteSheetFromContentTypes(target)
-		f.deleteCalcChain(f.getSheetID(sheet), "")
+		_ = f.deleteSheetFromContentTypes(target)
+		_ = f.deleteCalcChain(f.getSheetID(sheet), "")
 		delete(f.sheetMap, v.Name)
 		f.Pkg.Delete(sheetXML)
 		f.Pkg.Delete(rels)
@@ -573,12 +577,12 @@ func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
 // deleteSheetFromWorkbookRels provides a function to remove worksheet
 // relationships by given relationships ID in the file workbook.xml.rels.
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
-	content := f.relsReader(f.getWorkbookRelsPath())
-	content.Lock()
-	defer content.Unlock()
-	for k, v := range content.Relationships {
+	rels, _ := f.relsReader(f.getWorkbookRelsPath())
+	rels.Lock()
+	defer rels.Unlock()
+	for k, v := range rels.Relationships {
 		if v.ID == rID {
-			content.Relationships = append(content.Relationships[:k], content.Relationships[k+1:]...)
+			rels.Relationships = append(rels.Relationships[:k], rels.Relationships[k+1:]...)
 			return v.Target
 		}
 	}
@@ -587,11 +591,14 @@ func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 
 // deleteSheetFromContentTypes provides a function to remove worksheet
 // relationships by given target name in the file [Content_Types].xml.
-func (f *File) deleteSheetFromContentTypes(target string) {
+func (f *File) deleteSheetFromContentTypes(target string) error {
 	if !strings.HasPrefix(target, "/") {
 		target = "/xl/" + target
 	}
-	content := f.contentTypesReader()
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
 	content.Lock()
 	defer content.Unlock()
 	for k, v := range content.Overrides {
@@ -599,6 +606,7 @@ func (f *File) deleteSheetFromContentTypes(target string) {
 			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
 		}
 	}
+	return err
 }
 
 // CopySheet provides a function to duplicate a worksheet by gave source and
@@ -659,22 +667,25 @@ func (f *File) copySheet(from, to int) error {
 //	err := f.SetSheetVisible("Sheet1", false)
 func (f *File) SetSheetVisible(sheet string, visible bool) error {
 	sheet = trimSheetName(sheet)
-	content := f.workbookReader()
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
 	if visible {
-		for k, v := range content.Sheets.Sheet {
+		for k, v := range wb.Sheets.Sheet {
 			if strings.EqualFold(v.Name, sheet) {
-				content.Sheets.Sheet[k].State = ""
+				wb.Sheets.Sheet[k].State = ""
 			}
 		}
-		return nil
+		return err
 	}
 	count := 0
-	for _, v := range content.Sheets.Sheet {
+	for _, v := range wb.Sheets.Sheet {
 		if v.State != "hidden" {
 			count++
 		}
 	}
-	for k, v := range content.Sheets.Sheet {
+	for k, v := range wb.Sheets.Sheet {
 		ws, err := f.workSheetReader(v.Name)
 		if err != nil {
 			return err
@@ -684,10 +695,10 @@ func (f *File) SetSheetVisible(sheet string, visible bool) error {
 			tabSelected = ws.SheetViews.SheetView[0].TabSelected
 		}
 		if strings.EqualFold(v.Name, sheet) && count > 1 && !tabSelected {
-			content.Sheets.Sheet[k].State = "hidden"
+			wb.Sheets.Sheet[k].State = "hidden"
 		}
 	}
-	return nil
+	return err
 }
 
 // parsePanesOptions provides a function to parse the panes settings.
@@ -830,10 +841,11 @@ func (f *File) SetPanes(sheet, panes string) error {
 //
 //	f.GetSheetVisible("Sheet1")
 func (f *File) GetSheetVisible(sheet string) bool {
-	content, name, visible := f.workbookReader(), trimSheetName(sheet), false
-	for k, v := range content.Sheets.Sheet {
+	name, visible := trimSheetName(sheet), false
+	wb, _ := f.workbookReader()
+	for k, v := range wb.Sheets.Sheet {
 		if strings.EqualFold(v.Name, name) {
-			if content.Sheets.Sheet[k].State == "" || content.Sheets.Sheet[k].State == "visible" {
+			if wb.Sheets.Sheet[k].State == "" || wb.Sheets.Sheet[k].State == "visible" {
 				visible = true
 			}
 		}
@@ -1460,7 +1472,10 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //	    Scope:    "Sheet2",
 //	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
-	wb := f.workbookReader()
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
 	d := xlsxDefinedName{
 		Name:    definedName.Name,
 		Comment: definedName.Comment,
@@ -1499,7 +1514,10 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 //	    Scope:    "Sheet2",
 //	})
 func (f *File) DeleteDefinedName(definedName *DefinedName) error {
-	wb := f.workbookReader()
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
 	if wb.DefinedNames != nil {
 		for idx, dn := range wb.DefinedNames.DefinedName {
 			scope := "Workbook"
@@ -1512,7 +1530,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 			}
 			if scope == deleteScope && dn.Name == definedName.Name {
 				wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName[:idx], wb.DefinedNames.DefinedName[idx+1:]...)
-				return nil
+				return err
 			}
 		}
 	}
@@ -1523,7 +1541,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 // or worksheet.
 func (f *File) GetDefinedName() []DefinedName {
 	var definedNames []DefinedName
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	if wb.DefinedNames != nil {
 		for _, dn := range wb.DefinedNames.DefinedName {
 			definedName := DefinedName{
@@ -1715,23 +1733,22 @@ func (f *File) RemovePageBreak(sheet, cell string) error {
 
 // relsReader provides a function to get the pointer to the structure
 // after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
-func (f *File) relsReader(path string) *xlsxRelationships {
-	var err error
+func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 	rels, _ := f.Relationships.Load(path)
 	if rels == nil {
 		if _, ok := f.Pkg.Load(path); ok {
 			c := xlsxRelationships{}
-			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).
 				Decode(&c); err != nil && err != io.EOF {
-				log.Printf("xml decode error: %s", err)
+				return nil, err
 			}
 			f.Relationships.Store(path, &c)
 		}
 	}
 	if rels, _ = f.Relationships.Load(path); rels != nil {
-		return rels.(*xlsxRelationships)
+		return rels.(*xlsxRelationships), nil
 	}
-	return nil
+	return nil, nil
 }
 
 // fillSheetData ensures there are enough rows, and columns in the chosen

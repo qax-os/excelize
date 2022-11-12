@@ -188,6 +188,17 @@ func TestDefinedName(t *testing.T) {
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[0].RefersTo)
 	assert.Exactly(t, 1, len(f.GetDefinedName()))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDefinedName.xlsx")))
+	// Test set defined name with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetDefinedName(&DefinedName{
+		Name: "Amount", RefersTo: "Sheet1!$A$2:$D$5",
+	}), "XML syntax error on line 1: invalid UTF-8")
+	// Test delete defined name with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteDefinedName(&DefinedName{Name: "Amount"}),
+		"XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGroupSheets(t *testing.T) {
@@ -365,6 +376,32 @@ func TestGetSheetID(t *testing.T) {
 	file.NewSheet("Sheet1")
 	id := file.getSheetID("sheet1")
 	assert.NotEqual(t, -1, id)
+}
+
+func TestSetSheetVisible(t *testing.T) {
+	f := NewFile()
+	f.WorkBook.Sheets.Sheet[0].Name = "SheetN"
+	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "sheet SheetN does not exist")
+	// Test set sheet visible with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestSetContentTypes(t *testing.T) {
+	f := NewFile()
+	// Test set content type with unsupported charset content types.
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.setContentTypes("/xl/worksheets/sheet1.xml", ContentTypeSpreadSheetMLWorksheet), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestDeleteSheetFromContentTypes(t *testing.T) {
+	f := NewFile()
+	// Test delete sheet from content types with unsupported charset content types.
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSheetFromContentTypes("/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func BenchmarkNewSheet(b *testing.B) {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -78,6 +79,14 @@ func TestWriteTo(t *testing.T) {
 		f.Path = "Book1.xls"
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
+	}
+	// Test write with unsupported charset content types.
+	{
+		f, buf := NewFile(), bytes.Buffer{}
+		f.ContentTypes, f.Path = nil, filepath.Join("test", "TestWriteTo.xlsx")
+		f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	}
 }
 

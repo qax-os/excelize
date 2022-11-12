@@ -927,8 +927,10 @@ func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
 		return err
 	}
 	f.addChart(options, comboCharts)
-	f.addContentTypePart(chartID, "chart")
-	f.addContentTypePart(drawingID, "drawings")
+	if err = f.addContentTypePart(chartID, "chart"); err != nil {
+		return err
+	}
+	_ = f.addContentTypePart(drawingID, "drawings")
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
 }
@@ -952,7 +954,7 @@ func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 		},
 	}
 	f.SheetCount++
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	sheetID := 0
 	for _, v := range wb.Sheets.Sheet {
 		if v.SheetID > sheetID {
@@ -969,11 +971,15 @@ func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 	f.prepareChartSheetDrawing(&cs, drawingID, sheet)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	f.addSheetDrawingChart(drawingXML, drawingRID, &options.Format)
+	if err = f.addSheetDrawingChart(drawingXML, drawingRID, &options.Format); err != nil {
+		return err
+	}
 	f.addChart(options, comboCharts)
-	f.addContentTypePart(chartID, "chart")
-	f.addContentTypePart(sheetID, "chartsheet")
-	f.addContentTypePart(drawingID, "drawings")
+	if err = f.addContentTypePart(chartID, "chart"); err != nil {
+		return err
+	}
+	_ = f.addContentTypePart(sheetID, "chartsheet")
+	_ = f.addContentTypePart(drawingID, "drawings")
 	// Update workbook.xml.rels
 	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipChartsheet, fmt.Sprintf("/xl/chartsheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml

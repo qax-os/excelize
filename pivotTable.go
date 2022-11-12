@@ -160,10 +160,10 @@ func (f *File) AddPivotTable(opts *PivotTableOptions) error {
 	}
 	pivotTableSheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(pivotTableSheetPath, "xl/worksheets/") + ".rels"
 	f.addRels(pivotTableSheetRels, SourceRelationshipPivotTable, sheetRelationshipsPivotTableXML, "")
-	f.addContentTypePart(pivotTableID, "pivotTable")
-	f.addContentTypePart(pivotCacheID, "pivotCache")
-
-	return nil
+	if err = f.addContentTypePart(pivotTableID, "pivotTable"); err != nil {
+		return err
+	}
+	return f.addContentTypePart(pivotCacheID, "pivotCache")
 }
 
 // parseFormatPivotTableSet provides a function to validate pivot table
@@ -697,7 +697,7 @@ func (f *File) getPivotTableFieldOptions(name string, fields []PivotTableField) 
 
 // addWorkbookPivotCache add the association ID of the pivot cache in workbook.xml.
 func (f *File) addWorkbookPivotCache(RID int) int {
-	wb := f.workbookReader()
+	wb, _ := f.workbookReader()
 	if wb.PivotCaches == nil {
 		wb.PivotCaches = &xlsxPivotCaches{}
 	}

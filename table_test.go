@@ -78,9 +78,13 @@ func TestAutoFilter(t *testing.T) {
 		})
 	}
 
-	// Test AutoFilter with illegal cell reference.
+	// Test add auto filter with illegal cell reference.
 	assert.EqualError(t, f.AutoFilter("Sheet1", "A", "B1", ""), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.AutoFilter("Sheet1", "A1", "B", ""), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	// Test add auto filter with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AutoFilter("Sheet1", "D4", "B1", formats[0]), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAutoFilterError(t *testing.T) {

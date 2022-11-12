@@ -54,7 +54,10 @@ func (f *File) deleteCalcChain(index int, cell string) error {
 	if len(calc.C) == 0 {
 		f.CalcChain = nil
 		f.Pkg.Delete(defaultXMLPathCalcChain)
-		content := f.contentTypesReader()
+		content, err := f.contentTypesReader()
+		if err != nil {
+			return err
+		}
 		content.Lock()
 		defer content.Unlock()
 		for k, v := range content.Overrides {

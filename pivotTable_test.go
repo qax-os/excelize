@@ -259,6 +259,15 @@ func TestAddPivotTable(t *testing.T) {
 	// Test get pivot fields index with empty data range
 	_, err = f.getPivotFieldsIndex([]PivotTableField{}, &PivotTableOptions{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
+	// Test add pivot table with unsupported charset content types.
+	f = NewFile()
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!$A$1:$E$31",
+		PivotTableRange: "Sheet1!$G$2:$M$34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+	}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddPivotRowFields(t *testing.T) {

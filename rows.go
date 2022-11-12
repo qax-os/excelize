@@ -435,8 +435,13 @@ func (f *File) sharedStringsReader() (*xlsxSST, error) {
 				f.sharedStringsMap[sharedStrings.SI[i].T.Val] = i
 			}
 		}
-		f.addContentTypePart(0, "sharedStrings")
-		rels := f.relsReader(relPath)
+		if err = f.addContentTypePart(0, "sharedStrings"); err != nil {
+			return f.SharedStrings, err
+		}
+		rels, err := f.relsReader(relPath)
+		if err != nil {
+			return f.SharedStrings, err
+		}
 		for _, rel := range rels.Relationships {
 			if rel.Target == "/xl/sharedStrings.xml" {
 				return f.SharedStrings, nil

@@ -187,7 +187,9 @@ func (f *File) AddPictureFromBytes(sheet, cell, opts, name, extension string, fi
 	if err != nil {
 		return err
 	}
-	f.addContentTypePart(drawingID, "drawings")
+	if err = f.addContentTypePart(drawingID, "drawings"); err != nil {
+		return err
+	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
 }
@@ -201,7 +203,7 @@ func (f *File) deleteSheetRelationships(sheet, rID string) {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.relsReader(rels)
+	sheetRels, _ := f.relsReader(rels)
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
@@ -235,11 +237,15 @@ func (f *File) addSheetDrawing(sheet string, rID int) {
 
 // addSheetPicture provides a function to add picture element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
-func (f *File) addSheetPicture(sheet string, rID int) {
-	ws, _ := f.workSheetReader(sheet)
+func (f *File) addSheetPicture(sheet string, rID int) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
 	ws.Picture = &xlsxPicture{
 		RID: "rId" + strconv.Itoa(rID),
 	}
+	return err
 }
 
 // countDrawings provides a function to get drawing files count storage in the
@@ -378,12 +384,15 @@ func (f *File) addMedia(file []byte, ext string) string {
 
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
-func (f *File) setContentTypePartImageExtensions() {
+func (f *File) setContentTypePartImageExtensions() error {
 	imageTypes := map[string]string{
 		"jpeg": "image/", "png": "image/", "gif": "image/", "svg": "image/", "tiff": "image/",
 		"emf": "image/x-", "wmf": "image/x-", "emz": "image/x-", "wmz": "image/x-",
 	}
-	content := f.contentTypesReader()
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, file := range content.Defaults {
@@ -395,13 +404,17 @@ func (f *File) setContentTypePartImageExtensions() {
 			ContentType: prefix + extension,
 		})
 	}
+	return err
 }
 
 // setContentTypePartVMLExtensions provides a function to set the content type
 // for relationship parts and the Main Document part.
-func (f *File) setContentTypePartVMLExtensions() {
-	vml := false
-	content := f.contentTypesReader()
+func (f *File) setContentTypePartVMLExtensions() error {
+	var vml bool
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, v := range content.Defaults {
@@ -415,12 +428,13 @@ func (f *File) setContentTypePartVMLExtensions() {
 			ContentType: ContentTypeVML,
 		})
 	}
+	return err
 }
 
 // addContentTypePart provides a function to add content type part
 // relationships in the file [Content_Types].xml by given index.
-func (f *File) addContentTypePart(index int, contentType string) {
-	setContentType := map[string]func(){
+func (f *File) addContentTypePart(index int, contentType string) error {
+	setContentType := map[string]func() error{
 		"comments": f.setContentTypePartVMLExtensions,
 		"drawings": f.setContentTypePartImageExtensions,
 	}
@@ -446,20 +460,26 @@ func (f *File) addContentTypePart(index int, contentType string) {
 	}
 	s, ok := setContentType[contentType]
 	if ok {
-		s()
+		if err := s(); err != nil {
+			return err
+		}
 	}
-	content := f.contentTypesReader()
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
 	content.Lock()
 	defer content.Unlock()
 	for _, v := range content.Overrides {
 		if v.PartName == partNames[contentType] {
-			return
+			return err
 		}
 	}
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    partNames[contentType],
 		ContentType: contentTypes[contentType],
 	})
+	return err
 }
 
 // getSheetRelationshipsTargetByID provides a function to get Target attribute
@@ -471,7 +491,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 		name = strings.ToLower(sheet) + ".xml"
 	}
 	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels := f.relsReader(rels)
+	sheetRels, _ := f.relsReader(rels)
 	if sheetRels == nil {
 		sheetRels = &xlsxRelationships{}
 	}
@@ -630,7 +650,7 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 // from xl/drawings/_rels/drawing%s.xml.rels by given file name and
 // relationship ID.
 func (f *File) getDrawingRelationships(rels, rID string) *xlsxRelationship {
-	if drawingRels := f.relsReader(rels); drawingRels != nil {
+	if drawingRels, _ := f.relsReader(rels); drawingRels != nil {
 		drawingRels.Lock()
 		defer drawingRels.Unlock()
 		for _, v := range drawingRels.Relationships {

@@ -67,6 +67,12 @@ func TestAddPicture(t *testing.T) {
 	// Test write file to given path.
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture1.xlsx")))
 	assert.NoError(t, f.Close())
+
+	// Test add picture with unsupported charset content types.
+	f = NewFile()
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddPictureErrors(t *testing.T) {
@@ -235,4 +241,28 @@ func TestDrawingResize(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+}
+
+func TestSetContentTypePartImageExtensions(t *testing.T) {
+	f := NewFile()
+	// Test set content type part image extensions with unsupported charset content types.
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.setContentTypePartImageExtensions(), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestSetContentTypePartVMLExtensions(t *testing.T) {
+	f := NewFile()
+	// Test set content type part VML extensions with unsupported charset content types.
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.setContentTypePartVMLExtensions(), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestAddContentTypePart(t *testing.T) {
+	f := NewFile()
+	// Test add content type part with unsupported charset content types.
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addContentTypePart(0, "unknown"), "XML syntax error on line 1: invalid UTF-8")
 }

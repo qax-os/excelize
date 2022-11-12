@@ -241,11 +241,14 @@ func (f *File) setCellTimeFunc(sheet, cell string, value time.Time) error {
 	ws.Lock()
 	c.S = f.prepareCellStyle(ws, col, row, c.S)
 	ws.Unlock()
-	date1904, wb := false, f.workbookReader()
+	var date1904, isNum bool
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
-	var isNum bool
 	if isNum, err = c.setCellTime(value, date1904); err != nil {
 		return err
 	}
@@ -1320,7 +1323,11 @@ func (f *File) formattedValue(s int, v string, raw bool) (string, error) {
 	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
 		numFmtID = *styleSheet.CellXfs.Xf[s].NumFmtID
 	}
-	date1904, wb := false, f.workbookReader()
+	date1904 := false
+	wb, err := f.workbookReader()
+	if err != nil {
+		return v, err
+	}
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}

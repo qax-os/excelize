@@ -226,11 +226,12 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 
 	sw.tableParts = fmt.Sprintf(`<tableParts count="1"><tablePart r:id="rId%d"></tablePart></tableParts>`, rID)
 
-	sw.File.addContentTypePart(tableID, "table")
-
+	if err = sw.File.addContentTypePart(tableID, "table"); err != nil {
+		return err
+	}
 	b, _ := xml.Marshal(table)
 	sw.File.saveFileList(tableXML, b)
-	return nil
+	return err
 }
 
 // Extract values from a row in the StreamWriter.
@@ -471,6 +472,23 @@ func setCellFormula(c *xlsxC, formula string) {
 	}
 }
 
+// setCellTime provides a function to set number of a cell with a time.
+func (sw *StreamWriter) setCellTime(c *xlsxC, val time.Time) error {
+	var date1904, isNum bool
+	wb, err := sw.File.workbookReader()
+	if err != nil {
+		return err
+	}
+	if wb != nil && wb.WorkbookPr != nil {
+		date1904 = wb.WorkbookPr.Date1904
+	}
+	if isNum, err = c.setCellTime(val, date1904); err == nil && isNum && c.S == 0 {
+		style, _ := sw.File.NewStyle(&Style{NumFmt: 22})
+		c.S = style
+	}
+	return nil
+}
+
 // setCellValFunc provides a function to set value of a cell.
 func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	var err error
@@ -488,15 +506,7 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	case time.Duration:
 		c.T, c.V = setCellDuration(val)
 	case time.Time:
-		var isNum bool
-		date1904, wb := false, sw.File.workbookReader()
-		if wb != nil && wb.WorkbookPr != nil {
-			date1904 = wb.WorkbookPr.Date1904
-		}
-		if isNum, err = c.setCellTime(val, date1904); isNum && c.S == 0 {
-			style, _ := sw.File.NewStyle(&Style{NumFmt: 22})
-			c.S = style
-		}
+		err = sw.setCellTime(c, val)
 	case bool:
 		c.T, c.V = setCellBool(val)
 	case nil:

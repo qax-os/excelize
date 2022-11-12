@@ -69,8 +69,8 @@ func (f *File) GetComments() (map[string][]Comment, error) {
 // getSheetComments provides the method to get the target comment reference by
 // given worksheet file path.
 func (f *File) getSheetComments(sheetFile string) string {
-	rels := "xl/worksheets/_rels/" + sheetFile + ".rels"
-	if sheetRels := f.relsReader(rels); sheetRels != nil {
+	rels, _ := f.relsReader("xl/worksheets/_rels/" + sheetFile + ".rels")
+	if sheetRels := rels; sheetRels != nil {
 		sheetRels.Lock()
 		defer sheetRels.Unlock()
 		for _, v := range sheetRels.Relationships {
@@ -135,8 +135,7 @@ func (f *File) AddComment(sheet string, comment Comment) error {
 	if err = f.addComment(commentsXML, comment); err != nil {
 		return err
 	}
-	f.addContentTypePart(commentID, "comments")
-	return err
+	return f.addContentTypePart(commentID, "comments")
 }
 
 // DeleteComment provides the method to delete comment in a sheet by given

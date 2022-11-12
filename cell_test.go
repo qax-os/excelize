@@ -173,7 +173,7 @@ func TestSetCellValue(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Duration(1e13)), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	// Test set cell value with column and row style inherit
+	// Test set cell value with column and row style inherit.
 	style1, err := f.NewStyle(&Style{NumFmt: 2})
 	assert.NoError(t, err)
 	style2, err := f.NewStyle(&Style{NumFmt: 9})
@@ -189,10 +189,14 @@ func TestSetCellValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "0.50", B2)
 
-	// Test set cell value with unsupported charset shared strings table
+	// Test set cell value with unsupported charset shared strings table.
 	f.SharedStrings = nil
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", "A1"), "XML syntax error on line 1: invalid UTF-8")
+	// Test set cell value with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", time.Now().UTC()), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -204,7 +208,7 @@ func TestSetCellValues(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, v, "12/31/10 00:00")
 
-	// Test date value lower than min date supported by Excel
+	// Test date value lower than min date supported by Excel.
 	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
 	assert.NoError(t, err)
 
@@ -781,6 +785,12 @@ func TestFormattedValue(t *testing.T) {
 	for _, fn := range builtInNumFmtFunc {
 		assert.Equal(t, "0_0", fn("0_0", "", false))
 	}
+
+	// Test format value with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	_, err = f.formattedValue(1, "43528", false)
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 
 	// Test format value with unsupported charset style sheet.
 	f.Styles = nil

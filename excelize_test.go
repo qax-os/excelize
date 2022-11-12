@@ -219,26 +219,31 @@ func TestOpenReader(t *testing.T) {
 	assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
 
 	// Test open workbook with unsupported charset internal calculation chain.
-	source, err := zip.OpenReader(filepath.Join("test", "Book1.xlsx"))
-	assert.NoError(t, err)
-	buf := new(bytes.Buffer)
-	zw := zip.NewWriter(buf)
-	for _, item := range source.File {
-		// The following statements can be simplified as zw.Copy(item) in go1.17
-		writer, err := zw.Create(item.Name)
+	preset := func(filePath string) *bytes.Buffer {
+		source, err := zip.OpenReader(filepath.Join("test", "Book1.xlsx"))
 		assert.NoError(t, err)
-		readerCloser, err := item.Open()
+		buf := new(bytes.Buffer)
+		zw := zip.NewWriter(buf)
+		for _, item := range source.File {
+			// The following statements can be simplified as zw.Copy(item) in go1.17
+			writer, err := zw.Create(item.Name)
+			assert.NoError(t, err)
+			readerCloser, err := item.Open()
+			assert.NoError(t, err)
+			_, err = io.Copy(writer, readerCloser)
+			assert.NoError(t, err)
+		}
+		fi, err := zw.Create(filePath)
 		assert.NoError(t, err)
-		_, err = io.Copy(writer, readerCloser)
+		_, err = fi.Write(MacintoshCyrillicCharset)
 		assert.NoError(t, err)
+		assert.NoError(t, zw.Close())
+		return buf
 	}
-	fi, err := zw.Create(defaultXMLPathCalcChain)
-	assert.NoError(t, err)
-	_, err = fi.Write(MacintoshCyrillicCharset)
-	assert.NoError(t, err)
-	assert.NoError(t, zw.Close())
-	_, err = OpenReader(buf)
-	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	for _, defaultXMLPath := range []string{defaultXMLPathCalcChain, defaultXMLPathStyles} {
+		_, err = OpenReader(preset(defaultXMLPath))
+		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	}
 
 	// Test open spreadsheet with unzip size limit.
 	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
@@ -466,29 +471,16 @@ func TestGetCellHyperLink(t *testing.T) {
 
 func TestSetSheetBackground(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "images", "background.jpg"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "images", "background.jpg"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetSheetBackground("Sheet2", filepath.Join("test", "images", "background.jpg")))
+	assert.NoError(t, f.SetSheetBackground("Sheet2", filepath.Join("test", "images", "background.jpg")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetBackground.xlsx")))
 	assert.NoError(t, f.Close())
 }
 
 func TestSetSheetBackgroundErrors(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "not_exists", "not_exists.png"))
 	if assert.Error(t, err) {
@@ -497,7 +489,16 @@ func TestSetSheetBackgroundErrors(t *testing.T) {
 
 	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "Book1.xlsx"))
 	assert.EqualError(t, err, ErrImgExt.Error())
+	// Test set sheet background on not exist worksheet.
+	err = f.SetSheetBackground("SheetN", filepath.Join("test", "images", "background.jpg"))
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 	assert.NoError(t, f.Close())
+
+	// Test set sheet background with unsupported charset content types.
+	f = NewFile()
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetSheetBackground("Sheet1", filepath.Join("test", "images", "background.jpg")), "XML syntax error on line 1: invalid UTF-8")
 }
 
 // TestWriteArrayFormula tests the extended options of SetCellFormula by writing an array function
@@ -1027,12 +1028,6 @@ func TestGetSheetComments(t *testing.T) {
 	assert.Equal(t, "", f.getSheetComments("sheet0"))
 }
 
-func TestSetSheetVisible(t *testing.T) {
-	f := NewFile()
-	f.WorkBook.Sheets.Sheet[0].Name = "SheetN"
-	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "sheet SheetN does not exist")
-}
-
 func TestGetActiveSheetIndex(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.BookViews = nil
@@ -1334,6 +1329,10 @@ func TestAddVBAProject(t *testing.T) {
 	// Test add VBA project twice.
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
+	// Test add VBs with unsupported charset workbook relationships.
+	f.Relationships.Delete(defaultXMLPathWorkbookRels)
+	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestContentTypesReader(t *testing.T) {
@@ -1341,7 +1340,8 @@ func TestContentTypesReader(t *testing.T) {
 	f := NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	f.contentTypesReader()
+	_, err := f.contentTypesReader()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestWorkbookReader(t *testing.T) {
@@ -1349,7 +1349,8 @@ func TestWorkbookReader(t *testing.T) {
 	f := NewFile()
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
-	f.workbookReader()
+	_, err := f.workbookReader()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestWorkSheetReader(t *testing.T) {
@@ -1373,17 +1374,26 @@ func TestWorkSheetReader(t *testing.T) {
 func TestRelsReader(t *testing.T) {
 	// Test unsupported charset.
 	f := NewFile()
-	rels := "xl/_rels/workbook.xml.rels"
+	rels := defaultXMLPathWorkbookRels
 	f.Relationships.Store(rels, nil)
 	f.Pkg.Store(rels, MacintoshCyrillicCharset)
-	f.relsReader(rels)
+	_, err := f.relsReader(rels)
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestDeleteSheetFromWorkbookRels(t *testing.T) {
 	f := NewFile()
-	rels := "xl/_rels/workbook.xml.rels"
+	rels := defaultXMLPathWorkbookRels
 	f.Relationships.Store(rels, nil)
 	assert.Equal(t, f.deleteSheetFromWorkbookRels("rID"), "")
+}
+
+func TestUpdateLinkedValue(t *testing.T) {
+	f := NewFile()
+	// Test update lined value with unsupported charset workbook.
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.UpdateLinkedValue(), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAttrValToInt(t *testing.T) {

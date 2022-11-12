@@ -30,7 +30,7 @@ func NewFile() *File {
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
 	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
-	f.Pkg.Store("xl/_rels/workbook.xml.rels", []byte(xml.Header+templateWorkbookRels))
+	f.Pkg.Store(defaultXMLPathWorkbookRels, []byte(xml.Header+templateWorkbookRels))
 	f.Pkg.Store("xl/theme/theme1.xml", []byte(xml.Header+templateTheme))
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+templateSheet))
 	f.Pkg.Store(defaultXMLPathStyles, []byte(xml.Header+templateStyles))
@@ -39,18 +39,19 @@ func NewFile() *File {
 	f.SheetCount = 1
 	f.CalcChain, _ = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
-	f.ContentTypes = f.contentTypesReader()
+	f.ContentTypes, _ = f.contentTypesReader()
 	f.Drawings = sync.Map{}
 	f.Styles, _ = f.stylesReader()
 	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
 	f.VMLDrawing = make(map[string]*vmlDrawing)
-	f.WorkBook = f.workbookReader()
+	f.WorkBook, _ = f.workbookReader()
 	f.Relationships = sync.Map{}
-	f.Relationships.Store("xl/_rels/workbook.xml.rels", f.relsReader("xl/_rels/workbook.xml.rels"))
+	rels, _ := f.relsReader(defaultXMLPathWorkbookRels)
+	f.Relationships.Store(defaultXMLPathWorkbookRels, rels)
 	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
 	ws, _ := f.workSheetReader("Sheet1")
 	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
-	f.Theme = f.themeReader()
+	f.Theme, _ = f.themeReader()
 	return f
 }
 
@@ -119,7 +120,9 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 		if !ok {
 			return 0, ErrWorkbookFileFormat
 		}
-		f.setContentTypePartProjectExtensions(contentType)
+		if err := f.setContentTypePartProjectExtensions(contentType); err != nil {
+			return 0, err
+		}
 	}
 	if f.options != nil && f.options.Password != "" {
 		buf, err := f.WriteToBuffer()
