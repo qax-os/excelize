@@ -106,12 +106,12 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.rawData.tmp.Close())
 	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
 
-	// Test unsupported charset
+	// Test create stream writer with unsupported charset.
 	file = NewFile()
 	file.Sheet.Delete("xl/worksheets/sheet1.xml")
 	file.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err = file.NewStreamWriter("Sheet1")
-	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, file.Close())
 
 	// Test read cell.

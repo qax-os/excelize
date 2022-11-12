@@ -76,7 +76,6 @@ func (f *File) SetAppProps(appProperties *AppProperties) error {
 	app = new(xlsxProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
 		return err
 	}
 	fields = []string{"Application", "ScaleCrop", "DocSecurity", "Company", "LinksUpToDate", "HyperlinksChanged", "AppVersion"}
@@ -103,7 +102,6 @@ func (f *File) GetAppProps() (ret *AppProperties, err error) {
 	app := new(xlsxProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsApp)))).
 		Decode(app); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
 		return
 	}
 	ret, err = &AppProperties{
@@ -182,7 +180,6 @@ func (f *File) SetDocProps(docProperties *DocProperties) error {
 	core = new(decodeCoreProperties)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
 		return err
 	}
 	newProps = &xlsxCoreProperties{
@@ -237,7 +234,6 @@ func (f *File) GetDocProps() (ret *DocProperties, err error) {
 
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCore)))).
 		Decode(core); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
 		return
 	}
 	ret, err = &DocProperties{

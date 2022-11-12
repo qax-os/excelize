@@ -16,7 +16,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,8 +23,8 @@ import (
 
 // GetComments retrieves all comments and returns a map of worksheet name to
 // the worksheet comments.
-func (f *File) GetComments() (comments map[string][]Comment) {
-	comments = map[string][]Comment{}
+func (f *File) GetComments() (map[string][]Comment, error) {
+	comments := map[string][]Comment{}
 	for n, path := range f.sheetMap {
 		target := f.getSheetComments(filepath.Base(path))
 		if target == "" {
@@ -34,12 +33,16 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 		if !strings.HasPrefix(target, "/") {
 			target = "xl" + strings.TrimPrefix(target, "..")
 		}
-		if d := f.commentsReader(strings.TrimPrefix(target, "/")); d != nil {
+		cmts, err := f.commentsReader(strings.TrimPrefix(target, "/"))
+		if err != nil {
+			return comments, err
+		}
+		if cmts != nil {
 			var sheetComments []Comment
-			for _, comment := range d.CommentList.Comment {
+			for _, comment := range cmts.CommentList.Comment {
 				sheetComment := Comment{}
-				if comment.AuthorID < len(d.Authors.Author) {
-					sheetComment.Author = d.Authors.Author[comment.AuthorID]
+				if comment.AuthorID < len(cmts.Authors.Author) {
+					sheetComment.Author = cmts.Authors.Author[comment.AuthorID]
 				}
 				sheetComment.Cell = comment.Ref
 				sheetComment.AuthorID = comment.AuthorID
@@ -60,7 +63,7 @@ func (f *File) GetComments() (comments map[string][]Comment) {
 			comments[n] = sheetComments
 		}
 	}
-	return
+	return comments, nil
 }
 
 // getSheetComments provides the method to get the target comment reference by
@@ -129,7 +132,9 @@ func (f *File) AddComment(sheet string, comment Comment) error {
 	if err = f.addDrawingVML(commentID, drawingVML, comment.Cell, rows+1, cols); err != nil {
 		return err
 	}
-	f.addComment(commentsXML, comment)
+	if err = f.addComment(commentsXML, comment); err != nil {
+		return err
+	}
 	f.addContentTypePart(commentID, "comments")
 	return err
 }
@@ -139,34 +144,36 @@ func (f *File) AddComment(sheet string, comment Comment) error {
 //
 //	err := f.DeleteComment("Sheet1", "A30")
 func (f *File) DeleteComment(sheet, cell string) error {
-	var err error
 	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
 	if !ok {
-		err = newNoExistSheetError(sheet)
-		return err
+		return newNoExistSheetError(sheet)
 	}
 	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
 	if !strings.HasPrefix(commentsXML, "/") {
 		commentsXML = "xl" + strings.TrimPrefix(commentsXML, "..")
 	}
 	commentsXML = strings.TrimPrefix(commentsXML, "/")
-	if comments := f.commentsReader(commentsXML); comments != nil {
-		for i := 0; i < len(comments.CommentList.Comment); i++ {
-			cmt := comments.CommentList.Comment[i]
+	cmts, err := f.commentsReader(commentsXML)
+	if err != nil {
+		return err
+	}
+	if cmts != nil {
+		for i := 0; i < len(cmts.CommentList.Comment); i++ {
+			cmt := cmts.CommentList.Comment[i]
 			if cmt.Ref != cell {
 				continue
 			}
-			if len(comments.CommentList.Comment) > 1 {
-				comments.CommentList.Comment = append(
-					comments.CommentList.Comment[:i],
-					comments.CommentList.Comment[i+1:]...,
+			if len(cmts.CommentList.Comment) > 1 {
+				cmts.CommentList.Comment = append(
+					cmts.CommentList.Comment[:i],
+					cmts.CommentList.Comment[i+1:]...,
 				)
 				i--
 				continue
 			}
-			comments.CommentList.Comment = nil
+			cmts.CommentList.Comment = nil
 		}
-		f.Comments[commentsXML] = comments
+		f.Comments[commentsXML] = cmts
 	}
 	return err
 }
@@ -209,7 +216,10 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 			},
 		}
 		// load exist comment shapes from xl/drawings/vmlDrawing%d.vml
-		d := f.decodeVMLDrawingReader(drawingVML)
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return err
+		}
 		if d != nil {
 			for _, v := range d.Shape {
 				s := xlsxShape{
@@ -274,22 +284,30 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 
 // addComment provides a function to create chart as xl/comments%d.xml by
 // given cell and format sets.
-func (f *File) addComment(commentsXML string, comment Comment) {
+func (f *File) addComment(commentsXML string, comment Comment) error {
 	if comment.Author == "" {
 		comment.Author = "Author"
 	}
 	if len(comment.Author) > MaxFieldLength {
 		comment.Author = comment.Author[:MaxFieldLength]
 	}
-	comments, authorID := f.commentsReader(commentsXML), 0
-	if comments == nil {
-		comments = &xlsxComments{Authors: xlsxAuthor{Author: []string{comment.Author}}}
+	cmts, err := f.commentsReader(commentsXML)
+	if err != nil {
+		return err
 	}
-	if inStrSlice(comments.Authors.Author, comment.Author, true) == -1 {
-		comments.Authors.Author = append(comments.Authors.Author, comment.Author)
-		authorID = len(comments.Authors.Author) - 1
+	var authorID int
+	if cmts == nil {
+		cmts = &xlsxComments{Authors: xlsxAuthor{Author: []string{comment.Author}}}
 	}
-	defaultFont, chars, cmt := f.GetDefaultFont(), 0, xlsxComment{
+	if inStrSlice(cmts.Authors.Author, comment.Author, true) == -1 {
+		cmts.Authors.Author = append(cmts.Authors.Author, comment.Author)
+		authorID = len(cmts.Authors.Author) - 1
+	}
+	defaultFont, err := f.GetDefaultFont()
+	if err != nil {
+		return err
+	}
+	chars, cmt := 0, xlsxComment{
 		Ref:      comment.Cell,
 		AuthorID: authorID,
 		Text:     xlsxText{R: []xlsxR{}},
@@ -328,8 +346,9 @@ func (f *File) addComment(commentsXML string, comment Comment) {
 		}
 		cmt.Text.R = append(cmt.Text.R, r)
 	}
-	comments.CommentList.Comment = append(comments.CommentList.Comment, cmt)
-	f.Comments[commentsXML] = comments
+	cmts.CommentList.Comment = append(cmts.CommentList.Comment, cmt)
+	f.Comments[commentsXML] = cmts
+	return err
 }
 
 // countComments provides a function to get comments files count storage in
@@ -355,20 +374,18 @@ func (f *File) countComments() int {
 
 // decodeVMLDrawingReader provides a function to get the pointer to the
 // structure after deserialization of xl/drawings/vmlDrawing%d.xml.
-func (f *File) decodeVMLDrawingReader(path string) *decodeVmlDrawing {
-	var err error
-
+func (f *File) decodeVMLDrawingReader(path string) (*decodeVmlDrawing, error) {
 	if f.DecodeVMLDrawing[path] == nil {
 		c, ok := f.Pkg.Load(path)
 		if ok && c != nil {
 			f.DecodeVMLDrawing[path] = new(decodeVmlDrawing)
-			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c.([]byte)))).
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c.([]byte)))).
 				Decode(f.DecodeVMLDrawing[path]); err != nil && err != io.EOF {
-				log.Printf("xml decode error: %s", err)
+				return nil, err
 			}
 		}
 	}
-	return f.DecodeVMLDrawing[path]
+	return f.DecodeVMLDrawing[path], nil
 }
 
 // vmlDrawingWriter provides a function to save xl/drawings/vmlDrawing%d.xml
@@ -384,19 +401,18 @@ func (f *File) vmlDrawingWriter() {
 
 // commentsReader provides a function to get the pointer to the structure
 // after deserialization of xl/comments%d.xml.
-func (f *File) commentsReader(path string) *xlsxComments {
-	var err error
+func (f *File) commentsReader(path string) (*xlsxComments, error) {
 	if f.Comments[path] == nil {
 		content, ok := f.Pkg.Load(path)
 		if ok && content != nil {
 			f.Comments[path] = new(xlsxComments)
-			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
 				Decode(f.Comments[path]); err != nil && err != io.EOF {
-				log.Printf("xml decode error: %s", err)
+				return nil, err
 			}
 		}
 	}
-	return f.Comments[path]
+	return f.Comments[path], nil
 }
 
 // commentsWriter provides a function to save xl/comments%d.xml after

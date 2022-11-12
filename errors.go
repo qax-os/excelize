@@ -82,11 +82,6 @@ func newNotWorksheetError(name string) error {
 	return fmt.Errorf("sheet %s is not a worksheet", name)
 }
 
-// newDecodeXMLError defined the error message on decode XML error.
-func newDecodeXMLError(err error) error {
-	return fmt.Errorf("xml decode error: %s", err)
-}
-
 // newStreamSetRowError defined the error message on the stream writer
 // receiving the non-ascending row number.
 func newStreamSetRowError(row int) error {

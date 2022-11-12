@@ -10,7 +10,7 @@ import (
 
 func TestAdjustMergeCells(t *testing.T) {
 	f := NewFile()
-	// testing adjustAutoFilter with illegal cell reference.
+	// Test adjustAutoFilter with illegal cell reference.
 	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -57,7 +57,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}, columns, 1, -1))
 
-	// testing adjustMergeCells
+	// Test adjustMergeCells.
 	var cases []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -68,7 +68,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		expectRect []int
 	}
 
-	// testing insert
+	// Test insert.
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -139,7 +139,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.Equal(t, c.expectRect, c.ws.MergeCells.Cells[0].rect, c.label)
 	}
 
-	// testing delete
+	// Test delete,
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -227,7 +227,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.label)
 	}
 
-	// testing delete one row/column
+	// Test delete one row or column
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -324,13 +324,13 @@ func TestAdjustTable(t *testing.T) {
 
 	f = NewFile()
 	assert.NoError(t, f.AddTable(sheetName, "A1", "D5", ""))
-	// Test adjust table with non-table part
+	// Test adjust table with non-table part.
 	f.Pkg.Delete("xl/tables/table1.xml")
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
-	// Test adjust table with unsupported charset
+	// Test adjust table with unsupported charset.
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
-	// Test adjust table with invalid table range reference
+	// Test adjust table with invalid table range reference.
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
 }
@@ -365,4 +365,80 @@ func TestAdjustCalcChain(t *testing.T) {
 	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), newCellNameToCoordinatesError("invalid coordinates", newInvalidCellNameError("invalid coordinates")).Error())
 	f.CalcChain = nil
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+}
+
+func TestAdjustCols(t *testing.T) {
+	sheetName := "Sheet1"
+	preset := func() (*File, error) {
+		f := NewFile()
+		if err := f.SetColWidth(sheetName, "J", "T", 5); err != nil {
+			return f, err
+		}
+		if err := f.SetSheetRow(sheetName, "J1", &[]string{"J1", "K1", "L1", "M1", "N1", "O1", "P1", "Q1", "R1", "S1", "T1"}); err != nil {
+			return f, err
+		}
+		return f, nil
+	}
+	baseTbl := []string{"B", "J", "O", "O", "O", "U", "V"}
+	insertTbl := []int{2, 2, 2, 5, 6, 2, 2}
+	expectedTbl := []map[string]float64{
+		{"J": defaultColWidth, "K": defaultColWidth, "U": 5, "V": 5, "W": defaultColWidth},
+		{"J": defaultColWidth, "K": defaultColWidth, "U": 5, "V": 5, "W": defaultColWidth},
+		{"O": 5, "P": 5, "U": 5, "V": 5, "W": defaultColWidth},
+		{"O": 5, "S": 5, "X": 5, "Y": 5, "Z": defaultColWidth},
+		{"O": 5, "S": 5, "Y": 5, "X": 5, "AA": defaultColWidth},
+		{"U": 5, "V": 5, "W": defaultColWidth},
+		{"U": defaultColWidth, "V": defaultColWidth, "W": defaultColWidth},
+	}
+	for idx, columnName := range baseTbl {
+		f, err := preset()
+		assert.NoError(t, err)
+		assert.NoError(t, f.InsertCols(sheetName, columnName, insertTbl[idx]))
+		for column, expected := range expectedTbl[idx] {
+			width, err := f.GetColWidth(sheetName, column)
+			assert.NoError(t, err)
+			assert.Equal(t, expected, width, column)
+		}
+		assert.NoError(t, f.Close())
+	}
+
+	baseTbl = []string{"B", "J", "O", "T"}
+	expectedTbl = []map[string]float64{
+		{"H": defaultColWidth, "I": 5, "S": 5, "T": defaultColWidth},
+		{"I": defaultColWidth, "J": 5, "S": 5, "T": defaultColWidth},
+		{"I": defaultColWidth, "O": 5, "S": 5, "T": defaultColWidth},
+		{"R": 5, "S": 5, "T": defaultColWidth, "U": defaultColWidth},
+	}
+	for idx, columnName := range baseTbl {
+		f, err := preset()
+		assert.NoError(t, err)
+		assert.NoError(t, f.RemoveCol(sheetName, columnName))
+		for column, expected := range expectedTbl[idx] {
+			width, err := f.GetColWidth(sheetName, column)
+			assert.NoError(t, err)
+			assert.Equal(t, expected, width, column)
+		}
+		assert.NoError(t, f.Close())
+	}
+
+	f, err := preset()
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetColWidth(sheetName, "I", "I", 8))
+	for i := 0; i <= 12; i++ {
+		assert.NoError(t, f.RemoveCol(sheetName, "I"))
+	}
+	for c := 9; c <= 21; c++ {
+		columnName, err := ColumnNumberToName(c)
+		assert.NoError(t, err)
+		width, err := f.GetColWidth(sheetName, columnName)
+		assert.NoError(t, err)
+		assert.Equal(t, defaultColWidth, width, columnName)
+	}
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).Cols = nil
+	assert.NoError(t, f.RemoveCol(sheetName, "A"))
+
+	assert.NoError(t, f.Close())
 }

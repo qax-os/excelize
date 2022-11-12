@@ -37,11 +37,11 @@ func NewFile() *File {
 	f.Pkg.Store(defaultXMLPathWorkbook, []byte(xml.Header+templateWorkbook))
 	f.Pkg.Store(defaultXMLPathContentTypes, []byte(xml.Header+templateContentTypes))
 	f.SheetCount = 1
-	f.CalcChain = f.calcChainReader()
+	f.CalcChain, _ = f.calcChainReader()
 	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes = f.contentTypesReader()
 	f.Drawings = sync.Map{}
-	f.Styles = f.stylesReader()
+	f.Styles, _ = f.stylesReader()
 	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
 	f.VMLDrawing = make(map[string]*vmlDrawing)
 	f.WorkBook = f.workbookReader()

@@ -38,6 +38,7 @@ type Cols struct {
 	sheet                                  string
 	f                                      *File
 	sheetXML                               []byte
+	sst                                    *xlsxSST
 }
 
 // GetCols gets the value of all cells by columns on the worksheet based on the
@@ -87,17 +88,14 @@ func (cols *Cols) Error() error {
 
 // Rows return the current column's row values.
 func (cols *Cols) Rows(opts ...Options) ([]string, error) {
-	var (
-		err              error
-		inElement        string
-		cellCol, cellRow int
-		rows             []string
-	)
+	var rowIterator rowXMLIterator
 	if cols.stashCol >= cols.curCol {
-		return rows, err
+		return rowIterator.cells, rowIterator.err
 	}
 	cols.rawCellValue = parseOptions(opts...).RawCellValue
-	d := cols.f.sharedStringsReader()
+	if cols.sst, rowIterator.err = cols.f.sharedStringsReader(); rowIterator.err != nil {
+		return rowIterator.cells, rowIterator.err
+	}
 	decoder := cols.f.xmlNewDecoder(bytes.NewReader(cols.sheetXML))
 	for {
 		token, _ := decoder.Token()
@@ -106,42 +104,25 @@ func (cols *Cols) Rows(opts ...Options) ([]string, error) {
 		}
 		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			inElement = xmlElement.Name.Local
-			if inElement == "row" {
-				cellCol = 0
-				cellRow++
+			rowIterator.inElement = xmlElement.Name.Local
+			if rowIterator.inElement == "row" {
+				rowIterator.cellCol = 0
+				rowIterator.cellRow++
 				attrR, _ := attrValToInt("r", xmlElement.Attr)
 				if attrR != 0 {
-					cellRow = attrR
+					rowIterator.cellRow = attrR
 				}
 			}
-			if inElement == "c" {
-				cellCol++
-				for _, attr := range xmlElement.Attr {
-					if attr.Name.Local == "r" {
-						if cellCol, cellRow, err = CellNameToCoordinates(attr.Value); err != nil {
-							return rows, err
-						}
-					}
-				}
-				blank := cellRow - len(rows)
-				for i := 1; i < blank; i++ {
-					rows = append(rows, "")
-				}
-				if cellCol == cols.curCol {
-					colCell := xlsxC{}
-					_ = decoder.DecodeElement(&colCell, &xmlElement)
-					val, _ := colCell.getValueFrom(cols.f, d, cols.rawCellValue)
-					rows = append(rows, val)
-				}
+			if cols.rowXMLHandler(&rowIterator, &xmlElement, decoder); rowIterator.err != nil {
+				return rowIterator.cells, rowIterator.err
 			}
 		case xml.EndElement:
 			if xmlElement.Name.Local == "sheetData" {
-				return rows, err
+				return rowIterator.cells, rowIterator.err
 			}
 		}
 	}
-	return rows, err
+	return rowIterator.cells, rowIterator.err
 }
 
 // columnXMLIterator defined runtime use field for the worksheet column SAX parser.
@@ -179,6 +160,30 @@ func columnXMLHandler(colIterator *columnXMLIterator, xmlElement *xml.StartEleme
 		}
 		if colIterator.cellCol > colIterator.cols.totalCols {
 			colIterator.cols.totalCols = colIterator.cellCol
+		}
+	}
+}
+
+// rowXMLHandler parse the row XML element of the worksheet.
+func (cols *Cols) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement, decoder *xml.Decoder) {
+	if rowIterator.inElement == "c" {
+		rowIterator.cellCol++
+		for _, attr := range xmlElement.Attr {
+			if attr.Name.Local == "r" {
+				if rowIterator.cellCol, rowIterator.cellRow, rowIterator.err = CellNameToCoordinates(attr.Value); rowIterator.err != nil {
+					return
+				}
+			}
+		}
+		blank := rowIterator.cellRow - len(rowIterator.cells)
+		for i := 1; i < blank; i++ {
+			rowIterator.cells = append(rowIterator.cells, "")
+		}
+		if rowIterator.cellCol == cols.curCol {
+			colCell := xlsxC{}
+			_ = decoder.DecodeElement(&colCell, xmlElement)
+			val, _ := colCell.getValueFrom(cols.f, cols.sst, cols.rawCellValue)
+			rowIterator.cells = append(rowIterator.cells, val)
 		}
 	}
 }
@@ -279,7 +284,7 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 //
 //	err := f.SetColVisible("Sheet1", "D:F", false)
 func (f *File) SetColVisible(sheet, columns string, visible bool) error {
-	start, end, err := f.parseColRange(columns)
+	min, max, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
@@ -290,8 +295,8 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	ws.Lock()
 	defer ws.Unlock()
 	colData := xlsxCol{
-		Min:         start,
-		Max:         end,
+		Min:         min,
+		Max:         max,
 		Width:       defaultColWidth, // default width
 		Hidden:      !visible,
 		CustomWidth: true,
@@ -343,20 +348,20 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 }
 
 // parseColRange parse and convert column range with column name to the column number.
-func (f *File) parseColRange(columns string) (start, end int, err error) {
+func (f *File) parseColRange(columns string) (min, max int, err error) {
 	colsTab := strings.Split(columns, ":")
-	start, err = ColumnNameToNumber(colsTab[0])
+	min, err = ColumnNameToNumber(colsTab[0])
 	if err != nil {
 		return
 	}
-	end = start
+	max = min
 	if len(colsTab) == 2 {
-		if end, err = ColumnNameToNumber(colsTab[1]); err != nil {
+		if max, err = ColumnNameToNumber(colsTab[1]); err != nil {
 			return
 		}
 	}
-	if end < start {
-		start, end = end, start
+	if max < min {
+		min, max = max, min
 	}
 	return
 }
@@ -416,11 +421,14 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 //
 //	err = f.SetColStyle("Sheet1", "C:F", style)
 func (f *File) SetColStyle(sheet, columns string, styleID int) error {
-	start, end, err := f.parseColRange(columns)
+	min, max, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
-	s := f.stylesReader()
+	s, err := f.stylesReader()
+	if err != nil {
+		return err
+	}
 	s.Lock()
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		s.Unlock()
@@ -436,8 +444,8 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		ws.Cols = &xlsxCols{}
 	}
 	ws.Cols.Col = flatCols(xlsxCol{
-		Min:   start,
-		Max:   end,
+		Min:   min,
+		Max:   max,
 		Width: defaultColWidth,
 		Style: styleID,
 	}, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
@@ -452,7 +460,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	})
 	ws.Unlock()
 	if rows := len(ws.SheetData.Row); rows > 0 {
-		for col := start; col <= end; col++ {
+		for col := min; col <= max; col++ {
 			from, _ := CoordinatesToCellName(col, 1)
 			to, _ := CoordinatesToCellName(col, rows)
 			err = f.SetCellStyle(sheet, from, to, styleID)

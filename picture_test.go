@@ -169,15 +169,25 @@ func TestGetPicture(t *testing.T) {
 	assert.Empty(t, raw)
 	f, err = prepareTestBook1()
 	assert.NoError(t, err)
-	f.Pkg.Store("xl/drawings/drawing1.xml", MacintoshCyrillicCharset)
-	_, _, err = f.getPicture(20, 5, "xl/drawings/drawing1.xml", "xl/drawings/_rels/drawing2.xml.rels")
-	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
+
+	// Test get pictures with unsupported charset.
+	path := "xl/drawings/drawing1.xml"
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	_, _, err = f.getPicture(20, 5, path, "xl/drawings/_rels/drawing2.xml.rels")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	f.Drawings.Delete(path)
+	_, _, err = f.getPicture(20, 5, path, "xl/drawings/_rels/drawing2.xml.rels")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddDrawingPicture(t *testing.T) {
 	// Test addDrawingPicture with illegal cell reference.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", "", 0, 0, image.Config{}, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+
+	path := "xl/drawings/drawing1.xml"
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addDrawingPicture("sheet1", path, "A1", "", "", 0, 0, image.Config{}, &pictureOptions{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddPictureFromBytes(t *testing.T) {

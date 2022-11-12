@@ -15,23 +15,19 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
-	"log"
 )
 
 // calcChainReader provides a function to get the pointer to the structure
 // after deserialization of xl/calcChain.xml.
-func (f *File) calcChainReader() *xlsxCalcChain {
-	var err error
-
+func (f *File) calcChainReader() (*xlsxCalcChain, error) {
 	if f.CalcChain == nil {
 		f.CalcChain = new(xlsxCalcChain)
-		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathCalcChain)))).
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathCalcChain)))).
 			Decode(f.CalcChain); err != nil && err != io.EOF {
-			log.Printf("xml decode error: %s", err)
+			return f.CalcChain, err
 		}
 	}
-
-	return f.CalcChain
+	return f.CalcChain, nil
 }
 
 // calcChainWriter provides a function to save xl/calcChain.xml after
@@ -45,8 +41,11 @@ func (f *File) calcChainWriter() {
 
 // deleteCalcChain provides a function to remove cell reference on the
 // calculation chain.
-func (f *File) deleteCalcChain(index int, cell string) {
-	calc := f.calcChainReader()
+func (f *File) deleteCalcChain(index int, cell string) error {
+	calc, err := f.calcChainReader()
+	if err != nil {
+		return err
+	}
 	if calc != nil {
 		calc.C = xlsxCalcChainCollection(calc.C).Filter(func(c xlsxCalcChainC) bool {
 			return !((c.I == index && c.R == cell) || (c.I == index && cell == "") || (c.I == 0 && c.R == cell))
@@ -64,6 +63,7 @@ func (f *File) deleteCalcChain(index int, cell string) {
 			}
 		}
 	}
+	return err
 }
 
 type xlsxCalcChainCollection []xlsxCalcChainC

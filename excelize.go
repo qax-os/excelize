@@ -177,11 +177,13 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	for k, v := range file {
 		f.Pkg.Store(k, v)
 	}
-	f.CalcChain = f.calcChainReader()
+	if f.CalcChain, err = f.calcChainReader(); err != nil {
+		return f, err
+	}
 	f.sheetMap = f.getSheetMap()
-	f.Styles = f.stylesReader()
+	f.Styles, err = f.stylesReader()
 	f.Theme = f.themeReader()
-	return f, nil
+	return f, err
 }
 
 // parseOptions provides a function to parse the optional settings for open
@@ -250,7 +252,6 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
-		err = newDecodeXMLError(err)
 		return
 	}
 	err = nil

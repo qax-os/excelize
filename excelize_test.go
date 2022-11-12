@@ -10,6 +10,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -217,6 +218,28 @@ func TestOpenReader(t *testing.T) {
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", UnzipXMLSizeLimit: UnzipSizeLimit + 1})
 	assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
 
+	// Test open workbook with unsupported charset internal calculation chain.
+	source, err := zip.OpenReader(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	zw := zip.NewWriter(buf)
+	for _, item := range source.File {
+		// The following statements can be simplified as zw.Copy(item) in go1.17
+		writer, err := zw.Create(item.Name)
+		assert.NoError(t, err)
+		readerCloser, err := item.Open()
+		assert.NoError(t, err)
+		_, err = io.Copy(writer, readerCloser)
+		assert.NoError(t, err)
+	}
+	fi, err := zw.Create(defaultXMLPathCalcChain)
+	assert.NoError(t, err)
+	_, err = fi.Write(MacintoshCyrillicCharset)
+	assert.NoError(t, err)
+	assert.NoError(t, zw.Close())
+	_, err = OpenReader(buf)
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
 	// Test open spreadsheet with unzip size limit.
 	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
 	assert.EqualError(t, err, newUnzipSizeLimitError(100).Error())
@@ -338,6 +361,9 @@ func TestAddDrawingVML(t *testing.T) {
 	// Test addDrawingVML with illegal cell reference.
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
+
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", "A1", 0, 0), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetCellHyperLink(t *testing.T) {
@@ -1332,8 +1358,8 @@ func TestWorkSheetReader(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err := f.workSheetReader("Sheet1")
-	assert.EqualError(t, err, "xml decode error: XML syntax error on line 1: invalid UTF-8")
-	assert.EqualError(t, f.UpdateLinkedValue(), "xml decode error: XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.UpdateLinkedValue(), "XML syntax error on line 1: invalid UTF-8")
 
 	// Test on no checked worksheet.
 	f = NewFile()

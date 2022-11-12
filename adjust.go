@@ -70,6 +70,50 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	return nil
 }
 
+// adjustCols provides a function to update column style when inserting or
+// deleting columns.
+func (f *File) adjustCols(ws *xlsxWorksheet, col, offset int) error {
+	if ws.Cols == nil {
+		return nil
+	}
+	for i := 0; i < len(ws.Cols.Col); i++ {
+		if offset > 0 {
+			if ws.Cols.Col[i].Max+1 == col {
+				ws.Cols.Col[i].Max += offset
+				continue
+			}
+			if ws.Cols.Col[i].Min >= col {
+				ws.Cols.Col[i].Min += offset
+				ws.Cols.Col[i].Max += offset
+				continue
+			}
+			if ws.Cols.Col[i].Min < col && ws.Cols.Col[i].Max >= col {
+				ws.Cols.Col[i].Max += offset
+			}
+		}
+		if offset < 0 {
+			if ws.Cols.Col[i].Min == col && ws.Cols.Col[i].Max == col {
+				if len(ws.Cols.Col) > 1 {
+					ws.Cols.Col = append(ws.Cols.Col[:i], ws.Cols.Col[i+1:]...)
+				} else {
+					ws.Cols.Col = nil
+				}
+				i--
+				continue
+			}
+			if ws.Cols.Col[i].Min > col {
+				ws.Cols.Col[i].Min += offset
+				ws.Cols.Col[i].Max += offset
+				continue
+			}
+			if ws.Cols.Col[i].Min <= col && ws.Cols.Col[i].Max >= col {
+				ws.Cols.Col[i].Max += offset
+			}
+		}
+	}
+	return nil
+}
+
 // adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
 func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
@@ -91,7 +135,7 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 			}
 		}
 	}
-	return nil
+	return f.adjustCols(ws, col, offset)
 }
 
 // adjustRowDimensions provides a function to update row dimensions when

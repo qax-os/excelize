@@ -881,10 +881,12 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 	var (
 		cellName, inElement string
 		cellCol, row        int
-		d                   *xlsxSST
+		sst                 *xlsxSST
 	)
 
-	d = f.sharedStringsReader()
+	if sst, err = f.sharedStringsReader(); err != nil {
+		return
+	}
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readBytes(name)))
 	for {
 		var token xml.Token
@@ -907,7 +909,7 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 			if inElement == "c" {
 				colCell := xlsxC{}
 				_ = decoder.DecodeElement(&colCell, &xmlElement)
-				val, _ := colCell.getValueFrom(f, d, false)
+				val, _ := colCell.getValueFrom(f, sst, false)
 				if regSearch {
 					regex := regexp.MustCompile(value)
 					if !regex.MatchString(val) {
