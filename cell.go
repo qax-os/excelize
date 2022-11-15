@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"os"
@@ -490,7 +491,9 @@ func (c *xlsxC) setCellValue(val string) {
 // string.
 func (c *xlsxC) setInlineStr(val string) {
 	c.T, c.V, c.IS = "inlineStr", "", &xlsxSI{T: &xlsxT{}}
-	c.IS.T.Val, c.IS.T.Space = trimCellValue(val)
+	buf := &bytes.Buffer{}
+	_ = xml.EscapeText(buf, []byte(val))
+	c.IS.T.Val, c.IS.T.Space = trimCellValue(buf.String())
 }
 
 // setStr set cell data type and value which containing a formula string.
