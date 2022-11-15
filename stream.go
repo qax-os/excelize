@@ -25,7 +25,7 @@ import (
 
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
-	File            *File
+	file            *File
 	Sheet           string
 	SheetID         int
 	sheetWritten    bool
@@ -107,7 +107,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		return nil, newNoExistSheetError(sheet)
 	}
 	sw := &StreamWriter{
-		File:    f,
+		file:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
 	}
@@ -169,7 +169,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 	}
 
 	// Correct table reference range, such correct C1:B3 to B1:C3.
-	ref, err := sw.File.coordinatesToRangeRef(coordinates)
+	ref, err := sw.file.coordinatesToRangeRef(coordinates)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 		}
 	}
 
-	tableID := sw.File.countTables() + 1
+	tableID := sw.file.countTables() + 1
 
 	name := options.TableName
 	if name == "" {
@@ -220,17 +220,17 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
 
 	// Add first table for given sheet.
-	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
+	sheetPath := sw.file.sheetMap[trimSheetName(sw.Sheet)]
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
-	rID := sw.File.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
+	rID := sw.file.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 
 	sw.tableParts = fmt.Sprintf(`<tableParts count="1"><tablePart r:id="rId%d"></tablePart></tableParts>`, rID)
 
-	if err = sw.File.addContentTypePart(tableID, "table"); err != nil {
+	if err = sw.file.addContentTypePart(tableID, "table"); err != nil {
 		return err
 	}
 	b, _ := xml.Marshal(table)
-	sw.File.saveFileList(tableXML, b)
+	sw.file.saveFileList(tableXML, b)
 	return err
 }
 
@@ -243,7 +243,7 @@ func (sw *StreamWriter) getRowValues(hRow, hCol, vCol int) (res []string, err er
 		return nil, err
 	}
 
-	dec := sw.File.xmlNewDecoder(r)
+	dec := sw.file.xmlNewDecoder(r)
 	for {
 		token, err := dec.Token()
 		if err == io.EOF {
@@ -269,7 +269,7 @@ func (sw *StreamWriter) getRowValues(hRow, hCol, vCol int) (res []string, err er
 			if col < hCol || col > vCol {
 				continue
 			}
-			res[col-hCol], _ = c.getValueFrom(sw.File, nil, false)
+			res[col-hCol], _ = c.getValueFrom(sw.file, nil, false)
 		}
 		return res, nil
 	}
@@ -438,6 +438,14 @@ func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
 	return nil
 }
 
+// InsertPageBreak create a page break to determine where the printed page
+// ends and where begins the next one by given worksheet name and cell
+// reference, so the content before the page break will be printed on one page
+// and after the page break on another.
+func (sw *StreamWriter) InsertPageBreak(cell string) error {
+	return sw.worksheet.insertPageBreak(cell)
+}
+
 // SetPanes provides a function to create and remove freeze panes and split
 // panes by given worksheet name and panes options for the StreamWriter. Note
 // that you must call the 'SetPanes' function before the 'SetRow' function.
@@ -475,7 +483,7 @@ func setCellFormula(c *xlsxC, formula string) {
 // setCellTime provides a function to set number of a cell with a time.
 func (sw *StreamWriter) setCellTime(c *xlsxC, val time.Time) error {
 	var date1904, isNum bool
-	wb, err := sw.File.workbookReader()
+	wb, err := sw.file.workbookReader()
 	if err != nil {
 		return err
 	}
@@ -483,7 +491,7 @@ func (sw *StreamWriter) setCellTime(c *xlsxC, val time.Time) error {
 		date1904 = wb.WorkbookPr.Date1904
 	}
 	if isNum, err = c.setCellTime(val, date1904); err == nil && isNum && c.S == 0 {
-		style, _ := sw.File.NewStyle(&Style{NumFmt: 22})
+		style, _ := sw.file.NewStyle(&Style{NumFmt: 22})
 		c.S = style
 	}
 	return nil
@@ -643,10 +651,10 @@ func (sw *StreamWriter) Flush() error {
 		return err
 	}
 
-	sheetPath := sw.File.sheetMap[trimSheetName(sw.Sheet)]
-	sw.File.Sheet.Delete(sheetPath)
-	delete(sw.File.checked, sheetPath)
-	sw.File.Pkg.Delete(sheetPath)
+	sheetPath := sw.file.sheetMap[trimSheetName(sw.Sheet)]
+	sw.file.Sheet.Delete(sheetPath)
+	delete(sw.file.checked, sheetPath)
+	sw.file.Pkg.Delete(sheetPath)
 
 	return nil
 }

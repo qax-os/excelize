@@ -1616,19 +1616,25 @@ func (f *File) UngroupSheets() error {
 }
 
 // InsertPageBreak create a page break to determine where the printed page
-// ends and where begins the next one by given worksheet name and cell reference, so the
-// content before the page break will be printed on one page and after the
-// page break on another.
+// ends and where begins the next one by given worksheet name and cell
+// reference, so the content before the page break will be printed on one page
+// and after the page break on another.
 func (f *File) InsertPageBreak(sheet, cell string) error {
-	var (
-		ws       *xlsxWorksheet
-		row, col int
-		err      error
-	)
-	rowBrk, colBrk := -1, -1
-	if ws, err = f.workSheetReader(sheet); err != nil {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
 		return err
 	}
+	return ws.insertPageBreak(cell)
+}
+
+// insertPageBreak create a page break in the worksheet by specific cell
+// reference.
+func (ws *xlsxWorksheet) insertPageBreak(cell string) error {
+	var (
+		row, col       int
+		err            error
+		rowBrk, colBrk = -1, -1
+	)
 	if col, row, err = CellNameToCoordinates(cell); err != nil {
 		return err
 	}
@@ -1638,10 +1644,10 @@ func (f *File) InsertPageBreak(sheet, cell string) error {
 		return err
 	}
 	if ws.RowBreaks == nil {
-		ws.RowBreaks = &xlsxBreaks{}
+		ws.RowBreaks = &xlsxRowBreaks{}
 	}
 	if ws.ColBreaks == nil {
-		ws.ColBreaks = &xlsxBreaks{}
+		ws.ColBreaks = &xlsxColBreaks{}
 	}
 
 	for idx, brk := range ws.RowBreaks.Brk {
