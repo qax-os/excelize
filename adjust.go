@@ -279,16 +279,14 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 				rowData.Hidden = false
 			}
 		}
-		return nil
+		return err
 	}
 
 	coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
 	x1, y1, x2, y2 = coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
-	if ws.AutoFilter.Ref, err = f.coordinatesToRangeRef([]int{x1, y1, x2, y2}); err != nil {
-		return err
-	}
-	return nil
+	ws.AutoFilter.Ref, err = f.coordinatesToRangeRef([]int{x1, y1, x2, y2})
+	return err
 }
 
 // adjustAutoFilterHelper provides a function for adjusting auto filter to
