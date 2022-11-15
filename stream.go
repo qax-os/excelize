@@ -655,10 +655,20 @@ func (sw *StreamWriter) Flush() error {
 // names order range.
 func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 	s := reflect.ValueOf(ws).Elem()
+	t := reflect.TypeOf(ws).Elem()
 	enc := xml.NewEncoder(w)
 	for i := 0; i < s.NumField(); i++ {
 		if from <= i && i <= to {
-			_ = enc.Encode(s.Field(i).Interface())
+			local := t.Field(i).Tag.Get("xml")
+			if local == "" {
+				_ = enc.Encode(s.Field(i).Interface())
+			} else {
+				_ = enc.EncodeElement(s.Field(i).Interface(), xml.StartElement{
+					Name: xml.Name{
+						Local: local,
+					},
+				})
+			}
 		}
 	}
 }
