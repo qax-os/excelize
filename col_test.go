@@ -1,9 +1,10 @@
 package excelize
 
 import (
-	"math/rand"
 	"path/filepath"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -362,62 +363,46 @@ func TestColWidth(t *testing.T) {
 }
 
 func TestAutoFitColWidth(t *testing.T) {
-	randStr := func(n int) string {
-		var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-		b := make([]rune, n)
-		for i := range b {
-			b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	getCellLen := func(s string) int {
+		var cellLenSBCS, cellLenMBCS int
+		for i := range s {
+			if s[i] < 0x80 {
+				cellLenSBCS++
+			}
 		}
-		return string(b)
+
+		runeLen := utf8.RuneCountInString(s)
+		cellLenMBCS = runeLen - cellLenSBCS
+
+		return cellLenSBCS + cellLenMBCS*2
 	}
 
-	f := NewFile()
-	// Test null data columns
-	assert.NoError(t, f.AutoFitColWidth("Sheet1", "A"))
-	width, err := f.GetColWidth("Sheet1", "A")
-	assert.Equal(t, defaultColWidth, width)
-	assert.NoError(t, err)
+	for _, c := range []string{"", "A", "a", "a你好", "你好", "あなた"} {
+		f := NewFile()
+		for i := 1; i <= 10; i++ {
+			colN, err := ColumnNumberToName(i)
+			assert.NoError(t, err)
 
-	// Test some data
-	for _, max := range []int{1, 10, 100, 1000} {
-		f.SetCellValue("Sheet1", "B2", randStr(max/2))
-		f.SetCellValue("Sheet1", "B3", randStr(max))
-		assert.NoError(t, f.AutoFitColWidth("Sheet1", "B:A"))
-		width, err = f.GetColWidth("Sheet1", "A")
-		assert.Equal(t, defaultColWidth, width)
-		assert.NoError(t, err)
+			v := strings.Repeat(c, i)
+			assert.NoError(t, f.SetCellValue("Sheet1", colN+"1", v))
 
-		width, err = f.GetColWidth("Sheet1", "B")
-		if float64(max) < defaultColWidth {
-			assert.Equal(t, defaultColWidth, width)
-		} else if max > MaxColumnWidth {
-			assert.Equal(t, float64(MaxColumnWidth), width)
-		} else {
-			assert.Equal(t, float64(max+3), width)
+			assert.NoError(t, f.AutoFitColWidth("Sheet1", colN))
+
+			got, err := f.GetColWidth("Sheet1", colN)
+			assert.CallerInfo()
+			assert.NoError(t, err)
+
+			actualLen := float64(getCellLen(v)) * 1.123
+			if actualLen < defaultColWidth {
+				assert.Equal(t, defaultColWidth, got)
+			} else if actualLen >= MaxColumnWidth {
+				assert.Equal(t, float64(MaxColumnWidth), got)
+			} else {
+				assert.Equal(t, actualLen, got)
+			}
 		}
-		assert.NoError(t, err)
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoColWidth.xlsx")))
 	}
-
-	// Test All columns
-	f.SetCellValue("sheet1", "C2", randStr(10))
-	f.SetCellValue("sheet1", "D2", randStr(20))
-	f.SetCellValue("sheet1", "E2", randStr(30))
-	assert.NoError(t, f.AutoFitColWidth("Sheet1", "XFD:D"))
-	width, err = f.GetColWidth("Sheet1", "C")
-	assert.Equal(t, defaultColWidth, width)
-	assert.NoError(t, err)
-
-	width, err = f.GetColWidth("Sheet1", "D")
-	assert.Equal(t, float64(23), width)
-	assert.NoError(t, err)
-
-	width, err = f.GetColWidth("Sheet1", "E")
-	assert.Equal(t, float64(33), width)
-	assert.NoError(t, err)
-
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoColWidth.xlsx")))
-	convertRowHeightToPixels(0)
 }
 
 func TestGetColStyle(t *testing.T) {
