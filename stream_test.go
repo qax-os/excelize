@@ -234,6 +234,19 @@ func TestStreamMergeCells(t *testing.T) {
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamMergeCells.xlsx")))
 }
 
+func TestStreamInsertPageBreak(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.InsertPageBreak("A1"))
+	assert.NoError(t, streamWriter.Flush())
+	// Save spreadsheet by the given path.
+	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamInsertPageBreak.xlsx")))
+}
+
 func TestNewStreamWriter(t *testing.T) {
 	// Test error exceptions
 	file := NewFile()

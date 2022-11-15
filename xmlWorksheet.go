@@ -44,8 +44,8 @@ type xlsxWorksheet struct {
 	PageMargins            *xlsxPageMargins             `xml:"pageMargins"`
 	PageSetUp              *xlsxPageSetUp               `xml:"pageSetup"`
 	HeaderFooter           *xlsxHeaderFooter            `xml:"headerFooter"`
-	RowBreaks              *xlsxBreaks                  `xml:"rowBreaks"`
-	ColBreaks              *xlsxBreaks                  `xml:"colBreaks"`
+	RowBreaks              *xlsxRowBreaks               `xml:"rowBreaks"`
+	ColBreaks              *xlsxColBreaks               `xml:"colBreaks"`
 	CustomProperties       *xlsxInnerXML                `xml:"customProperties"`
 	CellWatches            *xlsxInnerXML                `xml:"cellWatches"`
 	IgnoredErrors          *xlsxInnerXML                `xml:"ignoredErrors"`
@@ -356,6 +356,18 @@ type xlsxBrk struct {
 	Max int  `xml:"max,attr,omitempty"`
 	Man bool `xml:"man,attr,omitempty"`
 	Pt  bool `xml:"pt,attr,omitempty"`
+}
+
+// xlsxRowBreaks directly maps a collection of the row breaks.
+type xlsxRowBreaks struct {
+	XMLName xml.Name `xml:"rowBreaks"`
+	xlsxBreaks
+}
+
+// xlsxRowBreaks directly maps a collection of the column breaks.
+type xlsxColBreaks struct {
+	XMLName xml.Name `xml:"colBreaks"`
+	xlsxBreaks
 }
 
 // xlsxBreaks directly maps a collection of the row or column breaks.
