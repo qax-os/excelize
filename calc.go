@@ -13960,13 +13960,10 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 	}
 	var sheetText string
 	if argsList.Len() == 5 {
-		sheetText = trimSheetName(argsList.Back().Value.(formulaArg).Value())
-	}
-	if len(sheetText) > 0 {
-		sheetText = fmt.Sprintf("%s!", sheetText)
+		sheetText = fmt.Sprintf("%s!", trimSheetName(argsList.Back().Value.(formulaArg).Value()))
 	}
 	formatter := addressFmtMaps[fmt.Sprintf("%d_%s", int(absNum.Number), a1.Value())]
-	addr, err := formatter(int(colNum.Number), int(colNum.Number))
+	addr, err := formatter(int(colNum.Number), int(rowNum.Number))
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
