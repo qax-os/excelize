@@ -13966,7 +13966,7 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 		sheetText = fmt.Sprintf("%s!", sheetText)
 	}
 	formatter := addressFmtMaps[fmt.Sprintf("%d_%s", int(absNum.Number), a1.Value())]
-	addr, err := formatter(int(colNum.Number), int(colNum.Number))
+	addr, err := formatter(int(colNum.Number), int(rowNum.Number))
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
