@@ -743,7 +743,6 @@ func (f *File) getPictures(row, col int, drawingXML, drawingRelationships string
 						Ret: ret,
 						Buf: buf,
 					})
-					return
 				}
 			}
 		}
