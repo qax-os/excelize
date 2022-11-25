@@ -1113,3 +1113,55 @@ func trimSliceSpace(s []string) []string {
 	}
 	return s
 }
+
+func TestFile_CountRows(t *testing.T) {
+	type fields struct {
+		filename string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    int64
+		wantErr assert.ErrorAssertionFunc
+	}{{
+		name:   "BadWorkbook.xlsx",
+		fields: fields{filename: filepath.Join("test", "BadWorkbook.xlsx")},
+		want:   -1,
+		wantErr: func(t assert.TestingT, err error, _ ...interface{}) bool {
+			return assert.Error(t, err)
+		},
+	}, {
+		name:   "Book1.xlsx",
+		fields: fields{filename: filepath.Join("test", "Book1.xlsx")},
+		want:   22,
+		wantErr: func(t assert.TestingT, err error, _ ...interface{}) bool {
+			return assert.NoError(t, err)
+		},
+	}, {
+		name:   "CalcChain.xlsx",
+		fields: fields{filename: filepath.Join("test", "CalcChain.xlsx")},
+		want:   1,
+		wantErr: func(t assert.TestingT, err error, _ ...interface{}) bool {
+			return assert.NoError(t, err)
+		},
+	}, {
+		name:   "SharedStrings.xlsx",
+		fields: fields{filename: filepath.Join("test", "SharedStrings.xlsx")},
+		want:   1,
+		wantErr: func(t assert.TestingT, err error, _ ...interface{}) bool {
+			return assert.NoError(t, err)
+		},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := OpenFile(tt.fields.filename)
+			assert.NoError(t, err)
+			firstSheet := f.GetSheetName(0)
+			got, err := f.CountRows(firstSheet)
+			if !tt.wantErr(t, err, "CountRows") {
+				return
+			}
+			assert.Equal(t, tt.want, got, "CountRows")
+		})
+	}
+}

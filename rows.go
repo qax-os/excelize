@@ -18,6 +18,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/mohae/deepcopy"
@@ -211,6 +212,15 @@ func (err ErrSheetNotExist) Error() string {
 	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
 }
 
+// ErrCountRows defines an error of count rows
+type ErrCountRows struct {
+	err error
+}
+
+func (err ErrCountRows) Error() string {
+	return fmt.Sprintf("wrong count rows: %s", err.err.Error())
+}
+
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.
 type rowXMLIterator struct {
 	err              error
@@ -235,6 +245,56 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 			rowIterator.cells = append(appendSpace(blank, rowIterator.cells), val)
 		}
 	}
+}
+
+// CountRows returns the number of rows in the worksheet.
+// if return -1, that row not found
+func (f *File) CountRows(sheet string) (int64, error) {
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		return -1, ErrSheetNotExist{sheet}
+	}
+
+	needClose, reader, tempFile, size, err := f.contentReader(name)
+	if err != nil {
+		return -1, ErrCountRows{fmt.Errorf("content reader: %v", err)}
+	}
+	if needClose && err == nil {
+		defer tempFile.Close()
+	}
+
+	var contentSize int64 = 1024
+	var content = make([]byte, contentSize)
+	var start int64
+	if size-contentSize < 0 {
+		start = 0
+	} else {
+		start = size - contentSize
+	}
+
+	if _, err = reader.ReadAt(content, start); err != nil && err != io.EOF {
+		return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
+	}
+
+	indexStart := bytes.LastIndex(content, []byte(`<row`))
+	if indexStart == -1 {
+		return 0, ErrCountRows{fmt.Errorf("not found row tag")}
+	}
+
+	indexStop := bytes.Index(content[indexStart:], []byte(`>`))
+	if indexStop == -1 {
+		return -1, ErrCountRows{fmt.Errorf("not found end row")}
+	}
+	indexStop = indexStart + indexStop
+
+	rFind := regexp.MustCompile(`r="(\d+)"`).Find(content[indexStart:indexStop])
+	if len(rFind) == 0 {
+		return -1, ErrCountRows{fmt.Errorf("not found row number")}
+	}
+
+	countStr := string(rFind[3 : len(rFind)-1])
+
+	return strconv.ParseInt(countStr, 10, 64)
 }
 
 // Rows returns a rows iterator, used for streaming reading data for a
@@ -326,19 +386,38 @@ func (f *File) getFromStringItem(index int) string {
 	return f.getFromStringItem(index)
 }
 
-// xmlDecoder creates XML decoder by given path in the zip from memory data
+type ReaderContent interface {
+	io.Reader
+	io.ReaderAt
+}
+
+// contentReader returns reader by given path in the zip from memory data
 // or system temporary file.
-func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
+func (f *File) contentReader(name string) (bool, ReaderContent, *os.File, int64, error) {
 	var (
 		content  []byte
 		err      error
 		tempFile *os.File
 	)
 	if content = f.readXML(name); len(content) > 0 {
-		return false, f.xmlNewDecoder(bytes.NewReader(content)), tempFile, err
+		return false, bytes.NewReader(content), tempFile, int64(len(content)), err
 	}
+
 	tempFile, err = f.readTemp(name)
-	return true, f.xmlNewDecoder(tempFile), tempFile, err
+
+	fileStat, err := tempFile.Stat()
+	if err != nil {
+		return true, tempFile, tempFile, 0, fmt.Errorf("failed to get file stat: %w", err)
+	}
+
+	return true, tempFile, tempFile, fileStat.Size(), err
+}
+
+// xmlDecoder creates XML decoder by given path in the zip from memory data
+// or system temporary file.
+func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
+	needClose, reader, tempFile, _, err := f.contentReader(name)
+	return needClose, f.xmlNewDecoder(reader), tempFile, err
 }
 
 // SetRowHeight provides a function to set the height of a single row. For
