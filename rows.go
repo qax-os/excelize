@@ -18,7 +18,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"regexp"
 	"strconv"
 
 	"github.com/mohae/deepcopy"
@@ -255,7 +254,7 @@ func (f *File) CountRows(sheet string) (int64, error) {
 		return -1, ErrSheetNotExist{sheet}
 	}
 
-	needClose, reader, tempFile, size, err := f.contentReader(name)
+	needClose, reader, tempFile, readerSize, err := f.contentReader(name)
 	if err != nil {
 		return -1, ErrCountRows{fmt.Errorf("content reader: %v", err)}
 	}
@@ -263,38 +262,60 @@ func (f *File) CountRows(sheet string) (int64, error) {
 		defer tempFile.Close()
 	}
 
-	var contentSize int64 = 1024
-	var content = make([]byte, contentSize)
-	var start int64
-	if size-contentSize < 0 {
-		start = 0
-	} else {
-		start = size - contentSize
+	var buffSize int64 = 1024
+	var buff = make([]byte, buffSize)
+	var cursor = readerSize - buffSize
+
+	for {
+		if cursor < 0 {
+			cursor = 0
+		}
+
+		if _, err = reader.ReadAt(buff, cursor); err != nil && err != io.EOF {
+			return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
+		}
+
+		index := bytes.LastIndex(buff, []byte(`<row`))
+		if index == -1 {
+			cursor -= buffSize / 2
+			continue
+		}
+		if cursor == 0 {
+			return -1, ErrCountRows{fmt.Errorf("not found row number (before)")}
+		}
+		cursor += int64(index)
+		break
 	}
 
-	if _, err = reader.ReadAt(content, start); err != nil && err != io.EOF {
-		return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
+	for {
+		if cursor > readerSize {
+			return -1, ErrCountRows{fmt.Errorf("not found row number (after)")}
+		}
+
+		if _, err = reader.ReadAt(buff, cursor); err != nil && err != io.EOF {
+			return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
+		}
+
+		indexStart := bytes.Index(buff, []byte(` r="`))
+		if indexStart == -1 {
+			cursor += buffSize / 2
+			continue
+		}
+
+		if _, err = reader.ReadAt(buff, cursor+int64(indexStart)); err != nil && err != io.EOF {
+			return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
+		}
+
+		indexStop := bytes.Index(buff[indexStart:], []byte(`"`))
+		if indexStop == -1 {
+			return -1, ErrCountRows{fmt.Errorf("not found row number")}
+		}
+		indexStop += indexStart
+
+		countStr := string(buff[indexStart:indexStop])
+
+		return strconv.ParseInt(countStr, 10, 64)
 	}
-
-	indexStart := bytes.LastIndex(content, []byte(`<row`))
-	if indexStart == -1 {
-		return 0, ErrCountRows{fmt.Errorf("not found row tag")}
-	}
-
-	indexStop := bytes.Index(content[indexStart:], []byte(`>`))
-	if indexStop == -1 {
-		return -1, ErrCountRows{fmt.Errorf("not found end row")}
-	}
-	indexStop = indexStart + indexStop
-
-	rFind := regexp.MustCompile(`r="(\d+)"`).Find(content[indexStart:indexStop])
-	if len(rFind) == 0 {
-		return -1, ErrCountRows{fmt.Errorf("not found row number")}
-	}
-
-	countStr := string(rFind[3 : len(rFind)-1])
-
-	return strconv.ParseInt(countStr, 10, 64)
 }
 
 // Rows returns a rows iterator, used for streaming reading data for a
