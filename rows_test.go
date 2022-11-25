@@ -1156,6 +1156,7 @@ func TestFile_CountRows(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			f, err := OpenFile(tt.fields.filename)
 			assert.NoError(t, err)
+			defer f.Close()
 			firstSheet := f.GetSheetName(0)
 			got, err := f.CountRows(firstSheet)
 			if !tt.wantErr(t, err, "CountRows") {
@@ -1163,5 +1164,30 @@ func TestFile_CountRows(t *testing.T) {
 			}
 			assert.Equal(t, tt.want, got, "CountRows")
 		})
+	}
+}
+
+func BenchmarkFile_GetRows_Old(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
+		defer f.Close()
+
+		firstSheet := f.GetSheetName(0)
+		count := 0
+		rows, _ := f.GetRows(firstSheet)
+		for range rows {
+			count++
+		}
+	}
+}
+
+func BenchmarkFile_GetRows_New(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
+		defer f.Close()
+
+		firstSheet := f.GetSheetName(0)
+		_, err := f.CountRows(firstSheet)
+		assert.NoError(b, err)
 	}
 }
