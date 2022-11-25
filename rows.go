@@ -262,9 +262,12 @@ func (f *File) CountRows(sheet string) (int64, error) {
 		defer tempFile.Close()
 	}
 
-	var buffSize int64 = 1024
-	var buff = make([]byte, buffSize)
-	var cursor = readerSize - buffSize
+	var (
+		index    int
+		buffSize int64 = 1024
+		buff           = make([]byte, buffSize)
+		cursor         = readerSize - buffSize
+	)
 
 	for {
 		if cursor < 0 {
@@ -275,13 +278,13 @@ func (f *File) CountRows(sheet string) (int64, error) {
 			return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
 		}
 
-		index := bytes.LastIndex(buff, []byte(`<row`))
+		index = bytes.LastIndex(buff, []byte(`<row`))
 		if index == -1 {
+			if cursor == 0 {
+				return -1, ErrCountRows{fmt.Errorf("not found row number (before)")}
+			}
 			cursor -= buffSize / 2
 			continue
-		}
-		if cursor == 0 {
-			return -1, ErrCountRows{fmt.Errorf("not found row number (before)")}
 		}
 		cursor += int64(index)
 		break
@@ -296,23 +299,22 @@ func (f *File) CountRows(sheet string) (int64, error) {
 			return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
 		}
 
-		indexStart := bytes.Index(buff, []byte(` r="`))
-		if indexStart == -1 {
+		index = bytes.Index(buff, []byte(` r="`))
+		if index == -1 {
 			cursor += buffSize / 2
 			continue
 		}
 
-		if _, err = reader.ReadAt(buff, cursor+int64(indexStart)); err != nil && err != io.EOF {
+		if _, err = reader.ReadAt(buff, cursor+int64(index)+4); err != nil && err != io.EOF {
 			return -1, ErrCountRows{fmt.Errorf("read at: %v", err)}
 		}
 
-		indexStop := bytes.Index(buff[indexStart:], []byte(`"`))
-		if indexStop == -1 {
+		index = bytes.Index(buff, []byte(`"`))
+		if index == -1 {
 			return -1, ErrCountRows{fmt.Errorf("not found row number")}
 		}
-		indexStop += indexStart
 
-		countStr := string(buff[indexStart:indexStop])
+		countStr := string(buff[:index])
 
 		return strconv.ParseInt(countStr, 10, 64)
 	}
