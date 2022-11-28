@@ -13,10 +13,12 @@ package excelize
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"encoding/xml"
 	"image"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -720,4 +722,156 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *pi
 	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	w, h = int(width*opts.XScale), int(height*opts.YScale)
 	return
+}
+
+// getImageDataFormat provides a function to query format of image data
+// by given data.
+func getImageDataFormat(data []byte) string {
+	if len(data) == 0 {
+		return ""
+	}
+	for ext, cmpFunc := range supportedImageHeaderFormat {
+		if cmpFunc(data) {
+			return ext
+		}
+	}
+	return ""
+}
+
+// isGIF provides a function to determine whether the format of given image data is gif
+func isGIF(data []byte) bool {
+	pattern := []byte{0x47, 0x49, 0x46, 0x38}
+	if len(data) < len(pattern) {
+		return false
+	}
+	return bytes.Equal(data[0:len(pattern)], pattern)
+}
+
+func isJPEG(data []byte) bool {
+	pattern := []byte{0xFF, 0xD8, 0xFF}
+	if len(data) < len(pattern) {
+		return false
+	}
+	return bytes.Equal(data[0:len(pattern)], pattern)
+}
+
+// isPNG provides a function to determine whether the format of given image data is png
+func isPNG(data []byte) bool {
+	pattern := []byte{0x89, 0x50, 0x4E}
+	if len(data) < len(pattern) {
+		return false
+	}
+	return bytes.Equal(data[0:len(pattern)], pattern)
+}
+
+// isTIFF provides a function to determine whether the format of given image data is tiff
+func isTIFF(data []byte) bool {
+	patterns := [][]byte{
+		{0x4D, 0x4D},
+		{0x49, 0x49},
+	}
+	for _, pattern := range patterns {
+		if len(data) < len(pattern) {
+			continue
+		}
+		if bytes.Equal(data[0:len(pattern)], pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// isEMF provides a function to determine whether the format of given image data is emf
+func isEMF(data []byte) bool {
+	patterns := [][]byte{
+		{0x01, 0x00, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00},
+		{0x01, 0x00, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00},
+	}
+	for _, pattern := range patterns {
+		if len(data) < len(pattern) {
+			continue
+		}
+		if bytes.Equal(data[0:len(pattern)], pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// isWMF provides a function to determine whether the format of given image data is wmf
+func isWMF(data []byte) bool {
+	patterns := [][]byte{
+		{0x01, 0x00, 0x09, 0x00},
+		{0x02, 0x00, 0x09, 0x00},
+		{0xD7, 0xCD, 0xC6, 0x9A},
+	}
+	for _, pattern := range patterns {
+		if len(data) < len(pattern) {
+			continue
+		}
+		if bytes.Equal(data[0:len(pattern)], pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// isEMZ provides a function to determine whether the format of given image data is emz
+func isEMZ(data []byte) bool {
+	pattern := []byte{0x1F, 0x8B}
+	if len(data) < len(pattern) {
+		return false
+	}
+	isEqual := bytes.Equal(data[0:len(pattern)], pattern)
+	if !isEqual {
+		return false
+	}
+	b := bytes.NewBuffer(data)
+	reader, err := gzip.NewReader(b)
+	if err != nil {
+		return false
+	}
+	res, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return false
+	}
+	return isEMF(res)
+}
+
+// isWMZ provides a function to determine whether the format of given image data is wmz
+func isWMZ(data []byte) bool {
+	pattern := []byte{0x1F, 0x8B}
+	if len(data) < len(pattern) {
+		return false
+	}
+	isEqual := bytes.Equal(data[0:len(pattern)], pattern)
+	if !isEqual {
+		return false
+	}
+	b := bytes.NewBuffer(data)
+	reader, err := gzip.NewReader(b)
+	if err != nil {
+		return false
+	}
+	res, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return false
+	}
+	return isWMF(res)
+}
+
+// isSVG provides a function to determine whether the format of given image data is svg
+func isSVG(data []byte) bool {
+	type Result struct {
+		XMLName xml.Name `xml:"svg"`
+	}
+	var res Result
+	err := xml.Unmarshal(data, &res)
+	if err != nil {
+		return false
+	}
+	if res.XMLName.Local == "svg" {
+		return true
+	}
+	return false
 }

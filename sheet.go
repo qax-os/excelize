@@ -497,11 +497,27 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 		return ErrImgExt
 	}
 	file, _ := os.ReadFile(filepath.Clean(picture))
-	name := f.addMedia(file, ext)
+	return f.setSheetBackground(sheet, ext, file)
+}
+
+// SetSheetBackgroundFromBytes provides a function to set background picture
+// by given worksheet name and image data
+func (f *File) SetSheetBackgroundFromBytes(sheet string, picture []byte) error {
+	ext, ok := supportedImageTypes[getImageDataFormat(picture)]
+	if !ok {
+		return ErrImgExt
+	}
+	return f.setSheetBackground(sheet, ext, picture)
+}
+
+// setSheetBackground provides a function to set background picture by given
+// worksheet name,  file name extension and image data.
+func (f *File) setSheetBackground(sheet, ext string, imageData []byte) error {
+	name := f.addMedia(imageData, ext)
 	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
-	if err = f.addSheetPicture(sheet, rID); err != nil {
+	if err := f.addSheetPicture(sheet, rID); err != nil {
 		return err
 	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
