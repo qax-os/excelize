@@ -656,7 +656,7 @@ func (f *File) copySheet(from, to int) error {
 // SetSheetVisible provides a function to set worksheet visible by given worksheet
 // name. A workbook must contain at least one visible worksheet. If the given
 // worksheet has been activated, this setting will be invalidated. Sheet state
-// values as defined by https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetstatevalues
+// values as defined by https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.sheetstatevalues
 //
 //	visible
 //	hidden

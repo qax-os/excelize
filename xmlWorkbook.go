@@ -219,7 +219,7 @@ type xlsxDefinedNames struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
 // defines a defined name within this workbook. A defined name is descriptive
 // text that is used to represents a cell, range of cells, formula, or constant
-// value. For a descriptions of the attributes see https://docs.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.definedname
+// value. For a descriptions of the attributes see https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.definedname
 type xlsxDefinedName struct {
 	Comment           string `xml:"comment,attr,omitempty"`
 	CustomMenu        string `xml:"customMenu,attr,omitempty"`
