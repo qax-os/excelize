@@ -3,7 +3,7 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -473,7 +473,7 @@ func TestSetSheetBackgroundFromBytes(t *testing.T) {
 	for i, file := range files {
 		img, err := os.Open(filepath.Join("test/images", file))
 		assert.NoError(t, err)
-		content, err := ioutil.ReadAll(img)
+		content, err := io.ReadAll(img)
 		assert.NoError(t, err)
 		assert.NoError(t, img.Close())
 		assert.NoError(t, f.SetSheetBackgroundFromBytes("sheet1", content))

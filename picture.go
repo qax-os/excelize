@@ -18,7 +18,6 @@ import (
 	"encoding/xml"
 	"image"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -831,7 +830,7 @@ func isEMZ(data []byte) bool {
 	if err != nil {
 		return false
 	}
-	res, err := ioutil.ReadAll(reader)
+	res, err := io.ReadAll(reader)
 	if err != nil {
 		return false
 	}
@@ -853,7 +852,7 @@ func isWMZ(data []byte) bool {
 	if err != nil {
 		return false
 	}
-	res, err := ioutil.ReadAll(reader)
+	res, err := io.ReadAll(reader)
 	if err != nil {
 		return false
 	}
