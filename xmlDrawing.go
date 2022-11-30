@@ -171,19 +171,6 @@ var supportedImageTypes = map[string]string{
 	".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
 }
 
-// supportedImageHeaderFormat defined supported image data format.
-var supportedImageHeaderFormat = map[string]func([]byte) bool{
-	".gif":  isGIF,
-	".jpeg": isJPEG,
-	".png":  isPNG,
-	".tiff": isTIFF,
-	".emf":  isEMF,
-	".wmf":  isWMF,
-	".emz":  isEMZ,
-	".wmz":  isWMZ,
-	".svg":  isSVG,
-}
-
 // supportedContentTypes defined supported file format types.
 var supportedContentTypes = map[string]string{
 	".xlam": ContentTypeAddinMacro,

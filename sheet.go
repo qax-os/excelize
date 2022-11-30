@@ -501,9 +501,12 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 }
 
 // SetSheetBackgroundFromBytes provides a function to set background picture
-// by given worksheet name and image data
-func (f *File) SetSheetBackgroundFromBytes(sheet string, picture []byte) error {
-	ext, ok := supportedImageTypes[getImageDataFormat(picture)]
+// by given worksheet name, extension name and image data
+func (f *File) SetSheetBackgroundFromBytes(sheet, extension string, picture []byte) error {
+	if len(picture) == 0 {
+		return ErrImgExt
+	}
+	ext, ok := supportedImageTypes[extension]
 	if !ok {
 		return ErrImgExt
 	}
