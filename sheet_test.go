@@ -3,6 +3,8 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -462,4 +464,26 @@ func TestAttrValToFloat(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 42.1, got)
+}
+
+func TestSetSheetBackgroundFromBytes(t *testing.T) {
+	f := NewFile()
+	f.SetSheetName("Sheet1", ".svg")
+	for i, imageTypes := range []string{".svg", ".emf", ".emz", ".gif", ".jpg", ".png", ".tif", ".wmf", ".wmz"} {
+		file := fmt.Sprintf("excelize%s", imageTypes)
+		if i > 0 {
+			file = filepath.Join("test", "images", fmt.Sprintf("excel%s", imageTypes))
+			f.NewSheet(imageTypes)
+		}
+		img, err := os.Open(file)
+		assert.NoError(t, err)
+		content, err := io.ReadAll(img)
+		assert.NoError(t, err)
+		assert.NoError(t, img.Close())
+		assert.NoError(t, f.SetSheetBackgroundFromBytes(imageTypes, imageTypes, content))
+	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetBackgroundFromBytes.xlsx")))
+	assert.NoError(t, f.Close())
+
+	assert.EqualError(t, f.SetSheetBackgroundFromBytes("Sheet1", ".svg", nil), ErrParameterInvalid.Error())
 }
