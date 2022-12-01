@@ -467,28 +467,23 @@ func TestAttrValToFloat(t *testing.T) {
 }
 
 func TestSetSheetBackgroundFromBytes(t *testing.T) {
-	files := map[string]string{
-		"excelize.svg":          ".svg",
-		"test/images/excel.emf": ".emf",
-		"test/images/excel.emz": ".emz",
-		"test/images/excel.gif": ".gif",
-		"test/images/excel.jpg": ".jpg",
-		"test/images/excel.png": ".png",
-		"test/images/excel.tif": ".tif",
-		"test/images/excel.wmf": ".wmf",
-		"test/images/excel.wmz": ".wmz",
-	}
 	f := NewFile()
-	index := f.NewSheet("sheet1")
-	assert.Equal(t, index, 0)
-	for name, ext := range files {
-		img, err := os.Open(name)
+	f.SetSheetName("Sheet1", ".svg")
+	for i, imageTypes := range []string{".svg", ".emf", ".emz", ".gif", ".jpg", ".png", ".tif", ".wmf", ".wmz"} {
+		file := fmt.Sprintf("excelize%s", imageTypes)
+		if i > 0 {
+			file = filepath.Join("test", "images", fmt.Sprintf("excel%s", imageTypes))
+			f.NewSheet(imageTypes)
+		}
+		img, err := os.Open(file)
 		assert.NoError(t, err)
 		content, err := io.ReadAll(img)
 		assert.NoError(t, err)
 		assert.NoError(t, img.Close())
-		assert.NoError(t, f.SetSheetBackgroundFromBytes("sheet1", ext, content))
-		assert.NoError(t, f.SaveAs(fmt.Sprintf("test/TestSetSheetBackgroundFromBytes%s.xlsx", strings.ToUpper(ext[1:]))))
+		assert.NoError(t, f.SetSheetBackgroundFromBytes(imageTypes, imageTypes, content))
 	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetBackgroundFromBytes.xlsx")))
 	assert.NoError(t, f.Close())
+
+	assert.EqualError(t, f.SetSheetBackgroundFromBytes("Sheet1", ".svg", nil), ErrParameterInvalid.Error())
 }

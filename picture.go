@@ -38,7 +38,8 @@ func parsePictureOptions(opts string) (*pictureOptions, error) {
 
 // AddPicture provides the method to add picture in a sheet by given picture
 // format set (such as offset, scale, aspect ratio setting and print settings)
-// and file path. This function is concurrency safe. For example:
+// and file path, supported image types: EMF, EMZ, GIF, JPEG, JPG, PNG, SVG,
+// TIF, TIFF, WMF, and WMZ. This function is concurrency safe. For example:
 //
 //	package main
 //
@@ -121,7 +122,9 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 
 // AddPictureFromBytes provides the method to add picture in a sheet by given
 // picture format set (such as offset, scale, aspect ratio setting and print
-// settings), file base name, extension name and file bytes. For example:
+// settings), file base name, extension name and file bytes, supported image
+// types: EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ. For
+// example:
 //
 //	package main
 //

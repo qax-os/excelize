@@ -485,38 +485,36 @@ func (f *File) getSheetXMLPath(sheet string) (string, bool) {
 }
 
 // SetSheetBackground provides a function to set background picture by given
-// worksheet name and file path.
+// worksheet name and file path. Supported image types: EMF, EMZ, GIF, JPEG,
+// JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 func (f *File) SetSheetBackground(sheet, picture string) error {
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportedImageTypes[path.Ext(picture)]
-	if !ok {
-		return ErrImgExt
-	}
 	file, _ := os.ReadFile(filepath.Clean(picture))
-	return f.setSheetBackground(sheet, ext, file)
+	return f.setSheetBackground(sheet, path.Ext(picture), file)
 }
 
-// SetSheetBackgroundFromBytes provides a function to set background picture
-// by given worksheet name, extension name and image data
+// SetSheetBackgroundFromBytes provides a function to set background picture by
+// given worksheet name, extension name and image data. Supported image types:
+// EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 func (f *File) SetSheetBackgroundFromBytes(sheet, extension string, picture []byte) error {
 	if len(picture) == 0 {
-		return ErrImgExt
+		return ErrParameterInvalid
 	}
-	ext, ok := supportedImageTypes[extension]
-	if !ok {
-		return ErrImgExt
-	}
-	return f.setSheetBackground(sheet, ext, picture)
+	return f.setSheetBackground(sheet, extension, picture)
 }
 
 // setSheetBackground provides a function to set background picture by given
-// worksheet name,  file name extension and image data.
-func (f *File) setSheetBackground(sheet, ext string, imageData []byte) error {
-	name := f.addMedia(imageData, ext)
+// worksheet name, file name extension and image data.
+func (f *File) setSheetBackground(sheet, extension string, file []byte) error {
+	imageType, ok := supportedImageTypes[extension]
+	if !ok {
+		return ErrImgExt
+	}
+	name := f.addMedia(file, imageType)
 	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipImage, strings.Replace(name, "xl", "..", 1), "")
