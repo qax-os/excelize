@@ -314,6 +314,7 @@ func TestBstrUnmarshal(t *testing.T) {
 		"_x005F__x0008_******":        "_\b******",
 		"******_x005F__x0008_":        "******_\b",
 		"******_x005F__x0008_******":  "******_\b******",
+		"_x000x_x005F_x000x_":         "_x000x_x000x_",
 	}
 	for bstr, expected := range bstrs {
 		assert.Equal(t, expected, bstrUnmarshal(bstr), bstr)
