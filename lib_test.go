@@ -305,18 +305,19 @@ func TestBstrUnmarshal(t *testing.T) {
 		"*_x0008_*":                   "*\b*",
 		"*_x4F60__x597D_":             "*你好",
 		"*_xG000_":                    "*_xG000_",
-		"*_xG05F_x0001_*":             "*_xG05F*",
+		"*_xG05F_x0001_*":             "*_xG05F\x01*",
 		"*_x005F__x0008_*":            "*_\b*",
 		"*_x005F_x0001_*":             "*_x0001_*",
 		"*_x005f_x005F__x0008_*":      "*_x005F_\b*",
-		"*_x005F_x005F_xG05F_x0006_*": "*_x005F_xG05F*",
+		"*_x005F_x005F_xG05F_x0006_*": "*_x005F_xG05F\x06*",
 		"*_x005F_x005F_x005F_x0006_*": "*_x005F_x0006_*",
 		"_x005F__x0008_******":        "_\b******",
 		"******_x005F__x0008_":        "******_\b",
 		"******_x005F__x0008_******":  "******_\b******",
+		"_x000x_x005F_x000x_":         "_x000x_x000x_",
 	}
 	for bstr, expected := range bstrs {
-		assert.Equal(t, expected, bstrUnmarshal(bstr))
+		assert.Equal(t, expected, bstrUnmarshal(bstr), bstr)
 	}
 }
 
