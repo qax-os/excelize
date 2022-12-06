@@ -729,16 +729,7 @@ func bstrUnmarshal(s string) (result string) {
 		}
 		if bstrExp.MatchString(subStr) {
 			cursor = match[1]
-			v, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
-			if err != nil {
-				if l > match[1]+6 && bstrEscapeExp.MatchString(s[match[1]:match[1]+6]) {
-					result += subStr[:6]
-					cursor = match[1] + 6
-					continue
-				}
-				result += subStr
-				continue
-			}
+			v, _ := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
 			result += v
 		}
 	}
@@ -769,12 +760,10 @@ func bstrMarshal(s string) (result string) {
 		}
 		if bstrExp.MatchString(subStr) {
 			cursor = match[1]
-			_, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`)
-			if err == nil {
+			if _, err := strconv.Unquote(`"\u` + s[match[0]+2:match[1]-1] + `"`); err == nil {
 				result += "_x005F" + subStr
 				continue
 			}
-			result += subStr
 		}
 	}
 	if cursor < l {
