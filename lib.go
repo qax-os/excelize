@@ -702,8 +702,8 @@ func isNumeric(s string) (bool, int, float64) {
 }
 
 var (
-	bstrExp       = regexp.MustCompile(`_x[a-zA-Z\d]{4}_`)
-	bstrEscapeExp = regexp.MustCompile(`x[a-zA-Z\d]{4}_`)
+	bstrExp       = regexp.MustCompile(`_x[a-fA-F\d]{4}_`)
+	bstrEscapeExp = regexp.MustCompile(`x[a-fA-F\d]{4}_`)
 )
 
 // bstrUnmarshal parses the binary basic string, this will trim escaped string
