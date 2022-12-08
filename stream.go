@@ -310,9 +310,10 @@ type Cell struct {
 // RowOpts define the options for the set row, it can be used directly in
 // StreamWriter.SetRow to specify the style and properties of the row.
 type RowOpts struct {
-	Height  float64
-	Hidden  bool
-	StyleID int
+	Height       float64
+	Hidden       bool
+	StyleID      int
+	OutlineLevel int
 }
 
 // marshalAttrs prepare attributes of the row.
@@ -337,6 +338,11 @@ func (r *RowOpts) marshalAttrs() (strings.Builder, error) {
 		attrs.WriteString(` ht="`)
 		attrs.WriteString(strconv.FormatFloat(r.Height, 'f', -1, 64))
 		attrs.WriteString(`" customHeight="1"`)
+	}
+	if r.OutlineLevel > 0 && r.OutlineLevel < 8 {
+		attrs.WriteString(` outlineLevel="`)
+		attrs.WriteString(strconv.Itoa(r.OutlineLevel))
+		attrs.WriteString(`"`)
 	}
 	if r.Hidden {
 		attrs.WriteString(` hidden="1"`)
