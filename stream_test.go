@@ -367,7 +367,7 @@ func TestStreamWriterOutlineLevel(t *testing.T) {
 	// Test set outlineLevel in row.
 	assert.NoError(t, streamWriter.SetRow("A1", nil, RowOpts{OutlineLevel: 1}))
 	assert.NoError(t, streamWriter.SetRow("A2", nil, RowOpts{OutlineLevel: 7}))
-	assert.NoError(t, streamWriter.SetRow("A3", nil, RowOpts{OutlineLevel: 8}))
+	assert.ErrorIs(t, ErrOutlineLevel, streamWriter.SetRow("A3", nil, RowOpts{OutlineLevel: 8}))
 
 	assert.NoError(t, streamWriter.Flush())
 	// Save spreadsheet by the given path.

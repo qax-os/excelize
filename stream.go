@@ -329,6 +329,10 @@ func (r *RowOpts) marshalAttrs() (strings.Builder, error) {
 		err = ErrMaxRowHeight
 		return attrs, err
 	}
+	if r.OutlineLevel > 7 {
+		err = ErrOutlineLevel
+		return attrs, err
+	}
 	if r.StyleID > 0 {
 		attrs.WriteString(` s="`)
 		attrs.WriteString(strconv.Itoa(r.StyleID))
