@@ -343,7 +343,7 @@ func (r *RowOpts) marshalAttrs() (strings.Builder, error) {
 		attrs.WriteString(strconv.FormatFloat(r.Height, 'f', -1, 64))
 		attrs.WriteString(`" customHeight="1"`)
 	}
-	if r.OutlineLevel > 0 && r.OutlineLevel < 8 {
+	if r.OutlineLevel > 0 {
 		attrs.WriteString(` outlineLevel="`)
 		attrs.WriteString(strconv.Itoa(r.OutlineLevel))
 		attrs.WriteString(`"`)
