@@ -358,3 +358,31 @@ func TestStreamSetCellValFunc(t *testing.T) {
 	assert.NoError(t, sw.setCellValFunc(c, nil))
 	assert.NoError(t, sw.setCellValFunc(c, complex64(5+10i)))
 }
+
+func TestStreamWriterOutlineLevel(t *testing.T) {
+	file := NewFile()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+
+	// Test set outlineLevel in row.
+	assert.NoError(t, streamWriter.SetRow("A1", nil, RowOpts{OutlineLevel: 1}))
+	assert.NoError(t, streamWriter.SetRow("A2", nil, RowOpts{OutlineLevel: 7}))
+	assert.ErrorIs(t, ErrOutlineLevel, streamWriter.SetRow("A3", nil, RowOpts{OutlineLevel: 8}))
+
+	assert.NoError(t, streamWriter.Flush())
+	// Save spreadsheet by the given path.
+	assert.NoError(t, file.SaveAs(filepath.Join("test", "TestStreamWriterSetRowOutlineLevel.xlsx")))
+
+	file, err = OpenFile(filepath.Join("test", "TestStreamWriterSetRowOutlineLevel.xlsx"))
+	assert.NoError(t, err)
+	level, err := file.GetRowOutlineLevel("Sheet1", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, uint8(1), level)
+	level, err = file.GetRowOutlineLevel("Sheet1", 2)
+	assert.NoError(t, err)
+	assert.Equal(t, uint8(7), level)
+	level, err = file.GetRowOutlineLevel("Sheet1", 3)
+	assert.NoError(t, err)
+	assert.Equal(t, uint8(0), level)
+	assert.NoError(t, file.Close())
+}
