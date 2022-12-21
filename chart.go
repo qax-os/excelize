@@ -940,6 +940,10 @@ func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
 // and properties set. In Excel a chartsheet is a worksheet that only contains
 // a chart.
 func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
+	// Check if the worksheet name is valid
+	if !f.CheckSheetNameValid(sheet) {
+		return ErrInvalidSheetName
+	}
 	// Check if the worksheet already exists
 	if f.GetSheetIndex(sheet) != -1 {
 		return ErrExistsWorksheet

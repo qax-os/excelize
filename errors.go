@@ -219,4 +219,6 @@ var (
 	// ErrWorkbookPassword defined the error message on receiving the incorrect
 	// workbook password.
 	ErrWorkbookPassword = errors.New("the supplied open workbook password is not correct")
+	// ErrInvalidSheetName defined the error message on receive the invalid worksheet name
+	ErrInvalidSheetName = errors.New("invalid worksheet name")
 )

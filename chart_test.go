@@ -403,3 +403,16 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		}
 	}
 }
+
+func TestAddChartSheetWithInvalidSheetName(t *testing.T) {
+	f := NewFile()
+	assert.EqualError(t, f.AddChartSheet("Sheet:", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet(`Sheet\`, ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("Sheet/", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("Sheet?", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("Sheet*", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("Sheet[", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("Sheet]", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("'Sheet", ``), "invalid worksheet name")
+	assert.EqualError(t, f.AddChartSheet("Sheet'", ``), "invalid worksheet name")
+}

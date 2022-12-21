@@ -25,6 +25,16 @@ func TestNewSheet(t *testing.T) {
 	assert.Equal(t, f.GetSheetIndex("Sheet2"), f.NewSheet("Sheet2"))
 	// create new worksheet with empty sheet name
 	assert.Equal(t, -1, f.NewSheet(":\\/?*[]"))
+	// create new worksheet with invalid characters or does not comply with the rules
+	assert.Equal(t, -1, f.NewSheet("Sheet:"))
+	assert.Equal(t, -1, f.NewSheet(`Sheet\`))
+	assert.Equal(t, -1, f.NewSheet("Sheet/"))
+	assert.Equal(t, -1, f.NewSheet("Sheet?"))
+	assert.Equal(t, -1, f.NewSheet("Sheet*"))
+	assert.Equal(t, -1, f.NewSheet("Sheet["))
+	assert.Equal(t, -1, f.NewSheet("Sheet]"))
+	assert.Equal(t, -1, f.NewSheet("'Sheet"))
+	assert.Equal(t, -1, f.NewSheet("Sheet'"))
 }
 
 func TestSetPane(t *testing.T) {
@@ -486,4 +496,20 @@ func TestSetSheetBackgroundFromBytes(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	assert.EqualError(t, f.SetSheetBackgroundFromBytes("Sheet1", ".svg", nil), ErrParameterInvalid.Error())
+}
+
+func TestSheetNameValid(t *testing.T) {
+	f := NewFile()
+	assert.Equal(t, true, f.CheckSheetNameValid("Sheet1"))
+	assert.Equal(t, false, f.CheckSheetNameValid(""))
+	assert.Equal(t, false, f.CheckSheetNameValid("'Sheet"))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet'"))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet:"))
+	assert.Equal(t, false, f.CheckSheetNameValid(`Sheet\`))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet/"))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet?"))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet*"))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet["))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet]"))
+
 }

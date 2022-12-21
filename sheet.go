@@ -36,6 +36,10 @@ import (
 // Note that when creating a new workbook, the default worksheet named
 // `Sheet1` will be created.
 func (f *File) NewSheet(sheet string) int {
+	// Check if the worksheet name is valid
+	if !f.CheckSheetNameValid(sheet) {
+		return -1
+	}
 	if trimSheetName(sheet) == "" {
 		return -1
 	}
@@ -352,6 +356,7 @@ func (f *File) getActiveSheetID() int {
 // this function only changes the name of the sheet and will not update the
 // sheet name in the formula or reference associated with the cell. So there
 // may be problem formula error or reference missing.
+// todo: need change, This function does not appear to have a caller.
 func (f *File) SetSheetName(source, target string) {
 	source = trimSheetName(source)
 	target = trimSheetName(target)
@@ -1248,8 +1253,24 @@ func (f *File) UnprotectSheet(sheet string, password ...string) error {
 
 // trimSheetName provides a function to trim invalid characters by given worksheet
 // name.
+// 1、Intercept no more than 31 characters.
+// 2、Delete characters are not included in the name: : \ / ? * [ ].
+// 3、Confirm that the first or last character of the name cannot be a single quote.
+//
+// The Ascii code is shown in the table below
+//
+//  | Decimal | Symbol |
+//  |  ----   | ----   |
+//  | 58      |  :     |
+//  | 92      |  \     |
+//  | 47      |  ?     |
+//  | 42      |  *     |
+//  | 91      |  [     |
+//  | 93      |  ]     |
+//  | 39      |  '     |
 func trimSheetName(name string) string {
-	if strings.ContainsAny(name, ":\\/?*[]") || utf8.RuneCountInString(name) > 31 {
+	if strings.ContainsAny(name, ":\\/?*[]") || utf8.RuneCountInString(name) > 31 ||
+		strings.HasSuffix(name, "'") || strings.HasPrefix(name, "'") {
 		r := make([]rune, 0, 31)
 		for _, v := range name {
 			switch v {
@@ -1262,9 +1283,35 @@ func trimSheetName(name string) string {
 				break
 			}
 		}
+		length := len(r)
+		// Make sure the first or last character of the name cannot be a single quote.
+		if r[0] == 39 {
+			r = r[1:length]
+		}
+		if r[length-1] == 39 {
+			r = r[:length-1]
+		}
 		name = string(r)
 	}
 	return name
+}
+
+// CheckSheetNameValid check whether there are illegal characters in the sheet name.
+// 1、Make sure to enter a name with no more than 31 characters.
+// 2、Verify that the following characters are not included in the name: : \ / ? * [ ].
+// 3、Make sure the first or last character of the name cannot be a single quote.
+// 4、Confirm that the sheet name is not empty.
+func (f *File) CheckSheetNameValid(sheetName string) bool {
+	if sheetName == "" {
+		return false
+	}
+	if strings.ContainsAny(sheetName, ":\\/?*[]") || utf8.RuneCountInString(sheetName) > 31 {
+		return false
+	}
+	if strings.HasPrefix(sheetName, "'") || strings.HasSuffix(sheetName, "'") {
+		return false
+	}
+	return true
 }
 
 // SetPageLayout provides a function to sets worksheet page layout.
