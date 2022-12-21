@@ -1283,11 +1283,11 @@ func trimSheetName(name string) string {
 				break
 			}
 		}
-		length := len(r)
 		// Make sure the first or last character of the name cannot be a single quote.
 		if r[0] == 39 {
-			r = r[1:length]
+			r = r[1:]
 		}
+		length := len(r)
 		if r[length-1] == 39 {
 			r = r[:length-1]
 		}

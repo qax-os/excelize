@@ -498,12 +498,14 @@ func TestSetSheetBackgroundFromBytes(t *testing.T) {
 	assert.EqualError(t, f.SetSheetBackgroundFromBytes("Sheet1", ".svg", nil), ErrParameterInvalid.Error())
 }
 
-func TestSheetNameValid(t *testing.T) {
+func TestSheetName(t *testing.T) {
 	f := NewFile()
+	// valid sheet name
 	assert.Equal(t, true, f.CheckSheetNameValid("Sheet1"))
+	assert.Equal(t, true, f.CheckSheetNameValid("She'et1"))
+	// invalid sheet name, empty name
 	assert.Equal(t, false, f.CheckSheetNameValid(""))
-	assert.Equal(t, false, f.CheckSheetNameValid("'Sheet"))
-	assert.Equal(t, false, f.CheckSheetNameValid("Sheet'"))
+	// invalid sheet name, include :\/?*[]
 	assert.Equal(t, false, f.CheckSheetNameValid("Sheet:"))
 	assert.Equal(t, false, f.CheckSheetNameValid(`Sheet\`))
 	assert.Equal(t, false, f.CheckSheetNameValid("Sheet/"))
@@ -511,5 +513,8 @@ func TestSheetNameValid(t *testing.T) {
 	assert.Equal(t, false, f.CheckSheetNameValid("Sheet*"))
 	assert.Equal(t, false, f.CheckSheetNameValid("Sheet["))
 	assert.Equal(t, false, f.CheckSheetNameValid("Sheet]"))
+	// invalid sheet name, single quotes at the front or at the end
+	assert.Equal(t, false, f.CheckSheetNameValid("'Sheet"))
+	assert.Equal(t, false, f.CheckSheetNameValid("Sheet'"))
 
 }

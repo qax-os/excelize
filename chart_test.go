@@ -406,6 +406,9 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 
 func TestAddChartSheetWithInvalidSheetName(t *testing.T) {
 	f := NewFile()
+	// invalid sheet name, empty name
+	assert.EqualError(t, f.AddChartSheet("", ``), "invalid worksheet name")
+	// invalid sheet name, include :\/?*[]
 	assert.EqualError(t, f.AddChartSheet("Sheet:", ``), "invalid worksheet name")
 	assert.EqualError(t, f.AddChartSheet(`Sheet\`, ``), "invalid worksheet name")
 	assert.EqualError(t, f.AddChartSheet("Sheet/", ``), "invalid worksheet name")
@@ -413,6 +416,7 @@ func TestAddChartSheetWithInvalidSheetName(t *testing.T) {
 	assert.EqualError(t, f.AddChartSheet("Sheet*", ``), "invalid worksheet name")
 	assert.EqualError(t, f.AddChartSheet("Sheet[", ``), "invalid worksheet name")
 	assert.EqualError(t, f.AddChartSheet("Sheet]", ``), "invalid worksheet name")
+	// invalid sheet name, single quotes at the front or at the end
 	assert.EqualError(t, f.AddChartSheet("'Sheet", ``), "invalid worksheet name")
 	assert.EqualError(t, f.AddChartSheet("Sheet'", ``), "invalid worksheet name")
 }
