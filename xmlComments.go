@@ -77,6 +77,6 @@ type Comment struct {
 	Author   string        `json:"author"`
 	AuthorID int           `json:"author_id"`
 	Cell     string        `json:"cell"`
-	Text     string        `json:"string"`
+	Text     string        `json:"text"`
 	Runs     []RichTextRun `json:"runs"`
 }

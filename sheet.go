@@ -35,14 +35,15 @@ import (
 // name and returns the index of the sheets in the workbook after it appended.
 // Note that when creating a new workbook, the default worksheet named
 // `Sheet1` will be created.
-func (f *File) NewSheet(sheet string) int {
-	if trimSheetName(sheet) == "" {
-		return -1
+func (f *File) NewSheet(sheet string) (int, error) {
+	var err error
+	if err = checkSheetName(sheet); err != nil {
+		return -1, err
 	}
 	// Check if the worksheet already exists
-	index := f.GetSheetIndex(sheet)
+	index, err := f.GetSheetIndex(sheet)
 	if index != -1 {
-		return index
+		return index, err
 	}
 	f.DeleteSheet(sheet)
 	f.SheetCount++
@@ -235,7 +236,7 @@ func (f *File) setSheet(index int, name string) {
 		},
 	}
 	sheetXMLPath := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
-	f.sheetMap[trimSheetName(name)] = sheetXMLPath
+	f.sheetMap[name] = sheetXMLPath
 	f.Sheet.Store(sheetXMLPath, &ws)
 	f.xmlAttr[sheetXMLPath] = []xml.Attr{NameSpaceSpreadSheet}
 }
@@ -352,11 +353,16 @@ func (f *File) getActiveSheetID() int {
 // this function only changes the name of the sheet and will not update the
 // sheet name in the formula or reference associated with the cell. So there
 // may be problem formula error or reference missing.
-func (f *File) SetSheetName(source, target string) {
-	source = trimSheetName(source)
-	target = trimSheetName(target)
+func (f *File) SetSheetName(source, target string) error {
+	var err error
+	if err = checkSheetName(source); err != nil {
+		return err
+	}
+	if err = checkSheetName(target); err != nil {
+		return err
+	}
 	if strings.EqualFold(target, source) {
-		return
+		return err
 	}
 	wb, _ := f.workbookReader()
 	for k, v := range wb.Sheets.Sheet {
@@ -366,6 +372,7 @@ func (f *File) SetSheetName(source, target string) {
 			delete(f.sheetMap, source)
 		}
 	}
+	return err
 }
 
 // GetSheetName provides a function to get the sheet name of the workbook by
@@ -385,9 +392,8 @@ func (f *File) GetSheetName(index int) (name string) {
 // given sheet name. If given worksheet name is invalid, will return an
 // integer type value -1.
 func (f *File) getSheetID(sheet string) int {
-	sheetName := trimSheetName(sheet)
 	for sheetID, name := range f.GetSheetMap() {
-		if strings.EqualFold(name, sheetName) {
+		if strings.EqualFold(name, sheet) {
 			return sheetID
 		}
 	}
@@ -397,14 +403,16 @@ func (f *File) getSheetID(sheet string) int {
 // GetSheetIndex provides a function to get a sheet index of the workbook by
 // the given sheet name. If the given sheet name is invalid or sheet doesn't
 // exist, it will return an integer type value -1.
-func (f *File) GetSheetIndex(sheet string) int {
-	sheetName := trimSheetName(sheet)
+func (f *File) GetSheetIndex(sheet string) (int, error) {
+	if err := checkSheetName(sheet); err != nil {
+		return -1, err
+	}
 	for index, name := range f.GetSheetList() {
-		if strings.EqualFold(name, sheetName) {
-			return index
+		if strings.EqualFold(name, sheet) {
+			return index, nil
 		}
 	}
-	return -1
+	return -1, nil
 }
 
 // GetSheetMap provides a function to get worksheets, chart sheets, dialog
@@ -474,7 +482,6 @@ func (f *File) getSheetXMLPath(sheet string) (string, bool) {
 		name string
 		ok   bool
 	)
-	sheet = trimSheetName(sheet)
 	for sheetName, filePath := range f.sheetMap {
 		if strings.EqualFold(sheetName, sheet) {
 			name, ok = filePath, true
@@ -530,19 +537,22 @@ func (f *File) setSheetBackground(sheet, extension string, file []byte) error {
 // references such as formulas, charts, and so on. If there is any referenced
 // value of the deleted worksheet, it will cause a file error when you open
 // it. This function will be invalid when only one worksheet is left.
-func (f *File) DeleteSheet(sheet string) {
-	if f.SheetCount == 1 || f.GetSheetIndex(sheet) == -1 {
-		return
+func (f *File) DeleteSheet(sheet string) error {
+	if err := checkSheetName(sheet); err != nil {
+		return err
 	}
-	sheetName := trimSheetName(sheet)
+	if idx, _ := f.GetSheetIndex(sheet); f.SheetCount == 1 || idx == -1 {
+		return nil
+	}
+
 	wb, _ := f.workbookReader()
 	wbRels, _ := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
-	deleteLocalSheetID := f.GetSheetIndex(sheet)
+	deleteLocalSheetID, _ := f.GetSheetIndex(sheet)
 	deleteAndAdjustDefinedNames(wb, deleteLocalSheetID)
 
 	for idx, v := range wb.Sheets.Sheet {
-		if !strings.EqualFold(v.Name, sheetName) {
+		if !strings.EqualFold(v.Name, sheet) {
 			continue
 		}
 
@@ -568,7 +578,9 @@ func (f *File) DeleteSheet(sheet string) {
 		delete(f.xmlAttr, sheetXML)
 		f.SheetCount--
 	}
-	f.SetActiveSheet(f.GetSheetIndex(activeSheetName))
+	index, err := f.GetSheetIndex(activeSheetName)
+	f.SetActiveSheet(index)
+	return err
 }
 
 // deleteAndAdjustDefinedNames delete and adjust defined name in the workbook
@@ -683,7 +695,9 @@ func (f *File) copySheet(from, to int) error {
 //
 //	err := f.SetSheetVisible("Sheet1", false)
 func (f *File) SetSheetVisible(sheet string, visible bool) error {
-	sheet = trimSheetName(sheet)
+	if err := checkSheetName(sheet); err != nil {
+		return err
+	}
 	wb, err := f.workbookReader()
 	if err != nil {
 		return err
@@ -857,17 +871,20 @@ func (f *File) SetPanes(sheet, panes string) error {
 // name. For example, get visible state of Sheet1:
 //
 //	f.GetSheetVisible("Sheet1")
-func (f *File) GetSheetVisible(sheet string) bool {
-	name, visible := trimSheetName(sheet), false
+func (f *File) GetSheetVisible(sheet string) (bool, error) {
+	var visible bool
+	if err := checkSheetName(sheet); err != nil {
+		return visible, err
+	}
 	wb, _ := f.workbookReader()
 	for k, v := range wb.Sheets.Sheet {
-		if strings.EqualFold(v.Name, name) {
+		if strings.EqualFold(v.Name, sheet) {
 			if wb.Sheets.Sheet[k].State == "" || wb.Sheets.Sheet[k].State == "visible" {
 				visible = true
 			}
 		}
 	}
-	return visible
+	return visible, nil
 }
 
 // SearchSheet provides a function to get cell reference by given worksheet name,
@@ -889,6 +906,9 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 		regSearch bool
 		result    []string
 	)
+	if err := checkSheetName(sheet); err != nil {
+		return result, err
+	}
 	for _, r := range reg {
 		regSearch = r
 	}
@@ -897,7 +917,7 @@ func (f *File) SearchSheet(sheet, value string, reg ...bool) ([]string, error) {
 		return result, ErrSheetNotExist{sheet}
 	}
 	if ws, ok := f.Sheet.Load(name); ok && ws != nil {
-		// flush data
+		// Flush data
 		output, _ := xml.Marshal(ws.(*xlsxWorksheet))
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
@@ -1051,7 +1071,7 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 //	                        |
 //	 &F                     | Current workbook's file name
 //	                        |
-//	 &G                     | Drawing object as background
+//	 &G                     | Drawing object as background (Not support currently)
 //	                        |
 //	 &H                     | Shadow text format
 //	                        |
@@ -1167,47 +1187,47 @@ func (f *File) SetHeaderFooter(sheet string, settings *HeaderFooterOptions) erro
 //	    Password:      "password",
 //	    EditScenarios: false,
 //	})
-func (f *File) ProtectSheet(sheet string, settings *SheetProtectionOptions) error {
+func (f *File) ProtectSheet(sheet string, opts *SheetProtectionOptions) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if settings == nil {
-		settings = &SheetProtectionOptions{
+	if opts == nil {
+		opts = &SheetProtectionOptions{
 			EditObjects:       true,
 			EditScenarios:     true,
 			SelectLockedCells: true,
 		}
 	}
 	ws.SheetProtection = &xlsxSheetProtection{
-		AutoFilter:          settings.AutoFilter,
-		DeleteColumns:       settings.DeleteColumns,
-		DeleteRows:          settings.DeleteRows,
-		FormatCells:         settings.FormatCells,
-		FormatColumns:       settings.FormatColumns,
-		FormatRows:          settings.FormatRows,
-		InsertColumns:       settings.InsertColumns,
-		InsertHyperlinks:    settings.InsertHyperlinks,
-		InsertRows:          settings.InsertRows,
-		Objects:             settings.EditObjects,
-		PivotTables:         settings.PivotTables,
-		Scenarios:           settings.EditScenarios,
-		SelectLockedCells:   settings.SelectLockedCells,
-		SelectUnlockedCells: settings.SelectUnlockedCells,
+		AutoFilter:          opts.AutoFilter,
+		DeleteColumns:       opts.DeleteColumns,
+		DeleteRows:          opts.DeleteRows,
+		FormatCells:         opts.FormatCells,
+		FormatColumns:       opts.FormatColumns,
+		FormatRows:          opts.FormatRows,
+		InsertColumns:       opts.InsertColumns,
+		InsertHyperlinks:    opts.InsertHyperlinks,
+		InsertRows:          opts.InsertRows,
+		Objects:             opts.EditObjects,
+		PivotTables:         opts.PivotTables,
+		Scenarios:           opts.EditScenarios,
+		SelectLockedCells:   opts.SelectLockedCells,
+		SelectUnlockedCells: opts.SelectUnlockedCells,
 		Sheet:               true,
-		Sort:                settings.Sort,
+		Sort:                opts.Sort,
 	}
-	if settings.Password != "" {
-		if settings.AlgorithmName == "" {
-			ws.SheetProtection.Password = genSheetPasswd(settings.Password)
+	if opts.Password != "" {
+		if opts.AlgorithmName == "" {
+			ws.SheetProtection.Password = genSheetPasswd(opts.Password)
 			return err
 		}
-		hashValue, saltValue, err := genISOPasswdHash(settings.Password, settings.AlgorithmName, "", int(sheetProtectionSpinCount))
+		hashValue, saltValue, err := genISOPasswdHash(opts.Password, opts.AlgorithmName, "", int(sheetProtectionSpinCount))
 		if err != nil {
 			return err
 		}
 		ws.SheetProtection.Password = ""
-		ws.SheetProtection.AlgorithmName = settings.AlgorithmName
+		ws.SheetProtection.AlgorithmName = opts.AlgorithmName
 		ws.SheetProtection.SaltValue = saltValue
 		ws.SheetProtection.HashValue = hashValue
 		ws.SheetProtection.SpinCount = int(sheetProtectionSpinCount)
@@ -1246,25 +1266,25 @@ func (f *File) UnprotectSheet(sheet string, password ...string) error {
 	return err
 }
 
-// trimSheetName provides a function to trim invalid characters by given worksheet
-// name.
-func trimSheetName(name string) string {
-	if strings.ContainsAny(name, ":\\/?*[]") || utf8.RuneCountInString(name) > 31 {
-		r := make([]rune, 0, 31)
-		for _, v := range name {
-			switch v {
-			case 58, 92, 47, 63, 42, 91, 93: // replace :\/?*[]
-				continue
-			default:
-				r = append(r, v)
-			}
-			if len(r) == 31 {
-				break
-			}
-		}
-		name = string(r)
+// checkSheetName check whether there are illegal characters in the sheet name.
+// 1. Confirm that the sheet name is not empty
+// 2. Make sure to enter a name with no more than 31 characters
+// 3. Make sure the first or last character of the name cannot be a single quote
+// 4. Verify that the following characters are not included in the name :\/?*[]
+func checkSheetName(name string) error {
+	if name == "" {
+		return ErrSheetNameBlank
 	}
-	return name
+	if utf8.RuneCountInString(name) > MaxSheetNameLength {
+		return ErrSheetNameLength
+	}
+	if strings.HasPrefix(name, "'") || strings.HasSuffix(name, "'") {
+		return ErrSheetNameSingleQuote
+	}
+	if strings.ContainsAny(name, ":\\/?*[]") {
+		return ErrSheetNameInvalid
+	}
+	return nil
 }
 
 // SetPageLayout provides a function to sets worksheet page layout.
@@ -1499,7 +1519,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 		Data:    definedName.RefersTo,
 	}
 	if definedName.Scope != "" {
-		if sheetIndex := f.GetSheetIndex(definedName.Scope); sheetIndex >= 0 {
+		if sheetIndex, _ := f.GetSheetIndex(definedName.Scope); sheetIndex >= 0 {
 			d.LocalSheetID = &sheetIndex
 		}
 	}
@@ -1579,7 +1599,7 @@ func (f *File) GetDefinedName() []DefinedName {
 // GroupSheets provides a function to group worksheets by given worksheets
 // name. Group worksheets must contain an active worksheet.
 func (f *File) GroupSheets(sheets []string) error {
-	// check an active worksheet in group worksheets
+	// Check an active worksheet in group worksheets
 	var inActiveSheet bool
 	activeSheet := f.GetActiveSheetIndex()
 	sheetMap := f.GetSheetList()

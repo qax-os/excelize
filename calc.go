@@ -11460,19 +11460,20 @@ func (fn *formulaFuncs) SHEET(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "SHEET accepts at most 1 argument")
 	}
 	if argsList.Len() == 0 {
-		return newNumberFormulaArg(float64(fn.f.GetSheetIndex(fn.sheet) + 1))
+		idx, _ := fn.f.GetSheetIndex(fn.sheet)
+		return newNumberFormulaArg(float64(idx + 1))
 	}
 	arg := argsList.Front().Value.(formulaArg)
-	if sheetIdx := fn.f.GetSheetIndex(arg.Value()); sheetIdx != -1 {
+	if sheetIdx, _ := fn.f.GetSheetIndex(arg.Value()); sheetIdx != -1 {
 		return newNumberFormulaArg(float64(sheetIdx + 1))
 	}
 	if arg.cellRanges != nil && arg.cellRanges.Len() > 0 {
-		if sheetIdx := fn.f.GetSheetIndex(arg.cellRanges.Front().Value.(cellRange).From.Sheet); sheetIdx != -1 {
+		if sheetIdx, _ := fn.f.GetSheetIndex(arg.cellRanges.Front().Value.(cellRange).From.Sheet); sheetIdx != -1 {
 			return newNumberFormulaArg(float64(sheetIdx + 1))
 		}
 	}
 	if arg.cellRefs != nil && arg.cellRefs.Len() > 0 {
-		if sheetIdx := fn.f.GetSheetIndex(arg.cellRefs.Front().Value.(cellRef).Sheet); sheetIdx != -1 {
+		if sheetIdx, _ := fn.f.GetSheetIndex(arg.cellRefs.Front().Value.(cellRef).Sheet); sheetIdx != -1 {
 			return newNumberFormulaArg(float64(sheetIdx + 1))
 		}
 	}
@@ -13960,7 +13961,7 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 	}
 	var sheetText string
 	if argsList.Len() == 5 {
-		sheetText = fmt.Sprintf("%s!", trimSheetName(argsList.Back().Value.(formulaArg).Value()))
+		sheetText = fmt.Sprintf("%s!", argsList.Back().Value.(formulaArg).Value())
 	}
 	formatter := addressFmtMaps[fmt.Sprintf("%d_%s", int(absNum.Number), a1.Value())]
 	addr, err := formatter(int(colNum.Number), int(rowNum.Number))

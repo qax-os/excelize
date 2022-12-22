@@ -143,6 +143,9 @@ func (f *File) AddComment(sheet string, comment Comment) error {
 //
 //	err := f.DeleteComment("Sheet1", "A30")
 func (f *File) DeleteComment(sheet, cell string) error {
+	if err := checkSheetName(sheet); err != nil {
+		return err
+	}
 	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		return newNoExistSheetError(sheet)

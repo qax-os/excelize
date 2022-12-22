@@ -941,8 +941,12 @@ func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
 // a chart.
 func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 	// Check if the worksheet already exists
-	if f.GetSheetIndex(sheet) != -1 {
-		return ErrExistsWorksheet
+	idx, err := f.GetSheetIndex(sheet)
+	if err != nil {
+		return err
+	}
+	if idx != -1 {
+		return ErrExistsSheet
 	}
 	options, comboCharts, err := f.getChartOptions(opts, combo)
 	if err != nil {
@@ -963,7 +967,7 @@ func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 	}
 	sheetID++
 	path := "xl/chartsheets/sheet" + strconv.Itoa(sheetID) + ".xml"
-	f.sheetMap[trimSheetName(sheet)] = path
+	f.sheetMap[sheet] = path
 	f.Sheet.Store(path, nil)
 	drawingID := f.countDrawings() + 1
 	chartID := f.countCharts() + 1

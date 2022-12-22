@@ -113,9 +113,8 @@ var (
 	// ErrCoordinates defined the error message on invalid coordinates tuples
 	// length.
 	ErrCoordinates = errors.New("coordinates length must be 4")
-	// ErrExistsWorksheet defined the error message on given worksheet already
-	// exists.
-	ErrExistsWorksheet = errors.New("the same name worksheet already exists")
+	// ErrExistsSheet defined the error message on given sheet already exists.
+	ErrExistsSheet = errors.New("the same name sheet already exists")
 	// ErrTotalSheetHyperlinks defined the error message on hyperlinks count
 	// overflow.
 	ErrTotalSheetHyperlinks = errors.New("over maximum limit hyperlinks in a worksheet")
@@ -219,4 +218,16 @@ var (
 	// ErrWorkbookPassword defined the error message on receiving the incorrect
 	// workbook password.
 	ErrWorkbookPassword = errors.New("the supplied open workbook password is not correct")
+	// ErrSheetNameInvalid defined the error message on receive the sheet name
+	// contains invalid characters.
+	ErrSheetNameInvalid = errors.New("the sheet can not contain any of the characters :\\/?*[or]")
+	// ErrSheetNameSingleQuote defined the error message on the first or last
+	// character of the sheet name was a single quote.
+	ErrSheetNameSingleQuote = errors.New("the first or last character of the sheet name can not be a single quote")
+	// ErrSheetNameBlank defined the error message on receive the blank sheet
+	// name.
+	ErrSheetNameBlank = errors.New("the sheet name can not be blank")
+	// ErrSheetNameLength defined the error message on receiving the sheet
+	// name length exceeds the limit.
+	ErrSheetNameLength = fmt.Errorf("the sheet name length exceeds the %d characters limit", MaxSheetNameLength)
 )

@@ -91,6 +91,9 @@ func TestDataValidation(t *testing.T) {
 	// Test get data validation on no exists worksheet
 	_, err = f.GetDataValidations("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get data validation with invalid sheet name
+	_, err = f.GetDataValidations("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
@@ -130,7 +133,7 @@ func TestDataValidationError(t *testing.T) {
 
 	assert.NoError(t, f.AddDataValidation("Sheet1", dvRange))
 
-	// Test width invalid data validation formula.
+	// Test width invalid data validation formula
 	prevFormula1 := dvRange.Formula1
 	for _, keys := range [][]string{
 		make([]string, 257),
@@ -156,9 +159,13 @@ func TestDataValidationError(t *testing.T) {
 		DataValidationTypeWhole, DataValidationOperatorGreaterThan), ErrDataValidationRange.Error())
 	assert.NoError(t, f.SaveAs(resultFile))
 
-	// Test add data validation on no exists worksheet.
+	// Test add data validation on no exists worksheet
 	f = NewFile()
 	assert.EqualError(t, f.AddDataValidation("SheetN", nil), "sheet SheetN does not exist")
+
+	// Test add data validation with invalid sheet name
+	f = NewFile()
+	assert.EqualError(t, f.AddDataValidation("Sheet:1", nil), ErrSheetNameInvalid.Error())
 }
 
 func TestDeleteDataValidation(t *testing.T) {
@@ -200,10 +207,11 @@ func TestDeleteDataValidation(t *testing.T) {
 	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A1:A"
 	assert.EqualError(t, f.DeleteDataValidation("Sheet1", "A1:B2"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
-	// Test delete data validation on no exists worksheet.
+	// Test delete data validation on no exists worksheet
 	assert.EqualError(t, f.DeleteDataValidation("SheetN", "A1:B2"), "sheet SheetN does not exist")
-
-	// Test delete all data validations in the worksheet.
+	// Test delete all data validation with invalid sheet name
+	assert.EqualError(t, f.DeleteDataValidation("Sheet:1"), ErrSheetNameInvalid.Error())
+	// Test delete all data validations in the worksheet
 	assert.NoError(t, f.DeleteDataValidation("Sheet1"))
 	assert.Nil(t, ws.(*xlsxWorksheet).DataValidations)
 }

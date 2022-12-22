@@ -208,6 +208,9 @@ func (cols *Cols) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 //	    fmt.Println()
 //	}
 func (f *File) Cols(sheet string) (*Cols, error) {
+	if err := checkSheetName(sheet); err != nil {
+		return nil, err
+	}
 	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
@@ -236,7 +239,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		case xml.EndElement:
 			if xmlElement.Name.Local == "sheetData" {
 				colIterator.cols.f = f
-				colIterator.cols.sheet = trimSheetName(sheet)
+				colIterator.cols.sheet = sheet
 				return &colIterator.cols, nil
 			}
 		}

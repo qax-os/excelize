@@ -217,6 +217,8 @@ func TestAddChart(t *testing.T) {
 		assert.NoError(t, f.AddChart("Combo Charts", axis, fmt.Sprintf(`{"type":"areaStacked","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"%s"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true}}`, props[1]), fmt.Sprintf(`{"type":"%s","series":[{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true}}`, props[0])))
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddChart.xlsx")))
+	// Test with invalid sheet name
+	assert.EqualError(t, f.AddChart("Sheet:1", "A1", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"}]}`), ErrSheetNameInvalid.Error())
 	// Test with illegal cell reference
 	assert.EqualError(t, f.AddChart("Sheet2", "A", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"2D Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test with unsupported chart type
@@ -257,14 +259,16 @@ func TestAddChartSheet(t *testing.T) {
 	// Test cell value on chartsheet
 	assert.EqualError(t, f.SetCellValue("Chart1", "A1", true), "sheet Chart1 is not a worksheet")
 	// Test add chartsheet on already existing name sheet
-	assert.EqualError(t, f.AddChartSheet("Sheet1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`), ErrExistsWorksheet.Error())
+	assert.EqualError(t, f.AddChartSheet("Sheet1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`), ErrExistsSheet.Error())
+	// Test add chartsheet with invalid sheet name
+	assert.EqualError(t, f.AddChartSheet("Sheet:1", "A1", `{"type":"col3DClustered","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`), ErrSheetNameInvalid.Error())
 	// Test with unsupported chart type
 	assert.EqualError(t, f.AddChartSheet("Chart2", `{"type":"unknown","series":[{"name":"Sheet1!$A$2","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$2:$D$2"},{"name":"Sheet1!$A$3","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$3:$D$3"},{"name":"Sheet1!$A$4","categories":"Sheet1!$B$1:$D$1","values":"Sheet1!$B$4:$D$4"}],"title":{"name":"Fruit 3D Clustered Column Chart"}}`), "unsupported chart type unknown")
 
 	assert.NoError(t, f.UpdateLinkedValue())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddChartSheet.xlsx")))
-	// Test add chart sheet with unsupported charset content types.
+	// Test add chart sheet with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
@@ -278,11 +282,13 @@ func TestDeleteChart(t *testing.T) {
 	assert.NoError(t, f.AddChart("Sheet1", "P1", `{"type":"col","series":[{"name":"Sheet1!$A$30","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$30:$D$30"},{"name":"Sheet1!$A$31","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$31:$D$31"},{"name":"Sheet1!$A$32","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$32:$D$32"},{"name":"Sheet1!$A$33","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$33:$D$33"},{"name":"Sheet1!$A$34","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$34:$D$34"},{"name":"Sheet1!$A$35","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$35:$D$35"},{"name":"Sheet1!$A$36","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$36:$D$36"},{"name":"Sheet1!$A$37","categories":"Sheet1!$B$29:$D$29","values":"Sheet1!$B$37:$D$37"}],"format":{"x_scale":1.0,"y_scale":1.0,"x_offset":15,"y_offset":10,"print_obj":true,"lock_aspect_ratio":false,"locked":false},"legend":{"position":"left","show_legend_key":false},"title":{"name":"2D Column Chart"},"plotarea":{"show_bubble_size":true,"show_cat_name":false,"show_leader_lines":false,"show_percent":true,"show_series_name":true,"show_val":true},"show_blanks_as":"zero"}`))
 	assert.NoError(t, f.DeleteChart("Sheet1", "P1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteChart.xlsx")))
-	// Test delete chart on not exists worksheet.
+	// Test delete chart with invalid sheet name
+	assert.EqualError(t, f.DeleteChart("Sheet:1", "P1"), ErrSheetNameInvalid.Error())
+	// Test delete chart on not exists worksheet
 	assert.EqualError(t, f.DeleteChart("SheetN", "A1"), "sheet SheetN does not exist")
-	// Test delete chart with invalid coordinates.
+	// Test delete chart with invalid coordinates
 	assert.EqualError(t, f.DeleteChart("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
-	// Test delete chart on no chart worksheet.
+	// Test delete chart on no chart worksheet
 	assert.NoError(t, NewFile().DeleteChart("Sheet1", "A1"))
 	assert.NoError(t, f.Close())
 }

@@ -225,6 +225,12 @@ func TestAddPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "-", Name: strings.Repeat("s", MaxFieldLength+1)}},
 	}))
 
+	// Test add pivot table with invalid sheet name
+	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet:1!$A$1:$E$31",
+		PivotTableRange: "Sheet:1!$G$2:$M$34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+	}), ErrSheetNameInvalid.Error())
 	// Test adjust range with invalid range
 	_, _, err := f.adjustRange("")
 	assert.EqualError(t, err, ErrParameterRequired.Error())

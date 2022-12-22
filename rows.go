@@ -260,6 +260,9 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 //	    fmt.Println(err)
 //	}
 func (f *File) Rows(sheet string) (*Rows, error) {
+	if err := checkSheetName(sheet); err != nil {
+		return nil, err
+	}
 	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
@@ -268,7 +271,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 		worksheet := ws.(*xlsxWorksheet)
 		worksheet.Lock()
 		defer worksheet.Unlock()
-		// flush data
+		// Flush data
 		output, _ := xml.Marshal(worksheet)
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}

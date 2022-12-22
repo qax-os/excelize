@@ -23,14 +23,17 @@ import (
 )
 
 func TestOpenFile(t *testing.T) {
-	// Test update the spreadsheet file.
+	// Test update the spreadsheet file
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 
-	// Test get all the rows in a not exists worksheet.
+	// Test get all the rows in a not exists worksheet
 	_, err = f.GetRows("Sheet4")
 	assert.EqualError(t, err, "sheet Sheet4 does not exist")
-	// Test get all the rows in a worksheet.
+	// Test get all the rows with invalid sheet name
+	_, err = f.GetRows("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	// Test get all the rows in a worksheet
 	rows, err := f.GetRows("Sheet2")
 	expected := [][]string{
 		{"Monitor", "", "Brand", "", "inlineStr"},
@@ -52,40 +55,44 @@ func TestOpenFile(t *testing.T) {
 
 	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(100.1588, 'f', -1, 32)))
 	assert.NoError(t, f.SetCellDefault("Sheet2", "A1", strconv.FormatFloat(-100.1588, 'f', -1, 64)))
-
-	// Test set cell value with illegal row number.
+	// Test set cell value with invalid sheet name
+	assert.EqualError(t, f.SetCellDefault("Sheet:1", "A1", ""), ErrSheetNameInvalid.Error())
+	// Test set cell value with illegal row number
 	assert.EqualError(t, f.SetCellDefault("Sheet2", "A", strconv.FormatFloat(-100.1588, 'f', -1, 64)),
 		newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	assert.NoError(t, f.SetCellInt("Sheet2", "A1", 100))
 
-	// Test set cell integer value with illegal row number.
+	// Test set cell integer value with illegal row number
 	assert.EqualError(t, f.SetCellInt("Sheet2", "A", 100), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test set cell integer value with invalid sheet name
+	assert.EqualError(t, f.SetCellInt("Sheet:1", "A1", 100), ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SetCellStr("Sheet2", "C11", "Knowns"))
-	// Test max characters in a cell.
+	// Test max characters in a cell
 	assert.NoError(t, f.SetCellStr("Sheet2", "D11", strings.Repeat("c", TotalCellChars+2)))
 	f.NewSheet(":\\/?*[]Maximum 31 characters allowed in sheet title.")
-	// Test set worksheet name with illegal name.
+	// Test set worksheet name with illegal name
 	f.SetSheetName("Maximum 31 characters allowed i", "[Rename]:\\/?* Maximum 31 characters allowed in sheet title.")
 	assert.EqualError(t, f.SetCellInt("Sheet3", "A23", 10), "sheet Sheet3 does not exist")
 	assert.EqualError(t, f.SetCellStr("Sheet3", "b230", "10"), "sheet Sheet3 does not exist")
 	assert.EqualError(t, f.SetCellStr("Sheet10", "b230", "10"), "sheet Sheet10 does not exist")
-
-	// Test set cell string value with illegal row number.
+	// Test set cell string data type value with invalid sheet name
+	assert.EqualError(t, f.SetCellStr("Sheet:1", "A1", "1"), ErrSheetNameInvalid.Error())
+	// Test set cell string value with illegal row number
 	assert.EqualError(t, f.SetCellStr("Sheet1", "A", "10"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	f.SetActiveSheet(2)
-	// Test get cell formula with given rows number.
+	// Test get cell formula with given rows number
 	_, err = f.GetCellFormula("Sheet1", "B19")
 	assert.NoError(t, err)
-	// Test get cell formula with illegal worksheet name.
+	// Test get cell formula with illegal worksheet name
 	_, err = f.GetCellFormula("Sheet2", "B20")
 	assert.NoError(t, err)
 	_, err = f.GetCellFormula("Sheet1", "B20")
 	assert.NoError(t, err)
 
-	// Test get cell formula with illegal rows number.
+	// Test get cell formula with illegal rows number
 	_, err = f.GetCellFormula("Sheet1", "B")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test get shared cell formula
@@ -110,7 +117,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.GetCellValue("Sheet2", "D12")
 	assert.NoError(t, err)
-	// Test SetCellValue function.
+	// Test SetCellValue function
 	assert.NoError(t, f.SetCellValue("Sheet2", "F1", " Hello"))
 	assert.NoError(t, f.SetCellValue("Sheet2", "G1", []byte("World")))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F2", 42))
@@ -130,7 +137,7 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "F16", true))
 	assert.NoError(t, f.SetCellValue("Sheet2", "F17", complex64(5+10i)))
 
-	// Test on not exists worksheet.
+	// Test on not exists worksheet
 	assert.EqualError(t, f.SetCellDefault("SheetN", "A1", ""), "sheet SheetN does not exist")
 	assert.EqualError(t, f.SetCellFloat("SheetN", "A1", 42.65418, 2, 32), "sheet SheetN does not exist")
 	assert.EqualError(t, f.SetCellBool("SheetN", "A1", true), "sheet SheetN does not exist")
@@ -163,18 +170,18 @@ func TestOpenFile(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("SheetN", "A1", time.Now()), "sheet SheetN does not exist")
 	// 02:46:40
 	assert.NoError(t, f.SetCellValue("Sheet2", "G5", time.Duration(1e13)))
-	// Test completion column.
+	// Test completion column
 	assert.NoError(t, f.SetCellValue("Sheet2", "M2", nil))
-	// Test read cell value with given cell reference large than exists row.
+	// Test read cell value with given cell reference large than exists row
 	_, err = f.GetCellValue("Sheet2", "E231")
 	assert.NoError(t, err)
-	// Test get active worksheet of spreadsheet and get worksheet name of spreadsheet by given worksheet index.
+	// Test get active worksheet of spreadsheet and get worksheet name of spreadsheet by given worksheet index
 	f.GetSheetName(f.GetActiveSheetIndex())
-	// Test get worksheet index of spreadsheet by given worksheet name.
+	// Test get worksheet index of spreadsheet by given worksheet name
 	f.GetSheetIndex("Sheet1")
-	// Test get worksheet name of spreadsheet by given invalid worksheet index.
+	// Test get worksheet name of spreadsheet by given invalid worksheet index
 	f.GetSheetName(4)
-	// Test get worksheet map of workbook.
+	// Test get worksheet map of workbook
 	f.GetSheetMap()
 	for i := 1; i <= 300; i++ {
 		assert.NoError(t, f.SetCellStr("Sheet2", "c"+strconv.Itoa(i), strconv.Itoa(i)))
@@ -202,7 +209,7 @@ func TestSaveFile(t *testing.T) {
 func TestSaveAsWrongPath(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
-	// Test write file to not exist directory.
+	// Test write file to not exist directory
 	assert.Error(t, f.SaveAs(filepath.Join("x", "Book1.xlsx")))
 	assert.NoError(t, f.Close())
 }
@@ -218,7 +225,7 @@ func TestOpenReader(t *testing.T) {
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", UnzipXMLSizeLimit: UnzipSizeLimit + 1})
 	assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
 
-	// Test open workbook with unsupported charset internal calculation chain.
+	// Test open workbook with unsupported charset internal calculation chain
 	preset := func(filePath string) *bytes.Buffer {
 		source, err := zip.OpenReader(filepath.Join("test", "Book1.xlsx"))
 		assert.NoError(t, err)
@@ -245,11 +252,11 @@ func TestOpenReader(t *testing.T) {
 		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	}
 
-	// Test open spreadsheet with unzip size limit.
+	// Test open spreadsheet with unzip size limit
 	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
 	assert.EqualError(t, err, newUnzipSizeLimitError(100).Error())
 
-	// Test open password protected spreadsheet created by Microsoft Office Excel 2010.
+	// Test open password protected spreadsheet created by Microsoft Office Excel 2010
 	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
 	val, err := f.GetCellValue("Sheet1", "A1")
@@ -257,7 +264,7 @@ func TestOpenReader(t *testing.T) {
 	assert.Equal(t, "SECRET", val)
 	assert.NoError(t, f.Close())
 
-	// Test open password protected spreadsheet created by LibreOffice 7.0.0.3.
+	// Test open password protected spreadsheet created by LibreOffice 7.0.0.3
 	f, err = OpenFile(filepath.Join("test", "encryptAES.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
 	val, err = f.GetCellValue("Sheet1", "A1")
@@ -265,11 +272,11 @@ func TestOpenReader(t *testing.T) {
 	assert.Equal(t, "SECRET", val)
 	assert.NoError(t, f.Close())
 
-	// Test open spreadsheet with invalid options.
+	// Test open spreadsheet with invalid options
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{UnzipSizeLimit: 1, UnzipXMLSizeLimit: 2})
 	assert.EqualError(t, err, ErrOptionsUnzipSizeLimit.Error())
 
-	// Test unexpected EOF.
+	// Test unexpected EOF
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
 	defer w.Close()
@@ -299,7 +306,7 @@ func TestOpenReader(t *testing.T) {
 }
 
 func TestBrokenFile(t *testing.T) {
-	// Test write file with broken file struct.
+	// Test write file with broken file struct
 	f := File{}
 
 	t.Run("SaveWithoutName", func(t *testing.T) {
@@ -307,12 +314,12 @@ func TestBrokenFile(t *testing.T) {
 	})
 
 	t.Run("SaveAsEmptyStruct", func(t *testing.T) {
-		// Test write file with broken file struct with given path.
+		// Test write file with broken file struct with given path
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "BadWorkbook.SaveAsEmptyStruct.xlsx")))
 	})
 
 	t.Run("OpenBadWorkbook", func(t *testing.T) {
-		// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml.
+		// Test set active sheet without BookViews and Sheets maps in xl/workbook.xml
 		f3, err := OpenFile(filepath.Join("test", "BadWorkbook.xlsx"))
 		f3.GetActiveSheetIndex()
 		f3.SetActiveSheet(1)
@@ -321,7 +328,7 @@ func TestBrokenFile(t *testing.T) {
 	})
 
 	t.Run("OpenNotExistsFile", func(t *testing.T) {
-		// Test open a spreadsheet file with given illegal path.
+		// Test open a spreadsheet file with given illegal path
 		_, err := OpenFile(filepath.Join("test", "NotExistsFile.xlsx"))
 		if assert.Error(t, err) {
 			assert.True(t, os.IsNotExist(err), "Expected os.IsNotExists(err) == true")
@@ -330,7 +337,7 @@ func TestBrokenFile(t *testing.T) {
 }
 
 func TestNewFile(t *testing.T) {
-	// Test create a spreadsheet file.
+	// Test create a spreadsheet file
 	f := NewFile()
 	f.NewSheet("Sheet1")
 	f.NewSheet("XLSXSheet2")
@@ -339,20 +346,20 @@ func TestNewFile(t *testing.T) {
 	assert.NoError(t, f.SetCellStr("Sheet1", "B20", "42"))
 	f.SetActiveSheet(0)
 
-	// Test add picture to sheet with scaling and positioning.
+	// Test add picture to sheet with scaling and positioning
 	err := f.AddPicture("Sheet1", "H2", filepath.Join("test", "images", "excel.gif"),
 		`{"x_scale": 0.5, "y_scale": 0.5, "positioning": "absolute"}`)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	// Test add picture to worksheet without options.
+	// Test add picture to worksheet without options
 	err = f.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), "")
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	// Test add picture to worksheet with invalid options.
+	// Test add picture to worksheet with invalid options
 	err = f.AddPicture("Sheet1", "C2", filepath.Join("test", "images", "excel.png"), `{`)
 	if !assert.Error(t, err) {
 		t.FailNow()
@@ -363,7 +370,7 @@ func TestNewFile(t *testing.T) {
 }
 
 func TestAddDrawingVML(t *testing.T) {
-	// Test addDrawingVML with illegal cell reference.
+	// Test addDrawingVML with illegal cell reference
 	f := NewFile()
 	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
 
@@ -374,23 +381,22 @@ func TestAddDrawingVML(t *testing.T) {
 func TestSetCellHyperLink(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
-	// Test set cell hyperlink in a work sheet already have hyperlinks.
+	// Test set cell hyperlink in a work sheet already have hyperlinks
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "B19", "https://github.com/xuri/excelize", "External"))
-	// Test add first hyperlink in a work sheet.
+	// Test add first hyperlink in a work sheet
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "C1", "https://github.com/xuri/excelize", "External"))
 	// Test add Location hyperlink in a work sheet.
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D6", "Sheet1!D8", "Location"))
-	// Test add Location hyperlink with display & tooltip in a work sheet.
+	// Test add Location hyperlink with display & tooltip in a work sheet
 	display, tooltip := "Display value", "Hover text"
 	assert.NoError(t, f.SetCellHyperLink("Sheet2", "D7", "Sheet1!D9", "Location", HyperlinkOpts{
 		Display: &display,
 		Tooltip: &tooltip,
 	}))
-
+	// Test set cell hyperlink with invalid sheet name
+	assert.EqualError(t, f.SetCellHyperLink("Sheet:1", "A1", "Sheet1!D60", "Location"), ErrSheetNameInvalid.Error())
 	assert.EqualError(t, f.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", ""), `invalid link type ""`)
-
 	assert.EqualError(t, f.SetCellHyperLink("Sheet2", "", "Sheet1!D60", "Location"), `invalid cell name ""`)
-
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellHyperLink.xlsx")))
 	assert.NoError(t, f.Close())
 
@@ -467,6 +473,10 @@ func TestGetCellHyperLink(t *testing.T) {
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.Equal(t, link, false)
 	assert.Equal(t, target, "")
+
+	// Test get cell hyperlink with invalid sheet name
+	_, _, err = f.GetCellHyperLink("Sheet:1", "A1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 }
 
 func TestSetSheetBackground(t *testing.T) {
@@ -489,12 +499,14 @@ func TestSetSheetBackgroundErrors(t *testing.T) {
 
 	err = f.SetSheetBackground("Sheet2", filepath.Join("test", "Book1.xlsx"))
 	assert.EqualError(t, err, ErrImgExt.Error())
-	// Test set sheet background on not exist worksheet.
+	// Test set sheet background on not exist worksheet
 	err = f.SetSheetBackground("SheetN", filepath.Join("test", "images", "background.jpg"))
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test set sheet background with invalid sheet name
+	assert.EqualError(t, f.SetSheetBackground("Sheet:1", filepath.Join("test", "images", "background.jpg")), ErrSheetNameInvalid.Error())
 	assert.NoError(t, f.Close())
 
-	// Test set sheet background with unsupported charset content types.
+	// Test set sheet background with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
@@ -510,7 +522,6 @@ func TestWriteArrayFormula(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		return c
 	}
 
@@ -621,14 +632,19 @@ func TestSetCellStyleAlignment(t *testing.T) {
 
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A22", "A22", style))
 
-	// Test set cell style with given illegal rows number.
+	// Test set cell style with given illegal rows number
 	assert.EqualError(t, f.SetCellStyle("Sheet1", "A", "A22", style), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.SetCellStyle("Sheet1", "A22", "A", style), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-
-	// Test get cell style with given illegal rows number.
+	// Test set cell style with invalid sheet name
+	assert.EqualError(t, f.SetCellStyle("Sheet:1", "A1", "A2", style), ErrSheetNameInvalid.Error())
+	// Test get cell style with given illegal rows number
 	index, err := f.GetCellStyle("Sheet1", "A")
 	assert.Equal(t, 0, index)
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+
+	// Test get cell style with invalid sheet name
+	_, err = f.GetCellStyle("Sheet:1", "A1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellStyleAlignment.xlsx")))
 }
@@ -987,18 +1003,18 @@ func TestSheetVisibility(t *testing.T) {
 	assert.NoError(t, f.SetSheetVisible("Sheet2", false))
 	assert.NoError(t, f.SetSheetVisible("Sheet1", false))
 	assert.NoError(t, f.SetSheetVisible("Sheet1", true))
-	assert.Equal(t, true, f.GetSheetVisible("Sheet1"))
-
+	visible, err := f.GetSheetVisible("Sheet1")
+	assert.Equal(t, true, visible)
+	assert.NoError(t, err)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSheetVisibility.xlsx")))
 }
 
 func TestCopySheet(t *testing.T) {
 	f, err := prepareTestBook1()
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
-	idx := f.NewSheet("CopySheet")
+	idx, err := f.NewSheet("CopySheet")
+	assert.NoError(t, err)
 	assert.NoError(t, f.CopySheet(0, idx))
 
 	assert.NoError(t, f.SetCellValue("CopySheet", "F1", "Hello"))
@@ -1011,15 +1027,9 @@ func TestCopySheet(t *testing.T) {
 
 func TestCopySheetError(t *testing.T) {
 	f, err := prepareTestBook1()
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	assert.EqualError(t, f.copySheet(-1, -2), "sheet  does not exist")
-	if !assert.EqualError(t, f.CopySheet(-1, -2), "invalid worksheet index") {
-		t.FailNow()
-	}
-
+	assert.NoError(t, err)
+	assert.EqualError(t, f.copySheet(-1, -2), ErrSheetNameBlank.Error())
+	assert.EqualError(t, f.CopySheet(-1, -2), ErrSheetIdx.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestCopySheetError.xlsx")))
 }
 
@@ -1072,9 +1082,9 @@ func TestConditionalFormat(t *testing.T) {
 		t.FailNow()
 	}
 
-	// Color scales: 2 color.
+	// Color scales: 2 color
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "A1:A10", `[{"type":"2_color_scale","criteria":"=","min_type":"min","max_type":"max","min_color":"#F8696B","max_color":"#63BE7B"}]`))
-	// Color scales: 3 color.
+	// Color scales: 3 color
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "B1:B10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`))
 	// Highlight cells rules: between...
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "C1:C10", fmt.Sprintf(`[{"type":"cell","criteria":"between","format":%d,"minimum":"6","maximum":"8"}]`, format1)))
@@ -1092,29 +1102,31 @@ func TestConditionalFormat(t *testing.T) {
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "I1:I10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": true}]`, format3)))
 	// Top/Bottom rules: Below Average...
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "J1:J10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": false}]`, format1)))
-	// Data Bars: Gradient Fill.
+	// Data Bars: Gradient Fill
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`))
-	// Use a formula to determine which cells to format.
+	// Use a formula to determine which cells to format
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "L1:L10", fmt.Sprintf(`[{"type":"formula", "criteria":"L2<3", "format":%d}]`, format1)))
-	// Alignment/Border cells rules.
+	// Alignment/Border cells rules
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "M1:M10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"0"}]`, format4)))
 
-	// Test set invalid format set in conditional format.
+	// Test set invalid format set in conditional format
 	assert.EqualError(t, f.SetConditionalFormat(sheet1, "L1:L10", ""), "unexpected end of JSON input")
-	// Set conditional format on not exists worksheet.
+	// Test set conditional format on not exists worksheet
 	assert.EqualError(t, f.SetConditionalFormat("SheetN", "L1:L10", "[]"), "sheet SheetN does not exist")
+	// Test set conditional format with invalid sheet name
+	assert.EqualError(t, f.SetConditionalFormat("Sheet:1", "L1:L10", "[]"), ErrSheetNameInvalid.Error())
 
 	err = f.SaveAs(filepath.Join("test", "TestConditionalFormat.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
 
-	// Set conditional format with illegal valid type.
+	// Set conditional format with illegal valid type
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10", `[{"type":"", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`))
-	// Set conditional format with illegal criteria type.
+	// Set conditional format with illegal criteria type
 	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10", `[{"type":"data_bar", "criteria":"", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`))
 
-	// Set conditional format with file without dxfs element should not return error.
+	// Set conditional format with file without dxfs element should not return error
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -1168,7 +1180,8 @@ func TestSetSheetCol(t *testing.T) {
 
 	assert.EqualError(t, f.SetSheetCol("Sheet1", "", &[]interface{}{"cell", nil, 2}),
 		newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
-
+	// Test set worksheet column values with invalid sheet name
+	assert.EqualError(t, f.SetSheetCol("Sheet:1", "A1", &[]interface{}{nil}), ErrSheetNameInvalid.Error())
 	assert.EqualError(t, f.SetSheetCol("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
 	assert.EqualError(t, f.SetSheetCol("Sheet1", "B27", &f), ErrParameterInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetCol.xlsx")))
@@ -1185,7 +1198,8 @@ func TestSetSheetRow(t *testing.T) {
 
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "", &[]interface{}{"cell", nil, 2}),
 		newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
-
+	// Test set worksheet row with invalid sheet name
+	assert.EqualError(t, f.SetSheetRow("Sheet:1", "A1", &[]interface{}{1}), ErrSheetNameInvalid.Error())
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", []interface{}{}), ErrParameterInvalid.Error())
 	assert.EqualError(t, f.SetSheetRow("Sheet1", "B27", &f), ErrParameterInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetSheetRow.xlsx")))
@@ -1261,6 +1275,8 @@ func TestProtectSheet(t *testing.T) {
 	assert.Equal(t, int(sheetProtectionSpinCount), ws.SheetProtection.SpinCount)
 	// Test remove sheet protection with an incorrect password
 	assert.EqualError(t, f.UnprotectSheet(sheetName, "wrongPassword"), ErrUnprotectSheetPassword.Error())
+	// Test remove sheet protection with invalid sheet name
+	assert.EqualError(t, f.UnprotectSheet("Sheet:1", "wrongPassword"), ErrSheetNameInvalid.Error())
 	// Test remove sheet protection with password verification
 	assert.NoError(t, f.UnprotectSheet(sheetName, "password"))
 	// Test protect worksheet with empty password
@@ -1276,8 +1292,10 @@ func TestProtectSheet(t *testing.T) {
 		AlgorithmName: "RIPEMD-160",
 		Password:      "password",
 	}), ErrUnsupportedHashAlgorithm.Error())
-	// Test protect not exists worksheet.
+	// Test protect not exists worksheet
 	assert.EqualError(t, f.ProtectSheet("SheetN", nil), "sheet SheetN does not exist")
+	// Test protect sheet with invalid sheet name
+	assert.EqualError(t, f.ProtectSheet("Sheet:1", nil), ErrSheetNameInvalid.Error())
 }
 
 func TestUnprotectSheet(t *testing.T) {
@@ -1326,10 +1344,10 @@ func TestAddVBAProject(t *testing.T) {
 	assert.EqualError(t, f.AddVBAProject("macros.bin"), "stat macros.bin: no such file or directory")
 	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "Book1.xlsx")), ErrAddVBAProject.Error())
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
-	// Test add VBA project twice.
+	// Test add VBA project twice
 	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
-	// Test add VBs with unsupported charset workbook relationships.
+	// Test add VBA with unsupported charset workbook relationships
 	f.Relationships.Delete(defaultXMLPathWorkbookRels)
 	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")), "XML syntax error on line 1: invalid UTF-8")

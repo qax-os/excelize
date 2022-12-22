@@ -19,58 +19,30 @@ import (
 // Source relationship and namespace list, associated prefixes and schema in which it was
 // introduced.
 var (
-	SourceRelationship                      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
-	SourceRelationshipCompatibility         = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
-	SourceRelationshipChart20070802         = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
-	SourceRelationshipChart2014             = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
-	SourceRelationshipChart201506           = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
-	NameSpaceSpreadSheet                    = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-	NameSpaceSpreadSheetX14                 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	NameSpaceDocumentPropertiesVariantTypes = xml.Attr{Name: xml.Name{Local: "vt", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"}
+	NameSpaceDrawing2016SVG                 = xml.Attr{Name: xml.Name{Local: "asvg", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2016/SVG/main"}
 	NameSpaceDrawingML                      = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
 	NameSpaceDrawingMLChart                 = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
 	NameSpaceDrawingMLSpreadSheet           = xml.Attr{Name: xml.Name{Local: "xdr", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"}
-	NameSpaceDrawing2016SVG                 = xml.Attr{Name: xml.Name{Local: "asvg", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2016/SVG/main"}
-	NameSpaceSpreadSheetX15                 = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
-	NameSpaceSpreadSheetExcel2006Main       = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
 	NameSpaceMacExcel2008Main               = xml.Attr{Name: xml.Name{Local: "mx", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/mac/excel/2008/main"}
-	NameSpaceDocumentPropertiesVariantTypes = xml.Attr{Name: xml.Name{Local: "vt", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"}
+	NameSpaceSpreadSheet                    = xml.Attr{Name: xml.Name{Local: "xmlns"}, Value: "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+	NameSpaceSpreadSheetExcel2006Main       = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
+	NameSpaceSpreadSheetX14                 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
+	NameSpaceSpreadSheetX15                 = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
+	SourceRelationship                      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+	SourceRelationshipChart20070802         = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
+	SourceRelationshipChart2014             = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
+	SourceRelationshipChart201506           = xml.Attr{Name: xml.Name{Local: "c16r2", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2015/06/chart"}
+	SourceRelationshipCompatibility         = xml.Attr{Name: xml.Name{Local: "mc", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/markup-compatibility/2006"}
 )
 
 // Source relationship and namespace.
 const (
-	SourceRelationshipOfficeDocument             = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
-	SourceRelationshipChart                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
-	SourceRelationshipComments                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
-	SourceRelationshipImage                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-	SourceRelationshipTable                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
-	SourceRelationshipDrawingML                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
-	SourceRelationshipDrawingVML                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing"
-	SourceRelationshipHyperLink                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
-	SourceRelationshipWorkSheet                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
-	SourceRelationshipChartsheet                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"
-	SourceRelationshipDialogsheet                = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/dialogsheet"
-	SourceRelationshipPivotTable                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
-	SourceRelationshipPivotCache                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
-	SourceRelationshipSharedStrings              = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
-	SourceRelationshipVBAProject                 = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
-	NameSpaceXML                                 = "http://www.w3.org/XML/1998/namespace"
-	NameSpaceXMLSchemaInstance                   = "http://www.w3.org/2001/XMLSchema-instance"
-	StrictSourceRelationship                     = "http://purl.oclc.org/ooxml/officeDocument/relationships"
-	StrictSourceRelationshipOfficeDocument       = "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
-	StrictSourceRelationshipChart                = "http://purl.oclc.org/ooxml/officeDocument/relationships/chart"
-	StrictSourceRelationshipComments             = "http://purl.oclc.org/ooxml/officeDocument/relationships/comments"
-	StrictSourceRelationshipImage                = "http://purl.oclc.org/ooxml/officeDocument/relationships/image"
-	StrictNameSpaceSpreadSheet                   = "http://purl.oclc.org/ooxml/spreadsheetml/main"
-	NameSpaceDublinCore                          = "http://purl.org/dc/elements/1.1/"
-	NameSpaceDublinCoreTerms                     = "http://purl.org/dc/terms/"
-	NameSpaceDublinCoreMetadataInitiative        = "http://purl.org/dc/dcmitype/"
+	ContentTypeAddinMacro                        = "application/vnd.ms-excel.addin.macroEnabled.main+xml"
 	ContentTypeDrawing                           = "application/vnd.openxmlformats-officedocument.drawing+xml"
 	ContentTypeDrawingML                         = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
-	ContentTypeSheetML                           = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
-	ContentTypeTemplate                          = "application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml"
-	ContentTypeAddinMacro                        = "application/vnd.ms-excel.addin.macroEnabled.main+xml"
 	ContentTypeMacro                             = "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
-	ContentTypeTemplateMacro                     = "application/vnd.ms-excel.template.macroEnabled.main+xml"
+	ContentTypeSheetML                           = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
 	ContentTypeSpreadSheetMLChartsheet           = "application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml"
 	ContentTypeSpreadSheetMLComments             = "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"
 	ContentTypeSpreadSheetMLPivotCacheDefinition = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"
@@ -78,44 +50,73 @@ const (
 	ContentTypeSpreadSheetMLSharedStrings        = "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"
 	ContentTypeSpreadSheetMLTable                = "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"
 	ContentTypeSpreadSheetMLWorksheet            = "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
+	ContentTypeTemplate                          = "application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml"
+	ContentTypeTemplateMacro                     = "application/vnd.ms-excel.template.macroEnabled.main+xml"
 	ContentTypeVBA                               = "application/vnd.ms-office.vbaProject"
 	ContentTypeVML                               = "application/vnd.openxmlformats-officedocument.vmlDrawing"
+	NameSpaceDublinCore                          = "http://purl.org/dc/elements/1.1/"
+	NameSpaceDublinCoreMetadataInitiative        = "http://purl.org/dc/dcmitype/"
+	NameSpaceDublinCoreTerms                     = "http://purl.org/dc/terms/"
+	NameSpaceXML                                 = "http://www.w3.org/XML/1998/namespace"
+	NameSpaceXMLSchemaInstance                   = "http://www.w3.org/2001/XMLSchema-instance"
+	SourceRelationshipChart                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
+	SourceRelationshipChartsheet                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"
+	SourceRelationshipComments                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+	SourceRelationshipDialogsheet                = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/dialogsheet"
+	SourceRelationshipDrawingML                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
+	SourceRelationshipDrawingVML                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing"
+	SourceRelationshipHyperLink                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+	SourceRelationshipImage                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+	SourceRelationshipOfficeDocument             = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+	SourceRelationshipPivotCache                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
+	SourceRelationshipPivotTable                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
+	SourceRelationshipSharedStrings              = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
+	SourceRelationshipTable                      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
+	SourceRelationshipVBAProject                 = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
+	SourceRelationshipWorkSheet                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
+	StrictNameSpaceSpreadSheet                   = "http://purl.oclc.org/ooxml/spreadsheetml/main"
+	StrictSourceRelationship                     = "http://purl.oclc.org/ooxml/officeDocument/relationships"
+	StrictSourceRelationshipChart                = "http://purl.oclc.org/ooxml/officeDocument/relationships/chart"
+	StrictSourceRelationshipComments             = "http://purl.oclc.org/ooxml/officeDocument/relationships/comments"
+	StrictSourceRelationshipImage                = "http://purl.oclc.org/ooxml/officeDocument/relationships/image"
+	StrictSourceRelationshipOfficeDocument       = "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
 	// ExtURIConditionalFormattings is the extLst child element
 	// ([ISO/IEC29500-1:2016] section 18.2.10) of the worksheet element
 	// ([ISO/IEC29500-1:2016] section 18.3.1.99) is extended by the addition of
 	// new child ext elements ([ISO/IEC29500-1:2016] section 18.2.7)
 	ExtURIConditionalFormattings = "{78C0D931-6437-407D-A8EE-F0AAD7539E65}"
 	ExtURIDataValidations        = "{CCE6A557-97BC-4B89-ADB6-D9C93CAAB3DF}"
-	ExtURISparklineGroups        = "{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"
-	ExtURISlicerListX14          = "{A8765BA9-456A-4DAB-B4F3-ACF838C121DE}"
-	ExtURISlicerCachesListX14    = "{BBE1A952-AA13-448e-AADC-164F8A28A991}"
-	ExtURISlicerListX15          = "{3A4CF648-6AED-40f4-86FF-DC5316D8AED3}"
-	ExtURIProtectedRanges        = "{FC87AEE6-9EDD-4A0A-B7FB-166176984837}"
-	ExtURIIgnoredErrors          = "{01252117-D84E-4E92-8308-4BE1C098FCBB}"
-	ExtURIWebExtensions          = "{F7C9EE02-42E1-4005-9D12-6889AFFD525C}"
-	ExtURITimelineRefs           = "{7E03D99C-DC04-49d9-9315-930204A7B6E9}"
 	ExtURIDrawingBlip            = "{28A0092B-C50C-407E-A947-70E740481C1C}"
+	ExtURIIgnoredErrors          = "{01252117-D84E-4E92-8308-4BE1C098FCBB}"
 	ExtURIMacExcelMX             = "{64002731-A6B0-56B0-2670-7721B7C09600}"
+	ExtURIProtectedRanges        = "{FC87AEE6-9EDD-4A0A-B7FB-166176984837}"
+	ExtURISlicerCachesListX14    = "{BBE1A952-AA13-448e-AADC-164F8A28A991}"
+	ExtURISlicerListX14          = "{A8765BA9-456A-4DAB-B4F3-ACF838C121DE}"
+	ExtURISlicerListX15          = "{3A4CF648-6AED-40f4-86FF-DC5316D8AED3}"
+	ExtURISparklineGroups        = "{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"
 	ExtURISVG                    = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
+	ExtURITimelineRefs           = "{7E03D99C-DC04-49d9-9315-930204A7B6E9}"
+	ExtURIWebExtensions          = "{F7C9EE02-42E1-4005-9D12-6889AFFD525C}"
 )
 
 // Excel specifications and limits
 const (
-	UnzipSizeLimit       = 1000 << 24
-	StreamChunkSize      = 1 << 24
+	MaxCellStyles        = 64000
+	MaxColumns           = 16384
+	MaxColumnWidth       = 255
+	MaxFieldLength       = 255
+	MaxFilePathLength    = 207
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
-	MaxFilePathLength    = 207
-	MaxFieldLength       = 255
-	MaxColumnWidth       = 255
 	MaxRowHeight         = 409
-	MaxCellStyles        = 64000
-	MinFontSize          = 1
-	TotalRows            = 1048576
+	MaxSheetNameLength   = 31
 	MinColumns           = 1
-	MaxColumns           = 16384
-	TotalSheetHyperlinks = 65529
+	MinFontSize          = 1
+	StreamChunkSize      = 1 << 24
 	TotalCellChars       = 32767
+	TotalRows            = 1048576
+	TotalSheetHyperlinks = 65529
+	UnzipSizeLimit       = 1000 << 24
 	// pivotTableVersion should be greater than 3. One or more of the
 	// PivotTables chosen are created in a version of Excel earlier than
 	// Excel 2007 or in compatibility mode. Slicer can only be used with

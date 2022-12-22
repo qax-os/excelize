@@ -304,7 +304,10 @@ func (f *File) AutoFilter(sheet, hCell, vCell, opts string) error {
 	if err != nil {
 		return err
 	}
-	sheetID := f.GetSheetIndex(sheet)
+	sheetID, err := f.GetSheetIndex(sheet)
+	if err != nil {
+		return err
+	}
 	filterRange := fmt.Sprintf("'%s'!%s", sheet, ref)
 	d := xlsxDefinedName{
 		Name:         filterDB,
