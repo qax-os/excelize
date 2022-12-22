@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddComments(t *testing.T) {
+func TestAddComment(t *testing.T) {
 	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -30,7 +30,7 @@ func TestAddComments(t *testing.T) {
 	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A30", Author: s, Text: s, Runs: []RichTextRun{{Text: s}, {Text: s}}}))
 	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "B7", Author: "Excelize", Text: s[:TotalCellChars-1], Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
 
-	// Test add comment on not exists worksheet.
+	// Test add comment on not exists worksheet
 	assert.EqualError(t, f.AddComment("SheetN", Comment{Cell: "B7", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), "sheet SheetN does not exist")
 	// Test add comment on with illegal cell reference
 	assert.EqualError(t, f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
@@ -50,18 +50,21 @@ func TestAddComments(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, len(comments), 0)
 
-	// Test add comments with unsupported charset.
+	// Test add comments with invalid sheet name
+	assert.EqualError(t, f.AddComment("Sheet:1", Comment{Cell: "A1", Author: "Excelize", Text: "This is a comment."}), ErrSheetNameInvalid.Error())
+
+	// Test add comments with unsupported charset
 	f.Comments["xl/comments2.xml"] = nil
 	f.Pkg.Store("xl/comments2.xml", MacintoshCyrillicCharset)
 	_, err = f.GetComments()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 
-	// Test add comments with unsupported charset.
+	// Test add comments with unsupported charset
 	f.Comments["xl/comments2.xml"] = nil
 	f.Pkg.Store("xl/comments2.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddComment("Sheet2", Comment{Cell: "A30", Text: "Comment"}), "XML syntax error on line 1: invalid UTF-8")
 
-	// Test add comments with unsupported charset style sheet.
+	// Test add comments with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddComment("Sheet2", Comment{Cell: "A30", Text: "Comment"}), "XML syntax error on line 1: invalid UTF-8")
@@ -90,6 +93,8 @@ func TestDeleteComment(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, len(comments), 0)
 
+	// Test delete comment with invalid sheet name
+	assert.EqualError(t, f.DeleteComment("Sheet:1", "A1"), ErrSheetNameInvalid.Error())
 	// Test delete all comments in a worksheet
 	assert.NoError(t, f.DeleteComment("Sheet2", "A41"))
 	assert.NoError(t, f.DeleteComment("Sheet2", "C41"))
@@ -118,7 +123,7 @@ func TestDecodeVMLDrawingReader(t *testing.T) {
 
 func TestCommentsReader(t *testing.T) {
 	f := NewFile()
-	// Test read comments with unsupported charset.
+	// Test read comments with unsupported charset
 	path := "xl/comments1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
 	_, err := f.commentsReader(path)

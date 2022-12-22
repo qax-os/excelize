@@ -102,6 +102,9 @@ type StreamWriter struct {
 //	    excelize.Cell{Value: 1}},
 //	    excelize.RowOpts{StyleID: styleID, Height: 20, Hidden: false});
 func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
+	if err := checkSheetName(sheet); err != nil {
+		return nil, err
+	}
 	sheetID := f.getSheetID(sheet)
 	if sheetID == -1 {
 		return nil, newNoExistSheetError(sheet)
@@ -219,8 +222,8 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
 	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
 
-	// Add first table for given sheet.
-	sheetPath := sw.file.sheetMap[trimSheetName(sw.Sheet)]
+	// Add first table for given sheet
+	sheetPath := sw.file.sheetMap[sw.Sheet]
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetPath, "xl/worksheets/") + ".rels"
 	rID := sw.file.addRels(sheetRels, SourceRelationshipTable, sheetRelationshipsTableXML, "")
 
@@ -661,7 +664,7 @@ func (sw *StreamWriter) Flush() error {
 		return err
 	}
 
-	sheetPath := sw.file.sheetMap[trimSheetName(sw.Sheet)]
+	sheetPath := sw.file.sheetMap[sw.Sheet]
 	sw.file.Sheet.Delete(sheetPath)
 	delete(sw.file.checked, sheetPath)
 	sw.file.Pkg.Delete(sheetPath)

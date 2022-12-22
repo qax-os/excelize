@@ -13,17 +13,15 @@ import (
 
 func TestRows(t *testing.T) {
 	const sheet2 = "Sheet2"
-
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
+
+	// Test get rows with invalid sheet name
+	_, err = f.Rows("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 
 	rows, err := f.Rows(sheet2)
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
+	assert.NoError(t, err)
 	var collectedRows [][]string
 	for rows.Next() {
 		columns, err := rows.Columns()
@@ -49,13 +47,13 @@ func TestRows(t *testing.T) {
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
 
-	// Test reload the file to memory from system temporary directory.
+	// Test reload the file to memory from system temporary directory
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
 	assert.NoError(t, err)
 	value, err := f.GetCellValue("Sheet1", "A19")
 	assert.NoError(t, err)
 	assert.Equal(t, "Total:", value)
-	// Test load shared string table to memory.
+	// Test load shared string table to memory
 	err = f.SetCellValue("Sheet1", "A19", "A19")
 	assert.NoError(t, err)
 	value, err = f.GetCellValue("Sheet1", "A19")
@@ -64,7 +62,7 @@ func TestRows(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRow.xlsx")))
 	assert.NoError(t, f.Close())
 
-	// Test rows iterator with unsupported charset shared strings table.
+	// Test rows iterator with unsupported charset shared strings table
 	f.SharedStrings = nil
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	rows, err = f.Rows(sheet2)
@@ -154,25 +152,32 @@ func TestRowHeight(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 111.0, height)
 
-	// Test set row height overflow max row height limit.
+	// Test set row height overflow max row height limit
 	assert.EqualError(t, f.SetRowHeight(sheet1, 4, MaxRowHeight+1), ErrMaxRowHeight.Error())
 
-	// Test get row height that rows index over exists rows.
+	// Test get row height that rows index over exists rows
 	height, err = f.GetRowHeight(sheet1, 5)
 	assert.NoError(t, err)
 	assert.Equal(t, defaultRowHeight, height)
 
-	// Test get row height that rows heights haven't changed.
+	// Test get row height that rows heights haven't changed
 	height, err = f.GetRowHeight(sheet1, 3)
 	assert.NoError(t, err)
 	assert.Equal(t, defaultRowHeight, height)
 
-	// Test set and get row height on not exists worksheet.
+	// Test set and get row height on not exists worksheet
 	assert.EqualError(t, f.SetRowHeight("SheetN", 1, 111.0), "sheet SheetN does not exist")
 	_, err = f.GetRowHeight("SheetN", 3)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 
-	// Test get row height with custom default row height.
+	// Test set row height with invalid sheet name
+	assert.EqualError(t, f.SetRowHeight("Sheet:1", 1, 10.0), ErrSheetNameInvalid.Error())
+
+	// Test get row height with invalid sheet name
+	_, err = f.GetRowHeight("Sheet:1", 3)
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+
+	// Test get row height with custom default row height
 	assert.NoError(t, f.SetSheetProps(sheet1, &SheetPropsOptions{
 		DefaultRowHeight: float64Ptr(30.0),
 		CustomHeight:     boolPtr(true),
@@ -181,7 +186,7 @@ func TestRowHeight(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 30.0, height)
 
-	// Test set row height with custom default row height with prepare XML.
+	// Test set row height with custom default row height with prepare XML
 	assert.NoError(t, f.SetCellValue(sheet1, "A10", "A10"))
 
 	f.NewSheet("Sheet2")
@@ -233,17 +238,17 @@ func TestColumns(t *testing.T) {
 
 func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
-	// Test read shared string with unsupported charset.
+	// Test read shared string with unsupported charset
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	_, err := f.sharedStringsReader()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
-	// Test read shared strings with unsupported charset content types.
+	// Test read shared strings with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	_, err = f.sharedStringsReader()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
-	// Test read shared strings with unsupported charset workbook relationships.
+	// Test read shared strings with unsupported charset workbook relationships
 	f = NewFile()
 	f.Relationships.Delete(defaultXMLPathWorkbookRels)
 	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
@@ -267,13 +272,17 @@ func TestRowVisibility(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualError(t, f.SetRowVisible("Sheet3", 0, true), newInvalidRowNumberError(0).Error())
 	assert.EqualError(t, f.SetRowVisible("SheetN", 2, false), "sheet SheetN does not exist")
+	// Test set row visibility with invalid sheet name
+	assert.EqualError(t, f.SetRowVisible("Sheet:1", 1, false), ErrSheetNameInvalid.Error())
 
 	visible, err = f.GetRowVisible("Sheet3", 0)
 	assert.Equal(t, false, visible)
 	assert.EqualError(t, err, newInvalidRowNumberError(0).Error())
 	_, err = f.GetRowVisible("SheetN", 1)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-
+	// Test get row visibility with invalid sheet name
+	_, err = f.GetRowVisible("Sheet:1", 1)
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRowVisibility.xlsx")))
 }
 
@@ -335,7 +344,9 @@ func TestRemoveRow(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
 
 	// Test remove row on not exist worksheet
-	assert.EqualError(t, f.RemoveRow("SheetN", 1), `sheet SheetN does not exist`)
+	assert.EqualError(t, f.RemoveRow("SheetN", 1), "sheet SheetN does not exist")
+	// Test remove row with invalid sheet name
+	assert.EqualError(t, f.RemoveRow("Sheet:1", 1), ErrSheetNameInvalid.Error())
 }
 
 func TestInsertRows(t *testing.T) {
@@ -365,6 +376,8 @@ func TestInsertRows(t *testing.T) {
 	if !assert.Len(t, r.SheetData.Row, rowCount+4) {
 		t.FailNow()
 	}
+	// Test insert rows with invalid sheet name
+	assert.EqualError(t, f.InsertRows("Sheet:1", 1, 1), ErrSheetNameInvalid.Error())
 
 	assert.EqualError(t, f.InsertRows(sheet1, -1, 1), newInvalidRowNumberError(-1).Error())
 	assert.EqualError(t, f.InsertRows(sheet1, 0, 1), newInvalidRowNumberError(0).Error())
@@ -892,6 +905,12 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 	}
 }
 
+func TestDuplicateRow(t *testing.T) {
+	f := NewFile()
+	// Test duplicate row with invalid sheet name
+	assert.EqualError(t, f.DuplicateRowTo("Sheet:1", 1, 2), ErrSheetNameInvalid.Error())
+}
+
 func TestDuplicateRowTo(t *testing.T) {
 	f, sheetName := NewFile(), "Sheet1"
 	// Test duplicate row with invalid target row number
@@ -907,6 +926,8 @@ func TestDuplicateRowTo(t *testing.T) {
 	assert.EqualError(t, f.DuplicateRowTo(sheetName, 1, 2), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test duplicate row on not exists worksheet
 	assert.EqualError(t, f.DuplicateRowTo("SheetN", 1, 2), "sheet SheetN does not exist")
+	// Test duplicate row with invalid sheet name
+	assert.EqualError(t, f.DuplicateRowTo("Sheet:1", 1, 2), ErrSheetNameInvalid.Error())
 }
 
 func TestDuplicateMergeCells(t *testing.T) {
@@ -976,22 +997,24 @@ func TestSetRowStyle(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet1", "B2", "B2", style1))
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 5, -1, style2), newInvalidRowNumberError(-1).Error())
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, TotalRows+1, style2), ErrMaxRows.Error())
-	// Test set row style with invalid style ID.
+	// Test set row style with invalid style ID
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, -1), newInvalidStyleID(-1).Error())
-	// Test set row style with not exists style ID.
+	// Test set row style with not exists style ID
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, 10), newInvalidStyleID(10).Error())
 	assert.EqualError(t, f.SetRowStyle("SheetN", 1, 1, style2), "sheet SheetN does not exist")
+	// Test set row style with invalid sheet name
+	assert.EqualError(t, f.SetRowStyle("Sheet:1", 1, 1, 0), ErrSheetNameInvalid.Error())
 	assert.NoError(t, f.SetRowStyle("Sheet1", 5, 1, style2))
 	cellStyleID, err := f.GetCellStyle("Sheet1", "B2")
 	assert.NoError(t, err)
 	assert.Equal(t, style2, cellStyleID)
-	// Test cell inheritance rows style.
+	// Test cell inheritance rows style
 	assert.NoError(t, f.SetCellValue("Sheet1", "C1", nil))
 	cellStyleID, err = f.GetCellStyle("Sheet1", "C1")
 	assert.NoError(t, err)
 	assert.Equal(t, style2, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetRowStyle.xlsx")))
-	// Test set row style with unsupported charset style sheet.
+	// Test set row style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, cellStyleID), "XML syntax error on line 1: invalid UTF-8")

@@ -257,6 +257,9 @@ func TestNewStreamWriter(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = file.NewStreamWriter("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test new stream write with invalid sheet name
+	_, err = file.NewStreamWriter("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 }
 
 func TestStreamMarshalAttrs(t *testing.T) {

@@ -64,7 +64,7 @@ func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
 func (f *File) setWorkbook(name string, sheetID, rid int) {
 	wb, _ := f.workbookReader()
 	wb.Sheets.Sheet = append(wb.Sheets.Sheet, xlsxSheet{
-		Name:    trimSheetName(name),
+		Name:    name,
 		SheetID: sheetID,
 		ID:      "rId" + strconv.Itoa(rid),
 	})

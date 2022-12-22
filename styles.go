@@ -1101,11 +1101,25 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 	return &fs, err
 }
 
-// NewStyle provides a function to create the style for cells by given
-// structure pointer or JSON. This function is concurrency safe. Note that the
-// color field uses RGB color code.
+// NewStyle provides a function to create the style for cells by given structure
+// pointer or JSON. This function is concurrency safe. Note that
+// the 'Font.Color' field uses an RGB color represented in 'RRGGBB' hexadecimal
+// notation.
 //
-// The following shows the border styles sorted by excelize index number:
+// The following table shows the border types used in 'Border.Type' supported by
+// excelize:
+//
+//	 Type         | Description
+//	--------------+------------------
+//	 left         | Left border
+//	 top          | Top border
+//	 right        | Right border
+//	 bottom       | Bottom border
+//	 diagonalDown | Diagonal down border
+//	 diagonalUp   | Diagonal up border
+//
+// The following table shows the border styles used in 'Border.Style' supported
+// by excelize index number:
 //
 //	 Index | Name          | Weight | Style
 //	-------+---------------+--------+-------------
@@ -1124,7 +1138,8 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	 12    | Dash Dot Dot  | 2      | - . . - . .
 //	 13    | SlantDash Dot | 2      | / - . / - .
 //
-// The following shows the borders in the order shown in the Excel dialog:
+// The following table shows the border styles used in 'Border.Style' in the
+// order shown in the Excel dialog:
 //
 //	 Index | Style       | Index | Style
 //	-------+-------------+-------+-------------
@@ -1136,7 +1151,8 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	 3     | - - - - - - | 5     | -----------
 //	 1     | ----------- | 6     | ===========
 //
-// The following shows the shading styles sorted by excelize index number:
+// The following table shows the shading styles used in 'Fill.Shading' supported
+// by excelize index number:
 //
 //	 Index | Style           | Index | Style
 //	-------+-----------------+-------+-----------------
@@ -1144,7 +1160,8 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	 1     | Vertical        | 4     | From corner
 //	 2     | Diagonal Up     | 5     | From center
 //
-// The following shows the patterns styles sorted by excelize index number:
+// The following table shows the pattern styles used in 'Fill.Pattern' supported
+// by excelize index number:
 //
 //	 Index | Style           | Index | Style
 //	-------+-----------------+-------+-----------------
@@ -1159,7 +1176,8 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	 8     | darkUp          | 18    | gray0625
 //	 9     | darkGrid        |       |
 //
-// The following the type of horizontal alignment in cells:
+// The following table shows the type of cells' horizontal alignment used
+// in 'Alignment.Horizontal':
 //
 //	 Style
 //	------------------
@@ -1171,7 +1189,8 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	 centerContinuous
 //	 distributed
 //
-// The following the type of vertical alignment in cells:
+// The following table shows the type of cells' vertical alignment used in
+// 'Alignment.Vertical':
 //
 //	 Style
 //	------------------
@@ -1180,7 +1199,8 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	 justify
 //	 distributed
 //
-// The following the type of font underline style:
+// The following table shows the type of font underline style used in
+// 'Font.Underline':
 //
 //	 Style
 //	------------------

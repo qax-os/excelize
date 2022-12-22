@@ -214,7 +214,7 @@ func TestAddSparkline(t *testing.T) {
 		Negative: true,
 	}))
 
-	// Save spreadsheet by the given path.
+	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddSparkline.xlsx")))
 
 	// Test error exceptions
@@ -224,6 +224,14 @@ func TestAddSparkline(t *testing.T) {
 	}), "sheet SheetN does not exist")
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", nil), ErrParameterRequired.Error())
+
+	// Test add sparkline with invalid sheet name
+	assert.EqualError(t, f.AddSparkline("Sheet:1", &SparklineOptions{
+		Location: []string{"F3"},
+		Range:    []string{"Sheet2!A3:E3"},
+		Type:     "win_loss",
+		Negative: true,
+	}), ErrSheetNameInvalid.Error())
 
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
 		Range: []string{"Sheet2!A3:E3"},

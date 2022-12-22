@@ -233,6 +233,9 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		name string
 		ok   bool
 	)
+	if err = checkSheetName(sheet); err != nil {
+		return
+	}
 	if name, ok = f.getSheetXMLPath(sheet); !ok {
 		err = newNoExistSheetError(sheet)
 		return

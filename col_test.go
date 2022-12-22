@@ -57,7 +57,13 @@ func TestCols(t *testing.T) {
 	_, err = f.Rows("Sheet1")
 	assert.NoError(t, err)
 
-	// Test columns iterator with unsupported charset shared strings table.
+	// Test columns iterator with invalid sheet name
+	_, err = f.Cols("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	// Test get columns cells with invalid sheet name
+	_, err = f.GetCols("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	// Test columns iterator with unsupported charset shared strings table
 	f.SharedStrings = nil
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	cols, err = f.Cols("Sheet1")
@@ -212,14 +218,18 @@ func TestColumnVisibility(t *testing.T) {
 		assert.Equal(t, true, visible)
 		assert.NoError(t, err)
 
-		// Test get column visible on an inexistent worksheet.
+		// Test get column visible on an inexistent worksheet
 		_, err = f.GetColVisible("SheetN", "F")
 		assert.EqualError(t, err, "sheet SheetN does not exist")
-
-		// Test get column visible with illegal cell reference.
+		// Test get column visible with invalid sheet name
+		_, err = f.GetColVisible("Sheet:1", "F")
+		assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+		// Test get column visible with illegal cell reference
 		_, err = f.GetColVisible("Sheet1", "*")
 		assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
 		assert.EqualError(t, f.SetColVisible("Sheet1", "*", false), newInvalidColumnNameError("*").Error())
+		// Test set column visible with invalid sheet name
+		assert.EqualError(t, f.SetColVisible("Sheet:1", "A", false), ErrSheetNameInvalid.Error())
 
 		f.NewSheet("Sheet3")
 		assert.NoError(t, f.SetColVisible("Sheet3", "E", false))
@@ -254,25 +264,35 @@ func TestOutlineLevel(t *testing.T) {
 	assert.Equal(t, uint8(0), level)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 
+	// Test column outline level with invalid sheet name
+	_, err = f.GetColOutlineLevel("Sheet:1", "A")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+
 	assert.NoError(t, f.SetColWidth("Sheet2", "A", "D", 13))
 	assert.EqualError(t, f.SetColWidth("Sheet2", "A", "D", MaxColumnWidth+1), ErrColumnWidth.Error())
+	// Test set column width with invalid sheet name
+	assert.EqualError(t, f.SetColWidth("Sheet:1", "A", "D", 13), ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SetColOutlineLevel("Sheet2", "B", 2))
 	assert.NoError(t, f.SetRowOutlineLevel("Sheet1", 2, 7))
 	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "D", 8), ErrOutlineLevel.Error())
 	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 2, 8), ErrOutlineLevel.Error())
-	// Test set row outline level on not exists worksheet.
+	// Test set row outline level on not exists worksheet
 	assert.EqualError(t, f.SetRowOutlineLevel("SheetN", 1, 4), "sheet SheetN does not exist")
-	// Test get row outline level on not exists worksheet.
+	// Test set row outline level with invalid sheet name
+	assert.EqualError(t, f.SetRowOutlineLevel("Sheet:1", 1, 4), ErrSheetNameInvalid.Error())
+	// Test get row outline level on not exists worksheet
 	_, err = f.GetRowOutlineLevel("SheetN", 1)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-
-	// Test set and get column outline level with illegal cell reference.
+	// Test get row outline level with invalid sheet name
+	_, err = f.GetRowOutlineLevel("Sheet:1", 1)
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	// Test set and get column outline level with illegal cell reference
 	assert.EqualError(t, f.SetColOutlineLevel("Sheet1", "*", 1), newInvalidColumnNameError("*").Error())
 	_, err = f.GetColOutlineLevel("Sheet1", "*")
 	assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
 
-	// Test set column outline level on not exists worksheet.
+	// Test set column outline level on not exists worksheet
 	assert.EqualError(t, f.SetColOutlineLevel("SheetN", "E", 2), "sheet SheetN does not exist")
 
 	assert.EqualError(t, f.SetRowOutlineLevel("Sheet1", 0, 1), newInvalidRowNumberError(0).Error())
@@ -300,22 +320,24 @@ func TestSetColStyle(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet1", "B2", "Hello"))
 	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
 	assert.NoError(t, err)
-	// Test set column style on not exists worksheet.
+	// Test set column style on not exists worksheet
 	assert.EqualError(t, f.SetColStyle("SheetN", "E", styleID), "sheet SheetN does not exist")
-	// Test set column style with illegal column name.
+	// Test set column style with illegal column name
 	assert.EqualError(t, f.SetColStyle("Sheet1", "*", styleID), newInvalidColumnNameError("*").Error())
 	assert.EqualError(t, f.SetColStyle("Sheet1", "A:*", styleID), newInvalidColumnNameError("*").Error())
-	// Test set column style with invalid style ID.
+	// Test set column style with invalid style ID
 	assert.EqualError(t, f.SetColStyle("Sheet1", "B", -1), newInvalidStyleID(-1).Error())
-	// Test set column style with not exists style ID.
+	// Test set column style with not exists style ID
 	assert.EqualError(t, f.SetColStyle("Sheet1", "B", 10), newInvalidStyleID(10).Error())
+	// Test set column style with invalid sheet name
+	assert.EqualError(t, f.SetColStyle("Sheet:1", "A", 0), ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SetColStyle("Sheet1", "B", styleID))
 	style, err := f.GetColStyle("Sheet1", "B")
 	assert.NoError(t, err)
 	assert.Equal(t, styleID, style)
 
-	// Test set column style with already exists column with style.
+	// Test set column style with already exists column with style
 	assert.NoError(t, f.SetColStyle("Sheet1", "B", styleID))
 	assert.NoError(t, f.SetColStyle("Sheet1", "D:C", styleID))
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
@@ -325,7 +347,7 @@ func TestSetColStyle(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, styleID, cellStyleID)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetColStyle.xlsx")))
-	// Test set column style with unsupported charset style sheet.
+	// Test set column style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetColStyle("Sheet1", "C:F", styleID), "XML syntax error on line 1: invalid UTF-8")
@@ -342,19 +364,21 @@ func TestColWidth(t *testing.T) {
 	assert.Equal(t, defaultColWidth, width)
 	assert.NoError(t, err)
 
-	// Test set and get column width with illegal cell reference.
+	// Test set and get column width with illegal cell reference
 	width, err = f.GetColWidth("Sheet1", "*")
 	assert.Equal(t, defaultColWidth, width)
 	assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
 	assert.EqualError(t, f.SetColWidth("Sheet1", "*", "B", 1), newInvalidColumnNameError("*").Error())
 	assert.EqualError(t, f.SetColWidth("Sheet1", "A", "*", 1), newInvalidColumnNameError("*").Error())
 
-	// Test set column width on not exists worksheet.
+	// Test set column width on not exists worksheet
 	assert.EqualError(t, f.SetColWidth("SheetN", "B", "A", 12), "sheet SheetN does not exist")
-
-	// Test get column width on not exists worksheet.
+	// Test get column width on not exists worksheet
 	_, err = f.GetColWidth("SheetN", "A")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get column width invalid sheet name
+	_, err = f.GetColWidth("Sheet:1", "A")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestColWidth.xlsx")))
 	convertRowHeightToPixels(0)
@@ -366,12 +390,15 @@ func TestGetColStyle(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, styleID, 0)
 
-	// Test set column style on not exists worksheet.
+	// Test get column style on not exists worksheet
 	_, err = f.GetColStyle("SheetN", "A")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-	// Test set column style with illegal column name.
+	// Test get column style with illegal column name
 	_, err = f.GetColStyle("Sheet1", "*")
 	assert.EqualError(t, err, newInvalidColumnNameError("*").Error())
+	// Test get column style with invalid sheet name
+	_, err = f.GetColStyle("Sheet:1", "A")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 }
 
 func TestInsertCols(t *testing.T) {
@@ -386,9 +413,10 @@ func TestInsertCols(t *testing.T) {
 	assert.NoError(t, f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`))
 	assert.NoError(t, f.InsertCols(sheet1, "A", 1))
 
-	// Test insert column with illegal cell reference.
+	// Test insert column with illegal cell reference
 	assert.EqualError(t, f.InsertCols(sheet1, "*", 1), newInvalidColumnNameError("*").Error())
-
+	// Test insert column with invalid sheet name
+	assert.EqualError(t, f.InsertCols("Sheet:1", "A", 1), ErrSheetNameInvalid.Error())
 	assert.EqualError(t, f.InsertCols(sheet1, "A", 0), ErrColumnNumber.Error())
 	assert.EqualError(t, f.InsertCols(sheet1, "A", MaxColumns), ErrColumnNumber.Error())
 	assert.EqualError(t, f.InsertCols(sheet1, "A", MaxColumns-10), ErrColumnNumber.Error())
@@ -411,11 +439,12 @@ func TestRemoveCol(t *testing.T) {
 	assert.NoError(t, f.RemoveCol(sheet1, "A"))
 	assert.NoError(t, f.RemoveCol(sheet1, "A"))
 
-	// Test remove column with illegal cell reference.
+	// Test remove column with illegal cell reference
 	assert.EqualError(t, f.RemoveCol("Sheet1", "*"), newInvalidColumnNameError("*").Error())
-
-	// Test remove column on not exists worksheet.
+	// Test remove column on not exists worksheet
 	assert.EqualError(t, f.RemoveCol("SheetN", "B"), "sheet SheetN does not exist")
+	// Test remove column  with invalid sheet name
+	assert.EqualError(t, f.RemoveCol("Sheet:1", "A"), ErrSheetNameInvalid.Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveCol.xlsx")))
 }
