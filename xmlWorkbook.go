@@ -320,3 +320,11 @@ type WorkbookPropsOptions struct {
 	FilterPrivacy *bool   `json:"filter_privacy,omitempty"`
 	CodeName      *string `json:"code_name,omitempty"`
 }
+
+// WorkbookProtectionOptions directly maps the settings of workbook protection.
+type WorkbookProtectionOptions struct {
+	AlgorithmName string `json:"algorithmName,omitempty"`
+	Password      string `json:"password,omitempty"`
+	LockStructure bool   `json:"lockStructure,omitempty"`
+	LockWindows   bool   `json:"lockWindows,omitempty"`
+}

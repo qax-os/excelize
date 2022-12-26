@@ -37,16 +37,17 @@ import (
 )
 
 var (
-	blockKey                   = []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6} // Block keys used for encryption
-	oleIdentifier              = []byte{0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1}
-	headerCLSID                = make([]byte, 16)
-	difSect                    = -4
-	endOfChain                 = -2
-	fatSect                    = -3
-	iterCount                  = 50000
-	packageEncryptionChunkSize = 4096
-	packageOffset              = 8 // First 8 bytes are the size of the stream
-	sheetProtectionSpinCount   = 1e5
+	blockKey                    = []byte{0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6} // Block keys used for encryption
+	oleIdentifier               = []byte{0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1}
+	headerCLSID                 = make([]byte, 16)
+	difSect                     = -4
+	endOfChain                  = -2
+	fatSect                     = -3
+	iterCount                   = 50000
+	packageEncryptionChunkSize  = 4096
+	packageOffset               = 8 // First 8 bytes are the size of the stream
+	sheetProtectionSpinCount    = 1e5
+	workbookProtectionSpinCount = 1e5
 )
 
 // Encryption specifies the encryption structure, streams, and storages are
