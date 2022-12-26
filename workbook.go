@@ -59,6 +59,67 @@ func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
 	return opts, err
 }
 
+// ProtectWorkbook provides a function to prevent other users from accidentally or
+// deliberately changing, moving, or deleting data in a workbook.
+func (f *File) ProtectWorkbook(opts *WorkbookProtectionOptions) error {
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	if wb.WorkbookProtection == nil {
+		wb.WorkbookProtection = new(xlsxWorkbookProtection)
+	}
+	if opts == nil {
+		opts = &WorkbookProtectionOptions{}
+	}
+	wb.WorkbookProtection = &xlsxWorkbookProtection{
+		LockStructure: opts.LockStructure,
+		LockWindows:   opts.LockWindows,
+	}
+	if opts.Password != "" {
+		if opts.AlgorithmName == "" {
+			opts.AlgorithmName = "SHA-512"
+		}
+		hashValue, saltValue, err := genISOPasswdHash(opts.Password, opts.AlgorithmName, "", int(workbookProtectionSpinCount))
+		if err != nil {
+			return err
+		}
+		wb.WorkbookProtection.WorkbookAlgorithmName = opts.AlgorithmName
+		wb.WorkbookProtection.WorkbookSaltValue = saltValue
+		wb.WorkbookProtection.WorkbookHashValue = hashValue
+		wb.WorkbookProtection.WorkbookSpinCount = int(workbookProtectionSpinCount)
+	}
+	return nil
+}
+
+// UnprotectWorkbook provides a function to remove protection for workbook,
+// specified the second optional password parameter to remove workbook
+// protection with password verification.
+func (f *File) UnprotectWorkbook(password ...string) error {
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	// password verification
+	if len(password) > 0 {
+		if wb.WorkbookProtection == nil {
+			return ErrUnprotectWorkbook
+		}
+		if wb.WorkbookProtection.WorkbookAlgorithmName != "" {
+			// check with given salt value
+			hashValue, _, err := genISOPasswdHash(password[0], wb.WorkbookProtection.WorkbookAlgorithmName, wb.WorkbookProtection.WorkbookSaltValue, wb.WorkbookProtection.WorkbookSpinCount)
+			if err != nil {
+				return err
+			}
+			if wb.WorkbookProtection.WorkbookHashValue != hashValue {
+				return ErrUnprotectWorkbookPassword
+			}
+		}
+	}
+	wb.WorkbookProtection = nil
+	return err
+}
+
 // setWorkbook update workbook property of the spreadsheet. Maximum 31
 // characters are allowed in sheet title.
 func (f *File) setWorkbook(name string, sheetID, rid int) {

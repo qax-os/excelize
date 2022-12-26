@@ -1329,6 +1329,61 @@ func TestUnprotectSheet(t *testing.T) {
 	assert.EqualError(t, f.UnprotectSheet(sheetName, "wrongPassword"), "illegal base64 data at input byte 8")
 }
 
+func TestProtectWorkbook(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.ProtectWorkbook(nil))
+	// Test protect workbook with default hash algorithm
+	assert.NoError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
+		Password:      "password",
+		LockStructure: true,
+	}))
+	wb, err := f.workbookReader()
+	assert.NoError(t, err)
+	assert.Equal(t, "SHA-512", wb.WorkbookProtection.WorkbookAlgorithmName)
+	assert.Equal(t, 24, len(wb.WorkbookProtection.WorkbookSaltValue))
+	assert.Equal(t, 88, len(wb.WorkbookProtection.WorkbookHashValue))
+	assert.Equal(t, int(workbookProtectionSpinCount), wb.WorkbookProtection.WorkbookSpinCount)
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestProtectWorkbook.xlsx")))
+	// Test protect workbook with password exceeds the limit length
+	assert.EqualError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
+		AlgorithmName: "MD4",
+		Password:      strings.Repeat("s", MaxFieldLength+1),
+	}), ErrPasswordLengthInvalid.Error())
+	// Test protect workbook with unsupported hash algorithm
+	assert.EqualError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
+		AlgorithmName: "RIPEMD-160",
+		Password:      "password",
+	}), ErrUnsupportedHashAlgorithm.Error())
+}
+
+func TestUnprotectWorkbook(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.NoError(t, f.UnprotectWorkbook())
+	assert.EqualError(t, f.UnprotectWorkbook("password"), ErrUnprotectWorkbook.Error())
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnprotectWorkbook.xlsx")))
+	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	assert.NoError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{Password: "password"}))
+	// Test remove workbook protection with an incorrect password
+	assert.EqualError(t, f.UnprotectWorkbook("wrongPassword"), ErrUnprotectWorkbookPassword.Error())
+	// Test remove workbook protection with password verification
+	assert.NoError(t, f.UnprotectWorkbook("password"))
+	// Test with invalid salt value
+	assert.NoError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
+		AlgorithmName: "SHA-512",
+		Password:      "password",
+	}))
+	wb, err := f.workbookReader()
+	assert.NoError(t, err)
+	wb.WorkbookProtection.WorkbookSaltValue = "YWJjZA====="
+	assert.EqualError(t, f.UnprotectWorkbook("wrongPassword"), "illegal base64 data at input byte 8")
+}
+
 func TestSetDefaultTimeStyle(t *testing.T) {
 	f := NewFile()
 	// Test set default time style on not exists worksheet.
