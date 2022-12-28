@@ -1319,7 +1319,7 @@ func (f *File) formattedValue(s int, v string, raw bool) (string, error) {
 	if styleSheet.CellXfs == nil {
 		return v, err
 	}
-	if s >= len(styleSheet.CellXfs.Xf) {
+	if s >= len(styleSheet.CellXfs.Xf) || s < 0 {
 		return v, err
 	}
 	var numFmtID int
