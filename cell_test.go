@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"fmt"
+	_ "image/jpeg"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,8 +11,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	_ "image/jpeg"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -755,7 +754,13 @@ func TestFormattedValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
+	// S is too large
 	result, err = f.formattedValue(15, "43528", false)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
+
+	// S is too small
+	result, err = f.formattedValue(-15, "43528", false)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
