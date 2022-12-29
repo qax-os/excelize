@@ -1,7 +1,6 @@
 package excelize
 
 import (
-	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -13,15 +12,15 @@ import (
 func TestStyleFill(t *testing.T) {
 	cases := []struct {
 		label      string
-		format     string
+		format     *Style
 		expectFill bool
 	}{{
 		label:      "no_fill",
-		format:     `{"alignment":{"wrap_text":true}}`,
+		format:     &Style{Alignment: &Alignment{WrapText: true}},
 		expectFill: false,
 	}, {
 		label:      "fill",
-		format:     `{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`,
+		format:     &Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}},
 		expectFill: true,
 	}}
 
@@ -40,9 +39,9 @@ func TestStyleFill(t *testing.T) {
 		}
 	}
 	f := NewFile()
-	styleID1, err := f.NewStyle(`{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`)
+	styleID1, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}})
 	assert.NoError(t, err)
-	styleID2, err := f.NewStyle(`{"fill":{"type":"pattern","pattern":1,"color":["#000000"]}}`)
+	styleID2, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}})
 	assert.NoError(t, err)
 	assert.Equal(t, styleID1, styleID2)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestStyleFill.xlsx")))
@@ -51,23 +50,23 @@ func TestStyleFill(t *testing.T) {
 func TestSetConditionalFormat(t *testing.T) {
 	cases := []struct {
 		label  string
-		format string
+		format []ConditionalFormatOptions
 		rules  []*xlsxCfRule
 	}{{
 		label: "3_color_scale",
-		format: `[{
-			"type":"3_color_scale",
-			"criteria":"=",
-			"min_type":"num",
-			"mid_type":"num",
-			"max_type":"num",
-			"min_value": "-10",
-			"mid_value": "0",
-			"max_value": "10",
-			"min_color":"ff0000",
-			"mid_color":"00ff00",
-			"max_color":"0000ff"
-		}]`,
+		format: []ConditionalFormatOptions{{
+			Type:     "3_color_scale",
+			Criteria: "=",
+			MinType:  "num",
+			MidType:  "num",
+			MaxType:  "num",
+			MinValue: "-10",
+			MidValue: "0",
+			MaxValue: "10",
+			MinColor: "ff0000",
+			MidColor: "00ff00",
+			MaxColor: "0000ff",
+		}},
 		rules: []*xlsxCfRule{{
 			Priority: 1,
 			Type:     "colorScale",
@@ -93,16 +92,16 @@ func TestSetConditionalFormat(t *testing.T) {
 		}},
 	}, {
 		label: "3_color_scale default min/mid/max",
-		format: `[{
-			"type":"3_color_scale",
-			"criteria":"=",
-			"min_type":"num",
-			"mid_type":"num",
-			"max_type":"num",
-			"min_color":"ff0000",
-			"mid_color":"00ff00",
-			"max_color":"0000ff"
-		}]`,
+		format: []ConditionalFormatOptions{{
+			Type:     "3_color_scale",
+			Criteria: "=",
+			MinType:  "num",
+			MidType:  "num",
+			MaxType:  "num",
+			MinColor: "ff0000",
+			MidColor: "00ff00",
+			MaxColor: "0000ff",
+		}},
 		rules: []*xlsxCfRule{{
 			Priority: 1,
 			Type:     "colorScale",
@@ -128,14 +127,14 @@ func TestSetConditionalFormat(t *testing.T) {
 		}},
 	}, {
 		label: "2_color_scale default min/max",
-		format: `[{
-			"type":"2_color_scale",
-			"criteria":"=",
-			"min_type":"num",
-			"max_type":"num",
-			"min_color":"ff0000",
-			"max_color":"0000ff"
-		}]`,
+		format: []ConditionalFormatOptions{{
+			Type:     "2_color_scale",
+			Criteria: "=",
+			MinType:  "num",
+			MaxType:  "num",
+			MinColor: "ff0000",
+			MaxColor: "0000ff",
+		}},
 		rules: []*xlsxCfRule{{
 			Priority: 1,
 			Type:     "colorScale",
@@ -177,18 +176,18 @@ func TestSetConditionalFormat(t *testing.T) {
 }
 
 func TestGetConditionalFormats(t *testing.T) {
-	for _, format := range []string{
-		`[{"type":"cell","format":1,"criteria":"greater than","value":"6"}]`,
-		`[{"type":"cell","format":1,"criteria":"between","minimum":"6","maximum":"8"}]`,
-		`[{"type":"top","format":1,"criteria":"=","value":"6"}]`,
-		`[{"type":"bottom","format":1,"criteria":"=","value":"6"}]`,
-		`[{"type":"average","above_average":true,"format":1,"criteria":"="}]`,
-		`[{"type":"duplicate","format":1,"criteria":"="}]`,
-		`[{"type":"unique","format":1,"criteria":"="}]`,
-		`[{"type":"3_color_scale","criteria":"=","min_type":"num","mid_type":"num","max_type":"num","min_value":"-10","mid_value":"50","max_value":"10","min_color":"#FF0000","mid_color":"#00FF00","max_color":"#0000FF"}]`,
-		`[{"type":"2_color_scale","criteria":"=","min_type":"num","max_type":"num","min_color":"#FF0000","max_color":"#0000FF"}]`,
-		`[{"type":"data_bar","criteria":"=","min_type":"min","max_type":"max","bar_color":"#638EC6"}]`,
-		`[{"type":"formula","format":1,"criteria":"="}]`,
+	for _, format := range [][]ConditionalFormatOptions{
+		{{Type: "cell", Format: 1, Criteria: "greater than", Value: "6"}},
+		{{Type: "cell", Format: 1, Criteria: "between", Minimum: "6", Maximum: "8"}},
+		{{Type: "top", Format: 1, Criteria: "=", Value: "6"}},
+		{{Type: "bottom", Format: 1, Criteria: "=", Value: "6"}},
+		{{Type: "average", AboveAverage: true, Format: 1, Criteria: "="}},
+		{{Type: "duplicate", Format: 1, Criteria: "="}},
+		{{Type: "unique", Format: 1, Criteria: "="}},
+		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
+		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
+		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarColor: "#638EC6"}},
+		{{Type: "formula", Format: 1, Criteria: "="}},
 	} {
 		f := NewFile()
 		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)
@@ -210,9 +209,9 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
-	format, err := f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+	format, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "#9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1}})
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format)))
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Criteria: ">", Format: format, Value: "6"}}))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	// Test unset conditional format on not exists worksheet
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
@@ -224,7 +223,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 
 func TestNewStyle(t *testing.T) {
 	f := NewFile()
-	styleID, err := f.NewStyle(`{"font":{"bold":true,"italic":true,"family":"Times New Roman","size":36,"color":"#777777"}}`)
+	styleID, err := f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "#777777"}})
 	assert.NoError(t, err)
 	styles, err := f.stylesReader()
 	assert.NoError(t, err)
@@ -234,8 +233,8 @@ func TestNewStyle(t *testing.T) {
 	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
 	_, err = f.NewStyle(&Style{})
 	assert.NoError(t, err)
-	_, err = f.NewStyle(Style{})
-	assert.EqualError(t, err, ErrParameterInvalid.Error())
+	_, err = f.NewStyle(nil)
+	assert.NoError(t, err)
 
 	var exp string
 	_, err = f.NewStyle(&Style{CustomNumFmt: &exp})
@@ -326,7 +325,7 @@ func TestNewConditionalStyle(t *testing.T) {
 	// Test create conditional style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	_, err := f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+	_, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "#9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1}})
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
@@ -378,13 +377,13 @@ func TestThemeReader(t *testing.T) {
 
 func TestSetCellStyle(t *testing.T) {
 	f := NewFile()
-	// Test set cell style on not exists worksheet.
+	// Test set cell style on not exists worksheet
 	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN does not exist")
-	// Test set cell style with invalid style ID.
+	// Test set cell style with invalid style ID
 	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", -1), newInvalidStyleID(-1).Error())
-	// Test set cell style with not exists style ID.
+	// Test set cell style with not exists style ID
 	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", 10), newInvalidStyleID(10).Error())
-	// Test set cell style with unsupported charset style sheet.
+	// Test set cell style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", 1), "XML syntax error on line 1: invalid UTF-8")
@@ -395,7 +394,7 @@ func TestGetStyleID(t *testing.T) {
 	styleID, err := f.getStyleID(&xlsxStyleSheet{}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, -1, styleID)
-	// Test get style ID with unsupported charset style sheet.
+	// Test get style ID with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	_, err = f.getStyleID(&xlsxStyleSheet{
@@ -429,11 +428,11 @@ func TestThemeColor(t *testing.T) {
 func TestGetNumFmtID(t *testing.T) {
 	f := NewFile()
 
-	fs1, err := parseFormatStyleSet(`{"protection":{"hidden":false,"locked":false},"number_format":10}`)
+	fs1, err := parseFormatStyleSet(&Style{Protection: &Protection{Hidden: false, Locked: false}, NumFmt: 10})
 	assert.NoError(t, err)
 	id1 := getNumFmtID(&xlsxStyleSheet{}, fs1)
 
-	fs2, err := parseFormatStyleSet(`{"protection":{"hidden":false,"locked":false},"number_format":0}`)
+	fs2, err := parseFormatStyleSet(&Style{Protection: &Protection{Hidden: false, Locked: false}, NumFmt: 0})
 	assert.NoError(t, err)
 	id2 := getNumFmtID(&xlsxStyleSheet{}, fs2)
 

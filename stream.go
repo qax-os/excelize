@@ -134,18 +134,19 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // AddTable creates an Excel table for the StreamWriter using the given
 // cell range and format set. For example, create a table of A1:D5:
 //
-//	err := sw.AddTable("A1", "D5", "")
+//	err := sw.AddTable("A1:D5", nil)
 //
 // Create a table of F2:H6 with format set:
 //
-//	err := sw.AddTable("F2", "H6", `{
-//	    "table_name": "table",
-//	    "table_style": "TableStyleMedium2",
-//	    "show_first_column": true,
-//	    "show_last_column": true,
-//	    "show_row_stripes": false,
-//	    "show_column_stripes": true
-//	}`)
+//	disable := false
+//	err := sw.AddTable("F2:H6", &excelize.TableOptions{
+//	    Name:              "table",
+//	    StyleName:         "TableStyleMedium2",
+//	    ShowFirstColumn:   true,
+//	    ShowLastColumn:    true,
+//	    ShowRowStripes:    &disable,
+//	    ShowColumnStripes: true,
+//	})
 //
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique.
@@ -154,13 +155,9 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // called after the rows are written but before Flush.
 //
 // See File.AddTable for details on the table format.
-func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
-	options, err := parseTableOptions(opts)
-	if err != nil {
-		return err
-	}
-
-	coordinates, err := cellRefsToCoordinates(hCell, vCell)
+func (sw *StreamWriter) AddTable(reference string, opts *TableOptions) error {
+	options := parseTableOptions(opts)
+	coordinates, err := rangeRefToCoordinates(reference)
 	if err != nil {
 		return err
 	}
@@ -192,7 +189,7 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 
 	tableID := sw.file.countTables() + 1
 
-	name := options.TableName
+	name := options.Name
 	if name == "" {
 		name = "Table" + strconv.Itoa(tableID)
 	}
@@ -211,10 +208,10 @@ func (sw *StreamWriter) AddTable(hCell, vCell, opts string) error {
 			TableColumn: tableColumn,
 		},
 		TableStyleInfo: &xlsxTableStyleInfo{
-			Name:              options.TableStyle,
+			Name:              options.StyleName,
 			ShowFirstColumn:   options.ShowFirstColumn,
 			ShowLastColumn:    options.ShowLastColumn,
-			ShowRowStripes:    options.ShowRowStripes,
+			ShowRowStripes:    *options.ShowRowStripes,
 			ShowColumnStripes: options.ShowColumnStripes,
 		},
 	}
@@ -462,7 +459,7 @@ func (sw *StreamWriter) InsertPageBreak(cell string) error {
 // SetPanes provides a function to create and remove freeze panes and split
 // panes by giving panes options for the StreamWriter. Note that you must call
 // the 'SetPanes' function before the 'SetRow' function.
-func (sw *StreamWriter) SetPanes(panes string) error {
+func (sw *StreamWriter) SetPanes(panes *Panes) error {
 	if sw.sheetWritten {
 		return ErrStreamSetPanes
 	}

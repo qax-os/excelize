@@ -147,6 +147,13 @@ func (f *File) GetAppProps() (ret *AppProperties, err error) {
 //	 Category       | A categorization of the content of this package.
 //	                |
 //	 Version        | The version number. This value is set by the user or by the application.
+//	                |
+//	 Modified       | The created time of the content of the resource which
+//	                | represent in ISO 8601 UTC format, for example "2019-06-04T22:00:10Z".
+//	                |
+//	 Modified       | The modified time of the content of the resource which
+//	                | represent in ISO 8601 UTC format, for example "2019-06-04T22:00:10Z".
+//	                |
 //
 // For example:
 //

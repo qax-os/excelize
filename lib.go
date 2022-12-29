@@ -313,15 +313,15 @@ func sortCoordinates(coordinates []int) error {
 
 // coordinatesToRangeRef provides a function to convert a pair of coordinates
 // to range reference.
-func (f *File) coordinatesToRangeRef(coordinates []int) (string, error) {
+func (f *File) coordinatesToRangeRef(coordinates []int, abs ...bool) (string, error) {
 	if len(coordinates) != 4 {
 		return "", ErrCoordinates
 	}
-	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1])
+	firstCell, err := CoordinatesToCellName(coordinates[0], coordinates[1], abs...)
 	if err != nil {
 		return "", err
 	}
-	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3])
+	lastCell, err := CoordinatesToCellName(coordinates[2], coordinates[3], abs...)
 	if err != nil {
 		return "", err
 	}
@@ -491,15 +491,6 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	defaultVal := true
 	avb.Val = &defaultVal
 	return nil
-}
-
-// fallbackOptions provides a method to convert format string to []byte and
-// handle empty string.
-func fallbackOptions(opts string) []byte {
-	if opts != "" {
-		return []byte(opts)
-	}
-	return []byte("{}")
 }
 
 // namespaceStrictToTransitional provides a method to convert Strict and

@@ -48,7 +48,7 @@ const (
 	formulaErrorSPILL       = "#SPILL!"
 	formulaErrorCALC        = "#CALC!"
 	formulaErrorGETTINGDATA = "#GETTING_DATA"
-	// formula criteria condition enumeration.
+	// Formula criteria condition enumeration
 	_ byte = iota
 	criteriaEq
 	criteriaLe
@@ -100,7 +100,7 @@ const (
 )
 
 var (
-	// tokenPriority defined basic arithmetic operator priority.
+	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
 		"*":  4,

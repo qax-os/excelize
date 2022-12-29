@@ -74,9 +74,9 @@ type xlsxPhoneticRun struct {
 
 // Comment directly maps the comment information.
 type Comment struct {
-	Author   string        `json:"author"`
-	AuthorID int           `json:"author_id"`
-	Cell     string        `json:"cell"`
-	Text     string        `json:"text"`
-	Runs     []RichTextRun `json:"runs"`
+	Author   string
+	AuthorID int
+	Cell     string
+	Text     string
+	Runs     []RichTextRun
 }

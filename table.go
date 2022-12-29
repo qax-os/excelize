@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"regexp"
@@ -22,64 +21,54 @@ import (
 
 // parseTableOptions provides a function to parse the format settings of the
 // table with default value.
-func parseTableOptions(opts string) (*tableOptions, error) {
-	options := tableOptions{ShowRowStripes: true}
-	err := json.Unmarshal(fallbackOptions(opts), &options)
-	return &options, err
+func parseTableOptions(opts *TableOptions) *TableOptions {
+	if opts == nil {
+		return &TableOptions{ShowRowStripes: boolPtr(true)}
+	}
+	if opts.ShowRowStripes == nil {
+		opts.ShowRowStripes = boolPtr(true)
+	}
+	return opts
 }
 
 // AddTable provides the method to add table in a worksheet by given worksheet
 // name, range reference and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
-//	err := f.AddTable("Sheet1", "A1", "D5", "")
+//	err := f.AddTable("Sheet1", "A1:D5", nil)
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
-//	err := f.AddTable("Sheet2", "F2", "H6", `{
-//	    "table_name": "table",
-//	    "table_style": "TableStyleMedium2",
-//	    "show_first_column": true,
-//	    "show_last_column": true,
-//	    "show_row_stripes": false,
-//	    "show_column_stripes": true
-//	}`)
+//	err := f.AddTable("Sheet2", "F2:H6", &excelize.TableOptions{
+//	    Name:              "table",
+//	    StyleName:         "TableStyleMedium2",
+//	    ShowFirstColumn:   true,
+//	    ShowLastColumn:    true,
+//	    ShowRowStripes:    &disable,
+//	    ShowColumnStripes: true,
+//	})
 //
 // Note that the table must be at least two lines including the header. The
 // header cells must contain strings and must be unique, and must set the
 // header row data of the table before calling the AddTable function. Multiple
 // tables range reference that can't have an intersection.
 //
-// table_name: The name of the table, in the same worksheet name of the table should be unique
+// Name: The name of the table, in the same worksheet name of the table should be unique
 //
-// table_style: The built-in table style names
+// StyleName: The built-in table style names
 //
 //	TableStyleLight1 - TableStyleLight21
 //	TableStyleMedium1 - TableStyleMedium28
 //	TableStyleDark1 - TableStyleDark11
-func (f *File) AddTable(sheet, hCell, vCell, opts string) error {
-	options, err := parseTableOptions(opts)
-	if err != nil {
-		return err
-	}
+func (f *File) AddTable(sheet, reference string, opts *TableOptions) error {
+	options := parseTableOptions(opts)
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	hCol, hRow, err := CellNameToCoordinates(hCell)
+	coordinates, err := rangeRefToCoordinates(reference)
 	if err != nil {
 		return err
 	}
-	vCol, vRow, err := CellNameToCoordinates(vCell)
-	if err != nil {
-		return err
-	}
-
-	if vCol < hCol {
-		vCol, hCol = hCol, vCol
-	}
-
-	if vRow < hRow {
-		vRow, hRow = hRow, vRow
-	}
-
+	// Correct table reference range, such correct C1:B3 to B1:C3.
+	_ = sortCoordinates(coordinates)
 	tableID := f.countTables() + 1
 	sheetRelationshipsTableXML := "../tables/table" + strconv.Itoa(tableID) + ".xml"
 	tableXML := strings.ReplaceAll(sheetRelationshipsTableXML, "..", "xl")
@@ -91,7 +80,7 @@ func (f *File) AddTable(sheet, hCell, vCell, opts string) error {
 		return err
 	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
-	if err = f.addTable(sheet, tableXML, hCol, hRow, vCol, vRow, tableID, options); err != nil {
+	if err = f.addTable(sheet, tableXML, coordinates[0], coordinates[1], coordinates[2], coordinates[3], tableID, options); err != nil {
 		return err
 	}
 	return f.addContentTypePart(tableID, "table")
@@ -159,7 +148,7 @@ func (f *File) setTableHeader(sheet string, x1, y1, x2 int) ([]*xlsxTableColumn,
 
 // addTable provides a function to add table by given worksheet name,
 // range reference and format set.
-func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *tableOptions) error {
+func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *TableOptions) error {
 	// Correct the minimum number of rows, the table at least two lines.
 	if y1 == y2 {
 		y2++
@@ -171,7 +160,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *tab
 		return err
 	}
 	tableColumns, _ := f.setTableHeader(sheet, x1, y1, x2)
-	name := opts.TableName
+	name := opts.Name
 	if name == "" {
 		name = "Table" + strconv.Itoa(i)
 	}
@@ -189,10 +178,10 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *tab
 			TableColumn: tableColumns,
 		},
 		TableStyleInfo: &xlsxTableStyleInfo{
-			Name:              opts.TableStyle,
+			Name:              opts.StyleName,
 			ShowFirstColumn:   opts.ShowFirstColumn,
 			ShowLastColumn:    opts.ShowLastColumn,
-			ShowRowStripes:    opts.ShowRowStripes,
+			ShowRowStripes:    *opts.ShowRowStripes,
 			ShowColumnStripes: opts.ShowColumnStripes,
 		},
 	}
@@ -201,36 +190,30 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *tab
 	return nil
 }
 
-// parseAutoFilterOptions provides a function to parse the settings of the auto
-// filter.
-func parseAutoFilterOptions(opts string) (*autoFilterOptions, error) {
-	options := autoFilterOptions{}
-	err := json.Unmarshal([]byte(opts), &options)
-	return &options, err
-}
-
 // AutoFilter provides the method to add auto filter in a worksheet by given
 // worksheet name, range reference and settings. An auto filter in Excel is a
 // way of filtering a 2D range of data based on some simple criteria. For
 // example applying an auto filter to a cell range A1:D4 in the Sheet1:
 //
-//	err := f.AutoFilter("Sheet1", "A1", "D4", "")
+//	err := f.AutoFilter("Sheet1", "A1:D4", nil)
 //
 // Filter data in an auto filter:
 //
-//	err := f.AutoFilter("Sheet1", "A1", "D4", `{"column":"B","expression":"x != blanks"}`)
+//	err := f.AutoFilter("Sheet1", "A1:D4", &excelize.AutoFilterOptions{
+//	    Column: "B", Expression: "x != blanks",
+//	})
 //
-// column defines the filter columns in an auto filter range based on simple
+// Column defines the filter columns in an auto filter range based on simple
 // criteria
 //
 // It isn't sufficient to just specify the filter condition. You must also
 // hide any rows that don't match the filter condition. Rows are hidden using
-// the SetRowVisible() method. Excelize can't filter rows automatically since
+// the SetRowVisible function. Excelize can't filter rows automatically since
 // this isn't part of the file format.
 //
 // Setting a filter criteria for a column:
 //
-// expression defines the conditions, the following operators are available
+// Expression defines the conditions, the following operators are available
 // for setting the filter criteria:
 //
 //	==
@@ -278,28 +261,15 @@ func parseAutoFilterOptions(opts string) (*autoFilterOptions, error) {
 //	x     < 2000
 //	col   < 2000
 //	Price < 2000
-func (f *File) AutoFilter(sheet, hCell, vCell, opts string) error {
-	hCol, hRow, err := CellNameToCoordinates(hCell)
+func (f *File) AutoFilter(sheet, reference string, opts *AutoFilterOptions) error {
+	coordinates, err := rangeRefToCoordinates(reference)
 	if err != nil {
 		return err
 	}
-	vCol, vRow, err := CellNameToCoordinates(vCell)
-	if err != nil {
-		return err
-	}
-
-	if vCol < hCol {
-		vCol, hCol = hCol, vCol
-	}
-
-	if vRow < hRow {
-		vRow, hRow = hRow, vRow
-	}
-
-	options, _ := parseAutoFilterOptions(opts)
-	cellStart, _ := CoordinatesToCellName(hCol, hRow, true)
-	cellEnd, _ := CoordinatesToCellName(vCol, vRow, true)
-	ref, filterDB := cellStart+":"+cellEnd, "_xlnm._FilterDatabase"
+	_ = sortCoordinates(coordinates)
+	// Correct reference range, such correct C1:B3 to B1:C3.
+	ref, _ := f.coordinatesToRangeRef(coordinates, true)
+	filterDB := "_xlnm._FilterDatabase"
 	wb, err := f.workbookReader()
 	if err != nil {
 		return err
@@ -332,13 +302,13 @@ func (f *File) AutoFilter(sheet, hCell, vCell, opts string) error {
 			wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
 		}
 	}
-	refRange := vCol - hCol
-	return f.autoFilter(sheet, ref, refRange, hCol, options)
+	refRange := coordinates[2] - coordinates[0]
+	return f.autoFilter(sheet, ref, refRange, coordinates[0], opts)
 }
 
 // autoFilter provides a function to extract the tokens from the filter
 // expression. The tokens are mainly non-whitespace groups.
-func (f *File) autoFilter(sheet, ref string, refRange, col int, opts *autoFilterOptions) error {
+func (f *File) autoFilter(sheet, ref string, refRange, col int, opts *AutoFilterOptions) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -351,7 +321,7 @@ func (f *File) autoFilter(sheet, ref string, refRange, col int, opts *autoFilter
 		Ref: ref,
 	}
 	ws.AutoFilter = filter
-	if opts.Column == "" || opts.Expression == "" {
+	if opts == nil || opts.Column == "" || opts.Expression == "" {
 		return nil
 	}
 

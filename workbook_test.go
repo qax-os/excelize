@@ -21,11 +21,11 @@ func TestWorkbookProps(t *testing.T) {
 	opts, err := f.GetWorkbookProps()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, opts)
-	// Test set workbook properties with unsupported charset workbook.
+	// Test set workbook properties with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetWorkbookProps(&expected), "XML syntax error on line 1: invalid UTF-8")
-	// Test get workbook properties with unsupported charset workbook.
+	// Test get workbook properties with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	_, err = f.GetWorkbookProps()

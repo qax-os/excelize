@@ -196,22 +196,25 @@ type xlsxTableStyleInfo struct {
 	ShowColumnStripes bool   `xml:"showColumnStripes,attr"`
 }
 
-// tableOptions directly maps the format settings of the table.
-type tableOptions struct {
-	TableName         string `json:"table_name"`
-	TableStyle        string `json:"table_style"`
-	ShowFirstColumn   bool   `json:"show_first_column"`
-	ShowLastColumn    bool   `json:"show_last_column"`
-	ShowRowStripes    bool   `json:"show_row_stripes"`
-	ShowColumnStripes bool   `json:"show_column_stripes"`
+// TableOptions directly maps the format settings of the table.
+type TableOptions struct {
+	Name              string
+	StyleName         string
+	ShowFirstColumn   bool
+	ShowLastColumn    bool
+	ShowRowStripes    *bool
+	ShowColumnStripes bool
 }
 
-// autoFilterOptions directly maps the auto filter settings.
-type autoFilterOptions struct {
-	Column     string `json:"column"`
-	Expression string `json:"expression"`
-	FilterList []struct {
-		Column string `json:"column"`
-		Value  []int  `json:"value"`
-	} `json:"filter_list"`
+// AutoFilterListOptions directly maps the auto filter list settings.
+type AutoFilterListOptions struct {
+	Column string
+	Value  []int
+}
+
+// AutoFilterOptions directly maps the auto filter settings.
+type AutoFilterOptions struct {
+	Column     string
+	Expression string
+	FilterList []AutoFilterListOptions
 }

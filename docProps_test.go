@@ -58,7 +58,7 @@ func TestGetAppProps(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
-	// Test get application properties with unsupported charset.
+	// Test get application properties with unsupported charset
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsApp, MacintoshCyrillicCharset)
 	_, err = f.GetAppProps()
@@ -110,7 +110,7 @@ func TestGetDocProps(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
-	// Test get workbook properties with unsupported charset.
+	// Test get workbook properties with unsupported charset
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()

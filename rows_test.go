@@ -189,7 +189,8 @@ func TestRowHeight(t *testing.T) {
 	// Test set row height with custom default row height with prepare XML
 	assert.NoError(t, f.SetCellValue(sheet1, "A10", "A10"))
 
-	f.NewSheet("Sheet2")
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet2", "A2", true))
 	height, err = f.GetRowHeight("Sheet2", 1)
 	assert.NoError(t, err)
@@ -258,10 +259,9 @@ func TestSharedStringsReader(t *testing.T) {
 
 func TestRowVisibility(t *testing.T) {
 	f, err := prepareTestBook1()
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-	f.NewSheet("Sheet3")
+	assert.NoError(t, err)
+	_, err = f.NewSheet("Sheet3")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetRowVisible("Sheet3", 2, false))
 	assert.NoError(t, f.SetRowVisible("Sheet3", 2, true))
 	visible, err := f.GetRowVisible("Sheet3", 2)
@@ -320,7 +320,7 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	err = f.AutoFilter(sheet1, "A2", "A2", `{"column":"A","expression":"x != blanks"}`)
+	err = f.AutoFilter(sheet1, "A2:A2", &AutoFilterOptions{Column: "A", Expression: "x != blanks"})
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -990,9 +990,9 @@ func TestCheckRow(t *testing.T) {
 
 func TestSetRowStyle(t *testing.T) {
 	f := NewFile()
-	style1, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#63BE7B"],"pattern":1}}`)
+	style1, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"#63BE7B"}, Pattern: 1}})
 	assert.NoError(t, err)
-	style2, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	style2, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"#E0EBF5"}, Pattern: 1}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "B2", "B2", style1))
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 5, -1, style2), newInvalidRowNumberError(-1).Error())

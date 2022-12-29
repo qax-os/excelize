@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -480,28 +479,41 @@ var (
 
 // parseChartOptions provides a function to parse the format settings of the
 // chart with default value.
-func parseChartOptions(opts string) (*chartOptions, error) {
-	options := chartOptions{
-		Dimension: chartDimensionOptions{
-			Width:  480,
-			Height: 290,
-		},
-		Format: pictureOptions{
-			FPrintsWithSheet: true,
-			XScale:           1,
-			YScale:           1,
-		},
-		Legend: chartLegendOptions{
-			Position: "bottom",
-		},
-		Title: chartTitleOptions{
-			Name: " ",
-		},
-		VaryColors:   true,
-		ShowBlanksAs: "gap",
+func parseChartOptions(opts *Chart) (*Chart, error) {
+	if opts == nil {
+		return nil, ErrParameterInvalid
 	}
-	err := json.Unmarshal([]byte(opts), &options)
-	return &options, err
+	if opts.Dimension.Width == nil {
+		opts.Dimension.Width = intPtr(defaultChartDimensionWidth)
+	}
+	if opts.Dimension.Height == nil {
+		opts.Dimension.Height = intPtr(defaultChartDimensionHeight)
+	}
+	if opts.Format.PrintObject == nil {
+		opts.Format.PrintObject = boolPtr(true)
+	}
+	if opts.Format.Locked == nil {
+		opts.Format.Locked = boolPtr(false)
+	}
+	if opts.Format.XScale == nil {
+		opts.Format.XScale = float64Ptr(defaultPictureScale)
+	}
+	if opts.Format.YScale == nil {
+		opts.Format.YScale = float64Ptr(defaultPictureScale)
+	}
+	if opts.Legend.Position == nil {
+		opts.Legend.Position = stringPtr(defaultChartLegendPosition)
+	}
+	if opts.Title.Name == "" {
+		opts.Title.Name = " "
+	}
+	if opts.VaryColors == nil {
+		opts.VaryColors = boolPtr(true)
+	}
+	if opts.ShowBlanksAs == "" {
+		opts.ShowBlanksAs = defaultChartShowBlanksAs
+	}
+	return opts, nil
 }
 
 // AddChart provides the method to add chart in a sheet by given chart format
@@ -518,66 +530,53 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //	)
 //
 //	func main() {
-//	    categories := map[string]string{
-//	        "A2": "Small", "A3": "Normal", "A4": "Large",
-//	        "B1": "Apple", "C1": "Orange", "D1": "Pear"}
-//	    values := map[string]int{
-//	        "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
 //	    f := excelize.NewFile()
-//	    for k, v := range categories {
-//	        f.SetCellValue("Sheet1", k, v)
-//	    }
-//	    for k, v := range values {
-//	        f.SetCellValue("Sheet1", k, v)
-//	    }
-//	    if err := f.AddChart("Sheet1", "E1", `{
-//	        "type": "col3DClustered",
-//	        "series": [
-//	        {
-//	            "name": "Sheet1!$A$2",
-//	            "categories": "Sheet1!$B$1:$D$1",
-//	            "values": "Sheet1!$B$2:$D$2"
-//	        },
-//	        {
-//	            "name": "Sheet1!$A$3",
-//	            "categories": "Sheet1!$B$1:$D$1",
-//	            "values": "Sheet1!$B$3:$D$3"
-//	        },
-//	        {
-//	            "name": "Sheet1!$A$4",
-//	            "categories": "Sheet1!$B$1:$D$1",
-//	            "values": "Sheet1!$B$4:$D$4"
-//	        }],
-//	        "title":
-//	        {
-//	            "name": "Fruit 3D Clustered Column Chart"
-//	        },
-//	        "legend":
-//	        {
-//	            "none": false,
-//	            "position": "bottom",
-//	            "show_legend_key": false
-//	        },
-//	        "plotarea":
-//	        {
-//	            "show_bubble_size": true,
-//	            "show_cat_name": false,
-//	            "show_leader_lines": false,
-//	            "show_percent": true,
-//	            "show_series_name": true,
-//	            "show_val": true
-//	        },
-//	        "show_blanks_as": "zero",
-//	        "x_axis":
-//	        {
-//	            "reverse_order": true
-//	        },
-//	        "y_axis":
-//	        {
-//	            "maximum": 7.5,
-//	            "minimum": 0.5
+//	    for idx, row := range [][]interface{}{
+//	        {nil, "Apple", "Orange", "Pear"}, {"Small", 2, 3, 3},
+//	        {"Normal", 5, 2, 4}, {"Large", 6, 7, 8},
+//	    } {
+//	        cell, err := excelize.CoordinatesToCellName(1, idx+1)
+//	        if err != nil {
+//	            fmt.Println(err)
+//	            return
 //	        }
-//	    }`); err != nil {
+//	        f.SetSheetRow("Sheet1", cell, &row)
+//	    }
+//	    positionBottom := "bottom"
+//	    if err := f.AddChart("Sheet1", "E1", &excelize.Chart{
+//	        Type: "col3DClustered",
+//	        Series: []excelize.ChartSeries{
+//	            {
+//	                Name:       "Sheet1!$A$2",
+//	                Categories: "Sheet1!$B$1:$D$1",
+//	                Values:     "Sheet1!$B$2:$D$2",
+//	            },
+//	            {
+//	                Name:       "Sheet1!$A$3",
+//	                Categories: "Sheet1!$B$1:$D$1",
+//	                Values:     "Sheet1!$B$3:$D$3",
+//	            },
+//	            {
+//	                Name:       "Sheet1!$A$4",
+//	                Categories: "Sheet1!$B$1:$D$1",
+//	                Values:     "Sheet1!$B$4:$D$4",
+//	            },
+//	        },
+//	        Title: excelize.ChartTitle{
+//	            Name: "Fruit 3D Clustered Column Chart",
+//	        },
+//	        Legend: excelize.ChartLegend{
+//	            None: false, Position: &positionBottom, ShowLegendKey: false,
+//	        },
+//	        PlotArea: excelize.ChartPlotArea{
+//	            ShowBubbleSize:  true,
+//	            ShowCatName:     false,
+//	            ShowLeaderLines: false,
+//	            ShowPercent:     true,
+//	            ShowSerName:     true,
+//	            ShowVal:         true,
+//	        },
+//	    }); err != nil {
 //	        fmt.Println(err)
 //	        return
 //	    }
@@ -651,21 +650,21 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //
 // The series options that can be set are:
 //
-//	name
-//	categories
-//	values
-//	line
-//	marker
+//	Name
+//	Categories
+//	Values
+//	Line
+//	Marker
 //
-// name: Set the name for the series. The name is displayed in the chart legend and in the formula bar. The name property is optional and if it isn't supplied it will default to Series 1..n. The name can also be a formula such as Sheet1!$A$1
+// Name: Set the name for the series. The name is displayed in the chart legend and in the formula bar. The 'Name' property is optional and if it isn't supplied it will default to Series 1..n. The name can also be a formula such as Sheet1!$A$1
 //
-// categories: This sets the chart category labels. The category is more or less the same as the X axis. In most chart types the categories property is optional and the chart will just assume a sequential series from 1..n.
+// Categories: This sets the chart category labels. The category is more or less the same as the X axis. In most chart types the 'Categories' property is optional and the chart will just assume a sequential series from 1..n.
 //
-// values: This is the most important property of a series and is the only mandatory option for every chart object. This option links the chart with the worksheet data that it displays.
+// Values: This is the most important property of a series and is the only mandatory option for every chart object. This option links the chart with the worksheet data that it displays.
 //
-// line: This sets the line format of the line chart. The line property is optional and if it isn't supplied it will default style. The options that can be set are width and color. The range of width is 0.25pt - 999pt. If the value of width is outside the range, the default width of the line is 2pt. The value for color should be represented in hex format (e.g., #000000 - #FFFFFF)
+// Line: This sets the line format of the line chart. The 'Line' property is optional and if it isn't supplied it will default style. The options that can be set are width and color. The range of width is 0.25pt - 999pt. If the value of width is outside the range, the default width of the line is 2pt. The value for color should be represented in hex format (e.g., #000000 - #FFFFFF)
 //
-// marker: This sets the marker of the line chart and scatter chart. The range of optional field 'size' is 2-72 (default value is 5). The enumeration value of optional field 'symbol' are (default value is 'auto'):
+// Marker: This sets the marker of the line chart and scatter chart. The range of optional field 'size' is 2-72 (default value is 5). The enumeration value of optional field 'Symbol' are (default value is 'auto'):
 //
 //	circle
 //	dash
@@ -682,13 +681,13 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //
 // Set properties of the chart legend. The options that can be set are:
 //
-//	none
-//	position
-//	show_legend_key
+//	None
+//	Position
+//	ShowLegendKey
 //
-// none: Specified if show the legend without overlapping the chart. The default value is 'false'.
+// None: Specified if show the legend without overlapping the chart. The default value is 'false'.
 //
-// position: Set the position of the chart legend. The default legend position is right. This parameter only takes effect when 'none' is false. The available positions are:
+// Position: Set the position of the chart legend. The default legend position is right. This parameter only takes effect when 'none' is false. The available positions are:
 //
 //	top
 //	bottom
@@ -696,15 +695,15 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //	right
 //	top_right
 //
-// show_legend_key: Set the legend keys shall be shown in data labels. The default value is false.
+// ShowLegendKey: Set the legend keys shall be shown in data labels. The default value is false.
 //
 // Set properties of the chart title. The properties that can be set are:
 //
-//	title
+//	Title
 //
-// name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as Sheet1!$A$1 or a list with a sheet name. The name property is optional. The default is to have no chart title.
+// Name: Set the name (title) for the chart. The name is displayed above the chart. The name can also be a formula such as Sheet1!$A$1 or a list with a sheet name. The name property is optional. The default is to have no chart title.
 //
-// Specifies how blank cells are plotted on the chart by show_blanks_as. The default value is gap. The options that can be set are:
+// Specifies how blank cells are plotted on the chart by ShowBlanksAs. The default value is gap. The options that can be set are:
 //
 //	gap
 //	span
@@ -716,80 +715,80 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //
 // zero: Specifies that blank values shall be treated as zero.
 //
-// Specifies that each data marker in the series has a different color by vary_colors. The default value is true.
+// Specifies that each data marker in the series has a different color by VaryColors. The default value is true.
 //
 // Set chart offset, scale, aspect ratio setting and print settings by format, same as function AddPicture.
 //
-// Set the position of the chart plot area by plotarea. The properties that can be set are:
+// Set the position of the chart plot area by PlotArea. The properties that can be set are:
 //
-//	show_bubble_size
-//	show_cat_name
-//	show_leader_lines
-//	show_percent
-//	show_series_name
-//	show_val
+//	ShowBubbleSize
+//	ShowCatName
+//	ShowLeaderLines
+//	ShowPercent
+//	ShowSerName
+//	ShowVal
 //
-// show_bubble_size: Specifies the bubble size shall be shown in a data label. The show_bubble_size property is optional. The default value is false.
+// ShowBubbleSize: Specifies the bubble size shall be shown in a data label. The ShowBubbleSize property is optional. The default value is false.
 //
-// show_cat_name: Specifies that the category name shall be shown in the data label. The show_cat_name property is optional. The default value is true.
+// ShowCatName: Specifies that the category name shall be shown in the data label. The ShowCatName property is optional. The default value is true.
 //
-// show_leader_lines: Specifies leader lines shall be shown for data labels. The show_leader_lines property is optional. The default value is false.
+// ShowLeaderLines: Specifies leader lines shall be shown for data labels. The ShowLeaderLines property is optional. The default value is false.
 //
-// show_percent: Specifies that the percentage shall be shown in a data label. The show_percent property is optional. The default value is false.
+// ShowPercent: Specifies that the percentage shall be shown in a data label. The ShowPercent property is optional. The default value is false.
 //
-// show_series_name: Specifies that the series name shall be shown in a data label. The show_series_name property is optional. The default value is false.
+// ShowSerName: Specifies that the series name shall be shown in a data label. The ShowSerName property is optional. The default value is false.
 //
-// show_val: Specifies that the value shall be shown in a data label. The show_val property is optional. The default value is false.
+// ShowVal: Specifies that the value shall be shown in a data label. The ShowVal property is optional. The default value is false.
 //
-// Set the primary horizontal and vertical axis options by x_axis and y_axis. The properties of x_axis that can be set are:
+// Set the primary horizontal and vertical axis options by XAxis and YAxis. The properties of XAxis that can be set are:
 //
-//	none
-//	major_grid_lines
-//	minor_grid_lines
-//	tick_label_skip
-//	reverse_order
-//	maximum
-//	minimum
-//	font
+//	None
+//	MajorGridLines
+//	MinorGridLines
+//	TickLabelSkip
+//	ReverseOrder
+//	Maximum
+//	Minimum
+//	Font
 //
-// The properties of y_axis that can be set are:
+// The properties of YAxis that can be set are:
 //
-//	none
-//	major_grid_lines
-//	minor_grid_lines
-//	major_unit
-//	tick_label_skip
-//	reverse_order
-//	maximum
-//	minimum
-//	font
+//	None
+//	MajorGridLines
+//	MinorGridLines
+//	MajorUnit
+//	TickLabelSkip
+//	ReverseOrder
+//	Maximum
+//	Minimum
+//	Font
 //
 // none: Disable axes.
 //
-// major_grid_lines: Specifies major grid lines.
+// MajorGridLines: Specifies major grid lines.
 //
-// minor_grid_lines: Specifies minor grid lines.
+// MinorGridLines: Specifies minor grid lines.
 //
-// major_unit: Specifies the distance between major ticks. Shall contain a positive floating-point number. The major_unit property is optional. The default value is auto.
+// MajorUnit: Specifies the distance between major ticks. Shall contain a positive floating-point number. The MajorUnit property is optional. The default value is auto.
 //
-// tick_label_skip: Specifies how many tick labels to skip between label that is drawn. The tick_label_skip property is optional. The default value is auto.
+// TickLabelSkip: Specifies how many tick labels to skip between label that is drawn. The TickLabelSkip property is optional. The default value is auto.
 //
-// reverse_order: Specifies that the categories or values on reverse order (orientation of the chart). The reverse_order property is optional. The default value is false.
+// ReverseOrder: Specifies that the categories or values on reverse order (orientation of the chart). The ReverseOrder property is optional. The default value is false.
 //
-// maximum: Specifies that the fixed maximum, 0 is auto. The maximum property is optional. The default value is auto.
+// Maximum: Specifies that the fixed maximum, 0 is auto. The Maximum property is optional. The default value is auto.
 //
-// minimum: Specifies that the fixed minimum, 0 is auto. The minimum property is optional. The default value is auto.
+// Minimum: Specifies that the fixed minimum, 0 is auto. The Minimum property is optional. The default value is auto.
 //
-// font: Specifies that the font of the horizontal and vertical axis. The properties of font that can be set are:
+// Font: Specifies that the font of the horizontal and vertical axis. The properties of font that can be set are:
 //
-//	bold
-//	italic
-//	underline
-//	family
-//	size
-//	strike
-//	color
-//	vertAlign
+//	Bold
+//	Italic
+//	Underline
+//	Family
+//	Size
+//	Strike
+//	Color
+//	VertAlign
 //
 // Set chart size by dimension property. The dimension property is optional. The default width is 480, and height is 290.
 //
@@ -806,112 +805,100 @@ func parseChartOptions(opts string) (*chartOptions, error) {
 //	)
 //
 //	func main() {
-//	    categories := map[string]string{
-//	        "A2": "Small", "A3": "Normal", "A4": "Large",
-//	        "B1": "Apple", "C1": "Orange", "D1": "Pear"}
-//	    values := map[string]int{
-//	        "B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
 //	    f := excelize.NewFile()
-//	    for k, v := range categories {
-//	        f.SetCellValue("Sheet1", k, v)
-//	    }
-//	    for k, v := range values {
-//	        f.SetCellValue("Sheet1", k, v)
-//	    }
-//	    if err := f.AddChart("Sheet1", "E1", `{
-//	        "type": "col",
-//	        "series": [
-//	        {
-//	            "name": "Sheet1!$A$2",
-//	            "categories": "",
-//	            "values": "Sheet1!$B$2:$D$2"
-//	        },
-//	        {
-//	            "name": "Sheet1!$A$3",
-//	            "categories": "Sheet1!$B$1:$D$1",
-//	            "values": "Sheet1!$B$3:$D$3"
-//	        }],
-//	        "format":
-//	        {
-//	            "x_scale": 1.0,
-//	            "y_scale": 1.0,
-//	            "x_offset": 15,
-//	            "y_offset": 10,
-//	            "print_obj": true,
-//	            "lock_aspect_ratio": false,
-//	            "locked": false
-//	        },
-//	        "title":
-//	        {
-//	            "name": "Clustered Column - Line Chart"
-//	        },
-//	        "legend":
-//	        {
-//	            "position": "left",
-//	            "show_legend_key": false
-//	        },
-//	        "plotarea":
-//	        {
-//	            "show_bubble_size": true,
-//	            "show_cat_name": false,
-//	            "show_leader_lines": false,
-//	            "show_percent": true,
-//	            "show_series_name": true,
-//	            "show_val": true
+//	    for idx, row := range [][]interface{}{
+//	        {nil, "Apple", "Orange", "Pear"}, {"Small", 2, 3, 3},
+//	        {"Normal", 5, 2, 4}, {"Large", 6, 7, 8},
+//	    } {
+//	        cell, err := excelize.CoordinatesToCellName(1, idx+1)
+//	        if err != nil {
+//	            fmt.Println(err)
+//	            return
 //	        }
-//	    }`, `{
-//	        "type": "line",
-//	        "series": [
-//	        {
-//	            "name": "Sheet1!$A$4",
-//	            "categories": "Sheet1!$B$1:$D$1",
-//	            "values": "Sheet1!$B$4:$D$4",
-//	            "marker":
+//	        f.SetSheetRow("Sheet1", cell, &row)
+//	    }
+//	    enable, disable, scale := true, false, 1.0
+//	    positionLeft, positionRight := "left", "right"
+//	    if err := f.AddChart("Sheet1", "E1", &excelize.Chart{
+//	        Type: "col",
+//	        Series: []excelize.ChartSeries{
 //	            {
-//	                "symbol": "none",
-//	                "size": 10
-//	            }
-//	        }],
-//	        "format":
-//	        {
-//	            "x_scale": 1,
-//	            "y_scale": 1,
-//	            "x_offset": 15,
-//	            "y_offset": 10,
-//	            "print_obj": true,
-//	            "lock_aspect_ratio": false,
-//	            "locked": false
+//	                Name:       "Sheet1!$A$2",
+//	                Categories: "Sheet1!$B$1:$D$1",
+//	                Values:     "Sheet1!$B$2:$D$2",
+//	            },
 //	        },
-//	        "legend":
-//	        {
-//	            "position": "right",
-//	            "show_legend_key": false
+//	        Format: excelize.Picture{
+//	            XScale:          &scale,
+//	            YScale:          &scale,
+//	            OffsetX:         15,
+//	            OffsetY:         10,
+//	            PrintObject:     &enable,
+//	            LockAspectRatio: false,
+//	            Locked:          &disable,
 //	        },
-//	        "plotarea":
-//	        {
-//	            "show_bubble_size": true,
-//	            "show_cat_name": false,
-//	            "show_leader_lines": false,
-//	            "show_percent": true,
-//	            "show_series_name": true,
-//	            "show_val": true
-//	        }
-//	    }`); err != nil {
+//	        Title: excelize.ChartTitle{
+//	            Name: "Clustered Column - Line Chart",
+//	        },
+//	        Legend: excelize.ChartLegend{
+//	            Position: &positionLeft, ShowLegendKey: false,
+//	        },
+//	        PlotArea: excelize.ChartPlotArea{
+//	            ShowBubbleSize:  true,
+//	            ShowCatName:     false,
+//	            ShowLeaderLines: false,
+//	            ShowPercent:     true,
+//	            ShowSerName:     true,
+//	            ShowVal:         true,
+//	        },
+//	    }, &excelize.Chart{
+//	        Type: "line",
+//	        Series: []excelize.ChartSeries{
+//	            {
+//	                Name:       "Sheet1!$A$4",
+//	                Categories: "Sheet1!$B$1:$D$1",
+//	                Values:     "Sheet1!$B$4:$D$4",
+//	                Marker: excelize.ChartMarker{
+//	                    Symbol: "none", Size: 10,
+//	                },
+//	            },
+//	        },
+//	        Format: excelize.Picture{
+//	            XScale:          &scale,
+//	            YScale:          &scale,
+//	            OffsetX:         15,
+//	            OffsetY:         10,
+//	            PrintObject:     &enable,
+//	            LockAspectRatio: false,
+//	            Locked:          &disable,
+//	        },
+//	        Legend: excelize.ChartLegend{
+//	            Position: &positionRight, ShowLegendKey: false,
+//	        },
+//	        PlotArea: excelize.ChartPlotArea{
+//	            ShowBubbleSize:  true,
+//	            ShowCatName:     false,
+//	            ShowLeaderLines: false,
+//	            ShowPercent:     true,
+//	            ShowSerName:     true,
+//	            ShowVal:         true,
+//	        },
+//	    }); err != nil {
 //	        fmt.Println(err)
 //	        return
 //	    }
-//	    // Save spreadsheet file by the given path.
+//	    // Save spreadsheet by the given path.
 //	    if err := f.SaveAs("Book1.xlsx"); err != nil {
 //	        fmt.Println(err)
 //	    }
 //	}
-func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
-	// Read sheet data.
+func (f *File) AddChart(sheet, cell string, chart *Chart, combo ...*Chart) error {
+	// Read worksheet data
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	options, comboCharts, err := f.getChartOptions(opts, combo)
+	opts, comboCharts, err := f.getChartOptions(chart, combo)
 	if err != nil {
 		return err
 	}
@@ -922,11 +909,11 @@ func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	err = f.addDrawingChart(sheet, drawingXML, cell, options.Dimension.Width, options.Dimension.Height, drawingRID, &options.Format)
+	err = f.addDrawingChart(sheet, drawingXML, cell, *opts.Dimension.Width, *opts.Dimension.Height, drawingRID, &opts.Format)
 	if err != nil {
 		return err
 	}
-	f.addChart(options, comboCharts)
+	f.addChart(opts, comboCharts)
 	if err = f.addContentTypePart(chartID, "chart"); err != nil {
 		return err
 	}
@@ -939,7 +926,7 @@ func (f *File) AddChart(sheet, cell, opts string, combo ...string) error {
 // format set (such as offset, scale, aspect ratio setting and print settings)
 // and properties set. In Excel a chartsheet is a worksheet that only contains
 // a chart.
-func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
+func (f *File) AddChartSheet(sheet string, chart *Chart, combo ...*Chart) error {
 	// Check if the worksheet already exists
 	idx, err := f.GetSheetIndex(sheet)
 	if err != nil {
@@ -948,7 +935,7 @@ func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 	if idx != -1 {
 		return ErrExistsSheet
 	}
-	options, comboCharts, err := f.getChartOptions(opts, combo)
+	opts, comboCharts, err := f.getChartOptions(chart, combo)
 	if err != nil {
 		return err
 	}
@@ -975,10 +962,10 @@ func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 	f.prepareChartSheetDrawing(&cs, drawingID, sheet)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	drawingRID := f.addRels(drawingRels, SourceRelationshipChart, "../charts/chart"+strconv.Itoa(chartID)+".xml", "")
-	if err = f.addSheetDrawingChart(drawingXML, drawingRID, &options.Format); err != nil {
+	if err = f.addSheetDrawingChart(drawingXML, drawingRID, &opts.Format); err != nil {
 		return err
 	}
-	f.addChart(options, comboCharts)
+	f.addChart(opts, comboCharts)
 	if err = f.addContentTypePart(chartID, "chart"); err != nil {
 		return err
 	}
@@ -996,8 +983,8 @@ func (f *File) AddChartSheet(sheet, opts string, combo ...string) error {
 
 // getChartOptions provides a function to check format set of the chart and
 // create chart format.
-func (f *File) getChartOptions(opts string, combo []string) (*chartOptions, []*chartOptions, error) {
-	var comboCharts []*chartOptions
+func (f *File) getChartOptions(opts *Chart, combo []*Chart) (*Chart, []*Chart, error) {
+	var comboCharts []*Chart
 	options, err := parseChartOptions(opts)
 	if err != nil {
 		return options, comboCharts, err

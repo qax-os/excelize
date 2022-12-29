@@ -55,7 +55,7 @@ func (f *File) prepareChartSheetDrawing(cs *xlsxChartsheet, drawingID int, sheet
 
 // addChart provides a function to create chart as xl/charts/chart%d.xml by
 // given format sets.
-func (f *File) addChart(opts *chartOptions, comboCharts []*chartOptions) {
+func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 	count := f.countCharts()
 	xlsxChartSpace := xlsxChartSpace{
 		XMLNSa:         NameSpaceDrawingML.Value,
@@ -139,7 +139,7 @@ func (f *File) addChart(opts *chartOptions, comboCharts []*chartOptions) {
 			},
 			PlotArea: &cPlotArea{},
 			Legend: &cLegend{
-				LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[opts.Legend.Position])},
+				LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[*opts.Legend.Position])},
 				Overlay:   &attrValBool{Val: boolPtr(false)},
 			},
 
@@ -180,7 +180,7 @@ func (f *File) addChart(opts *chartOptions, comboCharts []*chartOptions) {
 			},
 		},
 	}
-	plotAreaFunc := map[string]func(*chartOptions) *cPlotArea{
+	plotAreaFunc := map[string]func(*Chart) *cPlotArea{
 		Area:                        f.drawBaseChart,
 		AreaStacked:                 f.drawBaseChart,
 		AreaPercentStacked:          f.drawBaseChart,
@@ -264,7 +264,7 @@ func (f *File) addChart(opts *chartOptions, comboCharts []*chartOptions) {
 
 // drawBaseChart provides a function to draw the c:plotArea element for bar,
 // and column series charts by given format sets.
-func (f *File) drawBaseChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawBaseChart(opts *Chart) *cPlotArea {
 	c := cCharts{
 		BarDir: &attrValString{
 			Val: stringPtr("col"),
@@ -273,7 +273,7 @@ func (f *File) drawBaseChart(opts *chartOptions) *cPlotArea {
 			Val: stringPtr("clustered"),
 		},
 		VaryColors: &attrValBool{
-			Val: boolPtr(opts.VaryColors),
+			Val: opts.VaryColors,
 		},
 		Ser:   f.drawChartSeries(opts),
 		Shape: f.drawChartShape(opts),
@@ -513,7 +513,7 @@ func (f *File) drawBaseChart(opts *chartOptions) *cPlotArea {
 
 // drawDoughnutChart provides a function to draw the c:plotArea element for
 // doughnut chart by given format sets.
-func (f *File) drawDoughnutChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawDoughnutChart(opts *Chart) *cPlotArea {
 	holeSize := 75
 	if opts.HoleSize > 0 && opts.HoleSize <= 90 {
 		holeSize = opts.HoleSize
@@ -522,7 +522,7 @@ func (f *File) drawDoughnutChart(opts *chartOptions) *cPlotArea {
 	return &cPlotArea{
 		DoughnutChart: &cCharts{
 			VaryColors: &attrValBool{
-				Val: boolPtr(opts.VaryColors),
+				Val: opts.VaryColors,
 			},
 			Ser:      f.drawChartSeries(opts),
 			HoleSize: &attrValInt{Val: intPtr(holeSize)},
@@ -532,7 +532,7 @@ func (f *File) drawDoughnutChart(opts *chartOptions) *cPlotArea {
 
 // drawLineChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
-func (f *File) drawLineChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawLineChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		LineChart: &cCharts{
 			Grouping: &attrValString{
@@ -555,7 +555,7 @@ func (f *File) drawLineChart(opts *chartOptions) *cPlotArea {
 
 // drawLine3DChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
-func (f *File) drawLine3DChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawLine3DChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		Line3DChart: &cCharts{
 			Grouping: &attrValString{
@@ -578,11 +578,11 @@ func (f *File) drawLine3DChart(opts *chartOptions) *cPlotArea {
 
 // drawPieChart provides a function to draw the c:plotArea element for pie
 // chart by given format sets.
-func (f *File) drawPieChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawPieChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		PieChart: &cCharts{
 			VaryColors: &attrValBool{
-				Val: boolPtr(opts.VaryColors),
+				Val: opts.VaryColors,
 			},
 			Ser: f.drawChartSeries(opts),
 		},
@@ -591,11 +591,11 @@ func (f *File) drawPieChart(opts *chartOptions) *cPlotArea {
 
 // drawPie3DChart provides a function to draw the c:plotArea element for 3D
 // pie chart by given format sets.
-func (f *File) drawPie3DChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawPie3DChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		Pie3DChart: &cCharts{
 			VaryColors: &attrValBool{
-				Val: boolPtr(opts.VaryColors),
+				Val: opts.VaryColors,
 			},
 			Ser: f.drawChartSeries(opts),
 		},
@@ -604,14 +604,14 @@ func (f *File) drawPie3DChart(opts *chartOptions) *cPlotArea {
 
 // drawPieOfPieChart provides a function to draw the c:plotArea element for
 // pie chart by given format sets.
-func (f *File) drawPieOfPieChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawPieOfPieChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		OfPieChart: &cCharts{
 			OfPieType: &attrValString{
 				Val: stringPtr("pie"),
 			},
 			VaryColors: &attrValBool{
-				Val: boolPtr(opts.VaryColors),
+				Val: opts.VaryColors,
 			},
 			Ser:      f.drawChartSeries(opts),
 			SerLines: &attrValString{},
@@ -621,14 +621,14 @@ func (f *File) drawPieOfPieChart(opts *chartOptions) *cPlotArea {
 
 // drawBarOfPieChart provides a function to draw the c:plotArea element for
 // pie chart by given format sets.
-func (f *File) drawBarOfPieChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawBarOfPieChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		OfPieChart: &cCharts{
 			OfPieType: &attrValString{
 				Val: stringPtr("bar"),
 			},
 			VaryColors: &attrValBool{
-				Val: boolPtr(opts.VaryColors),
+				Val: opts.VaryColors,
 			},
 			Ser:      f.drawChartSeries(opts),
 			SerLines: &attrValString{},
@@ -638,7 +638,7 @@ func (f *File) drawBarOfPieChart(opts *chartOptions) *cPlotArea {
 
 // drawRadarChart provides a function to draw the c:plotArea element for radar
 // chart by given format sets.
-func (f *File) drawRadarChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawRadarChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		RadarChart: &cCharts{
 			RadarStyle: &attrValString{
@@ -661,7 +661,7 @@ func (f *File) drawRadarChart(opts *chartOptions) *cPlotArea {
 
 // drawScatterChart provides a function to draw the c:plotArea element for
 // scatter chart by given format sets.
-func (f *File) drawScatterChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawScatterChart(opts *Chart) *cPlotArea {
 	return &cPlotArea{
 		ScatterChart: &cCharts{
 			ScatterStyle: &attrValString{
@@ -684,7 +684,7 @@ func (f *File) drawScatterChart(opts *chartOptions) *cPlotArea {
 
 // drawSurface3DChart provides a function to draw the c:surface3DChart element by
 // given format sets.
-func (f *File) drawSurface3DChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawSurface3DChart(opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
 		Surface3DChart: &cCharts{
 			Ser: f.drawChartSeries(opts),
@@ -706,7 +706,7 @@ func (f *File) drawSurface3DChart(opts *chartOptions) *cPlotArea {
 
 // drawSurfaceChart provides a function to draw the c:surfaceChart element by
 // given format sets.
-func (f *File) drawSurfaceChart(opts *chartOptions) *cPlotArea {
+func (f *File) drawSurfaceChart(opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
 		SurfaceChart: &cCharts{
 			Ser: f.drawChartSeries(opts),
@@ -728,7 +728,7 @@ func (f *File) drawSurfaceChart(opts *chartOptions) *cPlotArea {
 
 // drawChartShape provides a function to draw the c:shape element by given
 // format sets.
-func (f *File) drawChartShape(opts *chartOptions) *attrValString {
+func (f *File) drawChartShape(opts *Chart) *attrValString {
 	shapes := map[string]string{
 		Bar3DConeClustered:          "cone",
 		Bar3DConeStacked:            "cone",
@@ -760,7 +760,7 @@ func (f *File) drawChartShape(opts *chartOptions) *attrValString {
 
 // drawChartSeries provides a function to draw the c:ser element by given
 // format sets.
-func (f *File) drawChartSeries(opts *chartOptions) *[]cSer {
+func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 	var ser []cSer
 	for k := range opts.Series {
 		ser = append(ser, cSer{
@@ -790,7 +790,7 @@ func (f *File) drawChartSeries(opts *chartOptions) *[]cSer {
 
 // drawChartSeriesSpPr provides a function to draw the c:spPr element by given
 // format sets.
-func (f *File) drawChartSeriesSpPr(i int, opts *chartOptions) *cSpPr {
+func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	var srgbClr *attrValString
 	var schemeClr *aSchemeClr
 
@@ -823,7 +823,7 @@ func (f *File) drawChartSeriesSpPr(i int, opts *chartOptions) *cSpPr {
 
 // drawChartSeriesDPt provides a function to draw the c:dPt element by given
 // data index and format sets.
-func (f *File) drawChartSeriesDPt(i int, opts *chartOptions) []*cDPt {
+func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 	dpt := []*cDPt{{
 		IDx:      &attrValInt{Val: intPtr(i)},
 		Bubble3D: &attrValBool{Val: boolPtr(false)},
@@ -852,7 +852,7 @@ func (f *File) drawChartSeriesDPt(i int, opts *chartOptions) []*cDPt {
 
 // drawChartSeriesCat provides a function to draw the c:cat element by given
 // chart series and format sets.
-func (f *File) drawChartSeriesCat(v chartSeriesOptions, opts *chartOptions) *cCat {
+func (f *File) drawChartSeriesCat(v ChartSeries, opts *Chart) *cCat {
 	cat := &cCat{
 		StrRef: &cStrRef{
 			F: v.Categories,
@@ -867,7 +867,7 @@ func (f *File) drawChartSeriesCat(v chartSeriesOptions, opts *chartOptions) *cCa
 
 // drawChartSeriesVal provides a function to draw the c:val element by given
 // chart series and format sets.
-func (f *File) drawChartSeriesVal(v chartSeriesOptions, opts *chartOptions) *cVal {
+func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
 			F: v.Values,
@@ -882,7 +882,7 @@ func (f *File) drawChartSeriesVal(v chartSeriesOptions, opts *chartOptions) *cVa
 
 // drawChartSeriesMarker provides a function to draw the c:marker element by
 // given data index and format sets.
-func (f *File) drawChartSeriesMarker(i int, opts *chartOptions) *cMarker {
+func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 	defaultSymbol := map[string]*attrValString{Scatter: {Val: stringPtr("circle")}}
 	marker := &cMarker{
 		Symbol: defaultSymbol[opts.Type],
@@ -917,7 +917,7 @@ func (f *File) drawChartSeriesMarker(i int, opts *chartOptions) *cMarker {
 
 // drawChartSeriesXVal provides a function to draw the c:xVal element by given
 // chart series and format sets.
-func (f *File) drawChartSeriesXVal(v chartSeriesOptions, opts *chartOptions) *cCat {
+func (f *File) drawChartSeriesXVal(v ChartSeries, opts *Chart) *cCat {
 	cat := &cCat{
 		StrRef: &cStrRef{
 			F: v.Categories,
@@ -929,7 +929,7 @@ func (f *File) drawChartSeriesXVal(v chartSeriesOptions, opts *chartOptions) *cC
 
 // drawChartSeriesYVal provides a function to draw the c:yVal element by given
 // chart series and format sets.
-func (f *File) drawChartSeriesYVal(v chartSeriesOptions, opts *chartOptions) *cVal {
+func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
 			F: v.Values,
@@ -941,7 +941,7 @@ func (f *File) drawChartSeriesYVal(v chartSeriesOptions, opts *chartOptions) *cV
 
 // drawCharSeriesBubbleSize provides a function to draw the c:bubbleSize
 // element by given chart series and format sets.
-func (f *File) drawCharSeriesBubbleSize(v chartSeriesOptions, opts *chartOptions) *cVal {
+func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
 	if _, ok := map[string]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok {
 		return nil
 	}
@@ -954,7 +954,7 @@ func (f *File) drawCharSeriesBubbleSize(v chartSeriesOptions, opts *chartOptions
 
 // drawCharSeriesBubble3D provides a function to draw the c:bubble3D element
 // by given format sets.
-func (f *File) drawCharSeriesBubble3D(opts *chartOptions) *attrValBool {
+func (f *File) drawCharSeriesBubble3D(opts *Chart) *attrValBool {
 	if _, ok := map[string]bool{Bubble3D: true}[opts.Type]; !ok {
 		return nil
 	}
@@ -963,21 +963,21 @@ func (f *File) drawCharSeriesBubble3D(opts *chartOptions) *attrValBool {
 
 // drawChartDLbls provides a function to draw the c:dLbls element by given
 // format sets.
-func (f *File) drawChartDLbls(opts *chartOptions) *cDLbls {
+func (f *File) drawChartDLbls(opts *Chart) *cDLbls {
 	return &cDLbls{
 		ShowLegendKey:   &attrValBool{Val: boolPtr(opts.Legend.ShowLegendKey)},
-		ShowVal:         &attrValBool{Val: boolPtr(opts.Plotarea.ShowVal)},
-		ShowCatName:     &attrValBool{Val: boolPtr(opts.Plotarea.ShowCatName)},
-		ShowSerName:     &attrValBool{Val: boolPtr(opts.Plotarea.ShowSerName)},
-		ShowBubbleSize:  &attrValBool{Val: boolPtr(opts.Plotarea.ShowBubbleSize)},
-		ShowPercent:     &attrValBool{Val: boolPtr(opts.Plotarea.ShowPercent)},
-		ShowLeaderLines: &attrValBool{Val: boolPtr(opts.Plotarea.ShowLeaderLines)},
+		ShowVal:         &attrValBool{Val: boolPtr(opts.PlotArea.ShowVal)},
+		ShowCatName:     &attrValBool{Val: boolPtr(opts.PlotArea.ShowCatName)},
+		ShowSerName:     &attrValBool{Val: boolPtr(opts.PlotArea.ShowSerName)},
+		ShowBubbleSize:  &attrValBool{Val: boolPtr(opts.PlotArea.ShowBubbleSize)},
+		ShowPercent:     &attrValBool{Val: boolPtr(opts.PlotArea.ShowPercent)},
+		ShowLeaderLines: &attrValBool{Val: boolPtr(opts.PlotArea.ShowLeaderLines)},
 	}
 }
 
 // drawChartSeriesDLbls provides a function to draw the c:dLbls element by
 // given format sets.
-func (f *File) drawChartSeriesDLbls(opts *chartOptions) *cDLbls {
+func (f *File) drawChartSeriesDLbls(opts *Chart) *cDLbls {
 	dLbls := f.drawChartDLbls(opts)
 	chartSeriesDLbls := map[string]*cDLbls{
 		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil,
@@ -989,7 +989,7 @@ func (f *File) drawChartSeriesDLbls(opts *chartOptions) *cDLbls {
 }
 
 // drawPlotAreaCatAx provides a function to draw the c:catAx element.
-func (f *File) drawPlotAreaCatAx(opts *chartOptions) []*cAxs {
+func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 	max := &attrValFloat{Val: opts.XAxis.Maximum}
 	min := &attrValFloat{Val: opts.XAxis.Minimum}
 	if opts.XAxis.Maximum == nil {
@@ -1025,10 +1025,10 @@ func (f *File) drawPlotAreaCatAx(opts *chartOptions) []*cAxs {
 			NoMultiLvlLbl: &attrValBool{Val: boolPtr(false)},
 		},
 	}
-	if opts.XAxis.MajorGridlines {
+	if opts.XAxis.MajorGridLines {
 		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
-	if opts.XAxis.MinorGridlines {
+	if opts.XAxis.MinorGridLines {
 		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.TickLabelSkip != 0 {
@@ -1038,7 +1038,7 @@ func (f *File) drawPlotAreaCatAx(opts *chartOptions) []*cAxs {
 }
 
 // drawPlotAreaValAx provides a function to draw the c:valAx element.
-func (f *File) drawPlotAreaValAx(opts *chartOptions) []*cAxs {
+func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 	max := &attrValFloat{Val: opts.YAxis.Maximum}
 	min := &attrValFloat{Val: opts.YAxis.Minimum}
 	if opts.YAxis.Maximum == nil {
@@ -1076,10 +1076,10 @@ func (f *File) drawPlotAreaValAx(opts *chartOptions) []*cAxs {
 			CrossBetween:  &attrValString{Val: stringPtr(chartValAxCrossBetween[opts.Type])},
 		},
 	}
-	if opts.YAxis.MajorGridlines {
+	if opts.YAxis.MajorGridLines {
 		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
-	if opts.YAxis.MinorGridlines {
+	if opts.YAxis.MinorGridLines {
 		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if pos, ok := valTickLblPos[opts.Type]; ok {
@@ -1092,7 +1092,7 @@ func (f *File) drawPlotAreaValAx(opts *chartOptions) []*cAxs {
 }
 
 // drawPlotAreaSerAx provides a function to draw the c:serAx element.
-func (f *File) drawPlotAreaSerAx(opts *chartOptions) []*cAxs {
+func (f *File) drawPlotAreaSerAx(opts *Chart) []*cAxs {
 	max := &attrValFloat{Val: opts.YAxis.Maximum}
 	min := &attrValFloat{Val: opts.YAxis.Minimum}
 	if opts.YAxis.Maximum == nil {
@@ -1139,7 +1139,7 @@ func (f *File) drawPlotAreaSpPr() *cSpPr {
 }
 
 // drawPlotAreaTxPr provides a function to draw the c:txPr element.
-func (f *File) drawPlotAreaTxPr(opts *chartAxisOptions) *cTxPr {
+func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 	cTxPr := &cTxPr{
 		BodyPr: aBodyPr{
 			Rot:              -60000000,
@@ -1242,7 +1242,7 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int, error) {
 
 // addDrawingChart provides a function to add chart graphic frame by given
 // sheet, drawingXML, cell, width, height, relationship index and format sets.
-func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, opts *pictureOptions) error {
+func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rID int, opts *PictureOptions) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
@@ -1250,8 +1250,8 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	colIdx := col - 1
 	rowIdx := row - 1
 
-	width = int(float64(width) * opts.XScale)
-	height = int(float64(height) * opts.YScale)
+	width = int(float64(width) * *opts.XScale)
+	height = int(float64(height) * *opts.YScale)
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, opts.OffsetX, opts.OffsetY, width, height)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
@@ -1293,8 +1293,8 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	graphic, _ := xml.Marshal(graphicFrame)
 	twoCellAnchor.GraphicFrame = string(graphic)
 	twoCellAnchor.ClientData = &xdrClientData{
-		FLocksWithSheet:  opts.FLocksWithSheet,
-		FPrintsWithSheet: opts.FPrintsWithSheet,
+		FLocksWithSheet:  *opts.Locked,
+		FPrintsWithSheet: *opts.PrintObject,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)
@@ -1304,7 +1304,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 // addSheetDrawingChart provides a function to add chart graphic frame for
 // chartsheet by given sheet, drawingXML, width, height, relationship index
 // and format sets.
-func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *pictureOptions) error {
+func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *PictureOptions) error {
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return err
@@ -1336,8 +1336,8 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *pictureOpt
 	graphic, _ := xml.Marshal(graphicFrame)
 	absoluteAnchor.GraphicFrame = string(graphic)
 	absoluteAnchor.ClientData = &xdrClientData{
-		FLocksWithSheet:  opts.FLocksWithSheet,
-		FPrintsWithSheet: opts.FPrintsWithSheet,
+		FLocksWithSheet:  *opts.Locked,
+		FPrintsWithSheet: *opts.PrintObject,
 	}
 	content.AbsoluteAnchor = append(content.AbsoluteAnchor, &absoluteAnchor)
 	f.Drawings.Store(drawingXML, content)

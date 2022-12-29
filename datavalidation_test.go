@@ -51,7 +51,8 @@ func TestDataValidation(t *testing.T) {
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
-	f.NewSheet("Sheet2")
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetSheetRow("Sheet2", "A2", &[]interface{}{"B2", 1}))
 	assert.NoError(t, f.SetSheetRow("Sheet2", "A3", &[]interface{}{"B3", 3}))
 	dvRange = NewDataValidation(true)

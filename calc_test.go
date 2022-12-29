@@ -5478,7 +5478,8 @@ func TestCalcSLOP(t *testing.T) {
 
 func TestCalcSHEET(t *testing.T) {
 	f := NewFile()
-	f.NewSheet("Sheet2")
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	formulaList := map[string]string{
 		"=SHEET(\"Sheet2\")":   "2",
 		"=SHEET(Sheet2!A1)":    "2",
@@ -5494,7 +5495,8 @@ func TestCalcSHEET(t *testing.T) {
 
 func TestCalcSHEETS(t *testing.T) {
 	f := NewFile()
-	f.NewSheet("Sheet2")
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	formulaList := map[string]string{
 		"=SHEETS(Sheet1!A1:B1)":        "1",
 		"=SHEETS(Sheet1!A1:Sheet1!A1)": "1",

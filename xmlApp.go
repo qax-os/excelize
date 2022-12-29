@@ -15,13 +15,13 @@ import "encoding/xml"
 
 // AppProperties directly maps the document application properties.
 type AppProperties struct {
-	Application       string `json:"application"`
-	ScaleCrop         bool   `json:"scale_crop"`
-	DocSecurity       int    `json:"doc_security"`
-	Company           string `json:"company"`
-	LinksUpToDate     bool   `json:"links_up_to_date"`
-	HyperlinksChanged bool   `json:"hyperlinks_changed"`
-	AppVersion        string `json:"app_version"`
+	Application       string
+	ScaleCrop         bool
+	DocSecurity       int
+	Company           string
+	LinksUpToDate     bool
+	HyperlinksChanged bool
+	AppVersion        string
 }
 
 // xlsxProperties specifies to an OOXML document properties such as the

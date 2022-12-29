@@ -10,7 +10,7 @@ import (
 
 func TestAdjustMergeCells(t *testing.T) {
 	f := NewFile()
-	// Test adjustAutoFilter with illegal cell reference.
+	// Test adjustAutoFilter with illegal cell reference
 	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -57,7 +57,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}, columns, 1, -1))
 
-	// Test adjustMergeCells.
+	// Test adjust merge cells
 	var cases []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -68,7 +68,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		expectRect []int
 	}
 
-	// Test insert.
+	// Test adjust merged cell when insert rows and columns
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -139,7 +139,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		assert.Equal(t, c.expectRect, c.ws.MergeCells.Cells[0].rect, c.label)
 	}
 
-	// Test delete,
+	// Test adjust merged cells when delete rows and columns
 	cases = []struct {
 		label      string
 		ws         *xlsxWorksheet
@@ -292,7 +292,7 @@ func TestAdjustAutoFilter(t *testing.T) {
 			Ref: "A1:A3",
 		},
 	}, rows, 1, -1))
-	// Test adjustAutoFilter with illegal cell reference.
+	// Test adjustAutoFilter with illegal cell reference
 	assert.EqualError(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A:B1",
@@ -307,15 +307,15 @@ func TestAdjustAutoFilter(t *testing.T) {
 
 func TestAdjustTable(t *testing.T) {
 	f, sheetName := NewFile(), "Sheet1"
-	for idx, tableRange := range [][]string{{"B2", "C3"}, {"E3", "F5"}, {"H5", "H8"}, {"J5", "K9"}} {
-		assert.NoError(t, f.AddTable(sheetName, tableRange[0], tableRange[1], fmt.Sprintf(`{
-	      "table_name": "table%d",
-	      "table_style": "TableStyleMedium2",
-	      "show_first_column": true,
-	      "show_last_column": true,
-	      "show_row_stripes": false,
-	      "show_column_stripes": true
-	  }`, idx)))
+	for idx, reference := range []string{"B2:C3", "E3:F5", "H5:H8", "J5:K9"} {
+		assert.NoError(t, f.AddTable(sheetName, reference, &TableOptions{
+			Name:              fmt.Sprintf("table%d", idx),
+			StyleName:         "TableStyleMedium2",
+			ShowFirstColumn:   true,
+			ShowLastColumn:    true,
+			ShowRowStripes:    boolPtr(false),
+			ShowColumnStripes: true,
+		}))
 	}
 	assert.NoError(t, f.RemoveRow(sheetName, 2))
 	assert.NoError(t, f.RemoveRow(sheetName, 3))
@@ -323,31 +323,32 @@ func TestAdjustTable(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustTable.xlsx")))
 
 	f = NewFile()
-	assert.NoError(t, f.AddTable(sheetName, "A1", "D5", ""))
-	// Test adjust table with non-table part.
+	assert.NoError(t, f.AddTable(sheetName, "A1:D5", nil))
+	// Test adjust table with non-table part
 	f.Pkg.Delete("xl/tables/table1.xml")
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
-	// Test adjust table with unsupported charset.
+	// Test adjust table with unsupported charset
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
-	// Test adjust table with invalid table range reference.
+	// Test adjust table with invalid table range reference
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
 }
 
 func TestAdjustHelper(t *testing.T) {
 	f := NewFile()
-	f.NewSheet("Sheet2")
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:B1"}}},
 	})
 	f.Sheet.Store("xl/worksheets/sheet2.xml", &xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{Ref: "A1:B"},
 	})
-	// Test adjustHelper with illegal cell reference.
+	// Test adjustHelper with illegal cell reference
 	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
-	// Test adjustHelper on not exists worksheet.
+	// Test adjustHelper on not exists worksheet
 	assert.EqualError(t, f.adjustHelper("SheetN", rows, 0, 0), "sheet SheetN does not exist")
 }
 

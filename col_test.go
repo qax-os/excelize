@@ -151,7 +151,6 @@ func TestGetColsError(t *testing.T) {
 
 func TestColsRows(t *testing.T) {
 	f := NewFile()
-	f.NewSheet("Sheet1")
 
 	_, err := f.Cols("Sheet1")
 	assert.NoError(t, err)
@@ -231,7 +230,8 @@ func TestColumnVisibility(t *testing.T) {
 		// Test set column visible with invalid sheet name
 		assert.EqualError(t, f.SetColVisible("Sheet:1", "A", false), ErrSheetNameInvalid.Error())
 
-		f.NewSheet("Sheet3")
+		_, err = f.NewSheet("Sheet3")
+		assert.NoError(t, err)
 		assert.NoError(t, f.SetColVisible("Sheet3", "E", false))
 		assert.EqualError(t, f.SetColVisible("Sheet1", "A:-1", true), newInvalidColumnNameError("-1").Error())
 		assert.EqualError(t, f.SetColVisible("SheetN", "E", false), "sheet SheetN does not exist")
@@ -253,7 +253,8 @@ func TestOutlineLevel(t *testing.T) {
 	assert.Equal(t, uint8(0), level)
 	assert.NoError(t, err)
 
-	f.NewSheet("Sheet2")
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetColOutlineLevel("Sheet1", "D", 4))
 
 	level, err = f.GetColOutlineLevel("Sheet1", "D")
@@ -318,7 +319,8 @@ func TestOutlineLevel(t *testing.T) {
 func TestSetColStyle(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "B2", "Hello"))
-	styleID, err := f.NewStyle(`{"fill":{"type":"pattern","color":["#94d3a2"],"pattern":1}}`)
+
+	styleID, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"#94d3a2"}, Pattern: 1}})
 	assert.NoError(t, err)
 	// Test set column style on not exists worksheet
 	assert.EqualError(t, f.SetColStyle("SheetN", "E", styleID), "sheet SheetN does not exist")
@@ -410,7 +412,7 @@ func TestInsertCols(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 	assert.NoError(t, f.MergeCell(sheet1, "A1", "C3"))
 
-	assert.NoError(t, f.AutoFilter(sheet1, "A2", "B2", `{"column":"B","expression":"x != blanks"}`))
+	assert.NoError(t, f.AutoFilter(sheet1, "A2:B2", &AutoFilterOptions{Column: "B", Expression: "x != blanks"}))
 	assert.NoError(t, f.InsertCols(sheet1, "A", 1))
 
 	// Test insert column with illegal cell reference

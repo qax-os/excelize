@@ -121,7 +121,14 @@ const (
 	// PivotTables chosen are created in a version of Excel earlier than
 	// Excel 2007 or in compatibility mode. Slicer can only be used with
 	// PivotTables created in Excel 2007 or a newer version of Excel.
-	pivotTableVersion = 3
+	pivotTableVersion           = 3
+	defaultPictureScale         = 1.0
+	defaultChartDimensionWidth  = 480
+	defaultChartDimensionHeight = 290
+	defaultChartLegendPosition  = "bottom"
+	defaultChartShowBlanksAs    = "gap"
+	defaultShapeSize            = 160
+	defaultShapeLineWidth       = 1
 )
 
 // ColorMappingType is the type of color transformation.
@@ -554,48 +561,48 @@ type xdrTxBody struct {
 	P      []*aP    `xml:"a:p"`
 }
 
-// pictureOptions directly maps the format settings of the picture.
-type pictureOptions struct {
-	FPrintsWithSheet bool    `json:"print_obj"`
-	FLocksWithSheet  bool    `json:"locked"`
-	NoChangeAspect   bool    `json:"lock_aspect_ratio"`
-	Autofit          bool    `json:"autofit"`
-	OffsetX          int     `json:"x_offset"`
-	OffsetY          int     `json:"y_offset"`
-	XScale           float64 `json:"x_scale"`
-	YScale           float64 `json:"y_scale"`
-	Hyperlink        string  `json:"hyperlink"`
-	HyperlinkType    string  `json:"hyperlink_type"`
-	Positioning      string  `json:"positioning"`
+// PictureOptions directly maps the format settings of the picture.
+type PictureOptions struct {
+	PrintObject     *bool
+	Locked          *bool
+	LockAspectRatio bool
+	AutoFit         bool
+	OffsetX         int
+	OffsetY         int
+	XScale          *float64
+	YScale          *float64
+	Hyperlink       string
+	HyperlinkType   string
+	Positioning     string
 }
 
-// shapeOptions directly maps the format settings of the shape.
-type shapeOptions struct {
-	Macro     string                  `json:"macro"`
-	Type      string                  `json:"type"`
-	Width     int                     `json:"width"`
-	Height    int                     `json:"height"`
-	Format    pictureOptions          `json:"format"`
-	Color     shapeColorOptions       `json:"color"`
-	Line      lineOptions             `json:"line"`
-	Paragraph []shapeParagraphOptions `json:"paragraph"`
+// Shape directly maps the format settings of the shape.
+type Shape struct {
+	Macro     string
+	Type      string
+	Width     *int
+	Height    *int
+	Format    PictureOptions
+	Color     ShapeColor
+	Line      ShapeLine
+	Paragraph []ShapeParagraph
 }
 
-// shapeParagraphOptions directly maps the format settings of the paragraph in
+// ShapeParagraph directly maps the format settings of the paragraph in
 // the shape.
-type shapeParagraphOptions struct {
-	Font Font   `json:"font"`
-	Text string `json:"text"`
+type ShapeParagraph struct {
+	Font Font
+	Text string
 }
 
-// shapeColorOptions directly maps the color settings of the shape.
-type shapeColorOptions struct {
-	Line   string `json:"line"`
-	Fill   string `json:"fill"`
-	Effect string `json:"effect"`
+// ShapeColor directly maps the color settings of the shape.
+type ShapeColor struct {
+	Line   string
+	Fill   string
+	Effect string
 }
 
-// lineOptions directly maps the line settings of the shape.
-type lineOptions struct {
-	Width float64 `json:"width"`
+// ShapeLine directly maps the line settings of the shape.
+type ShapeLine struct {
+	Width *float64
 }

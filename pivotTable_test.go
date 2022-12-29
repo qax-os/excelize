@@ -109,7 +109,8 @@ func TestAddPivotTable(t *testing.T) {
 		ShowLastColumn:      true,
 		PivotTableStyleName: "PivotStyleLight19",
 	}))
-	f.NewSheet("Sheet2")
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
 		PivotTableRange: "Sheet2!$A$1:$AR$15",
@@ -232,7 +233,7 @@ func TestAddPivotTable(t *testing.T) {
 		Rows:            []PivotTableField{{Data: "Year"}},
 	}), ErrSheetNameInvalid.Error())
 	// Test adjust range with invalid range
-	_, _, err := f.adjustRange("")
+	_, _, err = f.adjustRange("")
 	assert.EqualError(t, err, ErrParameterRequired.Error())
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")

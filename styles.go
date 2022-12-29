@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -1076,35 +1075,25 @@ func (f *File) sharedStringsWriter() {
 
 // parseFormatStyleSet provides a function to parse the format settings of the
 // cells and conditional formats.
-func parseFormatStyleSet(style interface{}) (*Style, error) {
-	fs := Style{}
+func parseFormatStyleSet(style *Style) (*Style, error) {
 	var err error
-	switch v := style.(type) {
-	case string:
-		err = json.Unmarshal([]byte(v), &fs)
-	case *Style:
-		fs = *v
-	default:
-		err = ErrParameterInvalid
-	}
-	if fs.Font != nil {
-		if len(fs.Font.Family) > MaxFontFamilyLength {
-			return &fs, ErrFontLength
+	if style.Font != nil {
+		if len(style.Font.Family) > MaxFontFamilyLength {
+			return style, ErrFontLength
 		}
-		if fs.Font.Size > MaxFontSize {
-			return &fs, ErrFontSize
+		if style.Font.Size > MaxFontSize {
+			return style, ErrFontSize
 		}
 	}
-	if fs.CustomNumFmt != nil && len(*fs.CustomNumFmt) == 0 {
+	if style.CustomNumFmt != nil && len(*style.CustomNumFmt) == 0 {
 		err = ErrCustomNumFmt
 	}
-	return &fs, err
+	return style, err
 }
 
-// NewStyle provides a function to create the style for cells by given structure
-// pointer or JSON. This function is concurrency safe. Note that
-// the 'Font.Color' field uses an RGB color represented in 'RRGGBB' hexadecimal
-// notation.
+// NewStyle provides a function to create the style for cells by given style
+// options. This function is concurrency safe. Note that the 'Font.Color' field
+// uses an RGB color represented in 'RRGGBB' hexadecimal notation.
 //
 // The following table shows the border types used in 'Border.Type' supported by
 // excelize:
@@ -1983,13 +1972,16 @@ func parseFormatStyleSet(style interface{}) (*Style, error) {
 //	err = f.SetCellStyle("Sheet1", "A6", "A6", style)
 //
 // Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
-func (f *File) NewStyle(style interface{}) (int, error) {
+func (f *File) NewStyle(style *Style) (int, error) {
 	var (
 		fs                                  *Style
 		font                                *xlsxFont
 		err                                 error
 		cellXfsID, fontID, borderID, fillID int
 	)
+	if style == nil {
+		return cellXfsID, err
+	}
 	fs, err = parseFormatStyleSet(style)
 	if err != nil {
 		return cellXfsID, err
@@ -2123,9 +2115,8 @@ func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (int, error) {
 
 // NewConditionalStyle provides a function to create style for conditional
 // format by given style format. The parameters are the same with the NewStyle
-// function. Note that the color field uses RGB color code and only support to
-// set font, fills, alignment and borders currently.
-func (f *File) NewConditionalStyle(style string) (int, error) {
+// function.
+func (f *File) NewConditionalStyle(style *Style) (int, error) {
 	s, err := f.stylesReader()
 	if err != nil {
 		return 0, err
@@ -2836,51 +2827,51 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //
 //	 Type          | Parameters
 //	---------------+------------------------------------
-//	 cell          | criteria
-//	               | value
-//	               | minimum
-//	               | maximum
-//	 date          | criteria
-//	               | value
-//	               | minimum
-//	               | maximum
-//	 time_period   | criteria
-//	 text          | criteria
-//	               | value
-//	 average       | criteria
+//	 cell          | Criteria
+//	               | Value
+//	               | Minimum
+//	               | Maximum
+//	 date          | Criteria
+//	               | Value
+//	               | Minimum
+//	               | Maximum
+//	 time_period   | Criteria
+//	 text          | Criteria
+//	               | Value
+//	 average       | Criteria
 //	 duplicate     | (none)
 //	 unique        | (none)
-//	 top           | criteria
-//	               | value
-//	 bottom        | criteria
-//	               | value
+//	 top           | Criteria
+//	               | Value
+//	 bottom        | Criteria
+//	               | Value
 //	 blanks        | (none)
 //	 no_blanks     | (none)
 //	 errors        | (none)
 //	 no_errors     | (none)
-//	 2_color_scale | min_type
-//	               | max_type
-//	               | min_value
-//	               | max_value
-//	               | min_color
-//	               | max_color
-//	 3_color_scale | min_type
-//	               | mid_type
-//	               | max_type
-//	               | min_value
-//	               | mid_value
-//	               | max_value
-//	               | min_color
-//	               | mid_color
-//	               | max_color
-//	 data_bar      | min_type
-//	               | max_type
-//	               | min_value
-//	               | max_value
-//	               | bar_color
-//	 formula       | criteria
+//	 2_color_scale | MinType
+//	               | MaxType
+//	               | MinValue
+//	               | MaxValue
+//	               | MinColor
+//	               | MaxColor
+//	 3_color_scale | MinType
+//	               | MidType
+//	               | MaxType
+//	               | MinValue
+//	               | MidValue
+//	               | MaxValue
+//	               | MinColor
+//	               | MidColor
+//	               | MaxColor
+//	 data_bar      | MinType
+//	               | MaxType
+//	               | MinValue
+//	               | MaxValue
+//	               | BarColor
+//	 formula       | Criteria
 //
-// The criteria parameter is used to set the criteria by which the cell data
+// The 'Criteria' parameter is used to set the criteria by which the cell data
 // will be evaluated. It has no default value. The most common criteria as
 // applied to {"type"："cell"} are:
 //
@@ -2902,22 +2893,51 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 // value: The value is generally used along with the criteria parameter to set
 // the rule by which the cell data will be evaluated:
 //
-//	f.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "D1:D10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "cell",
+//	            Criteria: ">",
+//	            Format:   format,
+//	            Value:    "6",
+//	        },
+//	    },
+//	)
 //
 // The value property can also be an cell reference:
 //
-//	f.SetConditionalFormat("Sheet1", "D1:D10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"$C$1"}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "D1:D10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "cell",
+//	            Criteria: ">",
+//	            Format:   format,
+//	            Value:    "$C$1",
+//	        },
+//	    },
+//	)
 //
 // type: format - The format parameter is used to specify the format that will
 // be applied to the cell when the conditional formatting criterion is met. The
-// format is created using the NewConditionalStyle() method in the same way as
+// format is created using the NewConditionalStyle function in the same way as
 // cell formats:
 //
-//	format, err = f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+//	format, err := f.NewConditionalStyle(
+//	    &excelize.Style{
+//	        Font: &excelize.Font{Color: "#9A0511"},
+//	        Fill: excelize.Fill{
+//	            Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1,
+//	        },
+//	    },
+//	)
 //	if err != nil {
 //	    fmt.Println(err)
 //	}
-//	f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":">","format":%d,"value":"6"}]`, format))
+//	err = f.SetConditionalFormat("Sheet1", "D1:D10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {Type: "cell", Criteria: ">", Format: format, Value: "6"},
+//	    },
+//	)
 //
 // Note: In Excel, a conditional format is superimposed over the existing cell
 // format and not all cell format properties can be modified. Properties that
@@ -2929,19 +2949,50 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 // These can be replicated using the following excelize formats:
 //
 //	// Rose format for bad conditional.
-//	format1, err = f.NewConditionalStyle(`{"font":{"color":"#9A0511"},"fill":{"type":"pattern","color":["#FEC7CE"],"pattern":1}}`)
+//	format1, err := f.NewConditionalStyle(
+//	    &excelize.Style{
+//	        Font: &excelize.Font{Color: "#9A0511"},
+//	        Fill: excelize.Fill{
+//	            Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1,
+//	        },
+//	    },
+//	)
 //
 //	// Light yellow format for neutral conditional.
-//	format2, err = f.NewConditionalStyle(`{"font":{"color":"#9B5713"},"fill":{"type":"pattern","color":["#FEEAA0"],"pattern":1}}`)
+//	format2, err := f.NewConditionalStyle(
+//	    &excelize.Style{
+//	        Font: &excelize.Font{Color: "#9B5713"},
+//	        Fill: excelize.Fill{
+//	            Type: "pattern", Color: []string{"#FEEAA0"}, Pattern: 1,
+//	        },
+//	    },
+//	)
 //
 //	// Light green format for good conditional.
-//	format3, err = f.NewConditionalStyle(`{"font":{"color":"#09600B"},"fill":{"type":"pattern","color":["#C7EECF"],"pattern":1}}`)
+//	format3, err := f.NewConditionalStyle(
+//	    &excelize.Style{
+//	        Font: &excelize.Font{Color: "#09600B"},
+//	        Fill: excelize.Fill{
+//	            Type: "pattern", Color: []string{"#C7EECF"}, Pattern: 1,
+//	        },
+//	    },
+//	)
 //
 // type: minimum - The minimum parameter is used to set the lower limiting value
 // when the criteria is either "between" or "not between".
 //
 //	// Highlight cells rules: between...
-//	f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"cell","criteria":"between","format":%d,"minimum":"6","maximum":"8"}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "cell",
+//	            Criteria: "between",
+//	            Format:   format,
+//	            Minimum:  "6",
+//	            Maximum:  "8",
+//	        },
+//	    },
+//	)
 //
 // type: maximum - The maximum parameter is used to set the upper limiting value
 // when the criteria is either "between" or "not between". See the previous
@@ -2951,98 +3002,184 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 // conditional format:
 //
 //	// Top/Bottom rules: Above Average...
-//	f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": true}]`, format1))
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:         "average",
+//	            Criteria:     "=",
+//	            Format:       format1,
+//	            AboveAverage: true,
+//	        },
+//	    },
+//	)
 //
 //	// Top/Bottom rules: Below Average...
-//	f.SetConditionalFormat("Sheet1", "B1:B10", fmt.Sprintf(`[{"type":"average","criteria":"=","format":%d, "above_average": false}]`, format2))
+//	err := f.SetConditionalFormat("Sheet1", "B1:B10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:         "average",
+//	            Criteria:     "=",
+//	            Format:       format2,
+//	            AboveAverage: false,
+//	        },
+//	    },
+//	)
 //
 // type: duplicate - The duplicate type is used to highlight duplicate cells in a range:
 //
 //	// Highlight cells rules: Duplicate Values...
-//	f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"duplicate","criteria":"=","format":%d}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {Type: "duplicate", Criteria: "=", Format: format},
+//	    },
+//	)
 //
 // type: unique - The unique type is used to highlight unique cells in a range:
 //
 //	// Highlight cells rules: Not Equal To...
-//	f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"unique","criteria":"=","format":%d}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {Type: "unique", Criteria: "=", Format: format},
+//	    },
+//	)
 //
 // type: top - The top type is used to specify the top n values by number or percentage in a range:
 //
 //	// Top/Bottom rules: Top 10.
-//	f.SetConditionalFormat("Sheet1", "H1:H10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6"}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "H1:H10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "top",
+//	            Criteria: "=",
+//	            Format:   format,
+//	            Value:    "6",
+//	        },
+//	    },
+//	)
 //
 // The criteria can be used to indicate that a percentage condition is required:
 //
-//	f.SetConditionalFormat("Sheet1", "A1:A10", fmt.Sprintf(`[{"type":"top","criteria":"=","format":%d,"value":"6","percent":true}]`, format))
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "top",
+//	            Criteria: "=",
+//	            Format:   format,
+//	            Value:    "6",
+//	            Percent:  true,
+//	        },
+//	    },
+//	)
 //
 // type: 2_color_scale - The 2_color_scale type is used to specify Excel's "2
 // Color Scale" style conditional format:
 //
 //	// Color scales: 2 color.
-//	f.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"2_color_scale","criteria":"=","min_type":"min","max_type":"max","min_color":"#F8696B","max_color":"#63BE7B"}]`)
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "2_color_scale",
+//	            Criteria: "=",
+//	            MinType:  "min",
+//	            MaxType:  "max",
+//	            MinColor: "#F8696B",
+//	            MaxColor: "#63BE7B",
+//	        },
+//	    },
+//	)
 //
-// This conditional type can be modified with min_type, max_type, min_value,
-// max_value, min_color and max_color, see below.
+// This conditional type can be modified with MinType, MaxType, MinValue,
+// MaxValue, MinColor and MaxColor, see below.
 //
 // type: 3_color_scale - The 3_color_scale type is used to specify Excel's "3
 // Color Scale" style conditional format:
 //
 //	// Color scales: 3 color.
-//	f.SetConditionalFormat("Sheet1", "A1:A10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
+//	err := f.SetConditionalFormat("Sheet1", "A1:A10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "3_color_scale",
+//	            Criteria: "=",
+//	            MinType:  "min",
+//	            MidType:  "percentile",
+//	            MaxType:  "max",
+//	            MinColor: "#F8696B",
+//	            MidColor: "#FFEB84",
+//	            MaxColor: "#63BE7B",
+//	        },
+//	    },
+//	)
 //
-// This conditional type can be modified with min_type, mid_type, max_type,
-// min_value, mid_value, max_value, min_color, mid_color and max_color, see
+// This conditional type can be modified with MinType, MidType, MaxType,
+// MinValue, MidValue, MaxValue, MinColor, MidColor and MaxColor, see
 // below.
 //
 // type: data_bar - The data_bar type is used to specify Excel's "Data Bar"
 // style conditional format.
 //
-// min_type - The min_type and max_type properties are available when the conditional formatting type is 2_color_scale, 3_color_scale or data_bar. The mid_type is available for 3_color_scale. The properties are used as follows:
+// MinType - The MinType and MaxType properties are available when the conditional formatting type is 2_color_scale, 3_color_scale or data_bar. The MidType is available for 3_color_scale. The properties are used as follows:
 //
 //	// Data Bars: Gradient Fill.
-//	f.SetConditionalFormat("Sheet1", "K1:K10", `[{"type":"data_bar", "criteria":"=", "min_type":"min","max_type":"max","bar_color":"#638EC6"}]`)
+//	err := f.SetConditionalFormat("Sheet1", "K1:K10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "data_bar",
+//	            Criteria: "=",
+//	            MinType:  "min",
+//	            MaxType:  "max",
+//	            BarColor: "#638EC6",
+//	        },
+//	    },
+//	)
 //
 // The available min/mid/max types are:
 //
-//	min        (for min_type only)
+//	min        (for MinType only)
 //	num
 //	percent
 //	percentile
 //	formula
-//	max        (for max_type only)
+//	max        (for MaxType only)
 //
-// mid_type - Used for 3_color_scale. Same as min_type, see above.
+// MidType - Used for 3_color_scale. Same as MinType, see above.
 //
-// max_type - Same as min_type, see above.
+// MaxType - Same as MinType, see above.
 //
-// min_value - The min_value and max_value properties are available when the
-// conditional formatting type is 2_color_scale, 3_color_scale or data_bar. The
-// mid_value is available for 3_color_scale.
-//
-// mid_value - Used for 3_color_scale. Same as min_value, see above.
-//
-// max_value - Same as min_value, see above.
-//
-// min_color - The min_color and max_color properties are available when the
+// MinValue - The MinValue and MaxValue properties are available when the
 // conditional formatting type is 2_color_scale, 3_color_scale or data_bar.
-// The mid_color is available for 3_color_scale. The properties are used as
-// follows:
+//
+// MidValue - The MidValue is available for 3_color_scale. Same as MinValue,
+// see above.
+//
+// MaxValue - Same as MinValue, see above.
+//
+// MinColor - The MinColor and MaxColor properties are available when the
+// conditional formatting type is 2_color_scale, 3_color_scale or data_bar.
+//
+// MidColor - The MidColor is available for 3_color_scale. The properties
+// are used as follows:
 //
 //	// Color scales: 3 color.
-//	f.SetConditionalFormat("Sheet1", "B1:B10", `[{"type":"3_color_scale","criteria":"=","min_type":"min","mid_type":"percentile","max_type":"max","min_color":"#F8696B","mid_color":"#FFEB84","max_color":"#63BE7B"}]`)
+//	err := f.SetConditionalFormat("Sheet1", "B1:B10",
+//	    []excelize.ConditionalFormatOptions{
+//	        {
+//	            Type:     "3_color_scale",
+//	            Criteria: "=",
+//	            MinType:  "min",
+//	            MidType:  "percentile",
+//	            MaxType:  "max",
+//	            MinColor: "#F8696B",
+//	            MidColor: "#FFEB84",
+//	            MaxColor: "#63BE7B",
+//	        },
+//	    },
+//	)
 //
-// mid_color - Used for 3_color_scale. Same as min_color, see above.
+// MaxColor - Same as MinColor, see above.
 //
-// max_color - Same as min_color, see above.
-//
-// bar_color - Used for data_bar. Same as min_color, see above.
-func (f *File) SetConditionalFormat(sheet, reference, opts string) error {
-	var format []*conditionalOptions
-	err := json.Unmarshal([]byte(opts), &format)
-	if err != nil {
-		return err
-	}
-	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *conditionalOptions) *xlsxCfRule{
+// BarColor - Used for data_bar. Same as MinColor, see above.
+func (f *File) SetConditionalFormat(sheet, reference string, opts []ConditionalFormatOptions) error {
+	drawContFmtFunc := map[string]func(p int, ct string, fmtCond *ConditionalFormatOptions) *xlsxCfRule{
 		"cellIs":          drawCondFmtCellIs,
 		"top10":           drawCondFmtTop10,
 		"aboveAverage":    drawCondFmtAboveAverage,
@@ -3059,7 +3196,7 @@ func (f *File) SetConditionalFormat(sheet, reference, opts string) error {
 		return err
 	}
 	var cfRule []*xlsxCfRule
-	for p, v := range format {
+	for p, v := range opts {
 		var vt, ct string
 		var ok bool
 		// "type" is a required parameter, check for valid validation types.
@@ -3070,7 +3207,7 @@ func (f *File) SetConditionalFormat(sheet, reference, opts string) error {
 			if ok || vt == "expression" {
 				drawFunc, ok := drawContFmtFunc[vt]
 				if ok {
-					cfRule = append(cfRule, drawFunc(p, ct, v))
+					cfRule = append(cfRule, drawFunc(p, ct, &v))
 				}
 			}
 		}
@@ -3086,21 +3223,21 @@ func (f *File) SetConditionalFormat(sheet, reference, opts string) error {
 // extractCondFmtCellIs provides a function to extract conditional format
 // settings for cell value (include between, not between, equal, not equal,
 // greater than and less than) by given conditional formatting rule.
-func extractCondFmtCellIs(c *xlsxCfRule) *conditionalOptions {
-	format := conditionalOptions{Type: "cell", Criteria: operatorType[c.Operator], Format: *c.DxfID}
+func extractCondFmtCellIs(c *xlsxCfRule) ConditionalFormatOptions {
+	format := ConditionalFormatOptions{Type: "cell", Criteria: operatorType[c.Operator], Format: *c.DxfID}
 	if len(c.Formula) == 2 {
 		format.Minimum, format.Maximum = c.Formula[0], c.Formula[1]
-		return &format
+		return format
 	}
 	format.Value = c.Formula[0]
-	return &format
+	return format
 }
 
 // extractCondFmtTop10 provides a function to extract conditional format
 // settings for top N (default is top 10) by given conditional formatting
 // rule.
-func extractCondFmtTop10(c *xlsxCfRule) *conditionalOptions {
-	format := conditionalOptions{
+func extractCondFmtTop10(c *xlsxCfRule) ConditionalFormatOptions {
+	format := ConditionalFormatOptions{
 		Type:     "top",
 		Criteria: "=",
 		Format:   *c.DxfID,
@@ -3110,14 +3247,14 @@ func extractCondFmtTop10(c *xlsxCfRule) *conditionalOptions {
 	if c.Bottom {
 		format.Type = "bottom"
 	}
-	return &format
+	return format
 }
 
 // extractCondFmtAboveAverage provides a function to extract conditional format
 // settings for above average and below average by given conditional formatting
 // rule.
-func extractCondFmtAboveAverage(c *xlsxCfRule) *conditionalOptions {
-	return &conditionalOptions{
+func extractCondFmtAboveAverage(c *xlsxCfRule) ConditionalFormatOptions {
+	return ConditionalFormatOptions{
 		Type:         "average",
 		Criteria:     "=",
 		Format:       *c.DxfID,
@@ -3128,8 +3265,8 @@ func extractCondFmtAboveAverage(c *xlsxCfRule) *conditionalOptions {
 // extractCondFmtDuplicateUniqueValues provides a function to extract
 // conditional format settings for duplicate and unique values by given
 // conditional formatting rule.
-func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule) *conditionalOptions {
-	return &conditionalOptions{
+func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule) ConditionalFormatOptions {
+	return ConditionalFormatOptions{
 		Type: map[string]string{
 			"duplicateValues": "duplicate",
 			"uniqueValues":    "unique",
@@ -3142,8 +3279,8 @@ func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule) *conditionalOptions {
 // extractCondFmtColorScale provides a function to extract conditional format
 // settings for color scale (include 2 color scale and 3 color scale) by given
 // conditional formatting rule.
-func extractCondFmtColorScale(c *xlsxCfRule) *conditionalOptions {
-	var format conditionalOptions
+func extractCondFmtColorScale(c *xlsxCfRule) ConditionalFormatOptions {
+	var format ConditionalFormatOptions
 	format.Type, format.Criteria = "2_color_scale", "="
 	values := len(c.ColorScale.Cfvo)
 	colors := len(c.ColorScale.Color)
@@ -3172,35 +3309,35 @@ func extractCondFmtColorScale(c *xlsxCfRule) *conditionalOptions {
 		}
 		format.MaxColor = "#" + strings.TrimPrefix(strings.ToUpper(c.ColorScale.Color[2].RGB), "FF")
 	}
-	return &format
+	return format
 }
 
 // extractCondFmtDataBar provides a function to extract conditional format
 // settings for data bar by given conditional formatting rule.
-func extractCondFmtDataBar(c *xlsxCfRule) *conditionalOptions {
-	format := conditionalOptions{Type: "data_bar", Criteria: "="}
+func extractCondFmtDataBar(c *xlsxCfRule) ConditionalFormatOptions {
+	format := ConditionalFormatOptions{Type: "data_bar", Criteria: "="}
 	if c.DataBar != nil {
 		format.MinType = c.DataBar.Cfvo[0].Type
 		format.MaxType = c.DataBar.Cfvo[1].Type
 		format.BarColor = "#" + strings.TrimPrefix(strings.ToUpper(c.DataBar.Color[0].RGB), "FF")
 	}
-	return &format
+	return format
 }
 
 // extractCondFmtExp provides a function to extract conditional format settings
 // for expression by given conditional formatting rule.
-func extractCondFmtExp(c *xlsxCfRule) *conditionalOptions {
-	format := conditionalOptions{Type: "formula", Format: *c.DxfID}
+func extractCondFmtExp(c *xlsxCfRule) ConditionalFormatOptions {
+	format := ConditionalFormatOptions{Type: "formula", Format: *c.DxfID}
 	if len(c.Formula) > 0 {
 		format.Criteria = c.Formula[0]
 	}
-	return &format
+	return format
 }
 
 // GetConditionalFormats returns conditional format settings by given worksheet
 // name.
-func (f *File) GetConditionalFormats(sheet string) (map[string]string, error) {
-	extractContFmtFunc := map[string]func(c *xlsxCfRule) *conditionalOptions{
+func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalFormatOptions, error) {
+	extractContFmtFunc := map[string]func(c *xlsxCfRule) ConditionalFormatOptions{
 		"cellIs":          extractCondFmtCellIs,
 		"top10":           extractCondFmtTop10,
 		"aboveAverage":    extractCondFmtAboveAverage,
@@ -3211,20 +3348,19 @@ func (f *File) GetConditionalFormats(sheet string) (map[string]string, error) {
 		"expression":      extractCondFmtExp,
 	}
 
-	conditionalFormats := make(map[string]string)
+	conditionalFormats := make(map[string][]ConditionalFormatOptions)
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return conditionalFormats, err
 	}
 	for _, cf := range ws.ConditionalFormatting {
-		var opts []*conditionalOptions
+		var opts []ConditionalFormatOptions
 		for _, cr := range cf.CfRule {
 			if extractFunc, ok := extractContFmtFunc[cr.Type]; ok {
 				opts = append(opts, extractFunc(cr))
 			}
 		}
-		options, _ := json.Marshal(opts)
-		conditionalFormats[cf.SQRef] = string(options)
+		conditionalFormats[cf.SQRef] = opts
 	}
 	return conditionalFormats, err
 }
@@ -3248,7 +3384,7 @@ func (f *File) UnsetConditionalFormat(sheet, reference string) error {
 // drawCondFmtCellIs provides a function to create conditional formatting rule
 // for cell value (include between, not between, equal, not equal, greater
 // than and less than) by given priority, criteria type and format settings.
-func drawCondFmtCellIs(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtCellIs(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	c := &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],
@@ -3268,7 +3404,7 @@ func drawCondFmtCellIs(p int, ct string, format *conditionalOptions) *xlsxCfRule
 // drawCondFmtTop10 provides a function to create conditional formatting rule
 // for top N (default is top 10) by given priority, criteria type and format
 // settings.
-func drawCondFmtTop10(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtTop10(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	c := &xlsxCfRule{
 		Priority: p + 1,
 		Bottom:   format.Type == "bottom",
@@ -3286,7 +3422,7 @@ func drawCondFmtTop10(p int, ct string, format *conditionalOptions) *xlsxCfRule 
 // drawCondFmtAboveAverage provides a function to create conditional
 // formatting rule for above average and below average by given priority,
 // criteria type and format settings.
-func drawCondFmtAboveAverage(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtAboveAverage(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority:     p + 1,
 		Type:         validType[format.Type],
@@ -3298,7 +3434,7 @@ func drawCondFmtAboveAverage(p int, ct string, format *conditionalOptions) *xlsx
 // drawCondFmtDuplicateUniqueValues provides a function to create conditional
 // formatting rule for duplicate and unique values by given priority, criteria
 // type and format settings.
-func drawCondFmtDuplicateUniqueValues(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtDuplicateUniqueValues(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],
@@ -3309,7 +3445,7 @@ func drawCondFmtDuplicateUniqueValues(p int, ct string, format *conditionalOptio
 // drawCondFmtColorScale provides a function to create conditional formatting
 // rule for color scale (include 2 color scale and 3 color scale) by given
 // priority, criteria type and format settings.
-func drawCondFmtColorScale(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtColorScale(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	minValue := format.MinValue
 	if minValue == "" {
 		minValue = "0"
@@ -3346,7 +3482,7 @@ func drawCondFmtColorScale(p int, ct string, format *conditionalOptions) *xlsxCf
 
 // drawCondFmtDataBar provides a function to create conditional formatting
 // rule for data bar by given priority, criteria type and format settings.
-func drawCondFmtDataBar(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtDataBar(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],
@@ -3359,7 +3495,7 @@ func drawCondFmtDataBar(p int, ct string, format *conditionalOptions) *xlsxCfRul
 
 // drawCondFmtExp provides a function to create conditional formatting rule
 // for expression by given priority, criteria type and format settings.
-func drawCondFmtExp(p int, ct string, format *conditionalOptions) *xlsxCfRule {
+func drawCondFmtExp(p int, ct string, format *ConditionalFormatOptions) *xlsxCfRule {
 	return &xlsxCfRule{
 		Priority: p + 1,
 		Type:     validType[format.Type],

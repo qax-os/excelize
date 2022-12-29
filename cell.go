@@ -655,9 +655,9 @@ type FormulaOpts struct {
 //
 // Example 5, set range array formula "A1:A2" for the cell "A3" on "Sheet1":
 //
-//	   formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
-//	   err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
-//		      excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
+//	formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
+//	err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
+//	       excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
 // Example 6, set shared formula "=A1+B1" for the cell "C1:C5"
 // on "Sheet1", "C1" is the master cell:
@@ -681,12 +681,13 @@ type FormulaOpts struct {
 //	    f := excelize.NewFile()
 //	    for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
 //	        if err := f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row); err != nil {
-//	        	fmt.Println(err)
-//	        	return
+//	            fmt.Println(err)
+//	            return
 //	        }
 //	    }
-//	    if err := f.AddTable("Sheet1", "A1", "C2",
-//	        `{"table_name":"Table1","table_style":"TableStyleMedium2"}`); err != nil {
+//	    if err := f.AddTable("Sheet1", "A1:C2", &excelize.TableOptions{
+//	        Name: "Table1", StyleName: "TableStyleMedium2",
+//	    }); err != nil {
 //	        fmt.Println(err)
 //	        return
 //	    }

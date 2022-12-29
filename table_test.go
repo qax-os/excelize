@@ -11,22 +11,28 @@ import (
 func TestAddTable(t *testing.T) {
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
-	assert.NoError(t, f.AddTable("Sheet1", "B26", "A21", `{}`))
-	assert.NoError(t, f.AddTable("Sheet2", "A2", "B5", `{"table_name":"table","table_style":"TableStyleMedium2", "show_first_column":true,"show_last_column":true,"show_row_stripes":false,"show_column_stripes":true}`))
-	assert.NoError(t, f.AddTable("Sheet2", "F1", "F1", `{"table_style":"TableStyleMedium8"}`))
+	assert.NoError(t, f.AddTable("Sheet1", "B26:A21", nil))
+	assert.NoError(t, f.AddTable("Sheet2", "A2:B5", &TableOptions{
+		Name:              "table",
+		StyleName:         "TableStyleMedium2",
+		ShowFirstColumn:   true,
+		ShowLastColumn:    true,
+		ShowRowStripes:    boolPtr(true),
+		ShowColumnStripes: true,
+	},
+	))
+	assert.NoError(t, f.AddTable("Sheet2", "F1:F1", &TableOptions{StyleName: "TableStyleMedium8"}))
 
 	// Test add table in not exist worksheet
-	assert.EqualError(t, f.AddTable("SheetN", "B26", "A21", `{}`), "sheet SheetN does not exist")
-	// Test add table with illegal options
-	assert.EqualError(t, f.AddTable("Sheet1", "B26", "A21", `{x}`), "invalid character 'x' looking for beginning of object key string")
+	assert.EqualError(t, f.AddTable("SheetN", "B26:A21", nil), "sheet SheetN does not exist")
 	// Test add table with illegal cell reference
-	assert.EqualError(t, f.AddTable("Sheet1", "A", "B1", `{}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.AddTable("Sheet1", "A1", "B", `{}`), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.EqualError(t, f.AddTable("Sheet1", "A:B1", nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddTable("Sheet1", "A1:B", nil), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
 	// Test add table with invalid sheet name
-	assert.EqualError(t, f.AddTable("Sheet:1", "B26", "A21", `{}`), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddTable("Sheet:1", "B26:A21", nil), ErrSheetNameInvalid.Error())
 	// Test addTable with illegal cell reference
 	f = NewFile()
 	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
@@ -43,73 +49,66 @@ func TestAutoFilter(t *testing.T) {
 	outFile := filepath.Join("test", "TestAutoFilter%d.xlsx")
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
-	formats := []string{
-		``,
-		`{"column":"B","expression":"x != blanks"}`,
-		`{"column":"B","expression":"x == blanks"}`,
-		`{"column":"B","expression":"x != nonblanks"}`,
-		`{"column":"B","expression":"x == nonblanks"}`,
-		`{"column":"B","expression":"x <= 1 and x >= 2"}`,
-		`{"column":"B","expression":"x == 1 or x == 2"}`,
-		`{"column":"B","expression":"x == 1 or x == 2*"}`,
-	}
-	for i, format := range formats {
+	for i, opts := range []*AutoFilterOptions{
+		nil,
+		{Column: "B", Expression: ""},
+		{Column: "B", Expression: "x != blanks"},
+		{Column: "B", Expression: "x == blanks"},
+		{Column: "B", Expression: "x != nonblanks"},
+		{Column: "B", Expression: "x == nonblanks"},
+		{Column: "B", Expression: "x <= 1 and x >= 2"},
+		{Column: "B", Expression: "x == 1 or x == 2"},
+		{Column: "B", Expression: "x == 1 or x == 2*"},
+	} {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
-			err = f.AutoFilter("Sheet1", "D4", "B1", format)
-			assert.NoError(t, err)
+			assert.NoError(t, f.AutoFilter("Sheet1", "D4:B1", opts))
 			assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, i+1)))
 		})
 	}
 
 	// Test add auto filter with invalid sheet name
-	assert.EqualError(t, f.AutoFilter("Sheet:1", "A1", "B1", ""), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AutoFilter("Sheet:1", "A1:B1", nil), ErrSheetNameInvalid.Error())
 	// Test add auto filter with illegal cell reference
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A", "B1", ""), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A1", "B", ""), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.EqualError(t, f.AutoFilter("Sheet1", "A:B1", nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AutoFilter("Sheet1", "A1:B", nil), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test add auto filter with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AutoFilter("Sheet1", "D4", "B1", formats[0]), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.AutoFilter("Sheet1", "D4:B1", nil), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAutoFilterError(t *testing.T) {
 	outFile := filepath.Join("test", "TestAutoFilterError%d.xlsx")
-
 	f, err := prepareTestBook1()
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	formats := []string{
-		`{"column":"B","expression":"x <= 1 and x >= blanks"}`,
-		`{"column":"B","expression":"x -- y or x == *2*"}`,
-		`{"column":"B","expression":"x != y or x ? *2"}`,
-		`{"column":"B","expression":"x -- y o r x == *2"}`,
-		`{"column":"B","expression":"x -- y"}`,
-		`{"column":"A","expression":"x -- y"}`,
-	}
-	for i, format := range formats {
+	assert.NoError(t, err)
+	for i, opts := range []*AutoFilterOptions{
+		{Column: "B", Expression: "x <= 1 and x >= blanks"},
+		{Column: "B", Expression: "x -- y or x == *2*"},
+		{Column: "B", Expression: "x != y or x ? *2"},
+		{Column: "B", Expression: "x -- y o r x == *2"},
+		{Column: "B", Expression: "x -- y"},
+		{Column: "A", Expression: "x -- y"},
+	} {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
-			err = f.AutoFilter("Sheet2", "D4", "B1", format)
-			if assert.Error(t, err) {
+			if assert.Error(t, f.AutoFilter("Sheet2", "D4:B1", opts)) {
 				assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, i+1)))
 			}
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &autoFilterOptions{
+	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &AutoFilterOptions{
 		Column:     "A",
 		Expression: "",
 	}), "sheet SheetN does not exist")
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &autoFilterOptions{
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &AutoFilterOptions{
 		Column:     "-",
 		Expression: "-",
 	}), newInvalidColumnNameError("-").Error())
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &autoFilterOptions{
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &AutoFilterOptions{
 		Column:     "A",
 		Expression: "-",
 	}), `incorrect index of column 'A'`)
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &autoFilterOptions{
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &AutoFilterOptions{
 		Column:     "A",
 		Expression: "-",
 	}), `incorrect number of tokens in criteria '-'`)

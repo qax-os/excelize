@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"image"
 	"io"
@@ -26,14 +25,28 @@ import (
 
 // parsePictureOptions provides a function to parse the format settings of
 // the picture with default value.
-func parsePictureOptions(opts string) (*pictureOptions, error) {
-	format := pictureOptions{
-		FPrintsWithSheet: true,
-		XScale:           1,
-		YScale:           1,
+func parsePictureOptions(opts *PictureOptions) *PictureOptions {
+	if opts == nil {
+		return &PictureOptions{
+			PrintObject: boolPtr(true),
+			Locked:      boolPtr(false),
+			XScale:      float64Ptr(defaultPictureScale),
+			YScale:      float64Ptr(defaultPictureScale),
+		}
 	}
-	err := json.Unmarshal(fallbackOptions(opts), &format)
-	return &format, err
+	if opts.PrintObject == nil {
+		opts.PrintObject = boolPtr(true)
+	}
+	if opts.Locked == nil {
+		opts.Locked = boolPtr(false)
+	}
+	if opts.XScale == nil {
+		opts.XScale = float64Ptr(defaultPictureScale)
+	}
+	if opts.YScale == nil {
+		opts.YScale = float64Ptr(defaultPictureScale)
+	}
+	return opts
 }
 
 // AddPicture provides the method to add picture in a sheet by given picture
@@ -44,6 +57,7 @@ func parsePictureOptions(opts string) (*pictureOptions, error) {
 //	package main
 //
 //	import (
+//	    "fmt"
 //	    _ "image/gif"
 //	    _ "image/jpeg"
 //	    _ "image/png"
@@ -54,15 +68,33 @@ func parsePictureOptions(opts string) (*pictureOptions, error) {
 //	func main() {
 //	    f := excelize.NewFile()
 //	    // Insert a picture.
-//	    if err := f.AddPicture("Sheet1", "A2", "image.jpg", ""); err != nil {
+//	    if err := f.AddPicture("Sheet1", "A2", "image.jpg", nil); err != nil {
 //	        fmt.Println(err)
 //	    }
 //	    // Insert a picture scaling in the cell with location hyperlink.
-//	    if err := f.AddPicture("Sheet1", "D2", "image.png", `{"x_scale": 0.5, "y_scale": 0.5, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`); err != nil {
+//	    enable, scale := true, 0.5
+//	    if err := f.AddPicture("Sheet1", "D2", "image.png",
+//	        &excelize.PictureOptions{
+//	            XScale:        &scale,
+//	            YScale:        &scale,
+//	            Hyperlink:     "#Sheet2!D8",
+//	            HyperlinkType: "Location",
+//	        },
+//	    ); err != nil {
 //	        fmt.Println(err)
 //	    }
 //	    // Insert a picture offset in the cell with external hyperlink, printing and positioning support.
-//	    if err := f.AddPicture("Sheet1", "H2", "image.gif", `{"x_offset": 15, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "print_obj": true, "lock_aspect_ratio": false, "locked": false, "positioning": "oneCell"}`); err != nil {
+//	    if err := f.AddPicture("Sheet1", "H2", "image.gif",
+//	        &excelize.PictureOptions{
+//	            PrintObject:     &enable,
+//	            LockAspectRatio: false,
+//	            OffsetX:         15,
+//	            OffsetY:         10,
+//	            Hyperlink:       "https://github.com/xuri/excelize",
+//	            HyperlinkType:   "External",
+//	            Positioning:     "oneCell",
+//	        },
+//	    ); err != nil {
 //	        fmt.Println(err)
 //	    }
 //	    if err := f.SaveAs("Book1.xlsx"); err != nil {
@@ -70,42 +102,42 @@ func parsePictureOptions(opts string) (*pictureOptions, error) {
 //	    }
 //	}
 //
-// The optional parameter "autofit" specifies if you make image size auto-fits the
+// The optional parameter "Autofit" specifies if you make image size auto-fits the
 // cell, the default value of that is 'false'.
 //
-// The optional parameter "hyperlink" specifies the hyperlink of the image.
+// The optional parameter "Hyperlink" specifies the hyperlink of the image.
 //
-// The optional parameter "hyperlink_type" defines two types of
+// The optional parameter "HyperlinkType" defines two types of
 // hyperlink "External" for website or "Location" for moving to one of the
 // cells in this workbook. When the "hyperlink_type" is "Location",
 // coordinates need to start with "#".
 //
-// The optional parameter "positioning" defines two types of the position of an
+// The optional parameter "Positioning" defines two types of the position of an
 // image in an Excel spreadsheet, "oneCell" (Move but don't size with
 // cells) or "absolute" (Don't move or size with cells). If you don't set this
 // parameter, the default positioning is move and size with cells.
 //
-// The optional parameter "print_obj" indicates whether the image is printed
+// The optional parameter "PrintObject" indicates whether the image is printed
 // when the worksheet is printed, the default value of that is 'true'.
 //
-// The optional parameter "lock_aspect_ratio" indicates whether lock aspect
+// The optional parameter "LockAspectRatio" indicates whether lock aspect
 // ratio for the image, the default value of that is 'false'.
 //
-// The optional parameter "locked" indicates whether lock the image. Locking
+// The optional parameter "Locked" indicates whether lock the image. Locking
 // an object has no effect unless the sheet is protected.
 //
-// The optional parameter "x_offset" specifies the horizontal offset of the
+// The optional parameter "OffsetX" specifies the horizontal offset of the
 // image with the cell, the default value of that is 0.
 //
-// The optional parameter "x_scale" specifies the horizontal scale of images,
+// The optional parameter "XScale" specifies the horizontal scale of images,
 // the default value of that is 1.0 which presents 100%.
 //
-// The optional parameter "y_offset" specifies the vertical offset of the
+// The optional parameter "OffsetY" specifies the vertical offset of the
 // image with the cell, the default value of that is 0.
 //
-// The optional parameter "y_scale" specifies the vertical scale of images,
+// The optional parameter "YScale" specifies the vertical scale of images,
 // the default value of that is 1.0 which presents 100%.
-func (f *File) AddPicture(sheet, cell, picture, format string) error {
+func (f *File) AddPicture(sheet, cell, picture string, opts *PictureOptions) error {
 	var err error
 	// Check picture exists first.
 	if _, err = os.Stat(picture); os.IsNotExist(err) {
@@ -117,7 +149,7 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 	}
 	file, _ := os.ReadFile(filepath.Clean(picture))
 	_, name := filepath.Split(picture)
-	return f.AddPictureFromBytes(sheet, cell, format, name, ext, file)
+	return f.AddPictureFromBytes(sheet, cell, name, ext, file, opts)
 }
 
 // AddPictureFromBytes provides the method to add picture in a sheet by given
@@ -143,24 +175,21 @@ func (f *File) AddPicture(sheet, cell, picture, format string) error {
 //	    if err != nil {
 //	        fmt.Println(err)
 //	    }
-//	    if err := f.AddPictureFromBytes("Sheet1", "A2", "", "Excel Logo", ".jpg", file); err != nil {
+//	    if err := f.AddPictureFromBytes("Sheet1", "A2", "Excel Logo", ".jpg", file, nil); err != nil {
 //	        fmt.Println(err)
 //	    }
 //	    if err := f.SaveAs("Book1.xlsx"); err != nil {
 //	        fmt.Println(err)
 //	    }
 //	}
-func (f *File) AddPictureFromBytes(sheet, cell, opts, name, extension string, file []byte) error {
+func (f *File) AddPictureFromBytes(sheet, cell, name, extension string, file []byte, opts *PictureOptions) error {
 	var drawingHyperlinkRID int
 	var hyperlinkType string
 	ext, ok := supportedImageTypes[extension]
 	if !ok {
 		return ErrImgExt
 	}
-	options, err := parsePictureOptions(opts)
-	if err != nil {
-		return err
-	}
+	options := parsePictureOptions(opts)
 	img, _, err := image.DecodeConfig(bytes.NewReader(file))
 	if err != nil {
 		return err
@@ -276,20 +305,20 @@ func (f *File) countDrawings() int {
 // addDrawingPicture provides a function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
-func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID, hyperlinkRID int, img image.Config, opts *pictureOptions) error {
+func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID, hyperlinkRID int, img image.Config, opts *PictureOptions) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
 	}
 	width, height := img.Width, img.Height
-	if opts.Autofit {
+	if opts.AutoFit {
 		width, height, col, row, err = f.drawingResize(sheet, cell, float64(width), float64(height), opts)
 		if err != nil {
 			return err
 		}
 	} else {
-		width = int(float64(width) * opts.XScale)
-		height = int(float64(height) * opts.YScale)
+		width = int(float64(width) * *opts.XScale)
+		height = int(float64(height) * *opts.YScale)
 	}
 	col--
 	row--
@@ -313,7 +342,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID,
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 	pic := xlsxPic{}
-	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = opts.NoChangeAspect
+	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = opts.LockAspectRatio
 	pic.NvPicPr.CNvPr.ID = cNvPrID
 	pic.NvPicPr.CNvPr.Descr = file
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
@@ -342,8 +371,8 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID,
 
 	twoCellAnchor.Pic = &pic
 	twoCellAnchor.ClientData = &xdrClientData{
-		FLocksWithSheet:  opts.FLocksWithSheet,
-		FPrintsWithSheet: opts.FPrintsWithSheet,
+		FLocksWithSheet:  *opts.Locked,
+		FPrintsWithSheet: *opts.PrintObject,
 	}
 	content.Lock()
 	defer content.Unlock()
@@ -682,7 +711,7 @@ func (f *File) drawingsWriter() {
 }
 
 // drawingResize calculate the height and width after resizing.
-func (f *File) drawingResize(sheet, cell string, width, height float64, opts *pictureOptions) (w, h, c, r int, err error) {
+func (f *File) drawingResize(sheet, cell string, width, height float64, opts *PictureOptions) (w, h, c, r int, err error) {
 	var mergeCells []MergeCell
 	mergeCells, err = f.GetMergeCells(sheet)
 	if err != nil {
@@ -725,6 +754,6 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *pi
 		height, width = float64(cellHeight), width*asp
 	}
 	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
-	w, h = int(width*opts.XScale), int(height*opts.YScale)
+	w, h = int(width**opts.XScale), int(height**opts.YScale)
 	return
 }

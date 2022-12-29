@@ -25,7 +25,7 @@ func BenchmarkAddPictureFromBytes(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
-		if err := f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", i), "", "excel", ".png", imgFile); err != nil {
+		if err := f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", i), "excel", ".png", imgFile, nil); err != nil {
 			b.Error(err)
 		}
 	}
@@ -37,32 +37,33 @@ func TestAddPicture(t *testing.T) {
 
 	// Test add picture to worksheet with offset and location hyperlink
 	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 140, "y_offset": 120, "hyperlink": "#Sheet2!D8", "hyperlink_type": "Location"}`))
+		&PictureOptions{OffsetX: 140, OffsetY: 120, Hyperlink: "#Sheet2!D8", HyperlinkType: "Location"}))
 	// Test add picture to worksheet with offset, external hyperlink and positioning
 	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-		`{"x_offset": 10, "y_offset": 10, "hyperlink": "https://github.com/xuri/excelize", "hyperlink_type": "External", "positioning": "oneCell"}`))
+		&PictureOptions{OffsetX: 10, OffsetY: 10, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"}))
 
 	file, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)
 
 	// Test add picture to worksheet with autofit
-	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
-	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), `{"x_offset": 10, "y_offset": 10, "autofit": true}`))
-	f.NewSheet("AddPicture")
+	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}))
+	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{OffsetX: 10, OffsetY: 10, AutoFit: true}))
+	_, err = f.NewSheet("AddPicture")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
 	assert.NoError(t, f.MergeCell("AddPicture", "B3", "D9"))
 	assert.NoError(t, f.MergeCell("AddPicture", "B1", "D1"))
-	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
-	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`))
+	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}))
+	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}))
 
 	// Test add picture to worksheet from bytes
-	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "Excel Logo", ".png", file, nil))
 	// Test add picture to worksheet from bytes with illegal cell reference
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "", "Excel Logo", ".png", file), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", "Excel Logo", ".png", file, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
-	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q15", filepath.Join("test", "images", "excel.jpg"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q15", filepath.Join("test", "images", "excel.jpg"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), nil))
 
 	// Test write file to given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture1.xlsx")))
@@ -72,10 +73,10 @@ func TestAddPicture(t *testing.T) {
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "Q1", "", "Excel Logo", ".png", file), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "Q1", "Excel Logo", ".png", file, nil), "XML syntax error on line 1: invalid UTF-8")
 
 	// Test add picture with invalid sheet name
-	assert.EqualError(t, f.AddPicture("Sheet:1", "A1", filepath.Join("test", "images", "excel.jpg"), ""), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddPicture("Sheet:1", "A1", filepath.Join("test", "images", "excel.jpg"), nil), ErrSheetNameInvalid.Error())
 }
 
 func TestAddPictureErrors(t *testing.T) {
@@ -83,14 +84,14 @@ func TestAddPictureErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test add picture to worksheet with invalid file path
-	assert.Error(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), ""))
+	assert.Error(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "not_exists_dir", "not_exists.icon"), nil))
 
 	// Test add picture to worksheet with unsupported file type
-	assert.EqualError(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), ""), ErrImgExt.Error())
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", "jpg", make([]byte, 1)), ErrImgExt.Error())
+	assert.EqualError(t, f.AddPicture("Sheet1", "G21", filepath.Join("test", "Book1.xlsx"), nil), ErrImgExt.Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "Excel Logo", "jpg", make([]byte, 1), nil), ErrImgExt.Error())
 
 	// Test add picture to worksheet with invalid file data
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "", "Excel Logo", ".jpg", make([]byte, 1)), image.ErrFormat.Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", "Excel Logo", ".jpg", make([]byte, 1), nil), image.ErrFormat.Error())
 
 	// Test add picture with custom image decoder and encoder
 	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
@@ -100,18 +101,19 @@ func TestAddPictureErrors(t *testing.T) {
 	image.RegisterFormat("emz", "", decode, decodeConfig)
 	image.RegisterFormat("wmz", "", decode, decodeConfig)
 	image.RegisterFormat("svg", "", decode, decodeConfig)
-	assert.NoError(t, f.AddPicture("Sheet1", "Q1", filepath.Join("test", "images", "excel.emf"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q7", filepath.Join("test", "images", "excel.wmf"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q13", filepath.Join("test", "images", "excel.emz"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q19", filepath.Join("test", "images", "excel.wmz"), ""))
-	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", `{"x_scale": 2.1}`))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q1", filepath.Join("test", "images", "excel.emf"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q7", filepath.Join("test", "images", "excel.wmf"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q13", filepath.Join("test", "images", "excel.emz"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q19", filepath.Join("test", "images", "excel.wmz"), nil))
+	xScale := 2.1
+	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &PictureOptions{XScale: &xScale}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
 	assert.NoError(t, f.Close())
 }
 
 func TestGetPicture(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), nil))
 	name, content, err := f.GetPicture("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 13233, len(content))
@@ -196,19 +198,20 @@ func TestGetPicture(t *testing.T) {
 func TestAddDrawingPicture(t *testing.T) {
 	// Test addDrawingPicture with illegal cell reference
 	f := NewFile()
-	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", "", 0, 0, image.Config{}, nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	opts := &PictureOptions{PrintObject: boolPtr(true), Locked: boolPtr(false), XScale: float64Ptr(defaultPictureScale), YScale: float64Ptr(defaultPictureScale)}
+	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", "", 0, 0, image.Config{}, opts), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	path := "xl/drawings/drawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addDrawingPicture("sheet1", path, "A1", "", "", 0, 0, image.Config{}, &pictureOptions{}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.addDrawingPicture("sheet1", path, "A1", "", "", 0, 0, image.Config{}, opts), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddPictureFromBytes(t *testing.T) {
 	f := NewFile()
 	imgFile, err := os.ReadFile("logo.png")
 	assert.NoError(t, err, "Unable to load logo for test")
-	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile))
-	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "", "logo", ".png", imgFile))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), "logo", ".png", imgFile, nil))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), "logo", ".png", imgFile, nil))
 	imageCount := 0
 	f.Pkg.Range(func(fileName, v interface{}) bool {
 		if strings.Contains(fileName.(string), "media/image") {
@@ -217,16 +220,16 @@ func TestAddPictureFromBytes(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
-	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), "sheet SheetN does not exist")
+	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), "logo", ".png", imgFile, nil), "sheet SheetN does not exist")
 	// Test add picture from bytes with invalid sheet name
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet:1", fmt.Sprint("A", 1), "", "logo", ".png", imgFile), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet:1", fmt.Sprint("A", 1), "logo", ".png", imgFile, nil), ErrSheetNameInvalid.Error())
 }
 
 func TestDeletePicture(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 	assert.NoError(t, f.DeletePicture("Sheet1", "A1"))
-	assert.NoError(t, f.AddPicture("Sheet1", "P1", filepath.Join("test", "images", "excel.jpg"), ""))
+	assert.NoError(t, f.AddPicture("Sheet1", "P1", filepath.Join("test", "images", "excel.jpg"), nil))
 	assert.NoError(t, f.DeletePicture("Sheet1", "P1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture.xlsx")))
 	// Test delete picture on not exists worksheet
@@ -251,7 +254,7 @@ func TestDrawingResize(t *testing.T) {
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), `{"autofit": true}`), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetContentTypePartImageExtensions(t *testing.T) {

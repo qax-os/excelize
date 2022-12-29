@@ -9,10 +9,11 @@ import (
 )
 
 func TestAddSparkline(t *testing.T) {
-	f := prepareSparklineDataset()
+	f, err := prepareSparklineDataset()
+	assert.NoError(t, err)
 
 	// Set the columns widths to make the output clearer
-	style, err := f.NewStyle(`{"font":{"bold":true}}`)
+	style, err := f.NewStyle(&Style{Font: &Font{Bold: true}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "B1", style))
 	viewOpts, err := f.GetSheetView("Sheet1", 0)
@@ -291,7 +292,7 @@ func TestAppendSparkline(t *testing.T) {
 	assert.EqualError(t, f.appendSparkline(ws, &xlsxX14SparklineGroup{}, &xlsxX14SparklineGroups{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
-func prepareSparklineDataset() *File {
+func prepareSparklineDataset() (*File, error) {
 	f := NewFile()
 	sheet2 := [][]int{
 		{-2, 2, 3, -1, 0},
@@ -307,8 +308,12 @@ func prepareSparklineDataset() *File {
 		{3, -1, 0, -2, 3, 2, 1, 0, 2, 1},
 		{0, -2, 3, 2, 1, 0, 1, 2, 3, 1},
 	}
-	f.NewSheet("Sheet2")
-	f.NewSheet("Sheet3")
+	if _, err := f.NewSheet("Sheet2"); err != nil {
+		return f, err
+	}
+	if _, err := f.NewSheet("Sheet3"); err != nil {
+		return f, err
+	}
 	for row, data := range sheet2 {
 		if err := f.SetSheetRow("Sheet2", fmt.Sprintf("A%d", row+1), &data); err != nil {
 			fmt.Println(err)
@@ -319,5 +324,5 @@ func prepareSparklineDataset() *File {
 			fmt.Println(err)
 		}
 	}
-	return f
+	return f, nil
 }

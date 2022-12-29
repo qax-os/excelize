@@ -12,26 +12,38 @@
 package excelize
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 )
 
 // parseShapeOptions provides a function to parse the format settings of the
 // shape with default value.
-func parseShapeOptions(opts string) (*shapeOptions, error) {
-	options := shapeOptions{
-		Width:  160,
-		Height: 160,
-		Format: pictureOptions{
-			FPrintsWithSheet: true,
-			XScale:           1,
-			YScale:           1,
-		},
-		Line: lineOptions{Width: 1},
+func parseShapeOptions(opts *Shape) (*Shape, error) {
+	if opts == nil {
+		return nil, ErrParameterInvalid
 	}
-	err := json.Unmarshal([]byte(opts), &options)
-	return &options, err
+	if opts.Width == nil {
+		opts.Width = intPtr(defaultShapeSize)
+	}
+	if opts.Height == nil {
+		opts.Height = intPtr(defaultShapeSize)
+	}
+	if opts.Format.PrintObject == nil {
+		opts.Format.PrintObject = boolPtr(true)
+	}
+	if opts.Format.Locked == nil {
+		opts.Format.Locked = boolPtr(false)
+	}
+	if opts.Format.XScale == nil {
+		opts.Format.XScale = float64Ptr(defaultPictureScale)
+	}
+	if opts.Format.YScale == nil {
+		opts.Format.YScale = float64Ptr(defaultPictureScale)
+	}
+	if opts.Line.Width == nil {
+		opts.Line.Width = float64Ptr(defaultShapeLineWidth)
+	}
+	return opts, nil
 }
 
 // AddShape provides the method to add shape in a sheet by given worksheet
@@ -39,33 +51,29 @@ func parseShapeOptions(opts string) (*shapeOptions, error) {
 // print settings) and properties set. For example, add text box (rect shape)
 // in Sheet1:
 //
-//	err := f.AddShape("Sheet1", "G6", `{
-//	    "type": "rect",
-//	    "color":
-//	    {
-//	        "line": "#4286F4",
-//	        "fill": "#8eb9ff"
+//	width, height, lineWidth := 180, 90, 1.2
+//	err := f.AddShape("Sheet1", "G6",
+//	    &excelize.Shape{
+//	        Type:  "rect",
+//	        Color: excelize.ShapeColor{Line: "#4286f4", Fill: "#8eb9ff"},
+//	        Paragraph: []excelize.ShapeParagraph{
+//	            {
+//	                Text: "Rectangle Shape",
+//	                Font: excelize.Font{
+//	                    Bold:      true,
+//	                    Italic:    true,
+//	                    Family:    "Times New Roman",
+//	                    Size:      36,
+//	                    Color:     "#777777",
+//	                    Underline: "sng",
+//	                },
+//	            },
+//	        },
+//	        Width:  &width,
+//	        Height: &height,
+//	        Line:   excelize.ShapeLine{Width: &lineWidth},
 //	    },
-//	    "paragraph": [
-//	    {
-//	        "text": "Rectangle Shape",
-//	        "font":
-//	        {
-//	            "bold": true,
-//	            "italic": true,
-//	            "family": "Times New Roman",
-//	            "size": 36,
-//	            "color": "#777777",
-//	            "underline": "sng"
-//	        }
-//	    }],
-//	    "width": 180,
-//	    "height": 90,
-//	    "line":
-//	    {
-//	        "width": 1.2
-//	    }
-//	}`)
+//	)
 //
 // The following shows the type of shape supported by excelize:
 //
@@ -277,7 +285,7 @@ func parseShapeOptions(opts string) (*shapeOptions, error) {
 //	wavy
 //	wavyHeavy
 //	wavyDbl
-func (f *File) AddShape(sheet, cell, opts string) error {
+func (f *File) AddShape(sheet, cell string, opts *Shape) error {
 	options, err := parseShapeOptions(opts)
 	if err != nil {
 		return err
@@ -313,7 +321,7 @@ func (f *File) AddShape(sheet, cell, opts string) error {
 
 // addDrawingShape provides a function to add preset geometry by given sheet,
 // drawingXMLand format sets.
-func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOptions) error {
+func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) error {
 	fromCol, fromRow, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
@@ -321,8 +329,8 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 	colIdx := fromCol - 1
 	rowIdx := fromRow - 1
 
-	width := int(float64(opts.Width) * opts.Format.XScale)
-	height := int(float64(opts.Height) * opts.Format.YScale)
+	width := int(float64(*opts.Width) * *opts.Format.XScale)
+	height := int(float64(*opts.Height) * *opts.Format.YScale)
 
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, opts.Format.OffsetX, opts.Format.OffsetY,
 		width, height)
@@ -381,9 +389,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 			},
 		},
 	}
-	if opts.Line.Width != 1 {
+	if *opts.Line.Width != 1 {
 		shape.SpPr.Ln = xlsxLineProperties{
-			W: f.ptToEMUs(opts.Line.Width),
+			W: f.ptToEMUs(*opts.Line.Width),
 		}
 	}
 	defaultFont, err := f.GetDefaultFont()
@@ -391,7 +399,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 		return err
 	}
 	if len(opts.Paragraph) < 1 {
-		opts.Paragraph = []shapeParagraphOptions{
+		opts.Paragraph = []ShapeParagraph{
 			{
 				Font: Font{
 					Bold:      false,
@@ -443,8 +451,8 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *shapeOption
 	}
 	twoCellAnchor.Sp = &shape
 	twoCellAnchor.ClientData = &xdrClientData{
-		FLocksWithSheet:  opts.Format.FLocksWithSheet,
-		FPrintsWithSheet: opts.Format.FPrintsWithSheet,
+		FLocksWithSheet:  *opts.Format.Locked,
+		FPrintsWithSheet: *opts.Format.PrintObject,
 	}
 	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)

@@ -59,8 +59,18 @@ func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
 	return opts, err
 }
 
-// ProtectWorkbook provides a function to prevent other users from accidentally or
-// deliberately changing, moving, or deleting data in a workbook.
+// ProtectWorkbook provides a function to prevent other users from viewing
+// hidden worksheets, adding, moving, deleting, or hiding worksheets, and
+// renaming worksheets in a workbook. The optional field AlgorithmName
+// specified hash algorithm, support XOR, MD4, MD5, SHA-1, SHA2-56, SHA-384,
+// and SHA-512 currently, if no hash algorithm specified, will be using the XOR
+// algorithm as default. The generated workbook only works on Microsoft Office
+// 2007 and later. For example, protect workbook with protection settings:
+//
+//	err := f.ProtectWorkbook(&excelize.WorkbookProtectionOptions{
+//	    Password:      "password",
+//	    LockStructure: true,
+//	})
 func (f *File) ProtectWorkbook(opts *WorkbookProtectionOptions) error {
 	wb, err := f.workbookReader()
 	if err != nil {
@@ -93,8 +103,8 @@ func (f *File) ProtectWorkbook(opts *WorkbookProtectionOptions) error {
 }
 
 // UnprotectWorkbook provides a function to remove protection for workbook,
-// specified the second optional password parameter to remove workbook
-// protection with password verification.
+// specified the optional password parameter to remove workbook protection with
+// password verification.
 func (f *File) UnprotectWorkbook(password ...string) error {
 	wb, err := f.workbookReader()
 	if err != nil {

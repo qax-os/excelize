@@ -308,23 +308,23 @@ type xlsxCustomWorkbookView struct {
 // DefinedName directly maps the name for a cell or cell range on a
 // worksheet.
 type DefinedName struct {
-	Name     string `json:"name,omitempty"`
-	Comment  string `json:"comment,omitempty"`
-	RefersTo string `json:"refers_to,omitempty"`
-	Scope    string `json:"scope,omitempty"`
+	Name     string
+	Comment  string
+	RefersTo string
+	Scope    string
 }
 
 // WorkbookPropsOptions directly maps the settings of workbook proprieties.
 type WorkbookPropsOptions struct {
-	Date1904      *bool   `json:"date_1994,omitempty"`
-	FilterPrivacy *bool   `json:"filter_privacy,omitempty"`
-	CodeName      *string `json:"code_name,omitempty"`
+	Date1904      *bool
+	FilterPrivacy *bool
+	CodeName      *string
 }
 
 // WorkbookProtectionOptions directly maps the settings of workbook protection.
 type WorkbookProtectionOptions struct {
-	AlgorithmName string `json:"algorithmName,omitempty"`
-	Password      string `json:"password,omitempty"`
-	LockStructure bool   `json:"lockStructure,omitempty"`
-	LockWindows   bool   `json:"lockWindows,omitempty"`
+	AlgorithmName string
+	Password      string
+	LockStructure bool
+	LockWindows   bool
 }

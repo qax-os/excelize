@@ -37,7 +37,8 @@ func TestMergeCell(t *testing.T) {
 	assert.Equal(t, "SUM(Sheet1!B19,Sheet1!C19)", value)
 	assert.NoError(t, err)
 
-	f.NewSheet("Sheet3")
+	_, err = f.NewSheet("Sheet3")
+	assert.NoError(t, err)
 	assert.NoError(t, f.MergeCell("Sheet3", "D11", "F13"))
 	assert.NoError(t, f.MergeCell("Sheet3", "G10", "K12"))
 

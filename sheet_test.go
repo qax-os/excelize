@@ -15,14 +15,15 @@ import (
 
 func TestNewSheet(t *testing.T) {
 	f := NewFile()
-	f.NewSheet("Sheet2")
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	sheetID, err := f.NewSheet("sheet2")
 	assert.NoError(t, err)
 	f.SetActiveSheet(sheetID)
 	// Test delete original sheet
 	idx, err := f.GetSheetIndex("Sheet1")
 	assert.NoError(t, err)
-	f.DeleteSheet(f.GetSheetName(idx))
+	assert.NoError(t, f.DeleteSheet(f.GetSheetName(idx)))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNewSheet.xlsx")))
 	// Test create new worksheet with already exists name
 	sheetID, err = f.NewSheet("Sheet2")
@@ -38,24 +39,79 @@ func TestNewSheet(t *testing.T) {
 
 func TestSetPanes(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.SetPanes("Sheet1", `{"freeze":false,"split":false}`))
-	f.NewSheet("Panes 2")
-	assert.NoError(t, f.SetPanes("Panes 2", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`))
-	f.NewSheet("Panes 3")
-	assert.NoError(t, f.SetPanes("Panes 3", `{"freeze":false,"split":true,"x_split":3270,"y_split":1800,"top_left_cell":"N57","active_pane":"bottomLeft","panes":[{"sqref":"I36","active_cell":"I36"},{"sqref":"G33","active_cell":"G33","pane":"topRight"},{"sqref":"J60","active_cell":"J60","pane":"bottomLeft"},{"sqref":"O60","active_cell":"O60","pane":"bottomRight"}]}`))
-	f.NewSheet("Panes 4")
-	assert.NoError(t, f.SetPanes("Panes 4", `{"freeze":true,"split":false,"x_split":0,"y_split":9,"top_left_cell":"A34","active_pane":"bottomLeft","panes":[{"sqref":"A11:XFD11","active_cell":"A11","pane":"bottomLeft"}]}`))
-	assert.EqualError(t, f.SetPanes("Panes 4", ""), "unexpected end of JSON input")
-	assert.EqualError(t, f.SetPanes("SheetN", ""), "sheet SheetN does not exist")
+
+	assert.NoError(t, f.SetPanes("Sheet1", &Panes{Freeze: false, Split: false}))
+	_, err := f.NewSheet("Panes 2")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetPanes("Panes 2",
+		&Panes{
+			Freeze:      true,
+			Split:       false,
+			XSplit:      1,
+			YSplit:      0,
+			TopLeftCell: "B1",
+			ActivePane:  "topRight",
+			Panes: []PaneOptions{
+				{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
+			},
+		},
+	))
+	_, err = f.NewSheet("Panes 3")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetPanes("Panes 3",
+		&Panes{
+			Freeze:      false,
+			Split:       true,
+			XSplit:      3270,
+			YSplit:      1800,
+			TopLeftCell: "N57",
+			ActivePane:  "bottomLeft",
+			Panes: []PaneOptions{
+				{SQRef: "I36", ActiveCell: "I36"},
+				{SQRef: "G33", ActiveCell: "G33", Pane: "topRight"},
+				{SQRef: "J60", ActiveCell: "J60", Pane: "bottomLeft"},
+				{SQRef: "O60", ActiveCell: "O60", Pane: "bottomRight"},
+			},
+		},
+	))
+	_, err = f.NewSheet("Panes 4")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetPanes("Panes 4",
+		&Panes{
+			Freeze:      true,
+			Split:       false,
+			XSplit:      0,
+			YSplit:      9,
+			TopLeftCell: "A34",
+			ActivePane:  "bottomLeft",
+			Panes: []PaneOptions{
+				{SQRef: "A11:XFD11", ActiveCell: "A11", Pane: "bottomLeft"},
+			},
+		},
+	))
+	assert.EqualError(t, f.SetPanes("Panes 4", nil), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.SetPanes("SheetN", nil), "sheet SheetN does not exist")
 	// Test set panes with invalid sheet name
-	assert.EqualError(t, f.SetPanes("Sheet:1", `{"freeze":false,"split":false}`), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.SetPanes("Sheet:1", &Panes{Freeze: false, Split: false}), ErrSheetNameInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
 	// Test add pane on empty sheet views worksheet
 	f = NewFile()
 	f.checked = nil
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
-	assert.NoError(t, f.SetPanes("Sheet1", `{"freeze":true,"split":false,"x_split":1,"y_split":0,"top_left_cell":"B1","active_pane":"topRight","panes":[{"sqref":"K16","active_cell":"K16","pane":"topRight"}]}`))
+	assert.NoError(t, f.SetPanes("Sheet1",
+		&Panes{
+			Freeze:      true,
+			Split:       false,
+			XSplit:      1,
+			YSplit:      0,
+			TopLeftCell: "B1",
+			ActivePane:  "topRight",
+			Panes: []PaneOptions{
+				{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
+			},
+		},
+	))
 }
 
 func TestSearchSheet(t *testing.T) {
@@ -108,7 +164,7 @@ func TestSearchSheet(t *testing.T) {
 	assert.EqualError(t, err, "invalid cell reference [1, 0]")
 	assert.Equal(t, []string(nil), result)
 
-	// Test search sheet with unsupported charset shared strings table.
+	// Test search sheet with unsupported charset shared strings table
 	f.SharedStrings = nil
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	_, err = f.SearchSheet("Sheet1", "A")
@@ -204,6 +260,14 @@ func TestDefinedName(t *testing.T) {
 	assert.EqualError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "No Exist Defined Name",
 	}), ErrDefinedNameScope.Error())
+	// Test set defined name without name
+	assert.EqualError(t, f.SetDefinedName(&DefinedName{
+		RefersTo: "Sheet1!$A$2:$D$5",
+	}), ErrParameterInvalid.Error())
+	// Test set defined name without reference
+	assert.EqualError(t, f.SetDefinedName(&DefinedName{
+		Name: "Amount",
+	}), ErrParameterInvalid.Error())
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[1].RefersTo)
 	assert.NoError(t, f.DeleteDefinedName(&DefinedName{
 		Name: "Amount",
@@ -228,7 +292,8 @@ func TestGroupSheets(t *testing.T) {
 	f := NewFile()
 	sheets := []string{"Sheet2", "Sheet3"}
 	for _, sheet := range sheets {
-		f.NewSheet(sheet)
+		_, err := f.NewSheet(sheet)
+		assert.NoError(t, err)
 	}
 	assert.EqualError(t, f.GroupSheets([]string{"Sheet1", "SheetN"}), "sheet SheetN does not exist")
 	assert.EqualError(t, f.GroupSheets([]string{"Sheet2", "Sheet3"}), "group worksheet must contain an active worksheet")
@@ -242,7 +307,8 @@ func TestUngroupSheets(t *testing.T) {
 	f := NewFile()
 	sheets := []string{"Sheet2", "Sheet3", "Sheet4", "Sheet5"}
 	for _, sheet := range sheets {
-		f.NewSheet(sheet)
+		_, err := f.NewSheet(sheet)
+		assert.NoError(t, err)
 	}
 	assert.NoError(t, f.UngroupSheets())
 }
@@ -276,7 +342,8 @@ func TestRemovePageBreak(t *testing.T) {
 	assert.NoError(t, f.RemovePageBreak("Sheet1", "B3"))
 	assert.NoError(t, f.RemovePageBreak("Sheet1", "A3"))
 
-	f.NewSheet("Sheet2")
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
 	assert.NoError(t, f.InsertPageBreak("Sheet2", "B2"))
 	assert.NoError(t, f.InsertPageBreak("Sheet2", "C2"))
 	assert.NoError(t, f.RemovePageBreak("Sheet2", "B2"))
@@ -381,20 +448,23 @@ func TestDeleteSheet(t *testing.T) {
 	idx, err := f.NewSheet("Sheet2")
 	assert.NoError(t, err)
 	f.SetActiveSheet(idx)
-	f.NewSheet("Sheet3")
-	f.DeleteSheet("Sheet1")
+	_, err = f.NewSheet("Sheet3")
+	assert.NoError(t, err)
+	assert.NoError(t, f.DeleteSheet("Sheet1"))
 	assert.Equal(t, "Sheet2", f.GetSheetName(f.GetActiveSheetIndex()))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet.xlsx")))
 	// Test with auto filter defined names
 	f = NewFile()
-	f.NewSheet("Sheet2")
-	f.NewSheet("Sheet3")
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	_, err = f.NewSheet("Sheet3")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A"))
 	assert.NoError(t, f.SetCellValue("Sheet2", "A1", "A"))
 	assert.NoError(t, f.SetCellValue("Sheet3", "A1", "A"))
-	assert.NoError(t, f.AutoFilter("Sheet1", "A1", "A1", ""))
-	assert.NoError(t, f.AutoFilter("Sheet2", "A1", "A1", ""))
-	assert.NoError(t, f.AutoFilter("Sheet3", "A1", "A1", ""))
+	assert.NoError(t, f.AutoFilter("Sheet1", "A1:A1", nil))
+	assert.NoError(t, f.AutoFilter("Sheet2", "A1:A1", nil))
+	assert.NoError(t, f.AutoFilter("Sheet3", "A1:A1", nil))
 	assert.NoError(t, f.DeleteSheet("Sheet2"))
 	assert.NoError(t, f.DeleteSheet("Sheet1"))
 	// Test delete sheet with invalid sheet name
@@ -408,9 +478,10 @@ func TestDeleteAndAdjustDefinedNames(t *testing.T) {
 }
 
 func TestGetSheetID(t *testing.T) {
-	file := NewFile()
-	file.NewSheet("Sheet1")
-	id := file.getSheetID("sheet1")
+	f := NewFile()
+	_, err := f.NewSheet("Sheet1")
+	assert.NoError(t, err)
+	id := f.getSheetID("sheet1")
 	assert.NotEqual(t, -1, id)
 }
 
@@ -444,7 +515,7 @@ func TestGetSheetIndex(t *testing.T) {
 
 func TestSetContentTypes(t *testing.T) {
 	f := NewFile()
-	// Test set content type with unsupported charset content types.
+	// Test set content type with unsupported charset content types
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.setContentTypes("/xl/worksheets/sheet1.xml", ContentTypeSpreadSheetMLWorksheet), "XML syntax error on line 1: invalid UTF-8")
@@ -452,7 +523,7 @@ func TestSetContentTypes(t *testing.T) {
 
 func TestDeleteSheetFromContentTypes(t *testing.T) {
 	f := NewFile()
-	// Test delete sheet from content types with unsupported charset content types.
+	// Test delete sheet from content types with unsupported charset content types
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.deleteSheetFromContentTypes("/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
@@ -468,9 +539,8 @@ func BenchmarkNewSheet(b *testing.B) {
 
 func newSheetWithSet() {
 	file := NewFile()
-	file.NewSheet("sheet1")
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), i)
 	}
 	file = nil
 }
@@ -485,9 +555,8 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 
 func newSheetWithSave() {
 	file := NewFile()
-	file.NewSheet("sheet1")
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("sheet1", "A"+strconv.Itoa(i+1), i)
+		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), i)
 	}
 	_ = file.Save()
 }
@@ -520,12 +589,13 @@ func TestAttrValToFloat(t *testing.T) {
 
 func TestSetSheetBackgroundFromBytes(t *testing.T) {
 	f := NewFile()
-	f.SetSheetName("Sheet1", ".svg")
+	assert.NoError(t, f.SetSheetName("Sheet1", ".svg"))
 	for i, imageTypes := range []string{".svg", ".emf", ".emz", ".gif", ".jpg", ".png", ".tif", ".wmf", ".wmz"} {
 		file := fmt.Sprintf("excelize%s", imageTypes)
 		if i > 0 {
 			file = filepath.Join("test", "images", fmt.Sprintf("excel%s", imageTypes))
-			f.NewSheet(imageTypes)
+			_, err := f.NewSheet(imageTypes)
+			assert.NoError(t, err)
 		}
 		img, err := os.Open(file)
 		assert.NoError(t, err)
