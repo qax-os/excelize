@@ -41,12 +41,11 @@ func TestChartSize(t *testing.T) {
 		assert.NoError(t, f.SetCellValue(sheet1, cell, v))
 	}
 
-	width, height := 640, 480
 	assert.NoError(t, f.AddChart("Sheet1", "E4", &Chart{
 		Type: "col3DClustered",
 		Dimension: ChartDimension{
-			Width:  &width,
-			Height: &height,
+			Width:  640,
+			Height: 480,
 		},
 		Series: []ChartSeries{
 			{Name: "Sheet1!$A$2", Categories: "Sheet1!$B$1:$D$1", Values: "Sheet1!$B$2:$D$2"},
@@ -107,14 +106,14 @@ func TestAddDrawingChart(t *testing.T) {
 
 	path := "xl/drawings/drawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addDrawingChart("Sheet1", path, "A1", 0, 0, 0, &PictureOptions{PrintObject: boolPtr(true), Locked: boolPtr(false), XScale: float64Ptr(defaultPictureScale), YScale: float64Ptr(defaultPictureScale)}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.addDrawingChart("Sheet1", path, "A1", 0, 0, 0, &GraphicOptions{PrintObject: boolPtr(true), Locked: boolPtr(false)}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddSheetDrawingChart(t *testing.T) {
 	f := NewFile()
 	path := "xl/drawings/drawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addSheetDrawingChart(path, 0, &PictureOptions{PrintObject: boolPtr(true), Locked: boolPtr(false), XScale: float64Ptr(defaultPictureScale), YScale: float64Ptr(defaultPictureScale)}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.addSheetDrawingChart(path, 0, &GraphicOptions{PrintObject: boolPtr(true), Locked: boolPtr(false)}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestDeleteDrawing(t *testing.T) {
@@ -142,7 +141,6 @@ func TestAddChart(t *testing.T) {
 
 	// Test add chart on not exists worksheet
 	assert.EqualError(t, f.AddChart("SheetN", "P1", nil), "sheet SheetN does not exist")
-	positionLeft, positionBottom, positionRight, positionTop, positionTopRight := "left", "bottom", "right", "top", "top_right"
 	maximum, minimum, zero := 7.5, 0.5, .0
 	series := []ChartSeries{
 		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"},
@@ -165,16 +163,16 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Width: 0.25}},
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
-	format := PictureOptions{
-		XScale:          float64Ptr(defaultPictureScale),
-		YScale:          float64Ptr(defaultPictureScale),
+	format := GraphicOptions{
+		ScaleX:          defaultPictureScale,
+		ScaleY:          defaultPictureScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),
 		LockAspectRatio: false,
 		Locked:          boolPtr(false),
 	}
-	legend := ChartLegend{Position: &positionLeft, ShowLegendKey: false}
+	legend := ChartLegend{Position: "left", ShowLegendKey: false}
 	plotArea := ChartPlotArea{
 		ShowBubbleSize:  true,
 		ShowCatName:     true,
@@ -187,13 +185,13 @@ func TestAddChart(t *testing.T) {
 		sheetName, cell string
 		opts            *Chart
 	}{
-		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: "col", Series: series, Format: format, Legend: ChartLegend{None: true, ShowLegendKey: true}, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Color: "#000000"}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "#777777"}}}},
+		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: "col", Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Color: "#000000"}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "#777777"}}}},
 		{sheetName: "Sheet1", cell: "X1", opts: &Chart{Type: "colStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "P16", opts: &Chart{Type: "colPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "100% Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: "col3DClustered", Series: series, Format: format, Legend: ChartLegend{Position: &positionBottom, ShowLegendKey: false}, Title: ChartTitle{Name: "3D Clustered Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: "col3DClustered", Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Clustered Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "P30", opts: &Chart{Type: "col3DStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "X30", opts: &Chart{Type: "col3DPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D 100% Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "X45", opts: &Chart{Type: "radar", Series: series, Format: format, Legend: ChartLegend{Position: &positionTopRight, ShowLegendKey: false}, Title: ChartTitle{Name: "Radar Chart"}, PlotArea: plotArea, ShowBlanksAs: "span"}},
+		{sheetName: "Sheet1", cell: "X45", opts: &Chart{Type: "radar", Series: series, Format: format, Legend: ChartLegend{Position: "top_right", ShowLegendKey: false}, Title: ChartTitle{Name: "Radar Chart"}, PlotArea: plotArea, ShowBlanksAs: "span"}},
 		{sheetName: "Sheet1", cell: "AF1", opts: &Chart{Type: "col3DConeStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "AF16", opts: &Chart{Type: "col3DConeClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "AF30", opts: &Chart{Type: "col3DConePercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
@@ -207,12 +205,12 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet1", cell: "AV30", opts: &Chart{Type: "col3DCylinderPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cylinder Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "AV45", opts: &Chart{Type: "col3DCylinder", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cylinder Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "P45", opts: &Chart{Type: "col3D", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "P1", opts: &Chart{Type: "line3D", Series: series2, Format: format, Legend: ChartLegend{Position: &positionTop, ShowLegendKey: false}, Title: ChartTitle{Name: "3D Line Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
-		{sheetName: "Sheet2", cell: "X1", opts: &Chart{Type: "scatter", Series: series, Format: format, Legend: ChartLegend{Position: &positionBottom, ShowLegendKey: false}, Title: ChartTitle{Name: "Scatter Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: "doughnut", Series: series3, Format: format, Legend: ChartLegend{Position: &positionRight, ShowLegendKey: false}, Title: ChartTitle{Name: "Doughnut Chart"}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
-		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: "line", Series: series2, Format: format, Legend: ChartLegend{Position: &positionTop, ShowLegendKey: false}, Title: ChartTitle{Name: "Line Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
-		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: "pie3D", Series: series3, Format: format, Legend: ChartLegend{Position: &positionBottom, ShowLegendKey: false}, Title: ChartTitle{Name: "3D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: "pie", Series: series3, Format: format, Legend: ChartLegend{Position: &positionBottom, ShowLegendKey: false}, Title: ChartTitle{Name: "Pie Chart"}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "gap"}},
+		{sheetName: "Sheet2", cell: "P1", opts: &Chart{Type: "line3D", Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Line Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
+		{sheetName: "Sheet2", cell: "X1", opts: &Chart{Type: "scatter", Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "Scatter Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: "doughnut", Series: series3, Format: format, Legend: ChartLegend{Position: "right", ShowLegendKey: false}, Title: ChartTitle{Name: "Doughnut Chart"}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
+		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: "line", Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: ChartTitle{Name: "Line Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
+		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: "pie3D", Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: "pie", Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "Pie Chart"}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "gap"}},
 		// bar series chart
 		{sheetName: "Sheet2", cell: "P48", opts: &Chart{Type: "bar", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Clustered Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "X48", opts: &Chart{Type: "barStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
@@ -343,7 +341,6 @@ func TestDeleteChart(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 	assert.NoError(t, f.DeleteChart("Sheet1", "A1"))
-	positionLeft := "left"
 	series := []ChartSeries{
 		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"},
 		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31"},
@@ -354,16 +351,16 @@ func TestDeleteChart(t *testing.T) {
 		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36"},
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
 	}
-	format := PictureOptions{
-		XScale:          float64Ptr(defaultPictureScale),
-		YScale:          float64Ptr(defaultPictureScale),
+	format := GraphicOptions{
+		ScaleX:          defaultPictureScale,
+		ScaleY:          defaultPictureScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),
 		LockAspectRatio: false,
 		Locked:          boolPtr(false),
 	}
-	legend := ChartLegend{Position: &positionLeft, ShowLegendKey: false}
+	legend := ChartLegend{Position: "left", ShowLegendKey: false}
 	plotArea := ChartPlotArea{
 		ShowBubbleSize:  true,
 		ShowCatName:     true,
@@ -416,17 +413,17 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		assert.NoError(t, f.SetCellValue(sheet1, cell, v))
 	}
 	series := []ChartSeries{{Name: "value", Categories: "Sheet1!$A$1:$A$19", Values: "Sheet1!$B$1:$B$10"}}
-	dimension := []int{640, 480, 320, 240}
+	dimension := []uint{640, 480, 320, 240}
 	for _, c := range []struct {
 		cell string
 		opts *Chart
 	}{
-		{cell: "C1", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: &dimension[0], Height: &dimension[1]}, Series: series, Title: ChartTitle{Name: "Line chart without log scaling"}}},
-		{cell: "M1", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: &dimension[0], Height: &dimension[1]}, Series: series, Title: ChartTitle{Name: "Line chart with log 10.5 scaling"}, YAxis: ChartAxis{LogBase: 10.5}}},
-		{cell: "A25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: &dimension[2], Height: &dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1.9 scaling"}, YAxis: ChartAxis{LogBase: 1.9}}},
-		{cell: "F25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: &dimension[2], Height: &dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 2 scaling"}, YAxis: ChartAxis{LogBase: 2}}},
-		{cell: "K25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: &dimension[2], Height: &dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1000.1 scaling"}, YAxis: ChartAxis{LogBase: 1000.1}}},
-		{cell: "P25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: &dimension[2], Height: &dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1000 scaling"}, YAxis: ChartAxis{LogBase: 1000}}},
+		{cell: "C1", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[0], Height: dimension[1]}, Series: series, Title: ChartTitle{Name: "Line chart without log scaling"}}},
+		{cell: "M1", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[0], Height: dimension[1]}, Series: series, Title: ChartTitle{Name: "Line chart with log 10.5 scaling"}, YAxis: ChartAxis{LogBase: 10.5}}},
+		{cell: "A25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1.9 scaling"}, YAxis: ChartAxis{LogBase: 1.9}}},
+		{cell: "F25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 2 scaling"}, YAxis: ChartAxis{LogBase: 2}}},
+		{cell: "K25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1000.1 scaling"}, YAxis: ChartAxis{LogBase: 1000.1}}},
+		{cell: "P25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1000 scaling"}, YAxis: ChartAxis{LogBase: 1000}}},
 	} {
 		// Add two chart, one without and one with log scaling
 		assert.NoError(t, f.AddChart(sheet1, c.cell, c.opts))

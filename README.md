@@ -44,8 +44,17 @@ import (
 
 func main() {
     f := excelize.NewFile()
+    defer func() {
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     // Create a new sheet.
-    index := f.NewSheet("Sheet2")
+    index, err := f.NewSheet("Sheet2")
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
     // Set value of a cell.
     f.SetCellValue("Sheet2", "A2", "Hello world.")
     f.SetCellValue("Sheet1", "B2", 100)
@@ -122,6 +131,11 @@ import (
 
 func main() {
     f := excelize.NewFile()
+    defer func() {
+        if err := f.Close(); err != nil {
+            fmt.Println(err)
+        }
+    }()
     for idx, row := range [][]interface{}{
         {nil, "Apple", "Orange", "Pear"}, {"Small", 2, 3, 3},
         {"Normal", 5, 2, 4}, {"Large", 6, 7, 8},
@@ -196,14 +210,14 @@ func main() {
         fmt.Println(err)
     }
     // Insert a picture to worksheet with scaling.
-    enable, disable, scale := true, false, 0.5
     if err := f.AddPicture("Sheet1", "D2", "image.jpg",
-        &excelize.PictureOptions{XScale: &scale, YScale: &scale}); err != nil {
+        &excelize.GraphicOptions{ScaleX: 0.5, ScaleY: 0.5}); err != nil {
         fmt.Println(err)
     }
     // Insert a picture offset in the cell with printing support.
+    enable, disable := true, false
     if err := f.AddPicture("Sheet1", "H2", "image.gif",
-        &excelize.PictureOptions{
+        &excelize.GraphicOptions{
             PrintObject:     &enable,
             LockAspectRatio: false,
             OffsetX:         15,

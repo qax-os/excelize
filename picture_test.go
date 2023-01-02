@@ -37,24 +37,24 @@ func TestAddPicture(t *testing.T) {
 
 	// Test add picture to worksheet with offset and location hyperlink
 	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"),
-		&PictureOptions{OffsetX: 140, OffsetY: 120, Hyperlink: "#Sheet2!D8", HyperlinkType: "Location"}))
+		&GraphicOptions{OffsetX: 140, OffsetY: 120, Hyperlink: "#Sheet2!D8", HyperlinkType: "Location"}))
 	// Test add picture to worksheet with offset, external hyperlink and positioning
 	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-		&PictureOptions{OffsetX: 10, OffsetY: 10, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"}))
+		&GraphicOptions{OffsetX: 10, OffsetY: 10, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"}))
 
 	file, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)
 
 	// Test add picture to worksheet with autofit
-	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}))
-	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{OffsetX: 10, OffsetY: 10, AutoFit: true}))
+	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}))
+	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{OffsetX: 10, OffsetY: 10, AutoFit: true}))
 	_, err = f.NewSheet("AddPicture")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
 	assert.NoError(t, f.MergeCell("AddPicture", "B3", "D9"))
 	assert.NoError(t, f.MergeCell("AddPicture", "B1", "D1"))
-	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}))
-	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}))
+	assert.NoError(t, f.AddPicture("AddPicture", "C6", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}))
+	assert.NoError(t, f.AddPicture("AddPicture", "A1", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}))
 
 	// Test add picture to worksheet from bytes
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", "Excel Logo", ".png", file, nil))
@@ -105,8 +105,7 @@ func TestAddPictureErrors(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "Q7", filepath.Join("test", "images", "excel.wmf"), nil))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q13", filepath.Join("test", "images", "excel.emz"), nil))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q19", filepath.Join("test", "images", "excel.wmz"), nil))
-	xScale := 2.1
-	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &PictureOptions{XScale: &xScale}))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &GraphicOptions{ScaleX: 2.1}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
 	assert.NoError(t, f.Close())
 }
@@ -198,7 +197,7 @@ func TestGetPicture(t *testing.T) {
 func TestAddDrawingPicture(t *testing.T) {
 	// Test addDrawingPicture with illegal cell reference
 	f := NewFile()
-	opts := &PictureOptions{PrintObject: boolPtr(true), Locked: boolPtr(false), XScale: float64Ptr(defaultPictureScale), YScale: float64Ptr(defaultPictureScale)}
+	opts := &GraphicOptions{PrintObject: boolPtr(true), Locked: boolPtr(false)}
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", "", 0, 0, image.Config{}, opts), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
 	path := "xl/drawings/drawing1.xml"
@@ -254,7 +253,7 @@ func TestDrawingResize(t *testing.T) {
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), &PictureOptions{AutoFit: true}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
 func TestSetContentTypePartImageExtensions(t *testing.T) {

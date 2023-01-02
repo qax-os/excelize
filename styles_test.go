@@ -158,9 +158,9 @@ func TestSetConditionalFormat(t *testing.T) {
 	for _, testCase := range cases {
 		f := NewFile()
 		const sheet = "Sheet1"
-		const cellRange = "A1:A1"
+		const rangeRef = "A1:A1"
 
-		err := f.SetConditionalFormat(sheet, cellRange, testCase.format)
+		err := f.SetConditionalFormat(sheet, rangeRef, testCase.format)
 		if err != nil {
 			t.Fatalf("%s", err)
 		}
@@ -170,7 +170,7 @@ func TestSetConditionalFormat(t *testing.T) {
 		cf := ws.ConditionalFormatting
 		assert.Len(t, cf, 1, testCase.label)
 		assert.Len(t, cf[0].CfRule, 1, testCase.label)
-		assert.Equal(t, cellRange, cf[0].SQRef, testCase.label)
+		assert.Equal(t, rangeRef, cf[0].SQRef, testCase.label)
 		assert.EqualValues(t, testCase.rules, cf[0].CfRule, testCase.label)
 	}
 }

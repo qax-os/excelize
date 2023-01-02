@@ -46,7 +46,7 @@ func TestAddShape(t *testing.T) {
 
 	// Test add first shape for given sheet
 	f = NewFile()
-	width, height := 1.2, 90
+	lineWidth := 1.2
 	assert.NoError(t, f.AddShape("Sheet1", "A1",
 		&Shape{
 			Type:  "ellipseRibbon",
@@ -63,8 +63,8 @@ func TestAddShape(t *testing.T) {
 					},
 				},
 			},
-			Height: &height,
-			Line:   ShapeLine{Width: &width},
+			Height: 90,
+			Line:   ShapeLine{Width: &lineWidth},
 		}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
 	// Test add shape with invalid sheet name
@@ -86,13 +86,11 @@ func TestAddDrawingShape(t *testing.T) {
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.addDrawingShape("sheet1", path, "A1",
 		&Shape{
-			Width:  intPtr(defaultShapeSize),
-			Height: intPtr(defaultShapeSize),
-			Format: PictureOptions{
+			Width:  defaultShapeSize,
+			Height: defaultShapeSize,
+			Format: GraphicOptions{
 				PrintObject: boolPtr(true),
 				Locked:      boolPtr(false),
-				XScale:      float64Ptr(defaultPictureScale),
-				YScale:      float64Ptr(defaultPictureScale),
 			},
 		},
 	), "XML syntax error on line 1: invalid UTF-8")

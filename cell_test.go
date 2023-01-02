@@ -43,7 +43,7 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
 			// Concurrency add picture
 			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
-				&PictureOptions{
+				&GraphicOptions{
 					OffsetX:       10,
 					OffsetY:       10,
 					Hyperlink:     "https://github.com/xuri/excelize",
@@ -475,11 +475,20 @@ func TestGetCellFormula(t *testing.T) {
 
 func ExampleFile_SetCellFloat() {
 	f := NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+		}
+	}()
 	x := 3.14159265
 	if err := f.SetCellFloat("Sheet1", "A1", x, 2, 64); err != nil {
 		fmt.Println(err)
 	}
-	val, _ := f.GetCellValue("Sheet1", "A1")
+	val, err := f.GetCellValue("Sheet1", "A1")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	fmt.Println(val)
 	// Output: 3.14
 }
