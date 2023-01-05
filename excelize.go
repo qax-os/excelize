@@ -179,7 +179,9 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	if f.CalcChain, err = f.calcChainReader(); err != nil {
 		return f, err
 	}
-	f.sheetMap = f.getSheetMap()
+	if f.sheetMap, err = f.getSheetMap(); err != nil {
+		return f, err
+	}
 	if f.Styles, err = f.stylesReader(); err != nil {
 		return f, err
 	}

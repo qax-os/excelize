@@ -114,6 +114,11 @@ func TestSetPanes(t *testing.T) {
 	))
 }
 
+func TestCorruptedRelationship(t *testing.T) {
+	_, err := OpenFile(filepath.Join("test", "CorruptedRel.xlsx"))
+	assert.Error(t, err)
+}
+
 func TestSearchSheet(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
 	if !assert.NoError(t, err) {

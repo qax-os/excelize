@@ -454,10 +454,16 @@ func (f *File) GetSheetList() (list []string) {
 
 // getSheetMap provides a function to get worksheet name and XML file path map
 // of the spreadsheet.
-func (f *File) getSheetMap() map[string]string {
+func (f *File) getSheetMap() (map[string]string, error) {
 	maps := map[string]string{}
-	wb, _ := f.workbookReader()
-	rels, _ := f.relsReader(f.getWorkbookRelsPath())
+	wb, err := f.workbookReader()
+	if err != nil {
+		return nil, err
+	}
+	rels, err := f.relsReader(f.getWorkbookRelsPath())
+	if err != nil {
+		return nil, err
+	}
 	for _, v := range wb.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
 			if rel.ID == v.ID {
@@ -471,7 +477,7 @@ func (f *File) getSheetMap() map[string]string {
 			}
 		}
 	}
-	return maps
+	return maps, nil
 }
 
 // getSheetXMLPath provides a function to get XML file path by given sheet
