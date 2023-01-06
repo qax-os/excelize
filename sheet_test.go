@@ -114,11 +114,6 @@ func TestSetPanes(t *testing.T) {
 	))
 }
 
-func TestCorruptedRelationship(t *testing.T) {
-	_, err := OpenFile(filepath.Join("test", "CorruptedRel.xlsx"))
-	assert.Error(t, err)
-}
-
 func TestSearchSheet(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "SharedStrings.xlsx"))
 	if !assert.NoError(t, err) {
@@ -383,6 +378,12 @@ func TestGetSheetMap(t *testing.T) {
 	}
 	assert.Equal(t, len(sheetMap), 2)
 	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	_, err = f.getSheetMap()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetActiveSheet(t *testing.T) {
