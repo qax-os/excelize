@@ -378,6 +378,12 @@ func TestGetSheetMap(t *testing.T) {
 	}
 	assert.Equal(t, len(sheetMap), 2)
 	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	_, err = f.getSheetMap()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestSetActiveSheet(t *testing.T) {
