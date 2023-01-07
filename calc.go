@@ -768,28 +768,11 @@ type formulaFuncs struct {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
-	return f.calcCellValue(&calcContext{
+	var token formulaArg
+	token, err = f.calcCellValue(&calcContext{
 		entry:      fmt.Sprintf("%s!%s", sheet, cell),
 		iterations: make(map[string]uint),
 	}, sheet, cell)
-}
-
-func (f *File) calcCellValue(ctx *calcContext, sheet, cell string) (result string, err error) {
-	var (
-		formula string
-		token   formulaArg
-	)
-	if formula, err = f.GetCellFormula(sheet, cell); err != nil {
-		return
-	}
-	ps := efp.ExcelParser()
-	tokens := ps.Parse(formula)
-	if tokens == nil {
-		return
-	}
-	if token, err = f.evalInfixExp(ctx, sheet, cell, tokens); err != nil {
-		return
-	}
 	result = token.Value()
 	if isNum, precision, decimal := isNumeric(result); isNum {
 		if precision > 15 {
@@ -800,6 +783,22 @@ func (f *File) calcCellValue(ctx *calcContext, sheet, cell string) (result strin
 			result = strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))
 		}
 	}
+	return
+}
+
+// calcCellValue calculate cell value by given context, worksheet name and cell
+// reference.
+func (f *File) calcCellValue(ctx *calcContext, sheet, cell string) (result formulaArg, err error) {
+	var formula string
+	if formula, err = f.GetCellFormula(sheet, cell); err != nil {
+		return
+	}
+	ps := efp.ExcelParser()
+	tokens := ps.Parse(formula)
+	if tokens == nil {
+		return
+	}
+	result, err = f.evalInfixExp(ctx, sheet, cell, tokens)
 	return
 }
 
@@ -919,8 +918,8 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 					if err != nil {
 						return result, err
 					}
-					if result.Type != ArgString {
-						return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE), errors.New(formulaErrorVALUE)
+					if result.Type == ArgError {
+						return result, errors.New(result.Error)
 					}
 					opfdStack.Push(result)
 					continue
@@ -933,7 +932,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 					}
 					result, err := f.parseReference(ctx, sheet, token.TValue)
 					if err != nil {
-						return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE), err
+						return newEmptyFormulaArg(), err
 					}
 					if result.Type == ArgUnknown {
 						return newEmptyFormulaArg(), errors.New(formulaErrorVALUE)
@@ -977,10 +976,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				continue
 			}
 
-			// current token is logical
-			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeLogical {
-				argsStack.Peek().(*list.List).PushBack(newStringFormulaArg(token.TValue))
-			}
 			if inArrayRow && isOperand(token) {
 				continue
 			}
@@ -1341,16 +1336,33 @@ func isOperatorPrefixToken(token efp.Token) bool {
 
 // isOperand determine if the token is parse operand.
 func isOperand(token efp.Token) bool {
-	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText)
+	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText || token.TSubType == efp.TokenSubTypeLogical)
 }
 
 // tokenToFormulaArg create a formula argument by given token.
 func tokenToFormulaArg(token efp.Token) formulaArg {
-	if token.TSubType == efp.TokenSubTypeNumber {
+	switch token.TSubType {
+	case efp.TokenSubTypeLogical:
+		return newBoolFormulaArg(strings.EqualFold(token.TValue, "TRUE"))
+	case efp.TokenSubTypeNumber:
 		num, _ := strconv.ParseFloat(token.TValue, 64)
 		return newNumberFormulaArg(num)
+	default:
+		return newStringFormulaArg(token.TValue)
 	}
-	return newStringFormulaArg(token.TValue)
+}
+
+// formulaArgToToken create a token by given formula argument.
+func formulaArgToToken(arg formulaArg) efp.Token {
+	switch arg.Type {
+	case ArgNumber:
+		if arg.Boolean {
+			return efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeLogical}
+		}
+		return efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber}
+	default:
+		return efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeText}
+	}
 }
 
 // parseToken parse basic arithmetic operator priority and evaluate based on
@@ -1366,12 +1378,7 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		if err != nil {
 			return errors.New(formulaErrorNAME)
 		}
-		if result.Type != ArgString {
-			return errors.New(formulaErrorVALUE)
-		}
-		token.TValue = result.String
-		token.TType = efp.TokenTypeOperand
-		token.TSubType = efp.TokenSubTypeText
+		token = formulaArgToToken(result)
 	}
 	if isOperatorPrefixToken(token) {
 		if err := f.parseOperatorPrefixToken(optStack, opdStack, token); err != nil {
@@ -1505,20 +1512,39 @@ func prepareValueRef(cr cellRef, valueRange []int) {
 }
 
 // cellResolver calc cell value by given worksheet name, cell reference and context.
-func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (string, error) {
-	var value string
+func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, error) {
+	var (
+		arg   formulaArg
+		value string
+		err   error
+	)
 	ref := fmt.Sprintf("%s!%s", sheet, cell)
 	if formula, _ := f.GetCellFormula(sheet, cell); len(formula) != 0 {
 		ctx.Lock()
 		if ctx.entry != ref && ctx.iterations[ref] <= f.options.MaxCalcIterations {
 			ctx.iterations[ref]++
 			ctx.Unlock()
-			value, _ = f.calcCellValue(ctx, sheet, cell)
-			return value, nil
+			arg, _ = f.calcCellValue(ctx, sheet, cell)
+			return arg, nil
 		}
 		ctx.Unlock()
 	}
-	return f.GetCellValue(sheet, cell, Options{RawCellValue: true})
+	if value, err = f.GetCellValue(sheet, cell, Options{RawCellValue: true}); err != nil {
+		return arg, err
+	}
+	arg = newStringFormulaArg(value)
+	cellType, _ := f.GetCellType(sheet, cell)
+	switch cellType {
+	case CellTypeBool:
+		return arg.ToBool(), err
+	case CellTypeNumber, CellTypeUnset:
+		if arg.Value() == "" {
+			return newEmptyFormulaArg(), err
+		}
+		return arg.ToNumber(), err
+	default:
+		return arg, err
+	}
 }
 
 // rangeResolver extract value as string from given reference and range list.
@@ -1556,17 +1582,15 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
 			var matrixRow []formulaArg
 			for col := valueRange[2]; col <= valueRange[3]; col++ {
-				var cell, value string
+				var cell string
+				var value formulaArg
 				if cell, err = CoordinatesToCellName(col, row); err != nil {
 					return
 				}
 				if value, err = f.cellResolver(ctx, sheet, cell); err != nil {
 					return
 				}
-				matrixRow = append(matrixRow, formulaArg{
-					String: value,
-					Type:   ArgString,
-				})
+				matrixRow = append(matrixRow, value)
 			}
 			arg.Matrix = append(arg.Matrix, matrixRow)
 		}
@@ -1579,10 +1603,10 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 		if cell, err = CoordinatesToCellName(cr.Col, cr.Row); err != nil {
 			return
 		}
-		if arg.String, err = f.cellResolver(ctx, cr.Sheet, cell); err != nil {
+		if arg, err = f.cellResolver(ctx, cr.Sheet, cell); err != nil {
 			return
 		}
-		arg.Type = ArgString
+		arg.cellRefs, arg.cellRanges = cellRefs, cellRanges
 	}
 	return
 }
@@ -4618,10 +4642,11 @@ func newNumberMatrix(arg formulaArg, phalanx bool) (numMtx [][]float64, ele form
 		}
 		numMtx = append(numMtx, make([]float64, len(row)))
 		for c, cell := range row {
-			if ele = cell.ToNumber(); ele.Type != ArgNumber {
+			if cell.Type != ArgNumber {
+				ele = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 				return
 			}
-			numMtx[r][c] = ele.Number
+			numMtx[r][c] = cell.Number
 		}
 	}
 	return
@@ -4946,31 +4971,24 @@ func (fn *formulaFuncs) POWER(argsList *list.List) formulaArg {
 //
 //	PRODUCT(number1,[number2],...)
 func (fn *formulaFuncs) PRODUCT(argsList *list.List) formulaArg {
-	val, product := 0.0, 1.0
-	var err error
+	product := 1.0
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
 		switch token.Type {
 		case ArgString:
-			if token.String == "" {
-				continue
+			num := token.ToNumber()
+			if num.Type != ArgNumber {
+				return num
 			}
-			if val, err = strconv.ParseFloat(token.String, 64); err != nil {
-				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-			}
-			product = product * val
+			product = product * num.Number
 		case ArgNumber:
 			product = product * token.Number
 		case ArgMatrix:
 			for _, row := range token.Matrix {
-				for _, value := range row {
-					if value.Value() == "" {
-						continue
+				for _, cell := range row {
+					if cell.Type == ArgNumber {
+						product *= cell.Number
 					}
-					if val, err = strconv.ParseFloat(value.String, 64); err != nil {
-						return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-					}
-					product *= val
 				}
 			}
 		}
@@ -5685,26 +5703,23 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	if argsList.Len() == 3 {
 		sumRange = argsList.Back().Value.(formulaArg).Matrix
 	}
-	var sum, val float64
-	var err error
+	var sum float64
+	var arg formulaArg
 	for rowIdx, row := range rangeMtx {
-		for colIdx, col := range row {
-			var ok bool
-			fromVal := col.String
-			if col.String == "" {
+		for colIdx, cell := range row {
+			arg = cell
+			if arg.Type == ArgEmpty {
 				continue
 			}
-			ok, _ = formulaCriteriaEval(fromVal, criteria)
-			if ok {
+			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
 				if argsList.Len() == 3 {
 					if len(sumRange) > rowIdx && len(sumRange[rowIdx]) > colIdx {
-						fromVal = sumRange[rowIdx][colIdx].String
+						arg = sumRange[rowIdx][colIdx]
 					}
 				}
-				if val, err = strconv.ParseFloat(fromVal, 64); err != nil {
-					continue
+				if arg.Type == ArgNumber {
+					sum += arg.Number
 				}
-				sum += val
 			}
 		}
 	}
@@ -7662,14 +7677,16 @@ func (fn *formulaFuncs) COUNT(argsList *list.List) formulaArg {
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
-		case ArgString, ArgNumber:
-			if arg.ToNumber().Type != ArgError {
+		case ArgString:
+			if num := arg.ToNumber(); num.Type == ArgNumber {
 				count++
 			}
+		case ArgNumber:
+			count++
 		case ArgMatrix:
 			for _, row := range arg.Matrix {
-				for _, value := range row {
-					if value.ToNumber().Type != ArgError {
+				for _, cell := range row {
+					if cell.Type == ArgNumber {
 						count++
 					}
 				}
@@ -7818,17 +7835,16 @@ func (fn *formulaFuncs) DEVSQ(argsList *list.List) formulaArg {
 	}
 	avg, count, result := fn.AVERAGE(argsList), -1, 0.0
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		for _, number := range arg.Value.(formulaArg).ToList() {
-			num := number.ToNumber()
-			if num.Type != ArgNumber {
+		for _, cell := range arg.Value.(formulaArg).ToList() {
+			if cell.Type != ArgNumber {
 				continue
 			}
 			count++
 			if count == 0 {
-				result = math.Pow(num.Number-avg.Number, 2)
+				result = math.Pow(cell.Number-avg.Number, 2)
 				continue
 			}
-			result += math.Pow(num.Number-avg.Number, 2)
+			result += math.Pow(cell.Number-avg.Number, 2)
 		}
 	}
 	if count == -1 {
@@ -9338,12 +9354,12 @@ func (fn *formulaFuncs) MODE(argsList *list.List) formulaArg {
 	var values []float64
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		cells := arg.Value.(formulaArg)
-		if cells.Type != ArgMatrix && cells.ToNumber().Type != ArgNumber {
+		if cells.Type != ArgMatrix && cells.Type != ArgNumber {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 		for _, cell := range cells.ToList() {
-			if num := cell.ToNumber(); num.Type == ArgNumber {
-				values = append(values, num.Number)
+			if cell.Type == ArgNumber {
+				values = append(values, cell.Number)
 			}
 		}
 	}
@@ -9381,12 +9397,12 @@ func (fn *formulaFuncs) MODEdotMULT(argsList *list.List) formulaArg {
 	var values []float64
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		cells := arg.Value.(formulaArg)
-		if cells.Type != ArgMatrix && cells.ToNumber().Type != ArgNumber {
+		if cells.Type != ArgMatrix && cells.Type != ArgNumber {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 		for _, cell := range cells.ToList() {
-			if num := cell.ToNumber(); num.Type == ArgNumber {
-				values = append(values, num.Number)
+			if cell.Type == ArgNumber {
+				values = append(values, cell.Number)
 			}
 		}
 	}
@@ -9700,8 +9716,8 @@ func (fn *formulaFuncs) kth(name string, argsList *list.List) formulaArg {
 	}
 	var data []float64
 	for _, arg := range array {
-		if numArg := arg.ToNumber(); numArg.Type == ArgNumber {
-			data = append(data, numArg.Number)
+		if arg.Type == ArgNumber {
+			data = append(data, arg.Number)
 		}
 	}
 	if len(data) < k {
@@ -9776,25 +9792,10 @@ func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
 
 // calcListMatrixMax is part of the implementation max.
 func calcListMatrixMax(maxa bool, max float64, arg formulaArg) float64 {
-	for _, row := range arg.ToList() {
-		switch row.Type {
-		case ArgString:
-			if !maxa && (row.Value() == "TRUE" || row.Value() == "FALSE") {
-				continue
-			} else {
-				num := row.ToBool()
-				if num.Type == ArgNumber && num.Number > max {
-					max = num.Number
-					continue
-				}
-			}
-			num := row.ToNumber()
-			if num.Type != ArgError && num.Number > max {
-				max = num.Number
-			}
-		case ArgNumber:
-			if row.Number > max {
-				max = row.Number
+	for _, cell := range arg.ToList() {
+		if cell.Type == ArgNumber && cell.Number > max {
+			if maxa && cell.Boolean || !cell.Boolean {
+				max = cell.Number
 			}
 		}
 	}
@@ -9846,32 +9847,30 @@ func (fn *formulaFuncs) MEDIAN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "MEDIAN requires at least 1 argument")
 	}
 	var values []float64
-	var median, digits float64
-	var err error
+	var median float64
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
 		case ArgString:
-			num := arg.ToNumber()
-			if num.Type == ArgError {
-				return newErrorFormulaArg(formulaErrorVALUE, num.Error)
+			value := arg.ToNumber()
+			if value.Type != ArgNumber {
+				return value
 			}
-			values = append(values, num.Number)
+			values = append(values, value.Number)
 		case ArgNumber:
 			values = append(values, arg.Number)
 		case ArgMatrix:
 			for _, row := range arg.Matrix {
-				for _, value := range row {
-					if value.String == "" {
-						continue
+				for _, cell := range row {
+					if cell.Type == ArgNumber {
+						values = append(values, cell.Number)
 					}
-					if digits, err = strconv.ParseFloat(value.String, 64); err != nil {
-						return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-					}
-					values = append(values, digits)
 				}
 			}
 		}
+	}
+	if len(values) == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	sort.Float64s(values)
 	if len(values)%2 == 0 {
@@ -9936,25 +9935,10 @@ func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
 
 // calcListMatrixMin is part of the implementation min.
 func calcListMatrixMin(mina bool, min float64, arg formulaArg) float64 {
-	for _, row := range arg.ToList() {
-		switch row.Type {
-		case ArgString:
-			if !mina && (row.Value() == "TRUE" || row.Value() == "FALSE") {
-				continue
-			} else {
-				num := row.ToBool()
-				if num.Type == ArgNumber && num.Number < min {
-					min = num.Number
-					continue
-				}
-			}
-			num := row.ToNumber()
-			if num.Type != ArgError && num.Number < min {
-				min = num.Number
-			}
-		case ArgNumber:
-			if row.Number < min {
-				min = row.Number
+	for _, cell := range arg.ToList() {
+		if cell.Type == ArgNumber && cell.Number < min {
+			if mina && cell.Boolean || !cell.Boolean {
+				min = cell.Number
 			}
 		}
 	}
@@ -10016,7 +10000,7 @@ func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formula
 	}
 	var sum, deltaX, deltaY, x, y, length float64
 	for i := 0; i < len(array1); i++ {
-		num1, num2 := array1[i].ToNumber(), array2[i].ToNumber()
+		num1, num2 := array1[i], array2[i]
 		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
 			continue
 		}
@@ -10027,7 +10011,7 @@ func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formula
 	x /= length
 	y /= length
 	for i := 0; i < len(array1); i++ {
-		num1, num2 := array1[i].ToNumber(), array2[i].ToNumber()
+		num1, num2 := array1[i], array2[i]
 		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
 			continue
 		}
@@ -10077,9 +10061,8 @@ func (fn *formulaFuncs) PERCENTILEdotEXC(argsList *list.List) formulaArg {
 		if arg.Type == ArgError {
 			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 		}
-		num := arg.ToNumber()
-		if num.Type == ArgNumber {
-			numbers = append(numbers, num.Number)
+		if arg.Type == ArgNumber {
+			numbers = append(numbers, arg.Number)
 		}
 	}
 	cnt := len(numbers)
@@ -10125,9 +10108,8 @@ func (fn *formulaFuncs) PERCENTILE(argsList *list.List) formulaArg {
 		if arg.Type == ArgError {
 			return arg
 		}
-		num := arg.ToNumber()
-		if num.Type == ArgNumber {
-			numbers = append(numbers, num.Number)
+		if arg.Type == ArgNumber {
+			numbers = append(numbers, arg.Number)
 		}
 	}
 	cnt := len(numbers)
@@ -10156,11 +10138,10 @@ func (fn *formulaFuncs) percentrank(name string, argsList *list.List) formulaArg
 	var numbers []float64
 	for _, arg := range array {
 		if arg.Type == ArgError {
-			return arg
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 		}
-		num := arg.ToNumber()
-		if num.Type == ArgNumber {
-			numbers = append(numbers, num.Number)
+		if arg.Type == ArgNumber {
+			numbers = append(numbers, arg.Number)
 		}
 	}
 	cnt := len(numbers)
@@ -10350,9 +10331,8 @@ func (fn *formulaFuncs) rank(name string, argsList *list.List) formulaArg {
 	}
 	var arr []float64
 	for _, arg := range argsList.Front().Next().Value.(formulaArg).ToList() {
-		n := arg.ToNumber()
-		if n.Type == ArgNumber {
-			arr = append(arr, n.Number)
+		if arg.Type == ArgNumber {
+			arr = append(arr, arg.Number)
 		}
 	}
 	sort.Float64s(arr)
@@ -10422,12 +10402,11 @@ func (fn *formulaFuncs) skew(name string, argsList *list.List) formulaArg {
 			summer += math.Pow((num.Number-mean.Number)/stdDev.Number, 3)
 			count++
 		case ArgList, ArgMatrix:
-			for _, row := range token.ToList() {
-				numArg := row.ToNumber()
-				if numArg.Type != ArgNumber {
+			for _, cell := range token.ToList() {
+				if cell.Type != ArgNumber {
 					continue
 				}
-				summer += math.Pow((numArg.Number-mean.Number)/stdDev.Number, 3)
+				summer += math.Pow((cell.Number-mean.Number)/stdDev.Number, 3)
 				count++
 			}
 		}
@@ -10558,7 +10537,7 @@ func (fn *formulaFuncs) STEYX(argsList *list.List) formulaArg {
 	}
 	var count, sumX, sumY, squareX, squareY, sigmaXY float64
 	for i := 0; i < len(array1); i++ {
-		num1, num2 := array1[i].ToNumber(), array2[i].ToNumber()
+		num1, num2 := array1[i], array2[i]
 		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
 			continue
 		}
@@ -10804,8 +10783,7 @@ func tTest(bTemplin bool, mtx1, mtx2 [][]formulaArg, c1, c2, r1, r2 int) (float6
 	var fVal formulaArg
 	for i := 0; i < c1; i++ {
 		for j := 0; j < r1; j++ {
-			fVal = mtx1[i][j].ToNumber()
-			if fVal.Type == ArgNumber {
+			if fVal = mtx1[i][j]; fVal.Type == ArgNumber {
 				sum1 += fVal.Number
 				sumSqr1 += fVal.Number * fVal.Number
 				cnt1++
@@ -10814,8 +10792,7 @@ func tTest(bTemplin bool, mtx1, mtx2 [][]formulaArg, c1, c2, r1, r2 int) (float6
 	}
 	for i := 0; i < c2; i++ {
 		for j := 0; j < r2; j++ {
-			fVal = mtx2[i][j].ToNumber()
-			if fVal.Type == ArgNumber {
+			if fVal = mtx2[i][j]; fVal.Type == ArgNumber {
 				sum2 += fVal.Number
 				sumSqr2 += fVal.Number * fVal.Number
 				cnt2++
@@ -10851,7 +10828,7 @@ func (fn *formulaFuncs) tTest(mtx1, mtx2 [][]formulaArg, fTails, fTyp float64) f
 		var fVal1, fVal2 formulaArg
 		for i := 0; i < c1; i++ {
 			for j := 0; j < r1; j++ {
-				fVal1, fVal2 = mtx1[i][j].ToNumber(), mtx2[i][j].ToNumber()
+				fVal1, fVal2 = mtx1[i][j], mtx2[i][j]
 				if fVal1.Type != ArgNumber || fVal2.Type != ArgNumber {
 					continue
 				}
@@ -10895,11 +10872,11 @@ func (fn *formulaFuncs) TTEST(argsList *list.List) formulaArg {
 	var array1, array2, tails, typeArg formulaArg
 	array1 = argsList.Front().Value.(formulaArg)
 	array2 = argsList.Front().Next().Value.(formulaArg)
-	if tails = argsList.Front().Next().Next().Value.(formulaArg).ToNumber(); tails.Type != ArgNumber {
-		return tails
+	if tails = argsList.Front().Next().Next().Value.(formulaArg); tails.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	if typeArg = argsList.Back().Value.(formulaArg).ToNumber(); typeArg.Type != ArgNumber {
-		return typeArg
+	if typeArg = argsList.Back().Value.(formulaArg); typeArg.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	if len(array1.Matrix) == 0 || len(array2.Matrix) == 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -10944,11 +10921,10 @@ func (fn *formulaFuncs) TRIMMEAN(argsList *list.List) formulaArg {
 	var arr []float64
 	arrArg := argsList.Front().Value.(formulaArg).ToList()
 	for _, cell := range arrArg {
-		num := cell.ToNumber()
-		if num.Type != ArgNumber {
+		if cell.Type != ArgNumber {
 			continue
 		}
-		arr = append(arr, num.Number)
+		arr = append(arr, cell.Number)
 	}
 	discard := math.Floor(float64(len(arr)) * percent.Number / 2)
 	sort.Float64s(arr)
@@ -11184,16 +11160,12 @@ func (fn *formulaFuncs) ISBLANK(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISBLANK requires 1 argument")
 	}
 	token := argsList.Front().Value.(formulaArg)
-	result := "FALSE"
 	switch token.Type {
-	case ArgUnknown:
-		result = "TRUE"
-	case ArgString:
-		if token.String == "" {
-			result = "TRUE"
-		}
+	case ArgUnknown, ArgEmpty:
+		return newBoolFormulaArg(true)
+	default:
+		return newBoolFormulaArg(false)
 	}
-	return newStringFormulaArg(result)
 }
 
 // ISERR function tests if an initial supplied expression (or value) returns
@@ -11256,21 +11228,22 @@ func (fn *formulaFuncs) ISEVEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISEVEN requires 1 argument")
 	}
-	var (
-		token   = argsList.Front().Value.(formulaArg)
-		result  = "FALSE"
-		numeric int
-		err     error
-	)
-	if token.Type == ArgString {
-		if numeric, err = strconv.Atoi(token.String); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	token := argsList.Front().Value.(formulaArg)
+	switch token.Type {
+	case ArgEmpty:
+		return newBoolFormulaArg(true)
+	case ArgNumber, ArgString:
+		num := token.ToNumber()
+		if num.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
-		if numeric == numeric/2*2 {
-			return newStringFormulaArg("TRUE")
+		if num.Number == 1 {
+			return newBoolFormulaArg(false)
 		}
+		return newBoolFormulaArg(num.Number == num.Number/2*2)
+	default:
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	return newStringFormulaArg(result)
 }
 
 // ISFORMULA function tests if a specified cell contains a formula, and if so,
@@ -11335,12 +11308,10 @@ func (fn *formulaFuncs) ISNONTEXT(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISNONTEXT requires 1 argument")
 	}
-	token := argsList.Front().Value.(formulaArg)
-	result := "TRUE"
-	if token.Type == ArgString && token.String != "" {
-		result = "FALSE"
+	if argsList.Front().Value.(formulaArg).Type == ArgString {
+		return newBoolFormulaArg(false)
 	}
-	return newStringFormulaArg(result)
+	return newBoolFormulaArg(true)
 }
 
 // ISNUMBER function tests if a supplied value is a number. If so,
@@ -11352,13 +11323,10 @@ func (fn *formulaFuncs) ISNUMBER(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISNUMBER requires 1 argument")
 	}
-	token, result := argsList.Front().Value.(formulaArg), false
-	if token.Type == ArgString && token.String != "" {
-		if _, err := strconv.Atoi(token.String); err == nil {
-			result = true
-		}
+	if argsList.Front().Value.(formulaArg).Type == ArgNumber {
+		return newBoolFormulaArg(true)
 	}
-	return newBoolFormulaArg(result)
+	return newBoolFormulaArg(false)
 }
 
 // ISODD function tests if a supplied number (or numeric expression) evaluates
@@ -11370,21 +11338,14 @@ func (fn *formulaFuncs) ISODD(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISODD requires 1 argument")
 	}
-	var (
-		token   = argsList.Front().Value.(formulaArg)
-		result  = "FALSE"
-		numeric int
-		err     error
-	)
-	if token.Type == ArgString {
-		if numeric, err = strconv.Atoi(token.String); err != nil {
-			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
-		}
-		if numeric != numeric/2*2 {
-			return newStringFormulaArg("TRUE")
-		}
+	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	if arg.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	return newStringFormulaArg(result)
+	if int(arg.Number) != int(arg.Number)/2*2 {
+		return newBoolFormulaArg(true)
+	}
+	return newBoolFormulaArg(false)
 }
 
 // ISREF function tests if a supplied value is a reference. If so, the
@@ -11524,13 +11485,12 @@ func (fn *formulaFuncs) TYPE(argsList *list.List) formulaArg {
 		return newNumberFormulaArg(16)
 	case ArgMatrix:
 		return newNumberFormulaArg(64)
-	default:
-		if arg := token.ToNumber(); arg.Type != ArgError || len(token.Value()) == 0 {
-			return newNumberFormulaArg(1)
-		}
-		if arg := token.ToBool(); arg.Type != ArgError {
+	case ArgNumber, ArgEmpty:
+		if token.Boolean {
 			return newNumberFormulaArg(4)
 		}
+		return newNumberFormulaArg(1)
+	default:
 		return newNumberFormulaArg(2)
 	}
 }
@@ -13734,9 +13694,9 @@ func (fn *formulaFuncs) TEXTJOIN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "TEXTJOIN accepts at most 252 arguments")
 	}
 	delimiter := argsList.Front().Value.(formulaArg)
-	ignoreEmpty := argsList.Front().Next().Value.(formulaArg).ToBool()
-	if ignoreEmpty.Type != ArgNumber {
-		return ignoreEmpty
+	ignoreEmpty := argsList.Front().Next().Value.(formulaArg)
+	if ignoreEmpty.Type != ArgNumber || !ignoreEmpty.Boolean {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	args, ok := textJoin(argsList.Front().Next().Next(), []string{}, ignoreEmpty.Number != 0)
 	if ok.Type != ArgNumber {
@@ -13755,7 +13715,7 @@ func textJoin(arg *list.Element, arr []string, ignoreEmpty bool) ([]string, form
 		switch arg.Value.(formulaArg).Type {
 		case ArgError:
 			return arr, arg.Value.(formulaArg)
-		case ArgString:
+		case ArgString, ArgEmpty:
 			val := arg.Value.(formulaArg).Value()
 			if val != "" || !ignoreEmpty {
 				arr = append(arr, val)
@@ -14040,7 +14000,7 @@ func matchPattern(pattern, name string) (matched bool) {
 // match, and make compare result as formula criteria condition type.
 func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte {
 	if lhs.Type != rhs.Type {
-		return criteriaErr
+		return criteriaNe
 	}
 	switch lhs.Type {
 	case ArgNumber:
@@ -14068,8 +14028,9 @@ func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte 
 		return compareFormulaArgList(lhs, rhs, matchMode, caseSensitive)
 	case ArgMatrix:
 		return compareFormulaArgMatrix(lhs, rhs, matchMode, caseSensitive)
+	default:
+		return criteriaErr
 	}
-	return criteriaErr
 }
 
 // compareFormulaArgList compares the left-hand sides and the right-hand sides
@@ -14247,8 +14208,8 @@ func checkHVLookupArgs(name string, argsList *list.List) (idx int, lookupValue, 
 		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires second argument of table array", name))
 		return
 	}
-	arg := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if arg.Type != ArgNumber {
+	arg := argsList.Front().Next().Next().Value.(formulaArg)
+	if arg.Type != ArgNumber || arg.Boolean {
 		errArg = newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires numeric %s argument", name, unit))
 		return
 	}
@@ -14256,7 +14217,7 @@ func checkHVLookupArgs(name string, argsList *list.List) (idx int, lookupValue, 
 	if argsList.Len() == 4 {
 		rangeLookup := argsList.Back().Value.(formulaArg).ToBool()
 		if rangeLookup.Type == ArgError {
-			errArg = newErrorFormulaArg(formulaErrorVALUE, rangeLookup.Error)
+			errArg = rangeLookup
 			return
 		}
 		if rangeLookup.Number == 0 {
@@ -14442,6 +14403,8 @@ start:
 			}
 		} else if lookupValue.Type == ArgMatrix {
 			lhs = lookupArray
+		} else if lookupArray.Type == ArgString {
+			lhs = newStringFormulaArg(cell.Value())
 		}
 		if compareFormulaArg(lhs, lookupValue, matchMode, false) == criteriaEq {
 			matchIdx = i
@@ -14512,6 +14475,8 @@ func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 			}
 		} else if lookupValue.Type == ArgMatrix && vertical {
 			lhs = lookupArray
+		} else if lookupValue.Type == ArgString {
+			lhs = newStringFormulaArg(cell.Value())
 		}
 		result := compareFormulaArg(lhs, lookupValue, matchMode, false)
 		if result == criteriaEq {
@@ -14524,7 +14489,7 @@ func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 			high = mid - 1
 		} else if result == criteriaL {
 			matchIdx = mid
-			if lhs.Value() != "" {
+			if cell.Type != ArgEmpty {
 				lastMatchIdx = matchIdx
 			}
 			low = mid + 1

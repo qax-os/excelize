@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/xuri/efp"
 )
 
 func prepareCalcData(cellData [][]interface{}) *File {
@@ -572,6 +573,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=FLOOR(-26.75,-0.1)":      "-26.7",
 		"=FLOOR(-26.75,-1)":        "-26",
 		"=FLOOR(-26.75,-5)":        "-25",
+		"=FLOOR(-2.05,2)":          "-4",
 		"=FLOOR(FLOOR(26.75,1),1)": "26",
 		// _xlfn.FLOOR.MATH
 		"=_xlfn.FLOOR.MATH(58.55)":                  "58",
@@ -706,8 +708,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=POWER(4,POWER(1,1))": "4",
 		// PRODUCT
 		"=PRODUCT(3,6)":            "18",
-		`=PRODUCT("",3,6)`:         "18",
-		`=PRODUCT(PRODUCT(1),3,6)`: "18",
+		"=PRODUCT(\"3\",\"6\")":    "18",
+		"=PRODUCT(PRODUCT(1),3,6)": "18",
 		"=PRODUCT(C1:C2)":          "1",
 		// QUOTIENT
 		"=QUOTIENT(5,2)":             "2",
@@ -836,7 +838,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUBTOTAL(111,A1:A6,A1:A6)": "1.25",
 		// SUM
 		"=SUM(1,2)":                           "3",
-		`=SUM("",1,2)`:                        "3",
+		"=SUM(\"1\",\"2\")":                   "3",
+		"=SUM(\"\",1,2)":                      "3",
 		"=SUM(1,2+3)":                         "6",
 		"=SUM(SUM(1,2),2)":                    "5",
 		"=(-2-SUM(-4+7))*5":                   "-25",
@@ -874,11 +877,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUMPRODUCT(A1:B3)":             "15",
 		"=SUMPRODUCT(A1:A3,B1:B3,B2:B4)": "20",
 		// SUMSQ
-		"=SUMSQ(A1:A4)":            "14",
-		"=SUMSQ(A1,B1,A2,B2,6)":    "82",
-		`=SUMSQ("",A1,B1,A2,B2,6)`: "82",
-		`=SUMSQ(1,SUMSQ(1))`:       "2",
-		"=SUMSQ(MUNIT(3))":         "3",
+		"=SUMSQ(A1:A4)":              "14",
+		"=SUMSQ(A1,B1,A2,B2,6)":      "82",
+		"=SUMSQ(\"\",A1,B1,A2,B2,6)": "82",
+		"=SUMSQ(1,SUMSQ(1))":         "2",
+		"=SUMSQ(\"1\",SUMSQ(1))":     "2",
+		"=SUMSQ(MUNIT(3))":           "3",
 		// SUMX2MY2
 		"=SUMX2MY2(A1:A4,B1:B4)": "-36",
 		// SUMX2PY2
@@ -914,6 +918,7 @@ func TestCalcCellValue(t *testing.T) {
 		// AVERAGEA
 		"=AVERAGEA(INT(1))": "1",
 		"=AVERAGEA(A1)":     "1",
+		"=AVERAGEA(\"1\")":  "1",
 		"=AVERAGEA(A1:A2)":  "1.5",
 		"=AVERAGEA(D2:F9)":  "12671.375",
 		// BETA.DIST
@@ -1013,6 +1018,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTA()":                              "0",
 		"=COUNTA(A1:A5,B2:B5,\"text\",1,INT(2))": "8",
 		"=COUNTA(COUNTA(1),MUNIT(1))":            "2",
+		"=COUNTA(D1:D2)":                         "2",
 		// COUNTBLANK
 		"=COUNTBLANK(MUNIT(1))": "0",
 		"=COUNTBLANK(1)":        "0",
@@ -1074,10 +1080,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=GAMMALN.PRECISE(0.4)": "0.796677817701784",
 		"=GAMMALN.PRECISE(4.5)": "2.45373657084244",
 		// GAUSS
-		"=GAUSS(-5)":  "-0.499999713348428",
-		"=GAUSS(0)":   "0",
-		"=GAUSS(0.1)": "0.039827837277029",
-		"=GAUSS(2.5)": "0.493790334674224",
+		"=GAUSS(-5)":    "-0.499999713348428",
+		"=GAUSS(0)":     "0",
+		"=GAUSS(\"0\")": "0",
+		"=GAUSS(0.1)":   "0.039827837277029",
+		"=GAUSS(2.5)":   "0.493790334674224",
 		// GEOMEAN
 		"=GEOMEAN(2.5,3,0.5,1,3)": "1.6226711115996",
 		// HARMEAN
@@ -1373,6 +1380,7 @@ func TestCalcCellValue(t *testing.T) {
 		// ISEVEN
 		"=ISEVEN(A1)": "FALSE",
 		"=ISEVEN(A2)": "TRUE",
+		"=ISEVEN(G1)": "TRUE",
 		// ISFORMULA
 		"=ISFORMULA(A1)":    "FALSE",
 		"=ISFORMULA(\"A\")": "FALSE",
@@ -1388,7 +1396,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISNA(A1)":   "FALSE",
 		"=ISNA(NA())": "TRUE",
 		// ISNONTEXT
-		"=ISNONTEXT(A1)":         "FALSE",
+		"=ISNONTEXT(A1)":         "TRUE",
 		"=ISNONTEXT(A5)":         "TRUE",
 		`=ISNONTEXT("Excelize")`: "FALSE",
 		"=ISNONTEXT(NA())":       "TRUE",
@@ -1421,7 +1429,7 @@ func TestCalcCellValue(t *testing.T) {
 		// TYPE
 		"=TYPE(2)":        "1",
 		"=TYPE(10/2)":     "1",
-		"=TYPE(C1)":       "1",
+		"=TYPE(C2)":       "1",
 		"=TYPE(\"text\")": "2",
 		"=TYPE(TRUE)":     "4",
 		"=TYPE(NA())":     "16",
@@ -1446,6 +1454,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=IFERROR(1/2,0)":             "0.5",
 		"=IFERROR(ISERROR(),0)":       "0",
 		"=IFERROR(1/0,0)":             "0",
+		"=IFERROR(G1,2)":              "0",
 		"=IFERROR(B2/MROUND(A2,1),0)": "2.5",
 		// IFNA
 		"=IFNA(1,\"not found\")":    "1",
@@ -1787,16 +1796,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=VALUE(\"01/02/2006 15:04:05\")": "38719.6278356481",
 		// Conditional Functions
 		// IF
-		"=IF(1=1)":                              "TRUE",
-		"=IF(1<>1)":                             "FALSE",
-		"=IF(5<0, \"negative\", \"positive\")":  "positive",
-		"=IF(-2<0, \"negative\", \"positive\")": "negative",
-		`=IF(1=1, "equal", "notequal")`:         "equal",
-		`=IF(1<>1, "equal", "notequal")`:        "notequal",
-		`=IF("A"="A", "equal", "notequal")`:     "equal",
-		`=IF("A"<>"A", "equal", "notequal")`:    "notequal",
-		`=IF(FALSE,0,ROUND(4/2,0))`:             "2",
-		`=IF(TRUE,ROUND(4/2,0),0)`:              "2",
+		"=IF(1=1)":                                   "TRUE",
+		"=IF(1<>1)":                                  "FALSE",
+		"=IF(5<0, \"negative\", \"positive\")":       "positive",
+		"=IF(-2<0, \"negative\", \"positive\")":      "negative",
+		"=IF(1=1, \"equal\", \"notequal\")":          "equal",
+		"=IF(1<>1, \"equal\", \"notequal\")":         "notequal",
+		"=IF(\"A\"=\"A\", \"equal\", \"notequal\")":  "equal",
+		"=IF(\"A\"<>\"A\", \"equal\", \"notequal\")": "notequal",
+		"=IF(FALSE,0,ROUND(4/2,0))":                  "2",
+		"=IF(TRUE,ROUND(4/2,0),0)":                   "2",
+		"=IF(A4>0.4,\"TRUE\",\"FALSE\")":             "FALSE",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"=ADDRESS(1,1,1,TRUE)":            "$A$1",
@@ -1855,6 +1865,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=VLOOKUP(INT(F2),F3:F9,1,TRUE)":      "32080",
 		"=VLOOKUP(MUNIT(3),MUNIT(3),1)":       "0",
 		"=VLOOKUP(A1,A3:B5,1)":                "0",
+		"=VLOOKUP(A1:A2,A1:A1,1)":             "1",
 		"=VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
 		// INDEX
 		"=INDEX(0,0,0)":          "0",
@@ -2556,13 +2567,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=MDETERM()": "MDETERM requires 1 argument",
 		// MINVERSE
 		"=MINVERSE()":      "MINVERSE requires 1 argument",
-		"=MINVERSE(B3:C4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MINVERSE(B3:C4)": "#VALUE!",
 		"=MINVERSE(A1:C2)": "#VALUE!",
 		"=MINVERSE(A4:A4)": "#NUM!",
 		// MMULT
 		"=MMULT()":            "MMULT requires 2 argument",
-		"=MMULT(A1:B2,B3:C4)": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=MMULT(B3:C4,A1:B2)": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=MMULT(A1:B2,B3:C4)": "#VALUE!",
+		"=MMULT(B3:C4,A1:B2)": "#VALUE!",
 		"=MMULT(A1:A2,B1:B2)": "#VALUE!",
 		// MOD
 		"=MOD()":      "MOD requires 2 numeric arguments",
@@ -2593,7 +2604,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=POWER(0,-1)":  "#DIV/0!",
 		"=POWER(1)":     "POWER requires 2 numeric arguments",
 		// PRODUCT
-		`=PRODUCT("X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=PRODUCT(\"X\")":    "strconv.ParseFloat: parsing \"X\": invalid syntax",
+		"=PRODUCT(\"\",3,6)": "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// QUOTIENT
 		`=QUOTIENT("X",1)`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
 		`=QUOTIENT(1,"X")`: "strconv.ParseFloat: parsing \"X\": invalid syntax",
@@ -2697,6 +2709,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUMPRODUCT(A1,D1)":       "#VALUE!",
 		"=SUMPRODUCT(A1:A3,D1:D3)": "#VALUE!",
 		"=SUMPRODUCT(A1:A2,B1:B3)": "#VALUE!",
+		"=SUMPRODUCT(\"\")":        "#VALUE!",
 		"=SUMPRODUCT(A1,NA())":     "#N/A",
 		// SUMX2MY2
 		"=SUMX2MY2()":         "SUMX2MY2 requires 2 arguments",
@@ -2922,6 +2935,7 @@ func TestCalcCellValue(t *testing.T) {
 		// FISHER
 		"=FISHER()":         "FISHER requires 1 numeric argument",
 		"=FISHER(2)":        "#N/A",
+		"=FISHER(\"2\")":    "#N/A",
 		"=FISHER(INT(-2)))": "#N/A",
 		"=FISHER(F1)":       "FISHER requires 1 numeric argument",
 		// FISHERINV
@@ -2984,7 +2998,8 @@ func TestCalcCellValue(t *testing.T) {
 		// GEOMEAN
 		"=GEOMEAN()":      "GEOMEAN requires at least 1 numeric argument",
 		"=GEOMEAN(0)":     "#NUM!",
-		"=GEOMEAN(D1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
+		"=GEOMEAN(D1:D2)": "#NUM!",
+		"=GEOMEAN(\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
 		// HARMEAN
 		"=HARMEAN()":   "HARMEAN requires at least 1 argument",
 		"=HARMEAN(-1)": "#N/A",
@@ -3184,7 +3199,7 @@ func TestCalcCellValue(t *testing.T) {
 		// MEDIAN
 		"=MEDIAN()":      "MEDIAN requires at least 1 argument",
 		"=MEDIAN(\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=MEDIAN(D1:D2)": "strconv.ParseFloat: parsing \"Month\": invalid syntax",
+		"=MEDIAN(D1:D2)": "#NUM!",
 		// MIN
 		"=MIN()":     "MIN requires at least 1 argument",
 		"=MIN(NA())": "#N/A",
@@ -3407,8 +3422,9 @@ func TestCalcCellValue(t *testing.T) {
 		// ISERROR
 		"=ISERROR()": "ISERROR requires 1 argument",
 		// ISEVEN
-		"=ISEVEN()":       "ISEVEN requires 1 argument",
-		`=ISEVEN("text")`: "strconv.Atoi: parsing \"text\": invalid syntax",
+		"=ISEVEN()":         "ISEVEN requires 1 argument",
+		"=ISEVEN(\"text\")": "#VALUE!",
+		"=ISEVEN(A1:A2)":    "#VALUE!",
 		// ISFORMULA
 		"=ISFORMULA()": "ISFORMULA requires 1 argument",
 		// ISLOGICAL
@@ -3420,8 +3436,8 @@ func TestCalcCellValue(t *testing.T) {
 		// ISNUMBER
 		"=ISNUMBER()": "ISNUMBER requires 1 argument",
 		// ISODD
-		"=ISODD()":       "ISODD requires 1 argument",
-		`=ISODD("text")`: "strconv.Atoi: parsing \"text\": invalid syntax",
+		"=ISODD()":         "ISODD requires 1 argument",
+		"=ISODD(\"text\")": "#VALUE!",
 		// ISREF
 		"=ISREF()": "ISREF requires 1 argument",
 		// ISTEXT
@@ -3717,7 +3733,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUBSTITUTE(\"\",\"\",\"\",0)":    "instance_num should be > 0",
 		// TEXTJOIN
 		"=TEXTJOIN()":               "TEXTJOIN requires at least 3 arguments",
-		"=TEXTJOIN(\"\",\"\",1)":    "strconv.ParseBool: parsing \"\": invalid syntax",
+		"=TEXTJOIN(\"\",\"\",1)":    "#VALUE!",
 		"=TEXTJOIN(\"\",TRUE,NA())": "#N/A",
 		"=TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": "TEXTJOIN accepts at most 252 arguments",
 		"=TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 "TEXTJOIN function exceeds 32767 characters",
@@ -3804,7 +3820,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=VLOOKUP(D2,D1,1,FALSE)":        "VLOOKUP requires second argument of table array",
 		"=VLOOKUP(D2,D:D,FALSE,FALSE)":   "VLOOKUP requires numeric col argument",
 		"=VLOOKUP(D2,D:D,1,FALSE,FALSE)": "VLOOKUP requires at most 4 arguments",
-		"=VLOOKUP(A1:A2,A1:A1,1)":        "VLOOKUP no result found",
 		"=VLOOKUP(D2,D10:D10,1,FALSE)":   "VLOOKUP no result found",
 		"=VLOOKUP(D2,D:D,2,FALSE)":       "VLOOKUP has invalid column index",
 		"=VLOOKUP(D2,C:C,1,FALSE)":       "VLOOKUP no result found",
@@ -4455,7 +4470,7 @@ func TestCalcISBLANK(t *testing.T) {
 	})
 	fn := formulaFuncs{}
 	result := fn.ISBLANK(argsList)
-	assert.Equal(t, result.String, "TRUE")
+	assert.Equal(t, "TRUE", result.Value())
 	assert.Empty(t, result.Error)
 }
 
@@ -4520,6 +4535,7 @@ func TestCalcMatchPattern(t *testing.T) {
 	assert.True(t, matchPattern("", ""))
 	assert.True(t, matchPattern("file/*", "file/abc/bcd/def"))
 	assert.True(t, matchPattern("*", ""))
+	assert.False(t, matchPattern("?", ""))
 	assert.False(t, matchPattern("file/?", "file/abc/bcd/def"))
 }
 
@@ -4574,15 +4590,14 @@ func TestCalcVLOOKUP(t *testing.T) {
 }
 
 func TestCalcBoolean(t *testing.T) {
-	cellData := [][]interface{}{
-		{0.5, "TRUE", -0.5, "FALSE"},
-	}
+	cellData := [][]interface{}{{0.5, "TRUE", -0.5, "FALSE", true}}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
 		"=AVERAGEA(A1:C1)":  "0.333333333333333",
 		"=MAX(0.5,B1)":      "0.5",
 		"=MAX(A1:B1)":       "0.5",
-		"=MAXA(A1:B1)":      "1",
+		"=MAXA(A1:B1)":      "0.5",
+		"=MAXA(A1:E1)":      "1",
 		"=MAXA(0.5,B1)":     "1",
 		"=MIN(-0.5,D1)":     "-0.5",
 		"=MIN(C1:D1)":       "-0.5",
@@ -4595,6 +4610,23 @@ func TestCalcBoolean(t *testing.T) {
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
 		result, err := f.CalcCellValue("Sheet1", "B10")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcMAXMIN(t *testing.T) {
+	cellData := [][]interface{}{{"1"}, {"2"}, {true}}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=MAX(A1:A3)":  "0",
+		"=MAXA(A1:A3)": "1",
+		"=MIN(A1:A3)":  "0",
+		"=MINA(A1:A3)": "1",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
+		result, err := f.CalcCellValue("Sheet1", "B1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
@@ -4822,28 +4854,29 @@ func TestCalcGROWTHandTREND(t *testing.T) {
 	calcError := map[string]string{
 		"=GROWTH()":                          "GROWTH requires at least 1 argument",
 		"=GROWTH(B2:B5,A2:A5,A8:A10,TRUE,0)": "GROWTH allows at most 4 arguments",
-		"=GROWTH(A1:B1,A2:A5,A8:A10,TRUE)":   "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=GROWTH(B2:B5,A1:B1,A8:A10,TRUE)":   "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=GROWTH(B2:B5,A2:A5,A1:B1,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=GROWTH(A1:B1,A2:A5,A8:A10,TRUE)":   "#VALUE!",
+		"=GROWTH(B2:B5,A1:B1,A8:A10,TRUE)":   "#VALUE!",
+		"=GROWTH(B2:B5,A2:A5,A1:B1,TRUE)":    "#VALUE!",
 		"=GROWTH(B2:B5,A2:A5,A8:A10,\"\")":   "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=GROWTH(A2:B3,A4:B4)":               "#REF!",
 		"=GROWTH(A4:B4,A2:A2)":               "#REF!",
 		"=GROWTH(A2:A2,A4:A5)":               "#REF!",
-		"=GROWTH(C1:C1,A2:A3)":               "#NUM!",
+		"=GROWTH(C1:C1,A2:A3)":               "#VALUE!",
 		"=GROWTH(D1:D1,A2:A3)":               "#NUM!",
-		"=GROWTH(A2:A3,C1:C1)":               "#NUM!",
+		"=GROWTH(A2:A3,C1:C1)":               "#VALUE!",
 		"=TREND()":                           "TREND requires at least 1 argument",
 		"=TREND(B2:B5,A2:A5,A8:A10,TRUE,0)":  "TREND allows at most 4 arguments",
-		"=TREND(A1:B1,A2:A5,A8:A10,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=TREND(B2:B5,A1:B1,A8:A10,TRUE)":    "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
-		"=TREND(B2:B5,A2:A5,A1:B1,TRUE)":     "strconv.ParseFloat: parsing \"known_x's\": invalid syntax",
+		"=TREND(A1:B1,A2:A5,A8:A10,TRUE)":    "#VALUE!",
+		"=TREND(B2:B5,A1:B1,A8:A10,TRUE)":    "#VALUE!",
+		"=TREND(B2:B5,A2:A5,A1:B1,TRUE)":     "#VALUE!",
 		"=TREND(B2:B5,A2:A5,A8:A10,\"\")":    "strconv.ParseBool: parsing \"\": invalid syntax",
 		"=TREND(A2:B3,A4:B4)":                "#REF!",
 		"=TREND(A4:B4,A2:A2)":                "#REF!",
 		"=TREND(A2:A2,A4:A5)":                "#REF!",
-		"=TREND(C1:C1,A2:A3)":                "#NUM!",
+		"=TREND(C1:C1,A2:A3)":                "#VALUE!",
 		"=TREND(D1:D1,A2:A3)":                "#REF!",
-		"=TREND(A2:A3,C1:C1)":                "#NUM!",
+		"=TREND(A2:A3,C1:C1)":                "#VALUE!",
+		"=TREND(C1:C1,C1:C1)":                "#VALUE!",
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
@@ -5586,8 +5619,8 @@ func TestCalcTTEST(t *testing.T) {
 		"=TTEST()":                      "TTEST requires 4 arguments",
 		"=TTEST(\"\",B1:B12,1,1)":       "#NUM!",
 		"=TTEST(A1:A12,\"\",1,1)":       "#NUM!",
-		"=TTEST(A1:A12,B1:B12,\"\",1)":  "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=TTEST(A1:A12,B1:B12,1,\"\")":  "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=TTEST(A1:A12,B1:B12,\"\",1)":  "#VALUE!",
+		"=TTEST(A1:A12,B1:B12,1,\"\")":  "#VALUE!",
 		"=TTEST(A1:A12,B1:B12,0,1)":     "#NUM!",
 		"=TTEST(A1:A12,B1:B12,1,0)":     "#NUM!",
 		"=TTEST(A1:A2,B1:B1,1,1)":       "#N/A",
@@ -5598,8 +5631,8 @@ func TestCalcTTEST(t *testing.T) {
 		"=T.TEST()":                     "T.TEST requires 4 arguments",
 		"=T.TEST(\"\",B1:B12,1,1)":      "#NUM!",
 		"=T.TEST(A1:A12,\"\",1,1)":      "#NUM!",
-		"=T.TEST(A1:A12,B1:B12,\"\",1)": "strconv.ParseFloat: parsing \"\": invalid syntax",
-		"=T.TEST(A1:A12,B1:B12,1,\"\")": "strconv.ParseFloat: parsing \"\": invalid syntax",
+		"=T.TEST(A1:A12,B1:B12,\"\",1)": "#VALUE!",
+		"=T.TEST(A1:A12,B1:B12,1,\"\")": "#VALUE!",
 		"=T.TEST(A1:A12,B1:B12,0,1)":    "#NUM!",
 		"=T.TEST(A1:A12,B1:B12,1,0)":    "#NUM!",
 		"=T.TEST(A1:A2,B1:B1,1,1)":      "#N/A",
@@ -5618,8 +5651,8 @@ func TestCalcTTEST(t *testing.T) {
 
 func TestCalcNETWORKDAYSandWORKDAY(t *testing.T) {
 	cellData := [][]interface{}{
-		{"05/01/2019", 43586},
-		{"09/13/2019", 43721},
+		{"05/01/2019", 43586, "text1"},
+		{"09/13/2019", 43721, "text2"},
 		{"10/01/2019", 43739},
 		{"12/25/2019", 43824},
 		{"01/01/2020", 43831},
@@ -5651,6 +5684,7 @@ func TestCalcNETWORKDAYSandWORKDAY(t *testing.T) {
 		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",17)":       "219",
 		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",1,A1:A12)": "178",
 		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",1,B1:B12)": "178",
+		"=NETWORKDAYS.INTL(\"01/01/2020\",\"09/12/2020\",1,C1:C2)":  "183",
 		"=WORKDAY(\"12/01/2015\",25)":                               "42374",
 		"=WORKDAY(\"01/01/2020\",123,B1:B12)":                       "44006",
 		"=WORKDAY.INTL(\"12/01/2015\",0)":                           "42339",
@@ -5812,4 +5846,28 @@ func TestNestedFunctionsWithOperators(t *testing.T) {
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
+}
+
+func TestFormulaArgToToken(t *testing.T) {
+	assert.Equal(t,
+		efp.Token{
+			TType:    efp.TokenTypeOperand,
+			TSubType: efp.TokenSubTypeLogical,
+			TValue:   "TRUE",
+		},
+		formulaArgToToken(newBoolFormulaArg(true)),
+	)
+}
+
+func TestPrepareTrendGrowth(t *testing.T) {
+	assert.Equal(t, [][]float64(nil), prepareTrendGrowthMtxX([][]float64{{0, 0}, {0, 0}}))
+	assert.Equal(t, [][]float64(nil), prepareTrendGrowthMtxY(false, [][]float64{{0, 0}, {0, 0}}))
+	info, err := prepareTrendGrowth(false, [][]float64{{0, 0}, {0, 0}}, [][]float64{{0, 0}, {0, 0}})
+	assert.Nil(t, info)
+	assert.Equal(t, newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM), err)
+}
+
+func TestCalcColRowQRDecomposition(t *testing.T) {
+	assert.False(t, calcRowQRDecomposition([][]float64{{0, 0}, {0, 0}}, []float64{0, 0}, 1, 0))
+	assert.False(t, calcColQRDecomposition([][]float64{{0, 0}, {0, 0}}, []float64{0, 0}, 1, 0))
 }

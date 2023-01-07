@@ -519,8 +519,12 @@ func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
 // string.
 func (c *xlsxC) setCellDefault(value string) {
 	if ok, _, _ := isNumeric(value); !ok {
-		c.setInlineStr(value)
-		c.IS.T.Val = value
+		if value != "" {
+			c.setInlineStr(value)
+			c.IS.T.Val = value
+			return
+		}
+		c.T, c.V, c.IS = value, value, nil
 		return
 	}
 	c.V = value
