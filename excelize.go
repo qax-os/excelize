@@ -113,6 +113,17 @@ func OpenFile(filename string, opts ...Options) (*File, error) {
 	return f, file.Close()
 }
 
+// OpenFileByte take the file byte data of an spreadsheet file and returns a populated
+// spreadsheet file struct for it.
+//
+func OpenFileByte(b []byte) (*File, error) {
+	f, err := OpenReader(bytes.NewReader(b))
+	if err != nil {
+		return f, err
+	}
+	return f, nil
+}
+
 // newFile is object builder
 func newFile() *File {
 	return &File{

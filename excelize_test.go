@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	_ "embed"
 	"encoding/xml"
 	"fmt"
 	"image/color"
@@ -27,8 +28,23 @@ func TestOpenFile(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 
+	testOpenFile(t, f)
+}
+
+//go:embed test/Book1.xlsx
+var bookExcel []byte
+
+func TestOpenFileByte(t *testing.T) {
+	// Test update the spreadsheet file
+	f, err := OpenFileByte(bookExcel)
+	assert.NoError(t, err)
+
+	testOpenFile(t, f)
+}
+
+func testOpenFile(t *testing.T, f *File) {
 	// Test get all the rows in a not exists worksheet
-	_, err = f.GetRows("Sheet4")
+	_, err := f.GetRows("Sheet4")
 	assert.EqualError(t, err, "sheet Sheet4 does not exist")
 	// Test get all the rows with invalid sheet name
 	_, err = f.GetRows("Sheet:1")
