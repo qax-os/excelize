@@ -386,6 +386,14 @@ func TestGetSheetMap(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestGetSheetMapWithoutRelationship(t *testing.T) {
+	// Sheet where workbook relationship is missing
+	f, err := OpenFile(filepath.Join("test", "WorkbookWithoutRel.xlsx"))
+	assert.NoError(t, err)
+	sheetMap := f.GetSheetMap()
+	assert.Equal(t, sheetMap, map[int]string{1: "Sheet1"})
+}
+
 func TestSetActiveSheet(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.BookViews = nil
