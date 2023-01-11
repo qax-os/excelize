@@ -228,14 +228,18 @@ func TestOpenReader(t *testing.T) {
 	_, err = OpenReader(bytes.NewReader(oleIdentifier), Options{Password: "password", UnzipXMLSizeLimit: UnzipSizeLimit + 1})
 	assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
 
-	// Test open workbook with unsupported charset internal calculation chain
-	preset := func(filePath string) *bytes.Buffer {
+	// Prepare unusual workbook, made the specified internal XML parts missing
+	// or contain unsupported charset
+	preset := func(filePath string, notExist bool) *bytes.Buffer {
 		source, err := zip.OpenReader(filepath.Join("test", "Book1.xlsx"))
 		assert.NoError(t, err)
 		buf := new(bytes.Buffer)
 		zw := zip.NewWriter(buf)
 		for _, item := range source.File {
 			// The following statements can be simplified as zw.Copy(item) in go1.17
+			if notExist && item.Name == filePath {
+				continue
+			}
 			writer, err := zw.Create(item.Name)
 			assert.NoError(t, err)
 			readerCloser, err := item.Open()
@@ -243,20 +247,32 @@ func TestOpenReader(t *testing.T) {
 			_, err = io.Copy(writer, readerCloser)
 			assert.NoError(t, err)
 		}
-		fi, err := zw.Create(filePath)
-		assert.NoError(t, err)
-		_, err = fi.Write(MacintoshCyrillicCharset)
-		assert.NoError(t, err)
+		if !notExist {
+			fi, err := zw.Create(filePath)
+			assert.NoError(t, err)
+			_, err = fi.Write(MacintoshCyrillicCharset)
+			assert.NoError(t, err)
+		}
 		assert.NoError(t, zw.Close())
 		return buf
 	}
+	// Test open workbook with unsupported charset internal XML parts
 	for _, defaultXMLPath := range []string{
 		defaultXMLPathCalcChain,
 		defaultXMLPathStyles,
 		defaultXMLPathWorkbookRels,
 	} {
-		_, err = OpenReader(preset(defaultXMLPath))
+		_, err = OpenReader(preset(defaultXMLPath, false))
 		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	}
+	// Test open workbook without internal XML parts
+	for _, defaultXMLPath := range []string{
+		defaultXMLPathCalcChain,
+		defaultXMLPathStyles,
+		defaultXMLPathWorkbookRels,
+	} {
+		_, err = OpenReader(preset(defaultXMLPath, true))
+		assert.NoError(t, err)
 	}
 
 	// Test open spreadsheet with unzip size limit
