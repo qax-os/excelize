@@ -464,6 +464,9 @@ func (f *File) getSheetMap() (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if rels == nil {
+		return maps, nil
+	}
 	for _, v := range wb.Sheets.Sheet {
 		for _, rel := range rels.Relationships {
 			if rel.ID == v.ID {
