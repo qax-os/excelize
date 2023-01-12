@@ -132,15 +132,9 @@ func newFile() *File {
 	}
 }
 
-// OpenReader read data stream from io.Reader and return a populated
-// spreadsheet file.
-func OpenReader(r io.Reader, opts ...Options) (*File, error) {
-	b, err := io.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-	f := newFile()
-	f.options = parseOptions(opts...)
+// checkOpenReaderOptions check and validate options field value for open
+// reader.
+func (f *File) checkOpenReaderOptions() error {
 	if f.options.UnzipSizeLimit == 0 {
 		f.options.UnzipSizeLimit = UnzipSizeLimit
 		if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
@@ -154,7 +148,22 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 		}
 	}
 	if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
-		return nil, ErrOptionsUnzipSizeLimit
+		return ErrOptionsUnzipSizeLimit
+	}
+	return nil
+}
+
+// OpenReader read data stream from io.Reader and return a populated
+// spreadsheet file.
+func OpenReader(r io.Reader, opts ...Options) (*File, error) {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	f := newFile()
+	f.options = parseOptions(opts...)
+	if err = f.checkOpenReaderOptions(); err != nil {
+		return nil, err
 	}
 	if bytes.Contains(b, oleIdentifier) {
 		if b, err = Decrypt(b, f.options); err != nil {

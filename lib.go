@@ -497,12 +497,16 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
 	namespaceTranslationDic := map[string]string{
-		StrictSourceRelationship:               SourceRelationship.Value,
-		StrictSourceRelationshipOfficeDocument: SourceRelationshipOfficeDocument,
-		StrictSourceRelationshipChart:          SourceRelationshipChart,
-		StrictSourceRelationshipComments:       SourceRelationshipComments,
-		StrictSourceRelationshipImage:          SourceRelationshipImage,
-		StrictNameSpaceSpreadSheet:             NameSpaceSpreadSheet.Value,
+		StrictNameSpaceDocumentPropertiesVariantTypes: NameSpaceDocumentPropertiesVariantTypes.Value,
+		StrictNameSpaceDrawingMLMain:                  NameSpaceDrawingMLMain,
+		StrictNameSpaceExtendedProperties:             NameSpaceExtendedProperties,
+		StrictNameSpaceSpreadSheet:                    NameSpaceSpreadSheet.Value,
+		StrictSourceRelationship:                      SourceRelationship.Value,
+		StrictSourceRelationshipChart:                 SourceRelationshipChart,
+		StrictSourceRelationshipComments:              SourceRelationshipComments,
+		StrictSourceRelationshipExtendProperties:      SourceRelationshipExtendProperties,
+		StrictSourceRelationshipImage:                 SourceRelationshipImage,
+		StrictSourceRelationshipOfficeDocument:        SourceRelationshipOfficeDocument,
 	}
 	for s, n := range namespaceTranslationDic {
 		content = bytesReplace(content, []byte(s), []byte(n), -1)

@@ -767,20 +767,29 @@ type formulaFuncs struct {
 //	YIELDMAT
 //	Z.TEST
 //	ZTEST
-func (f *File) CalcCellValue(sheet, cell string) (result string, err error) {
-	var token formulaArg
-	token, err = f.calcCellValue(&calcContext{
+func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
+	var (
+		rawCellValue = parseOptions(opts...).RawCellValue
+		styleIdx     int
+		token        formulaArg
+	)
+	if token, err = f.calcCellValue(&calcContext{
 		entry:      fmt.Sprintf("%s!%s", sheet, cell),
 		iterations: make(map[string]uint),
-	}, sheet, cell)
+	}, sheet, cell); err != nil {
+		return
+	}
+	if !rawCellValue {
+		styleIdx, _ = f.GetCellStyle(sheet, cell)
+	}
 	result = token.Value()
 	if isNum, precision, decimal := isNumeric(result); isNum {
 		if precision > 15 {
-			result = strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))
+			result, err = f.formattedValue(styleIdx, strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64)), rawCellValue)
 			return
 		}
 		if !strings.HasPrefix(result, "0") {
-			result = strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))
+			result, err = f.formattedValue(styleIdx, strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64)), rawCellValue)
 		}
 	}
 	return
