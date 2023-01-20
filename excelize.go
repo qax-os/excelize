@@ -161,7 +161,7 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 		return nil, err
 	}
 	f := newFile()
-	f.options = parseOptions(opts...)
+	f.options = getOptions(opts...)
 	if err = f.checkOpenReaderOptions(); err != nil {
 		return nil, err
 	}
@@ -198,9 +198,9 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	return f, err
 }
 
-// parseOptions provides a function to parse the optional settings for open
+// getOptions provides a function to parse the optional settings for open
 // and reading spreadsheet.
-func parseOptions(opts ...Options) *Options {
+func getOptions(opts ...Options) *Options {
 	options := &Options{}
 	for _, opt := range opts {
 		options = &opt

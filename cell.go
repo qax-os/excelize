@@ -71,7 +71,7 @@ func (f *File) GetCellValue(sheet, cell string, opts ...Options) (string, error)
 		if err != nil {
 			return "", true, err
 		}
-		val, err := c.getValueFrom(f, sst, parseOptions(opts...).RawCellValue)
+		val, err := c.getValueFrom(f, sst, getOptions(opts...).RawCellValue)
 		return val, true, err
 	})
 }
@@ -640,12 +640,12 @@ type FormulaOpts struct {
 //
 //	err := f.SetCellFormula("Sheet1", "A3", "=SUM(A1,B1)")
 //
-// Example 2, set one-dimensional vertical constant array (row array) formula
+// Example 2, set one-dimensional vertical constant array (column array) formula
 // "1,2,3" for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "={1,2,3}")
+//	err := f.SetCellFormula("Sheet1", "A3", "={1;2;3}")
 //
-// Example 3, set one-dimensional horizontal constant array (column array)
+// Example 3, set one-dimensional horizontal constant array (row array)
 // formula '"a","b","c"' for the cell "A3" on "Sheet1":
 //
 //	err := f.SetCellFormula("Sheet1", "A3", "={\"a\",\"b\",\"c\"}")
@@ -654,7 +654,7 @@ type FormulaOpts struct {
 // the cell "A3" on "Sheet1":
 //
 //	formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
-//	err := f.SetCellFormula("Sheet1", "A3", "={1,2,\"a\",\"b\"}",
+//	err := f.SetCellFormula("Sheet1", "A3", "={1,2;\"a\",\"b\"}",
 //	    excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
 // Example 5, set range array formula "A1:A2" for the cell "A3" on "Sheet1":

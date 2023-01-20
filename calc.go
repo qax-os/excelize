@@ -769,7 +769,7 @@ type formulaFuncs struct {
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
 	var (
-		rawCellValue = parseOptions(opts...).RawCellValue
+		rawCellValue = getOptions(opts...).RawCellValue
 		styleIdx     int
 		token        formulaArg
 	)

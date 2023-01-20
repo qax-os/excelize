@@ -156,7 +156,11 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		date = excel1900Epoc
 	}
 	durationPart := time.Duration(nanosInADay * floatPart)
-	return date.AddDate(0, 0, wholeDaysPart).Add(durationPart).Truncate(time.Second)
+	date = date.AddDate(0, 0, wholeDaysPart).Add(durationPart)
+	if date.Nanosecond()/1e6 > 500 {
+		return date.Round(time.Second)
+	}
+	return date.Truncate(time.Second)
 }
 
 // ExcelDateToTime converts a float-based excel date representation to a time.Time.

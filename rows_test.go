@@ -1052,6 +1052,8 @@ func TestNumberFormats(t *testing.T) {
 	assert.NoError(t, err)
 	numFmt10, err := f.NewStyle(&Style{NumFmt: 10})
 	assert.NoError(t, err)
+	numFmt21, err := f.NewStyle(&Style{NumFmt: 21})
+	assert.NoError(t, err)
 	numFmt37, err := f.NewStyle(&Style{NumFmt: 37})
 	assert.NoError(t, err)
 	numFmt38, err := f.NewStyle(&Style{NumFmt: 38})
@@ -1093,6 +1095,9 @@ func TestNumberFormats(t *testing.T) {
 		{"A30", numFmt40, -8.8888666665555493e+19, "(88,888,666,665,555,500,000.00)"},
 		{"A31", numFmt40, 8.8888666665555487, "8.89 "},
 		{"A32", numFmt40, -8.8888666665555487, "(8.89)"},
+		{"A33", numFmt21, 44729.999988368058, "23:59:59"},
+		{"A34", numFmt21, 44944.375005787035, "09:00:00"},
+		{"A35", numFmt21, 44944.375005798611, "09:00:01"},
 	} {
 		cell, styleID, value, expected := cases[0].(string), cases[1].(int), cases[2], cases[3].(string)
 		assert.NoError(t, f.SetCellStyle("Sheet1", cell, cell, styleID))
