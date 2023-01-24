@@ -598,11 +598,11 @@ func localMonthsNameWelsh(t time.Time, abbr int) string {
 	if abbr == 3 {
 		switch int(t.Month()) {
 		case 2, 7:
-			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:5])
+			return monthNamesWelsh[int(t.Month())-1][:5]
 		case 8, 9, 11, 12:
-			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:4])
+			return monthNamesWelsh[int(t.Month())-1][:4]
 		default:
-			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:3])
+			return monthNamesWelsh[int(t.Month())-1][:3]
 		}
 	}
 	if abbr == 4 {
@@ -630,7 +630,9 @@ func localMonthsNameWolof(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesWolof[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesWolof[int(t.Month())-1])[:1])
+	//return string([]rune(monthNamesWolof[int(t.Month())-1])[:1])
+	return monthNamesWolof[int(t.Month())-1][:1]
+
 }
 
 // localMonthsNameXhosa returns the Xhosa name of the month.
