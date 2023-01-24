@@ -630,9 +630,7 @@ func localMonthsNameWolof(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesWolof[int(t.Month())-1]
 	}
-	//return string([]rune(monthNamesWolof[int(t.Month())-1])[:1])
 	return monthNamesWolof[int(t.Month())-1][:1]
-
 }
 
 // localMonthsNameXhosa returns the Xhosa name of the month.
