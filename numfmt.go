@@ -244,8 +244,12 @@ var (
 	monthNamesWelsh = []string{"Ionawr", "Chwefror", "Mawrth", "Ebrill", "Mai", "Mehefin", "Gorffennaf", "Awst", "Medi", "Hydref", "Tachwedd", "Rhagfyr"}
 	// monthNamesWolof list the month names in the Wolof.
 	monthNamesWolof = []string{"Samwiye", "Fewriye", "Maars", "Awril", "Me", "Suwe", "Sullet", "Ut", "Septàmbar", "Oktoobar", "Noowàmbar", "Desàmbar"}
+	// monthNamesWolofAbbr list the month name abbreviations in Wolof, this prevents string concatenation
+	monthNamesWolofAbbr = []string{"Sam.", "Few.", "Maa", "Awr.", "Me", "Suw", "Sul.", "Ut", "Sept.", "Okt.", "Now.", "Des."}
 	// monthNamesXhosa list the month names in the Xhosa.
-	monthNamesXhosa = []string{"Januwari", "Febuwari", "Matshi", "Aprili", "Meyi", "Juni", "Julayi", "Agasti", "Septemba", "Oktobha", "Novemba", "Disemba"}
+	monthNamesXhosa = []string{"uJanuwari", "uFebuwari", "uMatshi", "uAprili", "uMeyi", "uJuni", "uJulayi", "uAgasti", "uSeptemba", "uOktobha", "uNovemba", "uDisemba"}
+	// monthNamesXhosaAbbr list the mont abbreviations in the Xhosa, this prevents string concatenation
+	monthNamesXhosaAbbr = []string{"uJan.", "uFeb.", "uMat.", "uEpr.", "uMey.", "uJun.", "uJul.", "uAg.", "uSep.", "uOkt.", "uNov.", "uDis."}
 	// monthNamesYi list the month names in the Yi.
 	monthNamesYi = []string{"\ua2cd", "\ua44d", "\ua315", "\ua1d6", "\ua26c", "\ua0d8", "\ua3c3", "\ua246", "\ua22c", "\ua2b0", "\ua2b0\ua2aa", "\ua2b0\ua44b"}
 	// monthNamesZulu list the month names in the Zulu.
@@ -594,11 +598,11 @@ func localMonthsNameWelsh(t time.Time, abbr int) string {
 	if abbr == 3 {
 		switch int(t.Month()) {
 		case 2, 7:
-			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:5])
+			return monthNamesWelsh[int(t.Month())-1][:5]
 		case 8, 9, 11, 12:
-			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:4])
+			return monthNamesWelsh[int(t.Month())-1][:4]
 		default:
-			return string([]rune(monthNamesWelsh[int(t.Month())-1])[:3])
+			return monthNamesWelsh[int(t.Month())-1][:3]
 		}
 	}
 	if abbr == 4 {
@@ -621,39 +625,21 @@ func localMonthsNameVietnamese(t time.Time, abbr int) string {
 // localMonthsNameWolof returns the Wolof name of the month.
 func localMonthsNameWolof(t time.Time, abbr int) string {
 	if abbr == 3 {
-		switch int(t.Month()) {
-		case 3, 6:
-			return string([]rune(monthNamesWolof[int(t.Month())-1])[:3])
-		case 5, 8:
-			return string([]rune(monthNamesWolof[int(t.Month())-1])[:2])
-		case 9:
-			return string([]rune(monthNamesWolof[int(t.Month())-1])[:4]) + "."
-		case 11:
-			return "Now."
-		default:
-			return string([]rune(monthNamesWolof[int(t.Month())-1])[:3]) + "."
-		}
+		return monthNamesWolofAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesWolof[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesWolof[int(t.Month())-1])[:1])
+	return monthNamesWolof[int(t.Month())-1][:1]
 }
 
 // localMonthsNameXhosa returns the Xhosa name of the month.
 func localMonthsNameXhosa(t time.Time, abbr int) string {
 	if abbr == 3 {
-		switch int(t.Month()) {
-		case 4:
-			return "uEpr."
-		case 8:
-			return "u" + string([]rune(monthNamesXhosa[int(t.Month())-1])[:2]) + "."
-		default:
-			return "u" + string([]rune(monthNamesXhosa[int(t.Month())-1])[:3]) + "."
-		}
+		return monthNamesXhosaAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
-		return "u" + monthNamesXhosa[int(t.Month())-1]
+		return monthNamesXhosa[int(t.Month())-1]
 	}
 	return "u"
 }
