@@ -192,22 +192,46 @@ var (
 	}
 	// monthNamesAfrikaans list the month names in the Afrikaans.
 	monthNamesAfrikaans = []string{"Januarie", "Februarie", "Maart", "April", "Mei", "Junie", "Julie", "Augustus", "September", "Oktober", "November", "Desember"}
+	// monthNamesAfrikaansAbbr lists the month name abbreviations in Afrikaans
+	monthNamesAfrikaansAbbr = []string{"Jan.", "Feb.", "Maa.", "Apr.", "Mei", "Jun.", "Jul.", "Aug.", "Sep.", "Okt.", "Nov.", "Des."}
 	// monthNamesChinese list the month names in the Chinese.
 	monthNamesChinese = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
+	// monthNamesChineseAbbr1 list the month number and character abbreviation in Chinese
+	monthNamesChineseAbbrPlus = []string{"0月", "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月"}
+	// monthNamesChinesePlus list the month names in Chinese plus the character 月
+	monthNamesChinesePlus = []string{"一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"}
+	// monthNamesKoreanAbbrPlus lists out the month number plus 월 for the Korean language
+	monthNamesKoreanAbbrPlus = []string{"0월", "1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월"}
+	// monthNamesTradMongolian lists the month number for use with traditional Mongolian
+	monthNamesTradMongolian = []string{"M01", "M02", "M03", "M04", "M05", "M06", "M07", "M08", "M09", "M10", "M11", "M12"}
 	// monthNamesFrench list the month names in the French.
 	monthNamesFrench = []string{"janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"}
+	// monthNamesFrenchAbbr lists the month name abbreviations in French
+	monthNamesFrenchAbbr = []string{"janv.", "févr.", "mars", "avri.", "mai", "juin", "juil.", "août", "sept.", "octo.", "nove.", "déce."}
 	// monthNamesGerman list the month names in the German.
 	monthNamesGerman = []string{"Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	// monthNamesGermanAbbr list the month abbreviations in German
+	monthNamesGermanAbbr = []string{"Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
 	// monthNamesAustria list the month names in the Austria.
 	monthNamesAustria = []string{"Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}
+	// monthNamesAustriaAbbr list the month name abbreviations in Austrian
+	monthNamesAustriaAbbr = []string{"Jän", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
 	// monthNamesIrish list the month names in the Irish.
 	monthNamesIrish = []string{"Eanáir", "Feabhra", "Márta", "Aibreán", "Bealtaine", "Meitheamh", "Iúil", "Lúnasa", "Meán Fómhair", "Deireadh Fómhair", "Samhain", "Nollaig"}
+	// monthNamesIrishAbbr lists the month abbreviations in Irish
+	monthNamesIrishAbbr = []string{"Ean", "Feabh", "Márta", "Aib", "Beal", "Meith", "Iúil", "Lún", "MFómh", "DFómh", "Samh", "Noll"}
 	// monthNamesItalian list the month names in the Italian.
 	monthNamesItalian = []string{"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"}
+	// monthNamesItalianAbbr list the month name abbreviations in Italian
+	monthNamesItalianAbbr = []string{"gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"}
 	// monthNamesRussian list the month names in the Russian.
 	monthNamesRussian = []string{"январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"}
+	// monthNamesRussianAbbr list the month abbreviations for Russian.
+	monthNamesRussianAbbr = []string{"янв.", "фев.", "март", "апр.", "май", "июнь", "июль", "авг.", "сен.", "окт.", "ноя.", "дек."}
 	// monthNamesSpanish list the month names in the Spanish.
 	monthNamesSpanish = []string{"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}
+	// monthNamesSpanishAbbr list the month abbreviations in Spanish
+	monthNamesSpanishAbbr = []string{"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"}
 	// monthNamesThai list the month names in the Thai.
 	monthNamesThai = []string{
 		"\u0e21\u0e01\u0e23\u0e32\u0e04\u0e21",
@@ -238,22 +262,51 @@ var (
 		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f45\u0f72\u0f42\u0f0b\u0f54\u0f0b",
 		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
 	}
+	// monthNamesTibetanAbbr lists the month name abbreviations in Tibetan
+	monthNamesTibetanAbbr = []string{
+		"\u0f5f\u0fb3\u0f0b\u0f21",
+		"\u0f5f\u0fb3\u0f0b\u0f22",
+		"\u0f5f\u0fb3\u0f0b\u0f23",
+		"\u0f5f\u0fb3\u0f0b\u0f24",
+		"\u0f5f\u0fb3\u0f0b\u0f25",
+		"\u0f5f\u0fb3\u0f0b\u0f26",
+		"\u0f5f\u0fb3\u0f0b\u0f27",
+		"\u0f5f\u0fb3\u0f0b\u0f28",
+		"\u0f5f\u0fb3\u0f0b\u0f29",
+		"\u0f5f\u0fb3\u0f0b\u0f21\u0f20",
+		"\u0f5f\u0fb3\u0f0b\u0f21\u0f21",
+		"\u0f5f\u0fb3\u0f0b\u0f21\u0f22",
+	}
 	// monthNamesTurkish list the month names in the Turkish.
 	monthNamesTurkish = []string{"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"}
+	// monthNamesTurkishAbbr lists the month name abbreviations in Turkish, this prevents string concatenation
+	monthNamesTurkishAbbr = []string{"Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"}
+	// monthNamesVietnamese list the month name used for Vietnamese
+	monthNamesVietnamese = []string{"Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"}
+	// monthNamesVietnameseAbbr3 list the mid-form abbreviation for Vietnamese months
+	monthNamesVietnameseAbbr3 = []string{"Thg 1", "Thg 2", "Thg 3", "Thg 4", "Thg 5", "Thg 6", "Thg 7", "Thg 8", "Thg 9", "Thg 10", "Thg 11", "Thg 12"}
+	// monthNamesVietnameseAbbr5 list the short-form abbreviation for Vietnamese months
+	monthNamesVietnameseAbbr5 = []string{"T 1", "T 2", "T 3", "T 4", "T 5", "T 6", "T 7", "T 8", "T 9", "T 10", "T 11", "T 12"}
 	// monthNamesWelsh list the month names in the Welsh.
 	monthNamesWelsh = []string{"Ionawr", "Chwefror", "Mawrth", "Ebrill", "Mai", "Mehefin", "Gorffennaf", "Awst", "Medi", "Hydref", "Tachwedd", "Rhagfyr"}
+	// monthNamesWelshAbbr lists the month name abbreviations in Welsh, this prevents string concatenation
+	monthNamesWelshAbbr = []string{"Ion", "Chwef", "Maw", "Ebr", "Mai", "Meh", "Gorff", "Awst", "Medi", "Hyd", "Tach", "Rhag"}
 	// monthNamesWolof list the month names in the Wolof.
 	monthNamesWolof = []string{"Samwiye", "Fewriye", "Maars", "Awril", "Me", "Suwe", "Sullet", "Ut", "Septàmbar", "Oktoobar", "Noowàmbar", "Desàmbar"}
 	// monthNamesWolofAbbr list the month name abbreviations in Wolof, this prevents string concatenation
 	monthNamesWolofAbbr = []string{"Sam.", "Few.", "Maa", "Awr.", "Me", "Suw", "Sul.", "Ut", "Sept.", "Okt.", "Now.", "Des."}
 	// monthNamesXhosa list the month names in the Xhosa.
 	monthNamesXhosa = []string{"uJanuwari", "uFebuwari", "uMatshi", "uAprili", "uMeyi", "uJuni", "uJulayi", "uAgasti", "uSeptemba", "uOktobha", "uNovemba", "uDisemba"}
-	// monthNamesXhosaAbbr list the mont abbreviations in the Xhosa, this prevents string concatenation
+	// monthNamesXhosaAbbr list the month abbreviations in the Xhosa, this prevents string concatenation
 	monthNamesXhosaAbbr = []string{"uJan.", "uFeb.", "uMat.", "uEpr.", "uMey.", "uJun.", "uJul.", "uAg.", "uSep.", "uOkt.", "uNov.", "uDis."}
 	// monthNamesYi list the month names in the Yi.
 	monthNamesYi = []string{"\ua2cd", "\ua44d", "\ua315", "\ua1d6", "\ua26c", "\ua0d8", "\ua3c3", "\ua246", "\ua22c", "\ua2b0", "\ua2b0\ua2aa", "\ua2b0\ua44b"}
+	// monthNamesYiSuffix lists the month names in Yi with the "\ua1aa" suffix
+	monthNamesYiSuffix = []string{"\ua2cd\ua1aa", "\ua44d\ua1aa", "\ua315\ua1aa", "\ua1d6\ua1aa", "\ua26c\ua1aa", "\ua0d8\ua1aa", "\ua3c3\ua1aa", "\ua246\ua1aa", "\ua22c\ua1aa", "\ua2b0\ua1aa", "\ua2b0\ua2aa\ua1aa", "\ua2b0\ua44b\ua1aa"}
 	// monthNamesZulu list the month names in the Zulu.
 	monthNamesZulu = []string{"Januwari", "Febhuwari", "Mashi", "Ephreli", "Meyi", "Juni", "Julayi", "Agasti", "Septemba", "Okthoba", "Novemba", "Disemba"}
+	// monthNamesZuluAbbr list teh month name abbreviations in Zulu
+	monthNamesZuluAbbr = []string{"Jan", "Feb", "Mas", "Eph", "Mey", "Jun", "Jul", "Agas", "Sep", "Okt", "Nov", "Dis"}
 	// apFmtAfrikaans defined the AM/PM name in the Afrikaans.
 	apFmtAfrikaans = "vm./nm."
 	// apFmtCuba defined the AM/PM name in the Cuba.
@@ -399,27 +452,23 @@ func localMonthsNameEnglish(t time.Time, abbr int) string {
 // localMonthsNameAfrikaans returns the Afrikaans name of the month.
 func localMonthsNameAfrikaans(t time.Time, abbr int) string {
 	if abbr == 3 {
-		month := monthNamesAfrikaans[int(t.Month())-1]
-		if len([]rune(month)) <= 3 {
-			return month
-		}
-		return string([]rune(month)[:3]) + "."
+		return monthNamesAfrikaansAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesAfrikaans[int(t.Month())-1]
 	}
-	return monthNamesAfrikaans[int(t.Month())-1][:1]
+	return monthNamesAfrikaansAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameAustria returns the Austria name of the month.
 func localMonthsNameAustria(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesAustria[int(t.Month())-1])[:3])
+		return monthNamesAustriaAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesAustria[int(t.Month())-1]
 	}
-	return monthNamesAustria[int(t.Month())-1][:1]
+	return monthNamesAustriaAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameBangla returns the German name of the month.
@@ -435,65 +484,56 @@ func localMonthsNameFrench(t time.Time, abbr int) string {
 	if abbr == 3 {
 		month := monthNamesFrench[int(t.Month())-1]
 		if len([]rune(month)) <= 4 {
-			return month
+			return monthNamesFrench[int(t.Month())-1]
 		}
-		return string([]rune(month)[:4]) + "."
+		return monthNamesFrenchAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesFrench[int(t.Month())-1]
 	}
-	return monthNamesFrench[int(t.Month())-1][:1]
+	return monthNamesFrenchAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameIrish returns the Irish name of the month.
 func localMonthsNameIrish(t time.Time, abbr int) string {
 	if abbr == 3 {
-		switch int(t.Month()) {
-		case 1, 4, 8:
-			return string([]rune(monthNamesIrish[int(t.Month())-1])[:3])
-		case 2, 3, 6:
-			return string([]rune(monthNamesIrish[int(t.Month())-1])[:5])
-		case 9, 10:
-			return string([]rune(monthNamesIrish[int(t.Month())-1])[:1]) + "Fómh"
-		default:
-			return string([]rune(monthNamesIrish[int(t.Month())-1])[:4])
-		}
+		return monthNamesIrishAbbr[int(t.Month()-1)]
 	}
 	if abbr == 4 {
 		return monthNamesIrish[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesIrish[int(t.Month())-1])[:1])
+	return monthNamesIrishAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameItalian returns the Italian name of the month.
 func localMonthsNameItalian(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesItalian[int(t.Month())-1][:3]
+		return monthNamesItalianAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesItalian[int(t.Month())-1]
 	}
-	return monthNamesItalian[int(t.Month())-1][:1]
+	return monthNamesItalianAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameGerman returns the German name of the month.
 func localMonthsNameGerman(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesGerman[int(t.Month())-1])[:3])
+		return monthNamesGermanAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesGerman[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesGerman[int(t.Month())-1])[:1])
+	return monthNamesGermanAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameChinese1 returns the Chinese name of the month.
 func localMonthsNameChinese1(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return strconv.Itoa(int(t.Month())) + "月"
+		return monthNamesChineseAbbrPlus[int(t.Month())]
 	}
 	if abbr == 4 {
-		return monthNamesChinese[int(t.Month())-1] + "月"
+		return monthNamesChinesePlus[int(t.Month())-1]
 	}
 	return monthNamesChinese[int(t.Month())-1]
 }
@@ -501,7 +541,7 @@ func localMonthsNameChinese1(t time.Time, abbr int) string {
 // localMonthsNameChinese2 returns the Chinese name of the month.
 func localMonthsNameChinese2(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return monthNamesChinese[int(t.Month())-1] + "月"
+		return monthNamesChinesePlus[int(t.Month())-1]
 	}
 	return monthNamesChinese[int(t.Month())-1]
 }
@@ -509,7 +549,7 @@ func localMonthsNameChinese2(t time.Time, abbr int) string {
 // localMonthsNameChinese3 returns the Chinese name of the month.
 func localMonthsNameChinese3(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return strconv.Itoa(int(t.Month())) + "月"
+		return monthNamesChineseAbbrPlus[int(t.Month())]
 	}
 	return strconv.Itoa(int(t.Month()))
 }
@@ -517,7 +557,7 @@ func localMonthsNameChinese3(t time.Time, abbr int) string {
 // localMonthsNameKorean returns the Korean name of the month.
 func localMonthsNameKorean(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return strconv.Itoa(int(t.Month())) + "월"
+		return monthNamesKoreanAbbrPlus[int(t.Month())]
 	}
 	return strconv.Itoa(int(t.Month()))
 }
@@ -527,7 +567,7 @@ func localMonthsNameTraditionalMongolian(t time.Time, abbr int) string {
 	if abbr == 5 {
 		return "M"
 	}
-	return fmt.Sprintf("M%02d", int(t.Month()))
+	return monthNamesTradMongolian[int(t.Month()-1)]
 }
 
 // localMonthsNameRussian returns the Russian name of the month.
@@ -537,7 +577,7 @@ func localMonthsNameRussian(t time.Time, abbr int) string {
 		if len([]rune(month)) <= 4 {
 			return month
 		}
-		return string([]rune(month)[:3]) + "."
+		return monthNamesRussianAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesRussian[int(t.Month())-1]
@@ -548,12 +588,12 @@ func localMonthsNameRussian(t time.Time, abbr int) string {
 // localMonthsNameSpanish returns the Spanish name of the month.
 func localMonthsNameSpanish(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSpanish[int(t.Month())-1][:3]
+		return monthNamesSpanishAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesSpanish[int(t.Month())-1]
 	}
-	return monthNamesSpanish[int(t.Month())-1][:1]
+	return monthNamesSpanishAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameThai returns the Thai name of the month.
@@ -571,7 +611,7 @@ func localMonthsNameThai(t time.Time, abbr int) string {
 // localMonthsNameTibetan returns the Tibetan name of the month.
 func localMonthsNameTibetan(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return "\u0f5f\u0fb3\u0f0b" + []string{"\u0f21", "\u0f22", "\u0f23", "\u0f24", "\u0f25", "\u0f26", "\u0f27", "\u0f28", "\u0f29", "\u0f21\u0f20", "\u0f21\u0f21", "\u0f21\u0f22"}[int(t.Month())-1]
+		return monthNamesTibetanAbbr[int(t.Month())-1]
 	}
 	if abbr == 5 {
 		if t.Month() == 10 {
@@ -585,41 +625,34 @@ func localMonthsNameTibetan(t time.Time, abbr int) string {
 // localMonthsNameTurkish returns the Turkish name of the month.
 func localMonthsNameTurkish(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesTurkish[int(t.Month())-1])[:3])
+		return monthNamesTurkishAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesTurkish[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTurkish[int(t.Month())-1])[:1])
+	return string([]rune(monthNamesTurkishAbbr[int(t.Month())-1])[:1])
 }
 
 // localMonthsNameWelsh returns the Welsh name of the month.
 func localMonthsNameWelsh(t time.Time, abbr int) string {
 	if abbr == 3 {
-		switch int(t.Month()) {
-		case 2, 7:
-			return monthNamesWelsh[int(t.Month())-1][:5]
-		case 8, 9, 11, 12:
-			return monthNamesWelsh[int(t.Month())-1][:4]
-		default:
-			return monthNamesWelsh[int(t.Month())-1][:3]
-		}
+		return monthNamesWelshAbbr[int(t.Month())-1]
 	}
 	if abbr == 4 {
 		return monthNamesWelsh[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesWelsh[int(t.Month())-1])[:1])
+	return monthNamesWelshAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthsNameVietnamese returns the Vietnamese name of the month.
 func localMonthsNameVietnamese(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return "Thg " + strconv.Itoa(int(t.Month()))
+		return monthNamesVietnameseAbbr3[int(t.Month()-1)]
 	}
 	if abbr == 5 {
-		return "T " + strconv.Itoa(int(t.Month()))
+		return monthNamesVietnameseAbbr5[int(t.Month()-1)]
 	}
-	return "Tháng " + strconv.Itoa(int(t.Month()))
+	return monthNamesVietnamese[int(t.Month()-1)]
 }
 
 // localMonthsNameWolof returns the Wolof name of the month.
@@ -647,7 +680,7 @@ func localMonthsNameXhosa(t time.Time, abbr int) string {
 // localMonthsNameYi returns the Yi name of the month.
 func localMonthsNameYi(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return string(monthNamesYi[int(t.Month())-1]) + "\ua1aa"
+		return monthNamesYiSuffix[int(t.Month()-1)]
 	}
 	return string([]rune(monthNamesYi[int(t.Month())-1])[:1])
 }
@@ -655,15 +688,12 @@ func localMonthsNameYi(t time.Time, abbr int) string {
 // localMonthsNameZulu returns the Zulu name of the month.
 func localMonthsNameZulu(t time.Time, abbr int) string {
 	if abbr == 3 {
-		if int(t.Month()) == 8 {
-			return string([]rune(monthNamesZulu[int(t.Month())-1])[:4])
-		}
-		return string([]rune(monthNamesZulu[int(t.Month())-1])[:3])
+		return monthNamesZuluAbbr[int(t.Month()-1)]
 	}
 	if abbr == 4 {
 		return monthNamesZulu[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesZulu[int(t.Month())-1])[:1])
+	return monthNamesZuluAbbr[int(t.Month())-1][:1]
 }
 
 // localMonthName return months name by supported language ID.
