@@ -120,39 +120,45 @@ func (f *File) GetAppProps() (ret *AppProperties, err error) {
 // properties that can be set are:
 //
 //	 Property       | Description
-//	----------------+-----------------------------------------------------------------------------
+//	----------------+-----------------------------------------------------------
 //	 Title          | The name given to the resource.
 //	                |
 //	 Subject        | The topic of the content of the resource.
 //	                |
-//	 Creator        | An entity primarily responsible for making the content of the resource.
+//	 Creator        | An entity primarily responsible for making the content of
+//	                | the resource.
 //	                |
-//	 Keywords       | A delimited set of keywords to support searching and indexing. This is
-//	                | typically a list of terms that are not available elsewhere in the properties.
+//	 Keywords       | A delimited set of keywords to support searching and
+//	                | indexing. This is typically a list of terms that are not
+//	                | available elsewhere in the properties.
 //	                |
 //	 Description    | An explanation of the content of the resource.
 //	                |
-//	 LastModifiedBy | The user who performed the last modification. The identification is
-//	                | environment-specific.
+//	 LastModifiedBy | The user who performed the last modification. The
+//	                | identification is environment-specific.
 //	                |
 //	 Language       | The language of the intellectual content of the resource.
 //	                |
-//	 Identifier     | An unambiguous reference to the resource within a given context.
+//	 Identifier     | An unambiguous reference to the resource within a given
+//	                | context.
 //	                |
 //	 Revision       | The topic of the content of the resource.
 //	                |
-//	 ContentStatus  | The status of the content. For example: Values might include "Draft",
-//	                | "Reviewed" and "Final"
+//	 ContentStatus  | The status of the content. For example: Values might
+//	                | include "Draft", "Reviewed" and "Final"
 //	                |
 //	 Category       | A categorization of the content of this package.
 //	                |
-//	 Version        | The version number. This value is set by the user or by the application.
+//	 Version        | The version number. This value is set by the user or by
+//	                | the application.
 //	                |
-//	 Modified       | The created time of the content of the resource which
-//	                | represent in ISO 8601 UTC format, for example "2019-06-04T22:00:10Z".
+//	 Created        | The created time of the content of the resource which
+//	                | represent in ISO 8601 UTC format, for example
+//	                | "2019-06-04T22:00:10Z".
 //	                |
 //	 Modified       | The modified time of the content of the resource which
-//	                | represent in ISO 8601 UTC format, for example "2019-06-04T22:00:10Z".
+//	                | represent in ISO 8601 UTC format, for example
+//	                | "2019-06-04T22:00:10Z".
 //	                |
 //
 // For example:

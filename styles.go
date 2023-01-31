@@ -1145,9 +1145,9 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //
 //	 Index | Style           | Index | Style
 //	-------+-----------------+-------+-----------------
-//	 0     | Horizontal      | 3     | Diagonal down
-//	 1     | Vertical        | 4     | From corner
-//	 2     | Diagonal Up     | 5     | From center
+//	 0-2   | Horizontal      | 9-11  | Diagonal down
+//	 3-5   | Vertical        | 12-15 | From corner
+//	 6-8   | Diagonal Up     | 16    | From center
 //
 // The following table shows the pattern styles used in 'Fill.Pattern' supported
 // by excelize index number:
@@ -2459,41 +2459,38 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		"gray125",
 		"gray0625",
 	}
-
-	variants := []float64{
-		90,
-		0,
-		45,
-		135,
+	variants := []xlsxGradientFill{
+		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 270, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 180, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 255, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 315, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path"},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Left: 1, Right: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Top: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Left: 1, Right: 1, Top: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 0.5, Left: 0.5, Right: 0.5, Top: 0.5},
 	}
 
 	var fill xlsxFill
 	switch style.Fill.Type {
 	case "gradient":
-		if len(style.Fill.Color) != 2 {
+		if len(style.Fill.Color) != 2 || style.Fill.Shading < 0 || style.Fill.Shading > 16 {
 			break
 		}
-		var gradient xlsxGradientFill
-		switch style.Fill.Shading {
-		case 0, 1, 2, 3:
-			gradient.Degree = variants[style.Fill.Shading]
-		case 4:
-			gradient.Type = "path"
-		case 5:
-			gradient.Type = "path"
-			gradient.Bottom = 0.5
-			gradient.Left = 0.5
-			gradient.Right = 0.5
-			gradient.Top = 0.5
+		gradient := variants[style.Fill.Shading]
+		gradient.Stop[0].Color.RGB = getPaletteColor(style.Fill.Color[0])
+		gradient.Stop[1].Color.RGB = getPaletteColor(style.Fill.Color[1])
+		if len(gradient.Stop) == 3 {
+			gradient.Stop[2].Color.RGB = getPaletteColor(style.Fill.Color[0])
 		}
-		var stops []*xlsxGradientFillStop
-		for index, color := range style.Fill.Color {
-			var stop xlsxGradientFillStop
-			stop.Position = float64(index)
-			stop.Color.RGB = getPaletteColor(color)
-			stops = append(stops, &stop)
-		}
-		gradient.Stop = stops
 		fill.GradientFill = &gradient
 	case "pattern":
 		if style.Fill.Pattern > 18 || style.Fill.Pattern < 0 {

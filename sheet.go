@@ -1183,17 +1183,17 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 // that same page
 //
 // - No footer on the first page
-func (f *File) SetHeaderFooter(sheet string, settings *HeaderFooterOptions) error {
+func (f *File) SetHeaderFooter(sheet string, opts *HeaderFooterOptions) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-	if settings == nil {
+	if opts == nil {
 		ws.HeaderFooter = nil
 		return err
 	}
 
-	v := reflect.ValueOf(*settings)
+	v := reflect.ValueOf(*opts)
 	// Check 6 string type fields: OddHeader, OddFooter, EvenHeader, EvenFooter,
 	// FirstFooter, FirstHeader
 	for i := 4; i < v.NumField()-1; i++ {
@@ -1202,16 +1202,16 @@ func (f *File) SetHeaderFooter(sheet string, settings *HeaderFooterOptions) erro
 		}
 	}
 	ws.HeaderFooter = &xlsxHeaderFooter{
-		AlignWithMargins: settings.AlignWithMargins,
-		DifferentFirst:   settings.DifferentFirst,
-		DifferentOddEven: settings.DifferentOddEven,
-		ScaleWithDoc:     settings.ScaleWithDoc,
-		OddHeader:        settings.OddHeader,
-		OddFooter:        settings.OddFooter,
-		EvenHeader:       settings.EvenHeader,
-		EvenFooter:       settings.EvenFooter,
-		FirstFooter:      settings.FirstFooter,
-		FirstHeader:      settings.FirstHeader,
+		AlignWithMargins: opts.AlignWithMargins,
+		DifferentFirst:   opts.DifferentFirst,
+		DifferentOddEven: opts.DifferentOddEven,
+		ScaleWithDoc:     opts.ScaleWithDoc,
+		OddHeader:        opts.OddHeader,
+		OddFooter:        opts.OddFooter,
+		EvenHeader:       opts.EvenHeader,
+		EvenFooter:       opts.EvenFooter,
+		FirstFooter:      opts.FirstFooter,
+		FirstHeader:      opts.FirstHeader,
 	}
 	return err
 }

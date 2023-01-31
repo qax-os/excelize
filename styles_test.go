@@ -223,6 +223,13 @@ func TestUnsetConditionalFormat(t *testing.T) {
 
 func TestNewStyle(t *testing.T) {
 	f := NewFile()
+	for i := 0; i < 18; i++ {
+		_, err := f.NewStyle(&Style{
+			Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF", "#4E71BE"}, Shading: i},
+		})
+		assert.NoError(t, err)
+	}
+	f = NewFile()
 	styleID, err := f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "#777777"}})
 	assert.NoError(t, err)
 	styles, err := f.stylesReader()

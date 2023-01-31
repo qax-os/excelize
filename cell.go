@@ -835,7 +835,7 @@ type HyperlinkOpts struct {
 //
 //	display, tooltip := "https://github.com/xuri/excelize", "Excelize on GitHub"
 //	if err := f.SetCellHyperLink("Sheet1", "A3",
-//	    "https://github.com/xuri/excelize", "External", excelize.HyperlinkOpts{
+//	    display, "External", excelize.HyperlinkOpts{
 //	        Display: &display,
 //	        Tooltip: &tooltip,
 //	    }); err != nil {
