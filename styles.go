@@ -1193,6 +1193,7 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //
 //	 Style
 //	------------------
+//	 none
 //	 single
 //	 double
 //
@@ -2047,8 +2048,7 @@ func (f *File) NewStyle(style *Style) (int, error) {
 
 	applyAlignment, alignment := fs.Alignment != nil, newAlignment(fs)
 	applyProtection, protection := fs.Protection != nil, newProtection(fs)
-	cellXfsID = setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
-	return cellXfsID, nil
+	return setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 }
 
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
@@ -2620,7 +2620,7 @@ func newBorders(style *Style) *xlsxBorder {
 
 // setCellXfs provides a function to set describes all of the formatting for a
 // cell.
-func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment, applyProtection bool, alignment *xlsxAlignment, protection *xlsxProtection) int {
+func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment, applyProtection bool, alignment *xlsxAlignment, protection *xlsxProtection) (int, error) {
 	var xf xlsxXf
 	xf.FontID = intPtr(fontID)
 	if fontID != 0 {
@@ -2638,6 +2638,9 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	if borderID != 0 {
 		xf.ApplyBorder = boolPtr(true)
 	}
+	if len(style.CellXfs.Xf) == MaxCellStyles {
+		return 0, ErrCellStyles
+	}
 	style.CellXfs.Count = len(style.CellXfs.Xf) + 1
 	xf.Alignment = alignment
 	if alignment != nil {
@@ -2650,7 +2653,7 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 	xfID := 0
 	xf.XfID = &xfID
 	style.CellXfs.Xf = append(style.CellXfs.Xf, xf)
-	return style.CellXfs.Count - 1
+	return style.CellXfs.Count - 1, nil
 }
 
 // GetCellStyle provides a function to get cell style index by given worksheet

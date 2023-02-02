@@ -280,16 +280,16 @@ type xlsxCols struct {
 // xlsxCol directly maps the col (Column Width & Formatting). Defines column
 // width and column formatting for one or more columns of the worksheet.
 type xlsxCol struct {
-	BestFit      bool    `xml:"bestFit,attr,omitempty"`
-	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
-	CustomWidth  bool    `xml:"customWidth,attr,omitempty"`
-	Hidden       bool    `xml:"hidden,attr,omitempty"`
-	Max          int     `xml:"max,attr"`
-	Min          int     `xml:"min,attr"`
-	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
-	Phonetic     bool    `xml:"phonetic,attr,omitempty"`
-	Style        int     `xml:"style,attr,omitempty"`
-	Width        float64 `xml:"width,attr,omitempty"`
+	BestFit      bool     `xml:"bestFit,attr,omitempty"`
+	Collapsed    bool     `xml:"collapsed,attr,omitempty"`
+	CustomWidth  bool     `xml:"customWidth,attr,omitempty"`
+	Hidden       bool     `xml:"hidden,attr,omitempty"`
+	Max          int      `xml:"max,attr"`
+	Min          int      `xml:"min,attr"`
+	OutlineLevel uint8    `xml:"outlineLevel,attr,omitempty"`
+	Phonetic     bool     `xml:"phonetic,attr,omitempty"`
+	Style        int      `xml:"style,attr,omitempty"`
+	Width        *float64 `xml:"width,attr"`
 }
 
 // xlsxDimension directly maps the dimension element in the namespace
@@ -316,19 +316,19 @@ type xlsxSheetData struct {
 // about an entire row of a worksheet, and contains all cell definitions for a
 // particular row in the worksheet.
 type xlsxRow struct {
-	C            []xlsxC `xml:"c"`
-	R            int     `xml:"r,attr,omitempty"`
-	Spans        string  `xml:"spans,attr,omitempty"`
-	S            int     `xml:"s,attr,omitempty"`
-	CustomFormat bool    `xml:"customFormat,attr,omitempty"`
-	Ht           float64 `xml:"ht,attr,omitempty"`
-	Hidden       bool    `xml:"hidden,attr,omitempty"`
-	CustomHeight bool    `xml:"customHeight,attr,omitempty"`
-	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
-	Collapsed    bool    `xml:"collapsed,attr,omitempty"`
-	ThickTop     bool    `xml:"thickTop,attr,omitempty"`
-	ThickBot     bool    `xml:"thickBot,attr,omitempty"`
-	Ph           bool    `xml:"ph,attr,omitempty"`
+	C            []xlsxC  `xml:"c"`
+	R            int      `xml:"r,attr,omitempty"`
+	Spans        string   `xml:"spans,attr,omitempty"`
+	S            int      `xml:"s,attr,omitempty"`
+	CustomFormat bool     `xml:"customFormat,attr,omitempty"`
+	Ht           *float64 `xml:"ht,attr"`
+	Hidden       bool     `xml:"hidden,attr,omitempty"`
+	CustomHeight bool     `xml:"customHeight,attr,omitempty"`
+	OutlineLevel uint8    `xml:"outlineLevel,attr,omitempty"`
+	Collapsed    bool     `xml:"collapsed,attr,omitempty"`
+	ThickTop     bool     `xml:"thickTop,attr,omitempty"`
+	ThickBot     bool     `xml:"thickBot,attr,omitempty"`
+	Ph           bool     `xml:"ph,attr,omitempty"`
 }
 
 // xlsxSortState directly maps the sortState element. This collection

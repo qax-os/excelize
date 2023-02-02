@@ -108,7 +108,7 @@ const (
 
 // Excel specifications and limits
 const (
-	MaxCellStyles        = 64000
+	MaxCellStyles        = 65430
 	MaxColumns           = 16384
 	MaxColumnWidth       = 255
 	MaxFieldLength       = 255

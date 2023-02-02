@@ -1844,10 +1844,10 @@ func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
 	defer ws.Unlock()
 	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
-	var ht float64
+	var ht *float64
 	var customHeight bool
 	if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
-		ht = ws.SheetFormatPr.DefaultRowHeight
+		ht = float64Ptr(ws.SheetFormatPr.DefaultRowHeight)
 		customHeight = true
 	}
 	if rowCount > 0 {

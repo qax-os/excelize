@@ -325,6 +325,13 @@ func TestNewStyle(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	_, err = f.NewStyle(&Style{NumFmt: 165})
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	// Test create cell styles reach maximum
+	f = NewFile()
+	f.Styles.CellXfs.Xf = make([]xlsxXf, MaxCellStyles)
+	f.Styles.CellXfs.Count = MaxCellStyles
+	_, err = f.NewStyle(&Style{NumFmt: 0})
+	assert.Equal(t, ErrCellStyles, err)
 }
 
 func TestNewConditionalStyle(t *testing.T) {

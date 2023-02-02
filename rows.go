@@ -363,7 +363,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	prepareSheetXML(ws, 0, row)
 
 	rowIdx := row - 1
-	ws.SheetData.Row[rowIdx].Ht = height
+	ws.SheetData.Row[rowIdx].Ht = float64Ptr(height)
 	ws.SheetData.Row[rowIdx].CustomHeight = true
 	return nil
 }
@@ -376,8 +376,8 @@ func (f *File) getRowHeight(sheet string, row int) int {
 	defer ws.Unlock()
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
-		if v.R == row && v.Ht != 0 {
-			return int(convertRowHeightToPixels(v.Ht))
+		if v.R == row && v.Ht != nil {
+			return int(convertRowHeightToPixels(*v.Ht))
 		}
 	}
 	// Optimization for when the row heights haven't changed.
@@ -404,8 +404,8 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 		return ht, nil // it will be better to use 0, but we take care with BC
 	}
 	for _, v := range ws.SheetData.Row {
-		if v.R == row && v.Ht != 0 {
-			return v.Ht, nil
+		if v.R == row && v.Ht != nil {
+			return *v.Ht, nil
 		}
 	}
 	// Optimization for when the row heights haven't changed.
@@ -784,7 +784,7 @@ func checkRow(ws *xlsxWorksheet) error {
 
 // hasAttr determine if row non-default attributes.
 func (r *xlsxRow) hasAttr() bool {
-	return r.Spans != "" || r.S != 0 || r.CustomFormat || r.Ht != 0 ||
+	return r.Spans != "" || r.S != 0 || r.CustomFormat || r.Ht != nil ||
 		r.Hidden || r.CustomHeight || r.OutlineLevel != 0 || r.Collapsed ||
 		r.ThickTop || r.ThickBot || r.Ph
 }

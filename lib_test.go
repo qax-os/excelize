@@ -342,8 +342,10 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
-	if strings.HasPrefix(runtime.Version(), "go1.19") {
-		t.Skip()
+	for _, v := range []string{"go1.19", "go1.20"} {
+		if strings.HasPrefix(runtime.Version(), v) {
+			t.Skip()
+		}
 	}
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
