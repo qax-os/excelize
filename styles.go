@@ -277,7 +277,7 @@ var langNumFmt = map[string]map[int]string{
 
 // currencyNumFmt defined the currency number format map.
 var currencyNumFmt = map[int]string{
-	164: `"CN¥",##0.00`,
+	164: `"¥"#,##0.00`,
 	165: "[$$-409]#,##0.00",
 	166: "[$$-45C]#,##0.00",
 	167: "[$$-1004]#,##0.00",
@@ -1491,8 +1491,8 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //
 //	 Index | Symbol
 //	-------+---------------------------------------------------------------
-//	 164   | CN¥
-//	 165   | $ English (China)
+//	 164   | ¥
+//	 165   | $ English (United States)
 //	 166   | $ Cherokee (United States)
 //	 167   | $ Chinese (Singapore)
 //	 168   | $ Chinese (Taiwan)
@@ -1533,28 +1533,28 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	 203   | ₡ Spanish (Costa Rica)
 //	 204   | ₦ Hausa (Nigeria)
 //	 205   | ₦ Igbo (Nigeria)
-//	 206   | ₦ Yoruba (Nigeria)
-//	 207   | ₩ Korean (South Korea)
-//	 208   | ₪ Hebrew (Israel)
-//	 209   | ₫ Vietnamese (Vietnam)
-//	 210   | € Basque (Spain)
-//	 211   | € Breton (France)
-//	 212   | € Catalan (Spain)
-//	 213   | € Corsican (France)
-//	 214   | € Dutch (Belgium)
-//	 215   | € Dutch (Netherlands)
-//	 216   | € English (Ireland)
-//	 217   | € Estonian (Estonia)
-//	 218   | € Euro (€ 123)
-//	 219   | € Euro (123 €)
-//	 220   | € Finnish (Finland)
-//	 221   | € French (Belgium)
-//	 222   | € French (France)
-//	 223   | € French (Luxembourg)
-//	 224   | € French (Monaco)
-//	 225   | € French (Réunion)
-//	 226   | € Galician (Spain)
-//	 227   | € German (Austria)
+//	 206   | ₩ Korean (South Korea)
+//	 207   | ₪ Hebrew (Israel)
+//	 208   | ₫ Vietnamese (Vietnam)
+//	 209   | € Basque (Spain)
+//	 210   | € Breton (France)
+//	 211   | € Catalan (Spain)
+//	 212   | € Corsican (France)
+//	 213   | € Dutch (Belgium)
+//	 214   | € Dutch (Netherlands)
+//	 215   | € English (Ireland)
+//	 216   | € Estonian (Estonia)
+//	 217   | € Euro (€ 123)
+//	 218   | € Euro (123 €)
+//	 219   | € Finnish (Finland)
+//	 220   | € French (Belgium)
+//	 221   | € French (France)
+//	 222   | € French (Luxembourg)
+//	 223   | € French (Monaco)
+//	 224   | € French (Réunion)
+//	 225   | € Galician (Spain)
+//	 226   | € German (Austria)
+//	 227   | € German (German)
 //	 228   | € German (Luxembourg)
 //	 229   | € Greek (Greece)
 //	 230   | € Inari Sami (Finland)

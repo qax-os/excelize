@@ -596,7 +596,10 @@ func TestAttrValToFloat(t *testing.T) {
 func TestSetSheetBackgroundFromBytes(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetSheetName("Sheet1", ".svg"))
-	for i, imageTypes := range []string{".svg", ".emf", ".emz", ".gif", ".jpg", ".png", ".tif", ".wmf", ".wmz"} {
+	for i, imageTypes := range []string{
+		".svg", ".bmp", ".emf", ".emz", ".gif",
+		".jpg", ".png", ".tif", ".wmf", ".wmz",
+	} {
 		file := fmt.Sprintf("excelize%s", imageTypes)
 		if i > 0 {
 			file = filepath.Join("test", "images", fmt.Sprintf("excel%s", imageTypes))

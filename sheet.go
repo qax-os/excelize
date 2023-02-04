@@ -500,8 +500,8 @@ func (f *File) getSheetXMLPath(sheet string) (string, bool) {
 }
 
 // SetSheetBackground provides a function to set background picture by given
-// worksheet name and file path. Supported image types: EMF, EMZ, GIF, JPEG,
-// JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
+// worksheet name and file path. Supported image types: BMP, EMF, EMZ, GIF,
+// JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 func (f *File) SetSheetBackground(sheet, picture string) error {
 	var err error
 	// Check picture exists first.
@@ -514,7 +514,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 
 // SetSheetBackgroundFromBytes provides a function to set background picture by
 // given worksheet name, extension name and image data. Supported image types:
-// EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
+// BMP, EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 func (f *File) SetSheetBackgroundFromBytes(sheet, extension string, picture []byte) error {
 	if len(picture) == 0 {
 		return ErrParameterInvalid

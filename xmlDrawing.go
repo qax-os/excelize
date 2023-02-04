@@ -181,9 +181,9 @@ var IndexedColorMapping = []string{
 
 // supportedImageTypes defined supported image types.
 var supportedImageTypes = map[string]string{
-	".emf": ".emf", ".emz": ".emz", ".gif": ".gif", ".jpeg": ".jpeg",
-	".jpg": ".jpeg", ".png": ".png", ".svg": ".svg", ".tif": ".tiff",
-	".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
+	".bmp": ".bmp", ".emf": ".emf", ".emz": ".emz", ".gif": ".gif",
+	".jpeg": ".jpeg", ".jpg": ".jpeg", ".png": ".png", ".svg": ".svg",
+	".tif": ".tiff", ".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
 }
 
 // supportedContentTypes defined supported file format types.

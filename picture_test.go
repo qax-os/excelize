@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 
 	"github.com/stretchr/testify/assert"
@@ -64,6 +65,7 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "Q8", filepath.Join("test", "images", "excel.gif"), nil))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q15", filepath.Join("test", "images", "excel.jpg"), nil))
 	assert.NoError(t, f.AddPicture("Sheet1", "Q22", filepath.Join("test", "images", "excel.tif"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q28", filepath.Join("test", "images", "excel.bmp"), nil))
 
 	// Test write file to given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture1.xlsx")))

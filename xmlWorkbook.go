@@ -45,7 +45,7 @@ type xlsxWorkbook struct {
 	WorkbookProtection     *xlsxWorkbookProtection  `xml:"workbookProtection"`
 	BookViews              *xlsxBookViews           `xml:"bookViews"`
 	Sheets                 xlsxSheets               `xml:"sheets"`
-	FunctionGroups         *xlsxExtLst              `xml:"functionGroups"`
+	FunctionGroups         *xlsxFunctionGroups      `xml:"functionGroups"`
 	ExternalReferences     *xlsxExternalReferences  `xml:"externalReferences"`
 	DefinedNames           *xlsxDefinedNames        `xml:"definedNames"`
 	CalcPr                 *xlsxCalcPr              `xml:"calcPr"`
@@ -169,6 +169,17 @@ type xlsxSheet struct {
 	SheetID int    `xml:"sheetId,attr,omitempty"`
 	ID      string `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr"`
 	State   string `xml:"state,attr,omitempty"`
+}
+
+// xlsxFunctionGroup represents a single function group.
+type xlsxFunctionGroup struct {
+	Name string `xml:"name,attr"`
+}
+
+// xlsxFunctionGroups defines the collection of function groups for the workbook.
+type xlsxFunctionGroups struct {
+	BuiltInGroupCount *int                `xml:"builtInGroupCount,attr"`
+	FunctionGroup     []xlsxFunctionGroup `xml:"functionGroup"`
 }
 
 // xlsxExternalReferences directly maps the externalReferences element of the
