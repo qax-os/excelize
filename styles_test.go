@@ -159,12 +159,7 @@ func TestSetConditionalFormat(t *testing.T) {
 		f := NewFile()
 		const sheet = "Sheet1"
 		const rangeRef = "A1:A1"
-
-		err := f.SetConditionalFormat(sheet, rangeRef, testCase.format)
-		if err != nil {
-			t.Fatalf("%s", err)
-		}
-
+		assert.NoError(t, f.SetConditionalFormat(sheet, rangeRef, testCase.format))
 		ws, err := f.workSheetReader(sheet)
 		assert.NoError(t, err)
 		cf := ws.ConditionalFormatting
@@ -173,6 +168,19 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.Equal(t, rangeRef, cf[0].SQRef, testCase.label)
 		assert.EqualValues(t, testCase.rules, cf[0].CfRule, testCase.label)
 	}
+	// Test creating a conditional format with a solid color data bar style
+	f := NewFile()
+	condFmts := []ConditionalFormatOptions{
+		{Type: "data_bar", BarColor: "#A9D08E", BarSolid: true, Format: 0, Criteria: "=", MinType: "min", MaxType: "max"},
+	}
+	for _, ref := range []string{"A1:A2", "B1:B2"} {
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
+	}
+	// Test creating a conditional format with invalid extension list characters
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst.Ext = "<extLst><ext><x14:conditionalFormattings></x14:conditionalFormatting></x14:conditionalFormattings></ext></extLst>"
+	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", condFmts), "XML syntax error on line 1: element <conditionalFormattings> closed by </conditionalFormatting>")
 }
 
 func TestGetConditionalFormats(t *testing.T) {
@@ -186,7 +194,7 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "unique", Format: 1, Criteria: "="}},
 		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
 		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
-		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarColor: "#638EC6"}},
+		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarColor: "#638EC6", BarBorderColor: "#0000FF", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: 1, Criteria: "="}},
 	} {
 		f := NewFile()

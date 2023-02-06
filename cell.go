@@ -527,7 +527,7 @@ func (c *xlsxC) setCellDefault(value string) {
 		c.T, c.V, c.IS = value, value, nil
 		return
 	}
-	c.V = value
+	c.T, c.V = "", value
 }
 
 // getCellDate parse cell value which contains a date in the ISO 8601 format.

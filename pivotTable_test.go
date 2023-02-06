@@ -70,7 +70,7 @@ func TestAddPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
-		PivotTableRange: "Sheet1!$G$37:$W$50",
+		PivotTableRange: "Sheet1!$G$39:$W$52",
 		Rows:            []PivotTableField{{Data: "Month"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Year"}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "CountNums", Name: "Summarize by CountNums"}},

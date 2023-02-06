@@ -592,7 +592,7 @@ type xlsxColorScale struct {
 type xlsxDataBar struct {
 	MaxLength int          `xml:"maxLength,attr,omitempty"`
 	MinLength int          `xml:"minLength,attr,omitempty"`
-	ShowValue bool         `xml:"showValue,attr,omitempty"`
+	ShowValue *bool        `xml:"showValue,attr"`
 	Cfvo      []*xlsxCfvo  `xml:"cfvo"`
 	Color     []*xlsxColor `xml:"color"`
 }
@@ -601,7 +601,7 @@ type xlsxDataBar struct {
 type xlsxIconSet struct {
 	Cfvo      []*xlsxCfvo `xml:"cfvo"`
 	IconSet   string      `xml:"iconSet,attr,omitempty"`
-	ShowValue bool        `xml:"showValue,attr,omitempty"`
+	ShowValue *bool       `xml:"showValue,attr"`
 	Percent   bool        `xml:"percent,attr,omitempty"`
 	Reverse   bool        `xml:"reverse,attr,omitempty"`
 }
@@ -742,6 +742,84 @@ type decodeX14SparklineGroups struct {
 	Content string   `xml:",innerxml"`
 }
 
+// decodeX14ConditionalFormattingExt directly maps the ext
+// element.
+type decodeX14ConditionalFormattingExt struct {
+	XMLName xml.Name `xml:"ext"`
+	ID      string   `xml:"id"`
+}
+
+// decodeX14ConditionalFormattings directly maps the conditionalFormattings
+// element.
+type decodeX14ConditionalFormattings struct {
+	XMLName xml.Name `xml:"conditionalFormattings"`
+	XMLNSXM string   `xml:"xmlns:xm,attr"`
+	Content string   `xml:",innerxml"`
+}
+
+// decodeX14ConditionalFormatting directly maps the conditionalFormatting
+// element.
+type decodeX14ConditionalFormatting struct {
+	XMLName xml.Name           `xml:"conditionalFormatting"`
+	CfRule  []*decodeX14CfRule `xml:"cfRule"`
+}
+
+// decodeX14CfRule directly maps the cfRule element.
+type decodeX14CfRule struct {
+	XNLName xml.Name          `xml:"cfRule"`
+	Type    string            `xml:"type,attr,omitempty"`
+	ID      string            `xml:"id,attr,omitempty"`
+	DataBar *decodeX14DataBar `xml:"dataBar"`
+}
+
+// decodeX14DataBar directly maps the dataBar element.
+type decodeX14DataBar struct {
+	XNLName           xml.Name    `xml:"dataBar"`
+	MaxLength         int         `xml:"maxLength,attr"`
+	MinLength         int         `xml:"minLength,attr"`
+	Gradient          bool        `xml:"gradient,attr"`
+	ShowValue         bool        `xml:"showValue,attr,omitempty"`
+	Cfvo              []*xlsxCfvo `xml:"cfvo"`
+	BorderColor       *xlsxColor  `xml:"borderColor"`
+	NegativeFillColor *xlsxColor  `xml:"negativeFillColor"`
+	AxisColor         *xlsxColor  `xml:"axisColor"`
+}
+
+// xlsxX14ConditionalFormattings directly maps the conditionalFormattings
+// element.
+type xlsxX14ConditionalFormattings struct {
+	XMLName xml.Name `xml:"x14:conditionalFormattings"`
+	Content string   `xml:",innerxml"`
+}
+
+// xlsxX14ConditionalFormatting directly maps the conditionalFormatting element.
+type xlsxX14ConditionalFormatting struct {
+	XMLName xml.Name         `xml:"x14:conditionalFormatting"`
+	XMLNSXM string           `xml:"xmlns:xm,attr"`
+	CfRule  []*xlsxX14CfRule `xml:"x14:cfRule"`
+}
+
+// xlsxX14CfRule directly maps the cfRule element.
+type xlsxX14CfRule struct {
+	XNLName xml.Name       `xml:"x14:cfRule"`
+	Type    string         `xml:"type,attr,omitempty"`
+	ID      string         `xml:"id,attr,omitempty"`
+	DataBar *xlsx14DataBar `xml:"x14:dataBar"`
+}
+
+// xlsx14DataBar directly maps the dataBar element.
+type xlsx14DataBar struct {
+	XNLName           xml.Name    `xml:"x14:dataBar"`
+	MaxLength         int         `xml:"maxLength,attr"`
+	MinLength         int         `xml:"minLength,attr"`
+	Gradient          bool        `xml:"gradient,attr"`
+	ShowValue         bool        `xml:"showValue,attr,omitempty"`
+	Cfvo              []*xlsxCfvo `xml:"x14:cfvo"`
+	BorderColor       *xlsxColor  `xml:"x14:borderColor"`
+	NegativeFillColor *xlsxColor  `xml:"x14:negativeFillColor"`
+	AxisColor         *xlsxColor  `xml:"x14:axisColor"`
+}
+
 // xlsxX14SparklineGroups directly maps the sparklineGroups element.
 type xlsxX14SparklineGroups struct {
 	XMLName         xml.Name                 `xml:"x14:sparklineGroups"`
@@ -843,26 +921,30 @@ type Panes struct {
 
 // ConditionalFormatOptions directly maps the conditional format settings of the cells.
 type ConditionalFormatOptions struct {
-	Type         string
-	AboveAverage bool
-	Percent      bool
-	Format       int
-	Criteria     string
-	Value        string
-	Minimum      string
-	Maximum      string
-	MinType      string
-	MidType      string
-	MaxType      string
-	MinValue     string
-	MidValue     string
-	MaxValue     string
-	MinColor     string
-	MidColor     string
-	MaxColor     string
-	MinLength    string
-	MaxLength    string
-	BarColor     string
+	Type           string
+	AboveAverage   bool
+	Percent        bool
+	Format         int
+	Criteria       string
+	Value          string
+	Minimum        string
+	Maximum        string
+	MinType        string
+	MidType        string
+	MaxType        string
+	MinValue       string
+	MidValue       string
+	MaxValue       string
+	MinColor       string
+	MidColor       string
+	MaxColor       string
+	MinLength      string
+	MaxLength      string
+	BarColor       string
+	BarBorderColor string
+	BarOnly        bool
+	BarSolid       bool
+	StopIfTrue     bool
 }
 
 // SheetProtectionOptions directly maps the settings of worksheet protection.
