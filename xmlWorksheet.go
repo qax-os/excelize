@@ -777,8 +777,10 @@ type decodeX14DataBar struct {
 	XNLName           xml.Name    `xml:"dataBar"`
 	MaxLength         int         `xml:"maxLength,attr"`
 	MinLength         int         `xml:"minLength,attr"`
+	Border            bool        `xml:"border,attr,omitempty"`
 	Gradient          bool        `xml:"gradient,attr"`
 	ShowValue         bool        `xml:"showValue,attr,omitempty"`
+	Direction         string      `xml:"direction,attr,omitempty"`
 	Cfvo              []*xlsxCfvo `xml:"cfvo"`
 	BorderColor       *xlsxColor  `xml:"borderColor"`
 	NegativeFillColor *xlsxColor  `xml:"negativeFillColor"`
@@ -801,7 +803,6 @@ type xlsxX14ConditionalFormatting struct {
 
 // xlsxX14CfRule directly maps the cfRule element.
 type xlsxX14CfRule struct {
-	XNLName xml.Name       `xml:"x14:cfRule"`
 	Type    string         `xml:"type,attr,omitempty"`
 	ID      string         `xml:"id,attr,omitempty"`
 	DataBar *xlsx14DataBar `xml:"x14:dataBar"`
@@ -809,11 +810,12 @@ type xlsxX14CfRule struct {
 
 // xlsx14DataBar directly maps the dataBar element.
 type xlsx14DataBar struct {
-	XNLName           xml.Name    `xml:"x14:dataBar"`
 	MaxLength         int         `xml:"maxLength,attr"`
 	MinLength         int         `xml:"minLength,attr"`
+	Border            bool        `xml:"border,attr"`
 	Gradient          bool        `xml:"gradient,attr"`
 	ShowValue         bool        `xml:"showValue,attr,omitempty"`
+	Direction         string      `xml:"direction,attr,omitempty"`
 	Cfvo              []*xlsxCfvo `xml:"x14:cfvo"`
 	BorderColor       *xlsxColor  `xml:"x14:borderColor"`
 	NegativeFillColor *xlsxColor  `xml:"x14:negativeFillColor"`
@@ -942,8 +944,12 @@ type ConditionalFormatOptions struct {
 	MaxLength      string
 	BarColor       string
 	BarBorderColor string
+	BarDirection   string
 	BarOnly        bool
 	BarSolid       bool
+	IconStyle      string
+	ReverseIcons   bool
+	IconsOnly      bool
 	StopIfTrue     bool
 }
 

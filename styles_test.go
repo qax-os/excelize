@@ -176,11 +176,22 @@ func TestSetConditionalFormat(t *testing.T) {
 	for _, ref := range []string{"A1:A2", "B1:B2"} {
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
 	}
-	// Test creating a conditional format with invalid extension list characters
+	f = NewFile()
+	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).ExtLst.Ext = "<extLst><ext><x14:conditionalFormattings></x14:conditionalFormatting></x14:conditionalFormattings></ext></extLst>"
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: `
+		<ext uri="{A8765BA9-456A-4dab-B4F3-ACF838C121DE}"><x14:slicerList /></ext>
+		<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"><x14:sparklineGroups /></ext>`}
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarSolid: true}}))
+	f = NewFile()
+	// Test creating a conditional format with invalid extension list characters
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: "<ext><x14:conditionalFormattings></x14:conditionalFormatting></x14:conditionalFormattings></ext>"}
 	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", condFmts), "XML syntax error on line 1: element <conditionalFormattings> closed by </conditionalFormatting>")
+	// Test creating a conditional format with invalid icon set style
+	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "iconSet", IconStyle: "unknown"}}), ErrParameterInvalid.Error())
 }
 
 func TestGetConditionalFormats(t *testing.T) {
@@ -194,8 +205,10 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "unique", Format: 1, Criteria: "="}},
 		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
 		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
-		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarColor: "#638EC6", BarBorderColor: "#0000FF", BarOnly: true, BarSolid: true, StopIfTrue: true}},
+		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
+		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: 1, Criteria: "="}},
+		{{Type: "iconSet", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
 		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)

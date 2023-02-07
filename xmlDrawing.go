@@ -107,6 +107,18 @@ const (
 	ExtURIWebExtensions               = "{F7C9EE02-42E1-4005-9D12-6889AFFD525C}"
 )
 
+// extensionURIPriority is the priority of URI in the extension lists.
+var extensionURIPriority = []string{
+	ExtURIConditionalFormattings,
+	ExtURIDataValidations,
+	ExtURISparklineGroups,
+	ExtURISlicerListX14,
+	ExtURIProtectedRanges,
+	ExtURIIgnoredErrors,
+	ExtURIWebExtensions,
+	ExtURITimelineRefs,
+}
+
 // Excel specifications and limits
 const (
 	MaxCellStyles        = 65430
