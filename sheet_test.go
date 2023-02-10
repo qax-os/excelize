@@ -644,3 +644,84 @@ func TestCheckSheetName(t *testing.T) {
 	assert.EqualError(t, checkSheetName("'Sheet"), ErrSheetNameSingleQuote.Error())
 	assert.EqualError(t, checkSheetName("Sheet'"), ErrSheetNameSingleQuote.Error())
 }
+
+func TestSetSheetDimension(t *testing.T) {
+	f := NewFile()
+	const sheetName = "Sheet1"
+
+	ws, err := f.workSheetReader(sheetName)
+	assert.NoError(t, err)
+
+	t.Run("Dimension element is set to 'A1' when a new workbook/sheet is created", func(t *testing.T) {
+		assert.Equal(t, "A1", ws.Dimension.Ref)
+	})
+
+	t.Run("Setting dimension field to an empty string will remove it when saving/opening the file", func(t *testing.T) {
+
+		err := f.SetSheetDimension("Sheet1", "")
+		assert.NoError(t, err)
+
+		// simulate saving the file
+		buf, err := f.WriteToBuffer()
+		assert.NoError(t, err)
+
+		// simulate opening and deserializing
+		f, err := OpenReader(buf)
+		assert.NoError(t, err)
+
+		// open the file and confirm the dimension field is nil
+		ws, err = f.workSheetReader(sheetName)
+		assert.NoError(t, err)
+
+		assert.Nil(t, ws.Dimension)
+	})
+
+	t.Run("Setting dimension field properly will persist when saving/opening file", func(t *testing.T) {
+		tests := []string{"A1", "A1:D5", "A1:XFD1048576", "a1", "A1:d5"}
+		for _, rng := range tests {
+
+			err := f.SetSheetDimension("Sheet1", rng)
+			assert.NoError(t, err)
+
+			// simulate saving the file
+			buf, err := f.WriteToBuffer()
+			assert.NoError(t, err)
+
+			// simulate opening and deserializing
+			f, err := OpenReader(buf)
+			assert.NoError(t, err)
+
+			// open the file and confirm the dimension field is nil
+			ws, err = f.workSheetReader(sheetName)
+			assert.NoError(t, err)
+
+			assert.Equal(t, strings.ToUpper(rng), ws.Dimension.Ref)
+		}
+	})
+
+	t.Run("Improper dimension or sheet will return an error", func(t *testing.T) {
+
+		tests := []struct {
+			sheet     string
+			dimension string
+			err       error
+		}{
+			{"Sheet1", "A-1", newSheetDimensionError("A-1")},
+			{"Sheet1", "A1:B-1", newSheetDimensionError("A1:B-1")},
+			{"Sheet1", "A1:XFD1048577", newSheetDimensionError("A1:XFD1048577")},
+			{"Sheet1", "123", newSheetDimensionError("123")},
+			{"Sheet1", "A:B", newSheetDimensionError("A:B")},
+			{"Sheet1", ":B10", newSheetDimensionError(":B10")},
+			{"Sheet1", "XFE1", newSheetDimensionError("XFE1")},
+			{"Sheet1", "A1:B3:D5", newSheetDimensionError("A1:B3:D5")},
+			{"Sheet1", "A1048577", newSheetDimensionError("A1048577")},
+			{"Sheet1", "ZZZ", newSheetDimensionError("ZZZ")},
+			{"SheetMissing", "A1", newNoExistSheetError("SheetMissing")},
+		}
+
+		for _, tt := range tests {
+			err := f.SetSheetDimension(tt.sheet, tt.dimension)
+			assert.EqualError(t, err, tt.err.Error())
+		}
+	})
+}

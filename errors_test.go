@@ -23,3 +23,7 @@ func TestNewInvalidCellNameError(t *testing.T) {
 func TestNewInvalidExcelDateError(t *testing.T) {
 	assert.EqualError(t, newInvalidExcelDateError(-1), "invalid date value -1.000000, negative values are not supported")
 }
+
+func TestNewSheetDimensionError(t *testing.T) {
+	assert.EqualError(t, newSheetDimensionError("XFD1048577"), `cannot set dimension property for sheet: "XFD1048577" is an invalid range`)
+}
