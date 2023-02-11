@@ -645,83 +645,50 @@ func TestCheckSheetName(t *testing.T) {
 	assert.EqualError(t, checkSheetName("Sheet'"), ErrSheetNameSingleQuote.Error())
 }
 
-func TestSetSheetDimension(t *testing.T) {
+func TestSheetDimension(t *testing.T) {
 	f := NewFile()
 	const sheetName = "Sheet1"
-
-	ws, err := f.workSheetReader(sheetName)
+	// Test get a new worksheet dimension
+	dimension, err := f.GetSheetDimension(sheetName)
 	assert.NoError(t, err)
-
-	t.Run("Dimension element is set to 'A1' when a new workbook/sheet is created", func(t *testing.T) {
-		assert.Equal(t, "A1", ws.Dimension.Ref)
-	})
-
-	t.Run("Setting dimension field to an empty string will remove it when saving/opening the file", func(t *testing.T) {
-
-		err := f.SetSheetDimension("Sheet1", "")
+	assert.Equal(t, "A1", dimension)
+	// Test remove the worksheet dimension
+	assert.NoError(t, f.SetSheetDimension(sheetName, ""))
+	assert.NoError(t, err)
+	dimension, err = f.GetSheetDimension(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, "", dimension)
+	// Test set the worksheet dimension
+	for _, excepted := range []string{"A1", "A1:D5", "A1:XFD1048576", "a1", "A1:d5"} {
+		err = f.SetSheetDimension(sheetName, excepted)
 		assert.NoError(t, err)
-
-		// simulate saving the file
-		buf, err := f.WriteToBuffer()
+		dimension, err := f.GetSheetDimension(sheetName)
 		assert.NoError(t, err)
-
-		// simulate opening and deserializing
-		f, err := OpenReader(buf)
-		assert.NoError(t, err)
-
-		// open the file and confirm the dimension field is nil
-		ws, err = f.workSheetReader(sheetName)
-		assert.NoError(t, err)
-
-		assert.Nil(t, ws.Dimension)
-	})
-
-	t.Run("Setting dimension field properly will persist when saving/opening file", func(t *testing.T) {
-		tests := []string{"A1", "A1:D5", "A1:XFD1048576", "a1", "A1:d5"}
-		for _, rng := range tests {
-
-			err := f.SetSheetDimension("Sheet1", rng)
-			assert.NoError(t, err)
-
-			// simulate saving the file
-			buf, err := f.WriteToBuffer()
-			assert.NoError(t, err)
-
-			// simulate opening and deserializing
-			f, err := OpenReader(buf)
-			assert.NoError(t, err)
-
-			// open the file and confirm the dimension field is nil
-			ws, err = f.workSheetReader(sheetName)
-			assert.NoError(t, err)
-
-			assert.Equal(t, strings.ToUpper(rng), ws.Dimension.Ref)
-		}
-	})
-
-	t.Run("Improper dimension or sheet will return an error", func(t *testing.T) {
-
-		tests := []struct {
-			sheet     string
-			dimension string
-			err       error
-		}{
-			{"Sheet1", "A-1", newSheetDimensionError("A-1")},
-			{"Sheet1", "A1:B-1", newSheetDimensionError("A1:B-1")},
-			{"Sheet1", "A1:XFD1048577", newSheetDimensionError("A1:XFD1048577")},
-			{"Sheet1", "123", newSheetDimensionError("123")},
-			{"Sheet1", "A:B", newSheetDimensionError("A:B")},
-			{"Sheet1", ":B10", newSheetDimensionError(":B10")},
-			{"Sheet1", "XFE1", newSheetDimensionError("XFE1")},
-			{"Sheet1", "A1:B3:D5", newSheetDimensionError("A1:B3:D5")},
-			{"Sheet1", "A1048577", newSheetDimensionError("A1048577")},
-			{"Sheet1", "ZZZ", newSheetDimensionError("ZZZ")},
-			{"SheetMissing", "A1", newNoExistSheetError("SheetMissing")},
-		}
-
-		for _, tt := range tests {
-			err := f.SetSheetDimension(tt.sheet, tt.dimension)
-			assert.EqualError(t, err, tt.err.Error())
-		}
-	})
+		assert.Equal(t, strings.ToUpper(excepted), dimension)
+	}
+	// Test set the worksheet dimension with invalid range reference or no exists worksheet
+	for _, c := range []struct {
+		sheetName string
+		rangeRef  string
+		err       string
+	}{
+		{"Sheet1", "A-1", "cannot convert cell \"A-1\" to coordinates: invalid cell name \"A-1\""},
+		{"Sheet1", "A1:B-1", "cannot convert cell \"B-1\" to coordinates: invalid cell name \"B-1\""},
+		{"Sheet1", "A1:XFD1048577", "row number exceeds maximum limit"},
+		{"Sheet1", "123", "cannot convert cell \"123\" to coordinates: invalid cell name \"123\""},
+		{"Sheet1", "A:B", "cannot convert cell \"A\" to coordinates: invalid cell name \"A\""},
+		{"Sheet1", ":B10", "cannot convert cell \"\" to coordinates: invalid cell name \"\""},
+		{"Sheet1", "XFE1", "the column number must be greater than or equal to 1 and less than or equal to 16384"},
+		{"Sheet1", "A1048577", "row number exceeds maximum limit"},
+		{"Sheet1", "ZZZ", "cannot convert cell \"ZZZ\" to coordinates: invalid cell name \"ZZZ\""},
+		{"SheetN", "A1", "sheet SheetN does not exist"},
+		{"Sheet1", "A1:B3:D5", ErrParameterInvalid.Error()},
+	} {
+		err = f.SetSheetDimension(c.sheetName, c.rangeRef)
+		assert.EqualError(t, err, c.err)
+	}
+	// Test get the worksheet dimension no exists worksheet
+	dimension, err = f.GetSheetDimension("SheetN")
+	assert.Empty(t, dimension)
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }

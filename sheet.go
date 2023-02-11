@@ -1884,74 +1884,51 @@ func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
 	}
 }
 
-// SetSheetDimension provides the method to set or remove the worksheet's dimension element.
-// The dimension is set using the A1 reference style (e.g., "A1:D5"). Passing an empty string
-// will remove the <dimension> element entirely; passing an invalid dimension range will throw an error.
-// Valid dimensions range from "A1:XFD1048576". Dimensions are converted to uppercase (e.g., "a1:d5" becomes "A1:D5").
-func (f *File) SetSheetDimension(sheet string, dimension string) error {
-
+// SetSheetDimension provides the method to set or remove the used range of the
+// worksheet by a given range reference. It specifies the row and column bounds
+// of used cells in the worksheet. The range reference is set using the A1
+// reference style(e.g., "A1:D5"). Passing an empty range reference will remove
+// the used range of the worksheet.
+func (f *File) SetSheetDimension(sheet string, rangeRef string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
-
-	// remove the dimension element if an empty string is provided
-	if dimension == "" {
+	// Remove the dimension element if an empty string is provided
+	if rangeRef == "" {
 		ws.Dimension = nil
 		return nil
 	}
-
-	parts := strings.Split(dimension, ":")
-
-	// if there is more than one ":" delimiter then it is invalid
-	if len(parts) > 2 {
-		return newSheetDimensionError(dimension)
+	parts := len(strings.Split(rangeRef, ":"))
+	if parts == 1 {
+		_, _, err = CellNameToCoordinates(rangeRef)
+		if err == nil {
+			ws.Dimension = &xlsxDimension{Ref: strings.ToUpper(rangeRef)}
+		}
+		return err
 	}
-
-	re := regexp.MustCompile(`^(?P<column>[a-zA-Z]{1,3})(?P<row>\d+)?`)
-
-	// returns an error if the reference is invalid or exceeds the maximum allowable
-	// columns or rows
-	parseColumnRowReference := func(ref string) error {
-
-		matches := re.FindStringSubmatch(ref)
-		if matches == nil {
-			return newSheetDimensionError(dimension)
-		}
-
-		column := matches[re.SubexpIndex("column")]
-		row := matches[re.SubexpIndex("row")]
-
-		// must have a valid entry for the column and row
-		if column == "" || row == "" {
-			return newSheetDimensionError(dimension)
-		}
-
-		if columnTotal, err := ColumnNameToNumber(column); columnTotal > MaxColumns || err != nil {
-			return newSheetDimensionError(dimension)
-		}
-
-		// row cannot exceed maximum allowable (TotalRows)
-		rowTotal, err := strconv.Atoi(row)
-		if err != nil {
-			return newSheetDimensionError(dimension)
-		}
-
-		if rowTotal > TotalRows {
-			return newSheetDimensionError(dimension)
-		}
-
-		return nil
+	if parts != 2 {
+		return ErrParameterInvalid
 	}
-
-	// the order of the references does not matter (e.g., "A1:D4" and "D4:A1" are both valid)
-	for _, p := range parts {
-		if refErr := parseColumnRowReference(p); refErr != nil {
-			return refErr
-		}
+	coordinates, err := rangeRefToCoordinates(rangeRef)
+	if err != nil {
+		return err
 	}
+	_ = sortCoordinates(coordinates)
+	ref, err := f.coordinatesToRangeRef(coordinates)
+	ws.Dimension = &xlsxDimension{Ref: ref}
+	return err
+}
 
-	// ensure it is saved as uppercase to align with Excel naming conventions
-	ws.Dimension = &xlsxDimension{Ref: strings.ToUpper(dimension)}
-	return nil
+// SetSheetDimension provides the method to get the used range of the worksheet.
+func (f *File) GetSheetDimension(sheet string) (string, error) {
+	var ref string
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return ref, err
+	}
+	if ws.Dimension != nil {
+		ref = ws.Dimension.Ref
+	}
+	return ref, err
 }

@@ -94,11 +94,6 @@ func newViewIdxError(viewIndex int) error {
 	return fmt.Errorf("view index %d out of range", viewIndex)
 }
 
-// newSheetDimensionError defines the error message when setting an invalid sheet dimension
-func newSheetDimensionError(dimension string) error {
-	return fmt.Errorf("cannot set dimension property for sheet: %q is an invalid range", dimension)
-}
-
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
