@@ -644,3 +644,51 @@ func TestCheckSheetName(t *testing.T) {
 	assert.EqualError(t, checkSheetName("'Sheet"), ErrSheetNameSingleQuote.Error())
 	assert.EqualError(t, checkSheetName("Sheet'"), ErrSheetNameSingleQuote.Error())
 }
+
+func TestSheetDimension(t *testing.T) {
+	f := NewFile()
+	const sheetName = "Sheet1"
+	// Test get a new worksheet dimension
+	dimension, err := f.GetSheetDimension(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, "A1", dimension)
+	// Test remove the worksheet dimension
+	assert.NoError(t, f.SetSheetDimension(sheetName, ""))
+	assert.NoError(t, err)
+	dimension, err = f.GetSheetDimension(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, "", dimension)
+	// Test set the worksheet dimension
+	for _, excepted := range []string{"A1", "A1:D5", "A1:XFD1048576", "a1", "A1:d5"} {
+		err = f.SetSheetDimension(sheetName, excepted)
+		assert.NoError(t, err)
+		dimension, err := f.GetSheetDimension(sheetName)
+		assert.NoError(t, err)
+		assert.Equal(t, strings.ToUpper(excepted), dimension)
+	}
+	// Test set the worksheet dimension with invalid range reference or no exists worksheet
+	for _, c := range []struct {
+		sheetName string
+		rangeRef  string
+		err       string
+	}{
+		{"Sheet1", "A-1", "cannot convert cell \"A-1\" to coordinates: invalid cell name \"A-1\""},
+		{"Sheet1", "A1:B-1", "cannot convert cell \"B-1\" to coordinates: invalid cell name \"B-1\""},
+		{"Sheet1", "A1:XFD1048577", "row number exceeds maximum limit"},
+		{"Sheet1", "123", "cannot convert cell \"123\" to coordinates: invalid cell name \"123\""},
+		{"Sheet1", "A:B", "cannot convert cell \"A\" to coordinates: invalid cell name \"A\""},
+		{"Sheet1", ":B10", "cannot convert cell \"\" to coordinates: invalid cell name \"\""},
+		{"Sheet1", "XFE1", "the column number must be greater than or equal to 1 and less than or equal to 16384"},
+		{"Sheet1", "A1048577", "row number exceeds maximum limit"},
+		{"Sheet1", "ZZZ", "cannot convert cell \"ZZZ\" to coordinates: invalid cell name \"ZZZ\""},
+		{"SheetN", "A1", "sheet SheetN does not exist"},
+		{"Sheet1", "A1:B3:D5", ErrParameterInvalid.Error()},
+	} {
+		err = f.SetSheetDimension(c.sheetName, c.rangeRef)
+		assert.EqualError(t, err, c.err)
+	}
+	// Test get the worksheet dimension no exists worksheet
+	dimension, err = f.GetSheetDimension("SheetN")
+	assert.Empty(t, dimension)
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+}

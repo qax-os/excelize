@@ -1883,3 +1883,52 @@ func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
 		fillColumns(rowData, colCount, fromRow)
 	}
 }
+
+// SetSheetDimension provides the method to set or remove the used range of the
+// worksheet by a given range reference. It specifies the row and column bounds
+// of used cells in the worksheet. The range reference is set using the A1
+// reference style(e.g., "A1:D5"). Passing an empty range reference will remove
+// the used range of the worksheet.
+func (f *File) SetSheetDimension(sheet string, rangeRef string) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	// Remove the dimension element if an empty string is provided
+	if rangeRef == "" {
+		ws.Dimension = nil
+		return nil
+	}
+	parts := len(strings.Split(rangeRef, ":"))
+	if parts == 1 {
+		_, _, err = CellNameToCoordinates(rangeRef)
+		if err == nil {
+			ws.Dimension = &xlsxDimension{Ref: strings.ToUpper(rangeRef)}
+		}
+		return err
+	}
+	if parts != 2 {
+		return ErrParameterInvalid
+	}
+	coordinates, err := rangeRefToCoordinates(rangeRef)
+	if err != nil {
+		return err
+	}
+	_ = sortCoordinates(coordinates)
+	ref, err := f.coordinatesToRangeRef(coordinates)
+	ws.Dimension = &xlsxDimension{Ref: ref}
+	return err
+}
+
+// SetSheetDimension provides the method to get the used range of the worksheet.
+func (f *File) GetSheetDimension(sheet string) (string, error) {
+	var ref string
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return ref, err
+	}
+	if ws.Dimension != nil {
+		ref = ws.Dimension.Ref
+	}
+	return ref, err
+}
