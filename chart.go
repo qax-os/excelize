@@ -773,7 +773,7 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 // The 'ShowVal' property is optional. The default value is false.
 //
 // Set the primary horizontal and vertical axis options by 'XAxis' and 'YAxis'.
-// The properties of XAxis that can be set are:
+// The properties of 'XAxis' that can be set are:
 //
 //	None
 //	MajorGridLines
@@ -790,13 +790,12 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //	MajorGridLines
 //	MinorGridLines
 //	MajorUnit
-//	TickLabelSkip
 //	ReverseOrder
 //	Maximum
 //	Minimum
 //	Font
 //
-// none: Disable axes.
+// None: Disable axes.
 //
 // MajorGridLines: Specifies major grid lines.
 //

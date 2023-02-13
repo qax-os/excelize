@@ -161,7 +161,10 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 //
 // See File.AddTable for details on the table format.
 func (sw *StreamWriter) AddTable(rangeRef string, opts *TableOptions) error {
-	options := parseTableOptions(opts)
+	options, err := parseTableOptions(opts)
+	if err != nil {
+		return err
+	}
 	coordinates, err := rangeRefToCoordinates(rangeRef)
 	if err != nil {
 		return err

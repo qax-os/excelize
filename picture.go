@@ -110,14 +110,14 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 //	    }
 //	}
 //
-// The optional parameter "Autofit" specifies if you make image size auto-fits the
+// The optional parameter "AutoFit" specifies if you make image size auto-fits the
 // cell, the default value of that is 'false'.
 //
 // The optional parameter "Hyperlink" specifies the hyperlink of the image.
 //
 // The optional parameter "HyperlinkType" defines two types of
 // hyperlink "External" for website or "Location" for moving to one of the
-// cells in this workbook. When the "hyperlink_type" is "Location",
+// cells in this workbook. When the "HyperlinkType" is "Location",
 // coordinates need to start with "#".
 //
 // The optional parameter "Positioning" defines two types of the position of an

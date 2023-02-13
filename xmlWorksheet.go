@@ -766,7 +766,7 @@ type decodeX14ConditionalFormatting struct {
 
 // decodeX14CfRule directly maps the cfRule element.
 type decodeX14CfRule struct {
-	XNLName xml.Name          `xml:"cfRule"`
+	XMLName xml.Name          `xml:"cfRule"`
 	Type    string            `xml:"type,attr,omitempty"`
 	ID      string            `xml:"id,attr,omitempty"`
 	DataBar *decodeX14DataBar `xml:"dataBar"`
@@ -774,7 +774,7 @@ type decodeX14CfRule struct {
 
 // decodeX14DataBar directly maps the dataBar element.
 type decodeX14DataBar struct {
-	XNLName           xml.Name    `xml:"dataBar"`
+	XMLName           xml.Name    `xml:"dataBar"`
 	MaxLength         int         `xml:"maxLength,attr"`
 	MinLength         int         `xml:"minLength,attr"`
 	Border            bool        `xml:"border,attr,omitempty"`

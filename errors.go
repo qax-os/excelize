@@ -40,6 +40,12 @@ func newInvalidExcelDateError(dateValue float64) error {
 	return fmt.Errorf("invalid date value %f, negative values are not supported", dateValue)
 }
 
+// newInvalidTableNameError defined the error message on receiving the invalid
+// table name.
+func newInvalidTableNameError(name string) error {
+	return fmt.Errorf("invalid table name %q", name)
+}
+
 // newUnsupportedChartType defined the error message on receiving the chart
 // type are unsupported.
 func newUnsupportedChartType(chartType string) error {
@@ -230,6 +236,9 @@ var (
 	// ErrSheetNameLength defined the error message on receiving the sheet
 	// name length exceeds the limit.
 	ErrSheetNameLength = fmt.Errorf("the sheet name length exceeds the %d characters limit", MaxSheetNameLength)
+	// ErrTableNameLength defined the error message on receiving the table name
+	// length exceeds the limit.
+	ErrTableNameLength = fmt.Errorf("the table name length exceeds the %d characters limit", MaxFieldLength)
 	// ErrCellStyles defined the error message on cell styles exceeds the limit.
 	ErrCellStyles = fmt.Errorf("the cell styles exceeds the %d limit", MaxCellStyles)
 	// ErrUnprotectWorkbook defined the error message on workbook has set no

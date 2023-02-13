@@ -3,6 +3,7 @@ package excelize
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,24 @@ func TestAddTable(t *testing.T) {
 	f = NewFile()
 	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
 	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell reference [0, 0]")
+	// Test add table with invalid table name
+	for _, cases := range []struct {
+		name string
+		err  error
+	}{
+		{name: "1Table", err: newInvalidTableNameError("1Table")},
+		{name: "-Table", err: newInvalidTableNameError("-Table")},
+		{name: "'Table", err: newInvalidTableNameError("'Table")},
+		{name: "Table 1", err: newInvalidTableNameError("Table 1")},
+		{name: "A&B", err: newInvalidTableNameError("A&B")},
+		{name: "_1Table'", err: newInvalidTableNameError("_1Table'")},
+		{name: "\u0f5f\u0fb3\u0f0b\u0f21", err: newInvalidTableNameError("\u0f5f\u0fb3\u0f0b\u0f21")},
+		{name: strings.Repeat("c", MaxFieldLength+1), err: ErrTableNameLength},
+	} {
+		assert.EqualError(t, f.AddTable("Sheet1", "A1:B2", &TableOptions{
+			Name: cases.name,
+		}), cases.err.Error())
+	}
 }
 
 func TestSetTableHeader(t *testing.T) {

@@ -17,18 +17,24 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // parseTableOptions provides a function to parse the format settings of the
 // table with default value.
-func parseTableOptions(opts *TableOptions) *TableOptions {
+func parseTableOptions(opts *TableOptions) (*TableOptions, error) {
+	var err error
 	if opts == nil {
-		return &TableOptions{ShowRowStripes: boolPtr(true)}
+		return &TableOptions{ShowRowStripes: boolPtr(true)}, err
 	}
 	if opts.ShowRowStripes == nil {
 		opts.ShowRowStripes = boolPtr(true)
 	}
-	return opts
+	if err = checkTableName(opts.Name); err != nil {
+		return opts, err
+	}
+	return opts, err
 }
 
 // AddTable provides the method to add table in a worksheet by given worksheet
@@ -54,7 +60,9 @@ func parseTableOptions(opts *TableOptions) *TableOptions {
 // header row data of the table before calling the AddTable function. Multiple
 // tables range reference that can't have an intersection.
 //
-// Name: The name of the table, in the same worksheet name of the table should be unique
+// Name: The name of the table, in the same worksheet name of the table should
+// be unique, starts with a letter or underscore (_), doesn't include a
+// space or character, and should be no more than 255 characters
 //
 // StyleName: The built-in table style names
 //
@@ -62,7 +70,10 @@ func parseTableOptions(opts *TableOptions) *TableOptions {
 //	TableStyleMedium1 - TableStyleMedium28
 //	TableStyleDark1 - TableStyleDark11
 func (f *File) AddTable(sheet, rangeRef string, opts *TableOptions) error {
-	options := parseTableOptions(opts)
+	options, err := parseTableOptions(opts)
+	if err != nil {
+		return err
+	}
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
 	coordinates, err := rangeRefToCoordinates(rangeRef)
 	if err != nil {
@@ -145,6 +156,29 @@ func (f *File) setTableHeader(sheet string, x1, y1, x2 int) ([]*xlsxTableColumn,
 		})
 	}
 	return tableColumns, nil
+}
+
+// checkSheetName check whether there are illegal characters in the table name.
+// Verify that the name:
+// 1. Starts with a letter or underscore (_)
+// 2. Doesn't include a space or character that isn't allowed
+func checkTableName(name string) error {
+	if utf8.RuneCountInString(name) > MaxFieldLength {
+		return ErrTableNameLength
+	}
+	for i, c := range name {
+		if string(c) == "_" {
+			continue
+		}
+		if unicode.IsLetter(c) {
+			continue
+		}
+		if i > 0 && unicode.IsDigit(c) {
+			continue
+		}
+		return newInvalidTableNameError(name)
+	}
+	return nil
 }
 
 // addTable provides a function to add table by given worksheet name,
