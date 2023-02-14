@@ -197,8 +197,9 @@ var (
 // calcContext defines the formula execution context.
 type calcContext struct {
 	sync.Mutex
-	entry      string
-	iterations map[string]uint
+	entry           string
+	iterations      map[string]uint
+	iterationsCache map[string]formulaArg
 }
 
 // cellRef defines the structure of a cell reference.
@@ -774,8 +775,9 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		token        formulaArg
 	)
 	if token, err = f.calcCellValue(&calcContext{
-		entry:      fmt.Sprintf("%s!%s", sheet, cell),
-		iterations: make(map[string]uint),
+		entry:           fmt.Sprintf("%s!%s", sheet, cell),
+		iterations:      make(map[string]uint),
+		iterationsCache: make(map[string]formulaArg),
 	}, sheet, cell); err != nil {
 		return
 	}
@@ -1530,11 +1532,16 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	ref := fmt.Sprintf("%s!%s", sheet, cell)
 	if formula, _ := f.GetCellFormula(sheet, cell); len(formula) != 0 {
 		ctx.Lock()
-		if ctx.entry != ref && ctx.iterations[ref] <= f.options.MaxCalcIterations {
-			ctx.iterations[ref]++
+		if ctx.entry != ref {
+			if ctx.iterations[ref] <= f.options.MaxCalcIterations {
+				ctx.iterations[ref]++
+				ctx.Unlock()
+				arg, _ = f.calcCellValue(ctx, sheet, cell)
+				ctx.iterationsCache[ref] = arg
+				return arg, nil
+			}
 			ctx.Unlock()
-			arg, _ = f.calcCellValue(ctx, sheet, cell)
-			return arg, nil
+			return ctx.iterationsCache[ref], nil
 		}
 		ctx.Unlock()
 	}
