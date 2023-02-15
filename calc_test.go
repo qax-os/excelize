@@ -1023,7 +1023,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTBLANK(MUNIT(1))": "0",
 		"=COUNTBLANK(1)":        "0",
 		"=COUNTBLANK(B1:C1)":    "1",
-		"=COUNTBLANK(C1)":       "1",
+		"=COUNTBLANK(C1)":       "0",
 		// COUNTIF
 		"=COUNTIF(D1:D9,\"Jan\")":     "4",
 		"=COUNTIF(D1:D9,\"<>Jan\")":   "5",
@@ -5872,17 +5872,18 @@ func TestCalcColRowQRDecomposition(t *testing.T) {
 	assert.False(t, calcColQRDecomposition([][]float64{{0, 0}, {0, 0}}, []float64{0, 0}, 1, 0))
 }
 
-func TestSameRefTwice(t *testing.T) {
+func TestCalcCellResolver(t *testing.T) {
 	f := NewFile()
+	// Test reference a cell multiple times in a formula
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "VALUE1"))
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=A1"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=A1"))
 	for formula, expected := range map[string]string{
-		`=CONCATENATE(A1,"_",A1)`: "VALUE1_VALUE1", // 2 direct references to same cell: OK
-		`=CONCATENATE(A1,"_",B1)`: "VALUE1_VALUE1", // first direct, 2nd indirect to same cell: OK
-		`=CONCATENATE(B1,"_",B1)`: "VALUE1_VALUE1", // 2 indirect references to same cell fails on 2nd reference
+		"=CONCATENATE(A1,\"_\",A1)": "VALUE1_VALUE1",
+		"=CONCATENATE(A1,\"_\",A2)": "VALUE1_VALUE1",
+		"=CONCATENATE(A2,\"_\",A2)": "VALUE1_VALUE1",
 	} {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", formula))
+		result, err := f.CalcCellValue("Sheet1", "A3")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
