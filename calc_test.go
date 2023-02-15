@@ -1023,7 +1023,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=COUNTBLANK(MUNIT(1))": "0",
 		"=COUNTBLANK(1)":        "0",
 		"=COUNTBLANK(B1:C1)":    "1",
-		"=COUNTBLANK(C1)":       "1",
+		"=COUNTBLANK(C1)":       "0",
 		// COUNTIF
 		"=COUNTIF(D1:D9,\"Jan\")":     "4",
 		"=COUNTIF(D1:D9,\"<>Jan\")":   "5",
@@ -5870,4 +5870,21 @@ func TestPrepareTrendGrowth(t *testing.T) {
 func TestCalcColRowQRDecomposition(t *testing.T) {
 	assert.False(t, calcRowQRDecomposition([][]float64{{0, 0}, {0, 0}}, []float64{0, 0}, 1, 0))
 	assert.False(t, calcColQRDecomposition([][]float64{{0, 0}, {0, 0}}, []float64{0, 0}, 1, 0))
+}
+
+func TestCalcCellResolver(t *testing.T) {
+	f := NewFile()
+	// Test reference a cell multiple times in a formula
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "VALUE1"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=A1"))
+	for formula, expected := range map[string]string{
+		"=CONCATENATE(A1,\"_\",A1)": "VALUE1_VALUE1",
+		"=CONCATENATE(A1,\"_\",A2)": "VALUE1_VALUE1",
+		"=CONCATENATE(A2,\"_\",A2)": "VALUE1_VALUE1",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", formula))
+		result, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
 }
