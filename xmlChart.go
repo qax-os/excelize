@@ -579,7 +579,6 @@ type ChartMarker struct {
 
 // ChartLine directly maps the format settings of the chart line.
 type ChartLine struct {
-	Color  string
 	Smooth bool
 	Width  float64
 }
@@ -588,7 +587,9 @@ type ChartLine struct {
 type ChartSeries struct {
 	Name       string
 	Categories string
+	Sizes      string
 	Values     string
+	Fill       Fill
 	Line       ChartLine
 	Marker     ChartMarker
 }

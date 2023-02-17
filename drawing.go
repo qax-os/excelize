@@ -234,8 +234,8 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		WireframeSurface3D:          f.drawSurface3DChart,
 		Contour:                     f.drawSurfaceChart,
 		WireframeContour:            f.drawSurfaceChart,
-		Bubble:                      f.drawBaseChart,
-		Bubble3D:                    f.drawBaseChart,
+		Bubble:                      f.drawBubbleChart,
+		Bubble3D:                    f.drawBubbleChart,
 	}
 	if opts.Legend.Position == "none" {
 		xlsxChartSpace.Chart.Legend = nil
@@ -270,7 +270,7 @@ func (f *File) drawBaseChart(opts *Chart) *cPlotArea {
 			Val: stringPtr("col"),
 		},
 		Grouping: &attrValString{
-			Val: stringPtr("clustered"),
+			Val: stringPtr(plotAreaChartGrouping[opts.Type]),
 		},
 		VaryColors: &attrValBool{
 			Val: opts.VaryColors,
@@ -287,9 +287,6 @@ func (f *File) drawBaseChart(opts *Chart) *cPlotArea {
 	var ok bool
 	if *c.BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
 		c.BarDir = nil
-	}
-	if *c.Grouping.Val, ok = plotAreaChartGrouping[opts.Type]; !ok {
-		c.Grouping = nil
 	}
 	if *c.Overlap.Val, ok = plotAreaChartOverlap[opts.Type]; !ok {
 		c.Overlap = nil
@@ -726,6 +723,26 @@ func (f *File) drawSurfaceChart(opts *Chart) *cPlotArea {
 	return plotArea
 }
 
+// drawBubbleChart provides a function to draw the c:bubbleChart element by
+// given format sets.
+func (f *File) drawBubbleChart(opts *Chart) *cPlotArea {
+	plotArea := &cPlotArea{
+		BubbleChart: &cCharts{
+			VaryColors: &attrValBool{
+				Val: opts.VaryColors,
+			},
+			Ser:   f.drawChartSeries(opts),
+			DLbls: f.drawChartDLbls(opts),
+			AxID: []*attrValInt{
+				{Val: intPtr(754001152)},
+				{Val: intPtr(753999904)},
+			},
+		},
+		ValAx: []*cAxs{f.drawPlotAreaCatAx(opts)[0], f.drawPlotAreaValAx(opts)[0]},
+	}
+	return plotArea
+}
+
 // drawChartShape provides a function to draw the c:shape element by given
 // format sets.
 func (f *File) drawChartShape(opts *Chart) *attrValString {
@@ -794,13 +811,13 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	var srgbClr *attrValString
 	var schemeClr *aSchemeClr
 
-	if color := stringPtr(opts.Series[i].Line.Color); *color != "" {
-		*color = strings.TrimPrefix(*color, "#")
-		srgbClr = &attrValString{Val: color}
+	if color := opts.Series[i].Fill.Color; len(color) == 1 {
+		srgbClr = &attrValString{Val: stringPtr(strings.TrimPrefix(color[0], "#"))}
 	} else {
 		schemeClr = &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}
 	}
 
+	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: schemeClr, SrgbClr: srgbClr}}
 	spPrScatter := &cSpPr{
 		Ln: &aLn{
 			W:      25400,
@@ -817,8 +834,15 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 			},
 		},
 	}
-	chartSeriesSpPr := map[string]*cSpPr{Line: spPrLine, Scatter: spPrScatter}
-	return chartSeriesSpPr[opts.Type]
+	if chartSeriesSpPr, ok := map[string]*cSpPr{
+		Line: spPrLine, Scatter: spPrScatter,
+	}[opts.Type]; ok {
+		return chartSeriesSpPr
+	}
+	if srgbClr != nil {
+		return spPr
+	}
+	return nil
 }
 
 // drawChartSeriesDPt provides a function to draw the c:dPt element by given
@@ -923,7 +947,7 @@ func (f *File) drawChartSeriesXVal(v ChartSeries, opts *Chart) *cCat {
 			F: v.Categories,
 		},
 	}
-	chartSeriesXVal := map[string]*cCat{Scatter: cat}
+	chartSeriesXVal := map[string]*cCat{Scatter: cat, Bubble: cat, Bubble3D: cat}
 	return chartSeriesXVal[opts.Type]
 }
 
@@ -942,12 +966,12 @@ func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 // drawCharSeriesBubbleSize provides a function to draw the c:bubbleSize
 // element by given chart series and format sets.
 func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
-	if _, ok := map[string]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok {
+	if _, ok := map[string]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok || v.Sizes == "" {
 		return nil
 	}
 	return &cVal{
 		NumRef: &cNumRef{
-			F: v.Values,
+			F: v.Sizes,
 		},
 	}
 }

@@ -1920,7 +1920,7 @@ func (f *File) SetSheetDimension(sheet string, rangeRef string) error {
 	return err
 }
 
-// SetSheetDimension provides the method to get the used range of the worksheet.
+// GetSheetDimension provides the method to get the used range of the worksheet.
 func (f *File) GetSheetDimension(sheet string) (string, error) {
 	var ref string
 	ws, err := f.workSheetReader(sheet)

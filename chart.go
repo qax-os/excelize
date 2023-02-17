@@ -657,7 +657,9 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //
 //	Name
 //	Categories
+//	Sizes
 //	Values
+//	Fill
 //	Line
 //	Marker
 //
@@ -670,16 +672,18 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 // the same as the X axis. In most chart types the 'Categories' property is
 // optional and the chart will just assume a sequential series from 1..n.
 //
+// Sizes: This sets the bubble size in a data series.
+//
 // Values: This is the most important property of a series and is the only
 // mandatory option for every chart object. This option links the chart with
 // the worksheet data that it displays.
+//
+// Fill: This set the format for the data series fill.
 //
 // Line: This sets the line format of the line chart. The 'Line' property is
 // optional and if it isn't supplied it will default style. The options that
 // can be set are width and color. The range of width is 0.25pt - 999pt. If the
 // value of width is outside the range, the default width of the line is 2pt.
-// The value for color should be represented in hex format
-// (e.g., #000000 - #FFFFFF)
 //
 // Marker: This sets the marker of the line chart and scatter chart. The range
 // of optional field 'Size' is 2-72 (default value is 5). The enumeration value
