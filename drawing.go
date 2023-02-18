@@ -602,6 +602,10 @@ func (f *File) drawPie3DChart(opts *Chart) *cPlotArea {
 // drawPieOfPieChart provides a function to draw the c:plotArea element for
 // pie chart by given format sets.
 func (f *File) drawPieOfPieChart(opts *Chart) *cPlotArea {
+	var splitPos *attrValInt
+	if opts.PlotArea.SecondPlotValues > 0 {
+		splitPos = &attrValInt{Val: intPtr(opts.PlotArea.SecondPlotValues)}
+	}
 	return &cPlotArea{
 		OfPieChart: &cCharts{
 			OfPieType: &attrValString{
@@ -611,6 +615,7 @@ func (f *File) drawPieOfPieChart(opts *Chart) *cPlotArea {
 				Val: opts.VaryColors,
 			},
 			Ser:      f.drawChartSeries(opts),
+			SplitPos: splitPos,
 			SerLines: &attrValString{},
 		},
 	}
@@ -619,6 +624,10 @@ func (f *File) drawPieOfPieChart(opts *Chart) *cPlotArea {
 // drawBarOfPieChart provides a function to draw the c:plotArea element for
 // pie chart by given format sets.
 func (f *File) drawBarOfPieChart(opts *Chart) *cPlotArea {
+	var splitPos *attrValInt
+	if opts.PlotArea.SecondPlotValues > 0 {
+		splitPos = &attrValInt{Val: intPtr(opts.PlotArea.SecondPlotValues)}
+	}
 	return &cPlotArea{
 		OfPieChart: &cCharts{
 			OfPieType: &attrValString{
@@ -627,6 +636,7 @@ func (f *File) drawBarOfPieChart(opts *Chart) *cPlotArea {
 			VaryColors: &attrValBool{
 				Val: opts.VaryColors,
 			},
+			SplitPos: splitPos,
 			Ser:      f.drawChartSeries(opts),
 			SerLines: &attrValString{},
 		},

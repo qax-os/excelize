@@ -751,12 +751,16 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 // Set the position of the chart plot area by PlotArea. The properties that can
 // be set are:
 //
+//	SecondPlotValues
 //	ShowBubbleSize
 //	ShowCatName
 //	ShowLeaderLines
 //	ShowPercent
 //	ShowSerName
 //	ShowVal
+//
+// SecondPlotValues: Specifies the values in second plot for the 'pieOfPie' and
+// 'barOfPie' chart.
 //
 // ShowBubbleSize: Specifies the bubble size shall be shown in a data label. The
 // 'ShowBubbleSize' property is optional. The default value is false.

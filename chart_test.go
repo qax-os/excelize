@@ -186,12 +186,13 @@ func TestAddChart(t *testing.T) {
 	}
 	legend := ChartLegend{Position: "left", ShowLegendKey: false}
 	plotArea := ChartPlotArea{
-		ShowBubbleSize:  true,
-		ShowCatName:     true,
-		ShowLeaderLines: false,
-		ShowPercent:     true,
-		ShowSerName:     true,
-		ShowVal:         true,
+		SecondPlotValues: 3,
+		ShowBubbleSize:   true,
+		ShowCatName:      true,
+		ShowLeaderLines:  false,
+		ShowPercent:      true,
+		ShowSerName:      true,
+		ShowVal:          true,
 	}
 	for _, c := range []struct {
 		sheetName, cell string
