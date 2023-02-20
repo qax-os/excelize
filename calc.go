@@ -13426,9 +13426,7 @@ func (fn *formulaFuncs) LEFTB(argsList *list.List) formulaArg {
 	return fn.leftRight("LEFTB", argsList)
 }
 
-// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT,
-// RIGHTB. TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
-// (Traditional), and Korean.
+// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT, RIGHTB.
 func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
