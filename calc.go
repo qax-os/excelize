@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 	"unicode"
+	"unicode/utf8"
 	"unsafe"
 
 	"github.com/xuri/efp"
@@ -13446,11 +13447,11 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 		}
 		numChars = int(numArg.Number)
 	}
-	if len(text) > numChars {
+	if utf8.RuneCountInString(text) > numChars {
 		if name == "LEFT" || name == "LEFTB" {
-			return newStringFormulaArg(text[:numChars])
+			return newStringFormulaArg(string([]rune(text)[:numChars]))
 		}
-		return newStringFormulaArg(text[len(text)-numChars:])
+		return newStringFormulaArg(string([]rune(text)[utf8.RuneCountInString(text)-numChars:]))
 	}
 	return newStringFormulaArg(text)
 }
@@ -13463,7 +13464,7 @@ func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LEN requires 1 string argument")
 	}
-	return newStringFormulaArg(strconv.Itoa(len(argsList.Front().Value.(formulaArg).String)))
+	return newStringFormulaArg(strconv.Itoa(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).String)))
 }
 
 // LENB returns the number of bytes used to represent the characters in a text
@@ -13510,9 +13511,7 @@ func (fn *formulaFuncs) MIDB(argsList *list.List) formulaArg {
 	return fn.mid("MIDB", argsList)
 }
 
-// mid is an implementation of the formula functions MID and MIDB. TODO:
-// support DBCS include Japanese, Chinese (Simplified), Chinese
-// (Traditional), and Korean.
+// mid is an implementation of the formula functions MID and MIDB.
 func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
@@ -13529,7 +13528,7 @@ func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 	if startNum < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	textLen := len(text)
+	textLen := utf8.RuneCountInString(text)
 	if startNum > textLen {
 		return newStringFormulaArg("")
 	}

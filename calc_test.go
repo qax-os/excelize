@@ -1697,6 +1697,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=LEFT(\"Original Text\",0)":  "",
 		"=LEFT(\"Original Text\",13)": "Original Text",
 		"=LEFT(\"Original Text\",20)": "Original Text",
+		"=LEFT(\"オリジナルテキスト\")":        "オ",
+		"=LEFT(\"オリジナルテキスト\",2)":      "オリ",
+		"=LEFT(\"オリジナルテキスト\",5)":      "オリジナル",
+		"=LEFT(\"オリジナルテキスト\",7)":      "オリジナルテキ",
+		"=LEFT(\"オリジナルテキスト\",20)":     "オリジナルテキスト",
 		// LEFTB
 		"=LEFTB(\"Original Text\")":    "O",
 		"=LEFTB(\"Original Text\",4)":  "Orig",
@@ -1751,6 +1756,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=RIGHT(\"Original Text\",0)":  "",
 		"=RIGHT(\"Original Text\",13)": "Original Text",
 		"=RIGHT(\"Original Text\",20)": "Original Text",
+		"=RIGHT(\"オリジナルテキスト\")":        "ト",
+		"=RIGHT(\"オリジナルテキスト\",2)":      "スト",
+		"=RIGHT(\"オリジナルテキスト\",4)":      "テキスト",
+		"=RIGHT(\"オリジナルテキスト\",7)":      "ジナルテキスト",
+		"=RIGHT(\"オリジナルテキスト\",20)":     "オリジナルテキスト",
 		// RIGHTB
 		"=RIGHTB(\"Original Text\")":    "t",
 		"=RIGHTB(\"Original Text\",4)":  "Text",
