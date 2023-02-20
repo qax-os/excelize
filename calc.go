@@ -13511,9 +13511,7 @@ func (fn *formulaFuncs) MIDB(argsList *list.List) formulaArg {
 	return fn.mid("MIDB", argsList)
 }
 
-// mid is an implementation of the formula functions MID and MIDB. TODO:
-// support DBCS include Japanese, Chinese (Simplified), Chinese
-// (Traditional), and Korean.
+// mid is an implementation of the formula functions MID and MIDB.
 func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 3 arguments", name))
