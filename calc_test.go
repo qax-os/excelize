@@ -1709,11 +1709,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=LEFTB(\"Original Text\",13)": "Original Text",
 		"=LEFTB(\"Original Text\",20)": "Original Text",
 		// LEN
-		"=LEN(\"\")": "0",
-		"=LEN(D1)":   "5",
+		"=LEN(\"\")":          "0",
+		"=LEN(D1)":            "5",
+		"=LEN(\"テキスト\")":      "4",
+		"=LEN(\"オリジナルテキスト\")": "9",
 		// LENB
-		"=LENB(\"\")": "0",
-		"=LENB(D1)":   "5",
+		"=LENB(\"\")":          "0",
+		"=LENB(D1)":            "5",
+		"=LENB(\"テキスト\")":      "8",
+		"=LENB(\"オリジナルテキスト\")": "18",
 		// LOWER
 		"=LOWER(\"test\")":     "test",
 		"=LOWER(\"TEST\")":     "test",
@@ -1725,6 +1729,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=MID(\"255 years\",3,1)":     "5",
 		"=MID(\"text\",3,6)":          "xt",
 		"=MID(\"text\",6,0)":          "",
+		"=MID(\"オリジナルテキスト\",6,4)":     "テキスト",
+		"=MID(\"オリジナルテキスト\",3,5)":     "ジナルテキ",
 		// MIDB
 		"=MIDB(\"Original Text\",7,1)": "a",
 		"=MIDB(\"Original Text\",4,7)": "ginal T",

@@ -13426,9 +13426,7 @@ func (fn *formulaFuncs) LEFTB(argsList *list.List) formulaArg {
 	return fn.leftRight("LEFTB", argsList)
 }
 
-// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT,
-// RIGHTB. TODO: support DBCS include Japanese, Chinese (Simplified), Chinese
-// (Traditional), and Korean.
+// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT, RIGHTB.
 func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
@@ -13447,10 +13445,22 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 		}
 		numChars = int(numArg.Number)
 	}
+	if name == "LEFTB" || name == "RIGHTB" {
+		if len(text) > numChars {
+			if name == "LEFTB" {
+				return newStringFormulaArg(text[:numChars])
+			}
+			// RIGHTB
+			return newStringFormulaArg(text[len(text)-numChars:])
+		}
+		return newStringFormulaArg(text)
+	}
+	// LEFT/RIGHT
 	if utf8.RuneCountInString(text) > numChars {
-		if name == "LEFT" || name == "LEFTB" {
+		if name == "LEFT" {
 			return newStringFormulaArg(string([]rune(text)[:numChars]))
 		}
+		// RIGHT
 		return newStringFormulaArg(string([]rune(text)[utf8.RuneCountInString(text)-numChars:]))
 	}
 	return newStringFormulaArg(text)
@@ -13480,7 +13490,16 @@ func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LENB requires 1 string argument")
 	}
-	return newStringFormulaArg(strconv.Itoa(len(argsList.Front().Value.(formulaArg).String)))
+	bytes := 0
+	for _, r := range []rune(argsList.Front().Value.(formulaArg).String) {
+		b := utf8.RuneLen(r)
+		if b == 1 {
+			bytes++
+		} else if b > 1 {
+			bytes += 2
+		}
+	}
+	return newStringFormulaArg(strconv.Itoa(bytes))
 }
 
 // LOWER converts all characters in a supplied text string to lower case. The
@@ -13528,6 +13547,19 @@ func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 	if startNum < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
+	if name == "MIDB" {
+		textLen := len(text)
+		if startNum > textLen {
+			return newStringFormulaArg("")
+		}
+		startNum--
+		endNum := startNum + int(numCharsArg.Number)
+		if endNum > textLen+1 {
+			return newStringFormulaArg(text[startNum:])
+		}
+		return newStringFormulaArg(text[startNum:endNum])
+	}
+	// MID
 	textLen := utf8.RuneCountInString(text)
 	if startNum > textLen {
 		return newStringFormulaArg("")
@@ -13535,9 +13567,9 @@ func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 	startNum--
 	endNum := startNum + int(numCharsArg.Number)
 	if endNum > textLen+1 {
-		return newStringFormulaArg(text[startNum:])
+		return newStringFormulaArg(string([]rune(text)[startNum:]))
 	}
-	return newStringFormulaArg(text[startNum:endNum])
+	return newStringFormulaArg(string([]rune(text)[startNum:endNum]))
 }
 
 // PROPER converts all characters in a supplied text string to proper case
