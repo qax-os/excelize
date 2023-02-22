@@ -13426,7 +13426,8 @@ func (fn *formulaFuncs) LEFTB(argsList *list.List) formulaArg {
 	return fn.leftRight("LEFTB", argsList)
 }
 
-// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT, RIGHTB.
+// leftRight is an implementation of the formula functions LEFT, LEFTB, RIGHT,
+// RIGHTB.
 func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
@@ -13483,9 +13484,6 @@ func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 // 1 byte per character. The syntax of the function is:
 //
 //	LENB(text)
-//
-// TODO: the languages that support DBCS include Japanese, Chinese
-// (Simplified), Chinese (Traditional), and Korean.
 func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LENB requires 1 string argument")

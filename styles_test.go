@@ -191,13 +191,13 @@ func TestSetConditionalFormat(t *testing.T) {
 	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: "<ext><x14:conditionalFormattings></x14:conditionalFormatting></x14:conditionalFormattings></ext>"}
 	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", condFmts), "XML syntax error on line 1: element <conditionalFormattings> closed by </conditionalFormatting>")
 	// Test creating a conditional format with invalid icon set style
-	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "iconSet", IconStyle: "unknown"}}), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}), ErrParameterInvalid.Error())
 }
 
 func TestGetConditionalFormats(t *testing.T) {
 	for _, format := range [][]ConditionalFormatOptions{
 		{{Type: "cell", Format: 1, Criteria: "greater than", Value: "6"}},
-		{{Type: "cell", Format: 1, Criteria: "between", Minimum: "6", Maximum: "8"}},
+		{{Type: "cell", Format: 1, Criteria: "between", MinValue: "6", MaxValue: "8"}},
 		{{Type: "top", Format: 1, Criteria: "=", Value: "6"}},
 		{{Type: "bottom", Format: 1, Criteria: "=", Value: "6"}},
 		{{Type: "average", AboveAverage: true, Format: 1, Criteria: "="}},
@@ -208,7 +208,7 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: 1, Criteria: "="}},
-		{{Type: "iconSet", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
+		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
 		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)

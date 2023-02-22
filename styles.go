@@ -808,7 +808,7 @@ var validType = map[string]string{
 	"3_color_scale": "3_color_scale",
 	"data_bar":      "dataBar",
 	"formula":       "expression",
-	"iconSet":       "iconSet",
+	"icon_set":      "iconSet",
 }
 
 // criteriaType defined the list of valid criteria types.
@@ -2843,12 +2843,12 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	---------------+------------------------------------
 //	 cell          | Criteria
 //	               | Value
-//	               | Minimum
-//	               | Maximum
+//	               | MinValue
+//	               | MaxValue
 //	 date          | Criteria
 //	               | Value
-//	               | Minimum
-//	               | Maximum
+//	               | MinValue
+//	               | MaxValue
 //	 time_period   | Criteria
 //	 text          | Criteria
 //	               | Value
@@ -2887,7 +2887,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	               | BarDirection
 //	               | BarOnly
 //	               | BarSolid
-//	 iconSet       | IconStyle
+//	 icon_set      | IconStyle
 //	               | ReverseIcons
 //	               | IconsOnly
 //	 formula       | Criteria
@@ -2999,7 +2999,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	    },
 //	)
 //
-// type: Minimum - The 'Minimum' parameter is used to set the lower limiting
+// type: MinValue - The 'MinValue' parameter is used to set the lower limiting
 // value when the criteria is either "between" or "not between".
 //
 //	// Highlight cells rules: between...
@@ -3009,13 +3009,13 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	            Type:     "cell",
 //	            Criteria: "between",
 //	            Format:   format,
-//	            Minimum:  "6",
-//	            Maximum:  "8",
+//	            MinValue: 6",
+//	            MaxValue: 8",
 //	        },
 //	    },
 //	)
 //
-// type: Maximum - The 'Maximum' parameter is used to set the upper limiting
+// type: MaxValue - The 'MaxValue' parameter is used to set the upper limiting
 // value when the criteria is either "between" or "not between". See the
 // previous example.
 //
@@ -3361,7 +3361,7 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 func extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "cell", Criteria: operatorType[c.Operator], Format: *c.DxfID}
 	if len(c.Formula) == 2 {
-		format.Minimum, format.Maximum = c.Formula[0], c.Formula[1]
+		format.MinValue, format.MaxValue = c.Formula[0], c.Formula[1]
 		return format
 	}
 	format.Value = c.Formula[0]
@@ -3514,7 +3514,7 @@ func extractCondFmtExp(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptio
 // extractCondFmtIconSet provides a function to extract conditional format
 // settings for icon sets by given conditional formatting rule.
 func extractCondFmtIconSet(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	format := ConditionalFormatOptions{Type: "iconSet"}
+	format := ConditionalFormatOptions{Type: "icon_set"}
 	if c.IconSet != nil {
 		if c.IconSet.ShowValue != nil {
 			format.IconsOnly = !*c.IconSet.ShowValue
@@ -3582,11 +3582,11 @@ func drawCondFmtCellIs(p int, ct, GUID string, format *ConditionalFormatOptions)
 		StopIfTrue: format.StopIfTrue,
 		Type:       validType[format.Type],
 		Operator:   ct,
-		DxfID:      &format.Format,
+		DxfID:      intPtr(format.Format),
 	}
 	// "between" and "not between" criteria require 2 values.
 	if ct == "between" || ct == "notBetween" {
-		c.Formula = append(c.Formula, []string{format.Minimum, format.Maximum}...)
+		c.Formula = append(c.Formula, []string{format.MinValue, format.MaxValue}...)
 	}
 	if idx := inStrSlice([]string{"equal", "notEqual", "greaterThan", "lessThan", "greaterThanOrEqual", "lessThanOrEqual", "containsText", "notContains", "beginsWith", "endsWith"}, ct, true); idx != -1 {
 		c.Formula = append(c.Formula, format.Value)
@@ -3604,7 +3604,7 @@ func drawCondFmtTop10(p int, ct, GUID string, format *ConditionalFormatOptions) 
 		Bottom:     format.Type == "bottom",
 		Type:       validType[format.Type],
 		Rank:       10,
-		DxfID:      &format.Format,
+		DxfID:      intPtr(format.Format),
 		Percent:    format.Percent,
 	}
 	if rank, err := strconv.Atoi(format.Value); err == nil {
@@ -3621,8 +3621,8 @@ func drawCondFmtAboveAverage(p int, ct, GUID string, format *ConditionalFormatOp
 		Priority:     p + 1,
 		StopIfTrue:   format.StopIfTrue,
 		Type:         validType[format.Type],
-		AboveAverage: &format.AboveAverage,
-		DxfID:        &format.Format,
+		AboveAverage: boolPtr(format.AboveAverage),
+		DxfID:        intPtr(format.Format),
 	}, nil
 }
 
@@ -3634,7 +3634,7 @@ func drawCondFmtDuplicateUniqueValues(p int, ct, GUID string, format *Conditiona
 		Priority:   p + 1,
 		StopIfTrue: format.StopIfTrue,
 		Type:       validType[format.Type],
-		DxfID:      &format.Format,
+		DxfID:      intPtr(format.Format),
 	}, nil
 }
 
@@ -3722,7 +3722,7 @@ func drawCondFmtExp(p int, ct, GUID string, format *ConditionalFormatOptions) (*
 		StopIfTrue: format.StopIfTrue,
 		Type:       validType[format.Type],
 		Formula:    []string{format.Criteria},
-		DxfID:      &format.Format,
+		DxfID:      intPtr(format.Format),
 	}, nil
 }
 
@@ -3774,7 +3774,7 @@ func drawCondFmtIconSet(p int, ct, GUID string, format *ConditionalFormatOptions
 	cfRule.IconSet.IconSet = format.IconStyle
 	cfRule.IconSet.Reverse = format.ReverseIcons
 	cfRule.IconSet.ShowValue = boolPtr(!format.IconsOnly)
-	cfRule.Type = format.Type
+	cfRule.Type = validType[format.Type]
 	return cfRule, nil
 }
 

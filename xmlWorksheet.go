@@ -929,8 +929,6 @@ type ConditionalFormatOptions struct {
 	Format         int
 	Criteria       string
 	Value          string
-	Minimum        string
-	Maximum        string
 	MinType        string
 	MidType        string
 	MaxType        string
@@ -940,8 +938,6 @@ type ConditionalFormatOptions struct {
 	MinColor       string
 	MidColor       string
 	MaxColor       string
-	MinLength      string
-	MaxLength      string
 	BarColor       string
 	BarBorderColor string
 	BarDirection   string

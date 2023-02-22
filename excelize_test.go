@@ -1052,8 +1052,8 @@ func TestConditionalFormat(t *testing.T) {
 				Type:     "cell",
 				Criteria: "between",
 				Format:   format1,
-				Minimum:  "6",
-				Maximum:  "8",
+				MinValue: "6",
+				MaxValue: "8",
 			},
 		},
 	))

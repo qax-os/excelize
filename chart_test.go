@@ -153,9 +153,11 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
 	}
 	series2 := []ChartSeries{
-		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30",
+		{
+			Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30",
 			Fill:   Fill{Type: "pattern", Color: []string{"000000"}, Pattern: 1},
-			Marker: ChartMarker{Symbol: "none", Size: 10}},
+			Marker: ChartMarker{Symbol: "none", Size: 10},
+		},
 		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31"},
 		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32"},
 		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33"},
