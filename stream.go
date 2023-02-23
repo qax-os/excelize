@@ -536,7 +536,7 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	case bool:
 		c.T, c.V = setCellBool(val)
 	case nil:
-		c.setCellValue("")
+		return err
 	case []RichTextRun:
 		c.T, c.IS = "inlineStr", &xlsxSI{}
 		c.IS.R, err = setRichText(val)
