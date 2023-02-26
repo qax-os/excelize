@@ -37,7 +37,7 @@ func TestConcurrency(t *testing.T) {
 				uint64(1<<32 - 1), true, complex64(5 + 10i),
 			}))
 			// Concurrency create style
-			style, err := f.NewStyle(&Style{Font: &Font{Color: "#1265BE", Underline: "single"}})
+			style, err := f.NewStyle(&Style{Font: &Font{Color: "1265BE", Underline: "single"}})
 			assert.NoError(t, err)
 			// Concurrency set cell style
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
@@ -947,4 +947,8 @@ func TestSharedStringsError(t *testing.T) {
 	f.tempFiles.Range(func(k, v interface{}) bool {
 		return assert.NoError(t, os.Remove(v.(string)))
 	})
+}
+
+func TestSIString(t *testing.T) {
+	assert.Empty(t, xlsxSI{}.String())
 }

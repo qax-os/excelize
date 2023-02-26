@@ -13489,7 +13489,7 @@ func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "LENB requires 1 string argument")
 	}
 	bytes := 0
-	for _, r := range []rune(argsList.Front().Value.(formulaArg).String) {
+	for _, r := range argsList.Front().Value.(formulaArg).Value() {
 		b := utf8.RuneLen(r)
 		if b == 1 {
 			bytes++

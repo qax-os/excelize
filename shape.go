@@ -54,24 +54,24 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 //	lineWidth := 1.2
 //	err := f.AddShape("Sheet1", "G6",
 //	    &excelize.Shape{
-//	        Type:  "rect",
-//	        Color: excelize.ShapeColor{Line: "#4286f4", Fill: "#8eb9ff"},
-//	        Paragraph: []excelize.ShapeParagraph{
+//	        Type: "rect",
+//	        Line: excelize.ShapeLine{Color: "4286F4", Width: &lineWidth},
+//	        Fill: excelize.Fill{Color: []string{"8EB9FF"}},
+//	        Paragraph: []excelize.RichTextRun{
 //	            {
 //	                Text: "Rectangle Shape",
-//	                Font: excelize.Font{
+//	                Font: &excelize.Font{
 //	                    Bold:      true,
 //	                    Italic:    true,
 //	                    Family:    "Times New Roman",
 //	                    Size:      18,
-//	                    Color:     "#777777",
+//	                    Color:     "777777",
 //	                    Underline: "sng",
 //	                },
 //	            },
 //	        },
 //	        Width:  180,
 //	        Height: 40,
-//	        Line:   excelize.ShapeLine{Width: &lineWidth},
 //	    },
 //	)
 //
@@ -352,6 +352,10 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	to.RowOff = y2 * EMU
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
+	var solidColor string
+	if len(opts.Fill.Color) == 1 {
+		solidColor = opts.Fill.Color[0]
+	}
 	shape := xdrSp{
 		Macro: opts.Macro,
 		NvSpPr: &xdrNvSpPr{
@@ -369,9 +373,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 			},
 		},
 		Style: &xdrStyle{
-			LnRef:     setShapeRef(opts.Color.Line, 2),
-			FillRef:   setShapeRef(opts.Color.Fill, 1),
-			EffectRef: setShapeRef(opts.Color.Effect, 0),
+			LnRef:     setShapeRef(opts.Line.Color, 2),
+			FillRef:   setShapeRef(solidColor, 1),
+			EffectRef: setShapeRef("", 0),
 			FontRef: &aFontRef{
 				Idx: "minor",
 				SchemeClr: &attrValString{
@@ -399,15 +403,15 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 		return err
 	}
 	if len(opts.Paragraph) < 1 {
-		opts.Paragraph = []ShapeParagraph{
+		opts.Paragraph = []RichTextRun{
 			{
-				Font: Font{
+				Font: &Font{
 					Bold:      false,
 					Italic:    false,
 					Underline: "none",
 					Family:    defaultFont,
 					Size:      11,
-					Color:     "#000000",
+					Color:     "000000",
 				},
 				Text: " ",
 			},
@@ -415,7 +419,11 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	}
 	for _, p := range opts.Paragraph {
 		u := "none"
-		if idx := inStrSlice(supportedDrawingUnderlineTypes, p.Font.Underline, true); idx != -1 {
+		font := &Font{}
+		if p.Font != nil {
+			font = p.Font
+		}
+		if idx := inStrSlice(supportedDrawingUnderlineTypes, font.Underline, true); idx != -1 {
 			u = supportedDrawingUnderlineTypes[idx]
 		}
 		text := p.Text
@@ -425,13 +433,13 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 		paragraph := &aP{
 			R: &aR{
 				RPr: aRPr{
-					I:       p.Font.Italic,
-					B:       p.Font.Bold,
+					I:       font.Italic,
+					B:       font.Bold,
 					Lang:    "en-US",
 					AltLang: "en-US",
 					U:       u,
-					Sz:      p.Font.Size * 100,
-					Latin:   &xlsxCTTextFont{Typeface: p.Font.Family},
+					Sz:      font.Size * 100,
+					Latin:   &xlsxCTTextFont{Typeface: font.Family},
 				},
 				T: text,
 			},
@@ -439,7 +447,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 				Lang: "en-US",
 			},
 		}
-		srgbClr := strings.ReplaceAll(strings.ToUpper(p.Font.Color), "#", "")
+		srgbClr := strings.ReplaceAll(strings.ToUpper(font.Color), "#", "")
 		if len(srgbClr) == 6 {
 			paragraph.R.RPr.SolidFill = &aSolidFill{
 				SrgbClr: &attrValString{

@@ -200,7 +200,7 @@ func TestAddChart(t *testing.T) {
 		sheetName, cell string
 		opts            *Chart
 	}{
-		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: "col", Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Color: "#000000"}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "#777777"}}}},
+		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: "col", Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Color: "000000"}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "777777"}}}},
 		{sheetName: "Sheet1", cell: "X1", opts: &Chart{Type: "colStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "P16", opts: &Chart{Type: "colPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "100% Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: "col3DClustered", Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Clustered Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},

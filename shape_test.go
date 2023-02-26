@@ -14,26 +14,27 @@ func TestAddShape(t *testing.T) {
 	}
 	shape := &Shape{
 		Type: "rect",
-		Paragraph: []ShapeParagraph{
-			{Text: "Rectangle", Font: Font{Color: "CD5C5C"}},
-			{Text: "Shape", Font: Font{Bold: true, Color: "2980B9"}},
+		Paragraph: []RichTextRun{
+			{Text: "Rectangle", Font: &Font{Color: "CD5C5C"}},
+			{Text: "Shape", Font: &Font{Bold: true, Color: "2980B9"}},
 		},
 	}
 	assert.NoError(t, f.AddShape("Sheet1", "A30", shape))
-	assert.NoError(t, f.AddShape("Sheet1", "B30", &Shape{Type: "rect", Paragraph: []ShapeParagraph{{Text: "Rectangle"}, {}}}))
+	assert.NoError(t, f.AddShape("Sheet1", "B30", &Shape{Type: "rect", Paragraph: []RichTextRun{{Text: "Rectangle"}, {}}}))
 	assert.NoError(t, f.AddShape("Sheet1", "C30", &Shape{Type: "rect"}))
 	assert.EqualError(t, f.AddShape("Sheet3", "H1",
 		&Shape{
-			Type:  "ellipseRibbon",
-			Color: ShapeColor{Line: "#4286f4", Fill: "#8eb9ff"},
-			Paragraph: []ShapeParagraph{
+			Type: "ellipseRibbon",
+			Line: ShapeLine{Color: "4286F4"},
+			Fill: Fill{Color: []string{"8EB9FF"}},
+			Paragraph: []RichTextRun{
 				{
-					Font: Font{
+					Font: &Font{
 						Bold:      true,
 						Italic:    true,
 						Family:    "Times New Roman",
 						Size:      36,
-						Color:     "#777777",
+						Color:     "777777",
 						Underline: "single",
 					},
 				},
@@ -49,22 +50,22 @@ func TestAddShape(t *testing.T) {
 	lineWidth := 1.2
 	assert.NoError(t, f.AddShape("Sheet1", "A1",
 		&Shape{
-			Type:  "ellipseRibbon",
-			Color: ShapeColor{Line: "#4286f4", Fill: "#8eb9ff"},
-			Paragraph: []ShapeParagraph{
+			Type: "ellipseRibbon",
+			Line: ShapeLine{Color: "4286F4", Width: &lineWidth},
+			Fill: Fill{Color: []string{"8EB9FF"}},
+			Paragraph: []RichTextRun{
 				{
-					Font: Font{
+					Font: &Font{
 						Bold:      true,
 						Italic:    true,
 						Family:    "Times New Roman",
 						Size:      36,
-						Color:     "#777777",
+						Color:     "777777",
 						Underline: "single",
 					},
 				},
 			},
 			Height: 90,
-			Line:   ShapeLine{Width: &lineWidth},
 		}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
 	// Test add shape with invalid sheet name
@@ -72,12 +73,12 @@ func TestAddShape(t *testing.T) {
 	// Test add shape with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AddShape("Sheet1", "B30", &Shape{Type: "rect", Paragraph: []ShapeParagraph{{Text: "Rectangle"}, {}}}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.AddShape("Sheet1", "B30", &Shape{Type: "rect", Paragraph: []RichTextRun{{Text: "Rectangle"}, {}}}), "XML syntax error on line 1: invalid UTF-8")
 	// Test add shape with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AddShape("Sheet1", "B30", &Shape{Type: "rect", Paragraph: []ShapeParagraph{{Text: "Rectangle"}, {}}}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.AddShape("Sheet1", "B30", &Shape{Type: "rect", Paragraph: []RichTextRun{{Text: "Rectangle"}, {}}}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddDrawingShape(t *testing.T) {

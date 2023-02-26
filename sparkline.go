@@ -374,20 +374,21 @@ func (f *File) addSparklineGroupByStyle(ID int) *xlsxX14SparklineGroup {
 //
 // The following shows the formatting options of sparkline supported by excelize:
 //
-//	 Parameter | Description
-//	-----------+--------------------------------------------
-//	 Location  | Required, must have the same number with 'Range' parameter
-//	 Range     | Required, must have the same number with 'Location' parameter
-//	 Type      | Enumeration value: line, column, win_loss
-//	 Style     | Value range: 0 - 35
-//	 Hight     | Toggle sparkline high points
-//	 Low       | Toggle sparkline low points
-//	 First     | Toggle sparkline first points
-//	 Last      | Toggle sparkline last points
-//	 Negative  | Toggle sparkline negative points
-//	 Markers   | Toggle sparkline markers
-//	 ColorAxis | An RGB Color is specified as RRGGBB
-//	 Axis      | Show sparkline axis
+//	 Parameter   | Description
+//	-------------+--------------------------------------------
+//	 Location    | Required, must have the same number with 'Range' parameter
+//	 Range       | Required, must have the same number with 'Location' parameter
+//	 Type        | Enumeration value: line, column, win_loss
+//	 Style       | Value range: 0 - 35
+//	 Hight       | Toggle sparkline high points
+//	 Low         | Toggle sparkline low points
+//	 First       | Toggle sparkline first points
+//	 Last        | Toggle sparkline last points
+//	 Negative    | Toggle sparkline negative points
+//	 Markers     | Toggle sparkline markers
+//	 Axis        | Used to specify if show horizontal axis
+//	 Reverse     | Used to specify if enable plot data right-to-left
+//	 SeriesColor | An RGB Color is specified as RRGGBB
 func (f *File) AddSparkline(sheet string, opts *SparklineOptions) error {
 	var (
 		err                 error

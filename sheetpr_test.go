@@ -58,7 +58,7 @@ func TestSetSheetProps(t *testing.T) {
 		AutoPageBreaks:                    enable,
 		FitToPage:                         enable,
 		TabColorIndexed:                   intPtr(1),
-		TabColorRGB:                       stringPtr("#FFFF00"),
+		TabColorRGB:                       stringPtr("FFFF00"),
 		TabColorTheme:                     intPtr(1),
 		TabColorTint:                      float64Ptr(1),
 		OutlineSummaryBelow:               enable,
@@ -79,7 +79,7 @@ func TestSetSheetProps(t *testing.T) {
 	ws.(*xlsxWorksheet).SheetPr = nil
 	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{FitToPage: enable}))
 	ws.(*xlsxWorksheet).SheetPr = nil
-	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorRGB: stringPtr("#FFFF00")}))
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorRGB: stringPtr("FFFF00")}))
 	ws.(*xlsxWorksheet).SheetPr = nil
 	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorTheme: intPtr(1)}))
 	ws.(*xlsxWorksheet).SheetPr = nil

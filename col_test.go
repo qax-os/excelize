@@ -320,7 +320,7 @@ func TestSetColStyle(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "B2", "Hello"))
 
-	styleID, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"#94d3a2"}, Pattern: 1}})
+	styleID, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"94D3A2"}, Pattern: 1}})
 	assert.NoError(t, err)
 	// Test set column style on not exists worksheet
 	assert.EqualError(t, f.SetColStyle("SheetN", "E", styleID), "sheet SheetN does not exist")

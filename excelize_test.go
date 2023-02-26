@@ -677,11 +677,11 @@ func TestSetCellStyleBorder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "J21", "L25", style))
 
-	style, err = f.NewStyle(&Style{Border: []Border{{Type: "left", Color: "0000FF", Style: 2}, {Type: "top", Color: "00FF00", Style: 3}, {Type: "bottom", Color: "FFFF00", Style: 4}, {Type: "right", Color: "FF0000", Style: 5}, {Type: "diagonalDown", Color: "A020F0", Style: 6}, {Type: "diagonalUp", Color: "A020F0", Style: 7}}, Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF", "#E0EBF5"}, Shading: 1}})
+	style, err = f.NewStyle(&Style{Border: []Border{{Type: "left", Color: "0000FF", Style: 2}, {Type: "top", Color: "00FF00", Style: 3}, {Type: "bottom", Color: "FFFF00", Style: 4}, {Type: "right", Color: "FF0000", Style: 5}, {Type: "diagonalDown", Color: "A020F0", Style: 6}, {Type: "diagonalUp", Color: "A020F0", Style: 7}}, Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 1}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "M28", "K24", style))
 
-	style, err = f.NewStyle(&Style{Border: []Border{{Type: "left", Color: "0000FF", Style: 2}, {Type: "top", Color: "00FF00", Style: 3}, {Type: "bottom", Color: "FFFF00", Style: 4}, {Type: "right", Color: "FF0000", Style: 5}, {Type: "diagonalDown", Color: "A020F0", Style: 6}, {Type: "diagonalUp", Color: "A020F0", Style: 7}}, Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF", "#E0EBF5"}, Shading: 4}})
+	style, err = f.NewStyle(&Style{Border: []Border{{Type: "left", Color: "0000FF", Style: 2}, {Type: "top", Color: "00FF00", Style: 3}, {Type: "bottom", Color: "FFFF00", Style: 4}, {Type: "right", Color: "FF0000", Style: 5}, {Type: "diagonalDown", Color: "A020F0", Style: 6}, {Type: "diagonalUp", Color: "A020F0", Style: 7}}, Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 4}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "M28", "K24", style))
 
@@ -721,7 +721,7 @@ func TestSetCellStyleBorder(t *testing.T) {
 		},
 		Fill: Fill{
 			Type:    "pattern",
-			Color:   []string{"#E0EBF5"},
+			Color:   []string{"E0EBF5"},
 			Pattern: 1,
 		},
 	})
@@ -767,7 +767,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 			} else {
 				assert.NoError(t, f.SetCellValue("Sheet2", c, val))
 			}
-			style, err := f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF", "#E0EBF5"}, Shading: 5}, NumFmt: d})
+			style, err := f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 5}, NumFmt: d})
 			if !assert.NoError(t, err) {
 				t.FailNow()
 			}
@@ -839,7 +839,7 @@ func TestSetCellStyleCustomNumberFormat(t *testing.T) {
 	style, err := f.NewStyle(&Style{CustomNumFmt: &customNumFmt})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-	style, err = f.NewStyle(&Style{CustomNumFmt: &customNumFmt, Font: &Font{Color: "#9A0511"}})
+	style, err = f.NewStyle(&Style{CustomNumFmt: &customNumFmt, Font: &Font{Color: "9A0511"}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))
 
@@ -855,11 +855,11 @@ func TestSetCellStyleFill(t *testing.T) {
 
 	var style int
 	// Test set fill for cell with invalid parameter
-	style, err = f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF", "#E0EBF5"}, Shading: 6}})
+	style, err = f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 6}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
-	style, err = f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF"}, Shading: 1}})
+	style, err = f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF"}, Shading: 1}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
@@ -879,7 +879,7 @@ func TestSetCellStyleFont(t *testing.T) {
 	assert.NoError(t, err)
 
 	var style int
-	style, err = f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "#777777", Underline: "single"}})
+	style, err = f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "777777", Underline: "single"}})
 	assert.NoError(t, err)
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A1", "A1", style))
@@ -899,7 +899,7 @@ func TestSetCellStyleFont(t *testing.T) {
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A4", "A4", style))
 
-	style, err = f.NewStyle(&Style{Font: &Font{Color: "#777777", Strike: true}})
+	style, err = f.NewStyle(&Style{Font: &Font{Color: "777777", Strike: true}})
 	assert.NoError(t, err)
 
 	assert.NoError(t, f.SetCellStyle("Sheet2", "A5", "A5", style))
@@ -1002,19 +1002,19 @@ func TestConditionalFormat(t *testing.T) {
 	var format1, format2, format3, format4 int
 	var err error
 	// Rose format for bad conditional
-	format1, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "#9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1}})
+	format1, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
 	assert.NoError(t, err)
 
 	// Light yellow format for neutral conditional
-	format2, err = f.NewConditionalStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"#FEEAA0"}, Pattern: 1}})
+	format2, err = f.NewConditionalStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"FEEAA0"}, Pattern: 1}})
 	assert.NoError(t, err)
 
 	// Light green format for good conditional
-	format3, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "#09600B"}, Fill: Fill{Type: "pattern", Color: []string{"#C7EECF"}, Pattern: 1}})
+	format3, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "09600B"}, Fill: Fill{Type: "pattern", Color: []string{"C7EECF"}, Pattern: 1}})
 	assert.NoError(t, err)
 
 	// conditional style with align and left border
-	format4, err = f.NewConditionalStyle(&Style{Alignment: &Alignment{WrapText: true}, Border: []Border{{Type: "left", Color: "#000000", Style: 1}}})
+	format4, err = f.NewConditionalStyle(&Style{Alignment: &Alignment{WrapText: true}, Border: []Border{{Type: "left", Color: "000000", Style: 1}}})
 	assert.NoError(t, err)
 
 	// Color scales: 2 color
@@ -1206,7 +1206,7 @@ func TestConditionalFormat(t *testing.T) {
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 
-	_, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "#9A0511"}, Fill: Fill{Type: "", Color: []string{"#FEC7CE"}, Pattern: 1}})
+	_, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "", Color: []string{"FEC7CE"}, Pattern: 1}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 }

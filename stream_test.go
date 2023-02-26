@@ -56,7 +56,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.SetRow("A3", row))
 
 	// Test set cell with style and rich text
-	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
+	styleID, err := file.NewStyle(&Style{Font: &Font{Color: "777777"}})
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A4", []interface{}{
 		Cell{StyleID: styleID},
@@ -67,8 +67,8 @@ func TestStreamWriter(t *testing.T) {
 		&Cell{StyleID: styleID, Value: "cell <>&'\""},
 		&Cell{Formula: "SUM(A10,B10)"},
 		[]RichTextRun{
-			{Text: "Rich ", Font: &Font{Color: "2354e8"}},
-			{Text: "Text", Font: &Font{Color: "e83723"}},
+			{Text: "Rich ", Font: &Font{Color: "2354E8"}},
+			{Text: "Text", Font: &Font{Color: "E83723"}},
 		},
 	}))
 	assert.NoError(t, streamWriter.SetRow("A6", []interface{}{time.Now()}))
@@ -318,9 +318,9 @@ func TestStreamSetRowWithStyle(t *testing.T) {
 		assert.NoError(t, file.Close())
 	}()
 	zeroStyleID := 0
-	grayStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#777777"}})
+	grayStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "777777"}})
 	assert.NoError(t, err)
-	blueStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "#0000FF"}})
+	blueStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "0000FF"}})
 	assert.NoError(t, err)
 
 	streamWriter, err := file.NewStreamWriter("Sheet1")

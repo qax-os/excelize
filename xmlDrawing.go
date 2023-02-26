@@ -598,21 +598,14 @@ type GraphicOptions struct {
 
 // Shape directly maps the format settings of the shape.
 type Shape struct {
-	Macro     string
 	Type      string
+	Macro     string
 	Width     uint
 	Height    uint
 	Format    GraphicOptions
-	Color     ShapeColor
+	Fill      Fill
 	Line      ShapeLine
-	Paragraph []ShapeParagraph
-}
-
-// ShapeParagraph directly maps the format settings of the paragraph in
-// the shape.
-type ShapeParagraph struct {
-	Font Font
-	Text string
+	Paragraph []RichTextRun
 }
 
 // ShapeColor directly maps the color settings of the shape.
@@ -624,5 +617,6 @@ type ShapeColor struct {
 
 // ShapeLine directly maps the line settings of the shape.
 type ShapeLine struct {
+	Color string
 	Width *float64
 }

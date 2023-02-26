@@ -843,7 +843,7 @@ type HyperlinkOpts struct {
 //	}
 //	// Set underline and font color style for the cell.
 //	style, err := f.NewStyle(&excelize.Style{
-//	    Font: &excelize.Font{Color: "#1265BE", Underline: "single"},
+//	    Font: &excelize.Font{Color: "1265BE", Underline: "single"},
 //	})
 //	if err != nil {
 //	    fmt.Println(err)

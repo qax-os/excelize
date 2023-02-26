@@ -2702,7 +2702,7 @@ func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 // Sheet1:
 //
 //	style, err := f.NewStyle(&excelize.Style{
-//	    Fill: excelize.Fill{Type: "gradient", Color: []string{"#FFFFFF", "#E0EBF5"}, Shading: 1},
+//	    Fill: excelize.Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 1},
 //	})
 //	if err != nil {
 //	    fmt.Println(err)
@@ -2712,7 +2712,7 @@ func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 // Set solid style pattern fill for cell H9 on Sheet1:
 //
 //	style, err := f.NewStyle(&excelize.Style{
-//	    Fill: excelize.Fill{Type: "pattern", Color: []string{"#E0EBF5"}, Pattern: 1},
+//	    Fill: excelize.Fill{Type: "pattern", Color: []string{"E0EBF5"}, Pattern: 1},
 //	})
 //	if err != nil {
 //	    fmt.Println(err)
@@ -2758,7 +2758,7 @@ func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 //	        Italic: true,
 //	        Family: "Times New Roman",
 //	        Size:   36,
-//	        Color:  "#777777",
+//	        Color:  "777777",
 //	    },
 //	})
 //	if err != nil {
@@ -2945,9 +2945,9 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //
 //	format, err := f.NewConditionalStyle(
 //	    &excelize.Style{
-//	        Font: &excelize.Font{Color: "#9A0511"},
+//	        Font: &excelize.Font{Color: "9A0511"},
 //	        Fill: excelize.Fill{
-//	            Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1,
+//	            Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1,
 //	        },
 //	    },
 //	)
@@ -2972,7 +2972,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	// Rose format for bad conditional.
 //	format1, err := f.NewConditionalStyle(
 //	    &excelize.Style{
-//	        Font: &excelize.Font{Color: "#9A0511"},
+//	        Font: &excelize.Font{Color: "9A0511"},
 //	        Fill: excelize.Fill{
 //	            Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1,
 //	        },
@@ -2982,9 +2982,9 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	// Light yellow format for neutral conditional.
 //	format2, err := f.NewConditionalStyle(
 //	    &excelize.Style{
-//	        Font: &excelize.Font{Color: "#9B5713"},
+//	        Font: &excelize.Font{Color: "9B5713"},
 //	        Fill: excelize.Fill{
-//	            Type: "pattern", Color: []string{"#FEEAA0"}, Pattern: 1,
+//	            Type: "pattern", Color: []string{"FEEAA0"}, Pattern: 1,
 //	        },
 //	    },
 //	)
@@ -2992,9 +2992,9 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	// Light green format for good conditional.
 //	format3, err := f.NewConditionalStyle(
 //	    &excelize.Style{
-//	        Font: &excelize.Font{Color: "#09600B"},
+//	        Font: &excelize.Font{Color: "09600B"},
 //	        Fill: excelize.Fill{
-//	            Type: "pattern", Color: []string{"#C7EECF"}, Pattern: 1,
+//	            Type: "pattern", Color: []string{"C7EECF"}, Pattern: 1,
 //	        },
 //	    },
 //	)

@@ -228,8 +228,8 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 					ID:          "_x0000_s1025",
 					Type:        "#_x0000_t202",
 					Style:       "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden",
-					Fillcolor:   "#fbf6d6",
-					Strokecolor: "#edeaa1",
+					Fillcolor:   "#FBF6D6",
+					Strokecolor: "#EDEAA1",
 					Val:         v.Val,
 				}
 				vml.Shape = append(vml.Shape, s)
@@ -238,7 +238,7 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 	}
 	sp := encodeShape{
 		Fill: &vFill{
-			Color2: "#fbfe82",
+			Color2: "#FBFE82",
 			Angle:  -180,
 			Type:   "gradient",
 			Fill: &oFill{
@@ -275,8 +275,8 @@ func (f *File) addDrawingVML(commentID int, drawingVML, cell string, lineCount, 
 		ID:          "_x0000_s1025",
 		Type:        "#_x0000_t202",
 		Style:       "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden",
-		Fillcolor:   "#fbf6d6",
-		Strokecolor: "#edeaa1",
+		Fillcolor:   "#FBF6D6",
+		Strokecolor: "#EDEAA1",
 		Val:         string(s[13 : len(s)-14]),
 	}
 	vml.Shape = append(vml.Shape, shape)

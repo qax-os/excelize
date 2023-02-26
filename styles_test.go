@@ -20,7 +20,7 @@ func TestStyleFill(t *testing.T) {
 		expectFill: false,
 	}, {
 		label:      "fill",
-		format:     &Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}},
+		format:     &Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"000000"}}},
 		expectFill: true,
 	}}
 
@@ -39,9 +39,9 @@ func TestStyleFill(t *testing.T) {
 		}
 	}
 	f := NewFile()
-	styleID1, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}})
+	styleID1, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"000000"}}})
 	assert.NoError(t, err)
-	styleID2, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"#000000"}}})
+	styleID2, err := f.NewStyle(&Style{Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"000000"}}})
 	assert.NoError(t, err)
 	assert.Equal(t, styleID1, styleID2)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestStyleFill.xlsx")))
@@ -230,7 +230,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
-	format, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "#9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1}})
+	format, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Criteria: ">", Format: format, Value: "6"}}))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
@@ -246,12 +246,12 @@ func TestNewStyle(t *testing.T) {
 	f := NewFile()
 	for i := 0; i < 18; i++ {
 		_, err := f.NewStyle(&Style{
-			Fill: Fill{Type: "gradient", Color: []string{"#FFFFFF", "#4E71BE"}, Shading: i},
+			Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "4E71BE"}, Shading: i},
 		})
 		assert.NoError(t, err)
 	}
 	f = NewFile()
-	styleID, err := f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "#777777"}})
+	styleID, err := f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "777777"}})
 	assert.NoError(t, err)
 	styles, err := f.stylesReader()
 	assert.NoError(t, err)
@@ -360,7 +360,7 @@ func TestNewConditionalStyle(t *testing.T) {
 	// Test create conditional style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	_, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "#9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1}})
+	_, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 

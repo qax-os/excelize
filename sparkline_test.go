@@ -136,7 +136,7 @@ func TestAddSparkline(t *testing.T) {
 		Location:    []string{"A18"},
 		Range:       []string{"Sheet3!A2:J2"},
 		Type:        "column",
-		SeriesColor: "#E965E0",
+		SeriesColor: "E965E0",
 	}))
 
 	assert.NoError(t, f.SetCellValue("Sheet1", "B20", "A win/loss sparkline."))
