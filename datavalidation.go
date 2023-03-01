@@ -88,9 +88,9 @@ func NewDataValidation(allowBlank bool) *DataValidation {
 }
 
 // SetError set error notice.
-func (dd *DataValidation) SetError(style DataValidationErrorStyle, title, msg string) {
-	dd.Error = &msg
-	dd.ErrorTitle = &title
+func (dv *DataValidation) SetError(style DataValidationErrorStyle, title, msg string) {
+	dv.Error = &msg
+	dv.ErrorTitle = &title
 	strStyle := styleStop
 	switch style {
 	case DataValidationErrorStyleStop:
@@ -101,31 +101,31 @@ func (dd *DataValidation) SetError(style DataValidationErrorStyle, title, msg st
 		strStyle = styleInformation
 
 	}
-	dd.ShowErrorMessage = true
-	dd.ErrorStyle = &strStyle
+	dv.ShowErrorMessage = true
+	dv.ErrorStyle = &strStyle
 }
 
 // SetInput set prompt notice.
-func (dd *DataValidation) SetInput(title, msg string) {
-	dd.ShowInputMessage = true
-	dd.PromptTitle = &title
-	dd.Prompt = &msg
+func (dv *DataValidation) SetInput(title, msg string) {
+	dv.ShowInputMessage = true
+	dv.PromptTitle = &title
+	dv.Prompt = &msg
 }
 
 // SetDropList data validation list.
-func (dd *DataValidation) SetDropList(keys []string) error {
+func (dv *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
 	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
 		return ErrDataValidationFormulaLength
 	}
-	dd.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
-	dd.Type = convDataValidationType(typeList)
+	dv.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
+	dv.Type = convDataValidationType(typeList)
 	return nil
 }
 
 // SetRange provides function to set data validation range in drop list, only
 // accepts int, float64, or string data type formula argument.
-func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
+func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
 	var formula1, formula2 string
 	switch v := f1.(type) {
 	case int:
@@ -153,9 +153,9 @@ func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 	default:
 		return ErrParameterInvalid
 	}
-	dd.Formula1, dd.Formula2 = formula1, formula2
-	dd.Type = convDataValidationType(t)
-	dd.Operator = convDataValidationOperator(o)
+	dv.Formula1, dv.Formula2 = formula1, formula2
+	dv.Type = convDataValidationType(t)
+	dv.Operator = convDataValidationOperator(o)
 	return nil
 }
 
@@ -166,21 +166,21 @@ func (dd *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 // Sheet1!A7:B8 with validation criteria source Sheet1!E1:E3 settings, create
 // in-cell dropdown by allowing list source:
 //
-//	dvRange := excelize.NewDataValidation(true)
-//	dvRange.Sqref = "A7:B8"
-//	dvRange.SetSqrefDropList("$E$1:$E$3")
-//	f.AddDataValidation("Sheet1", dvRange)
-func (dd *DataValidation) SetSqrefDropList(sqref string) {
-	dd.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
-	dd.Type = convDataValidationType(typeList)
+//	dv := excelize.NewDataValidation(true)
+//	dv.Sqref = "A7:B8"
+//	dv.SetSqrefDropList("$E$1:$E$3")
+//	err := f.AddDataValidation("Sheet1", dv)
+func (dv *DataValidation) SetSqrefDropList(sqref string) {
+	dv.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
+	dv.Type = convDataValidationType(typeList)
 }
 
 // SetSqref provides function to set data validation range in drop list.
-func (dd *DataValidation) SetSqref(sqref string) {
-	if dd.Sqref == "" {
-		dd.Sqref = sqref
+func (dv *DataValidation) SetSqref(sqref string) {
+	if dv.Sqref == "" {
+		dv.Sqref = sqref
 	} else {
-		dd.Sqref = fmt.Sprintf("%s %s", dd.Sqref, sqref)
+		dv.Sqref = fmt.Sprintf("%s %s", dv.Sqref, sqref)
 	}
 }
 
@@ -224,28 +224,28 @@ func convDataValidationOperator(o DataValidationOperator) string {
 // settings, show error alert after invalid data is entered with "Stop" style
 // and custom title "error body":
 //
-//	dvRange := excelize.NewDataValidation(true)
-//	dvRange.Sqref = "A1:B2"
-//	dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorBetween)
-//	dvRange.SetError(excelize.DataValidationErrorStyleStop, "error title", "error body")
-//	err := f.AddDataValidation("Sheet1", dvRange)
+//	dv := excelize.NewDataValidation(true)
+//	dv.Sqref = "A1:B2"
+//	dv.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorBetween)
+//	dv.SetError(excelize.DataValidationErrorStyleStop, "error title", "error body")
+//	err := f.AddDataValidation("Sheet1", dv)
 //
 // Example 2, set data validation on Sheet1!A3:B4 with validation criteria
 // settings, and show input message when cell is selected:
 //
-//	dvRange = excelize.NewDataValidation(true)
-//	dvRange.Sqref = "A3:B4"
-//	dvRange.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorGreaterThan)
-//	dvRange.SetInput("input title", "input body")
-//	err = f.AddDataValidation("Sheet1", dvRange)
+//	dv = excelize.NewDataValidation(true)
+//	dv.Sqref = "A3:B4"
+//	dv.SetRange(10, 20, excelize.DataValidationTypeWhole, excelize.DataValidationOperatorGreaterThan)
+//	dv.SetInput("input title", "input body")
+//	err = f.AddDataValidation("Sheet1", dv)
 //
 // Example 3, set data validation on Sheet1!A5:B6 with validation criteria
 // settings, create in-cell dropdown by allowing list source:
 //
-//	dvRange = excelize.NewDataValidation(true)
-//	dvRange.Sqref = "A5:B6"
-//	dvRange.SetDropList([]string{"1", "2", "3"})
-//	err = f.AddDataValidation("Sheet1", dvRange)
+//	dv = excelize.NewDataValidation(true)
+//	dv.Sqref = "A5:B6"
+//	dv.SetDropList([]string{"1", "2", "3"})
+//	err = f.AddDataValidation("Sheet1", dv)
 func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
