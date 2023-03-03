@@ -16,12 +16,14 @@ func TestAddTable(t *testing.T) {
 	assert.NoError(t, f.AddTable("Sheet2", "A2:B5", &TableOptions{
 		Name:              "table",
 		StyleName:         "TableStyleMedium2",
+		ShowColumnStripes: true,
 		ShowFirstColumn:   true,
 		ShowLastColumn:    true,
 		ShowRowStripes:    boolPtr(true),
-		ShowColumnStripes: true,
-	},
-	))
+	}))
+	assert.NoError(t, f.AddTable("Sheet2", "D1:D11", &TableOptions{
+		ShowHeaderRow: boolPtr(false),
+	}))
 	assert.NoError(t, f.AddTable("Sheet2", "F1:F1", &TableOptions{StyleName: "TableStyleMedium8"}))
 
 	// Test add table in not exist worksheet
@@ -60,7 +62,7 @@ func TestAddTable(t *testing.T) {
 
 func TestSetTableHeader(t *testing.T) {
 	f := NewFile()
-	_, err := f.setTableHeader("Sheet1", 1, 0, 1)
+	_, err := f.setTableHeader("Sheet1", true, 1, 0, 1)
 	assert.EqualError(t, err, "invalid cell reference [1, 0]")
 }
 
@@ -68,16 +70,16 @@ func TestAutoFilter(t *testing.T) {
 	outFile := filepath.Join("test", "TestAutoFilter%d.xlsx")
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
-	for i, opts := range []*AutoFilterOptions{
-		nil,
-		{Column: "B", Expression: ""},
-		{Column: "B", Expression: "x != blanks"},
-		{Column: "B", Expression: "x == blanks"},
-		{Column: "B", Expression: "x != nonblanks"},
-		{Column: "B", Expression: "x == nonblanks"},
-		{Column: "B", Expression: "x <= 1 and x >= 2"},
-		{Column: "B", Expression: "x == 1 or x == 2"},
-		{Column: "B", Expression: "x == 1 or x == 2*"},
+	for i, opts := range [][]AutoFilterOptions{
+		{},
+		{{Column: "B", Expression: ""}},
+		{{Column: "B", Expression: "x != blanks"}},
+		{{Column: "B", Expression: "x == blanks"}},
+		{{Column: "B", Expression: "x != nonblanks"}},
+		{{Column: "B", Expression: "x == nonblanks"}},
+		{{Column: "B", Expression: "x <= 1 and x >= 2"}},
+		{{Column: "B", Expression: "x == 1 or x == 2"}},
+		{{Column: "B", Expression: "x == 1 or x == 2*"}},
 	} {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			assert.NoError(t, f.AutoFilter("Sheet1", "D4:B1", opts))
@@ -100,13 +102,13 @@ func TestAutoFilterError(t *testing.T) {
 	outFile := filepath.Join("test", "TestAutoFilterError%d.xlsx")
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
-	for i, opts := range []*AutoFilterOptions{
-		{Column: "B", Expression: "x <= 1 and x >= blanks"},
-		{Column: "B", Expression: "x -- y or x == *2*"},
-		{Column: "B", Expression: "x != y or x ? *2"},
-		{Column: "B", Expression: "x -- y o r x == *2"},
-		{Column: "B", Expression: "x -- y"},
-		{Column: "A", Expression: "x -- y"},
+	for i, opts := range [][]AutoFilterOptions{
+		{{Column: "B", Expression: "x <= 1 and x >= blanks"}},
+		{{Column: "B", Expression: "x -- y or x == *2*"}},
+		{{Column: "B", Expression: "x != y or x ? *2"}},
+		{{Column: "B", Expression: "x -- y o r x == *2"}},
+		{{Column: "B", Expression: "x -- y"}},
+		{{Column: "A", Expression: "x -- y"}},
 	} {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			if assert.Error(t, f.AutoFilter("Sheet2", "D4:B1", opts)) {
@@ -115,22 +117,22 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, &AutoFilterOptions{
+	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "",
-	}), "sheet SheetN does not exist")
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &AutoFilterOptions{
+	}}), "sheet SheetN does not exist")
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "-",
 		Expression: "-",
-	}), newInvalidColumnNameError("-").Error())
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, &AutoFilterOptions{
+	}}), newInvalidColumnNameError("-").Error())
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "-",
-	}), `incorrect index of column 'A'`)
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, &AutoFilterOptions{
+	}}), `incorrect index of column 'A'`)
+	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "-",
-	}), `incorrect number of tokens in criteria '-'`)
+	}}), `incorrect number of tokens in criteria '-'`)
 }
 
 func TestParseFilterTokens(t *testing.T) {

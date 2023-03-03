@@ -26,7 +26,7 @@ type xlsxTable struct {
 	DisplayName          string              `xml:"displayName,attr,omitempty"`
 	HeaderRowBorderDxfID int                 `xml:"headerRowBorderDxfId,attr,omitempty"`
 	HeaderRowCellStyle   string              `xml:"headerRowCellStyle,attr,omitempty"`
-	HeaderRowCount       int                 `xml:"headerRowCount,attr,omitempty"`
+	HeaderRowCount       *int                `xml:"headerRowCount,attr"`
 	HeaderRowDxfID       int                 `xml:"headerRowDxfId,attr,omitempty"`
 	ID                   int                 `xml:"id,attr"`
 	InsertRow            bool                `xml:"insertRow,attr,omitempty"`
@@ -200,21 +200,15 @@ type xlsxTableStyleInfo struct {
 type TableOptions struct {
 	Name              string
 	StyleName         string
+	ShowColumnStripes bool
 	ShowFirstColumn   bool
+	ShowHeaderRow     *bool
 	ShowLastColumn    bool
 	ShowRowStripes    *bool
-	ShowColumnStripes bool
-}
-
-// AutoFilterListOptions directly maps the auto filter list settings.
-type AutoFilterListOptions struct {
-	Column string
-	Value  []int
 }
 
 // AutoFilterOptions directly maps the auto filter settings.
 type AutoFilterOptions struct {
 	Column     string
 	Expression string
-	FilterList []AutoFilterListOptions
 }

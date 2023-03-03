@@ -320,7 +320,7 @@ func TestRemoveRow(t *testing.T) {
 		t.FailNow()
 	}
 
-	err = f.AutoFilter(sheet1, "A2:A2", &AutoFilterOptions{Column: "A", Expression: "x != blanks"})
+	err = f.AutoFilter(sheet1, "A2:A2", []AutoFilterOptions{{Column: "A", Expression: "x != blanks"}})
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

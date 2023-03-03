@@ -412,7 +412,7 @@ func TestInsertCols(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 	assert.NoError(t, f.MergeCell(sheet1, "A1", "C3"))
 
-	assert.NoError(t, f.AutoFilter(sheet1, "A2:B2", &AutoFilterOptions{Column: "B", Expression: "x != blanks"}))
+	assert.NoError(t, f.AutoFilter(sheet1, "A2:B2", []AutoFilterOptions{{Column: "B", Expression: "x != blanks"}}))
 	assert.NoError(t, f.InsertCols(sheet1, "A", 1))
 
 	// Test insert column with illegal cell reference

@@ -252,7 +252,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 		if t.AutoFilter != nil {
 			t.AutoFilter.Ref = t.Ref
 		}
-		_, _ = f.setTableHeader(sheet, x1, y1, x2)
+		_, _ = f.setTableHeader(sheet, true, x1, y1, x2)
 		table, _ := xml.Marshal(t)
 		f.saveFileList(tableXML, table)
 	}
