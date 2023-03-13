@@ -11613,7 +11613,7 @@ func (fn *formulaFuncs) IFNA(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "IFNA requires 2 arguments")
 	}
 	arg := argsList.Front().Value.(formulaArg)
-	if arg.Type == ArgError && arg.Value() == formulaErrorNA {
+	if arg.Type == ArgError && arg.String == formulaErrorNA {
 		return argsList.Back().Value.(formulaArg)
 	}
 	return arg

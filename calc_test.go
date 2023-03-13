@@ -1457,8 +1457,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=IFERROR(G1,2)":              "0",
 		"=IFERROR(B2/MROUND(A2,1),0)": "2.5",
 		// IFNA
-		"=IFNA(1,\"not found\")":    "1",
-		"=IFNA(NA(),\"not found\")": "not found",
+		"=IFNA(1,\"not found\")":                   "1",
+		"=IFNA(NA(),\"not found\")":                "not found",
+		"=IFNA(HLOOKUP(D2,D:D,1,2),\"not found\")": "not found",
 		// IFS
 		"=IFS(4>1,5/4,4<-1,-5/4,TRUE,0)":     "1.25",
 		"=IFS(-2>1,5/-2,-2<-1,-5/-2,TRUE,0)": "2.5",
