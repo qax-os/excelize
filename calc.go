@@ -14294,7 +14294,7 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 		matchIdx, wasExact = lookupBinarySearch(false, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
-		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	if rowIdx < 0 || rowIdx >= len(tableArray.Matrix) {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP has invalid row index")
@@ -14488,7 +14488,7 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 		matchIdx, wasExact = lookupBinarySearch(true, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
-		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	mtx := tableArray.Matrix[matchIdx]
 	if colIdx < 0 || colIdx >= len(mtx) {
@@ -14888,7 +14888,7 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 		column = cols
 	}
 	if matchIdx < 0 || matchIdx >= len(column) {
-		return newErrorFormulaArg(formulaErrorNA, "LOOKUP no result found")
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return column[matchIdx]
 }
