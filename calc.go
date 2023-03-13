@@ -782,6 +782,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		iterations:        make(map[string]uint),
 		iterationsCache:   make(map[string]formulaArg),
 	}, sheet, cell); err != nil {
+		result = token.String
 		return
 	}
 	if !rawCellValue {
@@ -1002,8 +1003,8 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				inArray = false
 				continue
 			}
-			if err = f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); err != nil {
-				return newEmptyFormulaArg(), err
+			if errArg := f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); errArg.Type == ArgError {
+				return errArg, errors.New(errArg.Error)
 			}
 		}
 	}
@@ -1021,9 +1022,9 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
-func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) error {
+func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) formulaArg {
 	if !isFunctionStopToken(token) {
-		return nil
+		return newEmptyFormulaArg()
 	}
 	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
@@ -1031,7 +1032,7 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 		"_xlfn.", "", ".", "dot").Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
-		return errors.New(arg.Value())
+		return arg
 	}
 	argsStack.Pop()
 	opftStack.Pop() // remove current function separator
@@ -1050,7 +1051,7 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 		}
 		opdStack.Push(newStringFormulaArg(val))
 	}
-	return nil
+	return newEmptyFormulaArg()
 }
 
 // prepareEvalInfixExp check the token and stack state for formula function
@@ -14294,7 +14295,7 @@ func (fn *formulaFuncs) HLOOKUP(argsList *list.List) formulaArg {
 		matchIdx, wasExact = lookupBinarySearch(false, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP no result found")
 	}
 	if rowIdx < 0 || rowIdx >= len(tableArray.Matrix) {
 		return newErrorFormulaArg(formulaErrorNA, "HLOOKUP has invalid row index")
@@ -14488,7 +14489,7 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 		matchIdx, wasExact = lookupBinarySearch(true, lookupValue, tableArray, matchMode, newNumberFormulaArg(searchModeAscBinary))
 	}
 	if matchIdx == -1 {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 	}
 	mtx := tableArray.Matrix[matchIdx]
 	if colIdx < 0 || colIdx >= len(mtx) {
@@ -14888,7 +14889,7 @@ func (fn *formulaFuncs) LOOKUP(argsList *list.List) formulaArg {
 		column = cols
 	}
 	if matchIdx < 0 || matchIdx >= len(column) {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNA, "LOOKUP no result found")
 	}
 	return column[matchIdx]
 }
