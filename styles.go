@@ -3457,7 +3457,9 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 	if c.DataBar != nil {
 		format.StopIfTrue = c.StopIfTrue
 		format.MinType = c.DataBar.Cfvo[0].Type
+		format.MinValue = c.DataBar.Cfvo[0].Val
 		format.MaxType = c.DataBar.Cfvo[1].Type
+		format.MaxValue = c.DataBar.Cfvo[1].Val
 		format.BarColor = "#" + strings.TrimPrefix(strings.ToUpper(c.DataBar.Color[0].RGB), "FF")
 		if c.DataBar.ShowValue != nil {
 			format.BarOnly = !*c.DataBar.ShowValue
@@ -3707,7 +3709,7 @@ func drawCondFmtDataBar(p int, ct, GUID string, format *ConditionalFormatOptions
 		Type:       validType[format.Type],
 		DataBar: &xlsxDataBar{
 			ShowValue: boolPtr(!format.BarOnly),
-			Cfvo:      []*xlsxCfvo{{Type: format.MinType}, {Type: format.MaxType}},
+			Cfvo:      []*xlsxCfvo{{Type: format.MinType, Val: format.MinValue}, {Type: format.MaxType, Val: format.MaxValue}},
 			Color:     []*xlsxColor{{RGB: getPaletteColor(format.BarColor)}},
 		},
 		ExtLst: extLst,
