@@ -481,6 +481,7 @@ type cNumCache struct {
 // entire series or the entire chart. It contains child elements that specify
 // the specific formatting and positioning settings.
 type cDLbls struct {
+	NumFmt          *cNumFmt     `xml:"numFmt"`
 	ShowLegendKey   *attrValBool `xml:"showLegendKey"`
 	ShowVal         *attrValBool `xml:"showVal"`
 	ShowCatName     *attrValBool `xml:"showCatName"`
@@ -519,6 +520,12 @@ type cPageMargins struct {
 	T      float64 `xml:"t,attr"`
 }
 
+// ChartNumFmt directly maps the number format settings of the chart.
+type ChartNumFmt struct {
+	CustomNumFmt string
+	SourceLinked bool
+}
+
 // ChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
 	None           bool
@@ -531,6 +538,7 @@ type ChartAxis struct {
 	Minimum        *float64
 	Font           Font
 	LogBase        float64
+	NumFmt         ChartNumFmt
 }
 
 // ChartDimension directly maps the dimension of the chart.
@@ -548,6 +556,7 @@ type ChartPlotArea struct {
 	ShowPercent      bool
 	ShowSerName      bool
 	ShowVal          bool
+	NumFmt           ChartNumFmt
 }
 
 // Chart directly maps the format settings of the chart.

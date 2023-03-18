@@ -995,10 +995,24 @@ func (f *File) drawCharSeriesBubble3D(opts *Chart) *attrValBool {
 	return &attrValBool{Val: boolPtr(true)}
 }
 
+// drawChartNumFmt provides a function to draw the c:numFmt element by given
+// data labels format sets.
+func (f *File) drawChartNumFmt(labels ChartNumFmt) *cNumFmt {
+	var numFmt *cNumFmt
+	if labels.CustomNumFmt != "" || labels.SourceLinked {
+		numFmt = &cNumFmt{
+			FormatCode:   labels.CustomNumFmt,
+			SourceLinked: labels.SourceLinked,
+		}
+	}
+	return numFmt
+}
+
 // drawChartDLbls provides a function to draw the c:dLbls element by given
 // format sets.
 func (f *File) drawChartDLbls(opts *Chart) *cDLbls {
 	return &cDLbls{
+		NumFmt:          f.drawChartNumFmt(opts.PlotArea.NumFmt),
 		ShowLegendKey:   &attrValBool{Val: boolPtr(opts.Legend.ShowLegendKey)},
 		ShowVal:         &attrValBool{Val: boolPtr(opts.PlotArea.ShowVal)},
 		ShowCatName:     &attrValBool{Val: boolPtr(opts.PlotArea.ShowCatName)},
@@ -1040,12 +1054,9 @@ func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 				Max:         max,
 				Min:         min,
 			},
-			Delete: &attrValBool{Val: boolPtr(opts.XAxis.None)},
-			AxPos:  &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
-			NumFmt: &cNumFmt{
-				FormatCode:   "General",
-				SourceLinked: true,
-			},
+			Delete:        &attrValBool{Val: boolPtr(opts.XAxis.None)},
+			AxPos:         &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
+			NumFmt:        &cNumFmt{FormatCode: "General"},
 			MajorTickMark: &attrValString{Val: stringPtr("none")},
 			MinorTickMark: &attrValString{Val: stringPtr("none")},
 			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
@@ -1058,6 +1069,9 @@ func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 			LblOffset:     &attrValInt{Val: intPtr(100)},
 			NoMultiLvlLbl: &attrValBool{Val: boolPtr(false)},
 		},
+	}
+	if numFmt := f.drawChartNumFmt(opts.XAxis.NumFmt); numFmt != nil {
+		axs[0].NumFmt = numFmt
 	}
 	if opts.XAxis.MajorGridLines {
 		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
@@ -1097,8 +1111,7 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 			Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
 			AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
 			NumFmt: &cNumFmt{
-				FormatCode:   chartValAxNumFmtFormatCode[opts.Type],
-				SourceLinked: true,
+				FormatCode: chartValAxNumFmtFormatCode[opts.Type],
 			},
 			MajorTickMark: &attrValString{Val: stringPtr("none")},
 			MinorTickMark: &attrValString{Val: stringPtr("none")},
@@ -1109,6 +1122,9 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 			Crosses:       &attrValString{Val: stringPtr("autoZero")},
 			CrossBetween:  &attrValString{Val: stringPtr(chartValAxCrossBetween[opts.Type])},
 		},
+	}
+	if numFmt := f.drawChartNumFmt(opts.YAxis.NumFmt); numFmt != nil {
+		axs[0].NumFmt = numFmt
 	}
 	if opts.YAxis.MajorGridLines {
 		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
