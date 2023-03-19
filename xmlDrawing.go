@@ -581,8 +581,16 @@ type xdrTxBody struct {
 	P      []*aP    `xml:"a:p"`
 }
 
+// Picture maps the format settings of the picture.
+type Picture struct {
+	Extension string
+	File      []byte
+	Format    *GraphicOptions
+}
+
 // GraphicOptions directly maps the format settings of the picture.
 type GraphicOptions struct {
+	AltText         string
 	PrintObject     *bool
 	Locked          *bool
 	LockAspectRatio bool
