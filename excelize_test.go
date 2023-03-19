@@ -1558,7 +1558,7 @@ func prepareTestBook1() (*File, error) {
 		return nil, err
 	}
 
-	err = f.AddPictureFromBytes("Sheet1", "Q1", "Excel Logo", ".jpg", file, nil)
+	err = f.AddPictureFromBytes("Sheet1", "Q1", &Picture{Extension: ".jpg", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}})
 	if err != nil {
 		return nil, err
 	}

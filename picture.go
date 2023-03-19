@@ -145,19 +145,18 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 //
 // The optional parameter "ScaleY" specifies the vertical scale of images,
 // the default value of that is 1.0 which presents 100%.
-func (f *File) AddPicture(sheet, cell, picture string, opts *GraphicOptions) error {
+func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error {
 	var err error
 	// Check picture exists first.
-	if _, err = os.Stat(picture); os.IsNotExist(err) {
+	if _, err = os.Stat(name); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportedImageTypes[path.Ext(picture)]
+	ext, ok := supportedImageTypes[path.Ext(name)]
 	if !ok {
 		return ErrImgExt
 	}
-	file, _ := os.ReadFile(filepath.Clean(picture))
-	_, name := filepath.Split(picture)
-	return f.AddPictureFromBytes(sheet, cell, name, ext, file, opts)
+	file, _ := os.ReadFile(filepath.Clean(name))
+	return f.AddPictureFromBytes(sheet, cell, &Picture{Extension: ext, File: file, Format: opts})
 }
 
 // AddPictureFromBytes provides the method to add picture in a sheet by given
@@ -188,7 +187,11 @@ func (f *File) AddPicture(sheet, cell, picture string, opts *GraphicOptions) err
 //	        fmt.Println(err)
 //	        return
 //	    }
-//	    if err := f.AddPictureFromBytes("Sheet1", "A2", "Excel Logo", ".jpg", file, nil); err != nil {
+//	    if err := f.AddPictureFromBytes("Sheet1", "A2", &excelize.Picture{
+//	        Extension: ".jpg",
+//	        File:      file,
+//	        Format:    &excelize.GraphicOptions{AltText: "Excel Logo"},
+//	    }); err != nil {
 //	        fmt.Println(err)
 //	        return
 //	    }
@@ -196,15 +199,15 @@ func (f *File) AddPicture(sheet, cell, picture string, opts *GraphicOptions) err
 //	        fmt.Println(err)
 //	    }
 //	}
-func (f *File) AddPictureFromBytes(sheet, cell, name, extension string, file []byte, opts *GraphicOptions) error {
+func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	var drawingHyperlinkRID int
 	var hyperlinkType string
-	ext, ok := supportedImageTypes[extension]
+	ext, ok := supportedImageTypes[pic.Extension]
 	if !ok {
 		return ErrImgExt
 	}
-	options := parseGraphicOptions(opts)
-	img, _, err := image.DecodeConfig(bytes.NewReader(file))
+	options := parseGraphicOptions(pic.Format)
+	img, _, err := image.DecodeConfig(bytes.NewReader(pic.File))
 	if err != nil {
 		return err
 	}
@@ -219,7 +222,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, name, extension string, file []b
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
-	mediaStr := ".." + strings.TrimPrefix(f.addMedia(file, ext), "xl")
+	mediaStr := ".." + strings.TrimPrefix(f.addMedia(pic.File, ext), "xl")
 	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
 	// Add picture with hyperlink.
 	if options.Hyperlink != "" && options.HyperlinkType != "" {
@@ -229,7 +232,7 @@ func (f *File) AddPictureFromBytes(sheet, cell, name, extension string, file []b
 		drawingHyperlinkRID = f.addRels(drawingRels, SourceRelationshipHyperLink, options.Hyperlink, hyperlinkType)
 	}
 	ws.Unlock()
-	err = f.addDrawingPicture(sheet, drawingXML, cell, name, ext, drawingRID, drawingHyperlinkRID, img, options)
+	err = f.addDrawingPicture(sheet, drawingXML, cell, ext, drawingRID, drawingHyperlinkRID, img, options)
 	if err != nil {
 		return err
 	}
@@ -319,7 +322,7 @@ func (f *File) countDrawings() int {
 // addDrawingPicture provides a function to add picture by given sheet,
 // drawingXML, cell, file name, width, height relationship index and format
 // sets.
-func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID, hyperlinkRID int, img image.Config, opts *GraphicOptions) error {
+func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyperlinkRID int, img image.Config, opts *GraphicOptions) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
@@ -358,7 +361,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file, ext string, rID,
 	pic := xlsxPic{}
 	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = opts.LockAspectRatio
 	pic.NvPicPr.CNvPr.ID = cNvPrID
-	pic.NvPicPr.CNvPr.Descr = file
+	pic.NvPicPr.CNvPr.Descr = opts.AltText
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
 	if hyperlinkRID != 0 {
 		pic.NvPicPr.CNvPr.HlinkClick = &xlsxHlinkClick{
@@ -556,10 +559,10 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 	return ""
 }
 
-// GetPicture provides a function to get picture base name and raw content
+// GetPictures provides a function to get picture meta info and raw content
 // embed in spreadsheet by given worksheet and cell name. This function
-// returns the file name in spreadsheet and file contents as []byte data
-// types. This function is concurrency safe. For example:
+// returns the image contents as []byte data types. This function is
+// concurrency safe. For example:
 //
 //	f, err := excelize.OpenFile("Book1.xlsx")
 //	if err != nil {
@@ -571,27 +574,29 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //	        fmt.Println(err)
 //	    }
 //	}()
-//	file, raw, err := f.GetPicture("Sheet1", "A2")
+//	pics, err := f.GetPictures("Sheet1", "A2")
 //	if err != nil {
-//	    fmt.Println(err)
-//	    return
+//		fmt.Println(err)
 //	}
-//	if err := os.WriteFile(file, raw, 0644); err != nil {
-//	    fmt.Println(err)
+//	for idx, pic := range pics {
+//	    name := fmt.Sprintf("image%d%s", idx+1, pic.Extension)
+//	    if err := os.WriteFile(name, pic.File, 0644); err != nil {
+//	        fmt.Println(err)
+//	    }
 //	}
-func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
+func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	col--
 	row--
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	if ws.Drawing == nil {
-		return "", nil, err
+		return nil, err
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.ReplaceAll(target, "..", "xl")
@@ -601,7 +606,7 @@ func (f *File) GetPicture(sheet, cell string) (string, []byte, error) {
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
 
-// DeletePicture provides a function to delete charts in spreadsheet by given
+// DeletePicture provides a function to delete all pictures in a cell by given
 // worksheet name and cell reference. Note that the image file won't be deleted
 // from the document currently.
 func (f *File) DeletePicture(sheet, cell string) error {
@@ -624,7 +629,7 @@ func (f *File) DeletePicture(sheet, cell string) error {
 
 // getPicture provides a function to get picture base name and raw content
 // embed in spreadsheet by given coordinates and drawing relationships.
-func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (ret string, buf []byte, err error) {
+func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (pics []Picture, err error) {
 	var (
 		wsDr            *xlsxWsDr
 		ok              bool
@@ -636,7 +641,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return
 	}
-	if ret, buf = f.getPictureFromWsDr(row, col, drawingRelationships, wsDr); len(buf) > 0 {
+	if pics = f.getPicturesFromWsDr(row, col, drawingRelationships, wsDr); len(pics) > 0 {
 		return
 	}
 	deWsDr = new(decodeWsDr)
@@ -655,9 +660,11 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
-					ret = filepath.Base(drawRel.Target)
+					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
-						buf = buffer.([]byte)
+						pic.File = buffer.([]byte)
+						pic.Format.AltText = deTwoCellAnchor.Pic.NvPicPr.CNvPr.Descr
+						pics = append(pics, pic)
 					}
 					return
 				}
@@ -667,10 +674,10 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	return
 }
 
-// getPictureFromWsDr provides a function to get picture base name and raw
+// getPicturesFromWsDr provides a function to get picture base name and raw
 // content in worksheet drawing by given coordinates and drawing
 // relationships.
-func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsDr *xlsxWsDr) (ret string, buf []byte) {
+func (f *File) getPicturesFromWsDr(row, col int, drawingRelationships string, wsDr *xlsxWsDr) (pics []Picture) {
 	var (
 		ok      bool
 		anchor  *xdrCellAnchor
@@ -684,11 +691,12 @@ func (f *File) getPictureFromWsDr(row, col int, drawingRelationships string, wsD
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
 					if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
-						ret = filepath.Base(drawRel.Target)
+						pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 						if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
-							buf = buffer.([]byte)
+							pic.File = buffer.([]byte)
+							pic.Format.AltText = anchor.Pic.NvPicPr.CNvPr.Descr
+							pics = append(pics, pic)
 						}
-						return
 					}
 				}
 			}

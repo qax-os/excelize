@@ -52,9 +52,8 @@ func TestConcurrency(t *testing.T) {
 				},
 			))
 			// Concurrency get cell picture
-			name, raw, err := f.GetPicture("Sheet1", "A1")
-			assert.Equal(t, "", name)
-			assert.Nil(t, raw)
+			pics, err := f.GetPictures("Sheet1", "A1")
+			assert.Len(t, pics, 0)
 			assert.NoError(t, err)
 			// Concurrency iterate rows
 			rows, err := f.Rows("Sheet1")
