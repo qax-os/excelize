@@ -1407,18 +1407,58 @@ func (f *File) mergeCellsParser(ws *xlsxWorksheet, cell string) (string, error) 
 	return cell, nil
 }
 
+func CellNameToCoordinatesCacheFunc(capacity int) func(string) (int, int, error) {
+  cache := make(map[string][2]int, capacity)
+
+  return func(cell string) (int, int, error) {
+    if pos, ok := cache[cell]; ok {
+      return pos[0], pos[1], nil
+    }
+
+    col, row, err := CellNameToCoordinates(cell)
+    if err != nil {
+      return 0, 0, err
+    }
+
+    cache[cell] = [2]int{col, row}
+    return col, row, nil
+  }
+}
+
+var CellNameToCoordinatesCache = CellNameToCoordinatesCacheFunc(1024)
+
+func rangeRefToCoordinatesCacheFunc(capacity int) func(string) ([]int, error) {
+  cache := make(map[string][]int, capacity)
+
+  return func(rangeRef string) ([]int, error) {
+    if coords, ok := cache[rangeRef]; ok {
+      return coords, nil
+    }
+
+    coords, err := rangeRefToCoordinates(rangeRef)
+    if err != nil {
+      return nil, err
+    }
+
+    cache[rangeRef] = coords
+    return coords, nil
+  }
+}
+
+var rangeRefToCoordinatesCache = rangeRefToCoordinatesCacheFunc(1024)
+
 // checkCellInRangeRef provides a function to determine if a given cell reference
 // in a range.
 func (f *File) checkCellInRangeRef(cell, rangeRef string) (bool, error) {
-	col, row, err := CellNameToCoordinates(cell)
+	col, row, err := CellNameToCoordinatesCache(cell)
 	if err != nil {
 		return false, err
 	}
 
-	if rng := strings.Split(rangeRef, ":"); len(rng) != 2 {
-		return false, err
-	}
-	coordinates, err := rangeRefToCoordinates(rangeRef)
+  if strings.Count(rangeRef, ":") != 1 {
+    return false, err
+  }
+	coordinates, err := rangeRefToCoordinatesCache(rangeRef)
 	if err != nil {
 		return false, err
 	}
