@@ -151,7 +151,7 @@ func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error 
 	if _, err = os.Stat(name); os.IsNotExist(err) {
 		return err
 	}
-	ext, ok := supportedImageTypes[path.Ext(name)]
+	ext, ok := supportedImageTypes[strings.ToLower(path.Ext(name))]
 	if !ok {
 		return ErrImgExt
 	}
@@ -202,7 +202,7 @@ func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error 
 func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	var drawingHyperlinkRID int
 	var hyperlinkType string
-	ext, ok := supportedImageTypes[pic.Extension]
+	ext, ok := supportedImageTypes[strings.ToLower(pic.Extension)]
 	if !ok {
 		return ErrImgExt
 	}
@@ -659,7 +659,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
+				if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
 					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 						pic.File = buffer.([]byte)
@@ -690,7 +690,7 @@ func (f *File) getPicturesFromWsDr(row, col int, drawingRelationships string, ws
 			if anchor.From.Col == col && anchor.From.Row == row {
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
-					if _, ok = supportedImageTypes[filepath.Ext(drawRel.Target)]; ok {
+					if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
 						pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 						if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 							pic.File = buffer.([]byte)
