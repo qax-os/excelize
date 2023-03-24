@@ -63,7 +63,7 @@ var cellTypes = map[string]CellType{
 // returned, along with the raw value of the cell. All cells' values will be
 // the same in a merged range.
 func (f *File) GetCellValue(sheet, axis string, opts ...Options) (string, error) {
-	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+	return f.getCellStringFunc(sheet, axis, func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error) {
 		val, err := c.getValueFrom(f, f.sharedStringsReader(), parseOptions(opts...).RawCellValue)
 		return val, true, err
 	})
@@ -84,7 +84,7 @@ func (f *File) GetCellType(sheet, axis string) (CellType, error) {
 		cellTypeStr string
 		cellType    CellType
 	)
-	if cellTypeStr, err = f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+	if cellTypeStr, err = f.getCellStringFunc(sheet, axis, func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error) {
 		return c.T, true, nil
 	}); err != nil {
 		return CellTypeUnset, err
@@ -182,8 +182,8 @@ func (c *SRxlsxC) hasValue() bool {
 }
 
 // removeFormula delete formula for the cell.
-func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) {
-	if c.F != nil && c.Vm == nil {
+func (f *File) removeFormula(c *SRxlsxC, ws *SRxlsxWorksheet, sheet string) {
+	if c.F != nil {
 		f.deleteCalcChain(f.getSheetID(sheet), c.R)
 		if c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
 			si := c.F.Si
@@ -230,7 +230,7 @@ func (f *File) setCellIntFunc(sheet, axis string, value interface{}) error {
 // setCellTimeFunc provides a method to process time type of value for
 // SetCellValue.
 func (f *File) setCellTimeFunc(sheet, axis string, value time.Time) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func setCellDuration(value time.Duration) (t string, v string) {
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell coordinates and cell value.
 func (f *File) SetCellInt(sheet, axis string, value int) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -311,7 +311,7 @@ func setCellInt(value int) (t string, v string) {
 // SetCellBool provides a function to set bool type value of a cell by given
 // worksheet name, cell name and cell value.
 func (f *File) SetCellBool(sheet, axis string, value bool) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -349,7 +349,7 @@ func setCellBool(value bool) (t string, v string) {
 //	var x float32 = 1.325
 //	f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 func (f *File) SetCellFloat(sheet, axis string, value float64, precision, bitSize int) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -376,7 +376,7 @@ func setCellFloat(value float64, precision, bitSize int) (t string, v string) {
 // SetCellStr provides a function to set string type value of a cell. Total
 // number of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, axis, value string) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -476,7 +476,7 @@ func setCellStr(value string) (t string, v string, ns xml.Attr) {
 // SetCellDefault provides a function to set string type value of a cell as
 // default format without escaping the cell.
 func (f *File) SetCellDefault(sheet, axis, value string) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -506,7 +506,7 @@ func setCellDefault(value string) (t string, v string) {
 // SRGetCellFormula extends GetCellFormula by returning SI int value as well
 func (f *File) SRGetCellFormula(sheet, axis string) (string, int, error) {
 	si := -1
-	content, err := f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+	content, err := f.getCellStringFunc(sheet, axis, func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error) {
 		if c.F == nil {
 			return "", false, nil
 		}
@@ -522,7 +522,7 @@ func (f *File) SRGetCellFormula(sheet, axis string) (string, int, error) {
 // GetCellFormula provides a function to get formula from cell by given
 // worksheet name and axis in XLSX file.
 func (f *File) GetCellFormula(sheet, axis string) (string, error) {
-	return f.getCellStringFunc(sheet, axis, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+	return f.getCellStringFunc(sheet, axis, func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error) {
 		if c.F == nil {
 			return "", false, nil
 		}
@@ -616,7 +616,7 @@ type FormulaOpts struct {
 //	    }
 //	}
 func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -633,7 +633,7 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 	if cellData.F != nil {
 		cellData.F.Content = formula
 	} else {
-		cellData.F = &xlsxF{Content: formula}
+		cellData.F = &SRxlsxF{Content: formula}
 	}
 
 	for _, o := range opts {
@@ -658,6 +658,29 @@ func (f *File) SetCellFormula(sheet, axis, formula string, opts ...FormulaOpts) 
 
 // setSharedFormula set shared formula for the cells.
 func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
+	// shouldnt use this
+	coordinates, err := areaRefToCoordinates(ref)
+	if err != nil {
+		return err
+	}
+	_ = sortCoordinates(coordinates)
+	cnt := ws.countSharedFormula()
+	for c := coordinates[0]; c <= coordinates[2]; c++ {
+		for r := coordinates[1]; r <= coordinates[3]; r++ {
+			//prepareSheetXML(ws, c, r)
+			cell := &ws.SheetData.Row[r-1].C[c-1]
+			if cell.F == nil {
+				cell.F = &xlsxF{}
+			}
+			cell.F.T = STCellFormulaTypeShared
+			cell.F.Si = &cnt
+		}
+	}
+	return err
+}
+
+// setSharedFormula set shared formula for the cells.
+func (ws *SRxlsxWorksheet) setSharedFormula(ref string) error {
 	coordinates, err := areaRefToCoordinates(ref)
 	if err != nil {
 		return err
@@ -669,13 +692,25 @@ func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
 			prepareSheetXML(ws, c, r)
 			cell := &ws.SheetData.Row[r-1].C[c-1]
 			if cell.F == nil {
-				cell.F = &xlsxF{}
+				cell.F = &SRxlsxF{}
 			}
 			cell.F.T = STCellFormulaTypeShared
 			cell.F.Si = &cnt
 		}
 	}
 	return err
+}
+
+// countSharedFormula count shared formula in the given worksheet.
+func (ws *SRxlsxWorksheet) countSharedFormula() (count int) {
+	for _, row := range ws.SheetData.Row {
+		for _, cell := range row.C {
+			if cell.F != nil && cell.F.Si != nil && *cell.F.Si+1 > count {
+				count = *cell.F.Si + 1
+			}
+		}
+	}
+	return
 }
 
 // countSharedFormula count shared formula in the given worksheet.
@@ -703,23 +738,14 @@ func (f *File) GetCellHyperLink(sheet, axis string) (bool, string, error) {
 	if _, _, err := SplitCellName(axis); err != nil {
 		return false, "", err
 	}
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return false, "", err
 	}
 	if axis, err = f.mergeCellsParser(ws, axis); err != nil {
 		return false, "", err
 	}
-	if ws.Hyperlinks != nil {
-		for _, link := range ws.Hyperlinks.Hyperlink {
-			if link.Ref == axis {
-				if link.RID != "" {
-					return true, f.getSheetRelationshipsTargetByID(sheet, link.RID), err
-				}
-				return true, link.Location, err
-			}
-		}
-	}
+
 	return false, "", err
 }
 
@@ -765,7 +791,7 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 		return err
 	}
 
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -774,21 +800,6 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 	}
 
 	var linkData xlsxHyperlink
-	idx := -1
-	if ws.Hyperlinks == nil {
-		ws.Hyperlinks = new(xlsxHyperlinks)
-	}
-	for i, hyperlink := range ws.Hyperlinks.Hyperlink {
-		if hyperlink.Ref == axis {
-			idx = i
-			linkData = hyperlink
-			break
-		}
-	}
-
-	if len(ws.Hyperlinks.Hyperlink) > TotalSheetHyperlinks {
-		return ErrTotalSheetHyperlinks
-	}
 
 	switch linkType {
 	case "External":
@@ -817,11 +828,6 @@ func (f *File) SetCellHyperLink(sheet, axis, link, linkType string, opts ...Hype
 			linkData.Tooltip = *o.Tooltip
 		}
 	}
-	if idx == -1 {
-		ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink, linkData)
-		return err
-	}
-	ws.Hyperlinks.Hyperlink[idx] = linkData
 	return err
 }
 
@@ -861,7 +867,7 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 // GetCellRichText provides a function to get rich text of cell by given
 // worksheet.
 func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err error) {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return
 	}
@@ -1031,7 +1037,7 @@ func newRpr(fnt *Font) *xlsxRPr {
 //	    }
 //	}
 func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -1125,7 +1131,7 @@ func (f *File) setSheetCells(sheet, axis string, slice interface{}, dir adjustDi
 }
 
 // getCellInfo does common preparation for all SetCell* methods.
-func (f *File) prepareCell(ws *xlsxWorksheet, cell string) (*xlsxC, int, int, error) {
+func (f *File) prepareCell(ws *SRxlsxWorksheet, cell string) (*SRxlsxC, int, int, error) {
 	var err error
 	cell, err = f.mergeCellsParser(ws, cell)
 	if err != nil {
@@ -1144,8 +1150,8 @@ func (f *File) prepareCell(ws *xlsxWorksheet, cell string) (*xlsxC, int, int, er
 
 // getCellStringFunc does common value extraction workflow for all GetCell*
 // methods. Passed function implements specific part of required logic.
-func (f *File) getCellStringFunc(sheet, axis string, fn func(x *xlsxWorksheet, c *xlsxC) (string, bool, error)) (string, error) {
-	ws, err := f.workSheetReader(sheet)
+func (f *File) getCellStringFunc(sheet, axis string, fn func(x *SRxlsxWorksheet, c *SRxlsxC) (string, bool, error)) (string, error) {
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return "", err
 	}
@@ -1416,7 +1422,7 @@ func (f *File) formattedValue(s int, v string, raw bool) string {
 
 // prepareCellStyle provides a function to prepare style index of cell in
 // worksheet by given column index and style index.
-func (f *File) prepareCellStyle(ws *xlsxWorksheet, col, row, style int) int {
+func (f *File) prepareCellStyle(ws *SRxlsxWorksheet, col, row, style int) int {
 	if style != 0 {
 		return style
 	}
@@ -1458,7 +1464,7 @@ func (f *File) SRprepareCellStyle(ws *SRxlsxWorksheet, col, row, style int) int 
 
 // mergeCellsParser provides a function to check merged cells in worksheet by
 // given axis.
-func (f *File) mergeCellsParser(ws *xlsxWorksheet, axis string) (string, error) {
+func (f *File) mergeCellsParser(ws *SRxlsxWorksheet, axis string) (string, error) {
 	axis = strings.ToUpper(axis)
 	if ws.MergeCells != nil {
 		for i := 0; i < len(ws.MergeCells.Cells); i++ {
@@ -1587,7 +1593,7 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 //
 // Note that this function not validate ref tag to check the cell whether in
 // allow area, and always return origin shared formula.
-func getSharedFormula(ws *xlsxWorksheet, si int, axis string) string {
+func getSharedFormula(ws *SRxlsxWorksheet, si int, axis string) string {
 	for _, r := range ws.SheetData.Row {
 		for _, c := range r.C {
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {

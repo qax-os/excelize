@@ -362,7 +362,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if height > MaxRowHeight {
 		return ErrMaxRowHeight
 	}
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
@@ -371,7 +371,6 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 
 	rowIdx := row - 1
 	ws.SheetData.Row[rowIdx].Ht = height
-	ws.SheetData.Row[rowIdx].CustomHeight = true
 	return nil
 }
 
@@ -576,12 +575,11 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 		return newInvalidRowNumberError(row)
 	}
 
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	prepareSheetXML(ws, 0, row)
-	ws.SheetData.Row[row-1].Hidden = !visible
 	return nil
 }
 
@@ -617,12 +615,11 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if level > 7 || level < 1 {
 		return ErrOutlineLevel
 	}
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	prepareSheetXML(ws, 0, row)
-	ws.SheetData.Row[row-1].OutlineLevel = level
 	return nil
 }
 
@@ -1026,14 +1023,13 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	prepareSheetXML(ws, 0, end)
 	for row := start - 1; row < end; row++ {
 		ws.SheetData.Row[row].S = styleID
-		ws.SheetData.Row[row].CustomFormat = true
 		for i := range ws.SheetData.Row[row].C {
 			if _, rowNum, err := CellNameToCoordinates(ws.SheetData.Row[row].C[i].R); err == nil && rowNum-1 == row {
 				ws.SheetData.Row[row].C[i].S = styleID

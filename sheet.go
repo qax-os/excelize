@@ -104,7 +104,7 @@ func (f *File) getWorksheetPath(relTarget string) (path string) {
 }
 
 // mergeExpandedCols merge expanded columns.
-func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
+func (f *File) mergeExpandedCols(ws *SRxlsxWorksheet) {
 	sort.Slice(ws.Cols.Col, func(i, j int) bool {
 		return ws.Cols.Col[i].Min < ws.Cols.Col[j].Min
 	})
@@ -142,7 +142,7 @@ func (f *File) workSheetWriter() {
 	encoder := xml.NewEncoder(buffer)
 	f.Sheet.Range(func(p, ws interface{}) bool {
 		if ws != nil {
-			sheet := ws.(*xlsxWorksheet)
+			sheet := ws.(*SRxlsxWorksheet)
 			if sheet.MergeCells != nil && len(sheet.MergeCells.Cells) > 0 {
 				_ = f.mergeOverlapCells(sheet)
 			}
@@ -152,16 +152,7 @@ func (f *File) workSheetWriter() {
 			for k, v := range sheet.SheetData.Row {
 				sheet.SheetData.Row[k].C = trimCell(v.C)
 			}
-			if sheet.SheetPr != nil || sheet.Drawing != nil || sheet.Hyperlinks != nil || sheet.Picture != nil || sheet.TableParts != nil {
-				f.addNameSpaces(p.(string), SourceRelationship)
-			}
-			if sheet.DecodeAlternateContent != nil {
-				sheet.AlternateContent = &xlsxAlternateContent{
-					Content: sheet.DecodeAlternateContent.Content,
-					XMLNSMC: SourceRelationshipCompatibility.Value,
-				}
-			}
-			sheet.DecodeAlternateContent = nil
+
 			// reusing buffer
 			_ = encoder.Encode(sheet)
 			f.saveFileList(p.(string), replaceRelationshipsBytes(f.replaceNameSpaceBytes(p.(string), buffer.Bytes())))
@@ -177,7 +168,7 @@ func (f *File) workSheetWriter() {
 }
 
 // trimCell provides a function to trim blank cells which created by fillColumns.
-func trimCell(column []xlsxC) []xlsxC {
+func trimCell(column []SRxlsxC) []SRxlsxC {
 	rowFull := true
 	for i := range column {
 		rowFull = column[i].hasValue() && rowFull
@@ -185,7 +176,7 @@ func trimCell(column []xlsxC) []xlsxC {
 	if rowFull {
 		return column
 	}
-	col := make([]xlsxC, len(column))
+	col := make([]SRxlsxC, len(column))
 	i := 0
 	for _, c := range column {
 		if c.hasValue() {
@@ -210,12 +201,7 @@ func (f *File) setContentTypes(partName, contentType string) {
 
 // setSheet provides a function to update sheet property by given index.
 func (f *File) setSheet(index int, name string) {
-	ws := xlsxWorksheet{
-		Dimension: &xlsxDimension{Ref: "A1"},
-		SheetViews: &xlsxSheetViews{
-			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
-		},
-	}
+	ws := SRxlsxWorksheet{}
 	sheetXMLPath := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[trimSheetName(name)] = sheetXMLPath
 	f.Sheet.Store(sheetXMLPath, &ws)
@@ -1816,16 +1802,14 @@ func (f *File) relsReader(path string) *xlsxRelationships {
 // fillSheetData ensures there are enough rows, and columns in the chosen
 // row to accept data. Missing rows are backfilled and given their row number
 // Uses the last populated row as a hint for the size of the next row to add
-func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
+func prepareSheetXML(ws *SRxlsxWorksheet, col int, row int) {
 	ws.Lock()
 	defer ws.Unlock()
 	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
 	var ht float64
-	var customHeight bool
 	if ws.SheetFormatPr != nil && ws.SheetFormatPr.CustomHeight {
 		ht = ws.SheetFormatPr.DefaultRowHeight
-		customHeight = true
 	}
 	if rowCount > 0 {
 		sizeHint = len(ws.SheetData.Row[rowCount-1].C)
@@ -1833,7 +1817,7 @@ func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
 	if rowCount < row {
 		// append missing rows
 		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
-			ws.SheetData.Row = append(ws.SheetData.Row, xlsxRow{R: rowIdx + 1, CustomHeight: customHeight, Ht: ht, C: make([]xlsxC, 0, sizeHint)})
+			ws.SheetData.Row = append(ws.SheetData.Row, SRxlsxRow{R: rowIdx + 1, Ht: ht, C: make([]SRxlsxC, 0, sizeHint)})
 		}
 	}
 	rowData := &ws.SheetData.Row[row-1]
@@ -1874,18 +1858,18 @@ func SRfillColumns(rowData *SRxlsxRow, col, row int) {
 }
 
 // fillColumns fill cells in the column of the row as contiguous.
-func fillColumns(rowData *xlsxRow, col, row int) {
+func fillColumns(rowData *SRxlsxRow, col, row int) {
 	cellCount := len(rowData.C)
 	if cellCount < col {
 		for colIdx := cellCount; colIdx < col; colIdx++ {
 			cellName, _ := CoordinatesToCellName(colIdx+1, row)
-			rowData.C = append(rowData.C, xlsxC{R: cellName})
+			rowData.C = append(rowData.C, SRxlsxC{R: cellName})
 		}
 	}
 }
 
 // makeContiguousColumns make columns in specific rows as contiguous.
-func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
+func makeContiguousColumns(ws *SRxlsxWorksheet, fromRow, toRow, colCount int) {
 	ws.Lock()
 	defer ws.Unlock()
 	for ; fromRow < toRow; fromRow++ {

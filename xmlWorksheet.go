@@ -67,6 +67,7 @@ type xlsxWorksheet struct {
 // xlsxWorksheet directly maps the worksheet element in the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main.
 type SRxlsxWorksheet struct {
+	XMLName xml.Name `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	sync.Mutex
 	Cols          *xlsxCols          `xml:"cols"`
 	SheetData     SRxlsxSheetData    `xml:"sheetData"`

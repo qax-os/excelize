@@ -2481,7 +2481,7 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 // GetCellStyle provides a function to get cell style index by given worksheet
 // name and cell coordinates.
 func (f *File) GetCellStyle(sheet, axis string) (int, error) {
-	ws, err := f.workSheetReader(sheet)
+	ws, err := f.SRworkSheetReader(sheet)
 	if err != nil {
 		return 0, err
 	}
