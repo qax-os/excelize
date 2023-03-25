@@ -39,12 +39,8 @@ func NewFile() *File {
 	f.Pkg.Store(defaultXMLPathContentTypes, []byte(xml.Header+templateContentTypes))
 	f.SheetCount = 1
 	f.CalcChain, _ = f.calcChainReader()
-	f.Comments = make(map[string]*xlsxComments)
 	f.ContentTypes, _ = f.contentTypesReader()
-	f.Drawings = sync.Map{}
 	f.Styles, _ = f.stylesReader()
-	f.DecodeVMLDrawing = make(map[string]*decodeVmlDrawing)
-	f.VMLDrawing = make(map[string]*vmlDrawing)
 	f.WorkBook, _ = f.workbookReader()
 	f.Relationships = sync.Map{}
 	rels, _ := f.relsReader(defaultXMLPathWorkbookRels)

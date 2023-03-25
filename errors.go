@@ -129,7 +129,7 @@ var (
 	ErrInvalidFormula = errors.New("formula not valid")
 	// ErrAddVBAProject defined the error message on add the VBA project in
 	// the workbook.
-	ErrAddVBAProject = errors.New("unsupported VBA project extension")
+	ErrAddVBAProject = errors.New("unsupported VBA project")
 	// ErrMaxRows defined the error message on receive a row number exceeds maximum limit.
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrMaxRowHeight defined the error message on receive an invalid row

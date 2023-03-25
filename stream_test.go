@@ -196,7 +196,7 @@ func TestStreamTable(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	// Test add table without table header
-	assert.EqualError(t, streamWriter.AddTable("A1:C2", nil), "XML syntax error on line 2: unexpected EOF")
+	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A1:C2"}), "XML syntax error on line 2: unexpected EOF")
 	// Write some rows. We want enough rows to force a temp file (>16MB)
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
 	row := []interface{}{1, 2, 3}
@@ -205,7 +205,7 @@ func TestStreamTable(t *testing.T) {
 	}
 
 	// Write a table
-	assert.NoError(t, streamWriter.AddTable("A1:C2", nil))
+	assert.NoError(t, streamWriter.AddTable(&Table{Range: "A1:C2"}))
 	assert.NoError(t, streamWriter.Flush())
 
 	// Verify the table has names
@@ -217,17 +217,17 @@ func TestStreamTable(t *testing.T) {
 	assert.Equal(t, "B", table.TableColumns.TableColumn[1].Name)
 	assert.Equal(t, "C", table.TableColumns.TableColumn[2].Name)
 
-	assert.NoError(t, streamWriter.AddTable("A1:C1", nil))
+	assert.NoError(t, streamWriter.AddTable(&Table{Range: "A1:C1"}))
 
 	// Test add table with illegal cell reference
-	assert.EqualError(t, streamWriter.AddTable("A:B1", nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, streamWriter.AddTable("A1:B", nil), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A:B1"}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A1:B"}), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test add table with invalid table name
-	assert.EqualError(t, streamWriter.AddTable("A:B1", &TableOptions{Name: "1Table"}), newInvalidTableNameError("1Table").Error())
+	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A:B1", Name: "1Table"}), newInvalidTableNameError("1Table").Error())
 	// Test add table with unsupported charset content types
 	file.ContentTypes = nil
 	file.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, streamWriter.AddTable("A1:C2", nil), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A1:C2"}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestStreamMergeCells(t *testing.T) {

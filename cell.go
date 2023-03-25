@@ -694,8 +694,8 @@ type FormulaOpts struct {
 //	            return
 //	        }
 //	    }
-//	    if err := f.AddTable("Sheet1", "A1:C2", &excelize.TableOptions{
-//	        Name: "Table1", StyleName: "TableStyleMedium2",
+//	    if err := f.AddTable("Sheet1", &excelize.Table{
+//	        Range: "A1:C2", Name: "Table1", StyleName: "TableStyleMedium2",
 //	    }); err != nil {
 //	        fmt.Println(err)
 //	        return

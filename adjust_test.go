@@ -11,7 +11,7 @@ import (
 func TestAdjustMergeCells(t *testing.T) {
 	f := NewFile()
 	// Test adjustAutoFilter with illegal cell reference
-	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
+	assert.Equal(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
 				{
@@ -19,8 +19,8 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.adjustMergeCells(&xlsxWorksheet{
+	}, rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	assert.Equal(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
 				{
@@ -28,7 +28,7 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
 	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -272,7 +272,7 @@ func TestAdjustMergeCells(t *testing.T) {
 	}
 	for _, c := range cases {
 		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, -1))
-		assert.Equal(t, 0, len(c.ws.MergeCells.Cells), c.label)
+		assert.Len(t, c.ws.MergeCells.Cells, 0, c.label)
 	}
 
 	f = NewFile()
@@ -293,22 +293,23 @@ func TestAdjustAutoFilter(t *testing.T) {
 		},
 	}, rows, 1, -1))
 	// Test adjustAutoFilter with illegal cell reference
-	assert.EqualError(t, f.adjustAutoFilter(&xlsxWorksheet{
+	assert.Equal(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A:B1",
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.adjustAutoFilter(&xlsxWorksheet{
+	}, rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	assert.Equal(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A1:B",
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
 }
 
 func TestAdjustTable(t *testing.T) {
 	f, sheetName := NewFile(), "Sheet1"
 	for idx, reference := range []string{"B2:C3", "E3:F5", "H5:H8", "J5:K9"} {
-		assert.NoError(t, f.AddTable(sheetName, reference, &TableOptions{
+		assert.NoError(t, f.AddTable(sheetName, &Table{
+			Range:             reference,
 			Name:              fmt.Sprintf("table%d", idx),
 			StyleName:         "TableStyleMedium2",
 			ShowFirstColumn:   true,
@@ -323,7 +324,7 @@ func TestAdjustTable(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustTable.xlsx")))
 
 	f = NewFile()
-	assert.NoError(t, f.AddTable(sheetName, "A1:D5", nil))
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "A1:D5"}))
 	// Test adjust table with non-table part
 	f.Pkg.Delete("xl/tables/table1.xml")
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
@@ -346,8 +347,8 @@ func TestAdjustHelper(t *testing.T) {
 		AutoFilter: &xlsxAutoFilter{Ref: "A1:B"},
 	})
 	// Test adjustHelper with illegal cell reference
-	assert.EqualError(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.Equal(t, f.adjustHelper("Sheet1", rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	assert.Equal(t, f.adjustHelper("Sheet2", rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
 	// Test adjustHelper on not exists worksheet
 	assert.EqualError(t, f.adjustHelper("SheetN", rows, 0, 0), "sheet SheetN does not exist")
 }
@@ -363,7 +364,7 @@ func TestAdjustCalcChain(t *testing.T) {
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
 
 	f.CalcChain.C[1].R = "invalid coordinates"
-	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), newCellNameToCoordinatesError("invalid coordinates", newInvalidCellNameError("invalid coordinates")).Error())
+	assert.Equal(t, f.InsertCols("Sheet1", "A", 1), newCellNameToCoordinatesError("invalid coordinates", newInvalidCellNameError("invalid coordinates")))
 	f.CalcChain = nil
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 }

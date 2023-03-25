@@ -35,7 +35,7 @@ func TestDataValidation(t *testing.T) {
 
 	dataValidations, err := f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(dataValidations), 1)
+	assert.Len(t, dataValidations, 1)
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
@@ -47,7 +47,7 @@ func TestDataValidation(t *testing.T) {
 
 	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(dataValidations), 2)
+	assert.Len(t, dataValidations, 2)
 
 	assert.NoError(t, f.SaveAs(resultFile))
 
@@ -62,10 +62,10 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, f.AddDataValidation("Sheet2", dv))
 	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(dataValidations), 2)
+	assert.Len(t, dataValidations, 2)
 	dataValidations, err = f.GetDataValidations("Sheet2")
 	assert.NoError(t, err)
-	assert.Equal(t, len(dataValidations), 1)
+	assert.Len(t, dataValidations, 1)
 
 	dv = NewDataValidation(true)
 	dv.Sqref = "A5:B6"
@@ -87,7 +87,7 @@ func TestDataValidation(t *testing.T) {
 
 	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, len(dataValidations), 3)
+	assert.Len(t,dataValidations, 3)
 
 	// Test get data validation on no exists worksheet
 	_, err = f.GetDataValidations("SheetN")

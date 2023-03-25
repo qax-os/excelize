@@ -139,12 +139,13 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // AddTable creates an Excel table for the StreamWriter using the given
 // cell range and format set. For example, create a table of A1:D5:
 //
-//	err := sw.AddTable("A1:D5", nil)
+//	err := sw.AddTable(&excelize.Table{Range: "A1:D5"})
 //
 // Create a table of F2:H6 with format set:
 //
 //	disable := false
-//	err := sw.AddTable("F2:H6", &excelize.TableOptions{
+//	err := sw.AddTable(&excelize.Table{
+//	    Range:             "F2:H6",
 //	    Name:              "table",
 //	    StyleName:         "TableStyleMedium2",
 //	    ShowFirstColumn:   true,
@@ -160,12 +161,12 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 // called after the rows are written but before Flush.
 //
 // See File.AddTable for details on the table format.
-func (sw *StreamWriter) AddTable(rangeRef string, opts *TableOptions) error {
-	options, err := parseTableOptions(opts)
+func (sw *StreamWriter) AddTable(table *Table) error {
+	options, err := parseTableOptions(table)
 	if err != nil {
 		return err
 	}
-	coordinates, err := rangeRefToCoordinates(rangeRef)
+	coordinates, err := rangeRefToCoordinates(options.Range)
 	if err != nil {
 		return err
 	}
@@ -202,7 +203,7 @@ func (sw *StreamWriter) AddTable(rangeRef string, opts *TableOptions) error {
 		name = "Table" + strconv.Itoa(tableID)
 	}
 
-	table := xlsxTable{
+	tbl := xlsxTable{
 		XMLNS:       NameSpaceSpreadSheet.Value,
 		ID:          tableID,
 		Name:        name,
@@ -237,7 +238,7 @@ func (sw *StreamWriter) AddTable(rangeRef string, opts *TableOptions) error {
 	if err = sw.file.addContentTypePart(tableID, "table"); err != nil {
 		return err
 	}
-	b, _ := xml.Marshal(table)
+	b, _ := xml.Marshal(tbl)
 	sw.file.saveFileList(tableXML, b)
 	return err
 }

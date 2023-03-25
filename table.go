@@ -23,10 +23,10 @@ import (
 
 // parseTableOptions provides a function to parse the format settings of the
 // table with default value.
-func parseTableOptions(opts *TableOptions) (*TableOptions, error) {
+func parseTableOptions(opts *Table) (*Table, error) {
 	var err error
 	if opts == nil {
-		return &TableOptions{ShowRowStripes: boolPtr(true)}, err
+		return &Table{ShowRowStripes: boolPtr(true)}, err
 	}
 	if opts.ShowRowStripes == nil {
 		opts.ShowRowStripes = boolPtr(true)
@@ -41,12 +41,13 @@ func parseTableOptions(opts *TableOptions) (*TableOptions, error) {
 // name, range reference and format set. For example, create a table of A1:D5
 // on Sheet1:
 //
-//	err := f.AddTable("Sheet1", "A1:D5", nil)
+//	err := f.AddTable("Sheet1", &excelize.Table{Range: "A1:D5"})
 //
 // Create a table of F2:H6 on Sheet2 with format set:
 //
 //	disable := false
-//	err := f.AddTable("Sheet2", "F2:H6", &excelize.TableOptions{
+//	err := f.AddTable("Sheet2", &excelize.Table{
+//	    Range:             "F2:H6",
 //	    Name:              "table",
 //	    StyleName:         "TableStyleMedium2",
 //	    ShowFirstColumn:   true,
@@ -69,13 +70,13 @@ func parseTableOptions(opts *TableOptions) (*TableOptions, error) {
 //	TableStyleLight1 - TableStyleLight21
 //	TableStyleMedium1 - TableStyleMedium28
 //	TableStyleDark1 - TableStyleDark11
-func (f *File) AddTable(sheet, rangeRef string, opts *TableOptions) error {
-	options, err := parseTableOptions(opts)
+func (f *File) AddTable(sheet string, table *Table) error {
+	options, err := parseTableOptions(table)
 	if err != nil {
 		return err
 	}
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
-	coordinates, err := rangeRefToCoordinates(rangeRef)
+	coordinates, err := rangeRefToCoordinates(options.Range)
 	if err != nil {
 		return err
 	}
@@ -187,7 +188,7 @@ func checkTableName(name string) error {
 
 // addTable provides a function to add table by given worksheet name,
 // range reference and format set.
-func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *TableOptions) error {
+func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Table) error {
 	// Correct the minimum number of rows, the table at least two lines.
 	if y1 == y2 {
 		y2++

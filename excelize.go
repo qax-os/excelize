@@ -16,10 +16,8 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -460,27 +458,33 @@ func (f *File) UpdateLinkedValue() error {
 }
 
 // AddVBAProject provides the method to add vbaProject.bin file which contains
-// functions and/or macros. The file extension should be .xlsm. For example:
+// functions and/or macros. The file extension should be XLSM or XLTM. For
+// example:
 //
 //	codeName := "Sheet1"
 //	if err := f.SetSheetProps("Sheet1", &excelize.SheetPropsOptions{
 //	    CodeName: &codeName,
 //	}); err != nil {
 //	    fmt.Println(err)
+//	    return
 //	}
-//	if err := f.AddVBAProject("vbaProject.bin"); err != nil {
+//	file, err := os.ReadFile("vbaProject.bin")
+//	if err != nil {
 //	    fmt.Println(err)
+//	    return
+//	}
+//	if err := f.AddVBAProject(file); err != nil {
+//	    fmt.Println(err)
+//	    return
 //	}
 //	if err := f.SaveAs("macros.xlsm"); err != nil {
 //	    fmt.Println(err)
+//	    return
 //	}
-func (f *File) AddVBAProject(bin string) error {
+func (f *File) AddVBAProject(file []byte) error {
 	var err error
 	// Check vbaProject.bin exists first.
-	if _, err = os.Stat(bin); os.IsNotExist(err) {
-		return fmt.Errorf("stat %s: no such file or directory", bin)
-	}
-	if path.Ext(bin) != ".bin" {
+	if !bytes.Contains(file, oleIdentifier) {
 		return ErrAddVBAProject
 	}
 	rels, err := f.relsReader(f.getWorkbookRelsPath())
@@ -509,7 +513,6 @@ func (f *File) AddVBAProject(bin string) error {
 			Type:   SourceRelationshipVBAProject,
 		})
 	}
-	file, _ := os.ReadFile(filepath.Clean(bin))
 	f.Pkg.Store("xl/vbaProject.bin", file)
 	return err
 }

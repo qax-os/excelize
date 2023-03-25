@@ -571,7 +571,7 @@ func TestSetCellFormula(t *testing.T) {
 	for idx, row := range [][]interface{}{{"A", "B", "C"}, {1, 2}} {
 		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", idx+1), &row))
 	}
-	assert.NoError(t, f.AddTable("Sheet1", "A1:C2", &TableOptions{Name: "Table1", StyleName: "TableStyleMedium2"}))
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:C2", Name: "Table1", StyleName: "TableStyleMedium2"}))
 	formulaType = STCellFormulaTypeDataTable
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])", FormulaOpts{Type: &formulaType}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula6.xlsx")))

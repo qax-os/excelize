@@ -273,7 +273,7 @@ func TestDefinedName(t *testing.T) {
 		Name: "Amount",
 	}))
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[0].RefersTo)
-	assert.Exactly(t, 1, len(f.GetDefinedName()))
+	assert.Len(t, f.GetDefinedName(), 1)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDefinedName.xlsx")))
 	// Test set defined name with unsupported charset workbook
 	f.WorkBook = nil
@@ -376,7 +376,7 @@ func TestGetSheetMap(t *testing.T) {
 	for idx, name := range sheetMap {
 		assert.Equal(t, expectedMap[idx], name)
 	}
-	assert.Equal(t, len(sheetMap), 2)
+	assert.Len(t, sheetMap, 2)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()

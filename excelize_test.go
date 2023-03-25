@@ -1319,8 +1319,8 @@ func TestProtectSheet(t *testing.T) {
 	}))
 	ws, err = f.workSheetReader(sheetName)
 	assert.NoError(t, err)
-	assert.Equal(t, 24, len(ws.SheetProtection.SaltValue))
-	assert.Equal(t, 88, len(ws.SheetProtection.HashValue))
+	assert.Len(t, ws.SheetProtection.SaltValue, 24)
+	assert.Len(t, ws.SheetProtection.HashValue, 88)
 	assert.Equal(t, int(sheetProtectionSpinCount), ws.SheetProtection.SpinCount)
 	// Test remove sheet protection with an incorrect password
 	assert.EqualError(t, f.UnprotectSheet(sheetName, "wrongPassword"), ErrUnprotectSheetPassword.Error())
@@ -1387,8 +1387,8 @@ func TestProtectWorkbook(t *testing.T) {
 	wb, err := f.workbookReader()
 	assert.NoError(t, err)
 	assert.Equal(t, "SHA-512", wb.WorkbookProtection.WorkbookAlgorithmName)
-	assert.Equal(t, 24, len(wb.WorkbookProtection.WorkbookSaltValue))
-	assert.Equal(t, 88, len(wb.WorkbookProtection.WorkbookHashValue))
+	assert.Len(t, wb.WorkbookProtection.WorkbookSaltValue, 24)
+	assert.Len(t, wb.WorkbookProtection.WorkbookHashValue, 88)
 	assert.Equal(t, int(workbookProtectionSpinCount), wb.WorkbookProtection.WorkbookSpinCount)
 
 	// Test protect workbook with password exceeds the limit length
@@ -1447,18 +1447,21 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 }
 
 func TestAddVBAProject(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
-	assert.EqualError(t, f.AddVBAProject("macros.bin"), "stat macros.bin: no such file or directory")
-	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "Book1.xlsx")), ErrAddVBAProject.Error())
-	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
-	// Test add VBA project twice
-	assert.NoError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
-	// Test add VBA with unsupported charset workbook relationships
-	f.Relationships.Delete(defaultXMLPathWorkbookRels)
-	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AddVBAProject(filepath.Join("test", "vbaProject.bin")), "XML syntax error on line 1: invalid UTF-8")
+    f := NewFile()
+    file, err := os.ReadFile(filepath.Join("test", "Book1.xlsx"))
+    assert.NoError(t, err)
+    assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
+    assert.EqualError(t, f.AddVBAProject(file), ErrAddVBAProject.Error())
+    file, err = os.ReadFile(filepath.Join("test", "vbaProject.bin"))
+    assert.NoError(t, err)
+    assert.NoError(t, f.AddVBAProject(file))
+    // Test add VBA project twice
+    assert.NoError(t, f.AddVBAProject(file))
+    assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
+    // Test add VBA with unsupported charset workbook relationships
+    f.Relationships.Delete(defaultXMLPathWorkbookRels)
+    f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
+    assert.EqualError(t, f.AddVBAProject(file), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestContentTypesReader(t *testing.T) {

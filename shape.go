@@ -56,7 +56,7 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 //	    &excelize.Shape{
 //	        Type: "rect",
 //	        Line: excelize.ShapeLine{Color: "4286F4", Width: &lineWidth},
-//	        Fill: excelize.Fill{Color: []string{"8EB9FF"}},
+//	        Fill: excelize.Fill{Color: []string{"8EB9FF"}, Pattern: 1},
 //	        Paragraph: []excelize.RichTextRun{
 //	            {
 //	                Text: "Rectangle Shape",

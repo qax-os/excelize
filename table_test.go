@@ -12,8 +12,9 @@ import (
 func TestAddTable(t *testing.T) {
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
-	assert.NoError(t, f.AddTable("Sheet1", "B26:A21", nil))
-	assert.NoError(t, f.AddTable("Sheet2", "A2:B5", &TableOptions{
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "B26:A21"}))
+	assert.NoError(t, f.AddTable("Sheet2", &Table{
+		Range:             "A2:B5",
 		Name:              "table",
 		StyleName:         "TableStyleMedium2",
 		ShowColumnStripes: true,
@@ -21,21 +22,24 @@ func TestAddTable(t *testing.T) {
 		ShowLastColumn:    true,
 		ShowRowStripes:    boolPtr(true),
 	}))
-	assert.NoError(t, f.AddTable("Sheet2", "D1:D11", &TableOptions{
+	assert.NoError(t, f.AddTable("Sheet2", &Table{
+		Range:         "D1:D11",
 		ShowHeaderRow: boolPtr(false),
 	}))
-	assert.NoError(t, f.AddTable("Sheet2", "F1:F1", &TableOptions{StyleName: "TableStyleMedium8"}))
+	assert.NoError(t, f.AddTable("Sheet2", &Table{Range: "F1:F1", StyleName: "TableStyleMedium8"}))
 
+	// Test add table with invalid table options
+	assert.Equal(t, f.AddTable("Sheet1", nil), ErrParameterInvalid)
 	// Test add table in not exist worksheet
-	assert.EqualError(t, f.AddTable("SheetN", "B26:A21", nil), "sheet SheetN does not exist")
+	assert.EqualError(t, f.AddTable("SheetN", &Table{Range: "B26:A21"}), "sheet SheetN does not exist")
 	// Test add table with illegal cell reference
-	assert.EqualError(t, f.AddTable("Sheet1", "A:B1", nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.AddTable("Sheet1", "A1:B", nil), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.Equal(t, f.AddTable("Sheet1", &Table{Range: "A:B1"}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	assert.Equal(t, f.AddTable("Sheet1", &Table{Range: "A1:B"}), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
 	// Test add table with invalid sheet name
-	assert.EqualError(t, f.AddTable("Sheet:1", "B26:A21", nil), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddTable("Sheet:1", &Table{Range: "B26:A21"}), ErrSheetNameInvalid.Error())
 	// Test addTable with illegal cell reference
 	f = NewFile()
 	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
@@ -54,8 +58,9 @@ func TestAddTable(t *testing.T) {
 		{name: "\u0f5f\u0fb3\u0f0b\u0f21", err: newInvalidTableNameError("\u0f5f\u0fb3\u0f0b\u0f21")},
 		{name: strings.Repeat("c", MaxFieldLength+1), err: ErrTableNameLength},
 	} {
-		assert.EqualError(t, f.AddTable("Sheet1", "A1:B2", &TableOptions{
-			Name: cases.name,
+		assert.EqualError(t, f.AddTable("Sheet1", &Table{
+			Range: "A1:B2",
+			Name:  cases.name,
 		}), cases.err.Error())
 	}
 }

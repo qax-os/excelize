@@ -93,7 +93,7 @@ func TestMergeCellOverlap(t *testing.T) {
 	}
 	mc, err := f.GetMergeCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(mc))
+	assert.Len(t, mc, 1)
 	assert.Equal(t, "A1", mc[0].GetStartAxis())
 	assert.Equal(t, "D3", mc[0].GetEndAxis())
 	assert.Equal(t, "", mc[0].GetCellValue())

@@ -196,8 +196,9 @@ type xlsxTableStyleInfo struct {
 	ShowColumnStripes bool   `xml:"showColumnStripes,attr"`
 }
 
-// TableOptions directly maps the format settings of the table.
-type TableOptions struct {
+// Table directly maps the format settings of the table.
+type Table struct {
+	Range             string
 	Name              string
 	StyleName         string
 	ShowColumnStripes bool

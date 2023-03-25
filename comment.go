@@ -21,46 +21,43 @@ import (
 	"strings"
 )
 
-// GetComments retrieves all comments and returns a map of worksheet name to
-// the worksheet comments.
-func (f *File) GetComments() (map[string][]Comment, error) {
-	comments := map[string][]Comment{}
-	for n, path := range f.sheetMap {
-		target := f.getSheetComments(filepath.Base(path))
-		if target == "" {
-			continue
-		}
-		if !strings.HasPrefix(target, "/") {
-			target = "xl" + strings.TrimPrefix(target, "..")
-		}
-		cmts, err := f.commentsReader(strings.TrimPrefix(target, "/"))
-		if err != nil {
-			return comments, err
-		}
-		if cmts != nil {
-			var sheetComments []Comment
-			for _, comment := range cmts.CommentList.Comment {
-				sheetComment := Comment{}
-				if comment.AuthorID < len(cmts.Authors.Author) {
-					sheetComment.Author = cmts.Authors.Author[comment.AuthorID]
-				}
-				sheetComment.Cell = comment.Ref
-				sheetComment.AuthorID = comment.AuthorID
-				if comment.Text.T != nil {
-					sheetComment.Text += *comment.Text.T
-				}
-				for _, text := range comment.Text.R {
-					if text.T != nil {
-						run := RichTextRun{Text: text.T.Val}
-						if text.RPr != nil {
-							run.Font = newFont(text.RPr)
-						}
-						sheetComment.Runs = append(sheetComment.Runs, run)
-					}
-				}
-				sheetComments = append(sheetComments, sheetComment)
+// GetComments retrieves all comments in a worksheet by given worksheet name.
+func (f *File) GetComments(sheet string) ([]Comment, error) {
+	var comments []Comment
+	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		return comments, newNoExistSheetError(sheet)
+	}
+	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
+	if !strings.HasPrefix(commentsXML, "/") {
+		commentsXML = "xl" + strings.TrimPrefix(commentsXML, "..")
+	}
+	commentsXML = strings.TrimPrefix(commentsXML, "/")
+	cmts, err := f.commentsReader(commentsXML)
+	if err != nil {
+		return comments, err
+	}
+	if cmts != nil {
+		for _, cmt := range cmts.CommentList.Comment {
+			comment := Comment{}
+			if cmt.AuthorID < len(cmts.Authors.Author) {
+				comment.Author = cmts.Authors.Author[cmt.AuthorID]
 			}
-			comments[n] = sheetComments
+			comment.Cell = cmt.Ref
+			comment.AuthorID = cmt.AuthorID
+			if cmt.Text.T != nil {
+				comment.Text += *cmt.Text.T
+			}
+			for _, text := range cmt.Text.R {
+				if text.T != nil {
+					run := RichTextRun{Text: text.T.Val}
+					if text.RPr != nil {
+						run.Font = newFont(text.RPr)
+					}
+					comment.Runs = append(comment.Runs, run)
+				}
+			}
+			comments = append(comments, comment)
 		}
 	}
 	return comments, nil

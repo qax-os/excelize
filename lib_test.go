@@ -274,7 +274,7 @@ func TestBytesReplace(t *testing.T) {
 }
 
 func TestGetRootElement(t *testing.T) {
-	assert.Equal(t, 0, len(getRootElement(xml.NewDecoder(strings.NewReader("")))))
+	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {
