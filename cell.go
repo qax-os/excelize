@@ -564,7 +564,7 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	case "s":
 		if c.V != "" {
 			xlsxSI := 0
-			xlsxSI, _ = strconv.Atoi(c.V)
+			xlsxSI, _ = strconv.Atoi(strings.TrimSpace(c.V))
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
 				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw)
 			}

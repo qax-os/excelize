@@ -432,6 +432,11 @@ func TestGetValueFrom(t *testing.T) {
 	value, err := c.getValueFrom(f, sst, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "", value)
+
+	c = xlsxC{T: "s", V: " 1 "}
+	value, err = c.getValueFrom(f, &xlsxSST{Count: 1, SI: []xlsxSI{{}, {T: &xlsxT{Val: "s"}}}}, false)
+	assert.NoError(t, err)
+	assert.Equal(t, "s", value)
 }
 
 func TestGetCellFormula(t *testing.T) {
