@@ -801,12 +801,13 @@ func (f *File) GetCellHyperLink(sheet, cell string) (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
-	if cell, err = f.mergeCellsParser(ws, cell); err != nil {
-		return false, "", err
-	}
 	if ws.Hyperlinks != nil {
 		for _, link := range ws.Hyperlinks.Hyperlink {
-			if link.Ref == cell {
+			ok, err := f.checkCellInRangeRef(cell, link.Ref)
+			if err != nil {
+				return false, "", err
+			}
+			if link.Ref == cell || ok {
 				if link.RID != "" {
 					return true, f.getSheetRelationshipsTargetByID(sheet, link.RID), err
 				}

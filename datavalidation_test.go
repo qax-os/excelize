@@ -87,7 +87,7 @@ func TestDataValidation(t *testing.T) {
 
 	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Len(t,dataValidations, 3)
+	assert.Len(t, dataValidations, 3)
 
 	// Test get data validation on no exists worksheet
 	_, err = f.GetDataValidations("SheetN")

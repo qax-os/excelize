@@ -480,7 +480,7 @@ func TestGetCellHyperLink(t *testing.T) {
 
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
+	ws.(*xlsxWorksheet).Hyperlinks = &xlsxHyperlinks{Hyperlink: []xlsxHyperlink{{Ref: "A:A"}}}
 	link, target, err = f.GetCellHyperLink("Sheet1", "A1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.Equal(t, link, false)
@@ -1447,21 +1447,21 @@ func TestSetDefaultTimeStyle(t *testing.T) {
 }
 
 func TestAddVBAProject(t *testing.T) {
-    f := NewFile()
-    file, err := os.ReadFile(filepath.Join("test", "Book1.xlsx"))
-    assert.NoError(t, err)
-    assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
-    assert.EqualError(t, f.AddVBAProject(file), ErrAddVBAProject.Error())
-    file, err = os.ReadFile(filepath.Join("test", "vbaProject.bin"))
-    assert.NoError(t, err)
-    assert.NoError(t, f.AddVBAProject(file))
-    // Test add VBA project twice
-    assert.NoError(t, f.AddVBAProject(file))
-    assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
-    // Test add VBA with unsupported charset workbook relationships
-    f.Relationships.Delete(defaultXMLPathWorkbookRels)
-    f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
-    assert.EqualError(t, f.AddVBAProject(file), "XML syntax error on line 1: invalid UTF-8")
+	f := NewFile()
+	file, err := os.ReadFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
+	assert.EqualError(t, f.AddVBAProject(file), ErrAddVBAProject.Error())
+	file, err = os.ReadFile(filepath.Join("test", "vbaProject.bin"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddVBAProject(file))
+	// Test add VBA project twice
+	assert.NoError(t, f.AddVBAProject(file))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddVBAProject.xlsm")))
+	// Test add VBA with unsupported charset workbook relationships
+	f.Relationships.Delete(defaultXMLPathWorkbookRels)
+	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddVBAProject(file), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestContentTypesReader(t *testing.T) {
