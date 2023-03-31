@@ -148,7 +148,7 @@ func main() {
         f.SetSheetRow("Sheet1", cell, &row)
     }
     if err := f.AddChart("Sheet1", "E1", &excelize.Chart{
-        Type: "col3DClustered",
+        Type: excelize.Col3DClustered,
         Series: []excelize.ChartSeries{
             {
                 Name:       "Sheet1!$A$2",

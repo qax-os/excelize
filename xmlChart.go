@@ -561,7 +561,7 @@ type ChartPlotArea struct {
 
 // Chart directly maps the format settings of the chart.
 type Chart struct {
-	Type         string
+	Type         ChartType
 	Series       []ChartSeries
 	Format       GraphicOptions
 	Dimension    ChartDimension

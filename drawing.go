@@ -180,7 +180,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			},
 		},
 	}
-	plotAreaFunc := map[string]func(*Chart) *cPlotArea{
+	plotAreaFunc := map[ChartType]func(*Chart) *cPlotArea{
 		Area:                        f.drawBaseChart,
 		AreaStacked:                 f.drawBaseChart,
 		AreaPercentStacked:          f.drawBaseChart,
@@ -226,8 +226,8 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Line3D:                      f.drawLine3DChart,
 		Pie:                         f.drawPieChart,
 		Pie3D:                       f.drawPie3DChart,
-		PieOfPieChart:               f.drawPieOfPieChart,
-		BarOfPieChart:               f.drawBarOfPieChart,
+		PieOfPie:                    f.drawPieOfPieChart,
+		BarOfPie:                    f.drawBarOfPieChart,
 		Radar:                       f.drawRadarChart,
 		Scatter:                     f.drawScatterChart,
 		Surface3D:                   f.drawSurface3DChart,
@@ -293,213 +293,213 @@ func (f *File) drawBaseChart(opts *Chart) *cPlotArea {
 	}
 	catAx := f.drawPlotAreaCatAx(opts)
 	valAx := f.drawPlotAreaValAx(opts)
-	charts := map[string]*cPlotArea{
-		"area": {
+	charts := map[ChartType]*cPlotArea{
+		Area: {
 			AreaChart: &c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
-		"areaStacked": {
+		AreaStacked: {
 			AreaChart: &c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
-		"areaPercentStacked": {
+		AreaPercentStacked: {
 			AreaChart: &c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
-		"area3D": {
+		Area3D: {
 			Area3DChart: &c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
-		"area3DStacked": {
+		Area3DStacked: {
 			Area3DChart: &c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
-		"area3DPercentStacked": {
+		Area3DPercentStacked: {
 			Area3DChart: &c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
-		"bar": {
+		Bar: {
 			BarChart: &c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"barStacked": {
+		BarStacked: {
 			BarChart: &c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"barPercentStacked": {
+		BarPercentStacked: {
 			BarChart: &c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"bar3DClustered": {
+		Bar3DClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DStacked": {
+		Bar3DStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DPercentStacked": {
+		Bar3DPercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DConeClustered": {
+		Bar3DConeClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DConeStacked": {
+		Bar3DConeStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DConePercentStacked": {
+		Bar3DConePercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DPyramidClustered": {
+		Bar3DPyramidClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DPyramidStacked": {
+		Bar3DPyramidStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DPyramidPercentStacked": {
+		Bar3DPyramidPercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DCylinderClustered": {
+		Bar3DCylinderClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DCylinderStacked": {
+		Bar3DCylinderStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bar3DCylinderPercentStacked": {
+		Bar3DCylinderPercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col": {
+		Col: {
 			BarChart: &c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"colStacked": {
+		ColStacked: {
 			BarChart: &c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"colPercentStacked": {
+		ColPercentStacked: {
 			BarChart: &c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
-		"col3D": {
+		Col3D: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DClustered": {
+		Col3DClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DStacked": {
+		Col3DStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DPercentStacked": {
+		Col3DPercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DCone": {
+		Col3DCone: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DConeClustered": {
+		Col3DConeClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DConeStacked": {
+		Col3DConeStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DConePercentStacked": {
+		Col3DConePercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DPyramid": {
+		Col3DPyramid: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DPyramidClustered": {
+		Col3DPyramidClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DPyramidStacked": {
+		Col3DPyramidStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DPyramidPercentStacked": {
+		Col3DPyramidPercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DCylinder": {
+		Col3DCylinder: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DCylinderClustered": {
+		Col3DCylinderClustered: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DCylinderStacked": {
+		Col3DCylinderStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"col3DCylinderPercentStacked": {
+		Col3DCylinderPercentStacked: {
 			Bar3DChart: &c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
-		"bubble": {
+		Bubble: {
 			BubbleChart: &c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
-		"bubble3D": {
+		Bubble3D: {
 			BubbleChart: &c,
 			CatAx:       catAx,
 			ValAx:       valAx,
@@ -756,7 +756,7 @@ func (f *File) drawBubbleChart(opts *Chart) *cPlotArea {
 // drawChartShape provides a function to draw the c:shape element by given
 // format sets.
 func (f *File) drawChartShape(opts *Chart) *attrValString {
-	shapes := map[string]string{
+	shapes := map[ChartType]string{
 		Bar3DConeClustered:          "cone",
 		Bar3DConeStacked:            "cone",
 		Bar3DConePercentStacked:     "cone",
@@ -844,7 +844,7 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 			},
 		},
 	}
-	if chartSeriesSpPr, ok := map[string]*cSpPr{
+	if chartSeriesSpPr, ok := map[ChartType]*cSpPr{
 		Line: spPrLine, Scatter: spPrScatter,
 	}[opts.Type]; ok {
 		return chartSeriesSpPr
@@ -880,7 +880,7 @@ func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 			},
 		},
 	}}
-	chartSeriesDPt := map[string][]*cDPt{Pie: dpt, Pie3D: dpt}
+	chartSeriesDPt := map[ChartType][]*cDPt{Pie: dpt, Pie3D: dpt}
 	return chartSeriesDPt[opts.Type]
 }
 
@@ -892,7 +892,7 @@ func (f *File) drawChartSeriesCat(v ChartSeries, opts *Chart) *cCat {
 			F: v.Categories,
 		},
 	}
-	chartSeriesCat := map[string]*cCat{Scatter: nil, Bubble: nil, Bubble3D: nil}
+	chartSeriesCat := map[ChartType]*cCat{Scatter: nil, Bubble: nil, Bubble3D: nil}
 	if _, ok := chartSeriesCat[opts.Type]; ok || v.Categories == "" {
 		return nil
 	}
@@ -907,7 +907,7 @@ func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
 			F: v.Values,
 		},
 	}
-	chartSeriesVal := map[string]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
+	chartSeriesVal := map[ChartType]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
 	if _, ok := chartSeriesVal[opts.Type]; ok {
 		return nil
 	}
@@ -917,7 +917,7 @@ func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
 // drawChartSeriesMarker provides a function to draw the c:marker element by
 // given data index and format sets.
 func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
-	defaultSymbol := map[string]*attrValString{Scatter: {Val: stringPtr("circle")}}
+	defaultSymbol := map[ChartType]*attrValString{Scatter: {Val: stringPtr("circle")}}
 	marker := &cMarker{
 		Symbol: defaultSymbol[opts.Type],
 		Size:   &attrValInt{Val: intPtr(5)},
@@ -945,7 +945,7 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 			},
 		}
 	}
-	chartSeriesMarker := map[string]*cMarker{Scatter: marker, Line: marker}
+	chartSeriesMarker := map[ChartType]*cMarker{Scatter: marker, Line: marker}
 	return chartSeriesMarker[opts.Type]
 }
 
@@ -957,7 +957,7 @@ func (f *File) drawChartSeriesXVal(v ChartSeries, opts *Chart) *cCat {
 			F: v.Categories,
 		},
 	}
-	chartSeriesXVal := map[string]*cCat{Scatter: cat, Bubble: cat, Bubble3D: cat}
+	chartSeriesXVal := map[ChartType]*cCat{Scatter: cat, Bubble: cat, Bubble3D: cat}
 	return chartSeriesXVal[opts.Type]
 }
 
@@ -969,14 +969,14 @@ func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 			F: v.Values,
 		},
 	}
-	chartSeriesYVal := map[string]*cVal{Scatter: val, Bubble: val, Bubble3D: val}
+	chartSeriesYVal := map[ChartType]*cVal{Scatter: val, Bubble: val, Bubble3D: val}
 	return chartSeriesYVal[opts.Type]
 }
 
 // drawCharSeriesBubbleSize provides a function to draw the c:bubbleSize
 // element by given chart series and format sets.
 func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
-	if _, ok := map[string]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok || v.Sizes == "" {
+	if _, ok := map[ChartType]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok || v.Sizes == "" {
 		return nil
 	}
 	return &cVal{
@@ -989,7 +989,7 @@ func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
 // drawCharSeriesBubble3D provides a function to draw the c:bubble3D element
 // by given format sets.
 func (f *File) drawCharSeriesBubble3D(opts *Chart) *attrValBool {
-	if _, ok := map[string]bool{Bubble3D: true}[opts.Type]; !ok {
+	if _, ok := map[ChartType]bool{Bubble3D: true}[opts.Type]; !ok {
 		return nil
 	}
 	return &attrValBool{Val: boolPtr(true)}
@@ -1027,7 +1027,7 @@ func (f *File) drawChartDLbls(opts *Chart) *cDLbls {
 // given format sets.
 func (f *File) drawChartSeriesDLbls(opts *Chart) *cDLbls {
 	dLbls := f.drawChartDLbls(opts)
-	chartSeriesDLbls := map[string]*cDLbls{
+	chartSeriesDLbls := map[ChartType]*cDLbls{
 		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil,
 	}
 	if _, ok := chartSeriesDLbls[opts.Type]; ok {

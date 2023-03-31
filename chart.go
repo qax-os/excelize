@@ -18,68 +18,71 @@ import (
 	"strings"
 )
 
-// This section defines the currently supported chart types.
+// ChartType is the type of supported chart types.
+type ChartType byte
+
+// This section defines the currently supported chart types enumeration.
 const (
-	Area                        = "area"
-	AreaStacked                 = "areaStacked"
-	AreaPercentStacked          = "areaPercentStacked"
-	Area3D                      = "area3D"
-	Area3DStacked               = "area3DStacked"
-	Area3DPercentStacked        = "area3DPercentStacked"
-	Bar                         = "bar"
-	BarStacked                  = "barStacked"
-	BarPercentStacked           = "barPercentStacked"
-	Bar3DClustered              = "bar3DClustered"
-	Bar3DStacked                = "bar3DStacked"
-	Bar3DPercentStacked         = "bar3DPercentStacked"
-	Bar3DConeClustered          = "bar3DConeClustered"
-	Bar3DConeStacked            = "bar3DConeStacked"
-	Bar3DConePercentStacked     = "bar3DConePercentStacked"
-	Bar3DPyramidClustered       = "bar3DPyramidClustered"
-	Bar3DPyramidStacked         = "bar3DPyramidStacked"
-	Bar3DPyramidPercentStacked  = "bar3DPyramidPercentStacked"
-	Bar3DCylinderClustered      = "bar3DCylinderClustered"
-	Bar3DCylinderStacked        = "bar3DCylinderStacked"
-	Bar3DCylinderPercentStacked = "bar3DCylinderPercentStacked"
-	Col                         = "col"
-	ColStacked                  = "colStacked"
-	ColPercentStacked           = "colPercentStacked"
-	Col3D                       = "col3D"
-	Col3DClustered              = "col3DClustered"
-	Col3DStacked                = "col3DStacked"
-	Col3DPercentStacked         = "col3DPercentStacked"
-	Col3DCone                   = "col3DCone"
-	Col3DConeClustered          = "col3DConeClustered"
-	Col3DConeStacked            = "col3DConeStacked"
-	Col3DConePercentStacked     = "col3DConePercentStacked"
-	Col3DPyramid                = "col3DPyramid"
-	Col3DPyramidClustered       = "col3DPyramidClustered"
-	Col3DPyramidStacked         = "col3DPyramidStacked"
-	Col3DPyramidPercentStacked  = "col3DPyramidPercentStacked"
-	Col3DCylinder               = "col3DCylinder"
-	Col3DCylinderClustered      = "col3DCylinderClustered"
-	Col3DCylinderStacked        = "col3DCylinderStacked"
-	Col3DCylinderPercentStacked = "col3DCylinderPercentStacked"
-	Doughnut                    = "doughnut"
-	Line                        = "line"
-	Line3D                      = "line3D"
-	Pie                         = "pie"
-	Pie3D                       = "pie3D"
-	PieOfPieChart               = "pieOfPie"
-	BarOfPieChart               = "barOfPie"
-	Radar                       = "radar"
-	Scatter                     = "scatter"
-	Surface3D                   = "surface3D"
-	WireframeSurface3D          = "wireframeSurface3D"
-	Contour                     = "contour"
-	WireframeContour            = "wireframeContour"
-	Bubble                      = "bubble"
-	Bubble3D                    = "bubble3D"
+	Area ChartType = iota
+	AreaStacked
+	AreaPercentStacked
+	Area3D
+	Area3DStacked
+	Area3DPercentStacked
+	Bar
+	BarStacked
+	BarPercentStacked
+	Bar3DClustered
+	Bar3DStacked
+	Bar3DPercentStacked
+	Bar3DConeClustered
+	Bar3DConeStacked
+	Bar3DConePercentStacked
+	Bar3DPyramidClustered
+	Bar3DPyramidStacked
+	Bar3DPyramidPercentStacked
+	Bar3DCylinderClustered
+	Bar3DCylinderStacked
+	Bar3DCylinderPercentStacked
+	Col
+	ColStacked
+	ColPercentStacked
+	Col3D
+	Col3DClustered
+	Col3DStacked
+	Col3DPercentStacked
+	Col3DCone
+	Col3DConeClustered
+	Col3DConeStacked
+	Col3DConePercentStacked
+	Col3DPyramid
+	Col3DPyramidClustered
+	Col3DPyramidStacked
+	Col3DPyramidPercentStacked
+	Col3DCylinder
+	Col3DCylinderClustered
+	Col3DCylinderStacked
+	Col3DCylinderPercentStacked
+	Doughnut
+	Line
+	Line3D
+	Pie
+	Pie3D
+	PieOfPie
+	BarOfPie
+	Radar
+	Scatter
+	Surface3D
+	WireframeSurface3D
+	Contour
+	WireframeContour
+	Bubble
+	Bubble3D
 )
 
 // This section defines the default value of chart properties.
 var (
-	chartView3DRotX = map[string]int{
+	chartView3DRotX = map[ChartType]int{
 		Area:                        0,
 		AreaStacked:                 0,
 		AreaPercentStacked:          0,
@@ -125,8 +128,8 @@ var (
 		Line3D:                      20,
 		Pie:                         0,
 		Pie3D:                       30,
-		PieOfPieChart:               0,
-		BarOfPieChart:               0,
+		PieOfPie:                    0,
+		BarOfPie:                    0,
 		Radar:                       0,
 		Scatter:                     0,
 		Surface3D:                   15,
@@ -134,7 +137,7 @@ var (
 		Contour:                     90,
 		WireframeContour:            90,
 	}
-	chartView3DRotY = map[string]int{
+	chartView3DRotY = map[ChartType]int{
 		Area:                        0,
 		AreaStacked:                 0,
 		AreaPercentStacked:          0,
@@ -180,8 +183,8 @@ var (
 		Line3D:                      15,
 		Pie:                         0,
 		Pie3D:                       0,
-		PieOfPieChart:               0,
-		BarOfPieChart:               0,
+		PieOfPie:                    0,
+		BarOfPie:                    0,
 		Radar:                       0,
 		Scatter:                     0,
 		Surface3D:                   20,
@@ -189,18 +192,18 @@ var (
 		Contour:                     0,
 		WireframeContour:            0,
 	}
-	plotAreaChartOverlap = map[string]int{
+	plotAreaChartOverlap = map[ChartType]int{
 		BarStacked:        100,
 		BarPercentStacked: 100,
 		ColStacked:        100,
 		ColPercentStacked: 100,
 	}
-	chartView3DPerspective = map[string]int{
+	chartView3DPerspective = map[ChartType]int{
 		Line3D:           30,
 		Contour:          0,
 		WireframeContour: 0,
 	}
-	chartView3DRAngAx = map[string]int{
+	chartView3DRAngAx = map[ChartType]int{
 		Area:                        0,
 		AreaStacked:                 0,
 		AreaPercentStacked:          0,
@@ -246,8 +249,8 @@ var (
 		Line3D:                      0,
 		Pie:                         0,
 		Pie3D:                       0,
-		PieOfPieChart:               0,
-		BarOfPieChart:               0,
+		PieOfPie:                    0,
+		BarOfPie:                    0,
 		Radar:                       0,
 		Scatter:                     0,
 		Surface3D:                   0,
@@ -263,7 +266,7 @@ var (
 		"top":       "t",
 		"top_right": "tr",
 	}
-	chartValAxNumFmtFormatCode = map[string]string{
+	chartValAxNumFmtFormatCode = map[ChartType]string{
 		Area:                        "General",
 		AreaStacked:                 "General",
 		AreaPercentStacked:          "0%",
@@ -309,8 +312,8 @@ var (
 		Line3D:                      "General",
 		Pie:                         "General",
 		Pie3D:                       "General",
-		PieOfPieChart:               "General",
-		BarOfPieChart:               "General",
+		PieOfPie:                    "General",
+		BarOfPie:                    "General",
 		Radar:                       "General",
 		Scatter:                     "General",
 		Surface3D:                   "General",
@@ -320,7 +323,7 @@ var (
 		Bubble:                      "General",
 		Bubble3D:                    "General",
 	}
-	chartValAxCrossBetween = map[string]string{
+	chartValAxCrossBetween = map[ChartType]string{
 		Area:                        "midCat",
 		AreaStacked:                 "midCat",
 		AreaPercentStacked:          "midCat",
@@ -366,8 +369,8 @@ var (
 		Line3D:                      "between",
 		Pie:                         "between",
 		Pie3D:                       "between",
-		PieOfPieChart:               "between",
-		BarOfPieChart:               "between",
+		PieOfPie:                    "between",
+		BarOfPie:                    "between",
 		Radar:                       "between",
 		Scatter:                     "between",
 		Surface3D:                   "midCat",
@@ -377,7 +380,7 @@ var (
 		Bubble:                      "midCat",
 		Bubble3D:                    "midCat",
 	}
-	plotAreaChartGrouping = map[string]string{
+	plotAreaChartGrouping = map[ChartType]string{
 		Area:                        "standard",
 		AreaStacked:                 "stacked",
 		AreaPercentStacked:          "percentStacked",
@@ -421,7 +424,7 @@ var (
 		Line:                        "standard",
 		Line3D:                      "standard",
 	}
-	plotAreaChartBarDir = map[string]string{
+	plotAreaChartBarDir = map[ChartType]string{
 		Bar:                         "bar",
 		BarStacked:                  "bar",
 		BarPercentStacked:           "bar",
@@ -471,7 +474,7 @@ var (
 		true:  "r",
 		false: "l",
 	}
-	valTickLblPos = map[string]string{
+	valTickLblPos = map[ChartType]string{
 		Contour:          "none",
 		WireframeContour: "none",
 	}
@@ -548,7 +551,7 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //	        f.SetSheetRow("Sheet1", cell, &row)
 //	    }
 //	    if err := f.AddChart("Sheet1", "E1", &excelize.Chart{
-//	        Type: "col3DClustered",
+//	        Type: excelize.Col3DClustered,
 //	        Series: []excelize.ChartSeries{
 //	            {
 //	                Name:       "Sheet1!$A$2",
@@ -592,63 +595,63 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //
 // The following shows the type of chart supported by excelize:
 //
-//	 Type                        | Chart
-//	-----------------------------+------------------------------
-//	 area                        | 2D area chart
-//	 areaStacked                 | 2D stacked area chart
-//	 areaPercentStacked          | 2D 100% stacked area chart
-//	 area3D                      | 3D area chart
-//	 area3DStacked               | 3D stacked area chart
-//	 area3DPercentStacked        | 3D 100% stacked area chart
-//	 bar                         | 2D clustered bar chart
-//	 barStacked                  | 2D stacked bar chart
-//	 barPercentStacked           | 2D 100% stacked bar chart
-//	 bar3DClustered              | 3D clustered bar chart
-//	 bar3DStacked                | 3D stacked bar chart
-//	 bar3DPercentStacked         | 3D 100% stacked bar chart
-//	 bar3DConeClustered          | 3D cone clustered bar chart
-//	 bar3DConeStacked            | 3D cone stacked bar chart
-//	 bar3DConePercentStacked     | 3D cone percent bar chart
-//	 bar3DPyramidClustered       | 3D pyramid clustered bar chart
-//	 bar3DPyramidStacked         | 3D pyramid stacked bar chart
-//	 bar3DPyramidPercentStacked  | 3D pyramid percent stacked bar chart
-//	 bar3DCylinderClustered      | 3D cylinder clustered bar chart
-//	 bar3DCylinderStacked        | 3D cylinder stacked bar chart
-//	 bar3DCylinderPercentStacked | 3D cylinder percent stacked bar chart
-//	 col                         | 2D clustered column chart
-//	 colStacked                  | 2D stacked column chart
-//	 colPercentStacked           | 2D 100% stacked column chart
-//	 col3DClustered              | 3D clustered column chart
-//	 col3D                       | 3D column chart
-//	 col3DStacked                | 3D stacked column chart
-//	 col3DPercentStacked         | 3D 100% stacked column chart
-//	 col3DCone                   | 3D cone column chart
-//	 col3DConeClustered          | 3D cone clustered column chart
-//	 col3DConeStacked            | 3D cone stacked column chart
-//	 col3DConePercentStacked     | 3D cone percent stacked column chart
-//	 col3DPyramid                | 3D pyramid column chart
-//	 col3DPyramidClustered       | 3D pyramid clustered column chart
-//	 col3DPyramidStacked         | 3D pyramid stacked column chart
-//	 col3DPyramidPercentStacked  | 3D pyramid percent stacked column chart
-//	 col3DCylinder               | 3D cylinder column chart
-//	 col3DCylinderClustered      | 3D cylinder clustered column chart
-//	 col3DCylinderStacked        | 3D cylinder stacked column chart
-//	 col3DCylinderPercentStacked | 3D cylinder percent stacked column chart
-//	 doughnut                    | doughnut chart
-//	 line                        | line chart
-//	 line3D                      | 3D line chart
-//	 pie                         | pie chart
-//	 pie3D                       | 3D pie chart
-//	 pieOfPie                    | pie of pie chart
-//	 barOfPie                    | bar of pie chart
-//	 radar                       | radar chart
-//	 scatter                     | scatter chart
-//	 surface3D                   | 3D surface chart
-//	 wireframeSurface3D          | 3D wireframe surface chart
-//	 contour                     | contour chart
-//	 wireframeContour            | wireframe contour chart
-//	 bubble                      | bubble chart
-//	 bubble3D                    | 3D bubble chart
+//	 ID | Enumeration                 | Chart
+//	----+-----------------------------+------------------------------
+//	 0  | Area                        | 2D area chart
+//	 1  | AreaStacked                 | 2D stacked area chart
+//	 2  | AreaPercentStacked          | 2D 100% stacked area chart
+//	 3  | Area3D                      | 3D area chart
+//	 4  | Area3DStacked               | 3D stacked area chart
+//	 5  | Area3DPercentStacked        | 3D 100% stacked area chart
+//	 6  | Bar                         | 2D clustered bar chart
+//	 7  | BarStacked                  | 2D stacked bar chart
+//	 8  | BarPercentStacked           | 2D 100% stacked bar chart
+//	 9  | Bar3DClustered              | 3D clustered bar chart
+//	 10 | Bar3DStacked                | 3D stacked bar chart
+//	 11 | Bar3DPercentStacked         | 3D 100% stacked bar chart
+//	 12 | Bar3DConeClustered          | 3D cone clustered bar chart
+//	 13 | Bar3DConeStacked            | 3D cone stacked bar chart
+//	 14 | Bar3DConePercentStacked     | 3D cone percent bar chart
+//	 15 | Bar3DPyramidClustered       | 3D pyramid clustered bar chart
+//	 16 | Bar3DPyramidStacked         | 3D pyramid stacked bar chart
+//	 17 | Bar3DPyramidPercentStacked  | 3D pyramid percent stacked bar chart
+//	 18 | Bar3DCylinderClustered      | 3D cylinder clustered bar chart
+//	 19 | Bar3DCylinderStacked        | 3D cylinder stacked bar chart
+//	 20 | Bar3DCylinderPercentStacked | 3D cylinder percent stacked bar chart
+//	 21 | Col                         | 2D clustered column chart
+//	 22 | ColStacked                  | 2D stacked column chart
+//	 23 | ColPercentStacked           | 2D 100% stacked column chart
+//	 24 | Col3DClustered              | 3D clustered column chart
+//	 25 | Col3D                       | 3D column chart
+//	 26 | Col3DStacked                | 3D stacked column chart
+//	 27 | Col3DPercentStacked         | 3D 100% stacked column chart
+//	 28 | Col3DCone                   | 3D cone column chart
+//	 29 | Col3DConeClustered          | 3D cone clustered column chart
+//	 30 | Col3DConeStacked            | 3D cone stacked column chart
+//	 31 | Col3DConePercentStacked     | 3D cone percent stacked column chart
+//	 32 | Col3DPyramid                | 3D pyramid column chart
+//	 33 | Col3DPyramidClustered       | 3D pyramid clustered column chart
+//	 34 | Col3DPyramidStacked         | 3D pyramid stacked column chart
+//	 35 | Col3DPyramidPercentStacked  | 3D pyramid percent stacked column chart
+//	 36 | Col3DCylinder               | 3D cylinder column chart
+//	 37 | Col3DCylinderClustered      | 3D cylinder clustered column chart
+//	 38 | Col3DCylinderStacked        | 3D cylinder stacked column chart
+//	 39 | Col3DCylinderPercentStacked | 3D cylinder percent stacked column chart
+//	 40 | Doughnut                    | doughnut chart
+//	 41 | Line                        | line chart
+//	 42 | Line3D                      | 3D line chart
+//	 43 | Pie                         | pie chart
+//	 44 | Pie3D                       | 3D pie chart
+//	 45 | PieOfPie                    | pie of pie chart
+//	 46 | BarOfPie                    | bar of pie chart
+//	 47 | Radar                       | radar chart
+//	 48 | Scatter                     | scatter chart
+//	 49 | Surface3D                   | 3D surface chart
+//	 50 | WireframeSurface3D          | 3D wireframe surface chart
+//	 51 | Contour                     | contour chart
+//	 52 | WireframeContour            | wireframe contour chart
+//	 53 | Bubble                      | bubble chart
+//	 54 | Bubble3D                    | 3D bubble chart
 //
 // In Excel a chart series is a collection of information that defines which
 // data is plotted such as values, axis labels and formatting.

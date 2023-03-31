@@ -48,8 +48,8 @@ func newInvalidTableNameError(name string) error {
 
 // newUnsupportedChartType defined the error message on receiving the chart
 // type are unsupported.
-func newUnsupportedChartType(chartType string) error {
-	return fmt.Errorf("unsupported chart type %s", chartType)
+func newUnsupportedChartType(chartType ChartType) error {
+	return fmt.Errorf("unsupported chart type %d", chartType)
 }
 
 // newUnzipSizeLimitError defined the error message on unzip size exceeds the
