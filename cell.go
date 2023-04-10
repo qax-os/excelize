@@ -397,8 +397,9 @@ func (f *File) SetCellStr(sheet, cell, value string) error {
 // setCellString provides a function to set string type to shared string
 // table.
 func (f *File) setCellString(value string) (t, v string, err error) {
-	if len(value) > TotalCellChars {
-		value = string([]rune(value)[:TotalCellChars])
+	value_runes := []rune(value)
+	if len(value_runes) > TotalCellChars {
+		value = string(value_runes[:TotalCellChars])
 	}
 	t = "s"
 	var si int
@@ -458,8 +459,9 @@ func (f *File) setSharedString(val string) (int, error) {
 
 // trimCellValue provides a function to set string type to cell.
 func trimCellValue(value string) (v string, ns xml.Attr) {
-	if len(value) > TotalCellChars {
-		value = string([]rune(value)[:TotalCellChars])
+	value_runes := []rune(value)
+	if len(value_runes) > TotalCellChars {
+		value = string(value_runes[:TotalCellChars])
 	}
 	if len(value) > 0 {
 		prefix, suffix := value[0], value[len(value)-1]
