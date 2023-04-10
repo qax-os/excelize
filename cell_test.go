@@ -176,6 +176,18 @@ func TestSetCellFloat(t *testing.T) {
 	assert.EqualError(t, f.SetCellFloat("Sheet:1", "A1", 123.42, -1, 64), ErrSheetNameInvalid.Error())
 }
 
+func TestSetLongUtf8CellValues(t *testing.T) {
+	f := NewFile()
+	long_value := strings.Repeat("Ы", TotalCellChars+1)
+	err := f.SetCellValue("Sheet1", "A1", long_value)
+	assert.NoError(t, err)
+
+	v, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.NotEqual(t, long_value, v)
+	assert.Equal(t, TotalCellChars, len([]rune(v)))
+}
+
 func TestSetCellValue(t *testing.T) {
 	f := NewFile()
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A", time.Now().UTC()), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
