@@ -177,16 +177,36 @@ func TestSetCellFloat(t *testing.T) {
 }
 
 func TestSetCellValuesMultiByte(t *testing.T) {
-	value := strings.Repeat("\u042B", TotalCellChars+1)
-
 	f := NewFile()
-	err := f.SetCellValue("Sheet1", "A1", value)
+	row := []interface{}{
+		// Test set cell value with multi byte characters value
+		strings.Repeat("\u4E00", TotalCellChars+1),
+		// Test set cell value with XML escape characters
+		strings.Repeat("<>", TotalCellChars/2),
+		strings.Repeat(">", TotalCellChars-1),
+		strings.Repeat(">", TotalCellChars+1),
+	}
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &row))
+	// Test set cell value with XML escape characters in stream writer
+	_, err := f.NewSheet("Sheet2")
 	assert.NoError(t, err)
-
-	v, err := f.GetCellValue("Sheet1", "A1")
+	streamWriter, err := f.NewStreamWriter("Sheet2")
 	assert.NoError(t, err)
-	assert.NotEqual(t, value, v)
-	assert.Equal(t, TotalCellChars, len([]rune(v)))
+	assert.NoError(t, streamWriter.SetRow("A1", row))
+	assert.NoError(t, streamWriter.Flush())
+	for _, sheetName := range []string{"Sheet1", "Sheet2"} {
+		for cell, expected := range map[string]int{
+			"A1": TotalCellChars,
+			"B1": TotalCellChars - 1,
+			"C1": TotalCellChars - 1,
+			"D1": TotalCellChars,
+		} {
+			result, err := f.GetCellValue(sheetName, cell)
+			assert.NoError(t, err)
+			assert.Len(t, []rune(result), expected)
+		}
+	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellValuesMultiByte.xlsx")))
 }
 
 func TestSetCellValue(t *testing.T) {

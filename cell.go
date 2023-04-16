@@ -451,16 +451,21 @@ func (f *File) setSharedString(val string) (int, error) {
 	sst.Count++
 	sst.UniqueCount++
 	t := xlsxT{Val: val}
-	val, t.Space = trimCellValue(val)
+	val, t.Space = trimCellValue(val, false)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
 	return sst.UniqueCount - 1, nil
 }
 
 // trimCellValue provides a function to set string type to cell.
-func trimCellValue(value string) (v string, ns xml.Attr) {
+func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 	if utf8.RuneCountInString(value) > TotalCellChars {
 		value = string([]rune(value)[:TotalCellChars])
+	}
+	buf := &bytes.Buffer{}
+	if escape {
+		_ = xml.EscapeText(buf, []byte(value))
+		value = buf.String()
 	}
 	if len(value) > 0 {
 		prefix, suffix := value[0], value[len(value)-1]
@@ -492,15 +497,13 @@ func (c *xlsxC) setCellValue(val string) {
 // string.
 func (c *xlsxC) setInlineStr(val string) {
 	c.T, c.V, c.IS = "inlineStr", "", &xlsxSI{T: &xlsxT{}}
-	buf := &bytes.Buffer{}
-	_ = xml.EscapeText(buf, []byte(val))
-	c.IS.T.Val, c.IS.T.Space = trimCellValue(buf.String())
+	c.IS.T.Val, c.IS.T.Space = trimCellValue(val, true)
 }
 
 // setStr set cell data type and value which containing a formula string.
 func (c *xlsxC) setStr(val string) {
 	c.T, c.IS = "str", nil
-	c.V, c.XMLSpace = trimCellValue(val)
+	c.V, c.XMLSpace = trimCellValue(val, false)
 }
 
 // getCellDate parse cell value which containing a boolean.
@@ -1031,7 +1034,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 			return textRuns, ErrCellCharsLength
 		}
 		run := xlsxR{T: &xlsxT{}}
-		run.T.Val, run.T.Space = trimCellValue(textRun.Text)
+		run.T.Val, run.T.Space = trimCellValue(textRun.Text, false)
 		fnt := textRun.Font
 		if fnt != nil {
 			run.RPr = newRpr(fnt)
