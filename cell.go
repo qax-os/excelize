@@ -462,9 +462,9 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 	if utf8.RuneCountInString(value) > TotalCellChars {
 		value = string([]rune(value)[:TotalCellChars])
 	}
-	buf := &bytes.Buffer{}
 	if escape {
-		_ = xml.EscapeText(buf, []byte(value))
+		var buf bytes.Buffer
+		_ = xml.EscapeText(&buf, []byte(value))
 		value = buf.String()
 	}
 	if len(value) > 0 {

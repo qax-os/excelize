@@ -12,8 +12,10 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,6 +76,23 @@ func (f *File) AddTable(sheet string, table *Table) error {
 	options, err := parseTableOptions(table)
 	if err != nil {
 		return err
+	}
+	var exist bool
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/tables/table") {
+			var t xlsxTable
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v.([]byte)))).
+				Decode(&t); err != nil && err != io.EOF {
+				return true
+			}
+			if exist = t.Name == options.Name; exist {
+				return false
+			}
+		}
+		return true
+	})
+	if exist {
+		return ErrExistsTableName
 	}
 	// Coordinate conversion, convert C1:B3 to 2,0,1,2.
 	coordinates, err := rangeRefToCoordinates(options.Range)

@@ -126,6 +126,9 @@ func (f *File) AddComment(sheet string, comment Comment) error {
 			}
 		}
 	}
+	if len(comment.Runs) == 0 {
+		rows, cols = 1, len(comment.Text)
+	}
 	if err = f.addDrawingVML(commentID, drawingVML, comment.Cell, rows+1, cols); err != nil {
 		return err
 	}

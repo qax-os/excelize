@@ -239,6 +239,8 @@ var (
 	// ErrTableNameLength defined the error message on receiving the table name
 	// length exceeds the limit.
 	ErrTableNameLength = fmt.Errorf("the table name length exceeds the %d characters limit", MaxFieldLength)
+	// ErrExistsTableName defined the error message on given table already exists.
+	ErrExistsTableName = errors.New("the same name table already exists")
 	// ErrCellStyles defined the error message on cell styles exceeds the limit.
 	ErrCellStyles = fmt.Errorf("the cell styles exceeds the %d limit", MaxCellStyles)
 	// ErrUnprotectWorkbook defined the error message on workbook has set no

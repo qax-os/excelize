@@ -28,6 +28,8 @@ func TestAddTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddTable("Sheet2", &Table{Range: "F1:F1", StyleName: "TableStyleMedium8"}))
 
+	// Test add table with already exist table name
+	assert.Equal(t, f.AddTable("Sheet2", &Table{Name: "Table1"}), ErrExistsTableName)
 	// Test add table with invalid table options
 	assert.Equal(t, f.AddTable("Sheet1", nil), ErrParameterInvalid)
 	// Test add table in not exist worksheet
@@ -63,6 +65,10 @@ func TestAddTable(t *testing.T) {
 			Name:  cases.name,
 		}), cases.err.Error())
 	}
+	// Test check duplicate table name with unsupported charset table parts
+	f = NewFile()
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
 }
 
 func TestSetTableHeader(t *testing.T) {

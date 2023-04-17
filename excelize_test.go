@@ -773,7 +773,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 			}
 			assert.NoError(t, f.SetCellStyle("Sheet2", c, c, style))
 			cellValue, err := f.GetCellValue("Sheet2", c)
-			assert.Equal(t, expected[i][k], cellValue, "Sheet2!"+c, i, k)
+			assert.Equal(t, expected[i][k], cellValue, fmt.Sprintf("Sheet2!%s value: %s, number format: %d", c, value[i], k))
 			assert.NoError(t, err)
 		}
 	}
