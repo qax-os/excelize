@@ -116,7 +116,7 @@ func (ws *xlsxWorksheet) setSheetProps(opts *SheetPropsOptions) {
 	prepareTabColor := func(ws *xlsxWorksheet) {
 		ws.prepareSheetPr()
 		if ws.SheetPr.TabColor == nil {
-			ws.SheetPr.TabColor = new(xlsxTabColor)
+			ws.SheetPr.TabColor = new(xlsxColor)
 		}
 	}
 	if opts.CodeName != nil {
@@ -145,7 +145,12 @@ func (ws *xlsxWorksheet) setSheetProps(opts *SheetPropsOptions) {
 		if !s.Field(i).IsNil() {
 			prepareTabColor(ws)
 			name := s.Type().Field(i).Name
-			reflect.ValueOf(ws.SheetPr.TabColor).Elem().FieldByName(name[8:]).Set(s.Field(i).Elem())
+			fld := reflect.ValueOf(ws.SheetPr.TabColor).Elem().FieldByName(name[8:])
+			if s.Field(i).Kind() == reflect.Ptr && fld.Kind() == reflect.Ptr {
+				fld.Set(s.Field(i))
+				continue
+			}
+			fld.Set(s.Field(i).Elem())
 		}
 	}
 }
@@ -206,7 +211,7 @@ func (f *File) GetSheetProps(sheet string) (SheetPropsOptions, error) {
 		if ws.SheetPr.TabColor != nil {
 			opts.TabColorIndexed = intPtr(ws.SheetPr.TabColor.Indexed)
 			opts.TabColorRGB = stringPtr(ws.SheetPr.TabColor.RGB)
-			opts.TabColorTheme = intPtr(ws.SheetPr.TabColor.Theme)
+			opts.TabColorTheme = ws.SheetPr.TabColor.Theme
 			opts.TabColorTint = float64Ptr(ws.SheetPr.TabColor.Tint)
 		}
 	}

@@ -12,11 +12,14 @@
 package excelize
 
 import (
+	"bytes"
+	"encoding/binary"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/richardlehane/mscfb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,6 +54,25 @@ func TestEncrypt(t *testing.T) {
 	// Test remove password by save workbook with options
 	assert.NoError(t, f.Save(Options{Password: ""}))
 	assert.NoError(t, f.Close())
+
+	doc, err := mscfb.New(bytes.NewReader(raw))
+	assert.NoError(t, err)
+	encryptionInfoBuf, encryptedPackageBuf := extractPart(doc)
+	binary.LittleEndian.PutUint64(encryptionInfoBuf[20:32], uint64(0))
+	_, err = standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, &Options{Password: "password"})
+	assert.NoError(t, err)
+	_, err = decrypt(nil, nil, nil)
+	assert.EqualError(t, err, "crypto/aes: invalid key size 0")
+	_, err = agileDecrypt(encryptionInfoBuf, MacintoshCyrillicCharset, &Options{Password: "password"})
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid character entity &0 (no semicolon)")
+	_, err = convertPasswdToKey("password", nil, Encryption{
+		KeyEncryptors: KeyEncryptors{KeyEncryptor: []KeyEncryptor{
+			{EncryptedKey: EncryptedKey{KeyData: KeyData{SaltValue: "=="}}},
+		}},
+	})
+	assert.EqualError(t, err, "illegal base64 data at input byte 0")
+	_, err = createIV([]byte{0}, Encryption{KeyData: KeyData{SaltValue: "=="}})
+	assert.EqualError(t, err, "illegal base64 data at input byte 0")
 }
 
 func TestEncryptionMechanism(t *testing.T) {

@@ -516,7 +516,7 @@ func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
 			return "FALSE", nil
 		}
 	}
-	return f.formattedValue(c.S, c.V, raw)
+	return f.formattedValue(c, raw, CellTypeBool)
 }
 
 // setCellDefault prepares cell type and string type cell value by a given
@@ -551,7 +551,7 @@ func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
 			c.V = strconv.FormatFloat(excelTime, 'G', 15, 64)
 		}
 	}
-	return f.formattedValue(c.S, c.V, raw)
+	return f.formattedValue(c, raw, CellTypeBool)
 }
 
 // getValueFrom return a value from a column/row cell, this function is
@@ -567,21 +567,20 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		return c.getCellDate(f, raw)
 	case "s":
 		if c.V != "" {
-			xlsxSI := 0
-			xlsxSI, _ = strconv.Atoi(strings.TrimSpace(c.V))
+			xlsxSI, _ := strconv.Atoi(strings.TrimSpace(c.V))
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(c.S, f.getFromStringItem(xlsxSI), raw)
+				return f.formattedValue(&xlsxC{S: c.S, V: f.getFromStringItem(xlsxSI)}, raw, CellTypeSharedString)
 			}
 			if len(d.SI) > xlsxSI {
-				return f.formattedValue(c.S, d.SI[xlsxSI].String(), raw)
+				return f.formattedValue(&xlsxC{S: c.S, V: d.SI[xlsxSI].String()}, raw, CellTypeSharedString)
 			}
 		}
-		return f.formattedValue(c.S, c.V, raw)
+		return f.formattedValue(c, raw, CellTypeSharedString)
 	case "inlineStr":
 		if c.IS != nil {
-			return f.formattedValue(c.S, c.IS.String(), raw)
+			return f.formattedValue(&xlsxC{S: c.S, V: c.IS.String()}, raw, CellTypeInlineString)
 		}
-		return f.formattedValue(c.S, c.V, raw)
+		return f.formattedValue(c, raw, CellTypeInlineString)
 	default:
 		if isNum, precision, decimal := isNumeric(c.V); isNum && !raw {
 			if precision > 15 {
@@ -590,7 +589,7 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
 			}
 		}
-		return f.formattedValue(c.S, c.V, raw)
+		return f.formattedValue(c, raw, CellTypeNumber)
 	}
 }
 
@@ -1325,47 +1324,44 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 // formattedValue provides a function to returns a value after formatted. If
 // it is possible to apply a format to the cell value, it will do so, if not
 // then an error will be returned, along with the raw value of the cell.
-func (f *File) formattedValue(s int, v string, raw bool) (string, error) {
-	if raw {
-		return v, nil
-	}
-	if s == 0 {
-		return v, nil
+func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, error) {
+	if raw || c.S == 0 {
+		return c.V, nil
 	}
 	styleSheet, err := f.stylesReader()
 	if err != nil {
-		return v, err
+		return c.V, err
 	}
 	if styleSheet.CellXfs == nil {
-		return v, err
+		return c.V, err
 	}
-	if s >= len(styleSheet.CellXfs.Xf) || s < 0 {
-		return v, err
+	if c.S >= len(styleSheet.CellXfs.Xf) || c.S < 0 {
+		return c.V, err
 	}
 	var numFmtID int
-	if styleSheet.CellXfs.Xf[s].NumFmtID != nil {
-		numFmtID = *styleSheet.CellXfs.Xf[s].NumFmtID
+	if styleSheet.CellXfs.Xf[c.S].NumFmtID != nil {
+		numFmtID = *styleSheet.CellXfs.Xf[c.S].NumFmtID
 	}
 	date1904 := false
 	wb, err := f.workbookReader()
 	if err != nil {
-		return v, err
+		return c.V, err
 	}
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
 	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
-		return ok(v, builtInNumFmt[numFmtID], date1904), err
+		return ok(c.V, builtInNumFmt[numFmtID], date1904, cellType), err
 	}
 	if styleSheet.NumFmts == nil {
-		return v, err
+		return c.V, err
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(v, xlsxFmt.FormatCode, date1904), err
+			return format(c.V, xlsxFmt.FormatCode, date1904, cellType), err
 		}
 	}
-	return v, err
+	return c.V, err
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in

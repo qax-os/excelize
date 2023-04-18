@@ -35,10 +35,10 @@ type xlsxChartsheet struct {
 
 // xlsxChartsheetPr specifies chart sheet properties.
 type xlsxChartsheetPr struct {
-	XMLName       xml.Name      `xml:"sheetPr"`
-	PublishedAttr bool          `xml:"published,attr,omitempty"`
-	CodeNameAttr  string        `xml:"codeName,attr,omitempty"`
-	TabColor      *xlsxTabColor `xml:"tabColor"`
+	XMLName       xml.Name   `xml:"sheetPr"`
+	PublishedAttr bool       `xml:"published,attr,omitempty"`
+	CodeNameAttr  string     `xml:"codeName,attr,omitempty"`
+	TabColor      *xlsxColor `xml:"tabColor"`
 }
 
 // xlsxChartsheetViews specifies chart sheet views.

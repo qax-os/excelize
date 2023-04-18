@@ -1005,7 +1005,7 @@ func TestNumFmt(t *testing.T) {
 		{"-8.0450685976001E-21", "0_);[Red]\\(0\\)", "(0)"},
 		{"-8.04506", "0_);[Red]\\(0\\)", "(8)"},
 	} {
-		result := format(item[0], item[1], false)
+		result := format(item[0], item[1], false, CellTypeNumber)
 		assert.Equal(t, item[2], result, item)
 	}
 }

@@ -791,11 +791,11 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 	result = token.Value()
 	if isNum, precision, decimal := isNumeric(result); isNum {
 		if precision > 15 {
-			result, err = f.formattedValue(styleIdx, strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64)), rawCellValue)
+			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			return
 		}
 		if !strings.HasPrefix(result, "0") {
-			result, err = f.formattedValue(styleIdx, strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64)), rawCellValue)
+			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
 	}
 	return

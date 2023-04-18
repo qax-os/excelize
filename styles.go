@@ -753,7 +753,7 @@ var currencyNumFmt = map[int]string{
 
 // builtInNumFmtFunc defined the format conversion functions map. Partial format
 // code doesn't support currently and will return original string.
-var builtInNumFmtFunc = map[int]func(v, format string, date1904 bool) string{
+var builtInNumFmtFunc = map[int]func(v, format string, date1904 bool, cellType CellType) string{
 	0:  format,
 	1:  formatToInt,
 	2:  formatToFloat,
@@ -892,8 +892,8 @@ func printCommaSep(text string) string {
 // formatToInt provides a function to convert original string to integer
 // format as string type by given built-in number formats code and cell
 // string.
-func formatToInt(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToInt(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -906,8 +906,8 @@ func formatToInt(v, format string, date1904 bool) string {
 // formatToFloat provides a function to convert original string to float
 // format as string type by given built-in number formats code and cell
 // string.
-func formatToFloat(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToFloat(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -924,8 +924,8 @@ func formatToFloat(v, format string, date1904 bool) string {
 // formatToIntSeparator provides a function to convert original string to
 // integer format as string type by given built-in number formats code and cell
 // string.
-func formatToIntSeparator(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToIntSeparator(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -937,8 +937,8 @@ func formatToIntSeparator(v, format string, date1904 bool) string {
 
 // formatToA provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToA(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToA(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -960,8 +960,8 @@ func formatToA(v, format string, date1904 bool) string {
 
 // formatToB provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToB(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToB(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -990,8 +990,8 @@ func formatToB(v, format string, date1904 bool) string {
 
 // formatToC provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToC(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToC(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -1007,8 +1007,8 @@ func formatToC(v, format string, date1904 bool) string {
 
 // formatToD provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToD(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToD(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)
@@ -1024,8 +1024,8 @@ func formatToD(v, format string, date1904 bool) string {
 
 // formatToE provides a function to convert original string to special format
 // as string type by given built-in number formats code and cell string.
-func formatToE(v, format string, date1904 bool) string {
-	if strings.Contains(v, "_") {
+func formatToE(v, format string, date1904 bool, cellType CellType) string {
+	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
 		return v
 	}
 	f, err := strconv.ParseFloat(v, 64)

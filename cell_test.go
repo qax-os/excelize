@@ -803,21 +803,21 @@ func TestSetCellRichText(t *testing.T) {
 
 func TestFormattedValue(t *testing.T) {
 	f := NewFile()
-	result, err := f.formattedValue(0, "43528", false)
+	result, err := f.formattedValue(&xlsxC{S: 0, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
 	// S is too large
-	result, err = f.formattedValue(15, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: 15, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
 	// S is too small
-	result, err = f.formattedValue(-15, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: -15, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
-	result, err = f.formattedValue(1, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: 1, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 	customNumFmt := "[$-409]MM/DD/YYYY"
@@ -825,7 +825,7 @@ func TestFormattedValue(t *testing.T) {
 		CustomNumFmt: &customNumFmt,
 	})
 	assert.NoError(t, err)
-	result, err = f.formattedValue(1, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: 1, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "03/04/2019", result)
 
@@ -834,7 +834,7 @@ func TestFormattedValue(t *testing.T) {
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	result, err = f.formattedValue(2, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: 2, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
@@ -842,7 +842,7 @@ func TestFormattedValue(t *testing.T) {
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: nil,
 	})
-	result, err = f.formattedValue(3, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: 3, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
@@ -851,7 +851,16 @@ func TestFormattedValue(t *testing.T) {
 	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
 		NumFmtID: &numFmtID,
 	})
-	result, err = f.formattedValue(1, "43528", false)
+	result, err = f.formattedValue(&xlsxC{S: 1, V: "43528"}, false, CellTypeNumber)
+	assert.NoError(t, err)
+	assert.Equal(t, "43528", result)
+
+	// Test format numeric value with shared string data type
+	f.Styles.NumFmts, numFmtID = nil, 11
+	f.Styles.CellXfs.Xf = append(f.Styles.CellXfs.Xf, xlsxXf{
+		NumFmtID: &numFmtID,
+	})
+	result, err = f.formattedValue(&xlsxC{S: 5, V: "43528"}, false, CellTypeSharedString)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 
@@ -860,32 +869,36 @@ func TestFormattedValue(t *testing.T) {
 		NumFmt: 1,
 	})
 	assert.NoError(t, err)
-	result, err = f.formattedValue(styleID, "310.56", false)
+	result, err = f.formattedValue(&xlsxC{S: styleID, V: "310.56"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "311", result)
 
 	for _, fn := range builtInNumFmtFunc {
-		assert.Equal(t, "0_0", fn("0_0", "", false))
+		assert.Equal(t, "0_0", fn("0_0", "", false, CellTypeNumber))
 	}
 
 	// Test format value with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
-	_, err = f.formattedValue(1, "43528", false)
+	_, err = f.formattedValue(&xlsxC{S: 1, V: "43528"}, false, CellTypeNumber)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 
 	// Test format value with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	_, err = f.formattedValue(1, "43528", false)
+	_, err = f.formattedValue(&xlsxC{S: 1, V: "43528"}, false, CellTypeNumber)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	for _, fn := range builtInNumFmtFunc {
+		assert.Equal(t, fn("text", "0", false, CellTypeNumber), "text")
+	}
 }
 
 func TestFormattedValueNilXfs(t *testing.T) {
 	// Set the CellXfs to nil and verify that the formattedValue function does not crash
 	f := NewFile()
 	f.Styles.CellXfs = nil
-	result, err := f.formattedValue(3, "43528", false)
+	result, err := f.formattedValue(&xlsxC{S: 3, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 }
@@ -894,7 +907,7 @@ func TestFormattedValueNilNumFmts(t *testing.T) {
 	// Set the NumFmts value to nil and verify that the formattedValue function does not crash
 	f := NewFile()
 	f.Styles.NumFmts = nil
-	result, err := f.formattedValue(3, "43528", false)
+	result, err := f.formattedValue(&xlsxC{S: 3, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 }
@@ -903,7 +916,7 @@ func TestFormattedValueNilWorkbook(t *testing.T) {
 	// Set the Workbook value to nil and verify that the formattedValue function does not crash
 	f := NewFile()
 	f.WorkBook = nil
-	result, err := f.formattedValue(3, "43528", false)
+	result, err := f.formattedValue(&xlsxC{S: 3, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 }
@@ -913,7 +926,7 @@ func TestFormattedValueNilWorkbookPr(t *testing.T) {
 	// crash.
 	f := NewFile()
 	f.WorkBook.WorkbookPr = nil
-	result, err := f.formattedValue(3, "43528", false)
+	result, err := f.formattedValue(&xlsxC{S: 3, V: "43528"}, false, CellTypeNumber)
 	assert.NoError(t, err)
 	assert.Equal(t, "43528", result)
 }

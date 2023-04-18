@@ -11,6 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetRows(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A1"))
+	// Test get rows with unsupported charset shared strings table
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	_, err := f.GetRows("Sheet1")
+	assert.NoError(t, err)
+}
+
 func TestRows(t *testing.T) {
 	const sheet2 = "Sheet2"
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))

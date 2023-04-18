@@ -31,6 +31,7 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
+	cellType                                       CellType
 	section                                        []nfp.Section
 	t                                              time.Time
 	sectionIdx                                     int
@@ -336,6 +337,9 @@ var (
 // prepareNumberic split the number into two before and after parts by a
 // decimal point.
 func (nf *numberFormat) prepareNumberic(value string) {
+	if nf.cellType != CellTypeNumber && nf.cellType != CellTypeDate {
+		return
+	}
 	if nf.isNumeric, _, _ = isNumeric(value); !nf.isNumeric {
 		return
 	}
@@ -344,9 +348,9 @@ func (nf *numberFormat) prepareNumberic(value string) {
 // format provides a function to return a string parse by number format
 // expression. If the given number format is not supported, this will return
 // the original cell value.
-func format(value, numFmt string, date1904 bool) string {
+func format(value, numFmt string, date1904 bool, cellType CellType) string {
 	p := nfp.NumberFormatParser()
-	nf := numberFormat{section: p.Parse(numFmt), value: value, date1904: date1904}
+	nf := numberFormat{section: p.Parse(numFmt), value: value, date1904: date1904, cellType: cellType}
 	nf.number, nf.valueSectionType = nf.getValueSectionType(value)
 	nf.prepareNumberic(value)
 	for i, section := range nf.section {
@@ -947,7 +951,7 @@ func (nf *numberFormat) textHandler() (result string) {
 		if token.TType == nfp.TokenTypeLiteral {
 			result += token.TValue
 		}
-		if token.TType == nfp.TokenTypeTextPlaceHolder {
+		if token.TType == nfp.TokenTypeTextPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
 			result += nf.value
 		}
 	}

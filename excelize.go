@@ -101,11 +101,10 @@ func OpenFile(filename string, opts ...Options) (*File, error) {
 	}
 	f, err := OpenReader(file, opts...)
 	if err != nil {
-		closeErr := file.Close()
-		if closeErr == nil {
-			return f, err
+		if closeErr := file.Close(); closeErr != nil {
+			return f, closeErr
 		}
-		return f, closeErr
+		return f, err
 	}
 	f.Path = filename
 	return f, file.Close()
