@@ -1350,6 +1350,10 @@ func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, er
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
+	numFmtCode, ok := runNumFmtIdToCodeHook(f, numFmtID)
+	if ok {
+		return format(c.V, numFmtCode, date1904, cellType), err
+	}
 	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
 		return ok(c.V, builtInNumFmt[numFmtID], date1904, cellType), err
 	}

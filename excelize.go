@@ -79,12 +79,16 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // temporary directory when the file size is over this value, this value
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
+//
+// NumFmtIdToCodeHook User-defined mapping function for numFmtId to numFmtCode
+// if NumFmtIdToCodeHook function is nil will use default mapping
 type Options struct {
-	MaxCalcIterations uint
-	Password          string
-	RawCellValue      bool
-	UnzipSizeLimit    int64
-	UnzipXMLSizeLimit int64
+	MaxCalcIterations  uint
+	Password           string
+	RawCellValue       bool
+	UnzipSizeLimit     int64
+	UnzipXMLSizeLimit  int64
+	NumFmtIdToCodeHook NumFmtIdToCodeHook
 }
 
 // OpenFile take the name of an spreadsheet file and returns a populated

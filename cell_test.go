@@ -894,6 +894,75 @@ func TestFormattedValue(t *testing.T) {
 	}
 }
 
+func TestFormattedValueWithWpsFile(t *testing.T) {
+
+	testWpsIdCodeMap := map[int]string{
+		14: "yyyy/m/d",
+		31: "yyyy\"年\"m\"月\"d\"日\"",
+	}
+
+	testWpsIdCodeMapHook := func(info NumFmtIdToCodeHookInfo, numFmtId int) (code string, ok bool) {
+		isWps := false
+	allAttrs:
+		for _, attrs := range info.XmlAttr {
+			for _, attr := range attrs {
+				if strings.Contains(attr.Value, "wps") {
+					isWps = true
+					break allAttrs
+				}
+			}
+		}
+		if !isWps {
+			return
+		}
+		code, ok = testWpsIdCodeMap[numFmtId]
+		return
+	}
+
+	testCases := []struct {
+		name             string
+		cellName         string
+		v                string
+		numFmtIdCodeHook NumFmtIdToCodeHook
+	}{
+		{
+			name:     "yy/m/d cell",
+			cellName: "A1",
+			v:        "23/1/1",
+		},
+		{
+			name:     "yyyy/m/d cell",
+			cellName: "A2",
+			v:        "01-01-23",
+		},
+		{
+			name:             "yyyy/m/d cell has hook",
+			cellName:         "A2",
+			v:                "2023/1/1",
+			numFmtIdCodeHook: testWpsIdCodeMapHook,
+		},
+		{
+			name:             "yyyy\"年\"m\"月\"d\"日\" cell",
+			cellName:         "A3",
+			v:                "2023年1月1日",
+			numFmtIdCodeHook: testWpsIdCodeMapHook,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			f, err := OpenFile(filepath.Join("test", "NumFmtCases.xlsx"), Options{
+				NumFmtIdToCodeHook: testCase.numFmtIdCodeHook,
+			})
+			if !assert.NoError(t, err) {
+				t.FailNow()
+			}
+			val, err := f.GetCellValue("Sheet1", testCase.cellName)
+			assert.NoError(t, err)
+			assert.Equal(t, testCase.v, val)
+		})
+	}
+}
+
 func TestFormattedValueNilXfs(t *testing.T) {
 	// Set the CellXfs to nil and verify that the formattedValue function does not crash
 	f := NewFile()
