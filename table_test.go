@@ -46,23 +46,26 @@ func TestAddTable(t *testing.T) {
 	f = NewFile()
 	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
 	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell reference [0, 0]")
-	// Test add table with invalid table name
+	// Test set defined name and add table with invalid name
 	for _, cases := range []struct {
 		name string
 		err  error
 	}{
-		{name: "1Table", err: newInvalidTableNameError("1Table")},
-		{name: "-Table", err: newInvalidTableNameError("-Table")},
-		{name: "'Table", err: newInvalidTableNameError("'Table")},
-		{name: "Table 1", err: newInvalidTableNameError("Table 1")},
-		{name: "A&B", err: newInvalidTableNameError("A&B")},
-		{name: "_1Table'", err: newInvalidTableNameError("_1Table'")},
-		{name: "\u0f5f\u0fb3\u0f0b\u0f21", err: newInvalidTableNameError("\u0f5f\u0fb3\u0f0b\u0f21")},
-		{name: strings.Repeat("c", MaxFieldLength+1), err: ErrTableNameLength},
+		{name: "1Table", err: newInvalidNameError("1Table")},
+		{name: "-Table", err: newInvalidNameError("-Table")},
+		{name: "'Table", err: newInvalidNameError("'Table")},
+		{name: "Table 1", err: newInvalidNameError("Table 1")},
+		{name: "A&B", err: newInvalidNameError("A&B")},
+		{name: "_1Table'", err: newInvalidNameError("_1Table'")},
+		{name: "\u0f5f\u0fb3\u0f0b\u0f21", err: newInvalidNameError("\u0f5f\u0fb3\u0f0b\u0f21")},
+		{name: strings.Repeat("c", MaxFieldLength+1), err: ErrNameLength},
 	} {
 		assert.EqualError(t, f.AddTable("Sheet1", &Table{
 			Range: "A1:B2",
 			Name:  cases.name,
+		}), cases.err.Error())
+		assert.EqualError(t, f.SetDefinedName(&DefinedName{
+			Name: cases.name, RefersTo: "Sheet1!$A$2:$D$5",
 		}), cases.err.Error())
 	}
 	// Test check duplicate table name with unsupported charset table parts

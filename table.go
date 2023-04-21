@@ -33,7 +33,7 @@ func parseTableOptions(opts *Table) (*Table, error) {
 	if opts.ShowRowStripes == nil {
 		opts.ShowRowStripes = boolPtr(true)
 	}
-	if err = checkTableName(opts.Name); err != nil {
+	if err = checkDefinedName(opts.Name); err != nil {
 		return opts, err
 	}
 	return opts, err
@@ -182,13 +182,13 @@ func (f *File) setTableHeader(sheet string, showHeaderRow bool, x1, y1, x2 int) 
 	return tableColumns, nil
 }
 
-// checkSheetName check whether there are illegal characters in the table name.
-// Verify that the name:
+// checkDefinedName check whether there are illegal characters in the defined
+// name or table name. Verify that the name:
 // 1. Starts with a letter or underscore (_)
 // 2. Doesn't include a space or character that isn't allowed
-func checkTableName(name string) error {
+func checkDefinedName(name string) error {
 	if utf8.RuneCountInString(name) > MaxFieldLength {
-		return ErrTableNameLength
+		return ErrNameLength
 	}
 	for i, c := range name {
 		if string(c) == "_" {
@@ -200,7 +200,7 @@ func checkTableName(name string) error {
 		if i > 0 && unicode.IsDigit(c) {
 			continue
 		}
-		return newInvalidTableNameError(name)
+		return newInvalidNameError(name)
 	}
 	return nil
 }

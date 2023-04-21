@@ -223,7 +223,7 @@ func TestStreamTable(t *testing.T) {
 	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A:B1"}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A1:B"}), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
 	// Test add table with invalid table name
-	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A:B1", Name: "1Table"}), newInvalidTableNameError("1Table").Error())
+	assert.EqualError(t, streamWriter.AddTable(&Table{Range: "A:B1", Name: "1Table"}), newInvalidNameError("1Table").Error())
 	// Test add table with unsupported charset content types
 	file.ContentTypes = nil
 	file.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)

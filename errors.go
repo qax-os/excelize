@@ -40,10 +40,10 @@ func newInvalidExcelDateError(dateValue float64) error {
 	return fmt.Errorf("invalid date value %f, negative values are not supported", dateValue)
 }
 
-// newInvalidTableNameError defined the error message on receiving the invalid
-// table name.
-func newInvalidTableNameError(name string) error {
-	return fmt.Errorf("invalid table name %q", name)
+// newInvalidNameError defined the error message on receiving the invalid
+// defined name or table name.
+func newInvalidNameError(name string) error {
+	return fmt.Errorf("invalid name %q, the name should be starts with a letter or underscore, can not include a space or character, and can not conflict with an existing name in the workbook", name)
 }
 
 // newUnsupportedChartType defined the error message on receiving the chart
@@ -236,9 +236,9 @@ var (
 	// ErrSheetNameLength defined the error message on receiving the sheet
 	// name length exceeds the limit.
 	ErrSheetNameLength = fmt.Errorf("the sheet name length exceeds the %d characters limit", MaxSheetNameLength)
-	// ErrTableNameLength defined the error message on receiving the table name
-	// length exceeds the limit.
-	ErrTableNameLength = fmt.Errorf("the table name length exceeds the %d characters limit", MaxFieldLength)
+	// ErrNameLength defined the error message on receiving the defined name or
+	// table name length exceeds the limit.
+	ErrNameLength = fmt.Errorf("the name length exceeds the %d characters limit", MaxFieldLength)
 	// ErrExistsTableName defined the error message on given table already exists.
 	ErrExistsTableName = errors.New("the same name table already exists")
 	// ErrCellStyles defined the error message on cell styles exceeds the limit.

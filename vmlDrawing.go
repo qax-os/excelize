@@ -117,8 +117,8 @@ type xlsxDiv struct {
 // element.
 type xClientData struct {
 	ObjectType    string `xml:"ObjectType,attr"`
-	MoveWithCells string `xml:"x:MoveWithCells,omitempty"`
-	SizeWithCells string `xml:"x:SizeWithCells,omitempty"`
+	MoveWithCells string `xml:"x:MoveWithCells"`
+	SizeWithCells string `xml:"x:SizeWithCells"`
 	Anchor        string `xml:"x:Anchor"`
 	AutoFill      string `xml:"x:AutoFill"`
 	Row           int    `xml:"x:Row"`
