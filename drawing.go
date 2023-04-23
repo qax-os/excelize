@@ -1285,8 +1285,8 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int, error) {
 	if drawing, ok := f.Drawings.Load(path); ok && drawing != nil {
 		wsDr = drawing.(*xlsxWsDr)
 	}
-	wsDr.Lock()
-	defer wsDr.Unlock()
+	wsDr.mu.Lock()
+	defer wsDr.mu.Unlock()
 	return wsDr, len(wsDr.OneCellAnchor) + len(wsDr.TwoCellAnchor) + 2, nil
 }
 

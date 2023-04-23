@@ -2008,8 +2008,8 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	if err != nil {
 		return cellXfsID, err
 	}
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	// check given style already exist.
 	if cellXfsID, err = f.getStyleID(s, fs); err != nil || cellXfsID != -1 {
 		return cellXfsID, err
@@ -2669,10 +2669,10 @@ func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	prepareSheetXML(ws, col, row)
-	ws.Lock()
-	defer ws.Unlock()
-	return f.prepareCellStyle(ws, col, row, ws.SheetData.Row[row-1].C[col-1].S), err
+	ws.prepareSheetXML(col, row)
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	return ws.prepareCellStyle(col, row, ws.SheetData.Row[row-1].C[col-1].S), err
 }
 
 // SetCellStyle provides a function to add style attribute for cells by given
@@ -2808,17 +2808,17 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(ws, vCol, vRow)
+	ws.prepareSheetXML(vCol, vRow)
 	makeContiguousColumns(ws, hRow, vRow, vCol)
-	ws.Lock()
-	defer ws.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 
 	s, err := f.stylesReader()
 	if err != nil {
 		return err
 	}
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}

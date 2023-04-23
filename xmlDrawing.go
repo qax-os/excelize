@@ -440,7 +440,7 @@ type xlsxPoint2D struct {
 // xlsxWsDr directly maps the root element for a part of this content type shall
 // wsDr.
 type xlsxWsDr struct {
-	sync.Mutex
+	mu               sync.Mutex
 	XMLName          xml.Name                `xml:"xdr:wsDr"`
 	A                string                  `xml:"xmlns:a,attr,omitempty"`
 	Xdr              string                  `xml:"xmlns:xdr,attr,omitempty"`

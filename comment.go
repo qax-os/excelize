@@ -68,8 +68,8 @@ func (f *File) GetComments(sheet string) ([]Comment, error) {
 func (f *File) getSheetComments(sheetFile string) string {
 	rels, _ := f.relsReader("xl/worksheets/_rels/" + sheetFile + ".rels")
 	if sheetRels := rels; sheetRels != nil {
-		sheetRels.Lock()
-		defer sheetRels.Unlock()
+		sheetRels.mu.Lock()
+		defer sheetRels.mu.Unlock()
 		for _, v := range sheetRels.Relationships {
 			if v.Type == SourceRelationshipComments {
 				return v.Target

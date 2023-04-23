@@ -145,8 +145,8 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 // the spreadsheet.
 func (f *File) getWorkbookPath() (path string) {
 	if rels, _ := f.relsReader("_rels/.rels"); rels != nil {
-		rels.Lock()
-		defer rels.Unlock()
+		rels.mu.Lock()
+		defer rels.mu.Unlock()
 		for _, rel := range rels.Relationships {
 			if rel.Type == SourceRelationshipOfficeDocument {
 				path = strings.TrimPrefix(rel.Target, "/")

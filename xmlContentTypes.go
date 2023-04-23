@@ -20,7 +20,7 @@ import (
 // parts, it takes a Multipurpose Internet Mail Extension (MIME) media type as a
 // value.
 type xlsxTypes struct {
-	sync.Mutex
+	mu        sync.Mutex
 	XMLName   xml.Name       `xml:"http://schemas.openxmlformats.org/package/2006/content-types Types"`
 	Defaults  []xlsxDefault  `xml:"Default"`
 	Overrides []xlsxOverride `xml:"Override"`

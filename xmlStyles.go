@@ -18,7 +18,7 @@ import (
 
 // xlsxStyleSheet is the root element of the Styles part.
 type xlsxStyleSheet struct {
-	sync.Mutex
+	mu           sync.Mutex
 	XMLName      xml.Name          `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main styleSheet"`
 	NumFmts      *xlsxNumFmts      `xml:"numFmts"`
 	Fonts        *xlsxFonts        `xml:"fonts"`

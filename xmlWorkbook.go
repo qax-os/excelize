@@ -18,7 +18,7 @@ import (
 
 // xlsxRelationships describe references from parts to other internal resources in the package or to external resources.
 type xlsxRelationships struct {
-	sync.Mutex
+	mu            sync.Mutex
 	XMLName       xml.Name           `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`
 	Relationships []xlsxRelationship `xml:"Relationship"`
 }

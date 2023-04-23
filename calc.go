@@ -215,7 +215,7 @@ var (
 
 // calcContext defines the formula execution context.
 type calcContext struct {
-	sync.Mutex
+	mu                sync.Mutex
 	entry             string
 	maxCalcIterations uint
 	iterations        map[string]uint
@@ -1553,19 +1553,19 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	)
 	ref := fmt.Sprintf("%s!%s", sheet, cell)
 	if formula, _ := f.GetCellFormula(sheet, cell); len(formula) != 0 {
-		ctx.Lock()
+		ctx.mu.Lock()
 		if ctx.entry != ref {
 			if ctx.iterations[ref] <= f.options.MaxCalcIterations {
 				ctx.iterations[ref]++
-				ctx.Unlock()
+				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
 				ctx.iterationsCache[ref] = arg
 				return arg, nil
 			}
-			ctx.Unlock()
+			ctx.mu.Unlock()
 			return ctx.iterationsCache[ref], nil
 		}
-		ctx.Unlock()
+		ctx.mu.Unlock()
 	}
 	if value, err = f.GetCellValue(sheet, cell, Options{RawCellValue: true}); err != nil {
 		return arg, err

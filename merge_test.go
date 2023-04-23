@@ -207,7 +207,7 @@ func TestFlatMergedCells(t *testing.T) {
 }
 
 func TestMergeCellsParser(t *testing.T) {
-	f := NewFile()
-	_, err := f.mergeCellsParser(&xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{nil}}}, "A1")
+	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{nil}}}
+	_, err := ws.mergeCellsParser("A1")
 	assert.NoError(t, err)
 }

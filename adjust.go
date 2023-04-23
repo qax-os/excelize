@@ -60,8 +60,8 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
 		return err
 	}
-	checkSheet(ws)
-	_ = checkRow(ws)
+	ws.checkSheet()
+	_ = ws.checkRow()
 
 	if ws.MergeCells != nil && len(ws.MergeCells.Cells) == 0 {
 		ws.MergeCells = nil

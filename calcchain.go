@@ -58,8 +58,8 @@ func (f *File) deleteCalcChain(index int, cell string) error {
 		if err != nil {
 			return err
 		}
-		content.Lock()
-		defer content.Unlock()
+		content.mu.Lock()
+		defer content.mu.Unlock()
 		for k, v := range content.Overrides {
 			if v.PartName == "/xl/calcChain.xml" {
 				content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)

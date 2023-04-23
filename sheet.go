@@ -70,8 +70,8 @@ func (f *File) NewSheet(sheet string) (int, error) {
 func (f *File) contentTypesReader() (*xlsxTypes, error) {
 	if f.ContentTypes == nil {
 		f.ContentTypes = new(xlsxTypes)
-		f.ContentTypes.Lock()
-		defer f.ContentTypes.Unlock()
+		f.ContentTypes.mu.Lock()
+		defer f.ContentTypes.mu.Unlock()
 		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathContentTypes)))).
 			Decode(f.ContentTypes); err != nil && err != io.EOF {
 			return f.ContentTypes, err
@@ -217,8 +217,8 @@ func (f *File) setContentTypes(partName, contentType string) error {
 	if err != nil {
 		return err
 	}
-	content.Lock()
-	defer content.Unlock()
+	content.mu.Lock()
+	defer content.mu.Unlock()
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    partName,
 		ContentType: contentType,
@@ -615,8 +615,8 @@ func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
 // relationships by given relationships ID in the file workbook.xml.rels.
 func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	rels, _ := f.relsReader(f.getWorkbookRelsPath())
-	rels.Lock()
-	defer rels.Unlock()
+	rels.mu.Lock()
+	defer rels.mu.Unlock()
 	for k, v := range rels.Relationships {
 		if v.ID == rID {
 			rels.Relationships = append(rels.Relationships[:k], rels.Relationships[k+1:]...)
@@ -636,8 +636,8 @@ func (f *File) deleteSheetFromContentTypes(target string) error {
 	if err != nil {
 		return err
 	}
-	content.Lock()
-	defer content.Unlock()
+	content.mu.Lock()
+	defer content.mu.Unlock()
 	for k, v := range content.Overrides {
 		if v.PartName == target {
 			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
@@ -1842,9 +1842,9 @@ func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 // fillSheetData ensures there are enough rows, and columns in the chosen
 // row to accept data. Missing rows are backfilled and given their row number
 // Uses the last populated row as a hint for the size of the next row to add
-func prepareSheetXML(ws *xlsxWorksheet, col int, row int) {
-	ws.Lock()
-	defer ws.Unlock()
+func (ws *xlsxWorksheet) prepareSheetXML(col int, row int) {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
 	var ht *float64
@@ -1879,8 +1879,8 @@ func fillColumns(rowData *xlsxRow, col, row int) {
 
 // makeContiguousColumns make columns in specific rows as contiguous.
 func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
-	ws.Lock()
-	defer ws.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	for ; fromRow < toRow; fromRow++ {
 		rowData := &ws.SheetData.Row[fromRow-1]
 		fillColumns(rowData, colCount, fromRow)

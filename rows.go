@@ -267,12 +267,12 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
-	if ws, ok := f.Sheet.Load(name); ok && ws != nil {
-		worksheet := ws.(*xlsxWorksheet)
-		worksheet.Lock()
-		defer worksheet.Unlock()
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
+		ws := worksheet.(*xlsxWorksheet)
+		ws.mu.Lock()
+		defer ws.mu.Unlock()
 		// Flush data
-		output, _ := xml.Marshal(worksheet)
+		output, _ := xml.Marshal(ws)
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
 	var err error
@@ -360,7 +360,7 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 		return err
 	}
 
-	prepareSheetXML(ws, 0, row)
+	ws.prepareSheetXML(0, row)
 
 	rowIdx := row - 1
 	ws.SheetData.Row[rowIdx].Ht = float64Ptr(height)
@@ -372,8 +372,8 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 // name and row number.
 func (f *File) getRowHeight(sheet string, row int) int {
 	ws, _ := f.workSheetReader(sheet)
-	ws.Lock()
-	defer ws.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
 		if v.R == row && v.Ht != nil {
@@ -416,8 +416,8 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 // after deserialization of xl/sharedStrings.xml.
 func (f *File) sharedStringsReader() (*xlsxSST, error) {
 	var err error
-	f.Lock()
-	defer f.Unlock()
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	relPath := f.getWorkbookRelsPath()
 	if f.SharedStrings == nil {
 		var sharedStrings xlsxSST
@@ -470,7 +470,7 @@ func (f *File) SetRowVisible(sheet string, row int, visible bool) error {
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(ws, 0, row)
+	ws.prepareSheetXML(0, row)
 	ws.SheetData.Row[row-1].Hidden = !visible
 	return nil
 }
@@ -511,7 +511,7 @@ func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(ws, 0, row)
+	ws.prepareSheetXML(0, row)
 	ws.SheetData.Row[row-1].OutlineLevel = level
 	return nil
 }
@@ -724,7 +724,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 //
 // Notice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
-func checkRow(ws *xlsxWorksheet) error {
+func (ws *xlsxWorksheet) checkRow() error {
 	for rowIdx := range ws.SheetData.Row {
 		rowData := &ws.SheetData.Row[rowIdx]
 
@@ -814,8 +814,8 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if err != nil {
 		return err
 	}
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}
@@ -823,7 +823,7 @@ func (f *File) SetRowStyle(sheet string, start, end, styleID int) error {
 	if err != nil {
 		return err
 	}
-	prepareSheetXML(ws, 0, end)
+	ws.prepareSheetXML(0, end)
 	for row := start - 1; row < end; row++ {
 		ws.SheetData.Row[row].S = styleID
 		ws.SheetData.Row[row].CustomFormat = true
