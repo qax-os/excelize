@@ -17,6 +17,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mohae/deepcopy"
 )
@@ -481,9 +482,15 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	if err != nil {
 		return err
 	}
+
+	return f.setColWidth(sheet, min, max, width)
+}
+
+func (f *File) setColWidth(sheet string, min, max int, width float64) error {
 	if width > MaxColumnWidth {
 		return ErrColumnWidth
 	}
+
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -512,6 +519,81 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 		return fc
 	})
 	return err
+}
+
+// AutoFitColWidth provides a function to autofit columns according to
+// their text content with default font size and font.
+// Note: this only works on the column with cells which not contains
+// formula cell and style with a number format.
+//
+// For example set column of column H on Sheet1:
+//
+// err = f.AutoFitColWidth("Sheet1", "H")
+//
+// Set style of columns C:F on Sheet1:
+//
+// err = f.AutoFitColWidth("Sheet1", "C:F")
+func (f *File) AutoFitColWidth(sheetName, columns string) error {
+	startColIdx, endColIdx, err := f.parseColRange(columns)
+	if err != nil {
+		return err
+	}
+
+	cols, err := f.Cols(sheetName)
+	if err != nil {
+		return err
+	}
+
+	colIdx := 1
+	for cols.Next() {
+		if colIdx >= startColIdx && colIdx <= endColIdx {
+			rowCells, _ := cols.Rows()
+			var max int
+			for i := range rowCells {
+				rowCell := rowCells[i]
+
+				// Single Byte Character Set(SBCS) is 1 holds
+				// Multi-Byte Character System(MBCS) is 2 holds
+				var cellLenSBCS, cellLenMBCS int
+				for ii := range rowCell {
+					if rowCell[ii] < 0x80 {
+						cellLenSBCS++
+					}
+				}
+
+				runeLen := utf8.RuneCountInString(rowCell)
+				cellLenMBCS = runeLen - cellLenSBCS
+
+				cellWidth := cellLenSBCS + cellLenMBCS*2
+				if cellWidth > max {
+					max = cellWidth
+				}
+			}
+
+			// The ratio of 1.123 is the best approximation I tried my best to
+			// find.
+			actualMax := float64(max) * 1.123
+
+			if actualMax < defaultColWidth {
+				actualMax = defaultColWidth
+			} else if actualMax >= MaxColumnWidth {
+				actualMax = MaxColumnWidth
+			}
+
+			if err := f.setColWidth(sheetName, colIdx, colIdx, actualMax); err != nil {
+				return err
+			}
+		}
+
+		// fast go away.
+		if colIdx == endColIdx {
+			break
+		}
+
+		colIdx++
+	}
+
+	return nil
 }
 
 // flatCols provides a method for the column's operation functions to flatten

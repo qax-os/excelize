@@ -2,7 +2,9 @@ package excelize
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -384,6 +386,49 @@ func TestColWidth(t *testing.T) {
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestColWidth.xlsx")))
 	convertRowHeightToPixels(0)
+}
+
+func TestAutoFitColWidth(t *testing.T) {
+	getCellLen := func(s string) int {
+		var cellLenSBCS, cellLenMBCS int
+		for i := range s {
+			if s[i] < 0x80 {
+				cellLenSBCS++
+			}
+		}
+
+		runeLen := utf8.RuneCountInString(s)
+		cellLenMBCS = runeLen - cellLenSBCS
+
+		return cellLenSBCS + cellLenMBCS*2
+	}
+
+	for _, c := range []string{"", "A", "a", "a你好", "你好", "あなた"} {
+		f := NewFile()
+		for i := 1; i <= 10; i++ {
+			colN, err := ColumnNumberToName(i)
+			assert.NoError(t, err)
+
+			v := strings.Repeat(c, i)
+			assert.NoError(t, f.SetCellValue("Sheet1", colN+"1", v))
+
+			assert.NoError(t, f.AutoFitColWidth("Sheet1", colN))
+
+			got, err := f.GetColWidth("Sheet1", colN)
+			assert.CallerInfo()
+			assert.NoError(t, err)
+
+			actualLen := float64(getCellLen(v)) * 1.123
+			if actualLen < defaultColWidth {
+				assert.Equal(t, defaultColWidth, got)
+			} else if actualLen >= MaxColumnWidth {
+				assert.Equal(t, float64(MaxColumnWidth), got)
+			} else {
+				assert.Equal(t, actualLen, got)
+			}
+		}
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoColWidth.xlsx")))
+	}
 }
 
 func TestGetColStyle(t *testing.T) {
