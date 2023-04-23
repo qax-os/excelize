@@ -23,6 +23,13 @@ import (
 	"unicode/utf8"
 )
 
+var (
+	expressionFormat = regexp.MustCompile(`"(?:[^"]|"")*"|\S+`)
+	conditionFormat  = regexp.MustCompile(`(or|\|\|)`)
+	blankFormat      = regexp.MustCompile("blanks|nonblanks")
+	matchFormat      = regexp.MustCompile("[*?]")
+)
+
 // parseTableOptions provides a function to parse the format settings of the
 // table with default value.
 func parseTableOptions(opts *Table) (*Table, error) {
@@ -400,8 +407,7 @@ func (f *File) autoFilter(sheet, ref string, columns, col int, opts []AutoFilter
 			return fmt.Errorf("incorrect index of column '%s'", opt.Column)
 		}
 		fc := &xlsxFilterColumn{ColID: offset}
-		re := regexp.MustCompile(`"(?:[^"]|"")*"|\S+`)
-		token := re.FindAllString(opt.Expression, -1)
+		token := expressionFormat.FindAllString(opt.Expression, -1)
 		if len(token) != 3 && len(token) != 7 {
 			return fmt.Errorf("incorrect number of tokens in criteria '%s'", opt.Expression)
 		}
@@ -484,8 +490,7 @@ func (f *File) parseFilterExpression(expression string, tokens []string) ([]int,
 		// expressions).
 		conditional := 0
 		c := tokens[3]
-		re, _ := regexp.Match(`(or|\|\|)`, []byte(c))
-		if re {
+		if conditionFormat.Match([]byte(c)) {
 			conditional = 1
 		}
 		expression1, token1, err := f.parseFilterTokens(expression, tokens[:3])
@@ -533,7 +538,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	}
 	token := tokens[2]
 	// Special handling for Blanks/NonBlanks.
-	re, _ := regexp.Match("blanks|nonblanks", []byte(strings.ToLower(token)))
+	re := blankFormat.Match([]byte(strings.ToLower(token)))
 	if re {
 		// Only allow Equals or NotEqual in this context.
 		if operator != 2 && operator != 5 {
@@ -558,7 +563,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	}
 	// If the string token contains an Excel match character then change the
 	// operator type to indicate a non "simple" equality.
-	re, _ = regexp.Match("[*?]", []byte(token))
+	re = matchFormat.Match([]byte(token))
 	if operator == 2 && re {
 		operator = 22
 	}

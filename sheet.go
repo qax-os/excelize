@@ -977,6 +977,7 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 	if sst, err = f.sharedStringsReader(); err != nil {
 		return
 	}
+	regex := regexp.MustCompile(value)
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readBytes(name)))
 	for {
 		var token xml.Token
@@ -1001,7 +1002,6 @@ func (f *File) searchSheet(name, value string, regSearch bool) (result []string,
 				_ = decoder.DecodeElement(&colCell, &xmlElement)
 				val, _ := colCell.getValueFrom(f, sst, false)
 				if regSearch {
-					regex := regexp.MustCompile(value)
 					if !regex.MatchString(val) {
 						continue
 					}
