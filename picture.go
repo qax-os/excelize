@@ -212,10 +212,13 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 		return err
 	}
 	// Read sheet data.
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
 	ws.mu.Lock()
 	// Add first picture for given sheet, create xl/drawings/ and xl/drawings/_rels/ folder.
 	drawingID := f.countDrawings() + 1
@@ -591,10 +594,13 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 	}
 	col--
 	row--
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return nil, err
 	}
+	f.mu.Unlock()
 	if ws.Drawing == nil {
 		return nil, err
 	}

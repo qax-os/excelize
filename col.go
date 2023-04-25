@@ -257,10 +257,13 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 	if err != nil {
 		return true, err
 	}
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return false, err
 	}
+	f.mu.Unlock()
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	if ws.Cols == nil {
@@ -428,20 +431,24 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if err != nil {
 		return err
 	}
+	f.mu.Lock()
 	s, err := f.stylesReader()
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		f.mu.Unlock()
+		return err
+	}
+	f.mu.Unlock()
 	s.mu.Lock()
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		s.mu.Unlock()
 		return newInvalidStyleID(styleID)
 	}
 	s.mu.Unlock()
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
-	}
 	ws.mu.Lock()
 	if ws.Cols == nil {
 		ws.Cols = &xlsxCols{}
@@ -484,10 +491,13 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	if width > MaxColumnWidth {
 		return ErrColumnWidth
 	}
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	col := xlsxCol{
@@ -659,10 +669,13 @@ func (f *File) GetColStyle(sheet, col string) (int, error) {
 	if err != nil {
 		return styleID, err
 	}
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return styleID, err
 	}
+	f.mu.Unlock()
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	if ws.Cols != nil {
@@ -682,10 +695,13 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 	if err != nil {
 		return defaultColWidth, err
 	}
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return defaultColWidth, err
 	}
+	f.mu.Unlock()
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	if ws.Cols != nil {

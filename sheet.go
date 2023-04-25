@@ -1843,8 +1843,6 @@ func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 // row to accept data. Missing rows are backfilled and given their row number
 // Uses the last populated row as a hint for the size of the next row to add
 func (ws *xlsxWorksheet) prepareSheetXML(col int, row int) {
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
 	var ht *float64
@@ -1878,9 +1876,7 @@ func fillColumns(rowData *xlsxRow, col, row int) {
 }
 
 // makeContiguousColumns make columns in specific rows as contiguous.
-func makeContiguousColumns(ws *xlsxWorksheet, fromRow, toRow, colCount int) {
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
+func (ws *xlsxWorksheet) makeContiguousColumns(fromRow, toRow, colCount int) {
 	for ; fromRow < toRow; fromRow++ {
 		rowData := &ws.SheetData.Row[fromRow-1]
 		fillColumns(rowData, colCount, fromRow)

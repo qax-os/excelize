@@ -948,10 +948,13 @@ func (nf *numberFormat) zeroHandler() string {
 // textHandler will be handling text selection for a number format expression.
 func (nf *numberFormat) textHandler() (result string) {
 	for _, token := range nf.section[nf.sectionIdx].Items {
+		if inStrSlice([]string{nfp.TokenTypeDateTimes, nfp.TokenTypeElapsedDateTimes}, token.TType, false) != -1 {
+			return nf.value
+		}
 		if token.TType == nfp.TokenTypeLiteral {
 			result += token.TValue
 		}
-		if token.TType == nfp.TokenTypeTextPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
+		if token.TType == nfp.TokenTypeGeneral || token.TType == nfp.TokenTypeTextPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
 			result += nf.value
 		}
 	}

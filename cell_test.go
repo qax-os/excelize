@@ -65,7 +65,7 @@ func TestConcurrency(t *testing.T) {
 			// Concurrency iterate columns
 			cols, err := f.Cols("Sheet1")
 			assert.NoError(t, err)
-			for rows.Next() {
+			for cols.Next() {
 				_, err := cols.Rows()
 				assert.NoError(t, err)
 			}

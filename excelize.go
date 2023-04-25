@@ -234,8 +234,6 @@ func (f *File) setDefaultTimeStyle(sheet, cell string, format int) error {
 // workSheetReader provides a function to get the pointer to the structure
 // after deserialization by given worksheet name.
 func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
 	var (
 		name string
 		ok   bool

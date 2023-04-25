@@ -2004,10 +2004,13 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	if fs.DecimalPlaces == 0 {
 		fs.DecimalPlaces = 2
 	}
+	f.mu.Lock()
 	s, err := f.stylesReader()
 	if err != nil {
+		f.mu.Unlock()
 		return cellXfsID, err
 	}
+	f.mu.Unlock()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// check given style already exist.
@@ -2131,10 +2134,13 @@ func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (int, error) {
 // format by given style format. The parameters are the same with the NewStyle
 // function.
 func (f *File) NewConditionalStyle(style *Style) (int, error) {
+	f.mu.Lock()
 	s, err := f.stylesReader()
 	if err != nil {
+		f.mu.Unlock()
 		return 0, err
 	}
+	f.mu.Unlock()
 	fs, err := parseFormatStyleSet(style)
 	if err != nil {
 		return 0, err
@@ -2179,7 +2185,9 @@ func (f *File) SetDefaultFont(fontName string) error {
 		return err
 	}
 	font.Name.Val = stringPtr(fontName)
+	f.mu.Lock()
 	s, _ := f.stylesReader()
+	f.mu.Unlock()
 	s.Fonts.Font[0] = font
 	custom := true
 	s.CellStyles.CellStyle[0].CustomBuiltIn = &custom
@@ -2188,6 +2196,8 @@ func (f *File) SetDefaultFont(fontName string) error {
 
 // readDefaultFont provides an un-marshalled font value.
 func (f *File) readDefaultFont() (*xlsxFont, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	s, err := f.stylesReader()
 	if err != nil {
 		return nil, err
@@ -2803,22 +2813,25 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 
 	vColIdx := vCol - 1
 	vRowIdx := vRow - 1
-
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
-	ws.prepareSheetXML(vCol, vRow)
-	makeContiguousColumns(ws, hRow, vRow, vCol)
+	s, err := f.stylesReader()
+	if err != nil {
+		f.mu.Unlock()
+		return err
+	}
+	f.mu.Unlock()
+
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 
-	s, err := f.stylesReader()
-	if err != nil {
-		return err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	ws.prepareSheetXML(vCol, vRow)
+	ws.makeContiguousColumns(hRow, vRow, vCol)
+
 	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
 		return newInvalidStyleID(styleID)
 	}

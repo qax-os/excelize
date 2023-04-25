@@ -1008,4 +1008,12 @@ func TestNumFmt(t *testing.T) {
 		result := format(item[0], item[1], false, CellTypeNumber)
 		assert.Equal(t, item[2], result, item)
 	}
+	for _, item := range [][]string{
+		{"1234.5678", "General", "1234.5678"},
+		{"1234.5678", "yyyy\"年\"m\"月\"d\"日\";@", "1234.5678"},
+		{"1234.5678", "0_);[Red]\\(0\\)", "1234.5678"},
+	} {
+		result := format(item[0], item[1], false, CellTypeSharedString)
+		assert.Equal(t, item[2], result, item)
+	}
 }

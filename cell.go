@@ -288,16 +288,19 @@ func setCellDuration(value time.Duration) (t string, v string) {
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell reference and cell value.
 func (f *File) SetCellInt(sheet, cell string, value int) error {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	c, col, row, err := ws.prepareCell(cell)
 	if err != nil {
 		return err
 	}
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	c.S = ws.prepareCellStyle(col, row, c.S)
 	c.T, c.V = setCellInt(value)
 	c.IS = nil
@@ -314,16 +317,19 @@ func setCellInt(value int) (t string, v string) {
 // SetCellBool provides a function to set bool type value of a cell by given
 // worksheet name, cell reference and cell value.
 func (f *File) SetCellBool(sheet, cell string, value bool) error {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	c, col, row, err := ws.prepareCell(cell)
 	if err != nil {
 		return err
 	}
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	c.S = ws.prepareCellStyle(col, row, c.S)
 	c.T, c.V = setCellBool(value)
 	c.IS = nil
@@ -351,16 +357,19 @@ func setCellBool(value bool) (t string, v string) {
 //	var x float32 = 1.325
 //	f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSize int) error {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	c, col, row, err := ws.prepareCell(cell)
 	if err != nil {
 		return err
 	}
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	c.S = ws.prepareCellStyle(col, row, c.S)
 	c.T, c.V = setCellFloat(value, precision, bitSize)
 	c.IS = nil
@@ -377,16 +386,19 @@ func setCellFloat(value float64, precision, bitSize int) (t string, v string) {
 // SetCellStr provides a function to set string type value of a cell. Total
 // number of characters that a cell can contain 32767 characters.
 func (f *File) SetCellStr(sheet, cell, value string) error {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	c, col, row, err := ws.prepareCell(cell)
 	if err != nil {
 		return err
 	}
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	c.S = ws.prepareCellStyle(col, row, c.S)
 	if c.T, c.V, err = f.setCellString(value); err != nil {
 		return err
@@ -558,8 +570,6 @@ func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
 // intended to be used with for range on rows an argument with the spreadsheet
 // opened file.
 func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
 	switch c.T {
 	case "b":
 		return c.getCellBool(f, raw)
@@ -596,16 +606,19 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 // SetCellDefault provides a function to set string type value of a cell as
 // default format without escaping the cell.
 func (f *File) SetCellDefault(sheet, cell, value string) error {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	c, col, row, err := ws.prepareCell(cell)
 	if err != nil {
 		return err
 	}
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	c.S = ws.prepareCellStyle(col, row, c.S)
 	c.setCellDefault(value)
 	return f.removeFormula(c, ws, sheet)
@@ -1264,8 +1277,6 @@ func (ws *xlsxWorksheet) prepareCell(cell string) (*xlsxC, int, int, error) {
 	}
 
 	ws.prepareSheetXML(col, row)
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	return &ws.SheetData.Row[row-1].C[col-1], col, row, err
 }
 
