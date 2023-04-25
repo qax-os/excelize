@@ -11,7 +11,10 @@
 
 package excelize
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"sync"
+)
 
 // xlsxSST directly maps the sst element from the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main. String values may
@@ -21,6 +24,7 @@ import "encoding/xml"
 // is an indexed list of string values, shared across the workbook, which allows
 // implementations to store values only once.
 type xlsxSST struct {
+	mu          sync.Mutex
 	XMLName     xml.Name `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main sst"`
 	Count       int      `xml:"count,attr"`
 	UniqueCount int      `xml:"uniqueCount,attr"`

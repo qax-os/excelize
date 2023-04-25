@@ -460,6 +460,8 @@ func (f *File) setSharedString(val string) (int, error) {
 	if i, ok := f.sharedStringsMap[val]; ok {
 		return i, nil
 	}
+	sst.mu.Lock()
+	defer sst.mu.Unlock()
 	sst.Count++
 	sst.UniqueCount++
 	t := xlsxT{Val: val}
@@ -581,6 +583,8 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
 				return f.formattedValue(&xlsxC{S: c.S, V: f.getFromStringItem(xlsxSI)}, raw, CellTypeSharedString)
 			}
+			d.mu.Lock()
+			defer d.mu.Unlock()
 			if len(d.SI) > xlsxSI {
 				return f.formattedValue(&xlsxC{S: c.S, V: d.SI[xlsxSI].String()}, raw, CellTypeSharedString)
 			}
