@@ -1365,8 +1365,8 @@ func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, er
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
-	if ok := builtInNumFmtFunc[numFmtID]; ok != nil {
-		return ok(c.V, builtInNumFmt[numFmtID], date1904, cellType), err
+	if fmtCode, ok := builtInNumFmt[numFmtID]; ok {
+		return format(c.V, fmtCode, date1904, cellType), err
 	}
 	if styleSheet.NumFmts == nil {
 		return c.V, err

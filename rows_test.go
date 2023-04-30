@@ -1114,7 +1114,7 @@ func TestNumberFormats(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
 		result, err := f.GetCellValue("Sheet1", cell)
 		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		assert.Equal(t, expected, result, cell)
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNumberFormats.xlsx")))
 }

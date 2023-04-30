@@ -34,7 +34,7 @@ var builtInNumFmt = map[int]string{
 	4:  "#,##0.00",
 	9:  "0%",
 	10: "0.00%",
-	11: "0.00e+00",
+	11: "0.00E+00",
 	12: "# ?/?",
 	13: "# ??/??",
 	14: "mm-dd-yy",
@@ -48,8 +48,8 @@ var builtInNumFmt = map[int]string{
 	22: "m/d/yy hh:mm",
 	37: "#,##0 ;(#,##0)",
 	38: "#,##0 ;[red](#,##0)",
-	39: "#,##0.00;(#,##0.00)",
-	40: "#,##0.00;[red](#,##0.00)",
+	39: "#,##0.00 ;(#,##0.00)",
+	40: "#,##0.00 ;[red](#,##0.00)",
 	41: `_(* #,##0_);_(* \(#,##0\);_(* "-"_);_(@_)`,
 	42: `_("$"* #,##0_);_("$"* \(#,##0\);_("$"* "-"_);_(@_)`,
 	43: `_(* #,##0.00_);_(* \(#,##0.00\);_(* "-"??_);_(@_)`,
@@ -57,7 +57,7 @@ var builtInNumFmt = map[int]string{
 	45: "mm:ss",
 	46: "[h]:mm:ss",
 	47: "mmss.0",
-	48: "##0.0e+0",
+	48: "##0.0E+0",
 	49: "@",
 }
 
@@ -751,43 +751,6 @@ var currencyNumFmt = map[int]string{
 	634: "[$ZWR]\\ #,##0.00",
 }
 
-// builtInNumFmtFunc defined the format conversion functions map. Partial format
-// code doesn't support currently and will return original string.
-var builtInNumFmtFunc = map[int]func(v, format string, date1904 bool, cellType CellType) string{
-	0:  format,
-	1:  formatToInt,
-	2:  formatToFloat,
-	3:  formatToIntSeparator,
-	4:  formatToFloat,
-	9:  formatToC,
-	10: formatToD,
-	11: formatToE,
-	12: format, // Doesn't support currently
-	13: format, // Doesn't support currently
-	14: format,
-	15: format,
-	16: format,
-	17: format,
-	18: format,
-	19: format,
-	20: format,
-	21: format,
-	22: format,
-	37: formatToA,
-	38: formatToA,
-	39: formatToB,
-	40: formatToB,
-	41: format, // Doesn't support currently
-	42: format, // Doesn't support currently
-	43: format, // Doesn't support currently
-	44: format, // Doesn't support currently
-	45: format,
-	46: format,
-	47: format,
-	48: formatToE,
-	49: format,
-}
-
 // validType defined the list of valid validation types.
 var validType = map[string]string{
 	"cell":          "cellIs",
@@ -867,172 +830,6 @@ var operatorType = map[string]string{
 	"continueMonth":      "continue month",
 	"notBetween":         "not between",
 	"greaterThanOrEqual": "greater than or equal to",
-}
-
-// printCommaSep format number with thousands separator.
-func printCommaSep(text string) string {
-	var (
-		target strings.Builder
-		subStr = strings.Split(text, ".")
-		length = len(subStr[0])
-	)
-	for i := 0; i < length; i++ {
-		if i > 0 && (length-i)%3 == 0 {
-			target.WriteString(",")
-		}
-		target.WriteString(string(text[i]))
-	}
-	if len(subStr) == 2 {
-		target.WriteString(".")
-		target.WriteString(subStr[1])
-	}
-	return target.String()
-}
-
-// formatToInt provides a function to convert original string to integer
-// format as string type by given built-in number formats code and cell
-// string.
-func formatToInt(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	return strconv.FormatFloat(math.Round(f), 'f', -1, 64)
-}
-
-// formatToFloat provides a function to convert original string to float
-// format as string type by given built-in number formats code and cell
-// string.
-func formatToFloat(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	source := strconv.FormatFloat(f, 'f', -1, 64)
-	if !strings.Contains(source, ".") {
-		return source + ".00"
-	}
-	return fmt.Sprintf("%.2f", f)
-}
-
-// formatToIntSeparator provides a function to convert original string to
-// integer format as string type by given built-in number formats code and cell
-// string.
-func formatToIntSeparator(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	return printCommaSep(strconv.FormatFloat(math.Round(f), 'f', -1, 64))
-}
-
-// formatToA provides a function to convert original string to special format
-// as string type by given built-in number formats code and cell string.
-func formatToA(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	var target strings.Builder
-	if f < 0 {
-		target.WriteString("(")
-	}
-	target.WriteString(printCommaSep(strconv.FormatFloat(math.Abs(math.Round(f)), 'f', -1, 64)))
-	if f < 0 {
-		target.WriteString(")")
-	} else {
-		target.WriteString(" ")
-	}
-	return target.String()
-}
-
-// formatToB provides a function to convert original string to special format
-// as string type by given built-in number formats code and cell string.
-func formatToB(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	var target strings.Builder
-	if f < 0 {
-		target.WriteString("(")
-	}
-	source := strconv.FormatFloat(math.Abs(f), 'f', -1, 64)
-	var text string
-	if !strings.Contains(source, ".") {
-		text = printCommaSep(source + ".00")
-	} else {
-		text = printCommaSep(fmt.Sprintf("%.2f", math.Abs(f)))
-	}
-	target.WriteString(text)
-	if f < 0 {
-		target.WriteString(")")
-	} else {
-		target.WriteString(" ")
-	}
-	return target.String()
-}
-
-// formatToC provides a function to convert original string to special format
-// as string type by given built-in number formats code and cell string.
-func formatToC(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	source := strconv.FormatFloat(f, 'f', -1, 64)
-	if !strings.Contains(source, ".") {
-		return source + "00%"
-	}
-	return fmt.Sprintf("%.f%%", f*100)
-}
-
-// formatToD provides a function to convert original string to special format
-// as string type by given built-in number formats code and cell string.
-func formatToD(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	source := strconv.FormatFloat(f, 'f', -1, 64)
-	if !strings.Contains(source, ".") {
-		return source + "00.00%"
-	}
-	return fmt.Sprintf("%.2f%%", f*100)
-}
-
-// formatToE provides a function to convert original string to special format
-// as string type by given built-in number formats code and cell string.
-func formatToE(v, format string, date1904 bool, cellType CellType) string {
-	if strings.Contains(v, "_") || cellType == CellTypeSharedString || cellType == CellTypeInlineString {
-		return v
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return v
-	}
-	return fmt.Sprintf("%.2E", f)
 }
 
 // stylesReader provides a function to get the pointer to the structure after

@@ -21,7 +21,8 @@ import (
 	"github.com/xuri/nfp"
 )
 
-// languageInfo defined the required fields of localization support for number format.
+// languageInfo defined the required fields of localization support for number
+// format.
 type languageInfo struct {
 	apFmt      string
 	tags       []string
@@ -31,13 +32,16 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
-	cellType                                       CellType
-	section                                        []nfp.Section
-	t                                              time.Time
-	sectionIdx                                     int
-	date1904, isNumeric, hours, seconds            bool
-	number                                         float64
-	ap, localCode, result, value, valueSectionType string
+	cellType                                                    CellType
+	section                                                     []nfp.Section
+	t                                                           time.Time
+	sectionIdx                                                  int
+	date1904, isNumeric, hours, seconds                         bool
+	number                                                      float64
+	ap, localCode, result, value, valueSectionType              string
+	fracHolder, fracPadding, intHolder, intPadding, expBaseLen  int
+	percent                                                     int
+	useCommaSep, usePointer, usePositive, useScientificNotation bool
 }
 
 var (
@@ -47,11 +51,32 @@ var (
 		nfp.TokenTypeColor,
 		nfp.TokenTypeCurrencyLanguage,
 		nfp.TokenTypeDateTimes,
+		nfp.TokenTypeDecimalPoint,
 		nfp.TokenTypeElapsedDateTimes,
+		nfp.TokenTypeExponential,
 		nfp.TokenTypeGeneral,
+		nfp.TokenTypeHashPlaceHolder,
 		nfp.TokenTypeLiteral,
+		nfp.TokenTypePercent,
 		nfp.TokenTypeTextPlaceHolder,
+		nfp.TokenTypeThousandsSeparator,
 		nfp.TokenTypeZeroPlaceHolder,
+	}
+	// supportedNumberTokenTypes list the supported number token types.
+	supportedNumberTokenTypes = []string{
+		nfp.TokenTypeColor,
+		nfp.TokenTypeDecimalPoint,
+		nfp.TokenTypeHashPlaceHolder,
+		nfp.TokenTypeLiteral,
+		nfp.TokenTypePercent,
+		nfp.TokenTypeThousandsSeparator,
+		nfp.TokenTypeZeroPlaceHolder,
+	}
+	// supportedDateTimeTokenTypes list the supported date and time token types.
+	supportedDateTimeTokenTypes = []string{
+		nfp.TokenTypeCurrencyLanguage,
+		nfp.TokenTypeDateTimes,
+		nfp.TokenTypeElapsedDateTimes,
 	}
 	// supportedLanguageInfo directly maps the supported language ID and tags.
 	supportedLanguageInfo = map[string]languageInfo{
@@ -373,15 +398,172 @@ func format(value, numFmt string, date1904 bool, cellType CellType) string {
 	return value
 }
 
-// positiveHandler will be handling positive selection for a number format
-// expression.
-func (nf *numberFormat) positiveHandler() (result string) {
+// getNumberPartLen returns the length of integer and fraction parts for the
+// numeric.
+func getNumberPartLen(n float64) (int, int) {
+	parts := strings.Split(strconv.FormatFloat(math.Abs(n), 'f', -1, 64), ".")
+	if len(parts) == 2 {
+		return len(parts[0]), len(parts[1])
+	}
+	return len(parts[0]), 0
+}
+
+// getNumberFmtConf generate the number format padding and place holder
+// configurations.
+func (nf *numberFormat) getNumberFmtConf() {
+	for _, token := range nf.section[nf.sectionIdx].Items {
+		if token.TType == nfp.TokenTypeHashPlaceHolder {
+			if nf.usePointer {
+				nf.fracHolder += len(token.TValue)
+			} else {
+				nf.intHolder += len(token.TValue)
+			}
+		}
+		if token.TType == nfp.TokenTypeExponential {
+			nf.useScientificNotation = true
+		}
+		if token.TType == nfp.TokenTypeThousandsSeparator {
+			nf.useCommaSep = true
+		}
+		if token.TType == nfp.TokenTypePercent {
+			nf.percent += len(token.TValue)
+		}
+		if token.TType == nfp.TokenTypeDecimalPoint {
+			nf.usePointer = true
+		}
+		if token.TType == nfp.TokenTypeZeroPlaceHolder {
+			if nf.usePointer {
+				if nf.useScientificNotation {
+					nf.expBaseLen += len(token.TValue)
+					continue
+				}
+				nf.fracPadding += len(token.TValue)
+				continue
+			}
+			nf.intPadding += len(token.TValue)
+		}
+	}
+}
+
+// printNumberLiteral apply literal tokens for the pre-formatted text.
+func (nf *numberFormat) printNumberLiteral(text string) string {
+	var result string
+	var useZeroPlaceHolder bool
+	if nf.usePositive {
+		result += "-"
+	}
+	for _, token := range nf.section[nf.sectionIdx].Items {
+		if token.TType == nfp.TokenTypeLiteral {
+			result += token.TValue
+		}
+		if !useZeroPlaceHolder && token.TType == nfp.TokenTypeZeroPlaceHolder {
+			useZeroPlaceHolder = true
+			result += text
+		}
+	}
+	return result
+}
+
+// printCommaSep format number with thousands separator.
+func printCommaSep(text string) string {
+	var (
+		target strings.Builder
+		subStr = strings.Split(text, ".")
+		length = len(subStr[0])
+	)
+	for i := 0; i < length; i++ {
+		if i > 0 && (length-i)%3 == 0 {
+			target.WriteString(",")
+		}
+		target.WriteString(string(text[i]))
+	}
+	if len(subStr) == 2 {
+		target.WriteString(".")
+		target.WriteString(subStr[1])
+	}
+	return target.String()
+}
+
+// printBigNumber format number which precision great than 15 with fraction
+// zero padding and percentage symbol.
+func (nf *numberFormat) printBigNumber(decimal float64, fracLen int) string {
+	var exp float64
+	if nf.percent > 0 {
+		exp = 1
+	}
+	result := strings.TrimLeft(strconv.FormatFloat(decimal*math.Pow(100, exp), 'f', -1, 64), "-")
+	if nf.useCommaSep {
+		result = printCommaSep(result)
+	}
+	if fracLen > 0 {
+		if parts := strings.Split(result, "."); len(parts) == 2 {
+			fracPartLen := len(parts[1])
+			if fracPartLen < fracLen {
+				result = fmt.Sprintf("%s%s", result, strings.Repeat("0", fracLen-fracPartLen))
+			}
+			if fracPartLen > fracLen {
+				result = fmt.Sprintf("%s.%s", parts[0], parts[1][:fracLen])
+			}
+		} else {
+			result = fmt.Sprintf("%s.%s", result, strings.Repeat("0", fracLen))
+		}
+	}
+	if nf.percent > 0 {
+		return fmt.Sprintf("%s%%", result)
+	}
+	return result
+}
+
+// numberHandler handling number format expression for positive and negative
+// numeric.
+func (nf *numberFormat) numberHandler() string {
+	var (
+		num               = nf.number
+		intPart, fracPart = getNumberPartLen(nf.number)
+		intLen, fracLen   int
+		result            string
+	)
+	nf.getNumberFmtConf()
+	if intLen = intPart; nf.intPadding > intPart {
+		intLen = nf.intPadding
+	}
+	if fracLen = fracPart; fracPart > nf.fracHolder+nf.fracPadding {
+		fracLen = nf.fracHolder + nf.fracPadding
+	}
+	if nf.fracPadding > fracPart {
+		fracLen = nf.fracPadding
+	}
+	if isNum, precision, decimal := isNumeric(nf.value); isNum {
+		if precision > 15 && intLen+fracLen > 15 {
+			return nf.printNumberLiteral(nf.printBigNumber(decimal, fracLen))
+		}
+	}
+	paddingLen := intLen + fracLen
+	if fracLen > 0 {
+		paddingLen++
+	}
+	flag := "f"
+	if nf.useScientificNotation {
+		if nf.expBaseLen != 2 {
+			return nf.value
+		}
+		flag = "E"
+	}
+	fmtCode := fmt.Sprintf("%%0%d.%d%s%s", paddingLen, fracLen, flag, strings.Repeat("%%", nf.percent))
+	if nf.percent > 0 {
+		num *= math.Pow(100, float64(nf.percent))
+	}
+	if result = fmt.Sprintf(fmtCode, math.Abs(num)); nf.useCommaSep {
+		result = printCommaSep(result)
+	}
+	return nf.printNumberLiteral(result)
+}
+
+// dateTimeHandler handling data and time number format expression for a
+// positive numeric.
+func (nf *numberFormat) dateTimeHandler() (result string) {
 	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, nf.date1904), false, false
 	for i, token := range nf.section[nf.sectionIdx].Items {
-		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
-			result = nf.value
-			return
-		}
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
 			if err := nf.currencyLanguageHandler(i, token); err != nil {
 				result = nf.value
@@ -398,27 +580,46 @@ func (nf *numberFormat) positiveHandler() (result string) {
 			nf.result += token.TValue
 			continue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
-			if isNum, precision, decimal := isNumeric(nf.value); isNum {
-				if nf.number < 1 {
-					nf.result += "0"
-					continue
-				}
-				if precision > 15 {
-					nf.result += strconv.FormatFloat(decimal, 'f', -1, 64)
-				} else {
-					nf.result += fmt.Sprintf("%.f", nf.number)
-				}
-				continue
+		if token.TType == nfp.TokenTypeDecimalPoint {
+			nf.result += "."
+		}
+		if token.TType == nfp.TokenTypeZeroPlaceHolder {
+			zeroHolderLen := len(token.TValue)
+			if zeroHolderLen > 3 {
+				zeroHolderLen = 3
 			}
+			nf.result += strings.Repeat("0", zeroHolderLen)
 		}
 	}
-	result = nf.result
-	return
+	return nf.result
 }
 
-// currencyLanguageHandler will be handling currency and language types tokens for a number
-// format expression.
+// positiveHandler will be handling positive selection for a number format
+// expression.
+func (nf *numberFormat) positiveHandler() string {
+	var fmtNum bool
+	for _, token := range nf.section[nf.sectionIdx].Items {
+		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
+			return nf.value
+		}
+		if inStrSlice(supportedNumberTokenTypes, token.TType, true) != -1 {
+			fmtNum = true
+		}
+		if inStrSlice(supportedDateTimeTokenTypes, token.TType, true) != -1 {
+			if fmtNum || nf.number < 0 {
+				return nf.value
+			}
+			return nf.dateTimeHandler()
+		}
+	}
+	if fmtNum {
+		return nf.numberHandler()
+	}
+	return nf.value
+}
+
+// currencyLanguageHandler will be handling currency and language types tokens
+// for a number format expression.
 func (nf *numberFormat) currencyLanguageHandler(i int, token nfp.Token) (err error) {
 	for _, part := range token.Parts {
 		if inStrSlice(supportedTokenTypes, part.Token.TType, true) == -1 {
@@ -566,7 +767,8 @@ func localMonthsNameKorean(t time.Time, abbr int) string {
 	return strconv.Itoa(int(t.Month()))
 }
 
-// localMonthsNameTraditionalMongolian returns the Traditional Mongolian name of the month.
+// localMonthsNameTraditionalMongolian returns the Traditional Mongolian name of
+// the month.
 func localMonthsNameTraditionalMongolian(t time.Time, abbr int) string {
 	if abbr == 5 {
 		return "M"
@@ -912,32 +1114,23 @@ func (nf *numberFormat) secondsNext(i int) bool {
 // negativeHandler will be handling negative selection for a number format
 // expression.
 func (nf *numberFormat) negativeHandler() (result string) {
+	fmtNum := true
 	for _, token := range nf.section[nf.sectionIdx].Items {
 		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
-			result = nf.value
-			return
+			return nf.value
 		}
-		if token.TType == nfp.TokenTypeLiteral {
-			nf.result += token.TValue
+		if inStrSlice(supportedNumberTokenTypes, token.TType, true) != -1 {
 			continue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder && token.TValue == strings.Repeat("0", len(token.TValue)) {
-			if isNum, precision, decimal := isNumeric(nf.value); isNum {
-				if math.Abs(nf.number) < 1 {
-					nf.result += "0"
-					continue
-				}
-				if precision > 15 {
-					nf.result += strings.TrimLeft(strconv.FormatFloat(decimal, 'f', -1, 64), "-")
-				} else {
-					nf.result += fmt.Sprintf("%.f", math.Abs(nf.number))
-				}
-				continue
-			}
+		if inStrSlice(supportedDateTimeTokenTypes, token.TType, true) != -1 {
+			return nf.value
 		}
+		fmtNum = false
 	}
-	result = nf.result
-	return
+	if fmtNum {
+		return nf.numberHandler()
+	}
+	return nf.value
 }
 
 // zeroHandler will be handling zero selection for a number format expression.
@@ -973,6 +1166,16 @@ func (nf *numberFormat) getValueSectionType(value string) (float64, string) {
 		return number, nfp.TokenSectionPositive
 	}
 	if number < 0 {
+		var hasNeg bool
+		for _, sec := range nf.section {
+			if sec.Type == nfp.TokenSectionNegative {
+				hasNeg = true
+			}
+		}
+		if !hasNeg {
+			nf.usePositive = true
+			return number, nfp.TokenSectionPositive
+		}
 		return number, nfp.TokenSectionNegative
 	}
 	return number, nfp.TokenSectionZero

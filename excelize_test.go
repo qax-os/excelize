@@ -747,33 +747,33 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 
 	// Test only set fill and number format for a cell
 	col := []string{"L", "M", "N", "O", "P"}
-	data := []int{0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
+	idxTbl := []int{0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
 	value := []string{"37947.7500001", "-37947.7500001", "0.007", "2.1", "String"}
 	expected := [][]string{
-		{"37947.7500001", "37948", "37947.75", "37,948", "37947.75", "3794775%", "3794775.00%", "3.79E+04", "37947.7500001", "37947.7500001", "11-22-03", "22-Nov-03", "22-Nov", "Nov-03", "6:00 pm", "6:00:00 pm", "18:00", "18:00:00", "11/22/03 18:00", "37,948 ", "37,948 ", "37,947.75 ", "37,947.75 ", "37947.7500001", "37947.7500001", "37947.7500001", "37947.7500001", "00:00", "910746:00:00", "37947.7500001", "3.79E+04", "37947.7500001"},
-		{"-37947.7500001", "-37948", "-37947.75", "-37,948", "-37947.75", "-3794775%", "-3794775.00%", "-3.79E+04", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "(37,948)", "(37,948)", "(37,947.75)", "(37,947.75)", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-3.79E+04", "-37947.7500001"},
-		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0.007", "0.007", "12-30-99", "30-Dec-99", "30-Dec", "Dec-99", "0:10 am", "0:10:04 am", "00:10", "00:10:04", "12/30/99 00:10", "0 ", "0 ", "0.01 ", "0.01 ", "0.007", "0.007", "0.007", "0.007", "10:04", "0:10:04", "0.007", "7.00E-03", "0.007"},
-		{"2.1", "2", "2.10", "2", "2.10", "210%", "210.00%", "2.10E+00", "2.1", "2.1", "01-01-00", "1-Jan-00", "1-Jan", "Jan-00", "2:24 am", "2:24:00 am", "02:24", "02:24:00", "1/1/00 02:24", "2 ", "2 ", "2.10 ", "2.10 ", "2.1", "2.1", "2.1", "2.1", "24:00", "50:24:00", "2.1", "2.10E+00", "2.1"},
+		{"37947.7500001", "37948", "37947.75", "37,948", "37,947.75", "3794775%", "3794775.00%", "3.79E+04", "37947.7500001", "37947.7500001", "11-22-03", "22-Nov-03", "22-Nov", "Nov-03", "6:00 pm", "6:00:00 pm", "18:00", "18:00:00", "11/22/03 18:00", "37,948 ", "37,948 ", "37,947.75 ", "37,947.75 ", "37947.7500001", "37947.7500001", "37947.7500001", "37947.7500001", "00:00", "910746:00:00", "0000.0", "37947.7500001", "37947.7500001"},
+		{"-37947.7500001", "-37948", "-37947.75", "-37,948", "-37,947.75", "-3794775%", "-3794775.00%", "-3.79E+04", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "(37,948)", "(37,948)", "(37,947.75)", "(37,947.75)", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001"},
+		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0.007", "0.007", "12-30-99", "30-Dec-99", "30-Dec", "Dec-99", "0:10 am", "0:10:04 am", "00:10", "00:10:04", "12/30/99 00:10", "0 ", "0 ", "0.01 ", "0.01 ", "0.007", "0.007", "0.007", "0.007", "10:04", "0:10:04", "1004.0", "0.007", "0.007"},
+		{"2.1", "2", "2.10", "2", "2.10", "210%", "210.00%", "2.10E+00", "2.1", "2.1", "01-01-00", "1-Jan-00", "1-Jan", "Jan-00", "2:24 am", "2:24:00 am", "02:24", "02:24:00", "1/1/00 02:24", "2 ", "2 ", "2.10 ", "2.10 ", "2.1", "2.1", "2.1", "2.1", "24:00", "50:24:00", "2400.0", "2.1", "2.1"},
 		{"String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String"},
 	}
 
-	for i, v := range value {
-		for k, d := range data {
-			c := col[i] + strconv.Itoa(k+1)
+	for c, v := range value {
+		for r, idx := range idxTbl {
+			cell := col[c] + strconv.Itoa(r+1)
 			var val float64
 			val, err = strconv.ParseFloat(v, 64)
 			if err != nil {
-				assert.NoError(t, f.SetCellValue("Sheet2", c, v))
+				assert.NoError(t, f.SetCellValue("Sheet2", cell, v))
 			} else {
-				assert.NoError(t, f.SetCellValue("Sheet2", c, val))
+				assert.NoError(t, f.SetCellValue("Sheet2", cell, val))
 			}
-			style, err := f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 5}, NumFmt: d})
+			style, err := f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "E0EBF5"}, Shading: 5}, NumFmt: idx})
 			if !assert.NoError(t, err) {
 				t.FailNow()
 			}
-			assert.NoError(t, f.SetCellStyle("Sheet2", c, c, style))
-			cellValue, err := f.GetCellValue("Sheet2", c)
-			assert.Equal(t, expected[i][k], cellValue, fmt.Sprintf("Sheet2!%s value: %s, number format: %d", c, value[i], k))
+			assert.NoError(t, f.SetCellStyle("Sheet2", cell, cell, style))
+			cellValue, err := f.GetCellValue("Sheet2", cell)
+			assert.Equal(t, expected[c][r], cellValue, fmt.Sprintf("Sheet2!%s value: %s, number format: %s c: %d r: %d", cell, value[c], builtInNumFmt[idx], c, r))
 			assert.NoError(t, err)
 		}
 	}
@@ -997,7 +997,7 @@ func TestConditionalFormat(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 
-	fillCells(f, sheet1, 10, 15)
+	assert.NoError(t, fillCells(f, sheet1, 10, 15))
 
 	var format1, format2, format3, format4 int
 	var err error
@@ -1612,15 +1612,16 @@ func prepareTestBook4() (*File, error) {
 	return f, nil
 }
 
-func fillCells(f *File, sheet string, colCount, rowCount int) {
+func fillCells(f *File, sheet string, colCount, rowCount int) error {
 	for col := 1; col <= colCount; col++ {
 		for row := 1; row <= rowCount; row++ {
 			cell, _ := CoordinatesToCellName(col, row)
 			if err := f.SetCellStr(sheet, cell, cell); err != nil {
-				fmt.Println(err)
+				return err
 			}
 		}
 	}
+	return nil
 }
 
 func BenchmarkOpenFile(b *testing.B) {
