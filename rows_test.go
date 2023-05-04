@@ -305,7 +305,7 @@ func TestRemoveRow(t *testing.T) {
 		colCount = 10
 		rowCount = 10
 	)
-	fillCells(f, sheet1, colCount, rowCount)
+	assert.NoError(t, fillCells(f, sheet1, colCount, rowCount))
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
@@ -368,7 +368,7 @@ func TestInsertRows(t *testing.T) {
 		colCount = 10
 		rowCount = 10
 	)
-	fillCells(f, sheet1, colCount, rowCount)
+	assert.NoError(t, fillCells(f, sheet1, colCount, rowCount))
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 

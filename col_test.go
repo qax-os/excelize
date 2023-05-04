@@ -407,7 +407,7 @@ func TestInsertCols(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 
-	fillCells(f, sheet1, 10, 10)
+	assert.NoError(t, fillCells(f, sheet1, 10, 10))
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 	assert.NoError(t, f.MergeCell(sheet1, "A1", "C3"))
@@ -430,7 +430,7 @@ func TestRemoveCol(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 
-	fillCells(f, sheet1, 10, 15)
+	assert.NoError(t, fillCells(f, sheet1, 10, 15))
 
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "C5", "https://github.com", "External"))
