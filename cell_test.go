@@ -873,7 +873,7 @@ func TestFormattedValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "311", result)
 
-	assert.Equal(t, "0_0", format("0_0", "", false, CellTypeNumber))
+	assert.Equal(t, "0_0", format("0_0", "", false, CellTypeNumber, nil))
 
 	// Test format value with unsupported charset workbook
 	f.WorkBook = nil
@@ -887,7 +887,7 @@ func TestFormattedValue(t *testing.T) {
 	_, err = f.formattedValue(&xlsxC{S: 1, V: "43528"}, false, CellTypeNumber)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 
-	assert.Equal(t, "text", format("text", "0", false, CellTypeNumber))
+	assert.Equal(t, "text", format("text", "0", false, CellTypeNumber, nil))
 }
 
 func TestFormattedValueNilXfs(t *testing.T) {

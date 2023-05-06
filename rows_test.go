@@ -1117,6 +1117,15 @@ func TestNumberFormats(t *testing.T) {
 		assert.Equal(t, expected, result, cell)
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNumberFormats.xlsx")))
+
+	f = NewFile(Options{ShortDateFmtCode: "yyyy/m/d"})
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 43543.503206018519))
+	numFmt14, err := f.NewStyle(&Style{NumFmt: 14})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", numFmt14))
+	result, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "2019/3/19", result, "A1")
 }
 
 func BenchmarkRows(b *testing.B) {
