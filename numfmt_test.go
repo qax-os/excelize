@@ -995,6 +995,8 @@ func TestNumFmt(t *testing.T) {
 		{"44835.18957170139", "[$-435]mmmmm dd yyyy  h:mm AM/PM", "O 01 2022  4:32 AM"},
 		{"44866.18957170139", "[$-435]mmmmm dd yyyy  h:mm AM/PM", "N 01 2022  4:32 AM"},
 		{"44896.18957170139", "[$-435]mmmmm dd yyyy  h:mm AM/PM", "D 01 2022  4:32 AM"},
+		{"43543.503206018519", "[$-F800]dddd, mmmm dd, yyyy", "Tuesday, March 19, 2019"},
+		{"43543.503206018519", "[$-F400]h:mm:ss AM/PM", "12:04:37 PM"},
 		{"text_", "General", "text_"},
 		{"text_", "\"=====\"@@@\"--\"@\"----\"", "=====text_text_text_--text_----"},
 		{"0.0450685976001E+21", "0_);[Red]\\(0\\)", "45068597600100000000"},
@@ -1061,9 +1063,22 @@ func TestNumFmt(t *testing.T) {
 		{"1234.5678", "0.0xxx00", "1234.5678"},
 		{"-1234.5678", "00000.00###;s;", "-1234.5678"},
 	} {
-		result := format(item[0], item[1], false, CellTypeNumber)
+		result := format(item[0], item[1], false, CellTypeNumber, nil)
 		assert.Equal(t, item[2], result, item)
 	}
+	// Test format number with specified date and time format code
+	for _, item := range [][]string{
+		{"43543.503206018519", "[$-F800]dddd, mmmm dd, yyyy", "2019年3月19日"},
+		{"43543.503206018519", "[$-F400]h:mm:ss AM/PM", "12:04:37"},
+	} {
+		result := format(item[0], item[1], false, CellTypeNumber, &Options{
+			ShortDateFmtCode: "yyyy/m/d",
+			LongDateFmtCode:  "yyyy\"年\"M\"月\"d\"日\"",
+			LongTimeFmtCode:  "H:mm:ss",
+		})
+		assert.Equal(t, item[2], result, item)
+	}
+	// Test format number with string data type cell value
 	for _, cellType := range []CellType{CellTypeSharedString, CellTypeInlineString} {
 		for _, item := range [][]string{
 			{"1234.5678", "General", "1234.5678"},
@@ -1073,10 +1088,12 @@ func TestNumFmt(t *testing.T) {
 			{"1234.5678", "0_);[Red]\\(0\\)", "1234.5678"},
 			{"1234.5678", "\"text\"@", "text1234.5678"},
 		} {
-			result := format(item[0], item[1], false, cellType)
+			result := format(item[0], item[1], false, cellType, nil)
 			assert.Equal(t, item[2], result, item)
 		}
 	}
 	nf := numberFormat{}
-	assert.Equal(t, ErrUnsupportedNumberFormat, nf.currencyLanguageHandler(0, nfp.Token{Parts: []nfp.Part{{}}}))
+	err, changeNumFmtCode := nf.currencyLanguageHandler(0, nfp.Token{Parts: []nfp.Part{{}}})
+	assert.Equal(t, ErrUnsupportedNumberFormat, err)
+	assert.False(t, changeNumFmtCode)
 }

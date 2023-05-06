@@ -32,6 +32,7 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
+	opts                                                        *Options
 	cellType                                                    CellType
 	section                                                     []nfp.Section
 	t                                                           time.Time
@@ -396,9 +397,9 @@ func (nf *numberFormat) prepareNumberic(value string) {
 // format provides a function to return a string parse by number format
 // expression. If the given number format is not supported, this will return
 // the original cell value.
-func format(value, numFmt string, date1904 bool, cellType CellType) string {
+func format(value, numFmt string, date1904 bool, cellType CellType, opts *Options) string {
 	p := nfp.NumberFormatParser()
-	nf := numberFormat{section: p.Parse(numFmt), value: value, date1904: date1904, cellType: cellType}
+	nf := numberFormat{opts: opts, section: p.Parse(numFmt), value: value, date1904: date1904, cellType: cellType}
 	nf.number, nf.valueSectionType = nf.getValueSectionType(value)
 	nf.prepareNumberic(value)
 	for i, section := range nf.section {
@@ -480,7 +481,7 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 	}
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
-			if err := nf.currencyLanguageHandler(i, token); err != nil {
+			if err, changeNumFmtCode := nf.currencyLanguageHandler(i, token); err != nil || changeNumFmtCode {
 				return nf.value
 			}
 			result += nf.currencyString
@@ -616,7 +617,7 @@ func (nf *numberFormat) dateTimeHandler() string {
 	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, nf.date1904), false, false
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
-			if err := nf.currencyLanguageHandler(i, token); err != nil {
+			if err, changeNumFmtCode := nf.currencyLanguageHandler(i, token); err != nil || changeNumFmtCode {
 				return nf.value
 			}
 			nf.result += nf.currencyString
@@ -687,16 +688,28 @@ func (nf *numberFormat) positiveHandler() string {
 
 // currencyLanguageHandler will be handling currency and language types tokens
 // for a number format expression.
-func (nf *numberFormat) currencyLanguageHandler(i int, token nfp.Token) (err error) {
+func (nf *numberFormat) currencyLanguageHandler(i int, token nfp.Token) (error, bool) {
 	for _, part := range token.Parts {
 		if inStrSlice(supportedTokenTypes, part.Token.TType, true) == -1 {
-			err = ErrUnsupportedNumberFormat
-			return
+			return ErrUnsupportedNumberFormat, false
 		}
 		if part.Token.TType == nfp.TokenSubTypeLanguageInfo {
+			if strings.EqualFold(part.Token.TValue, "F800") { // [$-x-sysdate]
+				if nf.opts != nil && nf.opts.LongDateFmtCode != "" {
+					nf.value = format(nf.value, nf.opts.LongDateFmtCode, nf.date1904, nf.cellType, nf.opts)
+					return nil, true
+				}
+				part.Token.TValue = "409"
+			}
+			if strings.EqualFold(part.Token.TValue, "F400") { // [$-x-systime]
+				if nf.opts != nil && nf.opts.LongTimeFmtCode != "" {
+					nf.value = format(nf.value, nf.opts.LongTimeFmtCode, nf.date1904, nf.cellType, nf.opts)
+					return nil, true
+				}
+				part.Token.TValue = "409"
+			}
 			if _, ok := supportedLanguageInfo[strings.ToUpper(part.Token.TValue)]; !ok {
-				err = ErrUnsupportedNumberFormat
-				return
+				return ErrUnsupportedNumberFormat, false
 			}
 			nf.localCode = strings.ToUpper(part.Token.TValue)
 		}
@@ -704,7 +717,7 @@ func (nf *numberFormat) currencyLanguageHandler(i int, token nfp.Token) (err err
 			nf.currencyString = part.Token.TValue
 		}
 	}
-	return
+	return nil, false
 }
 
 // localAmPm return AM/PM name by supported language ID.

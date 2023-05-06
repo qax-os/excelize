@@ -26,7 +26,7 @@ import (
 // For example:
 //
 //	f := NewFile()
-func NewFile() *File {
+func NewFile(opts ...Options) *File {
 	f := newFile()
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
@@ -49,6 +49,7 @@ func NewFile() *File {
 	ws, _ := f.workSheetReader("Sheet1")
 	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
 	f.Theme, _ = f.themeReader()
+	f.options = getOptions(opts...)
 	return f
 }
 
