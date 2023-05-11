@@ -60,7 +60,7 @@ type File struct {
 // the spreadsheet from non-UTF-8 encoding.
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
-// Options define the options for open and reading spreadsheet.
+// Options define the options for o`pen and reading spreadsheet.
 //
 // MaxCalcIterations specifies the maximum iterations for iterative
 // calculation, the default value is 0.
@@ -80,26 +80,30 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
 //
-// ShortDateFmtCode specifies the short date number format code. In the
+// ShortDatePattern specifies the short date number format code. In the
 // spreadsheet applications, date formats display date and time serial numbers
 // as date values. Date formats that begin with an asterisk (*) respond to
 // changes in regional date and time settings that are specified for the
 // operating system. Formats without an asterisk are not affected by operating
-// system settings. The ShortDateFmtCode used for specifies apply date formats
+// system settings. The ShortDatePattern used for specifies apply date formats
 // that begin with an asterisk.
 //
-// LongDateFmtCode specifies the long date number format code.
+// LongDatePattern specifies the long date number format code.
 //
-// LongTimeFmtCode specifies the long time number format code.
+// LongTimePattern specifies the long time number format code.
+//
+// CultureInfo specifies the country code for applying built-in language number
+// format code these effect by the system's local language settings.
 type Options struct {
 	MaxCalcIterations uint
 	Password          string
 	RawCellValue      bool
 	UnzipSizeLimit    int64
 	UnzipXMLSizeLimit int64
-	ShortDateFmtCode  string
-	LongDateFmtCode   string
-	LongTimeFmtCode   string
+	ShortDatePattern  string
+	LongDatePattern   string
+	LongTimePattern   string
+	CultureInfo       CultureName
 }
 
 // OpenFile take the name of an spreadsheet file and returns a populated
@@ -162,7 +166,7 @@ func (f *File) checkOpenReaderOptions() error {
 	if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
 		return ErrOptionsUnzipSizeLimit
 	}
-	return nil
+	return f.checkDateTimePattern()
 }
 
 // OpenReader read data stream from io.Reader and return a populated

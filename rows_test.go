@@ -1118,7 +1118,7 @@ func TestNumberFormats(t *testing.T) {
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestNumberFormats.xlsx")))
 
-	f = NewFile(Options{ShortDateFmtCode: "yyyy/m/d"})
+	f = NewFile(Options{ShortDatePattern: "yyyy/m/d"})
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 43543.503206018519))
 	numFmt14, err := f.NewStyle(&Style{NumFmt: 14})
 	assert.NoError(t, err)

@@ -371,6 +371,5 @@ type Style struct {
 	NumFmt        int
 	DecimalPlaces int
 	CustomNumFmt  *string
-	Lang          string
 	NegRed        bool
 }

@@ -752,7 +752,7 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	expected := [][]string{
 		{"37947.7500001", "37948", "37947.75", "37,948", "37,947.75", "3794775%", "3794775.00%", "3.79E+04", "37947.7500001", "37947.7500001", "11-22-03", "22-Nov-03", "22-Nov", "Nov-03", "6:00 PM", "6:00:00 PM", "18:00", "18:00:00", "11/22/03 18:00", "37,948 ", "37,948 ", "37,947.75 ", "37,947.75 ", "37947.7500001", "37947.7500001", "37947.7500001", "37947.7500001", "00:00", "910746:00:00", "00:00.0", "37947.7500001", "37947.7500001"},
 		{"-37947.7500001", "-37948", "-37947.75", "-37,948", "-37,947.75", "-3794775%", "-3794775.00%", "-3.79E+04", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "(37,948)", "(37,948)", "(37,947.75)", "(37,947.75)", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001"},
-		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0.007", "0.007", "12-30-99", "30-Dec-99", "30-Dec", "Dec-99", "0:10 AM", "0:10:05 AM", "00:10", "00:10:05", "12/30/99 00:10", "0 ", "0 ", "0.01 ", "0.01 ", "0.007", "0.007", "0.007", "0.007", "10:05", "0:10:05", "10:04.8", "0.007", "0.007"},
+		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0.007", "0.007", "12-30-99", "30-Dec-99", "30-Dec", "Dec-99", "12:10 AM", "12:10:05 AM", "00:10", "00:10:05", "12/30/99 00:10", "0 ", "0 ", "0.01 ", "0.01 ", "0.007", "0.007", "0.007", "0.007", "10:05", "0:10:05", "10:04.8", "0.007", "0.007"},
 		{"2.1", "2", "2.10", "2", "2.10", "210%", "210.00%", "2.10E+00", "2.1", "2.1", "01-01-00", "1-Jan-00", "1-Jan", "Jan-00", "2:24 AM", "2:24:00 AM", "02:24", "02:24:00", "1/1/00 02:24", "2 ", "2 ", "2.10 ", "2.10 ", "2.1", "2.1", "2.1", "2.1", "24:00", "50:24:00", "24:00.0", "2.1", "2.1"},
 		{"String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String"},
 	}
@@ -811,24 +811,59 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 42920.5))
 		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 42920.5))
 
-		_, err = f.NewStyle(&Style{NumFmt: 26, Lang: "zh-tw"})
+		_, err = f.NewStyle(&Style{NumFmt: 26})
 		assert.NoError(t, err)
 
 		style, err := f.NewStyle(&Style{NumFmt: 27})
 		assert.NoError(t, err)
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-		style, err = f.NewStyle(&Style{NumFmt: 31, Lang: "ko-kr"})
+		style, err = f.NewStyle(&Style{NumFmt: 31})
 		assert.NoError(t, err)
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))
 
-		style, err = f.NewStyle(&Style{NumFmt: 71, Lang: "th-th"})
+		style, err = f.NewStyle(&Style{NumFmt: 71})
 		assert.NoError(t, err)
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))
 
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellStyleCurrencyNumberFormat.TestBook4.xlsx")))
 	})
+}
+
+func TestSetCellStyleLangNumberFormat(t *testing.T) {
+	rawCellValues := [][]string{{"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}}
+	for lang, expected := range map[CultureName][][]string{
+		CultureNameUnknown: rawCellValues,
+		CultureNameEnUS:    {{"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"0:00:00"}, {"0:00:00"}, {"0:00:00"}, {"0:00:00"}, {"45162"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"8/24/23"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}},
+		CultureNameZhCN:    {{"2023年8月"}, {"8月24日"}, {"8月24日"}, {"8/24/23"}, {"2023年8月24日"}, {"0时00分"}, {"0时00分00秒"}, {"上午12时00分"}, {"上午12时00分00秒"}, {"2023年8月"}, {"2023年8月"}, {"8月24日"}, {"2023年8月"}, {"8月24日"}, {"8月24日"}, {"上午12时00分"}, {"上午12时00分00秒"}, {"2023年8月"}, {"8月24日"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}},
+	} {
+		f, err := prepareTestBook5(Options{CultureInfo: lang})
+		assert.NoError(t, err)
+		rows, err := f.GetRows("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, rows)
+		assert.NoError(t, f.Close())
+	}
+	// Test apply language number format code with date and time pattern
+	for lang, expected := range map[CultureName][][]string{
+		CultureNameEnUS: {{"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"00:00:00"}, {"00:00:00"}, {"00:00:00"}, {"00:00:00"}, {"45162"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"2023-8-24"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}},
+		CultureNameZhCN: {{"2023年8月"}, {"8月24日"}, {"8月24日"}, {"2023-8-24"}, {"2023年8月24日"}, {"00:00:00"}, {"00:00:00"}, {"上午12时00分"}, {"上午12时00分00秒"}, {"2023年8月"}, {"2023年8月"}, {"8月24日"}, {"2023年8月"}, {"8月24日"}, {"8月24日"}, {"上午12时00分"}, {"上午12时00分00秒"}, {"2023年8月"}, {"8月24日"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}, {"45162"}},
+	} {
+		f, err := prepareTestBook5(Options{CultureInfo: lang, ShortDatePattern: "yyyy-M-d", LongTimePattern: "hh:mm:ss"})
+		assert.NoError(t, err)
+		rows, err := f.GetRows("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, rows)
+		assert.NoError(t, f.Close())
+	}
+	// Test open workbook with invalid date and time pattern options
+	_, err := OpenFile(filepath.Join("test", "Book1.xlsx"), Options{LongDatePattern: "0.00"})
+	assert.Equal(t, ErrUnsupportedNumberFormat, err)
+	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{LongTimePattern: "0.00"})
+	assert.Equal(t, ErrUnsupportedNumberFormat, err)
+	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{ShortDatePattern: "0.00"})
+	assert.Equal(t, ErrUnsupportedNumberFormat, err)
 }
 
 func TestSetCellStyleCustomNumberFormat(t *testing.T) {
@@ -1609,6 +1644,31 @@ func prepareTestBook4() (*File, error) {
 		return f, err
 	}
 
+	return f, nil
+}
+
+func prepareTestBook5(opts Options) (*File, error) {
+	f := NewFile(opts)
+	var rowNum int
+	for _, idxRange := range [][]int{{27, 36}, {50, 81}} {
+		for numFmtIdx := idxRange[0]; numFmtIdx <= idxRange[1]; numFmtIdx++ {
+			rowNum++
+			styleID, err := f.NewStyle(&Style{NumFmt: numFmtIdx})
+			if err != nil {
+				return f, err
+			}
+			cell, err := CoordinatesToCellName(1, rowNum)
+			if err != nil {
+				return f, err
+			}
+			if err := f.SetCellValue("Sheet1", cell, 45162); err != nil {
+				return f, err
+			}
+			if err := f.SetCellStyle("Sheet1", cell, cell, styleID); err != nil {
+				return f, err
+			}
+		}
+	}
 	return f, nil
 }
 

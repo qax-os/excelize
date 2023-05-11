@@ -291,9 +291,7 @@ func TestNewStyle(t *testing.T) {
 	// Test create currency custom style
 	f.Styles.NumFmts = nil
 	styleID, err = f.NewStyle(&Style{
-		Lang:   "ko-kr",
 		NumFmt: 32, // must not be in currencyNumFmt
-
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 3, styleID)
@@ -330,14 +328,14 @@ func TestNewStyle(t *testing.T) {
 	f = NewFile()
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = nil
-	style4, err := f.NewStyle(&Style{NumFmt: 160, Lang: "unknown"})
+	style4, err := f.NewStyle(&Style{NumFmt: 160})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, style4)
 
 	f = NewFile()
 	f.Styles.NumFmts = nil
 	f.Styles.CellXfs.Xf = nil
-	style5, err := f.NewStyle(&Style{NumFmt: 160, Lang: "zh-cn"})
+	style5, err := f.NewStyle(&Style{NumFmt: 160})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, style5)
 
