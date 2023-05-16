@@ -2409,7 +2409,7 @@ func TestCalcCellValue(t *testing.T) {
 		// ABS
 		"=ABS()":      {"#VALUE!", "ABS requires 1 numeric argument"},
 		"=ABS(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
-		"=ABS(~)":     {"", newInvalidColumnNameError("~").Error()},
+		"=ABS(~)":     {"#NAME?", "invalid reference"},
 		// ACOS
 		"=ACOS()":        {"#VALUE!", "ACOS requires 1 numeric argument"},
 		"=ACOS(\"X\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3794,17 +3794,19 @@ func TestCalcCellValue(t *testing.T) {
 		"=CHOOSE(2,0)":             {"#VALUE!", "index_num should be <= to the number of values"},
 		"=CHOOSE(1,NA())":          {"#N/A", "#N/A"},
 		// COLUMN
-		"=COLUMN(1,2)":          {"#VALUE!", "COLUMN requires at most 1 argument"},
-		"=COLUMN(\"\")":         {"#VALUE!", "invalid reference"},
-		"=COLUMN(Sheet1)":       {"", newInvalidColumnNameError("Sheet1").Error()},
-		"=COLUMN(Sheet1!A1!B1)": {"", newInvalidColumnNameError("Sheet1").Error()},
+		"=COLUMN(1,2)":                 {"#VALUE!", "COLUMN requires at most 1 argument"},
+		"=COLUMN(\"\")":                {"#VALUE!", "invalid reference"},
+		"=COLUMN(Sheet1)":              {"#NAME?", "invalid reference"},
+		"=COLUMN(Sheet1!A1!B1)":        {"#NAME?", "invalid reference"},
+		"=COLUMN(Sheet1!A1:Sheet2!A2)": {"#NAME?", "invalid reference"},
+		"=COLUMN(Sheet1!A1:1A)":        {"#NAME?", "invalid reference"},
 		// COLUMNS
 		"=COLUMNS()":              {"#VALUE!", "COLUMNS requires 1 argument"},
 		"=COLUMNS(1)":             {"#VALUE!", "invalid reference"},
 		"=COLUMNS(\"\")":          {"#VALUE!", "invalid reference"},
-		"=COLUMNS(Sheet1)":        {"", newInvalidColumnNameError("Sheet1").Error()},
-		"=COLUMNS(Sheet1!A1!B1)":  {"", newInvalidColumnNameError("Sheet1").Error()},
-		"=COLUMNS(Sheet1!Sheet1)": {"", newInvalidColumnNameError("Sheet1").Error()},
+		"=COLUMNS(Sheet1)":        {"#NAME?", "invalid reference"},
+		"=COLUMNS(Sheet1!A1!B1)":  {"#NAME?", "invalid reference"},
+		"=COLUMNS(Sheet1!Sheet1)": {"#NAME?", "invalid reference"},
 		// FORMULATEXT
 		"=FORMULATEXT()":  {"#VALUE!", "FORMULATEXT requires 1 argument"},
 		"=FORMULATEXT(1)": {"#VALUE!", "#VALUE!"},
@@ -3874,15 +3876,15 @@ func TestCalcCellValue(t *testing.T) {
 		// ROW
 		"=ROW(1,2)":          {"#VALUE!", "ROW requires at most 1 argument"},
 		"=ROW(\"\")":         {"#VALUE!", "invalid reference"},
-		"=ROW(Sheet1)":       {"", newInvalidColumnNameError("Sheet1").Error()},
-		"=ROW(Sheet1!A1!B1)": {"", newInvalidColumnNameError("Sheet1").Error()},
+		"=ROW(Sheet1)":       {"#NAME?", "invalid reference"},
+		"=ROW(Sheet1!A1!B1)": {"#NAME?", "invalid reference"},
 		// ROWS
 		"=ROWS()":              {"#VALUE!", "ROWS requires 1 argument"},
 		"=ROWS(1)":             {"#VALUE!", "invalid reference"},
 		"=ROWS(\"\")":          {"#VALUE!", "invalid reference"},
-		"=ROWS(Sheet1)":        {"", newInvalidColumnNameError("Sheet1").Error()},
-		"=ROWS(Sheet1!A1!B1)":  {"", newInvalidColumnNameError("Sheet1").Error()},
-		"=ROWS(Sheet1!Sheet1)": {"", newInvalidColumnNameError("Sheet1").Error()},
+		"=ROWS(Sheet1)":        {"#NAME?", "invalid reference"},
+		"=ROWS(Sheet1!A1!B1)":  {"#NAME?", "invalid reference"},
+		"=ROWS(Sheet1!Sheet1)": {"#NAME?", "invalid reference"},
 		// Web Functions
 		// ENCODEURL
 		"=ENCODEURL()": {"#VALUE!", "ENCODEURL requires 1 argument"},
@@ -4376,6 +4378,7 @@ func TestCalcCellValue(t *testing.T) {
 		// SUM
 		"=A1/A3":                          "0.333333333333333",
 		"=SUM(A1:A2)":                     "3",
+		"=SUM(Sheet1!A1:Sheet1!A2)":       "3",
 		"=SUM(Sheet1!A1,A2)":              "3",
 		"=(-2-SUM(-4+A2))*5":              "0",
 		"=SUM(Sheet1!A1:Sheet1!A1:A2,A2)": "5",
@@ -5549,8 +5552,7 @@ func TestCalcSHEETS(t *testing.T) {
 	assert.NoError(t, err)
 	formulaList := map[string]string{
 		"=SHEETS(Sheet1!A1:B1)":        "1",
-		"=SHEETS(Sheet1!A1:Sheet1!A1)": "1",
-		"=SHEETS(Sheet1!A1:Sheet2!A1)": "2",
+		"=SHEETS(Sheet1!A1:Sheet1!B1)": "1",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formula))
@@ -5904,4 +5906,20 @@ func TestCalcCellResolver(t *testing.T) {
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
+}
+
+func TestEvalInfixExp(t *testing.T) {
+	f := NewFile()
+	arg, err := f.evalInfixExp(nil, "Sheet1", "A1", []efp.Token{
+		{TSubType: efp.TokenSubTypeRange, TValue: "1A"},
+	})
+	assert.Equal(t, arg, newEmptyFormulaArg())
+	assert.Equal(t, formulaErrorNAME, err.Error())
+}
+
+func TestParseToken(t *testing.T) {
+	f := NewFile()
+	assert.Equal(t, formulaErrorNAME, f.parseToken(nil, "Sheet1",
+		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
+	).Error())
 }

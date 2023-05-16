@@ -951,9 +951,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 					if err != nil {
 						return result, err
 					}
-					if result.Type == ArgError {
-						return result, errors.New(result.Error)
-					}
 					opfdStack.Push(result)
 					continue
 				}
@@ -965,10 +962,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 					}
 					result, err := f.parseReference(ctx, sheet, token.TValue)
 					if err != nil {
-						return newEmptyFormulaArg(), err
-					}
-					if result.Type == ArgUnknown {
-						return newEmptyFormulaArg(), errors.New(formulaErrorVALUE)
+						return result, err
 					}
 					// when current token is range, next token is argument and opfdStack not empty,
 					// should push value to opfdStack and continue
@@ -1442,74 +1436,99 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 	return nil
 }
 
+// parseRef parse reference for a cell, column name or row number.
+func (f *File) parseRef(ref string) (cellRef, bool, bool, error) {
+	var (
+		err, colErr, rowErr error
+		cr                  cellRef
+		cell                = ref
+		tokens              = strings.Split(ref, "!")
+	)
+	if len(tokens) == 2 { // have a worksheet
+		cr.Sheet, cell = tokens[0], tokens[1]
+	}
+	if cr.Col, cr.Row, err = CellNameToCoordinates(cell); err != nil {
+		if cr.Col, colErr = ColumnNameToNumber(cell); colErr == nil { // cast to column
+			return cr, true, false, nil
+		}
+		if cr.Row, rowErr = strconv.Atoi(cell); rowErr == nil { // cast to row
+			return cr, false, true, nil
+		}
+		return cr, false, false, err
+	}
+	return cr, false, false, err
+}
+
+// prepareCellRange checking and convert cell reference to a cell range.
+func (cr *cellRange) prepareCellRange(col, row bool, cellRef cellRef) error {
+	if col {
+		cellRef.Row = TotalRows
+	}
+	if row {
+		cellRef.Col = MaxColumns
+	}
+	if cellRef.Sheet == "" {
+		cellRef.Sheet = cr.From.Sheet
+	}
+	if cr.From.Sheet != cellRef.Sheet || cr.To.Sheet != cellRef.Sheet {
+		return errors.New("invalid reference")
+	}
+	if cr.From.Col > cellRef.Col {
+		cr.From.Col = cellRef.Col
+	}
+	if cr.From.Row > cellRef.Row {
+		cr.From.Row = cellRef.Row
+	}
+	if cr.To.Col < cellRef.Col {
+		cr.To.Col = cellRef.Col
+	}
+	if cr.To.Row < cellRef.Row {
+		cr.To.Row = cellRef.Row
+	}
+	return nil
+}
+
 // parseReference parse reference and extract values by given reference
 // characters and default sheet name.
-func (f *File) parseReference(ctx *calcContext, sheet, reference string) (arg formulaArg, err error) {
+func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formulaArg, error) {
 	reference = strings.ReplaceAll(reference, "$", "")
-	refs, cellRanges, cellRefs := list.New(), list.New(), list.New()
-	for _, ref := range strings.Split(reference, ":") {
-		tokens := strings.Split(ref, "!")
-		cr := cellRef{}
-		if len(tokens) == 2 { // have a worksheet name
-			cr.Sheet = tokens[0]
-			// cast to cell reference
-			if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[1]); err != nil {
-				// cast to column
-				if cr.Col, err = ColumnNameToNumber(tokens[1]); err != nil {
-					// cast to row
-					if cr.Row, err = strconv.Atoi(tokens[1]); err != nil {
-						err = newInvalidColumnNameError(tokens[1])
-						return
-					}
-					cr.Col = MaxColumns
+	ranges, cellRanges, cellRefs := strings.Split(reference, ":"), list.New(), list.New()
+	if len(ranges) > 1 {
+		var cr cellRange
+		for i, ref := range ranges {
+			cellRef, col, row, err := f.parseRef(ref)
+			if err != nil {
+				return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), errors.New("invalid reference")
+			}
+			if i == 0 {
+				if col {
+					cellRef.Row = 1
 				}
-			}
-			if refs.Len() > 0 {
-				e := refs.Back()
-				cellRefs.PushBack(e.Value.(cellRef))
-				refs.Remove(e)
-			}
-			refs.PushBack(cr)
-			continue
-		}
-		// cast to cell reference
-		if cr.Col, cr.Row, err = CellNameToCoordinates(tokens[0]); err != nil {
-			// cast to column
-			if cr.Col, err = ColumnNameToNumber(tokens[0]); err != nil {
-				// cast to row
-				if cr.Row, err = strconv.Atoi(tokens[0]); err != nil {
-					err = newInvalidColumnNameError(tokens[0])
-					return
+				if row {
+					cellRef.Col = 1
 				}
-				cr.Col = MaxColumns
+				if cellRef.Sheet == "" {
+					cellRef.Sheet = sheet
+				}
+				cr.From, cr.To = cellRef, cellRef
+				continue
 			}
-			cellRanges.PushBack(cellRange{
-				From: cellRef{Sheet: sheet, Col: cr.Col, Row: 1},
-				To:   cellRef{Sheet: sheet, Col: cr.Col, Row: TotalRows},
-			})
-			cellRefs.Init()
-			arg, err = f.rangeResolver(ctx, cellRefs, cellRanges)
-			return
+			if err := cr.prepareCellRange(col, row, cellRef); err != nil {
+				return newErrorFormulaArg(formulaErrorNAME, err.Error()), err
+			}
 		}
-		e := refs.Back()
-		if e == nil {
-			cr.Sheet = sheet
-			refs.PushBack(cr)
-			continue
-		}
-		cellRanges.PushBack(cellRange{
-			From: e.Value.(cellRef),
-			To:   cr,
-		})
-		refs.Remove(e)
+		cellRanges.PushBack(cr)
+		return f.rangeResolver(ctx, cellRefs, cellRanges)
 	}
-	if refs.Len() > 0 {
-		e := refs.Back()
-		cellRefs.PushBack(e.Value.(cellRef))
-		refs.Remove(e)
+	cellRef, _, _, err := f.parseRef(reference)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), errors.New("invalid reference")
 	}
-	arg, err = f.rangeResolver(ctx, cellRefs, cellRanges)
-	return
+	if cellRef.Sheet == "" {
+		cellRef.Sheet = sheet
+	}
+	cellRefs.PushBack(cellRef)
+	return f.rangeResolver(ctx, cellRefs, cellRanges)
 }
 
 // prepareValueRange prepare value range.
@@ -1598,9 +1617,6 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 	// prepare value range
 	for temp := cellRanges.Front(); temp != nil; temp = temp.Next() {
 		cr := temp.Value.(cellRange)
-		if cr.From.Sheet != cr.To.Sheet {
-			err = errors.New(formulaErrorVALUE)
-		}
 		rng := []int{cr.From.Col, cr.From.Row, cr.To.Col, cr.To.Row}
 		_ = sortCoordinates(rng)
 		cr.From.Col, cr.From.Row, cr.To.Col, cr.To.Row = rng[0], rng[1], rng[2], rng[3]
@@ -14155,17 +14171,8 @@ func calcColumnsMinMax(argsList *list.List) (min, max int) {
 			if min == 0 {
 				min = cr.Value.(cellRange).From.Col
 			}
-			if min > cr.Value.(cellRange).From.Col {
-				min = cr.Value.(cellRange).From.Col
-			}
-			if min > cr.Value.(cellRange).To.Col {
-				min = cr.Value.(cellRange).To.Col
-			}
 			if max < cr.Value.(cellRange).To.Col {
 				max = cr.Value.(cellRange).To.Col
-			}
-			if max < cr.Value.(cellRange).From.Col {
-				max = cr.Value.(cellRange).From.Col
 			}
 		}
 	}
@@ -14173,9 +14180,6 @@ func calcColumnsMinMax(argsList *list.List) (min, max int) {
 		cr := argsList.Front().Value.(formulaArg).cellRefs
 		for refs := cr.Front(); refs != nil; refs = refs.Next() {
 			if min == 0 {
-				min = refs.Value.(cellRef).Col
-			}
-			if min > refs.Value.(cellRef).Col {
 				min = refs.Value.(cellRef).Col
 			}
 			if max < refs.Value.(cellRef).Col {
@@ -14936,17 +14940,8 @@ func calcRowsMinMax(argsList *list.List) (min, max int) {
 			if min == 0 {
 				min = cr.Value.(cellRange).From.Row
 			}
-			if min > cr.Value.(cellRange).From.Row {
-				min = cr.Value.(cellRange).From.Row
-			}
-			if min > cr.Value.(cellRange).To.Row {
-				min = cr.Value.(cellRange).To.Row
-			}
 			if max < cr.Value.(cellRange).To.Row {
 				max = cr.Value.(cellRange).To.Row
-			}
-			if max < cr.Value.(cellRange).From.Row {
-				max = cr.Value.(cellRange).From.Row
 			}
 		}
 	}
@@ -14954,9 +14949,6 @@ func calcRowsMinMax(argsList *list.List) (min, max int) {
 		cr := argsList.Front().Value.(formulaArg).cellRefs
 		for refs := cr.Front(); refs != nil; refs = refs.Next() {
 			if min == 0 {
-				min = refs.Value.(cellRef).Row
-			}
-			if min > refs.Value.(cellRef).Row {
 				min = refs.Value.(cellRef).Row
 			}
 			if max < refs.Value.(cellRef).Row {
