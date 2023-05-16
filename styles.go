@@ -162,9 +162,11 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 	return style, err
 }
 
-// NewStyle provides a function to create the style for cells by given style
-// options. This function is concurrency safe. Note that the 'Font.Color' field
-// uses an RGB color represented in 'RRGGBB' hexadecimal notation.
+// NewStyle provides a function to create the style for cells by a given style
+// options, and returns style index. The same style index can not be used
+// across different workbook. This function is concurrency safe. Note that
+// the 'Font.Color' field uses an RGB color represented in 'RRGGBB' hexadecimal
+// notation.
 //
 // The following table shows the border types used in 'Border.Type' supported by
 // excelize:
@@ -236,6 +238,18 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	 8     | darkUp          | 18    | gray0625
 //	 9     | darkGrid        |       |
 //
+// The 'Alignment.Indent' is an integer value, where an increment of 1
+// represents 3 spaces. Indicates the number of spaces (of the normal style
+// font) of indentation for text in a cell. The number of spaces to indent is
+// calculated as following:
+//
+//	Number of spaces to indent = indent value * 3
+//
+// For example, an indent value of 1 means that the text begins 3 space widths
+// (of the normal style font) from the edge of the cell. Note: The width of one
+// space character is defined by the font. Only left, right, and distributed
+// horizontal alignments are supported.
+//
 // The following table shows the type of cells' horizontal alignment used
 // in 'Alignment.Horizontal':
 //
@@ -258,6 +272,24 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	 center
 //	 justify
 //	 distributed
+//
+// The 'Alignment.ReadingOrder' is an uint64 value indicating whether the
+// reading order of the cell is left-to-right, right-to-left, or context
+// dependent. the valid value of this field was:
+//
+//	 Value | Description
+//	-------+----------------------------------------------------
+//	 0     | Context Dependent - reading order is determined by scanning the
+//	       | text for the first non-whitespace character: if it is a strong
+//	       | right-to-left character, the reading order is right-to-left;
+//	       | otherwise, the reading order left-to-right.
+//	 1     | Left-to-Right: reading order is left-to-right in the cell, as in
+//	       | English.
+//	 2     | Right-to-Left: reading order is right-to-left in the cell, as in
+//	       | Hebrew.
+//
+// The 'Alignment.RelativeIndent' is an integer value to indicate the additional
+// number of spaces of indentation to adjust for text in a cell.
 //
 // The following table shows the type of font underline style used in
 // 'Font.Underline':
