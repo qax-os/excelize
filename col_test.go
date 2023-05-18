@@ -366,6 +366,15 @@ func TestColWidth(t *testing.T) {
 	assert.Equal(t, defaultColWidth, width)
 	assert.NoError(t, err)
 
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetFormatPr = &xlsxSheetFormatPr{DefaultColWidth: 10}
+	ws.(*xlsxWorksheet).Cols = nil
+	width, err = f.GetColWidth("Sheet1", "A")
+	assert.NoError(t, err)
+	assert.Equal(t, 10.0, width)
+	assert.Equal(t, 76, f.getColWidth("Sheet1", 1))
+
 	// Test set and get column width with illegal cell reference
 	width, err = f.GetColWidth("Sheet1", "*")
 	assert.Equal(t, defaultColWidth, width)

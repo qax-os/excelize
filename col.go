@@ -657,6 +657,9 @@ func (f *File) getColWidth(sheet string, col int) int {
 			return int(convertColWidthToPixels(width))
 		}
 	}
+	if ws.SheetFormatPr != nil && ws.SheetFormatPr.DefaultColWidth > 0 {
+		return int(convertColWidthToPixels(ws.SheetFormatPr.DefaultColWidth))
+	}
 	// Optimization for when the column widths haven't changed.
 	return int(defaultColWidthPixels)
 }
@@ -714,6 +717,9 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 		if width != 0 {
 			return width, err
 		}
+	}
+	if ws.SheetFormatPr != nil && ws.SheetFormatPr.DefaultColWidth > 0 {
+		return ws.SheetFormatPr.DefaultColWidth, err
 	}
 	// Optimization for when the column widths haven't changed.
 	return defaultColWidth, err
