@@ -144,7 +144,7 @@ const (
 	pivotTableVersion           = 3
 	defaultPictureScale         = 1.0
 	defaultChartDimensionWidth  = 480
-	defaultChartDimensionHeight = 290
+	defaultChartDimensionHeight = 260
 	defaultChartLegendPosition  = "bottom"
 	defaultChartShowBlanksAs    = "gap"
 	defaultShapeSize            = 160
