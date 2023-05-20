@@ -490,7 +490,7 @@ func (f *File) parseFilterExpression(expression string, tokens []string) ([]int,
 		// expressions).
 		conditional := 0
 		c := tokens[3]
-		if conditionFormat.Match([]byte(c)) {
+		if conditionFormat.MatchString(c) {
 			conditional = 1
 		}
 		expression1, token1, err := f.parseFilterTokens(expression, tokens[:3])
@@ -538,7 +538,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	}
 	token := tokens[2]
 	// Special handling for Blanks/NonBlanks.
-	re := blankFormat.Match([]byte(strings.ToLower(token)))
+	re := blankFormat.MatchString((strings.ToLower(token)))
 	if re {
 		// Only allow Equals or NotEqual in this context.
 		if operator != 2 && operator != 5 {
@@ -563,7 +563,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	}
 	// If the string token contains an Excel match character then change the
 	// operator type to indicate a non "simple" equality.
-	re = matchFormat.Match([]byte(token))
+	re = matchFormat.MatchString(token)
 	if operator == 2 && re {
 		operator = 22
 	}

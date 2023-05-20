@@ -1220,7 +1220,7 @@ func printCommaSep(text string) string {
 		if i > 0 && (length-i)%3 == 0 {
 			target.WriteString(",")
 		}
-		target.WriteString(string(text[i]))
+		target.WriteByte(text[i])
 	}
 	if len(subStr) == 2 {
 		target.WriteString(".")
