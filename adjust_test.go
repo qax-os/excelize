@@ -320,6 +320,7 @@ func TestAdjustTable(t *testing.T) {
 	}
 	assert.NoError(t, f.RemoveRow(sheetName, 2))
 	assert.NoError(t, f.RemoveRow(sheetName, 3))
+	assert.NoError(t, f.RemoveRow(sheetName, 3))
 	assert.NoError(t, f.RemoveCol(sheetName, "H"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustTable.xlsx")))
 

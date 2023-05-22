@@ -242,7 +242,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 		}
 		coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
 		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
-		if y2-y1 < 2 || x2-x1 < 1 {
+		if y2-y1 < 1 || x2-x1 < 0 {
 			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
 			ws.TableParts.Count = len(ws.TableParts.TableParts)
 			idx--
