@@ -151,7 +151,25 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 	case nil:
 		err = f.SetCellDefault(sheet, cell, "")
 	default:
-		err = f.SetCellStr(sheet, cell, fmt.Sprint(value))
+
+		kd := reflect.TypeOf(value).Kind()
+		vv := reflect.ValueOf(value)
+		switch kd {
+		case reflect.Float32:
+			err = f.SetCellFloat(sheet, cell, vv.Float(), -1, 32)
+		case reflect.Float64:
+			err = f.SetCellFloat(sheet, cell, vv.Float(), -1, 64)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			err = f.SetCellInt(sheet, cell, int(vv.Int()))
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			err = f.SetCellInt(sheet, cell, int(vv.Uint()))
+		case reflect.String:
+			err = f.SetCellStr(sheet, cell, vv.String())
+		case reflect.Bool:
+			err = f.SetCellBool(sheet, cell, vv.Bool())
+		default:
+			err = f.SetCellStr(sheet, cell, fmt.Sprint(value))
+		}
 	}
 	return err
 }

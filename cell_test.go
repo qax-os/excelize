@@ -229,6 +229,16 @@ func TestSetCellValue(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "0.50", B2)
 
+	//Test define type
+	type Number int
+	type NumberFloat float64
+	type Str string
+	type Bool bool
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", Number(100)))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B2", NumberFloat(20.65)))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B3", Str("ABC")))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B4", Bool(true)))
+
 	// Test set cell value with invalid sheet name
 	assert.EqualError(t, f.SetCellValue("Sheet:1", "A1", "A1"), ErrSheetNameInvalid.Error())
 	// Test set cell value with unsupported charset shared strings table
