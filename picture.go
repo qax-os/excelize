@@ -672,7 +672,6 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 						pic.Format.AltText = deTwoCellAnchor.Pic.NvPicPr.CNvPr.Descr
 						pics = append(pics, pic)
 					}
-					return
 				}
 			}
 		}
