@@ -1049,7 +1049,7 @@ func (f *File) checkDateTimePattern() error {
 		p := nfp.NumberFormatParser()
 		for _, section := range p.Parse(pattern) {
 			for _, token := range section.Items {
-				if inStrSlice(supportedNumberTokenTypes, token.TType, false) == -1 || inStrSlice(supportedNumberTokenTypes, token.TType, false) != -1 {
+				if inStrSlice(supportedTokenTypes, token.TType, false) == -1 || inStrSlice(supportedNumberTokenTypes, token.TType, false) != -1 {
 					return ErrUnsupportedNumberFormat
 				}
 			}
