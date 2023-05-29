@@ -60,7 +60,7 @@ type File struct {
 // the spreadsheet from non-UTF-8 encoding.
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
 
-// Options define the options for o`pen and reading spreadsheet.
+// Options define the options for opening and reading the spreadsheet.
 //
 // MaxCalcIterations specifies the maximum iterations for iterative
 // calculation, the default value is 0.
@@ -70,7 +70,7 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // RawCellValue specifies if apply the number format for the cell value or get
 // the raw value.
 //
-// UnzipSizeLimit specifies the unzip size limit in bytes on open the
+// UnzipSizeLimit specifies to unzip size limit in bytes on open the
 // spreadsheet, this value should be greater than or equal to
 // UnzipXMLSizeLimit, the default size limit is 16GB.
 //
@@ -106,7 +106,7 @@ type Options struct {
 	CultureInfo       CultureName
 }
 
-// OpenFile take the name of an spreadsheet file and returns a populated
+// OpenFile take the name of a spreadsheet file and returns a populated
 // spreadsheet file struct for it. For example, open spreadsheet with
 // password protection:
 //

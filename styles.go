@@ -1309,7 +1309,7 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 	if !ok {
 		fc, currency := currencyNumFmt[style.NumFmt]
 		if !currency {
-			return setLangNumFmt(styleSheet, style)
+			return setLangNumFmt(style)
 		}
 		fc = strings.ReplaceAll(fc, "0.00", dp)
 		if style.NegRed {
@@ -1375,7 +1375,7 @@ func getCustomNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (customNumFmtID
 }
 
 // setLangNumFmt provides a function to set number format code with language.
-func setLangNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
+func setLangNumFmt(style *Style) int {
 	if (27 <= style.NumFmt && style.NumFmt <= 36) || (50 <= style.NumFmt && style.NumFmt <= 81) {
 		return style.NumFmt
 	}
@@ -1585,7 +1585,7 @@ func newBorders(style *Style) *xlsxBorder {
 	return &border
 }
 
-// setCellXfs provides a function to set describes all of the formatting for a
+// setCellXfs provides a function to set describes all the formatting for a
 // cell.
 func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, applyAlignment, applyProtection bool, alignment *xlsxAlignment, protection *xlsxProtection) (int, error) {
 	var xf xlsxXf
@@ -2451,7 +2451,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 			if ext.URI == ExtURIConditionalFormattings {
 				decodeCondFmts := new(decodeX14ConditionalFormattings)
 				if err := xml.Unmarshal([]byte(ext.Content), &decodeCondFmts); err == nil {
-					condFmts := []decodeX14ConditionalFormatting{}
+					var condFmts []decodeX14ConditionalFormatting
 					if err = xml.Unmarshal([]byte(decodeCondFmts.Content), &condFmts); err == nil {
 						extractDataBarRule(condFmts)
 					}

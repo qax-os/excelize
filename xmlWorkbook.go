@@ -212,7 +212,7 @@ type xlsxPivotCache struct {
 // document are specified in the markup specification and can be used to store
 // extensions to the markup specification, whether those are future version
 // extensions of the markup specification or are private extensions implemented
-// independently from the markup specification. Markup within an extension might
+// independently of the markup specification. Markup within an extension might
 // not be understood by a consumer.
 type xlsxExtLst struct {
 	Ext string `xml:",innerxml"`
@@ -229,7 +229,7 @@ type xlsxDefinedNames struct {
 // xlsxDefinedName directly maps the definedName element from the namespace
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
 // defines a defined name within this workbook. A defined name is descriptive
-// text that is used to represents a cell, range of cells, formula, or constant
+// text that is used to represent a cell, range of cells, formula, or constant
 // value. For a descriptions of the attributes see https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.definedname
 type xlsxDefinedName struct {
 	Comment           string `xml:"comment,attr,omitempty"`

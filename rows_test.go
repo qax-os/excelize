@@ -416,6 +416,23 @@ func TestInsertRowsInEmptyFile(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestInsertRowInEmptyFile.xlsx")))
 }
 
+func prepareTestBook2() (*File, error) {
+	f := NewFile()
+	for cell, val := range map[string]string{
+		"A1": "A1 Value",
+		"A2": "A2 Value",
+		"A3": "A3 Value",
+		"B1": "B1 Value",
+		"B2": "B2 Value",
+		"B3": "B3 Value",
+	} {
+		if err := f.SetCellStr("Sheet1", cell, val); err != nil {
+			return f, err
+		}
+	}
+	return f, nil
+}
+
 func TestDuplicateRowFromSingleRow(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
@@ -512,7 +529,6 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
-
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -521,18 +537,9 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 		"B2": "B2 Value",
 		"B3": "B3 Value",
 	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			assert.NoError(t, f.SetCellStr(sheet, cell, val))
-		}
-		return f
-	}
-
 	t.Run("FirstOfMultipleRows", func(t *testing.T) {
-		f := newFileWithDefaults()
-
+		f, err := prepareTestBook2()
+		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRow(sheet, 1))
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FirstOfMultipleRows"))) {
@@ -635,18 +642,9 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 		"B2": "B2 Value",
 		"B3": "B3 Value",
 	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			assert.NoError(t, f.SetCellStr(sheet, cell, val))
-		}
-		return f
-	}
-
 	t.Run("WithLargeOffsetToMiddleOfData", func(t *testing.T) {
-		f := newFileWithDefaults()
-
+		f, err := prepareTestBook2()
+		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 3))
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "WithLargeOffsetToMiddleOfData"))) {
@@ -671,7 +669,6 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
-
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -680,18 +677,9 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 		"B2": "B2 Value",
 		"B3": "B3 Value",
 	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			assert.NoError(t, f.SetCellStr(sheet, cell, val))
-		}
-		return f
-	}
-
 	t.Run("WithLargeOffsetToEmptyRows", func(t *testing.T) {
-		f := newFileWithDefaults()
-
+		f, err := prepareTestBook2()
+		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 7))
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "WithLargeOffsetToEmptyRows"))) {
@@ -716,7 +704,6 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 func TestDuplicateRowInsertBefore(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
-
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -725,18 +712,9 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 		"B2": "B2 Value",
 		"B3": "B3 Value",
 	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			assert.NoError(t, f.SetCellStr(sheet, cell, val))
-		}
-		return f
-	}
-
 	t.Run("InsertBefore", func(t *testing.T) {
-		f := newFileWithDefaults()
-
+		f, err := prepareTestBook2()
+		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
 		assert.NoError(t, f.DuplicateRowTo(sheet, 10, 4))
 
@@ -763,7 +741,6 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
-
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -772,18 +749,9 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 		"B2": "B2 Value",
 		"B3": "B3 Value",
 	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			assert.NoError(t, f.SetCellStr(sheet, cell, val))
-		}
-		return f
-	}
-
 	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
-		f := newFileWithDefaults()
-
+		f, err := prepareTestBook2()
+		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 3, 1))
 
 		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBeforeWithLargeOffset"))) {
@@ -809,28 +777,11 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 	const sheet = "Sheet1"
 	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
-
-	cells := map[string]string{
-		"A1": "A1 Value",
-		"A2": "A2 Value",
-		"A3": "A3 Value",
-		"B1": "B1 Value",
-		"B2": "B2 Value",
-		"B3": "B3 Value",
-	}
-
-	newFileWithDefaults := func() *File {
-		f := NewFile()
-		for cell, val := range cells {
-			assert.NoError(t, f.SetCellStr(sheet, cell, val))
-		}
+	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
+		f, err := prepareTestBook2()
+		assert.NoError(t, err)
 		assert.NoError(t, f.MergeCell(sheet, "B2", "C2"))
 		assert.NoError(t, f.MergeCell(sheet, "C6", "C8"))
-		return f
-	}
-
-	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
-		f := newFileWithDefaults()
 
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 8))

@@ -320,7 +320,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 //	x == *b      // ends with b
 //	x != *b      // doesn't end with b
 //	x == *b*     // contains b
-//	x != *b*     // doesn't contains b
+//	x != *b*     // doesn't contain b
 //
 // You can also use '*' to match any character or number and '?' to match any
 // single character or number. No other regular expression quantifier is
@@ -538,7 +538,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	}
 	token := tokens[2]
 	// Special handling for Blanks/NonBlanks.
-	re := blankFormat.MatchString((strings.ToLower(token)))
+	re := blankFormat.MatchString(strings.ToLower(token))
 	if re {
 		// Only allow Equals or NotEqual in this context.
 		if operator != 2 && operator != 5 {

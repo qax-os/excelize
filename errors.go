@@ -143,7 +143,7 @@ var (
 	ErrWorkbookFileFormat = errors.New("unsupported workbook file format")
 	// ErrMaxFilePathLength defined the error message on receive the file path
 	// length overflow.
-	ErrMaxFilePathLength = errors.New("file path length exceeds maximum limit")
+	ErrMaxFilePathLength = fmt.Errorf("file path length exceeds maximum limit %d characters", MaxFilePathLength)
 	// ErrUnknownEncryptMechanism defined the error message on unsupported
 	// encryption mechanism.
 	ErrUnknownEncryptMechanism = errors.New("unknown encryption mechanism")

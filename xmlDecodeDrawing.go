@@ -199,7 +199,7 @@ type decodeSpPr struct {
 // decodePic elements encompass the definition of pictures within the
 // DrawingML framework. While pictures are in many ways very similar to shapes
 // they have specific properties that are unique in order to optimize for
-// picture- specific scenarios.
+// picture-specific scenarios.
 type decodePic struct {
 	NvPicPr  decodeNvPicPr  `xml:"nvPicPr"`
 	BlipFill decodeBlipFill `xml:"blipFill"`

@@ -380,17 +380,17 @@ type formulaFuncs struct {
 //	BESSELJ
 //	BESSELK
 //	BESSELY
-//	BETADIST
 //	BETA.DIST
-//	BETAINV
 //	BETA.INV
+//	BETADIST
+//	BETAINV
 //	BIN2DEC
 //	BIN2HEX
 //	BIN2OCT
-//	BINOMDIST
 //	BINOM.DIST
 //	BINOM.DIST.RANGE
 //	BINOM.INV
+//	BINOMDIST
 //	BITAND
 //	BITLSHIFT
 //	BITOR
@@ -402,12 +402,12 @@ type formulaFuncs struct {
 //	CHAR
 //	CHIDIST
 //	CHIINV
-//	CHITEST
 //	CHISQ.DIST
 //	CHISQ.DIST.RT
 //	CHISQ.INV
 //	CHISQ.INV.RT
 //	CHISQ.TEST
+//	CHITEST
 //	CHOOSE
 //	CLEAN
 //	CODE
@@ -477,8 +477,8 @@ type formulaFuncs struct {
 //	DURATION
 //	DVAR
 //	DVARP
-//	EFFECT
 //	EDATE
+//	EFFECT
 //	ENCODEURL
 //	EOMONTH
 //	ERF
@@ -492,16 +492,17 @@ type formulaFuncs struct {
 //	EXP
 //	EXPON.DIST
 //	EXPONDIST
+//	F.DIST
+//	F.DIST.RT
+//	F.INV
+//	F.INV.RT
+//	F.TEST
 //	FACT
 //	FACTDOUBLE
 //	FALSE
-//	F.DIST
-//	F.DIST.RT
 //	FDIST
 //	FIND
 //	FINDB
-//	F.INV
-//	F.INV.RT
 //	FINV
 //	FISHER
 //	FISHERINV
@@ -510,14 +511,13 @@ type formulaFuncs struct {
 //	FLOOR.MATH
 //	FLOOR.PRECISE
 //	FORMULATEXT
-//	F.TEST
 //	FTEST
 //	FV
 //	FVSCHEDULE
 //	GAMMA
 //	GAMMA.DIST
-//	GAMMADIST
 //	GAMMA.INV
+//	GAMMADIST
 //	GAMMAINV
 //	GAMMALN
 //	GAMMALN.PRECISE
@@ -579,12 +579,12 @@ type formulaFuncs struct {
 //	ISNA
 //	ISNONTEXT
 //	ISNUMBER
-//	ISODD
-//	ISREF
-//	ISTEXT
 //	ISO.CEILING
+//	ISODD
 //	ISOWEEKNUM
 //	ISPMT
+//	ISREF
+//	ISTEXT
 //	KURT
 //	LARGE
 //	LCM
@@ -597,8 +597,8 @@ type formulaFuncs struct {
 //	LOG10
 //	LOGINV
 //	LOGNORM.DIST
-//	LOGNORMDIST
 //	LOGNORM.INV
+//	LOGNORMDIST
 //	LOOKUP
 //	LOWER
 //	MATCH
@@ -633,12 +633,12 @@ type formulaFuncs struct {
 //	NETWORKDAYS.INTL
 //	NOMINAL
 //	NORM.DIST
-//	NORMDIST
 //	NORM.INV
-//	NORMINV
 //	NORM.S.DIST
-//	NORMSDIST
 //	NORM.S.INV
+//	NORMDIST
+//	NORMINV
+//	NORMSDIST
 //	NORMSINV
 //	NOT
 //	NOW
@@ -652,19 +652,19 @@ type formulaFuncs struct {
 //	OR
 //	PDURATION
 //	PEARSON
+//	PERCENTILE
 //	PERCENTILE.EXC
 //	PERCENTILE.INC
-//	PERCENTILE
+//	PERCENTRANK
 //	PERCENTRANK.EXC
 //	PERCENTRANK.INC
-//	PERCENTRANK
 //	PERMUT
 //	PERMUTATIONA
 //	PHI
 //	PI
 //	PMT
-//	POISSON.DIST
 //	POISSON
+//	POISSON.DIST
 //	POWER
 //	PPMT
 //	PRICE
@@ -734,20 +734,21 @@ type formulaFuncs struct {
 //	SWITCH
 //	SYD
 //	T
+//	T.DIST
+//	T.DIST.2T
+//	T.DIST.RT
+//	T.INV
+//	T.INV.2T
+//	T.TEST
 //	TAN
 //	TANH
 //	TBILLEQ
 //	TBILLPRICE
 //	TBILLYIELD
-//	T.DIST
-//	T.DIST.2T
-//	T.DIST.RT
 //	TDIST
 //	TEXTJOIN
 //	TIME
 //	TIMEVALUE
-//	T.INV
-//	T.INV.2T
 //	TINV
 //	TODAY
 //	TRANSPOSE
@@ -756,7 +757,6 @@ type formulaFuncs struct {
 //	TRIMMEAN
 //	TRUE
 //	TRUNC
-//	T.TEST
 //	TTEST
 //	TYPE
 //	UNICHAR
@@ -14162,17 +14162,23 @@ func (fn *formulaFuncs) COLUMN(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(col))
 }
 
-// calcColumnsMinMax calculation min and max value for given formula arguments
-// sequence of the formula function COLUMNS.
-func calcColumnsMinMax(argsList *list.List) (min, max int) {
+// calcColsRowsMinMax calculation min and max value for given formula arguments
+// sequence of the formula functions COLUMNS and ROWS.
+func calcColsRowsMinMax(cols bool, argsList *list.List) (min, max int) {
+	getVal := func(cols bool, cell cellRef) int {
+		if cols {
+			return cell.Col
+		}
+		return cell.Row
+	}
 	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
 		crs := argsList.Front().Value.(formulaArg).cellRanges
 		for cr := crs.Front(); cr != nil; cr = cr.Next() {
 			if min == 0 {
-				min = cr.Value.(cellRange).From.Col
+				min = getVal(cols, cr.Value.(cellRange).From)
 			}
-			if max < cr.Value.(cellRange).To.Col {
-				max = cr.Value.(cellRange).To.Col
+			if max < getVal(cols, cr.Value.(cellRange).To) {
+				max = getVal(cols, cr.Value.(cellRange).To)
 			}
 		}
 	}
@@ -14180,10 +14186,10 @@ func calcColumnsMinMax(argsList *list.List) (min, max int) {
 		cr := argsList.Front().Value.(formulaArg).cellRefs
 		for refs := cr.Front(); refs != nil; refs = refs.Next() {
 			if min == 0 {
-				min = refs.Value.(cellRef).Col
+				min = getVal(cols, refs.Value.(cellRef))
 			}
-			if max < refs.Value.(cellRef).Col {
-				max = refs.Value.(cellRef).Col
+			if max < getVal(cols, refs.Value.(cellRef)) {
+				max = getVal(cols, refs.Value.(cellRef))
 			}
 		}
 	}
@@ -14198,7 +14204,7 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COLUMNS requires 1 argument")
 	}
-	min, max := calcColumnsMinMax(argsList)
+	min, max := calcColsRowsMinMax(true, argsList)
 	if max == MaxColumns {
 		return newNumberFormulaArg(float64(MaxColumns))
 	}
@@ -14411,8 +14417,8 @@ func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "TRANSPOSE requires 1 argument")
 	}
 	args := argsList.Back().Value.(formulaArg).ToList()
-	rmin, rmax := calcRowsMinMax(argsList)
-	cmin, cmax := calcColumnsMinMax(argsList)
+	rmin, rmax := calcColsRowsMinMax(false, argsList)
+	cmin, cmax := calcColsRowsMinMax(true, argsList)
 	cols, rows := cmax-cmin+1, rmax-rmin+1
 	src := make([][]formulaArg, 0)
 	for i := 0; i < len(args); i += cols {
@@ -14931,34 +14937,6 @@ func (fn *formulaFuncs) ROW(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(float64(row))
 }
 
-// calcRowsMinMax calculation min and max value for given formula arguments
-// sequence of the formula function ROWS.
-func calcRowsMinMax(argsList *list.List) (min, max int) {
-	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
-		crs := argsList.Front().Value.(formulaArg).cellRanges
-		for cr := crs.Front(); cr != nil; cr = cr.Next() {
-			if min == 0 {
-				min = cr.Value.(cellRange).From.Row
-			}
-			if max < cr.Value.(cellRange).To.Row {
-				max = cr.Value.(cellRange).To.Row
-			}
-		}
-	}
-	if argsList.Front().Value.(formulaArg).cellRefs != nil && argsList.Front().Value.(formulaArg).cellRefs.Len() > 0 {
-		cr := argsList.Front().Value.(formulaArg).cellRefs
-		for refs := cr.Front(); refs != nil; refs = refs.Next() {
-			if min == 0 {
-				min = refs.Value.(cellRef).Row
-			}
-			if max < refs.Value.(cellRef).Row {
-				max = refs.Value.(cellRef).Row
-			}
-		}
-	}
-	return
-}
-
 // ROWS function takes an Excel range and returns the number of rows that are
 // contained within the range. The syntax of the function is:
 //
@@ -14967,7 +14945,7 @@ func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROWS requires 1 argument")
 	}
-	min, max := calcRowsMinMax(argsList)
+	min, max := calcColsRowsMinMax(false, argsList)
 	if max == TotalRows {
 		return newStringFormulaArg(strconv.Itoa(TotalRows))
 	}
@@ -15649,35 +15627,35 @@ func (fn *formulaFuncs) prepareDataValueArgs(n int, argsList *list.List) formula
 	return newListFormulaArg(dataValues)
 }
 
-// DISC function calculates the Discount Rate for a security. The syntax of
-// the function is:
-//
-//	DISC(settlement,maturity,pr,redemption,[basis])
-func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
+// discIntrate is an implementation of the formula functions DISC and INTRATE.
+func (fn *formulaFuncs) discIntrate(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 4 && argsList.Len() != 5 {
-		return newErrorFormulaArg(formulaErrorVALUE, "DISC requires 4 or 5 arguments")
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 4 or 5 arguments", name))
 	}
 	args := fn.prepareDataValueArgs(2, argsList)
 	if args.Type != ArgList {
 		return args
 	}
-	settlement, maturity := args.List[0], args.List[1]
+	settlement, maturity, argName := args.List[0], args.List[1], "pr"
 	if maturity.Number <= settlement.Number {
-		return newErrorFormulaArg(formulaErrorNUM, "DISC requires maturity > settlement")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
 	}
-	pr := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if pr.Type != ArgNumber {
+	prInvestment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+	if prInvestment.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	if pr.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "DISC requires pr > 0")
+	if prInvestment.Number <= 0 {
+		if name == "INTRATE" {
+			argName = "investment"
+		}
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires %s > 0", name, argName))
 	}
 	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
 	if redemption.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	if redemption.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "DISC requires redemption > 0")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires redemption > 0", name))
 	}
 	basis := newNumberFormulaArg(0)
 	if argsList.Len() == 5 {
@@ -15689,7 +15667,18 @@ func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
 	if frac.Type != ArgNumber {
 		return frac
 	}
-	return newNumberFormulaArg((redemption.Number - pr.Number) / redemption.Number / frac.Number)
+	if name == "INTRATE" {
+		return newNumberFormulaArg((redemption.Number - prInvestment.Number) / prInvestment.Number / frac.Number)
+	}
+	return newNumberFormulaArg((redemption.Number - prInvestment.Number) / redemption.Number / frac.Number)
+}
+
+// DISC function calculates the Discount Rate for a security. The syntax of
+// the function is:
+//
+//	DISC(settlement,maturity,pr,redemption,[basis])
+func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
+	return fn.discIntrate("DISC", argsList)
 }
 
 // DOLLARDE function converts a dollar value in fractional notation, into a
@@ -16007,42 +15996,7 @@ func (fn *formulaFuncs) FVSCHEDULE(argsList *list.List) formulaArg {
 //
 //	INTRATE(settlement,maturity,investment,redemption,[basis])
 func (fn *formulaFuncs) INTRATE(argsList *list.List) formulaArg {
-	if argsList.Len() != 4 && argsList.Len() != 5 {
-		return newErrorFormulaArg(formulaErrorVALUE, "INTRATE requires 4 or 5 arguments")
-	}
-	args := fn.prepareDataValueArgs(2, argsList)
-	if args.Type != ArgList {
-		return args
-	}
-	settlement, maturity := args.List[0], args.List[1]
-	if maturity.Number <= settlement.Number {
-		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires maturity > settlement")
-	}
-	investment := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if investment.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	if investment.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires investment > 0")
-	}
-	redemption := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if redemption.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	if redemption.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "INTRATE requires redemption > 0")
-	}
-	basis := newNumberFormulaArg(0)
-	if argsList.Len() == 5 {
-		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
-		}
-	}
-	frac := yearFrac(settlement.Number, maturity.Number, int(basis.Number))
-	if frac.Type != ArgNumber {
-		return frac
-	}
-	return newNumberFormulaArg((redemption.Number - investment.Number) / investment.Number / frac.Number)
+	return fn.discIntrate("INTRATE", argsList)
 }
 
 // IPMT function calculates the interest payment, during a specific period of a
@@ -16756,13 +16710,50 @@ func (fn *formulaFuncs) price(settlement, maturity, rate, yld, redemption, frequ
 	return newNumberFormulaArg(ret)
 }
 
-// PRICE function calculates the price, per $100 face value of a security that
-// pays periodic interest. The syntax of the function is:
-//
-//	PRICE(settlement,maturity,rate,yld,redemption,frequency,[basis])
-func (fn *formulaFuncs) PRICE(argsList *list.List) formulaArg {
+// checkPriceYieldArgs checking and prepare arguments for the formula functions
+// PRICE and YIELD.
+func checkPriceYieldArgs(name string, rate, prYld, redemption, frequency formulaArg) formulaArg {
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires rate >= 0", name))
+	}
+	if prYld.Type != ArgNumber {
+		return prYld
+	}
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if name == "PRICE" {
+		if prYld.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, "PRICE requires yld >= 0")
+		}
+		if redemption.Number <= 0 {
+			return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption > 0")
+		}
+	}
+	if name == "YIELD" {
+		if prYld.Number <= 0 {
+			return newErrorFormulaArg(formulaErrorNUM, "YIELD requires pr > 0")
+		}
+		if redemption.Number < 0 {
+			return newErrorFormulaArg(formulaErrorNUM, "YIELD requires redemption >= 0")
+		}
+	}
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newEmptyFormulaArg()
+}
+
+// priceYield is an implementation of the formula functions PRICE and YIELD.
+func (fn *formulaFuncs) priceYield(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 6 && argsList.Len() != 7 {
-		return newErrorFormulaArg(formulaErrorVALUE, "PRICE requires 6 or 7 arguments")
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 6 or 7 arguments", name))
 	}
 	args := fn.prepareDataValueArgs(2, argsList)
 	if args.Type != ArgList {
@@ -16770,32 +16761,11 @@ func (fn *formulaFuncs) PRICE(argsList *list.List) formulaArg {
 	}
 	settlement, maturity := args.List[0], args.List[1]
 	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if rate.Type != ArgNumber {
-		return rate
-	}
-	if rate.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires rate >= 0")
-	}
-	yld := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if yld.Type != ArgNumber {
-		return yld
-	}
-	if yld.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires yld >= 0")
-	}
+	prYld := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
 	redemption := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if redemption.Type != ArgNumber {
-		return redemption
-	}
-	if redemption.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption > 0")
-	}
 	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if frequency.Type != ArgNumber {
-		return frequency
-	}
-	if !validateFrequency(frequency.Number) {
-		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	if arg := checkPriceYieldArgs(name, rate, prYld, redemption, frequency); arg.Type != ArgEmpty {
+		return arg
 	}
 	basis := newNumberFormulaArg(0)
 	if argsList.Len() == 7 {
@@ -16803,7 +16773,18 @@ func (fn *formulaFuncs) PRICE(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 		}
 	}
-	return fn.price(settlement, maturity, rate, yld, redemption, frequency, basis)
+	if name == "PRICE" {
+		return fn.price(settlement, maturity, rate, prYld, redemption, frequency, basis)
+	}
+	return fn.yield(settlement, maturity, rate, prYld, redemption, frequency, basis)
+}
+
+// PRICE function calculates the price, per $100 face value of a security that
+// pays periodic interest. The syntax of the function is:
+//
+//	PRICE(settlement,maturity,rate,yld,redemption,frequency,[basis])
+func (fn *formulaFuncs) PRICE(argsList *list.List) formulaArg {
+	return fn.priceYield("PRICE", argsList)
 }
 
 // PRICEDISC function calculates the price, per $100 face value of a
@@ -17535,49 +17516,7 @@ func (fn *formulaFuncs) yield(settlement, maturity, rate, pr, redemption, freque
 //
 //	YIELD(settlement,maturity,rate,pr,redemption,frequency,[basis])
 func (fn *formulaFuncs) YIELD(argsList *list.List) formulaArg {
-	if argsList.Len() != 6 && argsList.Len() != 7 {
-		return newErrorFormulaArg(formulaErrorVALUE, "YIELD requires 6 or 7 arguments")
-	}
-	args := fn.prepareDataValueArgs(2, argsList)
-	if args.Type != ArgList {
-		return args
-	}
-	settlement, maturity := args.List[0], args.List[1]
-	rate := argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-	if rate.Type != ArgNumber {
-		return rate
-	}
-	if rate.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires rate >= 0")
-	}
-	pr := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if pr.Type != ArgNumber {
-		return pr
-	}
-	if pr.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires pr > 0")
-	}
-	redemption := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if redemption.Type != ArgNumber {
-		return redemption
-	}
-	if redemption.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "PRICE requires redemption >= 0")
-	}
-	frequency := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if frequency.Type != ArgNumber {
-		return frequency
-	}
-	if !validateFrequency(frequency.Number) {
-		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
-	}
-	basis := newNumberFormulaArg(0)
-	if argsList.Len() == 7 {
-		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
-		}
-	}
-	return fn.yield(settlement, maturity, rate, pr, redemption, frequency, basis)
+	return fn.priceYield("YIELD", argsList)
 }
 
 // YIELDDISC function calculates the annual yield of a discounted security.

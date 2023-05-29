@@ -114,7 +114,7 @@ func julianDateToGregorianTime(part1, part2 float64) time.Time {
 // "Communications of the ACM" in 1968 (published in CACM, volume 11, number
 // 10, October 1968, p.657). None of those programmers seems to have found it
 // necessary to explain the constants or variable names set out by Henry F.
-// Fliegel and Thomas C. Van Flandern.  Maybe one day I'll buy that jounal and
+// Fliegel and Thomas C. Van Flandern. Maybe one day I'll buy that journal and
 // expand an explanation here - that day is not today.
 func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 	l := jd + 68569
@@ -163,7 +163,7 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 	return date.Truncate(time.Second)
 }
 
-// ExcelDateToTime converts a float-based excel date representation to a time.Time.
+// ExcelDateToTime converts a float-based Excel date representation to a time.Time.
 func ExcelDateToTime(excelDate float64, use1904Format bool) (time.Time, error) {
 	if excelDate < 0 {
 		return time.Time{}, newInvalidExcelDateError(excelDate)

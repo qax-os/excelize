@@ -1136,7 +1136,7 @@ func getNumberPartLen(n float64) (int, int) {
 	return len(parts[0]), 0
 }
 
-// getNumberFmtConf generate the number format padding and place holder
+// getNumberFmtConf generate the number format padding and placeholder
 // configurations.
 func (nf *numberFormat) getNumberFmtConf() {
 	for _, token := range nf.section[nf.sectionIdx].Items {
@@ -1183,9 +1183,9 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 	if nf.usePositive {
 		result += "-"
 	}
-	for i, token := range nf.section[nf.sectionIdx].Items {
+	for _, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
-			if err, changeNumFmtCode := nf.currencyLanguageHandler(i, token); err != nil || changeNumFmtCode {
+			if err, changeNumFmtCode := nf.currencyLanguageHandler(token); err != nil || changeNumFmtCode {
 				return nf.value
 			}
 			result += nf.currencyString
@@ -1321,7 +1321,7 @@ func (nf *numberFormat) dateTimeHandler() string {
 	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, nf.date1904), false, false
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
-			if err, changeNumFmtCode := nf.currencyLanguageHandler(i, token); err != nil || changeNumFmtCode {
+			if err, changeNumFmtCode := nf.currencyLanguageHandler(token); err != nil || changeNumFmtCode {
 				return nf.value
 			}
 			nf.result += nf.currencyString
@@ -1392,7 +1392,7 @@ func (nf *numberFormat) positiveHandler() string {
 
 // currencyLanguageHandler will be handling currency and language types tokens
 // for a number format expression.
-func (nf *numberFormat) currencyLanguageHandler(i int, token nfp.Token) (error, bool) {
+func (nf *numberFormat) currencyLanguageHandler(token nfp.Token) (error, bool) {
 	for _, part := range token.Parts {
 		if inStrSlice(supportedTokenTypes, part.Token.TType, true) == -1 {
 			return ErrUnsupportedNumberFormat, false
@@ -1491,7 +1491,7 @@ func localMonthsNameFrench(t time.Time, abbr int) string {
 // localMonthsNameIrish returns the Irish name of the month.
 func localMonthsNameIrish(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesIrishAbbr[int(t.Month()-1)]
+		return monthNamesIrishAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 {
 		return monthNamesIrish[int(t.Month())-1]
@@ -1524,7 +1524,7 @@ func localMonthsNameGerman(t time.Time, abbr int) string {
 // localMonthsNameChinese1 returns the Chinese name of the month.
 func localMonthsNameChinese1(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesChineseAbbrPlus[int(t.Month())]
+		return monthNamesChineseAbbrPlus[t.Month()]
 	}
 	if abbr == 4 {
 		return monthNamesChinesePlus[int(t.Month())-1]
@@ -1543,7 +1543,7 @@ func localMonthsNameChinese2(t time.Time, abbr int) string {
 // localMonthsNameChinese3 returns the Chinese name of the month.
 func localMonthsNameChinese3(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return monthNamesChineseAbbrPlus[int(t.Month())]
+		return monthNamesChineseAbbrPlus[t.Month()]
 	}
 	return strconv.Itoa(int(t.Month()))
 }
@@ -1551,7 +1551,7 @@ func localMonthsNameChinese3(t time.Time, abbr int) string {
 // localMonthsNameKorean returns the Korean name of the month.
 func localMonthsNameKorean(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return monthNamesKoreanAbbrPlus[int(t.Month())]
+		return monthNamesKoreanAbbrPlus[t.Month()]
 	}
 	return strconv.Itoa(int(t.Month()))
 }
@@ -1562,7 +1562,7 @@ func localMonthsNameTraditionalMongolian(t time.Time, abbr int) string {
 	if abbr == 5 {
 		return "M"
 	}
-	return monthNamesTradMongolian[int(t.Month()-1)]
+	return monthNamesTradMongolian[t.Month()-1]
 }
 
 // localMonthsNameRussian returns the Russian name of the month.
@@ -1642,12 +1642,12 @@ func localMonthsNameWelsh(t time.Time, abbr int) string {
 // localMonthsNameVietnamese returns the Vietnamese name of the month.
 func localMonthsNameVietnamese(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesVietnameseAbbr3[int(t.Month()-1)]
+		return monthNamesVietnameseAbbr3[t.Month()-1]
 	}
 	if abbr == 5 {
-		return monthNamesVietnameseAbbr5[int(t.Month()-1)]
+		return monthNamesVietnameseAbbr5[t.Month()-1]
 	}
-	return monthNamesVietnamese[int(t.Month()-1)]
+	return monthNamesVietnamese[t.Month()-1]
 }
 
 // localMonthsNameWolof returns the Wolof name of the month.
@@ -1675,7 +1675,7 @@ func localMonthsNameXhosa(t time.Time, abbr int) string {
 // localMonthsNameYi returns the Yi name of the month.
 func localMonthsNameYi(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return monthNamesYiSuffix[int(t.Month()-1)]
+		return monthNamesYiSuffix[t.Month()-1]
 	}
 	return string([]rune(monthNamesYi[int(t.Month())-1])[:1])
 }
@@ -1683,7 +1683,7 @@ func localMonthsNameYi(t time.Time, abbr int) string {
 // localMonthsNameZulu returns the Zulu name of the month.
 func localMonthsNameZulu(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesZuluAbbr[int(t.Month()-1)]
+		return monthNamesZuluAbbr[t.Month()-1]
 	}
 	if abbr == 4 {
 		return monthNamesZulu[int(t.Month())-1]
@@ -1737,8 +1737,8 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 			return
 		}
 	}
-	nf.yearsHandler(i, token)
-	nf.daysHandler(i, token)
+	nf.yearsHandler(token)
+	nf.daysHandler(token)
 	nf.hoursHandler(i, token)
 	nf.minutesHandler(token)
 	nf.secondsHandler(token)
@@ -1746,7 +1746,7 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 
 // yearsHandler will be handling years in the date and times types tokens for a
 // number format expression.
-func (nf *numberFormat) yearsHandler(i int, token nfp.Token) {
+func (nf *numberFormat) yearsHandler(token nfp.Token) {
 	years := strings.Contains(strings.ToUpper(token.TValue), "Y")
 	if years && len(token.TValue) <= 2 {
 		nf.result += strconv.Itoa(nf.t.Year())[2:]
@@ -1760,7 +1760,7 @@ func (nf *numberFormat) yearsHandler(i int, token nfp.Token) {
 
 // daysHandler will be handling days in the date and times types tokens for a
 // number format expression.
-func (nf *numberFormat) daysHandler(i int, token nfp.Token) {
+func (nf *numberFormat) daysHandler(token nfp.Token) {
 	if strings.Contains(strings.ToUpper(token.TValue), "D") {
 		switch len(token.TValue) {
 		case 1:

@@ -79,7 +79,7 @@ type Rows struct {
 	curRowOpts, seekRowOpts RowOpts
 }
 
-// Next will return true if find the next row element.
+// Next will return true if it finds the next row element.
 func (rows *Rows) Next() bool {
 	rows.seekRow++
 	if rows.curRow >= rows.seekRow {
@@ -297,7 +297,9 @@ func (f *File) getFromStringItem(index int) string {
 	}
 	needClose, decoder, tempFile, err := f.xmlDecoder(defaultXMLPathSharedStrings)
 	if needClose && err == nil {
-		defer tempFile.Close()
+		defer func() {
+			err = tempFile.Close()
+		}()
 	}
 	f.sharedStringItem = [][]uint{}
 	f.sharedStringTemp, _ = os.CreateTemp(os.TempDir(), "excelize-")

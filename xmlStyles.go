@@ -65,10 +65,10 @@ type xlsxLine struct {
 
 // xlsxColor is a common mapping used for both the fgColor and bgColor elements.
 // Foreground color of the cell fill pattern. Cell fill patterns operate with
-// two colors: a background color and a foreground color. These combine together
+// two colors: a background color and a foreground color. These combine
 // to make a patterned cell fill. Background color of the cell fill pattern.
 // Cell fill patterns operate with two colors: a background color and a
-// foreground color. These combine together to make a patterned cell fill.
+// foreground color. These combine to make a patterned cell fill.
 type xlsxColor struct {
 	Auto    bool    `xml:"auto,attr,omitempty"`
 	RGB     string  `xml:"rgb,attr,omitempty"`
@@ -103,7 +103,7 @@ type xlsxFont struct {
 	Scheme   *attrValString `xml:"scheme"`
 }
 
-// xlsxFills directly maps the fills element. This element defines the cell
+// xlsxFills directly maps the fills' element. This element defines the cell
 // fills portion of the Styles part, consisting of a sequence of fill records. A
 // cell fill consists of a background color, foreground color, and pattern to be
 // applied across the cell.
@@ -147,7 +147,7 @@ type xlsxGradientFillStop struct {
 	Color    xlsxColor `xml:"color,omitempty"`
 }
 
-// xlsxBorders directly maps the borders element. This element contains borders
+// xlsxBorders directly maps the borders' element. This element contains borders
 // formatting information, specifying all border definitions for all cells in
 // the workbook.
 type xlsxBorders struct {
@@ -205,7 +205,7 @@ type xlsxCellStyleXfs struct {
 	Xf    []xlsxXf `xml:"xf,omitempty"`
 }
 
-// xlsxXf directly maps the xf element. A single xf element describes all of the
+// xlsxXf directly maps the xf element. A single xf element describes all the
 // formatting for a cell.
 type xlsxXf struct {
 	NumFmtID          *int            `xml:"numFmtId,attr"`
@@ -236,8 +236,8 @@ type xlsxCellXfs struct {
 }
 
 // xlsxDxfs directly maps the dxfs element. This element contains the master
-// differential formatting records (dxf's) which define formatting for all non-
-// cell formatting in this workbook. Whereas xf records fully specify a
+// differential formatting records (dxf's) which define formatting for all
+// non-cell formatting in this workbook. Whereas xf records fully specify a
 // particular aspect of formatting (e.g., cell borders) by referencing those
 // formatting definitions elsewhere in the Styles part, dxf records specify
 // incremental (or differential) aspects of formatting directly inline within
@@ -304,7 +304,7 @@ type xlsxNumFmt struct {
 	FormatCode string `xml:"formatCode,attr,omitempty"`
 }
 
-// xlsxStyleColors directly maps the colors element. Color information
+// xlsxStyleColors directly maps the colors' element. Color information
 // associated with this stylesheet. This collection is written whenever the
 // legacy color palette has been modified (backwards compatibility settings) or
 // a custom color has been selected while using this workbook.
