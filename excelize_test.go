@@ -783,6 +783,16 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	assert.NoError(t, f.SetCellStyle("Sheet2", "L33", "L33", style))
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellStyleNumberFormat.xlsx")))
+
+	// Test get cell value with built-in number format code 22 with custom short date pattern
+	f = NewFile(Options{ShortDatePattern: "yyyy-m-dd"})
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 45074.625694444447))
+	style, err = f.NewStyle(&Style{NumFmt: 22})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+	cellValue, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "2023-5-28 15:01", cellValue)
 }
 
 func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {

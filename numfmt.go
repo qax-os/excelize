@@ -1073,6 +1073,9 @@ func (f *File) langNumFmtFuncZhCN(numFmtID int) string {
 // getBuiltInNumFmtCode convert number format index to number format code with
 // specified locale and language.
 func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
+	if numFmtID == 22 && f.options.ShortDatePattern != "" {
+		return fmt.Sprintf("%s hh:mm", f.options.ShortDatePattern), true
+	}
 	if fmtCode, ok := builtInNumFmt[numFmtID]; ok {
 		return fmtCode, true
 	}
