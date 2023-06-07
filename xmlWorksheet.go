@@ -894,8 +894,8 @@ type SparklineOptions struct {
 	EmptyCells    string
 }
 
-// PaneOptions directly maps the settings of the pane.
-type PaneOptions struct {
+// Selection directly maps the settings of the worksheet selection.
+type Selection struct {
 	SQRef      string
 	ActiveCell string
 	Pane       string
@@ -909,7 +909,7 @@ type Panes struct {
 	YSplit      int
 	TopLeftCell string
 	ActivePane  string
-	Panes       []PaneOptions
+	Selection   []Selection
 }
 
 // ConditionalFormatOptions directly maps the conditional format settings of the cells.

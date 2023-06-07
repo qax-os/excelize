@@ -430,22 +430,23 @@ func (f *File) writeAutoFilter(fc *xlsxFilterColumn, exp []int, tokens []string)
 		var filters []*xlsxFilter
 		filters = append(filters, &xlsxFilter{Val: tokens[0]})
 		fc.Filters = &xlsxFilters{Filter: filters}
-	} else if len(exp) == 3 && exp[0] == 2 && exp[1] == 1 && exp[2] == 2 {
+		return
+	}
+	if len(exp) == 3 && exp[0] == 2 && exp[1] == 1 && exp[2] == 2 {
 		// Double equality with "or" operator.
 		var filters []*xlsxFilter
 		for _, v := range tokens {
 			filters = append(filters, &xlsxFilter{Val: v})
 		}
 		fc.Filters = &xlsxFilters{Filter: filters}
-	} else {
-		// Non default custom filter.
-		expRel := map[int]int{0: 0, 1: 2}
-		andRel := map[int]bool{0: true, 1: false}
-		for k, v := range tokens {
-			f.writeCustomFilter(fc, exp[expRel[k]], v)
-			if k == 1 {
-				fc.CustomFilters.And = andRel[exp[k]]
-			}
+		return
+	}
+	// Non default custom filter.
+	expRel, andRel := map[int]int{0: 0, 1: 2}, map[int]bool{0: true, 1: false}
+	for k, v := range tokens {
+		f.writeCustomFilter(fc, exp[expRel[k]], v)
+		if k == 1 {
+			fc.CustomFilters.And = andRel[exp[k]]
 		}
 	}
 }
@@ -467,11 +468,11 @@ func (f *File) writeCustomFilter(fc *xlsxFilterColumn, operator int, val string)
 	}
 	if fc.CustomFilters != nil {
 		fc.CustomFilters.CustomFilter = append(fc.CustomFilters.CustomFilter, &customFilter)
-	} else {
-		var customFilters []*xlsxCustomFilter
-		customFilters = append(customFilters, &customFilter)
-		fc.CustomFilters = &xlsxCustomFilters{CustomFilter: customFilters}
+		return
 	}
+	var customFilters []*xlsxCustomFilter
+	customFilters = append(customFilters, &customFilter)
+	fc.CustomFilters = &xlsxCustomFilters{CustomFilter: customFilters}
 }
 
 // parseFilterExpression provides a function to converts the tokens of a
@@ -488,8 +489,7 @@ func (f *File) parseFilterExpression(expression string, tokens []string) ([]int,
 	if len(tokens) == 7 {
 		// The number of tokens will be either 3 (for 1 expression) or 7 (for 2
 		// expressions).
-		conditional := 0
-		c := tokens[3]
+		conditional, c := 0, tokens[3]
 		if conditionFormat.MatchString(c) {
 			conditional = 1
 		}
@@ -501,17 +501,13 @@ func (f *File) parseFilterExpression(expression string, tokens []string) ([]int,
 		if err != nil {
 			return expressions, t, err
 		}
-		expressions = []int{expression1[0], conditional, expression2[0]}
-		t = []string{token1, token2}
-	} else {
-		exp, token, err := f.parseFilterTokens(expression, tokens)
-		if err != nil {
-			return expressions, t, err
-		}
-		expressions = exp
-		t = []string{token}
+		return []int{expression1[0], conditional, expression2[0]}, []string{token1, token2}, nil
 	}
-	return expressions, t, nil
+	exp, token, err := f.parseFilterTokens(expression, tokens)
+	if err != nil {
+		return expressions, t, err
+	}
+	return exp, []string{token}, nil
 }
 
 // parseFilterTokens provides a function to parse the 3 tokens of a filter
@@ -534,7 +530,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	operator, ok := operators[strings.ToLower(tokens[1])]
 	if !ok {
 		// Convert the operator from a number to a descriptive string.
-		return []int{}, "", fmt.Errorf("unknown operator: %s", tokens[1])
+		return []int{}, "", newUnknownFilterTokenError(tokens[1])
 	}
 	token := tokens[2]
 	// Special handling for Blanks/NonBlanks.
@@ -563,8 +559,7 @@ func (f *File) parseFilterTokens(expression string, tokens []string) ([]int, str
 	}
 	// If the string token contains an Excel match character then change the
 	// operator type to indicate a non "simple" equality.
-	re = matchFormat.MatchString(token)
-	if operator == 2 && re {
+	if re = matchFormat.MatchString(token); operator == 2 && re {
 		operator = 22
 	}
 	return []int{operator}, token, nil

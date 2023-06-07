@@ -37,25 +37,29 @@ func TestNewSheet(t *testing.T) {
 	assert.Equal(t, -1, sheetID)
 }
 
-func TestSetPanes(t *testing.T) {
+func TestPanes(t *testing.T) {
 	f := NewFile()
 
 	assert.NoError(t, f.SetPanes("Sheet1", &Panes{Freeze: false, Split: false}))
 	_, err := f.NewSheet("Panes 2")
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetPanes("Panes 2",
-		&Panes{
-			Freeze:      true,
-			Split:       false,
-			XSplit:      1,
-			YSplit:      0,
-			TopLeftCell: "B1",
-			ActivePane:  "topRight",
-			Panes: []PaneOptions{
-				{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
-			},
+
+	expected := Panes{
+		Freeze:      true,
+		Split:       false,
+		XSplit:      1,
+		YSplit:      0,
+		TopLeftCell: "B1",
+		ActivePane:  "topRight",
+		Selection: []Selection{
+			{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
 		},
-	))
+	}
+	assert.NoError(t, f.SetPanes("Panes 2", &expected))
+	panes, err := f.GetPanes("Panes 2")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, panes)
+
 	_, err = f.NewSheet("Panes 3")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetPanes("Panes 3",
@@ -66,7 +70,7 @@ func TestSetPanes(t *testing.T) {
 			YSplit:      1800,
 			TopLeftCell: "N57",
 			ActivePane:  "bottomLeft",
-			Panes: []PaneOptions{
+			Selection: []Selection{
 				{SQRef: "I36", ActiveCell: "I36"},
 				{SQRef: "G33", ActiveCell: "G33", Pane: "topRight"},
 				{SQRef: "J60", ActiveCell: "J60", Pane: "bottomLeft"},
@@ -84,7 +88,7 @@ func TestSetPanes(t *testing.T) {
 			YSplit:      9,
 			TopLeftCell: "A34",
 			ActivePane:  "bottomLeft",
-			Panes: []PaneOptions{
+			Selection: []Selection{
 				{SQRef: "A11:XFD11", ActiveCell: "A11", Pane: "bottomLeft"},
 			},
 		},
@@ -94,6 +98,26 @@ func TestSetPanes(t *testing.T) {
 	// Test set panes with invalid sheet name
 	assert.EqualError(t, f.SetPanes("Sheet:1", &Panes{Freeze: false, Split: false}), ErrSheetNameInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetPane.xlsx")))
+
+	// Test get panes with empty sheet views
+	f = NewFile()
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = &xlsxSheetViews{}
+	_, err = f.GetPanes("Sheet1")
+	assert.NoError(t, err)
+	// Test get panes without panes
+	ws.(*xlsxWorksheet).SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{{}}}
+	_, err = f.GetPanes("Sheet1")
+	assert.NoError(t, err)
+	// Test get panes without sheet views
+	ws.(*xlsxWorksheet).SheetViews = nil
+	_, err = f.GetPanes("Sheet1")
+	assert.NoError(t, err)
+	// Test get panes on not exists worksheet
+	_, err = f.GetPanes("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+
 	// Test add pane on empty sheet views worksheet
 	f = NewFile()
 	f.checked = nil
@@ -107,7 +131,7 @@ func TestSetPanes(t *testing.T) {
 			YSplit:      0,
 			TopLeftCell: "B1",
 			ActivePane:  "topRight",
-			Panes: []PaneOptions{
+			Selection: []Selection{
 				{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
 			},
 		},
