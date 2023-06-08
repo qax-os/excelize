@@ -772,7 +772,7 @@ func (ws *xlsxWorksheet) setPanes(panes *Panes) error {
 		}
 	}
 	var s []*xlsxSelection
-	for _, p := range panes.Panes {
+	for _, p := range panes.Selection {
 		s = append(s, &xlsxSelection{
 			ActiveCell: p.ActiveCell,
 			Pane:       p.Pane,
@@ -859,7 +859,7 @@ func (ws *xlsxWorksheet) setPanes(panes *Panes) error {
 //	    YSplit:      0,
 //	    TopLeftCell: "B1",
 //	    ActivePane:  "topRight",
-//	    Panes: []excelize.PaneOptions{
+//	    Selection: []excelize.Selection{
 //	        {SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
 //	    },
 //	})
@@ -874,7 +874,7 @@ func (ws *xlsxWorksheet) setPanes(panes *Panes) error {
 //	    YSplit:      9,
 //	    TopLeftCell: "A34",
 //	    ActivePane:  "bottomLeft",
-//	    Panes: []excelize.PaneOptions{
+//	    Selection: []excelize.Selection{
 //	        {SQRef: "A11:XFD11", ActiveCell: "A11", Pane: "bottomLeft"},
 //	    },
 //	})
@@ -889,7 +889,7 @@ func (ws *xlsxWorksheet) setPanes(panes *Panes) error {
 //	    YSplit:      1800,
 //	    TopLeftCell: "N57",
 //	    ActivePane:  "bottomLeft",
-//	    Panes: []excelize.PaneOptions{
+//	    Selection: []excelize.Selection{
 //	        {SQRef: "I36", ActiveCell: "I36"},
 //	        {SQRef: "G33", ActiveCell: "G33", Pane: "topRight"},
 //	        {SQRef: "J60", ActiveCell: "J60", Pane: "bottomLeft"},
@@ -906,6 +906,50 @@ func (f *File) SetPanes(sheet string, panes *Panes) error {
 		return err
 	}
 	return ws.setPanes(panes)
+}
+
+// getPanes returns freeze panes, split panes, and views of the worksheet.
+func (ws *xlsxWorksheet) getPanes() Panes {
+	var (
+		panes   Panes
+		section []Selection
+	)
+	if ws.SheetViews == nil || len(ws.SheetViews.SheetView) < 1 {
+		return panes
+	}
+	sw := ws.SheetViews.SheetView[len(ws.SheetViews.SheetView)-1]
+	for _, s := range sw.Selection {
+		if s != nil {
+			section = append(section, Selection{
+				SQRef:      s.SQRef,
+				ActiveCell: s.ActiveCell,
+				Pane:       s.Pane,
+			})
+		}
+	}
+	panes.Selection = section
+	if sw.Pane == nil {
+		return panes
+	}
+	panes.ActivePane = sw.Pane.ActivePane
+	if sw.Pane.State == "frozen" {
+		panes.Freeze = true
+	}
+	panes.TopLeftCell = sw.Pane.TopLeftCell
+	panes.XSplit = int(sw.Pane.XSplit)
+	panes.YSplit = int(sw.Pane.YSplit)
+	return panes
+}
+
+// GetPanes provides a function to get freeze panes, split panes, and worksheet
+// views by given worksheet name.
+func (f *File) GetPanes(sheet string) (Panes, error) {
+	var panes Panes
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return panes, err
+	}
+	return ws.getPanes(), err
 }
 
 // GetSheetVisible provides a function to get worksheet visible by given worksheet

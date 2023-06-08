@@ -100,6 +100,12 @@ func newViewIdxError(viewIndex int) error {
 	return fmt.Errorf("view index %d out of range", viewIndex)
 }
 
+// newUnknownFilterTokenError defined the error message on receiving a unknown
+// filter operator token.
+func newUnknownFilterTokenError(token string) error {
+	return fmt.Errorf("unknown operator: %s", token)
+}
+
 var (
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.

@@ -1018,8 +1018,13 @@ var (
 // applyBuiltInNumFmt provides a function to returns a value after formatted
 // with built-in number format code, or specified sort date format code.
 func (f *File) applyBuiltInNumFmt(c *xlsxC, fmtCode string, numFmtID int, date1904 bool, cellType CellType) string {
-	if numFmtID == 14 && f.options != nil && f.options.ShortDatePattern != "" {
-		fmtCode = f.options.ShortDatePattern
+	if f.options != nil && f.options.ShortDatePattern != "" {
+		if numFmtID == 14 {
+			fmtCode = f.options.ShortDatePattern
+		}
+		if numFmtID == 22 {
+			fmtCode = fmt.Sprintf("%s hh:mm", f.options.ShortDatePattern)
+		}
 	}
 	return format(c.V, fmtCode, date1904, cellType, f.options)
 }
@@ -1073,9 +1078,6 @@ func (f *File) langNumFmtFuncZhCN(numFmtID int) string {
 // getBuiltInNumFmtCode convert number format index to number format code with
 // specified locale and language.
 func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
-	if numFmtID == 22 && f.options.ShortDatePattern != "" {
-		return fmt.Sprintf("%s hh:mm", f.options.ShortDatePattern), true
-	}
 	if fmtCode, ok := builtInNumFmt[numFmtID]; ok {
 		return fmtCode, true
 	}

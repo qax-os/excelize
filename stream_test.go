@@ -173,7 +173,7 @@ func TestStreamSetPanes(t *testing.T) {
 		YSplit:      0,
 		TopLeftCell: "B1",
 		ActivePane:  "topRight",
-		Panes: []PaneOptions{
+		Selection: []Selection{
 			{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
 		},
 	}

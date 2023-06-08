@@ -61,11 +61,7 @@ func (view *xlsxSheetView) setSheetView(opts *ViewOptions) {
 		view.TopLeftCell = *opts.TopLeftCell
 	}
 	if opts.View != nil {
-		if _, ok := map[string]interface{}{
-			"normal":           nil,
-			"pageLayout":       nil,
-			"pageBreakPreview": nil,
-		}[*opts.View]; ok {
+		if inStrSlice([]string{"normal", "pageLayout", "pageBreakPreview"}, *opts.View, true) != -1 {
 			view.View = *opts.View
 		}
 	}
