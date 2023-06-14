@@ -337,11 +337,9 @@ func TestStreamSetRowWithStyle(t *testing.T) {
 
 	ws, err := file.workSheetReader("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, grayStyleID, ws.SheetData.Row[0].C[0].S)
-	assert.Equal(t, zeroStyleID, ws.SheetData.Row[0].C[1].S)
-	assert.Equal(t, zeroStyleID, ws.SheetData.Row[0].C[2].S)
-	assert.Equal(t, blueStyleID, ws.SheetData.Row[0].C[3].S)
-	assert.Equal(t, blueStyleID, ws.SheetData.Row[0].C[4].S)
+	for colIdx, expected := range []int{grayStyleID, zeroStyleID, zeroStyleID, blueStyleID, blueStyleID} {
+		assert.Equal(t, expected, ws.SheetData.Row[0].C[colIdx].S)
+	}
 }
 
 func TestStreamSetCellValFunc(t *testing.T) {
@@ -352,25 +350,29 @@ func TestStreamSetCellValFunc(t *testing.T) {
 	sw, err := f.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	c := &xlsxC{}
-	assert.NoError(t, sw.setCellValFunc(c, 128))
-	assert.NoError(t, sw.setCellValFunc(c, int8(-128)))
-	assert.NoError(t, sw.setCellValFunc(c, int16(-32768)))
-	assert.NoError(t, sw.setCellValFunc(c, int32(-2147483648)))
-	assert.NoError(t, sw.setCellValFunc(c, int64(-9223372036854775808)))
-	assert.NoError(t, sw.setCellValFunc(c, uint(128)))
-	assert.NoError(t, sw.setCellValFunc(c, uint8(255)))
-	assert.NoError(t, sw.setCellValFunc(c, uint16(65535)))
-	assert.NoError(t, sw.setCellValFunc(c, uint32(4294967295)))
-	assert.NoError(t, sw.setCellValFunc(c, uint64(18446744073709551615)))
-	assert.NoError(t, sw.setCellValFunc(c, float32(100.1588)))
-	assert.NoError(t, sw.setCellValFunc(c, 100.1588))
-	assert.NoError(t, sw.setCellValFunc(c, " Hello"))
-	assert.NoError(t, sw.setCellValFunc(c, []byte(" Hello")))
-	assert.NoError(t, sw.setCellValFunc(c, time.Now().UTC()))
-	assert.NoError(t, sw.setCellValFunc(c, time.Duration(1e13)))
-	assert.NoError(t, sw.setCellValFunc(c, true))
-	assert.NoError(t, sw.setCellValFunc(c, nil))
-	assert.NoError(t, sw.setCellValFunc(c, complex64(5+10i)))
+	for _, val := range []interface{}{
+		128,
+		int8(-128),
+		int16(-32768),
+		int32(-2147483648),
+		int64(-9223372036854775808),
+		uint(128),
+		uint8(255),
+		uint16(65535),
+		uint32(4294967295),
+		uint64(18446744073709551615),
+		float32(100.1588),
+		100.1588,
+		" Hello",
+		[]byte(" Hello"),
+		time.Now().UTC(),
+		time.Duration(1e13),
+		true,
+		nil,
+		complex64(5 + 10i),
+	} {
+		assert.NoError(t, sw.setCellValFunc(c, val))
+	}
 }
 
 func TestStreamWriterOutlineLevel(t *testing.T) {
@@ -389,14 +391,10 @@ func TestStreamWriterOutlineLevel(t *testing.T) {
 
 	file, err = OpenFile(filepath.Join("test", "TestStreamWriterSetRowOutlineLevel.xlsx"))
 	assert.NoError(t, err)
-	level, err := file.GetRowOutlineLevel("Sheet1", 1)
-	assert.NoError(t, err)
-	assert.Equal(t, uint8(1), level)
-	level, err = file.GetRowOutlineLevel("Sheet1", 2)
-	assert.NoError(t, err)
-	assert.Equal(t, uint8(7), level)
-	level, err = file.GetRowOutlineLevel("Sheet1", 3)
-	assert.NoError(t, err)
-	assert.Equal(t, uint8(0), level)
+	for rowIdx, expected := range []uint8{1, 7, 0} {
+		level, err := file.GetRowOutlineLevel("Sheet1", rowIdx+1)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, level)
+	}
 	assert.NoError(t, file.Close())
 }

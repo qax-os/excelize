@@ -1297,12 +1297,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	if err != nil {
 		return err
 	}
-	colIdx := col - 1
-	rowIdx := row - 1
-
 	width = int(float64(width) * opts.ScaleX)
 	height = int(float64(height) * opts.ScaleY)
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, colIdx, rowIdx, opts.OffsetX, opts.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return err
