@@ -13,14 +13,18 @@ func TestMergeCell(t *testing.T) {
 		t.FailNow()
 	}
 	assert.EqualError(t, f.MergeCell("Sheet1", "A", "B"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.NoError(t, f.MergeCell("Sheet1", "D9", "D9"))
-	assert.NoError(t, f.MergeCell("Sheet1", "D9", "E9"))
-	assert.NoError(t, f.MergeCell("Sheet1", "H14", "G13"))
-	assert.NoError(t, f.MergeCell("Sheet1", "C9", "D8"))
-	assert.NoError(t, f.MergeCell("Sheet1", "F11", "G13"))
-	assert.NoError(t, f.MergeCell("Sheet1", "H7", "B15"))
-	assert.NoError(t, f.MergeCell("Sheet1", "D11", "F13"))
-	assert.NoError(t, f.MergeCell("Sheet1", "G10", "K12"))
+	for _, cells := range [][]string{
+		{"D9", "D9"},
+		{"D9", "E9"},
+		{"H14", "G13"},
+		{"C9", "D8"},
+		{"F11", "G13"},
+		{"H7", "B15"},
+		{"D11", "F13"},
+		{"G10", "K12"},
+	} {
+		assert.NoError(t, f.MergeCell("Sheet1", cells[0], cells[1]))
+	}
 	assert.NoError(t, f.SetCellValue("Sheet1", "G11", "set value in merged cell"))
 	assert.NoError(t, f.SetCellInt("Sheet1", "H11", 100))
 	assert.NoError(t, f.SetCellValue("Sheet1", "I11", 0.5))
@@ -39,32 +43,29 @@ func TestMergeCell(t *testing.T) {
 
 	_, err = f.NewSheet("Sheet3")
 	assert.NoError(t, err)
-	assert.NoError(t, f.MergeCell("Sheet3", "D11", "F13"))
-	assert.NoError(t, f.MergeCell("Sheet3", "G10", "K12"))
 
-	assert.NoError(t, f.MergeCell("Sheet3", "B1", "D5")) // B1:D5
-	assert.NoError(t, f.MergeCell("Sheet3", "E1", "F5")) // E1:F5
-
-	assert.NoError(t, f.MergeCell("Sheet3", "H2", "I5"))
-	assert.NoError(t, f.MergeCell("Sheet3", "I4", "J6")) // H2:J6
-
-	assert.NoError(t, f.MergeCell("Sheet3", "M2", "N5"))
-	assert.NoError(t, f.MergeCell("Sheet3", "L4", "M6")) // L2:N6
-
-	assert.NoError(t, f.MergeCell("Sheet3", "P4", "Q7"))
-	assert.NoError(t, f.MergeCell("Sheet3", "O2", "P5")) // O2:Q7
-
-	assert.NoError(t, f.MergeCell("Sheet3", "A9", "B12"))
-	assert.NoError(t, f.MergeCell("Sheet3", "B7", "C9")) // A7:C12
-
-	assert.NoError(t, f.MergeCell("Sheet3", "E9", "F10"))
-	assert.NoError(t, f.MergeCell("Sheet3", "D8", "G12"))
-
-	assert.NoError(t, f.MergeCell("Sheet3", "I8", "I12"))
-	assert.NoError(t, f.MergeCell("Sheet3", "I10", "K10"))
-
-	assert.NoError(t, f.MergeCell("Sheet3", "M8", "Q13"))
-	assert.NoError(t, f.MergeCell("Sheet3", "N10", "O11"))
+	for _, cells := range [][]string{
+		{"D11", "F13"},
+		{"G10", "K12"},
+		{"B1", "D5"}, // B1:D5
+		{"E1", "F5"}, // E1:F5
+		{"H2", "I5"},
+		{"I4", "J6"}, // H2:J6
+		{"M2", "N5"},
+		{"L4", "M6"}, // L2:N6
+		{"P4", "Q7"},
+		{"O2", "P5"}, // O2:Q7
+		{"A9", "B12"},
+		{"B7", "C9"}, // A7:C12
+		{"E9", "F10"},
+		{"D8", "G12"},
+		{"I8", "I12"},
+		{"I10", "K10"},
+		{"M8", "Q13"},
+		{"N10", "O11"},
+	} {
+		assert.NoError(t, f.MergeCell("Sheet3", cells[0], cells[1]))
+	}
 
 	// Test merge cells on not exists worksheet
 	assert.EqualError(t, f.MergeCell("SheetN", "N10", "O11"), "sheet SheetN does not exist")

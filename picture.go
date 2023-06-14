@@ -332,16 +332,13 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	}
 	width, height := img.Width, img.Height
 	if opts.AutoFit {
-		width, height, col, row, err = f.drawingResize(sheet, cell, float64(width), float64(height), opts)
-		if err != nil {
+		if width, height, col, row, err = f.drawingResize(sheet, cell, float64(width), float64(height), opts); err != nil {
 			return err
 		}
 	} else {
 		width = int(float64(width) * opts.ScaleX)
 		height = int(float64(height) * opts.ScaleY)
 	}
-	col--
-	row--
 	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
