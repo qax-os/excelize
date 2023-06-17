@@ -1093,7 +1093,7 @@ func TestNumFmt(t *testing.T) {
 		}
 	}
 	nf := numberFormat{}
-	err, changeNumFmtCode := nf.currencyLanguageHandler(nfp.Token{Parts: []nfp.Part{{}}})
+	changeNumFmtCode, err := nf.currencyLanguageHandler(nfp.Token{Parts: []nfp.Part{{}}})
 	assert.Equal(t, ErrUnsupportedNumberFormat, err)
 	assert.False(t, changeNumFmtCode)
 }

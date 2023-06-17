@@ -66,41 +66,43 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			Title: &cTitle{
 				Tx: cTx{
 					Rich: &cRich{
-						P: aP{
-							PPr: &aPPr{
-								DefRPr: aRPr{
-									Kern:   1200,
-									Strike: "noStrike",
-									U:      "none",
-									Sz:     1400,
-									SolidFill: &aSolidFill{
-										SchemeClr: &aSchemeClr{
-											Val: "tx1",
-											LumMod: &attrValInt{
-												Val: intPtr(65000),
-											},
-											LumOff: &attrValInt{
-												Val: intPtr(35000),
+						P: []aP{
+							{
+								PPr: &aPPr{
+									DefRPr: aRPr{
+										Kern:   1200,
+										Strike: "noStrike",
+										U:      "none",
+										Sz:     1400,
+										SolidFill: &aSolidFill{
+											SchemeClr: &aSchemeClr{
+												Val: "tx1",
+												LumMod: &attrValInt{
+													Val: intPtr(65000),
+												},
+												LumOff: &attrValInt{
+													Val: intPtr(35000),
+												},
 											},
 										},
-									},
-									Ea: &aEa{
-										Typeface: "+mn-ea",
-									},
-									Cs: &aCs{
-										Typeface: "+mn-cs",
-									},
-									Latin: &xlsxCTTextFont{
-										Typeface: "+mn-lt",
+										Ea: &aEa{
+											Typeface: "+mn-ea",
+										},
+										Cs: &aCs{
+											Typeface: "+mn-cs",
+										},
+										Latin: &xlsxCTTextFont{
+											Typeface: "+mn-lt",
+										},
 									},
 								},
-							},
-							R: &aR{
-								RPr: aRPr{
-									Lang:    "en-US",
-									AltLang: "en-US",
+								R: &aR{
+									RPr: aRPr{
+										Lang:    "en-US",
+										AltLang: "en-US",
+									},
+									T: opts.Title.Name,
 								},
-								T: opts.Title.Name,
 							},
 						},
 					},
@@ -1059,6 +1061,7 @@ func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 			NumFmt:        &cNumFmt{FormatCode: "General"},
 			MajorTickMark: &attrValString{Val: stringPtr("none")},
 			MinorTickMark: &attrValString{Val: stringPtr("none")},
+			Title:         f.drawPlotAreaTitles(opts.XAxis.Title, ""),
 			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
 			SpPr:          f.drawPlotAreaSpPr(),
 			TxPr:          f.drawPlotAreaTxPr(&opts.YAxis),
@@ -1110,6 +1113,7 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 			},
 			Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
 			AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
+			Title:  f.drawPlotAreaTitles(opts.YAxis.Title, "horz"),
 			NumFmt: &cNumFmt{
 				FormatCode: chartValAxNumFmtFormatCode[opts.Type],
 			},
@@ -1167,6 +1171,35 @@ func (f *File) drawPlotAreaSerAx(opts *Chart) []*cAxs {
 			CrossAx:    &attrValInt{Val: intPtr(753999904)},
 		},
 	}
+}
+
+// drawPlotAreaTitles provides a function to draw the c:title element.
+func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
+	if len(runs) == 0 {
+		return nil
+	}
+	title := &cTitle{Tx: cTx{Rich: &cRich{}}, Overlay: &attrValBool{Val: boolPtr(false)}}
+	for _, run := range runs {
+		r := &aR{T: run.Text}
+		if run.Font != nil {
+			r.RPr.B, r.RPr.I = run.Font.Bold, run.Font.Italic
+			if run.Font.Color != "" {
+				r.RPr.SolidFill = &aSolidFill{SrgbClr: &attrValString{Val: stringPtr(run.Font.Color)}}
+			}
+			if run.Font.Size > 0 {
+				r.RPr.Sz = run.Font.Size * 100
+			}
+		}
+		title.Tx.Rich.P = append(title.Tx.Rich.P, aP{
+			PPr:        &aPPr{DefRPr: aRPr{}},
+			R:          r,
+			EndParaRPr: &aEndParaRPr{Lang: "en-US", AltLang: "en-US"},
+		})
+	}
+	if vert == "horz" {
+		title.Tx.Rich.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
+	}
+	return title
 }
 
 // drawPlotAreaSpPr provides a function to draw the c:spPr element.
