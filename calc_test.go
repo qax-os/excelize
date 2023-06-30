@@ -5133,8 +5133,10 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 	formulaList := map[string]string{
 		"=AVERAGEIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":     "174000",
 		"=AVERAGEIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")": "285500",
+		"=AVERAGEIFS(D2:D13,A2:A13,1,A2:A13,2)":             "0",
 		"=SUMIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":         "348000",
 		"=SUMIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")":     "571000",
+		"=SUMIFS(D2:D13,A2:A13,1,A2:A13,2)":                 "0",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
