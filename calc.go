@@ -7812,15 +7812,13 @@ func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
 				}
 			}
 		} else {
+			match = []cellRef{}
 			for _, ref := range cellRefs {
 				value := matrix[ref.Row][ref.Col]
 				if ok, _ := formulaCriteriaEval(value.Value(), criteria); ok {
 					match = append(match, ref)
 				}
 			}
-		}
-		if len(match) == 0 {
-			return
 		}
 		cellRefs = match[:]
 	}
@@ -14397,7 +14395,7 @@ func (fn *formulaFuncs) MATCH(argsList *list.List) formulaArg {
 	}
 	switch lookupArrayArg.Type {
 	case ArgMatrix:
-		if len(lookupArrayArg.Matrix[0]) != 1 {
+		if len(lookupArrayArg.Matrix) != 1 && len(lookupArrayArg.Matrix[0]) != 1 {
 			return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
 		}
 		lookupArray = lookupArrayArg.ToList()
