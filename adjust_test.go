@@ -445,3 +445,23 @@ func TestAdjustCols(t *testing.T) {
 
 	assert.NoError(t, f.Close())
 }
+
+func TestAdjustFormula(t *testing.T) {
+	f := NewFile()
+	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.DuplicateRowTo("Sheet1", 1, 10))
+	assert.NoError(t, f.InsertCols("Sheet1", "B", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	for cell, expected := range map[string]string{"D2": "=A1+B1", "D3": "=A2+B2", "D11": "=A1+B1"} {
+		formula, err := f.GetCellFormula("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, formula)
+	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
+	assert.NoError(t, f.Close())
+
+	assert.NoError(t, f.adjustFormula(nil, rows, 0, false))
+	assert.Equal(t, f.adjustFormula(&xlsxF{Ref: "-"}, rows, 0, false), ErrParameterInvalid)
+	assert.Equal(t, f.adjustFormula(&xlsxF{Ref: "XFD1:XFD1"}, columns, 1, false), ErrColumnNumber)
+}
