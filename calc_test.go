@@ -1663,8 +1663,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=CODE(\"\")":      "0",
 		// CONCAT
 		"=CONCAT(TRUE(),1,FALSE(),\"0\",INT(2))": "TRUE1FALSE02",
+		"=CONCAT(MUNIT(2))":                      "1001",
+		"=CONCAT(A1:B2)":                         "1425",
 		// CONCATENATE
 		"=CONCATENATE(TRUE(),1,FALSE(),\"0\",INT(2))": "TRUE1FALSE02",
+		"=CONCATENATE(MUNIT(2))":                      "1001",
+		"=CONCATENATE(A1:B2)":                         "1425",
 		// EXACT
 		"=EXACT(1,\"1\")":     "TRUE",
 		"=EXACT(1,1)":         "TRUE",
@@ -3665,9 +3669,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=CODE()":    {"#VALUE!", "CODE requires 1 argument"},
 		"=CODE(1,2)": {"#VALUE!", "CODE requires 1 argument"},
 		// CONCAT
-		"=CONCAT(MUNIT(2))": {"#VALUE!", "CONCAT requires arguments to be strings"},
+		"=CONCAT(NA())":  {"#N/A", "#N/A"},
+		"=CONCAT(1,1/0)": {"#DIV/0!", "#DIV/0!"},
 		// CONCATENATE
-		"=CONCATENATE(MUNIT(2))": {"#VALUE!", "CONCATENATE requires arguments to be strings"},
+		"=CONCATENATE(NA())":  {"#N/A", "#N/A"},
+		"=CONCATENATE(1,1/0)": {"#DIV/0!", "#DIV/0!"},
 		// EXACT
 		"=EXACT()":      {"#VALUE!", "EXACT requires 2 arguments"},
 		"=EXACT(1,2,3)": {"#VALUE!", "EXACT requires 2 arguments"},

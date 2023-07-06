@@ -13282,24 +13282,13 @@ func (fn *formulaFuncs) CONCATENATE(argsList *list.List) formulaArg {
 // concat is an implementation of the formula functions CONCAT and
 // CONCATENATE.
 func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
-	buf := bytes.Buffer{}
+	var buf bytes.Buffer
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		token := arg.Value.(formulaArg)
-		switch token.Type {
-		case ArgString:
-			buf.WriteString(token.String)
-		case ArgNumber:
-			if token.Boolean {
-				if token.Number == 0 {
-					buf.WriteString("FALSE")
-				} else {
-					buf.WriteString("TRUE")
-				}
-			} else {
-				buf.WriteString(token.Value())
+		for _, cell := range arg.Value.(formulaArg).ToList() {
+			if cell.Type == ArgError {
+				return cell
 			}
-		default:
-			return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires arguments to be strings", name))
+			buf.WriteString(cell.Value())
 		}
 	}
 	return newStringFormulaArg(buf.String())
