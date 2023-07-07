@@ -238,7 +238,7 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "P64", opts: &Chart{Type: BarPercentStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked 100% Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "X64", opts: &Chart{Type: Bar3DClustered, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Clustered Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "P80", opts: &Chart{Type: Bar3DStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{Maximum: &maximum, Minimum: &minimum}}},
-		{sheetName: "Sheet2", cell: "X80", opts: &Chart{Type: Bar3DPercentStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D 100% Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{ReverseOrder: true, Minimum: &zero}, YAxis: ChartAxis{ReverseOrder: true, Minimum: &zero}}},
+		{sheetName: "Sheet2", cell: "X80", opts: &Chart{Type: Bar3DPercentStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D 100% Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{ReverseOrder: true, Secondary: true, Minimum: &zero}, YAxis: ChartAxis{ReverseOrder: true, Minimum: &zero}}},
 		// area series chart
 		{sheetName: "Sheet2", cell: "AF1", opts: &Chart{Type: Area, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "AN1", opts: &Chart{Type: AreaStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
@@ -280,7 +280,7 @@ func TestAddChart(t *testing.T) {
 		{"I1", Doughnut, "Clustered Column - Doughnut Chart"},
 	}
 	for _, props := range clusteredColumnCombo {
-		assert.NoError(t, f.AddChart("Combo Charts", props[0].(string), &Chart{Type: Col, Series: series[:4], Format: format, Legend: legend, Title: ChartTitle{Name: props[2].(string)}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[1].(ChartType), Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}))
+		assert.NoError(t, f.AddChart("Combo Charts", props[0].(string), &Chart{Type: Col, Series: series[:4], Format: format, Legend: legend, Title: ChartTitle{Name: props[2].(string)}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[1].(ChartType), Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}, YAxis: ChartAxis{Secondary: true}}))
 	}
 	stackedAreaCombo := map[string][]interface{}{
 		"A16": {Line, "Stacked Area - Line Chart"},

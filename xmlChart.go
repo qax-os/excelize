@@ -535,12 +535,14 @@ type ChartAxis struct {
 	MajorUnit      float64
 	TickLabelSkip  int
 	ReverseOrder   bool
+	Secondary      bool
 	Maximum        *float64
 	Minimum        *float64
 	Font           Font
 	LogBase        float64
 	NumFmt         ChartNumFmt
 	Title          []RichTextRun
+	axID           int
 }
 
 // ChartDimension directly maps the dimension of the chart.

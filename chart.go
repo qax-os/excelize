@@ -803,6 +803,7 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //	MajorGridLines
 //	MinorGridLines
 //	MajorUnit
+//	Secondary
 //	ReverseOrder
 //	Maximum
 //	Minimum
@@ -820,6 +821,10 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 // MajorUnit: Specifies the distance between major ticks. Shall contain a
 // positive floating-point number. The 'MajorUnit' property is optional. The
 // default value is auto.
+//
+// Secondary: Specifies the current series vertical axis as the secondary axis,
+// this only works for the second and later chart in the combo chart. The
+// default value is false.
 //
 // TickLabelSkip: Specifies how many tick labels to skip between label that is
 // drawn. The 'TickLabelSkip' property is optional. The default value is auto.
