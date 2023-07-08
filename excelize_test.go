@@ -803,11 +803,11 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 56))
 		assert.NoError(t, f.SetCellValue("Sheet1", "A2", -32.3))
 		var style int
-		style, err = f.NewStyle(&Style{NumFmt: 188, DecimalPlaces: -1})
+		style, err = f.NewStyle(&Style{NumFmt: 188, DecimalPlaces: intPtr(-1)})
 		assert.NoError(t, err)
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
-		style, err = f.NewStyle(&Style{NumFmt: 188, DecimalPlaces: 31, NegRed: true})
+		style, err = f.NewStyle(&Style{NumFmt: 188, DecimalPlaces: intPtr(31), NegRed: true})
 		assert.NoError(t, err)
 
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A2", "A2", style))

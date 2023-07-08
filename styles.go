@@ -977,8 +977,8 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	if err != nil {
 		return cellXfsID, err
 	}
-	if fs.DecimalPlaces == 0 {
-		fs.DecimalPlaces = 2
+	if fs.DecimalPlaces != nil && (*fs.DecimalPlaces < 0 || *fs.DecimalPlaces > 30) {
+		fs.DecimalPlaces = intPtr(2)
 	}
 	f.mu.Lock()
 	s, err := f.stylesReader()
@@ -1037,7 +1037,7 @@ var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 		if style.CustomNumFmt == nil && numFmtID == -1 {
 			return xf.NumFmtID != nil && *xf.NumFmtID == 0
 		}
-		if style.NegRed || style.DecimalPlaces != 2 {
+		if style.NegRed || (style.DecimalPlaces != nil && *style.DecimalPlaces != 2) {
 			return false
 		}
 		return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
@@ -1291,13 +1291,12 @@ func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (numFmtID int) {
 // newNumFmt provides a function to check if number format code in the range
 // of built-in values.
 func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
-	dp := "0."
-	numFmtID := 164 // Default custom number format code from 164.
-	if style.DecimalPlaces < 0 || style.DecimalPlaces > 30 {
-		style.DecimalPlaces = 2
-	}
-	for i := 0; i < style.DecimalPlaces; i++ {
-		dp += "0"
+	dp, numFmtID := "0", 164 // Default custom number format code from 164.
+	if style.DecimalPlaces != nil && *style.DecimalPlaces > 0 {
+		dp += "."
+		for i := 0; i < *style.DecimalPlaces; i++ {
+			dp += "0"
+		}
 	}
 	if style.CustomNumFmt != nil {
 		if customNumFmtID := getCustomNumFmtID(styleSheet, style); customNumFmtID != -1 {
@@ -1305,35 +1304,26 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 		}
 		return setCustomNumFmt(styleSheet, style)
 	}
-	_, ok := builtInNumFmt[style.NumFmt]
-	if !ok {
+	if _, ok := builtInNumFmt[style.NumFmt]; !ok {
 		fc, currency := currencyNumFmt[style.NumFmt]
 		if !currency {
 			return setLangNumFmt(style)
 		}
-		fc = strings.ReplaceAll(fc, "0.00", dp)
+		if style.DecimalPlaces != nil {
+			fc = strings.ReplaceAll(fc, "0.00", dp)
+		}
 		if style.NegRed {
 			fc = fc + ";[Red]" + fc
 		}
-		if styleSheet.NumFmts != nil {
-			numFmtID = styleSheet.NumFmts.NumFmt[len(styleSheet.NumFmts.NumFmt)-1].NumFmtID + 1
-			nf := xlsxNumFmt{
-				FormatCode: fc,
-				NumFmtID:   numFmtID,
-			}
-			styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)
-			styleSheet.NumFmts.Count++
+		if styleSheet.NumFmts == nil {
+			styleSheet.NumFmts = &xlsxNumFmts{NumFmt: []*xlsxNumFmt{}}
 		} else {
-			nf := xlsxNumFmt{
-				FormatCode: fc,
-				NumFmtID:   numFmtID,
-			}
-			numFmts := xlsxNumFmts{
-				NumFmt: []*xlsxNumFmt{&nf},
-				Count:  1,
-			}
-			styleSheet.NumFmts = &numFmts
+			numFmtID = styleSheet.NumFmts.NumFmt[len(styleSheet.NumFmts.NumFmt)-1].NumFmtID + 1
 		}
+		styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &xlsxNumFmt{
+			FormatCode: fc, NumFmtID: numFmtID,
+		})
+		styleSheet.NumFmts.Count++
 		return numFmtID
 	}
 	return style.NumFmt

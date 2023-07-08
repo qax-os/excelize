@@ -369,7 +369,7 @@ type Style struct {
 	Alignment     *Alignment
 	Protection    *Protection
 	NumFmt        int
-	DecimalPlaces int
+	DecimalPlaces *int
 	CustomNumFmt  *string
 	NegRed        bool
 }
