@@ -125,6 +125,25 @@ func (f *File) AddTable(sheet string, table *Table) error {
 	return f.addContentTypePart(tableID, "table")
 }
 
+func (f *File) GetTables(sheet string) ([]Table, error) {
+	var tables []Table
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return tables, err
+	}
+	for _, tbl := range ws.TableParts.TableParts {
+		if tbl != nil {
+			target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
+			tableXML := strings.ReplaceAll(target, "..", "xl")
+			content, ok := f.Pkg.Load(tableXML)
+			if !ok {
+				continue
+			}
+		}
+	}
+	return tables, err
+ }
+
 // countTables provides a function to get table files count storage in the
 // folder xl/tables.
 func (f *File) countTables() int {
