@@ -383,15 +383,6 @@ func TestNewFile(t *testing.T) {
 	assert.NoError(t, f.Save())
 }
 
-func TestAddDrawingVML(t *testing.T) {
-	// Test addDrawingVML with illegal cell reference
-	f := NewFile()
-	assert.EqualError(t, f.addDrawingVML(0, "", "*", 0, 0), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
-
-	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", "A1", 0, 0), "XML syntax error on line 1: invalid UTF-8")
-}
-
 func TestSetCellHyperLink(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
@@ -978,7 +969,7 @@ func TestSetDeleteSheet(t *testing.T) {
 		f, err := prepareTestBook4()
 		assert.NoError(t, err)
 		assert.NoError(t, f.DeleteSheet("Sheet1"))
-		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A1", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
+		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A1", Author: "Excelize", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDeleteSheet.TestBook4.xlsx")))
 	})
 }

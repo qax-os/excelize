@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"encoding/xml"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -27,13 +28,13 @@ func TestAddComment(t *testing.T) {
 	}
 
 	s := strings.Repeat("c", TotalCellChars+1)
-	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A30", Author: s, Text: s, Runs: []RichTextRun{{Text: s}, {Text: s}}}))
-	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "B7", Author: "Excelize", Text: s[:TotalCellChars-1], Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
+	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A30", Author: s, Text: s, Paragraph: []RichTextRun{{Text: s}, {Text: s}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "B7", Author: "Excelize", Text: s[:TotalCellChars-1], Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
 
 	// Test add comment on not exists worksheet
-	assert.EqualError(t, f.AddComment("SheetN", Comment{Cell: "B7", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), "sheet SheetN does not exist")
+	assert.EqualError(t, f.AddComment("SheetN", Comment{Cell: "B7", Author: "Excelize", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), "sheet SheetN does not exist")
 	// Test add comment on with illegal cell reference
-	assert.EqualError(t, f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	comments, err := f.GetComments("Sheet1")
 	assert.NoError(t, err)
 	assert.Len(t, comments, 2)
@@ -86,11 +87,11 @@ func TestDeleteComment(t *testing.T) {
 	}
 
 	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "A40", Text: "Excelize: This is a comment1."}))
-	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "A41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment2."}}}))
-	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment3."}}}))
-	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment3-1."}}}))
-	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C42", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment4."}}}))
-	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Runs: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment2."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "A41", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment2."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment3."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment3-1."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C42", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment4."}}}))
+	assert.NoError(t, f.AddComment("Sheet2", Comment{Cell: "C41", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment2."}}}))
 
 	assert.NoError(t, f.DeleteComment("Sheet2", "A40"))
 
@@ -143,4 +144,81 @@ func TestCountComments(t *testing.T) {
 	f := NewFile()
 	f.Comments["xl/comments1.xml"] = nil
 	assert.Equal(t, f.countComments(), 1)
+}
+
+func TestAddDrawingVML(t *testing.T) {
+	// Test addDrawingVML with illegal cell reference
+	f := NewFile()
+	assert.EqualError(t, f.addDrawingVML(0, "", &vmlOptions{Cell: "*"}), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
+
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{Cell: "A1"}), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestAddFormControl(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell:  "D1",
+		Type:  FormControlButton,
+		Macro: "Button1_Click",
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell:   "A1",
+		Type:   FormControlButton,
+		Macro:  "Button1_Click",
+		Width:  140,
+		Height: 60,
+		Text:   "Button 1\r\n",
+		Paragraph: []RichTextRun{
+			{
+				Font: &Font{
+					Bold:      true,
+					Italic:    true,
+					Underline: "single",
+					Family:    "Times New Roman",
+					Size:      14,
+					Color:     "777777",
+				},
+				Text: "C1=A1+B1",
+			},
+		},
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell:    "A5",
+		Type:    FormControlRadio,
+		Text:    "Option Button 1",
+		Checked: true,
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "A6",
+		Type: FormControlRadio,
+		Text: "Option Button 2",
+	}))
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
+	file, err := os.ReadFile(filepath.Join("test", "vbaProject.bin"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddVBAProject(file))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddFormControl.xlsm")))
+	assert.NoError(t, f.Close())
+	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell:  "D4",
+		Type:  FormControlButton,
+		Macro: "Button1_Click",
+		Text:  "Button 2",
+	}))
+	// Test add unsupported form control
+	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
+		Cell:  "A1",
+		Type:  0x37,
+		Macro: "Button1_Click",
+	}), ErrParameterInvalid)
+	// Test add form control on not exists worksheet
+	assert.Equal(t, f.AddFormControl("SheetN", FormControl{
+		Cell:  "A1",
+		Type:  FormControlButton,
+		Macro: "Button1_Click",
+	}), newNoExistSheetError("SheetN"))
+	assert.NoError(t, f.Close())
 }
