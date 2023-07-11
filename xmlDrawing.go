@@ -606,6 +606,7 @@ type GraphicOptions struct {
 
 // Shape directly maps the format settings of the shape.
 type Shape struct {
+	Cell      string
 	Type      string
 	Macro     string
 	Width     uint

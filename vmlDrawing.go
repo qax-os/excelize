@@ -21,15 +21,15 @@ type vmlDrawing struct {
 	XMLNSo      string           `xml:"xmlns:o,attr"`
 	XMLNSx      string           `xml:"xmlns:x,attr"`
 	XMLNSmv     string           `xml:"xmlns:mv,attr"`
-	Shapelayout *xlsxShapelayout `xml:"o:shapelayout"`
-	Shapetype   *xlsxShapetype   `xml:"v:shapetype"`
+	ShapeLayout *xlsxShapeLayout `xml:"o:shapelayout"`
+	ShapeType   *xlsxShapeType   `xml:"v:shapetype"`
 	Shape       []xlsxShape      `xml:"v:shape"`
 }
 
-// xlsxShapelayout directly maps the shapelayout element. This element contains
+// xlsxShapeLayout directly maps the shapelayout element. This element contains
 // child elements that store information used in the editing and layout of
 // shapes.
-type xlsxShapelayout struct {
+type xlsxShapeLayout struct {
 	Ext   string     `xml:"v:ext,attr"`
 	IDmap *xlsxIDmap `xml:"o:idmap"`
 }
@@ -46,16 +46,19 @@ type xlsxShape struct {
 	ID          string   `xml:"id,attr"`
 	Type        string   `xml:"type,attr"`
 	Style       string   `xml:"style,attr"`
-	Fillcolor   string   `xml:"fillcolor,attr"`
-	Insetmode   string   `xml:"urn:schemas-microsoft-com:office:office insetmode,attr,omitempty"`
-	Strokecolor string   `xml:"strokecolor,attr,omitempty"`
+	Button      string   `xml:"o:button,attr,omitempty"`
+	Filled      string   `xml:"filled,attr,omitempty"`
+	FillColor   string   `xml:"fillcolor,attr"`
+	InsetMode   string   `xml:"urn:schemas-microsoft-com:office:office insetmode,attr,omitempty"`
+	Stroked     string   `xml:"stroked,attr,omitempty"`
+	StrokeColor string   `xml:"strokecolor,attr,omitempty"`
 	Val         string   `xml:",innerxml"`
 }
 
-// xlsxShapetype directly maps the shapetype element.
-type xlsxShapetype struct {
+// xlsxShapeType directly maps the shapetype element.
+type xlsxShapeType struct {
 	ID        string      `xml:"id,attr"`
-	Coordsize string      `xml:"coordsize,attr"`
+	CoordSize string      `xml:"coordsize,attr"`
 	Spt       int         `xml:"o:spt,attr"`
 	Path      string      `xml:"path,attr"`
 	Stroke    *xlsxStroke `xml:"v:stroke"`
@@ -64,13 +67,13 @@ type xlsxShapetype struct {
 
 // xlsxStroke directly maps the stroke element.
 type xlsxStroke struct {
-	Joinstyle string `xml:"joinstyle,attr"`
+	JoinStyle string `xml:"joinstyle,attr"`
 }
 
 // vPath directly maps the v:path element.
 type vPath struct {
-	Gradientshapeok string `xml:"gradientshapeok,attr,omitempty"`
-	Connecttype     string `xml:"o:connecttype,attr"`
+	GradientShapeOK string `xml:"gradientshapeok,attr,omitempty"`
+	ConnectType     string `xml:"o:connecttype,attr"`
 }
 
 // vFill directly maps the v:fill element. This element must be defined within a
@@ -96,16 +99,24 @@ type vShadow struct {
 	Obscured string `xml:"obscured,attr"`
 }
 
-// vTextbox directly maps the v:textbox element. This element must be defined
+// vTextBox directly maps the v:textbox element. This element must be defined
 // within a Shape element.
-type vTextbox struct {
+type vTextBox struct {
 	Style string   `xml:"style,attr"`
 	Div   *xlsxDiv `xml:"div"`
 }
 
 // xlsxDiv directly maps the div element.
 type xlsxDiv struct {
-	Style string `xml:"style,attr"`
+	Style string    `xml:"style,attr"`
+	Font  []vmlFont `xml:"font"`
+}
+
+type vmlFont struct {
+	Face    string `xml:"face,attr,omitempty"`
+	Size    uint   `xml:"size,attr,omitempty"`
+	Color   string `xml:"color,attr,omitempty"`
+	Content string `xml:",innerxml"`
 }
 
 // xClientData (Attached Object Data) directly maps the x:ClientData element.
@@ -116,24 +127,49 @@ type xlsxDiv struct {
 // child elements is appropriate. Relevant groups are identified for each child
 // element.
 type xClientData struct {
-	ObjectType    string `xml:"ObjectType,attr"`
-	MoveWithCells string `xml:"x:MoveWithCells"`
-	SizeWithCells string `xml:"x:SizeWithCells"`
-	Anchor        string `xml:"x:Anchor"`
-	AutoFill      string `xml:"x:AutoFill"`
-	Row           int    `xml:"x:Row"`
-	Column        int    `xml:"x:Column"`
+	ObjectType    string  `xml:"ObjectType,attr"`
+	MoveWithCells string  `xml:"x:MoveWithCells"`
+	SizeWithCells string  `xml:"x:SizeWithCells"`
+	Anchor        string  `xml:"x:Anchor"`
+	AutoFill      string  `xml:"x:AutoFill"`
+	Row           int     `xml:"x:Row"`
+	Column        int     `xml:"x:Column"`
+	FmlaMacro     string  `xml:"x:FmlaMacro,omitempty"`
+	TextHAlign    string  `xml:"x:TextHAlign,omitempty"`
+	TextVAlign    string  `xml:"x:TextVAlign,omitempty"`
+	Checked       *string `xml:"x:Checked,omitempty"`
+	NoThreeD      *string `xml:"x:NoThreeD,omitempty"`
+	FirstButton   *string `xml:"x:FirstButton,omitempty"`
 }
 
 // decodeVmlDrawing defines the structure used to parse the file
 // xl/drawings/vmlDrawing%d.vml.
 type decodeVmlDrawing struct {
-	Shape []decodeShape `xml:"urn:schemas-microsoft-com:vml shape"`
+	ShapeType decodeShapeType `xml:"urn:schemas-microsoft-com:vml shapetype"`
+	Shape     []decodeShape   `xml:"urn:schemas-microsoft-com:vml shape"`
+}
+
+// decodeShapeType defines the structure used to parse the shapetype element in
+// the file xl/drawings/vmlDrawing%d.vml.
+type decodeShapeType struct {
+	ID        string `xml:"id,attr"`
+	CoordSize string `xml:"coordsize,attr"`
+	Spt       int    `xml:"spt,attr"`
+	Path      string `xml:"path,attr"`
 }
 
 // decodeShape defines the structure used to parse the particular shape element.
 type decodeShape struct {
-	Val string `xml:",innerxml"`
+	ID          string `xml:"id,attr"`
+	Type        string `xml:"type,attr"`
+	Style       string `xml:"style,attr"`
+	Button      string `xml:"button,attr,omitempty"`
+	Filled      string `xml:"filled,attr,omitempty"`
+	FillColor   string `xml:"fillcolor,attr"`
+	InsetMode   string `xml:"urn:schemas-microsoft-com:office:office insetmode,attr,omitempty"`
+	Stroked     string `xml:"stroked,attr,omitempty"`
+	StrokeColor string `xml:"strokecolor,attr,omitempty"`
+	Val         string `xml:",innerxml"`
 }
 
 // encodeShape defines the structure used to re-serialization shape element.
@@ -141,6 +177,38 @@ type encodeShape struct {
 	Fill       *vFill       `xml:"v:fill"`
 	Shadow     *vShadow     `xml:"v:shadow"`
 	Path       *vPath       `xml:"v:path"`
-	Textbox    *vTextbox    `xml:"v:textbox"`
+	TextBox    *vTextBox    `xml:"v:textbox"`
 	ClientData *xClientData `xml:"x:ClientData"`
+}
+
+// vmlOptions defines the structure used to internal comments and form controls.
+type vmlOptions struct {
+	rows      int
+	cols      int
+	FormCtrl  bool
+	Sheet     string
+	Author    string
+	AuthorID  int
+	Cell      string
+	Checked   bool
+	Text      string
+	Macro     string
+	Width     uint
+	Height    uint
+	Paragraph []RichTextRun
+	Type      FormControlType
+	Format    GraphicOptions
+}
+
+// FormControl directly maps the form controls information.
+type FormControl struct {
+	Cell      string
+	Macro     string
+	Width     uint
+	Height    uint
+	Checked   bool
+	Text      string
+	Paragraph []RichTextRun
+	Type      FormControlType
+	Format    GraphicOptions
 }
