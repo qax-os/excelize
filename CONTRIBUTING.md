@@ -21,7 +21,7 @@ issue, please bring it to their attention right away!
 Please **DO NOT** file a public issue, instead send your report privately to
 [xuri.me](https://xuri.me).
 
-Security reports are greatly appreciated and we will publicly thank you for it.
+Security reports are greatly appreciated and we will publicly thank you for them.
 We currently do not offer a paid security bounty program, but are not
 ruling it out in the future.
 
@@ -103,14 +103,14 @@ Before contributing large or high impact changes, make the effort to coordinate
 with the maintainers of the project before submitting a pull request. This
 prevents you from doing extra work that may or may not be merged.
 
-Large PRs that are just submitted without any prior communication are unlikely
+Large PRs that are just submitted without any prior communication is unlikely
 to be successful.
 
 While pull requests are the methodology for submitting changes to code, changes
 are much more likely to be accepted if they are accompanied by additional
 engineering work. While we don't define this explicitly, most of these goals
-are accomplished through communication of the design goals and subsequent
-solutions. Often times, it helps to first state the problem before presenting
+are accomplished through the communication of the design goals and subsequent
+solutions. Oftentimes, it helps to first state the problem before presenting
 solutions.
 
 Typically, the best methods of accomplishing this are to submit an issue,
@@ -130,7 +130,7 @@ written in the imperative, followed by an optional, more detailed explanatory
 text which is separated from the summary by an empty line.
 
 Commit messages should follow best practices, including explaining the context
-of the problem and how it was solved, including in caveats or follow up changes
+of the problem and how it was solved, including in caveats or follow-up changes
 required. They should tell the story of the change and provide readers
 understanding of what led to it.
 
@@ -191,19 +191,17 @@ indicate acceptance.
 The sign-off is a simple line at the end of the explanation for the patch. Your
 signature certifies that you wrote the patch or otherwise have the right to pass
 it on as an open-source patch. The rules are pretty simple: if you can certify
-the below (from [developercertificate.org](http://developercertificate.org/)):
+the below (from [developercertificate.org](https://developercertificate.org)):
 
 ```text
 Developer Certificate of Origin
 Version 1.1
 
 Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-1 Letterman Drive
-Suite D4700
-San Francisco, CA, 94129
 
 Everyone is permitted to copy and distribute verbatim copies of this
 license document, but changing it is not allowed.
+
 
 Developer's Certificate of Origin 1.1
 
@@ -262,7 +260,7 @@ Don't forget: being a maintainer is a time investment. Make sure you
 will have time to make yourself available. You don't have to be a
 maintainer to make a difference on the project!
 
-If you want to become a meintainer, contact [xuri.me](https://xuri.me) and given a introduction of you.
+If you want to become a maintainer, contact [xuri.me](https://xuri.me) and given an introduction of you.
 
 ## Community guidelines
 
@@ -347,9 +345,9 @@ The rules:
 
 1. All code should be formatted with `gofmt -s`.
 2. All code should pass the default levels of
-   [`golint`](https://github.com/golang/lint).
+   [`go vet`](https://pkg.go.dev/cmd/vet).
 3. All code should follow the guidelines covered in [Effective
-   Go](http://golang.org/doc/effective_go.html) and [Go Code Review
+   Go](https://go.dev/doc/effective_go) and [Go Code Review
    Comments](https://github.com/golang/go/wiki/CodeReviewComments).
 4. Comment the code. Tell us the why, the history and the context.
 5. Document _all_ declarations and methods, even private ones. Declare
@@ -372,13 +370,13 @@ The rules:
     guidelines. Since you've read all the rules, you now know that.
 
 If you are having trouble getting into the mood of idiomatic Go, we recommend
-reading through [Effective Go](https://golang.org/doc/effective_go.html). The
-[Go Blog](https://blog.golang.org) is also a great resource. Drinking the
+reading through [Effective Go](https://go.dev/doc/effective_go). The
+[Go Blog](https://go.dev/blog/) is also a great resource. Drinking the
 kool-aid is a lot easier than going thirsty.
 
 ## Code Review Comments and Effective Go Guidelines
 
-[CodeLingo](https://codelingo.io) automatically checks every pull request against the following guidelines from [Effective Go](https://golang.org/doc/effective_go.html) and [Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments).
+[CodeLingo](https://www.codelingo.io) automatically checks every pull request against the following guidelines from [Effective Go](https://go.dev/doc/effective_go) and [Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments).
 
 ### Package Comment
 
@@ -416,7 +414,7 @@ The first sentence should be a one-sentence summary that starts with the name be
 
 It's helpful if everyone using the package can use the same name
 to refer to its contents, which implies that the package name should
-be good: short, concise, evocative. By convention, packages are
+be good: short, concise, and evocative. By convention, packages are
 given lower case, single-word names; there should be no need for
 underscores or mixedCaps. Err on the side of brevity, since everyone
 using your package will be typing that name. And don't worry about

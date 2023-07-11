@@ -1,57 +1,33 @@
 package excelize
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func ExampleFile_SetWorkbookPrOptions() {
+func TestWorkbookProps(t *testing.T) {
 	f := NewFile()
-	if err := f.SetWorkbookPrOptions(
-		FilterPrivacy(false),
-		CodeName("code"),
-	); err != nil {
-		fmt.Println(err)
-	}
-	// Output:
-}
-
-func ExampleFile_GetWorkbookPrOptions() {
-	f := NewFile()
-	var (
-		filterPrivacy FilterPrivacy
-		codeName      CodeName
-	)
-	if err := f.GetWorkbookPrOptions(&filterPrivacy); err != nil {
-		fmt.Println(err)
-	}
-	if err := f.GetWorkbookPrOptions(&codeName); err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Defaults:")
-	fmt.Printf("- filterPrivacy: %t\n", filterPrivacy)
-	fmt.Printf("- codeName: %q\n", codeName)
-	// Output:
-	// Defaults:
-	// - filterPrivacy: true
-	// - codeName: ""
-}
-
-func TestWorkbookPr(t *testing.T) {
-	f := NewFile()
-	wb := f.workbookReader()
+	assert.NoError(t, f.SetWorkbookProps(nil))
+	wb, err := f.workbookReader()
+	assert.NoError(t, err)
 	wb.WorkbookPr = nil
-	var codeName CodeName
-	assert.NoError(t, f.GetWorkbookPrOptions(&codeName))
-	assert.Equal(t, "", string(codeName))
-	assert.NoError(t, f.SetWorkbookPrOptions(CodeName("code")))
-	assert.NoError(t, f.GetWorkbookPrOptions(&codeName))
-	assert.Equal(t, "code", string(codeName))
-
-	wb.WorkbookPr = nil
-	var filterPrivacy FilterPrivacy
-	assert.NoError(t, f.GetWorkbookPrOptions(&filterPrivacy))
-	assert.Equal(t, false, bool(filterPrivacy))
+	expected := WorkbookPropsOptions{
+		Date1904:      boolPtr(true),
+		FilterPrivacy: boolPtr(true),
+		CodeName:      stringPtr("code"),
+	}
+	assert.NoError(t, f.SetWorkbookProps(&expected))
+	opts, err := f.GetWorkbookProps()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
+	// Test set workbook properties with unsupported charset workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetWorkbookProps(&expected), "XML syntax error on line 1: invalid UTF-8")
+	// Test get workbook properties with unsupported charset workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	_, err = f.GetWorkbookProps()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }

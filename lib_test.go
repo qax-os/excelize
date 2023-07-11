@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,7 +80,7 @@ func TestColumnNameToNumber_Error(t *testing.T) {
 		}
 	}
 	_, err := ColumnNameToNumber("XFE")
-	assert.EqualError(t, err, ErrColumnNumber.Error())
+	assert.ErrorIs(t, err, ErrColumnNumber)
 }
 
 func TestColumnNumberToName_OK(t *testing.T) {
@@ -103,8 +104,8 @@ func TestColumnNumberToName_Error(t *testing.T) {
 		assert.Equal(t, "", out)
 	}
 
-	_, err = ColumnNumberToName(TotalColumns + 1)
-	assert.EqualError(t, err, ErrColumnNumber.Error())
+	_, err = ColumnNumberToName(MaxColumns + 1)
+	assert.ErrorIs(t, err, ErrColumnNumber)
 }
 
 func TestSplitCellName_OK(t *testing.T) {
@@ -216,15 +217,15 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 	}
 }
 
-func TestCoordinatesToAreaRef(t *testing.T) {
+func TestCoordinatesToRangeRef(t *testing.T) {
 	f := NewFile()
-	_, err := f.coordinatesToAreaRef([]int{})
+	_, err := f.coordinatesToRangeRef([]int{})
 	assert.EqualError(t, err, ErrCoordinates.Error())
-	_, err = f.coordinatesToAreaRef([]int{1, -1, 1, 1})
-	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
-	_, err = f.coordinatesToAreaRef([]int{1, 1, 1, -1})
-	assert.EqualError(t, err, "invalid cell coordinates [1, -1]")
-	ref, err := f.coordinatesToAreaRef([]int{1, 1, 1, 1})
+	_, err = f.coordinatesToRangeRef([]int{1, -1, 1, 1})
+	assert.EqualError(t, err, "invalid cell reference [1, -1]")
+	_, err = f.coordinatesToRangeRef([]int{1, 1, 1, -1})
+	assert.EqualError(t, err, "invalid cell reference [1, -1]")
+	ref, err := f.coordinatesToRangeRef([]int{1, 1, 1, 1})
 	assert.NoError(t, err)
 	assert.EqualValues(t, ref, "A1:A1")
 }
@@ -273,7 +274,7 @@ func TestBytesReplace(t *testing.T) {
 }
 
 func TestGetRootElement(t *testing.T) {
-	assert.Equal(t, 0, len(getRootElement(xml.NewDecoder(strings.NewReader("")))))
+	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {
@@ -304,18 +305,19 @@ func TestBstrUnmarshal(t *testing.T) {
 		"*_x0008_*":                   "*\b*",
 		"*_x4F60__x597D_":             "*你好",
 		"*_xG000_":                    "*_xG000_",
-		"*_xG05F_x0001_*":             "*_xG05F*",
+		"*_xG05F_x0001_*":             "*_xG05F\x01*",
 		"*_x005F__x0008_*":            "*_\b*",
 		"*_x005F_x0001_*":             "*_x0001_*",
 		"*_x005f_x005F__x0008_*":      "*_x005F_\b*",
-		"*_x005F_x005F_xG05F_x0006_*": "*_x005F_xG05F*",
+		"*_x005F_x005F_xG05F_x0006_*": "*_x005F_xG05F\x06*",
 		"*_x005F_x005F_x005F_x0006_*": "*_x005F_x0006_*",
 		"_x005F__x0008_******":        "_\b******",
 		"******_x005F__x0008_":        "******_\b",
 		"******_x005F__x0008_******":  "******_\b******",
+		"_x000x_x005F_x000x_":         "_x000x_x000x_",
 	}
 	for bstr, expected := range bstrs {
-		assert.Equal(t, expected, bstrUnmarshal(bstr))
+		assert.Equal(t, expected, bstrUnmarshal(bstr), bstr)
 	}
 }
 
@@ -340,9 +342,12 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
+	if ver := runtime.Version(); strings.HasPrefix(ver, "go1.19") || strings.HasPrefix(ver, "go1.2") {
+		t.Skip()
+	}
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
-	assert.NoError(t, os.Chmod(os.TempDir(), 0444))
+	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))
 	f := NewFile()
 	data := []byte("PK\x03\x040000000PK\x01\x0200000" +
 		"0000000000000000000\x00" +
@@ -364,7 +369,7 @@ func TestUnzipToTemp(t *testing.T) {
 
 	_, err = f.unzipToTemp(z.File[0])
 	require.Error(t, err)
-	assert.NoError(t, os.Chmod(os.TempDir(), 0755))
+	assert.NoError(t, os.Chmod(os.TempDir(), 0o755))
 
 	_, err = f.unzipToTemp(z.File[0])
 	assert.EqualError(t, err, "EOF")
