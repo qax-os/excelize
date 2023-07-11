@@ -1032,6 +1032,65 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	return setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 }
 
+// Value extracts string data type text from a attribute value.
+func (attr *attrValString) Value() string {
+	if attr != nil && attr.Val != nil {
+		return *attr.Val
+	}
+	return ""
+}
+
+// Value extracts boolean data type value from a attribute value.
+func (attr *attrValBool) Value() bool {
+	if attr != nil && attr.Val != nil {
+		return *attr.Val
+	}
+	return false
+}
+
+// Value extracts float64 data type numeric from a attribute value.
+func (attr *attrValFloat) Value() float64 {
+	if attr != nil && attr.Val != nil {
+		return *attr.Val
+	}
+	return 0
+}
+
+// extractFont provides a function to extract font styles settings by given
+// font styles definition.
+func (f *File) extractFont(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.ApplyFont != nil && *xf.ApplyFont &&
+		xf.FontID != nil && s.Fonts != nil &&
+		*xf.FontID < len(s.Fonts.Font) {
+		if fnt := s.Fonts.Font[*xf.FontID]; fnt != nil {
+			var font Font
+			if fnt.B != nil {
+				font.Bold = fnt.B.Value()
+			}
+			if fnt.I != nil {
+				font.Italic = fnt.I.Value()
+			}
+			if fnt.U != nil {
+				font.Underline = fnt.U.Value()
+			}
+			if fnt.Name != nil {
+				font.Family = fnt.Name.Value()
+			}
+			if fnt.Sz != nil {
+				font.Size = fnt.Sz.Value()
+			}
+			if fnt.Strike != nil {
+				font.Strike = fnt.Strike.Value()
+			}
+			font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
+			font.ColorIndexed = fnt.Color.Indexed
+			font.ColorTheme = fnt.Color.Theme
+			font.ColorTint = fnt.Color.Tint
+			style.Font = &font
+		}
+	}
+}
+
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
 		if style.CustomNumFmt == nil && numFmtID == -1 {
