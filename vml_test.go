@@ -155,7 +155,7 @@ func TestAddDrawingVML(t *testing.T) {
 	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{Cell: "A1"}), "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestAddFormControl(t *testing.T) {
+func TestFormControl(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
 		Cell:  "D1",
@@ -185,12 +185,23 @@ func TestAddFormControl(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
 		Cell:    "A5",
+		Type:    FormControlCheckbox,
+		Text:    "Check Box 1",
+		Checked: true,
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "A6",
+		Type: FormControlCheckbox,
+		Text: "Check Box 2",
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell:    "A7",
 		Type:    FormControlRadio,
 		Text:    "Option Button 1",
 		Checked: true,
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A6",
+		Cell: "A8",
 		Type: FormControlRadio,
 		Text: "Option Button 2",
 	}))
@@ -221,4 +232,24 @@ func TestAddFormControl(t *testing.T) {
 		Macro: "Button1_Click",
 	}), newNoExistSheetError("SheetN"))
 	assert.NoError(t, f.Close())
+	// Test delete form control
+	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.DeleteFormControl("Sheet1", "D1"))
+	assert.NoError(t, f.DeleteFormControl("Sheet1", "A1"))
+	// Test delete form control on not exists worksheet
+	assert.Equal(t, f.DeleteFormControl("SheetN", "A1"), newNoExistSheetError("SheetN"))
+	// Test delete form control on not exists worksheet
+	assert.Equal(t, f.DeleteFormControl("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteFormControl.xlsm")))
+	assert.NoError(t, f.Close())
+	// Test delete form control with expected element
+	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	assert.Error(t, f.DeleteFormControl("Sheet1", "A1"), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+	// Test delete form control on a worksheet without form control
+	f = NewFile()
+	assert.NoError(t, f.DeleteFormControl("Sheet1", "A1"))
 }

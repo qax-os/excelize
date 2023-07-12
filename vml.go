@@ -28,6 +28,7 @@ type FormControlType byte
 const (
 	FormControlNote FormControlType = iota
 	FormControlButton
+	FormControlCheckbox
 	FormControlRadio
 )
 
@@ -114,8 +115,9 @@ func (f *File) AddComment(sheet string, opts Comment) error {
 	})
 }
 
-// DeleteComment provides the method to delete comment in a sheet by given
-// worksheet name. For example, delete the comment in Sheet1!$A$30:
+// DeleteComment provides the method to delete comment in a worksheet by given
+// worksheet name and cell reference. For example, delete the comment in
+// Sheet1!$A$30:
 //
 //	err := f.DeleteComment("Sheet1", "A30")
 func (f *File) DeleteComment(sheet, cell string) error {
@@ -315,6 +317,80 @@ func (f *File) AddFormControl(sheet string, opts FormControl) error {
 	})
 }
 
+// DeleteFormControl provides the method to delete form control in a worksheet
+// by given worksheet name and cell reference. For example, delete the form
+// control in Sheet1!$A$30:
+//
+//	err := f.DeleteFormControl("Sheet1", "A30")
+func (f *File) DeleteFormControl(sheet, cell string) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return err
+	}
+	if ws.LegacyDrawing == nil {
+		return err
+	}
+	sheetRelationshipsDrawingVML := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	vmlID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
+	drawingVML := strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		vml = &vmlDrawing{
+			XMLNSv:  "urn:schemas-microsoft-com:vml",
+			XMLNSo:  "urn:schemas-microsoft-com:office:office",
+			XMLNSx:  "urn:schemas-microsoft-com:office:excel",
+			XMLNSmv: "http://macVmlSchemaUri",
+			ShapeLayout: &xlsxShapeLayout{
+				Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: vmlID},
+			},
+			ShapeType: &xlsxShapeType{
+				Stroke: &xlsxStroke{JoinStyle: "miter"},
+				VPath:  &vPath{GradientShapeOK: "t", ConnectType: "rect"},
+			},
+		}
+		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return err
+		}
+		if d != nil {
+			vml.ShapeType.ID = d.ShapeType.ID
+			vml.ShapeType.CoordSize = d.ShapeType.CoordSize
+			vml.ShapeType.Spt = d.ShapeType.Spt
+			vml.ShapeType.Path = d.ShapeType.Path
+			for _, v := range d.Shape {
+				s := xlsxShape{
+					ID:          v.ID,
+					Type:        v.Type,
+					Style:       v.Style,
+					Button:      v.Button,
+					Filled:      v.Filled,
+					FillColor:   v.FillColor,
+					InsetMode:   v.InsetMode,
+					Stroked:     v.Stroked,
+					StrokeColor: v.StrokeColor,
+					Val:         v.Val,
+				}
+				vml.Shape = append(vml.Shape, s)
+			}
+		}
+	}
+	for i, sp := range vml.Shape {
+		var shapeVal decodeShapeVal
+		if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", sp.Val)), &shapeVal); err == nil &&
+			shapeVal.ClientData.ObjectType != "Note" && shapeVal.ClientData.Column == col-1 && shapeVal.ClientData.Row == row-1 {
+			vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
+			break
+		}
+	}
+	f.VMLDrawing[drawingVML] = vml
+	return err
+}
+
 // countVMLDrawing provides a function to get VML drawing files count storage
 // in the folder xl/drawings.
 func (f *File) countVMLDrawing() int {
@@ -380,6 +456,8 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 	}
 	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
 	sheetRelationshipsDrawingVML := "../drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
+	sheetXMLPath, _ := f.getSheetXMLPath(opts.Sheet)
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	if ws.LegacyDrawing != nil {
 		// The worksheet already has a VML relationships, use the relationships drawing ../drawings/vmlDrawing%d.vml.
 		sheetRelationshipsDrawingVML = f.getSheetRelationshipsTargetByID(opts.Sheet, ws.LegacyDrawing.RID)
@@ -387,13 +465,7 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 		drawingVML = strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
 	} else {
 		// Add first VML drawing for given sheet.
-		sheetXMLPath, _ := f.getSheetXMLPath(opts.Sheet)
-		sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
-		if !opts.FormCtrl {
-			sheetRelationshipsComments := "../comments" + strconv.Itoa(vmlID) + ".xml"
-			f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
-		}
 		f.addSheetNameSpace(opts.Sheet, SourceRelationship)
 		f.addSheetLegacyDrawing(opts.Sheet, rID)
 	}
@@ -404,6 +476,10 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 		commentsXML := "xl/comments" + strconv.Itoa(vmlID) + ".xml"
 		if err = f.addComment(commentsXML, opts); err != nil {
 			return err
+		}
+		if sheetXMLPath, ok := f.getSheetXMLPath(opts.Sheet); ok && f.getSheetComments(filepath.Base(sheetXMLPath)) == "" {
+			sheetRelationshipsComments := "../comments" + strconv.Itoa(vmlID) + ".xml"
+			f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		}
 	}
 	return f.addContentTypePart(vmlID, "comments")
@@ -475,75 +551,87 @@ func formCtrlText(opts *vmlOptions) []vmlFont {
 	return font
 }
 
-var (
-	formCtrlPresets = map[FormControlType]struct {
-		objectType   string
-		filled       string
-		fillColor    string
-		stroked      string
-		strokeColor  string
-		strokeButton string
-		fill         *vFill
-		textHAlign   string
-		textVAlign   string
-		noThreeD     *string
-		firstButton  *string
-		shadow       *vShadow
-	}{
-		FormControlNote: {
-			objectType:   "Note",
-			filled:       "",
-			fillColor:    "#FBF6D6",
-			stroked:      "",
-			strokeColor:  "#EDEAA1",
-			strokeButton: "",
-			fill: &vFill{
-				Color2: "#FBFE82",
-				Angle:  -180,
-				Type:   "gradient",
-				Fill:   &oFill{Ext: "view", Type: "gradientUnscaled"},
-			},
-			textHAlign:  "",
-			textVAlign:  "",
-			noThreeD:    nil,
-			firstButton: nil,
-			shadow:      &vShadow{On: "t", Color: "black", Obscured: "t"},
+var formCtrlPresets = map[FormControlType]struct {
+	objectType   string
+	filled       string
+	fillColor    string
+	stroked      string
+	strokeColor  string
+	strokeButton string
+	fill         *vFill
+	textHAlign   string
+	textVAlign   string
+	noThreeD     *string
+	firstButton  *string
+	shadow       *vShadow
+}{
+	FormControlNote: {
+		objectType:   "Note",
+		filled:       "",
+		fillColor:    "#FBF6D6",
+		stroked:      "",
+		strokeColor:  "#EDEAA1",
+		strokeButton: "",
+		fill: &vFill{
+			Color2: "#FBFE82",
+			Angle:  -180,
+			Type:   "gradient",
+			Fill:   &oFill{Ext: "view", Type: "gradientUnscaled"},
 		},
-		FormControlButton: {
-			objectType:   "Button",
-			filled:       "",
-			fillColor:    "buttonFace [67]",
-			stroked:      "",
-			strokeColor:  "windowText [64]",
-			strokeButton: "t",
-			fill: &vFill{
-				Color2: "buttonFace [67]",
-				Angle:  -180,
-				Type:   "gradient",
-				Fill:   &oFill{Ext: "view", Type: "gradientUnscaled"},
-			},
-			textHAlign:  "Center",
-			textVAlign:  "Center",
-			noThreeD:    nil,
-			firstButton: nil,
-			shadow:      nil,
+		textHAlign:  "",
+		textVAlign:  "",
+		noThreeD:    nil,
+		firstButton: nil,
+		shadow:      &vShadow{On: "t", Color: "black", Obscured: "t"},
+	},
+	FormControlButton: {
+		objectType:   "Button",
+		filled:       "",
+		fillColor:    "buttonFace [67]",
+		stroked:      "",
+		strokeColor:  "windowText [64]",
+		strokeButton: "t",
+		fill: &vFill{
+			Color2: "buttonFace [67]",
+			Angle:  -180,
+			Type:   "gradient",
+			Fill:   &oFill{Ext: "view", Type: "gradientUnscaled"},
 		},
-		FormControlRadio: {
-			objectType:   "Radio",
-			filled:       "f",
-			fillColor:    "window [65]",
-			stroked:      "f",
-			strokeColor:  "windowText [64]",
-			strokeButton: "",
-			fill:         nil,
-			textHAlign:   "",
-			textVAlign:   "Center",
-			noThreeD:     stringPtr(""),
-			firstButton:  stringPtr(""),
-			shadow:       nil,
-		},
-	}
-)
+		textHAlign:  "Center",
+		textVAlign:  "Center",
+		noThreeD:    nil,
+		firstButton: nil,
+		shadow:      nil,
+	},
+	FormControlCheckbox: {
+		objectType:   "Checkbox",
+		filled:       "f",
+		fillColor:    "window [65]",
+		stroked:      "f",
+		strokeColor:  "windowText [64]",
+		strokeButton: "",
+		fill:         nil,
+		textHAlign:   "",
+		textVAlign:   "Center",
+		noThreeD:     stringPtr(""),
+		firstButton:  nil,
+		shadow:       nil,
+	},
+	FormControlRadio: {
+		objectType:   "Radio",
+		filled:       "f",
+		fillColor:    "window [65]",
+		stroked:      "f",
+		strokeColor:  "windowText [64]",
+		strokeButton: "",
+		fill:         nil,
+		textHAlign:   "",
+		textVAlign:   "Center",
+		noThreeD:     stringPtr(""),
+		firstButton:  stringPtr(""),
+		shadow:       nil,
+	},
+}
 
 // addDrawingVML provides a function to create VML drawing XML as
 // xl/drawings/vmlDrawing%d.vml by given data ID, XML path and VML options. The
@@ -634,7 +722,7 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 	if opts.FormCtrl {
 		sp.ClientData.FmlaMacro = opts.Macro
 	}
-	if opts.Type == FormControlRadio && opts.Checked {
+	if (opts.Type == FormControlCheckbox || opts.Type == FormControlRadio) && opts.Checked {
 		sp.ClientData.Checked = stringPtr("1")
 	}
 	s, _ := xml.Marshal(sp)
