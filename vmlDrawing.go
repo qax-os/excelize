@@ -172,6 +172,20 @@ type decodeShape struct {
 	Val         string `xml:",innerxml"`
 }
 
+// decodeShapeVal defines the structure used to parse the sub-element of the
+// shape in the file xl/drawings/vmlDrawing%d.vml.
+type decodeShapeVal struct {
+	ClientData decodeVMLClientData `xml:"ClientData"`
+}
+
+// decodeVMLClientData defines the structure used to parse the x:ClientData
+// element in the file xl/drawings/vmlDrawing%d.vml.
+type decodeVMLClientData struct {
+	ObjectType string `xml:"ObjectType,attr"`
+	Column     int
+	Row        int
+}
+
 // encodeShape defines the structure used to re-serialization shape element.
 type encodeShape struct {
 	Fill       *vFill       `xml:"v:fill"`
