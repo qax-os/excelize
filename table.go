@@ -125,10 +125,15 @@ func (f *File) AddTable(sheet string, table *Table) error {
 	return f.addContentTypePart(tableID, "table")
 }
 
+// GetTables provides the method to get all tables in a worksheet by given
+// worksheet name.
 func (f *File) GetTables(sheet string) ([]Table, error) {
 	var tables []Table
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		return tables, err
+	}
+	if ws.TableParts == nil {
 		return tables, err
 	}
 	for _, tbl := range ws.TableParts.TableParts {
@@ -139,10 +144,28 @@ func (f *File) GetTables(sheet string) ([]Table, error) {
 			if !ok {
 				continue
 			}
+			var t xlsxTable
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
+				Decode(&t); err != nil && err != io.EOF {
+				return tables, err
+			}
+			table := Table{
+				rID:   tbl.RID,
+				Range: t.Ref,
+				Name:  t.Name,
+			}
+			if t.TableStyleInfo != nil {
+				table.StyleName = t.TableStyleInfo.Name
+				table.ShowColumnStripes = t.TableStyleInfo.ShowColumnStripes
+				table.ShowFirstColumn = t.TableStyleInfo.ShowFirstColumn
+				table.ShowLastColumn = t.TableStyleInfo.ShowLastColumn
+				table.ShowRowStripes = &t.TableStyleInfo.ShowRowStripes
+			}
+			tables = append(tables, table)
 		}
 	}
 	return tables, err
- }
+}
 
 // countTables provides a function to get table files count storage in the
 // folder xl/tables.
