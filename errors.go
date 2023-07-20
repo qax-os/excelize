@@ -255,4 +255,7 @@ var (
 	// ErrUnprotectWorkbookPassword defined the error message on remove workbook
 	// protection with password verification failed.
 	ErrUnprotectWorkbookPassword = errors.New("workbook protect password not match")
+	// ErrorFormControlValue defined the error message for receiving a scroll
+	// value exceeds limit.
+	ErrorFormControlValue = fmt.Errorf("scroll value must be between 0 and %d", MaxFormControlValue)
 )

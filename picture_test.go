@@ -192,6 +192,8 @@ func TestAddDrawingPicture(t *testing.T) {
 	f := NewFile()
 	opts := &GraphicOptions{PrintObject: boolPtr(true), Locked: boolPtr(false)}
 	assert.EqualError(t, f.addDrawingPicture("sheet1", "", "A", "", 0, 0, image.Config{}, opts), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	// Test addDrawingPicture with invalid positioning types
+	assert.Equal(t, f.addDrawingPicture("sheet1", "", "A1", "", 0, 0, image.Config{}, &GraphicOptions{Positioning: "x"}), ErrParameterInvalid)
 
 	path := "xl/drawings/drawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)

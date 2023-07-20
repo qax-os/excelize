@@ -149,26 +149,20 @@ func TestCountComments(t *testing.T) {
 func TestAddDrawingVML(t *testing.T) {
 	// Test addDrawingVML with illegal cell reference
 	f := NewFile()
-	assert.EqualError(t, f.addDrawingVML(0, "", &vmlOptions{Cell: "*"}), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")).Error())
+	assert.Equal(t, f.addDrawingVML(0, "", &vmlOptions{FormControl: FormControl{Cell: "*"}}), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")))
 
 	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{Cell: "A1"}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{FormControl: FormControl{Cell: "A1"}}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestFormControl(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell:  "D1",
-		Type:  FormControlButton,
-		Macro: "Button1_Click",
+		Cell: "D1", Type: FormControlButton, Macro: "Button1_Click",
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell:   "A1",
-		Type:   FormControlButton,
-		Macro:  "Button1_Click",
-		Width:  140,
-		Height: 60,
-		Text:   "Button 1\r\n",
+		Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
+		Width: 140, Height: 60, Text: "Button 1\r\n",
 		Paragraph: []RichTextRun{
 			{
 				Font: &Font{
@@ -182,28 +176,42 @@ func TestFormControl(t *testing.T) {
 				Text: "C1=A1+B1",
 			},
 		},
+		Format: GraphicOptions{PrintObject: boolPtr(true), Positioning: "absolute"},
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell:    "A5",
-		Type:    FormControlCheckbox,
-		Text:    "Check Box 1",
-		Checked: true,
+		Cell: "A5", Type: FormControlCheckBox, Text: "Check Box 1",
+		Checked: true, Format: GraphicOptions{
+			PrintObject: boolPtr(false), Positioning: "oneCell",
+		},
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A6",
-		Type: FormControlCheckbox,
-		Text: "Check Box 2",
+		Cell: "A6", Type: FormControlCheckBox, Text: "Check Box 2",
+		Format: GraphicOptions{Positioning: "twoCell"},
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell:    "A7",
-		Type:    FormControlRadio,
-		Text:    "Option Button 1",
-		Checked: true,
+		Cell: "A7", Type: FormControlOptionButton, Text: "Option Button 1", Checked: true,
 	}))
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A8",
-		Type: FormControlRadio,
-		Text: "Option Button 2",
+		Cell: "A8", Type: FormControlOptionButton, Text: "Option Button 2",
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "D3", Type: FormControlGroupBox, Text: "Group Box 1",
+		Width: 140, Height: 60,
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "A9", Type: FormControlLabel, Text: "Label 1", Width: 140,
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "C5", Type: FormControlSpinButton, Width: 40, Height: 60,
+		CurrentVal: 7, MinVal: 5, MaxVal: 10, IncChange: 1, CellLink: "C2",
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "D7", Type: FormControlScrollBar, Width: 140, Height: 20,
+		CurrentVal: 50, MinVal: 10, MaxVal: 100, IncChange: 1, PageChange: 1, Horizontally: true, CellLink: "C3",
+	}))
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "G1", Type: FormControlScrollBar, Width: 20, Height: 140,
+		CurrentVal: 50, MinVal: 1000, MaxVal: 100, IncChange: 1, PageChange: 1, CellLink: "C4",
 	}))
 	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
 	file, err := os.ReadFile(filepath.Join("test", "vbaProject.bin"))
@@ -214,23 +222,29 @@ func TestFormControl(t *testing.T) {
 	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
 	assert.NoError(t, err)
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell:  "D4",
-		Type:  FormControlButton,
-		Macro: "Button1_Click",
-		Text:  "Button 2",
+		Cell: "D4", Type: FormControlButton, Macro: "Button1_Click", Text: "Button 2",
 	}))
 	// Test add unsupported form control
 	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
-		Cell:  "A1",
-		Type:  0x37,
-		Macro: "Button1_Click",
+		Cell: "A1", Type: 0x37, Macro: "Button1_Click",
 	}), ErrParameterInvalid)
 	// Test add form control on not exists worksheet
 	assert.Equal(t, f.AddFormControl("SheetN", FormControl{
-		Cell:  "A1",
-		Type:  FormControlButton,
-		Macro: "Button1_Click",
+		Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
 	}), newNoExistSheetError("SheetN"))
+	// Test add form control with invalid positioning types
+	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "A1", Type: FormControlButton,
+		Format: GraphicOptions{Positioning: "x"},
+	}), ErrParameterInvalid)
+	// Test add spin form control with illegal cell link reference
+	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "C5", Type: FormControlSpinButton, CellLink: "*",
+	}), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")))
+	// Test add spin form control with invalid scroll value
+	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
+		Cell: "C5", Type: FormControlSpinButton, CurrentVal: MaxFormControlValue + 1,
+	}), ErrorFormControlValue)
 	assert.NoError(t, f.Close())
 	// Test delete form control
 	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
