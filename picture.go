@@ -110,41 +110,46 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 //	    }
 //	}
 //
-// The optional parameter "AutoFit" specifies if you make image size auto-fits the
-// cell, the default value of that is 'false'.
+// The optional parameter "AltText" is used to add alternative text to a graph
+// object.
 //
-// The optional parameter "Hyperlink" specifies the hyperlink of the image.
+// The optional parameter "PrintObject" indicates whether the graph object is
+// printed when the worksheet is printed, the default value of that is 'true'.
+//
+// The optional parameter "Locked" indicates whether lock the graph object.
+// Locking an object has no effect unless the sheet is protected.
+//
+// The optional parameter "LockAspectRatio" indicates whether lock aspect ratio
+// for the graph object, the default value of that is 'false'.
+//
+// The optional parameter "AutoFit" specifies if you make graph object size
+// auto-fits the cell, the default value of that is 'false'.
+//
+// The optional parameter "OffsetX" specifies the horizontal offset of the graph
+// object with the cell, the default value of that is 0.
+//
+// The optional parameter "OffsetY" specifies the vertical offset of the graph
+// object with the cell, the default value of that is 0.
+//
+// The optional parameter "ScaleX" specifies the horizontal scale of graph
+// object, the default value of that is 1.0 which presents 100%.
+//
+// The optional parameter "ScaleY" specifies the vertical scale of graph object,
+// the default value of that is 1.0 which presents 100%.
+//
+// The optional parameter "Hyperlink" specifies the hyperlink of the graph
+// object.
 //
 // The optional parameter "HyperlinkType" defines two types of
 // hyperlink "External" for website or "Location" for moving to one of the
 // cells in this workbook. When the "HyperlinkType" is "Location",
 // coordinates need to start with "#".
 //
-// The optional parameter "Positioning" defines two types of the position of an
-// image in an Excel spreadsheet, "oneCell" (Move but don't size with
-// cells) or "absolute" (Don't move or size with cells). If you don't set this
-// parameter, the default positioning is move and size with cells.
-//
-// The optional parameter "PrintObject" indicates whether the image is printed
-// when the worksheet is printed, the default value of that is 'true'.
-//
-// The optional parameter "LockAspectRatio" indicates whether lock aspect
-// ratio for the image, the default value of that is 'false'.
-//
-// The optional parameter "Locked" indicates whether lock the image. Locking
-// an object has no effect unless the sheet is protected.
-//
-// The optional parameter "OffsetX" specifies the horizontal offset of the
-// image with the cell, the default value of that is 0.
-//
-// The optional parameter "ScaleX" specifies the horizontal scale of images,
-// the default value of that is 1.0 which presents 100%.
-//
-// The optional parameter "OffsetY" specifies the vertical offset of the
-// image with the cell, the default value of that is 0.
-//
-// The optional parameter "ScaleY" specifies the vertical scale of images,
-// the default value of that is 1.0 which presents 100%.
+// The optional parameter "Positioning" defines 3 types of the position of a
+// graph object in a spreadsheet: "oneCell" (Move but don't size with
+// cells), "twoCell" (Move and size with cells), and "absolute" (Don't move or
+// size with cells). If you don't set this parameter, the default positioning
+// is to move and size with cells.
 func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error {
 	var err error
 	// Check picture exists first.
@@ -329,6 +334,9 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
+	}
+	if opts.Positioning != "" && inStrSlice(supportedPositioning, opts.Positioning, true) == -1 {
+		return ErrParameterInvalid
 	}
 	width, height := img.Width, img.Height
 	if opts.AutoFit {

@@ -22,6 +22,9 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 	if opts == nil {
 		return nil, ErrParameterInvalid
 	}
+	if opts.Type == "" {
+		return nil, ErrParameterInvalid
+	}
 	if opts.Width == 0 {
 		opts.Width = defaultShapeSize
 	}
@@ -285,7 +288,7 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 //	wavy
 //	wavyHeavy
 //	wavyDbl
-func (f *File) AddShape(sheet, cell string, opts *Shape) error {
+func (f *File) AddShape(sheet string, opts *Shape) error {
 	options, err := parseShapeOptions(opts)
 	if err != nil {
 		return err
@@ -313,7 +316,7 @@ func (f *File) AddShape(sheet, cell string, opts *Shape) error {
 		f.addSheetDrawing(sheet, rID)
 		f.addSheetNameSpace(sheet, SourceRelationship)
 	}
-	if err = f.addDrawingShape(sheet, drawingXML, cell, options); err != nil {
+	if err = f.addDrawingShape(sheet, drawingXML, opts.Cell, options); err != nil {
 		return err
 	}
 	return f.addContentTypePart(drawingID, "drawings")

@@ -5918,6 +5918,23 @@ func TestCalcCellResolver(t *testing.T) {
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
+	// Test calculates formula that contains a nested argument function which returns a numeric result
+	f = NewFile()
+	for _, cell := range []string{"A1", "B2", "B3", "B4"} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, "ABC"))
+	}
+	for cell, formula := range map[string]string{
+		"A2": "IF(B2<>\"\",MAX(A1:A1)+1,\"\")",
+		"A3": "IF(B3<>\"\",MAX(A1:A2)+1,\"\")",
+		"A4": "IF(B4<>\"\",MAX(A1:A3)+1,\"\")",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, formula))
+	}
+	for cell, expected := range map[string]string{"A2": "1", "A3": "2", "A4": "3"} {
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
 }
 
 func TestEvalInfixExp(t *testing.T) {
