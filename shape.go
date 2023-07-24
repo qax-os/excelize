@@ -50,13 +50,13 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 }
 
 // AddShape provides the method to add shape in a sheet by given worksheet
-// index, shape format set (such as offset, scale, aspect ratio setting and
-// print settings) and properties set. For example, add text box (rect shape)
-// in Sheet1:
+// name and shape format set (such as offset, scale, aspect ratio setting and
+// print settings). For example, add text box (rect shape) in Sheet1:
 //
 //	lineWidth := 1.2
-//	err := f.AddShape("Sheet1", "G6",
+//	err := f.AddShape("Sheet1",
 //	    &excelize.Shape{
+//	        Cell: "G6",
 //	        Type: "rect",
 //	        Line: excelize.ShapeLine{Color: "4286F4", Width: &lineWidth},
 //	        Fill: excelize.Fill{Color: []string{"8EB9FF"}, Pattern: 1},

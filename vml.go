@@ -229,22 +229,19 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 // countComments provides a function to get comments files count storage in
 // the folder xl.
 func (f *File) countComments() int {
-	c1, c2 := 0, 0
+	comments := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/comments") {
-			c1++
+			comments[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	for rel := range f.Comments {
 		if strings.Contains(rel, "xl/comments") {
-			c2++
+			comments[rel] = struct{}{}
 		}
 	}
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(comments)
 }
 
 // commentsReader provides a function to get the pointer to the structure
@@ -281,12 +278,12 @@ func (f *File) commentsWriter() {
 // XLSM or XLTM. Scroll value must be between 0 and 30000.
 //
 // Example 1, add button form control with macro, rich-text, custom button size,
-// print property on Sheet1!A1, and let the button do not move or size with
+// print property on Sheet1!A2, and let the button do not move or size with
 // cells:
 //
 //	enable := true
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:   "A1",
+//	    Cell:   "A2",
 //	    Type:   excelize.FormControlButton,
 //	    Macro:  "Button1_Click",
 //	    Width:  140,
@@ -321,12 +318,14 @@ func (f *File) commentsWriter() {
 //	    Checked: true,
 //	})
 //
-// Example 3, add spin button form control on Sheet1!A2 to increase or decrease
+// Example 3, add spin button form control on Sheet1!B1 to increase or decrease
 // the value of Sheet1!A1:
 //
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:       "A2",
+//	    Cell:       "B1",
 //	    Type:       excelize.FormControlSpinButton,
+//	    Width:      15,
+//	    Height:     40,
 //	    CurrentVal: 7,
 //	    MinVal:     5,
 //	    MaxVal:     10,
@@ -338,14 +337,17 @@ func (f *File) commentsWriter() {
 // the value of Sheet1!A1 by click the scroll arrows or drag the scroll box:
 //
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:       "A2",
-//	    Type:       excelize.FormControlScrollBar,
-//	    CurrentVal: 50,
-//	    MinVal:     10,
-//	    MaxVal:     100,
-//	    IncChange:  1,
-//	    PageChange: 1,
-//	    CellLink:   "A1",
+//	    Cell:         "A2",
+//	    Type:         excelize.FormControlScrollBar,
+//	    Width:        140,
+//	    Height:       20,
+//	    CurrentVal:   50,
+//	    MinVal:       10,
+//	    MaxVal:       100,
+//	    IncChange:    1,
+//	    PageChange:   1,
+//	    CellLink:     "A1",
+//	    Horizontally: true,
 //	})
 func (f *File) AddFormControl(sheet string, opts FormControl) error {
 	return f.addVMLObject(vmlOptions{
@@ -355,9 +357,9 @@ func (f *File) AddFormControl(sheet string, opts FormControl) error {
 
 // DeleteFormControl provides the method to delete form control in a worksheet
 // by given worksheet name and cell reference. For example, delete the form
-// control in Sheet1!$A$30:
+// control in Sheet1!$A$1:
 //
-//	err := f.DeleteFormControl("Sheet1", "A30")
+//	err := f.DeleteFormControl("Sheet1", "A1")
 func (f *File) DeleteFormControl(sheet, cell string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -430,22 +432,19 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 // countVMLDrawing provides a function to get VML drawing files count storage
 // in the folder xl/drawings.
 func (f *File) countVMLDrawing() int {
-	c1, c2 := 0, 0
+	drawings := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/drawings/vmlDrawing") {
-			c1++
+			drawings[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	for rel := range f.VMLDrawing {
 		if strings.Contains(rel, "xl/drawings/vmlDrawing") {
-			c2++
+			drawings[rel] = struct{}{}
 		}
 	}
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(drawings)
 }
 
 // decodeVMLDrawingReader provides a function to get the pointer to the

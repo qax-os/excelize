@@ -308,23 +308,20 @@ func (f *File) addSheetPicture(sheet string, rID int) error {
 // countDrawings provides a function to get drawing files count storage in the
 // folder xl/drawings.
 func (f *File) countDrawings() int {
-	var c1, c2 int
+	drawings := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/drawings/drawing") {
-			c1++
+			drawings[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	f.Drawings.Range(func(rel, value interface{}) bool {
 		if strings.Contains(rel.(string), "xl/drawings/drawing") {
-			c2++
+			drawings[rel.(string)] = struct{}{}
 		}
 		return true
 	})
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(drawings)
 }
 
 // addDrawingPicture provides a function to add picture by given sheet,
