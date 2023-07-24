@@ -304,12 +304,19 @@ type xlsxNumFmt struct {
 	FormatCode string `xml:"formatCode,attr,omitempty"`
 }
 
+// xlsxIndexedColors directly maps the single ARGB entry for the corresponding
+// color index.
+type xlsxIndexedColors struct {
+	RgbColor []xlsxColor `xml:"rgbColor"`
+}
+
 // xlsxStyleColors directly maps the colors' element. Color information
-// associated with this stylesheet. This collection is written whenever the
+// associated with this style sheet. This collection is written whenever the
 // legacy color palette has been modified (backwards compatibility settings) or
 // a custom color has been selected while using this workbook.
 type xlsxStyleColors struct {
-	Color string `xml:",innerxml"`
+	IndexedColors xlsxIndexedColors `xml:"indexedColors"`
+	MruColors     xlsxInnerXML      `xml:"mruColors"`
 }
 
 // Alignment directly maps the alignment settings of the cells.

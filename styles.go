@@ -1032,29 +1032,65 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	return setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 }
 
-// Value extracts string data type text from a attribute value.
-func (attr *attrValString) Value() string {
-	if attr != nil && attr.Val != nil {
-		return *attr.Val
+// getThemeColor provides a function to convert theme color or index color to
+// RGB color.
+func (f *File) getThemeColor(clr *xlsxColor) string {
+	var RGB string
+	if clr == nil || f.Theme == nil {
+		return RGB
 	}
-	return ""
+	if clrScheme := f.Theme.ThemeElements.ClrScheme; clr.Theme != nil {
+		if val, ok := map[int]*string{
+			0: &clrScheme.Lt1.SysClr.LastClr,
+			1: &clrScheme.Dk1.SysClr.LastClr,
+			2: clrScheme.Lt2.SrgbClr.Val,
+			3: clrScheme.Dk2.SrgbClr.Val,
+			4: clrScheme.Accent1.SrgbClr.Val,
+			5: clrScheme.Accent2.SrgbClr.Val,
+			6: clrScheme.Accent3.SrgbClr.Val,
+			7: clrScheme.Accent4.SrgbClr.Val,
+			8: clrScheme.Accent5.SrgbClr.Val,
+			9: clrScheme.Accent6.SrgbClr.Val,
+		}[*clr.Theme]; ok && val != nil {
+			return strings.TrimPrefix(ThemeColor(*val, clr.Tint), "FF")
+		}
+	}
+	if len(clr.RGB) == 6 {
+		return clr.RGB
+	}
+	if len(clr.RGB) == 8 {
+		return strings.TrimPrefix(clr.RGB, "FF")
+	}
+	if f.Styles.Colors != nil && clr.Indexed < len(f.Styles.Colors.IndexedColors.RgbColor) {
+		return strings.TrimPrefix(ThemeColor(strings.TrimPrefix(f.Styles.Colors.IndexedColors.RgbColor[clr.Indexed].RGB, "FF"), clr.Tint), "FF")
+	}
+	if clr.Indexed < len(IndexedColorMapping) {
+		return strings.TrimPrefix(ThemeColor(IndexedColorMapping[clr.Indexed], clr.Tint), "FF")
+	}
+	return RGB
 }
 
-// Value extracts boolean data type value from a attribute value.
-func (attr *attrValBool) Value() bool {
-	if attr != nil && attr.Val != nil {
-		return *attr.Val
+// extractBorders provides a function to extract borders styles settings by
+// given border styles definition.
+func (f *File) extractBorders(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.ApplyBorder != nil && *xf.ApplyBorder &&
+		xf.BorderID != nil && s.Borders != nil &&
+		*xf.BorderID < len(s.Borders.Border) {
+		if bdr := s.Borders.Border[*xf.BorderID]; bdr != nil {
+			var borders []Border
+			extractBorder := func(lineType string, line xlsxLine) {
+				if line.Style != "" {
+					borders = append(borders, Border{
+						Type:  lineType,
+						Color: f.getThemeColor(line.Color),
+					})
+				}
+			}
+			_ = extractBorder
+			style.Border = borders
+		}
 	}
-	return false
-}
-
-// Value extracts float64 data type numeric from a attribute value.
-func (attr *attrValFloat) Value() float64 {
-	if attr != nil && attr.Val != nil {
-		return *attr.Val
-	}
-	return 0
-}
+ }
 
 // extractFont provides a function to extract font styles settings by given
 // font styles definition.
@@ -1082,10 +1118,12 @@ func (f *File) extractFont(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 			if fnt.Strike != nil {
 				font.Strike = fnt.Strike.Value()
 			}
-			font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
-			font.ColorIndexed = fnt.Color.Indexed
-			font.ColorTheme = fnt.Color.Theme
-			font.ColorTint = fnt.Color.Tint
+			if fnt.Color != nil {
+				font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
+				font.ColorIndexed = fnt.Color.Indexed
+				font.ColorTheme = fnt.Color.Theme
+				font.ColorTint = fnt.Color.Tint
+			}
 			style.Font = &font
 		}
 	}
