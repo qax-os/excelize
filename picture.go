@@ -216,7 +216,7 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	if err != nil {
 		return err
 	}
-	// Read sheet data.
+	// Read sheet data
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {

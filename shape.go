@@ -293,7 +293,7 @@ func (f *File) AddShape(sheet string, opts *Shape) error {
 	if err != nil {
 		return err
 	}
-	// Read sheet data.
+	// Read sheet data
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err

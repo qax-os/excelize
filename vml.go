@@ -390,7 +390,7 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 				VPath:  &vPath{GradientShapeOK: "t", ConnectType: "rect"},
 			},
 		}
-		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
 			return err
@@ -477,7 +477,7 @@ func (f *File) vmlDrawingWriter() {
 // addVMLObject provides a function to create VML drawing parts and
 // relationships for comments and form controls.
 func (f *File) addVMLObject(opts vmlOptions) error {
-	// Read sheet data.
+	// Read sheet data
 	ws, err := f.workSheetReader(opts.sheet)
 	if err != nil {
 		return err
@@ -836,7 +836,7 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 				VPath:     &vPath{GradientShapeOK: "t", ConnectType: "rect"},
 			},
 		}
-		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
 			return err
@@ -882,4 +882,88 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 	vml.Shape = append(vml.Shape, shape)
 	f.VMLDrawing[drawingVML] = vml
 	return err
+}
+
+// GetFormControls retrieves all form controls in a worksheet by a given
+// worksheet name. Note that, this function does not support getting the width,
+// height, text, rich text, and format currently.
+func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
+	var formControls []FormControl
+	// Read sheet data
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return formControls, err
+	}
+	if ws.LegacyDrawing == nil {
+		return formControls, err
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	drawingVML := strings.ReplaceAll(target, "..", "xl")
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return formControls, err
+		}
+		for _, sp := range d.Shape {
+			if sp.Type != "#_x0000_t201" {
+				continue
+			}
+			formControl, err := extractFormControl(sp.Val)
+			if err != nil {
+				return formControls, err
+			}
+			if formControl.Type == FormControlNote || formControl.Cell == "" {
+				continue
+			}
+			formControls = append(formControls, formControl)
+		}
+		return formControls, err
+	}
+	for _, sp := range vml.Shape {
+		if sp.Type != "#_x0000_t201" {
+			continue
+		}
+		formControl, err := extractFormControl(sp.Val)
+		if err != nil {
+			return formControls, err
+		}
+		if formControl.Type == FormControlNote || formControl.Cell == "" {
+			continue
+		}
+		formControls = append(formControls, formControl)
+	}
+	return formControls, err
+}
+
+// extractFormControl provides a function to extract form controls for a
+// worksheets by given client data.
+func extractFormControl(clientData string) (FormControl, error) {
+	var (
+		err         error
+		formControl FormControl
+		shapeVal    decodeShapeVal
+	)
+	if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", clientData)), &shapeVal); err != nil {
+		return formControl, err
+	}
+	for formCtrlType, preset := range formCtrlPresets {
+		if shapeVal.ClientData.ObjectType == preset.objectType {
+			formControl.Type = formCtrlType
+			if formControl.Cell, err = CoordinatesToCellName(shapeVal.ClientData.Column+1, shapeVal.ClientData.Row+1); err != nil {
+				return formControl, err
+			}
+			formControl.Macro = shapeVal.ClientData.FmlaMacro
+			formControl.Checked = shapeVal.ClientData.Checked != 0
+			formControl.CellLink = shapeVal.ClientData.FmlaLink
+			formControl.CurrentVal = shapeVal.ClientData.Val
+			formControl.MinVal = shapeVal.ClientData.Min
+			formControl.MaxVal = shapeVal.ClientData.Max
+			formControl.IncChange = shapeVal.ClientData.Inc
+			formControl.PageChange = shapeVal.ClientData.Page
+			formControl.Horizontally = shapeVal.ClientData.Horiz != nil
+		}
+	}
+	return formControl, err
 }

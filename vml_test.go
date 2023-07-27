@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -157,62 +158,83 @@ func TestAddDrawingVML(t *testing.T) {
 
 func TestFormControl(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "D1", Type: FormControlButton, Macro: "Button1_Click",
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
-		Width: 140, Height: 60, Text: "Button 1\r\n",
-		Paragraph: []RichTextRun{
-			{
-				Font: &Font{
-					Bold:      true,
-					Italic:    true,
-					Underline: "single",
-					Family:    "Times New Roman",
-					Size:      14,
-					Color:     "777777",
+	formControls := []FormControl{
+		{
+			Cell: "D1", Type: FormControlButton, Macro: "Button1_Click",
+		},
+		{
+			Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
+			Width: 140, Height: 60, Text: "Button 1\r\n",
+			Paragraph: []RichTextRun{
+				{
+					Font: &Font{
+						Bold:      true,
+						Italic:    true,
+						Underline: "single",
+						Family:    "Times New Roman",
+						Size:      14,
+						Color:     "777777",
+					},
+					Text: "C1=A1+B1",
 				},
-				Text: "C1=A1+B1",
+			},
+			Format: GraphicOptions{PrintObject: boolPtr(true), Positioning: "absolute"},
+		},
+		{
+			Cell: "A5", Type: FormControlCheckBox, Text: "Check Box 1",
+			Checked: true, Format: GraphicOptions{
+				PrintObject: boolPtr(false), Positioning: "oneCell",
 			},
 		},
-		Format: GraphicOptions{PrintObject: boolPtr(true), Positioning: "absolute"},
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A5", Type: FormControlCheckBox, Text: "Check Box 1",
-		Checked: true, Format: GraphicOptions{
-			PrintObject: boolPtr(false), Positioning: "oneCell",
+		{
+			Cell: "A6", Type: FormControlCheckBox, Text: "Check Box 2",
+			Format: GraphicOptions{Positioning: "twoCell"},
 		},
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A6", Type: FormControlCheckBox, Text: "Check Box 2",
-		Format: GraphicOptions{Positioning: "twoCell"},
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A7", Type: FormControlOptionButton, Text: "Option Button 1", Checked: true,
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A8", Type: FormControlOptionButton, Text: "Option Button 2",
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "D3", Type: FormControlGroupBox, Text: "Group Box 1",
-		Width: 140, Height: 60,
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A9", Type: FormControlLabel, Text: "Label 1", Width: 140,
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "C5", Type: FormControlSpinButton, Width: 40, Height: 60,
-		CurrentVal: 7, MinVal: 5, MaxVal: 10, IncChange: 1, CellLink: "C2",
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "D7", Type: FormControlScrollBar, Width: 140, Height: 20,
-		CurrentVal: 50, MinVal: 10, MaxVal: 100, IncChange: 1, PageChange: 1, Horizontally: true, CellLink: "C3",
-	}))
-	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "G1", Type: FormControlScrollBar, Width: 20, Height: 140,
-		CurrentVal: 50, MinVal: 1000, MaxVal: 100, IncChange: 1, PageChange: 1, CellLink: "C4",
-	}))
+		{
+			Cell: "A7", Type: FormControlOptionButton, Text: "Option Button 1", Checked: true,
+		},
+		{
+			Cell: "A8", Type: FormControlOptionButton, Text: "Option Button 2",
+		},
+		{
+			Cell: "D3", Type: FormControlGroupBox, Text: "Group Box 1",
+			Width: 140, Height: 60,
+		},
+		{
+			Cell: "A9", Type: FormControlLabel, Text: "Label 1", Width: 140,
+		},
+		{
+			Cell: "C5", Type: FormControlSpinButton, Width: 40, Height: 60,
+			CurrentVal: 7, MinVal: 5, MaxVal: 10, IncChange: 1, CellLink: "C2",
+		},
+		{
+			Cell: "D7", Type: FormControlScrollBar, Width: 140, Height: 20,
+			CurrentVal: 50, MinVal: 10, MaxVal: 100, IncChange: 1, PageChange: 1, Horizontally: true, CellLink: "C3",
+		},
+		{
+			Cell: "G1", Type: FormControlScrollBar, Width: 20, Height: 140,
+			CurrentVal: 50, MinVal: 1000, MaxVal: 100, IncChange: 1, PageChange: 1, CellLink: "C4",
+		},
+	}
+	for _, formCtrl := range formControls {
+		assert.NoError(t, f.AddFormControl("Sheet1", formCtrl))
+	}
+	// Test get from controls
+	result, err := f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, result, 11)
+	for i, formCtrl := range formControls {
+		assert.Equal(t, formCtrl.Type, result[i].Type)
+		assert.Equal(t, formCtrl.Cell, result[i].Cell)
+		assert.Equal(t, formCtrl.Macro, result[i].Macro)
+		assert.Equal(t, formCtrl.Checked, result[i].Checked)
+		assert.Equal(t, formCtrl.CurrentVal, result[i].CurrentVal)
+		assert.Equal(t, formCtrl.MinVal, result[i].MinVal)
+		assert.Equal(t, formCtrl.MaxVal, result[i].MaxVal)
+		assert.Equal(t, formCtrl.IncChange, result[i].IncChange)
+		assert.Equal(t, formCtrl.Horizontally, result[i].Horizontally)
+		assert.Equal(t, formCtrl.CellLink, result[i].CellLink)
+	}
 	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
 	file, err := os.ReadFile(filepath.Join("test", "vbaProject.bin"))
 	assert.NoError(t, err)
@@ -221,9 +243,18 @@ func TestFormControl(t *testing.T) {
 	assert.NoError(t, f.Close())
 	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
 	assert.NoError(t, err)
+	// Test get from controls before add form controls
+	result, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, result, 11)
+	// Test add from control to a worksheet which already contains form controls
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
 		Cell: "D4", Type: FormControlButton, Macro: "Button1_Click", Text: "Button 2",
 	}))
+	// Test get from controls after add form controls
+	result, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, result, 12)
 	// Test add unsupported form control
 	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
 		Cell: "A1", Type: 0x37, Macro: "Button1_Click",
@@ -251,9 +282,13 @@ func TestFormControl(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.DeleteFormControl("Sheet1", "D1"))
 	assert.NoError(t, f.DeleteFormControl("Sheet1", "A1"))
+	// Test get from controls after delete form controls
+	result, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, result, 9)
 	// Test delete form control on not exists worksheet
 	assert.Equal(t, f.DeleteFormControl("SheetN", "A1"), newNoExistSheetError("SheetN"))
-	// Test delete form control on not exists worksheet
+	// Test delete form control with illegal cell link reference
 	assert.Equal(t, f.DeleteFormControl("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteFormControl.xlsm")))
 	assert.NoError(t, f.Close())
@@ -266,4 +301,65 @@ func TestFormControl(t *testing.T) {
 	// Test delete form control on a worksheet without form control
 	f = NewFile()
 	assert.NoError(t, f.DeleteFormControl("Sheet1", "A1"))
+	// Test get form controls on a worksheet without form control
+	_, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	// Test get form controls on not exists worksheet
+	_, err = f.GetFormControls("SheetN")
+	assert.Equal(t, err, newNoExistSheetError("SheetN"))
+	// Test get form controls with unsupported charset VML drawing
+	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	_, err = f.GetFormControls("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get form controls with unsupported shape type
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "_x0000_t202"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, formControls, 0)
+	// Test get form controls with invalid column number
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: fmt.Sprintf("<x:ClientData ObjectType=\"Scroll\"><x:Column>%d</x:Column></x:ClientData>", MaxColumns)}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.Equal(t, err, ErrColumnNumber)
+	assert.Len(t, formControls, 0)
+	// Test get form controls with comment (Note) shape type
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<x:ClientData ObjectType=\"Note\"></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, formControls, 0)
+	// Test get form controls with unsupported shape type
+	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{
+		Shape: []xlsxShape{{Type: "_x0000_t202"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, formControls, 0)
+	// Test get form controls with invalid column number
+	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{
+		Shape: []xlsxShape{{Type: "#_x0000_t201", Val: fmt.Sprintf("<x:ClientData ObjectType=\"Scroll\"><x:Column>%d</x:Column></x:ClientData>", MaxColumns)}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.Equal(t, err, ErrColumnNumber)
+	assert.Len(t, formControls, 0)
+	// Test get form controls with comment (Note) shape type
+	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{
+		Shape: []xlsxShape{{Type: "#_x0000_t201", Val: "<x:ClientData ObjectType=\"Note\"></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, formControls, 0)
+	assert.NoError(t, f.Close())
+}
+
+func TestExtractFormControl(t *testing.T) {
+	// Test extract form control with unsupported charset
+	_, err := extractFormControl(string(MacintoshCyrillicCharset))
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
