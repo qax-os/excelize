@@ -113,7 +113,7 @@ func TestAddPivotTable(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
-		PivotTableRange: "Sheet2!$A$1:$AR$15",
+		PivotTableRange: "Sheet2!$A$1:$AN$17",
 		Rows:            []PivotTableField{{Data: "Month"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type", DefaultSubtotal: true}, {Data: "Year"}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Min", Name: "Summarize by Min"}},
@@ -126,7 +126,7 @@ func TestAddPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!$A$1:$E$31",
-		PivotTableRange: "Sheet2!$A$18:$AR$54",
+		PivotTableRange: "Sheet2!$A$20:$AR$60",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Type"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Year"}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Product", Name: "Summarize by Product"}},
@@ -146,7 +146,7 @@ func TestAddPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "dataRange",
-		PivotTableRange: "Sheet2!$A$57:$AJ$91",
+		PivotTableRange: "Sheet2!$A$65:$AJ$100",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type"}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Sum of Sales"}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales"}},

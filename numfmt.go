@@ -1855,15 +1855,15 @@ func (nf *numberFormat) secondsHandler(token nfp.Token) {
 // for a number format expression.
 func (nf *numberFormat) elapsedDateTimesHandler(token nfp.Token) {
 	if strings.Contains(strings.ToUpper(token.TValue), "H") {
-		nf.result += fmt.Sprintf("%.f", nf.t.Sub(excel1900Epoc).Hours())
+		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(excel1900Epoc).Hours()))
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {
-		nf.result += fmt.Sprintf("%.f", nf.t.Sub(excel1900Epoc).Minutes())
+		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(excel1900Epoc).Minutes()))
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "S") {
-		nf.result += fmt.Sprintf("%.f", nf.t.Sub(excel1900Epoc).Seconds())
+		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(excel1900Epoc).Seconds()))
 		return
 	}
 }

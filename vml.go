@@ -229,22 +229,19 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 // countComments provides a function to get comments files count storage in
 // the folder xl.
 func (f *File) countComments() int {
-	c1, c2 := 0, 0
+	comments := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/comments") {
-			c1++
+			comments[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	for rel := range f.Comments {
 		if strings.Contains(rel, "xl/comments") {
-			c2++
+			comments[rel] = struct{}{}
 		}
 	}
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(comments)
 }
 
 // commentsReader provides a function to get the pointer to the structure
@@ -281,12 +278,12 @@ func (f *File) commentsWriter() {
 // XLSM or XLTM. Scroll value must be between 0 and 30000.
 //
 // Example 1, add button form control with macro, rich-text, custom button size,
-// print property on Sheet1!A1, and let the button do not move or size with
+// print property on Sheet1!A2, and let the button do not move or size with
 // cells:
 //
 //	enable := true
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:   "A1",
+//	    Cell:   "A2",
 //	    Type:   excelize.FormControlButton,
 //	    Macro:  "Button1_Click",
 //	    Width:  140,
@@ -321,12 +318,14 @@ func (f *File) commentsWriter() {
 //	    Checked: true,
 //	})
 //
-// Example 3, add spin button form control on Sheet1!A2 to increase or decrease
+// Example 3, add spin button form control on Sheet1!B1 to increase or decrease
 // the value of Sheet1!A1:
 //
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:       "A2",
+//	    Cell:       "B1",
 //	    Type:       excelize.FormControlSpinButton,
+//	    Width:      15,
+//	    Height:     40,
 //	    CurrentVal: 7,
 //	    MinVal:     5,
 //	    MaxVal:     10,
@@ -338,14 +337,17 @@ func (f *File) commentsWriter() {
 // the value of Sheet1!A1 by click the scroll arrows or drag the scroll box:
 //
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:       "A2",
-//	    Type:       excelize.FormControlScrollBar,
-//	    CurrentVal: 50,
-//	    MinVal:     10,
-//	    MaxVal:     100,
-//	    IncChange:  1,
-//	    PageChange: 1,
-//	    CellLink:   "A1",
+//	    Cell:         "A2",
+//	    Type:         excelize.FormControlScrollBar,
+//	    Width:        140,
+//	    Height:       20,
+//	    CurrentVal:   50,
+//	    MinVal:       10,
+//	    MaxVal:       100,
+//	    IncChange:    1,
+//	    PageChange:   1,
+//	    CellLink:     "A1",
+//	    Horizontally: true,
 //	})
 func (f *File) AddFormControl(sheet string, opts FormControl) error {
 	return f.addVMLObject(vmlOptions{
@@ -355,9 +357,9 @@ func (f *File) AddFormControl(sheet string, opts FormControl) error {
 
 // DeleteFormControl provides the method to delete form control in a worksheet
 // by given worksheet name and cell reference. For example, delete the form
-// control in Sheet1!$A$30:
+// control in Sheet1!$A$1:
 //
-//	err := f.DeleteFormControl("Sheet1", "A30")
+//	err := f.DeleteFormControl("Sheet1", "A1")
 func (f *File) DeleteFormControl(sheet, cell string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -388,7 +390,7 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 				VPath:  &vPath{GradientShapeOK: "t", ConnectType: "rect"},
 			},
 		}
-		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
 			return err
@@ -430,22 +432,19 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 // countVMLDrawing provides a function to get VML drawing files count storage
 // in the folder xl/drawings.
 func (f *File) countVMLDrawing() int {
-	c1, c2 := 0, 0
+	drawings := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/drawings/vmlDrawing") {
-			c1++
+			drawings[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	for rel := range f.VMLDrawing {
 		if strings.Contains(rel, "xl/drawings/vmlDrawing") {
-			c2++
+			drawings[rel] = struct{}{}
 		}
 	}
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(drawings)
 }
 
 // decodeVMLDrawingReader provides a function to get the pointer to the
@@ -478,7 +477,7 @@ func (f *File) vmlDrawingWriter() {
 // addVMLObject provides a function to create VML drawing parts and
 // relationships for comments and form controls.
 func (f *File) addVMLObject(opts vmlOptions) error {
-	// Read sheet data.
+	// Read sheet data
 	ws, err := f.workSheetReader(opts.sheet)
 	if err != nil {
 		return err
@@ -837,7 +836,7 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 				VPath:     &vPath{GradientShapeOK: "t", ConnectType: "rect"},
 			},
 		}
-		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
 			return err
@@ -883,4 +882,88 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 	vml.Shape = append(vml.Shape, shape)
 	f.VMLDrawing[drawingVML] = vml
 	return err
+}
+
+// GetFormControls retrieves all form controls in a worksheet by a given
+// worksheet name. Note that, this function does not support getting the width,
+// height, text, rich text, and format currently.
+func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
+	var formControls []FormControl
+	// Read sheet data
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return formControls, err
+	}
+	if ws.LegacyDrawing == nil {
+		return formControls, err
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	drawingVML := strings.ReplaceAll(target, "..", "xl")
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return formControls, err
+		}
+		for _, sp := range d.Shape {
+			if sp.Type != "#_x0000_t201" {
+				continue
+			}
+			formControl, err := extractFormControl(sp.Val)
+			if err != nil {
+				return formControls, err
+			}
+			if formControl.Type == FormControlNote || formControl.Cell == "" {
+				continue
+			}
+			formControls = append(formControls, formControl)
+		}
+		return formControls, err
+	}
+	for _, sp := range vml.Shape {
+		if sp.Type != "#_x0000_t201" {
+			continue
+		}
+		formControl, err := extractFormControl(sp.Val)
+		if err != nil {
+			return formControls, err
+		}
+		if formControl.Type == FormControlNote || formControl.Cell == "" {
+			continue
+		}
+		formControls = append(formControls, formControl)
+	}
+	return formControls, err
+}
+
+// extractFormControl provides a function to extract form controls for a
+// worksheets by given client data.
+func extractFormControl(clientData string) (FormControl, error) {
+	var (
+		err         error
+		formControl FormControl
+		shapeVal    decodeShapeVal
+	)
+	if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", clientData)), &shapeVal); err != nil {
+		return formControl, err
+	}
+	for formCtrlType, preset := range formCtrlPresets {
+		if shapeVal.ClientData.ObjectType == preset.objectType {
+			formControl.Type = formCtrlType
+			if formControl.Cell, err = CoordinatesToCellName(shapeVal.ClientData.Column+1, shapeVal.ClientData.Row+1); err != nil {
+				return formControl, err
+			}
+			formControl.Macro = shapeVal.ClientData.FmlaMacro
+			formControl.Checked = shapeVal.ClientData.Checked != 0
+			formControl.CellLink = shapeVal.ClientData.FmlaLink
+			formControl.CurrentVal = shapeVal.ClientData.Val
+			formControl.MinVal = shapeVal.ClientData.Min
+			formControl.MaxVal = shapeVal.ClientData.Max
+			formControl.IncChange = shapeVal.ClientData.Inc
+			formControl.PageChange = shapeVal.ClientData.Page
+			formControl.Horizontally = shapeVal.ClientData.Horiz != nil
+		}
+	}
+	return formControl, err
 }

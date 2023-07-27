@@ -63,67 +63,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},
 		Chart: cChart{
-			Title: &cTitle{
-				Tx: cTx{
-					Rich: &cRich{
-						P: []aP{
-							{
-								PPr: &aPPr{
-									DefRPr: aRPr{
-										Kern:   1200,
-										Strike: "noStrike",
-										U:      "none",
-										Sz:     1400,
-										SolidFill: &aSolidFill{
-											SchemeClr: &aSchemeClr{
-												Val: "tx1",
-												LumMod: &attrValInt{
-													Val: intPtr(65000),
-												},
-												LumOff: &attrValInt{
-													Val: intPtr(35000),
-												},
-											},
-										},
-										Ea: &aEa{
-											Typeface: "+mn-ea",
-										},
-										Cs: &aCs{
-											Typeface: "+mn-cs",
-										},
-										Latin: &xlsxCTTextFont{
-											Typeface: "+mn-lt",
-										},
-									},
-								},
-								R: &aR{
-									RPr: aRPr{
-										Lang:    "en-US",
-										AltLang: "en-US",
-									},
-									T: opts.Title.Name,
-								},
-							},
-						},
-					},
-				},
-				TxPr: cTxPr{
-					P: aP{
-						PPr: &aPPr{
-							DefRPr: aRPr{
-								Kern:   1200,
-								U:      "none",
-								Sz:     14000,
-								Strike: "noStrike",
-							},
-						},
-						EndParaRPr: &aEndParaRPr{
-							Lang: "en-US",
-						},
-					},
-				},
-				Overlay: &attrValBool{Val: boolPtr(false)},
-			},
+			Title: f.drawPlotAreaTitles(opts.Title, ""),
 			View3D: &cView3D{
 				RotX:        &attrValInt{Val: intPtr(chartView3DRotX[opts.Type])},
 				RotY:        &attrValInt{Val: intPtr(chartView3DRotY[opts.Type])},

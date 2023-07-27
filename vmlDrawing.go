@@ -192,8 +192,17 @@ type decodeShapeVal struct {
 // element in the file xl/drawings/vmlDrawing%d.vml.
 type decodeVMLClientData struct {
 	ObjectType string `xml:"ObjectType,attr"`
+	FmlaMacro  string
 	Column     int
 	Row        int
+	Checked    int
+	FmlaLink   string
+	Val        uint
+	Min        uint
+	Max        uint
+	Inc        uint
+	Page       uint
+	Horiz      *string
 }
 
 // encodeShape defines the structure used to re-serialization shape element.
