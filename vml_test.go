@@ -164,7 +164,7 @@ func TestFormControl(t *testing.T) {
 		},
 		{
 			Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
-			Width: 140, Height: 60, Text: "Button 1\r\n",
+			Width: 140, Height: 60, Text: "Button 1\n",
 			Paragraph: []RichTextRun{
 				{
 					Font: &Font{
@@ -234,6 +234,8 @@ func TestFormControl(t *testing.T) {
 		assert.Equal(t, formCtrl.IncChange, result[i].IncChange)
 		assert.Equal(t, formCtrl.Horizontally, result[i].Horizontally)
 		assert.Equal(t, formCtrl.CellLink, result[i].CellLink)
+		assert.Equal(t, formCtrl.Text, result[i].Text)
+		assert.Equal(t, len(formCtrl.Paragraph), len(result[i].Paragraph))
 	}
 	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{CodeName: stringPtr("Sheet1")}))
 	file, err := os.ReadFile(filepath.Join("test", "vbaProject.bin"))
@@ -249,7 +251,8 @@ func TestFormControl(t *testing.T) {
 	assert.Len(t, result, 11)
 	// Test add from control to a worksheet which already contains form controls
 	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "D4", Type: FormControlButton, Macro: "Button1_Click", Text: "Button 2",
+		Cell: "D4", Type: FormControlButton, Macro: "Button1_Click",
+		Paragraph: []RichTextRun{{Font: &Font{Underline: "double"}, Text: "Button 2"}},
 	}))
 	// Test get from controls after add form controls
 	result, err = f.GetFormControls("Sheet1")
@@ -297,6 +300,11 @@ func TestFormControl(t *testing.T) {
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
 	assert.Error(t, f.DeleteFormControl("Sheet1", "A1"), "XML syntax error on line 1: invalid UTF-8")
+	// Test delete form controls with invalid shape anchor
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<x:ClientData ObjectType=\"Scroll\"><x:Anchor>0</x:Anchor></x:ClientData>"}},
+	}
+	assert.Equal(t, ErrParameterInvalid, f.DeleteFormControl("Sheet1", "A1"))
 	assert.NoError(t, f.Close())
 	// Test delete form control on a worksheet without form control
 	f = NewFile()
@@ -320,9 +328,39 @@ func TestFormControl(t *testing.T) {
 	formControls, err = f.GetFormControls("Sheet1")
 	assert.NoError(t, err)
 	assert.Len(t, formControls, 0)
+	// Test get form controls with bold font format
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font><b>Text</b></font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, formControls[0].Paragraph[0].Font.Bold)
+	// Test get form controls with italic font format
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font><i>Text</i></font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, formControls[0].Paragraph[0].Font.Italic)
+	// Test get form controls with font format
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font face=\"Calibri\" size=\"280\" color=\"#777777\">Text</font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Calibri", formControls[0].Paragraph[0].Font.Family)
+	assert.Equal(t, 14.0, formControls[0].Paragraph[0].Font.Size)
+	assert.Equal(t, "#777777", formControls[0].Paragraph[0].Font.Color)
+	// Test get form controls with italic font format
+	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font><i>Text</i></font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, formControls[0].Paragraph[0].Font.Italic)
 	// Test get form controls with invalid column number
 	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
-		Shape: []decodeShape{{Type: "#_x0000_t201", Val: fmt.Sprintf("<x:ClientData ObjectType=\"Scroll\"><x:Column>%d</x:Column></x:ClientData>", MaxColumns)}},
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: fmt.Sprintf("<x:ClientData ObjectType=\"Scroll\"><x:Anchor>%d,0,0,0,0,0,0,0</x:Anchor></x:ClientData>", MaxColumns)}},
 	}
 	formControls, err = f.GetFormControls("Sheet1")
 	assert.Equal(t, err, ErrColumnNumber)
@@ -343,10 +381,17 @@ func TestFormControl(t *testing.T) {
 	assert.Len(t, formControls, 0)
 	// Test get form controls with invalid column number
 	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{
-		Shape: []xlsxShape{{Type: "#_x0000_t201", Val: fmt.Sprintf("<x:ClientData ObjectType=\"Scroll\"><x:Column>%d</x:Column></x:ClientData>", MaxColumns)}},
+		Shape: []xlsxShape{{Type: "#_x0000_t201", Val: fmt.Sprintf("<x:ClientData ObjectType=\"Scroll\"><x:Anchor>%d,0,0,0,0,0,0,0</x:Anchor></x:ClientData>", MaxColumns)}},
 	}
 	formControls, err = f.GetFormControls("Sheet1")
 	assert.Equal(t, err, ErrColumnNumber)
+	assert.Len(t, formControls, 0)
+	// Test get form controls with invalid shape anchor
+	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{
+		Shape: []xlsxShape{{Type: "#_x0000_t201", Val: "<x:ClientData ObjectType=\"Scroll\"><x:Anchor>x,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+	}
+	formControls, err = f.GetFormControls("Sheet1")
+	assert.Equal(t, ErrColumnNumber, err)
 	assert.Len(t, formControls, 0)
 	// Test get form controls with comment (Note) shape type
 	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{

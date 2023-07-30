@@ -927,6 +927,14 @@ func TestFormattedValueNilWorkbookPr(t *testing.T) {
 	assert.Equal(t, "43528", result)
 }
 
+func TestApplyNumFmt(t *testing.T) {
+	f := NewFile()
+	assert.Equal(t, "\u4EE4\u548C\u5143年9月1日", f.applyNumFmt(&xlsxC{V: "43709"},
+		&xlsxStyleSheet{NumFmts: &xlsxNumFmts{NumFmt: []*xlsxNumFmt{
+			{NumFmtID: 164, FormatCode16: "[$-ja-JP-x-gannen,80]ggge\"年\"m\"月\"d\"日\";@"},
+		}}}, 164, false, CellTypeNumber))
+}
+
 func TestSharedStringsError(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
 	assert.NoError(t, err)

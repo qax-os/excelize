@@ -137,8 +137,8 @@ type xClientData struct {
 	FmlaMacro     string  `xml:"x:FmlaMacro,omitempty"`
 	TextHAlign    string  `xml:"x:TextHAlign,omitempty"`
 	TextVAlign    string  `xml:"x:TextVAlign,omitempty"`
-	Row           int     `xml:"x:Row"`
-	Column        int     `xml:"x:Column"`
+	Row           *int    `xml:"x:Row"`
+	Column        *int    `xml:"x:Column"`
 	Checked       int     `xml:"x:Checked,omitempty"`
 	FmlaLink      string  `xml:"x:FmlaLink,omitempty"`
 	NoThreeD      *string `xml:"x:NoThreeD"`
@@ -185,16 +185,59 @@ type decodeShape struct {
 // decodeShapeVal defines the structure used to parse the sub-element of the
 // shape in the file xl/drawings/vmlDrawing%d.vml.
 type decodeShapeVal struct {
+	TextBox    decodeVMLTextBox    `xml:"textbox"`
 	ClientData decodeVMLClientData `xml:"ClientData"`
+}
+
+// decodeVMLFontU defines the structure used to parse the u element in the VML.
+type decodeVMLFontU struct {
+	Class string `xml:"class,attr"`
+	Val   string `xml:",chardata"`
+}
+
+// decodeVMLFontI defines the structure used to parse the i element in the VML.
+type decodeVMLFontI struct {
+	U   *decodeVMLFontU `xml:"u"`
+	Val string          `xml:",chardata"`
+}
+
+// decodeVMLFontB defines the structure used to parse the b element in the VML.
+type decodeVMLFontB struct {
+	I   *decodeVMLFontI `xml:"i"`
+	U   *decodeVMLFontU `xml:"u"`
+	Val string          `xml:",chardata"`
+}
+
+// decodeVMLFont defines the structure used to parse the font element in the VML.
+type decodeVMLFont struct {
+	Face  string          `xml:"face,attr,omitempty"`
+	Size  uint            `xml:"size,attr,omitempty"`
+	Color string          `xml:"color,attr,omitempty"`
+	B     *decodeVMLFontB `xml:"b"`
+	I     *decodeVMLFontI `xml:"i"`
+	U     *decodeVMLFontU `xml:"u"`
+	Val   string          `xml:",chardata"`
+}
+
+// decodeVMLDiv defines the structure used to parse the div element in the VML.
+type decodeVMLDiv struct {
+	Font []decodeVMLFont `xml:"font"`
+}
+
+// decodeVMLTextBox defines the structure used to parse the v:textbox element in
+// the file xl/drawings/vmlDrawing%d.vml.
+type decodeVMLTextBox struct {
+	Div decodeVMLDiv `xml:"div"`
 }
 
 // decodeVMLClientData defines the structure used to parse the x:ClientData
 // element in the file xl/drawings/vmlDrawing%d.vml.
 type decodeVMLClientData struct {
 	ObjectType string `xml:"ObjectType,attr"`
+	Anchor     string
 	FmlaMacro  string
-	Column     int
-	Row        int
+	Column     *int
+	Row        *int
 	Checked    int
 	FmlaLink   string
 	Val        uint

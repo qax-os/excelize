@@ -420,9 +420,15 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 	for i, sp := range vml.Shape {
 		var shapeVal decodeShapeVal
 		if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", sp.Val)), &shapeVal); err == nil &&
-			shapeVal.ClientData.ObjectType != "Note" && shapeVal.ClientData.Column == col-1 && shapeVal.ClientData.Row == row-1 {
-			vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
-			break
+			shapeVal.ClientData.ObjectType != "Note" && shapeVal.ClientData.Anchor != "" {
+			leftCol, topRow, err := extractAnchorCell(shapeVal.ClientData.Anchor)
+			if err != nil {
+				return err
+			}
+			if leftCol == col-1 && topRow == row-1 {
+				vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
+				break
+			}
 		}
 	}
 	f.VMLDrawing[drawingVML] = vml
@@ -454,7 +460,7 @@ func (f *File) decodeVMLDrawingReader(path string) (*decodeVmlDrawing, error) {
 		c, ok := f.Pkg.Load(path)
 		if ok && c != nil {
 			f.DecodeVMLDrawing[path] = new(decodeVmlDrawing)
-			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c.([]byte)))).
+			if err := f.xmlNewDecoder(bytes.NewReader(bytesReplace(namespaceStrictToTransitional(c.([]byte)), []byte("<br>\r\n"), []byte("<br></br>\r\n"), -1))).
 				Decode(f.DecodeVMLDrawing[path]); err != nil && err != io.EOF {
 				return nil, err
 			}
@@ -573,6 +579,9 @@ func formCtrlText(opts *vmlOptions) []vmlFont {
 			}
 			if run.Font.Underline == "single" {
 				fnt.Content = "<u>" + fnt.Content + "</u>"
+			}
+			if run.Font.Underline == "double" {
+				fnt.Content = "<u class=\"font1\">" + fnt.Content + "</u>"
 			}
 			if run.Font.Italic {
 				fnt.Content = "<i>" + fnt.Content + "</i>"
@@ -765,8 +774,8 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 			ObjectType:  preset.objectType,
 			Anchor:      anchor,
 			AutoFill:    preset.autoFill,
-			Row:         row - 1,
-			Column:      col - 1,
+			Row:         intPtr(row - 1),
+			Column:      intPtr(col - 1),
 			TextHAlign:  preset.textHAlign,
 			TextVAlign:  preset.textVAlign,
 			NoThreeD:    preset.noThreeD,
@@ -885,8 +894,8 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 }
 
 // GetFormControls retrieves all form controls in a worksheet by a given
-// worksheet name. Note that, this function does not support getting the width,
-// height, text, rich text, and format currently.
+// worksheet name. Note that, this function does not support getting the width
+// and height of the form controls currently.
 func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
 	var formControls []FormControl
 	// Read sheet data
@@ -949,9 +958,18 @@ func extractFormControl(clientData string) (FormControl, error) {
 		return formControl, err
 	}
 	for formCtrlType, preset := range formCtrlPresets {
-		if shapeVal.ClientData.ObjectType == preset.objectType {
+		if shapeVal.ClientData.ObjectType == preset.objectType && shapeVal.ClientData.Anchor != "" {
+			formControl.Paragraph = extractVMLFont(shapeVal.TextBox.Div.Font)
+			if len(formControl.Paragraph) > 0 && formControl.Paragraph[0].Font == nil {
+				formControl.Text = formControl.Paragraph[0].Text
+				formControl.Paragraph = formControl.Paragraph[1:]
+			}
 			formControl.Type = formCtrlType
-			if formControl.Cell, err = CoordinatesToCellName(shapeVal.ClientData.Column+1, shapeVal.ClientData.Row+1); err != nil {
+			col, row, err := extractAnchorCell(shapeVal.ClientData.Anchor)
+			if err != nil {
+				return formControl, err
+			}
+			if formControl.Cell, err = CoordinatesToCellName(col+1, row+1); err != nil {
 				return formControl, err
 			}
 			formControl.Macro = shapeVal.ClientData.FmlaMacro
@@ -966,4 +984,80 @@ func extractFormControl(clientData string) (FormControl, error) {
 		}
 	}
 	return formControl, err
+}
+
+// extractAnchorCell extract left-top cell coordinates from given VML anchor
+// comma-separated list values.
+func extractAnchorCell(anchor string) (int, int, error) {
+	var (
+		leftCol, topRow int
+		err             error
+		pos             = strings.Split(anchor, ",")
+	)
+	if len(pos) != 8 {
+		return leftCol, topRow, ErrParameterInvalid
+	}
+	leftCol, err = strconv.Atoi(strings.TrimSpace(pos[0]))
+	if err != nil {
+		return leftCol, topRow, ErrColumnNumber
+	}
+	topRow, err = strconv.Atoi(strings.TrimSpace(pos[2]))
+	return leftCol, topRow, err
+}
+
+// extractVMLFont extract rich-text and font format from given VML font element.
+func extractVMLFont(font []decodeVMLFont) []RichTextRun {
+	var runs []RichTextRun
+	extractU := func(u *decodeVMLFontU, run *RichTextRun) {
+		if u == nil {
+			return
+		}
+		run.Text += u.Val
+		if run.Font == nil {
+			run.Font = &Font{}
+		}
+		run.Font.Underline = "single"
+		if u.Class == "font1" {
+			run.Font.Underline = "double"
+		}
+	}
+	extractI := func(i *decodeVMLFontI, run *RichTextRun) {
+		if i == nil {
+			return
+		}
+		extractU(i.U, run)
+		run.Text += i.Val
+		if run.Font == nil {
+			run.Font = &Font{}
+		}
+		run.Font.Italic = true
+	}
+	extractB := func(b *decodeVMLFontB, run *RichTextRun) {
+		if b == nil {
+			return
+		}
+		extractI(b.I, run)
+		run.Text += b.Val
+		if run.Font == nil {
+			run.Font = &Font{}
+		}
+		run.Font.Bold = true
+	}
+	for _, fnt := range font {
+		var run RichTextRun
+		extractB(fnt.B, &run)
+		extractI(fnt.I, &run)
+		extractU(fnt.U, &run)
+		run.Text += fnt.Val
+		if fnt.Face != "" || fnt.Size > 0 || fnt.Color != "" {
+			if run.Font == nil {
+				run.Font = &Font{}
+			}
+			run.Font.Family = fnt.Face
+			run.Font.Size = float64(fnt.Size / 20)
+			run.Font.Color = fnt.Color
+		}
+		runs = append(runs, run)
+	}
+	return runs
 }

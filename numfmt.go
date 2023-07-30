@@ -26,6 +26,7 @@ import (
 type languageInfo struct {
 	apFmt      string
 	tags       []string
+	useGannen  bool
 	localMonth func(t time.Time, abbr int) string
 }
 
@@ -768,71 +769,85 @@ var (
 			"vai-Vaii-LR", "vai-Latn-LR", "vai-Latn", "vo", "vo-001", "vun", "vun-TZ", "wae",
 			"wae-CH", "wal", "wae-ET", "yav", "yav-CM", "yo-BJ", "dje", "dje-NE",
 		}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"C09":  {tags: []string{"en-AU"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
-		"2829": {tags: []string{"en-BZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"1009": {tags: []string{"en-CA"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"2409": {tags: []string{"en-029"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"3C09": {tags: []string{"en-HK"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"4009": {tags: []string{"en-IN"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"1809": {tags: []string{"en-IE"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
-		"2009": {tags: []string{"en-JM"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"4409": {tags: []string{"en-MY"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"1409": {tags: []string{"en-NZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"3409": {tags: []string{"en-PH"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"4809": {tags: []string{"en-SG"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"1C09": {tags: []string{"en-ZA"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"2C09": {tags: []string{"en-TT"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"4C09": {tags: []string{"en-AE"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"809":  {tags: []string{"en-GB"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
-		"409":  {tags: []string{"en-US"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"3009": {tags: []string{"en-ZW"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
-		"C":    {tags: []string{"fr"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0]},
-		"7":    {tags: []string{"de"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
-		"C07":  {tags: []string{"de-AT"}, localMonth: localMonthsNameAustria, apFmt: nfp.AmPm[0]},
-		"407":  {tags: []string{"de-DE"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
-		"3C":   {tags: []string{"ga"}, localMonth: localMonthsNameIrish, apFmt: apFmtIrish},
-		"83C":  {tags: []string{"ga-IE"}, localMonth: localMonthsNameIrish, apFmt: apFmtIrish},
-		"10":   {tags: []string{"it"}, localMonth: localMonthsNameItalian, apFmt: nfp.AmPm[0]},
-		"11":   {tags: []string{"ja"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
-		"411":  {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
-		"12":   {tags: []string{"ko"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
-		"412":  {tags: []string{"ko-KR"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
-		"7C50": {tags: []string{"mn-Mong"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
-		"850":  {tags: []string{"mn-Mong-CN"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
-		"C50":  {tags: []string{"mn-Mong-MN"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
-		"19":   {tags: []string{"ru"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
-		"819":  {tags: []string{"ru-MD"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
-		"419":  {tags: []string{"ru-RU"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
-		"A":    {tags: []string{"es"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"2C0A": {tags: []string{"es-AR"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"200A": {tags: []string{"es-VE"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"400A": {tags: []string{"es-BO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"340A": {tags: []string{"es-CL"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"240A": {tags: []string{"es-CO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"140A": {tags: []string{"es-CR"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"5C0A": {tags: []string{"es-CU"}, localMonth: localMonthsNameSpanish, apFmt: apFmtCuba},
-		"1C0A": {tags: []string{"es-DO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"300A": {tags: []string{"es-EC"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"440A": {tags: []string{"es-SV"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
-		"1E":   {tags: []string{"th"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
-		"41E":  {tags: []string{"th-TH"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
-		"51":   {tags: []string{"bo"}, localMonth: localMonthsNameTibetan, apFmt: apFmtTibetan},
-		"451":  {tags: []string{"bo-CN"}, localMonth: localMonthsNameTibetan, apFmt: apFmtTibetan},
-		"1F":   {tags: []string{"tr"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
-		"41F":  {tags: []string{"tr-TR"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
-		"52":   {tags: []string{"cy"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
-		"452":  {tags: []string{"cy-GB"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
-		"2A":   {tags: []string{"vi"}, localMonth: localMonthsNameVietnamese, apFmt: apFmtVietnamese},
-		"42A":  {tags: []string{"vi-VN"}, localMonth: localMonthsNameVietnamese, apFmt: apFmtVietnamese},
-		"88":   {tags: []string{"wo"}, localMonth: localMonthsNameWolof, apFmt: apFmtWolof},
-		"488":  {tags: []string{"wo-SN"}, localMonth: localMonthsNameWolof, apFmt: apFmtWolof},
-		"34":   {tags: []string{"xh"}, localMonth: localMonthsNameXhosa, apFmt: nfp.AmPm[0]},
-		"434":  {tags: []string{"xh-ZA"}, localMonth: localMonthsNameXhosa, apFmt: nfp.AmPm[0]},
-		"78":   {tags: []string{"ii"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
-		"478":  {tags: []string{"ii-CN"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
-		"35":   {tags: []string{"zu"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
-		"435":  {tags: []string{"zu-ZA"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
+		"C09":            {tags: []string{"en-AU"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
+		"2829":           {tags: []string{"en-BZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1009":           {tags: []string{"en-CA"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"2409":           {tags: []string{"en-029"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"3C09":           {tags: []string{"en-HK"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4009":           {tags: []string{"en-IN"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1809":           {tags: []string{"en-IE"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
+		"2009":           {tags: []string{"en-JM"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4409":           {tags: []string{"en-MY"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1409":           {tags: []string{"en-NZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"3409":           {tags: []string{"en-PH"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4809":           {tags: []string{"en-SG"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"1C09":           {tags: []string{"en-ZA"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"2C09":           {tags: []string{"en-TT"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"4C09":           {tags: []string{"en-AE"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"809":            {tags: []string{"en-GB"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0])},
+		"409":            {tags: []string{"en-US"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"3009":           {tags: []string{"en-ZW"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0]},
+		"C":              {tags: []string{"fr"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0]},
+		"7":              {tags: []string{"de"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
+		"C07":            {tags: []string{"de-AT"}, localMonth: localMonthsNameAustria, apFmt: nfp.AmPm[0]},
+		"407":            {tags: []string{"de-DE"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0]},
+		"3C":             {tags: []string{"ga"}, localMonth: localMonthsNameIrish, apFmt: apFmtIrish},
+		"83C":            {tags: []string{"ga-IE"}, localMonth: localMonthsNameIrish, apFmt: apFmtIrish},
+		"10":             {tags: []string{"it"}, localMonth: localMonthsNameItalian, apFmt: nfp.AmPm[0]},
+		"11":             {tags: []string{"ja"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
+		"411":            {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
+		"800411":         {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
+		"JP-X-GANNEN,80": {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, useGannen: true},
+		"12":             {tags: []string{"ko"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
+		"412":            {tags: []string{"ko-KR"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
+		"7C50":           {tags: []string{"mn-Mong"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
+		"850":            {tags: []string{"mn-Mong-CN"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
+		"C50":            {tags: []string{"mn-Mong-MN"}, localMonth: localMonthsNameTraditionalMongolian, apFmt: nfp.AmPm[0]},
+		"19":             {tags: []string{"ru"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
+		"819":            {tags: []string{"ru-MD"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
+		"419":            {tags: []string{"ru-RU"}, localMonth: localMonthsNameRussian, apFmt: nfp.AmPm[0]},
+		"A":              {tags: []string{"es"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"2C0A":           {tags: []string{"es-AR"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"200A":           {tags: []string{"es-VE"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"400A":           {tags: []string{"es-BO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"340A":           {tags: []string{"es-CL"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"240A":           {tags: []string{"es-CO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"140A":           {tags: []string{"es-CR"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"5C0A":           {tags: []string{"es-CU"}, localMonth: localMonthsNameSpanish, apFmt: apFmtCuba},
+		"1C0A":           {tags: []string{"es-DO"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"300A":           {tags: []string{"es-EC"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"440A":           {tags: []string{"es-SV"}, localMonth: localMonthsNameSpanish, apFmt: apFmtSpanish},
+		"1E":             {tags: []string{"th"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
+		"41E":            {tags: []string{"th-TH"}, localMonth: localMonthsNameThai, apFmt: nfp.AmPm[0]},
+		"51":             {tags: []string{"bo"}, localMonth: localMonthsNameTibetan, apFmt: apFmtTibetan},
+		"451":            {tags: []string{"bo-CN"}, localMonth: localMonthsNameTibetan, apFmt: apFmtTibetan},
+		"1F":             {tags: []string{"tr"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
+		"41F":            {tags: []string{"tr-TR"}, localMonth: localMonthsNameTurkish, apFmt: apFmtTurkish},
+		"52":             {tags: []string{"cy"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
+		"452":            {tags: []string{"cy-GB"}, localMonth: localMonthsNameWelsh, apFmt: apFmtWelsh},
+		"2A":             {tags: []string{"vi"}, localMonth: localMonthsNameVietnamese, apFmt: apFmtVietnamese},
+		"42A":            {tags: []string{"vi-VN"}, localMonth: localMonthsNameVietnamese, apFmt: apFmtVietnamese},
+		"88":             {tags: []string{"wo"}, localMonth: localMonthsNameWolof, apFmt: apFmtWolof},
+		"488":            {tags: []string{"wo-SN"}, localMonth: localMonthsNameWolof, apFmt: apFmtWolof},
+		"34":             {tags: []string{"xh"}, localMonth: localMonthsNameXhosa, apFmt: nfp.AmPm[0]},
+		"434":            {tags: []string{"xh-ZA"}, localMonth: localMonthsNameXhosa, apFmt: nfp.AmPm[0]},
+		"78":             {tags: []string{"ii"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
+		"478":            {tags: []string{"ii-CN"}, localMonth: localMonthsNameYi, apFmt: apFmtYi},
+		"35":             {tags: []string{"zu"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
+		"435":            {tags: []string{"zu-ZA"}, localMonth: localMonthsNameZulu, apFmt: nfp.AmPm[0]},
 	}
+	// japaneseEraYears list the Japanese era name periods.
+	japaneseEraYears = []time.Time{
+		time.Date(1868, time.August, 8, 0, 0, 0, 0, time.UTC),
+		time.Date(1912, time.June, 30, 0, 0, 0, 0, time.UTC),
+		time.Date(1926, time.November, 25, 0, 0, 0, 0, time.UTC),
+		time.Date(1989, time.January, 8, 0, 0, 0, 0, time.UTC),
+		time.Date(2019, time.April, 1, 0, 0, 0, 0, time.UTC),
+	}
+	// japaneseEraNames list the Japanese era name for the Japanese emperor reign calendar.
+	japaneseEraNames = []string{"\u660E\u6CBB", "\u5927\u6B63", "\u662D\u548C", "\u5E73\u6210", "\u4EE4\u548C"}
+	// japaneseEraYear list the Japanese era name symbols.
+	japaneseEraSymbols = []string{"M", "T", "S", "H", "R"}
 	// monthNamesBangla list the month names in the Bangla.
 	monthNamesBangla = []string{
 		"\u099C\u09BE\u09A8\u09C1\u09AF\u09BC\u09BE\u09B0\u09C0",
@@ -1329,7 +1344,9 @@ func (nf *numberFormat) dateTimeHandler() string {
 			if changeNumFmtCode, err := nf.currencyLanguageHandler(token); err != nil || changeNumFmtCode {
 				return nf.value
 			}
-			nf.result += nf.currencyString
+			if !supportedLanguageInfo[nf.localCode].useGannen {
+				nf.result += nf.currencyString
+			}
 		}
 		if token.TType == nfp.TokenTypeDateTimes {
 			nf.dateTimesHandler(i, token)
@@ -1752,14 +1769,34 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 // yearsHandler will be handling years in the date and times types tokens for a
 // number format expression.
 func (nf *numberFormat) yearsHandler(token nfp.Token) {
-	years := strings.Contains(strings.ToUpper(token.TValue), "Y")
-	if years && len(token.TValue) <= 2 {
-		nf.result += strconv.Itoa(nf.t.Year())[2:]
-		return
-	}
-	if years && len(token.TValue) > 2 {
+	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
+		if len(token.TValue) <= 2 {
+			nf.result += strconv.Itoa(nf.t.Year())[2:]
+			return
+		}
 		nf.result += strconv.Itoa(nf.t.Year())
 		return
+	}
+	if strings.Contains(strings.ToUpper(token.TValue), "G") {
+		for i := len(japaneseEraYears) - 1; i > 0; i-- {
+			if y := japaneseEraYears[i]; nf.t.After(y) {
+				switch len(token.TValue) {
+				case 1:
+					nf.result += japaneseEraSymbols[i]
+				case 2:
+					nf.result += japaneseEraNames[i][:3]
+				default:
+					nf.result += japaneseEraNames[i]
+				}
+				year := nf.t.Year() - y.Year() + 1
+				if year == 1 && len(token.TValue) > 1 && supportedLanguageInfo[nf.localCode].useGannen {
+					nf.result += "\u5143"
+					break
+				}
+				nf.result += strconv.Itoa(year)
+				break
+			}
+		}
 	}
 }
 
