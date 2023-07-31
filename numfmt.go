@@ -33,18 +33,18 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
-	opts                                                        *Options
-	cellType                                                    CellType
-	section                                                     []nfp.Section
-	t                                                           time.Time
-	sectionIdx                                                  int
-	date1904, isNumeric, hours, seconds, useMillisecond         bool
-	number                                                      float64
-	ap, localCode, result, value, valueSectionType              string
-	switchArgument, currencyString                              string
-	fracHolder, fracPadding, intHolder, intPadding, expBaseLen  int
-	percent                                                     int
-	useCommaSep, usePointer, usePositive, useScientificNotation bool
+	opts                                                           *Options
+	cellType                                                       CellType
+	section                                                        []nfp.Section
+	t                                                              time.Time
+	sectionIdx                                                     int
+	date1904, isNumeric, hours, seconds, useMillisecond, useGannen bool
+	number                                                         float64
+	ap, localCode, result, value, valueSectionType                 string
+	switchArgument, currencyString                                 string
+	fracHolder, fracPadding, intHolder, intPadding, expBaseLen     int
+	percent                                                        int
+	useCommaSep, usePointer, usePositive, useScientificNotation    bool
 }
 
 // CultureName is the type of supported language country codes types for apply
@@ -797,6 +797,7 @@ var (
 		"11":             {tags: []string{"ja"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
 		"411":            {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
 		"800411":         {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
+		"JP-X-GANNEN":    {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese},
 		"JP-X-GANNEN,80": {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, useGannen: true},
 		"12":             {tags: []string{"ko"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
 		"412":            {tags: []string{"ko-KR"}, localMonth: localMonthsNameKorean, apFmt: apFmtKorean},
@@ -1344,7 +1345,7 @@ func (nf *numberFormat) dateTimeHandler() string {
 			if changeNumFmtCode, err := nf.currencyLanguageHandler(token); err != nil || changeNumFmtCode {
 				return nf.value
 			}
-			if !supportedLanguageInfo[nf.localCode].useGannen {
+			if !strings.EqualFold(nf.localCode, "JP-X-GANNEN") && !strings.EqualFold(nf.localCode, "JP-X-GANNEN,80") {
 				nf.result += nf.currencyString
 			}
 		}
@@ -1766,6 +1767,18 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 	nf.secondsHandler(token)
 }
 
+// eraYear convert time to the Japanese era years.
+func eraYear(t time.Time) (int, int) {
+	i, year := 0, -1
+	for i = len(japaneseEraYears) - 1; i > 0; i-- {
+		if y := japaneseEraYears[i]; t.After(y) {
+			year = t.Year() - y.Year() + 1
+			break
+		}
+	}
+	return i, year
+}
+
 // yearsHandler will be handling years in the date and times types tokens for a
 // number format expression.
 func (nf *numberFormat) yearsHandler(token nfp.Token) {
@@ -1778,24 +1791,38 @@ func (nf *numberFormat) yearsHandler(token nfp.Token) {
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "G") {
-		for i := len(japaneseEraYears) - 1; i > 0; i-- {
-			if y := japaneseEraYears[i]; nf.t.After(y) {
-				switch len(token.TValue) {
-				case 1:
-					nf.result += japaneseEraSymbols[i]
-				case 2:
-					nf.result += japaneseEraNames[i][:3]
-				default:
-					nf.result += japaneseEraNames[i]
-				}
-				year := nf.t.Year() - y.Year() + 1
-				if year == 1 && len(token.TValue) > 1 && supportedLanguageInfo[nf.localCode].useGannen {
-					nf.result += "\u5143"
-					break
-				}
-				nf.result += strconv.Itoa(year)
-				break
-			}
+		i, year := eraYear(nf.t)
+		if year == -1 {
+			return
+		}
+		nf.useGannen = supportedLanguageInfo[nf.localCode].useGannen
+		switch len(token.TValue) {
+		case 1:
+			nf.useGannen = false
+			nf.result += japaneseEraSymbols[i]
+		case 2:
+			nf.result += japaneseEraNames[i][:3]
+		default:
+			nf.result += japaneseEraNames[i]
+		}
+		return
+	}
+	if strings.Contains(strings.ToUpper(token.TValue), "E") {
+		_, year := eraYear(nf.t)
+		if year == -1 {
+			nf.result += strconv.Itoa(nf.t.Year())
+			return
+		}
+		if year == 1 && nf.useGannen {
+			nf.result += "\u5143"
+			return
+		}
+		if len(token.TValue) == 1 && !nf.useGannen {
+			nf.result += strconv.Itoa(year)
+			return
+		}
+		if len(token.TValue) == 2 {
+			nf.result += fmt.Sprintf("%02d", year)
 		}
 	}
 }
