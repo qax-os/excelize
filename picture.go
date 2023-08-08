@@ -639,11 +639,11 @@ func (f *File) DeletePicture(sheet, cell string) error {
 // embed in spreadsheet by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (pics []Picture, err error) {
 	var (
-		wsDr            *xlsxWsDr
-		ok              bool
-		deWsDr          *decodeWsDr
-		drawRel         *xlsxRelationship
-		deTwoCellAnchor *decodeTwoCellAnchor
+		ok           bool
+		deWsDr       *decodeWsDr
+		deCellAnchor *decodeCellAnchor
+		drawRel      *xlsxRelationship
+		wsDr         *xlsxWsDr
 	)
 
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
@@ -658,25 +658,31 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		return
 	}
 	err = nil
-	for _, anchor := range deWsDr.TwoCellAnchor {
-		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
-			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
+	extractAnchor := func(anchor *decodeCellAnchor) {
+		deCellAnchor = new(decodeCellAnchor)
+		if err := f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.Content + "</decodeCellAnchor>")).
+			Decode(deCellAnchor); err != nil && err != io.EOF {
 			return
 		}
-		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
-			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+		if err = nil; deCellAnchor.From != nil && deCellAnchor.Pic != nil {
+			if deCellAnchor.From.Col == col && deCellAnchor.From.Row == row {
+				drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
 					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 						pic.File = buffer.([]byte)
-						pic.Format.AltText = deTwoCellAnchor.Pic.NvPicPr.CNvPr.Descr
+						pic.Format.AltText = deCellAnchor.Pic.NvPicPr.CNvPr.Descr
 						pics = append(pics, pic)
 					}
 				}
 			}
 		}
+	}
+	for _, anchor := range deWsDr.TwoCellAnchor {
+		extractAnchor(anchor)
+	}
+	for _, anchor := range deWsDr.OneCellAnchor {
+		extractAnchor(anchor)
 	}
 	return
 }

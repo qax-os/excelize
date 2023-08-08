@@ -70,7 +70,7 @@ func TestChartSize(t *testing.T) {
 
 	var (
 		workdir decodeWsDr
-		anchor  decodeTwoCellAnchor
+		anchor  decodeCellAnchor
 	)
 
 	content, ok := newFile.Pkg.Load("xl/drawings/drawing1.xml")
@@ -81,8 +81,8 @@ func TestChartSize(t *testing.T) {
 		t.FailNow()
 	}
 
-	err = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+
-		workdir.TwoCellAnchor[0].Content+"</decodeTwoCellAnchor>"), &anchor)
+	err = xml.Unmarshal([]byte("<decodeCellAnchor>"+
+		workdir.TwoCellAnchor[0].Content+"</decodeCellAnchor>"), &anchor)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}

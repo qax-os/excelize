@@ -1394,15 +1394,15 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) error
 	var (
 		err             error
 		wsDr            *xlsxWsDr
-		deTwoCellAnchor *decodeTwoCellAnchor
+		deTwoCellAnchor *decodeCellAnchor
 	)
 	xdrCellAnchorFuncs := map[string]func(anchor *xdrCellAnchor) bool{
 		"Chart": func(anchor *xdrCellAnchor) bool { return anchor.Pic == nil },
 		"Pic":   func(anchor *xdrCellAnchor) bool { return anchor.Pic != nil },
 	}
-	decodeTwoCellAnchorFuncs := map[string]func(anchor *decodeTwoCellAnchor) bool{
-		"Chart": func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic == nil },
-		"Pic":   func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic != nil },
+	decodeCellAnchorFuncs := map[string]func(anchor *decodeCellAnchor) bool{
+		"Chart": func(anchor *decodeCellAnchor) bool { return anchor.Pic == nil },
+		"Pic":   func(anchor *decodeCellAnchor) bool { return anchor.Pic != nil },
 	}
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return err
@@ -1416,12 +1416,12 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) error
 		}
 	}
 	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
+		deTwoCellAnchor = new(decodeCellAnchor)
+		if err = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
 			return err
 		}
-		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {
+		if err = nil; deTwoCellAnchor.From != nil && decodeCellAnchorFuncs[drawingType](deTwoCellAnchor) {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
 				idx--
