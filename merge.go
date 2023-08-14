@@ -289,5 +289,9 @@ func (m *MergeCell) GetStartAxis() string {
 // GetEndAxis returns the bottom right cell reference of merged range, for
 // example: "D4".
 func (m *MergeCell) GetEndAxis() string {
-	return strings.Split((*m)[0], ":")[1]
+	coordinates := strings.Split((*m)[0], ":")
+	if len(coordinates) == 2 {
+		return coordinates[1]
+	}
+	return coordinates[0]
 }
