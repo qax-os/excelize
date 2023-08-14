@@ -300,8 +300,9 @@ type xlsxNumFmts struct {
 // format properties which indicate how to format and render the numeric value
 // of a cell.
 type xlsxNumFmt struct {
-	NumFmtID   int    `xml:"numFmtId,attr"`
-	FormatCode string `xml:"formatCode,attr,omitempty"`
+	NumFmtID     int    `xml:"numFmtId,attr"`
+	FormatCode   string `xml:"formatCode,attr,omitempty"`
+	FormatCode16 string `xml:"http://schemas.microsoft.com/office/spreadsheetml/2015/02/main formatCode16,attr,omitempty"`
 }
 
 // xlsxStyleColors directly maps the colors' element. Color information

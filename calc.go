@@ -108,13 +108,13 @@ var (
 		"/":  4,
 		"+":  3,
 		"-":  3,
-		"=":  2,
-		"<>": 2,
-		"<":  2,
-		"<=": 2,
-		">":  2,
-		">=": 2,
-		"&":  1,
+		"&":  2,
+		"=":  1,
+		"<>": 1,
+		"<":  1,
+		"<=": 1,
+		">":  1,
+		">=": 1,
 	}
 	month2num = map[string]int{
 		"january":   1,
@@ -1053,16 +1053,16 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 		if nextToken.TType == efp.TokenTypeOperatorInfix || (opftStack.Len() > 1 && opfdStack.Len() > 0) {
 			// mathematics calculate in formula function
 			opfdStack.Push(arg)
-		} else {
-			argsStack.Peek().(*list.List).PushBack(arg)
+			return newEmptyFormulaArg()
 		}
-	} else {
-		val := arg.Value()
-		if arg.Type == ArgMatrix && len(arg.Matrix) > 0 && len(arg.Matrix[0]) > 0 {
-			val = arg.Matrix[0][0].Value()
-		}
-		opdStack.Push(newStringFormulaArg(val))
+		argsStack.Peek().(*list.List).PushBack(arg)
+		return newEmptyFormulaArg()
 	}
+	if arg.Type == ArgMatrix && len(arg.Matrix) > 0 && len(arg.Matrix[0]) > 0 {
+		opdStack.Push(arg.Matrix[0][0])
+		return newEmptyFormulaArg()
+	}
+	opdStack.Push(arg)
 	return newEmptyFormulaArg()
 }
 

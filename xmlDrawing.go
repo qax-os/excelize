@@ -126,6 +126,7 @@ const (
 	MaxColumnWidth       = 255
 	MaxFieldLength       = 255
 	MaxFilePathLength    = 207
+	MaxFormControlValue  = 30000
 	MaxFontFamilyLength  = 31
 	MaxFontSize          = 409
 	MaxRowHeight         = 409
@@ -217,6 +218,9 @@ var supportedDrawingUnderlineTypes = []string{
 	"none", "words", "sng", "dbl", "heavy", "dotted", "dottedHeavy", "dash", "dashHeavy", "dashLong", "dashLongHeavy", "dotDash", "dotDashHeavy", "dotDotDash", "dotDotDashHeavy", "wavy", "wavyHeavy",
 	"wavyDbl",
 }
+
+// supportedPositioning defined supported positioning types.
+var supportedPositioning = []string{"absolute", "oneCell", "twoCell"}
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional

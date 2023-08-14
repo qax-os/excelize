@@ -570,7 +570,7 @@ type Chart struct {
 	Format       GraphicOptions
 	Dimension    ChartDimension
 	Legend       ChartLegend
-	Title        ChartTitle
+	Title        []RichTextRun
 	VaryColors   *bool
 	XAxis        ChartAxis
 	YAxis        ChartAxis
@@ -607,9 +607,4 @@ type ChartSeries struct {
 	Fill       Fill
 	Line       ChartLine
 	Marker     ChartMarker
-}
-
-// ChartTitle directly maps the format settings of the chart title.
-type ChartTitle struct {
-	Name string
 }

@@ -80,6 +80,13 @@ func TestMergeCell(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{nil, nil}}
 	assert.NoError(t, f.MergeCell("Sheet1", "A2", "B3"))
+	// Test getting merged cells with the same start and end axis
+	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A1"}}}
+	mergedCells, err := f.GetMergeCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "A1", mergedCells[0].GetStartAxis())
+	assert.Equal(t, "A1", mergedCells[0].GetEndAxis())
+	assert.Empty(t, mergedCells[0].GetCellValue())
 }
 
 func TestMergeCellOverlap(t *testing.T) {

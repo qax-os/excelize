@@ -1368,15 +1368,24 @@ func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, er
 	if fmtCode, ok := f.getBuiltInNumFmtCode(numFmtID); ok {
 		return f.applyBuiltInNumFmt(c, fmtCode, numFmtID, date1904, cellType), err
 	}
+	return f.applyNumFmt(c, styleSheet, numFmtID, date1904, cellType), err
+}
+
+// applyNumFmt provides a function to returns formatted cell value with custom
+// number format code.
+func (f *File) applyNumFmt(c *xlsxC, styleSheet *xlsxStyleSheet, numFmtID int, date1904 bool, cellType CellType) string {
 	if styleSheet.NumFmts == nil {
-		return c.V, err
+		return c.V
 	}
 	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
-			return format(c.V, xlsxFmt.FormatCode, date1904, cellType, f.options), err
+			if xlsxFmt.FormatCode16 != "" {
+				return format(c.V, xlsxFmt.FormatCode16, date1904, cellType, f.options)
+			}
+			return format(c.V, xlsxFmt.FormatCode, date1904, cellType, f.options)
 		}
 	}
-	return c.V, err
+	return c.V
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in

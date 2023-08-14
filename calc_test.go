@@ -35,37 +35,42 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"=2^3":            "8",
-		"=1=1":            "TRUE",
-		"=1=2":            "FALSE",
-		"=1<2":            "TRUE",
-		"=3<2":            "FALSE",
-		"=1<\"-1\"":       "TRUE",
-		"=\"-1\"<1":       "FALSE",
-		"=\"-1\"<\"-2\"":  "TRUE",
-		"=2<=3":           "TRUE",
-		"=2<=1":           "FALSE",
-		"=1<=\"-1\"":      "TRUE",
-		"=\"-1\"<=1":      "FALSE",
-		"=\"-1\"<=\"-2\"": "TRUE",
-		"=2>1":            "TRUE",
-		"=2>3":            "FALSE",
-		"=1>\"-1\"":       "FALSE",
-		"=\"-1\">-1":      "TRUE",
-		"=\"-1\">\"-2\"":  "FALSE",
-		"=2>=1":           "TRUE",
-		"=2>=3":           "FALSE",
-		"=1>=\"-1\"":      "FALSE",
-		"=\"-1\">=-1":     "TRUE",
-		"=\"-1\">=\"-2\"": "FALSE",
-		"=1&2":            "12",
-		"=15%":            "0.15",
-		"=1+20%":          "1.2",
-		"={1}+2":          "3",
-		"=1+{2}":          "3",
-		"={1}+{2}":        "3",
-		"=\"A\"=\"A\"":    "TRUE",
-		"=\"A\"<>\"A\"":   "FALSE",
+		"=2^3":                   "8",
+		"=1=1":                   "TRUE",
+		"=1=2":                   "FALSE",
+		"=1<2":                   "TRUE",
+		"=3<2":                   "FALSE",
+		"=1<\"-1\"":              "TRUE",
+		"=\"-1\"<1":              "FALSE",
+		"=\"-1\"<\"-2\"":         "TRUE",
+		"=2<=3":                  "TRUE",
+		"=2<=1":                  "FALSE",
+		"=1<=\"-1\"":             "TRUE",
+		"=\"-1\"<=1":             "FALSE",
+		"=\"-1\"<=\"-2\"":        "TRUE",
+		"=2>1":                   "TRUE",
+		"=2>3":                   "FALSE",
+		"=1>\"-1\"":              "FALSE",
+		"=\"-1\">-1":             "TRUE",
+		"=\"-1\">\"-2\"":         "FALSE",
+		"=2>=1":                  "TRUE",
+		"=2>=3":                  "FALSE",
+		"=1>=\"-1\"":             "FALSE",
+		"=\"-1\">=-1":            "TRUE",
+		"=\"-1\">=\"-2\"":        "FALSE",
+		"=1&2":                   "12",
+		"=15%":                   "0.15",
+		"=1+20%":                 "1.2",
+		"={1}+2":                 "3",
+		"=1+{2}":                 "3",
+		"={1}+{2}":               "3",
+		"=\"A\"=\"A\"":           "TRUE",
+		"=\"A\"<>\"A\"":          "FALSE",
+		"=TRUE()&FALSE()":        "TRUEFALSE",
+		"=TRUE()&FALSE()<>FALSE": "TRUE",
+		"=TRUE()&\"1\"":          "TRUE1",
+		"=TRUE<>FALSE()":         "TRUE",
+		"=TRUE<>1&\"x\"":         "TRUE",
 		// Engineering Functions
 		// BESSELI
 		"=BESSELI(4.5,1)":    "15.3892227537359",
@@ -5917,6 +5922,23 @@ func TestCalcCellResolver(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "A3")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+	// Test calculates formula that contains a nested argument function which returns a numeric result
+	f = NewFile()
+	for _, cell := range []string{"A1", "B2", "B3", "B4"} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, "ABC"))
+	}
+	for cell, formula := range map[string]string{
+		"A2": "IF(B2<>\"\",MAX(A1:A1)+1,\"\")",
+		"A3": "IF(B3<>\"\",MAX(A1:A2)+1,\"\")",
+		"A4": "IF(B4<>\"\",MAX(A1:A3)+1,\"\")",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, formula))
+	}
+	for cell, expected := range map[string]string{"A2": "1", "A3": "2", "A4": "3"} {
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
 	}
 }
 

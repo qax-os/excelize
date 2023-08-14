@@ -110,41 +110,46 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 //	    }
 //	}
 //
-// The optional parameter "AutoFit" specifies if you make image size auto-fits the
-// cell, the default value of that is 'false'.
+// The optional parameter "AltText" is used to add alternative text to a graph
+// object.
 //
-// The optional parameter "Hyperlink" specifies the hyperlink of the image.
+// The optional parameter "PrintObject" indicates whether the graph object is
+// printed when the worksheet is printed, the default value of that is 'true'.
+//
+// The optional parameter "Locked" indicates whether lock the graph object.
+// Locking an object has no effect unless the sheet is protected.
+//
+// The optional parameter "LockAspectRatio" indicates whether lock aspect ratio
+// for the graph object, the default value of that is 'false'.
+//
+// The optional parameter "AutoFit" specifies if you make graph object size
+// auto-fits the cell, the default value of that is 'false'.
+//
+// The optional parameter "OffsetX" specifies the horizontal offset of the graph
+// object with the cell, the default value of that is 0.
+//
+// The optional parameter "OffsetY" specifies the vertical offset of the graph
+// object with the cell, the default value of that is 0.
+//
+// The optional parameter "ScaleX" specifies the horizontal scale of graph
+// object, the default value of that is 1.0 which presents 100%.
+//
+// The optional parameter "ScaleY" specifies the vertical scale of graph object,
+// the default value of that is 1.0 which presents 100%.
+//
+// The optional parameter "Hyperlink" specifies the hyperlink of the graph
+// object.
 //
 // The optional parameter "HyperlinkType" defines two types of
 // hyperlink "External" for website or "Location" for moving to one of the
 // cells in this workbook. When the "HyperlinkType" is "Location",
 // coordinates need to start with "#".
 //
-// The optional parameter "Positioning" defines two types of the position of an
-// image in an Excel spreadsheet, "oneCell" (Move but don't size with
-// cells) or "absolute" (Don't move or size with cells). If you don't set this
-// parameter, the default positioning is move and size with cells.
-//
-// The optional parameter "PrintObject" indicates whether the image is printed
-// when the worksheet is printed, the default value of that is 'true'.
-//
-// The optional parameter "LockAspectRatio" indicates whether lock aspect
-// ratio for the image, the default value of that is 'false'.
-//
-// The optional parameter "Locked" indicates whether lock the image. Locking
-// an object has no effect unless the sheet is protected.
-//
-// The optional parameter "OffsetX" specifies the horizontal offset of the
-// image with the cell, the default value of that is 0.
-//
-// The optional parameter "ScaleX" specifies the horizontal scale of images,
-// the default value of that is 1.0 which presents 100%.
-//
-// The optional parameter "OffsetY" specifies the vertical offset of the
-// image with the cell, the default value of that is 0.
-//
-// The optional parameter "ScaleY" specifies the vertical scale of images,
-// the default value of that is 1.0 which presents 100%.
+// The optional parameter "Positioning" defines 3 types of the position of a
+// graph object in a spreadsheet: "oneCell" (Move but don't size with
+// cells), "twoCell" (Move and size with cells), and "absolute" (Don't move or
+// size with cells). If you don't set this parameter, the default positioning
+// is to move and size with cells.
 func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error {
 	var err error
 	// Check picture exists first.
@@ -211,7 +216,7 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	if err != nil {
 		return err
 	}
-	// Read sheet data.
+	// Read sheet data
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -303,23 +308,20 @@ func (f *File) addSheetPicture(sheet string, rID int) error {
 // countDrawings provides a function to get drawing files count storage in the
 // folder xl/drawings.
 func (f *File) countDrawings() int {
-	var c1, c2 int
+	drawings := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/drawings/drawing") {
-			c1++
+			drawings[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	f.Drawings.Range(func(rel, value interface{}) bool {
 		if strings.Contains(rel.(string), "xl/drawings/drawing") {
-			c2++
+			drawings[rel.(string)] = struct{}{}
 		}
 		return true
 	})
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(drawings)
 }
 
 // addDrawingPicture provides a function to add picture by given sheet,
@@ -329,6 +331,9 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return err
+	}
+	if opts.Positioning != "" && inStrSlice(supportedPositioning, opts.Positioning, true) == -1 {
+		return ErrParameterInvalid
 	}
 	width, height := img.Width, img.Height
 	if opts.AutoFit {
@@ -634,11 +639,11 @@ func (f *File) DeletePicture(sheet, cell string) error {
 // embed in spreadsheet by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (pics []Picture, err error) {
 	var (
-		wsDr            *xlsxWsDr
-		ok              bool
-		deWsDr          *decodeWsDr
-		drawRel         *xlsxRelationship
-		deTwoCellAnchor *decodeTwoCellAnchor
+		ok           bool
+		deWsDr       *decodeWsDr
+		deCellAnchor *decodeCellAnchor
+		drawRel      *xlsxRelationship
+		wsDr         *xlsxWsDr
 	)
 
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
@@ -653,25 +658,31 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		return
 	}
 	err = nil
-	for _, anchor := range deWsDr.TwoCellAnchor {
-		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
-			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
+	extractAnchor := func(anchor *decodeCellAnchor) {
+		deCellAnchor = new(decodeCellAnchor)
+		if err := f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.Content + "</decodeCellAnchor>")).
+			Decode(deCellAnchor); err != nil && err != io.EOF {
 			return
 		}
-		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
-			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+		if err = nil; deCellAnchor.From != nil && deCellAnchor.Pic != nil {
+			if deCellAnchor.From.Col == col && deCellAnchor.From.Row == row {
+				drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
 					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 						pic.File = buffer.([]byte)
-						pic.Format.AltText = deTwoCellAnchor.Pic.NvPicPr.CNvPr.Descr
+						pic.Format.AltText = deCellAnchor.Pic.NvPicPr.CNvPr.Descr
 						pics = append(pics, pic)
 					}
 				}
 			}
 		}
+	}
+	for _, anchor := range deWsDr.TwoCellAnchor {
+		extractAnchor(anchor)
+	}
+	for _, anchor := range deWsDr.OneCellAnchor {
+		extractAnchor(anchor)
 	}
 	return
 }
