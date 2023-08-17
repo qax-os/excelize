@@ -1032,6 +1032,7 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	return setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 }
 
+// getXfIDFuncs provides a function to get xfID by given style.
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
 		if style.CustomNumFmt == nil && numFmtID == -1 {
@@ -1121,7 +1122,10 @@ func (f *File) NewConditionalStyle(style *Style) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	dxf := dxf{
+	if fs.DecimalPlaces != nil && (*fs.DecimalPlaces < 0 || *fs.DecimalPlaces > 30) {
+		fs.DecimalPlaces = intPtr(2)
+	}
+	dxf := xlsxDxf{
 		Fill: newFills(fs, false),
 	}
 	if fs.Alignment != nil {
@@ -1133,15 +1137,53 @@ func (f *File) NewConditionalStyle(style *Style) (int, error) {
 	if fs.Font != nil {
 		dxf.Font, _ = f.newFont(fs)
 	}
-	dxfStr, _ := xml.Marshal(dxf)
+	if fs.Protection != nil {
+		dxf.Protection = newProtection(fs)
+	}
+	dxf.NumFmt = newDxfNumFmt(s, style, &dxf)
 	if s.Dxfs == nil {
 		s.Dxfs = &xlsxDxfs{}
 	}
 	s.Dxfs.Count++
-	s.Dxfs.Dxfs = append(s.Dxfs.Dxfs, &xlsxDxf{
-		Dxf: string(dxfStr[5 : len(dxfStr)-6]),
-	})
+	s.Dxfs.Dxfs = append(s.Dxfs.Dxfs, &dxf)
 	return s.Dxfs.Count - 1, nil
+}
+
+// newDxfNumFmt provides a function to create number format for conditional
+// format styles.
+func newDxfNumFmt(styleSheet *xlsxStyleSheet, style *Style, dxf *xlsxDxf) *xlsxNumFmt {
+	dp, numFmtID := "0", 164 // Default custom number format code from 164.
+	if style.DecimalPlaces != nil && *style.DecimalPlaces > 0 {
+		dp += "."
+		for i := 0; i < *style.DecimalPlaces; i++ {
+			dp += "0"
+		}
+	}
+	if style.CustomNumFmt != nil {
+		if styleSheet.Dxfs != nil {
+			for _, d := range styleSheet.Dxfs.Dxfs {
+				if d != nil && d.NumFmt != nil && d.NumFmt.NumFmtID > numFmtID {
+					numFmtID = d.NumFmt.NumFmtID
+				}
+			}
+		}
+		return &xlsxNumFmt{NumFmtID: numFmtID + 1, FormatCode: *style.CustomNumFmt}
+	}
+	numFmtCode, ok := builtInNumFmt[style.NumFmt]
+	if style.NumFmt > 0 && ok {
+		return &xlsxNumFmt{NumFmtID: style.NumFmt, FormatCode: numFmtCode}
+	}
+	fc, currency := currencyNumFmt[style.NumFmt]
+	if !currency {
+		return nil
+	}
+	if style.DecimalPlaces != nil {
+		fc = strings.ReplaceAll(fc, "0.00", dp)
+	}
+	if style.NegRed {
+		fc = fc + ";[Red]" + fc
+	}
+	return &xlsxNumFmt{NumFmtID: numFmtID, FormatCode: fc}
 }
 
 // GetDefaultFont provides the default font name currently set in the

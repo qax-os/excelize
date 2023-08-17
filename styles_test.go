@@ -355,10 +355,26 @@ func TestNewStyle(t *testing.T) {
 
 func TestNewConditionalStyle(t *testing.T) {
 	f := NewFile()
+	_, err := f.NewConditionalStyle(&Style{Protection: &Protection{Hidden: true, Locked: true}})
+	assert.NoError(t, err)
+	_, err = f.NewConditionalStyle(&Style{DecimalPlaces: intPtr(4), NumFmt: 165, NegRed: true})
+	assert.NoError(t, err)
+	_, err = f.NewConditionalStyle(&Style{DecimalPlaces: intPtr(-1)})
+	assert.NoError(t, err)
+	_, err = f.NewConditionalStyle(&Style{NumFmt: 1})
+	assert.NoError(t, err)
+	_, err = f.NewConditionalStyle(&Style{NumFmt: 27})
+	assert.NoError(t, err)
+	numFmt := "general"
+	_, err = f.NewConditionalStyle(&Style{CustomNumFmt: &numFmt})
+	assert.NoError(t, err)
+	numFmt1 := "0.00"
+	_, err = f.NewConditionalStyle(&Style{CustomNumFmt: &numFmt1})
+	assert.NoError(t, err)
 	// Test create conditional style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	_, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+	_, err = f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
