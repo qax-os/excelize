@@ -74,6 +74,27 @@ func TestAddTable(t *testing.T) {
 	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
 }
 
+func TestGetTables(t *testing.T) {
+	f := NewFile()
+	// Test get tables in none table worksheet
+	tables, err := f.GetTables("Sheet1")
+	assert.Len(t, tables, 0)
+	assert.NoError(t, err)
+	// Test get tables in not exist worksheet
+	_, err = f.GetTables("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test adjust table with unsupported charset
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "B26:A21"}))
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	_, err = f.GetTables("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test adjust table with no exist table parts
+	f.Pkg.Delete("xl/tables/table1.xml")
+	tables, err = f.GetTables("Sheet1")
+	assert.Len(t, tables, 0)
+	assert.NoError(t, err)
+}
+
 func TestSetTableHeader(t *testing.T) {
 	f := NewFile()
 	_, err := f.setTableHeader("Sheet1", true, 1, 0, 1)
