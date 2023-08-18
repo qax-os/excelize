@@ -251,11 +251,6 @@ type xlsxDxfs struct {
 // xlsxDxf directly maps the dxf element. A single dxf record, expressing
 // incremental formatting to be applied.
 type xlsxDxf struct {
-	Dxf string `xml:",innerxml"`
-}
-
-// dxf directly maps the dxf element.
-type dxf struct {
 	Font       *xlsxFont       `xml:"font"`
 	NumFmt     *xlsxNumFmt     `xml:"numFmt"`
 	Fill       *xlsxFill       `xml:"fill"`
