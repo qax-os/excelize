@@ -1032,6 +1032,72 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	return setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 }
 
+var (
+	// styleBorders list all types of the cell border style.
+	styleBorders = []string{
+		"none",
+		"thin",
+		"medium",
+		"dashed",
+		"dotted",
+		"thick",
+		"double",
+		"hair",
+		"mediumDashed",
+		"dashDot",
+		"mediumDashDot",
+		"dashDotDot",
+		"mediumDashDotDot",
+		"slantDashDot",
+	}
+	// styleBorderTypes list all types of the cell border.
+	styleBorderTypes = []string{
+		"left", "right", "top", "bottom", "diagonalUp", "diagonalDown",
+	}
+	// styleFillPatterns list all types of the cell fill style.
+	styleFillPatterns = []string{
+		"none",
+		"solid",
+		"mediumGray",
+		"darkGray",
+		"lightGray",
+		"darkHorizontal",
+		"darkVertical",
+		"darkDown",
+		"darkUp",
+		"darkGrid",
+		"darkTrellis",
+		"lightHorizontal",
+		"lightVertical",
+		"lightDown",
+		"lightUp",
+		"lightGrid",
+		"lightTrellis",
+		"gray125",
+		"gray0625",
+	}
+	// styleFillVariants list all preset variants of the fill style.
+	styleFillVariants = []xlsxGradientFill{
+		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 270, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 180, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 255, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 315, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path"},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Left: 1, Right: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Top: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Left: 1, Right: 1, Top: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 0.5, Left: 0.5, Right: 0.5, Top: 0.5},
+	}
+)
+
 // getThemeColor provides a function to convert theme color or index color to
 // RGB color.
 func (f *File) getThemeColor(clr *xlsxColor) string {
@@ -1077,20 +1143,67 @@ func (f *File) extractBorders(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 		xf.BorderID != nil && s.Borders != nil &&
 		*xf.BorderID < len(s.Borders.Border) {
 		if bdr := s.Borders.Border[*xf.BorderID]; bdr != nil {
+
 			var borders []Border
 			extractBorder := func(lineType string, line xlsxLine) {
 				if line.Style != "" {
 					borders = append(borders, Border{
 						Type:  lineType,
 						Color: f.getThemeColor(line.Color),
+						Style: inStrSlice(styleBorders, line.Style, false),
 					})
 				}
 			}
-			_ = extractBorder
+			for i, line := range []xlsxLine{
+				bdr.Left, bdr.Right, bdr.Top, bdr.Bottom, bdr.Diagonal, bdr.Diagonal,
+			} {
+				if i < 4 {
+					extractBorder(styleBorderTypes[i], line)
+				}
+				if i == 4 && bdr.DiagonalUp {
+					extractBorder(styleBorderTypes[i], line)
+				}
+				if i == 5 && bdr.DiagonalDown {
+					extractBorder(styleBorderTypes[i], line)
+				}
+			}
 			style.Border = borders
 		}
 	}
- }
+}
+
+// extractFills provides a function to extract fill styles settings by
+// given fill styles definition.
+func (f *File) extractFills(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if fl := s.Fills.Fill[*xf.FillID]; fl != nil {
+		var fill Fill
+		if fl.GradientFill != nil {
+			fill.Type = "gradient"
+			for shading, variants := range styleFillVariants {
+				if fl.GradientFill.Bottom == variants.Bottom &&
+					fl.GradientFill.Degree == variants.Degree &&
+					fl.GradientFill.Left == variants.Left &&
+					fl.GradientFill.Right == variants.Right &&
+					fl.GradientFill.Top == variants.Top &&
+					fl.GradientFill.Type == variants.Type {
+					fill.Shading = shading
+					break
+				}
+			}
+			for _, stop := range fl.GradientFill.Stop {
+				fill.Color = append(fill.Color, f.getThemeColor(&stop.Color))
+			}
+		}
+		if fl.PatternFill != nil {
+			fill.Type = "pattern"
+			fill.Pattern = inStrSlice(styleFillPatterns, fl.PatternFill.PatternType, false)
+			if fl.PatternFill.FgColor != nil {
+				fill.Color = []string{f.getThemeColor(fl.PatternFill.FgColor)}
+			}
+		}
+		style.Fill = fill
+	}
+}
 
 // extractFont provides a function to extract font styles settings by given
 // font styles definition.
