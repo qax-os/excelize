@@ -169,6 +169,14 @@ func TestGetPicture(t *testing.T) {
 	assert.Len(t, pics, 0)
 	assert.NoError(t, f.Close())
 
+	// Try to get picture with one cell anchor
+	f, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/drawing2.xml", []byte(`<xdr:wsDr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><xdr:oneCellAnchor><xdr:from><xdr:col>10</xdr:col><xdr:row>15</xdr:row></xdr:from><xdr:to><xdr:col>13</xdr:col><xdr:row>22</xdr:row></xdr:to><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2"></xdr:cNvPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"></a:blip></xdr:blipFill></xdr:pic></xdr:oneCellAnchor></xdr:wsDr>`))
+	pics, err = f.GetPictures("Sheet2", "K16")
+	assert.NoError(t, err)
+	assert.Len(t, pics, 1)
+
 	// Test get picture from none drawing worksheet
 	f = NewFile()
 	pics, err = f.GetPictures("Sheet1", "F22")

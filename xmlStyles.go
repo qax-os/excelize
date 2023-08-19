@@ -251,11 +251,6 @@ type xlsxDxfs struct {
 // xlsxDxf directly maps the dxf element. A single dxf record, expressing
 // incremental formatting to be applied.
 type xlsxDxf struct {
-	Dxf string `xml:",innerxml"`
-}
-
-// dxf directly maps the dxf element.
-type dxf struct {
 	Font       *xlsxFont       `xml:"font"`
 	NumFmt     *xlsxNumFmt     `xml:"numFmt"`
 	Fill       *xlsxFill       `xml:"fill"`
@@ -300,8 +295,9 @@ type xlsxNumFmts struct {
 // format properties which indicate how to format and render the numeric value
 // of a cell.
 type xlsxNumFmt struct {
-	NumFmtID   int    `xml:"numFmtId,attr"`
-	FormatCode string `xml:"formatCode,attr,omitempty"`
+	NumFmtID     int    `xml:"numFmtId,attr"`
+	FormatCode   string `xml:"formatCode,attr,omitempty"`
+	FormatCode16 string `xml:"http://schemas.microsoft.com/office/spreadsheetml/2015/02/main formatCode16,attr,omitempty"`
 }
 
 // xlsxIndexedColors directly maps the single ARGB entry for the corresponding

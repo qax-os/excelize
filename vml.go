@@ -229,22 +229,19 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 // countComments provides a function to get comments files count storage in
 // the folder xl.
 func (f *File) countComments() int {
-	c1, c2 := 0, 0
+	comments := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/comments") {
-			c1++
+			comments[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	for rel := range f.Comments {
 		if strings.Contains(rel, "xl/comments") {
-			c2++
+			comments[rel] = struct{}{}
 		}
 	}
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(comments)
 }
 
 // commentsReader provides a function to get the pointer to the structure
@@ -281,12 +278,12 @@ func (f *File) commentsWriter() {
 // XLSM or XLTM. Scroll value must be between 0 and 30000.
 //
 // Example 1, add button form control with macro, rich-text, custom button size,
-// print property on Sheet1!A1, and let the button do not move or size with
+// print property on Sheet1!A2, and let the button do not move or size with
 // cells:
 //
 //	enable := true
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:   "A1",
+//	    Cell:   "A2",
 //	    Type:   excelize.FormControlButton,
 //	    Macro:  "Button1_Click",
 //	    Width:  140,
@@ -321,12 +318,14 @@ func (f *File) commentsWriter() {
 //	    Checked: true,
 //	})
 //
-// Example 3, add spin button form control on Sheet1!A2 to increase or decrease
+// Example 3, add spin button form control on Sheet1!B1 to increase or decrease
 // the value of Sheet1!A1:
 //
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:       "A2",
+//	    Cell:       "B1",
 //	    Type:       excelize.FormControlSpinButton,
+//	    Width:      15,
+//	    Height:     40,
 //	    CurrentVal: 7,
 //	    MinVal:     5,
 //	    MaxVal:     10,
@@ -338,14 +337,17 @@ func (f *File) commentsWriter() {
 // the value of Sheet1!A1 by click the scroll arrows or drag the scroll box:
 //
 //	err := f.AddFormControl("Sheet1", excelize.FormControl{
-//	    Cell:       "A2",
-//	    Type:       excelize.FormControlScrollBar,
-//	    CurrentVal: 50,
-//	    MinVal:     10,
-//	    MaxVal:     100,
-//	    IncChange:  1,
-//	    PageChange: 1,
-//	    CellLink:   "A1",
+//	    Cell:         "A2",
+//	    Type:         excelize.FormControlScrollBar,
+//	    Width:        140,
+//	    Height:       20,
+//	    CurrentVal:   50,
+//	    MinVal:       10,
+//	    MaxVal:       100,
+//	    IncChange:    1,
+//	    PageChange:   1,
+//	    CellLink:     "A1",
+//	    Horizontally: true,
 //	})
 func (f *File) AddFormControl(sheet string, opts FormControl) error {
 	return f.addVMLObject(vmlOptions{
@@ -355,9 +357,9 @@ func (f *File) AddFormControl(sheet string, opts FormControl) error {
 
 // DeleteFormControl provides the method to delete form control in a worksheet
 // by given worksheet name and cell reference. For example, delete the form
-// control in Sheet1!$A$30:
+// control in Sheet1!$A$1:
 //
-//	err := f.DeleteFormControl("Sheet1", "A30")
+//	err := f.DeleteFormControl("Sheet1", "A1")
 func (f *File) DeleteFormControl(sheet, cell string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -388,7 +390,7 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 				VPath:  &vPath{GradientShapeOK: "t", ConnectType: "rect"},
 			},
 		}
-		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
 			return err
@@ -418,9 +420,15 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 	for i, sp := range vml.Shape {
 		var shapeVal decodeShapeVal
 		if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", sp.Val)), &shapeVal); err == nil &&
-			shapeVal.ClientData.ObjectType != "Note" && shapeVal.ClientData.Column == col-1 && shapeVal.ClientData.Row == row-1 {
-			vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
-			break
+			shapeVal.ClientData.ObjectType != "Note" && shapeVal.ClientData.Anchor != "" {
+			leftCol, topRow, err := extractAnchorCell(shapeVal.ClientData.Anchor)
+			if err != nil {
+				return err
+			}
+			if leftCol == col-1 && topRow == row-1 {
+				vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
+				break
+			}
 		}
 	}
 	f.VMLDrawing[drawingVML] = vml
@@ -430,22 +438,19 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 // countVMLDrawing provides a function to get VML drawing files count storage
 // in the folder xl/drawings.
 func (f *File) countVMLDrawing() int {
-	c1, c2 := 0, 0
+	drawings := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/drawings/vmlDrawing") {
-			c1++
+			drawings[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	for rel := range f.VMLDrawing {
 		if strings.Contains(rel, "xl/drawings/vmlDrawing") {
-			c2++
+			drawings[rel] = struct{}{}
 		}
 	}
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(drawings)
 }
 
 // decodeVMLDrawingReader provides a function to get the pointer to the
@@ -455,7 +460,7 @@ func (f *File) decodeVMLDrawingReader(path string) (*decodeVmlDrawing, error) {
 		c, ok := f.Pkg.Load(path)
 		if ok && c != nil {
 			f.DecodeVMLDrawing[path] = new(decodeVmlDrawing)
-			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(c.([]byte)))).
+			if err := f.xmlNewDecoder(bytes.NewReader(bytesReplace(namespaceStrictToTransitional(c.([]byte)), []byte("<br>\r\n"), []byte("<br></br>\r\n"), -1))).
 				Decode(f.DecodeVMLDrawing[path]); err != nil && err != io.EOF {
 				return nil, err
 			}
@@ -478,7 +483,7 @@ func (f *File) vmlDrawingWriter() {
 // addVMLObject provides a function to create VML drawing parts and
 // relationships for comments and form controls.
 func (f *File) addVMLObject(opts vmlOptions) error {
-	// Read sheet data.
+	// Read sheet data
 	ws, err := f.workSheetReader(opts.sheet)
 	if err != nil {
 		return err
@@ -574,6 +579,9 @@ func formCtrlText(opts *vmlOptions) []vmlFont {
 			}
 			if run.Font.Underline == "single" {
 				fnt.Content = "<u>" + fnt.Content + "</u>"
+			}
+			if run.Font.Underline == "double" {
+				fnt.Content = "<u class=\"font1\">" + fnt.Content + "</u>"
 			}
 			if run.Font.Italic {
 				fnt.Content = "<i>" + fnt.Content + "</i>"
@@ -766,8 +774,8 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 			ObjectType:  preset.objectType,
 			Anchor:      anchor,
 			AutoFill:    preset.autoFill,
-			Row:         row - 1,
-			Column:      col - 1,
+			Row:         intPtr(row - 1),
+			Column:      intPtr(col - 1),
 			TextHAlign:  preset.textHAlign,
 			TextVAlign:  preset.textVAlign,
 			NoThreeD:    preset.noThreeD,
@@ -837,7 +845,7 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 				VPath:     &vPath{GradientShapeOK: "t", ConnectType: "rect"},
 			},
 		}
-		// load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
 			return err
@@ -883,4 +891,173 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 	vml.Shape = append(vml.Shape, shape)
 	f.VMLDrawing[drawingVML] = vml
 	return err
+}
+
+// GetFormControls retrieves all form controls in a worksheet by a given
+// worksheet name. Note that, this function does not support getting the width
+// and height of the form controls currently.
+func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
+	var formControls []FormControl
+	// Read sheet data
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return formControls, err
+	}
+	if ws.LegacyDrawing == nil {
+		return formControls, err
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	drawingVML := strings.ReplaceAll(target, "..", "xl")
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return formControls, err
+		}
+		for _, sp := range d.Shape {
+			if sp.Type != "#_x0000_t201" {
+				continue
+			}
+			formControl, err := extractFormControl(sp.Val)
+			if err != nil {
+				return formControls, err
+			}
+			if formControl.Type == FormControlNote || formControl.Cell == "" {
+				continue
+			}
+			formControls = append(formControls, formControl)
+		}
+		return formControls, err
+	}
+	for _, sp := range vml.Shape {
+		if sp.Type != "#_x0000_t201" {
+			continue
+		}
+		formControl, err := extractFormControl(sp.Val)
+		if err != nil {
+			return formControls, err
+		}
+		if formControl.Type == FormControlNote || formControl.Cell == "" {
+			continue
+		}
+		formControls = append(formControls, formControl)
+	}
+	return formControls, err
+}
+
+// extractFormControl provides a function to extract form controls for a
+// worksheets by given client data.
+func extractFormControl(clientData string) (FormControl, error) {
+	var (
+		err         error
+		formControl FormControl
+		shapeVal    decodeShapeVal
+	)
+	if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", clientData)), &shapeVal); err != nil {
+		return formControl, err
+	}
+	for formCtrlType, preset := range formCtrlPresets {
+		if shapeVal.ClientData.ObjectType == preset.objectType && shapeVal.ClientData.Anchor != "" {
+			formControl.Paragraph = extractVMLFont(shapeVal.TextBox.Div.Font)
+			if len(formControl.Paragraph) > 0 && formControl.Paragraph[0].Font == nil {
+				formControl.Text = formControl.Paragraph[0].Text
+				formControl.Paragraph = formControl.Paragraph[1:]
+			}
+			formControl.Type = formCtrlType
+			col, row, err := extractAnchorCell(shapeVal.ClientData.Anchor)
+			if err != nil {
+				return formControl, err
+			}
+			if formControl.Cell, err = CoordinatesToCellName(col+1, row+1); err != nil {
+				return formControl, err
+			}
+			formControl.Macro = shapeVal.ClientData.FmlaMacro
+			formControl.Checked = shapeVal.ClientData.Checked != 0
+			formControl.CellLink = shapeVal.ClientData.FmlaLink
+			formControl.CurrentVal = shapeVal.ClientData.Val
+			formControl.MinVal = shapeVal.ClientData.Min
+			formControl.MaxVal = shapeVal.ClientData.Max
+			formControl.IncChange = shapeVal.ClientData.Inc
+			formControl.PageChange = shapeVal.ClientData.Page
+			formControl.Horizontally = shapeVal.ClientData.Horiz != nil
+		}
+	}
+	return formControl, err
+}
+
+// extractAnchorCell extract left-top cell coordinates from given VML anchor
+// comma-separated list values.
+func extractAnchorCell(anchor string) (int, int, error) {
+	var (
+		leftCol, topRow int
+		err             error
+		pos             = strings.Split(anchor, ",")
+	)
+	if len(pos) != 8 {
+		return leftCol, topRow, ErrParameterInvalid
+	}
+	leftCol, err = strconv.Atoi(strings.TrimSpace(pos[0]))
+	if err != nil {
+		return leftCol, topRow, ErrColumnNumber
+	}
+	topRow, err = strconv.Atoi(strings.TrimSpace(pos[2]))
+	return leftCol, topRow, err
+}
+
+// extractVMLFont extract rich-text and font format from given VML font element.
+func extractVMLFont(font []decodeVMLFont) []RichTextRun {
+	var runs []RichTextRun
+	extractU := func(u *decodeVMLFontU, run *RichTextRun) {
+		if u == nil {
+			return
+		}
+		run.Text += u.Val
+		if run.Font == nil {
+			run.Font = &Font{}
+		}
+		run.Font.Underline = "single"
+		if u.Class == "font1" {
+			run.Font.Underline = "double"
+		}
+	}
+	extractI := func(i *decodeVMLFontI, run *RichTextRun) {
+		if i == nil {
+			return
+		}
+		extractU(i.U, run)
+		run.Text += i.Val
+		if run.Font == nil {
+			run.Font = &Font{}
+		}
+		run.Font.Italic = true
+	}
+	extractB := func(b *decodeVMLFontB, run *RichTextRun) {
+		if b == nil {
+			return
+		}
+		extractI(b.I, run)
+		run.Text += b.Val
+		if run.Font == nil {
+			run.Font = &Font{}
+		}
+		run.Font.Bold = true
+	}
+	for _, fnt := range font {
+		var run RichTextRun
+		extractB(fnt.B, &run)
+		extractI(fnt.I, &run)
+		extractU(fnt.U, &run)
+		run.Text += fnt.Val
+		if fnt.Face != "" || fnt.Size > 0 || fnt.Color != "" {
+			if run.Font == nil {
+				run.Font = &Font{}
+			}
+			run.Font.Family = fnt.Face
+			run.Font.Size = float64(fnt.Size / 20)
+			run.Font.Color = fnt.Color
+		}
+		runs = append(runs, run)
+	}
+	return runs
 }

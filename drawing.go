@@ -63,67 +63,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},
 		Chart: cChart{
-			Title: &cTitle{
-				Tx: cTx{
-					Rich: &cRich{
-						P: []aP{
-							{
-								PPr: &aPPr{
-									DefRPr: aRPr{
-										Kern:   1200,
-										Strike: "noStrike",
-										U:      "none",
-										Sz:     1400,
-										SolidFill: &aSolidFill{
-											SchemeClr: &aSchemeClr{
-												Val: "tx1",
-												LumMod: &attrValInt{
-													Val: intPtr(65000),
-												},
-												LumOff: &attrValInt{
-													Val: intPtr(35000),
-												},
-											},
-										},
-										Ea: &aEa{
-											Typeface: "+mn-ea",
-										},
-										Cs: &aCs{
-											Typeface: "+mn-cs",
-										},
-										Latin: &xlsxCTTextFont{
-											Typeface: "+mn-lt",
-										},
-									},
-								},
-								R: &aR{
-									RPr: aRPr{
-										Lang:    "en-US",
-										AltLang: "en-US",
-									},
-									T: opts.Title.Name,
-								},
-							},
-						},
-					},
-				},
-				TxPr: cTxPr{
-					P: aP{
-						PPr: &aPPr{
-							DefRPr: aRPr{
-								Kern:   1200,
-								U:      "none",
-								Sz:     14000,
-								Strike: "noStrike",
-							},
-						},
-						EndParaRPr: &aEndParaRPr{
-							Lang: "en-US",
-						},
-					},
-				},
-				Overlay: &attrValBool{Val: boolPtr(false)},
-			},
+			Title: f.drawPlotAreaTitles(opts.Title, ""),
 			View3D: &cView3D{
 				RotX:        &attrValInt{Val: intPtr(chartView3DRotX[opts.Type])},
 				RotY:        &attrValInt{Val: intPtr(chartView3DRotY[opts.Type])},
@@ -1454,15 +1394,15 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) error
 	var (
 		err             error
 		wsDr            *xlsxWsDr
-		deTwoCellAnchor *decodeTwoCellAnchor
+		deTwoCellAnchor *decodeCellAnchor
 	)
 	xdrCellAnchorFuncs := map[string]func(anchor *xdrCellAnchor) bool{
 		"Chart": func(anchor *xdrCellAnchor) bool { return anchor.Pic == nil },
 		"Pic":   func(anchor *xdrCellAnchor) bool { return anchor.Pic != nil },
 	}
-	decodeTwoCellAnchorFuncs := map[string]func(anchor *decodeTwoCellAnchor) bool{
-		"Chart": func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic == nil },
-		"Pic":   func(anchor *decodeTwoCellAnchor) bool { return anchor.Pic != nil },
+	decodeCellAnchorFuncs := map[string]func(anchor *decodeCellAnchor) bool{
+		"Chart": func(anchor *decodeCellAnchor) bool { return anchor.Pic == nil },
+		"Pic":   func(anchor *decodeCellAnchor) bool { return anchor.Pic != nil },
 	}
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return err
@@ -1476,12 +1416,12 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) error
 		}
 	}
 	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeTwoCellAnchor>")).
+		deTwoCellAnchor = new(decodeCellAnchor)
+		if err = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeCellAnchor>")).
 			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
 			return err
 		}
-		if err = nil; deTwoCellAnchor.From != nil && decodeTwoCellAnchorFuncs[drawingType](deTwoCellAnchor) {
+		if err = nil; deTwoCellAnchor.From != nil && decodeCellAnchorFuncs[drawingType](deTwoCellAnchor) {
 			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
 				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
 				idx--

@@ -507,8 +507,16 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.Legend.Position == "" {
 		opts.Legend.Position = defaultChartLegendPosition
 	}
-	if opts.Title.Name == "" {
-		opts.Title.Name = " "
+	for i := range opts.Title {
+		if opts.Title[i].Font == nil {
+			opts.Title[i].Font = &Font{}
+		}
+		if opts.Title[i].Font.Color == "" {
+			opts.Title[i].Font.Color = "595959"
+		}
+		if opts.Title[i].Font.Size == 0 {
+			opts.Title[i].Font.Size = 14
+		}
 	}
 	if opts.VaryColors == nil {
 		opts.VaryColors = boolPtr(true)
@@ -569,8 +577,10 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //	                Values:     "Sheet1!$B$4:$D$4",
 //	            },
 //	        },
-//	        Title: excelize.ChartTitle{
-//	            Name: "Fruit 3D Clustered Column Chart",
+//	        Title: []excelize.RichTextRun{
+//	            {
+//	                Text: "Fruit 3D Clustered Column Chart",
+//	            },
 //	        },
 //	        Legend: excelize.ChartLegend{
 //	            ShowLegendKey: false,
@@ -727,7 +737,7 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //
 //	Title
 //
-// Name: Set the name (title) for the chart. The name is displayed above the
+// Title: Set the name (title) for the chart. The name is displayed above the
 // chart. The name can also be a formula such as Sheet1!$A$1 or a list with a
 // sheet name. The name property is optional. The default is to have no chart
 // title.
@@ -912,8 +922,10 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 //	            LockAspectRatio: false,
 //	            Locked:          &disable,
 //	        },
-//	        Title: excelize.ChartTitle{
-//	            Name: "Clustered Column - Line Chart",
+//	        Title: []excelize.RichTextRun{
+//	            {
+//	                Text: "Clustered Column - Line Chart",
+//	            },
 //	        },
 //	        Legend: excelize.ChartLegend{
 //	            Position:      "left",

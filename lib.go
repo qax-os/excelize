@@ -53,7 +53,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 				continue
 			}
 		}
-		if strings.HasPrefix(fileName, "xl/worksheets/sheet") {
+		if strings.HasPrefix(strings.ToLower(fileName), "xl/worksheets/sheet") {
 			worksheets++
 			if fileSize > f.options.UnzipXMLSizeLimit && !v.FileInfo().IsDir() {
 				if tempFile, err := f.unzipToTemp(v); err == nil {

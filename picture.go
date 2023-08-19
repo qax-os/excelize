@@ -216,7 +216,7 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	if err != nil {
 		return err
 	}
-	// Read sheet data.
+	// Read sheet data
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -308,23 +308,20 @@ func (f *File) addSheetPicture(sheet string, rID int) error {
 // countDrawings provides a function to get drawing files count storage in the
 // folder xl/drawings.
 func (f *File) countDrawings() int {
-	var c1, c2 int
+	drawings := map[string]struct{}{}
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/drawings/drawing") {
-			c1++
+			drawings[k.(string)] = struct{}{}
 		}
 		return true
 	})
 	f.Drawings.Range(func(rel, value interface{}) bool {
 		if strings.Contains(rel.(string), "xl/drawings/drawing") {
-			c2++
+			drawings[rel.(string)] = struct{}{}
 		}
 		return true
 	})
-	if c1 < c2 {
-		return c2
-	}
-	return c1
+	return len(drawings)
 }
 
 // addDrawingPicture provides a function to add picture by given sheet,
@@ -642,11 +639,11 @@ func (f *File) DeletePicture(sheet, cell string) error {
 // embed in spreadsheet by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (pics []Picture, err error) {
 	var (
-		wsDr            *xlsxWsDr
-		ok              bool
-		deWsDr          *decodeWsDr
-		drawRel         *xlsxRelationship
-		deTwoCellAnchor *decodeTwoCellAnchor
+		ok           bool
+		deWsDr       *decodeWsDr
+		deCellAnchor *decodeCellAnchor
+		drawRel      *xlsxRelationship
+		wsDr         *xlsxWsDr
 	)
 
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
@@ -661,25 +658,31 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		return
 	}
 	err = nil
-	for _, anchor := range deWsDr.TwoCellAnchor {
-		deTwoCellAnchor = new(decodeTwoCellAnchor)
-		if err = f.xmlNewDecoder(strings.NewReader("<decodeTwoCellAnchor>" + anchor.Content + "</decodeTwoCellAnchor>")).
-			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
+	extractAnchor := func(anchor *decodeCellAnchor) {
+		deCellAnchor = new(decodeCellAnchor)
+		if err := f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.Content + "</decodeCellAnchor>")).
+			Decode(deCellAnchor); err != nil && err != io.EOF {
 			return
 		}
-		if err = nil; deTwoCellAnchor.From != nil && deTwoCellAnchor.Pic != nil {
-			if deTwoCellAnchor.From.Col == col && deTwoCellAnchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships, deTwoCellAnchor.Pic.BlipFill.Blip.Embed)
+		if err = nil; deCellAnchor.From != nil && deCellAnchor.Pic != nil {
+			if deCellAnchor.From.Col == col && deCellAnchor.From.Row == row {
+				drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
 				if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
 					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
 					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
 						pic.File = buffer.([]byte)
-						pic.Format.AltText = deTwoCellAnchor.Pic.NvPicPr.CNvPr.Descr
+						pic.Format.AltText = deCellAnchor.Pic.NvPicPr.CNvPr.Descr
 						pics = append(pics, pic)
 					}
 				}
 			}
 		}
+	}
+	for _, anchor := range deWsDr.TwoCellAnchor {
+		extractAnchor(anchor)
+	}
+	for _, anchor := range deWsDr.OneCellAnchor {
+		extractAnchor(anchor)
 	}
 	return
 }
