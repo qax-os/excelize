@@ -927,12 +927,14 @@ func TestFormattedValueNilWorkbookPr(t *testing.T) {
 	assert.Equal(t, "43528", result)
 }
 
-func TestApplyNumFmt(t *testing.T) {
-	f := NewFile()
-	assert.Equal(t, "\u4EE4\u548C\u5143年9月1日", f.applyNumFmt(&xlsxC{V: "43709"},
-		&xlsxStyleSheet{NumFmts: &xlsxNumFmts{NumFmt: []*xlsxNumFmt{
-			{NumFmtID: 164, FormatCode16: "[$-ja-JP-x-gannen,80]ggge\"年\"m\"月\"d\"日\";@"},
-		}}}, 164, false, CellTypeNumber))
+func TestGetCustomNumFmtCode(t *testing.T) {
+	expected := "[$-ja-JP-x-gannen,80]ggge\"年\"m\"月\"d\"日\";@"
+	styleSheet := &xlsxStyleSheet{NumFmts: &xlsxNumFmts{NumFmt: []*xlsxNumFmt{
+		{NumFmtID: 164, FormatCode16: expected},
+	}}}
+	numFmtCode, ok := styleSheet.getCustomNumFmtCode(164)
+	assert.Equal(t, expected, numFmtCode)
+	assert.True(t, ok)
 }
 
 func TestSharedStringsError(t *testing.T) {
