@@ -1242,6 +1242,38 @@ func (f *File) extractFont(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 	}
 }
 
+// extractNumFmt provides a function to extract number format by given styles
+// definition.
+func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.NumFmtID != nil {
+		if _, ok := builtInNumFmt[*xf.NumFmtID]; ok {
+			style.NumFmt = *xf.NumFmtID
+			return
+		}
+		if s.NumFmts != nil {
+			for _, numFmt := range s.NumFmts.NumFmt {
+				for _, langFmtCodes := range langNumFmt {
+					if fmtCode, ok := langFmtCodes[*xf.NumFmtID]; ok && fmtCode == numFmt.FormatCode {
+						style.NumFmt = *xf.NumFmtID
+					}
+				}
+				style.CustomNumFmt = &numFmt.FormatCode
+				if strings.Contains(numFmt.FormatCode, ";[Red]") {
+					style.NegRed = true
+				}
+				for numFmtID, fmtCode := range currencyNumFmt {
+					if style.NegRed {
+						fmtCode += ";[Red]" + fmtCode
+					}
+					if numFmt.FormatCode == fmtCode {
+						style.NumFmt = numFmtID
+					}
+				}
+			}
+		}
+	}
+ }
+ 
 // getXfIDFuncs provides a function to get xfID by given style.
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
