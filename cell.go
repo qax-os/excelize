@@ -1365,27 +1365,29 @@ func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, er
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
+	if fmtCode, ok := styleSheet.getCustomNumFmtCode(numFmtID); ok {
+		return format(c.V, fmtCode, date1904, cellType, f.options), err
+	}
 	if fmtCode, ok := f.getBuiltInNumFmtCode(numFmtID); ok {
 		return f.applyBuiltInNumFmt(c, fmtCode, numFmtID, date1904, cellType), err
 	}
-	return f.applyNumFmt(c, styleSheet, numFmtID, date1904, cellType), err
+	return c.V, err
 }
 
-// applyNumFmt provides a function to returns formatted cell value with custom
-// number format code.
-func (f *File) applyNumFmt(c *xlsxC, styleSheet *xlsxStyleSheet, numFmtID int, date1904 bool, cellType CellType) string {
-	if styleSheet.NumFmts == nil {
-		return c.V
+// getCustomNumFmtCode provides a function to returns custom number format code.
+func (ss *xlsxStyleSheet) getCustomNumFmtCode(numFmtID int) (string, bool) {
+	if ss.NumFmts == nil {
+		return "", false
 	}
-	for _, xlsxFmt := range styleSheet.NumFmts.NumFmt {
+	for _, xlsxFmt := range ss.NumFmts.NumFmt {
 		if xlsxFmt.NumFmtID == numFmtID {
 			if xlsxFmt.FormatCode16 != "" {
-				return format(c.V, xlsxFmt.FormatCode16, date1904, cellType, f.options)
+				return xlsxFmt.FormatCode16, true
 			}
-			return format(c.V, xlsxFmt.FormatCode, date1904, cellType, f.options)
+			return xlsxFmt.FormatCode, true
 		}
 	}
-	return c.V
+	return "", false
 }
 
 // prepareCellStyle provides a function to prepare style index of cell in
