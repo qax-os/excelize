@@ -27,6 +27,10 @@ func TestAddTable(t *testing.T) {
 		ShowHeaderRow: boolPtr(false),
 	}))
 	assert.NoError(t, f.AddTable("Sheet2", &Table{Range: "F1:F1", StyleName: "TableStyleMedium8"}))
+	// Test get tables in worksheet
+	tables, err := f.GetTables("Sheet2")
+	assert.Len(t, tables, 3)
+	assert.NoError(t, err)
 
 	// Test add table with already exist table name
 	assert.Equal(t, f.AddTable("Sheet2", &Table{Name: "Table1"}), ErrExistsTableName)
@@ -93,6 +97,27 @@ func TestGetTables(t *testing.T) {
 	tables, err = f.GetTables("Sheet1")
 	assert.Len(t, tables, 0)
 	assert.NoError(t, err)
+}
+
+func TestDeleteTable(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B4", Name: "Table1"}))
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "B26:A21", Name: "Table2"}))
+	assert.NoError(t, f.DeleteTable("Table2"))
+	assert.NoError(t, f.DeleteTable("Table1"))
+	// Test delete table with invalid table name
+	assert.EqualError(t, f.DeleteTable("Table 1"), newNoExistTableError("Table 1").Error())
+	// Test delete table with no exist table name
+	assert.EqualError(t, f.DeleteTable("Table"), newNoExistTableError("Table").Error())
+	// Test delete table with unsupported charset
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteTable("Table1"), "XML syntax error on line 1: invalid UTF-8")
+	// Test delete table with invalid table range
+	f = NewFile()
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B4", Name: "Table1"}))
+	f.Pkg.Store("xl/tables/table1.xml", []byte("<table name=\"Table1\" ref=\"-\" />"))
+	assert.EqualError(t, f.DeleteTable("Table1"), ErrParameterInvalid.Error())
 }
 
 func TestSetTableHeader(t *testing.T) {

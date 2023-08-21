@@ -207,7 +207,7 @@ func (f *File) DeleteTable(name string) error {
 			return err
 		}
 	}
-	return nil
+	return newNoExistTableError(name)
 }
 
 // countTables provides a function to get table files count storage in the
