@@ -10,6 +10,7 @@ import (
 func TestNumFmt(t *testing.T) {
 	for _, item := range [][]string{
 		{"123", "general", "123"},
+		{"-123", ";general", "-123"},
 		{"43528", "y", "19"},
 		{"43528", "Y", "19"},
 		{"43528", "yy", "19"},
