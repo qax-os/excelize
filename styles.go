@@ -1272,8 +1272,36 @@ func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 			}
 		}
 	}
- }
- 
+}
+
+// extractAlignment provides a function to extract alignment format by
+// given style definition.
+func (f *File) extractAlignment(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	style.Alignment = &Alignment{
+		Horizontal:      xf.Alignment.Horizontal,
+		Indent:          xf.Alignment.Indent,
+		JustifyLastLine: xf.Alignment.JustifyLastLine,
+		ReadingOrder:    xf.Alignment.ReadingOrder,
+		RelativeIndent:  xf.Alignment.RelativeIndent,
+		ShrinkToFit:     xf.Alignment.ShrinkToFit,
+		TextRotation:    xf.Alignment.TextRotation,
+		Vertical:        xf.Alignment.Vertical,
+		WrapText:        xf.Alignment.WrapText,
+	}
+}
+
+// extractProtection provides a function to extract protection settings by
+// given format definition.
+func (f *File) extractProtection(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	style.Protection = &Protection{}
+	if xf.Protection.Hidden != nil {
+		style.Protection.Hidden = *xf.Protection.Hidden
+	}
+	if xf.Protection.Locked != nil {
+		style.Protection.Locked = *xf.Protection.Locked
+	}
+}
+
 // getXfIDFuncs provides a function to get xfID by given style.
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
