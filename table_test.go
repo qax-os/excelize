@@ -106,7 +106,7 @@ func TestDeleteTable(t *testing.T) {
 	assert.NoError(t, f.DeleteTable("Table2"))
 	assert.NoError(t, f.DeleteTable("Table1"))
 	// Test delete table with invalid table name
-	assert.EqualError(t, f.DeleteTable("Table 1"), newNoExistTableError("Table 1").Error())
+	assert.EqualError(t, f.DeleteTable("Table 1"), newInvalidNameError("Table 1").Error())
 	// Test delete table with no exist table name
 	assert.EqualError(t, f.DeleteTable("Table"), newNoExistTableError("Table").Error())
 	// Test delete table with unsupported charset
