@@ -238,6 +238,12 @@ func TestInStrSlice(t *testing.T) {
 	assert.EqualValues(t, -1, inStrSlice([]string{}, "", true))
 }
 
+func TestAttrValue(t *testing.T) {
+	assert.Empty(t, (&attrValString{}).Value())
+	assert.False(t, (&attrValBool{}).Value())
+	assert.Zero(t, (&attrValFloat{}).Value())
+}
+
 func TestBoolValMarshal(t *testing.T) {
 	bold := true
 	node := &xlsxFont{B: &attrValBool{Val: &bold}}

@@ -488,3 +488,14 @@ func TestGetNumFmtID(t *testing.T) {
 	assert.NotEqual(t, id1, id2)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestStyleNumFmt.xlsx")))
 }
+
+func TestGetThemeColor(t *testing.T) {
+	assert.Empty(t, (&File{}).getThemeColor(&xlsxColor{}))
+	f := NewFile()
+	assert.Empty(t, f.getThemeColor(nil))
+	var theme int
+	assert.Equal(t, "FFFFFF", f.getThemeColor(&xlsxColor{Theme: &theme}))
+	assert.Equal(t, "FFFFFF", f.getThemeColor(&xlsxColor{RGB: "FFFFFF"}))
+	assert.Equal(t, "FF8080", f.getThemeColor(&xlsxColor{Indexed: 2, Tint: 0.5}))
+	assert.Empty(t, f.getThemeColor(&xlsxColor{Indexed: len(IndexedColorMapping), Tint: 0.5}))
+}

@@ -1277,30 +1277,61 @@ func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 // extractAlignment provides a function to extract alignment format by
 // given style definition.
 func (f *File) extractAlignment(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	style.Alignment = &Alignment{
-		Horizontal:      xf.Alignment.Horizontal,
-		Indent:          xf.Alignment.Indent,
-		JustifyLastLine: xf.Alignment.JustifyLastLine,
-		ReadingOrder:    xf.Alignment.ReadingOrder,
-		RelativeIndent:  xf.Alignment.RelativeIndent,
-		ShrinkToFit:     xf.Alignment.ShrinkToFit,
-		TextRotation:    xf.Alignment.TextRotation,
-		Vertical:        xf.Alignment.Vertical,
-		WrapText:        xf.Alignment.WrapText,
+	if xf.ApplyAlignment != nil && *xf.ApplyAlignment && xf.Alignment != nil {
+		style.Alignment = &Alignment{
+			Horizontal:      xf.Alignment.Horizontal,
+			Indent:          xf.Alignment.Indent,
+			JustifyLastLine: xf.Alignment.JustifyLastLine,
+			ReadingOrder:    xf.Alignment.ReadingOrder,
+			RelativeIndent:  xf.Alignment.RelativeIndent,
+			ShrinkToFit:     xf.Alignment.ShrinkToFit,
+			TextRotation:    xf.Alignment.TextRotation,
+			Vertical:        xf.Alignment.Vertical,
+			WrapText:        xf.Alignment.WrapText,
+		}
 	}
 }
 
 // extractProtection provides a function to extract protection settings by
 // given format definition.
 func (f *File) extractProtection(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	style.Protection = &Protection{}
-	if xf.Protection.Hidden != nil {
-		style.Protection.Hidden = *xf.Protection.Hidden
-	}
-	if xf.Protection.Locked != nil {
-		style.Protection.Locked = *xf.Protection.Locked
+	if xf.ApplyProtection != nil && *xf.ApplyProtection && xf.Protection != nil {
+		style.Protection = &Protection{}
+		if xf.Protection.Hidden != nil {
+			style.Protection.Hidden = *xf.Protection.Hidden
+		}
+		if xf.Protection.Locked != nil {
+			style.Protection.Locked = *xf.Protection.Locked
+		}
 	}
 }
+
+// GetStyle get style details by given style index.
+func (f *File) GetStyle(idx int) (*Style, error) {
+	var style *Style
+	f.mu.Lock()
+	s, err := f.stylesReader()
+	if err != nil {
+		return style, err
+	}
+	f.mu.Unlock()
+	if idx < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= idx {
+		return style, newInvalidStyleID(idx)
+	}
+	style = &Style{}
+	xf := s.CellXfs.Xf[idx]
+	if xf.ApplyFill != nil && *xf.ApplyFill &&
+		xf.FillID != nil && s.Fills != nil &&
+		*xf.FillID < len(s.Fills.Fill) {
+		f.extractFills(xf, s, style)
+	}
+	f.extractBorders(xf, s, style)
+	f.extractFont(xf, s, style)
+	f.extractAlignment(xf, s, style)
+	f.extractProtection(xf, s, style)
+	f.extractNumFmt(xf, s, style)
+	return style, nil
+ }
 
 // getXfIDFuncs provides a function to get xfID by given style.
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
