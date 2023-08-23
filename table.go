@@ -125,6 +125,91 @@ func (f *File) AddTable(sheet string, table *Table) error {
 	return f.addContentTypePart(tableID, "table")
 }
 
+// GetTables provides the method to get all tables in a worksheet by given
+// worksheet name.
+func (f *File) GetTables(sheet string) ([]Table, error) {
+	var tables []Table
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return tables, err
+	}
+	if ws.TableParts == nil {
+		return tables, err
+	}
+	for _, tbl := range ws.TableParts.TableParts {
+		if tbl != nil {
+			target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
+			tableXML := strings.ReplaceAll(target, "..", "xl")
+			content, ok := f.Pkg.Load(tableXML)
+			if !ok {
+				continue
+			}
+			var t xlsxTable
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
+				Decode(&t); err != nil && err != io.EOF {
+				return tables, err
+			}
+			table := Table{
+				rID:   tbl.RID,
+				Range: t.Ref,
+				Name:  t.Name,
+			}
+			if t.TableStyleInfo != nil {
+				table.StyleName = t.TableStyleInfo.Name
+				table.ShowColumnStripes = t.TableStyleInfo.ShowColumnStripes
+				table.ShowFirstColumn = t.TableStyleInfo.ShowFirstColumn
+				table.ShowLastColumn = t.TableStyleInfo.ShowLastColumn
+				table.ShowRowStripes = &t.TableStyleInfo.ShowRowStripes
+			}
+			tables = append(tables, table)
+		}
+	}
+	return tables, err
+}
+
+// DeleteTable provides the method to delete table by given table name.
+func (f *File) DeleteTable(name string) error {
+	if err := checkDefinedName(name); err != nil {
+		return err
+	}
+	for _, sheet := range f.GetSheetList() {
+		tables, err := f.GetTables(sheet)
+		if err != nil {
+			return err
+		}
+		for _, table := range tables {
+			if table.Name != name {
+				continue
+			}
+			ws, _ := f.workSheetReader(sheet)
+			for i, tbl := range ws.TableParts.TableParts {
+				if tbl.RID == table.rID {
+					ws.TableParts.TableParts = append(ws.TableParts.TableParts[:i], ws.TableParts.TableParts[i+1:]...)
+					f.deleteSheetRelationships(sheet, tbl.RID)
+					break
+				}
+			}
+			if ws.TableParts.Count = len(ws.TableParts.TableParts); ws.TableParts.Count == 0 {
+				ws.TableParts = nil
+			}
+			// Delete cell value in the table header
+			coordinates, err := rangeRefToCoordinates(table.Range)
+			if err != nil {
+				return err
+			}
+			_ = sortCoordinates(coordinates)
+			for col := coordinates[0]; col <= coordinates[2]; col++ {
+				for row := coordinates[1]; row < coordinates[1]+1; row++ {
+					cell, _ := CoordinatesToCellName(col, row)
+					err = f.SetCellValue(sheet, cell, nil)
+				}
+			}
+			return err
+		}
+	}
+	return newNoExistTableError(name)
+}
+
 // countTables provides a function to get table files count storage in the
 // folder xl/tables.
 func (f *File) countTables() int {
