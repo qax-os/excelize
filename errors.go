@@ -82,6 +82,12 @@ func newNoExistSheetError(name string) error {
 	return fmt.Errorf("sheet %s does not exist", name)
 }
 
+// newNoExistTableError defined the error message on receiving the non existing
+// table name.
+func newNoExistTableError(name string) error {
+	return fmt.Errorf("table %s does not exist", name)
+}
+
 // newNotWorksheetError defined the error message on receiving a sheet which
 // not a worksheet.
 func newNotWorksheetError(name string) error {
