@@ -649,9 +649,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return
 	}
-	if pics = f.getPicturesFromWsDr(row, col, drawingRelationships, wsDr); len(pics) > 0 {
-		return
-	}
+	pics = f.getPicturesFromWsDr(row, col, drawingRelationships, wsDr)
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {

@@ -70,6 +70,15 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture1.xlsx")))
 	assert.NoError(t, f.Close())
 
+	// Test get pictures after inserting a new picture from a workbook which contains existing pictures
+	f, err = OpenFile(filepath.Join("test", "TestAddPicture1.xlsx"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), nil))
+	pics, err := f.GetPictures("Sheet1", "A30")
+	assert.NoError(t, err)
+	assert.Len(t, pics, 2)
+	assert.NoError(t, f.Close())
+
 	// Test add picture with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
