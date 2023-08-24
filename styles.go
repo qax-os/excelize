@@ -1246,17 +1246,13 @@ func (f *File) extractFont(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 // definition.
 func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 	if xf.NumFmtID != nil {
-		if _, ok := builtInNumFmt[*xf.NumFmtID]; ok {
-			style.NumFmt = *xf.NumFmtID
+		numFmtID := *xf.NumFmtID
+		if _, ok := builtInNumFmt[numFmtID]; ok || isLangNumFmt(numFmtID) {
+			style.NumFmt = numFmtID
 			return
 		}
 		if s.NumFmts != nil {
 			for _, numFmt := range s.NumFmts.NumFmt {
-				for _, langFmtCodes := range langNumFmt {
-					if fmtCode, ok := langFmtCodes[*xf.NumFmtID]; ok && fmtCode == numFmt.FormatCode {
-						style.NumFmt = *xf.NumFmtID
-					}
-				}
 				style.CustomNumFmt = &numFmt.FormatCode
 				if strings.Contains(numFmt.FormatCode, ";[Red]") {
 					style.NegRed = true
@@ -1331,7 +1327,7 @@ func (f *File) GetStyle(idx int) (*Style, error) {
 	f.extractProtection(xf, s, style)
 	f.extractNumFmt(xf, s, style)
 	return style, nil
- }
+}
 
 // getXfIDFuncs provides a function to get xfID by given style.
 var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
@@ -1707,9 +1703,15 @@ func getCustomNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (customNumFmtID
 	return
 }
 
+// isLangNumFmt provides a function to returns if a given number format ID is a
+// built-in language glyphs number format code.
+func isLangNumFmt(ID int) bool {
+	return (27 <= ID && ID <= 36) || (50 <= ID && ID <= 62) || (67 <= ID && ID <= 81)
+}
+
 // setLangNumFmt provides a function to set number format code with language.
 func setLangNumFmt(style *Style) int {
-	if (27 <= style.NumFmt && style.NumFmt <= 36) || (50 <= style.NumFmt && style.NumFmt <= 81) {
+	if isLangNumFmt(style.NumFmt) {
 		return style.NumFmt
 	}
 	return 0

@@ -4692,7 +4692,7 @@ func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
 	if fmtCode, ok := builtInNumFmt[numFmtID]; ok {
 		return fmtCode, true
 	}
-	if (27 <= numFmtID && numFmtID <= 36) || (50 <= numFmtID && numFmtID <= 81) {
+	if isLangNumFmt(numFmtID) {
 		if f.options.CultureInfo == CultureNameEnUS {
 			return f.langNumFmtFuncEnUS(numFmtID), true
 		}
