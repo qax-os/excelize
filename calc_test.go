@@ -1060,6 +1060,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=FISHERINV(INT(0))": "0",
 		"=FISHERINV(\"0\")":  "0",
 		"=FISHERINV(2.8)":    "0.992631520201128",
+		// FORECAST
+		"=FORECAST(7,A1:A7,B1:B7)": "4",
+		// FORECAST.LINEAR
+		"=FORECAST.LINEAR(7,A1:A7,B1:B7)": "4",
+		// FREQUENCY
+		"=SUM(FREQUENCY(A2,B2))":       "1",
+		"=SUM(FREQUENCY(A1:A5,B1:B2))": "4",
 		// GAMMA
 		"=GAMMA(0.1)":     "9.51350769866873",
 		"=GAMMA(INT(1))":  "1",
@@ -1109,6 +1116,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=HYPGEOMDIST(2,4,4,12)": "0.339393939393939",
 		"=HYPGEOMDIST(3,4,4,12)": "0.0646464646464646",
 		"=HYPGEOMDIST(4,4,4,12)": "0.00202020202020202",
+		// INTERCEPT
+		"=INTERCEPT(A1:A4,B1:B4)": "-3",
 		// KURT
 		"=KURT(F1:F9)":           "-1.03350350255137",
 		"=KURT(F1,F2:F9)":        "-1.03350350255137",
@@ -1652,6 +1661,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEEKNUM(\"01/01/2017\",21)": "52",
 		"=WEEKNUM(\"01/01/2021\",21)": "53",
 		// Text Functions
+		// ARRAYTOTEXT
+		"=ARRAYTOTEXT(A1:D2)":   "1, 4, , Month, 2, 5, , Jan",
+		"=ARRAYTOTEXT(A1:D2,0)": "1, 4, , Month, 2, 5, , Jan",
+		"=ARRAYTOTEXT(A1:D2,1)": "{1,4,,\"Month\";2,5,,\"Jan\"}",
 		// CHAR
 		"=CHAR(65)": "A",
 		"=CHAR(97)": "a",
@@ -1820,6 +1833,13 @@ func TestCalcCellValue(t *testing.T) {
 		"=VALUE(\"20%\")":                 "0.2",
 		"=VALUE(\"12:00:00\")":            "0.5",
 		"=VALUE(\"01/02/2006 15:04:05\")": "38719.6278356481",
+		// VALUETOTEXT
+		"=VALUETOTEXT(A1)":   "1",
+		"=VALUETOTEXT(A1,0)": "1",
+		"=VALUETOTEXT(A1,1)": "1",
+		"=VALUETOTEXT(D1)":   "Month",
+		"=VALUETOTEXT(D1,0)": "Month",
+		"=VALUETOTEXT(D1,1)": "\"Month\"",
 		// Conditional Functions
 		// IF
 		"=IF(1=1)":                                   "TRUE",
@@ -2050,13 +2070,23 @@ func TestCalcCellValue(t *testing.T) {
 		// NPV
 		"=NPV(0.02,-5000,\"\",800)": "-4133.02575932334",
 		// ODDFPRICE
-		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2)":              "107.691830256629",
-		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,4,1)":            "106.766915010929",
-		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,4,3)":            "106.7819138147",
-		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,4,4)":            "106.771913772467",
-		"=ODDFPRICE(\"11/11/2008\",\"03/01/2021\",\"10/15/2008\",\"03/01/2009\",7.85%,6.25%,100,2,1)":          "113.597717474079",
-		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"09/30/2017\",5.5%,3.5%,100,4,0)":            "106.72930611878",
-		"=ODDFPRICE(\"11/11/2008\",\"03/29/2021\", \"08/15/2008\", \"03/29/2009\", 0.0785, 0.0625, 100, 2, 1)": "113.61826640814",
+		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2)":       "107.691830256629",
+		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,4,1)":     "106.766915010929",
+		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,4,3)":     "106.7819138147",
+		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,4,4)":     "106.771913772467",
+		"=ODDFPRICE(\"11/11/2008\",\"03/01/2021\",\"10/15/2008\",\"03/01/2009\",7.85%,6.25%,100,2,1)":   "113.597717474079",
+		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"09/30/2017\",5.5%,3.5%,100,4,0)":     "106.72930611878",
+		"=ODDFPRICE(\"11/11/2008\",\"03/29/2021\",\"08/15/2008\",\"03/29/2009\",0.0785,0.0625,100,2,1)": "113.61826640814",
+		// ODDFYIELD
+		"=ODDFYIELD(\"05/01/2017\",\"06/30/2021\",\"03/15/2017\",\"06/30/2017\",5.5%,102,100,1)":   "0.0495998049937776",
+		"=ODDFYIELD(\"05/01/2017\",\"06/30/2021\",\"03/15/2017\",\"06/30/2017\",5.5%,102,100,2)":   "0.0496289417392839",
+		"=ODDFYIELD(\"05/01/2017\",\"06/30/2021\",\"03/15/2017\",\"06/30/2017\",5.5%,102,100,4,1)": "0.0464750282973541",
+		// ODDLPRICE
+		"=ODDLPRICE(\"04/20/2008\",\"06/15/2008\",\"12/24/2007\",3.75%,99.875,100,2)":   "5.0517841252892",
+		"=ODDLPRICE(\"04/20/2008\",\"06/15/2008\",\"12/24/2007\",3.75%,99.875,100,4,1)": "10.3667274303228",
+		// ODDLYIELD
+		"=ODDLYIELD(\"04/20/2008\",\"06/15/2008\",\"12/24/2007\",3.75%,99.875,100,2)":   "0.0451922356291692",
+		"=ODDLYIELD(\"04/20/2008\",\"06/15/2008\",\"12/24/2007\",3.75%,99.875,100,4,1)": "0.0882287538349037",
 		// PDURATION
 		"=PDURATION(0.04,10000,15000)": "10.3380350715076",
 		// PMT
@@ -2710,6 +2740,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=POISSON(0,\"\",FALSE)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"=POISSON(0,0,\"\")":     {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
 		"=POISSON(0,-1,TRUE)":    {"#N/A", "#N/A"},
+		// PROB
+		"=PROB()":                   {"#VALUE!", "PROB requires at least 3 arguments"},
+		"=PROB(A1:A2,B1:B2,1,1,1)":  {"#VALUE!", "PROB requires at most 4 arguments"},
+		"=PROB(A1:A2,B1:B2,\"\")":   {"#VALUE!", "#VALUE!"},
+		"=PROB(A1:A2,B1:B2,1,\"\")": {"#VALUE!", "#VALUE!"},
+		"=PROB(A1,B1,1)":            {"#NUM!", "#NUM!"},
+		"=PROB(A1:A2,B1:B3,1)":      {"#N/A", "#N/A"},
+		"=PROB(A1:A2,B1:C2,1)":      {"#N/A", "#N/A"},
+		"=PROB(A1:A2,B1:B2,1)":      {"#NUM!", "#NUM!"},
 		// SUBTOTAL
 		"=SUBTOTAL()":           {"#VALUE!", "SUBTOTAL requires at least 2 arguments"},
 		"=SUBTOTAL(\"\",A4:A5)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -2967,6 +3006,20 @@ func TestCalcCellValue(t *testing.T) {
 		// FISHERINV
 		"=FISHERINV()":   {"#VALUE!", "FISHERINV requires 1 numeric argument"},
 		"=FISHERINV(F1)": {"#VALUE!", "FISHERINV requires 1 numeric argument"},
+		// FORECAST
+		"=FORECAST()":                 {"#VALUE!", "FORECAST requires 3 arguments"},
+		"=FORECAST(\"\",A1:A7,B1:B7)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=FORECAST(1,A1:A2,B1:B1)":    {"#N/A", "#N/A"},
+		"=FORECAST(1,A4,A4)":          {"#DIV/0!", "#DIV/0!"},
+		// FORECAST.LINEAR
+		"=FORECAST.LINEAR()":                 {"#VALUE!", "FORECAST.LINEAR requires 3 arguments"},
+		"=FORECAST.LINEAR(\"\",A1:A7,B1:B7)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=FORECAST.LINEAR(1,A1:A2,B1:B1)":    {"#N/A", "#N/A"},
+		"=FORECAST.LINEAR(1,A4,A4)":          {"#DIV/0!", "#DIV/0!"},
+		// FREQUENCY
+		"=FREQUENCY()":           {"#VALUE!", "FREQUENCY requires 2 arguments"},
+		"=FREQUENCY(NA(),A1:A3)": {"#N/A", "#N/A"},
+		"=FREQUENCY(A1:A3,NA())": {"#N/A", "#N/A"},
 		// GAMMA
 		"=GAMMA()":       {"#VALUE!", "GAMMA requires 1 numeric argument"},
 		"=GAMMA(F1)":     {"#VALUE!", "GAMMA requires 1 numeric argument"},
@@ -3059,6 +3112,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=HYPGEOMDIST(1,4,4,2)":     {"#NUM!", "#NUM!"},
 		"=HYPGEOMDIST(1,4,0,12)":    {"#NUM!", "#NUM!"},
 		"=HYPGEOMDIST(1,4,4,0)":     {"#NUM!", "#NUM!"},
+		// INTERCEPT
+		"=INTERCEPT()":            {"#VALUE!", "INTERCEPT requires 2 arguments"},
+		"=INTERCEPT(A1:A2,B1:B1)": {"#N/A", "#N/A"},
+		"=INTERCEPT(A4,A4)":       {"#DIV/0!", "#DIV/0!"},
 		// KURT
 		"=KURT()":          {"#VALUE!", "KURT requires at least 1 argument"},
 		"=KURT(F1,INT(1))": {"#DIV/0!", "#DIV/0!"},
@@ -3662,6 +3719,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=WEEKNUM(0,0)":                 {"#NUM!", "#NUM!"},
 		"=WEEKNUM(-1,1)":                {"#NUM!", "#NUM!"},
 		// Text Functions
+		// ARRAYTOTEXT
+		"=ARRAYTOTEXT()":        {"#VALUE!", "ARRAYTOTEXT requires at least 1 argument"},
+		"=ARRAYTOTEXT(A1,0,0)":  {"#VALUE!", "ARRAYTOTEXT allows at most 2 arguments"},
+		"=ARRAYTOTEXT(A1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ARRAYTOTEXT(A1,2)":    {"#VALUE!", "#VALUE!"},
 		// CHAR
 		"=CHAR()":     {"#VALUE!", "CHAR requires 1 argument"},
 		"=CHAR(-1)":   {"#VALUE!", "#VALUE!"},
@@ -3779,6 +3841,11 @@ func TestCalcCellValue(t *testing.T) {
 		// VALUE
 		"=VALUE()":     {"#VALUE!", "VALUE requires 1 argument"},
 		"=VALUE(\"\")": {"#VALUE!", "#VALUE!"},
+		// VALUETOTEXT
+		"=VALUETOTEXT()":        {"#VALUE!", "VALUETOTEXT requires at least 1 argument"},
+		"=VALUETOTEXT(A1,0,0)":  {"#VALUE!", "VALUETOTEXT allows at most 2 arguments"},
+		"=VALUETOTEXT(A1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=VALUETOTEXT(A1,2)":    {"#VALUE!", "#VALUE!"},
 		// UPPER
 		"=UPPER()":    {"#VALUE!", "UPPER requires 1 argument"},
 		"=UPPER(1,2)": {"#VALUE!", "UPPER requires 1 argument"},
@@ -4187,6 +4254,60 @@ func TestCalcCellValue(t *testing.T) {
 		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,3)":      {"#NUM!", "#NUM!"},
 		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/30/2017\",5.5%,3.5%,100,4)":      {"#NUM!", "#NUM!"},
 		"=ODDFPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2,5)":    {"#NUM!", "invalid basis"},
+		// ODDFYIELD
+		"=ODDFYIELD()": {"#VALUE!", "ODDFYIELD requires 8 or 9 arguments"},
+		"=ODDFYIELD(\"\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDFYIELD(\"02/01/2017\",\"\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"\",\"03/31/2017\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",\"\",3.5%,100,2)":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,\"\",100,2)":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,\"\",2)":     {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"02/01/2017\",\"03/31/2017\",5.5%,3.5%,100,2)":      {"#NUM!", "ODDFYIELD requires settlement > issue"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"02/01/2017\",5.5%,3.5%,100,2)":      {"#NUM!", "ODDFYIELD requires first_coupon > settlement"},
+		"=ODDFYIELD(\"02/01/2017\",\"02/01/2017\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2)":      {"#NUM!", "ODDFYIELD requires maturity > first_coupon"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",-1,3.5%,100,2)":        {"#NUM!", "ODDFYIELD requires rate >= 0"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,0,100,2)":         {"#NUM!", "ODDFYIELD requires pr > 0"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,0,2)":        {"#NUM!", "ODDFYIELD requires redemption > 0"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2,\"\")": {"#NUM!", "#NUM!"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,3)":      {"#NUM!", "#NUM!"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/30/2017\",5.5%,3.5%,100,4)":      {"#NUM!", "#NUM!"},
+		"=ODDFYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"03/31/2017\",5.5%,3.5%,100,2,5)":    {"#NUM!", "invalid basis"},
+		// ODDLPRICE
+		"=ODDLPRICE()": {"#VALUE!", "ODDLPRICE requires 7 or 8 arguments"},
+		"=ODDLPRICE(\"\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDLPRICE(\"02/01/2017\",\"\",\"12/01/2016\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"\",3.5%,100,2)":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,\"\",100,2)":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,\"\",2)":     {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLPRICE(\"04/20/2008\",\"06/15/2008\",\"04/30/2008\",3.75%,99.875,100,2)":   {"#NUM!", "ODDLPRICE requires settlement > last_interest"},
+		"=ODDLPRICE(\"06/20/2008\",\"06/15/2008\",\"04/30/2008\",3.75%,99.875,100,2)":   {"#NUM!", "ODDLPRICE requires maturity > settlement"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",-1,3.5%,100,2)":        {"#NUM!", "ODDLPRICE requires rate >= 0"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,-1,100,2)":        {"#NUM!", "ODDLPRICE requires yld >= 0"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,0,2)":        {"#NUM!", "ODDLPRICE requires redemption > 0"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,2,\"\")": {"#NUM!", "#NUM!"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,3)":      {"#NUM!", "#NUM!"},
+		"=ODDLPRICE(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,2,5)":    {"#NUM!", "invalid basis"},
+		// ODDLYIELD
+		"=ODDLYIELD()": {"#VALUE!", "ODDLYIELD requires 7 or 8 arguments"},
+		"=ODDLYIELD(\"\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDLYIELD(\"02/01/2017\",\"\",\"12/01/2016\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"\",5.5%,3.5%,100,2)":                {"#VALUE!", "#VALUE!"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",\"\",3.5%,100,2)":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,\"\",100,2)":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,\"\",2)":     {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=ODDLYIELD(\"04/20/2008\",\"06/15/2008\",\"04/30/2008\",3.75%,99.875,100,2)":   {"#NUM!", "ODDLYIELD requires settlement > last_interest"},
+		"=ODDLYIELD(\"06/20/2008\",\"06/15/2008\",\"04/30/2008\",3.75%,99.875,100,2)":   {"#NUM!", "ODDLYIELD requires maturity > settlement"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",-1,3.5%,100,2)":        {"#NUM!", "ODDLYIELD requires rate >= 0"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,0,100,2)":         {"#NUM!", "ODDLYIELD requires pr > 0"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,0,2)":        {"#NUM!", "ODDLYIELD requires redemption > 0"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,2,\"\")": {"#NUM!", "#NUM!"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,3)":      {"#NUM!", "#NUM!"},
+		"=ODDLYIELD(\"02/01/2017\",\"03/31/2021\",\"12/01/2016\",5.5%,3.5%,100,2,5)":    {"#NUM!", "invalid basis"},
 		// PDURATION
 		"=PDURATION()":         {"#VALUE!", "PDURATION requires 3 arguments"},
 		"=PDURATION(\"\",0,0)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -5497,6 +5618,42 @@ func TestCalcPEARSON(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcPROB(t *testing.T) {
+	cellData := [][]interface{}{
+		{"x", "probability"},
+		{0, 0.1},
+		{1, 0.15},
+		{2, 0.17},
+		{3, 0.22},
+		{4, 0.21},
+		{5, 0.09},
+		{6, 0.05},
+		{7, 0.01},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"=PROB(A2:A9,B2:B9,3)":    "0.22",
+		"=PROB(A2:A9,B2:B9,3,5)":  "0.52",
+		"=PROB(A2:A9,B2:B9,8,10)": "0",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=NA()"))
+	calcError := map[string][]string{
+		"=PROB(A2:A9,B2:B9,3)": {"#NUM!", "#NUM!"},
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Equal(t, expected[0], result, formula)
+		assert.EqualError(t, err, expected[1], formula)
 	}
 }
 
