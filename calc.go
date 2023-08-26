@@ -365,6 +365,7 @@ type formulaFuncs struct {
 //	AMORLINC
 //	AND
 //	ARABIC
+//	ARRAYTOTEXT
 //	ASIN
 //	ASINH
 //	ATAN
@@ -510,7 +511,10 @@ type formulaFuncs struct {
 //	FLOOR
 //	FLOOR.MATH
 //	FLOOR.PRECISE
+//	FORECAST
+//	FORECAST.LINEAR
 //	FORMULATEXT
+//	FREQUENCY
 //	FTEST
 //	FV
 //	FVSCHEDULE
@@ -567,6 +571,7 @@ type formulaFuncs struct {
 //	INDEX
 //	INDIRECT
 //	INT
+//	INTERCEPT
 //	INTRATE
 //	IPMT
 //	IRR
@@ -649,6 +654,9 @@ type formulaFuncs struct {
 //	OCT2HEX
 //	ODD
 //	ODDFPRICE
+//	ODDFYIELD
+//	ODDLPRICE
+//	ODDLYIELD
 //	OR
 //	PDURATION
 //	PEARSON
@@ -670,6 +678,7 @@ type formulaFuncs struct {
 //	PRICE
 //	PRICEDISC
 //	PRICEMAT
+//	PROB
 //	PRODUCT
 //	PROPER
 //	PV
@@ -763,6 +772,7 @@ type formulaFuncs struct {
 //	UNICODE
 //	UPPER
 //	VALUE
+//	VALUETOTEXT
 //	VAR
 //	VAR.P
 //	VAR.S
@@ -5657,6 +5667,76 @@ func (fn *formulaFuncs) POISSON(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(math.Exp(0-mean.Number) * math.Pow(mean.Number, x.Number) / fact(x.Number))
 }
 
+// prepareProbArgs checking and prepare arguments for the formula function
+// PROB.
+func prepareProbArgs(argsList *list.List) []formulaArg {
+	if argsList.Len() < 3 {
+		return []formulaArg{newErrorFormulaArg(formulaErrorVALUE, "PROB requires at least 3 arguments")}
+	}
+	if argsList.Len() > 4 {
+		return []formulaArg{newErrorFormulaArg(formulaErrorVALUE, "PROB requires at most 4 arguments")}
+	}
+	var lower, upper formulaArg
+	xRange := argsList.Front().Value.(formulaArg)
+	probRange := argsList.Front().Next().Value.(formulaArg)
+	if lower = argsList.Front().Next().Next().Value.(formulaArg); lower.Type != ArgNumber {
+		return []formulaArg{newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)}
+	}
+	upper = lower
+	if argsList.Len() == 4 {
+		if upper = argsList.Back().Value.(formulaArg); upper.Type != ArgNumber {
+			return []formulaArg{newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)}
+		}
+	}
+	nR1, nR2 := len(xRange.Matrix), len(probRange.Matrix)
+	if nR1 == 0 || nR2 == 0 {
+		return []formulaArg{newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)}
+	}
+	if nR1 != nR2 {
+		return []formulaArg{newErrorFormulaArg(formulaErrorNA, formulaErrorNA)}
+	}
+	nC1, nC2 := len(xRange.Matrix[0]), len(probRange.Matrix[0])
+	if nC1 != nC2 {
+		return []formulaArg{newErrorFormulaArg(formulaErrorNA, formulaErrorNA)}
+	}
+	return []formulaArg{xRange, probRange, lower, upper}
+}
+
+// PROB function calculates the probability associated with a given range. The
+// syntax of the function is:
+//
+//	PROB(x_range,prob_range,lower_limit,[upper_limit])
+func (fn *formulaFuncs) PROB(argsList *list.List) formulaArg {
+	args := prepareProbArgs(argsList)
+	if len(args) == 1 {
+		return args[0]
+	}
+	xRange, probRange, lower, upper := args[0], args[1], args[2], args[3]
+	var sum, res, fP, fW float64
+	var stop bool
+	for r := 0; r < len(xRange.Matrix) && !stop; r++ {
+		for c := 0; c < len(xRange.Matrix[0]) && !stop; c++ {
+			p := probRange.Matrix[r][c]
+			x := xRange.Matrix[r][c]
+			if p.Type == ArgNumber && x.Type == ArgNumber {
+				if fP, fW = p.Number, x.Number; fP < 0 || fP > 1 {
+					stop = true
+					continue
+				}
+				if sum += fP; fW >= lower.Number && fW <= upper.Number {
+					res += fP
+				}
+				continue
+			}
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	if stop || math.Abs(sum-1) > 1.0e-7 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	return newNumberFormulaArg(res)
+}
+
 // SUBTOTAL function performs a specified calculation (e.g. the sum, product,
 // average, etc.) for a supplied set of values. The syntax of the function is:
 //
@@ -7933,6 +8013,92 @@ func (fn *formulaFuncs) FISHERINV(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorVALUE, "FISHERINV requires 1 numeric argument")
 }
 
+// FORECAST function predicts a future point on a linear trend line fitted to a
+// supplied set of x- and y- values. The syntax of the function is:
+//
+//	FORECAST(x,known_y's,known_x's)
+func (fn *formulaFuncs) FORECAST(argsList *list.List) formulaArg {
+	return fn.pearsonProduct("FORECAST", 3, argsList)
+}
+
+// FORECASTdotLINEAR function predicts a future point on a linear trend line
+// fitted to a supplied set of x- and y- values. The syntax of the function is:
+//
+//	FORECAST.LINEAR(x,known_y's,known_x's)
+func (fn *formulaFuncs) FORECASTdotLINEAR(argsList *list.List) formulaArg {
+	return fn.pearsonProduct("FORECAST.LINEAR", 3, argsList)
+}
+
+// maritxToSortedColumnList convert matrix formula arguments to a ascending
+// order list by column.
+func maritxToSortedColumnList(arg formulaArg) formulaArg {
+	mtx, cols := []formulaArg{}, len(arg.Matrix[0])
+	for colIdx := 0; colIdx < cols; colIdx++ {
+		for _, row := range arg.Matrix {
+			cell := row[colIdx]
+			if cell.Type == ArgError {
+				return cell
+			}
+			if cell.Type == ArgNumber {
+				mtx = append(mtx, cell)
+			}
+		}
+	}
+	argsList := newListFormulaArg(mtx)
+	sort.Slice(argsList.List, func(i, j int) bool {
+		return argsList.List[i].Number < argsList.List[j].Number
+	})
+	return argsList
+}
+
+// FREQUENCY function to count how many children fall into different age
+// ranges. The syntax of the function is:
+//
+//	FREQUENCY(data_array,bins_array)
+func (fn *formulaFuncs) FREQUENCY(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "FREQUENCY requires 2 arguments")
+	}
+	data, bins := argsList.Front().Value.(formulaArg), argsList.Back().Value.(formulaArg)
+	if len(data.Matrix) == 0 {
+		data.Matrix = [][]formulaArg{{data}}
+	}
+	if len(bins.Matrix) == 0 {
+		bins.Matrix = [][]formulaArg{{bins}}
+	}
+	var (
+		dataMtx, binsMtx formulaArg
+		c                [][]formulaArg
+		i, j             int
+	)
+	if dataMtx = maritxToSortedColumnList(data); dataMtx.Type != ArgList {
+		return dataMtx
+	}
+	if binsMtx = maritxToSortedColumnList(bins); binsMtx.Type != ArgList {
+		return binsMtx
+	}
+	for row := 0; row < len(binsMtx.List)+1; row++ {
+		rows := []formulaArg{}
+		for col := 0; col < 1; col++ {
+			rows = append(rows, newNumberFormulaArg(0))
+		}
+		c = append(c, rows)
+	}
+	for j = 0; j < len(binsMtx.List); j++ {
+		n := 0.0
+		for i < len(dataMtx.List) && dataMtx.List[i].Number <= binsMtx.List[j].Number {
+			n++
+			i++
+		}
+		c[j] = []formulaArg{newNumberFormulaArg(n)}
+	}
+	c[j] = []formulaArg{newNumberFormulaArg(float64(len(dataMtx.List) - i))}
+	if len(c) > 2 {
+		c[1], c[2] = c[2], c[1]
+	}
+	return newMatrixFormulaArg(c)
+}
+
 // GAMMA function returns the value of the Gamma Function, Γ(n), for a
 // specified number, n. The syntax of the function is:
 //
@@ -8951,6 +9117,15 @@ func (fn *formulaFuncs) HYPGEOMDIST(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(binomCoeff(populationS.Number, sampleS.Number) *
 		binomCoeff(numberPop.Number-populationS.Number, numberSample.Number-sampleS.Number) /
 		binomCoeff(numberPop.Number, numberSample.Number))
+}
+
+// INTERCEPT function calculates the intercept (the value at the intersection
+// of the y axis) of the linear regression line through a supplied set of x-
+// and y- values. The syntax of the function is:
+//
+//	INTERCEPT(known_y's,known_x's)
+func (fn *formulaFuncs) INTERCEPT(argsList *list.List) formulaArg {
+	return fn.pearsonProduct("INTERCEPT", 2, argsList)
 }
 
 // KURT function calculates the kurtosis of a supplied set of values. The
@@ -10013,19 +10188,23 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 	return newNumberFormulaArg(min)
 }
 
-// pearsonProduct is an implementation of the formula functions PEARSON, RSQ
-// and SLOPE.
-func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formulaArg {
-	if argsList.Len() != 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 2 arguments", name))
+// pearsonProduct is an implementation of the formula functions FORECAST,
+// FORECAST.LINEAR, INTERCEPT, PEARSON, RSQ and SLOPE.
+func (fn *formulaFuncs) pearsonProduct(name string, n int, argsList *list.List) formulaArg {
+	if argsList.Len() != n {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires %d arguments", name, n))
 	}
-	var array1, array2 []formulaArg
-	if name == "SLOPE" {
-		array1 = argsList.Back().Value.(formulaArg).ToList()
-		array2 = argsList.Front().Value.(formulaArg).ToList()
-	} else {
-		array1 = argsList.Front().Value.(formulaArg).ToList()
-		array2 = argsList.Back().Value.(formulaArg).ToList()
+	var fx formulaArg
+	array1 := argsList.Back().Value.(formulaArg).ToList()
+	array2 := argsList.Front().Value.(formulaArg).ToList()
+	if name == "PEARSON" || name == "RSQ" {
+		array1, array2 = array2, array1
+	}
+	if n == 3 {
+		if fx = argsList.Front().Value.(formulaArg).ToNumber(); fx.Type != ArgNumber {
+			return fx
+		}
+		array2 = argsList.Front().Next().Value.(formulaArg).ToList()
 	}
 	if len(array1) != len(array2) {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
@@ -10051,16 +10230,17 @@ func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formula
 		deltaX += (num1.Number - x) * (num1.Number - x)
 		deltaY += (num2.Number - y) * (num2.Number - y)
 	}
-	if deltaX == 0 || deltaY == 0 {
+	if sum*deltaX*deltaY == 0 {
 		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
 	}
-	if name == "RSQ" {
-		return newNumberFormulaArg(math.Pow(sum/math.Sqrt(deltaX*deltaY), 2))
-	}
-	if name == "PEARSON" {
-		return newNumberFormulaArg(sum / math.Sqrt(deltaX*deltaY))
-	}
-	return newNumberFormulaArg(sum / deltaX)
+	return newNumberFormulaArg(map[string]float64{
+		"FORECAST":        y + sum/deltaX*(fx.Number-x),
+		"FORECAST.LINEAR": y + sum/deltaX*(fx.Number-x),
+		"INTERCEPT":       y - sum/deltaX*x,
+		"PEARSON":         sum / math.Sqrt(deltaX*deltaY),
+		"RSQ":             math.Pow(sum/math.Sqrt(deltaX*deltaY), 2),
+		"SLOPE":           sum / deltaX,
+	}[name])
 }
 
 // PEARSON function calculates the Pearson Product-Moment Correlation
@@ -10068,7 +10248,7 @@ func (fn *formulaFuncs) pearsonProduct(name string, argsList *list.List) formula
 //
 //	PEARSON(array1,array2)
 func (fn *formulaFuncs) PEARSON(argsList *list.List) formulaArg {
-	return fn.pearsonProduct("PEARSON", argsList)
+	return fn.pearsonProduct("PEARSON", 2, argsList)
 }
 
 // PERCENTILEdotEXC function returns the k'th percentile (i.e. the value below
@@ -10407,7 +10587,7 @@ func (fn *formulaFuncs) RANK(argsList *list.List) formulaArg {
 //
 //	RSQ(known_y's,known_x's)
 func (fn *formulaFuncs) RSQ(argsList *list.List) formulaArg {
-	return fn.pearsonProduct("RSQ", argsList)
+	return fn.pearsonProduct("RSQ", 2, argsList)
 }
 
 // skew is an implementation of the formula functions SKEW and SKEW.P.
@@ -10475,7 +10655,7 @@ func (fn *formulaFuncs) SKEWdotP(argsList *list.List) formulaArg {
 //
 //	SLOPE(known_y's,known_x's)
 func (fn *formulaFuncs) SLOPE(argsList *list.List) formulaArg {
-	return fn.pearsonProduct("SLOPE", argsList)
+	return fn.pearsonProduct("SLOPE", 2, argsList)
 }
 
 // SMALL function returns the k'th smallest value from an array of numeric
@@ -13203,8 +13383,65 @@ func (fn *formulaFuncs) WEEKNUM(argsList *list.List) formulaArg {
 
 // Text Functions
 
+// prepareToText checking and prepare arguments for the formula functions
+// ARRAYTOTEXT and VALUETOTEXT.
+func prepareToText(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 2 arguments", name))
+	}
+	format := newNumberFormulaArg(0)
+	if argsList.Len() == 2 {
+		if format = argsList.Back().Value.(formulaArg).ToNumber(); format.Type != ArgNumber {
+			return format
+		}
+	}
+	if format.Number != 0 && format.Number != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	return format
+}
+
+// ARRAYTOTEXT function returns an array of text values from any specified
+// range. It passes text values unchanged, and converts non-text values to
+// text. The syntax of the function is:
+//
+//	ARRAYTOTEXT(array,[format])
+func (fn *formulaFuncs) ARRAYTOTEXT(argsList *list.List) formulaArg {
+	var mtx [][]string
+	format := prepareToText("ARRAYTOTEXT", argsList)
+	if format.Type != ArgNumber {
+		return format
+	}
+	for _, rows := range argsList.Front().Value.(formulaArg).Matrix {
+		var row []string
+		for _, cell := range rows {
+			if num := cell.ToNumber(); num.Type != ArgNumber && format.Number == 1 {
+				row = append(row, fmt.Sprintf("\"%s\"", cell.Value()))
+				continue
+			}
+			row = append(row, cell.Value())
+		}
+		mtx = append(mtx, row)
+	}
+	var text []string
+	for _, row := range mtx {
+		if format.Number == 1 {
+			text = append(text, strings.Join(row, ","))
+			continue
+		}
+		text = append(text, strings.Join(row, ", "))
+	}
+	if format.Number == 1 {
+		return newStringFormulaArg(fmt.Sprintf("{%s}", strings.Join(text, ";")))
+	}
+	return newStringFormulaArg(strings.Join(text, ", "))
+}
+
 // CHAR function returns the character relating to a supplied character set
-// number (from 1 to 255). syntax of the function is:
+// number (from 1 to 255). The syntax of the function is:
 //
 //	CHAR(number)
 func (fn *formulaFuncs) CHAR(argsList *list.List) formulaArg {
@@ -13871,6 +14108,22 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	return newNumberFormulaArg(dateValue + timeValue)
+}
+
+// VALUETOTEXT function returns text from any specified value. It passes text
+// values unchanged, and converts non-text values to text.
+//
+//	VALUETOTEXT(value,[format])
+func (fn *formulaFuncs) VALUETOTEXT(argsList *list.List) formulaArg {
+	format := prepareToText("VALUETOTEXT", argsList)
+	if format.Type != ArgNumber {
+		return format
+	}
+	cell := argsList.Front().Value.(formulaArg)
+	if num := cell.ToNumber(); num.Type != ArgNumber && format.Number == 1 {
+		return newStringFormulaArg(fmt.Sprintf("\"%s\"", cell.Value()))
+	}
+	return newStringFormulaArg(cell.Value())
 }
 
 // Conditional Functions
@@ -16401,43 +16654,56 @@ func coupNumber(maturity, settlement, numMonths float64) float64 {
 	return result
 }
 
-// prepareOddfpriceArgs checking and prepare arguments for the formula
-// function ODDFPRICE.
-func (fn *formulaFuncs) prepareOddfpriceArgs(argsList *list.List) formulaArg {
+// prepareOddYldOrPrArg checking and prepare yield or price arguments for the
+// formula functions ODDFPRICE, ODDFYIELD, ODDLPRICE and ODDLYIELD.
+func prepareOddYldOrPrArg(name string, arg formulaArg) formulaArg {
+	yldOrPr := arg.ToNumber()
+	if yldOrPr.Type != ArgNumber {
+		return yldOrPr
+	}
+	if (name == "ODDFPRICE" || name == "ODDLPRICE") && yldOrPr.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires yld >= 0", name))
+	}
+	if (name == "ODDFYIELD" || name == "ODDLYIELD") && yldOrPr.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires pr > 0", name))
+	}
+	return yldOrPr
+}
+
+// prepareOddfArgs checking and prepare arguments for the formula
+// functions ODDFPRICE and ODDFYIELD.
+func (fn *formulaFuncs) prepareOddfArgs(name string, argsList *list.List) formulaArg {
 	dateValues := fn.prepareDataValueArgs(4, argsList)
 	if dateValues.Type != ArgList {
 		return dateValues
 	}
 	settlement, maturity, issue, firstCoupon := dateValues.List[0], dateValues.List[1], dateValues.List[2], dateValues.List[3]
 	if issue.Number >= settlement.Number {
-		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires settlement > issue")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires settlement > issue", name))
 	}
 	if settlement.Number >= firstCoupon.Number {
-		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires first_coupon > settlement")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires first_coupon > settlement", name))
 	}
 	if firstCoupon.Number >= maturity.Number {
-		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires maturity > first_coupon")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > first_coupon", name))
 	}
 	rate := argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
 	if rate.Type != ArgNumber {
 		return rate
 	}
 	if rate.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires rate >= 0")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires rate >= 0", name))
 	}
-	yld := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
-	if yld.Type != ArgNumber {
-		return yld
-	}
-	if yld.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires yld >= 0")
+	yldOrPr := prepareOddYldOrPrArg(name, argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg))
+	if yldOrPr.Type != ArgNumber {
+		return yldOrPr
 	}
 	redemption := argsList.Front().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
 	if redemption.Type != ArgNumber {
 		return redemption
 	}
 	if redemption.Number <= 0 {
-		return newErrorFormulaArg(formulaErrorNUM, "ODDFPRICE requires redemption > 0")
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires redemption > 0", name))
 	}
 	frequency := argsList.Front().Next().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
 	if frequency.Type != ArgNumber {
@@ -16452,7 +16718,7 @@ func (fn *formulaFuncs) prepareOddfpriceArgs(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 		}
 	}
-	return newListFormulaArg([]formulaArg{settlement, maturity, issue, firstCoupon, rate, yld, redemption, frequency, basis})
+	return newListFormulaArg([]formulaArg{settlement, maturity, issue, firstCoupon, rate, yldOrPr, redemption, frequency, basis})
 }
 
 // ODDFPRICE function calculates the price per $100 face value of a security
@@ -16463,7 +16729,7 @@ func (fn *formulaFuncs) ODDFPRICE(argsList *list.List) formulaArg {
 	if argsList.Len() != 8 && argsList.Len() != 9 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ODDFPRICE requires 8 or 9 arguments")
 	}
-	args := fn.prepareOddfpriceArgs(argsList)
+	args := fn.prepareOddfArgs("ODDFPRICE", argsList)
 	if args.Type != ArgList {
 		return args
 	}
@@ -16581,6 +16847,198 @@ func (fn *formulaFuncs) ODDFPRICE(argsList *list.List) formulaArg {
 	term3 := aggrBetween(1, math.Floor(n.Number), []float64{0}, f)
 	term4 := 100 * rate.Number / m * anl
 	return newNumberFormulaArg(term1 + term2 + term3[0] - term4)
+}
+
+// getODDFPRICE is a part of implementation of the formula function ODDFPRICE.
+func getODDFPRICE(f func(yld float64) float64, x, cnt, prec float64) float64 {
+	const maxCnt = 20.0
+	d := func(f func(yld float64) float64, x float64) float64 {
+		return (f(x+prec) - f(x-prec)) / (2 * prec)
+	}
+	fx, Fx := f(x), d(f, x)
+	newX := x - (fx / Fx)
+	if math.Abs(newX-x) < prec {
+		return newX
+	} else if cnt > maxCnt {
+		return newX
+	}
+	return getODDFPRICE(f, newX, cnt+1, prec)
+}
+
+// ODDFYIELD function calculates the yield of a security with an odd (short or
+// long) first period. The syntax of the function is:
+//
+//	ODDFYIELD(settlement,maturity,issue,first_coupon,rate,pr,redemption,frequency,[basis])
+func (fn *formulaFuncs) ODDFYIELD(argsList *list.List) formulaArg {
+	if argsList.Len() != 8 && argsList.Len() != 9 {
+		return newErrorFormulaArg(formulaErrorVALUE, "ODDFYIELD requires 8 or 9 arguments")
+	}
+	args := fn.prepareOddfArgs("ODDFYIELD", argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity, issue, firstCoupon, rate, pr, redemption, frequency, basisArg := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6], args.List[7], args.List[8]
+	if basisArg.Number < 0 || basisArg.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	settlementTime := timeFromExcelTime(settlement.Number, false)
+	maturityTime := timeFromExcelTime(maturity.Number, false)
+	years := coupdays(settlementTime, maturityTime, int(basisArg.Number))
+	px := pr.Number - 100
+	num := rate.Number*years*100 - px
+	denum := px/4 + years*px/2 + years*100
+	guess := num / denum
+	f := func(yld float64) float64 {
+		fnArgs := list.New().Init()
+		fnArgs.PushBack(settlement)
+		fnArgs.PushBack(maturity)
+		fnArgs.PushBack(issue)
+		fnArgs.PushBack(firstCoupon)
+		fnArgs.PushBack(rate)
+		fnArgs.PushBack(newNumberFormulaArg(yld))
+		fnArgs.PushBack(redemption)
+		fnArgs.PushBack(frequency)
+		fnArgs.PushBack(basisArg)
+		return pr.Number - fn.ODDFPRICE(fnArgs).Number
+	}
+	if result := getODDFPRICE(f, guess, 0, 1e-7); !math.IsInf(result, 0) {
+		return newNumberFormulaArg(result)
+	}
+	return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+}
+
+// prepareOddlArgs checking and prepare arguments for the formula
+// functions ODDLPRICE and ODDLYIELD.
+func (fn *formulaFuncs) prepareOddlArgs(name string, argsList *list.List) formulaArg {
+	dateValues := fn.prepareDataValueArgs(3, argsList)
+	if dateValues.Type != ArgList {
+		return dateValues
+	}
+	settlement, maturity, lastInterest := dateValues.List[0], dateValues.List[1], dateValues.List[2]
+	if lastInterest.Number >= settlement.Number {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires settlement > last_interest", name))
+	}
+	if settlement.Number >= maturity.Number {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires maturity > settlement", name))
+	}
+	rate := argsList.Front().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if rate.Type != ArgNumber {
+		return rate
+	}
+	if rate.Number < 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires rate >= 0", name))
+	}
+	yldOrPr := prepareOddYldOrPrArg(name, argsList.Front().Next().Next().Next().Next().Value.(formulaArg))
+	if yldOrPr.Type != ArgNumber {
+		return yldOrPr
+	}
+	redemption := argsList.Front().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if redemption.Type != ArgNumber {
+		return redemption
+	}
+	if redemption.Number <= 0 {
+		return newErrorFormulaArg(formulaErrorNUM, fmt.Sprintf("%s requires redemption > 0", name))
+	}
+	frequency := argsList.Front().Next().Next().Next().Next().Next().Next().Value.(formulaArg).ToNumber()
+	if frequency.Type != ArgNumber {
+		return frequency
+	}
+	if !validateFrequency(frequency.Number) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
+	basis := newNumberFormulaArg(0)
+	if argsList.Len() == 8 {
+		if basis = argsList.Back().Value.(formulaArg).ToNumber(); basis.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
+	}
+	return newListFormulaArg([]formulaArg{settlement, maturity, lastInterest, rate, yldOrPr, redemption, frequency, basis})
+}
+
+// oddl is an implementation of the formula functions ODDLPRICE and ODDLYIELD.
+func (fn *formulaFuncs) oddl(name string, argsList *list.List) formulaArg {
+	if argsList.Len() != 7 && argsList.Len() != 8 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires 7 or 8 arguments", name))
+	}
+	args := fn.prepareOddlArgs(name, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	settlement, maturity, lastInterest, rate, prOrYld, redemption, frequency, basisArg := args.List[0], args.List[1], args.List[2], args.List[3], args.List[4], args.List[5], args.List[6], args.List[7]
+	if basisArg.Number < 0 || basisArg.Number > 4 {
+		return newErrorFormulaArg(formulaErrorNUM, "invalid basis")
+	}
+	settlementTime := timeFromExcelTime(settlement.Number, false)
+	maturityTime := timeFromExcelTime(maturity.Number, false)
+	basis := int(basisArg.Number)
+	numMonths := 12 / frequency.Number
+	fnArgs := list.New().Init()
+	fnArgs.PushBack(lastInterest)
+	fnArgs.PushBack(maturity)
+	fnArgs.PushBack(frequency)
+	fnArgs.PushBack(basisArg)
+	nc := fn.COUPNUM(fnArgs)
+	earlyCoupon := lastInterest.Number
+	aggrFunc := func(acc []float64, index float64) []float64 {
+		earlyCouponTime := timeFromExcelTime(earlyCoupon, false)
+		lateCouponTime := changeMonth(earlyCouponTime, numMonths, false)
+		lateCoupon, _ := timeToExcelTime(lateCouponTime, false)
+		nl := coupdays(earlyCouponTime, lateCouponTime, basis)
+		dci := coupdays(earlyCouponTime, maturityTime, basis)
+		if index < nc.Number {
+			dci = nl
+		}
+		var a float64
+		if lateCoupon < settlement.Number {
+			a = dci
+		} else if earlyCoupon < settlement.Number {
+			a = coupdays(earlyCouponTime, settlementTime, basis)
+		}
+		startDate := earlyCoupon
+		if settlement.Number > earlyCoupon {
+			startDate = settlement.Number
+		}
+		endDate := lateCoupon
+		if maturity.Number < lateCoupon {
+			endDate = maturity.Number
+		}
+		startDateTime := timeFromExcelTime(startDate, false)
+		endDateTime := timeFromExcelTime(endDate, false)
+		dsc := coupdays(startDateTime, endDateTime, basis)
+		earlyCoupon = lateCoupon
+		dcnl := acc[0]
+		anl := acc[1]
+		dscnl := acc[2]
+		return []float64{dcnl + dci/nl, anl + a/nl, dscnl + dsc/nl}
+	}
+	ag := aggrBetween(1, math.Floor(nc.Number), []float64{0, 0, 0}, aggrFunc)
+	dcnl, anl, dscnl := ag[0], ag[1], ag[2]
+	x := 100.0 * rate.Number / frequency.Number
+	term1 := dcnl*x + redemption.Number
+	if name == "ODDLPRICE" {
+		term2 := dscnl*prOrYld.Number/frequency.Number + 1
+		term3 := anl * x
+		return newNumberFormulaArg(term1/term2 - term3)
+	}
+	term2 := anl*x + prOrYld.Number
+	term3 := frequency.Number / dscnl
+	return newNumberFormulaArg((term1 - term2) / term2 * term3)
+}
+
+// ODDLPRICE function calculates the price per $100 face value of a security
+// with an odd (short or long) last period. The syntax of the function is:
+//
+//	ODDLPRICE(settlement,maturity,last_interest,rate,yld,redemption,frequency,[basis])
+func (fn *formulaFuncs) ODDLPRICE(argsList *list.List) formulaArg {
+	return fn.oddl("ODDLPRICE", argsList)
+}
+
+// ODDLYIELD function calculates the yield of a security with an odd (short or
+// long) last period. The syntax of the function is:
+//
+//	ODDLYIELD(settlement,maturity,last_interest,rate,pr,redemption,frequency,[basis])
+func (fn *formulaFuncs) ODDLYIELD(argsList *list.List) formulaArg {
+	return fn.oddl("ODDLYIELD", argsList)
 }
 
 // PDURATION function calculates the number of periods required for an
@@ -17743,7 +18201,7 @@ func (fn *formulaFuncs) database(name string, argsList *list.List) formulaArg {
 
 // DAVERAGE function calculates the average (statistical mean) of values in a
 // field (column) in a database for selected records, that satisfy
-// user-specified criteria. The syntax of the Excel Daverage function is:
+// user-specified criteria. The syntax of the function is:
 //
 //	DAVERAGE(database,field,criteria)
 func (fn *formulaFuncs) DAVERAGE(argsList *list.List) formulaArg {
