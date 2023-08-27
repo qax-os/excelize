@@ -1302,7 +1302,7 @@ func (f *File) extractProtection(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 	}
 }
 
-// GetStyle get style details by given style index.
+// GetStyle provides a function to get style definition by given style index.
 func (f *File) GetStyle(idx int) (*Style, error) {
 	var style *Style
 	f.mu.Lock()

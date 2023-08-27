@@ -112,7 +112,12 @@ func (dv *DataValidation) SetInput(title, msg string) {
 	dv.Prompt = &msg
 }
 
-// SetDropList data validation list.
+// SetDropList data validation list. If you type the items into the data
+// validation dialog box (a delimited list), the limit is 255 characters,
+// including the separators. If your data validation list source formula is
+// over the maximum length limit, please set the allowed values in the
+// worksheet cells, and use the SetSqrefDropList function to set the reference
+// for their cells.
 func (dv *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
 	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
@@ -162,9 +167,12 @@ func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 // SetSqrefDropList provides set data validation on a range with source
 // reference range of the worksheet by given data validation object and
 // worksheet name. The data validation object can be created by
-// NewDataValidation function. For example, set data validation on
-// Sheet1!A7:B8 with validation criteria source Sheet1!E1:E3 settings, create
-// in-cell dropdown by allowing list source:
+// NewDataValidation function. There are limits to the number of items that
+// will show in a data validation drop down list: The list can show up to show
+// 32768 items from a list on the worksheet. If you need more items than that,
+// you could create a dependent drop down list, broken down by category. For
+// example, set data validation on Sheet1!A7:B8 with validation criteria source
+// Sheet1!E1:E3 settings, create in-cell dropdown by allowing list source:
 //
 //	dv := excelize.NewDataValidation(true)
 //	dv.Sqref = "A7:B8"
