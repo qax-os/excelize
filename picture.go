@@ -614,6 +614,52 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
 
+// GetAllPictures provides a function to get all pictures meta info and raw content
+// embed in spreadsheet by given worksheet. This function
+// returns the image contents as []byte data types. This function is
+// concurrency safe. For example:
+//
+//	f, err := excelize.OpenFile("Book1.xlsx")
+//	if err != nil {
+//	    fmt.Println(err)
+//	    return
+//	}
+//	defer func() {
+//	    if err := f.Close(); err != nil {
+//	        fmt.Println(err)
+//	    }
+//	}()
+//	picsMap, err := f.GetAllPictures("Sheet1")
+//	if err != nil {
+//		fmt.Println(err)
+//	}
+//	for cellName, pics := range picsMap {
+//		for _, pic := range pics {
+//			name := fmt.Sprintf("image%d%s", idx+1, pic.Extension)
+//			if err := os.WriteFile(name, pic.File, 0644); err != nil {
+//				fmt.Println(err)
+//			}
+//		}
+//	}
+func (f *File) GetAllPictures(sheet string) (map[string][]Picture, error) {
+	f.mu.Lock()
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		f.mu.Unlock()
+		return nil, err
+	}
+	f.mu.Unlock()
+	if ws.Drawing == nil {
+		return nil, err
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
+	drawingXML := strings.ReplaceAll(target, "..", "xl")
+	drawingRelationships := strings.ReplaceAll(
+		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
+
+	return f.getAllPictures(drawingXML, drawingRelationships)
+}
+
 // DeletePicture provides a function to delete all pictures in a cell by given
 // worksheet name and cell reference. Note that the image file won't be deleted
 // from the document currently.
@@ -791,5 +837,84 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 	}
 	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	w, h = int(width*opts.ScaleX), int(height*opts.ScaleY)
+	return
+}
+
+// getAllPictures provides a function to get all pictures base name and raw content
+// embed in spreadsheet by given drawing relationships, return a map[cellName][]Picture.
+func (f *File) getAllPictures(drawingXML, drawingRelationships string) (pics map[string][]Picture, err error) {
+	var (
+		ok           bool
+		deWsDr       *decodeWsDr
+		deCellAnchor *decodeCellAnchor
+		drawRel      *xlsxRelationship
+		wsDr         *xlsxWsDr
+	)
+
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return
+	}
+	pics = f.getPicturesMapFromWsDr(drawingRelationships, wsDr)
+	deWsDr = new(decodeWsDr)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
+		Decode(deWsDr); err != nil && err != io.EOF {
+		return
+	}
+	err = nil
+	extractAnchor := func(anchor *decodeCellAnchor) {
+		deCellAnchor = new(decodeCellAnchor)
+		if err := f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.Content + "</decodeCellAnchor>")).
+			Decode(deCellAnchor); err != nil && err != io.EOF {
+			return
+		}
+		if err = nil; deCellAnchor.From != nil && deCellAnchor.Pic != nil {
+			drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
+			if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
+				pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
+				if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
+					pic.File = buffer.([]byte)
+					pic.Format.AltText = deCellAnchor.Pic.NvPicPr.CNvPr.Descr
+					if cellName, err := CoordinatesToCellName(deCellAnchor.From.Col, deCellAnchor.From.Row); err == nil {
+						pics[cellName] = append(pics[cellName], pic)
+					}
+				}
+			}
+		}
+	}
+	for _, anchor := range deWsDr.TwoCellAnchor {
+		extractAnchor(anchor)
+	}
+	for _, anchor := range deWsDr.OneCellAnchor {
+		extractAnchor(anchor)
+	}
+	return
+}
+
+func (f *File) getPicturesMapFromWsDr(drawingRelationships string, wsDr *xlsxWsDr) (pics map[string][]Picture) {
+	var (
+		ok      bool
+		anchor  *xdrCellAnchor
+		drawRel *xlsxRelationship
+	)
+	pics = make(map[string][]Picture)
+	wsDr.mu.Lock()
+	defer wsDr.mu.Unlock()
+	for _, anchor = range wsDr.TwoCellAnchor {
+		if anchor.From != nil && anchor.Pic != nil {
+			if drawRel = f.getDrawingRelationships(drawingRelationships,
+				anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
+				if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
+					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
+					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
+						pic.File = buffer.([]byte)
+						pic.Format.AltText = anchor.Pic.NvPicPr.CNvPr.Descr
+						if cellName, err := CoordinatesToCellName(anchor.From.Col, anchor.From.Row); err == nil {
+							pics[cellName] = append(pics[cellName], pic)
+						}
+					}
+				}
+			}
+		}
+	}
 	return
 }
