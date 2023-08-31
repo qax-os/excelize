@@ -210,7 +210,7 @@ func (f *File) DeleteTable(name string) error {
 	return newNoExistTableError(name)
 }
 
-// GetTableData provides the method to return the data of a table given its range
+// GetTableData provides the method to return the values of a table given its range
 // and worksheet name.
 func (f *File) GetTableData(sheet string, tableRange string) ([][]string, error) {
 	coordinates, err := rangeRefToCoordinates(tableRange)
@@ -236,8 +236,8 @@ func (f *File) GetTableData(sheet string, tableRange string) ([][]string, error)
 	return data, nil
 }
 
-// GetTableColumns provides the method to return the data of a table given its range
-// and worksheet name.
+// GetTableColumns provides the method to return the values of a table as a map with the headers as the keys,
+// given its range and worksheet name.
 func (f *File) GetTableColumns(sheet string, table Table) (map[string][]string, error) {
 	coordinates, err := rangeRefToCoordinates(table.Range)
 	if err != nil {
