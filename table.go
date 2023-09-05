@@ -289,7 +289,7 @@ func checkDefinedName(name string) error {
 		if unicode.IsLetter(c) {
 			continue
 		}
-		if i > 0 && unicode.IsDigit(c) {
+		if i > 0 && (unicode.IsDigit(c) || c == '.') {
 			continue
 		}
 		return newInvalidNameError(name)
