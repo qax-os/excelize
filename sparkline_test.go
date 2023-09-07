@@ -267,16 +267,14 @@ func TestAddSparkline(t *testing.T) {
 	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: `
-		<ext uri="{A8765BA9-456A-4dab-B4F3-ACF838C121DE}"><x14:slicerList /></ext>
-		<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"><x14:sparklineGroups /></ext>`}
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:slicerList /></ext><ext uri="%s"><x14:sparklineGroups /></ext>`, ExtURISlicerListX14, ExtURISparklineGroups)}
 	assert.NoError(t, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"A3"},
 		Range:    []string{"Sheet3!A2:J2"},
 		Type:     "column",
 	}))
 	// Test creating a conditional format with invalid extension list characters
-	ws.(*xlsxWorksheet).ExtLst.Ext = `<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"><x14:sparklineGroups><x14:sparklineGroup></x14:sparklines></x14:sparklineGroup></x14:sparklineGroups></ext>`
+	ws.(*xlsxWorksheet).ExtLst.Ext = fmt.Sprintf(`<ext uri="%s"><x14:sparklineGroups><x14:sparklineGroup></x14:sparklines></x14:sparklineGroup></x14:sparklineGroups></ext>`, ExtURISparklineGroups)
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"A2"},
 		Range:    []string{"Sheet3!A1:J1"},

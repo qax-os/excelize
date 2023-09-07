@@ -311,8 +311,8 @@ type xlsxIndexedColors struct {
 // legacy color palette has been modified (backwards compatibility settings) or
 // a custom color has been selected while using this workbook.
 type xlsxStyleColors struct {
-	IndexedColors xlsxIndexedColors `xml:"indexedColors"`
-	MruColors     xlsxInnerXML      `xml:"mruColors"`
+	IndexedColors *xlsxIndexedColors `xml:"indexedColors"`
+	MruColors     xlsxInnerXML       `xml:"mruColors"`
 }
 
 // Alignment directly maps the alignment settings of the cells.

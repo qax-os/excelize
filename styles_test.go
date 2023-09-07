@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -180,9 +181,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: `
-		<ext uri="{A8765BA9-456A-4dab-B4F3-ACF838C121DE}"><x14:slicerList /></ext>
-		<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"><x14:sparklineGroups /></ext>`}
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:slicerList /></ext><ext uri="%s"><x14:sparklineGroups /></ext>`, ExtURISlicerListX14, ExtURISparklineGroups)}
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarSolid: true}}))
 	f = NewFile()
 	// Test creating a conditional format with invalid extension list characters
@@ -573,7 +572,7 @@ func TestGetStyle(t *testing.T) {
 
 	// Test get style with custom color index
 	f.Styles.Colors = &xlsxStyleColors{
-		IndexedColors: xlsxIndexedColors{
+		IndexedColors: &xlsxIndexedColors{
 			RgbColor: []xlsxColor{{RGB: "FF012345"}},
 		},
 	}

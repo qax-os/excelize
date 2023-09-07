@@ -29,6 +29,7 @@ var (
 	NameSpaceSpreadSheetExcel2006Main       = xml.Attr{Name: xml.Name{Local: "xne", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/excel/2006/main"}
 	NameSpaceSpreadSheetX14                 = xml.Attr{Name: xml.Name{Local: "x14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"}
 	NameSpaceSpreadSheetX15                 = xml.Attr{Name: xml.Name{Local: "x15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main"}
+	NameSpaceSpreadSheetXR10                = xml.Attr{Name: xml.Name{Local: "xr10", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/spreadsheetml/2016/revision10"}
 	SourceRelationship                      = xml.Attr{Name: xml.Name{Local: "r", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
 	SourceRelationshipChart20070802         = xml.Attr{Name: xml.Name{Local: "c14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2007/8/2/chart"}
 	SourceRelationshipChart2014             = xml.Attr{Name: xml.Name{Local: "c16", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2014/chart"}
@@ -43,6 +44,8 @@ const (
 	ContentTypeDrawingML                          = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
 	ContentTypeMacro                              = "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
 	ContentTypeSheetML                            = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
+	ContentTypeSlicer                             = "application/vnd.ms-excel.slicer+xml"
+	ContentTypeSlicerCache                        = "application/vnd.ms-excel.slicerCache+xml"
 	ContentTypeSpreadSheetMLChartsheet            = "application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml"
 	ContentTypeSpreadSheetMLComments              = "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"
 	ContentTypeSpreadSheetMLPivotCacheDefinition  = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"
@@ -74,6 +77,7 @@ const (
 	SourceRelationshipPivotCache                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition"
 	SourceRelationshipPivotTable                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"
 	SourceRelationshipSharedStrings               = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
+	SourceRelationshipSlicer                      = "http://schemas.microsoft.com/office/2007/relationships/slicer"
 	SourceRelationshipTable                       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
 	SourceRelationshipVBAProject                  = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
 	SourceRelationshipWorkSheet                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
@@ -97,6 +101,7 @@ const (
 	ExtURIDrawingBlip                 = "{28A0092B-C50C-407E-A947-70E740481C1C}"
 	ExtURIIgnoredErrors               = "{01252117-D84E-4E92-8308-4BE1C098FCBB}"
 	ExtURIMacExcelMX                  = "{64002731-A6B0-56B0-2670-7721B7C09600}"
+	ExtURIPivotCacheDefinition        = "{725AE2AE-9491-48be-B2B4-4EB974FC3084}"
 	ExtURIProtectedRanges             = "{FC87AEE6-9EDD-4A0A-B7FB-166176984837}"
 	ExtURISlicerCachesListX14         = "{BBE1A952-AA13-448e-AADC-164F8A28A991}"
 	ExtURISlicerListX14               = "{A8765BA9-456A-4DAB-B4F3-ACF838C121DE}"
@@ -221,6 +226,9 @@ var supportedDrawingUnderlineTypes = []string{
 
 // supportedPositioning defined supported positioning types.
 var supportedPositioning = []string{"absolute", "oneCell", "twoCell"}
+
+// builtInDefinedNames defined built-in defined names are built with a _xlnm prefix.
+var builtInDefinedNames = []string{"_xlnm.Print_Area", "_xlnm.Print_Titles", "_xlnm._FilterDatabase"}
 
 // xlsxCNvPr directly maps the cNvPr (Non-Visual Drawing Properties). This
 // element specifies non-visual canvas properties. This allows for additional

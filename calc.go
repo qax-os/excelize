@@ -706,6 +706,8 @@ type formulaFuncs struct {
 //	ROWS
 //	RRI
 //	RSQ
+//	SEARCH
+//	SEARCHB
 //	SEC
 //	SECH
 //	SECOND
@@ -9303,7 +9305,7 @@ func (fn *formulaFuncs) FdotDISTdotRT(argsList *list.List) formulaArg {
 	return fn.FDIST(argsList)
 }
 
-// prepareFinvArgs checking and prepare arguments for the formula function
+// prepareFinvArgs checking and prepare arguments for the formula functions
 // F.INV, F.INV.RT and FINV.
 func (fn *formulaFuncs) prepareFinvArgs(name string, argsList *list.List) formulaArg {
 	if argsList.Len() != 3 {
@@ -13612,17 +13614,16 @@ func (fn *formulaFuncs) FINDB(argsList *list.List) formulaArg {
 	return fn.find("FINDB", argsList)
 }
 
-// find is an implementation of the formula functions FIND and FINDB.
-func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
+// prepareFindArgs checking and prepare arguments for the formula functions
+// FIND, FINDB, SEARCH and SEARCHB.
+func (fn *formulaFuncs) prepareFindArgs(name string, argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
 	}
 	if argsList.Len() > 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 3 arguments", name))
 	}
-	findText := argsList.Front().Value.(formulaArg).Value()
-	withinText := argsList.Front().Next().Value.(formulaArg).Value()
-	startNum, result := 1, 1
+	startNum := 1
 	if argsList.Len() == 3 {
 		numArg := argsList.Back().Value.(formulaArg).ToNumber()
 		if numArg.Type != ArgNumber {
@@ -13633,19 +13634,44 @@ func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
 		}
 		startNum = int(numArg.Number)
 	}
+	return newListFormulaArg([]formulaArg{newNumberFormulaArg(float64(startNum))})
+}
+
+// find is an implementation of the formula functions FIND, FINDB, SEARCH and
+// SEARCHB.
+func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
+	args := fn.prepareFindArgs(name, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	findText := argsList.Front().Value.(formulaArg).Value()
+	withinText := argsList.Front().Next().Value.(formulaArg).Value()
+	startNum := int(args.List[0].Number)
 	if findText == "" {
 		return newNumberFormulaArg(float64(startNum))
 	}
-	for idx := range withinText {
-		if result < startNum {
-			result++
-		}
-		if strings.Index(withinText[idx:], findText) == 0 {
-			return newNumberFormulaArg(float64(result))
-		}
-		result++
+	dbcs, search := name == "FINDB" || name == "SEARCHB", name == "SEARCH" || name == "SEARCHB"
+	if search {
+		findText, withinText = strings.ToUpper(findText), strings.ToUpper(withinText)
 	}
-	return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	offset, ok := matchPattern(findText, withinText, dbcs, startNum)
+	if !ok {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	result := offset
+	if dbcs {
+		var pre int
+		for idx := range withinText {
+			if pre > offset {
+				break
+			}
+			if idx-pre > 1 {
+				result++
+			}
+			pre = idx
+		}
+	}
+	return newNumberFormulaArg(float64(result))
 }
 
 // LEFT function returns a specified number of characters from the start of a
@@ -13780,20 +13806,37 @@ func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 		return numCharsArg
 	}
 	startNum := int(startNumArg.Number)
-	if startNum < 0 {
+	if startNum < 1 || numCharsArg.Number < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	if name == "MIDB" {
-		textLen := len(text)
-		if startNum > textLen {
-			return newStringFormulaArg("")
+		var result string
+		var cnt, offset int
+		for _, char := range text {
+			offset++
+			var dbcs bool
+			if utf8.RuneLen(char) > 1 {
+				dbcs = true
+				offset++
+			}
+			if cnt == int(numCharsArg.Number) {
+				break
+			}
+			if offset+1 > startNum {
+				if dbcs {
+					if cnt+2 > int(numCharsArg.Number) {
+						result += string(char)[:1]
+						break
+					}
+					result += string(char)
+					cnt += 2
+				} else {
+					result += string(char)
+					cnt++
+				}
+			}
 		}
-		startNum--
-		endNum := startNum + int(numCharsArg.Number)
-		if endNum > textLen+1 {
-			return newStringFormulaArg(text[startNum:])
-		}
-		return newStringFormulaArg(text[startNum:endNum])
+		return newStringFormulaArg(result)
 	}
 	// MID
 	textLen := utf8.RuneCountInString(text)
@@ -13920,6 +13963,23 @@ func (fn *formulaFuncs) RIGHT(argsList *list.List) formulaArg {
 //	RIGHTB(text,[num_bytes])
 func (fn *formulaFuncs) RIGHTB(argsList *list.List) formulaArg {
 	return fn.leftRight("RIGHTB", argsList)
+}
+
+// SEARCH function returns the position of a specified character or sub-string
+// within a supplied text string. The syntax of the function is:
+//
+//	SEARCH(search_text,within_text,[start_num])
+func (fn *formulaFuncs) SEARCH(argsList *list.List) formulaArg {
+	return fn.find("SEARCH", argsList)
+}
+
+// SEARCHB functions locate one text string within a second text string, and
+// return the number of the starting position of the first text string from the
+// first character of the second text string. The syntax of the function is:
+//
+//	SEARCHB(search_text,within_text,[start_num])
+func (fn *formulaFuncs) SEARCHB(argsList *list.List) formulaArg {
+	return fn.find("SEARCHB", argsList)
 }
 
 // SUBSTITUTE function replaces one or more instances of a given text string,
@@ -14255,46 +14315,57 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	return arg.Value.(formulaArg)
 }
 
-// deepMatchRune finds whether the text deep matches/satisfies the pattern
-// string.
-func deepMatchRune(str, pattern []rune, simple bool) bool {
-	for len(pattern) > 0 {
-		switch pattern[0] {
-		default:
-			if len(str) == 0 || str[0] != pattern[0] {
-				return false
-			}
-		case '?':
-			if len(str) == 0 && !simple {
-				return false
-			}
-		case '*':
-			return deepMatchRune(str, pattern[1:], simple) ||
-				(len(str) > 0 && deepMatchRune(str[1:], pattern, simple))
-		}
-		str = str[1:]
-		pattern = pattern[1:]
+// matchPatternToRegExp convert find text pattern to regular expression.
+func matchPatternToRegExp(findText string, dbcs bool) (string, bool) {
+	var (
+		exp      string
+		wildCard bool
+		mark     = "."
+	)
+	if dbcs {
+		mark = "(?:(?:[\\x00-\\x0081])|(?:[\\xFF61-\\xFFA0])|(?:[\\xF8F1-\\xF8F4])|[0-9A-Za-z])"
 	}
-	return len(str) == 0 && len(pattern) == 0
+	for _, char := range findText {
+		if strings.ContainsAny(string(char), ".+$^[](){}|/") {
+			exp += fmt.Sprintf("\\%s", string(char))
+			continue
+		}
+		if char == '?' {
+			wildCard = true
+			exp += mark
+			continue
+		}
+		if char == '*' {
+			wildCard = true
+			exp += ".*"
+			continue
+		}
+		exp += string(char)
+	}
+	return fmt.Sprintf("^%s", exp), wildCard
 }
 
 // matchPattern finds whether the text matches or satisfies the pattern
 // string. The pattern supports '*' and '?' wildcards in the pattern string.
-func matchPattern(pattern, name string) (matched bool) {
-	if pattern == "" {
-		return name == pattern
+func matchPattern(findText, withinText string, dbcs bool, startNum int) (int, bool) {
+	exp, wildCard := matchPatternToRegExp(findText, dbcs)
+	offset := 1
+	for idx := range withinText {
+		if offset < startNum {
+			offset++
+			continue
+		}
+		if wildCard {
+			if ok, _ := regexp.MatchString(exp, withinText[idx:]); ok {
+				break
+			}
+		}
+		if strings.Index(withinText[idx:], findText) == 0 {
+			break
+		}
+		offset++
 	}
-	if pattern == "*" {
-		return true
-	}
-	rName, rPattern := make([]rune, 0, len(name)), make([]rune, 0, len(pattern))
-	for _, r := range name {
-		rName = append(rName, r)
-	}
-	for _, r := range pattern {
-		rPattern = append(rPattern, r)
-	}
-	return deepMatchRune(rName, rPattern, false)
+	return offset, utf8.RuneCountInString(withinText) != offset-1
 }
 
 // compareFormulaArg compares the left-hand sides and the right-hand sides'
@@ -14319,7 +14390,7 @@ func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte 
 			ls, rs = strings.ToLower(ls), strings.ToLower(rs)
 		}
 		if matchMode.Number == matchModeWildcard {
-			if matchPattern(rs, ls) {
+			if _, ok := matchPattern(rs, ls, false, 0); ok {
 				return criteriaEq
 			}
 		}

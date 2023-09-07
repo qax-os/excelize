@@ -427,7 +427,6 @@ func (f *File) AutoFilter(sheet, rangeRef string, opts []AutoFilterOptions) erro
 	_ = sortCoordinates(coordinates)
 	// Correct reference range, such correct C1:B3 to B1:C3.
 	ref, _ := f.coordinatesToRangeRef(coordinates, true)
-	filterDB := "_xlnm._FilterDatabase"
 	wb, err := f.workbookReader()
 	if err != nil {
 		return err
@@ -438,7 +437,7 @@ func (f *File) AutoFilter(sheet, rangeRef string, opts []AutoFilterOptions) erro
 	}
 	filterRange := fmt.Sprintf("'%s'!%s", sheet, ref)
 	d := xlsxDefinedName{
-		Name:         filterDB,
+		Name:         builtInDefinedNames[2],
 		Hidden:       true,
 		LocalSheetID: intPtr(sheetID),
 		Data:         filterRange,
@@ -451,7 +450,7 @@ func (f *File) AutoFilter(sheet, rangeRef string, opts []AutoFilterOptions) erro
 		var definedNameExists bool
 		for idx := range wb.DefinedNames.DefinedName {
 			definedName := wb.DefinedNames.DefinedName[idx]
-			if definedName.Name == filterDB && *definedName.LocalSheetID == sheetID && definedName.Hidden {
+			if definedName.Name == builtInDefinedNames[2] && *definedName.LocalSheetID == sheetID && definedName.Hidden {
 				wb.DefinedNames.DefinedName[idx].Data = filterRange
 				definedNameExists = true
 			}

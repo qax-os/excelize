@@ -506,6 +506,8 @@ func (f *File) addContentTypePart(index int, contentType string) error {
 		"pivotTable":    "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
 		"pivotCache":    "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
 		"sharedStrings": "/xl/sharedStrings.xml",
+		"slicer":        "/xl/slicers/slicer" + strconv.Itoa(index) + ".xml",
+		"slicerCache":   "/xl/slicerCaches/slicerCache" + strconv.Itoa(index) + ".xml",
 	}
 	contentTypes := map[string]string{
 		"chart":         ContentTypeDrawingML,
@@ -516,6 +518,8 @@ func (f *File) addContentTypePart(index int, contentType string) error {
 		"pivotTable":    ContentTypeSpreadSheetMLPivotTable,
 		"pivotCache":    ContentTypeSpreadSheetMLPivotCacheDefinition,
 		"sharedStrings": ContentTypeSpreadSheetMLSharedStrings,
+		"slicer":        ContentTypeSlicer,
+		"slicerCache":   ContentTypeSlicerCache,
 	}
 	s, ok := setContentType[contentType]
 	if ok {

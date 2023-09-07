@@ -764,6 +764,30 @@ func TestCalcCellValue(t *testing.T) {
 		"=ROUNDUP(-11.111,2)":         "-11.12",
 		"=ROUNDUP(-11.111,-1)":        "-20",
 		"=ROUNDUP(ROUNDUP(100,1),-1)": "100",
+		// SEARCH
+		"=SEARCH(\"s\",F1)":           "1",
+		"=SEARCH(\"s\",F1,2)":         "5",
+		"=SEARCH(\"e\",F1)":           "4",
+		"=SEARCH(\"e*\",F1)":          "4",
+		"=SEARCH(\"?e\",F1)":          "3",
+		"=SEARCH(\"??e\",F1)":         "2",
+		"=SEARCH(6,F2)":               "2",
+		"=SEARCH(\"?\",\"你好world\")":  "1",
+		"=SEARCH(\"?l\",\"你好world\")": "5",
+		"=SEARCH(\"?+\",\"你好 1+2\")":  "4",
+		"=SEARCH(\" ?+\",\"你好 1+2\")": "3",
+		// SEARCHB
+		"=SEARCHB(\"s\",F1)":           "1",
+		"=SEARCHB(\"s\",F1,2)":         "5",
+		"=SEARCHB(\"e\",F1)":           "4",
+		"=SEARCHB(\"e*\",F1)":          "4",
+		"=SEARCHB(\"?e\",F1)":          "3",
+		"=SEARCHB(\"??e\",F1)":         "2",
+		"=SEARCHB(6,F2)":               "2",
+		"=SEARCHB(\"?\",\"你好world\")":  "5",
+		"=SEARCHB(\"?l\",\"你好world\")": "7",
+		"=SEARCHB(\"?+\",\"你好 1+2\")":  "6",
+		"=SEARCHB(\" ?+\",\"你好 1+2\")": "5",
 		// SEC
 		"=_xlfn.SEC(-3.14159265358979)": "-1",
 		"=_xlfn.SEC(0)":                 "1",
@@ -1707,6 +1731,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=FIND(\"i\",\"Original Text\",4)": "5",
 		"=FIND(\"\",\"Original Text\")":    "1",
 		"=FIND(\"\",\"Original Text\",2)":  "2",
+		"=FIND(\"s\",\"Sales\",2)":         "5",
 		// FINDB
 		"=FINDB(\"T\",\"Original Text\")":   "10",
 		"=FINDB(\"t\",\"Original Text\")":   "13",
@@ -1714,6 +1739,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=FINDB(\"i\",\"Original Text\",4)": "5",
 		"=FINDB(\"\",\"Original Text\")":    "1",
 		"=FINDB(\"\",\"Original Text\",2)":  "2",
+		"=FINDB(\"s\",\"Sales\",2)":         "5",
 		// LEFT
 		"=LEFT(\"Original Text\")":    "O",
 		"=LEFT(\"Original Text\",4)":  "Orig",
@@ -1752,14 +1778,18 @@ func TestCalcCellValue(t *testing.T) {
 		"=MID(\"255 years\",3,1)":     "5",
 		"=MID(\"text\",3,6)":          "xt",
 		"=MID(\"text\",6,0)":          "",
-		"=MID(\"オリジナルテキスト\",6,4)":     "テキスト",
-		"=MID(\"オリジナルテキスト\",3,5)":     "ジナルテキ",
+		"=MID(\"你好World\",5,1)":       "r",
+		"=MID(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",6,4)": "\u30C6\u30AD\u30B9\u30C8",
+		"=MID(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",3,5)": "\u30B8\u30CA\u30EB\u30C6\u30AD",
 		// MIDB
 		"=MIDB(\"Original Text\",7,1)": "a",
 		"=MIDB(\"Original Text\",4,7)": "ginal T",
 		"=MIDB(\"255 years\",3,1)":     "5",
 		"=MIDB(\"text\",3,6)":          "xt",
 		"=MIDB(\"text\",6,0)":          "",
+		"=MIDB(\"你好World\",5,1)":       "W",
+		"=MIDB(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",6,4)": "\u30B8\u30CA",
+		"=MIDB(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",3,5)": "\u30EA\u30B8\xe3",
 		// PROPER
 		"=PROPER(\"this is a test sentence\")": "This Is A Test Sentence",
 		"=PROPER(\"THIS IS A TEST SENTENCE\")": "This Is A Test Sentence",
@@ -2695,6 +2725,17 @@ func TestCalcCellValue(t *testing.T) {
 		"=ROUNDUP()":      {"#VALUE!", "ROUNDUP requires 2 numeric arguments"},
 		`=ROUNDUP("X",1)`: {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		`=ROUNDUP(1,"X")`: {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		// SEARCH
+		"=SEARCH()":          {"#VALUE!", "SEARCH requires at least 2 arguments"},
+		"=SEARCH(1,A1,1,1)":  {"#VALUE!", "SEARCH allows at most 3 arguments"},
+		"=SEARCH(2,A1)":      {"#VALUE!", "#VALUE!"},
+		"=SEARCH(1,A1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		// SEARCHB
+		"=SEARCHB()":                   {"#VALUE!", "SEARCHB requires at least 2 arguments"},
+		"=SEARCHB(1,A1,1,1)":           {"#VALUE!", "SEARCHB allows at most 3 arguments"},
+		"=SEARCHB(2,A1)":               {"#VALUE!", "#VALUE!"},
+		"=SEARCHB(\"?w\",\"你好world\")": {"#VALUE!", "#VALUE!"},
+		"=SEARCHB(1,A1,\"\")":          {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// SEC
 		"=_xlfn.SEC()":    {"#VALUE!", "SEC requires 1 numeric argument"},
 		`=_xlfn.SEC("X")`: {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3781,12 +3822,14 @@ func TestCalcCellValue(t *testing.T) {
 		"=LOWER(1,2)": {"#VALUE!", "LOWER requires 1 argument"},
 		// MID
 		"=MID()":            {"#VALUE!", "MID requires 3 arguments"},
-		"=MID(\"\",-1,1)":   {"#VALUE!", "#VALUE!"},
+		"=MID(\"\",0,1)":    {"#VALUE!", "#VALUE!"},
+		"=MID(\"\",1,-1)":   {"#VALUE!", "#VALUE!"},
 		"=MID(\"\",\"\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"=MID(\"\",1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// MIDB
 		"=MIDB()":            {"#VALUE!", "MIDB requires 3 arguments"},
-		"=MIDB(\"\",-1,1)":   {"#VALUE!", "#VALUE!"},
+		"=MIDB(\"\",0,1)":    {"#VALUE!", "#VALUE!"},
+		"=MIDB(\"\",1,-1)":   {"#VALUE!", "#VALUE!"},
 		"=MIDB(\"\",\"\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"=MIDB(\"\",1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// PROPER
@@ -4684,14 +4727,6 @@ func TestCalcCompareFormulaArg(t *testing.T) {
 	assert.Equal(t, compareFormulaArg(formulaArg{Type: ArgUnknown}, formulaArg{Type: ArgUnknown}, newNumberFormulaArg(matchModeMaxLess), false), criteriaErr)
 }
 
-func TestCalcMatchPattern(t *testing.T) {
-	assert.True(t, matchPattern("", ""))
-	assert.True(t, matchPattern("file/*", "file/abc/bcd/def"))
-	assert.True(t, matchPattern("*", ""))
-	assert.False(t, matchPattern("?", ""))
-	assert.False(t, matchPattern("file/?", "file/abc/bcd/def"))
-}
-
 func TestCalcTRANSPOSE(t *testing.T) {
 	cellData := [][]interface{}{
 		{"a", "d"},
@@ -5376,7 +5411,6 @@ func TestCalcXLOOKUP(t *testing.T) {
 		"=XLOOKUP()": {"#VALUE!", "XLOOKUP requires at least 3 arguments"},
 		"=XLOOKUP($C3,$C5:$C5,$C6:$C17,NA(),0,2,1)":  {"#VALUE!", "XLOOKUP allows at most 6 arguments"},
 		"=XLOOKUP($C3,$C5,$C6,NA(),0,2)":             {"#N/A", "#N/A"},
-		"=XLOOKUP(\"?\",B2:B9,C2:C9,NA(),2)":         {"#N/A", "#N/A"},
 		"=XLOOKUP($C3,$C4:$D5,$C6:$C17,NA(),0,2)":    {"#VALUE!", "#VALUE!"},
 		"=XLOOKUP($C3,$C5:$C5,$C6:$G17,NA(),0,-2)":   {"#VALUE!", "#VALUE!"},
 		"=XLOOKUP($C3,$C5:$G5,$C6:$F7,NA(),0,2)":     {"#VALUE!", "#VALUE!"},

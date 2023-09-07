@@ -565,7 +565,7 @@ func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
 			c.V = strconv.FormatFloat(excelTime, 'G', 15, 64)
 		}
 	}
-	return f.formattedValue(c, raw, CellTypeBool)
+	return f.formattedValue(c, raw, CellTypeDate)
 }
 
 // getValueFrom return a value from a column/row cell, this function is
