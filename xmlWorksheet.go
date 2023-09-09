@@ -81,8 +81,8 @@ type xlsxHeaderFooter struct {
 	XMLName          xml.Name `xml:"headerFooter"`
 	DifferentOddEven bool     `xml:"differentOddEven,attr,omitempty"`
 	DifferentFirst   bool     `xml:"differentFirst,attr,omitempty"`
-	ScaleWithDoc     bool     `xml:"scaleWithDoc,attr,omitempty"`
-	AlignWithMargins bool     `xml:"alignWithMargins,attr,omitempty"`
+	ScaleWithDoc     *bool    `xml:"scaleWithDoc,attr"`
+	AlignWithMargins *bool    `xml:"alignWithMargins,attr"`
 	OddHeader        string   `xml:"oddHeader,omitempty"`
 	OddFooter        string   `xml:"oddFooter,omitempty"`
 	EvenHeader       string   `xml:"evenHeader,omitempty"`
@@ -963,10 +963,10 @@ type SheetProtectionOptions struct {
 
 // HeaderFooterOptions directly maps the settings of header and footer.
 type HeaderFooterOptions struct {
-	AlignWithMargins bool
+	AlignWithMargins *bool
 	DifferentFirst   bool
 	DifferentOddEven bool
-	ScaleWithDoc     bool
+	ScaleWithDoc     *bool
 	OddHeader        string
 	OddFooter        string
 	EvenHeader       string

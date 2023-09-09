@@ -449,8 +449,11 @@ func (f *File) AutoFilter(sheet, rangeRef string, opts []AutoFilterOptions) erro
 	} else {
 		var definedNameExists bool
 		for idx := range wb.DefinedNames.DefinedName {
-			definedName := wb.DefinedNames.DefinedName[idx]
-			if definedName.Name == builtInDefinedNames[2] && *definedName.LocalSheetID == sheetID && definedName.Hidden {
+			definedName, localSheetID := wb.DefinedNames.DefinedName[idx], 0
+			if definedName.LocalSheetID != nil {
+				localSheetID = *definedName.LocalSheetID
+			}
+			if definedName.Name == builtInDefinedNames[2] && localSheetID == sheetID && definedName.Hidden {
 				wb.DefinedNames.DefinedName[idx].Data = filterRange
 				definedNameExists = true
 			}

@@ -266,7 +266,7 @@ func TestSetHeaderFooter(t *testing.T) {
 func TestDefinedName(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetDefinedName(&DefinedName{
-		Name:     "Amount",
+		Name:     "Amount.",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
 		Scope:    "Sheet1",
