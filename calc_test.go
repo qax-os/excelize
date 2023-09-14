@@ -673,6 +673,8 @@ func TestCalcCellValue(t *testing.T) {
 		// MINVERSE
 		"=MINVERSE(A1:B2)": "-0",
 		// MMULT
+		"=MMULT(0,0)":         "0",
+		"=MMULT(2,4)":         "8",
 		"=MMULT(A4:A4,A4:A4)": "0",
 		// MOD
 		"=MOD(6,4)":        "2",
@@ -5139,16 +5141,17 @@ func TestCalcCHITESTandCHISQdotTEST(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string][]string{
-		"=CHITEST()":               {"#VALUE!", "CHITEST requires 2 arguments"},
-		"=CHITEST(B3:C5,F3:F4)":    {"#N/A", "#N/A"},
-		"=CHITEST(B3:B3,F3:F3)":    {"#N/A", "#N/A"},
-		"=CHITEST(F3:F5,B4:B6)":    {"#NUM!", "#NUM!"},
-		"=CHITEST(F3:F5,C4:C6)":    {"#DIV/0!", "#DIV/0!"},
-		"=CHISQ.TEST()":            {"#VALUE!", "CHISQ.TEST requires 2 arguments"},
-		"=CHISQ.TEST(B3:C5,F3:F4)": {"#N/A", "#N/A"},
-		"=CHISQ.TEST(B3:B3,F3:F3)": {"#N/A", "#N/A"},
-		"=CHISQ.TEST(F3:F5,B4:B6)": {"#NUM!", "#NUM!"},
-		"=CHISQ.TEST(F3:F5,C4:C6)": {"#DIV/0!", "#DIV/0!"},
+		"=CHITEST()":                  {"#VALUE!", "CHITEST requires 2 arguments"},
+		"=CHITEST(MUNIT(0),MUNIT(0))": {"#VALUE!", "#VALUE!"},
+		"=CHITEST(B3:C5,F3:F4)":       {"#N/A", "#N/A"},
+		"=CHITEST(B3:B3,F3:F3)":       {"#N/A", "#N/A"},
+		"=CHITEST(F3:F5,B4:B6)":       {"#NUM!", "#NUM!"},
+		"=CHITEST(F3:F5,C4:C6)":       {"#DIV/0!", "#DIV/0!"},
+		"=CHISQ.TEST()":               {"#VALUE!", "CHISQ.TEST requires 2 arguments"},
+		"=CHISQ.TEST(B3:C5,F3:F4)":    {"#N/A", "#N/A"},
+		"=CHISQ.TEST(B3:B3,F3:F3)":    {"#N/A", "#N/A"},
+		"=CHISQ.TEST(F3:F5,B4:B6)":    {"#NUM!", "#NUM!"},
+		"=CHISQ.TEST(F3:F5,C4:C6)":    {"#DIV/0!", "#DIV/0!"},
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "I1", formula))

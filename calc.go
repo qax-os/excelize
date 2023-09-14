@@ -4803,11 +4803,16 @@ func (fn *formulaFuncs) MMULT(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MMULT requires 2 argument")
 	}
-	numMtx1, errArg1 := newNumberMatrix(argsList.Front().Value.(formulaArg), false)
+	arr1 := argsList.Front().Value.(formulaArg)
+	arr2 := argsList.Back().Value.(formulaArg)
+	if arr1.Type == ArgNumber && arr2.Type == ArgNumber {
+		return newNumberFormulaArg(arr1.Number * arr2.Number)
+	}
+	numMtx1, errArg1 := newNumberMatrix(arr1, false)
 	if errArg1.Type == ArgError {
 		return errArg1
 	}
-	numMtx2, errArg2 := newNumberMatrix(argsList.Back().Value.(formulaArg), false)
+	numMtx2, errArg2 := newNumberMatrix(arr2, false)
 	if errArg2.Type == ArgError {
 		return errArg2
 	}
@@ -7191,6 +7196,9 @@ func (fn *formulaFuncs) CHITEST(argsList *list.List) formulaArg {
 	actual, expected := argsList.Front().Value.(formulaArg), argsList.Back().Value.(formulaArg)
 	actualList, expectedList := actual.ToList(), expected.ToList()
 	rows := len(actual.Matrix)
+	if rows == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
 	columns := len(actualList) / rows
 	if len(actualList) != len(expectedList) || len(actualList) == 1 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)

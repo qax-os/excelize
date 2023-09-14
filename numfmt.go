@@ -4759,9 +4759,9 @@ func (nf *numberFormat) getNumberFmtConf() {
 		if token.TType == nfp.TokenTypeHashPlaceHolder {
 			if nf.usePointer {
 				nf.fracHolder += len(token.TValue)
-			} else {
-				nf.intHolder += len(token.TValue)
+				continue
 			}
+			nf.intHolder += len(token.TValue)
 		}
 		if token.TType == nfp.TokenTypeExponential {
 			nf.useScientificNotation = true
@@ -4779,6 +4779,7 @@ func (nf *numberFormat) getNumberFmtConf() {
 			nf.switchArgument = token.TValue
 		}
 		if token.TType == nfp.TokenTypeZeroPlaceHolder {
+			nf.intHolder = 0
 			if nf.usePointer {
 				if nf.useScientificNotation {
 					nf.expBaseLen += len(token.TValue)
@@ -4795,7 +4796,7 @@ func (nf *numberFormat) getNumberFmtConf() {
 // printNumberLiteral apply literal tokens for the pre-formatted text.
 func (nf *numberFormat) printNumberLiteral(text string) string {
 	var result string
-	var useLiteral, useZeroPlaceHolder bool
+	var useLiteral, usePlaceHolder bool
 	if nf.usePositive {
 		result += "-"
 	}
@@ -4807,17 +4808,17 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 			result += nf.currencyString
 		}
 		if token.TType == nfp.TokenTypeLiteral {
-			if useZeroPlaceHolder {
+			if usePlaceHolder {
 				useLiteral = true
 			}
 			result += token.TValue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder {
-			if useLiteral && useZeroPlaceHolder {
+		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
+			if useLiteral && usePlaceHolder {
 				return nf.value
 			}
-			if !useZeroPlaceHolder {
-				useZeroPlaceHolder = true
+			if !usePlaceHolder {
+				usePlaceHolder = true
 				result += text
 			}
 		}
@@ -4896,8 +4897,11 @@ func (nf *numberFormat) numberHandler() string {
 		result            string
 	)
 	nf.getNumberFmtConf()
-	if intLen = intPart; nf.intPadding > intPart {
-		intLen = nf.intPadding
+	if nf.intHolder > intPart {
+		nf.intHolder = intPart
+	}
+	if intLen = intPart; nf.intPadding+nf.intHolder > intPart {
+		intLen = nf.intPadding + nf.intHolder
 	}
 	if fracLen = fracPart; fracPart > nf.fracHolder+nf.fracPadding {
 		fracLen = nf.fracHolder + nf.fracPadding
