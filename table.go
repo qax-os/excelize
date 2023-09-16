@@ -151,6 +151,7 @@ func (f *File) GetTables(sheet string) ([]Table, error) {
 			}
 			table := Table{
 				rID:   tbl.RID,
+				tID:   t.ID,
 				Range: t.Ref,
 				Name:  t.Name,
 			}
@@ -216,7 +217,15 @@ func (f *File) countTables() int {
 	count := 0
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/tables/table") {
-			count++
+			var t xlsxTable
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v.([]byte)))).
+				Decode(&t); err != nil && err != io.EOF {
+				count++
+				return true
+			}
+			if count < t.ID {
+				count = t.ID
+			}
 		}
 		return true
 	})
@@ -343,9 +352,9 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 		t.AutoFilter = nil
 		t.HeaderRowCount = intPtr(0)
 	}
-	table, _ := xml.Marshal(t)
+	table, err := xml.Marshal(t)
 	f.saveFileList(tableXML, table)
-	return nil
+	return err
 }
 
 // AutoFilter provides the method to add auto filter in a worksheet by given

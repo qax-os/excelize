@@ -329,7 +329,7 @@ func (f *File) coordinatesToRangeRef(coordinates []int, abs ...bool) (string, er
 }
 
 // getDefinedNameRefTo convert defined name to reference range.
-func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
+func (f *File) getDefinedNameRefTo(definedNameName, currentSheet string) (refTo string) {
 	var workbookRefTo, worksheetRefTo string
 	for _, definedName := range f.GetDefinedName() {
 		if definedName.Name == definedNameName {
@@ -431,17 +431,17 @@ func float64Ptr(f float64) *float64 { return &f }
 func stringPtr(s string) *string { return &s }
 
 // Value extracts string data type text from a attribute value.
-func (attr *attrValString) Value() string {
-	if attr != nil && attr.Val != nil {
-		return *attr.Val
+func (avb *attrValString) Value() string {
+	if avb != nil && avb.Val != nil {
+		return *avb.Val
 	}
 	return ""
 }
 
 // Value extracts boolean data type value from a attribute value.
-func (attr *attrValBool) Value() bool {
-	if attr != nil && attr.Val != nil {
-		return *attr.Val
+func (avb *attrValBool) Value() bool {
+	if avb != nil && avb.Val != nil {
+		return *avb.Val
 	}
 	return false
 }
@@ -514,6 +514,34 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	}
 	defaultVal := true
 	avb.Val = &defaultVal
+	return nil
+}
+
+// MarshalXML encodes ext element with specified namespace attributes on
+// serialization.
+func (ext xlsxExt) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = ext.xmlns
+	return e.EncodeElement(decodeExt{URI: ext.URI, Content: ext.Content}, start)
+}
+
+// UnmarshalXML extracts ext element attributes namespace by giving XML decoder
+// on deserialization.
+func (ext *xlsxExt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "uri" {
+			continue
+		}
+		if attr.Name.Space == "xmlns" {
+			attr.Name.Space = ""
+			attr.Name.Local = "xmlns:" + attr.Name.Local
+		}
+		ext.xmlns = append(ext.xmlns, attr)
+	}
+	e := &decodeExt{}
+	if err := d.DecodeElement(&e, &start); err != nil {
+		return err
+	}
+	ext.URI, ext.Content = e.URI, e.Content
 	return nil
 }
 

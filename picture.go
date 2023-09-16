@@ -30,8 +30,8 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 		return &GraphicOptions{
 			PrintObject: boolPtr(true),
 			Locked:      boolPtr(true),
-			ScaleX:      defaultPictureScale,
-			ScaleY:      defaultPictureScale,
+			ScaleX:      defaultDrawingScale,
+			ScaleY:      defaultDrawingScale,
 		}
 	}
 	if opts.PrintObject == nil {
@@ -41,10 +41,10 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 		opts.Locked = boolPtr(true)
 	}
 	if opts.ScaleX == 0 {
-		opts.ScaleX = defaultPictureScale
+		opts.ScaleX = defaultDrawingScale
 	}
 	if opts.ScaleY == 0 {
-		opts.ScaleY = defaultPictureScale
+		opts.ScaleY = defaultDrawingScale
 	}
 	return opts
 }
@@ -440,6 +440,28 @@ func (f *File) addMedia(file []byte, ext string) string {
 	return media
 }
 
+// setContentTypePartRelsExtensions provides a function to set the content
+// type for relationship parts and the Main Document part.
+func (f *File) setContentTypePartRelsExtensions() error {
+	var rels bool
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	for _, v := range content.Defaults {
+		if v.Extension == "rels" {
+			rels = true
+		}
+	}
+	if !rels {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   "rels",
+			ContentType: ContentTypeRelationships,
+		})
+	}
+	return err
+}
+
 // setContentTypePartImageExtensions provides a function to set the content
 // type for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() error {
@@ -542,7 +564,7 @@ func (f *File) addContentTypePart(index int, contentType string) error {
 		PartName:    partNames[contentType],
 		ContentType: contentTypes[contentType],
 	})
-	return err
+	return f.setContentTypePartRelsExtensions()
 }
 
 // getSheetRelationshipsTargetByID provides a function to get Target attribute

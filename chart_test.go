@@ -184,8 +184,8 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Sizes: "Sheet1!$B$37:$D$37"},
 	}
 	format := GraphicOptions{
-		ScaleX:          defaultPictureScale,
-		ScaleY:          defaultPictureScale,
+		ScaleX:          defaultDrawingScale,
+		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),
@@ -369,8 +369,8 @@ func TestDeleteChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
 	}
 	format := GraphicOptions{
-		ScaleX:          defaultPictureScale,
-		ScaleY:          defaultPictureScale,
+		ScaleX:          defaultDrawingScale,
+		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),

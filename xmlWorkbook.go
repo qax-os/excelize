@@ -16,7 +16,8 @@ import (
 	"sync"
 )
 
-// xlsxRelationships describe references from parts to other internal resources in the package or to external resources.
+// xlsxRelationships describe references from parts to other internal resources
+// in the package or to external resources.
 type xlsxRelationships struct {
 	mu            sync.Mutex
 	XMLName       xml.Name           `xml:"http://schemas.openxmlformats.org/package/2006/relationships Relationships"`
@@ -216,6 +217,63 @@ type xlsxPivotCache struct {
 // not be understood by a consumer.
 type xlsxExtLst struct {
 	Ext string `xml:",innerxml"`
+}
+
+// xlsxExt represents a the future feature data storage area. Each extension
+// within an extension list shall be contained within an ext element.
+// Extensions shall be versioned by namespace, using the uri attribute, and
+// shall be allowed to appear in any order within the extension list. Any
+// number of extensions shall be allowed within an extension list.
+type xlsxExt struct {
+	XMLName xml.Name `xml:"ext"`
+	URI     string   `xml:"uri,attr"`
+	Content string   `xml:",innerxml"`
+	xmlns   []xml.Attr
+}
+
+// xlsxAlternateContent is a container for a sequence of multiple
+// representations of a given piece of content. The program reading the file
+// should only process one of these, and the one chosen should be based on
+// which conditions match.
+type xlsxAlternateContent struct {
+	XMLNSMC string `xml:"xmlns:mc,attr,omitempty"`
+	Content string `xml:",innerxml"`
+}
+
+// xlsxChoice element shall be an element in the Markup Compatibility namespace
+// with local name "Choice". Parent elements of Choice elements shall be
+// AlternateContent elements.
+type xlsxChoice struct {
+	XMLName    xml.Name `xml:"mc:Choice"`
+	XMLNSSle15 string   `xml:"xmlns:sle15,attr,omitempty"`
+	Requires   string   `xml:"Requires,attr,omitempty"`
+	Content    string   `xml:",innerxml"`
+}
+
+// xlsxFallback element shall be an element in the Markup Compatibility
+// namespace with local name "Fallback". Parent elements of Fallback elements
+// shall be AlternateContent elements.
+type xlsxFallback struct {
+	XMLName xml.Name `xml:"mc:Fallback"`
+	Content string   `xml:",innerxml"`
+}
+
+// xlsxInnerXML holds parts of XML content currently not unmarshal.
+type xlsxInnerXML struct {
+	Content string `xml:",innerxml"`
+}
+
+// decodeExtLst defines the structure used to parse the extLst element
+// of the future feature data storage area.
+type decodeExtLst struct {
+	XMLName xml.Name   `xml:"extLst"`
+	Ext     []*xlsxExt `xml:"ext"`
+}
+
+// decodeExt defines the structure used to parse the ext element.
+type decodeExt struct {
+	URI     string `xml:"uri,attr,omitempty"`
+	Content string `xml:",innerxml"`
 }
 
 // xlsxDefinedNames directly maps the definedNames element. This element defines

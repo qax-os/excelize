@@ -499,10 +499,10 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 		opts.Format.Locked = boolPtr(false)
 	}
 	if opts.Format.ScaleX == 0 {
-		opts.Format.ScaleX = defaultPictureScale
+		opts.Format.ScaleX = defaultDrawingScale
 	}
 	if opts.Format.ScaleY == 0 {
-		opts.Format.ScaleY = defaultPictureScale
+		opts.Format.ScaleY = defaultDrawingScale
 	}
 	if opts.Legend.Position == "" {
 		opts.Legend.Position = defaultChartLegendPosition

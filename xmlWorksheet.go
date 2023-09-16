@@ -699,33 +699,6 @@ type xlsxLegacyDrawingHF struct {
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
-// xlsxAlternateContent is a container for a sequence of multiple
-// representations of a given piece of content. The program reading the file
-// should only process one of these, and the one chosen should be based on
-// which conditions match.
-type xlsxAlternateContent struct {
-	XMLNSMC string `xml:"xmlns:mc,attr,omitempty"`
-	Content string `xml:",innerxml"`
-}
-
-// xlsxInnerXML holds parts of XML content currently not unmarshal.
-type xlsxInnerXML struct {
-	Content string `xml:",innerxml"`
-}
-
-// xlsxWorksheetExt directly maps the ext element in the worksheet.
-type xlsxWorksheetExt struct {
-	XMLName xml.Name `xml:"ext"`
-	URI     string   `xml:"uri,attr"`
-	Content string   `xml:",innerxml"`
-}
-
-// decodeWorksheetExt directly maps the ext element.
-type decodeWorksheetExt struct {
-	XMLName xml.Name            `xml:"extLst"`
-	Ext     []*xlsxWorksheetExt `xml:"ext"`
-}
-
 // decodeX14SparklineGroups directly maps the sparklineGroups element.
 type decodeX14SparklineGroups struct {
 	XMLName xml.Name `xml:"sparklineGroups"`
@@ -733,8 +706,7 @@ type decodeX14SparklineGroups struct {
 	Content string   `xml:",innerxml"`
 }
 
-// decodeX14ConditionalFormattingExt directly maps the ext
-// element.
+// decodeX14ConditionalFormattingExt directly maps the ext element.
 type decodeX14ConditionalFormattingExt struct {
 	XMLName xml.Name `xml:"ext"`
 	ID      string   `xml:"id"`

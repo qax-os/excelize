@@ -2615,10 +2615,10 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 		err                                      error
 		idx                                      int
 		appendMode                               bool
-		decodeExtLst                             = new(decodeWorksheetExt)
+		decodeExtLst                             = new(decodeExtLst)
 		condFmts                                 *xlsxX14ConditionalFormattings
 		decodeCondFmts                           *decodeX14ConditionalFormattings
-		ext                                      *xlsxWorksheetExt
+		ext                                      *xlsxExt
 		condFmtBytes, condFmtsBytes, extLstBytes []byte
 	)
 	condFmtBytes, _ = xml.Marshal([]*xlsxX14ConditionalFormatting{
@@ -2645,7 +2645,7 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 	}
 	if !appendMode {
 		condFmtsBytes, _ = xml.Marshal(&xlsxX14ConditionalFormattings{Content: string(condFmtBytes)})
-		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxWorksheetExt{
+		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
 			URI: ExtURIConditionalFormattings, Content: string(condFmtsBytes),
 		})
 	}
@@ -2781,7 +2781,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 			}
 		}
 	}
-	extractExtLst := func(extLst *decodeWorksheetExt) {
+	extractExtLst := func(extLst *decodeExtLst) {
 		for _, ext := range extLst.Ext {
 			if ext.URI == ExtURIConditionalFormattings {
 				decodeCondFmts := new(decodeX14ConditionalFormattings)
@@ -2797,7 +2797,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 	if c.ExtLst != nil {
 		ext := decodeX14ConditionalFormattingExt{}
 		if err := xml.Unmarshal([]byte(c.ExtLst.Ext), &ext); err == nil && extLst != nil {
-			decodeExtLst := new(decodeWorksheetExt)
+			decodeExtLst := new(decodeExtLst)
 			if err = xml.Unmarshal([]byte("<extLst>"+extLst.Ext+"</extLst>"), decodeExtLst); err == nil {
 				extractExtLst(decodeExtLst)
 			}

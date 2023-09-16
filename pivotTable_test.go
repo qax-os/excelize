@@ -257,8 +257,8 @@ func TestPivotTable(t *testing.T) {
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")
 	assert.EqualError(t, err, "parameter is invalid")
-	// Test get pivot fields order with empty data range
-	_, err = f.getPivotFieldsOrder(&PivotTableOptions{})
+	// Test get table fields order with empty data range
+	_, err = f.getTableFieldsOrder("", "")
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot cache with empty data range
 	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is required")
@@ -367,8 +367,8 @@ func TestAddPivotColFields(t *testing.T) {
 
 func TestGetPivotFieldsOrder(t *testing.T) {
 	f := NewFile()
-	// Test get pivot fields order with not exist worksheet
-	_, err := f.getPivotFieldsOrder(&PivotTableOptions{DataRange: "SheetN!A1:E31"})
+	// Test get table fields order with not exist worksheet
+	_, err := f.getTableFieldsOrder("", "SheetN!A1:E31")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 

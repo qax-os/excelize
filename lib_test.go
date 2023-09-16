@@ -274,6 +274,15 @@ func TestBoolValUnmarshalXML(t *testing.T) {
 	assert.EqualError(t, attr.UnmarshalXML(xml.NewDecoder(strings.NewReader("")), xml.StartElement{}), io.EOF.Error())
 }
 
+func TestExtUnmarshalXML(t *testing.T) {
+	f, extLst := NewFile(), decodeExtLst{}
+	expected := fmt.Sprintf(`<extLst><ext uri="%s" xmlns:x14="%s"/></extLst>`,
+		ExtURISlicerCachesX14, NameSpaceSpreadSheetX14.Value)
+	assert.NoError(t, f.xmlNewDecoder(strings.NewReader(expected)).Decode(&extLst))
+	assert.Len(t, extLst.Ext, 1)
+	assert.Equal(t, extLst.Ext[0].URI, ExtURISlicerCachesX14)
+}
+
 func TestBytesReplace(t *testing.T) {
 	s := []byte{0x01}
 	assert.EqualValues(t, s, bytesReplace(s, []byte{}, []byte{}, 0))

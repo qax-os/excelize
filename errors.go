@@ -34,6 +34,12 @@ func newInvalidCellNameError(cell string) error {
 	return fmt.Errorf("invalid cell name %q", cell)
 }
 
+// newInvalidSlicerNameError defined the error message on receiving the invalid
+// slicer name.
+func newInvalidSlicerNameError(name string) error {
+	return fmt.Errorf("invalid slicer name %q", name)
+}
+
 // newInvalidExcelDateError defined the error message on receiving the data
 // with negative values.
 func newInvalidExcelDateError(dateValue float64) error {

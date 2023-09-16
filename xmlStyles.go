@@ -257,7 +257,7 @@ type xlsxDxf struct {
 	Alignment  *xlsxAlignment  `xml:"alignment"`
 	Border     *xlsxBorder     `xml:"border"`
 	Protection *xlsxProtection `xml:"protection"`
-	ExtLst     *xlsxExt        `xml:"extLst"`
+	ExtLst     *aExt           `xml:"extLst"`
 }
 
 // xlsxTableStyles directly maps the tableStyles element. This element
@@ -312,7 +312,7 @@ type xlsxIndexedColors struct {
 // a custom color has been selected while using this workbook.
 type xlsxStyleColors struct {
 	IndexedColors *xlsxIndexedColors `xml:"indexedColors"`
-	MruColors     xlsxInnerXML       `xml:"mruColors"`
+	MruColors     *xlsxInnerXML      `xml:"mruColors"`
 }
 
 // Alignment directly maps the alignment settings of the cells.

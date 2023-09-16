@@ -198,6 +198,7 @@ type xlsxTableStyleInfo struct {
 
 // Table directly maps the format settings of the table.
 type Table struct {
+	tID               int
 	rID               string
 	Range             string
 	Name              string

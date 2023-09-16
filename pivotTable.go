@@ -89,9 +89,9 @@ type PivotTableField struct {
 // options. Note that the same fields can not in Columns, Rows and Filter
 // fields at the same time.
 //
-// For example, create a pivot table on the range reference Sheet1!$G$2:$M$34
-// with the range reference Sheet1!$A$1:$E$31 as the data source, summarize by
-// sum for sales:
+// For example, create a pivot table on the range reference Sheet1!G2:M34 with
+// the range reference Sheet1!A1:E31 as the data source, summarize by sum for
+// sales:
 //
 //	package main
 //
@@ -242,15 +242,15 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 	return rng[0], []int{x1, y1, x2, y2}, nil
 }
 
-// getPivotFieldsOrder provides a function to get order list of pivot table
+// getTableFieldsOrder provides a function to get order list of pivot table
 // fields.
-func (f *File) getPivotFieldsOrder(opts *PivotTableOptions) ([]string, error) {
+func (f *File) getTableFieldsOrder(sheetName, dataRange string) ([]string, error) {
 	var order []string
-	dataRange := f.getDefinedNameRefTo(opts.DataRange, opts.pivotTableSheetName)
-	if dataRange == "" {
-		dataRange = opts.DataRange
+	ref := f.getDefinedNameRefTo(dataRange, sheetName)
+	if ref == "" {
+		ref = dataRange
 	}
-	dataSheet, coordinates, err := f.adjustRange(dataRange)
+	dataSheet, coordinates, err := f.adjustRange(ref)
 	if err != nil {
 		return order, fmt.Errorf("parameter 'DataRange' parsing error: %s", err.Error())
 	}
@@ -279,7 +279,7 @@ func (f *File) addPivotCache(pivotCacheXML string, opts *PivotTableOptions) erro
 		return fmt.Errorf("parameter 'DataRange' parsing error: %s", err.Error())
 	}
 	// data range has been checked
-	order, _ := f.getPivotFieldsOrder(opts)
+	order, _ := f.getTableFieldsOrder(opts.pivotTableSheetName, opts.DataRange)
 	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
@@ -541,7 +541,7 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opts *PivotTableO
 // addPivotFields create pivot fields based on the column order of the first
 // row in the data region by given pivot table definition and option.
 func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOptions) error {
-	order, err := f.getPivotFieldsOrder(opts)
+	order, err := f.getTableFieldsOrder(opts.pivotTableSheetName, opts.DataRange)
 	if err != nil {
 		return err
 	}
@@ -647,7 +647,7 @@ func (f *File) countPivotCache() int {
 // to a sequential index by given fields and pivot option.
 func (f *File) getPivotFieldsIndex(fields []PivotTableField, opts *PivotTableOptions) ([]int, error) {
 	var pivotFieldsIndex []int
-	orders, err := f.getPivotFieldsOrder(opts)
+	orders, err := f.getTableFieldsOrder(opts.pivotTableSheetName, opts.DataRange)
 	if err != nil {
 		return pivotFieldsIndex, err
 	}
@@ -809,7 +809,7 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		opts.ShowLastColumn = si.ShowLastColumn
 		opts.PivotTableStyleName = si.Name
 	}
-	order, _ := f.getPivotFieldsOrder(&PivotTableOptions{DataRange: dataRange, pivotTableSheetName: pt.Name})
+	order, _ := f.getTableFieldsOrder(pt.Name, dataRange)
 	f.extractPivotTableFields(order, pt, &opts)
 	return opts, err
 }

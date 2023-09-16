@@ -269,6 +269,17 @@ func TestDrawingResize(t *testing.T) {
 	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
+func TestSetContentTypePartRelsExtensions(t *testing.T) {
+	f := NewFile()
+	f.ContentTypes = &xlsxTypes{}
+	assert.NoError(t, f.setContentTypePartRelsExtensions())
+
+	// Test set content type part relationships extensions with unsupported charset content types
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.setContentTypePartRelsExtensions(), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestSetContentTypePartImageExtensions(t *testing.T) {
 	f := NewFile()
 	// Test set content type part image extensions with unsupported charset content types
