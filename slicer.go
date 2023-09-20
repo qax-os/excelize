@@ -36,7 +36,7 @@ import (
 // Caption specifies the caption of the slicer, this setting is optional.
 //
 // Macro used for set macro for the slicer, the workbook extension should be
-// XLSM or XLTM
+// XLSM or XLTM.
 //
 // Width specifies the width of the slicer, this setting is optional.
 //

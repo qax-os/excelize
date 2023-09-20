@@ -76,6 +76,15 @@ func TestAddTable(t *testing.T) {
 	f = NewFile()
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
 	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
+	assert.NoError(t, f.Close())
+	f = NewFile()
+	// Test add table with workbook with single cells parts
+	f.Pkg.Store("xl/tables/tableSingleCells1.xml", []byte("<singleXmlCells><singleXmlCell id=\"2\" r=\"A1\" connectionId=\"2\" /></singleXmlCells>"))
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
+	// Test add table with workbook with unsupported charset single cells parts
+	f.Pkg.Store("xl/tables/tableSingleCells1.xml", MacintoshCyrillicCharset)
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
+	assert.NoError(t, f.Close())
 }
 
 func TestGetTables(t *testing.T) {

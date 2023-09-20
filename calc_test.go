@@ -1834,6 +1834,15 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUBSTITUTE(\"abab\",\"x\",\"X\",2)":                    "abab",
 		"=SUBSTITUTE(\"John is 5 years old\",\"John\",\"Jack\")": "Jack is 5 years old",
 		"=SUBSTITUTE(\"John is 5 years old\",\"5\",\"6\")":       "John is 6 years old",
+		// TEXT
+		"=TEXT(\"07/07/2015\",\"mm/dd/yyyy\")":        "07/07/2015",
+		"=TEXT(42192,\"mm/dd/yyyy\")":                 "07/07/2015",
+		"=TEXT(42192,\"mmm dd yyyy\")":                "Jul 07 2015",
+		"=TEXT(0.75,\"hh:mm\")":                       "18:00",
+		"=TEXT(36.363636,\"0.00\")":                   "36.36",
+		"=TEXT(567.9,\"$#,##0.00\")":                  "$567.90",
+		"=TEXT(-5,\"+ $#,##0.00;- $#,##0.00;$0.00\")": "- $5.00",
+		"=TEXT(5,\"+ $#,##0.00;- $#,##0.00;$0.00\")":  "+ $5.00",
 		// TEXTJOIN
 		"=TEXTJOIN(\"-\",TRUE,1,2,3,4)":  "1-2-3-4",
 		"=TEXTJOIN(A4,TRUE,A1:B2)":       "1040205",
@@ -3866,6 +3875,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=SUBSTITUTE()":                    {"#VALUE!", "SUBSTITUTE requires 3 or 4 arguments"},
 		"=SUBSTITUTE(\"\",\"\",\"\",\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"=SUBSTITUTE(\"\",\"\",\"\",0)":    {"#VALUE!", "instance_num should be > 0"},
+		// TEXT
+		"=TEXT()":          {"#VALUE!", "TEXT requires 2 arguments"},
+		"=TEXT(NA(),\"\")": {"#N/A", "#N/A"},
+		"=TEXT(0,NA())":    {"#N/A", "#N/A"},
 		// TEXTJOIN
 		"=TEXTJOIN()":               {"#VALUE!", "TEXTJOIN requires at least 3 arguments"},
 		"=TEXTJOIN(\"\",\"\",1)":    {"#VALUE!", "#VALUE!"},

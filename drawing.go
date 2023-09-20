@@ -25,8 +25,9 @@ import (
 func (f *File) prepareDrawing(ws *xlsxWorksheet, drawingID int, sheet, drawingXML string) (int, string) {
 	sheetRelationshipsDrawingXML := "../drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	if ws.Drawing != nil {
-		// The worksheet already has a picture or chart relationships, use the relationships drawing ../drawings/drawing%d.xml.
-		sheetRelationshipsDrawingXML = f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
+		// The worksheet already has a picture or chart relationships, use the
+		// relationships drawing ../drawings/drawing%d.xml or /xl/drawings/drawing%d.xml.
+		sheetRelationshipsDrawingXML = strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "/xl/drawings/", "../drawings/")
 		drawingID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingXML, "../drawings/drawing"), ".xml"))
 		drawingXML = strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
 	} else {
@@ -1247,9 +1248,11 @@ func (f *File) drawingParser(path string) (*xlsxWsDr, int, error) {
 	)
 	_, ok = f.Drawings.Load(path)
 	if !ok {
-		content := xlsxWsDr{}
-		content.A = NameSpaceDrawingML.Value
-		content.Xdr = NameSpaceDrawingMLSpreadSheet.Value
+		content := xlsxWsDr{
+			NS:  NameSpaceDrawingMLSpreadSheet.Value,
+			Xdr: NameSpaceDrawingMLSpreadSheet.Value,
+			A:   NameSpaceDrawingML.Value,
+		}
 		if _, ok = f.Pkg.Load(path); ok { // Append Model
 			decodeWsDr := decodeWsDr{}
 			if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(path)))).

@@ -757,6 +757,7 @@ type formulaFuncs struct {
 //	TBILLPRICE
 //	TBILLYIELD
 //	TDIST
+//	TEXT
 //	TEXTJOIN
 //	TIME
 //	TIMEVALUE
@@ -14033,6 +14034,28 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	}
 	pre, post := text.Value()[:pos], text.Value()[pos+sourceTextLen:]
 	return newStringFormulaArg(pre + targetText.Value() + post)
+}
+
+// TEXT function converts a supplied numeric value into text, in a
+// user-specified format. The syntax of the function is:
+//
+//	TEXT(value,format_text)
+func (fn *formulaFuncs) TEXT(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TEXT requires 2 arguments")
+	}
+	value, fmtText := argsList.Front().Value.(formulaArg), argsList.Back().Value.(formulaArg)
+	if value.Type == ArgError {
+		return value
+	}
+	if fmtText.Type == ArgError {
+		return fmtText
+	}
+	cellType := CellTypeNumber
+	if num := value.ToNumber(); num.Type != ArgNumber {
+		cellType = CellTypeSharedString
+	}
+	return newStringFormulaArg(format(value.Value(), fmtText.Value(), false, cellType, nil))
 }
 
 // TEXTJOIN function joins together a series of supplied text strings into one

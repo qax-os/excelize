@@ -590,6 +590,8 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 			}
 		}
 		return f.formattedValue(c, raw, CellTypeSharedString)
+	case "str":
+		return c.V, nil
 	case "inlineStr":
 		if c.IS != nil {
 			return f.formattedValue(&xlsxC{S: c.S, V: c.IS.String()}, raw, CellTypeInlineString)

@@ -216,6 +216,19 @@ func (f *File) DeleteTable(name string) error {
 func (f *File) countTables() int {
 	count := 0
 	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/tables/tableSingleCells") {
+			var cells xlsxSingleXmlCells
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v.([]byte)))).
+				Decode(&cells); err != nil && err != io.EOF {
+				count++
+				return true
+			}
+			for _, cell := range cells.SingleXmlCell {
+				if count < cell.ID {
+					count = cell.ID
+				}
+			}
+		}
 		if strings.Contains(k.(string), "xl/tables/table") {
 			var t xlsxTable
 			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v.([]byte)))).

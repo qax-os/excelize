@@ -242,6 +242,7 @@ type xlsxPoint2D struct {
 type xlsxWsDr struct {
 	mu               sync.Mutex
 	XMLName          xml.Name                `xml:"xdr:wsDr"`
+	NS               string                  `xml:"xmlns,attr,omitempty"`
 	A                string                  `xml:"xmlns:a,attr,omitempty"`
 	Xdr              string                  `xml:"xmlns:xdr,attr,omitempty"`
 	R                string                  `xml:"xmlns:r,attr,omitempty"`
