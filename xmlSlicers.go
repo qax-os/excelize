@@ -126,6 +126,13 @@ type xlsxX14Slicer struct {
 	RID     string   `xml:"r:id,attr"`
 }
 
+// xlsxX14SlicerCaches directly maps the x14:slicerCache element.
+type xlsxX14SlicerCaches struct {
+	XMLName xml.Name `xml:"x14:slicerCaches"`
+	XMLNS   string   `xml:"xmlns:x14,attr"`
+	Content string   `xml:",innerxml"`
+}
+
 // xlsxX15SlicerCaches directly maps the x14:slicerCache element.
 type xlsxX14SlicerCache struct {
 	XMLName xml.Name `xml:"x14:slicerCache"`
@@ -160,9 +167,39 @@ type decodeSlicer struct {
 	RID string `xml:"id,attr"`
 }
 
-// decodeX15SlicerCaches defines the structure used to parse the
-// x15:slicerCaches element of a slicer cache.
-type decodeX15SlicerCaches struct {
+// decodeSlicerCaches defines the structure used to parse the
+// x14:slicerCaches and x15:slicerCaches element of a slicer cache.
+type decodeSlicerCaches struct {
 	XMLName xml.Name `xml:"slicerCaches"`
 	Content string   `xml:",innerxml"`
+}
+
+// xlsxTimelines is a mechanism for filtering data in pivot table views, cube
+// functions and charts based on non-worksheet pivot tables. In the case of
+// using OLAP Timeline source data, a Timeline is based on a key attribute of
+// an OLAP hierarchy. In the case of using native Timeline source data, a
+// Timeline is based on a data table column.
+type xlsxTimelines struct {
+	XMLName   xml.Name       `xml:"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main timelines"`
+	XMLNSXMC  string         `xml:"xmlns:mc,attr"`
+	XMLNSX    string         `xml:"xmlns:x,attr"`
+	XMLNSXR10 string         `xml:"xmlns:xr10,attr"`
+	Timeline  []xlsxTimeline `xml:"timeline"`
+}
+
+// xlsxTimeline is timeline view specifies the display of a timeline on a
+// worksheet.
+type xlsxTimeline struct {
+	Name                    string `xml:"name,attr"`
+	XR10UID                 string `xml:"xr10:uid,attr,omitempty"`
+	Cache                   string `xml:"cache,attr"`
+	Caption                 string `xml:"caption,attr,omitempty"`
+	ShowHeader              *bool  `xml:"showHeader,attr"`
+	ShowSelectionLabel      *bool  `xml:"showSelectionLabel,attr"`
+	ShowTimeLevel           *bool  `xml:"showTimeLevel,attr"`
+	ShowHorizontalScrollbar *bool  `xml:"showHorizontalScrollbar,attr"`
+	Level                   int    `xml:"level,attr"`
+	SelectionLevel          int    `xml:"selectionLevel,attr"`
+	ScrollPosition          string `xml:"scrollPosition,attr,omitempty"`
+	Style                   string `xml:"style,attr,omitempty"`
 }

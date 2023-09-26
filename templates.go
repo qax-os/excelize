@@ -22,6 +22,7 @@ var (
 	NameSpaceDocumentPropertiesVariantTypes = xml.Attr{Name: xml.Name{Local: "vt", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"}
 	NameSpaceDrawing2016SVG                 = xml.Attr{Name: xml.Name{Local: "asvg", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2016/SVG/main"}
 	NameSpaceDrawingML                      = xml.Attr{Name: xml.Name{Local: "a", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/main"}
+	NameSpaceDrawingMLA14                   = xml.Attr{Name: xml.Name{Local: "a14", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2010/main"}
 	NameSpaceDrawingMLChart                 = xml.Attr{Name: xml.Name{Local: "c", Space: "xmlns"}, Value: "http://schemas.openxmlformats.org/drawingml/2006/chart"}
 	NameSpaceDrawingMLSlicer                = xml.Attr{Name: xml.Name{Local: "sle", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2010/slicer"}
 	NameSpaceDrawingMLSlicerX15             = xml.Attr{Name: xml.Name{Local: "sle15", Space: "xmlns"}, Value: "http://schemas.microsoft.com/office/drawing/2012/slicer"}
@@ -117,7 +118,7 @@ const (
 	ExtURISlicerCacheHideItemsWithNoData = "{470722E0-AACD-4C17-9CDC-17EF765DBC7E}"
 	ExtURISlicerCachesX14                = "{BBE1A952-AA13-448e-AADC-164F8A28A991}"
 	ExtURISlicerCachesX15                = "{46BE6895-7355-4a93-B00E-2C351335B9C9}"
-	ExtURISlicerListX14                  = "{A8765BA9-456A-4DAB-B4F3-ACF838C121DE}"
+	ExtURISlicerListX14                  = "{A8765BA9-456A-4dab-B4F3-ACF838C121DE}"
 	ExtURISlicerListX15                  = "{3A4CF648-6AED-40f4-86FF-DC5316D8AED3}"
 	ExtURISparklineGroups                = "{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"
 	ExtURISVG                            = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
@@ -129,8 +130,25 @@ const (
 	ExtURIWorkbookPrX15                  = "{140A7094-0E35-4892-8432-C4D2E57EDEB5}"
 )
 
-// extensionURIPriority is the priority of URI in the extension lists.
-var extensionURIPriority = []string{
+// workbookExtURIPriority is the priority of URI in the workbook extension lists.
+var workbookExtURIPriority = []string{
+	ExtURIPivotCachesX14,
+	ExtURISlicerCachesX14,
+	ExtURISlicerCachesX15,
+	ExtURIWorkbookPrX14,
+	ExtURIPivotCachesX15,
+	ExtURIPivotTableReferences,
+	ExtURITimelineCachePivotCaches,
+	ExtURITimelineCacheRefs,
+	ExtURIWorkbookPrX15,
+	ExtURIDataModel,
+	ExtURICalcFeatures,
+	ExtURIExternalLinkPr,
+	ExtURIModelTimeGroupings,
+}
+
+// worksheetExtURIPriority is the priority of URI in the worksheet extension lists.
+var worksheetExtURIPriority = []string{
 	ExtURIConditionalFormattings,
 	ExtURIDataValidations,
 	ExtURISparklineGroups,
@@ -167,6 +185,7 @@ const (
 	// Excel 2007 or in compatibility mode. Slicer can only be used with
 	// PivotTables created in Excel 2007 or a newer version of Excel.
 	pivotTableVersion           = 3
+	pivotTableRefreshedVersion  = 8
 	defaultDrawingScale         = 1.0
 	defaultChartDimensionWidth  = 480
 	defaultChartDimensionHeight = 260

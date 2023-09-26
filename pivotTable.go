@@ -33,6 +33,8 @@ import (
 //	PivotStyleMedium1 - PivotStyleMedium28
 //	PivotStyleDark1 - PivotStyleDark28
 type PivotTableOptions struct {
+	pivotTableXML       string
+	pivotCacheXML       string
 	pivotTableSheetName string
 	DataRange           string
 	PivotTableRange     string
@@ -286,7 +288,7 @@ func (f *File) addPivotCache(pivotCacheXML string, opts *PivotTableOptions) erro
 		SaveData:              false,
 		RefreshOnLoad:         true,
 		CreatedVersion:        pivotTableVersion,
-		RefreshedVersion:      pivotTableVersion,
+		RefreshedVersion:      pivotTableRefreshedVersion,
 		MinRefreshableVersion: pivotTableVersion,
 		CacheSource: &xlsxCacheSource{
 			Type: "worksheet",
@@ -301,23 +303,9 @@ func (f *File) addPivotCache(pivotCacheXML string, opts *PivotTableOptions) erro
 		pc.CacheSource.WorksheetSource = &xlsxWorksheetSource{Name: opts.DataRange}
 	}
 	for _, name := range order {
-		rowOptions, rowOk := f.getPivotTableFieldOptions(name, opts.Rows)
-		columnOptions, colOk := f.getPivotTableFieldOptions(name, opts.Columns)
-		sharedItems := xlsxSharedItems{
-			Count: 0,
-		}
-		s := xlsxString{}
-		if (rowOk && !rowOptions.DefaultSubtotal) || (colOk && !columnOptions.DefaultSubtotal) {
-			s = xlsxString{
-				V: "",
-			}
-			sharedItems.Count++
-			sharedItems.S = &s
-		}
-
 		pc.CacheFields.CacheField = append(pc.CacheFields.CacheField, &xlsxCacheField{
 			Name:        name,
-			SharedItems: &sharedItems,
+			SharedItems: &xlsxSharedItems{ContainsBlank: true, M: []xlsxMissing{{}}},
 		})
 	}
 	pc.CacheFields.Count = len(pc.CacheFields.CacheField)
@@ -349,13 +337,13 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		CacheID:               cacheID,
 		RowGrandTotals:        &opts.RowGrandTotals,
 		ColGrandTotals:        &opts.ColGrandTotals,
-		UpdatedVersion:        pivotTableVersion,
+		UpdatedVersion:        pivotTableRefreshedVersion,
 		MinRefreshableVersion: pivotTableVersion,
 		ShowDrill:             &opts.ShowDrill,
 		UseAutoFormatting:     &opts.UseAutoFormatting,
 		PageOverThenDown:      &opts.PageOverThenDown,
 		MergeItem:             &opts.MergeItem,
-		CreatedVersion:        pivotTableVersion,
+		CreatedVersion:        3,
 		CompactData:           &opts.CompactData,
 		ShowError:             &opts.ShowError,
 		DataCaption:           "Values",
@@ -788,6 +776,8 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 	}
 	dataRange := fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref)
 	opts = PivotTableOptions{
+		pivotTableXML:       pivotTableXML,
+		pivotCacheXML:       pivotCacheXML,
 		pivotTableSheetName: sheet,
 		DataRange:           dataRange,
 		PivotTableRange:     fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
@@ -885,4 +875,34 @@ func extractPivotTableField(data string, fld *xlsxPivotField) PivotTableField {
 		}
 	}
 	return pivotTableField
+}
+
+// genPivotCacheDefinitionID generates a unique pivot table cache definition ID.
+func (f *File) genPivotCacheDefinitionID() int {
+	var (
+		ID                            int
+		decodeExtLst                  = new(decodeExtLst)
+		decodeX14PivotCacheDefinition = new(decodeX14PivotCacheDefinition)
+	)
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/pivotCache/pivotCacheDefinition") {
+			pc, err := f.pivotCacheReader(k.(string))
+			if err != nil {
+				return true
+			}
+			if pc.ExtLst != nil {
+				_ = f.xmlNewDecoder(strings.NewReader("<extLst>" + pc.ExtLst.Ext + "</extLst>")).Decode(decodeExtLst)
+				for _, ext := range decodeExtLst.Ext {
+					if ext.URI == ExtURIPivotCacheDefinition {
+						_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeX14PivotCacheDefinition)
+						if ID < decodeX14PivotCacheDefinition.PivotCacheID {
+							ID = decodeX14PivotCacheDefinition.PivotCacheID
+						}
+					}
+				}
+			}
+		}
+		return true
+	})
+	return ID + 1
 }

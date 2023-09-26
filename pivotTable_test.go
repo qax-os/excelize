@@ -26,6 +26,8 @@ func TestPivotTable(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[rand.Intn(4)]))
 	}
 	expected := &PivotTableOptions{
+		pivotTableXML:       "xl/pivotTables/pivotTable1.xml",
+		pivotCacheXML:       "xl/pivotCache/pivotCacheDefinition1.xml",
 		DataRange:           "Sheet1!A1:E31",
 		PivotTableRange:     "Sheet1!G2:M34",
 		Name:                "PivotTable1",
@@ -374,5 +376,19 @@ func TestGetPivotFieldsOrder(t *testing.T) {
 
 func TestGetPivotTableFieldName(t *testing.T) {
 	f := NewFile()
-	f.getPivotTableFieldName("-", []PivotTableField{})
+	assert.Empty(t, f.getPivotTableFieldName("-", []PivotTableField{}))
+}
+
+func TestGetPivotTableFieldOptions(t *testing.T) {
+	f := NewFile()
+	_, ok := f.getPivotTableFieldOptions("-", []PivotTableField{})
+	assert.False(t, ok)
+}
+
+func TestGenPivotCacheDefinitionID(t *testing.T) {
+	f := NewFile()
+	// Test generate pivot table cache definition ID with unsupported charset
+	f.Pkg.Store("xl/pivotCache/pivotCacheDefinition1.xml", MacintoshCyrillicCharset)
+	assert.Equal(t, 1, f.genPivotCacheDefinitionID())
+	assert.NoError(t, f.Close())
 }

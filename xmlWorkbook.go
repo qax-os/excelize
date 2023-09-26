@@ -245,6 +245,7 @@ type xlsxAlternateContent struct {
 // AlternateContent elements.
 type xlsxChoice struct {
 	XMLName    xml.Name `xml:"mc:Choice"`
+	XMLNSA14   string   `xml:"xmlns:a14,attr,omitempty"`
 	XMLNSSle15 string   `xml:"xmlns:sle15,attr,omitempty"`
 	Requires   string   `xml:"Requires,attr,omitempty"`
 	Content    string   `xml:",innerxml"`

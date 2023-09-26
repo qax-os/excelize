@@ -27,11 +27,14 @@ import (
 // Name specifies the slicer name, should be an existing field name of the given
 // table or pivot table, this setting is required.
 //
-// Table specifies the name of the table or pivot table, this setting is
-// required.
-//
 // Cell specifies the left top cell coordinates the position for inserting the
 // slicer, this setting is required.
+//
+// TableSheet specifies the worksheet name of the table or pivot table, this
+// setting is required.
+//
+// TableName specifies the name of the table or pivot table, this setting is
+// required.
 //
 // Caption specifies the caption of the slicer, this setting is optional.
 //
@@ -51,8 +54,9 @@ import (
 // Format specifies the format of the slicer, this setting is optional.
 type SlicerOptions struct {
 	Name          string
-	Table         string
 	Cell          string
+	TableSheet    string
+	TableName     string
 	Caption       string
 	Macro         string
 	Width         uint
@@ -63,38 +67,44 @@ type SlicerOptions struct {
 }
 
 // AddSlicer function inserts a slicer by giving the worksheet name and slicer
-// settings. The pivot table slicer is not supported currently.
+// settings.
 //
 // For example, insert a slicer on the Sheet1!E1 with field Column1 for the
 // table named Table1:
 //
 //	err := f.AddSlicer("Sheet1", &excelize.SlicerOptions{
-//	    Name:    "Column1",
-//	    Table:   "Table1",
-//	    Cell:    "E1",
-//	    Caption: "Column1",
-//	    Width:   200,
-//	    Height:  200,
+//	    Name:       "Column1",
+//	    Cell:       "E1",
+//	    TableSheet: "Sheet1",
+//	    TableName:  "Table1",
+//	    Caption:    "Column1",
+//	    Width:      200,
+//	    Height:     200,
 //	})
 func (f *File) AddSlicer(sheet string, opts *SlicerOptions) error {
 	opts, err := parseSlicerOptions(opts)
 	if err != nil {
 		return err
 	}
-	table, colIdx, err := f.getSlicerSource(sheet, opts)
+	table, pivotTable, colIdx, err := f.getSlicerSource(opts)
 	if err != nil {
 		return err
 	}
-	slicerID, err := f.addSheetSlicer(sheet)
+	extURI, ns := ExtURISlicerListX14, NameSpaceDrawingMLA14
+	if table != nil {
+		extURI = ExtURISlicerListX15
+		ns = NameSpaceDrawingMLSlicerX15
+	}
+	slicerID, err := f.addSheetSlicer(sheet, extURI)
 	if err != nil {
 		return err
 	}
-	slicerCacheName, err := f.setSlicerCache(colIdx, opts, table)
+	slicerCacheName, err := f.setSlicerCache(sheet, colIdx, opts, table, pivotTable)
 	if err != nil {
 		return err
 	}
-	slicerName, err := f.addDrawingSlicer(sheet, opts)
-	if err != nil {
+	slicerName := f.genSlicerName(opts.Name)
+	if err := f.addDrawingSlicer(sheet, slicerName, ns, opts); err != nil {
 		return err
 	}
 	return f.addSlicer(slicerID, xlsxSlicer{
@@ -112,7 +122,7 @@ func parseSlicerOptions(opts *SlicerOptions) (*SlicerOptions, error) {
 	if opts == nil {
 		return nil, ErrParameterRequired
 	}
-	if opts.Name == "" || opts.Table == "" || opts.Cell == "" {
+	if opts.Name == "" || opts.Cell == "" || opts.TableSheet == "" || opts.TableName == "" {
 		return nil, ErrParameterInvalid
 	}
 	if opts.Width == 0 {
@@ -165,34 +175,51 @@ func (f *File) countSlicerCache() int {
 // getSlicerSource returns the slicer data source table or pivot table settings
 // and the index of the given slicer fields in the table or pivot table
 // column.
-func (f *File) getSlicerSource(sheet string, opts *SlicerOptions) (*Table, int, error) {
+func (f *File) getSlicerSource(opts *SlicerOptions) (*Table, *PivotTableOptions, int, error) {
 	var (
 		table       *Table
+		pivotTable  *PivotTableOptions
 		colIdx      int
-		tables, err = f.GetTables(sheet)
+		err         error
+		dataRange   string
+		tables      []Table
+		pivotTables []PivotTableOptions
 	)
-	if err != nil {
-		return table, colIdx, err
+	if tables, err = f.GetTables(opts.TableSheet); err != nil {
+		return table, pivotTable, colIdx, err
 	}
 	for _, tbl := range tables {
-		if tbl.Name == opts.Table {
+		if tbl.Name == opts.TableName {
 			table = &tbl
+			dataRange = fmt.Sprintf("%s!%s", opts.TableSheet, tbl.Range)
 			break
 		}
 	}
 	if table == nil {
-		return table, colIdx, newNoExistTableError(opts.Table)
+		if pivotTables, err = f.GetPivotTables(opts.TableSheet); err != nil {
+			return table, pivotTable, colIdx, err
+		}
+		for _, tbl := range pivotTables {
+			if tbl.Name == opts.TableName {
+				pivotTable = &tbl
+				dataRange = tbl.DataRange
+				break
+			}
+		}
+		if pivotTable == nil {
+			return table, pivotTable, colIdx, newNoExistTableError(opts.TableName)
+		}
 	}
-	order, _ := f.getTableFieldsOrder(sheet, fmt.Sprintf("%s!%s", sheet, table.Range))
+	order, _ := f.getTableFieldsOrder(opts.TableSheet, dataRange)
 	if colIdx = inStrSlice(order, opts.Name, true); colIdx == -1 {
-		return table, colIdx, newInvalidSlicerNameError(opts.Name)
+		return table, pivotTable, colIdx, newInvalidSlicerNameError(opts.Name)
 	}
-	return table, colIdx, err
+	return table, pivotTable, colIdx, err
 }
 
 // addSheetSlicer adds a new slicer and updates the namespace and relationships
 // parts of the worksheet by giving the worksheet name.
-func (f *File) addSheetSlicer(sheet string) (int, error) {
+func (f *File) addSheetSlicer(sheet, extURI string) (int, error) {
 	var (
 		slicerID     = f.countSlicers() + 1
 		ws, err      = f.workSheetReader(sheet)
@@ -208,7 +235,7 @@ func (f *File) addSheetSlicer(sheet string) (int, error) {
 			return slicerID, err
 		}
 		for _, ext := range decodeExtLst.Ext {
-			if ext.URI == ExtURISlicerListX15 {
+			if ext.URI == extURI {
 				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(slicerList)
 				for _, slicer := range slicerList.Slicer {
 					if slicer.RID != "" {
@@ -225,12 +252,12 @@ func (f *File) addSheetSlicer(sheet string) (int, error) {
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
 	rID := f.addRels(sheetRels, SourceRelationshipSlicer, sheetRelationshipsSlicerXML, "")
 	f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
-	return slicerID, f.addSheetTableSlicer(ws, rID)
+	return slicerID, f.addSheetTableSlicer(ws, rID, extURI)
 }
 
 // addSheetTableSlicer adds a new table slicer for the worksheet by giving the
-// worksheet relationships ID.
-func (f *File) addSheetTableSlicer(ws *xlsxWorksheet, rID int) error {
+// worksheet relationships ID and extension URI.
+func (f *File) addSheetTableSlicer(ws *xlsxWorksheet, rID int, extURI string) error {
 	var (
 		decodeExtLst                 = new(decodeExtLst)
 		err                          error
@@ -245,13 +272,17 @@ func (f *File) addSheetTableSlicer(ws *xlsxWorksheet, rID int) error {
 	slicerListBytes, _ = xml.Marshal(&xlsxX14SlicerList{
 		Slicer: []*xlsxX14Slicer{{RID: "rId" + strconv.Itoa(rID)}},
 	})
-	decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
-		xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX15.Name.Local}, Value: NameSpaceSpreadSheetX15.Value}},
-		URI:   ExtURISlicerListX15, Content: string(slicerListBytes),
-	})
+	ext := &xlsxExt{
+		xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX14.Name.Local}, Value: NameSpaceSpreadSheetX14.Value}},
+		URI:   extURI, Content: string(slicerListBytes),
+	}
+	if extURI == ExtURISlicerListX15 {
+		ext.xmlns = []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX15.Name.Local}, Value: NameSpaceSpreadSheetX15.Value}}
+	}
+	decodeExtLst.Ext = append(decodeExtLst.Ext, ext)
 	sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
-		return inStrSlice(extensionURIPriority, decodeExtLst.Ext[i].URI, false) <
-			inStrSlice(extensionURIPriority, decodeExtLst.Ext[j].URI, false)
+		return inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+			inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[j].URI, false)
 	})
 	extLstBytes, err = xml.Marshal(decodeExtLst)
 	ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
@@ -273,6 +304,49 @@ func (f *File) addSlicer(slicerID int, slicer xlsxSlicer) error {
 	output, err := xml.Marshal(slicers)
 	f.saveFileList(slicerXML, output)
 	return err
+}
+
+// genSlicerName generates a unique slicer cache name by giving the slicer name.
+func (f *File) genSlicerName(name string) string {
+	var (
+		cnt        int
+		slicerName string
+		names      []string
+	)
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/slicers/slicer") {
+			slicers, err := f.slicerReader(k.(string))
+			if err != nil {
+				return true
+			}
+			for _, slicer := range slicers.Slicer {
+				names = append(names, slicer.Name)
+			}
+		}
+		if strings.Contains(k.(string), "xl/timelines/timeline") {
+			timelines, err := f.timelineReader(k.(string))
+			if err != nil {
+				return true
+			}
+			for _, timeline := range timelines.Timeline {
+				names = append(names, timeline.Name)
+			}
+		}
+		return true
+	})
+	slicerName = name
+	for {
+		tmp := slicerName
+		if cnt > 0 {
+			tmp = fmt.Sprintf("%s %d", slicerName, cnt)
+		}
+		if inStrSlice(names, tmp, true) == -1 {
+			slicerName = tmp
+			break
+		}
+		cnt++
+	}
+	return slicerName
 }
 
 // genSlicerNames generates a unique slicer cache name by giving the slicer name.
@@ -316,7 +390,7 @@ func (f *File) genSlicerCacheName(name string) string {
 // setSlicerCache check if a slicer cache already exists or add a new slicer
 // cache by giving the column index, slicer, table options, and returns the
 // slicer cache name.
-func (f *File) setSlicerCache(colIdx int, opts *SlicerOptions, table *Table) (string, error) {
+func (f *File) setSlicerCache(sheet string, colIdx int, opts *SlicerOptions, table *Table, pivotTable *PivotTableOptions) (string, error) {
 	var ok bool
 	var slicerCacheName string
 	f.Pkg.Range(func(k, v interface{}) bool {
@@ -326,7 +400,15 @@ func (f *File) setSlicerCache(colIdx int, opts *SlicerOptions, table *Table) (st
 				Decode(slicerCache); err != nil && err != io.EOF {
 				return true
 			}
-			if slicerCache.ExtLst == nil {
+			if pivotTable != nil && slicerCache.PivotTables != nil {
+				for _, tbl := range slicerCache.PivotTables.PivotTable {
+					if tbl.Name == pivotTable.Name {
+						ok, slicerCacheName = true, slicerCache.Name
+						return false
+					}
+				}
+			}
+			if table == nil || slicerCache.ExtLst == nil {
 				return true
 			}
 			ext := new(xlsxExt)
@@ -346,7 +428,7 @@ func (f *File) setSlicerCache(colIdx int, opts *SlicerOptions, table *Table) (st
 		return slicerCacheName, nil
 	}
 	slicerCacheName = f.genSlicerCacheName(opts.Name)
-	return slicerCacheName, f.addSlicerCache(slicerCacheName, colIdx, opts, table)
+	return slicerCacheName, f.addSlicerCache(slicerCacheName, colIdx, opts, table, pivotTable)
 }
 
 // slicerReader provides a function to get the pointer to the structure
@@ -367,11 +449,31 @@ func (f *File) slicerReader(slicerXML string) (*xlsxSlicers, error) {
 	return slicer, nil
 }
 
+// timelineReader provides a function to get the pointer to the structure
+// after deserialization of xl/timelines/timeline%d.xml.
+func (f *File) timelineReader(timelineXML string) (*xlsxTimelines, error) {
+	content, ok := f.Pkg.Load(timelineXML)
+	timeline := &xlsxTimelines{
+		XMLNSXMC:  SourceRelationshipCompatibility.Value,
+		XMLNSX:    NameSpaceSpreadSheet.Value,
+		XMLNSXR10: NameSpaceSpreadSheetXR10.Value,
+	}
+	if ok && content != nil {
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
+			Decode(timeline); err != nil && err != io.EOF {
+			return nil, err
+		}
+	}
+	return timeline, nil
+}
+
 // addSlicerCache adds a new slicer cache by giving the slicer cache name,
-// column index, slicer, and table options.
-func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOptions, table *Table) error {
+// column index, slicer, and table or pivot table options.
+func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOptions, table *Table, pivotTable *PivotTableOptions) error {
 	var (
+		sortOrder                                       string
 		slicerCacheBytes, tableSlicerBytes, extLstBytes []byte
+		extURI                                          = ExtURISlicerCachesX14
 		slicerCacheID                                   = f.countSlicerCache() + 1
 		decodeExtLst                                    = new(decodeExtLst)
 		slicerCache                                     = xlsxSlicerCacheDefinition{
@@ -381,52 +483,108 @@ func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOp
 			XMLNSXR10:  NameSpaceSpreadSheetXR10.Value,
 			Name:       slicerCacheName,
 			SourceName: opts.Name,
-			ExtLst:     &xlsxExtLst{},
 		}
 	)
-	var sortOrder string
 	if opts.ItemDesc {
 		sortOrder = "descending"
 	}
-	tableSlicerBytes, _ = xml.Marshal(&xlsxTableSlicerCache{
-		TableID:   table.tID,
-		Column:    colIdx + 1,
-		SortOrder: sortOrder,
-	})
-	decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
-		xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX15.Name.Local}, Value: NameSpaceSpreadSheetX15.Value}},
-		URI:   ExtURISlicerCacheDefinition, Content: string(tableSlicerBytes),
-	})
-	extLstBytes, _ = xml.Marshal(decodeExtLst)
-	slicerCache.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+	if pivotTable != nil {
+		pivotCacheID, err := f.addPivotCacheSlicer(pivotTable)
+		if err != nil {
+			return err
+		}
+		slicerCache.PivotTables = &xlsxSlicerCachePivotTables{
+			PivotTable: []xlsxSlicerCachePivotTable{
+				{TabID: f.getSheetID(opts.TableSheet), Name: pivotTable.Name},
+			},
+		}
+		slicerCache.Data = &xlsxSlicerCacheData{
+			Tabular: &xlsxTabularSlicerCache{
+				PivotCacheID: pivotCacheID,
+				SortOrder:    sortOrder,
+				ShowMissing:  boolPtr(false),
+				Items: &xlsxTabularSlicerCacheItems{
+					Count: 1, I: []xlsxTabularSlicerCacheItem{{S: true}},
+				},
+			},
+		}
+	}
+	if table != nil {
+		tableSlicerBytes, _ = xml.Marshal(&xlsxTableSlicerCache{
+			TableID:   table.tID,
+			Column:    colIdx + 1,
+			SortOrder: sortOrder,
+		})
+		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
+			xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX15.Name.Local}, Value: NameSpaceSpreadSheetX15.Value}},
+			URI:   ExtURISlicerCacheDefinition, Content: string(tableSlicerBytes),
+		})
+		extLstBytes, _ = xml.Marshal(decodeExtLst)
+		slicerCache.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+		extURI = ExtURISlicerCachesX15
+	}
 	slicerCacheXML := "xl/slicerCaches/slicerCache" + strconv.Itoa(slicerCacheID) + ".xml"
 	slicerCacheBytes, _ = xml.Marshal(slicerCache)
 	f.saveFileList(slicerCacheXML, slicerCacheBytes)
 	if err := f.addContentTypePart(slicerCacheID, "slicerCache"); err != nil {
 		return err
 	}
-	if err := f.addWorkbookSlicerCache(slicerCacheID, ExtURISlicerCachesX15); err != nil {
+	if err := f.addWorkbookSlicerCache(slicerCacheID, extURI); err != nil {
 		return err
 	}
 	return f.SetDefinedName(&DefinedName{Name: slicerCacheName, RefersTo: formulaErrorNA})
 }
 
+// addPivotCacheSlicer adds a new slicer cache by giving the pivot table options
+// and returns pivot table cache ID.
+func (f *File) addPivotCacheSlicer(opts *PivotTableOptions) (int, error) {
+	var (
+		pivotCacheID                  int
+		pivotCacheBytes, extLstBytes  []byte
+		decodeExtLst                  = new(decodeExtLst)
+		decodeX14PivotCacheDefinition = new(decodeX14PivotCacheDefinition)
+	)
+	pc, err := f.pivotCacheReader(opts.pivotCacheXML)
+	if err != nil {
+		return pivotCacheID, err
+	}
+	if pc.ExtLst != nil {
+		_ = f.xmlNewDecoder(strings.NewReader("<extLst>" + pc.ExtLst.Ext + "</extLst>")).Decode(decodeExtLst)
+		for _, ext := range decodeExtLst.Ext {
+			if ext.URI == ExtURIPivotCacheDefinition {
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeX14PivotCacheDefinition)
+				return decodeX14PivotCacheDefinition.PivotCacheID, err
+			}
+		}
+	}
+	pivotCacheID = f.genPivotCacheDefinitionID()
+	pivotCacheBytes, _ = xml.Marshal(&xlsxX14PivotCacheDefinition{PivotCacheID: pivotCacheID})
+	ext := &xlsxExt{
+		xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX14.Name.Local}, Value: NameSpaceSpreadSheetX14.Value}},
+		URI:   ExtURIPivotCacheDefinition, Content: string(pivotCacheBytes),
+	}
+	decodeExtLst.Ext = append(decodeExtLst.Ext, ext)
+	extLstBytes, _ = xml.Marshal(decodeExtLst)
+	pc.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+	pivotCache, err := xml.Marshal(pc)
+	f.saveFileList(opts.pivotCacheXML, pivotCache)
+	return pivotCacheID, err
+}
+
 // addDrawingSlicer adds a slicer shape and fallback shape by giving the
-// worksheet name, slicer options, and returns slicer name.
-func (f *File) addDrawingSlicer(sheet string, opts *SlicerOptions) (string, error) {
-	var slicerName string
+// worksheet name, slicer name, and slicer options.
+func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *SlicerOptions) error {
 	drawingID := f.countDrawings() + 1
 	drawingXML := "xl/drawings/drawing" + strconv.Itoa(drawingID) + ".xml"
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		return slicerName, err
+		return err
 	}
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	content, twoCellAnchor, cNvPrID, err := f.twoCellAnchorShape(sheet, drawingXML, opts.Cell, opts.Width, opts.Height, opts.Format)
 	if err != nil {
-		return slicerName, err
+		return err
 	}
-	slicerName = fmt.Sprintf("%s %d", opts.Name, cNvPrID)
 	graphicFrame := xlsxGraphicFrame{
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
@@ -474,14 +632,14 @@ func (f *File) addDrawingSlicer(sheet string, opts *SlicerOptions) (string, erro
 		FLocksWithSheet:  *opts.Format.Locked,
 		FPrintsWithSheet: *opts.Format.PrintObject,
 	}
-	choice := xlsxChoice{
-		XMLNSSle15: NameSpaceDrawingMLSlicerX15.Value,
-		Requires:   NameSpaceDrawingMLSlicerX15.Name.Local,
-		Content:    string(graphic),
+	choice := xlsxChoice{Requires: ns.Name.Local, Content: string(graphic)}
+	if ns.Value == NameSpaceDrawingMLA14.Value { // pivot table slicer
+		choice.XMLNSA14 = ns.Value
 	}
-	fallback := xlsxFallback{
-		Content: string(shape),
+	if ns.Value == NameSpaceDrawingMLSlicerX15.Value { // table slicer
+		choice.XMLNSSle15 = ns.Value
 	}
+	fallback := xlsxFallback{Content: string(shape)}
 	choiceBytes, _ := xml.Marshal(choice)
 	shapeBytes, _ := xml.Marshal(fallback)
 	twoCellAnchor.AlternateContent = append(twoCellAnchor.AlternateContent, &xlsxAlternateContent{
@@ -490,7 +648,7 @@ func (f *File) addDrawingSlicer(sheet string, opts *SlicerOptions) (string, erro
 	})
 	content.TwoCellAnchor = append(content.TwoCellAnchor, twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)
-	return slicerName, f.addContentTypePart(drawingID, "drawings")
+	return f.addContentTypePart(drawingID, "drawings")
 }
 
 // addWorkbookSlicerCache add the association ID of the slicer cache in
@@ -502,7 +660,8 @@ func (f *File) addWorkbookSlicerCache(slicerCacheID int, URI string) error {
 		idx                                              int
 		appendMode                                       bool
 		decodeExtLst                                     = new(decodeExtLst)
-		decodeSlicerCaches                               *decodeX15SlicerCaches
+		decodeSlicerCaches                               = new(decodeSlicerCaches)
+		x14SlicerCaches                                  = new(xlsxX14SlicerCaches)
 		x15SlicerCaches                                  = new(xlsxX15SlicerCaches)
 		ext                                              *xlsxExt
 		slicerCacheBytes, slicerCachesBytes, extLstBytes []byte
@@ -518,24 +677,37 @@ func (f *File) addWorkbookSlicerCache(slicerCacheID int, URI string) error {
 		}
 		for idx, ext = range decodeExtLst.Ext {
 			if ext.URI == URI {
-				if URI == ExtURISlicerCachesX15 {
-					decodeSlicerCaches = new(decodeX15SlicerCaches)
-					_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeSlicerCaches)
-					slicerCache := xlsxX14SlicerCache{RID: fmt.Sprintf("rId%d", rID)}
-					slicerCacheBytes, _ = xml.Marshal(slicerCache)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeSlicerCaches)
+				slicerCache := xlsxX14SlicerCache{RID: fmt.Sprintf("rId%d", rID)}
+				slicerCacheBytes, _ = xml.Marshal(slicerCache)
+				if URI == ExtURISlicerCachesX14 { // pivot table slicer
+					x14SlicerCaches.Content = decodeSlicerCaches.Content + string(slicerCacheBytes)
+					x14SlicerCaches.XMLNS = NameSpaceSpreadSheetX14.Value
+					slicerCachesBytes, _ = xml.Marshal(x14SlicerCaches)
+				}
+				if URI == ExtURISlicerCachesX15 { // table slicer
 					x15SlicerCaches.Content = decodeSlicerCaches.Content + string(slicerCacheBytes)
 					x15SlicerCaches.XMLNS = NameSpaceSpreadSheetX14.Value
 					slicerCachesBytes, _ = xml.Marshal(x15SlicerCaches)
-					decodeExtLst.Ext[idx].Content = string(slicerCachesBytes)
-					appendMode = true
 				}
+				decodeExtLst.Ext[idx].Content = string(slicerCachesBytes)
+				appendMode = true
 			}
 		}
 	}
 	if !appendMode {
+		slicerCache := xlsxX14SlicerCache{RID: fmt.Sprintf("rId%d", rID)}
+		slicerCacheBytes, _ = xml.Marshal(slicerCache)
+		if URI == ExtURISlicerCachesX14 {
+			x14SlicerCaches.Content = string(slicerCacheBytes)
+			x14SlicerCaches.XMLNS = NameSpaceSpreadSheetX14.Value
+			slicerCachesBytes, _ = xml.Marshal(x14SlicerCaches)
+			decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
+				xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX14.Name.Local}, Value: NameSpaceSpreadSheetX14.Value}},
+				URI:   ExtURISlicerCachesX14, Content: string(slicerCachesBytes),
+			})
+		}
 		if URI == ExtURISlicerCachesX15 {
-			slicerCache := xlsxX14SlicerCache{RID: fmt.Sprintf("rId%d", rID)}
-			slicerCacheBytes, _ = xml.Marshal(slicerCache)
 			x15SlicerCaches.Content = string(slicerCacheBytes)
 			x15SlicerCaches.XMLNS = NameSpaceSpreadSheetX14.Value
 			slicerCachesBytes, _ = xml.Marshal(x15SlicerCaches)
@@ -545,6 +717,10 @@ func (f *File) addWorkbookSlicerCache(slicerCacheID int, URI string) error {
 			})
 		}
 	}
+	sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
+		return inStrSlice(workbookExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+			inStrSlice(workbookExtURIPriority, decodeExtLst.Ext[j].URI, false)
+	})
 	extLstBytes, err = xml.Marshal(decodeExtLst)
 	wb.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
 	return err

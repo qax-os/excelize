@@ -528,8 +528,8 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 		})
 	}
 	sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
-		return inStrSlice(extensionURIPriority, decodeExtLst.Ext[i].URI, false) <
-			inStrSlice(extensionURIPriority, decodeExtLst.Ext[j].URI, false)
+		return inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+			inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[j].URI, false)
 	})
 	extLstBytes, err = xml.Marshal(decodeExtLst)
 	ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
