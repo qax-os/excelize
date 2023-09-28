@@ -41,7 +41,7 @@ func (f *File) GetComments(sheet string) ([]Comment, error) {
 	var comments []Comment
 	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
 	if !ok {
-		return comments, newNoExistSheetError(sheet)
+		return comments, ErrSheetNotExist{sheet}
 	}
 	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
 	if !strings.HasPrefix(commentsXML, "/") {
@@ -125,7 +125,7 @@ func (f *File) DeleteComment(sheet, cell string) error {
 	}
 	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
 	if !ok {
-		return newNoExistSheetError(sheet)
+		return ErrSheetNotExist{sheet}
 	}
 	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
 	if !strings.HasPrefix(commentsXML, "/") {
@@ -738,7 +738,7 @@ func (sp *encodeShape) addFormCtrl(opts *vmlOptions) error {
 		opts.MaxVal > MaxFormControlValue ||
 		opts.IncChange > MaxFormControlValue ||
 		opts.PageChange > MaxFormControlValue {
-		return ErrorFormControlValue
+		return ErrFormControlValue
 	}
 	if opts.CellLink != "" {
 		if _, _, err := CellNameToCoordinates(opts.CellLink); err != nil {

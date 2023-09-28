@@ -399,8 +399,8 @@ func TestSetCellHyperLink(t *testing.T) {
 		Tooltip: &tooltip,
 	}))
 	// Test set cell hyperlink with invalid sheet name
-	assert.EqualError(t, f.SetCellHyperLink("Sheet:1", "A1", "Sheet1!D60", "Location"), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, f.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", ""), `invalid link type ""`)
+	assert.Equal(t, ErrSheetNameInvalid, f.SetCellHyperLink("Sheet:1", "A1", "Sheet1!D60", "Location"))
+	assert.Equal(t, newInvalidLinkTypeError(""), f.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", ""))
 	assert.EqualError(t, f.SetCellHyperLink("Sheet2", "", "Sheet1!D60", "Location"), `invalid cell name ""`)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellHyperLink.xlsx")))
 	assert.NoError(t, f.Close())
@@ -1236,7 +1236,7 @@ func TestConditionalFormat(t *testing.T) {
 	// Test create conditional format with invalid custom number format
 	var exp string
 	_, err = f.NewConditionalStyle(&Style{CustomNumFmt: &exp})
-	assert.EqualError(t, err, ErrCustomNumFmt.Error())
+	assert.Equal(t, ErrCustomNumFmt, err)
 
 	// Set conditional format with file without dxfs element should not return error
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))

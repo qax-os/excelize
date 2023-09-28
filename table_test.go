@@ -48,8 +48,8 @@ func TestAddTable(t *testing.T) {
 	assert.EqualError(t, f.AddTable("Sheet:1", &Table{Range: "B26:A21"}), ErrSheetNameInvalid.Error())
 	// Test addTable with illegal cell reference
 	f = NewFile()
-	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
-	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell reference [0, 0]")
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil))
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil))
 	// Test set defined name and add table with invalid name
 	for _, cases := range []struct {
 		name string
@@ -132,7 +132,7 @@ func TestDeleteTable(t *testing.T) {
 func TestSetTableHeader(t *testing.T) {
 	f := NewFile()
 	_, err := f.setTableHeader("Sheet1", true, 1, 0, 1)
-	assert.EqualError(t, err, "invalid cell reference [1, 0]")
+	assert.Equal(t, newCoordinatesToCellNameError(1, 0), err)
 }
 
 func TestAutoFilter(t *testing.T) {
@@ -190,22 +190,22 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, []AutoFilterOptions{{
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.autoFilter("SheetN", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "",
-	}}), "sheet SheetN does not exist")
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
+	}}))
+	assert.Equal(t, newInvalidColumnNameError("-"), f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "-",
 		Expression: "-",
-	}}), newInvalidColumnNameError("-").Error())
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, []AutoFilterOptions{{
+	}}))
+	assert.Equal(t, newInvalidAutoFilterColumnError("A"), f.autoFilter("Sheet1", "A1", 1, 100, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "-",
-	}}), `incorrect index of column 'A'`)
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
+	}}))
+	assert.Equal(t, newInvalidAutoFilterExpError("-"), f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "-",
-	}}), `incorrect number of tokens in criteria '-'`)
+	}}))
 }
 
 func TestParseFilterTokens(t *testing.T) {
@@ -215,5 +215,5 @@ func TestParseFilterTokens(t *testing.T) {
 	assert.EqualError(t, err, "unknown operator: !")
 	// Test invalid operator in context
 	_, _, err = f.parseFilterTokens("", []string{"", "<", "x != blanks"})
-	assert.EqualError(t, err, "the operator '<' in expression '' is not valid in relation to Blanks/NonBlanks'")
+	assert.Equal(t, newInvalidAutoFilterOperatorError("<", ""), err)
 }

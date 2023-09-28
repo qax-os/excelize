@@ -932,8 +932,7 @@ func TestGetValueFromNumber(t *testing.T) {
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
-	err := ErrSheetNotExist{SheetName: "Sheet1"}
-	assert.EqualValues(t, err.Error(), "sheet Sheet1 does not exist")
+	assert.Equal(t, "sheet Sheet1 does not exist", ErrSheetNotExist{"Sheet1"}.Error())
 }
 
 func TestCheckRow(t *testing.T) {

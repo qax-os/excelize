@@ -185,7 +185,7 @@ func TestSearchSheet(t *testing.T) {
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
-	assert.EqualError(t, err, "invalid cell reference [1, 0]")
+	assert.Equal(t, newCoordinatesToCellNameError(1, 0), err)
 	assert.Equal(t, []string(nil), result)
 
 	// Test search sheet with unsupported charset shared strings table

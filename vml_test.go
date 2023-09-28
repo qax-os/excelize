@@ -263,9 +263,9 @@ func TestFormControl(t *testing.T) {
 		Cell: "A1", Type: 0x37, Macro: "Button1_Click",
 	}), ErrParameterInvalid)
 	// Test add form control on not exists worksheet
-	assert.Equal(t, f.AddFormControl("SheetN", FormControl{
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddFormControl("SheetN", FormControl{
 		Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
-	}), newNoExistSheetError("SheetN"))
+	}))
 	// Test add form control with invalid positioning types
 	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
 		Cell: "A1", Type: FormControlButton,
@@ -278,7 +278,7 @@ func TestFormControl(t *testing.T) {
 	// Test add spin form control with invalid scroll value
 	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
 		Cell: "C5", Type: FormControlSpinButton, CurrentVal: MaxFormControlValue + 1,
-	}), ErrorFormControlValue)
+	}), ErrFormControlValue)
 	assert.NoError(t, f.Close())
 	// Test delete form control
 	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
@@ -290,7 +290,7 @@ func TestFormControl(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result, 9)
 	// Test delete form control on not exists worksheet
-	assert.Equal(t, f.DeleteFormControl("SheetN", "A1"), newNoExistSheetError("SheetN"))
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.DeleteFormControl("SheetN", "A1"))
 	// Test delete form control with illegal cell link reference
 	assert.Equal(t, f.DeleteFormControl("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteFormControl.xlsm")))
@@ -314,7 +314,7 @@ func TestFormControl(t *testing.T) {
 	assert.NoError(t, err)
 	// Test get form controls on not exists worksheet
 	_, err = f.GetFormControls("SheetN")
-	assert.Equal(t, err, newNoExistSheetError("SheetN"))
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, err)
 	// Test get form controls with unsupported charset VML drawing
 	f, err = OpenFile(filepath.Join("test", "TestAddFormControl.xlsm"))
 	assert.NoError(t, err)

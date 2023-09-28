@@ -265,11 +265,11 @@ func TestNewStyle(t *testing.T) {
 
 	var exp string
 	_, err = f.NewStyle(&Style{CustomNumFmt: &exp})
-	assert.EqualError(t, err, ErrCustomNumFmt.Error())
+	assert.Equal(t, ErrCustomNumFmt, err)
 	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
-	assert.EqualError(t, err, ErrFontLength.Error())
+	assert.Equal(t, ErrFontLength, err)
 	_, err = f.NewStyle(&Style{Font: &Font{Size: MaxFontSize + 1}})
-	assert.EqualError(t, err, ErrFontSize.Error())
+	assert.Equal(t, ErrFontSize, err)
 
 	// Test create numeric custom style
 	numFmt := "####;####"

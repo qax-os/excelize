@@ -923,7 +923,7 @@ func (f *File) SetCellHyperLink(sheet, cell, link, linkType string, opts ...Hype
 			Location: link,
 		}
 	default:
-		return fmt.Errorf("invalid link type %q", linkType)
+		return newInvalidLinkTypeError(linkType)
 	}
 
 	for _, o := range opts {

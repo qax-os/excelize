@@ -189,7 +189,7 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 	}
 	pivotTableSheetName, _, err := f.adjustRange(opts.PivotTableRange)
 	if err != nil {
-		return nil, "", fmt.Errorf("parameter 'PivotTableRange' parsing error: %s", err.Error())
+		return nil, "", newPivotTableRangeError(err.Error())
 	}
 	if len(opts.Name) > MaxFieldLength {
 		return nil, "", ErrNameLength
@@ -201,7 +201,7 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 	}
 	dataSheetName, _, err := f.adjustRange(dataRange)
 	if err != nil {
-		return nil, "", fmt.Errorf("parameter 'DataRange' parsing error: %s", err.Error())
+		return nil, "", newPivotTableDataRangeError(err.Error())
 	}
 	dataSheet, err := f.workSheetReader(dataSheetName)
 	if err != nil {
@@ -209,7 +209,7 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 	}
 	pivotTableSheetPath, ok := f.getSheetXMLPath(pivotTableSheetName)
 	if !ok {
-		return dataSheet, pivotTableSheetPath, fmt.Errorf("sheet %s does not exist", pivotTableSheetName)
+		return dataSheet, pivotTableSheetPath, ErrSheetNotExist{pivotTableSheetName}
 	}
 	return dataSheet, pivotTableSheetPath, err
 }
@@ -254,7 +254,7 @@ func (f *File) getTableFieldsOrder(sheetName, dataRange string) ([]string, error
 	}
 	dataSheet, coordinates, err := f.adjustRange(ref)
 	if err != nil {
-		return order, fmt.Errorf("parameter 'DataRange' parsing error: %s", err.Error())
+		return order, newPivotTableDataRangeError(err.Error())
 	}
 	for col := coordinates[0]; col <= coordinates[2]; col++ {
 		coordinate, _ := CoordinatesToCellName(col, coordinates[1])
@@ -278,7 +278,7 @@ func (f *File) addPivotCache(pivotCacheXML string, opts *PivotTableOptions) erro
 	}
 	dataSheet, coordinates, err := f.adjustRange(dataRange)
 	if err != nil {
-		return fmt.Errorf("parameter 'DataRange' parsing error: %s", err.Error())
+		return newPivotTableDataRangeError(err.Error())
 	}
 	// data range has been checked
 	order, _ := f.getTableFieldsOrder(opts.pivotTableSheetName, opts.DataRange)
@@ -320,7 +320,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 	// validate pivot table range
 	_, coordinates, err := f.adjustRange(opts.PivotTableRange)
 	if err != nil {
-		return fmt.Errorf("parameter 'PivotTableRange' parsing error: %s", err.Error())
+		return newPivotTableRangeError(err.Error())
 	}
 
 	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
@@ -727,7 +727,7 @@ func (f *File) GetPivotTables(sheet string) ([]PivotTableOptions, error) {
 	var pivotTables []PivotTableOptions
 	name, ok := f.getSheetXMLPath(sheet)
 	if !ok {
-		return pivotTables, newNoExistSheetError(sheet)
+		return pivotTables, ErrSheetNotExist{sheet}
 	}
 	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
 	sheetRels, err := f.relsReader(rels)

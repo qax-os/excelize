@@ -261,7 +261,7 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 //	excelize.CoordinatesToCellName(1, 1, true) // returns "$A$1", nil
 func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if col < 1 || row < 1 {
-		return "", fmt.Errorf("invalid cell reference [%d, %d]", col, row)
+		return "", newCoordinatesToCellNameError(col, row)
 	}
 	sign := ""
 	for _, a := range abs {

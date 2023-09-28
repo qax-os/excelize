@@ -261,7 +261,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		return
 	}
 	if name, ok = f.getSheetXMLPath(sheet); !ok {
-		err = newNoExistSheetError(sheet)
+		err = ErrSheetNotExist{sheet}
 		return
 	}
 	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {

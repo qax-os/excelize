@@ -118,7 +118,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	}
 	sheetID := f.getSheetID(sheet)
 	if sheetID == -1 {
-		return nil, newNoExistSheetError(sheet)
+		return nil, ErrSheetNotExist{sheet}
 	}
 	sw := &StreamWriter{
 		file:    f,

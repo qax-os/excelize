@@ -182,61 +182,61 @@ func TestPivotTable(t *testing.T) {
 		Name:            strings.Repeat("c", MaxFieldLength+1),
 	}))
 	// Test invalid data range
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, newPivotTableDataRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:A1",
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+	}))
 	// Test the data range of the worksheet that is not declared
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, newPivotTableDataRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "A1:E31",
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+	}))
 	// Test the worksheet declared in the data range does not exist
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "SheetN!A1:E31",
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "sheet SheetN does not exist")
+	}))
 	// Test the pivot table range of the worksheet that is not declared
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, newPivotTableRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
 		PivotTableRange: "U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), `parameter 'PivotTableRange' parsing error: parameter is invalid`)
+	}))
 	// Test the worksheet declared in the pivot table range does not exist
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
 		PivotTableRange: "SheetN!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "sheet SheetN does not exist")
+	}))
 	// Test not exists worksheet in data range
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "SheetN!A1:E31",
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "sheet SheetN does not exist")
+	}))
 	// Test invalid row number in data range
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Equal(t, newPivotTableDataRangeError(newCellNameToCoordinatesError("A0", newInvalidCellNameError("A0")).Error()), f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A0:E31",
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales"}},
-	}), `parameter 'DataRange' parsing error: cannot convert cell "A0" to coordinates: invalid cell name "A0"`)
+	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable1.xlsx")))
 	// Test with field names that exceed the length limit and invalid subtotal
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
