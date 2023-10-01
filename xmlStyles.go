@@ -296,7 +296,7 @@ type xlsxNumFmts struct {
 // of a cell.
 type xlsxNumFmt struct {
 	NumFmtID     int    `xml:"numFmtId,attr"`
-	FormatCode   string `xml:"formatCode,attr,omitempty"`
+	FormatCode   string `xml:"formatCode,attr"`
 	FormatCode16 string `xml:"http://schemas.microsoft.com/office/spreadsheetml/2015/02/main formatCode16,attr,omitempty"`
 }
 

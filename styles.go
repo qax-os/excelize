@@ -1694,20 +1694,18 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 
 // setCustomNumFmt provides a function to set custom number format code.
 func setCustomNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
-	nf := xlsxNumFmt{FormatCode: *style.CustomNumFmt}
-
-	if styleSheet.NumFmts != nil {
-		nf.NumFmtID = styleSheet.NumFmts.NumFmt[len(styleSheet.NumFmts.NumFmt)-1].NumFmtID + 1
-		styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)
-		styleSheet.NumFmts.Count++
-	} else {
-		nf.NumFmtID = 164
-		numFmts := xlsxNumFmts{
-			NumFmt: []*xlsxNumFmt{&nf},
-			Count:  1,
-		}
-		styleSheet.NumFmts = &numFmts
+	nf := xlsxNumFmt{NumFmtID: 163, FormatCode: *style.CustomNumFmt}
+	if styleSheet.NumFmts == nil {
+		styleSheet.NumFmts = &xlsxNumFmts{}
 	}
+	for _, numFmt := range styleSheet.NumFmts.NumFmt {
+		if numFmt != nil && nf.NumFmtID < numFmt.NumFmtID {
+			nf.NumFmtID = numFmt.NumFmtID
+		}
+	}
+	nf.NumFmtID++
+	styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)
+	styleSheet.NumFmts.Count = len(styleSheet.NumFmts.NumFmt)
 	return nf.NumFmtID
 }
 
