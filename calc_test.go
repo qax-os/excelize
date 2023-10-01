@@ -1843,6 +1843,35 @@ func TestCalcCellValue(t *testing.T) {
 		"=TEXT(567.9,\"$#,##0.00\")":                  "$567.90",
 		"=TEXT(-5,\"+ $#,##0.00;- $#,##0.00;$0.00\")": "- $5.00",
 		"=TEXT(5,\"+ $#,##0.00;- $#,##0.00;$0.00\")":  "+ $5.00",
+		// TEXTAFTER
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\")":               "'s, red hood",
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"HOOD\",1,1)":           "'s, red hood",
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"basket\",1,0,0,\"x\")": "x",
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"basket\",1,0,1,\"x\")": "",
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",-1)":            "",
+		"=TEXTAFTER(\"Jones,Bob\",\",\")":                                    "Bob",
+		"=TEXTAFTER(\"12 ft x 20 ft\",\" x \")":                              "20 ft",
+		"=TEXTAFTER(\"ABX-112-Red-Y\",\"-\",1)":                              "112-Red-Y",
+		"=TEXTAFTER(\"ABX-112-Red-Y\",\"-\",2)":                              "Red-Y",
+		"=TEXTAFTER(\"ABX-112-Red-Y\",\"-\",-1)":                             "Y",
+		"=TEXTAFTER(\"ABX-112-Red-Y\",\"-\",-2)":                             "Red-Y",
+		"=TEXTAFTER(\"ABX-112-Red-Y\",\"-\",-3)":                             "112-Red-Y",
+		"=TEXTAFTER(\"ABX-123-Red-XYZ\",\"-\",-4,0,1)":                       "ABX-123-Red-XYZ",
+		"=TEXTAFTER(\"ABX-123-Red-XYZ\",\"A\")":                              "BX-123-Red-XYZ",
+		// TEXTBEFORE
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\")":               "Red riding ",
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"HOOD\",1,1)":           "Red riding ",
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"basket\",1,0,0,\"x\")": "x",
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"basket\",1,0,1,\"x\")": "Red riding hood's, red hood",
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",-1)":            "Red riding hood's, red ",
+		"=TEXTBEFORE(\"Jones,Bob\",\",\")":                                    "Jones",
+		"=TEXTBEFORE(\"12 ft x 20 ft\",\" x \")":                              "12 ft",
+		"=TEXTBEFORE(\"ABX-112-Red-Y\",\"-\",1)":                              "ABX",
+		"=TEXTBEFORE(\"ABX-112-Red-Y\",\"-\",2)":                              "ABX-112",
+		"=TEXTBEFORE(\"ABX-112-Red-Y\",\"-\",-1)":                             "ABX-112-Red",
+		"=TEXTBEFORE(\"ABX-112-Red-Y\",\"-\",-2)":                             "ABX-112",
+		"=TEXTBEFORE(\"ABX-123-Red-XYZ\",\"-\",4,0,1)":                        "ABX-123-Red-XYZ",
+		"=TEXTBEFORE(\"ABX-112-Red-Y\",\"A\")":                                "",
 		// TEXTJOIN
 		"=TEXTJOIN(\"-\",TRUE,1,2,3,4)":  "1-2-3-4",
 		"=TEXTJOIN(A4,TRUE,A1:B2)":       "1040205",
@@ -3879,6 +3908,24 @@ func TestCalcCellValue(t *testing.T) {
 		"=TEXT()":          {"#VALUE!", "TEXT requires 2 arguments"},
 		"=TEXT(NA(),\"\")": {"#N/A", "#N/A"},
 		"=TEXT(0,NA())":    {"#N/A", "#N/A"},
+		// TEXTAFTER
+		"=TEXTAFTER()": {"#VALUE!", "TEXTAFTER requires at least 2 arguments"},
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",1,0,0,\"\",0)": {"#VALUE!", "TEXTAFTER accepts at most 6 arguments"},
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",\"\")":         {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",1,\"\")":       {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",1,0,\"\")":     {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
+		"=TEXTAFTER(\"\",\"hood\")":                                         {"#N/A", "#N/A"},
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",0)":            {"#VALUE!", "#VALUE!"},
+		"=TEXTAFTER(\"Red riding hood's, red hood\",\"hood\",28)":           {"#VALUE!", "#VALUE!"},
+		// TEXTBEFORE
+		"=TEXTBEFORE()": {"#VALUE!", "TEXTBEFORE requires at least 2 arguments"},
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",1,0,0,\"\",0)": {"#VALUE!", "TEXTBEFORE accepts at most 6 arguments"},
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",\"\")":         {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",1,\"\")":       {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",1,0,\"\")":     {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
+		"=TEXTBEFORE(\"\",\"hood\")":                                         {"#N/A", "#N/A"},
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",0)":            {"#VALUE!", "#VALUE!"},
+		"=TEXTBEFORE(\"Red riding hood's, red hood\",\"hood\",28)":           {"#VALUE!", "#VALUE!"},
 		// TEXTJOIN
 		"=TEXTJOIN()":               {"#VALUE!", "TEXTJOIN requires at least 3 arguments"},
 		"=TEXTJOIN(\"\",\"\",1)":    {"#VALUE!", "#VALUE!"},
@@ -4739,7 +4786,25 @@ func TestCalcCompareFormulaArg(t *testing.T) {
 	rhs = newListFormulaArg([]formulaArg{newBoolFormulaArg(true)})
 	assert.Equal(t, compareFormulaArg(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaEq)
 
+	lhs = newListFormulaArg([]formulaArg{newNumberFormulaArg(1)})
+	rhs = newListFormulaArg([]formulaArg{newNumberFormulaArg(0)})
+	assert.Equal(t, compareFormulaArg(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaG)
+
 	assert.Equal(t, compareFormulaArg(formulaArg{Type: ArgUnknown}, formulaArg{Type: ArgUnknown}, newNumberFormulaArg(matchModeMaxLess), false), criteriaErr)
+}
+
+func TestCalcCompareFormulaArgMatrix(t *testing.T) {
+	lhs := newMatrixFormulaArg([][]formulaArg{{newEmptyFormulaArg()}})
+	rhs := newMatrixFormulaArg([][]formulaArg{{newEmptyFormulaArg(), newEmptyFormulaArg()}})
+	assert.Equal(t, compareFormulaArgMatrix(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaL)
+
+	lhs = newMatrixFormulaArg([][]formulaArg{{newEmptyFormulaArg(), newEmptyFormulaArg()}})
+	rhs = newMatrixFormulaArg([][]formulaArg{{newEmptyFormulaArg()}})
+	assert.Equal(t, compareFormulaArgMatrix(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaG)
+
+	lhs = newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})
+	rhs = newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(0)}})
+	assert.Equal(t, compareFormulaArgMatrix(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaG)
 }
 
 func TestCalcTRANSPOSE(t *testing.T) {

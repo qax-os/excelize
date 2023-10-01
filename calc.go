@@ -314,7 +314,7 @@ func (fa formulaArg) ToBool() formulaArg {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
 	case ArgNumber:
-		if fa.Boolean && fa.Number == 1 {
+		if fa.Number == 1 {
 			b = true
 		}
 	}
@@ -758,6 +758,8 @@ type formulaFuncs struct {
 //	TBILLYIELD
 //	TDIST
 //	TEXT
+//	TEXTAFTER
+//	TEXTBEFORE
 //	TEXTJOIN
 //	TIME
 //	TIMEVALUE
@@ -13748,7 +13750,7 @@ func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LEN requires 1 string argument")
 	}
-	return newStringFormulaArg(strconv.Itoa(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).String)))
+	return newNumberFormulaArg(float64(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).String)))
 }
 
 // LENB returns the number of bytes used to represent the characters in a text
@@ -13770,7 +13772,7 @@ func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
 			bytes += 2
 		}
 	}
-	return newStringFormulaArg(strconv.Itoa(bytes))
+	return newNumberFormulaArg(float64(bytes))
 }
 
 // LOWER converts all characters in a supplied text string to lower case. The
@@ -14056,6 +14058,163 @@ func (fn *formulaFuncs) TEXT(argsList *list.List) formulaArg {
 		cellType = CellTypeSharedString
 	}
 	return newStringFormulaArg(format(value.Value(), fmtText.Value(), false, cellType, nil))
+}
+
+// prepareTextAfterBefore checking and prepare arguments for the formula
+// functions TEXTAFTER and TEXTBEFORE.
+func (fn *formulaFuncs) prepareTextAfterBefore(name string, argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 2 arguments", name))
+	}
+	if argsLen > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s accepts at most 6 arguments", name))
+	}
+	text, delimiter := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
+	instanceNum, matchMode, matchEnd, ifNotFound := newNumberFormulaArg(1), newBoolFormulaArg(false), newBoolFormulaArg(false), newEmptyFormulaArg()
+	if argsLen > 2 {
+		instanceNum = argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
+		if instanceNum.Type != ArgNumber {
+			return instanceNum
+		}
+	}
+	if argsLen > 3 {
+		matchMode = argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool()
+		if matchMode.Type != ArgNumber {
+			return matchMode
+		}
+		if matchMode.Number == 1 {
+			text, delimiter = newStringFormulaArg(strings.ToLower(text.Value())), newStringFormulaArg(strings.ToLower(delimiter.Value()))
+		}
+	}
+	if argsLen > 4 {
+		matchEnd = argsList.Front().Next().Next().Next().Next().Value.(formulaArg).ToBool()
+		if matchEnd.Type != ArgNumber {
+			return matchEnd
+		}
+	}
+	if argsLen > 5 {
+		ifNotFound = argsList.Back().Value.(formulaArg)
+	}
+	if text.Value() == "" {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	lenArgsList := list.New().Init()
+	lenArgsList.PushBack(text)
+	textLen := fn.LEN(lenArgsList)
+	if instanceNum.Number == 0 || instanceNum.Number > textLen.Number {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	reverseSearch, startPos := instanceNum.Number < 0, 0.0
+	if reverseSearch {
+		startPos = textLen.Number
+	}
+	return newListFormulaArg([]formulaArg{
+		text, delimiter, instanceNum, matchMode, matchEnd, ifNotFound,
+		textLen, newBoolFormulaArg(reverseSearch), newNumberFormulaArg(startPos),
+	})
+}
+
+// textAfterBeforeSearch is an implementation of the formula functions TEXTAFTER
+// and TEXTBEFORE.
+func textAfterBeforeSearch(text string, delimiter []string, startPos int, reverseSearch bool) (int, string) {
+	idx := -1
+	var modifiedDelimiter string
+	for i := 0; i < len(delimiter); i++ {
+		nextDelimiter := delimiter[i]
+		nextIdx := strings.Index(text[startPos:], nextDelimiter)
+		if nextIdx != -1 {
+			nextIdx += startPos
+		}
+		if reverseSearch {
+			nextIdx = strings.LastIndex(text[:startPos], nextDelimiter)
+		}
+		if idx == -1 || (((nextIdx < idx && !reverseSearch) || (nextIdx > idx && reverseSearch)) && idx != -1) {
+			idx = nextIdx
+			modifiedDelimiter = nextDelimiter
+		}
+	}
+	return idx, modifiedDelimiter
+}
+
+// textAfterBeforeResult is an implementation of the formula functions TEXTAFTER
+// and TEXTBEFORE.
+func textAfterBeforeResult(name, modifiedDelimiter string, text []rune, foundIdx, repeatZero, textLen int, matchEndActive, matchEnd, reverseSearch bool) formulaArg {
+	if name == "TEXTAFTER" {
+		endPos := len(modifiedDelimiter)
+		if (repeatZero > 1 || matchEndActive) && matchEnd && reverseSearch {
+			endPos = 0
+		}
+		if foundIdx+endPos >= textLen {
+			return newEmptyFormulaArg()
+		}
+		return newStringFormulaArg(string(text[foundIdx+endPos : textLen]))
+	}
+	return newStringFormulaArg(string(text[:foundIdx]))
+}
+
+// textAfterBefore is an implementation of the formula functions TEXTAFTER and
+// TEXTBEFORE.
+func (fn *formulaFuncs) textAfterBefore(name string, argsList *list.List) formulaArg {
+	args := fn.prepareTextAfterBefore(name, argsList)
+	if args.Type != ArgList {
+		return args
+	}
+	var (
+		text                 = []rune(argsList.Front().Value.(formulaArg).Value())
+		modifiedText         = args.List[0].Value()
+		delimiter            = []string{args.List[1].Value()}
+		instanceNum          = args.List[2].Number
+		matchEnd             = args.List[4].Number == 1
+		ifNotFound           = args.List[5]
+		textLen              = args.List[6]
+		reverseSearch        = args.List[7].Number == 1
+		foundIdx             = -1
+		repeatZero, startPos int
+		matchEndActive       bool
+		modifiedDelimiter    string
+	)
+	if reverseSearch {
+		startPos = int(args.List[8].Number)
+	}
+	for i := 0; i < int(math.Abs(instanceNum)); i++ {
+		foundIdx, modifiedDelimiter = textAfterBeforeSearch(modifiedText, delimiter, startPos, reverseSearch)
+		if foundIdx == 0 {
+			repeatZero++
+		}
+		if foundIdx == -1 {
+			if matchEnd && i == int(math.Abs(instanceNum))-1 {
+				if foundIdx = int(textLen.Number); reverseSearch {
+					foundIdx = 0
+				}
+				matchEndActive = true
+			}
+			break
+		}
+		if startPos = foundIdx + len(modifiedDelimiter); reverseSearch {
+			startPos = foundIdx - len(modifiedDelimiter)
+		}
+	}
+	if foundIdx == -1 {
+		return ifNotFound
+	}
+	return textAfterBeforeResult(name, modifiedDelimiter, text, foundIdx, repeatZero, int(textLen.Number), matchEndActive, matchEnd, reverseSearch)
+}
+
+// TEXTAFTER function returns the text that occurs after a given substring or
+// delimiter. The syntax of the function is:
+//
+//	TEXTAFTER(text,delimiter,[instance_num],[match_mode],[match_end],[if_not_found])
+func (fn *formulaFuncs) TEXTAFTER(argsList *list.List) formulaArg {
+	return fn.textAfterBefore("TEXTAFTER", argsList)
+}
+
+// TEXTBEFORE function returns text that occurs before a given character or
+// string. The syntax of the function is:
+//
+//	TEXTBEFORE(text,delimiter,[instance_num],[match_mode],[match_end],[if_not_found])
+func (fn *formulaFuncs) TEXTBEFORE(argsList *list.List) formulaArg {
+	return fn.textAfterBefore("TEXTBEFORE", argsList)
 }
 
 // TEXTJOIN function joins together a series of supplied text strings into one
@@ -14465,8 +14624,7 @@ func compareFormulaArgMatrix(lhs, rhs, matchMode formulaArg, caseSensitive bool)
 		return criteriaG
 	}
 	for i := range lhs.Matrix {
-		left := lhs.Matrix[i]
-		right := lhs.Matrix[i]
+		left, right := lhs.Matrix[i], rhs.Matrix[i]
 		if len(left) < len(right) {
 			return criteriaL
 		}
@@ -15289,7 +15447,7 @@ func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
 	}
 	min, max := calcColsRowsMinMax(false, argsList)
 	if max == TotalRows {
-		return newStringFormulaArg(strconv.Itoa(TotalRows))
+		return newNumberFormulaArg(TotalRows)
 	}
 	result := max - min + 1
 	if max == min {
@@ -15298,7 +15456,7 @@ func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
 		}
 		return newNumberFormulaArg(float64(1))
 	}
-	return newStringFormulaArg(strconv.Itoa(result))
+	return newNumberFormulaArg(float64(result))
 }
 
 // Web Functions

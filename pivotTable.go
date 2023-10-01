@@ -343,7 +343,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, pivotTableXML string, op
 		UseAutoFormatting:     &opts.UseAutoFormatting,
 		PageOverThenDown:      &opts.PageOverThenDown,
 		MergeItem:             &opts.MergeItem,
-		CreatedVersion:        3,
+		CreatedVersion:        pivotTableVersion,
 		CompactData:           &opts.CompactData,
 		ShowError:             &opts.ShowError,
 		DataCaption:           "Values",
