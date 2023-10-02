@@ -170,6 +170,26 @@ func (f *File) getWorkbookRelsPath() (path string) {
 	return
 }
 
+// deleteWorkbookRels provides a function to delete relationships in
+// xl/_rels/workbook.xml.rels by given type and target.
+func (f *File) deleteWorkbookRels(relType, relTarget string) (string, error) {
+	var rID string
+	rels, err := f.relsReader(f.getWorkbookRelsPath())
+	if err != nil {
+		return rID, err
+	}
+	if rels == nil {
+		rels = &xlsxRelationships{}
+	}
+	for k, v := range rels.Relationships {
+		if v.Type == relType && v.Target == relTarget {
+			rID = v.ID
+			rels.Relationships = append(rels.Relationships[:k], rels.Relationships[k+1:]...)
+		}
+	}
+	return rID, err
+}
+
 // workbookReader provides a function to get the pointer to the workbook.xml
 // structure after deserialization.
 func (f *File) workbookReader() (*xlsxWorkbook, error) {

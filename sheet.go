@@ -1864,7 +1864,7 @@ func (f *File) RemovePageBreak(sheet, cell string) error {
 }
 
 // relsReader provides a function to get the pointer to the structure
-// after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
+// after deserialization of relationships parts.
 func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 	rels, _ := f.Relationships.Load(path)
 	if rels == nil {

@@ -246,6 +246,14 @@ func TestPivotTable(t *testing.T) {
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "-", Name: strings.Repeat("s", MaxFieldLength+1)}},
 	}))
+	// Test delete pivot table
+	pivotTables, err = f.GetPivotTables("Sheet1")
+	assert.Len(t, pivotTables, 7)
+	assert.NoError(t, err)
+	assert.NoError(t, f.DeletePivotTable("Sheet1", "PivotTable1"))
+	pivotTables, err = f.GetPivotTables("Sheet1")
+	assert.Len(t, pivotTables, 6)
+	assert.NoError(t, err)
 
 	// Test add pivot table with invalid sheet name
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
@@ -253,6 +261,10 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet:1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Year"}},
 	}), ErrSheetNameInvalid.Error())
+	// Test delete pivot table with not exists worksheet
+	assert.EqualError(t, f.DeletePivotTable("SheetN", "PivotTable1"), "sheet SheetN does not exist")
+	// Test delete pivot table with not exists pivot table name
+	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTableN"), "table PivotTableN does not exist")
 	// Test adjust range with invalid range
 	_, _, err = f.adjustRange("")
 	assert.EqualError(t, err, ErrParameterRequired.Error())
@@ -263,7 +275,7 @@ func TestPivotTable(t *testing.T) {
 	_, err = f.getTableFieldsOrder("", "")
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot cache with empty data range
-	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is invalid")
 	// Test add pivot cache with invalid data range
 	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{
 		DataRange:       "A1:E31",
@@ -334,6 +346,89 @@ func TestPivotTable(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestPivotTableDataRange(t *testing.T) {
+	f := NewFile()
+	// Create table in a worksheet
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	for row := 2; row < 6; row++ {
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), rand.Intn(10)))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), rand.Intn(10)))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), rand.Intn(10)))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), rand.Intn(10)))
+	}
+	// Test add pivot table with table data range
+	opts := PivotTableOptions{
+		DataRange:           "Table1",
+		PivotTableRange:     "Sheet1!G2:K7",
+		Rows:                []PivotTableField{{Data: "Column1"}},
+		Columns:             []PivotTableField{{Data: "Column2"}},
+		RowGrandTotals:      true,
+		ColGrandTotals:      true,
+		ShowDrill:           true,
+		ShowRowHeaders:      true,
+		ShowColHeaders:      true,
+		ShowLastColumn:      true,
+		ShowError:           true,
+		PivotTableStyleName: "PivotStyleLight16",
+	}
+	assert.NoError(t, f.AddPivotTable(&opts))
+	assert.NoError(t, f.DeletePivotTable("Sheet1", "PivotTable1"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable2.xlsx")))
+	assert.NoError(t, f.Close())
+
+	assert.NoError(t, f.AddPivotTable(&opts))
+
+	// Test delete pivot table with unsupported table relationships charset
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTable1"), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test delete pivot table with unsupported worksheet relationships charset
+	f.Relationships.Delete("xl/worksheets/_rels/sheet1.xml.rels")
+	f.Pkg.Store("xl/worksheets/_rels/sheet1.xml.rels", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTable1"), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test delete pivot table without worksheet relationships
+	f.Relationships.Delete("xl/worksheets/_rels/sheet1.xml.rels")
+	f.Pkg.Delete("xl/worksheets/_rels/sheet1.xml.rels")
+	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTable1"), "table PivotTable1 does not exist")
+}
+
+func TestParseFormatPivotTableSet(t *testing.T) {
+	f := NewFile()
+	// Create table in a worksheet
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	// Test parse format pivot table options with unsupported table relationships charset
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	_, _, err := f.parseFormatPivotTableSet(&PivotTableOptions{
+		DataRange:       "Table1",
+		PivotTableRange: "Sheet1!G2:K7",
+		Rows:            []PivotTableField{{Data: "Column1"}},
+	})
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestAddPivotCache(t *testing.T) {
+	f := NewFile()
+	// Create table in a worksheet
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	// Test add pivot table cache with unsupported table relationships charset
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.addPivotCache("xl/pivotCache/pivotCacheDefinition1.xml", &PivotTableOptions{
+		DataRange:       "Table1",
+		PivotTableRange: "Sheet1!G2:K7",
+		Rows:            []PivotTableField{{Data: "Column1"}},
+	}), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestAddPivotRowFields(t *testing.T) {
 	f := NewFile()
 	// Test invalid data range
@@ -372,6 +467,15 @@ func TestGetPivotFieldsOrder(t *testing.T) {
 	// Test get table fields order with not exist worksheet
 	_, err := f.getTableFieldsOrder("", "SheetN!A1:E31")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Create table in a worksheet
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	// Test get table fields order with unsupported table relationships charset
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	_, err = f.getTableFieldsOrder("Sheet1", "Table")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetPivotTableFieldName(t *testing.T) {
@@ -391,4 +495,17 @@ func TestGenPivotCacheDefinitionID(t *testing.T) {
 	f.Pkg.Store("xl/pivotCache/pivotCacheDefinition1.xml", MacintoshCyrillicCharset)
 	assert.Equal(t, 1, f.genPivotCacheDefinitionID())
 	assert.NoError(t, f.Close())
+}
+
+func TestDeleteWorkbookPivotCache(t *testing.T) {
+	f := NewFile()
+	// Test delete workbook pivot table cache with unsupported workbook charset
+	f.WorkBook = nil
+	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteWorkbookPivotCache(PivotTableOptions{pivotCacheXML: "pivotCache/pivotCacheDefinition1.xml"}), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test delete workbook pivot table cache with unsupported workbook relationships charset
+	f.Relationships.Delete("xl/_rels/workbook.xml.rels")
+	f.Pkg.Store("xl/_rels/workbook.xml.rels", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteWorkbookPivotCache(PivotTableOptions{pivotCacheXML: "pivotCache/pivotCacheDefinition1.xml"}), "XML syntax error on line 1: invalid UTF-8")
 }

@@ -157,20 +157,18 @@ func (f *File) AddPivotTable(opts *PivotTableOptions) error {
 	sheetRelationshipsPivotTableXML := "../pivotTables/pivotTable" + strconv.Itoa(pivotTableID) + ".xml"
 	pivotTableXML := strings.ReplaceAll(sheetRelationshipsPivotTableXML, "..", "xl")
 	pivotCacheXML := "xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(pivotCacheID) + ".xml"
-	err = f.addPivotCache(pivotCacheXML, opts)
-	if err != nil {
+	if err = f.addPivotCache(pivotCacheXML, opts); err != nil {
 		return err
 	}
 
 	// workbook pivot cache
-	workBookPivotCacheRID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipPivotCache, fmt.Sprintf("/xl/pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
+	workBookPivotCacheRID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipPivotCache, strings.TrimPrefix(pivotCacheXML, "xl/"), "")
 	cacheID := f.addWorkbookPivotCache(workBookPivotCacheRID)
 
 	pivotCacheRels := "xl/pivotTables/_rels/pivotTable" + strconv.Itoa(pivotTableID) + ".xml.rels"
 	// rId not used
 	_ = f.addRels(pivotCacheRels, SourceRelationshipPivotCache, fmt.Sprintf("../pivotCache/pivotCacheDefinition%d.xml", pivotCacheID), "")
-	err = f.addPivotTable(cacheID, pivotTableID, pivotTableXML, opts)
-	if err != nil {
+	if err = f.addPivotTable(cacheID, pivotTableID, pivotTableXML, opts); err != nil {
 		return err
 	}
 	pivotTableSheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(pivotTableSheetPath, "xl/worksheets/") + ".rels"
@@ -195,11 +193,14 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 		return nil, "", ErrNameLength
 	}
 	opts.pivotTableSheetName = pivotTableSheetName
-	dataRange := f.getDefinedNameRefTo(opts.DataRange, pivotTableSheetName)
-	if dataRange == "" {
-		dataRange = opts.DataRange
+	_, dataRangeRef, err := f.getPivotTableDataRange(pivotTableSheetName, opts.DataRange, opts.DataRange)
+	if err != nil {
+		return nil, "", err
 	}
-	dataSheetName, _, err := f.adjustRange(dataRange)
+	if dataRangeRef == "" {
+		dataRangeRef = opts.DataRange
+	}
+	dataSheetName, _, err := f.adjustRange(dataRangeRef)
 	if err != nil {
 		return nil, "", newPivotTableDataRangeError(err.Error())
 	}
@@ -248,11 +249,17 @@ func (f *File) adjustRange(rangeStr string) (string, []int, error) {
 // fields.
 func (f *File) getTableFieldsOrder(sheetName, dataRange string) ([]string, error) {
 	var order []string
-	ref := f.getDefinedNameRefTo(dataRange, sheetName)
-	if ref == "" {
-		ref = dataRange
+	if dataRange == "" {
+		return order, newPivotTableDataRangeError(ErrParameterRequired.Error())
 	}
-	dataSheet, coordinates, err := f.adjustRange(ref)
+	_, dataRangeRef, err := f.getPivotTableDataRange(sheetName, dataRange, dataRange)
+	if err != nil {
+		return order, err
+	}
+	if dataRangeRef == "" {
+		dataRangeRef = dataRange
+	}
+	dataSheet, coordinates, err := f.adjustRange(dataRangeRef)
 	if err != nil {
 		return order, newPivotTableDataRangeError(err.Error())
 	}
@@ -271,17 +278,20 @@ func (f *File) getTableFieldsOrder(sheetName, dataRange string) ([]string, error
 func (f *File) addPivotCache(pivotCacheXML string, opts *PivotTableOptions) error {
 	// validate data range
 	definedNameRef := true
-	dataRange := f.getDefinedNameRefTo(opts.DataRange, opts.pivotTableSheetName)
-	if dataRange == "" {
-		definedNameRef = false
-		dataRange = opts.DataRange
+	_, dataRangeRef, err := f.getPivotTableDataRange(opts.pivotTableSheetName, opts.DataRange, opts.DataRange)
+	if err != nil {
+		return err
 	}
-	dataSheet, coordinates, err := f.adjustRange(dataRange)
+	if dataRangeRef == "" {
+		definedNameRef = false
+		dataRangeRef = opts.DataRange
+	}
+	dataSheet, coordinates, err := f.adjustRange(dataRangeRef)
 	if err != nil {
 		return newPivotTableDataRangeError(err.Error())
 	}
 	// data range has been checked
-	order, _ := f.getTableFieldsOrder(opts.pivotTableSheetName, opts.DataRange)
+	order, _ := f.getTableFieldsOrder(opts.pivotTableSheetName, dataRangeRef)
 	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
@@ -751,6 +761,32 @@ func (f *File) GetPivotTables(sheet string) ([]PivotTableOptions, error) {
 	return pivotTables, nil
 }
 
+// getPivotTableDataRange returns pivot table data range name and reference from
+// cell reference, table name or defined name.
+func (f *File) getPivotTableDataRange(sheet, ref, name string) (string, string, error) {
+	dataRange := fmt.Sprintf("%s!%s", sheet, ref)
+	dataRangeRef, isTable := dataRange, false
+	if name != "" {
+		dataRange = name
+		for _, sheetName := range f.GetSheetList() {
+			tables, err := f.GetTables(sheetName)
+			e := ErrSheetNotExist{sheetName}
+			if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
+				return dataRange, dataRangeRef, err
+			}
+			for _, table := range tables {
+				if table.Name == name {
+					dataRangeRef, isTable = fmt.Sprintf("%s!%s", sheetName, table.Range), true
+				}
+			}
+		}
+		if !isTable {
+			dataRangeRef = f.getDefinedNameRefTo(name, sheet)
+		}
+	}
+	return dataRange, dataRangeRef, nil
+}
+
 // getPivotTable provides a function to get a pivot table definition by given
 // worksheet name, pivot table XML path and pivot cache relationship XML path.
 func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (PivotTableOptions, error) {
@@ -774,7 +810,10 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 	if err != nil {
 		return opts, err
 	}
-	dataRange := fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref)
+	dataRange, dataRangeRef, err := f.getPivotTableDataRange(sheet, pc.CacheSource.WorksheetSource.Ref, pc.CacheSource.WorksheetSource.Name)
+	if err != nil {
+		return opts, err
+	}
 	opts = PivotTableOptions{
 		pivotTableXML:       pivotTableXML,
 		pivotCacheXML:       pivotCacheXML,
@@ -799,7 +838,7 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		opts.ShowLastColumn = si.ShowLastColumn
 		opts.PivotTableStyleName = si.Name
 	}
-	order, _ := f.getTableFieldsOrder(pt.Name, dataRange)
+	order, err := f.getTableFieldsOrder(pt.Name, dataRangeRef)
 	f.extractPivotTableFields(order, pt, &opts)
 	return opts, err
 }
@@ -905,4 +944,72 @@ func (f *File) genPivotCacheDefinitionID() int {
 		return true
 	})
 	return ID + 1
+}
+
+// deleteWorkbookPivotCache remove workbook pivot cache and pivot cache
+// relationships.
+func (f *File) deleteWorkbookPivotCache(opt PivotTableOptions) error {
+	rID, err := f.deleteWorkbookRels(SourceRelationshipPivotCache, strings.TrimPrefix(strings.TrimPrefix(opt.pivotCacheXML, "/"), "xl/"))
+	if err != nil {
+		return err
+	}
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	if wb.PivotCaches != nil {
+		for i, pivotCache := range wb.PivotCaches.PivotCache {
+			if pivotCache.RID == rID {
+				wb.PivotCaches.PivotCache = append(wb.PivotCaches.PivotCache[:i], wb.PivotCaches.PivotCache[i+1:]...)
+			}
+		}
+		if len(wb.PivotCaches.PivotCache) == 0 {
+			wb.PivotCaches = nil
+		}
+	}
+	return err
+}
+
+// DeletePivotTable delete a pivot table by giving the worksheet name and pivot
+// table name. Note that this function does not clean cell values in the pivot
+// table range.
+func (f *File) DeletePivotTable(sheet, name string) error {
+	sheetXML, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		return ErrSheetNotExist{sheet}
+	}
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXML, "xl/worksheets/") + ".rels"
+	sheetRels, err := f.relsReader(rels)
+	if err != nil {
+		return err
+	}
+	if sheetRels == nil {
+		sheetRels = &xlsxRelationships{}
+	}
+	opts, err := f.GetPivotTables(sheet)
+	if err != nil {
+		return err
+	}
+	pivotTableCaches := map[string]int{}
+	for _, sheetName := range f.GetSheetList() {
+		sheetPivotTables, _ := f.GetPivotTables(sheetName)
+		for _, sheetPivotTable := range sheetPivotTables {
+			pivotTableCaches[sheetPivotTable.pivotCacheXML]++
+		}
+	}
+	for _, v := range sheetRels.Relationships {
+		for _, opt := range opts {
+			if v.Type == SourceRelationshipPivotTable {
+				pivotTableXML := strings.ReplaceAll(v.Target, "..", "xl")
+				if opt.Name == name && opt.pivotTableXML == pivotTableXML {
+					if pivotTableCaches[opt.pivotCacheXML] == 1 {
+						err = f.deleteWorkbookPivotCache(opt)
+					}
+					f.deleteSheetRelationships(sheet, v.ID)
+					return err
+				}
+			}
+		}
+	}
+	return newNoExistTableError(name)
 }
