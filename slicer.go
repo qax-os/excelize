@@ -210,7 +210,7 @@ func (f *File) getSlicerSource(opts *SlicerOptions) (*Table, *PivotTableOptions,
 			return table, pivotTable, colIdx, newNoExistTableError(opts.TableName)
 		}
 	}
-	order, _ := f.getTableFieldsOrder(opts.TableSheet, dataRange)
+	order, _ := f.getTableFieldsOrder(&PivotTableOptions{DataRange: dataRange})
 	if colIdx = inStrSlice(order, opts.Name, true); colIdx == -1 {
 		return table, pivotTable, colIdx, newInvalidSlicerNameError(opts.Name)
 	}

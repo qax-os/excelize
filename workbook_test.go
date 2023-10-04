@@ -31,3 +31,13 @@ func TestWorkbookProps(t *testing.T) {
 	_, err = f.GetWorkbookProps()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
+
+func TestDeleteWorkbookRels(t *testing.T) {
+	f := NewFile()
+	// Test delete pivot table without worksheet relationships
+	f.Relationships.Delete("xl/_rels/workbook.xml.rels")
+	f.Pkg.Delete("xl/_rels/workbook.xml.rels")
+	rID, err := f.deleteWorkbookRels("", "")
+	assert.Empty(t, rID)
+	assert.NoError(t, err)
+}

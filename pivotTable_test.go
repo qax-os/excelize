@@ -272,22 +272,14 @@ func TestPivotTable(t *testing.T) {
 	_, _, err = f.adjustRange("sheet1!")
 	assert.EqualError(t, err, "parameter is invalid")
 	// Test get table fields order with empty data range
-	_, err = f.getTableFieldsOrder("", "")
+	_, err = f.getTableFieldsOrder(&PivotTableOptions{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot cache with empty data range
-	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is invalid")
-	// Test add pivot cache with invalid data range
-	assert.EqualError(t, f.addPivotCache("", &PivotTableOptions{
-		DataRange:       "A1:E31",
-		PivotTableRange: "Sheet1!U34:O2",
-		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
-		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
-	}), "parameter 'DataRange' parsing error: parameter is invalid")
+	assert.EqualError(t, f.addPivotCache(&PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is required")
 	// Test add pivot table with empty options
-	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOptions{}), "parameter 'PivotTableRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotTable(0, 0, &PivotTableOptions{}), "parameter 'PivotTableRange' parsing error: parameter is required")
 	// Test add pivot table with invalid data range
-	assert.EqualError(t, f.addPivotTable(0, 0, "", &PivotTableOptions{}), "parameter 'PivotTableRange' parsing error: parameter is required")
+	assert.EqualError(t, f.addPivotTable(0, 0, &PivotTableOptions{}), "parameter 'PivotTableRange' parsing error: parameter is required")
 	// Test add pivot fields with empty data range
 	assert.EqualError(t, f.addPivotFields(nil, &PivotTableOptions{
 		DataRange:       "A1:E31",
@@ -413,22 +405,6 @@ func TestParseFormatPivotTableSet(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestAddPivotCache(t *testing.T) {
-	f := NewFile()
-	// Create table in a worksheet
-	assert.NoError(t, f.AddTable("Sheet1", &Table{
-		Name:  "Table1",
-		Range: "A1:D5",
-	}))
-	// Test add pivot table cache with unsupported table relationships charset
-	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addPivotCache("xl/pivotCache/pivotCacheDefinition1.xml", &PivotTableOptions{
-		DataRange:       "Table1",
-		PivotTableRange: "Sheet1!G2:K7",
-		Rows:            []PivotTableField{{Data: "Column1"}},
-	}), "XML syntax error on line 1: invalid UTF-8")
-}
-
 func TestAddPivotRowFields(t *testing.T) {
 	f := NewFile()
 	// Test invalid data range
@@ -465,7 +441,7 @@ func TestAddPivotColFields(t *testing.T) {
 func TestGetPivotFieldsOrder(t *testing.T) {
 	f := NewFile()
 	// Test get table fields order with not exist worksheet
-	_, err := f.getTableFieldsOrder("", "SheetN!A1:E31")
+	_, err := f.getTableFieldsOrder(&PivotTableOptions{DataRange: "SheetN!A1:E31"})
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Create table in a worksheet
 	assert.NoError(t, f.AddTable("Sheet1", &Table{
@@ -474,7 +450,7 @@ func TestGetPivotFieldsOrder(t *testing.T) {
 	}))
 	// Test get table fields order with unsupported table relationships charset
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
-	_, err = f.getTableFieldsOrder("Sheet1", "Table")
+	_, err = f.getTableFieldsOrder(&PivotTableOptions{DataRange: "Table"})
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
