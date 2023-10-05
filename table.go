@@ -150,10 +150,11 @@ func (f *File) GetTables(sheet string) ([]Table, error) {
 				return tables, err
 			}
 			table := Table{
-				rID:   tbl.RID,
-				tID:   t.ID,
-				Range: t.Ref,
-				Name:  t.Name,
+				rID:      tbl.RID,
+				tID:      t.ID,
+				tableXML: tableXML,
+				Range:    t.Ref,
+				Name:     t.Name,
 			}
 			if t.TableStyleInfo != nil {
 				table.StyleName = t.TableStyleInfo.Name
@@ -186,6 +187,8 @@ func (f *File) DeleteTable(name string) error {
 			for i, tbl := range ws.TableParts.TableParts {
 				if tbl.RID == table.rID {
 					ws.TableParts.TableParts = append(ws.TableParts.TableParts[:i], ws.TableParts.TableParts[i+1:]...)
+					f.Pkg.Delete(table.tableXML)
+					_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLTable, "/"+table.tableXML)
 					f.deleteSheetRelationships(sheet, tbl.RID)
 					break
 				}

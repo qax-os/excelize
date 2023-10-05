@@ -561,12 +561,12 @@ func TestSetContentTypes(t *testing.T) {
 	assert.EqualError(t, f.setContentTypes("/xl/worksheets/sheet1.xml", ContentTypeSpreadSheetMLWorksheet), "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestDeleteSheetFromContentTypes(t *testing.T) {
+func TestRemoveContentTypesPart(t *testing.T) {
 	f := NewFile()
 	// Test delete sheet from content types with unsupported charset content types
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.deleteSheetFromContentTypes("/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.removeContentTypesPart(ContentTypeSpreadSheetMLWorksheet, "/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func BenchmarkNewSheet(b *testing.B) {

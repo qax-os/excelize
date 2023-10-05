@@ -225,3 +225,150 @@ func (f *File) workBookWriter() {
 		f.saveFileList(f.getWorkbookPath(), replaceRelationshipsBytes(f.replaceNameSpaceBytes(f.getWorkbookPath(), output)))
 	}
 }
+
+// setContentTypePartRelsExtensions provides a function to set the content type
+// for relationship parts and the Main Document part.
+func (f *File) setContentTypePartRelsExtensions() error {
+	var rels bool
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	for _, v := range content.Defaults {
+		if v.Extension == "rels" {
+			rels = true
+		}
+	}
+	if !rels {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   "rels",
+			ContentType: ContentTypeRelationships,
+		})
+	}
+	return err
+}
+
+// setContentTypePartImageExtensions provides a function to set the content type
+// for relationship parts and the Main Document part.
+func (f *File) setContentTypePartImageExtensions() error {
+	imageTypes := map[string]string{
+		"bmp": "image/", "jpeg": "image/", "png": "image/", "gif": "image/",
+		"svg": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-",
+		"emz": "image/x-", "wmz": "image/x-",
+	}
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	content.mu.Lock()
+	defer content.mu.Unlock()
+	for _, file := range content.Defaults {
+		delete(imageTypes, file.Extension)
+	}
+	for extension, prefix := range imageTypes {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   extension,
+			ContentType: prefix + extension,
+		})
+	}
+	return err
+}
+
+// setContentTypePartVMLExtensions provides a function to set the content type
+// for relationship parts and the Main Document part.
+func (f *File) setContentTypePartVMLExtensions() error {
+	var vml bool
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	content.mu.Lock()
+	defer content.mu.Unlock()
+	for _, v := range content.Defaults {
+		if v.Extension == "vml" {
+			vml = true
+		}
+	}
+	if !vml {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   "vml",
+			ContentType: ContentTypeVML,
+		})
+	}
+	return err
+}
+
+// addContentTypePart provides a function to add content type part relationships
+// in the file [Content_Types].xml by given index and content type.
+func (f *File) addContentTypePart(index int, contentType string) error {
+	setContentType := map[string]func() error{
+		"comments": f.setContentTypePartVMLExtensions,
+		"drawings": f.setContentTypePartImageExtensions,
+	}
+	partNames := map[string]string{
+		"chart":         "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
+		"chartsheet":    "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
+		"comments":      "/xl/comments" + strconv.Itoa(index) + ".xml",
+		"drawings":      "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
+		"table":         "/xl/tables/table" + strconv.Itoa(index) + ".xml",
+		"pivotTable":    "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
+		"pivotCache":    "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
+		"sharedStrings": "/xl/sharedStrings.xml",
+		"slicer":        "/xl/slicers/slicer" + strconv.Itoa(index) + ".xml",
+		"slicerCache":   "/xl/slicerCaches/slicerCache" + strconv.Itoa(index) + ".xml",
+	}
+	contentTypes := map[string]string{
+		"chart":         ContentTypeDrawingML,
+		"chartsheet":    ContentTypeSpreadSheetMLChartsheet,
+		"comments":      ContentTypeSpreadSheetMLComments,
+		"drawings":      ContentTypeDrawing,
+		"table":         ContentTypeSpreadSheetMLTable,
+		"pivotTable":    ContentTypeSpreadSheetMLPivotTable,
+		"pivotCache":    ContentTypeSpreadSheetMLPivotCacheDefinition,
+		"sharedStrings": ContentTypeSpreadSheetMLSharedStrings,
+		"slicer":        ContentTypeSlicer,
+		"slicerCache":   ContentTypeSlicerCache,
+	}
+	s, ok := setContentType[contentType]
+	if ok {
+		if err := s(); err != nil {
+			return err
+		}
+	}
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	content.mu.Lock()
+	defer content.mu.Unlock()
+	for _, v := range content.Overrides {
+		if v.PartName == partNames[contentType] {
+			return err
+		}
+	}
+	content.Overrides = append(content.Overrides, xlsxOverride{
+		PartName:    partNames[contentType],
+		ContentType: contentTypes[contentType],
+	})
+	return f.setContentTypePartRelsExtensions()
+}
+
+// removeContentTypesPart provides a function to remove relationships by given
+// content type and part name in the file [Content_Types].xml.
+func (f *File) removeContentTypesPart(contentType, partName string) error {
+	if !strings.HasPrefix(partName, "/") {
+		partName = "/xl/" + partName
+	}
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	content.mu.Lock()
+	defer content.mu.Unlock()
+	for k, v := range content.Overrides {
+		if v.PartName == partName && v.ContentType == contentType {
+			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
+		}
+	}
+	return err
+}

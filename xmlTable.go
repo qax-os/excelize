@@ -229,6 +229,7 @@ type xlsxXMLCellPr struct {
 type Table struct {
 	tID               int
 	rID               string
+	tableXML          string
 	Range             string
 	Name              string
 	StyleName         string

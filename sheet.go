@@ -576,7 +576,7 @@ func (f *File) DeleteSheet(sheet string) error {
 			}
 		}
 		target := f.deleteSheetFromWorkbookRels(v.ID)
-		_ = f.deleteSheetFromContentTypes(target)
+		_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLWorksheet, target)
 		_ = f.deleteCalcChain(f.getSheetID(sheet), "")
 		delete(f.sheetMap, v.Name)
 		f.Pkg.Delete(sheetXML)
@@ -626,24 +626,50 @@ func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	return ""
 }
 
-// deleteSheetFromContentTypes provides a function to remove worksheet
-// relationships by given target name in the file [Content_Types].xml.
-func (f *File) deleteSheetFromContentTypes(target string) error {
-	if !strings.HasPrefix(target, "/") {
-		target = "/xl/" + target
+// deleteSheetRelationships provides a function to delete relationships in
+// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
+// relationship index.
+func (f *File) deleteSheetRelationships(sheet, rID string) {
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
 	}
-	content, err := f.contentTypesReader()
-	if err != nil {
-		return err
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+	sheetRels, _ := f.relsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxRelationships{}
 	}
-	content.mu.Lock()
-	defer content.mu.Unlock()
-	for k, v := range content.Overrides {
-		if v.PartName == target {
-			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
+	sheetRels.mu.Lock()
+	defer sheetRels.mu.Unlock()
+	for k, v := range sheetRels.Relationships {
+		if v.ID == rID {
+			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
-	return err
+	f.Relationships.Store(rels, sheetRels)
+}
+
+// getSheetRelationshipsTargetByID provides a function to get Target attribute
+// value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
+// relationship index.
+func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
+	}
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+	sheetRels, _ := f.relsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxRelationships{}
+	}
+	sheetRels.mu.Lock()
+	defer sheetRels.mu.Unlock()
+	for _, v := range sheetRels.Relationships {
+		if v.ID == rID {
+			return v.Target
+		}
+	}
+	return ""
 }
 
 // CopySheet provides a function to duplicate a worksheet by gave source and
