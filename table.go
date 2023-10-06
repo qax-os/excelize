@@ -196,18 +196,6 @@ func (f *File) DeleteTable(name string) error {
 			if ws.TableParts.Count = len(ws.TableParts.TableParts); ws.TableParts.Count == 0 {
 				ws.TableParts = nil
 			}
-			// Delete cell value in the table header
-			coordinates, err := rangeRefToCoordinates(table.Range)
-			if err != nil {
-				return err
-			}
-			_ = sortCoordinates(coordinates)
-			for col := coordinates[0]; col <= coordinates[2]; col++ {
-				for row := coordinates[1]; row < coordinates[1]+1; row++ {
-					cell, _ := CoordinatesToCellName(col, row)
-					err = f.SetCellValue(sheet, cell, nil)
-				}
-			}
 			return err
 		}
 	}

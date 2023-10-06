@@ -122,11 +122,19 @@ func TestDeleteTable(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.DeleteTable("Table1"), "XML syntax error on line 1: invalid UTF-8")
-	// Test delete table with invalid table range
+	// Test delete table without deleting table header
 	f = NewFile()
-	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B4", Name: "Table1"}))
-	f.Pkg.Store("xl/tables/table1.xml", []byte("<table name=\"Table1\" ref=\"-\" />"))
-	assert.EqualError(t, f.DeleteTable("Table1"), ErrParameterInvalid.Error())
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "Date"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "Values"))
+	assert.NoError(t, f.UpdateLinkedValue())
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2", Name: "Table1"}))
+	assert.NoError(t, f.DeleteTable("Table1"))
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Date", val)
+	val, err = f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Values", val)
 }
 
 func TestSetTableHeader(t *testing.T) {
