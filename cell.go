@@ -216,15 +216,15 @@ func (f *File) setCellIntFunc(sheet, cell string, value interface{}) error {
 	case int64:
 		err = f.SetCellInt(sheet, cell, int(v))
 	case uint:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellUint(sheet, cell, uint64(v))
 	case uint8:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellUint(sheet, cell, uint64(v))
 	case uint16:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellUint(sheet, cell, uint64(v))
 	case uint32:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellUint(sheet, cell, uint64(v))
 	case uint64:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellUint(sheet, cell, v)
 	}
 	return err
 }
@@ -307,10 +307,38 @@ func (f *File) SetCellInt(sheet, cell string, value int) error {
 	return f.removeFormula(c, ws, sheet)
 }
 
-// setCellInt prepares cell type and string type cell value by a given
-// integer.
+// setCellInt prepares cell type and string type cell value by a given integer.
 func setCellInt(value int) (t string, v string) {
 	v = strconv.Itoa(value)
+	return
+}
+
+// SetCellUint provides a function to set uint type value of a cell by given
+// worksheet name, cell reference and cell value.
+func (f *File) SetCellUint(sheet, cell string, value uint64) error {
+	f.mu.Lock()
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		f.mu.Unlock()
+		return err
+	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	c, col, row, err := ws.prepareCell(cell)
+	if err != nil {
+		return err
+	}
+	c.S = ws.prepareCellStyle(col, row, c.S)
+	c.T, c.V = setCellUint(value)
+	c.IS = nil
+	return f.removeFormula(c, ws, sheet)
+}
+
+// setCellUint prepares cell type and string type cell value by a given unsigned
+// integer.
+func setCellUint(value uint64) (t string, v string) {
+	v = strconv.FormatUint(value, 10)
 	return
 }
 
@@ -336,8 +364,8 @@ func (f *File) SetCellBool(sheet, cell string, value bool) error {
 	return f.removeFormula(c, ws, sheet)
 }
 
-// setCellBool prepares cell type and string type cell value by a given
-// boolean value.
+// setCellBool prepares cell type and string type cell value by a given boolean
+// value.
 func setCellBool(value bool) (t string, v string) {
 	t = "b"
 	if value {
@@ -376,8 +404,8 @@ func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSiz
 	return f.removeFormula(c, ws, sheet)
 }
 
-// setCellFloat prepares cell type and string type cell value by a given
-// float value.
+// setCellFloat prepares cell type and string type cell value by a given float
+// value.
 func setCellFloat(value float64, precision, bitSize int) (t string, v string) {
 	v = strconv.FormatFloat(value, 'f', precision, bitSize)
 	return
@@ -407,8 +435,7 @@ func (f *File) SetCellStr(sheet, cell, value string) error {
 	return f.removeFormula(c, ws, sheet)
 }
 
-// setCellString provides a function to set string type to shared string
-// table.
+// setCellString provides a function to set string type to shared string table.
 func (f *File) setCellString(value string) (t, v string, err error) {
 	if utf8.RuneCountInString(value) > TotalCellChars {
 		value = string([]rune(value)[:TotalCellChars])

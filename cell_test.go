@@ -3,6 +3,7 @@ package excelize
 import (
 	"fmt"
 	_ "image/jpeg"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -174,6 +175,26 @@ func TestSetCellFloat(t *testing.T) {
 	assert.EqualError(t, f.SetCellFloat(sheet, "A", 123.42, -1, 64), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test set cell float data type value with invalid sheet name
 	assert.EqualError(t, f.SetCellFloat("Sheet:1", "A1", 123.42, -1, 64), ErrSheetNameInvalid.Error())
+}
+
+func TestSetCellUint(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", uint8(math.MaxUint8)))
+	result, err := f.GetCellValue("Sheet1", "A1")
+	assert.Equal(t, "255", result)
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", uint(math.MaxUint16)))
+	result, err = f.GetCellValue("Sheet1", "A1")
+	assert.Equal(t, "65535", result)
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", uint(math.MaxUint32)))
+	result, err = f.GetCellValue("Sheet1", "A1")
+	assert.Equal(t, "4294967295", result)
+	assert.NoError(t, err)
+	// Test uint cell value not exists worksheet
+	assert.EqualError(t, f.SetCellUint("SheetN", "A1", 1), "sheet SheetN does not exist")
+	// Test uint cell value with illegal cell reference
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.SetCellUint("Sheet1", "A", 1))
 }
 
 func TestSetCellValuesMultiByte(t *testing.T) {

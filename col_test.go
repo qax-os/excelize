@@ -217,7 +217,7 @@ func TestColumnVisibility(t *testing.T) {
 		assert.Equal(t, true, visible)
 		assert.NoError(t, err)
 
-		// Test get column visible on an inexistent worksheet
+		// Test get column visible on not exists worksheet
 		_, err = f.GetColVisible("SheetN", "F")
 		assert.EqualError(t, err, "sheet SheetN does not exist")
 		// Test get column visible with invalid sheet name

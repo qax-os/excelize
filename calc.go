@@ -193,7 +193,7 @@ var (
 			return fmt.Sprintf("R[%d]C[%d]", row, col), nil
 		},
 	}
-	formularFormats = []*regexp.Regexp{
+	formulaFormats = []*regexp.Regexp{
 		regexp.MustCompile(`^(\d+)$`),
 		regexp.MustCompile(`^=(.*)$`),
 		regexp.MustCompile(`^<>(.*)$`),
@@ -202,7 +202,7 @@ var (
 		regexp.MustCompile(`^<(.*)$`),
 		regexp.MustCompile(`^>(.*)$`),
 	}
-	formularCriterias = []byte{
+	formulaCriterias = []byte{
 		criteriaEq,
 		criteriaEq,
 		criteriaNe,
@@ -238,7 +238,7 @@ type cellRange struct {
 // formulaCriteria defined formula criteria parser result.
 type formulaCriteria struct {
 	Type      byte
-	Condition string
+	Condition formulaArg
 }
 
 // ArgType is the type of formula argument type.
@@ -1698,39 +1698,12 @@ func callFuncByName(receiver interface{}, name string, params []reflect.Value) (
 }
 
 // formulaCriteriaParser parse formula criteria.
-func formulaCriteriaParser(exp string) (fc *formulaCriteria) {
-	fc = &formulaCriteria{}
-	if exp == "" {
-		return
-	}
-	for i, re := range formularFormats {
-		if match := re.FindStringSubmatch(exp); len(match) > 1 {
-			fc.Type, fc.Condition = formularCriterias[i], match[1]
-			return
-		}
-	}
-	if strings.Contains(exp, "?") {
-		exp = strings.ReplaceAll(exp, "?", ".")
-	}
-	if strings.Contains(exp, "*") {
-		exp = strings.ReplaceAll(exp, "*", ".*")
-	}
-	fc.Type, fc.Condition = criteriaRegexp, exp
-	return
-}
-
-// formulaCriteriaEval evaluate formula criteria expression.
-func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, err error) {
-	var value, expected float64
-	var e error
-	prepareValue := func(val, cond string) (value float64, expected float64, err error) {
+func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
+	prepareValue := func(cond string) (expected float64, err error) {
 		percentile := 1.0
 		if strings.HasSuffix(cond, "%") {
 			cond = strings.TrimSuffix(cond, "%")
 			percentile /= 100
-		}
-		if value, err = strconv.ParseFloat(val, 64); err != nil {
-			return
 		}
 		if expected, err = strconv.ParseFloat(cond, 64); err != nil {
 			return
@@ -1738,25 +1711,53 @@ func formulaCriteriaEval(val string, criteria *formulaCriteria) (result bool, er
 		expected *= percentile
 		return
 	}
+	fc, val := &formulaCriteria{}, exp.Value()
+	if val == "" {
+		return fc
+	}
+	for i, re := range formulaFormats {
+		if match := re.FindStringSubmatch(val); len(match) > 1 {
+			fc.Condition = newStringFormulaArg(match[1])
+			if num, err := prepareValue(match[1]); err == nil {
+				fc.Condition = newNumberFormulaArg(num)
+			}
+			fc.Type = formulaCriterias[i]
+			return fc
+		}
+	}
+	if strings.Contains(val, "?") {
+		val = strings.ReplaceAll(val, "?", ".")
+	}
+	if strings.Contains(val, "*") {
+		val = strings.ReplaceAll(val, "*", ".*")
+	}
+	fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg(val)
+	if num := fc.Condition.ToNumber(); num.Type == ArgNumber {
+		fc.Condition = num
+	}
+	return fc
+}
+
+// formulaCriteriaEval evaluate formula criteria expression.
+func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool, err error) {
+	s := NewStack()
+	tokenCalcFunc := map[byte]func(rOpd, lOpd formulaArg, opdStack *Stack) error{
+		criteriaEq: calcEq,
+		criteriaNe: calcNEq,
+		criteriaL:  calcL,
+		criteriaLe: calcLe,
+		criteriaG:  calcG,
+		criteriaGe: calcGe,
+	}
 	switch criteria.Type {
-	case criteriaEq:
-		return val == criteria.Condition, err
-	case criteriaLe:
-		value, expected, e = prepareValue(val, criteria.Condition)
-		return value <= expected && e == nil, err
-	case criteriaGe:
-		value, expected, e = prepareValue(val, criteria.Condition)
-		return value >= expected && e == nil, err
-	case criteriaNe:
-		return val != criteria.Condition, err
-	case criteriaL:
-		value, expected, e = prepareValue(val, criteria.Condition)
-		return value < expected && e == nil, err
-	case criteriaG:
-		value, expected, e = prepareValue(val, criteria.Condition)
-		return value > expected && e == nil, err
+	case criteriaEq, criteriaLe, criteriaGe, criteriaNe, criteriaL, criteriaG:
+		if fn, ok := tokenCalcFunc[criteria.Type]; ok {
+			if _ = fn(criteria.Condition, val, s); s.Len() > 0 {
+				return s.Pop().(formulaArg).Number == 1, err
+			}
+		}
 	case criteriaRegexp:
-		return regexp.MatchString(criteria.Condition, val)
+		return regexp.MatchString(criteria.Condition.Value(), val.Value())
 	}
 	return
 }
@@ -5821,7 +5822,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	if argsList.Len() < 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SUMIF requires at least 2 arguments")
 	}
-	criteria := formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+	criteria := formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg))
 	rangeMtx := argsList.Front().Value.(formulaArg).Matrix
 	var sumRange [][]formulaArg
 	if argsList.Len() == 3 {
@@ -5835,7 +5836,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 			if arg.Type == ArgEmpty {
 				continue
 			}
-			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+			if ok, _ := formulaCriteriaEval(arg, criteria); ok {
 				if argsList.Len() == 3 {
 					if len(sumRange) > rowIdx && len(sumRange[rowIdx]) > colIdx {
 						arg = sumRange[rowIdx][colIdx]
@@ -6169,7 +6170,7 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "AVERAGEIF requires at least 2 arguments")
 	}
 	var (
-		criteria  = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).Value())
+		criteria  = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg))
 		rangeMtx  = argsList.Front().Value.(formulaArg).Matrix
 		cellRange [][]formulaArg
 		args      []formulaArg
@@ -6183,10 +6184,13 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 	for rowIdx, row := range rangeMtx {
 		for colIdx, col := range row {
 			fromVal := col.Value()
-			if col.Value() == "" {
+			if fromVal == "" {
 				continue
 			}
-			ok, _ = formulaCriteriaEval(fromVal, criteria)
+			if col.Type == ArgString && criteria.Condition.Type != ArgString {
+				continue
+			}
+			ok, _ = formulaCriteriaEval(col, criteria)
 			if ok {
 				if argsList.Len() == 3 {
 					if len(cellRange) > rowIdx && len(cellRange[rowIdx]) > colIdx {
@@ -7880,11 +7884,14 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "COUNTIF requires 2 arguments")
 	}
 	var (
-		criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg).String)
+		criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg))
 		count    float64
 	)
 	for _, cell := range argsList.Front().Value.(formulaArg).ToList() {
-		if ok, _ := formulaCriteriaEval(cell.Value(), criteria); ok {
+		if cell.Type == ArgString && criteria.Condition.Type != ArgString {
+			continue
+		}
+		if ok, _ := formulaCriteriaEval(cell, criteria); ok {
 			count++
 		}
 	}
@@ -7895,11 +7902,11 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
 	for i := 0; i < len(args)-1; i += 2 {
 		var match []cellRef
-		matrix, criteria := args[i].Matrix, formulaCriteriaParser(args[i+1].Value())
+		matrix, criteria := args[i].Matrix, formulaCriteriaParser(args[i+1])
 		if i == 0 {
 			for rowIdx, row := range matrix {
 				for colIdx, col := range row {
-					if ok, _ := formulaCriteriaEval(col.Value(), criteria); ok {
+					if ok, _ := formulaCriteriaEval(col, criteria); ok {
 						match = append(match, cellRef{Col: colIdx, Row: rowIdx})
 					}
 				}
@@ -7908,7 +7915,7 @@ func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
 			match = []cellRef{}
 			for _, ref := range cellRefs {
 				value := matrix[ref.Row][ref.Col]
-				if ok, _ := formulaCriteriaEval(value.Value(), criteria); ok {
+				if ok, _ := formulaCriteriaEval(value, criteria); ok {
 					match = append(match, ref)
 				}
 			}
@@ -14830,43 +14837,43 @@ func (fn *formulaFuncs) HYPERLINK(argsList *list.List) formulaArg {
 // calcMatch returns the position of the value by given match type, criteria
 // and lookup array for the formula function MATCH.
 func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
+	idx := -1
 	switch matchType {
 	case 0:
 		for i, arg := range lookupArray {
-			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
+			if ok, _ := formulaCriteriaEval(arg, criteria); ok {
 				return newNumberFormulaArg(float64(i + 1))
 			}
 		}
 	case -1:
 		for i, arg := range lookupArray {
-			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
-				return newNumberFormulaArg(float64(i + 1))
-			}
-			if ok, _ := formulaCriteriaEval(arg.Value(), &formulaCriteria{
-				Type: criteriaL, Condition: criteria.Condition,
+			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
+				Type: criteriaGe, Condition: criteria.Condition,
 			}); ok {
-				if i == 0 {
-					return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-				}
-				return newNumberFormulaArg(float64(i))
+				idx = i
+				continue
+			}
+			if criteria.Condition.Type == ArgNumber {
+				break
 			}
 		}
 	case 1:
 		for i, arg := range lookupArray {
-			if ok, _ := formulaCriteriaEval(arg.Value(), criteria); ok {
-				return newNumberFormulaArg(float64(i + 1))
-			}
-			if ok, _ := formulaCriteriaEval(arg.Value(), &formulaCriteria{
-				Type: criteriaG, Condition: criteria.Condition,
+			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
+				Type: criteriaLe, Condition: criteria.Condition,
 			}); ok {
-				if i == 0 {
-					return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-				}
-				return newNumberFormulaArg(float64(i))
+				idx = i
+				continue
+			}
+			if criteria.Condition.Type == ArgNumber {
+				break
 			}
 		}
 	}
-	return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	if idx == -1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(float64(idx + 1))
 }
 
 // MATCH function looks up a value in an array, and returns the position of
@@ -14904,7 +14911,7 @@ func (fn *formulaFuncs) MATCH(argsList *list.List) formulaArg {
 	default:
 		return newErrorFormulaArg(formulaErrorNA, lookupArrayErr)
 	}
-	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg).Value()), lookupArray)
+	return calcMatch(matchType, formulaCriteriaParser(argsList.Front().Value.(formulaArg)), lookupArray)
 }
 
 // TRANSPOSE function 'transposes' an array of cells (i.e. the function copies
@@ -14970,7 +14977,7 @@ start:
 			}
 		}
 		if matchMode.Number == matchModeMinGreater || matchMode.Number == matchModeMaxLess {
-			matchIdx = int(calcMatch(int(matchMode.Number), formulaCriteriaParser(lookupValue.Value()), tableArray).Number)
+			matchIdx = int(calcMatch(int(matchMode.Number), formulaCriteriaParser(lookupValue), tableArray).Number)
 			continue
 		}
 	}
@@ -18390,12 +18397,12 @@ func (db *calcDatabase) criteriaEval() bool {
 	for i := 1; !matched && i < rows; i++ {
 		matched = true
 		for j := 0; matched && j < columns; j++ {
-			criteriaExp := db.criteria[i][j].Value()
-			if criteriaExp == "" {
+			criteriaExp := db.criteria[i][j]
+			if criteriaExp.Value() == "" {
 				continue
 			}
 			criteria := formulaCriteriaParser(criteriaExp)
-			cell := db.database[db.row][db.indexMap[j]].Value()
+			cell := db.database[db.row][db.indexMap[j]]
 			matched, _ = formulaCriteriaEval(cell, criteria)
 		}
 	}

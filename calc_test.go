@@ -4913,9 +4913,9 @@ func TestCalcAVERAGEIF(t *testing.T) {
 		{4, 50},
 		{5, 100},
 		{1, 50},
-		{"TRUE", 200},
-		{"TRUE", 250},
-		{"FALSE", 50},
+		{true, 200},
+		{true, 250},
+		{false, 50},
 	})
 	for formula, expected := range map[string]string{
 		"=AVERAGEIF(A1:A14,\"Thursday\",B1:B14)": "150",
@@ -5622,6 +5622,7 @@ func TestCalcMATCH(t *testing.T) {
 		"=MATCH(8,C1:C6,1)":        "3",
 		"=MATCH(6,B1:B6,-1)":       "1",
 		"=MATCH(10,D1:D6,-1)":      "3",
+		"=MATCH(-10,D1:D6,-1)":     "6",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
