@@ -468,8 +468,7 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 }
 
 // DeletePicture provides a function to delete all pictures in a cell by given
-// worksheet name and cell reference. Note that the image file won't be deleted
-// from the document currently.
+// worksheet name and cell reference.
 func (f *File) DeletePicture(sheet, cell string) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
@@ -485,7 +484,36 @@ func (f *File) DeletePicture(sheet, cell string) error {
 		return err
 	}
 	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
-	return f.deleteDrawing(col, row, drawingXML, "Pic")
+	drawingRels := "xl/drawings/_rels/" + filepath.Base(drawingXML) + ".rels"
+	rID, err := f.deleteDrawing(col, row, drawingXML, "Pic")
+	if err != nil {
+		return err
+	}
+	rels := f.getDrawingRelationships(drawingRels, rID)
+	if rels == nil {
+		return err
+	}
+	var used bool
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/drawings/_rels/") {
+			r, err := f.relsReader(k.(string))
+			if err != nil {
+				return true
+			}
+			for _, rel := range r.Relationships {
+				if rel.ID != rels.ID && rel.Type == SourceRelationshipImage &&
+					filepath.Base(rel.Target) == filepath.Base(rels.Target) {
+					used = true
+				}
+			}
+		}
+		return true
+	})
+	if !used {
+		f.Pkg.Delete(strings.Replace(rels.Target, "../", "xl/", -1))
+	}
+	f.deleteDrawingRels(drawingRels, rID)
+	return err
 }
 
 // getPicture provides a function to get picture base name and raw content

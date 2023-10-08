@@ -240,10 +240,25 @@ func TestAddPictureFromBytes(t *testing.T) {
 func TestDeletePicture(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
+	// Test delete picture on a worksheet which does not contains any pictures
 	assert.NoError(t, f.DeletePicture("Sheet1", "A1"))
-	assert.NoError(t, f.AddPicture("Sheet1", "P1", filepath.Join("test", "images", "excel.jpg"), nil))
-	assert.NoError(t, f.DeletePicture("Sheet1", "P1"))
+	// Add same pictures on different worksheets
+	assert.NoError(t, f.AddPicture("Sheet1", "F20", filepath.Join("test", "images", "excel.jpg"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "I20", filepath.Join("test", "images", "excel.jpg"), nil))
+	assert.NoError(t, f.AddPicture("Sheet2", "F1", filepath.Join("test", "images", "excel.jpg"), nil))
+	// Test delete picture on a worksheet, the images should be preserved
+	assert.NoError(t, f.DeletePicture("Sheet1", "F20"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture.xlsx")))
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filepath.Join("test", "TestDeletePicture.xlsx"))
+	assert.NoError(t, err)
+	// Test delete same picture on different worksheet, the images should be removed
+	assert.NoError(t, f.DeletePicture("Sheet1", "F10"))
+	assert.NoError(t, f.DeletePicture("Sheet2", "F1"))
+	assert.NoError(t, f.DeletePicture("Sheet1", "I20"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture2.xlsx")))
+
 	// Test delete picture on not exists worksheet
 	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete picture with invalid sheet name
@@ -253,6 +268,32 @@ func TestDeletePicture(t *testing.T) {
 	assert.NoError(t, f.Close())
 	// Test delete picture on no chart worksheet
 	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
+
+	f, err = OpenFile(filepath.Join("test", "TestDeletePicture.xlsx"))
+	assert.NoError(t, err)
+	// Test delete picture with unsupported charset drawing
+	f.Pkg.Store("xl/drawings/drawing1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeletePicture("Sheet1", "F10"), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filepath.Join("test", "TestDeletePicture.xlsx"))
+	assert.NoError(t, err)
+	// Test delete picture with unsupported charset drawing relationships
+	f.Relationships.Delete("xl/drawings/_rels/drawing1.xml.rels")
+	f.Pkg.Store("xl/drawings/_rels/drawing1.xml.rels", MacintoshCyrillicCharset)
+	assert.NoError(t, f.DeletePicture("Sheet2", "F1"))
+	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "G1", filepath.Join("test", "images", "excel.jpg"), nil))
+	drawing, ok := f.Drawings.Load("xl/drawings/drawing1.xml")
+	assert.True(t, ok)
+	// Made two picture reference the same drawing relationship ID
+	drawing.(*xlsxWsDr).TwoCellAnchor[1].Pic.BlipFill.Blip.Embed = "rId1"
+	assert.NoError(t, f.DeletePicture("Sheet1", "A1"))
+	assert.NoError(t, f.Close())
 }
 
 func TestDrawingResize(t *testing.T) {

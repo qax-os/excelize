@@ -48,16 +48,22 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 			fileName = partName
 		}
 		if strings.EqualFold(fileName, defaultXMLPathSharedStrings) && fileSize > f.options.UnzipXMLSizeLimit {
-			if tempFile, err := f.unzipToTemp(v); err == nil {
+			tempFile, err := f.unzipToTemp(v)
+			if tempFile != "" {
 				f.tempFiles.Store(fileName, tempFile)
+			}
+			if err == nil {
 				continue
 			}
 		}
 		if strings.HasPrefix(strings.ToLower(fileName), "xl/worksheets/sheet") {
 			worksheets++
 			if fileSize > f.options.UnzipXMLSizeLimit && !v.FileInfo().IsDir() {
-				if tempFile, err := f.unzipToTemp(v); err == nil {
+				tempFile, err := f.unzipToTemp(v)
+				if tempFile != "" {
 					f.tempFiles.Store(fileName, tempFile)
+				}
+				if err == nil {
 					continue
 				}
 			}
