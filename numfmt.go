@@ -33,18 +33,18 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
-	opts                                                           *Options
-	cellType                                                       CellType
-	section                                                        []nfp.Section
-	t                                                              time.Time
-	sectionIdx                                                     int
-	date1904, isNumeric, hours, seconds, useMillisecond, useGannen bool
-	number                                                         float64
-	ap, localCode, result, value, valueSectionType                 string
-	switchArgument, currencyString                                 string
-	fracHolder, fracPadding, intHolder, intPadding, expBaseLen     int
-	percent                                                        int
-	useCommaSep, usePointer, usePositive, useScientificNotation    bool
+	opts                                                                     *Options
+	cellType                                                                 CellType
+	section                                                                  []nfp.Section
+	t                                                                        time.Time
+	sectionIdx                                                               int
+	date1904, isNumeric, hours, seconds, useMillisecond, useGannen           bool
+	number                                                                   float64
+	ap, localCode, result, value, valueSectionType                           string
+	switchArgument, currencyString                                           string
+	fracHolder, fracPadding, intHolder, intPadding, expBaseLen               int
+	percent                                                                  int
+	useCommaSep, useFraction, usePointer, usePositive, useScientificNotation bool
 }
 
 // CultureName is the type of supported language country codes types for apply
@@ -688,8 +688,11 @@ var (
 		nfp.TokenTypeCurrencyLanguage,
 		nfp.TokenTypeDateTimes,
 		nfp.TokenTypeDecimalPoint,
+		nfp.TokenTypeDenominator,
+		nfp.TokenTypeDigitalPlaceHolder,
 		nfp.TokenTypeElapsedDateTimes,
 		nfp.TokenTypeExponential,
+		nfp.TokenTypeFraction,
 		nfp.TokenTypeGeneral,
 		nfp.TokenTypeHashPlaceHolder,
 		nfp.TokenTypeLiteral,
@@ -702,7 +705,10 @@ var (
 	}
 	// supportedNumberTokenTypes list the supported number token types.
 	supportedNumberTokenTypes = []string{
+		nfp.TokenTypeDenominator,
+		nfp.TokenTypeDigitalPlaceHolder,
 		nfp.TokenTypeExponential,
+		nfp.TokenTypeFraction,
 		nfp.TokenTypeHashPlaceHolder,
 		nfp.TokenTypePercent,
 		nfp.TokenTypeZeroPlaceHolder,
@@ -4775,6 +4781,9 @@ func (nf *numberFormat) getNumberFmtConf() {
 		if token.TType == nfp.TokenTypeDecimalPoint {
 			nf.usePointer = true
 		}
+		if token.TType == nfp.TokenTypeFraction {
+			nf.useFraction = true
+		}
 		if token.TType == nfp.TokenTypeSwitchArgument {
 			nf.switchArgument = token.TValue
 		}
@@ -4795,8 +4804,11 @@ func (nf *numberFormat) getNumberFmtConf() {
 
 // printNumberLiteral apply literal tokens for the pre-formatted text.
 func (nf *numberFormat) printNumberLiteral(text string) string {
-	var result string
-	var useLiteral, usePlaceHolder bool
+	var (
+		result                                  string
+		frac                                    float64
+		useFraction, useLiteral, usePlaceHolder bool
+	)
 	if nf.usePositive {
 		result += "-"
 	}
@@ -4822,8 +4834,39 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 				result += text
 			}
 		}
+		if token.TType == nfp.TokenTypeFraction {
+			_, frac = math.Modf(nf.number)
+			frac, useFraction = math.Abs(frac), true
+		}
+		if useFraction {
+			result += nf.fractionHandler(frac, token)
+		}
 	}
 	return nf.printSwitchArgument(result)
+}
+
+// fractionHandler handling fraction number format expression for positive and
+// negative numeric.
+func (nf *numberFormat) fractionHandler(frac float64, token nfp.Token) string {
+	var rat, result string
+	if token.TType == nfp.TokenTypeDigitalPlaceHolder {
+		fracPlaceHolder := len(token.TValue)
+		for i := 0; i < 5000; i++ {
+			if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= fracPlaceHolder {
+				if rat = r.String(); strings.HasPrefix(rat, "0/") {
+					rat = strings.Repeat(" ", 3)
+				}
+				continue
+			}
+			break
+		}
+		result += rat
+	}
+	if token.TType == nfp.TokenTypeDenominator {
+		denom, _ := strconv.ParseFloat(token.TValue, 64)
+		result += fmt.Sprintf("%d/%d", int(math.Round(frac*denom)), int(math.Round(denom)))
+	}
+	return result
 }
 
 // printCommaSep format number with thousands separator.
@@ -4928,6 +4971,9 @@ func (nf *numberFormat) numberHandler() string {
 	fmtCode := fmt.Sprintf("%%0%d.%d%s%s", paddingLen, fracLen, flag, strings.Repeat("%%", nf.percent))
 	if nf.percent > 0 {
 		num *= math.Pow(100, float64(nf.percent))
+	}
+	if nf.useFraction {
+		num = math.Floor(math.Abs(num))
 	}
 	if result = fmt.Sprintf(fmtCode, math.Abs(num)); nf.useCommaSep {
 		result = printCommaSep(result)

@@ -231,7 +231,18 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	mediaStr := ".." + strings.TrimPrefix(f.addMedia(pic.File, ext), "xl")
-	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
+	var drawingRID int
+	if rels, _ := f.relsReader(drawingRels); rels != nil {
+		for _, rel := range rels.Relationships {
+			if rel.Type == SourceRelationshipImage && rel.Target == mediaStr {
+				drawingRID, _ = strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
+				break
+			}
+		}
+	}
+	if drawingRID == 0 {
+		drawingRID = f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
+	}
 	// Add picture with hyperlink.
 	if options.Hyperlink != "" && options.HyperlinkType != "" {
 		if options.HyperlinkType == "External" {
@@ -494,8 +505,8 @@ func (f *File) DeletePicture(sheet, cell string) error {
 		return err
 	}
 	var used bool
-	f.Pkg.Range(func(k, v interface{}) bool {
-		if strings.Contains(k.(string), "xl/drawings/_rels/") {
+	checkPicRef := func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/drawings/_rels/drawing") {
 			r, err := f.relsReader(k.(string))
 			if err != nil {
 				return true
@@ -508,7 +519,9 @@ func (f *File) DeletePicture(sheet, cell string) error {
 			}
 		}
 		return true
-	})
+	}
+	f.Relationships.Range(checkPicRef)
+	f.Pkg.Range(checkPicRef)
 	if !used {
 		f.Pkg.Delete(strings.Replace(rels.Target, "../", "xl/", -1))
 	}

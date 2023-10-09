@@ -18,6 +18,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"os"
 	"regexp"
@@ -823,6 +824,30 @@ func bstrMarshal(s string) (result string) {
 		result += s[cursor:]
 	}
 	return result
+}
+
+// newRat converts decimals to rational fractions with the required precision.
+func newRat(n float64, iterations int64, prec float64) *big.Rat {
+	x := int64(math.Floor(n))
+	y := n - float64(x)
+	rat := continuedFraction(y, 1, iterations, prec)
+	return rat.Add(rat, new(big.Rat).SetInt64(x))
+}
+
+// continuedFraction returns rational from decimal with the continued fraction
+// algorithm.
+func continuedFraction(n float64, i int64, limit int64, prec float64) *big.Rat {
+	if i >= limit || n <= prec {
+		return big.NewRat(0, 1)
+	}
+	inverted := 1 / n
+	y := int64(math.Floor(inverted))
+	x := inverted - float64(y)
+	ratY := new(big.Rat).SetInt64(y)
+	ratNext := continuedFraction(x, i+1, limit, prec)
+	res := ratY.Add(ratY, ratNext)
+	res = res.Inv(res)
+	return res
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.
