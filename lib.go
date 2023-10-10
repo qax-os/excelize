@@ -682,8 +682,8 @@ func getXMLNamespace(space string, attr []xml.Attr) string {
 func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
 	sourceXmlns := []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	targetXmlns := []byte(templateNamespaceIDMap)
-	if attr, ok := f.xmlAttr[path]; ok {
-		targetXmlns = []byte(genXMLNamespace(attr))
+	if attrs, ok := f.xmlAttr.Load(path); ok {
+		targetXmlns = []byte(genXMLNamespace(attrs.([]xml.Attr)))
 	}
 	return bytesReplace(contentMarshal, sourceXmlns, bytes.ReplaceAll(targetXmlns, []byte(" mc:Ignorable=\"r\""), []byte{}), -1)
 }
@@ -694,29 +694,36 @@ func (f *File) addNameSpaces(path string, ns xml.Attr) {
 	exist := false
 	mc := false
 	ignore := -1
-	if attr, ok := f.xmlAttr[path]; ok {
-		for i, attribute := range attr {
-			if attribute.Name.Local == ns.Name.Local && attribute.Name.Space == ns.Name.Space {
+	if attrs, ok := f.xmlAttr.Load(path); ok {
+		for i, attr := range attrs.([]xml.Attr) {
+			if attr.Name.Local == ns.Name.Local && attr.Name.Space == ns.Name.Space {
 				exist = true
 			}
-			if attribute.Name.Local == "Ignorable" && getXMLNamespace(attribute.Name.Space, attr) == "mc" {
+			if attr.Name.Local == "Ignorable" && getXMLNamespace(attr.Name.Space, attrs.([]xml.Attr)) == "mc" {
 				ignore = i
 			}
-			if attribute.Name.Local == "mc" && attribute.Name.Space == "xmlns" {
+			if attr.Name.Local == "mc" && attr.Name.Space == "xmlns" {
 				mc = true
 			}
 		}
 	}
 	if !exist {
-		f.xmlAttr[path] = append(f.xmlAttr[path], ns)
+		attrs, _ := f.xmlAttr.Load(path)
+		if attrs == nil {
+			attrs = []xml.Attr{}
+		}
+		attrs = append(attrs.([]xml.Attr), ns)
+		f.xmlAttr.Store(path, attrs)
 		if !mc {
-			f.xmlAttr[path] = append(f.xmlAttr[path], SourceRelationshipCompatibility)
+			attrs = append(attrs.([]xml.Attr), SourceRelationshipCompatibility)
+			f.xmlAttr.Store(path, attrs)
 		}
 		if ignore == -1 {
-			f.xmlAttr[path] = append(f.xmlAttr[path], xml.Attr{
+			attrs = append(attrs.([]xml.Attr), xml.Attr{
 				Name:  xml.Name{Local: "Ignorable", Space: "mc"},
 				Value: ns.Name.Local,
 			})
+			f.xmlAttr.Store(path, attrs)
 			return
 		}
 		f.setIgnorableNameSpace(path, ignore, ns)
@@ -727,8 +734,10 @@ func (f *File) addNameSpaces(path string, ns xml.Attr) {
 // by the given attribute.
 func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 	ignorableNS := []string{"c14", "cdr14", "a14", "pic14", "x14", "xdr14", "x14ac", "dsp", "mso14", "dgm14", "x15", "x12ac", "x15ac", "xr", "xr2", "xr3", "xr4", "xr5", "xr6", "xr7", "xr8", "xr9", "xr10", "xr11", "xr12", "xr13", "xr14", "xr15", "x15", "x16", "x16r2", "mo", "mx", "mv", "o", "v"}
-	if inStrSlice(strings.Fields(f.xmlAttr[path][index].Value), ns.Name.Local, true) == -1 && inStrSlice(ignorableNS, ns.Name.Local, true) != -1 {
-		f.xmlAttr[path][index].Value = strings.TrimSpace(fmt.Sprintf("%s %s", f.xmlAttr[path][index].Value, ns.Name.Local))
+	xmlAttrs, _ := f.xmlAttr.Load(path)
+	if inStrSlice(strings.Fields(xmlAttrs.([]xml.Attr)[index].Value), ns.Name.Local, true) == -1 && inStrSlice(ignorableNS, ns.Name.Local, true) != -1 {
+		xmlAttrs.([]xml.Attr)[index].Value = strings.TrimSpace(fmt.Sprintf("%s %s", xmlAttrs.([]xml.Attr)[index].Value, ns.Name.Local))
+		f.xmlAttr.Store(path, xmlAttrs)
 	}
 }
 

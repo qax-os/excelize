@@ -30,8 +30,8 @@ import (
 type File struct {
 	mu               sync.Mutex
 	options          *Options
-	xmlAttr          map[string][]xml.Attr
-	checked          map[string]bool
+	xmlAttr          sync.Map
+	checked          sync.Map
 	sheetMap         map[string]string
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
@@ -133,8 +133,8 @@ func OpenFile(filename string, opts ...Options) (*File, error) {
 func newFile() *File {
 	return &File{
 		options:          &Options{UnzipSizeLimit: UnzipSizeLimit, UnzipXMLSizeLimit: StreamChunkSize},
-		xmlAttr:          make(map[string][]xml.Attr),
-		checked:          make(map[string]bool),
+		xmlAttr:          sync.Map{},
+		checked:          sync.Map{},
 		sheetMap:         make(map[string]string),
 		tempFiles:        sync.Map{},
 		Comments:         make(map[string]*xlsxComments),
@@ -275,24 +275,25 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		}
 	}
 	ws = new(xlsxWorksheet)
-	if _, ok := f.xmlAttr[name]; !ok {
+	if attrs, ok := f.xmlAttr.Load(name); !ok {
 		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
-		f.xmlAttr[name] = append(f.xmlAttr[name], getRootElement(d)...)
+		if attrs == nil {
+			attrs = []xml.Attr{}
+		}
+		attrs = append(attrs.([]xml.Attr), getRootElement(d)...)
+		f.xmlAttr.Store(name, attrs)
 	}
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
 		return
 	}
 	err = nil
-	if f.checked == nil {
-		f.checked = make(map[string]bool)
-	}
-	if ok = f.checked[name]; !ok {
+	if _, ok = f.checked.Load(name); !ok {
 		ws.checkSheet()
 		if err = ws.checkRow(); err != nil {
 			return
 		}
-		f.checked[name] = true
+		f.checked.Store(name, true)
 	}
 	f.Sheet.Store(name, ws)
 	return

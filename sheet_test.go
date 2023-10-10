@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,7 +121,7 @@ func TestPanes(t *testing.T) {
 
 	// Test add pane on empty sheet views worksheet
 	f = NewFile()
-	f.checked = nil
+	f.checked = sync.Map{}
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
 	assert.NoError(t, f.SetPanes("Sheet1",
@@ -173,7 +174,7 @@ func TestSearchSheet(t *testing.T) {
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
-	f.checked = nil
+	f.checked = sync.Map{}
 	result, err = f.SearchSheet("Sheet1", "A")
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"A\": invalid syntax")
 	assert.Equal(t, []string(nil), result)
@@ -462,7 +463,7 @@ func TestWorksheetWriter(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	worksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(worksheet, 1)))
-	f.checked = nil
+	f.checked = sync.Map{}
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
 	f.workSheetWriter()
 	value, ok := f.Pkg.Load("xl/worksheets/sheet1.xml")

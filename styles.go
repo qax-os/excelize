@@ -2161,7 +2161,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //
 // The 'Criteria' parameter is used to set the criteria by which the cell data
 // will be evaluated. It has no default value. The most common criteria as
-// applied to {"type"："cell"} are:
+// applied to {Type: "cell"} are:
 //
 //	between                  |
 //	not between              |

@@ -164,10 +164,10 @@ func (f *File) workSheetWriter() {
 			// reusing buffer
 			_ = encoder.Encode(sheet)
 			f.saveFileList(p.(string), replaceRelationshipsBytes(f.replaceNameSpaceBytes(p.(string), buffer.Bytes())))
-			ok := f.checked[p.(string)]
+			_, ok := f.checked.Load(p.(string))
 			if ok {
 				f.Sheet.Delete(p.(string))
-				f.checked[p.(string)] = false
+				f.checked.Store(p.(string), false)
 			}
 			buffer.Reset()
 		}
@@ -237,7 +237,7 @@ func (f *File) setSheet(index int, name string) {
 	sheetXMLPath := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[name] = sheetXMLPath
 	f.Sheet.Store(sheetXMLPath, &ws)
-	f.xmlAttr[sheetXMLPath] = []xml.Attr{NameSpaceSpreadSheet}
+	f.xmlAttr.Store(sheetXMLPath, []xml.Attr{NameSpaceSpreadSheet})
 }
 
 // relsWriter provides a function to save relationships after
@@ -583,7 +583,7 @@ func (f *File) DeleteSheet(sheet string) error {
 		f.Pkg.Delete(rels)
 		f.Relationships.Delete(rels)
 		f.Sheet.Delete(sheetXML)
-		delete(f.xmlAttr, sheetXML)
+		f.xmlAttr.Delete(sheetXML)
 		f.SheetCount--
 	}
 	index, err := f.GetSheetIndex(activeSheetName)
@@ -714,8 +714,8 @@ func (f *File) copySheet(from, to int) error {
 		f.Pkg.Store(toRels, rels.([]byte))
 	}
 	fromSheetXMLPath, _ := f.getSheetXMLPath(fromSheet)
-	fromSheetAttr := f.xmlAttr[fromSheetXMLPath]
-	f.xmlAttr[sheetXMLPath] = fromSheetAttr
+	fromSheetAttr, _ := f.xmlAttr.Load(fromSheetXMLPath)
+	f.xmlAttr.Store(sheetXMLPath, fromSheetAttr)
 	return err
 }
 

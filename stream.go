@@ -678,7 +678,7 @@ func (sw *StreamWriter) Flush() error {
 
 	sheetPath := sw.file.sheetMap[sw.Sheet]
 	sw.file.Sheet.Delete(sheetPath)
-	delete(sw.file.checked, sheetPath)
+	sw.file.checked.Delete(sheetPath)
 	sw.file.Pkg.Delete(sheetPath)
 
 	return nil

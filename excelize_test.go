@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1531,7 +1532,7 @@ func TestWorkSheetReader(t *testing.T) {
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
-	f.checked = nil
+	f.checked = sync.Map{}
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
 }

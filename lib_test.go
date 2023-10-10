@@ -294,9 +294,11 @@ func TestGetRootElement(t *testing.T) {
 
 func TestSetIgnorableNameSpace(t *testing.T) {
 	f := NewFile()
-	f.xmlAttr["xml_path"] = []xml.Attr{{}}
+	f.xmlAttr.Store("xml_path", []xml.Attr{{}})
 	f.setIgnorableNameSpace("xml_path", 0, xml.Attr{Name: xml.Name{Local: "c14"}})
-	assert.EqualValues(t, "c14", f.xmlAttr["xml_path"][0].Value)
+	attrs, ok := f.xmlAttr.Load("xml_path")
+	assert.EqualValues(t, "c14", attrs.([]xml.Attr)[0].Value)
+	assert.True(t, ok)
 }
 
 func TestStack(t *testing.T) {

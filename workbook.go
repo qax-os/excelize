@@ -197,9 +197,13 @@ func (f *File) workbookReader() (*xlsxWorkbook, error) {
 	if f.WorkBook == nil {
 		wbPath := f.getWorkbookPath()
 		f.WorkBook = new(xlsxWorkbook)
-		if _, ok := f.xmlAttr[wbPath]; !ok {
+		if attrs, ok := f.xmlAttr.Load(wbPath); !ok {
 			d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath))))
-			f.xmlAttr[wbPath] = append(f.xmlAttr[wbPath], getRootElement(d)...)
+			if attrs == nil {
+				attrs = []xml.Attr{}
+			}
+			attrs = append(attrs.([]xml.Attr), getRootElement(d)...)
+			f.xmlAttr.Store(wbPath, attrs)
 			f.addNameSpaces(wbPath, SourceRelationship)
 		}
 		if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(wbPath)))).

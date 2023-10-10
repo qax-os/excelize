@@ -94,23 +94,33 @@ func (f *File) getSheetComments(sheetFile string) string {
 	return ""
 }
 
-// AddComment provides the method to add comment in a sheet by given worksheet
-// name, cell reference and format set (such as author and text). Note that the
-// max author length is 255 and the max text length is 32512. For example, add
-// a comment in Sheet1!$A$30:
+// AddComment provides the method to add comments in a sheet by giving the
+// worksheet name, cell reference, and format set (such as author and text).
+// Note that the maximum author name length is 255 and the max text length is
+// 32512. For example, add a rich-text comment with a specified comments box
+// size in Sheet1!A5:
 //
 //	err := f.AddComment("Sheet1", excelize.Comment{
-//	    Cell:   "A12",
+//	    Cell:   "A5",
 //	    Author: "Excelize",
 //	    Paragraph: []excelize.RichTextRun{
 //	        {Text: "Excelize: ", Font: &excelize.Font{Bold: true}},
 //	        {Text: "This is a comment."},
 //	    },
+//	    Height: 40,
+//	    Width:  180,
 //	})
 func (f *File) AddComment(sheet string, opts Comment) error {
 	return f.addVMLObject(vmlOptions{
 		sheet: sheet, Comment: opts,
-		FormControl: FormControl{Cell: opts.Cell, Type: FormControlNote},
+		FormControl: FormControl{
+			Cell:      opts.Cell,
+			Type:      FormControlNote,
+			Text:      opts.Text,
+			Paragraph: opts.Paragraph,
+			Width:     opts.Width,
+			Height:    opts.Height,
+		},
 	})
 }
 
@@ -529,31 +539,17 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 // prepareFormCtrlOptions provides a function to parse the format settings of
 // the form control with default value.
 func prepareFormCtrlOptions(opts *vmlOptions) *vmlOptions {
-	for _, runs := range opts.FormControl.Paragraph {
-		for _, subStr := range strings.Split(runs.Text, "\n") {
-			opts.rows++
-			if chars := len(subStr); chars > opts.cols {
-				opts.cols = chars
-			}
-		}
-	}
-	if len(opts.FormControl.Paragraph) == 0 {
-		opts.rows, opts.cols = 1, len(opts.FormControl.Text)
-	}
 	if opts.Format.ScaleX == 0 {
 		opts.Format.ScaleX = 1
 	}
 	if opts.Format.ScaleY == 0 {
 		opts.Format.ScaleY = 1
 	}
-	if opts.cols == 0 {
-		opts.cols = 8
+	if opts.FormControl.Width == 0 {
+		opts.FormControl.Width = 140
 	}
-	if opts.Width == 0 {
-		opts.Width = uint(opts.cols * 9)
-	}
-	if opts.Height == 0 {
-		opts.Height = uint(opts.rows * 25)
+	if opts.FormControl.Height == 0 {
+		opts.FormControl.Height = 60
 	}
 	return opts
 }
@@ -818,15 +814,14 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 	if err != nil {
 		return err
 	}
-	anchor := fmt.Sprintf("%d, 23, %d, 0, %d, %d, %d, 5", col, row, col+opts.rows+2, col+opts.cols-1, row+opts.rows+2)
-	vmlID, vml, preset := 202, f.VMLDrawing[drawingVML], formCtrlPresets[opts.Type]
+	leftOffset, vmlID, vml, preset := 23, 202, f.VMLDrawing[drawingVML], formCtrlPresets[opts.Type]
 	style := "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden"
 	if opts.formCtrl {
-		vmlID = 201
+		leftOffset, vmlID = 0, 201
 		style = "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;mso-wrap-style:tight"
-		colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(opts.sheet, col, row, opts.Format.OffsetX, opts.Format.OffsetY, int(opts.Width), int(opts.Height))
-		anchor = fmt.Sprintf("%d, 0, %d, 0, %d, %d, %d, %d", colStart, rowStart, colEnd, x2, rowEnd, y2)
 	}
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(opts.sheet, col, row, opts.Format.OffsetX, opts.Format.OffsetY, int(opts.FormControl.Width), int(opts.FormControl.Height))
+	anchor := fmt.Sprintf("%d, %d, %d, 0, %d, %d, %d, %d", colStart, leftOffset, rowStart, colEnd, x2, rowEnd, y2)
 	if vml == nil {
 		vml = &vmlDrawing{
 			XMLNSv:  "urn:schemas-microsoft-com:vml",

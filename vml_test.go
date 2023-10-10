@@ -153,7 +153,7 @@ func TestAddDrawingVML(t *testing.T) {
 	assert.Equal(t, f.addDrawingVML(0, "", &vmlOptions{FormControl: FormControl{Cell: "*"}}), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")))
 
 	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{FormControl: FormControl{Cell: "A1"}}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{sheet: "Sheet1", FormControl: FormControl{Cell: "A1"}}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestFormControl(t *testing.T) {

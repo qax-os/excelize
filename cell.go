@@ -1317,10 +1317,15 @@ func (ws *xlsxWorksheet) prepareCell(cell string) (*xlsxC, int, int, error) {
 // value function. Passed function implements specific part of required
 // logic.
 func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c *xlsxC) (string, bool, error)) (string, error) {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return "", err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	cell, err = ws.mergeCellsParser(cell)
 	if err != nil {
 		return "", err
@@ -1329,10 +1334,6 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 	if err != nil {
 		return "", err
 	}
-
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
-
 	lastRowNum := 0
 	if l := len(ws.SheetData.Row); l > 0 {
 		lastRowNum = ws.SheetData.Row[l-1].R
