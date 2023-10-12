@@ -11,6 +11,6 @@ require (
 	github.com/xuri/nfp v0.0.0-20230919160717-d98342af3f05
 	golang.org/x/crypto v0.14.0
 	golang.org/x/image v0.11.0
-	golang.org/x/net v0.16.0
+	golang.org/x/net v0.17.0
 	golang.org/x/text v0.13.0
 )

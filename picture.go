@@ -478,6 +478,27 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 	return f.getPicture(row, col, drawingXML, drawingRelationships)
 }
 
+// GetPictureCells returns all picture cell references in a worksheet by a
+// specific worksheet name.
+func (f *File) GetPictureCells(sheet string) ([]string, error) {
+	f.mu.Lock()
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		f.mu.Unlock()
+		return nil, err
+	}
+	f.mu.Unlock()
+	if ws.Drawing == nil {
+		return nil, err
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
+	drawingXML := strings.ReplaceAll(target, "..", "xl")
+	drawingRelationships := strings.ReplaceAll(
+		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
+
+	return f.getPictureCells(drawingXML, drawingRelationships)
+}
+
 // DeletePicture provides a function to delete all pictures in a cell by given
 // worksheet name and cell reference.
 func (f *File) DeletePicture(sheet, cell string) error {
@@ -533,58 +554,52 @@ func (f *File) DeletePicture(sheet, cell string) error {
 // embed in spreadsheet by given coordinates and drawing relationships.
 func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string) (pics []Picture, err error) {
 	var (
-		ok           bool
-		deWsDr       *decodeWsDr
-		deCellAnchor *decodeCellAnchor
-		drawRel      *xlsxRelationship
-		wsDr         *xlsxWsDr
+		deWsDr = new(decodeWsDr)
+		wsDr   *xlsxWsDr
 	)
-
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return
 	}
-	pics = f.getPicturesFromWsDr(row, col, drawingRelationships, wsDr)
-	deWsDr = new(decodeWsDr)
+	anchorCond := func(a *xdrCellAnchor) bool { return a.From.Col == col && a.From.Row == row }
+	anchorCb := func(a *xdrCellAnchor, r *xlsxRelationship) {
+		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+		if buffer, _ := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); buffer != nil {
+			pic.File = buffer.([]byte)
+			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
+			pics = append(pics, pic)
+		}
+	}
+	f.extractCellAnchor(drawingRelationships, wsDr, anchorCond, anchorCb)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {
 		return
 	}
 	err = nil
-	extractAnchor := func(anchor *decodeCellAnchor) {
-		deCellAnchor = new(decodeCellAnchor)
-		if err := f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.Content + "</decodeCellAnchor>")).
-			Decode(deCellAnchor); err != nil && err != io.EOF {
-			return
-		}
-		if err = nil; deCellAnchor.From != nil && deCellAnchor.Pic != nil {
-			if deCellAnchor.From.Col == col && deCellAnchor.From.Row == row {
-				drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
-				if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
-					pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
-					if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
-						pic.File = buffer.([]byte)
-						pic.Format.AltText = deCellAnchor.Pic.NvPicPr.CNvPr.Descr
-						pics = append(pics, pic)
-					}
-				}
-			}
+	decodeAnchorCond := func(a *decodeCellAnchor) bool { return a.From.Col == col && a.From.Row == row }
+	decodeAnchorCb := func(a *decodeCellAnchor, r *xlsxRelationship) {
+		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+		if buffer, _ := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); buffer != nil {
+			pic.File = buffer.([]byte)
+			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
+			pics = append(pics, pic)
 		}
 	}
 	for _, anchor := range deWsDr.TwoCellAnchor {
-		extractAnchor(anchor)
+		f.extractDecodeCellAnchor(anchor, drawingRelationships, decodeAnchorCond, decodeAnchorCb)
 	}
 	for _, anchor := range deWsDr.OneCellAnchor {
-		extractAnchor(anchor)
+		f.extractDecodeCellAnchor(anchor, drawingRelationships, decodeAnchorCond, decodeAnchorCb)
 	}
 	return
 }
 
-// getPicturesFromWsDr provides a function to get picture base name and raw
-// content in worksheet drawing by given coordinates and drawing
-// relationships.
-func (f *File) getPicturesFromWsDr(row, col int, drawingRelationships string, wsDr *xlsxWsDr) (pics []Picture) {
+// extractCellAnchor extract drawing object from cell anchor by giving drawing
+// cell anchor, drawing relationships part path, conditional and callback
+// function.
+func (f *File) extractCellAnchor(drawingRelationships string, wsDr *xlsxWsDr,
+	cond func(anchor *xdrCellAnchor) bool, cb func(anchor *xdrCellAnchor, rels *xlsxRelationship),
+) {
 	var (
-		ok      bool
 		anchor  *xdrCellAnchor
 		drawRel *xlsxRelationship
 	)
@@ -592,22 +607,40 @@ func (f *File) getPicturesFromWsDr(row, col int, drawingRelationships string, ws
 	defer wsDr.mu.Unlock()
 	for _, anchor = range wsDr.TwoCellAnchor {
 		if anchor.From != nil && anchor.Pic != nil {
-			if anchor.From.Col == col && anchor.From.Row == row {
+			if cond(anchor) {
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
-					if _, ok = supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
-						pic := Picture{Extension: filepath.Ext(drawRel.Target), Format: &GraphicOptions{}}
-						if buffer, _ := f.Pkg.Load(strings.ReplaceAll(drawRel.Target, "..", "xl")); buffer != nil {
-							pic.File = buffer.([]byte)
-							pic.Format.AltText = anchor.Pic.NvPicPr.CNvPr.Descr
-							pics = append(pics, pic)
-						}
+					if _, ok := supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
+						cb(anchor, drawRel)
 					}
 				}
 			}
 		}
 	}
-	return
+}
+
+// extractDecodeCellAnchor extract drawing object from cell anchor by giving
+// decoded drawing cell anchor, drawing relationships part path, conditional and
+// callback function.
+func (f *File) extractDecodeCellAnchor(anchor *decodeCellAnchor, drawingRelationships string,
+	cond func(anchor *decodeCellAnchor) bool, cb func(anchor *decodeCellAnchor, rels *xlsxRelationship),
+) {
+	var (
+		drawRel      *xlsxRelationship
+		deCellAnchor = new(decodeCellAnchor)
+	)
+	if err := f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.Content + "</decodeCellAnchor>")).
+		Decode(deCellAnchor); err != nil && err != io.EOF {
+		return
+	}
+	if deCellAnchor.From != nil && deCellAnchor.Pic != nil {
+		if cond(deCellAnchor) {
+			drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
+			if _, ok := supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
+				cb(deCellAnchor, drawRel)
+			}
+		}
+	}
 }
 
 // getDrawingRelationships provides a function to get drawing relationships
@@ -655,10 +688,7 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 		if inMergeCell {
 			continue
 		}
-		if inMergeCell, err = f.checkCellInRangeRef(cell, mergeCell[0]); err != nil {
-			return
-		}
-		if inMergeCell {
+		if inMergeCell, err = f.checkCellInRangeRef(cell, mergeCell[0]); err == nil {
 			rng, _ = cellRefsToCoordinates(mergeCell.GetStartAxis(), mergeCell.GetEndAxis())
 			_ = sortCoordinates(rng)
 		}
@@ -684,4 +714,48 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	w, h = int(width*opts.ScaleX), int(height*opts.ScaleY)
 	return
+}
+
+// getPictureCells provides a function to get all picture cell references in a
+// worksheet by given drawing part path and drawing relationships path.
+func (f *File) getPictureCells(drawingXML, drawingRelationships string) ([]string, error) {
+	var (
+		cells  []string
+		err    error
+		deWsDr *decodeWsDr
+		wsDr   *xlsxWsDr
+	)
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return cells, err
+	}
+	anchorCond := func(a *xdrCellAnchor) bool { return true }
+	anchorCb := func(a *xdrCellAnchor, r *xlsxRelationship) {
+		if _, ok := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); ok {
+			if cell, err := CoordinatesToCellName(a.From.Col+1, a.From.Row+1); err == nil && inStrSlice(cells, cell, true) == -1 {
+				cells = append(cells, cell)
+			}
+		}
+	}
+	f.extractCellAnchor(drawingRelationships, wsDr, anchorCond, anchorCb)
+	deWsDr = new(decodeWsDr)
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
+		Decode(deWsDr); err != nil && err != io.EOF {
+		return cells, err
+	}
+	err = nil
+	decodeAnchorCond := func(a *decodeCellAnchor) bool { return true }
+	decodeAnchorCb := func(a *decodeCellAnchor, r *xlsxRelationship) {
+		if _, ok := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); ok {
+			if cell, err := CoordinatesToCellName(a.From.Col+1, a.From.Row+1); err == nil && inStrSlice(cells, cell, true) == -1 {
+				cells = append(cells, cell)
+			}
+		}
+	}
+	for _, anchor := range deWsDr.TwoCellAnchor {
+		f.extractDecodeCellAnchor(anchor, drawingRelationships, decodeAnchorCond, decodeAnchorCb)
+	}
+	for _, anchor := range deWsDr.OneCellAnchor {
+		f.extractDecodeCellAnchor(anchor, drawingRelationships, decodeAnchorCond, decodeAnchorCb)
+	}
+	return cells, err
 }
