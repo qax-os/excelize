@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,7 +121,7 @@ func TestPanes(t *testing.T) {
 
 	// Test add pane on empty sheet views worksheet
 	f = NewFile()
-	f.checked = nil
+	f.checked = sync.Map{}
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
 	assert.NoError(t, f.SetPanes("Sheet1",
@@ -173,7 +174,7 @@ func TestSearchSheet(t *testing.T) {
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
-	f.checked = nil
+	f.checked = sync.Map{}
 	result, err = f.SearchSheet("Sheet1", "A")
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"A\": invalid syntax")
 	assert.Equal(t, []string(nil), result)
@@ -185,7 +186,7 @@ func TestSearchSheet(t *testing.T) {
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
-	assert.EqualError(t, err, "invalid cell reference [1, 0]")
+	assert.Equal(t, newCoordinatesToCellNameError(1, 0), err)
 	assert.Equal(t, []string(nil), result)
 
 	// Test search sheet with unsupported charset shared strings table
@@ -266,7 +267,7 @@ func TestSetHeaderFooter(t *testing.T) {
 func TestDefinedName(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetDefinedName(&DefinedName{
-		Name:     "Amount",
+		Name:     "Amount.",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
 		Scope:    "Sheet1",
@@ -275,6 +276,16 @@ func TestDefinedName(t *testing.T) {
 		Name:     "Amount",
 		RefersTo: "Sheet1!$A$2:$D$5",
 		Comment:  "defined name comment",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     builtInDefinedNames[0],
+		RefersTo: "Sheet1!$A$1:$Z$100",
+		Scope:    "Sheet1",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     builtInDefinedNames[1],
+		RefersTo: "Sheet1!$A:$A,Sheet1!$1:$1",
+		Scope:    "Sheet1",
 	}))
 	assert.EqualError(t, f.SetDefinedName(&DefinedName{
 		Name:     "Amount",
@@ -297,7 +308,7 @@ func TestDefinedName(t *testing.T) {
 		Name: "Amount",
 	}))
 	assert.Exactly(t, "Sheet1!$A$2:$D$5", f.GetDefinedName()[0].RefersTo)
-	assert.Len(t, f.GetDefinedName(), 1)
+	assert.Len(t, f.GetDefinedName(), 3)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDefinedName.xlsx")))
 	// Test set defined name with unsupported charset workbook
 	f.WorkBook = nil
@@ -452,7 +463,7 @@ func TestWorksheetWriter(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	worksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(worksheet, 1)))
-	f.checked = nil
+	f.checked = sync.Map{}
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
 	f.workSheetWriter()
 	value, ok := f.Pkg.Load("xl/worksheets/sheet1.xml")
@@ -551,12 +562,12 @@ func TestSetContentTypes(t *testing.T) {
 	assert.EqualError(t, f.setContentTypes("/xl/worksheets/sheet1.xml", ContentTypeSpreadSheetMLWorksheet), "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestDeleteSheetFromContentTypes(t *testing.T) {
+func TestRemoveContentTypesPart(t *testing.T) {
 	f := NewFile()
 	// Test delete sheet from content types with unsupported charset content types
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.deleteSheetFromContentTypes("/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.removeContentTypesPart(ContentTypeSpreadSheetMLWorksheet, "/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func BenchmarkNewSheet(b *testing.B) {

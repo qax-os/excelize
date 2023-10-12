@@ -257,7 +257,7 @@ type xlsxDxf struct {
 	Alignment  *xlsxAlignment  `xml:"alignment"`
 	Border     *xlsxBorder     `xml:"border"`
 	Protection *xlsxProtection `xml:"protection"`
-	ExtLst     *xlsxExt        `xml:"extLst"`
+	ExtLst     *aExt           `xml:"extLst"`
 }
 
 // xlsxTableStyles directly maps the tableStyles element. This element
@@ -296,16 +296,23 @@ type xlsxNumFmts struct {
 // of a cell.
 type xlsxNumFmt struct {
 	NumFmtID     int    `xml:"numFmtId,attr"`
-	FormatCode   string `xml:"formatCode,attr,omitempty"`
+	FormatCode   string `xml:"formatCode,attr"`
 	FormatCode16 string `xml:"http://schemas.microsoft.com/office/spreadsheetml/2015/02/main formatCode16,attr,omitempty"`
 }
 
+// xlsxIndexedColors directly maps the single ARGB entry for the corresponding
+// color index.
+type xlsxIndexedColors struct {
+	RgbColor []xlsxColor `xml:"rgbColor"`
+}
+
 // xlsxStyleColors directly maps the colors' element. Color information
-// associated with this stylesheet. This collection is written whenever the
+// associated with this style sheet. This collection is written whenever the
 // legacy color palette has been modified (backwards compatibility settings) or
 // a custom color has been selected while using this workbook.
 type xlsxStyleColors struct {
-	Color string `xml:",innerxml"`
+	IndexedColors *xlsxIndexedColors `xml:"indexedColors"`
+	MruColors     *xlsxInnerXML      `xml:"mruColors"`
 }
 
 // Alignment directly maps the alignment settings of the cells.

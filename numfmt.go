@@ -33,18 +33,18 @@ type languageInfo struct {
 // numberFormat directly maps the number format parser runtime required
 // fields.
 type numberFormat struct {
-	opts                                                           *Options
-	cellType                                                       CellType
-	section                                                        []nfp.Section
-	t                                                              time.Time
-	sectionIdx                                                     int
-	date1904, isNumeric, hours, seconds, useMillisecond, useGannen bool
-	number                                                         float64
-	ap, localCode, result, value, valueSectionType                 string
-	switchArgument, currencyString                                 string
-	fracHolder, fracPadding, intHolder, intPadding, expBaseLen     int
-	percent                                                        int
-	useCommaSep, usePointer, usePositive, useScientificNotation    bool
+	opts                                                                     *Options
+	cellType                                                                 CellType
+	section                                                                  []nfp.Section
+	t                                                                        time.Time
+	sectionIdx                                                               int
+	date1904, isNumeric, hours, seconds, useMillisecond, useGannen           bool
+	number                                                                   float64
+	ap, localCode, result, value, valueSectionType                           string
+	switchArgument, currencyString                                           string
+	fracHolder, fracPadding, intHolder, intPadding, expBaseLen               int
+	percent                                                                  int
+	useCommaSep, useFraction, usePointer, usePositive, useScientificNotation bool
 }
 
 // CultureName is the type of supported language country codes types for apply
@@ -108,16 +108,16 @@ var (
 			31: "yyyy\"年\"m\"月\"d\"日\"",
 			32: "hh\"時\"mm\"分\"",
 			33: "hh\"時\"mm\"分\"ss\"秒\"",
-			34: "上午/下午 hh\"時\"mm\"分\"",
-			35: "上午/下午 hh\"時\"mm\"分\"ss\"秒\"",
+			34: "上午/下午hh\"時\"mm\"分\"",
+			35: "上午/下午hh\"時\"mm\"分\"ss\"秒\"",
 			36: "[$-404]e/m/d",
 			50: "[$-404]e/m/d",
 			51: "[$-404]e\"年\"m\"月\"d\"日\"",
-			52: "上午/下午 hh\"時\"mm\"分\"",
-			53: "上午/下午 hh\"時\"mm\"分\"ss\"秒\"",
+			52: "上午/下午hh\"時\"mm\"分\"",
+			53: "上午/下午hh\"時\"mm\"分\"ss\"秒\"",
 			54: "[$-404]e\"年\"m\"月\"d\"日\"",
-			55: "上午/下午 hh\"時\"mm\"分\"",
-			56: "上午/下午 hh\"時\"mm\"分\"ss\"秒\"",
+			55: "上午/下午hh\"時\"mm\"分\"",
+			56: "上午/下午hh\"時\"mm\"分\"ss\"秒\"",
 			57: "[$-404]e/m/d",
 			58: "[$-404]e\"年\"m\"月\"d\"日\"",
 		},
@@ -129,16 +129,16 @@ var (
 			31: "yyyy\"年\"m\"月\"d\"日\"",
 			32: "h\"时\"mm\"分\"",
 			33: "h\"时\"mm\"分\"ss\"秒\"",
-			34: "上午/下午 h\"时\"mm\"分\"",
-			35: "上午/下午 h\"时\"mm\"分\"ss\"秒\"",
+			34: "上午/下午h\"时\"mm\"分\"",
+			35: "上午/下午h\"时\"mm\"分\"ss\"秒\"",
 			36: "yyyy\"年\"m\"月\"",
 			50: "yyyy\"年\"m\"月\"",
 			51: "m\"月\"d\"日\"",
 			52: "yyyy\"年\"m\"月\"",
 			53: "m\"月\"d\"日\"",
 			54: "m\"月\"d\"日\"",
-			55: "上午/下午 h\"时\"mm\"分\"",
-			56: "上午/下午 h\"时\"mm\"分\"ss\"秒\"",
+			55: "上午/下午h\"时\"mm\"分\"",
+			56: "上午/下午h\"时\"mm\"分\"ss\"秒\"",
 			57: "yyyy\"年\"m\"月\"",
 			58: "m\"月\"d\"日\"",
 		},
@@ -688,8 +688,11 @@ var (
 		nfp.TokenTypeCurrencyLanguage,
 		nfp.TokenTypeDateTimes,
 		nfp.TokenTypeDecimalPoint,
+		nfp.TokenTypeDenominator,
+		nfp.TokenTypeDigitalPlaceHolder,
 		nfp.TokenTypeElapsedDateTimes,
 		nfp.TokenTypeExponential,
+		nfp.TokenTypeFraction,
 		nfp.TokenTypeGeneral,
 		nfp.TokenTypeHashPlaceHolder,
 		nfp.TokenTypeLiteral,
@@ -702,7 +705,10 @@ var (
 	}
 	// supportedNumberTokenTypes list the supported number token types.
 	supportedNumberTokenTypes = []string{
+		nfp.TokenTypeDenominator,
+		nfp.TokenTypeDigitalPlaceHolder,
 		nfp.TokenTypeExponential,
+		nfp.TokenTypeFraction,
 		nfp.TokenTypeHashPlaceHolder,
 		nfp.TokenTypePercent,
 		nfp.TokenTypeZeroPlaceHolder,
@@ -4692,7 +4698,7 @@ func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
 	if fmtCode, ok := builtInNumFmt[numFmtID]; ok {
 		return fmtCode, true
 	}
-	if (27 <= numFmtID && numFmtID <= 36) || (50 <= numFmtID && numFmtID <= 81) {
+	if isLangNumFmt(numFmtID) {
 		if f.options.CultureInfo == CultureNameEnUS {
 			return f.langNumFmtFuncEnUS(numFmtID), true
 		}
@@ -4759,9 +4765,9 @@ func (nf *numberFormat) getNumberFmtConf() {
 		if token.TType == nfp.TokenTypeHashPlaceHolder {
 			if nf.usePointer {
 				nf.fracHolder += len(token.TValue)
-			} else {
-				nf.intHolder += len(token.TValue)
+				continue
 			}
+			nf.intHolder += len(token.TValue)
 		}
 		if token.TType == nfp.TokenTypeExponential {
 			nf.useScientificNotation = true
@@ -4775,10 +4781,14 @@ func (nf *numberFormat) getNumberFmtConf() {
 		if token.TType == nfp.TokenTypeDecimalPoint {
 			nf.usePointer = true
 		}
+		if token.TType == nfp.TokenTypeFraction {
+			nf.useFraction = true
+		}
 		if token.TType == nfp.TokenTypeSwitchArgument {
 			nf.switchArgument = token.TValue
 		}
 		if token.TType == nfp.TokenTypeZeroPlaceHolder {
+			nf.intHolder = 0
 			if nf.usePointer {
 				if nf.useScientificNotation {
 					nf.expBaseLen += len(token.TValue)
@@ -4794,8 +4804,11 @@ func (nf *numberFormat) getNumberFmtConf() {
 
 // printNumberLiteral apply literal tokens for the pre-formatted text.
 func (nf *numberFormat) printNumberLiteral(text string) string {
-	var result string
-	var useLiteral, useZeroPlaceHolder bool
+	var (
+		result                                  string
+		frac                                    float64
+		useFraction, useLiteral, usePlaceHolder bool
+	)
 	if nf.usePositive {
 		result += "-"
 	}
@@ -4807,22 +4820,53 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 			result += nf.currencyString
 		}
 		if token.TType == nfp.TokenTypeLiteral {
-			if useZeroPlaceHolder {
+			if usePlaceHolder {
 				useLiteral = true
 			}
 			result += token.TValue
 		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder {
-			if useLiteral && useZeroPlaceHolder {
+		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
+			if useLiteral && usePlaceHolder {
 				return nf.value
 			}
-			if !useZeroPlaceHolder {
-				useZeroPlaceHolder = true
+			if !usePlaceHolder {
+				usePlaceHolder = true
 				result += text
 			}
 		}
+		if token.TType == nfp.TokenTypeFraction {
+			_, frac = math.Modf(nf.number)
+			frac, useFraction = math.Abs(frac), true
+		}
+		if useFraction {
+			result += nf.fractionHandler(frac, token)
+		}
 	}
 	return nf.printSwitchArgument(result)
+}
+
+// fractionHandler handling fraction number format expression for positive and
+// negative numeric.
+func (nf *numberFormat) fractionHandler(frac float64, token nfp.Token) string {
+	var rat, result string
+	if token.TType == nfp.TokenTypeDigitalPlaceHolder {
+		fracPlaceHolder := len(token.TValue)
+		for i := 0; i < 5000; i++ {
+			if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= fracPlaceHolder {
+				if rat = r.String(); strings.HasPrefix(rat, "0/") {
+					rat = strings.Repeat(" ", 3)
+				}
+				continue
+			}
+			break
+		}
+		result += rat
+	}
+	if token.TType == nfp.TokenTypeDenominator {
+		denom, _ := strconv.ParseFloat(token.TValue, 64)
+		result += fmt.Sprintf("%d/%d", int(math.Round(frac*denom)), int(math.Round(denom)))
+	}
+	return result
 }
 
 // printCommaSep format number with thousands separator.
@@ -4896,8 +4940,11 @@ func (nf *numberFormat) numberHandler() string {
 		result            string
 	)
 	nf.getNumberFmtConf()
-	if intLen = intPart; nf.intPadding > intPart {
-		intLen = nf.intPadding
+	if nf.intHolder > intPart {
+		nf.intHolder = intPart
+	}
+	if intLen = intPart; nf.intPadding+nf.intHolder > intPart {
+		intLen = nf.intPadding + nf.intHolder
 	}
 	if fracLen = fracPart; fracPart > nf.fracHolder+nf.fracPadding {
 		fracLen = nf.fracHolder + nf.fracPadding
@@ -4925,6 +4972,9 @@ func (nf *numberFormat) numberHandler() string {
 	if nf.percent > 0 {
 		num *= math.Pow(100, float64(nf.percent))
 	}
+	if nf.useFraction {
+		num = math.Floor(math.Abs(num))
+	}
 	if result = fmt.Sprintf(fmtCode, math.Abs(num)); nf.useCommaSep {
 		result = printCommaSep(result)
 	}
@@ -4935,6 +4985,9 @@ func (nf *numberFormat) numberHandler() string {
 // positive numeric.
 func (nf *numberFormat) dateTimeHandler() string {
 	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, nf.date1904), false, false
+	if !nf.useMillisecond {
+		nf.t = nf.t.Add(time.Duration(math.Round(float64(nf.t.Nanosecond())/1e9)) * time.Second)
+	}
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
 			if changeNumFmtCode, err := nf.currencyLanguageHandler(token); err != nil || changeNumFmtCode {
@@ -6708,11 +6761,11 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {
 		l := len(token.TValue)
-		if l == 1 && !nf.hours && !nf.secondsNext(i) {
+		if l == 1 && nf.isMonthToken(i) {
 			nf.result += strconv.Itoa(int(nf.t.Month()))
 			return
 		}
-		if l == 2 && !nf.hours && !nf.secondsNext(i) {
+		if l == 2 && nf.isMonthToken(i) {
 			nf.result += fmt.Sprintf("%02d", int(nf.t.Month()))
 			return
 		}
@@ -6833,8 +6886,7 @@ func (nf *numberFormat) daysHandler(token nfp.Token) {
 // hoursHandler will be handling hours in the date and times types tokens for a
 // number format expression.
 func (nf *numberFormat) hoursHandler(i int, token nfp.Token) {
-	nf.hours = strings.Contains(strings.ToUpper(token.TValue), "H")
-	if nf.hours {
+	if nf.hours = strings.Contains(strings.ToUpper(token.TValue), "H"); nf.hours {
 		h := nf.t.Hour()
 		ap, ok := nf.apNext(i)
 		if ok {
@@ -6885,9 +6937,6 @@ func (nf *numberFormat) minutesHandler(token nfp.Token) {
 func (nf *numberFormat) secondsHandler(token nfp.Token) {
 	if nf.seconds = strings.Contains(strings.ToUpper(token.TValue), "S"); !nf.seconds {
 		return
-	}
-	if !nf.useMillisecond {
-		nf.t = nf.t.Add(time.Duration(math.Round(float64(nf.t.Nanosecond())/1e9)) * time.Second)
 	}
 	if len(token.TValue) == 1 {
 		nf.result += strconv.Itoa(nf.t.Second())
@@ -6943,16 +6992,29 @@ func (nf *numberFormat) apNext(i int) ([]string, bool) {
 	return nil, false
 }
 
-// secondsNext detects if a token of type seconds exists after a given tokens
-// list.
-func (nf *numberFormat) secondsNext(i int) bool {
+// isMonthToken detects if the given token represents minutes, if no hours and
+// seconds tokens before the given token or not seconds after the given token,
+// the current token is a minutes token.
+func (nf *numberFormat) isMonthToken(i int) bool {
 	tokens := nf.section[nf.sectionIdx].Items
-	for idx := i + 1; idx < len(tokens); idx++ {
+	var timePrevious, secondsNext bool
+	for idx := i - 1; idx >= 0; idx-- {
 		if tokens[idx].TType == nfp.TokenTypeDateTimes {
-			return strings.Contains(strings.ToUpper(tokens[idx].TValue), "S")
+			timePrevious = strings.ContainsAny(strings.ToUpper(tokens[idx].TValue), "HS")
+			break
+		}
+		if tokens[idx].TType == nfp.TokenTypeElapsedDateTimes {
+			timePrevious = true
+			break
 		}
 	}
-	return false
+	for idx := i + 1; idx < len(tokens); idx++ {
+		if tokens[idx].TType == nfp.TokenTypeDateTimes {
+			secondsNext = strings.Contains(strings.ToUpper(tokens[idx].TValue), "S")
+			break
+		}
+	}
+	return !(timePrevious || secondsNext)
 }
 
 // negativeHandler will be handling negative selection for a number format

@@ -30,8 +30,8 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 		return &GraphicOptions{
 			PrintObject: boolPtr(true),
 			Locked:      boolPtr(true),
-			ScaleX:      defaultPictureScale,
-			ScaleY:      defaultPictureScale,
+			ScaleX:      defaultDrawingScale,
+			ScaleY:      defaultDrawingScale,
 		}
 	}
 	if opts.PrintObject == nil {
@@ -41,10 +41,10 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 		opts.Locked = boolPtr(true)
 	}
 	if opts.ScaleX == 0 {
-		opts.ScaleX = defaultPictureScale
+		opts.ScaleX = defaultDrawingScale
 	}
 	if opts.ScaleY == 0 {
-		opts.ScaleY = defaultPictureScale
+		opts.ScaleY = defaultDrawingScale
 	}
 	return opts
 }
@@ -231,7 +231,18 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
 	drawingRels := "xl/drawings/_rels/drawing" + strconv.Itoa(drawingID) + ".xml.rels"
 	mediaStr := ".." + strings.TrimPrefix(f.addMedia(pic.File, ext), "xl")
-	drawingRID := f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
+	var drawingRID int
+	if rels, _ := f.relsReader(drawingRels); rels != nil {
+		for _, rel := range rels.Relationships {
+			if rel.Type == SourceRelationshipImage && rel.Target == mediaStr {
+				drawingRID, _ = strconv.Atoi(strings.TrimPrefix(rel.ID, "rId"))
+				break
+			}
+		}
+	}
+	if drawingRID == 0 {
+		drawingRID = f.addRels(drawingRels, SourceRelationshipImage, mediaStr, hyperlinkType)
+	}
 	// Add picture with hyperlink.
 	if options.Hyperlink != "" && options.HyperlinkType != "" {
 		if options.HyperlinkType == "External" {
@@ -249,29 +260,6 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
-}
-
-// deleteSheetRelationships provides a function to delete relationships in
-// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
-// relationship index.
-func (f *File) deleteSheetRelationships(sheet, rID string) {
-	name, ok := f.getSheetXMLPath(sheet)
-	if !ok {
-		name = strings.ToLower(sheet) + ".xml"
-	}
-	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels, _ := f.relsReader(rels)
-	if sheetRels == nil {
-		sheetRels = &xlsxRelationships{}
-	}
-	sheetRels.mu.Lock()
-	defer sheetRels.mu.Unlock()
-	for k, v := range sheetRels.Relationships {
-		if v.ID == rID {
-			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
-		}
-	}
-	f.Relationships.Store(rels, sheetRels)
 }
 
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
@@ -440,130 +428,6 @@ func (f *File) addMedia(file []byte, ext string) string {
 	return media
 }
 
-// setContentTypePartImageExtensions provides a function to set the content
-// type for relationship parts and the Main Document part.
-func (f *File) setContentTypePartImageExtensions() error {
-	imageTypes := map[string]string{
-		"bmp": "image/", "jpeg": "image/", "png": "image/", "gif": "image/",
-		"svg": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-",
-		"emz": "image/x-", "wmz": "image/x-",
-	}
-	content, err := f.contentTypesReader()
-	if err != nil {
-		return err
-	}
-	content.mu.Lock()
-	defer content.mu.Unlock()
-	for _, file := range content.Defaults {
-		delete(imageTypes, file.Extension)
-	}
-	for extension, prefix := range imageTypes {
-		content.Defaults = append(content.Defaults, xlsxDefault{
-			Extension:   extension,
-			ContentType: prefix + extension,
-		})
-	}
-	return err
-}
-
-// setContentTypePartVMLExtensions provides a function to set the content type
-// for relationship parts and the Main Document part.
-func (f *File) setContentTypePartVMLExtensions() error {
-	var vml bool
-	content, err := f.contentTypesReader()
-	if err != nil {
-		return err
-	}
-	content.mu.Lock()
-	defer content.mu.Unlock()
-	for _, v := range content.Defaults {
-		if v.Extension == "vml" {
-			vml = true
-		}
-	}
-	if !vml {
-		content.Defaults = append(content.Defaults, xlsxDefault{
-			Extension:   "vml",
-			ContentType: ContentTypeVML,
-		})
-	}
-	return err
-}
-
-// addContentTypePart provides a function to add content type part
-// relationships in the file [Content_Types].xml by given index.
-func (f *File) addContentTypePart(index int, contentType string) error {
-	setContentType := map[string]func() error{
-		"comments": f.setContentTypePartVMLExtensions,
-		"drawings": f.setContentTypePartImageExtensions,
-	}
-	partNames := map[string]string{
-		"chart":         "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
-		"chartsheet":    "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
-		"comments":      "/xl/comments" + strconv.Itoa(index) + ".xml",
-		"drawings":      "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
-		"table":         "/xl/tables/table" + strconv.Itoa(index) + ".xml",
-		"pivotTable":    "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
-		"pivotCache":    "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
-		"sharedStrings": "/xl/sharedStrings.xml",
-	}
-	contentTypes := map[string]string{
-		"chart":         ContentTypeDrawingML,
-		"chartsheet":    ContentTypeSpreadSheetMLChartsheet,
-		"comments":      ContentTypeSpreadSheetMLComments,
-		"drawings":      ContentTypeDrawing,
-		"table":         ContentTypeSpreadSheetMLTable,
-		"pivotTable":    ContentTypeSpreadSheetMLPivotTable,
-		"pivotCache":    ContentTypeSpreadSheetMLPivotCacheDefinition,
-		"sharedStrings": ContentTypeSpreadSheetMLSharedStrings,
-	}
-	s, ok := setContentType[contentType]
-	if ok {
-		if err := s(); err != nil {
-			return err
-		}
-	}
-	content, err := f.contentTypesReader()
-	if err != nil {
-		return err
-	}
-	content.mu.Lock()
-	defer content.mu.Unlock()
-	for _, v := range content.Overrides {
-		if v.PartName == partNames[contentType] {
-			return err
-		}
-	}
-	content.Overrides = append(content.Overrides, xlsxOverride{
-		PartName:    partNames[contentType],
-		ContentType: contentTypes[contentType],
-	})
-	return err
-}
-
-// getSheetRelationshipsTargetByID provides a function to get Target attribute
-// value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
-// relationship index.
-func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
-	name, ok := f.getSheetXMLPath(sheet)
-	if !ok {
-		name = strings.ToLower(sheet) + ".xml"
-	}
-	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
-	sheetRels, _ := f.relsReader(rels)
-	if sheetRels == nil {
-		sheetRels = &xlsxRelationships{}
-	}
-	sheetRels.mu.Lock()
-	defer sheetRels.mu.Unlock()
-	for _, v := range sheetRels.Relationships {
-		if v.ID == rID {
-			return v.Target
-		}
-	}
-	return ""
-}
-
 // GetPictures provides a function to get picture meta info and raw content
 // embed in spreadsheet by given worksheet and cell name. This function
 // returns the image contents as []byte data types. This function is
@@ -661,8 +525,7 @@ func (f *File) GetAllPictures(sheet string) (map[string][]Picture, error) {
 }
 
 // DeletePicture provides a function to delete all pictures in a cell by given
-// worksheet name and cell reference. Note that the image file won't be deleted
-// from the document currently.
+// worksheet name and cell reference.
 func (f *File) DeletePicture(sheet, cell string) error {
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
@@ -678,7 +541,38 @@ func (f *File) DeletePicture(sheet, cell string) error {
 		return err
 	}
 	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
-	return f.deleteDrawing(col, row, drawingXML, "Pic")
+	drawingRels := "xl/drawings/_rels/" + filepath.Base(drawingXML) + ".rels"
+	rID, err := f.deleteDrawing(col, row, drawingXML, "Pic")
+	if err != nil {
+		return err
+	}
+	rels := f.getDrawingRelationships(drawingRels, rID)
+	if rels == nil {
+		return err
+	}
+	var used bool
+	checkPicRef := func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/drawings/_rels/drawing") {
+			r, err := f.relsReader(k.(string))
+			if err != nil {
+				return true
+			}
+			for _, rel := range r.Relationships {
+				if rel.ID != rels.ID && rel.Type == SourceRelationshipImage &&
+					filepath.Base(rel.Target) == filepath.Base(rels.Target) {
+					used = true
+				}
+			}
+		}
+		return true
+	}
+	f.Relationships.Range(checkPicRef)
+	f.Pkg.Range(checkPicRef)
+	if !used {
+		f.Pkg.Delete(strings.Replace(rels.Target, "../", "xl/", -1))
+	}
+	f.deleteDrawingRels(drawingRels, rID)
+	return err
 }
 
 // getPicture provides a function to get picture base name and raw content
@@ -695,9 +589,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return
 	}
-	if pics = f.getPicturesFromWsDr(row, col, drawingRelationships, wsDr); len(pics) > 0 {
-		return
-	}
+	pics = f.getPicturesFromWsDr(row, col, drawingRelationships, wsDr)
 	deWsDr = new(decodeWsDr)
 	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(drawingXML)))).
 		Decode(deWsDr); err != nil && err != io.EOF {

@@ -38,3 +38,12 @@ func TestDrawingParser(t *testing.T) {
 	_, _, err = f.drawingParser("wsDr")
 	assert.NoError(t, err)
 }
+
+func TestDeleteDrawingRels(t *testing.T) {
+	f := NewFile()
+	// Test delete drawing relationships with unsupported charset
+	rels := "xl/drawings/_rels/drawing1.xml.rels"
+	f.Relationships.Delete(rels)
+	f.Pkg.Store(rels, MacintoshCyrillicCharset)
+	f.deleteDrawingRels(rels, "")
+}

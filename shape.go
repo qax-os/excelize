@@ -38,10 +38,10 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 		opts.Format.Locked = boolPtr(false)
 	}
 	if opts.Format.ScaleX == 0 {
-		opts.Format.ScaleX = defaultPictureScale
+		opts.Format.ScaleX = defaultDrawingScale
 	}
 	if opts.Format.ScaleY == 0 {
-		opts.Format.ScaleY = defaultPictureScale
+		opts.Format.ScaleY = defaultDrawingScale
 	}
 	if opts.Line.Width == nil {
 		opts.Line.Width = float64Ptr(defaultShapeLineWidth)
@@ -322,29 +322,27 @@ func (f *File) AddShape(sheet string, opts *Shape) error {
 	return f.addContentTypePart(drawingID, "drawings")
 }
 
-// addDrawingShape provides a function to add preset geometry by given sheet,
-// drawingXMLand format sets.
-func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) error {
+// twoCellAnchorShape create a two cell anchor shape size placeholder for a
+// group, a shape, or a drawing element.
+func (f *File) twoCellAnchorShape(sheet, drawingXML, cell string, width, height uint, format GraphicOptions) (*xlsxWsDr, *xdrCellAnchor, int, error) {
 	fromCol, fromRow, err := CellNameToCoordinates(cell)
 	if err != nil {
-		return err
+		return nil, nil, 0, err
 	}
-	width := int(float64(opts.Width) * opts.Format.ScaleX)
-	height := int(float64(opts.Height) * opts.Format.ScaleY)
-
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, fromCol, fromRow, opts.Format.OffsetX, opts.Format.OffsetY,
-		width, height)
+	w := int(float64(width) * format.ScaleX)
+	h := int(float64(height) * format.ScaleY)
+	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, fromCol, fromRow, format.OffsetX, format.OffsetY, w, h)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
-		return err
+		return content, nil, cNvPrID, err
 	}
 	twoCellAnchor := xdrCellAnchor{}
-	twoCellAnchor.EditAs = opts.Format.Positioning
+	twoCellAnchor.EditAs = format.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
-	from.ColOff = opts.Format.OffsetX * EMU
+	from.ColOff = format.OffsetX * EMU
 	from.Row = rowStart
-	from.RowOff = opts.Format.OffsetY * EMU
+	from.RowOff = format.OffsetY * EMU
 	to := xlsxTo{}
 	to.Col = colEnd
 	to.ColOff = x2 * EMU
@@ -352,6 +350,17 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	to.RowOff = y2 * EMU
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
+	return content, &twoCellAnchor, cNvPrID, err
+}
+
+// addDrawingShape provides a function to add preset geometry by given sheet,
+// drawingXML and format sets.
+func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) error {
+	content, twoCellAnchor, cNvPrID, err := f.twoCellAnchorShape(
+		sheet, drawingXML, cell, opts.Width, opts.Height, opts.Format)
+	if err != nil {
+		return err
+	}
 	var solidColor string
 	if len(opts.Fill.Color) == 1 {
 		solidColor = opts.Fill.Color[0]
@@ -462,7 +471,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 		FLocksWithSheet:  *opts.Format.Locked,
 		FPrintsWithSheet: *opts.Format.PrintObject,
 	}
-	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
+	content.TwoCellAnchor = append(content.TwoCellAnchor, twoCellAnchor)
 	f.Drawings.Store(drawingXML, content)
 	return err
 }

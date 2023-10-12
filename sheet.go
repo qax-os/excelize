@@ -164,10 +164,10 @@ func (f *File) workSheetWriter() {
 			// reusing buffer
 			_ = encoder.Encode(sheet)
 			f.saveFileList(p.(string), replaceRelationshipsBytes(f.replaceNameSpaceBytes(p.(string), buffer.Bytes())))
-			ok := f.checked[p.(string)]
+			_, ok := f.checked.Load(p.(string))
 			if ok {
 				f.Sheet.Delete(p.(string))
-				f.checked[p.(string)] = false
+				f.checked.Store(p.(string), false)
 			}
 			buffer.Reset()
 		}
@@ -237,7 +237,7 @@ func (f *File) setSheet(index int, name string) {
 	sheetXMLPath := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[name] = sheetXMLPath
 	f.Sheet.Store(sheetXMLPath, &ws)
-	f.xmlAttr[sheetXMLPath] = []xml.Attr{NameSpaceSpreadSheet}
+	f.xmlAttr.Store(sheetXMLPath, []xml.Attr{NameSpaceSpreadSheet})
 }
 
 // relsWriter provides a function to save relationships after
@@ -576,14 +576,14 @@ func (f *File) DeleteSheet(sheet string) error {
 			}
 		}
 		target := f.deleteSheetFromWorkbookRels(v.ID)
-		_ = f.deleteSheetFromContentTypes(target)
+		_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLWorksheet, target)
 		_ = f.deleteCalcChain(f.getSheetID(sheet), "")
 		delete(f.sheetMap, v.Name)
 		f.Pkg.Delete(sheetXML)
 		f.Pkg.Delete(rels)
 		f.Relationships.Delete(rels)
 		f.Sheet.Delete(sheetXML)
-		delete(f.xmlAttr, sheetXML)
+		f.xmlAttr.Delete(sheetXML)
 		f.SheetCount--
 	}
 	index, err := f.GetSheetIndex(activeSheetName)
@@ -626,24 +626,50 @@ func (f *File) deleteSheetFromWorkbookRels(rID string) string {
 	return ""
 }
 
-// deleteSheetFromContentTypes provides a function to remove worksheet
-// relationships by given target name in the file [Content_Types].xml.
-func (f *File) deleteSheetFromContentTypes(target string) error {
-	if !strings.HasPrefix(target, "/") {
-		target = "/xl/" + target
+// deleteSheetRelationships provides a function to delete relationships in
+// xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
+// relationship index.
+func (f *File) deleteSheetRelationships(sheet, rID string) {
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
 	}
-	content, err := f.contentTypesReader()
-	if err != nil {
-		return err
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+	sheetRels, _ := f.relsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxRelationships{}
 	}
-	content.mu.Lock()
-	defer content.mu.Unlock()
-	for k, v := range content.Overrides {
-		if v.PartName == target {
-			content.Overrides = append(content.Overrides[:k], content.Overrides[k+1:]...)
+	sheetRels.mu.Lock()
+	defer sheetRels.mu.Unlock()
+	for k, v := range sheetRels.Relationships {
+		if v.ID == rID {
+			sheetRels.Relationships = append(sheetRels.Relationships[:k], sheetRels.Relationships[k+1:]...)
 		}
 	}
-	return err
+	f.Relationships.Store(rels, sheetRels)
+}
+
+// getSheetRelationshipsTargetByID provides a function to get Target attribute
+// value in xl/worksheets/_rels/sheet%d.xml.rels by given worksheet name and
+// relationship index.
+func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		name = strings.ToLower(sheet) + ".xml"
+	}
+	rels := "xl/worksheets/_rels/" + strings.TrimPrefix(name, "xl/worksheets/") + ".rels"
+	sheetRels, _ := f.relsReader(rels)
+	if sheetRels == nil {
+		sheetRels = &xlsxRelationships{}
+	}
+	sheetRels.mu.Lock()
+	defer sheetRels.mu.Unlock()
+	for _, v := range sheetRels.Relationships {
+		if v.ID == rID {
+			return v.Target
+		}
+	}
+	return ""
 }
 
 // CopySheet provides a function to duplicate a worksheet by gave source and
@@ -688,8 +714,8 @@ func (f *File) copySheet(from, to int) error {
 		f.Pkg.Store(toRels, rels.([]byte))
 	}
 	fromSheetXMLPath, _ := f.getSheetXMLPath(fromSheet)
-	fromSheetAttr := f.xmlAttr[fromSheetXMLPath]
-	f.xmlAttr[sheetXMLPath] = fromSheetAttr
+	fromSheetAttr, _ := f.xmlAttr.Load(fromSheetXMLPath)
+	f.xmlAttr.Store(sheetXMLPath, fromSheetAttr)
 	return err
 }
 
@@ -1123,8 +1149,8 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 //	 DifferentFirst   | Different first-page header and footer indicator
 //	 DifferentOddEven | Different odd and even page headers and footers indicator
 //	 ScaleWithDoc     | Scale header and footer with document scaling
-//	 OddFooter        | Odd Page Footer
-//	 OddHeader        | Odd Header
+//	 OddFooter        | Odd Page Footer, or primary Page Footer if 'DifferentOddEven' is 'false'
+//	 OddHeader        | Odd Header, or primary Page Header if 'DifferentOddEven' is 'false'
 //	 EvenFooter       | Even Page Footer
 //	 EvenHeader       | Even Page Header
 //	 FirstFooter      | First Page Footer
@@ -1595,7 +1621,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if definedName.Name == "" || definedName.RefersTo == "" {
 		return ErrParameterInvalid
 	}
-	if err := checkDefinedName(definedName.Name); err != nil {
+	if err := checkDefinedName(definedName.Name); err != nil && inStrSlice(builtInDefinedNames[:2], definedName.Name, false) == -1 {
 		return err
 	}
 	wb, err := f.workbookReader()
@@ -1713,11 +1739,8 @@ func (f *File) GroupSheets(sheets []string) error {
 	}
 	for _, ws := range wss {
 		sheetViews := ws.SheetViews.SheetView
-		if len(sheetViews) > 0 {
-			for idx := range sheetViews {
-				ws.SheetViews.SheetView[idx].TabSelected = true
-			}
-			continue
+		for idx := range sheetViews {
+			ws.SheetViews.SheetView[idx].TabSelected = true
 		}
 	}
 	return nil
@@ -1732,10 +1755,8 @@ func (f *File) UngroupSheets() error {
 		}
 		ws, _ := f.workSheetReader(sheet)
 		sheetViews := ws.SheetViews.SheetView
-		if len(sheetViews) > 0 {
-			for idx := range sheetViews {
-				ws.SheetViews.SheetView[idx].TabSelected = false
-			}
+		for idx := range sheetViews {
+			ws.SheetViews.SheetView[idx].TabSelected = false
 		}
 	}
 	return nil
@@ -1864,7 +1885,7 @@ func (f *File) RemovePageBreak(sheet, cell string) error {
 }
 
 // relsReader provides a function to get the pointer to the structure
-// after deserialization of xl/worksheets/_rels/sheet%d.xml.rels.
+// after deserialization of relationships parts.
 func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 	rels, _ := f.Relationships.Load(path)
 	if rels == nil {

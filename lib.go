@@ -18,6 +18,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"os"
 	"regexp"
@@ -48,16 +49,22 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 			fileName = partName
 		}
 		if strings.EqualFold(fileName, defaultXMLPathSharedStrings) && fileSize > f.options.UnzipXMLSizeLimit {
-			if tempFile, err := f.unzipToTemp(v); err == nil {
+			tempFile, err := f.unzipToTemp(v)
+			if tempFile != "" {
 				f.tempFiles.Store(fileName, tempFile)
+			}
+			if err == nil {
 				continue
 			}
 		}
 		if strings.HasPrefix(strings.ToLower(fileName), "xl/worksheets/sheet") {
 			worksheets++
 			if fileSize > f.options.UnzipXMLSizeLimit && !v.FileInfo().IsDir() {
-				if tempFile, err := f.unzipToTemp(v); err == nil {
+				tempFile, err := f.unzipToTemp(v)
+				if tempFile != "" {
 					f.tempFiles.Store(fileName, tempFile)
+				}
+				if err == nil {
 					continue
 				}
 			}
@@ -261,7 +268,7 @@ func CellNameToCoordinates(cell string) (int, int, error) {
 //	excelize.CoordinatesToCellName(1, 1, true) // returns "$A$1", nil
 func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if col < 1 || row < 1 {
-		return "", fmt.Errorf("invalid cell reference [%d, %d]", col, row)
+		return "", newCoordinatesToCellNameError(col, row)
 	}
 	sign := ""
 	for _, a := range abs {
@@ -329,7 +336,7 @@ func (f *File) coordinatesToRangeRef(coordinates []int, abs ...bool) (string, er
 }
 
 // getDefinedNameRefTo convert defined name to reference range.
-func (f *File) getDefinedNameRefTo(definedNameName string, currentSheet string) (refTo string) {
+func (f *File) getDefinedNameRefTo(definedNameName, currentSheet string) (refTo string) {
 	var workbookRefTo, worksheetRefTo string
 	for _, definedName := range f.GetDefinedName() {
 		if definedName.Name == definedNameName {
@@ -430,6 +437,30 @@ func float64Ptr(f float64) *float64 { return &f }
 // stringPtr returns a pointer to a string with the given value.
 func stringPtr(s string) *string { return &s }
 
+// Value extracts string data type text from a attribute value.
+func (avb *attrValString) Value() string {
+	if avb != nil && avb.Val != nil {
+		return *avb.Val
+	}
+	return ""
+}
+
+// Value extracts boolean data type value from a attribute value.
+func (avb *attrValBool) Value() bool {
+	if avb != nil && avb.Val != nil {
+		return *avb.Val
+	}
+	return false
+}
+
+// Value extracts float64 data type numeric from a attribute value.
+func (attr *attrValFloat) Value() float64 {
+	if attr != nil && attr.Val != nil {
+		return *attr.Val
+	}
+	return 0
+}
+
 // MarshalXML convert the boolean data type to literal values 0 or 1 on
 // serialization.
 func (avb attrValBool) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
@@ -490,6 +521,34 @@ func (avb *attrValBool) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	}
 	defaultVal := true
 	avb.Val = &defaultVal
+	return nil
+}
+
+// MarshalXML encodes ext element with specified namespace attributes on
+// serialization.
+func (ext xlsxExt) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = ext.xmlns
+	return e.EncodeElement(decodeExt{URI: ext.URI, Content: ext.Content}, start)
+}
+
+// UnmarshalXML extracts ext element attributes namespace by giving XML decoder
+// on deserialization.
+func (ext *xlsxExt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "uri" {
+			continue
+		}
+		if attr.Name.Space == "xmlns" {
+			attr.Name.Space = ""
+			attr.Name.Local = "xmlns:" + attr.Name.Local
+		}
+		ext.xmlns = append(ext.xmlns, attr)
+	}
+	e := &decodeExt{}
+	if err := d.DecodeElement(&e, &start); err != nil {
+		return err
+	}
+	ext.URI, ext.Content = e.URI, e.Content
 	return nil
 }
 
@@ -623,8 +682,8 @@ func getXMLNamespace(space string, attr []xml.Attr) string {
 func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
 	sourceXmlns := []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
 	targetXmlns := []byte(templateNamespaceIDMap)
-	if attr, ok := f.xmlAttr[path]; ok {
-		targetXmlns = []byte(genXMLNamespace(attr))
+	if attrs, ok := f.xmlAttr.Load(path); ok {
+		targetXmlns = []byte(genXMLNamespace(attrs.([]xml.Attr)))
 	}
 	return bytesReplace(contentMarshal, sourceXmlns, bytes.ReplaceAll(targetXmlns, []byte(" mc:Ignorable=\"r\""), []byte{}), -1)
 }
@@ -635,29 +694,36 @@ func (f *File) addNameSpaces(path string, ns xml.Attr) {
 	exist := false
 	mc := false
 	ignore := -1
-	if attr, ok := f.xmlAttr[path]; ok {
-		for i, attribute := range attr {
-			if attribute.Name.Local == ns.Name.Local && attribute.Name.Space == ns.Name.Space {
+	if attrs, ok := f.xmlAttr.Load(path); ok {
+		for i, attr := range attrs.([]xml.Attr) {
+			if attr.Name.Local == ns.Name.Local && attr.Name.Space == ns.Name.Space {
 				exist = true
 			}
-			if attribute.Name.Local == "Ignorable" && getXMLNamespace(attribute.Name.Space, attr) == "mc" {
+			if attr.Name.Local == "Ignorable" && getXMLNamespace(attr.Name.Space, attrs.([]xml.Attr)) == "mc" {
 				ignore = i
 			}
-			if attribute.Name.Local == "mc" && attribute.Name.Space == "xmlns" {
+			if attr.Name.Local == "mc" && attr.Name.Space == "xmlns" {
 				mc = true
 			}
 		}
 	}
 	if !exist {
-		f.xmlAttr[path] = append(f.xmlAttr[path], ns)
+		attrs, _ := f.xmlAttr.Load(path)
+		if attrs == nil {
+			attrs = []xml.Attr{}
+		}
+		attrs = append(attrs.([]xml.Attr), ns)
+		f.xmlAttr.Store(path, attrs)
 		if !mc {
-			f.xmlAttr[path] = append(f.xmlAttr[path], SourceRelationshipCompatibility)
+			attrs = append(attrs.([]xml.Attr), SourceRelationshipCompatibility)
+			f.xmlAttr.Store(path, attrs)
 		}
 		if ignore == -1 {
-			f.xmlAttr[path] = append(f.xmlAttr[path], xml.Attr{
+			attrs = append(attrs.([]xml.Attr), xml.Attr{
 				Name:  xml.Name{Local: "Ignorable", Space: "mc"},
 				Value: ns.Name.Local,
 			})
+			f.xmlAttr.Store(path, attrs)
 			return
 		}
 		f.setIgnorableNameSpace(path, ignore, ns)
@@ -668,8 +734,10 @@ func (f *File) addNameSpaces(path string, ns xml.Attr) {
 // by the given attribute.
 func (f *File) setIgnorableNameSpace(path string, index int, ns xml.Attr) {
 	ignorableNS := []string{"c14", "cdr14", "a14", "pic14", "x14", "xdr14", "x14ac", "dsp", "mso14", "dgm14", "x15", "x12ac", "x15ac", "xr", "xr2", "xr3", "xr4", "xr5", "xr6", "xr7", "xr8", "xr9", "xr10", "xr11", "xr12", "xr13", "xr14", "xr15", "x15", "x16", "x16r2", "mo", "mx", "mv", "o", "v"}
-	if inStrSlice(strings.Fields(f.xmlAttr[path][index].Value), ns.Name.Local, true) == -1 && inStrSlice(ignorableNS, ns.Name.Local, true) != -1 {
-		f.xmlAttr[path][index].Value = strings.TrimSpace(fmt.Sprintf("%s %s", f.xmlAttr[path][index].Value, ns.Name.Local))
+	xmlAttrs, _ := f.xmlAttr.Load(path)
+	if inStrSlice(strings.Fields(xmlAttrs.([]xml.Attr)[index].Value), ns.Name.Local, true) == -1 && inStrSlice(ignorableNS, ns.Name.Local, true) != -1 {
+		xmlAttrs.([]xml.Attr)[index].Value = strings.TrimSpace(fmt.Sprintf("%s %s", xmlAttrs.([]xml.Attr)[index].Value, ns.Name.Local))
+		f.xmlAttr.Store(path, xmlAttrs)
 	}
 }
 
@@ -765,6 +833,30 @@ func bstrMarshal(s string) (result string) {
 		result += s[cursor:]
 	}
 	return result
+}
+
+// newRat converts decimals to rational fractions with the required precision.
+func newRat(n float64, iterations int64, prec float64) *big.Rat {
+	x := int64(math.Floor(n))
+	y := n - float64(x)
+	rat := continuedFraction(y, 1, iterations, prec)
+	return rat.Add(rat, new(big.Rat).SetInt64(x))
+}
+
+// continuedFraction returns rational from decimal with the continued fraction
+// algorithm.
+func continuedFraction(n float64, i int64, limit int64, prec float64) *big.Rat {
+	if i >= limit || n <= prec {
+		return big.NewRat(0, 1)
+	}
+	inverted := 1 / n
+	y := int64(math.Floor(inverted))
+	x := inverted - float64(y)
+	ratY := new(big.Rat).SetInt64(y)
+	ratNext := continuedFraction(x, i+1, limit, prec)
+	res := ratY.Add(ratY, ratNext)
+	res = res.Inv(res)
+	return res
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

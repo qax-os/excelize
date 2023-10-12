@@ -120,26 +120,26 @@ type xlsxCacheField struct {
 // those values that are referenced in multiple places across all the
 // PivotTable parts.
 type xlsxSharedItems struct {
-	ContainsSemiMixedTypes bool          `xml:"containsSemiMixedTypes,attr,omitempty"`
-	ContainsNonDate        bool          `xml:"containsNonDate,attr,omitempty"`
-	ContainsDate           bool          `xml:"containsDate,attr,omitempty"`
-	ContainsString         bool          `xml:"containsString,attr,omitempty"`
-	ContainsBlank          bool          `xml:"containsBlank,attr,omitempty"`
-	ContainsMixedTypes     bool          `xml:"containsMixedTypes,attr,omitempty"`
-	ContainsNumber         bool          `xml:"containsNumber,attr,omitempty"`
-	ContainsInteger        bool          `xml:"containsInteger,attr,omitempty"`
-	MinValue               float64       `xml:"minValue,attr,omitempty"`
-	MaxValue               float64       `xml:"maxValue,attr,omitempty"`
-	MinDate                string        `xml:"minDate,attr,omitempty"`
-	MaxDate                string        `xml:"maxDate,attr,omitempty"`
-	Count                  int           `xml:"count,attr"`
-	LongText               bool          `xml:"longText,attr,omitempty"`
-	M                      *xlsxMissing  `xml:"m"`
-	N                      *xlsxNumber   `xml:"n"`
-	B                      *xlsxBoolean  `xml:"b"`
-	E                      *xlsxError    `xml:"e"`
-	S                      *xlsxString   `xml:"s"`
-	D                      *xlsxDateTime `xml:"d"`
+	ContainsSemiMixedTypes bool           `xml:"containsSemiMixedTypes,attr,omitempty"`
+	ContainsNonDate        bool           `xml:"containsNonDate,attr,omitempty"`
+	ContainsDate           bool           `xml:"containsDate,attr,omitempty"`
+	ContainsString         bool           `xml:"containsString,attr,omitempty"`
+	ContainsBlank          bool           `xml:"containsBlank,attr,omitempty"`
+	ContainsMixedTypes     bool           `xml:"containsMixedTypes,attr,omitempty"`
+	ContainsNumber         bool           `xml:"containsNumber,attr,omitempty"`
+	ContainsInteger        bool           `xml:"containsInteger,attr,omitempty"`
+	MinValue               float64        `xml:"minValue,attr,omitempty"`
+	MaxValue               float64        `xml:"maxValue,attr,omitempty"`
+	MinDate                string         `xml:"minDate,attr,omitempty"`
+	MaxDate                string         `xml:"maxDate,attr,omitempty"`
+	Count                  int            `xml:"count,attr"`
+	LongText               bool           `xml:"longText,attr,omitempty"`
+	M                      []xlsxMissing  `xml:"m"`
+	N                      []xlsxNumber   `xml:"n"`
+	B                      []xlsxBoolean  `xml:"b"`
+	E                      []xlsxError    `xml:"e"`
+	S                      []xlsxString   `xml:"s"`
+	D                      []xlsxDateTime `xml:"d"`
 }
 
 // xlsxMissing represents a value that was not specified.
@@ -226,3 +226,17 @@ type xlsxMeasureGroups struct{}
 
 // xlsxMaps represents the PivotTable OLAP measure group - Dimension maps.
 type xlsxMaps struct{}
+
+// xlsxX14PivotCacheDefinition specifies the extended properties of a pivot
+// table cache definition.
+type xlsxX14PivotCacheDefinition struct {
+	XMLName      xml.Name `xml:"x14:pivotCacheDefinition"`
+	PivotCacheID int      `xml:"pivotCacheId,attr"`
+}
+
+// decodeX14PivotCacheDefinition defines the structure used to parse the
+// x14:pivotCacheDefinition element of a pivot table cache.
+type decodeX14PivotCacheDefinition struct {
+	XMLName      xml.Name `xml:"pivotCacheDefinition"`
+	PivotCacheID int      `xml:"pivotCacheId,attr"`
+}

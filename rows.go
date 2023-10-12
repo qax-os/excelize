@@ -14,7 +14,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"math"
 	"os"
@@ -200,15 +199,6 @@ func appendSpace(l int, s []string) []string {
 		s = append(s, "")
 	}
 	return s
-}
-
-// ErrSheetNotExist defines an error of sheet that does not exist
-type ErrSheetNotExist struct {
-	SheetName string
-}
-
-func (err ErrSheetNotExist) Error() string {
-	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
 }
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.
@@ -708,7 +698,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 // checkRow provides a function to check and fill each column element for all
 // rows and make that is continuous in a worksheet of XML. For example:
 //
-//	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//	<row r="15">
 //	    <c r="A15" s="2" />
 //	    <c r="B15" s="2" />
 //	    <c r="F15" s="1" />
@@ -717,7 +707,7 @@ func (f *File) duplicateMergeCells(sheet string, ws *xlsxWorksheet, row, row2 in
 //
 // in this case, we should to change it to
 //
-//	<row r="15" spans="1:22" x14ac:dyDescent="0.2">
+//	<row r="15">
 //	    <c r="A15" s="2" />
 //	    <c r="B15" s="2" />
 //	    <c r="C15" s="2" />

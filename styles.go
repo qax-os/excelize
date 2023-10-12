@@ -1032,47 +1032,368 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	return setCellXfs(s, fontID, numFmtID, fillID, borderID, applyAlignment, applyProtection, alignment, protection)
 }
 
-// getXfIDFuncs provides a function to get xfID by given style.
-var getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
-	"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
-		if style.CustomNumFmt == nil && numFmtID == -1 {
-			return xf.NumFmtID != nil && *xf.NumFmtID == 0
+var (
+	// styleBorders list all types of the cell border style.
+	styleBorders = []string{
+		"none",
+		"thin",
+		"medium",
+		"dashed",
+		"dotted",
+		"thick",
+		"double",
+		"hair",
+		"mediumDashed",
+		"dashDot",
+		"mediumDashDot",
+		"dashDotDot",
+		"mediumDashDotDot",
+		"slantDashDot",
+	}
+	// styleBorderTypes list all types of the cell border.
+	styleBorderTypes = []string{
+		"left", "right", "top", "bottom", "diagonalUp", "diagonalDown",
+	}
+	// styleFillPatterns list all types of the cell fill style.
+	styleFillPatterns = []string{
+		"none",
+		"solid",
+		"mediumGray",
+		"darkGray",
+		"lightGray",
+		"darkHorizontal",
+		"darkVertical",
+		"darkDown",
+		"darkUp",
+		"darkGrid",
+		"darkTrellis",
+		"lightHorizontal",
+		"lightVertical",
+		"lightDown",
+		"lightUp",
+		"lightGrid",
+		"lightTrellis",
+		"gray125",
+		"gray0625",
+	}
+	// styleFillVariants list all preset variants of the fill style.
+	styleFillVariants = []xlsxGradientFill{
+		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 270, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 180, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 255, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 315, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path"},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Left: 1, Right: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Top: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Left: 1, Right: 1, Top: 1},
+		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 0.5, Left: 0.5, Right: 0.5, Top: 0.5},
+	}
+	// getXfIDFuncs provides a function to get xfID by given style.
+	getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
+		"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
+			if style.CustomNumFmt == nil && numFmtID == -1 {
+				return xf.NumFmtID != nil && *xf.NumFmtID == 0
+			}
+			if style.NegRed || (style.DecimalPlaces != nil && *style.DecimalPlaces != 2) {
+				return false
+			}
+			return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
+		},
+		"font": func(fontID int, xf xlsxXf, style *Style) bool {
+			if style.Font == nil {
+				return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || !*xf.ApplyFont)
+			}
+			return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont
+		},
+		"fill": func(fillID int, xf xlsxXf, style *Style) bool {
+			if style.Fill.Type == "" {
+				return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || !*xf.ApplyFill)
+			}
+			return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill
+		},
+		"border": func(borderID int, xf xlsxXf, style *Style) bool {
+			if len(style.Border) == 0 {
+				return (xf.BorderID == nil || *xf.BorderID == 0) && (xf.ApplyBorder == nil || !*xf.ApplyBorder)
+			}
+			return xf.BorderID != nil && *xf.BorderID == borderID && xf.ApplyBorder != nil && *xf.ApplyBorder
+		},
+		"alignment": func(ID int, xf xlsxXf, style *Style) bool {
+			if style.Alignment == nil {
+				return xf.ApplyAlignment == nil || !*xf.ApplyAlignment
+			}
+			return reflect.DeepEqual(xf.Alignment, newAlignment(style))
+		},
+		"protection": func(ID int, xf xlsxXf, style *Style) bool {
+			if style.Protection == nil {
+				return xf.ApplyProtection == nil || !*xf.ApplyProtection
+			}
+			return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection
+		},
+	}
+	// drawContFmtFunc defines functions to create conditional formats.
+	drawContFmtFunc = map[string]func(p int, ct, GUID string, fmtCond *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule){
+		"cellIs":          drawCondFmtCellIs,
+		"top10":           drawCondFmtTop10,
+		"aboveAverage":    drawCondFmtAboveAverage,
+		"duplicateValues": drawCondFmtDuplicateUniqueValues,
+		"uniqueValues":    drawCondFmtDuplicateUniqueValues,
+		"2_color_scale":   drawCondFmtColorScale,
+		"3_color_scale":   drawCondFmtColorScale,
+		"dataBar":         drawCondFmtDataBar,
+		"expression":      drawCondFmtExp,
+		"iconSet":         drawCondFmtIconSet,
+	}
+	// extractContFmtFunc defines functions to get conditional formats.
+	extractContFmtFunc = map[string]func(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions{
+		"cellIs":          extractCondFmtCellIs,
+		"top10":           extractCondFmtTop10,
+		"aboveAverage":    extractCondFmtAboveAverage,
+		"duplicateValues": extractCondFmtDuplicateUniqueValues,
+		"uniqueValues":    extractCondFmtDuplicateUniqueValues,
+		"colorScale":      extractCondFmtColorScale,
+		"dataBar":         extractCondFmtDataBar,
+		"expression":      extractCondFmtExp,
+		"iconSet":         extractCondFmtIconSet,
+	}
+)
+
+// getThemeColor provides a function to convert theme color or index color to
+// RGB color.
+func (f *File) getThemeColor(clr *xlsxColor) string {
+	var RGB string
+	if clr == nil || f.Theme == nil {
+		return RGB
+	}
+	if clrScheme := f.Theme.ThemeElements.ClrScheme; clr.Theme != nil {
+		if val, ok := map[int]*string{
+			0: &clrScheme.Lt1.SysClr.LastClr,
+			1: &clrScheme.Dk1.SysClr.LastClr,
+			2: clrScheme.Lt2.SrgbClr.Val,
+			3: clrScheme.Dk2.SrgbClr.Val,
+			4: clrScheme.Accent1.SrgbClr.Val,
+			5: clrScheme.Accent2.SrgbClr.Val,
+			6: clrScheme.Accent3.SrgbClr.Val,
+			7: clrScheme.Accent4.SrgbClr.Val,
+			8: clrScheme.Accent5.SrgbClr.Val,
+			9: clrScheme.Accent6.SrgbClr.Val,
+		}[*clr.Theme]; ok && val != nil {
+			return strings.TrimPrefix(ThemeColor(*val, clr.Tint), "FF")
 		}
-		if style.NegRed || (style.DecimalPlaces != nil && *style.DecimalPlaces != 2) {
-			return false
+	}
+	if len(clr.RGB) == 6 {
+		return clr.RGB
+	}
+	if len(clr.RGB) == 8 {
+		return strings.TrimPrefix(clr.RGB, "FF")
+	}
+	if f.Styles.Colors != nil && f.Styles.Colors.IndexedColors != nil && clr.Indexed < len(f.Styles.Colors.IndexedColors.RgbColor) {
+		return strings.TrimPrefix(ThemeColor(strings.TrimPrefix(f.Styles.Colors.IndexedColors.RgbColor[clr.Indexed].RGB, "FF"), clr.Tint), "FF")
+	}
+	if clr.Indexed < len(IndexedColorMapping) {
+		return strings.TrimPrefix(ThemeColor(IndexedColorMapping[clr.Indexed], clr.Tint), "FF")
+	}
+	return RGB
+}
+
+// extractBorders provides a function to extract borders styles settings by
+// given border styles definition.
+func (f *File) extractBorders(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.ApplyBorder != nil && *xf.ApplyBorder &&
+		xf.BorderID != nil && s.Borders != nil &&
+		*xf.BorderID < len(s.Borders.Border) {
+		if bdr := s.Borders.Border[*xf.BorderID]; bdr != nil {
+
+			var borders []Border
+			extractBorder := func(lineType string, line xlsxLine) {
+				if line.Style != "" {
+					borders = append(borders, Border{
+						Type:  lineType,
+						Color: f.getThemeColor(line.Color),
+						Style: inStrSlice(styleBorders, line.Style, false),
+					})
+				}
+			}
+			for i, line := range []xlsxLine{
+				bdr.Left, bdr.Right, bdr.Top, bdr.Bottom, bdr.Diagonal, bdr.Diagonal,
+			} {
+				if i < 4 {
+					extractBorder(styleBorderTypes[i], line)
+				}
+				if i == 4 && bdr.DiagonalUp {
+					extractBorder(styleBorderTypes[i], line)
+				}
+				if i == 5 && bdr.DiagonalDown {
+					extractBorder(styleBorderTypes[i], line)
+				}
+			}
+			style.Border = borders
 		}
-		return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
-	},
-	"font": func(fontID int, xf xlsxXf, style *Style) bool {
-		if style.Font == nil {
-			return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || !*xf.ApplyFont)
+	}
+}
+
+// extractFills provides a function to extract fill styles settings by
+// given fill styles definition.
+func (f *File) extractFills(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if fl := s.Fills.Fill[*xf.FillID]; fl != nil {
+		var fill Fill
+		if fl.GradientFill != nil {
+			fill.Type = "gradient"
+			for shading, variants := range styleFillVariants {
+				if fl.GradientFill.Bottom == variants.Bottom &&
+					fl.GradientFill.Degree == variants.Degree &&
+					fl.GradientFill.Left == variants.Left &&
+					fl.GradientFill.Right == variants.Right &&
+					fl.GradientFill.Top == variants.Top &&
+					fl.GradientFill.Type == variants.Type {
+					fill.Shading = shading
+					break
+				}
+			}
+			for _, stop := range fl.GradientFill.Stop {
+				fill.Color = append(fill.Color, f.getThemeColor(&stop.Color))
+			}
 		}
-		return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont
-	},
-	"fill": func(fillID int, xf xlsxXf, style *Style) bool {
-		if style.Fill.Type == "" {
-			return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || !*xf.ApplyFill)
+		if fl.PatternFill != nil {
+			fill.Type = "pattern"
+			fill.Pattern = inStrSlice(styleFillPatterns, fl.PatternFill.PatternType, false)
+			if fl.PatternFill.FgColor != nil {
+				fill.Color = []string{f.getThemeColor(fl.PatternFill.FgColor)}
+			}
 		}
-		return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill
-	},
-	"border": func(borderID int, xf xlsxXf, style *Style) bool {
-		if len(style.Border) == 0 {
-			return (xf.BorderID == nil || *xf.BorderID == 0) && (xf.ApplyBorder == nil || !*xf.ApplyBorder)
+		style.Fill = fill
+	}
+}
+
+// extractFont provides a function to extract font styles settings by given
+// font styles definition.
+func (f *File) extractFont(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.ApplyFont != nil && *xf.ApplyFont &&
+		xf.FontID != nil && s.Fonts != nil &&
+		*xf.FontID < len(s.Fonts.Font) {
+		if fnt := s.Fonts.Font[*xf.FontID]; fnt != nil {
+			var font Font
+			if fnt.B != nil {
+				font.Bold = fnt.B.Value()
+			}
+			if fnt.I != nil {
+				font.Italic = fnt.I.Value()
+			}
+			if fnt.U != nil {
+				font.Underline = fnt.U.Value()
+			}
+			if fnt.Name != nil {
+				font.Family = fnt.Name.Value()
+			}
+			if fnt.Sz != nil {
+				font.Size = fnt.Sz.Value()
+			}
+			if fnt.Strike != nil {
+				font.Strike = fnt.Strike.Value()
+			}
+			if fnt.Color != nil {
+				font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
+				font.ColorIndexed = fnt.Color.Indexed
+				font.ColorTheme = fnt.Color.Theme
+				font.ColorTint = fnt.Color.Tint
+			}
+			style.Font = &font
 		}
-		return xf.BorderID != nil && *xf.BorderID == borderID && xf.ApplyBorder != nil && *xf.ApplyBorder
-	},
-	"alignment": func(ID int, xf xlsxXf, style *Style) bool {
-		if style.Alignment == nil {
-			return xf.ApplyAlignment == nil || !*xf.ApplyAlignment
+	}
+}
+
+// extractNumFmt provides a function to extract number format by given styles
+// definition.
+func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.NumFmtID != nil {
+		numFmtID := *xf.NumFmtID
+		if _, ok := builtInNumFmt[numFmtID]; ok || isLangNumFmt(numFmtID) {
+			style.NumFmt = numFmtID
+			return
 		}
-		return reflect.DeepEqual(xf.Alignment, newAlignment(style))
-	},
-	"protection": func(ID int, xf xlsxXf, style *Style) bool {
-		if style.Protection == nil {
-			return xf.ApplyProtection == nil || !*xf.ApplyProtection
+		if s.NumFmts != nil {
+			for _, numFmt := range s.NumFmts.NumFmt {
+				style.CustomNumFmt = &numFmt.FormatCode
+				if strings.Contains(numFmt.FormatCode, ";[Red]") {
+					style.NegRed = true
+				}
+				for numFmtID, fmtCode := range currencyNumFmt {
+					if style.NegRed {
+						fmtCode += ";[Red]" + fmtCode
+					}
+					if numFmt.FormatCode == fmtCode {
+						style.NumFmt = numFmtID
+					}
+				}
+			}
 		}
-		return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection
-	},
+	}
+}
+
+// extractAlignment provides a function to extract alignment format by
+// given style definition.
+func (f *File) extractAlignment(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.ApplyAlignment != nil && *xf.ApplyAlignment && xf.Alignment != nil {
+		style.Alignment = &Alignment{
+			Horizontal:      xf.Alignment.Horizontal,
+			Indent:          xf.Alignment.Indent,
+			JustifyLastLine: xf.Alignment.JustifyLastLine,
+			ReadingOrder:    xf.Alignment.ReadingOrder,
+			RelativeIndent:  xf.Alignment.RelativeIndent,
+			ShrinkToFit:     xf.Alignment.ShrinkToFit,
+			TextRotation:    xf.Alignment.TextRotation,
+			Vertical:        xf.Alignment.Vertical,
+			WrapText:        xf.Alignment.WrapText,
+		}
+	}
+}
+
+// extractProtection provides a function to extract protection settings by
+// given format definition.
+func (f *File) extractProtection(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
+	if xf.ApplyProtection != nil && *xf.ApplyProtection && xf.Protection != nil {
+		style.Protection = &Protection{}
+		if xf.Protection.Hidden != nil {
+			style.Protection.Hidden = *xf.Protection.Hidden
+		}
+		if xf.Protection.Locked != nil {
+			style.Protection.Locked = *xf.Protection.Locked
+		}
+	}
+}
+
+// GetStyle provides a function to get style definition by given style index.
+func (f *File) GetStyle(idx int) (*Style, error) {
+	var style *Style
+	f.mu.Lock()
+	s, err := f.stylesReader()
+	if err != nil {
+		return style, err
+	}
+	f.mu.Unlock()
+	if idx < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= idx {
+		return style, newInvalidStyleID(idx)
+	}
+	style = &Style{}
+	xf := s.CellXfs.Xf[idx]
+	if xf.ApplyFill != nil && *xf.ApplyFill &&
+		xf.FillID != nil && s.Fills != nil &&
+		*xf.FillID < len(s.Fills.Fill) {
+		f.extractFills(xf, s, style)
+	}
+	f.extractBorders(xf, s, style)
+	f.extractFont(xf, s, style)
+	f.extractAlignment(xf, s, style)
+	f.extractProtection(xf, s, style)
+	f.extractNumFmt(xf, s, style)
+	return style, nil
 }
 
 // getStyleID provides a function to get styleID by given style. If given
@@ -1373,20 +1694,18 @@ func newNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
 
 // setCustomNumFmt provides a function to set custom number format code.
 func setCustomNumFmt(styleSheet *xlsxStyleSheet, style *Style) int {
-	nf := xlsxNumFmt{FormatCode: *style.CustomNumFmt}
-
-	if styleSheet.NumFmts != nil {
-		nf.NumFmtID = styleSheet.NumFmts.NumFmt[len(styleSheet.NumFmts.NumFmt)-1].NumFmtID + 1
-		styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)
-		styleSheet.NumFmts.Count++
-	} else {
-		nf.NumFmtID = 164
-		numFmts := xlsxNumFmts{
-			NumFmt: []*xlsxNumFmt{&nf},
-			Count:  1,
-		}
-		styleSheet.NumFmts = &numFmts
+	nf := xlsxNumFmt{NumFmtID: 163, FormatCode: *style.CustomNumFmt}
+	if styleSheet.NumFmts == nil {
+		styleSheet.NumFmts = &xlsxNumFmts{}
 	}
+	for _, numFmt := range styleSheet.NumFmts.NumFmt {
+		if numFmt != nil && nf.NumFmtID < numFmt.NumFmtID {
+			nf.NumFmtID = numFmt.NumFmtID
+		}
+	}
+	nf.NumFmtID++
+	styleSheet.NumFmts.NumFmt = append(styleSheet.NumFmts.NumFmt, &nf)
+	styleSheet.NumFmts.Count = len(styleSheet.NumFmts.NumFmt)
 	return nf.NumFmtID
 }
 
@@ -1406,9 +1725,15 @@ func getCustomNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (customNumFmtID
 	return
 }
 
+// isLangNumFmt provides a function to returns if a given number format ID is a
+// built-in language glyphs number format code.
+func isLangNumFmt(ID int) bool {
+	return (27 <= ID && ID <= 36) || (50 <= ID && ID <= 62) || (67 <= ID && ID <= 81)
+}
+
 // setLangNumFmt provides a function to set number format code with language.
 func setLangNumFmt(style *Style) int {
-	if (27 <= style.NumFmt && style.NumFmt <= 36) || (50 <= style.NumFmt && style.NumFmt <= 81) {
+	if isLangNumFmt(style.NumFmt) {
 		return style.NumFmt
 	}
 	return 0
@@ -1437,54 +1762,13 @@ func getFillID(styleSheet *xlsxStyleSheet, style *Style) (fillID int) {
 // newFills provides a function to add fill elements in the styles.xml by
 // given cell format settings.
 func newFills(style *Style, fg bool) *xlsxFill {
-	patterns := []string{
-		"none",
-		"solid",
-		"mediumGray",
-		"darkGray",
-		"lightGray",
-		"darkHorizontal",
-		"darkVertical",
-		"darkDown",
-		"darkUp",
-		"darkGrid",
-		"darkTrellis",
-		"lightHorizontal",
-		"lightVertical",
-		"lightDown",
-		"lightUp",
-		"lightGrid",
-		"lightTrellis",
-		"gray125",
-		"gray0625",
-	}
-	variants := []xlsxGradientFill{
-		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 270, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 180, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 255, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 315, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path"},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Left: 1, Right: 1},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Top: 1},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Left: 1, Right: 1, Top: 1},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 0.5, Left: 0.5, Right: 0.5, Top: 0.5},
-	}
-
 	var fill xlsxFill
 	switch style.Fill.Type {
 	case "gradient":
 		if len(style.Fill.Color) != 2 || style.Fill.Shading < 0 || style.Fill.Shading > 16 {
 			break
 		}
-		gradient := variants[style.Fill.Shading]
+		gradient := styleFillVariants[style.Fill.Shading]
 		gradient.Stop[0].Color.RGB = getPaletteColor(style.Fill.Color[0])
 		gradient.Stop[1].Color.RGB = getPaletteColor(style.Fill.Color[1])
 		if len(gradient.Stop) == 3 {
@@ -1499,7 +1783,7 @@ func newFills(style *Style, fg bool) *xlsxFill {
 			break
 		}
 		var pattern xlsxPatternFill
-		pattern.PatternType = patterns[style.Fill.Pattern]
+		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
 		if fg {
 			if pattern.FgColor == nil {
 				pattern.FgColor = new(xlsxColor)
@@ -1568,23 +1852,6 @@ func getBorderID(styleSheet *xlsxStyleSheet, style *Style) (borderID int) {
 // newBorders provides a function to add border elements in the styles.xml by
 // given borders format settings.
 func newBorders(style *Style) *xlsxBorder {
-	styles := []string{
-		"none",
-		"thin",
-		"medium",
-		"dashed",
-		"dotted",
-		"thick",
-		"double",
-		"hair",
-		"mediumDashed",
-		"dashDot",
-		"mediumDashDot",
-		"dashDotDot",
-		"mediumDashDotDot",
-		"slantDashDot",
-	}
-
 	var border xlsxBorder
 	for _, v := range style.Border {
 		if 0 <= v.Style && v.Style < 14 {
@@ -1592,23 +1859,23 @@ func newBorders(style *Style) *xlsxBorder {
 			color.RGB = getPaletteColor(v.Color)
 			switch v.Type {
 			case "left":
-				border.Left.Style = styles[v.Style]
+				border.Left.Style = styleBorders[v.Style]
 				border.Left.Color = &color
 			case "right":
-				border.Right.Style = styles[v.Style]
+				border.Right.Style = styleBorders[v.Style]
 				border.Right.Color = &color
 			case "top":
-				border.Top.Style = styles[v.Style]
+				border.Top.Style = styleBorders[v.Style]
 				border.Top.Color = &color
 			case "bottom":
-				border.Bottom.Style = styles[v.Style]
+				border.Bottom.Style = styleBorders[v.Style]
 				border.Bottom.Color = &color
 			case "diagonalUp":
-				border.Diagonal.Style = styles[v.Style]
+				border.Diagonal.Style = styleBorders[v.Style]
 				border.Diagonal.Color = &color
 				border.DiagonalUp = true
 			case "diagonalDown":
-				border.Diagonal.Style = styles[v.Style]
+				border.Diagonal.Style = styleBorders[v.Style]
 				border.Diagonal.Color = &color
 				border.DiagonalDown = true
 			}
@@ -1894,7 +2161,7 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //
 // The 'Criteria' parameter is used to set the criteria by which the cell data
 // will be evaluated. It has no default value. The most common criteria as
-// applied to {"type"："cell"} are:
+// applied to {Type: "cell"} are:
 //
 //	between                  |
 //	not between              |
@@ -2248,19 +2515,6 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 // cells. When this parameter is set then subsequent rules are not evaluated
 // if the current rule is true.
 func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFormatOptions) error {
-	drawContFmtFunc := map[string]func(p int, ct, GUID string, fmtCond *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule){
-		"cellIs":          drawCondFmtCellIs,
-		"top10":           drawCondFmtTop10,
-		"aboveAverage":    drawCondFmtAboveAverage,
-		"duplicateValues": drawCondFmtDuplicateUniqueValues,
-		"uniqueValues":    drawCondFmtDuplicateUniqueValues,
-		"2_color_scale":   drawCondFmtColorScale,
-		"3_color_scale":   drawCondFmtColorScale,
-		"dataBar":         drawCondFmtDataBar,
-		"expression":      drawCondFmtExp,
-		"iconSet":         drawCondFmtIconSet,
-	}
-
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -2312,10 +2566,10 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 		err                                      error
 		idx                                      int
 		appendMode                               bool
-		decodeExtLst                             = new(decodeWorksheetExt)
+		decodeExtLst                             = new(decodeExtLst)
 		condFmts                                 *xlsxX14ConditionalFormattings
 		decodeCondFmts                           *decodeX14ConditionalFormattings
-		ext                                      *xlsxWorksheetExt
+		ext                                      *xlsxExt
 		condFmtBytes, condFmtsBytes, extLstBytes []byte
 	)
 	condFmtBytes, _ = xml.Marshal([]*xlsxX14ConditionalFormatting{
@@ -2342,13 +2596,13 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 	}
 	if !appendMode {
 		condFmtsBytes, _ = xml.Marshal(&xlsxX14ConditionalFormattings{Content: string(condFmtBytes)})
-		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxWorksheetExt{
+		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
 			URI: ExtURIConditionalFormattings, Content: string(condFmtsBytes),
 		})
 	}
 	sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
-		return inStrSlice(extensionURIPriority, decodeExtLst.Ext[i].URI, false) <
-			inStrSlice(extensionURIPriority, decodeExtLst.Ext[j].URI, false)
+		return inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+			inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[j].URI, false)
 	})
 	extLstBytes, err = xml.Marshal(decodeExtLst)
 	ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
@@ -2478,7 +2732,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 			}
 		}
 	}
-	extractExtLst := func(extLst *decodeWorksheetExt) {
+	extractExtLst := func(extLst *decodeExtLst) {
 		for _, ext := range extLst.Ext {
 			if ext.URI == ExtURIConditionalFormattings {
 				decodeCondFmts := new(decodeX14ConditionalFormattings)
@@ -2494,7 +2748,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 	if c.ExtLst != nil {
 		ext := decodeX14ConditionalFormattingExt{}
 		if err := xml.Unmarshal([]byte(c.ExtLst.Ext), &ext); err == nil && extLst != nil {
-			decodeExtLst := new(decodeWorksheetExt)
+			decodeExtLst := new(decodeExtLst)
 			if err = xml.Unmarshal([]byte("<extLst>"+extLst.Ext+"</extLst>"), decodeExtLst); err == nil {
 				extractExtLst(decodeExtLst)
 			}
@@ -2530,18 +2784,6 @@ func extractCondFmtIconSet(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 // GetConditionalFormats returns conditional format settings by given worksheet
 // name.
 func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalFormatOptions, error) {
-	extractContFmtFunc := map[string]func(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions{
-		"cellIs":          extractCondFmtCellIs,
-		"top10":           extractCondFmtTop10,
-		"aboveAverage":    extractCondFmtAboveAverage,
-		"duplicateValues": extractCondFmtDuplicateUniqueValues,
-		"uniqueValues":    extractCondFmtDuplicateUniqueValues,
-		"colorScale":      extractCondFmtColorScale,
-		"dataBar":         extractCondFmtDataBar,
-		"expression":      extractCondFmtExp,
-		"iconSet":         extractCondFmtIconSet,
-	}
-
 	conditionalFormats := make(map[string][]ConditionalFormatOptions)
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {

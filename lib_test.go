@@ -222,9 +222,9 @@ func TestCoordinatesToRangeRef(t *testing.T) {
 	_, err := f.coordinatesToRangeRef([]int{})
 	assert.EqualError(t, err, ErrCoordinates.Error())
 	_, err = f.coordinatesToRangeRef([]int{1, -1, 1, 1})
-	assert.EqualError(t, err, "invalid cell reference [1, -1]")
+	assert.Equal(t, newCoordinatesToCellNameError(1, -1), err)
 	_, err = f.coordinatesToRangeRef([]int{1, 1, 1, -1})
-	assert.EqualError(t, err, "invalid cell reference [1, -1]")
+	assert.Equal(t, newCoordinatesToCellNameError(1, -1), err)
 	ref, err := f.coordinatesToRangeRef([]int{1, 1, 1, 1})
 	assert.NoError(t, err)
 	assert.EqualValues(t, ref, "A1:A1")
@@ -236,6 +236,12 @@ func TestSortCoordinates(t *testing.T) {
 
 func TestInStrSlice(t *testing.T) {
 	assert.EqualValues(t, -1, inStrSlice([]string{}, "", true))
+}
+
+func TestAttrValue(t *testing.T) {
+	assert.Empty(t, (&attrValString{}).Value())
+	assert.False(t, (&attrValBool{}).Value())
+	assert.Zero(t, (&attrValFloat{}).Value())
 }
 
 func TestBoolValMarshal(t *testing.T) {
@@ -268,6 +274,15 @@ func TestBoolValUnmarshalXML(t *testing.T) {
 	assert.EqualError(t, attr.UnmarshalXML(xml.NewDecoder(strings.NewReader("")), xml.StartElement{}), io.EOF.Error())
 }
 
+func TestExtUnmarshalXML(t *testing.T) {
+	f, extLst := NewFile(), decodeExtLst{}
+	expected := fmt.Sprintf(`<extLst><ext uri="%s" xmlns:x14="%s"/></extLst>`,
+		ExtURISlicerCachesX14, NameSpaceSpreadSheetX14.Value)
+	assert.NoError(t, f.xmlNewDecoder(strings.NewReader(expected)).Decode(&extLst))
+	assert.Len(t, extLst.Ext, 1)
+	assert.Equal(t, extLst.Ext[0].URI, ExtURISlicerCachesX14)
+}
+
 func TestBytesReplace(t *testing.T) {
 	s := []byte{0x01}
 	assert.EqualValues(t, s, bytesReplace(s, []byte{}, []byte{}, 0))
@@ -279,9 +294,11 @@ func TestGetRootElement(t *testing.T) {
 
 func TestSetIgnorableNameSpace(t *testing.T) {
 	f := NewFile()
-	f.xmlAttr["xml_path"] = []xml.Attr{{}}
+	f.xmlAttr.Store("xml_path", []xml.Attr{{}})
 	f.setIgnorableNameSpace("xml_path", 0, xml.Attr{Name: xml.Name{Local: "c14"}})
-	assert.EqualValues(t, "c14", f.xmlAttr["xml_path"][0].Value)
+	attrs, ok := f.xmlAttr.Load("xml_path")
+	assert.EqualValues(t, "c14", attrs.([]xml.Attr)[0].Value)
+	assert.True(t, ok)
 }
 
 func TestStack(t *testing.T) {

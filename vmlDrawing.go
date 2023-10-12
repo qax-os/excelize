@@ -276,8 +276,6 @@ type formCtrlPreset struct {
 
 // vmlOptions defines the structure used to internal comments and form controls.
 type vmlOptions struct {
-	rows     int
-	cols     int
 	formCtrl bool
 	sheet    string
 	Comment

@@ -489,9 +489,9 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 		err                                                    error
 		idx                                                    int
 		appendMode                                             bool
-		decodeExtLst                                           = new(decodeWorksheetExt)
+		decodeExtLst                                           = new(decodeExtLst)
 		decodeSparklineGroups                                  *decodeX14SparklineGroups
-		ext                                                    *xlsxWorksheetExt
+		ext                                                    *xlsxExt
 		sparklineGroupsBytes, sparklineGroupBytes, extLstBytes []byte
 	)
 	sparklineGroupBytes, _ = xml.Marshal(group)
@@ -523,13 +523,13 @@ func (f *File) appendSparkline(ws *xlsxWorksheet, group *xlsxX14SparklineGroup, 
 			XMLNSXM:         NameSpaceSpreadSheetExcel2006Main.Value,
 			SparklineGroups: []*xlsxX14SparklineGroup{group},
 		})
-		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxWorksheetExt{
+		decodeExtLst.Ext = append(decodeExtLst.Ext, &xlsxExt{
 			URI: ExtURISparklineGroups, Content: string(sparklineGroupsBytes),
 		})
 	}
 	sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
-		return inStrSlice(extensionURIPriority, decodeExtLst.Ext[i].URI, false) <
-			inStrSlice(extensionURIPriority, decodeExtLst.Ext[j].URI, false)
+		return inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+			inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[j].URI, false)
 	})
 	extLstBytes, err = xml.Marshal(decodeExtLst)
 	ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}

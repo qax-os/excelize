@@ -932,8 +932,7 @@ func TestGetValueFromNumber(t *testing.T) {
 }
 
 func TestErrSheetNotExistError(t *testing.T) {
-	err := ErrSheetNotExist{SheetName: "Sheet1"}
-	assert.EqualValues(t, err.Error(), "sheet Sheet1 does not exist")
+	assert.Equal(t, "sheet Sheet1 does not exist", ErrSheetNotExist{"Sheet1"}.Error())
 }
 
 func TestCheckRow(t *testing.T) {
@@ -945,7 +944,7 @@ func TestCheckRow(t *testing.T) {
 	f = NewFile()
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	delete(f.checked, "xl/worksheets/sheet1.xml")
+	f.checked.Delete("xl/worksheets/sheet1.xml")
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), newCellNameToCoordinatesError("-", newInvalidCellNameError("-")).Error())
 }
 

@@ -78,5 +78,7 @@ type Comment struct {
 	AuthorID  int
 	Cell      string
 	Text      string
+	Width     uint
+	Height    uint
 	Paragraph []RichTextRun
 }

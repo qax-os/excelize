@@ -120,13 +120,15 @@ func TestDeleteDrawing(t *testing.T) {
 	f := NewFile()
 	path := "xl/drawings/drawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.deleteDrawing(0, 0, path, "Chart"), "XML syntax error on line 1: invalid UTF-8")
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	_, err := f.deleteDrawing(0, 0, path, "Chart")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
 	f.Drawings.Store(path, &xlsxWsDr{TwoCellAnchor: []*xdrCellAnchor{{
 		GraphicFrame: string(MacintoshCyrillicCharset),
 	}}})
-	assert.EqualError(t, f.deleteDrawing(0, 0, path, "Chart"), "XML syntax error on line 1: invalid UTF-8")
+	_, err = f.deleteDrawing(0, 0, path, "Chart")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddChart(t *testing.T) {
@@ -184,8 +186,8 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Sizes: "Sheet1!$B$37:$D$37"},
 	}
 	format := GraphicOptions{
-		ScaleX:          defaultPictureScale,
-		ScaleY:          defaultPictureScale,
+		ScaleX:          defaultDrawingScale,
+		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),
@@ -369,8 +371,8 @@ func TestDeleteChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
 	}
 	format := GraphicOptions{
-		ScaleX:          defaultPictureScale,
-		ScaleY:          defaultPictureScale,
+		ScaleX:          defaultDrawingScale,
+		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),

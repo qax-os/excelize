@@ -196,9 +196,40 @@ type xlsxTableStyleInfo struct {
 	ShowColumnStripes bool   `xml:"showColumnStripes,attr"`
 }
 
+// xlsxSingleXMLCells is a single cell table is generated from an XML mapping.
+// These really just look like regular cells to the spreadsheet user, but shall
+// be implemented as Tables "under the covers."
+type xlsxSingleXMLCells struct {
+	XMLName       xml.Name            `xml:"singleXmlCells"`
+	SingleXmlCell []xlsxSingleXMLCell `xml:"singleXmlCell"`
+}
+
+// xlsxSingleXMLCell is a element represents the table properties for a single
+// cell XML table.
+type xlsxSingleXMLCell struct {
+	XMLName      xml.Name      `xml:"singleXmlCell"`
+	ID           int           `xml:"id,attr"`
+	R            string        `xml:"r,attr"`
+	ConnectionID int           `xml:"connectionId,attr"`
+	XMLCellPr    xlsxXMLCellPr `xml:"xmlCellPr"`
+	ExtLst       *xlsxInnerXML `xml:"extLst"`
+}
+
+// xlsxXMLCellPr is a element stores the XML properties for the cell of a single
+// cell xml table.
+type xlsxXMLCellPr struct {
+	XMLName    xml.Name      `xml:"xmlCellPr"`
+	ID         int           `xml:"id,attr"`
+	UniqueName string        `xml:"uniqueName,attr,omitempty"`
+	XMLPr      *xlsxInnerXML `xml:"xmlPr"`
+	ExtLst     *xlsxInnerXML `xml:"extLst"`
+}
+
 // Table directly maps the format settings of the table.
 type Table struct {
+	tID               int
 	rID               string
+	tableXML          string
 	Range             string
 	Name              string
 	StyleName         string

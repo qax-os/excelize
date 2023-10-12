@@ -47,7 +47,7 @@ type decodeSp struct {
 // appearance of the shape to be stored.
 type decodeNvSpPr struct {
 	CNvPr   *decodeCNvPr   `xml:"cNvPr"`
-	ExtLst  *decodeExt     `xml:"extLst"`
+	ExtLst  *decodeAExt    `xml:"extLst"`
 	CNvSpPr *decodeCNvSpPr `xml:"cNvSpPr"`
 }
 
@@ -78,10 +78,11 @@ type decodeWsDr struct {
 // information that does not affect the appearance of the picture to be
 // stored.
 type decodeCNvPr struct {
-	ID    int    `xml:"id,attr"`
-	Name  string `xml:"name,attr"`
-	Descr string `xml:"descr,attr"`
-	Title string `xml:"title,attr,omitempty"`
+	XMLName xml.Name `xml:"cNvPr"`
+	ID      int      `xml:"id,attr"`
+	Name    string   `xml:"name,attr"`
+	Descr   string   `xml:"descr,attr"`
+	Title   string   `xml:"title,attr,omitempty"`
 }
 
 // decodePicLocks directly maps the picLocks (Picture Locks). This element
@@ -124,8 +125,8 @@ type decodeOff struct {
 	Y int `xml:"y,attr"`
 }
 
-// decodeExt directly maps the ext element.
-type decodeExt struct {
+// decodeAExt directly maps the a:ext element.
+type decodeAExt struct {
 	Cx int `xml:"cx,attr"`
 	Cy int `xml:"cy,attr"`
 }
@@ -143,8 +144,8 @@ type decodePrstGeom struct {
 // frame. This transformation is applied to the graphic frame just as it would
 // be for a shape or group shape.
 type decodeXfrm struct {
-	Off decodeOff `xml:"off"`
-	Ext decodeExt `xml:"ext"`
+	Off decodeOff  `xml:"off"`
+	Ext decodeAExt `xml:"ext"`
 }
 
 // decodeCNvPicPr directly maps the cNvPicPr (Non-Visual Picture Drawing

@@ -499,10 +499,10 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 		opts.Format.Locked = boolPtr(false)
 	}
 	if opts.Format.ScaleX == 0 {
-		opts.Format.ScaleX = defaultPictureScale
+		opts.Format.ScaleX = defaultDrawingScale
 	}
 	if opts.Format.ScaleY == 0 {
-		opts.Format.ScaleY = defaultPictureScale
+		opts.Format.ScaleY = defaultDrawingScale
 	}
 	if opts.Legend.Position == "" {
 		opts.Legend.Position = defaultChartLegendPosition
@@ -1109,7 +1109,8 @@ func (f *File) DeleteChart(sheet, cell string) error {
 		return err
 	}
 	drawingXML := strings.ReplaceAll(f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID), "..", "xl")
-	return f.deleteDrawing(col, row, drawingXML, "Chart")
+	_, err = f.deleteDrawing(col, row, drawingXML, "Chart")
+	return err
 }
 
 // countCharts provides a function to get chart files count storage in the

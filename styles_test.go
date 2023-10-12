@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -180,9 +181,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: `
-		<ext uri="{A8765BA9-456A-4dab-B4F3-ACF838C121DE}"><x14:slicerList /></ext>
-		<ext uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}"><x14:sparklineGroups /></ext>`}
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:slicerList /></ext><ext uri="%s"><x14:sparklineGroups /></ext>`, ExtURISlicerListX14, ExtURISparklineGroups)}
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarSolid: true}}))
 	f = NewFile()
 	// Test creating a conditional format with invalid extension list characters
@@ -266,11 +265,11 @@ func TestNewStyle(t *testing.T) {
 
 	var exp string
 	_, err = f.NewStyle(&Style{CustomNumFmt: &exp})
-	assert.EqualError(t, err, ErrCustomNumFmt.Error())
+	assert.Equal(t, ErrCustomNumFmt, err)
 	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
-	assert.EqualError(t, err, ErrFontLength.Error())
+	assert.Equal(t, ErrFontLength, err)
 	_, err = f.NewStyle(&Style{Font: &Font{Size: MaxFontSize + 1}})
-	assert.EqualError(t, err, ErrFontSize.Error())
+	assert.Equal(t, ErrFontSize, err)
 
 	// Test create numeric custom style
 	numFmt := "####;####"
@@ -487,4 +486,106 @@ func TestGetNumFmtID(t *testing.T) {
 
 	assert.NotEqual(t, id1, id2)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestStyleNumFmt.xlsx")))
+}
+
+func TestGetThemeColor(t *testing.T) {
+	assert.Empty(t, (&File{}).getThemeColor(&xlsxColor{}))
+	f := NewFile()
+	assert.Empty(t, f.getThemeColor(nil))
+	var theme int
+	assert.Equal(t, "FFFFFF", f.getThemeColor(&xlsxColor{Theme: &theme}))
+	assert.Equal(t, "FFFFFF", f.getThemeColor(&xlsxColor{RGB: "FFFFFF"}))
+	assert.Equal(t, "FF8080", f.getThemeColor(&xlsxColor{Indexed: 2, Tint: 0.5}))
+	assert.Empty(t, f.getThemeColor(&xlsxColor{Indexed: len(IndexedColorMapping), Tint: 0.5}))
+}
+
+func TestGetStyle(t *testing.T) {
+	f := NewFile()
+	expected := &Style{
+		Border: []Border{
+			{Type: "left", Color: "0000FF", Style: 3},
+			{Type: "right", Color: "FF0000", Style: 6},
+			{Type: "top", Color: "00FF00", Style: 4},
+			{Type: "bottom", Color: "FFFF00", Style: 5},
+			{Type: "diagonalUp", Color: "A020F0", Style: 7},
+			{Type: "diagonalDown", Color: "A020F0", Style: 7},
+		},
+		Fill: Fill{Type: "gradient", Shading: 16, Color: []string{"0000FF", "00FF00"}},
+		Font: &Font{
+			Bold: true, Italic: true, Underline: "single", Family: "Arial",
+			Size: 8.5, Strike: true, Color: "777777", ColorIndexed: 1, ColorTint: 0.1,
+		},
+		Alignment: &Alignment{
+			Horizontal:      "center",
+			Indent:          1,
+			JustifyLastLine: true,
+			ReadingOrder:    1,
+			RelativeIndent:  1,
+			ShrinkToFit:     true,
+			TextRotation:    180,
+			Vertical:        "center",
+			WrapText:        true,
+		},
+		Protection: &Protection{Hidden: true, Locked: true},
+		NumFmt:     49,
+	}
+	styleID, err := f.NewStyle(expected)
+	assert.NoError(t, err)
+	style, err := f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.Border, style.Border)
+	assert.Equal(t, expected.Fill, style.Fill)
+	assert.Equal(t, expected.Font, style.Font)
+	assert.Equal(t, expected.Alignment, style.Alignment)
+	assert.Equal(t, expected.Protection, style.Protection)
+	assert.Equal(t, expected.NumFmt, style.NumFmt)
+
+	expected = &Style{
+		Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"0000FF"}},
+	}
+	styleID, err = f.NewStyle(expected)
+	assert.NoError(t, err)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.Fill, style.Fill)
+
+	expected = &Style{NumFmt: 27}
+	styleID, err = f.NewStyle(expected)
+	assert.NoError(t, err)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.NumFmt, style.NumFmt)
+
+	expected = &Style{NumFmt: 165}
+	styleID, err = f.NewStyle(expected)
+	assert.NoError(t, err)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.NumFmt, style.NumFmt)
+
+	expected = &Style{NumFmt: 165, NegRed: true}
+	styleID, err = f.NewStyle(expected)
+	assert.NoError(t, err)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.NumFmt, style.NumFmt)
+
+	// Test get style with custom color index
+	f.Styles.Colors = &xlsxStyleColors{
+		IndexedColors: &xlsxIndexedColors{
+			RgbColor: []xlsxColor{{RGB: "FF012345"}},
+		},
+	}
+	assert.Equal(t, "012345", f.getThemeColor(&xlsxColor{Indexed: 0}))
+
+	// Test get style with invalid style index
+	style, err = f.GetStyle(-1)
+	assert.Nil(t, style)
+	assert.Equal(t, err, newInvalidStyleID(-1))
+	// Test get style with unsupported charset style sheet
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	style, err = f.GetStyle(1)
+	assert.Nil(t, style)
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
