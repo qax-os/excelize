@@ -1739,11 +1739,8 @@ func (f *File) GroupSheets(sheets []string) error {
 	}
 	for _, ws := range wss {
 		sheetViews := ws.SheetViews.SheetView
-		if len(sheetViews) > 0 {
-			for idx := range sheetViews {
-				ws.SheetViews.SheetView[idx].TabSelected = true
-			}
-			continue
+		for idx := range sheetViews {
+			ws.SheetViews.SheetView[idx].TabSelected = true
 		}
 	}
 	return nil
@@ -1758,10 +1755,8 @@ func (f *File) UngroupSheets() error {
 		}
 		ws, _ := f.workSheetReader(sheet)
 		sheetViews := ws.SheetViews.SheetView
-		if len(sheetViews) > 0 {
-			for idx := range sheetViews {
-				ws.SheetViews.SheetView[idx].TabSelected = false
-			}
+		for idx := range sheetViews {
+			ws.SheetViews.SheetView[idx].TabSelected = false
 		}
 	}
 	return nil
