@@ -332,10 +332,14 @@ func (ws *xlsxWorksheet) checkSheet() {
 		}
 		row++
 		r.R = row
-		sheetData.Row[row-1] = r
+		if len(sheetData.Row) > row-1 {
+			sheetData.Row[row-1] = r
+		}
 	}
 	for i := 1; i <= row; i++ {
-		sheetData.Row[i-1].R = i
+		if len(sheetData.Row) > i-1 {
+			sheetData.Row[i-1].R = i
+		}
 	}
 	ws.checkSheetR0(&sheetData, &r0)
 }
