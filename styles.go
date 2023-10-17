@@ -1138,6 +1138,31 @@ var (
 			return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection
 		},
 	}
+	// extractStyleCondFuncs provides a function set to returns if shoudle be
+	// extract style definition by given style.
+	extractStyleCondFuncs = map[string]func(xlsxXf, *xlsxStyleSheet) bool{
+		"fill": func(xf xlsxXf, s *xlsxStyleSheet) bool {
+			return xf.ApplyFill != nil && *xf.ApplyFill &&
+				xf.FillID != nil && s.Fills != nil &&
+				*xf.FillID < len(s.Fills.Fill)
+		},
+		"border": func(xf xlsxXf, s *xlsxStyleSheet) bool {
+			return xf.ApplyBorder != nil && *xf.ApplyBorder &&
+				xf.BorderID != nil && s.Borders != nil &&
+				*xf.BorderID < len(s.Borders.Border)
+		},
+		"font": func(xf xlsxXf, s *xlsxStyleSheet) bool {
+			return xf.ApplyFont != nil && *xf.ApplyFont &&
+				xf.FontID != nil && s.Fonts != nil &&
+				*xf.FontID < len(s.Fonts.Font)
+		},
+		"alignment": func(xf xlsxXf, s *xlsxStyleSheet) bool {
+			return xf.ApplyAlignment != nil && *xf.ApplyAlignment
+		},
+		"protection": func(xf xlsxXf, s *xlsxStyleSheet) bool {
+			return xf.ApplyProtection != nil && *xf.ApplyProtection
+		},
+	}
 	// drawContFmtFunc defines functions to create conditional formats.
 	drawContFmtFunc = map[string]func(p int, ct, GUID string, fmtCond *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule){
 		"cellIs":          drawCondFmtCellIs,
@@ -1205,44 +1230,39 @@ func (f *File) getThemeColor(clr *xlsxColor) string {
 
 // extractBorders provides a function to extract borders styles settings by
 // given border styles definition.
-func (f *File) extractBorders(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	if xf.ApplyBorder != nil && *xf.ApplyBorder &&
-		xf.BorderID != nil && s.Borders != nil &&
-		*xf.BorderID < len(s.Borders.Border) {
-		if bdr := s.Borders.Border[*xf.BorderID]; bdr != nil {
-
-			var borders []Border
-			extractBorder := func(lineType string, line xlsxLine) {
-				if line.Style != "" {
-					borders = append(borders, Border{
-						Type:  lineType,
-						Color: f.getThemeColor(line.Color),
-						Style: inStrSlice(styleBorders, line.Style, false),
-					})
-				}
+func (f *File) extractBorders(bdr *xlsxBorder, s *xlsxStyleSheet, style *Style) {
+	if bdr != nil {
+		var borders []Border
+		extractBorder := func(lineType string, line xlsxLine) {
+			if line.Style != "" {
+				borders = append(borders, Border{
+					Type:  lineType,
+					Color: f.getThemeColor(line.Color),
+					Style: inStrSlice(styleBorders, line.Style, false),
+				})
 			}
-			for i, line := range []xlsxLine{
-				bdr.Left, bdr.Right, bdr.Top, bdr.Bottom, bdr.Diagonal, bdr.Diagonal,
-			} {
-				if i < 4 {
-					extractBorder(styleBorderTypes[i], line)
-				}
-				if i == 4 && bdr.DiagonalUp {
-					extractBorder(styleBorderTypes[i], line)
-				}
-				if i == 5 && bdr.DiagonalDown {
-					extractBorder(styleBorderTypes[i], line)
-				}
-			}
-			style.Border = borders
 		}
+		for i, line := range []xlsxLine{
+			bdr.Left, bdr.Right, bdr.Top, bdr.Bottom, bdr.Diagonal, bdr.Diagonal,
+		} {
+			if i < 4 {
+				extractBorder(styleBorderTypes[i], line)
+			}
+			if i == 4 && bdr.DiagonalUp {
+				extractBorder(styleBorderTypes[i], line)
+			}
+			if i == 5 && bdr.DiagonalDown {
+				extractBorder(styleBorderTypes[i], line)
+			}
+		}
+		style.Border = borders
 	}
 }
 
 // extractFills provides a function to extract fill styles settings by
 // given fill styles definition.
-func (f *File) extractFills(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	if fl := s.Fills.Fill[*xf.FillID]; fl != nil {
+func (f *File) extractFills(fl *xlsxFill, s *xlsxStyleSheet, style *Style) {
+	if fl != nil {
 		var fill Fill
 		if fl.GradientFill != nil {
 			fill.Type = "gradient"
@@ -1274,46 +1294,42 @@ func (f *File) extractFills(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 
 // extractFont provides a function to extract font styles settings by given
 // font styles definition.
-func (f *File) extractFont(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	if xf.ApplyFont != nil && *xf.ApplyFont &&
-		xf.FontID != nil && s.Fonts != nil &&
-		*xf.FontID < len(s.Fonts.Font) {
-		if fnt := s.Fonts.Font[*xf.FontID]; fnt != nil {
-			var font Font
-			if fnt.B != nil {
-				font.Bold = fnt.B.Value()
-			}
-			if fnt.I != nil {
-				font.Italic = fnt.I.Value()
-			}
-			if fnt.U != nil {
-				font.Underline = fnt.U.Value()
-			}
-			if fnt.Name != nil {
-				font.Family = fnt.Name.Value()
-			}
-			if fnt.Sz != nil {
-				font.Size = fnt.Sz.Value()
-			}
-			if fnt.Strike != nil {
-				font.Strike = fnt.Strike.Value()
-			}
-			if fnt.Color != nil {
-				font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
-				font.ColorIndexed = fnt.Color.Indexed
-				font.ColorTheme = fnt.Color.Theme
-				font.ColorTint = fnt.Color.Tint
-			}
-			style.Font = &font
+func (f *File) extractFont(fnt *xlsxFont, s *xlsxStyleSheet, style *Style) {
+	if fnt != nil {
+		var font Font
+		if fnt.B != nil {
+			font.Bold = fnt.B.Value()
 		}
+		if fnt.I != nil {
+			font.Italic = fnt.I.Value()
+		}
+		if fnt.U != nil {
+			font.Underline = fnt.U.Value()
+		}
+		if fnt.Name != nil {
+			font.Family = fnt.Name.Value()
+		}
+		if fnt.Sz != nil {
+			font.Size = fnt.Sz.Value()
+		}
+		if fnt.Strike != nil {
+			font.Strike = fnt.Strike.Value()
+		}
+		if fnt.Color != nil {
+			font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
+			font.ColorIndexed = fnt.Color.Indexed
+			font.ColorTheme = fnt.Color.Theme
+			font.ColorTint = fnt.Color.Tint
+		}
+		style.Font = &font
 	}
 }
 
 // extractNumFmt provides a function to extract number format by given styles
 // definition.
-func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	if xf.NumFmtID != nil {
-		numFmtID := *xf.NumFmtID
+func (f *File) extractNumFmt(n *int, s *xlsxStyleSheet, style *Style) {
+	if n != nil {
+		numFmtID := *n
 		if _, ok := builtInNumFmt[numFmtID]; ok || isLangNumFmt(numFmtID) {
 			style.NumFmt = numFmtID
 			return
@@ -1339,32 +1355,32 @@ func (f *File) extractNumFmt(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
 
 // extractAlignment provides a function to extract alignment format by
 // given style definition.
-func (f *File) extractAlignment(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	if xf.ApplyAlignment != nil && *xf.ApplyAlignment && xf.Alignment != nil {
+func (f *File) extractAlignment(a *xlsxAlignment, s *xlsxStyleSheet, style *Style) {
+	if a != nil {
 		style.Alignment = &Alignment{
-			Horizontal:      xf.Alignment.Horizontal,
-			Indent:          xf.Alignment.Indent,
-			JustifyLastLine: xf.Alignment.JustifyLastLine,
-			ReadingOrder:    xf.Alignment.ReadingOrder,
-			RelativeIndent:  xf.Alignment.RelativeIndent,
-			ShrinkToFit:     xf.Alignment.ShrinkToFit,
-			TextRotation:    xf.Alignment.TextRotation,
-			Vertical:        xf.Alignment.Vertical,
-			WrapText:        xf.Alignment.WrapText,
+			Horizontal:      a.Horizontal,
+			Indent:          a.Indent,
+			JustifyLastLine: a.JustifyLastLine,
+			ReadingOrder:    a.ReadingOrder,
+			RelativeIndent:  a.RelativeIndent,
+			ShrinkToFit:     a.ShrinkToFit,
+			TextRotation:    a.TextRotation,
+			Vertical:        a.Vertical,
+			WrapText:        a.WrapText,
 		}
 	}
 }
 
 // extractProtection provides a function to extract protection settings by
 // given format definition.
-func (f *File) extractProtection(xf xlsxXf, s *xlsxStyleSheet, style *Style) {
-	if xf.ApplyProtection != nil && *xf.ApplyProtection && xf.Protection != nil {
+func (f *File) extractProtection(p *xlsxProtection, s *xlsxStyleSheet, style *Style) {
+	if p != nil {
 		style.Protection = &Protection{}
-		if xf.Protection.Hidden != nil {
-			style.Protection.Hidden = *xf.Protection.Hidden
+		if p.Hidden != nil {
+			style.Protection.Hidden = *p.Hidden
 		}
-		if xf.Protection.Locked != nil {
-			style.Protection.Locked = *xf.Protection.Locked
+		if p.Locked != nil {
+			style.Protection.Locked = *p.Locked
 		}
 	}
 }
@@ -1383,16 +1399,22 @@ func (f *File) GetStyle(idx int) (*Style, error) {
 	}
 	style = &Style{}
 	xf := s.CellXfs.Xf[idx]
-	if xf.ApplyFill != nil && *xf.ApplyFill &&
-		xf.FillID != nil && s.Fills != nil &&
-		*xf.FillID < len(s.Fills.Fill) {
-		f.extractFills(xf, s, style)
+	if extractStyleCondFuncs["fill"](xf, s) {
+		f.extractFills(s.Fills.Fill[*xf.FillID], s, style)
 	}
-	f.extractBorders(xf, s, style)
-	f.extractFont(xf, s, style)
-	f.extractAlignment(xf, s, style)
-	f.extractProtection(xf, s, style)
-	f.extractNumFmt(xf, s, style)
+	if extractStyleCondFuncs["border"](xf, s) {
+		f.extractBorders(s.Borders.Border[*xf.BorderID], s, style)
+	}
+	if extractStyleCondFuncs["font"](xf, s) {
+		f.extractFont(s.Fonts.Font[*xf.FontID], s, style)
+	}
+	if extractStyleCondFuncs["alignment"](xf, s) {
+		f.extractAlignment(xf.Alignment, s, style)
+	}
+	if extractStyleCondFuncs["protection"](xf, s) {
+		f.extractProtection(xf.Protection, s, style)
+	}
+	f.extractNumFmt(xf.NumFmtID, s, style)
 	return style, nil
 }
 
@@ -1468,6 +1490,32 @@ func (f *File) NewConditionalStyle(style *Style) (int, error) {
 	s.Dxfs.Count++
 	s.Dxfs.Dxfs = append(s.Dxfs.Dxfs, &dxf)
 	return s.Dxfs.Count - 1, nil
+}
+
+// GetConditionalStyle returns conditional format style definition by specified
+// style index.
+func (f *File) GetConditionalStyle(idx int) (*Style, error) {
+	var style *Style
+	f.mu.Lock()
+	s, err := f.stylesReader()
+	if err != nil {
+		return style, err
+	}
+	f.mu.Unlock()
+	if idx < 0 || s.Dxfs == nil || len(s.Dxfs.Dxfs) <= idx {
+		return style, newInvalidStyleID(idx)
+	}
+	style = &Style{}
+	xf := s.Dxfs.Dxfs[idx]
+	f.extractFills(xf.Fill, s, style)
+	f.extractBorders(xf.Border, s, style)
+	f.extractFont(xf.Font, s, style)
+	f.extractAlignment(xf.Alignment, s, style)
+	f.extractProtection(xf.Protection, s, style)
+	if xf.NumFmt != nil {
+		f.extractNumFmt(&xf.NumFmt.NumFmtID, s, style)
+	}
+	return style, nil
 }
 
 // newDxfNumFmt provides a function to create number format for conditional
