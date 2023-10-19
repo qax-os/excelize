@@ -191,13 +191,11 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			return err
 		}
 		var from io.Reader
-		from, err = stream.rawData.Reader()
-		if err != nil {
+		if from, err = stream.rawData.Reader(); err != nil {
 			_ = stream.rawData.Close()
 			return err
 		}
-		_, err = io.Copy(fi, from)
-		if err != nil {
+		if _, err = io.Copy(fi, from); err != nil {
 			return err
 		}
 	}
@@ -210,8 +208,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			return true
 		}
 		var fi io.Writer
-		fi, err = zw.Create(path.(string))
-		if err != nil {
+		if fi, err = zw.Create(path.(string)); err != nil {
 			return false
 		}
 		_, err = fi.Write(content.([]byte))
@@ -222,8 +219,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			return true
 		}
 		var fi io.Writer
-		fi, err = zw.Create(path.(string))
-		if err != nil {
+		if fi, err = zw.Create(path.(string)); err != nil {
 			return false
 		}
 		_, err = fi.Write(f.readBytes(path.(string)))

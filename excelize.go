@@ -47,7 +47,7 @@ type File struct {
 	Sheet            sync.Map
 	SheetCount       int
 	Styles           *xlsxStyleSheet
-	Theme            *xlsxTheme
+	Theme            *decodeTheme
 	DecodeVMLDrawing map[string]*decodeVmlDrawing
 	VMLDrawing       map[string]*vmlDrawing
 	WorkBook         *xlsxWorkbook

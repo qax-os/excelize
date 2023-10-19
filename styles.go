@@ -129,8 +129,67 @@ func (f *File) styleSheetWriter() {
 // themeWriter provides a function to save xl/theme/theme1.xml after serialize
 // structure.
 func (f *File) themeWriter() {
+	newColor := func(c *decodeCTColor) xlsxCTColor {
+		return xlsxCTColor{
+			ScrgbClr:  c.ScrgbClr,
+			SrgbClr:   c.SrgbClr,
+			HslClr:    c.HslClr,
+			SysClr:    c.SysClr,
+			SchemeClr: c.SchemeClr,
+			PrstClr:   c.PrstClr,
+		}
+	}
+	newFontScheme := func(c *decodeFontCollection) xlsxFontCollection {
+		return xlsxFontCollection{
+			Latin:  c.Latin,
+			Ea:     c.Ea,
+			Cs:     c.Cs,
+			Font:   c.Font,
+			ExtLst: c.ExtLst,
+		}
+	}
 	if f.Theme != nil {
-		output, _ := xml.Marshal(f.Theme)
+		output, _ := xml.Marshal(xlsxTheme{
+			XMLNSa: NameSpaceDrawingML.Value,
+			XMLNSr: SourceRelationship.Value,
+			Name:   f.Theme.Name,
+			ThemeElements: xlsxBaseStyles{
+				ClrScheme: xlsxColorScheme{
+					Name:     f.Theme.ThemeElements.ClrScheme.Name,
+					Dk1:      newColor(&f.Theme.ThemeElements.ClrScheme.Dk1),
+					Lt1:      newColor(&f.Theme.ThemeElements.ClrScheme.Lt1),
+					Dk2:      newColor(&f.Theme.ThemeElements.ClrScheme.Dk2),
+					Lt2:      newColor(&f.Theme.ThemeElements.ClrScheme.Lt2),
+					Accent1:  newColor(&f.Theme.ThemeElements.ClrScheme.Accent1),
+					Accent2:  newColor(&f.Theme.ThemeElements.ClrScheme.Accent2),
+					Accent3:  newColor(&f.Theme.ThemeElements.ClrScheme.Accent3),
+					Accent4:  newColor(&f.Theme.ThemeElements.ClrScheme.Accent4),
+					Accent5:  newColor(&f.Theme.ThemeElements.ClrScheme.Accent5),
+					Accent6:  newColor(&f.Theme.ThemeElements.ClrScheme.Accent6),
+					Hlink:    newColor(&f.Theme.ThemeElements.ClrScheme.Hlink),
+					FolHlink: newColor(&f.Theme.ThemeElements.ClrScheme.FolHlink),
+					ExtLst:   f.Theme.ThemeElements.ClrScheme.ExtLst,
+				},
+				FontScheme: xlsxFontScheme{
+					Name:      f.Theme.ThemeElements.FontScheme.Name,
+					MajorFont: newFontScheme(&f.Theme.ThemeElements.FontScheme.MajorFont),
+					MinorFont: newFontScheme(&f.Theme.ThemeElements.FontScheme.MinorFont),
+					ExtLst:    f.Theme.ThemeElements.FontScheme.ExtLst,
+				},
+				FmtScheme: xlsxStyleMatrix{
+					Name:           f.Theme.ThemeElements.FmtScheme.Name,
+					FillStyleLst:   f.Theme.ThemeElements.FmtScheme.FillStyleLst,
+					LnStyleLst:     f.Theme.ThemeElements.FmtScheme.LnStyleLst,
+					EffectStyleLst: f.Theme.ThemeElements.FmtScheme.EffectStyleLst,
+					BgFillStyleLst: f.Theme.ThemeElements.FmtScheme.BgFillStyleLst,
+				},
+				ExtLst: f.Theme.ThemeElements.ExtLst,
+			},
+			ObjectDefaults:    f.Theme.ObjectDefaults,
+			ExtraClrSchemeLst: f.Theme.ExtraClrSchemeLst,
+			CustClrLst:        f.Theme.CustClrLst,
+			ExtLst:            f.Theme.ExtLst,
+		})
 		f.saveFileList(defaultXMLPathTheme, f.replaceNameSpaceBytes(defaultXMLPathTheme, output))
 	}
 }
@@ -1284,6 +1343,9 @@ func (f *File) extractFills(fl *xlsxFill, s *xlsxStyleSheet, style *Style) {
 		if fl.PatternFill != nil {
 			fill.Type = "pattern"
 			fill.Pattern = inStrSlice(styleFillPatterns, fl.PatternFill.PatternType, false)
+			if fl.PatternFill.BgColor != nil {
+				fill.Color = []string{f.getThemeColor(fl.PatternFill.BgColor)}
+			}
 			if fl.PatternFill.FgColor != nil {
 				fill.Color = []string{f.getThemeColor(fl.PatternFill.FgColor)}
 			}
@@ -1507,6 +1569,10 @@ func (f *File) GetConditionalStyle(idx int) (*Style, error) {
 	}
 	style = &Style{}
 	xf := s.Dxfs.Dxfs[idx]
+	// The default pattern fill type of conditional format style is solid
+	if xf.Fill != nil && xf.Fill.PatternFill != nil && xf.Fill.PatternFill.PatternType == "" {
+		xf.Fill.PatternFill.PatternType = "solid"
+	}
 	f.extractFills(xf.Fill, s, style)
 	f.extractBorders(xf.Border, s, style)
 	f.extractFont(xf.Font, s, style)
@@ -3078,11 +3144,11 @@ func getPaletteColor(color string) string {
 
 // themeReader provides a function to get the pointer to the xl/theme/theme1.xml
 // structure after deserialization.
-func (f *File) themeReader() (*xlsxTheme, error) {
+func (f *File) themeReader() (*decodeTheme, error) {
 	if _, ok := f.Pkg.Load(defaultXMLPathTheme); !ok {
 		return nil, nil
 	}
-	theme := xlsxTheme{XMLNSa: NameSpaceDrawingML.Value, XMLNSr: SourceRelationship.Value}
+	theme := decodeTheme{}
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathTheme)))).
 		Decode(&theme); err != nil && err != io.EOF {
 		return &theme, err
