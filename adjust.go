@@ -221,7 +221,7 @@ func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, 
 	return nil
 }
 
-// adjustFormulaRef returns adjusted formula text by giving adjusted direction
+// adjustFormulaRef returns adjusted formula text by giving adjusting direction
 // and the base number of column or row, and offset.
 func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, num, offset int) (string, error) {
 	var (
@@ -385,8 +385,8 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 }
 
 // adjustAutoFilterHelper provides a function for adjusting auto filter to
-// compare and calculate cell reference by the given adjust direction, operation
-// reference and offset.
+// compare and calculate cell reference by the giving adjusting direction,
+// operation reference and offset.
 func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, num, offset int) []int {
 	if dir == rows {
 		if coordinates[1] >= num {
@@ -491,13 +491,34 @@ func (f *File) deleteMergeCell(ws *xlsxWorksheet, idx int) {
 	}
 }
 
+// adjustCalcChainRef update the cell reference in calculation chain when
+// inserting or deleting rows or columns.
+func (f *File) adjustCalcChainRef(i, c, r, offset int, dir adjustDirection) {
+	if dir == rows {
+		if rn := r + offset; rn > 0 {
+			f.CalcChain.C[i].R, _ = CoordinatesToCellName(c, rn)
+		}
+		return
+	}
+	if nc := c + offset; nc > 0 {
+		f.CalcChain.C[i].R, _ = CoordinatesToCellName(nc, r)
+	}
+}
+
 // adjustCalcChain provides a function to update the calculation chain when
 // inserting or deleting rows or columns.
 func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) error {
 	if f.CalcChain == nil {
 		return nil
 	}
+	// If sheet ID is omitted, it is assumed to be the same as the i value of
+	// the previous cell.
+	var prevSheetID int
 	for index, c := range f.CalcChain.C {
+		if c.I == 0 {
+			c.I = prevSheetID
+		}
+		prevSheetID = c.I
 		if c.I != sheetID {
 			continue
 		}
@@ -510,18 +531,14 @@ func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) er
 				_ = f.deleteCalcChain(c.I, c.R)
 				continue
 			}
-			if newRow := rowNum + offset; newRow > 0 {
-				f.CalcChain.C[index].R, _ = CoordinatesToCellName(colNum, newRow)
-			}
+			f.adjustCalcChainRef(index, colNum, rowNum, offset, dir)
 		}
 		if dir == columns && num <= colNum {
 			if num == colNum && offset == -1 {
 				_ = f.deleteCalcChain(c.I, c.R)
 				continue
 			}
-			if newCol := colNum + offset; newCol > 0 {
-				f.CalcChain.C[index].R, _ = CoordinatesToCellName(newCol, rowNum)
-			}
+			f.adjustCalcChainRef(index, colNum, rowNum, offset, dir)
 		}
 	}
 	return nil

@@ -76,7 +76,7 @@ type xlsxCalcChain struct {
 //	                          | boolean datatype.
 type xlsxCalcChainC struct {
 	R string `xml:"r,attr"`
-	I int    `xml:"i,attr"`
+	I int    `xml:"i,attr,omitempty"`
 	L bool   `xml:"l,attr,omitempty"`
 	S bool   `xml:"s,attr,omitempty"`
 	T bool   `xml:"t,attr,omitempty"`

@@ -362,6 +362,9 @@ func TestAdjustCalcChain(t *testing.T) {
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
 
+	f.CalcChain = &xlsxCalcChain{
+		C: []xlsxCalcChainC{{R: "B2", I: 1}, {R: "B3"}, {R: "A1"}},
+	}
 	assert.NoError(t, f.RemoveRow("Sheet1", 3))
 	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
 
