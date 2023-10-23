@@ -14,6 +14,7 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"github.com/xuri/efp"
 	"io"
 	"strings"
 )
@@ -131,7 +132,7 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 			if cellCol, cellRow, _ := CellNameToCoordinates(v.R); col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
 					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
-					_ = f.adjustFormula(ws.SheetData.Row[rowIdx].C[colIdx].F, columns, offset, false)
+					_ = f.adjustFormula(ws.SheetData.Row[rowIdx].C[colIdx].F, columns, offset, false, col)
 				}
 			}
 		}
@@ -154,6 +155,9 @@ func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
 			f.adjustSingleRowDimensions(r, newRow, offset, false)
+			for _, col := range r.C {
+				_ = f.adjustFormula(col.F, rows, offset, false, row)
+			}
 		}
 	}
 	return nil
@@ -165,31 +169,57 @@ func (f *File) adjustSingleRowDimensions(r *xlsxRow, num, offset int, si bool) {
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
 		r.C[i].R, _ = JoinCellName(colName, num)
-		_ = f.adjustFormula(col.F, rows, offset, si)
 	}
 }
 
 // adjustFormula provides a function to adjust shared formula reference.
-func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si bool) error {
-	if formula != nil && formula.Ref != "" {
-		coordinates, err := rangeRefToCoordinates(formula.Ref)
-		if err != nil {
-			return err
+func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si bool, positionInserted int) error {
+	//if formula != nil && formula.Ref != "" {
+	//	coordinates, err := rangeRefToCoordinates(formula.Ref)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if dir == columns {
+	//		coordinates[0] += offset
+	//		coordinates[2] += offset
+	//	} else {
+	//		coordinates[1] += offset
+	//		coordinates[3] += offset
+	//	}
+	//	if formula.Ref, err = f.coordinatesToRangeRef(coordinates); err != nil {
+	//		return err
+	//	}
+	//	if si && formula.Si != nil {
+	//		formula.Si = intPtr(*formula.Si + 1)
+	//	}
+	//}
+
+	if formula != nil && formula.Content != "" {
+		ps, formulaText := efp.ExcelParser(), "="
+		for _, token := range ps.Parse(formula.Content) {
+			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
+				col, row, _ := CellNameToCoordinates(token.TValue)
+				if dir == columns && col >= positionInserted {
+					col += offset
+				} else if dir == rows && row >= positionInserted {
+					row += offset
+				}
+				cell, err := CoordinatesToCellName(col, row, strings.Contains(token.TValue, "$"))
+				if err != nil {
+					return err
+				}
+				formulaText += cell
+				continue
+			}
+			formulaText += token.TValue
 		}
-		if dir == columns {
-			coordinates[0] += offset
-			coordinates[2] += offset
-		} else {
-			coordinates[1] += offset
-			coordinates[3] += offset
-		}
-		if formula.Ref, err = f.coordinatesToRangeRef(coordinates); err != nil {
-			return err
-		}
+		formula.Content = formulaText
+
 		if si && formula.Si != nil {
 			formula.Si = intPtr(*formula.Si + 1)
 		}
 	}
+
 	return nil
 }
 
