@@ -14454,7 +14454,7 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 	if rowNum.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	if rowNum.Number >= TotalRows {
+	if rowNum.Number > TotalRows {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	colNum := argsList.Front().Next().Value.(formulaArg).ToNumber()

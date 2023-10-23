@@ -3970,7 +3970,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=ADDRESS(1,1,0,TRUE)":              {"#NUM!", "#NUM!"},
 		"=ADDRESS(1,16385,2,TRUE)":          {"#VALUE!", "#VALUE!"},
 		"=ADDRESS(1,16385,3,TRUE)":          {"#VALUE!", "#VALUE!"},
-		"=ADDRESS(1048576,1,1,TRUE)":        {"#VALUE!", "#VALUE!"},
+		"=ADDRESS(1048577,1,1,TRUE)":        {"#VALUE!", "#VALUE!"},
 		// CHOOSE
 		"=CHOOSE()":                {"#VALUE!", "CHOOSE requires 2 arguments"},
 		"=CHOOSE(\"index_num\",0)": {"#VALUE!", "CHOOSE requires first argument of type number"},

@@ -16,6 +16,8 @@ import (
 	"encoding/xml"
 	"io"
 	"strings"
+
+	"github.com/xuri/efp"
 )
 
 type adjustDirection bool
@@ -42,9 +44,9 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	}
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
-		err = f.adjustRowDimensions(ws, num, offset)
+		err = f.adjustRowDimensions(sheet, ws, num, offset)
 	} else {
-		err = f.adjustColDimensions(ws, num, offset)
+		err = f.adjustColDimensions(sheet, ws, num, offset)
 	}
 	if err != nil {
 		return err
@@ -116,7 +118,7 @@ func (f *File) adjustCols(ws *xlsxWorksheet, col, offset int) error {
 
 // adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
+func (f *File) adjustColDimensions(sheet string, ws *xlsxWorksheet, col, offset int) error {
 	for rowIdx := range ws.SheetData.Row {
 		for _, v := range ws.SheetData.Row[rowIdx].C {
 			if cellCol, _, _ := CellNameToCoordinates(v.R); col <= cellCol {
@@ -131,8 +133,10 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 			if cellCol, cellRow, _ := CellNameToCoordinates(v.R); col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
 					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
-					_ = f.adjustFormula(ws.SheetData.Row[rowIdx].C[colIdx].F, columns, offset, false)
 				}
+			}
+			if err := f.adjustFormula(sheet, ws.SheetData.Row[rowIdx].C[colIdx].F, columns, col, offset, false); err != nil {
+				return err
 			}
 		}
 	}
@@ -141,40 +145,49 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
+func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset int) error {
 	totalRows := len(ws.SheetData.Row)
 	if totalRows == 0 {
 		return nil
 	}
 	lastRow := &ws.SheetData.Row[totalRows-1]
-	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow >= TotalRows {
+	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow > TotalRows {
 		return ErrMaxRows
 	}
 	for i := 0; i < len(ws.SheetData.Row); i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			f.adjustSingleRowDimensions(r, newRow, offset, false)
+			if err := f.adjustSingleRowDimensions(sheet, r, row, offset, false); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
-func (f *File) adjustSingleRowDimensions(r *xlsxRow, num, offset int, si bool) {
-	r.R = num
+func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, num, offset int, si bool) error {
+	r.R += offset
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
-		r.C[i].R, _ = JoinCellName(colName, num)
-		_ = f.adjustFormula(col.F, rows, offset, si)
+		r.C[i].R, _ = JoinCellName(colName, r.R)
+		if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-// adjustFormula provides a function to adjust shared formula reference.
-func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si bool) error {
-	if formula != nil && formula.Ref != "" {
-		coordinates, err := rangeRefToCoordinates(formula.Ref)
+// adjustFormula provides a function to adjust formula reference and shared
+// formula reference.
+func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, num, offset int, si bool) error {
+	if formula == nil {
+		return nil
+	}
+	adjustRef := func(ref string) (string, error) {
+		coordinates, err := rangeRefToCoordinates(ref)
 		if err != nil {
-			return err
+			return ref, err
 		}
 		if dir == columns {
 			coordinates[0] += offset
@@ -183,14 +196,70 @@ func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si
 			coordinates[1] += offset
 			coordinates[3] += offset
 		}
-		if formula.Ref, err = f.coordinatesToRangeRef(coordinates); err != nil {
+		return f.coordinatesToRangeRef(coordinates)
+	}
+	var err error
+	if formula.Ref != "" {
+		if formula.Ref, err = adjustRef(formula.Ref); err != nil {
 			return err
 		}
 		if si && formula.Si != nil {
 			formula.Si = intPtr(*formula.Si + 1)
 		}
 	}
+	if formula.T == STCellFormulaTypeArray {
+		formula.Content, err = adjustRef(strings.TrimPrefix(formula.Content, "="))
+		return err
+	}
+	if formula.Content != "" && !strings.ContainsAny(formula.Content, "[:]") {
+		content, err := f.adjustFormulaRef(sheet, formula.Content, dir, num, offset)
+		if err != nil {
+			return err
+		}
+		formula.Content = content
+	}
 	return nil
+}
+
+// adjustFormulaRef returns adjusted formula text by giving adjusting direction
+// and the base number of column or row, and offset.
+func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, num, offset int) (string, error) {
+	var (
+		formulaText  string
+		definedNames []string
+		ps           = efp.ExcelParser()
+	)
+	for _, definedName := range f.GetDefinedName() {
+		if definedName.Scope == "Workbook" || definedName.Scope == sheet {
+			definedNames = append(definedNames, definedName.Name)
+		}
+	}
+	for _, token := range ps.Parse(text) {
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
+			if inStrSlice(definedNames, token.TValue, true) != -1 {
+				formulaText += token.TValue
+				continue
+			}
+			c, r, err := CellNameToCoordinates(token.TValue)
+			if err != nil {
+				return formulaText, err
+			}
+			if dir == columns && c >= num {
+				c += offset
+			}
+			if dir == rows {
+				r += offset
+			}
+			cell, err := CoordinatesToCellName(c, r, strings.Contains(token.TValue, "$"))
+			if err != nil {
+				return formulaText, err
+			}
+			formulaText += cell
+			continue
+		}
+		formulaText += token.TValue
+	}
+	return formulaText, nil
 }
 
 // adjustHyperlinks provides a function to update hyperlinks when inserting or
@@ -260,7 +329,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			return
 		}
 		// Remove the table when deleting the header row of the table
-		if dir == rows && num == coordinates[0] {
+		if dir == rows && num == coordinates[0] && offset == -1 {
 			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
 			ws.TableParts.Count = len(ws.TableParts.TableParts)
 			idx--
@@ -316,8 +385,8 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, off
 }
 
 // adjustAutoFilterHelper provides a function for adjusting auto filter to
-// compare and calculate cell reference by the given adjust direction, operation
-// reference and offset.
+// compare and calculate cell reference by the giving adjusting direction,
+// operation reference and offset.
 func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, num, offset int) []int {
 	if dir == rows {
 		if coordinates[1] >= num {
@@ -422,13 +491,34 @@ func (f *File) deleteMergeCell(ws *xlsxWorksheet, idx int) {
 	}
 }
 
+// adjustCalcChainRef update the cell reference in calculation chain when
+// inserting or deleting rows or columns.
+func (f *File) adjustCalcChainRef(i, c, r, offset int, dir adjustDirection) {
+	if dir == rows {
+		if rn := r + offset; rn > 0 {
+			f.CalcChain.C[i].R, _ = CoordinatesToCellName(c, rn)
+		}
+		return
+	}
+	if nc := c + offset; nc > 0 {
+		f.CalcChain.C[i].R, _ = CoordinatesToCellName(nc, r)
+	}
+}
+
 // adjustCalcChain provides a function to update the calculation chain when
 // inserting or deleting rows or columns.
 func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) error {
 	if f.CalcChain == nil {
 		return nil
 	}
+	// If sheet ID is omitted, it is assumed to be the same as the i value of
+	// the previous cell.
+	var prevSheetID int
 	for index, c := range f.CalcChain.C {
+		if c.I == 0 {
+			c.I = prevSheetID
+		}
+		prevSheetID = c.I
 		if c.I != sheetID {
 			continue
 		}
@@ -437,14 +527,18 @@ func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) er
 			return err
 		}
 		if dir == rows && num <= rowNum {
-			if newRow := rowNum + offset; newRow > 0 {
-				f.CalcChain.C[index].R, _ = CoordinatesToCellName(colNum, newRow)
+			if num == rowNum && offset == -1 {
+				_ = f.deleteCalcChain(c.I, c.R)
+				continue
 			}
+			f.adjustCalcChainRef(index, colNum, rowNum, offset, dir)
 		}
 		if dir == columns && num <= colNum {
-			if newCol := colNum + offset; newCol > 0 {
-				f.CalcChain.C[index].R, _ = CoordinatesToCellName(newCol, rowNum)
+			if num == colNum && offset == -1 {
+				_ = f.deleteCalcChain(c.I, c.R)
+				continue
 			}
+			f.adjustCalcChainRef(index, colNum, rowNum, offset, dir)
 		}
 	}
 	return nil

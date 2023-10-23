@@ -870,6 +870,21 @@ func TestDuplicateRow(t *testing.T) {
 	f := NewFile()
 	// Test duplicate row with invalid sheet name
 	assert.EqualError(t, f.DuplicateRowTo("Sheet:1", 1, 2), ErrSheetNameInvalid.Error())
+
+	f = NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Amount",
+		RefersTo: "Sheet1!$B$1",
+	}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "Amount+C1"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A10", "A10"))
+	assert.NoError(t, f.DuplicateRowTo("Sheet1", 1, 10))
+	formula, err := f.GetCellFormula("Sheet1", "A10")
+	assert.NoError(t, err)
+	assert.Equal(t, "Amount+C10", formula)
+	value, err := f.GetCellValue("Sheet1", "A11")
+	assert.NoError(t, err)
+	assert.Equal(t, "A10", value)
 }
 
 func TestDuplicateRowTo(t *testing.T) {
