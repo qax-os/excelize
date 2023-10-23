@@ -14,9 +14,10 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/xuri/efp"
 	"io"
 	"strings"
+
+	"github.com/xuri/efp"
 )
 
 type adjustDirection bool
@@ -43,9 +44,9 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	}
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
-		err = f.adjustRowDimensions(ws, num, offset)
+		err = f.adjustRowDimensions(sheet, ws, num, offset)
 	} else {
-		err = f.adjustColDimensions(ws, num, offset)
+		err = f.adjustColDimensions(sheet, ws, num, offset)
 	}
 	if err != nil {
 		return err
@@ -117,7 +118,7 @@ func (f *File) adjustCols(ws *xlsxWorksheet, col, offset int) error {
 
 // adjustColDimensions provides a function to update column dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
+func (f *File) adjustColDimensions(sheet string, ws *xlsxWorksheet, col, offset int) error {
 	for rowIdx := range ws.SheetData.Row {
 		for _, v := range ws.SheetData.Row[rowIdx].C {
 			if cellCol, _, _ := CellNameToCoordinates(v.R); col <= cellCol {
@@ -132,8 +133,10 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 			if cellCol, cellRow, _ := CellNameToCoordinates(v.R); col <= cellCol {
 				if newCol := cellCol + offset; newCol > 0 {
 					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
-					_ = f.adjustFormula(ws.SheetData.Row[rowIdx].C[colIdx].F, columns, offset, false, col)
 				}
+			}
+			if err := f.adjustFormula(sheet, ws.SheetData.Row[rowIdx].C[colIdx].F, columns, col, offset, false); err != nil {
+				return err
 			}
 		}
 	}
@@ -142,21 +145,20 @@ func (f *File) adjustColDimensions(ws *xlsxWorksheet, col, offset int) error {
 
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
-func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
+func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset int) error {
 	totalRows := len(ws.SheetData.Row)
 	if totalRows == 0 {
 		return nil
 	}
 	lastRow := &ws.SheetData.Row[totalRows-1]
-	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow >= TotalRows {
+	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow > TotalRows {
 		return ErrMaxRows
 	}
 	for i := 0; i < len(ws.SheetData.Row); i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			f.adjustSingleRowDimensions(r, newRow, offset, false)
-			for _, col := range r.C {
-				_ = f.adjustFormula(col.F, rows, offset, false, row)
+			if err := f.adjustSingleRowDimensions(sheet, r, row, offset, false); err != nil {
+				return err
 			}
 		}
 	}
@@ -164,54 +166,100 @@ func (f *File) adjustRowDimensions(ws *xlsxWorksheet, row, offset int) error {
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
-func (f *File) adjustSingleRowDimensions(r *xlsxRow, num, offset int, si bool) {
-	r.R = num
+func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, num, offset int, si bool) error {
+	r.R += offset
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
-		r.C[i].R, _ = JoinCellName(colName, num)
+		r.C[i].R, _ = JoinCellName(colName, r.R)
+		if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-// adjustFormula provides a function to adjust shared formula reference.
-func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si bool, positionInserted int) error {
-
-	if formula != nil && formula.Content != "" {
-		ps, formulaText := efp.ExcelParser(), "="
-		ast := ps.Parse(formula.Content)
-		for _, token := range ast {
-			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
-				col, row, _ := CellNameToCoordinates(token.TValue)
-				if dir == columns && col >= positionInserted {
-					col += offset
-				} else if dir == rows && row >= positionInserted {
-					row += offset
-				}
-				cell, err := CoordinatesToCellName(col, row, strings.Contains(token.TValue, "$"))
-				if err != nil {
-					return err
-				}
-				formulaText += cell
-				continue
-			} else if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart {
-				formulaText += token.TValue + "("
-				continue
-			} else if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStop {
-				formulaText += ")"
-				continue
-			} else if token.TType == efp.TokenTypeArgument {
-				formulaText += ", "
-				continue
-			}
-			formulaText += token.TValue
+// adjustFormula provides a function to adjust formula reference and shared
+// formula reference.
+func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, num, offset int, si bool) error {
+	if formula == nil {
+		return nil
+	}
+	adjustRef := func(ref string) (string, error) {
+		coordinates, err := rangeRefToCoordinates(ref)
+		if err != nil {
+			return ref, err
 		}
-		formula.Content = formulaText
-
+		if dir == columns {
+			coordinates[0] += offset
+			coordinates[2] += offset
+		} else {
+			coordinates[1] += offset
+			coordinates[3] += offset
+		}
+		return f.coordinatesToRangeRef(coordinates)
+	}
+	var err error
+	if formula.Ref != "" {
+		if formula.Ref, err = adjustRef(formula.Ref); err != nil {
+			return err
+		}
 		if si && formula.Si != nil {
 			formula.Si = intPtr(*formula.Si + 1)
 		}
 	}
-
+	if formula.T == STCellFormulaTypeArray {
+		formula.Content, err = adjustRef(strings.TrimPrefix(formula.Content, "="))
+		return err
+	}
+	if formula.Content != "" && !strings.ContainsAny(formula.Content, "[:]") {
+		content, err := f.adjustFormulaRef(sheet, formula.Content, dir, num, offset)
+		if err != nil {
+			return err
+		}
+		formula.Content = content
+	}
 	return nil
+}
+
+// adjustFormulaRef returns adjusted formula text by giving adjusted direction
+// and the base number of column or row, and offset.
+func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, num, offset int) (string, error) {
+	var (
+		formulaText  string
+		definedNames []string
+		ps           = efp.ExcelParser()
+	)
+	for _, definedName := range f.GetDefinedName() {
+		if definedName.Scope == "Workbook" || definedName.Scope == sheet {
+			definedNames = append(definedNames, definedName.Name)
+		}
+	}
+	for _, token := range ps.Parse(text) {
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
+			if inStrSlice(definedNames, token.TValue, true) != -1 {
+				formulaText += token.TValue
+				continue
+			}
+			c, r, err := CellNameToCoordinates(token.TValue)
+			if err != nil {
+				return formulaText, err
+			}
+			if dir == columns && c >= num {
+				c += offset
+			}
+			if dir == rows {
+				r += offset
+			}
+			cell, err := CoordinatesToCellName(c, r, strings.Contains(token.TValue, "$"))
+			if err != nil {
+				return formulaText, err
+			}
+			formulaText += cell
+			continue
+		}
+		formulaText += token.TValue
+	}
+	return formulaText, nil
 }
 
 // adjustHyperlinks provides a function to update hyperlinks when inserting or
@@ -281,7 +329,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			return
 		}
 		// Remove the table when deleting the header row of the table
-		if dir == rows && num == coordinates[0] {
+		if dir == rows && num == coordinates[0] && offset == -1 {
 			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
 			ws.TableParts.Count = len(ws.TableParts.TableParts)
 			idx--
@@ -458,11 +506,19 @@ func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) er
 			return err
 		}
 		if dir == rows && num <= rowNum {
+			if num == rowNum && offset == -1 {
+				_ = f.deleteCalcChain(c.I, c.R)
+				continue
+			}
 			if newRow := rowNum + offset; newRow > 0 {
 				f.CalcChain.C[index].R, _ = CoordinatesToCellName(colNum, newRow)
 			}
 		}
 		if dir == columns && num <= colNum {
+			if num == colNum && offset == -1 {
+				_ = f.deleteCalcChain(c.I, c.R)
+				continue
+			}
 			if newCol := colNum + offset; newCol > 0 {
 				f.CalcChain.C[index].R, _ = CoordinatesToCellName(newCol, rowNum)
 			}

@@ -270,6 +270,9 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if col < 1 || row < 1 {
 		return "", newCoordinatesToCellNameError(col, row)
 	}
+	if row > TotalRows {
+		return "", ErrMaxRows
+	}
 	sign := ""
 	for _, a := range abs {
 		if a {

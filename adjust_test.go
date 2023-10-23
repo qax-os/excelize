@@ -357,13 +357,15 @@ func TestAdjustHelper(t *testing.T) {
 func TestAdjustCalcChain(t *testing.T) {
 	f := NewFile()
 	f.CalcChain = &xlsxCalcChain{
-		C: []xlsxCalcChainC{
-			{R: "B2", I: 2}, {R: "B2", I: 1},
-		},
+		C: []xlsxCalcChainC{{R: "B2", I: 2}, {R: "B2", I: 1}, {R: "A1", I: 1}},
 	}
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
 
+	assert.NoError(t, f.RemoveRow("Sheet1", 3))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	f.CalcChain = &xlsxCalcChain{C: []xlsxCalcChainC{{R: "B2", I: 2}, {R: "B2", I: 1}}}
 	f.CalcChain.C[1].R = "invalid coordinates"
 	assert.Equal(t, f.InsertCols("Sheet1", "A", 1), newCellNameToCoordinatesError("invalid coordinates", newInvalidCellNameError("invalid coordinates")))
 	f.CalcChain = nil
@@ -449,11 +451,11 @@ func TestAdjustCols(t *testing.T) {
 func TestAdjustFormula(t *testing.T) {
 	f := NewFile()
 	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	assert.NoError(t, f.DuplicateRowTo("Sheet1", 1, 10))
 	assert.NoError(t, f.InsertCols("Sheet1", "B", 1))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
-	for cell, expected := range map[string]string{"D2": "=A2+C2", "D3": "=A3+C3", "D11": "=A11+C11"} {
+	for cell, expected := range map[string]string{"D2": "A2+C2", "D3": "A3+C3", "D11": "A11+C11"} {
 		formula, err := f.GetCellFormula("Sheet1", cell)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, formula)
@@ -461,20 +463,40 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
 	assert.NoError(t, f.Close())
 
-	assert.NoError(t, f.adjustFormula(nil, rows, 0, false, 1))
+	assert.NoError(t, f.adjustFormula("Sheet1", nil, rows, 0, 0, false))
+	assert.Equal(t, ErrParameterInvalid, f.adjustFormula("Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
+	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
 
-}
+	_, err := f.adjustFormulaRef("Sheet1", "XFE1", columns, 0, 1)
+	assert.Equal(t, ErrColumnNumber, err)
+	_, err = f.adjustFormulaRef("Sheet1", "XFD1", columns, 0, 1)
+	assert.Equal(t, ErrColumnNumber, err)
 
-func TestAdjustSumFormula(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "=SUM(B4, B5, B6, B7)"))
-	assert.NoError(t, f.InsertCols("Sheet1", "B", 1))
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "XFD1"))
+	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", fmt.Sprintf("A%d", TotalRows)))
+	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet1", 1, 1))
+
+	// Test adjust formula with defined name in formula text
+	f = NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Amount",
+		RefersTo: "Sheet1!$B$2",
+	}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "Amount+B3"))
+	assert.NoError(t, f.RemoveRow("Sheet1", 1))
+	formula, err := f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Amount+B2", formula)
+
+	// Test adjust formula with array formula
+	f = NewFile()
+	formulaType, reference := STCellFormulaTypeArray, "A3:A3"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "=A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
-	for cell, expected := range map[string]string{"C3": "=SUM(C5, C6, C7, C8)"} {
-		formula, err := f.GetCellFormula("Sheet1", cell)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, formula)
-	}
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustSumFormula.xlsx")))
-	assert.NoError(t, f.Close())
+	formula, err = f.GetCellFormula("Sheet1", "A4")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2:A3", formula)
 }
