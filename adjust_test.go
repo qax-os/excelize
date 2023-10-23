@@ -461,7 +461,20 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
 	assert.NoError(t, f.Close())
 
-	//assert.NoError(t, f.adjustFormula(nil, rows, 0, false))
-	//assert.Equal(t, f.adjustFormula(&xlsxF{Ref: "-"}, rows, 0, false), ErrParameterInvalid)
-	//assert.Equal(t, f.adjustFormula(&xlsxF{Ref: "XFD1:XFD1"}, columns, 1, false), ErrColumnNumber)
+	assert.NoError(t, f.adjustFormula(nil, rows, 0, false, 1))
+
+}
+
+func TestAdjustSumFormula(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "=SUM(B4, B5, B6, B7)"))
+	assert.NoError(t, f.InsertCols("Sheet1", "B", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	for cell, expected := range map[string]string{"C3": "=SUM(C5, C6, C7, C8)"} {
+		formula, err := f.GetCellFormula("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, formula)
+	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustSumFormula.xlsx")))
+	assert.NoError(t, f.Close())
 }

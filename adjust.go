@@ -174,29 +174,11 @@ func (f *File) adjustSingleRowDimensions(r *xlsxRow, num, offset int, si bool) {
 
 // adjustFormula provides a function to adjust shared formula reference.
 func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si bool, positionInserted int) error {
-	//if formula != nil && formula.Ref != "" {
-	//	coordinates, err := rangeRefToCoordinates(formula.Ref)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	if dir == columns {
-	//		coordinates[0] += offset
-	//		coordinates[2] += offset
-	//	} else {
-	//		coordinates[1] += offset
-	//		coordinates[3] += offset
-	//	}
-	//	if formula.Ref, err = f.coordinatesToRangeRef(coordinates); err != nil {
-	//		return err
-	//	}
-	//	if si && formula.Si != nil {
-	//		formula.Si = intPtr(*formula.Si + 1)
-	//	}
-	//}
 
 	if formula != nil && formula.Content != "" {
 		ps, formulaText := efp.ExcelParser(), "="
-		for _, token := range ps.Parse(formula.Content) {
+		ast := ps.Parse(formula.Content)
+		for _, token := range ast {
 			if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
 				col, row, _ := CellNameToCoordinates(token.TValue)
 				if dir == columns && col >= positionInserted {
@@ -209,6 +191,15 @@ func (f *File) adjustFormula(formula *xlsxF, dir adjustDirection, offset int, si
 					return err
 				}
 				formulaText += cell
+				continue
+			} else if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart {
+				formulaText += token.TValue + "("
+				continue
+			} else if token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStop {
+				formulaText += ")"
+				continue
+			} else if token.TType == efp.TokenTypeArgument {
+				formulaText += ", "
 				continue
 			}
 			formulaText += token.TValue
