@@ -154,12 +154,16 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow > TotalRows {
 		return ErrMaxRows
 	}
-	for i := 0; i < len(ws.SheetData.Row); i++ {
+	numOfRows := len(ws.SheetData.Row)
+	for i := 0; i < numOfRows; i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
 			if err := f.adjustSingleRowDimensions(sheet, r, row, offset, false); err != nil {
 				return err
 			}
+		}
+		if err := f.adjustSingleRowFormulas(sheet, r, row, offset, false); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -171,6 +175,15 @@ func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, num, offset i
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
 		r.C[i].R, _ = JoinCellName(colName, r.R)
+		//if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
+		//	return err
+		//}
+	}
+	return nil
+}
+
+func (f *File) adjustSingleRowFormulas(sheet string, r *xlsxRow, num, offset int, si bool) error {
+	for _, col := range r.C {
 		if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
 			return err
 		}
@@ -190,11 +203,19 @@ func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, 
 			return ref, err
 		}
 		if dir == columns {
-			coordinates[0] += offset
-			coordinates[2] += offset
+			if coordinates[0] >= num {
+				coordinates[0] += offset
+			}
+			if coordinates[2] >= num {
+				coordinates[2] += offset
+			}
 		} else {
-			coordinates[1] += offset
-			coordinates[3] += offset
+			if coordinates[1] >= num {
+				coordinates[1] += offset
+			}
+			if coordinates[3] >= num {
+				coordinates[3] += offset
+			}
 		}
 		return f.coordinatesToRangeRef(coordinates)
 	}
@@ -247,7 +268,7 @@ func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, 
 			if dir == columns && c >= num {
 				c += offset
 			}
-			if dir == rows {
+			if dir == rows && r >= num {
 				r += offset
 			}
 			cell, err := CoordinatesToCellName(c, r, strings.Contains(token.TValue, "$"))
