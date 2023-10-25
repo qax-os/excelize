@@ -175,9 +175,6 @@ func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, num, offset i
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
 		r.C[i].R, _ = JoinCellName(colName, r.R)
-		//if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
-		//	return err
-		//}
 	}
 	return nil
 }

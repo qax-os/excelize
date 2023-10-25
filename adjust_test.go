@@ -502,6 +502,14 @@ func TestAdjustFormula(t *testing.T) {
 	formula, err = f.GetCellFormula("Sheet1", "A4")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2:A3", formula)
+
+	// Test changes to duplicateRowTo
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "=A10+A11"))
+	assert.NoError(t, f.DuplicateRowTo("Sheet1", 10, 2))
+	formula, err = f.GetCellFormula("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2+A3", formula)
 }
 
 func TestInsertMiddleOfRange(t *testing.T) {
@@ -529,6 +537,15 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "B1+C1", formula)
 
+	//insert row and col in a rectangular range (+ notation)
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=D4+D5+E4+E5"))
+	assert.NoError(t, f.InsertCols("Sheet1", "E", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 5, 1))
+	formula, err = f.GetCellFormula("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "D4+D6+F4+F6", formula)
+
 	// test insert row in middle of range (: notation)
 	f = NewFile()
 	formulaType, reference := STCellFormulaTypeArray, "B1:B1"
@@ -554,6 +571,16 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	formula, err = f.GetCellFormula("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "B1:C1", formula)
+
+	//insert row and col in a rectangular range (: notation)
+	f = NewFile()
+	formulaType, reference = STCellFormulaTypeArray, "A1:A1"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=D4:E5", FormulaOpts{Ref: &reference, Type: &formulaType}))
+	assert.NoError(t, f.InsertCols("Sheet1", "E", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 5, 1))
+	formula, err = f.GetCellFormula("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "D4:F6", formula)
 }
 
 func TestCellNotOffsetButFormulaAffected(t *testing.T) {
