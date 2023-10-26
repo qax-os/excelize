@@ -453,46 +453,56 @@ func TestAdjustCols(t *testing.T) {
 
 func TestAdjustColDimensions(t *testing.T) {
 	f := NewFile()
-	ws, _ := f.workSheetReader("Sheet1")
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
 	assert.Equal(t, ErrColumnNumber, f.adjustColDimensions("Sheet1", ws, 1, MaxColumns))
 }
 
 func TestAdjustRowDimensions(t *testing.T) {
 	f := NewFile()
-	ws, _ := f.workSheetReader("Sheet1")
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
 	assert.Equal(t, ErrMaxRows, f.adjustRowDimensions("Sheet1", ws, 1, TotalRows))
 }
 
 func TestAdjustHyperlinks(t *testing.T) {
-	// No hyperlinks
 	f := NewFile()
-	ws, _ := f.workSheetReader("Sheet1")
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
 	f.adjustHyperlinks(ws, "Sheet1", rows, 3, -1)
 
-	// Location hyperlinks positive offset
+	// Test adjust hyperlinks location with positive offset
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "F5", "Sheet1!A1", "Location"))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
-	isHyperlink, _, _ := f.GetCellHyperLink("Sheet1", "F6")
-	assert.True(t, isHyperlink)
+	link, target, err := f.GetCellHyperLink("Sheet1", "F6")
+	assert.NoError(t, err)
+	assert.True(t, link)
+	assert.Equal(t, target, "Sheet1!A1")
 
-	// negative offset
+	// Test adjust hyperlinks location with negative offset
 	assert.NoError(t, f.RemoveRow("Sheet1", 1))
-	isHyperlink, _, _ = f.GetCellHyperLink("Sheet1", "F5")
-	assert.True(t, isHyperlink)
+	link, target, err = f.GetCellHyperLink("Sheet1", "F5")
+	assert.NoError(t, err)
+	assert.True(t, link)
+	assert.Equal(t, target, "Sheet1!A1")
 
-	// delete row with hyperlink
+	// Test adjust hyperlinks location on remove row
 	assert.NoError(t, f.RemoveRow("Sheet1", 5))
-	isHyperlink, _, _ = f.GetCellHyperLink("Sheet1", "F5")
-	assert.False(t, isHyperlink)
+	link, target, err = f.GetCellHyperLink("Sheet1", "F5")
+	assert.NoError(t, err)
+	assert.False(t, link)
+	assert.Empty(t, target)
 
-	// delete column with hyperlink
+	// Test adjust hyperlinks location on remove column
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "F5", "Sheet1!A1", "Location"))
 	assert.NoError(t, f.RemoveCol("Sheet1", "F"))
-	isHyperlink, _, _ = f.GetCellHyperLink("Sheet1", "F5")
-	assert.False(t, isHyperlink)
+	link, target, err = f.GetCellHyperLink("Sheet1", "F5")
+	assert.NoError(t, err)
+	assert.False(t, link)
+	assert.Empty(t, target)
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustHyperlinks.xlsx")))
 	assert.NoError(t, f.Close())
@@ -550,7 +560,7 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "A2:A3", formula)
 
-	// Test changes to duplicateRowTo
+	// Test adjust formula on duplicate row
 	f = NewFile()
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "=A10+A11"))
 	assert.NoError(t, f.DuplicateRowTo("Sheet1", 10, 2))
@@ -560,7 +570,7 @@ func TestAdjustFormula(t *testing.T) {
 }
 
 func TestInsertMiddleOfRange(t *testing.T) {
-	// test insert row in middle of range (+ notation)
+	// Test insert row in middle of range (+ notation)
 	f := NewFile()
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=A1+A2"))
 	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
@@ -572,7 +582,7 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "A1+A2", formula)
 
-	// test insert col in middle of range (+ notation)
+	// Test insert columns in middle of range (+ notation)
 	f = NewFile()
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=B1+C1"))
 	assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
@@ -584,7 +594,7 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "B1+C1", formula)
 
-	//insert row and col in a rectangular range (+ notation)
+	// Test insert row and columns in a rectangular range (+ notation)
 	f = NewFile()
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=D4+D5+E4+E5"))
 	assert.NoError(t, f.InsertCols("Sheet1", "E", 1))
@@ -593,7 +603,7 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "D4+D6+F4+F6", formula)
 
-	// test insert row in middle of range (: notation)
+	// Test insert row in middle of range (: notation)
 	f = NewFile()
 	formulaType, reference := STCellFormulaTypeArray, "B1:B1"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
@@ -606,7 +616,7 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "A1:A2", formula)
 
-	// test insert col in middle of range (: notation)
+	// Test insert columns in middle of range (: notation)
 	f = NewFile()
 	formulaType, reference = STCellFormulaTypeArray, "A1:A1"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=B1:C1", FormulaOpts{Ref: &reference, Type: &formulaType}))
@@ -619,7 +629,7 @@ func TestInsertMiddleOfRange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "B1:C1", formula)
 
-	//insert row and col in a rectangular range (: notation)
+	// Test insert row and columns in a rectangular range (: notation)
 	f = NewFile()
 	formulaType, reference = STCellFormulaTypeArray, "A1:A1"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=D4:E5", FormulaOpts{Ref: &reference, Type: &formulaType}))

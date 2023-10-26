@@ -158,7 +158,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 	for i := 0; i < numOfRows; i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			f.adjustSingleRowDimensions(sheet, r, row, offset, false)
+			f.adjustSingleRowDimensions(sheet, r, offset)
 		}
 		if err := f.adjustSingleRowFormulas(sheet, r, row, offset, false); err != nil {
 			return err
@@ -168,15 +168,15 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
-func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, num, offset int, si bool) error {
+func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, offset int) {
 	r.R += offset
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
 		r.C[i].R, _ = JoinCellName(colName, r.R)
 	}
-	return nil
 }
 
+// adjustSingleRowFormulas provides a function to adjust single row formulas.
 func (f *File) adjustSingleRowFormulas(sheet string, r *xlsxRow, num, offset int, si bool) error {
 	for _, col := range r.C {
 		if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
@@ -186,37 +186,39 @@ func (f *File) adjustSingleRowFormulas(sheet string, r *xlsxRow, num, offset int
 	return nil
 }
 
+// adjusCellRef provides a function to adjust cell reference.
+func (f *File) adjustRef(ref string, dir adjustDirection, num, offset int) (string, error) {
+	coordinates, err := rangeRefToCoordinates(ref)
+	if err != nil {
+		return ref, err
+	}
+	if dir == columns {
+		if coordinates[0] >= num {
+			coordinates[0] += offset
+		}
+		if coordinates[2] >= num {
+			coordinates[2] += offset
+		}
+	} else {
+		if coordinates[1] >= num {
+			coordinates[1] += offset
+		}
+		if coordinates[3] >= num {
+			coordinates[3] += offset
+		}
+	}
+	return f.coordinatesToRangeRef(coordinates)
+}
+
 // adjustFormula provides a function to adjust formula reference and shared
 // formula reference.
 func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, num, offset int, si bool) error {
 	if formula == nil {
 		return nil
 	}
-	adjustRef := func(ref string) (string, error) {
-		coordinates, err := rangeRefToCoordinates(ref)
-		if err != nil {
-			return ref, err
-		}
-		if dir == columns {
-			if coordinates[0] >= num {
-				coordinates[0] += offset
-			}
-			if coordinates[2] >= num {
-				coordinates[2] += offset
-			}
-		} else {
-			if coordinates[1] >= num {
-				coordinates[1] += offset
-			}
-			if coordinates[3] >= num {
-				coordinates[3] += offset
-			}
-		}
-		return f.coordinatesToRangeRef(coordinates)
-	}
 	var err error
 	if formula.Ref != "" {
-		if formula.Ref, err = adjustRef(formula.Ref); err != nil {
+		if formula.Ref, err = f.adjustRef(formula.Ref, dir, num, offset); err != nil {
 			return err
 		}
 		if si && formula.Si != nil {
@@ -224,7 +226,7 @@ func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, 
 		}
 	}
 	if formula.T == STCellFormulaTypeArray {
-		formula.Content, err = adjustRef(strings.TrimPrefix(formula.Content, "="))
+		formula.Content, err = f.adjustRef(strings.TrimPrefix(formula.Content, "="), dir, num, offset)
 		return err
 	}
 	if formula.Content != "" && !strings.ContainsAny(formula.Content, "[:]") {
