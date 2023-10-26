@@ -158,9 +158,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 	for i := 0; i < numOfRows; i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			if err := f.adjustSingleRowDimensions(sheet, r, row, offset, false); err != nil {
-				return err
-			}
+			f.adjustSingleRowDimensions(sheet, r, row, offset, false)
 		}
 		if err := f.adjustSingleRowFormulas(sheet, r, row, offset, false); err != nil {
 			return err
