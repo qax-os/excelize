@@ -451,6 +451,53 @@ func TestAdjustCols(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestAdjustColDimensions(t *testing.T) {
+	f := NewFile()
+	ws, _ := f.workSheetReader("Sheet1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
+	assert.Equal(t, ErrColumnNumber, f.adjustColDimensions("Sheet1", ws, 1, MaxColumns))
+}
+
+func TestAdjustRowDimensions(t *testing.T) {
+	f := NewFile()
+	ws, _ := f.workSheetReader("Sheet1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
+	assert.Equal(t, ErrMaxRows, f.adjustRowDimensions("Sheet1", ws, 1, TotalRows))
+}
+
+func TestAdjustHyperlinks(t *testing.T) {
+	// No hyperlinks
+	f := NewFile()
+	ws, _ := f.workSheetReader("Sheet1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
+	f.adjustHyperlinks(ws, "Sheet1", rows, 3, -1)
+
+	// Location hyperlinks positive offset
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "F5", "Sheet1!A1", "Location"))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	isHyperlink, _, _ := f.GetCellHyperLink("Sheet1", "F6")
+	assert.True(t, isHyperlink)
+
+	// negative offset
+	assert.NoError(t, f.RemoveRow("Sheet1", 1))
+	isHyperlink, _, _ = f.GetCellHyperLink("Sheet1", "F5")
+	assert.True(t, isHyperlink)
+
+	// delete row with hyperlink
+	assert.NoError(t, f.RemoveRow("Sheet1", 5))
+	isHyperlink, _, _ = f.GetCellHyperLink("Sheet1", "F5")
+	assert.False(t, isHyperlink)
+
+	// delete column with hyperlink
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "F5", "Sheet1!A1", "Location"))
+	assert.NoError(t, f.RemoveCol("Sheet1", "F"))
+	isHyperlink, _, _ = f.GetCellHyperLink("Sheet1", "F5")
+	assert.False(t, isHyperlink)
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustHyperlinks.xlsx")))
+	assert.NoError(t, f.Close())
+}
+
 func TestAdjustFormula(t *testing.T) {
 	f := NewFile()
 	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
