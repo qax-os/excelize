@@ -663,3 +663,90 @@ func TestCellNotOffsetButFormulaAffected(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "D3+D4", formula)
 }
+
+func TestCommonFormulaAdjustment(t *testing.T) {
+	f := NewFile()
+	// insert row in the middle of the range
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(A2:A3)"))
+	assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
+	formula, err := f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(A2:A4)", formula)
+
+	// insert at the top of the range
+	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(A3:A5)", formula)
+
+	f = NewFile()
+	// insert row in the middle of the range
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(A2,A3)"))
+	assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(A2,A4)", formula)
+
+	// insert row at the top of the range
+	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(A3,A5)", formula)
+
+	f = NewFile()
+	// insert col in the middle of the range
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(C3:D3)"))
+	assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(C3:E3)", formula)
+
+	// insert at the top of the range
+	assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(D3:F3)", formula)
+
+	f = NewFile()
+	// insert col in the middle of the range
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(C3,D3)"))
+	assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(C3,E3)", formula)
+
+	// insert col at the top of the range
+	assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(D3,F3)", formula)
+
+	f = NewFile()
+	// insert row in the middle of the range (range of whole row)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(2:3)"))
+	assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(2:4)", formula)
+
+	// insert row at the top of the range (range of whole row)
+	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(3:5)", formula)
+
+	f = NewFile()
+	// insert row in the middle of the range (range of whole col)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(C:D)"))
+	assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(C:E)", formula)
+
+	// insert row at the top of the range (range of whole col)
+	assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SUM(D:F)", formula)
+
+}
