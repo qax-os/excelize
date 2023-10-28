@@ -159,7 +159,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 	for i := 0; i < numOfRows; i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			f.adjustSingleRowDimensions(sheet, r, offset)
+			r.adjustSingleRowDimensions(offset)
 		}
 		if err := f.adjustSingleRowFormulas(sheet, r, row, offset, false); err != nil {
 			return err
@@ -169,7 +169,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
-func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, offset int) {
+func (r *xlsxRow) adjustSingleRowDimensions(offset int) {
 	r.R += offset
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
@@ -189,6 +189,9 @@ func (f *File) adjustSingleRowFormulas(sheet string, r *xlsxRow, num, offset int
 
 // adjustCellRef provides a function to adjust cell reference.
 func (f *File) adjustCellRef(ref string, dir adjustDirection, num, offset int) (string, error) {
+	if !strings.Contains(ref, ":") {
+		ref += ":" + ref
+	}
 	coordinates, err := rangeRefToCoordinates(ref)
 	if err != nil {
 		return ref, err

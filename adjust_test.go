@@ -524,7 +524,7 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	assert.NoError(t, f.adjustFormula("Sheet1", nil, rows, 0, 0, false))
-	assert.Equal(t, ErrParameterInvalid, f.adjustFormula("Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
 	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
 
 	_, err := f.adjustFormulaRef("Sheet1", "XFE1", columns, 0, 1)
@@ -566,6 +566,15 @@ func TestAdjustFormula(t *testing.T) {
 	// Test adjust formula with array formula
 	f = NewFile()
 	formulaType, reference := STCellFormulaTypeArray, "A3:A3"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	formula, err = f.GetCellFormula("Sheet1", "A4")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2:A3", formula)
+
+	// Test adjust formula on duplicate row with array formula
+	f = NewFile()
+	formulaType, reference = STCellFormulaTypeArray, "A3"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
 	formula, err = f.GetCellFormula("Sheet1", "A4")
