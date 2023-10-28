@@ -14,9 +14,7 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -190,7 +188,7 @@ func (f *File) adjustSingleRowFormulas(sheet string, r *xlsxRow, num, offset int
 }
 
 // adjustCellRef provides a function to adjust cell reference.
-func (f *File) adjustRef(ref string, dir adjustDirection, num, offset int) (string, error) {
+func (f *File) adjustCellRef(ref string, dir adjustDirection, num, offset int) (string, error) {
 	coordinates, err := rangeRefToCoordinates(ref)
 	if err != nil {
 		return ref, err
@@ -213,127 +211,124 @@ func (f *File) adjustRef(ref string, dir adjustDirection, num, offset int) (stri
 	return f.coordinatesToRangeRef(coordinates)
 }
 
-// adjustRefToEntireRows provides a function to adjust reference to entire rows.
-func (f *File) adjustRefToEntireRows(ref string, num, offset int) string {
-	// ref is a range of entire rows, e.g. 1:2
-	r := strings.Split(ref, ":")
-	topRow, _ := strconv.Atoi(r[0])
-	bottomRow, _ := strconv.Atoi(r[1])
-	if topRow >= num {
-		topRow += offset
-	}
-	if bottomRow >= num {
-		bottomRow += offset
-	}
-
-	return fmt.Sprintf("%d:%d", topRow, bottomRow)
-}
-
-// adjustRefToEntireCols provides a function to adjust reference to entire cols.
-func (f *File) adjustRefToEntireCols(ref string, num, offset int) string {
-	// ref is a range of entire cols, e.g. A:B
-
-	c := strings.Split(ref, ":")
-	topCol, _ := ColumnNameToNumber(c[0])
-	bottomCol, _ := ColumnNameToNumber(c[1])
-	if topCol >= num {
-		topCol += offset
-	}
-	if bottomCol >= num {
-		bottomCol += offset
-	}
-
-	topColName, _ := ColumnNumberToName(topCol)
-	bottomColName, _ := ColumnNumberToName(bottomCol)
-	return fmt.Sprintf("%s:%s", topColName, bottomColName)
-}
-
 // adjustFormula provides a function to adjust formula reference and shared
 // formula reference.
 func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, num, offset int, si bool) error {
 	if formula == nil {
 		return nil
 	}
-
 	var err error
 	if formula.Ref != "" {
-		if formula.Ref, err = f.adjustRef(formula.Ref, dir, num, offset); err != nil {
+		if formula.Ref, err = f.adjustCellRef(formula.Ref, dir, num, offset); err != nil {
 			return err
 		}
 		if si && formula.Si != nil {
 			formula.Si = intPtr(*formula.Si + 1)
 		}
 	}
-	if formula.T == STCellFormulaTypeArray {
-		formula.Content, err = f.adjustRef(strings.TrimPrefix(formula.Content, "="), dir, num, offset)
-		return err
-	}
-	if formula.Content != "" && !strings.ContainsAny(formula.Content, "[:]()") {
-		content, err := f.adjustFormulaRef(sheet, formula.Content, dir, num, offset)
-		if err != nil {
+	if formula.Content != "" {
+		if formula.Content, err = f.adjustFormulaRef(sheet, formula.Content, dir, num, offset); err != nil {
 			return err
 		}
-		formula.Content = content
-	} else if formula.Content != "" {
-		ps := efp.ExcelParser()
-		content := ""
-		for _, token := range ps.Parse(formula.Content) {
-			if f.isRangeOperand(token) {
-				// If string contains ":" and both sides have at least one letter and one number,
-				// create a regex for this expression
-				content = f.handleRangeOperand(sheet, token, dir, num, offset, content)
-			} else if f.isFunctionStart(token) {
-				content += token.TValue + "("
-			} else if f.isFunctionStop(token) {
-				content += token.TValue + ")"
-			} else {
-				content += token.TValue
-			}
-		}
-		formula.Content = content
 	}
 	return nil
 }
 
 // isFunctionStop provides a function to check if token is a function stop.
-func (f *File) isFunctionStop(token efp.Token) bool {
+func isFunctionStop(token efp.Token) bool {
 	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStop
 }
 
 // isFunctionStart provides a function to check if token is a function start.
-func (f *File) isFunctionStart(token efp.Token) bool {
+func isFunctionStart(token efp.Token) bool {
 	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart
 }
 
-// isRangeOperand provides a function to check if token is a range operand.
-func (f *File) isRangeOperand(token efp.Token) bool {
-	return token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange
-}
-
-// handleRangeOperand provides a function to handle range operand tokens.
-// Examples are A2:C5, 1:2, A:B
-func (f *File) handleRangeOperand(sheet string, token efp.Token, dir adjustDirection, num int, offset int, content string) string {
-	if regex := regexp.MustCompile("[A-Z]+[0-9]+:[A-Z]+[0-9]+"); regex.MatchString(token.TValue) {
-		token.TValue, _ = f.adjustRef(token.TValue, dir, num, offset)
-		content += token.TValue
-	} else if regex := regexp.MustCompile("[0-9]+:[0-9]+"); regex.MatchString(token.TValue) {
-		token.TValue = f.adjustRefToEntireRows(token.TValue, num, offset)
-		content += token.TValue
-	} else if regex := regexp.MustCompile("[A-Z]+:[A-Z]+"); regex.MatchString(token.TValue) {
-		token.TValue = f.adjustRefToEntireCols(token.TValue, num, offset)
-		content += token.TValue
-	} else {
-		token.TValue, _ = f.adjustFormulaRef(sheet, token.TValue, dir, num, offset)
-		content += token.TValue
+// adjustFormulaColumnName adjust column name in the formula reference.
+func adjustFormulaColumnName(name string, dir adjustDirection, num, offset int) (string, error) {
+	if name == "" {
+		return name, nil
 	}
-	return content
+	col, err := ColumnNameToNumber(name)
+	if err != nil {
+		return name, err
+	}
+	if dir == columns && col >= num {
+		col += offset
+		return ColumnNumberToName(col)
+	}
+	return name, nil
 }
 
-// adjustFormulaRef returns adjusted formula text by giving adjusting direction
-// and the base number of column or row, and offset.
-func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, num, offset int) (string, error) {
+// adjustFormulaRowNumber adjust row number in the formula reference.
+func adjustFormulaRowNumber(name string, dir adjustDirection, num, offset int) (string, error) {
+	if name == "" {
+		return name, nil
+	}
+	row, _ := strconv.Atoi(name)
+	if dir == rows && row >= num {
+		row += offset
+		if row > TotalRows {
+			return name, ErrMaxRows
+		}
+		return strconv.Itoa(row), nil
+	}
+	return name, nil
+}
+
+// adjustFormulaOperand adjust range operand tokens for the formula.
+func (f *File) adjustFormulaOperand(token efp.Token, dir adjustDirection, num int, offset int) (string, error) {
+	var col, row, operand string
+	for _, r := range token.TValue {
+		if ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') {
+			col += string(r)
+			continue
+		}
+		if '0' <= r && r <= '9' {
+			row += string(r)
+			if col != "" {
+				name, err := adjustFormulaColumnName(col, dir, num, offset)
+				if err != nil {
+					return operand, err
+				}
+				operand += name
+				col = ""
+			}
+			continue
+		}
+		if row != "" {
+			name, err := adjustFormulaRowNumber(row, dir, num, offset)
+			if err != nil {
+				return operand, err
+			}
+			operand += name
+			row = ""
+		}
+		if col != "" {
+			name, err := adjustFormulaColumnName(col, dir, num, offset)
+			if err != nil {
+				return operand, err
+			}
+			operand += name
+			col = ""
+		}
+		operand += string(r)
+	}
+	name, err := adjustFormulaColumnName(col, dir, num, offset)
+	if err != nil {
+		return operand, err
+	}
+	operand += name
+	name, err = adjustFormulaRowNumber(row, dir, num, offset)
+	operand += name
+	return operand, err
+}
+
+// adjustFormulaRef returns adjusted formula by giving adjusting direction and
+// the base number of column or row, and offset.
+func (f *File) adjustFormulaRef(sheet, formula string, dir adjustDirection, num, offset int) (string, error) {
 	var (
-		formulaText  string
+		val          string
 		definedNames []string
 		ps           = efp.ExcelParser()
 	)
@@ -342,32 +337,34 @@ func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, 
 			definedNames = append(definedNames, definedName.Name)
 		}
 	}
-	for _, token := range ps.Parse(text) {
+	for _, token := range ps.Parse(formula) {
 		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
 			if inStrSlice(definedNames, token.TValue, true) != -1 {
-				formulaText += token.TValue
+				val += token.TValue
 				continue
 			}
-			c, r, err := CellNameToCoordinates(token.TValue)
+			if strings.ContainsAny(token.TValue, "[]") {
+				val += token.TValue
+				continue
+			}
+			operand, err := f.adjustFormulaOperand(token, dir, num, offset)
 			if err != nil {
-				return formulaText, err
+				return val, err
 			}
-			if dir == columns && c >= num {
-				c += offset
-			}
-			if dir == rows && r >= num {
-				r += offset
-			}
-			cell, err := CoordinatesToCellName(c, r, strings.Contains(token.TValue, "$"))
-			if err != nil {
-				return formulaText, err
-			}
-			formulaText += cell
+			val += operand
 			continue
 		}
-		formulaText += token.TValue
+		if isFunctionStart(token) {
+			val += token.TValue + string(efp.ParenOpen)
+			continue
+		}
+		if isFunctionStop(token) {
+			val += token.TValue + string(efp.ParenClose)
+			continue
+		}
+		val += token.TValue
 	}
-	return formulaText, nil
+	return val, nil
 }
 
 // adjustHyperlinks provides a function to update hyperlinks when inserting or
