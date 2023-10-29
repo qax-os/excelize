@@ -451,6 +451,63 @@ func TestAdjustCols(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestAdjustColDimensions(t *testing.T) {
+	f := NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
+	assert.Equal(t, ErrColumnNumber, f.adjustColDimensions("Sheet1", ws, 1, MaxColumns))
+}
+
+func TestAdjustRowDimensions(t *testing.T) {
+	f := NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
+	assert.Equal(t, ErrMaxRows, f.adjustRowDimensions("Sheet1", ws, 1, TotalRows))
+}
+
+func TestAdjustHyperlinks(t *testing.T) {
+	f := NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
+	f.adjustHyperlinks(ws, "Sheet1", rows, 3, -1)
+
+	// Test adjust hyperlinks location with positive offset
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "F5", "Sheet1!A1", "Location"))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	link, target, err := f.GetCellHyperLink("Sheet1", "F6")
+	assert.NoError(t, err)
+	assert.True(t, link)
+	assert.Equal(t, target, "Sheet1!A1")
+
+	// Test adjust hyperlinks location with negative offset
+	assert.NoError(t, f.RemoveRow("Sheet1", 1))
+	link, target, err = f.GetCellHyperLink("Sheet1", "F5")
+	assert.NoError(t, err)
+	assert.True(t, link)
+	assert.Equal(t, target, "Sheet1!A1")
+
+	// Test adjust hyperlinks location on remove row
+	assert.NoError(t, f.RemoveRow("Sheet1", 5))
+	link, target, err = f.GetCellHyperLink("Sheet1", "F5")
+	assert.NoError(t, err)
+	assert.False(t, link)
+	assert.Empty(t, target)
+
+	// Test adjust hyperlinks location on remove column
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "F5", "Sheet1!A1", "Location"))
+	assert.NoError(t, f.RemoveCol("Sheet1", "F"))
+	link, target, err = f.GetCellHyperLink("Sheet1", "F5")
+	assert.NoError(t, err)
+	assert.False(t, link)
+	assert.Empty(t, target)
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustHyperlinks.xlsx")))
+	assert.NoError(t, f.Close())
+}
+
 func TestAdjustFormula(t *testing.T) {
 	f := NewFile()
 	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
@@ -467,7 +524,7 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.Close())
 
 	assert.NoError(t, f.adjustFormula("Sheet1", nil, rows, 0, 0, false))
-	assert.Equal(t, ErrParameterInvalid, f.adjustFormula("Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
 	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
 
 	_, err := f.adjustFormulaRef("Sheet1", "XFE1", columns, 0, 1)
@@ -481,6 +538,18 @@ func TestAdjustFormula(t *testing.T) {
 
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", fmt.Sprintf("A%d", TotalRows)))
 	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet1", 1, 1))
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B3", "SUM(1048576:1:2)"))
+	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet1", 1, 1))
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B3", "SUM(XFD:A:B)"))
+	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B3", "SUM(A:B:XFD)"))
+	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
 
 	// Test adjust formula with defined name in formula text
 	f = NewFile()
@@ -497,9 +566,205 @@ func TestAdjustFormula(t *testing.T) {
 	// Test adjust formula with array formula
 	f = NewFile()
 	formulaType, reference := STCellFormulaTypeArray, "A3:A3"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "=A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
 	formula, err = f.GetCellFormula("Sheet1", "A4")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2:A3", formula)
+
+	// Test adjust formula on duplicate row with array formula
+	f = NewFile()
+	formulaType, reference = STCellFormulaTypeArray, "A3"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	formula, err = f.GetCellFormula("Sheet1", "A4")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2:A3", formula)
+
+	// Test adjust formula on duplicate row with relative and absolute cell references
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "A$10+$A11"))
+	assert.NoError(t, f.DuplicateRowTo("Sheet1", 10, 2))
+	formula, err = f.GetCellFormula("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A$2+$A3", formula)
+
+	t.Run("for_cells_affected_directly", func(t *testing.T) {
+		// Test insert row in middle of range with relative and absolute cell references
+		f := NewFile()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "$A1+A$2"))
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		formula, err := f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "$A1+A$3", formula)
+		assert.NoError(t, f.RemoveRow("Sheet1", 2))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "$A1+A$2", formula)
+
+		// Test insert column in middle of range
+		f = NewFile()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "B1+C1"))
+		assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+		formula, err = f.GetCellFormula("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "B1+D1", formula)
+		assert.NoError(t, f.RemoveCol("Sheet1", "C"))
+		formula, err = f.GetCellFormula("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "B1+C1", formula)
+
+		// Test insert row and column in a rectangular range
+		f = NewFile()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "D4+D5+E4+E5"))
+		assert.NoError(t, f.InsertCols("Sheet1", "E", 1))
+		assert.NoError(t, f.InsertRows("Sheet1", 5, 1))
+		formula, err = f.GetCellFormula("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "D4+D6+F4+F6", formula)
+
+		// Test insert row in middle of range
+		f = NewFile()
+		formulaType, reference := STCellFormulaTypeArray, "B1:B1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "A1:A2", FormulaOpts{Ref: &reference, Type: &formulaType}))
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "A1:A3", formula)
+		assert.NoError(t, f.RemoveRow("Sheet1", 2))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "A1:A2", formula)
+
+		// Test insert column in middle of range
+		f = NewFile()
+		formulaType, reference = STCellFormulaTypeArray, "A1:A1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "B1:C1", FormulaOpts{Ref: &reference, Type: &formulaType}))
+		assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+		formula, err = f.GetCellFormula("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "B1:D1", formula)
+		assert.NoError(t, f.RemoveCol("Sheet1", "C"))
+		formula, err = f.GetCellFormula("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "B1:C1", formula)
+
+		// Test insert row and column in a rectangular range
+		f = NewFile()
+		formulaType, reference = STCellFormulaTypeArray, "A1:A1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "D4:E5", FormulaOpts{Ref: &reference, Type: &formulaType}))
+		assert.NoError(t, f.InsertCols("Sheet1", "E", 1))
+		assert.NoError(t, f.InsertRows("Sheet1", 5, 1))
+		formula, err = f.GetCellFormula("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "D4:F6", formula)
+	})
+	t.Run("for_cells_affected_indirectly", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "A3+A4"))
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		formula, err := f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "A4+A5", formula)
+		assert.NoError(t, f.RemoveRow("Sheet1", 2))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "A3+A4", formula)
+
+		f = NewFile()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "D3+D4"))
+		assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "E3+E4", formula)
+		assert.NoError(t, f.RemoveCol("Sheet1", "C"))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "D3+D4", formula)
+	})
+	t.Run("for_entire_cols_rows_reference", func(t *testing.T) {
+		f := NewFile()
+		// Test adjust formula on insert row in the middle of the range
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(A2:A3:A4,,Table1[])"))
+		assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
+		formula, err := f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(A2:A4:A5,,Table1[])", formula)
+
+		// Test adjust formula on insert at the top of the range
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(A3:A5:A6,,Table1[])", formula)
+
+		f = NewFile()
+		// Test adjust formula on insert row in the middle of the range
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(A2,A3)"))
+		assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(A2,A4)", formula)
+
+		// Test adjust formula on insert row at the top of the range
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(A3,A5)", formula)
+
+		f = NewFile()
+		// Test adjust formula on insert col in the middle of the range
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(C3:D3)"))
+		assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(C3:E3)", formula)
+
+		// Test adjust formula on insert at the top of the range
+		assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(D3:F3)", formula)
+
+		f = NewFile()
+		// Test adjust formula on insert column in the middle of the range
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(C3,D3)"))
+		assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(C3,E3)", formula)
+
+		// Test adjust formula on insert column at the top of the range
+		assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(D3,F3)", formula)
+
+		f = NewFile()
+		// Test adjust formula on insert row in the middle of the range (range of whole row)
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(2:3)"))
+		assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(2:4)", formula)
+
+		// Test adjust formula on insert row at the top of the range (range of whole row)
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(3:5)", formula)
+
+		f = NewFile()
+		// Test adjust formula on insert row in the middle of the range (range of whole column)
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(C:D)"))
+		assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(C:E)", formula)
+
+		// Test adjust formula on insert row at the top of the range (range of whole column)
+		assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+		formula, err = f.GetCellFormula("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUM(D:F)", formula)
+	})
 }

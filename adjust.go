@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/xuri/efp"
@@ -154,28 +155,63 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow > TotalRows {
 		return ErrMaxRows
 	}
-	for i := 0; i < len(ws.SheetData.Row); i++ {
+	numOfRows := len(ws.SheetData.Row)
+	for i := 0; i < numOfRows; i++ {
 		r := &ws.SheetData.Row[i]
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
-			if err := f.adjustSingleRowDimensions(sheet, r, row, offset, false); err != nil {
-				return err
-			}
+			r.adjustSingleRowDimensions(offset)
+		}
+		if err := f.adjustSingleRowFormulas(sheet, r, row, offset, false); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
-func (f *File) adjustSingleRowDimensions(sheet string, r *xlsxRow, num, offset int, si bool) error {
+func (r *xlsxRow) adjustSingleRowDimensions(offset int) {
 	r.R += offset
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
 		r.C[i].R, _ = JoinCellName(colName, r.R)
+	}
+}
+
+// adjustSingleRowFormulas provides a function to adjust single row formulas.
+func (f *File) adjustSingleRowFormulas(sheet string, r *xlsxRow, num, offset int, si bool) error {
+	for _, col := range r.C {
 		if err := f.adjustFormula(sheet, col.F, rows, num, offset, si); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// adjustCellRef provides a function to adjust cell reference.
+func (f *File) adjustCellRef(ref string, dir adjustDirection, num, offset int) (string, error) {
+	if !strings.Contains(ref, ":") {
+		ref += ":" + ref
+	}
+	coordinates, err := rangeRefToCoordinates(ref)
+	if err != nil {
+		return ref, err
+	}
+	if dir == columns {
+		if coordinates[0] >= num {
+			coordinates[0] += offset
+		}
+		if coordinates[2] >= num {
+			coordinates[2] += offset
+		}
+	} else {
+		if coordinates[1] >= num {
+			coordinates[1] += offset
+		}
+		if coordinates[3] >= num {
+			coordinates[3] += offset
+		}
+	}
+	return f.coordinatesToRangeRef(coordinates)
 }
 
 // adjustFormula provides a function to adjust formula reference and shared
@@ -184,48 +220,118 @@ func (f *File) adjustFormula(sheet string, formula *xlsxF, dir adjustDirection, 
 	if formula == nil {
 		return nil
 	}
-	adjustRef := func(ref string) (string, error) {
-		coordinates, err := rangeRefToCoordinates(ref)
-		if err != nil {
-			return ref, err
-		}
-		if dir == columns {
-			coordinates[0] += offset
-			coordinates[2] += offset
-		} else {
-			coordinates[1] += offset
-			coordinates[3] += offset
-		}
-		return f.coordinatesToRangeRef(coordinates)
-	}
 	var err error
 	if formula.Ref != "" {
-		if formula.Ref, err = adjustRef(formula.Ref); err != nil {
+		if formula.Ref, err = f.adjustCellRef(formula.Ref, dir, num, offset); err != nil {
 			return err
 		}
 		if si && formula.Si != nil {
 			formula.Si = intPtr(*formula.Si + 1)
 		}
 	}
-	if formula.T == STCellFormulaTypeArray {
-		formula.Content, err = adjustRef(strings.TrimPrefix(formula.Content, "="))
-		return err
-	}
-	if formula.Content != "" && !strings.ContainsAny(formula.Content, "[:]") {
-		content, err := f.adjustFormulaRef(sheet, formula.Content, dir, num, offset)
-		if err != nil {
+	if formula.Content != "" {
+		if formula.Content, err = f.adjustFormulaRef(sheet, formula.Content, dir, num, offset); err != nil {
 			return err
 		}
-		formula.Content = content
 	}
 	return nil
 }
 
-// adjustFormulaRef returns adjusted formula text by giving adjusting direction
-// and the base number of column or row, and offset.
-func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, num, offset int) (string, error) {
+// isFunctionStop provides a function to check if token is a function stop.
+func isFunctionStop(token efp.Token) bool {
+	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStop
+}
+
+// isFunctionStart provides a function to check if token is a function start.
+func isFunctionStart(token efp.Token) bool {
+	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart
+}
+
+// adjustFormulaColumnName adjust column name in the formula reference.
+func adjustFormulaColumnName(name string, dir adjustDirection, num, offset int) (string, error) {
+	if name == "" {
+		return name, nil
+	}
+	col, err := ColumnNameToNumber(name)
+	if err != nil {
+		return name, err
+	}
+	if dir == columns && col >= num {
+		col += offset
+		return ColumnNumberToName(col)
+	}
+	return name, nil
+}
+
+// adjustFormulaRowNumber adjust row number in the formula reference.
+func adjustFormulaRowNumber(name string, dir adjustDirection, num, offset int) (string, error) {
+	if name == "" {
+		return name, nil
+	}
+	row, _ := strconv.Atoi(name)
+	if dir == rows && row >= num {
+		row += offset
+		if row > TotalRows {
+			return name, ErrMaxRows
+		}
+		return strconv.Itoa(row), nil
+	}
+	return name, nil
+}
+
+// adjustFormulaOperand adjust range operand tokens for the formula.
+func (f *File) adjustFormulaOperand(token efp.Token, dir adjustDirection, num int, offset int) (string, error) {
+	var col, row, operand string
+	for _, r := range token.TValue {
+		if ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') {
+			col += string(r)
+			continue
+		}
+		if '0' <= r && r <= '9' {
+			row += string(r)
+			if col != "" {
+				name, err := adjustFormulaColumnName(col, dir, num, offset)
+				if err != nil {
+					return operand, err
+				}
+				operand += name
+				col = ""
+			}
+			continue
+		}
+		if row != "" {
+			name, err := adjustFormulaRowNumber(row, dir, num, offset)
+			if err != nil {
+				return operand, err
+			}
+			operand += name
+			row = ""
+		}
+		if col != "" {
+			name, err := adjustFormulaColumnName(col, dir, num, offset)
+			if err != nil {
+				return operand, err
+			}
+			operand += name
+			col = ""
+		}
+		operand += string(r)
+	}
+	name, err := adjustFormulaColumnName(col, dir, num, offset)
+	if err != nil {
+		return operand, err
+	}
+	operand += name
+	name, err = adjustFormulaRowNumber(row, dir, num, offset)
+	operand += name
+	return operand, err
+}
+
+// adjustFormulaRef returns adjusted formula by giving adjusting direction and
+// the base number of column or row, and offset.
+func (f *File) adjustFormulaRef(sheet, formula string, dir adjustDirection, num, offset int) (string, error) {
 	var (
-		formulaText  string
+		val          string
 		definedNames []string
 		ps           = efp.ExcelParser()
 	)
@@ -234,32 +340,34 @@ func (f *File) adjustFormulaRef(sheet string, text string, dir adjustDirection, 
 			definedNames = append(definedNames, definedName.Name)
 		}
 	}
-	for _, token := range ps.Parse(text) {
+	for _, token := range ps.Parse(formula) {
 		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
 			if inStrSlice(definedNames, token.TValue, true) != -1 {
-				formulaText += token.TValue
+				val += token.TValue
 				continue
 			}
-			c, r, err := CellNameToCoordinates(token.TValue)
+			if strings.ContainsAny(token.TValue, "[]") {
+				val += token.TValue
+				continue
+			}
+			operand, err := f.adjustFormulaOperand(token, dir, num, offset)
 			if err != nil {
-				return formulaText, err
+				return val, err
 			}
-			if dir == columns && c >= num {
-				c += offset
-			}
-			if dir == rows {
-				r += offset
-			}
-			cell, err := CoordinatesToCellName(c, r, strings.Contains(token.TValue, "$"))
-			if err != nil {
-				return formulaText, err
-			}
-			formulaText += cell
+			val += operand
 			continue
 		}
-		formulaText += token.TValue
+		if isFunctionStart(token) {
+			val += token.TValue + string(efp.ParenOpen)
+			continue
+		}
+		if isFunctionStop(token) {
+			val += token.TValue + string(efp.ParenClose)
+			continue
+		}
+		val += token.TValue
 	}
-	return formulaText, nil
+	return val, nil
 }
 
 // adjustHyperlinks provides a function to update hyperlinks when inserting or
