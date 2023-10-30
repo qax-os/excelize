@@ -254,37 +254,58 @@ func (f *File) addSheetTable(sheet string, rID int) error {
 	return err
 }
 
-// setTableHeader provides a function to set cells value in header row for the
+// setTableColumns provides a function to set cells value in header row for the
 // table.
-func (f *File) setTableHeader(sheet string, showHeaderRow bool, x1, y1, x2 int) ([]*xlsxTableColumn, error) {
+func (f *File) setTableColumns(sheet string, showHeaderRow bool, x1, y1, x2 int, tbl *xlsxTable) error {
 	var (
-		tableColumns []*xlsxTableColumn
-		idx          int
+		idx            int
+		header         []string
+		tableColumns   []*xlsxTableColumn
+		getTableColumn = func(name string) *xlsxTableColumn {
+			if tbl != nil && tbl.TableColumns != nil {
+				for _, column := range tbl.TableColumns.TableColumn {
+					if column.Name == name {
+						return column
+					}
+				}
+			}
+			return nil
+		}
 	)
 	for i := x1; i <= x2; i++ {
 		idx++
 		cell, err := CoordinatesToCellName(i, y1)
 		if err != nil {
-			return tableColumns, err
+			return err
 		}
-		name, _ := f.GetCellValue(sheet, cell)
+		name, _ := f.GetCellValue(sheet, cell, Options{RawCellValue: true})
 		if _, err := strconv.Atoi(name); err == nil {
 			if showHeaderRow {
 				_ = f.SetCellStr(sheet, cell, name)
 			}
 		}
-		if name == "" {
+		if name == "" || inStrSlice(header, name, true) != -1 {
 			name = "Column" + strconv.Itoa(idx)
 			if showHeaderRow {
 				_ = f.SetCellStr(sheet, cell, name)
 			}
+		}
+		header = append(header, name)
+		if column := getTableColumn(name); column != nil {
+			column.ID, column.DataDxfID = idx, 0
+			tableColumns = append(tableColumns, column)
+			continue
 		}
 		tableColumns = append(tableColumns, &xlsxTableColumn{
 			ID:   idx,
 			Name: name,
 		})
 	}
-	return tableColumns, nil
+	tbl.TableColumns = &xlsxTableColumns{
+		Count:       len(tableColumns),
+		TableColumn: tableColumns,
+	}
+	return nil
 }
 
 // checkDefinedName check whether there are illegal characters in the defined
@@ -326,7 +347,6 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 	if err != nil {
 		return err
 	}
-	tableColumns, _ := f.setTableHeader(sheet, !hideHeaderRow, x1, y1, x2)
 	name := opts.Name
 	if name == "" {
 		name = "Table" + strconv.Itoa(i)
@@ -340,10 +360,6 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 		AutoFilter: &xlsxAutoFilter{
 			Ref: ref,
 		},
-		TableColumns: &xlsxTableColumns{
-			Count:       len(tableColumns),
-			TableColumn: tableColumns,
-		},
 		TableStyleInfo: &xlsxTableStyleInfo{
 			Name:              opts.StyleName,
 			ShowFirstColumn:   opts.ShowFirstColumn,
@@ -352,6 +368,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 			ShowColumnStripes: opts.ShowColumnStripes,
 		},
 	}
+	_ = f.setTableColumns(sheet, !hideHeaderRow, x1, y1, x2, &t)
 	if hideHeaderRow {
 		t.AutoFilter = nil
 		t.HeaderRowCount = intPtr(0)

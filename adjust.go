@@ -53,6 +53,8 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
+	ws.checkSheet()
+	_ = ws.checkRow()
 	f.adjustTable(ws, sheet, dir, num, offset)
 	if err = f.adjustMergeCells(ws, dir, num, offset); err != nil {
 		return err
@@ -63,9 +65,6 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
 		return err
 	}
-	ws.checkSheet()
-	_ = ws.checkRow()
-
 	if ws.MergeCells != nil && len(ws.MergeCells.Cells) == 0 {
 		ws.MergeCells = nil
 	}
@@ -279,10 +278,40 @@ func adjustFormulaRowNumber(name string, dir adjustDirection, num, offset int) (
 	return name, nil
 }
 
+// adjustFormulaOperandRef adjust cell reference in the operand tokens for the formula.
+func adjustFormulaOperandRef(row, col, operand string, dir adjustDirection, num int, offset int) (string, string, string, error) {
+	if col != "" {
+		name, err := adjustFormulaColumnName(col, dir, num, offset)
+		if err != nil {
+			return row, col, operand, err
+		}
+		operand += name
+		col = ""
+	}
+	if row != "" {
+		name, err := adjustFormulaRowNumber(row, dir, num, offset)
+		if err != nil {
+			return row, col, operand, err
+		}
+		operand += name
+		row = ""
+	}
+	return row, col, operand, nil
+}
+
 // adjustFormulaOperand adjust range operand tokens for the formula.
 func (f *File) adjustFormulaOperand(token efp.Token, dir adjustDirection, num int, offset int) (string, error) {
-	var col, row, operand string
-	for _, r := range token.TValue {
+	var (
+		err                      error
+		sheet, col, row, operand string
+		cell                     = token.TValue
+		tokens                   = strings.Split(token.TValue, "!")
+	)
+	if len(tokens) == 2 { // have a worksheet
+		sheet, cell = tokens[0], tokens[1]
+		operand = string(efp.QuoteSingle) + sheet + string(efp.QuoteSingle) + "!"
+	}
+	for _, r := range cell {
 		if ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') {
 			col += string(r)
 			continue
@@ -299,21 +328,8 @@ func (f *File) adjustFormulaOperand(token efp.Token, dir adjustDirection, num in
 			}
 			continue
 		}
-		if row != "" {
-			name, err := adjustFormulaRowNumber(row, dir, num, offset)
-			if err != nil {
-				return operand, err
-			}
-			operand += name
-			row = ""
-		}
-		if col != "" {
-			name, err := adjustFormulaColumnName(col, dir, num, offset)
-			if err != nil {
-				return operand, err
-			}
-			operand += name
-			col = ""
+		if row, col, operand, err = adjustFormulaOperandRef(row, col, operand, dir, num, offset); err != nil {
+			return operand, err
 		}
 		operand += string(r)
 	}
@@ -365,6 +381,10 @@ func (f *File) adjustFormulaRef(sheet, formula string, dir adjustDirection, num,
 			val += token.TValue + string(efp.ParenClose)
 			continue
 		}
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
+			val += string(efp.QuoteDouble) + token.TValue + string(efp.QuoteDouble)
+			continue
+		}
 		val += token.TValue
 	}
 	return val, nil
@@ -400,16 +420,7 @@ func (f *File) adjustHyperlinks(ws *xlsxWorksheet, sheet string, dir adjustDirec
 	}
 	for i := range ws.Hyperlinks.Hyperlink {
 		link := &ws.Hyperlinks.Hyperlink[i] // get reference
-		colNum, rowNum, _ := CellNameToCoordinates(link.Ref)
-		if dir == rows {
-			if rowNum >= num {
-				link.Ref, _ = CoordinatesToCellName(colNum, rowNum+offset)
-			}
-		} else {
-			if colNum >= num {
-				link.Ref, _ = CoordinatesToCellName(colNum+offset, rowNum)
-			}
-		}
+		link.Ref, _ = f.adjustFormulaRef(sheet, link.Ref, dir, num, offset)
 	}
 }
 
@@ -455,7 +466,8 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 		if t.AutoFilter != nil {
 			t.AutoFilter.Ref = t.Ref
 		}
-		_, _ = f.setTableHeader(sheet, true, x1, y1, x2)
+		_ = f.setTableColumns(sheet, true, x1, y1, x2, &t)
+		t.TotalsRowCount = 0
 		table, _ := xml.Marshal(t)
 		f.saveFileList(tableXML, table)
 	}

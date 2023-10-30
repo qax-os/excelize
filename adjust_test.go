@@ -583,11 +583,11 @@ func TestAdjustFormula(t *testing.T) {
 
 	// Test adjust formula on duplicate row with relative and absolute cell references
 	f = NewFile()
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "A$10+$A11"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "A$10+$A11&\" \""))
 	assert.NoError(t, f.DuplicateRowTo("Sheet1", 10, 2))
 	formula, err = f.GetCellFormula("Sheet1", "B2")
 	assert.NoError(t, err)
-	assert.Equal(t, "A$2+$A3", formula)
+	assert.Equal(t, "A$2+$A3&\" \"", formula)
 
 	t.Run("for_cells_affected_directly", func(t *testing.T) {
 		// Test insert row in middle of range with relative and absolute cell references
@@ -699,17 +699,17 @@ func TestAdjustFormula(t *testing.T) {
 
 		f = NewFile()
 		// Test adjust formula on insert row in the middle of the range
-		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(A2,A3)"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM('Sheet1'!A2,A3)"))
 		assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
 		formula, err = f.GetCellFormula("Sheet1", "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A2,A4)", formula)
+		assert.Equal(t, "SUM('Sheet1'!A2,A4)", formula)
 
 		// Test adjust formula on insert row at the top of the range
 		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 		formula, err = f.GetCellFormula("Sheet1", "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A3,A5)", formula)
+		assert.Equal(t, "SUM('Sheet1'!A3,A5)", formula)
 
 		f = NewFile()
 		// Test adjust formula on insert col in the middle of the range
