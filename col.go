@@ -752,7 +752,10 @@ func (f *File) InsertCols(sheet, col string, n int) error {
 		if s == sheet {
 			continue
 		}
-		f.adjustOtherSheetHelper(s, columns, num, n)
+		err = f.adjustOtherSheetHelper(s, sheet, columns, num, n)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

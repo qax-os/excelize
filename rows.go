@@ -594,7 +594,10 @@ func (f *File) InsertRows(sheet string, row, n int) error {
 		if s == sheet {
 			continue
 		}
-		f.adjustOtherSheetHelper(s, rows, row, n)
+		err = f.adjustOtherSheetHelper(s, sheet, rows, row, n)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -667,7 +670,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 
 	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
 	rowCopy.adjustSingleRowDimensions(row2 - row)
-	_ = f.adjustSingleRowFormulas(sheet, &rowCopy, row, row2-row, true, false)
+	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row, true, false)
 
 	if idx2 != -1 {
 		ws.SheetData.Row[idx2] = rowCopy
