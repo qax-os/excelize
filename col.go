@@ -742,23 +742,7 @@ func (f *File) InsertCols(sheet, col string, n int) error {
 	if n < 1 || n > MaxColumns {
 		return ErrColumnNumber
 	}
-	err = f.adjustHelper(sheet, columns, num, n)
-	if err != nil {
-		return err
-	}
-
-	// iterate over all the other sheets in the file
-	for _, s := range f.GetSheetList() {
-		if s == sheet {
-			continue
-		}
-		err = f.adjustOtherSheetHelper(s, sheet, columns, num, n)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return f.adjustHelper(sheet, columns, num, n)
 }
 
 // RemoveCol provides a function to remove single column by given worksheet

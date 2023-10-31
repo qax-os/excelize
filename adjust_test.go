@@ -457,6 +457,12 @@ func TestAdjustColDimensions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
 	assert.Equal(t, ErrColumnNumber, f.adjustColDimensions("Sheet1", ws, 1, MaxColumns))
+
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	f.Sheet.Delete("xl/worksheets/sheet2.xml")
+	f.Pkg.Store("xl/worksheets/sheet2.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.adjustColDimensions("Sheet2", ws, 2, 1), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAdjustRowDimensions(t *testing.T) {
@@ -465,6 +471,20 @@ func TestAdjustRowDimensions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C3", "A1+B1"))
 	assert.Equal(t, ErrMaxRows, f.adjustRowDimensions("Sheet1", ws, 1, TotalRows))
+
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	f.Sheet.Delete("xl/worksheets/sheet2.xml")
+	f.Pkg.Store("xl/worksheets/sheet2.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.adjustRowDimensions("Sheet1", ws, 2, 1), "XML syntax error on line 1: invalid UTF-8")
+
+	f = NewFile()
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	ws, err = f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", fmt.Sprintf("Sheet2!A%d", TotalRows)))
+	assert.Equal(t, ErrMaxRows, f.adjustRowDimensions("Sheet2", ws, 1, TotalRows))
 }
 
 func TestAdjustHyperlinks(t *testing.T) {
@@ -523,13 +543,13 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
 	assert.NoError(t, f.Close())
 
-	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", nil, rows, 0, 0, false, false))
-	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false, false))
-	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false, false))
+	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", nil, rows, 0, 0, false))
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
+	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
 
-	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", columns, 0, 1, false)
+	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
-	_, err = f.adjustFormulaRef("Sheet1", "Sheet1", "XFD1", columns, 0, 1, false)
+	_, err = f.adjustFormulaRef("Sheet1", "Sheet1", "XFD1", columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
 
 	f = NewFile()
@@ -538,15 +558,6 @@ func TestAdjustFormula(t *testing.T) {
 
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", fmt.Sprintf("A%d", TotalRows)))
 	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet1", 1, 1))
-
-	f = NewFile()
-	_, err = f.NewSheet("Sheet2")
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "Sheet2!XFD1"))
-	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet2", "A", 1))
-
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", fmt.Sprintf("Sheet2!A%d", TotalRows)))
-	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet2", 1, 1))
 
 	f = NewFile()
 	assert.NoError(t, f.SetCellFormula("Sheet1", "B3", "SUM(1048576:1:2)"))
@@ -592,11 +603,11 @@ func TestAdjustFormula(t *testing.T) {
 
 	// Test adjust formula on duplicate row with relative and absolute cell references
 	f = NewFile()
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "A$10+$A11"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "A$10+$A11&\" \""))
 	assert.NoError(t, f.DuplicateRowTo("Sheet1", 10, 2))
 	formula, err = f.GetCellFormula("Sheet1", "B2")
 	assert.NoError(t, err)
-	assert.Equal(t, "A$2+$A3", formula)
+	assert.Equal(t, "A$2+$A3&\" \"", formula)
 
 	t.Run("for_cells_affected_directly", func(t *testing.T) {
 		// Test insert row in middle of range with relative and absolute cell references
@@ -708,17 +719,17 @@ func TestAdjustFormula(t *testing.T) {
 
 		f = NewFile()
 		// Test adjust formula on insert row in the middle of the range
-		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM(A2,A3)"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "SUM('Sheet 1'!A2,A3)"))
 		assert.NoError(t, f.InsertRows("Sheet1", 3, 1))
 		formula, err = f.GetCellFormula("Sheet1", "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A2,A4)", formula)
+		assert.Equal(t, "SUM('Sheet 1'!A2,A4)", formula)
 
 		// Test adjust formula on insert row at the top of the range
 		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 		formula, err = f.GetCellFormula("Sheet1", "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A3,A5)", formula)
+		assert.Equal(t, "SUM('Sheet 1'!A3,A5)", formula)
 
 		f = NewFile()
 		// Test adjust formula on insert col in the middle of the range
@@ -776,265 +787,143 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "SUM(D:F)", formula)
 	})
-}
-
-func TestSheet1RefSheet2(t *testing.T) {
-	t.Run("for_cells_in_Empty_Sheet2_referenced_from_Sheet1_test_rows_insert", func(t *testing.T) {
+	t.Run("for_all_worksheet_cells_with_rows_insert", func(t *testing.T) {
 		f := NewFile()
 		_, err := f.NewSheet("Sheet2")
 		assert.NoError(t, err)
-
 		// Tests formulas referencing Sheet2 should update but those referencing the original sheet should not
-		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "Sheet2!A1+Sheet2!A2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1+A2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "Sheet2!B1:B2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "B1:B2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", "SUM(Sheet2!C1:C2)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "G1", "SUM(C1:C2)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "H1", "SUM(Sheet2!D1,Sheet2!D2)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "I1", "SUM(D1,D2)"))
-
-		//insert row in the middle of the range
+		tbl := [][]string{
+			{"B1", "Sheet2!A1+Sheet2!A2", "Sheet2!A1+Sheet2!A3", "Sheet2!A2+Sheet2!A4"},
+			{"C1", "A1+A2", "A1+A2", "A1+A2"},
+			{"D1", "Sheet2!B1:B2", "Sheet2!B1:B3", "Sheet2!B2:B4"},
+			{"E1", "B1:B2", "B1:B2", "B1:B2"},
+			{"F1", "SUM(Sheet2!C1:C2)", "SUM(Sheet2!C1:C3)", "SUM(Sheet2!C2:C4)"},
+			{"G1", "SUM(C1:C2)", "SUM(C1:C2)", "SUM(C1:C2)"},
+			{"H1", "SUM(Sheet2!D1,Sheet2!D2)", "SUM(Sheet2!D1,Sheet2!D3)", "SUM(Sheet2!D2,Sheet2!D4)"},
+			{"I1", "SUM(D1,D2)", "SUM(D1,D2)", "SUM(D1,D2)"},
+		}
+		for _, preset := range tbl {
+			assert.NoError(t, f.SetCellFormula("Sheet1", preset[0], preset[1]))
+		}
+		// Test adjust formula on insert row in the middle of the range
 		assert.NoError(t, f.InsertRows("Sheet2", 2, 1))
-		formula, err := f.GetCellFormula("Sheet1", "B1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A1+Sheet2!A3", formula)
-		formula, err = f.GetCellFormula("Sheet1", "C1")
-		assert.NoError(t, err)
-		assert.Equal(t, "A1+A2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "D1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B1:B3", formula)
-		formula, err = f.GetCellFormula("Sheet1", "E1")
-		assert.NoError(t, err)
-		assert.Equal(t, "B1:B2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "F1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!C1:C3)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "G1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(C1:C2)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "H1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!D1,Sheet2!D3)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "I1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(D1,D2)", formula)
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[2], formula)
+		}
 
-		//insert row in the top of the range
+		// Test adjust formula on insert row in the top of the range
 		assert.NoError(t, f.InsertRows("Sheet2", 1, 1))
-		formula, err = f.GetCellFormula("Sheet1", "B1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A2+Sheet2!A4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "C1")
-		assert.NoError(t, err)
-		assert.Equal(t, "A1+A2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "D1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B2:B4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "E1")
-		assert.NoError(t, err)
-		assert.Equal(t, "B1:B2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "F1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!C2:C4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "G1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(C1:C2)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "H1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!D2,Sheet2!D4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "I1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(D1,D2)", formula)
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[3], formula)
+		}
 	})
-
-	t.Run("for_cells_in_Empty_Sheet2_referenced_from_Sheet1_test_cols_insert", func(t *testing.T) {
+	t.Run("for_all_worksheet_cells_with_cols_insert", func(t *testing.T) {
 		f := NewFile()
 		_, err := f.NewSheet("Sheet2")
 		assert.NoError(t, err)
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "Sheet2!A1+Sheet2!B1"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1+B1"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "Sheet2!A2:B2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A4", "A2:B2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A5", "SUM(Sheet2!A3:B3)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A6", "SUM(A3:B3)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A7", "SUM(Sheet2!A4,Sheet2!B4)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A8", "SUM(A4,B4)"))
-
-		//insert col in the middle of the range
+		tbl := [][]string{
+			{"A1", "Sheet2!A1+Sheet2!B1", "Sheet2!A1+Sheet2!C1", "Sheet2!B1+Sheet2!D1"},
+			{"A2", "A1+B1", "A1+B1", "A1+B1"},
+			{"A3", "Sheet2!A2:B2", "Sheet2!A2:C2", "Sheet2!B2:D2"},
+			{"A4", "A2:B2", "A2:B2", "A2:B2"},
+			{"A5", "SUM(Sheet2!A3:B3)", "SUM(Sheet2!A3:C3)", "SUM(Sheet2!B3:D3)"},
+			{"A6", "SUM(A3:B3)", "SUM(A3:B3)", "SUM(A3:B3)"},
+			{"A7", "SUM(Sheet2!A4,Sheet2!B4)", "SUM(Sheet2!A4,Sheet2!C4)", "SUM(Sheet2!B4,Sheet2!D4)"},
+			{"A8", "SUM(A4,B4)", "SUM(A4,B4)", "SUM(A4,B4)"},
+		}
+		for _, preset := range tbl {
+			assert.NoError(t, f.SetCellFormula("Sheet1", preset[0], preset[1]))
+		}
+		// Test adjust formula on insert column in the middle of the range
 		assert.NoError(t, f.InsertCols("Sheet2", "B", 1))
-		formula, err := f.GetCellFormula("Sheet1", "A1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A1+Sheet2!C1", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A2")
-		assert.NoError(t, err)
-		assert.Equal(t, "A1+B1", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A3")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A2:C2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A4")
-		assert.NoError(t, err)
-		assert.Equal(t, "A2:B2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A5")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!A3:C3)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A6")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A3:B3)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A7")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!A4,Sheet2!C4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A8")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A4,B4)", formula)
-
-		//insert col in the top of the range
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[2], formula)
+		}
+		// Test adjust formula on insert column in the top of the range
 		assert.NoError(t, f.InsertCols("Sheet2", "A", 1))
-		formula, err = f.GetCellFormula("Sheet1", "A1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B1+Sheet2!D1", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A2")
-		assert.NoError(t, err)
-		assert.Equal(t, "A1+B1", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A3")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B2:D2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A4")
-		assert.NoError(t, err)
-		assert.Equal(t, "A2:B2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A5")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!B3:D3)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A6")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A3:B3)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A7")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!B4,Sheet2!D4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A8")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(A4,B4)", formula)
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[3], formula)
+		}
 	})
-}
-
-func TestMixedCrossSheetReferences(t *testing.T) {
-	t.Run("mix_different_kind_of_references_test_rows)", func(t *testing.T) {
+	t.Run("for_cross_sheet_ref_with_rows_insert)", func(t *testing.T) {
 		f := NewFile()
 		_, err := f.NewSheet("Sheet2")
 		assert.NoError(t, err)
 		_, err = f.NewSheet("Sheet3")
 		assert.NoError(t, err)
-
-		// Tests formulas referencing Sheet2 should update
-		// but those referencing the original sheet or Sheet 3 should not update
-		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "Sheet2!A1+Sheet2!A2+Sheet1!A3+Sheet1!A4"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "Sheet2!B1+Sheet2!B2+B3+B4"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "Sheet2!C1+Sheet2!C2+Sheet3!A3+Sheet3!A4"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "SUM(Sheet2!D1:D2,Sheet1!A3:A4)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", "SUM(Sheet2!E1:E2,A3:A4)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "G1", "SUM(Sheet2!F1:F2,Sheet3!A3:A4)"))
-
-		// insert row in the middle of the range
+		// Tests formulas referencing Sheet2 should update but those referencing
+		// the original sheet or Sheet 3 should not update
+		tbl := [][]string{
+			{"B1", "Sheet2!A1+Sheet2!A2+Sheet1!A3+Sheet1!A4", "Sheet2!A1+Sheet2!A3+Sheet1!A3+Sheet1!A4", "Sheet2!A2+Sheet2!A4+Sheet1!A3+Sheet1!A4"},
+			{"C1", "Sheet2!B1+Sheet2!B2+B3+B4", "Sheet2!B1+Sheet2!B3+B3+B4", "Sheet2!B2+Sheet2!B4+B3+B4"},
+			{"D1", "Sheet2!C1+Sheet2!C2+Sheet3!A3+Sheet3!A4", "Sheet2!C1+Sheet2!C3+Sheet3!A3+Sheet3!A4", "Sheet2!C2+Sheet2!C4+Sheet3!A3+Sheet3!A4"},
+			{"E1", "SUM(Sheet2!D1:D2,Sheet1!A3:A4)", "SUM(Sheet2!D1:D3,Sheet1!A3:A4)", "SUM(Sheet2!D2:D4,Sheet1!A3:A4)"},
+			{"F1", "SUM(Sheet2!E1:E2,A3:A4)", "SUM(Sheet2!E1:E3,A3:A4)", "SUM(Sheet2!E2:E4,A3:A4)"},
+			{"G1", "SUM(Sheet2!F1:F2,Sheet3!A3:A4)", "SUM(Sheet2!F1:F3,Sheet3!A3:A4)", "SUM(Sheet2!F2:F4,Sheet3!A3:A4)"},
+		}
+		for _, preset := range tbl {
+			assert.NoError(t, f.SetCellFormula("Sheet1", preset[0], preset[1]))
+		}
+		// Test adjust formula on insert row in the middle of the range
 		assert.NoError(t, f.InsertRows("Sheet2", 2, 1))
-		formula, err := f.GetCellFormula("Sheet1", "B1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A1+Sheet2!A3+Sheet1!A3+Sheet1!A4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "C1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B1+Sheet2!B3+B3+B4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "D1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!C1+Sheet2!C3+Sheet3!A3+Sheet3!A4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "E1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!D1:D3,Sheet1!A3:A4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "F1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!E1:E3,A3:A4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "G1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!F1:F3,Sheet3!A3:A4)", formula)
-
-		// insert row in the top of the range
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[2], formula)
+		}
+		// Test adjust formula on insert row in the top of the range
 		assert.NoError(t, f.InsertRows("Sheet2", 1, 1))
-		formula, err = f.GetCellFormula("Sheet1", "B1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A2+Sheet2!A4+Sheet1!A3+Sheet1!A4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "C1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B2+Sheet2!B4+B3+B4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "D1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!C2+Sheet2!C4+Sheet3!A3+Sheet3!A4", formula)
-		formula, err = f.GetCellFormula("Sheet1", "E1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!D2:D4,Sheet1!A3:A4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "F1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!E2:E4,A3:A4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "G1")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!F2:F4,Sheet3!A3:A4)", formula)
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[3], formula)
+		}
 	})
-
-	t.Run("mix_different_kind_of_references_test_cols)", func(t *testing.T) {
+	t.Run("for_cross_sheet_ref_with_cols_insert)", func(t *testing.T) {
 		f := NewFile()
 		_, err := f.NewSheet("Sheet2")
 		assert.NoError(t, err)
 		_, err = f.NewSheet("Sheet3")
 		assert.NoError(t, err)
-
-		// Tests formulas referencing Sheet2 should update
-		// but those referencing the original sheet or Sheet 3 should not update
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "Sheet2!A1+Sheet2!B1+Sheet1!C1+Sheet1!D1"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "Sheet2!A2+Sheet2!B2+C2+D2"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "Sheet2!A3+Sheet2!B3+Sheet3!C3+Sheet3!D3"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A4", "SUM(Sheet2!A4:B4,Sheet1!C4:D4)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A5", "SUM(Sheet2!A5:B5,C5:D5)"))
-		assert.NoError(t, f.SetCellFormula("Sheet1", "A6", "SUM(Sheet2!A6:B6,Sheet3!C6:D6)"))
-
-		// insert row in the middle of the range
+		// Tests formulas referencing Sheet2 should update but those referencing
+		// the original sheet or Sheet 3 should not update
+		tbl := [][]string{
+			{"A1", "Sheet2!A1+Sheet2!B1+Sheet1!C1+Sheet1!D1", "Sheet2!A1+Sheet2!C1+Sheet1!C1+Sheet1!D1", "Sheet2!B1+Sheet2!D1+Sheet1!C1+Sheet1!D1"},
+			{"A2", "Sheet2!A2+Sheet2!B2+C2+D2", "Sheet2!A2+Sheet2!C2+C2+D2", "Sheet2!B2+Sheet2!D2+C2+D2"},
+			{"A3", "Sheet2!A3+Sheet2!B3+Sheet3!C3+Sheet3!D3", "Sheet2!A3+Sheet2!C3+Sheet3!C3+Sheet3!D3", "Sheet2!B3+Sheet2!D3+Sheet3!C3+Sheet3!D3"},
+			{"A4", "SUM(Sheet2!A4:B4,Sheet1!C4:D4)", "SUM(Sheet2!A4:C4,Sheet1!C4:D4)", "SUM(Sheet2!B4:D4,Sheet1!C4:D4)"},
+			{"A5", "SUM(Sheet2!A5:B5,C5:D5)", "SUM(Sheet2!A5:C5,C5:D5)", "SUM(Sheet2!B5:D5,C5:D5)"},
+			{"A6", "SUM(Sheet2!A6:B6,Sheet3!C6:D6)", "SUM(Sheet2!A6:C6,Sheet3!C6:D6)", "SUM(Sheet2!B6:D6,Sheet3!C6:D6)"},
+		}
+		for _, preset := range tbl {
+			assert.NoError(t, f.SetCellFormula("Sheet1", preset[0], preset[1]))
+		}
+		// Test adjust formula on insert row in the middle of the range
 		assert.NoError(t, f.InsertCols("Sheet2", "B", 1))
-		formula, err := f.GetCellFormula("Sheet1", "A1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A1+Sheet2!C1+Sheet1!C1+Sheet1!D1", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A2")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A2+Sheet2!C2+C2+D2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A3")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!A3+Sheet2!C3+Sheet3!C3+Sheet3!D3", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A4")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!A4:C4,Sheet1!C4:D4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A5")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!A5:C5,C5:D5)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A6")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!A6:C6,Sheet3!C6:D6)", formula)
-
-		// insert row in the top of the range
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[2], formula)
+		}
+		// Test adjust formula on insert row in the top of the range
 		assert.NoError(t, f.InsertCols("Sheet2", "A", 1))
-		formula, err = f.GetCellFormula("Sheet1", "A1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B1+Sheet2!D1+Sheet1!C1+Sheet1!D1", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A2")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B2+Sheet2!D2+C2+D2", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A3")
-		assert.NoError(t, err)
-		assert.Equal(t, "Sheet2!B3+Sheet2!D3+Sheet3!C3+Sheet3!D3", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A4")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!B4:D4,Sheet1!C4:D4)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A5")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!B5:D5,C5:D5)", formula)
-		formula, err = f.GetCellFormula("Sheet1", "A6")
-		assert.NoError(t, err)
-		assert.Equal(t, "SUM(Sheet2!B6:D6,Sheet3!C6:D6)", formula)
-
+		for _, preset := range tbl {
+			formula, err := f.GetCellFormula("Sheet1", preset[0])
+			assert.NoError(t, err)
+			assert.Equal(t, preset[3], formula)
+		}
+	})
+	t.Run("for_cross_sheet_ref_with_chart_sheet)", func(t *testing.T) {
+		assert.NoError(t, f.AddChartSheet("Chart1", &Chart{Type: Line}))
+		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+		assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	})
 }

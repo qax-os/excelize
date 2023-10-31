@@ -17,6 +17,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/xuri/efp"
 )
@@ -43,7 +44,6 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err != nil {
 		return err
 	}
-
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
 		err = f.adjustRowDimensions(sheet, ws, num, offset)
@@ -54,6 +54,8 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
+	ws.checkSheet()
+	_ = ws.checkRow()
 	f.adjustTable(ws, sheet, dir, num, offset)
 	if err = f.adjustMergeCells(ws, dir, num, offset); err != nil {
 		return err
@@ -64,37 +66,8 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
 		return err
 	}
-	ws.checkSheet()
-	_ = ws.checkRow()
-
 	if ws.MergeCells != nil && len(ws.MergeCells.Cells) == 0 {
 		ws.MergeCells = nil
-	}
-
-	return nil
-}
-
-func (f *File) adjustOtherSheetHelper(sheet, changedSheet string, dir adjustDirection, num, offset int) error {
-	ws, _ := f.workSheetReader(sheet)
-
-	if dir == rows {
-		numOfRows := len(ws.SheetData.Row)
-		for i := 0; i < numOfRows; i++ {
-			r := &ws.SheetData.Row[i]
-			err := f.adjustSingleRowFormulas(sheet, changedSheet, r, num, offset, false, true)
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		for rowIdx := range ws.SheetData.Row {
-			for colIdx, _ := range ws.SheetData.Row[rowIdx].C {
-				err := f.adjustFormula(sheet, changedSheet, ws.SheetData.Row[rowIdx].C[colIdx].F, columns, num, offset, false, true)
-				if err != nil {
-					return err
-				}
-			}
-		}
 	}
 
 	return nil
@@ -156,15 +129,24 @@ func (f *File) adjustColDimensions(sheet string, ws *xlsxWorksheet, col, offset 
 			}
 		}
 	}
-	for rowIdx := range ws.SheetData.Row {
-		for colIdx, v := range ws.SheetData.Row[rowIdx].C {
-			if cellCol, cellRow, _ := CellNameToCoordinates(v.R); col <= cellCol {
-				if newCol := cellCol + offset; newCol > 0 {
-					ws.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
-				}
+	for _, sheetN := range f.GetSheetList() {
+		worksheet, err := f.workSheetReader(sheetN)
+		if err != nil {
+			if err.Error() == newNotWorksheetError(sheetN).Error() {
+				continue
 			}
-			if err := f.adjustFormula(sheet, sheet, ws.SheetData.Row[rowIdx].C[colIdx].F, columns, col, offset, false, false); err != nil {
-				return err
+			return err
+		}
+		for rowIdx := range worksheet.SheetData.Row {
+			for colIdx, v := range worksheet.SheetData.Row[rowIdx].C {
+				if cellCol, cellRow, _ := CellNameToCoordinates(v.R); sheetN == sheet && col <= cellCol {
+					if newCol := cellCol + offset; newCol > 0 {
+						worksheet.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
+					}
+				}
+				if err := f.adjustFormula(sheet, sheetN, worksheet.SheetData.Row[rowIdx].C[colIdx].F, columns, col, offset, false); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -174,6 +156,25 @@ func (f *File) adjustColDimensions(sheet string, ws *xlsxWorksheet, col, offset 
 // adjustRowDimensions provides a function to update row dimensions when
 // inserting or deleting rows or columns.
 func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset int) error {
+	for _, sheetN := range f.GetSheetList() {
+		if sheetN == sheet {
+			continue
+		}
+		worksheet, err := f.workSheetReader(sheetN)
+		if err != nil {
+			if err.Error() == newNotWorksheetError(sheetN).Error() {
+				continue
+			}
+			return err
+		}
+		numOfRows := len(worksheet.SheetData.Row)
+		for i := 0; i < numOfRows; i++ {
+			r := &worksheet.SheetData.Row[i]
+			if err = f.adjustSingleRowFormulas(sheet, sheetN, r, row, offset, false); err != nil {
+				return err
+			}
+		}
+	}
 	totalRows := len(ws.SheetData.Row)
 	if totalRows == 0 {
 		return nil
@@ -188,7 +189,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
 			r.adjustSingleRowDimensions(offset)
 		}
-		if err := f.adjustSingleRowFormulas(sheet, sheet, r, row, offset, false, false); err != nil {
+		if err := f.adjustSingleRowFormulas(sheet, sheet, r, row, offset, false); err != nil {
 			return err
 		}
 	}
@@ -205,9 +206,9 @@ func (r *xlsxRow) adjustSingleRowDimensions(offset int) {
 }
 
 // adjustSingleRowFormulas provides a function to adjust single row formulas.
-func (f *File) adjustSingleRowFormulas(sheet, changedSheet string, r *xlsxRow, num, offset int, si, onlyOtherSheetRefs bool) error {
+func (f *File) adjustSingleRowFormulas(sheet, sheetN string, r *xlsxRow, num, offset int, si bool) error {
 	for _, col := range r.C {
-		if err := f.adjustFormula(sheet, changedSheet, col.F, rows, num, offset, si, onlyOtherSheetRefs); err != nil {
+		if err := f.adjustFormula(sheet, sheetN, col.F, rows, num, offset, si); err != nil {
 			return err
 		}
 	}
@@ -243,14 +244,12 @@ func (f *File) adjustCellRef(ref string, dir adjustDirection, num, offset int) (
 
 // adjustFormula provides a function to adjust formula reference and shared
 // formula reference.
-func (f *File) adjustFormula(sheet, changedSheet string, formula *xlsxF, dir adjustDirection, num,
-	offset int, si,
-	onlyOtherSheetRefs bool) error {
+func (f *File) adjustFormula(sheet, sheetN string, formula *xlsxF, dir adjustDirection, num, offset int, si bool) error {
 	if formula == nil {
 		return nil
 	}
 	var err error
-	if formula.Ref != "" {
+	if formula.Ref != "" && sheet == sheetN {
 		if formula.Ref, err = f.adjustCellRef(formula.Ref, dir, num, offset); err != nil {
 			return err
 		}
@@ -259,7 +258,7 @@ func (f *File) adjustFormula(sheet, changedSheet string, formula *xlsxF, dir adj
 		}
 	}
 	if formula.Content != "" {
-		if formula.Content, err = f.adjustFormulaRef(sheet, changedSheet, formula.Content, dir, num, offset, onlyOtherSheetRefs); err != nil {
+		if formula.Content, err = f.adjustFormulaRef(sheet, sheetN, formula.Content, dir, num, offset); err != nil {
 			return err
 		}
 	}
@@ -276,16 +275,19 @@ func isFunctionStart(token efp.Token) bool {
 	return token.TType == efp.TokenTypeFunction && token.TSubType == efp.TokenSubTypeStart
 }
 
-// isRangeOperand provides a function to check if token is a range operand.
-func isRangeOperand(token efp.Token) bool {
-	return token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange
+// escapeSheetName enclose sheet name in single quotation marks if the giving
+// worksheet name includes spaces or non-alphabetical characters.
+func escapeSheetName(name string) string {
+	if strings.IndexFunc(name, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	}) != -1 {
+		return string(efp.QuoteSingle) + name + string(efp.QuoteSingle)
+	}
+	return name
 }
 
 // adjustFormulaColumnName adjust column name in the formula reference.
 func adjustFormulaColumnName(name string, dir adjustDirection, num, offset int) (string, error) {
-	if name == "" {
-		return name, nil
-	}
 	col, err := ColumnNameToNumber(name)
 	if err != nil {
 		return name, err
@@ -299,9 +301,6 @@ func adjustFormulaColumnName(name string, dir adjustDirection, num, offset int) 
 
 // adjustFormulaRowNumber adjust row number in the formula reference.
 func adjustFormulaRowNumber(name string, dir adjustDirection, num, offset int) (string, error) {
-	if name == "" {
-		return name, nil
-	}
 	row, _ := strconv.Atoi(name)
 	if dir == rows && row >= num {
 		row += offset
@@ -313,10 +312,43 @@ func adjustFormulaRowNumber(name string, dir adjustDirection, num, offset int) (
 	return name, nil
 }
 
+// adjustFormulaOperandRef adjust cell reference in the operand tokens for the formula.
+func adjustFormulaOperandRef(row, col, operand string, dir adjustDirection, num int, offset int) (string, string, string, error) {
+	if col != "" {
+		name, err := adjustFormulaColumnName(col, dir, num, offset)
+		if err != nil {
+			return row, col, operand, err
+		}
+		operand += name
+		col = ""
+	}
+	if row != "" {
+		name, err := adjustFormulaRowNumber(row, dir, num, offset)
+		if err != nil {
+			return row, col, operand, err
+		}
+		operand += name
+		row = ""
+	}
+	return row, col, operand, nil
+}
+
 // adjustFormulaOperand adjust range operand tokens for the formula.
-func (f *File) adjustFormulaOperand(token efp.Token, dir adjustDirection, num int, offset int) (string, error) {
-	var col, row, operand string
-	for _, r := range token.TValue {
+func (f *File) adjustFormulaOperand(sheet, sheetN string, token efp.Token, dir adjustDirection, num int, offset int) (string, error) {
+	var (
+		err                          error
+		sheetName, col, row, operand string
+		cell                         = token.TValue
+		tokens                       = strings.Split(token.TValue, "!")
+	)
+	if len(tokens) == 2 { // have a worksheet
+		sheetName, cell = tokens[0], tokens[1]
+		operand = escapeSheetName(sheetName) + "!"
+	}
+	if sheet != sheetN && sheet != sheetName {
+		return operand + cell, err
+	}
+	for _, r := range cell {
 		if ('A' <= r && r <= 'Z') || ('a' <= r && r <= 'z') {
 			col += string(r)
 			continue
@@ -333,82 +365,18 @@ func (f *File) adjustFormulaOperand(token efp.Token, dir adjustDirection, num in
 			}
 			continue
 		}
-		if row != "" {
-			name, err := adjustFormulaRowNumber(row, dir, num, offset)
-			if err != nil {
-				return operand, err
-			}
-			operand += name
-			row = ""
-		}
-		if col != "" {
-			name, err := adjustFormulaColumnName(col, dir, num, offset)
-			if err != nil {
-				return operand, err
-			}
-			operand += name
-			col = ""
+		if row, col, operand, err = adjustFormulaOperandRef(row, col, operand, dir, num, offset); err != nil {
+			return operand, err
 		}
 		operand += string(r)
 	}
-	name, err := adjustFormulaColumnName(col, dir, num, offset)
-	if err != nil {
-		return operand, err
-	}
-	operand += name
-	name, err = adjustFormulaRowNumber(row, dir, num, offset)
-	operand += name
+	_, _, operand, err = adjustFormulaOperandRef(row, col, operand, dir, num, offset)
 	return operand, err
-}
-
-func isOtherSheetRef(formula, changedSheet string) bool {
-	return strings.Contains(formula, "!") && strings.Contains(formula, changedSheet)
-}
-
-func (f *File) handleExternalSheetRefToken(val *string, token efp.Token, changedSheet string, dir adjustDirection, num, offset int) error {
-	if !strings.Contains(token.TValue, changedSheet) {
-		*val += token.TValue
-	} else {
-		// extract string after the first '!'
-		*val += strings.Split(token.TValue, "!")[0] + "!"
-		token.TValue = strings.Split(token.TValue, "!")[1]
-		operand, err := f.adjustFormulaOperand(token, dir, num, offset)
-		if err != nil {
-			return err
-		}
-		*val += operand
-	}
-	return nil
-}
-
-func (f *File) handleRangeOperand(val *string, token efp.Token, sheet, changedSheet string, dir adjustDirection, num, offset int, definedNames []string) error {
-	if inStrSlice(definedNames, token.TValue, true) != -1 {
-		*val += token.TValue
-	} else if strings.ContainsAny(token.TValue, "[]") {
-		*val += token.TValue
-	} else if strings.Contains(token.TValue, "!") {
-		if err := f.handleExternalSheetRefToken(val, token, changedSheet, dir, num, offset); err != nil {
-			return err
-		}
-	} else if sheet == changedSheet {
-		operand, err := f.adjustFormulaOperand(token, dir, num, offset)
-		if err != nil {
-			return err
-		}
-		*val += operand
-	} else {
-		*val += token.TValue
-	}
-	return nil
 }
 
 // adjustFormulaRef returns adjusted formula by giving adjusting direction and
 // the base number of column or row, and offset.
-func (f *File) adjustFormulaRef(sheet, changedSheet, formula string, dir adjustDirection, num, offset int, onlyOtherSheetRefs bool) (string, error) {
-	// check if formula is referencing other sheet
-	if onlyOtherSheetRefs && !isOtherSheetRef(formula, changedSheet) {
-		return formula, nil
-	}
+func (f *File) adjustFormulaRef(sheet, sheetN, formula string, dir adjustDirection, num, offset int) (string, error) {
 	var (
 		val          string
 		definedNames []string
@@ -420,10 +388,20 @@ func (f *File) adjustFormulaRef(sheet, changedSheet, formula string, dir adjustD
 		}
 	}
 	for _, token := range ps.Parse(formula) {
-		if isRangeOperand(token) {
-			if err := f.handleRangeOperand(&val, token, sheet, changedSheet, dir, num, offset, definedNames); err != nil {
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
+			if inStrSlice(definedNames, token.TValue, true) != -1 {
+				val += token.TValue
+				continue
+			}
+			if strings.ContainsAny(token.TValue, "[]") {
+				val += token.TValue
+				continue
+			}
+			operand, err := f.adjustFormulaOperand(sheet, sheetN, token, dir, num, offset)
+			if err != nil {
 				return val, err
 			}
+			val += operand
 			continue
 		}
 		if isFunctionStart(token) {
@@ -432,6 +410,10 @@ func (f *File) adjustFormulaRef(sheet, changedSheet, formula string, dir adjustD
 		}
 		if isFunctionStop(token) {
 			val += token.TValue + string(efp.ParenClose)
+			continue
+		}
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
+			val += string(efp.QuoteDouble) + strings.ReplaceAll(token.TValue, "\"", "\"\"") + string(efp.QuoteDouble)
 			continue
 		}
 		val += token.TValue
@@ -469,16 +451,7 @@ func (f *File) adjustHyperlinks(ws *xlsxWorksheet, sheet string, dir adjustDirec
 	}
 	for i := range ws.Hyperlinks.Hyperlink {
 		link := &ws.Hyperlinks.Hyperlink[i] // get reference
-		colNum, rowNum, _ := CellNameToCoordinates(link.Ref)
-		if dir == rows {
-			if rowNum >= num {
-				link.Ref, _ = CoordinatesToCellName(colNum, rowNum+offset)
-			}
-		} else {
-			if colNum >= num {
-				link.Ref, _ = CoordinatesToCellName(colNum+offset, rowNum)
-			}
-		}
+		link.Ref, _ = f.adjustFormulaRef(sheet, sheet, link.Ref, dir, num, offset)
 	}
 }
 
@@ -524,7 +497,8 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 		if t.AutoFilter != nil {
 			t.AutoFilter.Ref = t.Ref
 		}
-		_, _ = f.setTableHeader(sheet, true, x1, y1, x2)
+		_ = f.setTableColumns(sheet, true, x1, y1, x2, &t)
+		t.TotalsRowCount = 0
 		table, _ := xml.Marshal(t)
 		f.saveFileList(tableXML, table)
 	}

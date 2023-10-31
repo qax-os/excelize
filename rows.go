@@ -583,24 +583,7 @@ func (f *File) InsertRows(sheet string, row, n int) error {
 	if n < 1 {
 		return ErrParameterInvalid
 	}
-
-	err := f.adjustHelper(sheet, rows, row, n)
-	if err != nil {
-		return err
-	}
-
-	// iterate over all the other sheets in the file
-	for _, s := range f.GetSheetList() {
-		if s == sheet {
-			continue
-		}
-		err = f.adjustOtherSheetHelper(s, sheet, rows, row, n)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return f.adjustHelper(sheet, rows, row, n)
 }
 
 // DuplicateRow inserts a copy of specified row (by its Excel row number) below
@@ -670,7 +653,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 
 	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
 	rowCopy.adjustSingleRowDimensions(row2 - row)
-	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row, true, false)
+	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row, true)
 
 	if idx2 != -1 {
 		ws.SheetData.Row[idx2] = rowCopy
