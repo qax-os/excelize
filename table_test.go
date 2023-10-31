@@ -137,10 +137,9 @@ func TestDeleteTable(t *testing.T) {
 	assert.Equal(t, "Values", val)
 }
 
-func TestSetTableHeader(t *testing.T) {
+func TestSetTableColumns(t *testing.T) {
 	f := NewFile()
-	_, err := f.setTableHeader("Sheet1", true, 1, 0, 1)
-	assert.Equal(t, newCoordinatesToCellNameError(1, 0), err)
+	assert.Equal(t, newCoordinatesToCellNameError(1, 0), f.setTableColumns("Sheet1", true, 1, 0, 1, nil))
 }
 
 func TestAutoFilter(t *testing.T) {
