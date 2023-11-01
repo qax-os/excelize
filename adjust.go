@@ -38,7 +38,7 @@ const (
 // row: Index number of the row we're inserting/deleting before
 // offset: Number of rows/column to insert/delete negative values indicate deletion
 //
-// TODO: adjustPageBreaks, adjustComments, adjustDataValidations, adjustProtectedCells
+// TODO: adjustComments, adjustDataValidations, adjustDrawings, adjustPageBreaks, adjustProtectedCells
 func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -64,6 +64,9 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
+		return err
+	}
+	if err = f.adjustVolatileDeps(dir, num, offset, sheetID); err != nil {
 		return err
 	}
 	if ws.MergeCells != nil && len(ws.MergeCells.Cells) == 0 {
@@ -498,7 +501,8 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			t.AutoFilter.Ref = t.Ref
 		}
 		_ = f.setTableColumns(sheet, true, x1, y1, x2, &t)
-		t.TotalsRowCount = 0
+		// Currently doesn't support query table
+		t.TableType, t.TotalsRowCount, t.ConnectionID = "", 0, 0
 		table, _ := xml.Marshal(t)
 		f.saveFileList(tableXML, table)
 	}
@@ -578,7 +582,6 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 		if dir == rows {
 			if y1 == num && y2 == num && offset < 0 {
 				f.deleteMergeCell(ws, i)
-				i--
 				continue
 			}
 
@@ -586,7 +589,6 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, off
 		} else {
 			if x1 == num && x2 == num && offset < 0 {
 				f.deleteMergeCell(ws, i)
-				i--
 				continue
 			}
 
@@ -642,18 +644,15 @@ func (f *File) deleteMergeCell(ws *xlsxWorksheet, idx int) {
 	}
 }
 
-// adjustCalcChainRef update the cell reference in calculation chain when
-// inserting or deleting rows or columns.
-func (f *File) adjustCalcChainRef(i, c, r, offset int, dir adjustDirection) {
+// adjustCellName returns updated cell name by giving column/row number and
+// offset on inserting or deleting rows or columns.
+func adjustCellName(cell string, dir adjustDirection, c, r, offset int) (string, error) {
 	if dir == rows {
 		if rn := r + offset; rn > 0 {
-			f.CalcChain.C[i].R, _ = CoordinatesToCellName(c, rn)
+			return CoordinatesToCellName(c, rn)
 		}
-		return
 	}
-	if nc := c + offset; nc > 0 {
-		f.CalcChain.C[i].R, _ = CoordinatesToCellName(nc, r)
-	}
+	return CoordinatesToCellName(c+offset, r)
 }
 
 // adjustCalcChain provides a function to update the calculation chain when
@@ -665,7 +664,8 @@ func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) er
 	// If sheet ID is omitted, it is assumed to be the same as the i value of
 	// the previous cell.
 	var prevSheetID int
-	for index, c := range f.CalcChain.C {
+	for i := 0; i < len(f.CalcChain.C); i++ {
+		c := f.CalcChain.C[i]
 		if c.I == 0 {
 			c.I = prevSheetID
 		}
@@ -680,16 +680,72 @@ func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) er
 		if dir == rows && num <= rowNum {
 			if num == rowNum && offset == -1 {
 				_ = f.deleteCalcChain(c.I, c.R)
+				i--
 				continue
 			}
-			f.adjustCalcChainRef(index, colNum, rowNum, offset, dir)
+			f.CalcChain.C[i].R, _ = adjustCellName(c.R, dir, colNum, rowNum, offset)
 		}
 		if dir == columns && num <= colNum {
 			if num == colNum && offset == -1 {
 				_ = f.deleteCalcChain(c.I, c.R)
+				i--
 				continue
 			}
-			f.adjustCalcChainRef(index, colNum, rowNum, offset, dir)
+			f.CalcChain.C[i].R, _ = adjustCellName(c.R, dir, colNum, rowNum, offset)
+		}
+	}
+	return nil
+}
+
+// adjustVolatileDepsTopic updates the volatile dependencies topic when
+// inserting or deleting rows or columns.
+func (vt *xlsxVolTypes) adjustVolatileDepsTopic(cell string, dir adjustDirection, indexes []int) (int, error) {
+	num, offset, i1, i2, i3, i4 := indexes[0], indexes[1], indexes[2], indexes[3], indexes[4], indexes[5]
+	colNum, rowNum, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return i4, err
+	}
+	if dir == rows && num <= rowNum {
+		if num == rowNum && offset == -1 {
+			vt.deleteVolTopicRef(i1, i2, i3, i4)
+			i4--
+			return i4, err
+		}
+		vt.VolType[i1].Main[i2].Tp[i3].Tr[i4].R, _ = adjustCellName(cell, dir, colNum, rowNum, offset)
+	}
+	if dir == columns && num <= colNum {
+		if num == colNum && offset == -1 {
+			vt.deleteVolTopicRef(i1, i2, i3, i4)
+			i4--
+			return i4, err
+		}
+		if name, _ := adjustCellName(cell, dir, colNum, rowNum, offset); name != "" {
+			vt.VolType[i1].Main[i2].Tp[i3].Tr[i4].R, _ = adjustCellName(cell, dir, colNum, rowNum, offset)
+		}
+	}
+	return i4, err
+}
+
+// adjustVolatileDeps updates the volatile dependencies when inserting or
+// deleting rows or columns.
+func (f *File) adjustVolatileDeps(dir adjustDirection, num, offset, sheetID int) error {
+	volTypes, err := f.volatileDepsReader()
+	if err != nil || volTypes == nil {
+		return err
+	}
+	for i1 := 0; i1 < len(volTypes.VolType); i1++ {
+		for i2 := 0; i2 < len(volTypes.VolType[i1].Main); i2++ {
+			for i3 := 0; i3 < len(volTypes.VolType[i1].Main[i2].Tp); i3++ {
+				for i4 := 0; i4 < len(volTypes.VolType[i1].Main[i2].Tp[i3].Tr); i4++ {
+					ref := volTypes.VolType[i1].Main[i2].Tp[i3].Tr[i4]
+					if ref.S != sheetID {
+						continue
+					}
+					if i4, err = volTypes.adjustVolatileDepsTopic(ref.R, dir, []int{num, offset, i1, i2, i3, i4}); err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
 	return nil

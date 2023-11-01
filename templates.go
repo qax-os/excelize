@@ -218,16 +218,17 @@ const (
 )
 
 const (
+	defaultTempFileSST          = "sharedStrings"
+	defaultXMLPathCalcChain     = "xl/calcChain.xml"
 	defaultXMLPathContentTypes  = "[Content_Types].xml"
 	defaultXMLPathDocPropsApp   = "docProps/app.xml"
 	defaultXMLPathDocPropsCore  = "docProps/core.xml"
-	defaultXMLPathCalcChain     = "xl/calcChain.xml"
 	defaultXMLPathSharedStrings = "xl/sharedStrings.xml"
 	defaultXMLPathStyles        = "xl/styles.xml"
 	defaultXMLPathTheme         = "xl/theme/theme1.xml"
+	defaultXMLPathVolatileDeps  = "xl/volatileDependencies.xml"
 	defaultXMLPathWorkbook      = "xl/workbook.xml"
 	defaultXMLPathWorkbookRels  = "xl/_rels/workbook.xml.rels"
-	defaultTempFileSST          = "sharedStrings"
 )
 
 // IndexedColorMapping is the table of default mappings from indexed color value

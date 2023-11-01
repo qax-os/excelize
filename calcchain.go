@@ -81,3 +81,39 @@ func (c xlsxCalcChainCollection) Filter(fn func(v xlsxCalcChainC) bool) []xlsxCa
 	}
 	return results
 }
+
+// volatileDepsReader provides a function to get the pointer to the structure
+// after deserialization of xl/volatileDependencies.xml.
+func (f *File) volatileDepsReader() (*xlsxVolTypes, error) {
+	if f.VolatileDeps == nil {
+		volatileDeps, ok := f.Pkg.Load(defaultXMLPathVolatileDeps)
+		if !ok {
+			return f.VolatileDeps, nil
+		}
+		f.VolatileDeps = new(xlsxVolTypes)
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(volatileDeps.([]byte)))).
+			Decode(f.VolatileDeps); err != nil && err != io.EOF {
+			return f.VolatileDeps, err
+		}
+	}
+	return f.VolatileDeps, nil
+}
+
+// volatileDepsWriter provides a function to save xl/volatileDependencies.xml
+// after serialize structure.
+func (f *File) volatileDepsWriter() {
+	if f.VolatileDeps != nil {
+		output, _ := xml.Marshal(f.VolatileDeps)
+		f.saveFileList(defaultXMLPathVolatileDeps, output)
+	}
+}
+
+// deleteVolTopicRef provides a function to remove cell reference on the
+// volatile dependencies topic.
+func (vt *xlsxVolTypes) deleteVolTopicRef(i1, i2, i3, i4 int) {
+	for i := range vt.VolType[i1].Main[i2].Tp[i3].Tr {
+		if i == i4 {
+			vt.VolType[i1].Main[i2].Tp[i3].Tr = append(vt.VolType[i1].Main[i2].Tp[i3].Tr[:i], vt.VolType[i1].Main[i2].Tp[i3].Tr[i+1:]...)
+		}
+	}
+}

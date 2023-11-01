@@ -37,12 +37,12 @@ type xlsxTable struct {
 	DataDxfID            int                 `xml:"dataDxfId,attr,omitempty"`
 	TotalsRowDxfID       int                 `xml:"totalsRowDxfId,attr,omitempty"`
 	HeaderRowBorderDxfID int                 `xml:"headerRowBorderDxfId,attr,omitempty"`
-	TableBorderDxfId     int                 `xml:"tableBorderDxfId,attr,omitempty"`
-	TotalsRowBorderDxfId int                 `xml:"totalsRowBorderDxfId,attr,omitempty"`
+	TableBorderDxfID     int                 `xml:"tableBorderDxfId,attr,omitempty"`
+	TotalsRowBorderDxfID int                 `xml:"totalsRowBorderDxfId,attr,omitempty"`
 	HeaderRowCellStyle   string              `xml:"headerRowCellStyle,attr,omitempty"`
 	DataCellStyle        string              `xml:"dataCellStyle,attr,omitempty"`
 	TotalsRowCellStyle   string              `xml:"totalsRowCellStyle,attr,omitempty"`
-	ConnectionId         int                 `xml:"connectionId,attr,omitempty"`
+	ConnectionID         int                 `xml:"connectionId,attr,omitempty"`
 	AutoFilter           *xlsxAutoFilter     `xml:"autoFilter"`
 	TableColumns         *xlsxTableColumns   `xml:"tableColumns"`
 	TableStyleInfo       *xlsxTableStyleInfo `xml:"tableStyleInfo"`

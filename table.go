@@ -292,7 +292,7 @@ func (f *File) setTableColumns(sheet string, showHeaderRow bool, x1, y1, x2 int,
 		}
 		header = append(header, name)
 		if column := getTableColumn(name); column != nil {
-			column.ID, column.DataDxfID = idx, 0
+			column.ID, column.DataDxfID, column.QueryTableFieldID = idx, 0, 0
 			tableColumns = append(tableColumns, column)
 			continue
 		}
