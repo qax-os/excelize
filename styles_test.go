@@ -606,6 +606,12 @@ func TestGetStyle(t *testing.T) {
 	}
 	assert.Equal(t, "012345", f.getThemeColor(&xlsxColor{Indexed: 0}))
 
+	f.Styles.Fonts.Font[0].U = &attrValString{}
+	f.Styles.CellXfs.Xf[0].FontID = intPtr(0)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, "single", style.Font.Underline)
+
 	// Test get style with invalid style index
 	style, err = f.GetStyle(-1)
 	assert.Nil(t, style)

@@ -80,6 +80,16 @@ const (
 	Bubble3D
 )
 
+// ChartLineType is the type of supported chart line types.
+type ChartLineType byte
+
+// This section defines the currently supported chart line types enumeration.
+const (
+	ChartLineSolid ChartLineType = iota
+	ChartLineNone
+	ChartLineAutomatic
+)
+
 // This section defines the default value of chart properties.
 var (
 	chartView3DRotX = map[ChartType]int{
@@ -507,6 +517,21 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.Legend.Position == "" {
 		opts.Legend.Position = defaultChartLegendPosition
 	}
+	opts.parseTitle()
+	if opts.VaryColors == nil {
+		opts.VaryColors = boolPtr(true)
+	}
+	if opts.Border.Width == 0 {
+		opts.Border.Width = 0.75
+	}
+	if opts.ShowBlanksAs == "" {
+		opts.ShowBlanksAs = defaultChartShowBlanksAs
+	}
+	return opts, nil
+}
+
+// parseTitle parse the title settings of the chart with default value.
+func (opts *Chart) parseTitle() {
 	for i := range opts.Title {
 		if opts.Title[i].Font == nil {
 			opts.Title[i].Font = &Font{}
@@ -518,13 +543,6 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 			opts.Title[i].Font.Size = 14
 		}
 	}
-	if opts.VaryColors == nil {
-		opts.VaryColors = boolPtr(true)
-	}
-	if opts.ShowBlanksAs == "" {
-		opts.ShowBlanksAs = defaultChartShowBlanksAs
-	}
-	return opts, nil
 }
 
 // AddChart provides the method to add chart in a sheet by given chart format

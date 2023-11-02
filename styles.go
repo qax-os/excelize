@@ -1201,25 +1201,25 @@ var (
 	// extract style definition by given style.
 	extractStyleCondFuncs = map[string]func(xlsxXf, *xlsxStyleSheet) bool{
 		"fill": func(xf xlsxXf, s *xlsxStyleSheet) bool {
-			return xf.ApplyFill != nil && *xf.ApplyFill &&
+			return (xf.ApplyFill == nil || (xf.ApplyFill != nil && *xf.ApplyFill)) &&
 				xf.FillID != nil && s.Fills != nil &&
 				*xf.FillID < len(s.Fills.Fill)
 		},
 		"border": func(xf xlsxXf, s *xlsxStyleSheet) bool {
-			return xf.ApplyBorder != nil && *xf.ApplyBorder &&
+			return (xf.ApplyBorder == nil || (xf.ApplyBorder != nil && *xf.ApplyBorder)) &&
 				xf.BorderID != nil && s.Borders != nil &&
 				*xf.BorderID < len(s.Borders.Border)
 		},
 		"font": func(xf xlsxXf, s *xlsxStyleSheet) bool {
-			return xf.ApplyFont != nil && *xf.ApplyFont &&
+			return (xf.ApplyFont == nil || (xf.ApplyFont != nil && *xf.ApplyFont)) &&
 				xf.FontID != nil && s.Fonts != nil &&
 				*xf.FontID < len(s.Fonts.Font)
 		},
 		"alignment": func(xf xlsxXf, s *xlsxStyleSheet) bool {
-			return xf.ApplyAlignment != nil && *xf.ApplyAlignment
+			return xf.ApplyAlignment == nil || (xf.ApplyAlignment != nil && *xf.ApplyAlignment)
 		},
 		"protection": func(xf xlsxXf, s *xlsxStyleSheet) bool {
-			return xf.ApplyProtection != nil && *xf.ApplyProtection
+			return xf.ApplyProtection == nil || (xf.ApplyProtection != nil && *xf.ApplyProtection)
 		},
 	}
 	// drawContFmtFunc defines functions to create conditional formats.
@@ -1366,7 +1366,9 @@ func (f *File) extractFont(fnt *xlsxFont, s *xlsxStyleSheet, style *Style) {
 			font.Italic = fnt.I.Value()
 		}
 		if fnt.U != nil {
-			font.Underline = fnt.U.Value()
+			if font.Underline = fnt.U.Value(); font.Underline == "" {
+				font.Underline = "single"
+			}
 		}
 		if fnt.Name != nil {
 			font.Family = fnt.Name.Value()

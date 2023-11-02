@@ -11,15 +11,11 @@
 
 package excelize
 
-import (
-	"encoding/xml"
-	"sync"
-)
+import "encoding/xml"
 
 // xlsxCalcChain directly maps the calcChain element. This element represents
 // the root of the calculation chain.
 type xlsxCalcChain struct {
-	mu      sync.Mutex
 	XMLName xml.Name         `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main calcChain"`
 	C       []xlsxCalcChainC `xml:"c"`
 }
@@ -91,7 +87,6 @@ type xlsxCalcChainC struct {
 // xlsxVolTypes maps the volatileDependencies part provides a cache of data that
 // supports Real Time Data (RTD) and CUBE functions in the workbook.
 type xlsxVolTypes struct {
-	mu      sync.Mutex
 	XMLName xml.Name      `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main volTypes"`
 	VolType []xlsxVolType `xml:"volType"`
 	ExtLst  *xlsxExtLst   `xml:"extLst"`

@@ -248,13 +248,13 @@ type aContourClr struct {
 // shapes and text. The line allows for the specifying of many different types
 // of outlines including even line dashes and bevels.
 type aLn struct {
-	Algn      string      `xml:"algn,attr,omitempty"`
-	Cap       string      `xml:"cap,attr,omitempty"`
-	Cmpd      string      `xml:"cmpd,attr,omitempty"`
-	W         int         `xml:"w,attr,omitempty"`
-	NoFill    string      `xml:"a:noFill,omitempty"`
-	Round     string      `xml:"a:round,omitempty"`
-	SolidFill *aSolidFill `xml:"a:solidFill"`
+	Algn      string         `xml:"algn,attr,omitempty"`
+	Cap       string         `xml:"cap,attr,omitempty"`
+	Cmpd      string         `xml:"cmpd,attr,omitempty"`
+	W         int            `xml:"w,attr,omitempty"`
+	NoFill    *attrValString `xml:"a:noFill"`
+	Round     string         `xml:"a:round,omitempty"`
+	SolidFill *aSolidFill    `xml:"a:solidFill"`
 }
 
 // cTxPr (Text Properties) directly maps the txPr element. This element
@@ -575,6 +575,7 @@ type Chart struct {
 	XAxis        ChartAxis
 	YAxis        ChartAxis
 	PlotArea     ChartPlotArea
+	Border       ChartLine
 	ShowBlanksAs string
 	HoleSize     int
 	order        int
@@ -594,6 +595,7 @@ type ChartMarker struct {
 
 // ChartLine directly maps the format settings of the chart line.
 type ChartLine struct {
+	Type   ChartLineType
 	Smooth bool
 	Width  float64
 }
