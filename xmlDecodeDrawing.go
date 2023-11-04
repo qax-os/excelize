@@ -27,6 +27,23 @@ type decodeCellAnchor struct {
 	Content    string            `xml:",innerxml"`
 }
 
+// decodeCellAnchorPos defines the structure used to deserialize the cell anchor
+// for adjust drawing object on inserting/deleting column/rows.
+type decodeCellAnchorPos struct {
+	EditAs       string        `xml:"editAs,attr,omitempty"`
+	From         *xlsxFrom     `xml:"from"`
+	To           *xlsxTo       `xml:"to"`
+	Pos          *xlsxInnerXML `xml:"pos"`
+	Ext          *xlsxInnerXML `xml:"ext"`
+	Sp           *xlsxInnerXML `xml:"sp"`
+	GrpSp        *xlsxInnerXML `xml:"grpSp"`
+	GraphicFrame *xlsxInnerXML `xml:"graphicFrame"`
+	CxnSp        *xlsxInnerXML `xml:"cxnSp"`
+	Pic          *xlsxInnerXML `xml:"pic"`
+	ContentPart  *xlsxInnerXML `xml:"contentPart"`
+	ClientData   *xlsxInnerXML `xml:"clientData"`
+}
+
 // xdrSp (Shape) directly maps the sp element. This element specifies the
 // existence of a single shape. A shape can either be a preset or a custom
 // geometry, defined using the SpreadsheetDrawingML framework. In addition to

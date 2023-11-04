@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	_ "image/jpeg"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +21,7 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	}, "Sheet1", rows, 0, 0, 1), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	assert.Equal(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -28,7 +30,7 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
+	}, "Sheet1", rows, 0, 0, 1), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
 	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -37,7 +39,7 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, rows, 1, -1))
+	}, "Sheet1", rows, 1, -1, 1))
 	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -46,7 +48,7 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, columns, 1, -1))
+	}, "Sheet1", columns, 1, -1, 1))
 	assert.NoError(t, f.adjustMergeCells(&xlsxWorksheet{
 		MergeCells: &xlsxMergeCells{
 			Cells: []*xlsxMergeCell{
@@ -55,7 +57,7 @@ func TestAdjustMergeCells(t *testing.T) {
 				},
 			},
 		},
-	}, columns, 1, -1))
+	}, "Sheet1", columns, 1, -1, 1))
 
 	// Test adjust merge cells
 	var cases []struct {
@@ -134,7 +136,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, 1))
+		assert.NoError(t, f.adjustMergeCells(c.ws, "Sheet1", c.dir, c.num, 1, 1))
 		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.label)
 		assert.Equal(t, c.expectRect, c.ws.MergeCells.Cells[0].rect, c.label)
 	}
@@ -223,7 +225,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, -1))
+		assert.NoError(t, f.adjustMergeCells(c.ws, "Sheet1", c.dir, c.num, -1, 1))
 		assert.Equal(t, c.expect, c.ws.MergeCells.Cells[0].Ref, c.label)
 	}
 
@@ -271,7 +273,7 @@ func TestAdjustMergeCells(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		assert.NoError(t, f.adjustMergeCells(c.ws, c.dir, c.num, -1))
+		assert.NoError(t, f.adjustMergeCells(c.ws, "Sheet1", c.dir, c.num, -1, 1))
 		assert.Len(t, c.ws.MergeCells.Cells, 0, c.label)
 	}
 
@@ -291,18 +293,18 @@ func TestAdjustAutoFilter(t *testing.T) {
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A1:A3",
 		},
-	}, rows, 1, -1))
+	}, "Sheet1", rows, 1, -1, 1))
 	// Test adjustAutoFilter with illegal cell reference
 	assert.Equal(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A:B1",
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+	}, "Sheet1", rows, 0, 0, 1), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	assert.Equal(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A1:B",
 		},
-	}, rows, 0, 0), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
+	}, "Sheet1", rows, 0, 0, 1), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")))
 }
 
 func TestAdjustTable(t *testing.T) {
@@ -334,7 +336,7 @@ func TestAdjustTable(t *testing.T) {
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
 	// Test adjust table with invalid table range reference
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
-	assert.NoError(t, f.RemoveRow(sheetName, 1))
+	assert.Equal(t, ErrParameterInvalid, f.RemoveRow(sheetName, 1))
 }
 
 func TestAdjustHelper(t *testing.T) {
@@ -946,4 +948,46 @@ func TestAdjustVolatileDeps(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathVolatileDeps, []byte(fmt.Sprintf(`<volTypes xmlns="%s"><volType><main><tp><tr r="A" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value)))
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.InsertCols("Sheet1", "A", 1))
 	f.volatileDepsWriter()
+}
+
+func TestAdjustDrawings(t *testing.T) {
+	f := NewFile()
+	// Test add pictures to sheet with positioning
+	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), nil))
+	assert.NoError(t, f.AddPicture("Sheet1", "A10", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{Positioning: "oneCell"}))
+	assert.NoError(t, f.AddPicture("Sheet1", "A20", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{Positioning: "absolute"}))
+	// Test adjust pictures on inserting columns and rows
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	assert.NoError(t, f.InsertCols("Sheet1", "C", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 5, 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 15, 1))
+	cells, err := f.GetPictureCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"B2", "B12", "A20"}, cells)
+	wb := filepath.Join("test", "TestAdjustDrawings.xlsx")
+	assert.NoError(t, f.SaveAs(wb))
+
+	// Test adjust existing pictures on inserting columns and rows
+	f, err = OpenFile(wb)
+	assert.NoError(t, err)
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	assert.NoError(t, f.InsertCols("Sheet1", "D", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 5, 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 16, 1))
+	cells, err = f.GetPictureCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"C3", "C14", "A20"}, cells)
+
+	// Test adjust pictures with unsupported charset
+	f, err = OpenFile(wb)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/drawing1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "XML syntax error on line 1: invalid UTF-8")
+
+	a := xdrCellAnchor{}
+	a.adjustDrawings(columns, 0, 0)
+	p := xlsxCellAnchorPos{}
+	p.adjustDrawings(columns, 0, 0, "")
 }
