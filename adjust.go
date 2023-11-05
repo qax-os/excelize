@@ -765,60 +765,70 @@ func (f *File) adjustVolatileDeps(ws *xlsxWorksheet, sheet string, dir adjustDir
 	return nil
 }
 
+// adjustDrawings updates the starting anchor of the two cell anchor pictures
+// and charts object when inserting or deleting rows or columns.
+func (from *xlsxFrom) adjustDrawings(dir adjustDirection, num, offset int, editAs string) (bool, error) {
+	var ok bool
+	if dir == columns && from.Col+1 >= num && from.Col+offset >= 0 {
+		if from.Col+offset >= MaxColumns {
+			return false, ErrColumnNumber
+		}
+		from.Col += offset
+		ok = editAs == "oneCell"
+	}
+	if dir == rows && from.Row+1 >= num && from.Row+offset >= 0 {
+		if from.Row+offset >= TotalRows {
+			return false, ErrMaxRows
+		}
+		from.Row += offset
+		ok = editAs == "oneCell"
+	}
+	return ok, nil
+}
+
+// adjustDrawings updates the ending anchor of the two cell anchor pictures
+// and charts object when inserting or deleting rows or columns.
+func (to *xlsxTo) adjustDrawings(dir adjustDirection, num, offset int, editAs string, ok bool) error {
+	if dir == columns && to.Col+1 >= num && to.Col+offset >= 0 && ok {
+		if to.Col+offset >= MaxColumns {
+			return ErrColumnNumber
+		}
+		to.Col += offset
+	}
+	if dir == rows && to.Row+1 >= num && to.Row+offset >= 0 && ok {
+		if to.Row+offset >= TotalRows {
+			return ErrMaxRows
+		}
+		to.Row += offset
+	}
+	return nil
+}
+
 // adjustDrawings updates the two cell anchor pictures and charts object when
 // inserting or deleting rows or columns.
-func (a *xdrCellAnchor) adjustDrawings(dir adjustDirection, num, offset int) {
-	if a.From == nil || a.To == nil {
-		return
+func (a *xdrCellAnchor) adjustDrawings(dir adjustDirection, num, offset int) error {
+	editAs := a.EditAs
+	if a.From == nil || a.To == nil || editAs == "absolute" {
+		return nil
 	}
-	if offset > 0 && a.EditAs != "absolute" {
-		var move bool
-		if dir == columns {
-			if a.From.Col+1 >= num {
-				a.From.Col += offset
-				move = a.EditAs == "oneCell"
-			}
-			if a.To.Col+1 >= num && (move || a.EditAs == "") {
-				a.To.Col += offset
-			}
-			return
-		}
-		if a.From.Row+1 >= num {
-			a.From.Row += offset
-			move = a.EditAs == "oneCell"
-		}
-		if a.To.Row+1 >= num && (move || a.EditAs == "") {
-			a.To.Row += offset
-		}
+	ok, err := a.From.adjustDrawings(dir, num, offset, editAs)
+	if err != nil {
+		return err
 	}
+	return a.To.adjustDrawings(dir, num, offset, editAs, ok || editAs == "")
 }
 
 // adjustDrawings updates the existing two cell anchor pictures and charts
 // object when inserting or deleting rows or columns.
-func (a *xlsxCellAnchorPos) adjustDrawings(dir adjustDirection, num, offset int, editAs string) {
-	if a.From == nil || a.To == nil {
-		return
+func (a *xlsxCellAnchorPos) adjustDrawings(dir adjustDirection, num, offset int, editAs string) error {
+	if a.From == nil || a.To == nil || editAs == "absolute" {
+		return nil
 	}
-	if offset > 0 && editAs != "absolute" {
-		var move bool
-		if dir == columns {
-			if a.From.Col+1 >= num {
-				a.From.Col += offset
-				move = editAs == "oneCell"
-			}
-			if a.To.Col+1 >= num && (move || editAs == "") {
-				a.To.Col += offset
-			}
-			return
-		}
-		if a.From.Row+1 >= num {
-			a.From.Row += offset
-			move = editAs == "oneCell"
-		}
-		if a.To.Row+1 >= num && (move || editAs == "") {
-			a.To.Row += offset
-		}
+	ok, err := a.From.adjustDrawings(dir, num, offset, editAs)
+	if err != nil {
+		return err
 	}
+	return a.To.adjustDrawings(dir, num, offset, editAs, ok || editAs == "")
 }
 
 // adjustDrawings updates the pictures and charts object when inserting or
@@ -836,10 +846,9 @@ func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirecti
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return err
 	}
-	anchorCb := func(a *xdrCellAnchor) {
+	anchorCb := func(a *xdrCellAnchor) error {
 		if a.GraphicFrame == "" {
-			a.adjustDrawings(dir, num, offset)
-			return
+			return a.adjustDrawings(dir, num, offset)
 		}
 		deCellAnchor := decodeCellAnchor{}
 		deCellAnchorPos := decodeCellAnchorPos{}
@@ -858,12 +867,17 @@ func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirecti
 				Row: deCellAnchor.To.Row, RowOff: deCellAnchor.To.RowOff,
 			}
 		}
-		xlsxCellAnchorPos.adjustDrawings(dir, num, offset, a.EditAs)
+		if err = xlsxCellAnchorPos.adjustDrawings(dir, num, offset, a.EditAs); err != nil {
+			return err
+		}
 		cellAnchor, _ := xml.Marshal(xlsxCellAnchorPos)
 		a.GraphicFrame = strings.TrimSuffix(strings.TrimPrefix(string(cellAnchor), "<xlsxCellAnchorPos>"), "</xlsxCellAnchorPos>")
+		return err
 	}
 	for _, anchor := range wsDr.TwoCellAnchor {
-		anchorCb(anchor)
+		if err = anchorCb(anchor); err != nil {
+			return err
+		}
 	}
 	return nil
 }
