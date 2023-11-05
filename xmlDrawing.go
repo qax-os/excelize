@@ -233,18 +233,19 @@ type xdrCellAnchor struct {
 // xlsxCellAnchorPos defines the structure used to serialize the cell anchor for
 // adjust drawing object on inserting/deleting column/rows.
 type xlsxCellAnchorPos struct {
-	EditAs       string        `xml:"editAs,attr,omitempty"`
-	From         *xlsxFrom     `xml:"xdr:from"`
-	To           *xlsxTo       `xml:"xdr:to"`
-	Pos          *xlsxInnerXML `xml:"xdr:pos"`
-	Ext          *xlsxInnerXML `xml:"xdr:ext"`
-	Sp           *xlsxInnerXML `xml:"xdr:sp"`
-	GrpSp        *xlsxInnerXML `xml:"xdr:grpSp"`
-	GraphicFrame *xlsxInnerXML `xml:"xdr:graphicFrame"`
-	CxnSp        *xlsxInnerXML `xml:"xdr:cxnSp"`
-	Pic          *xlsxInnerXML `xml:"xdr:pic"`
-	ContentPart  *xlsxInnerXML `xml:"xdr:contentPart"`
-	ClientData   *xlsxInnerXML `xml:"xdr:clientData"`
+	EditAs           string                  `xml:"editAs,attr,omitempty"`
+	From             *xlsxFrom               `xml:"xdr:from"`
+	To               *xlsxTo                 `xml:"xdr:to"`
+	Pos              *xlsxInnerXML           `xml:"xdr:pos"`
+	Ext              *xlsxInnerXML           `xml:"xdr:ext"`
+	Sp               *xlsxInnerXML           `xml:"xdr:sp"`
+	GrpSp            *xlsxInnerXML           `xml:"xdr:grpSp"`
+	GraphicFrame     *xlsxInnerXML           `xml:"xdr:graphicFrame"`
+	CxnSp            *xlsxInnerXML           `xml:"xdr:cxnSp"`
+	Pic              *xlsxInnerXML           `xml:"xdr:pic"`
+	ContentPart      *xlsxInnerXML           `xml:"xdr:contentPart"`
+	AlternateContent []*xlsxAlternateContent `xml:"mc:AlternateContent"`
+	ClientData       *xlsxInnerXML           `xml:"xdr:clientData"`
 }
 
 // xlsxPoint2D describes the position of a drawing element within a spreadsheet.

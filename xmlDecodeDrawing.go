@@ -18,30 +18,32 @@ import "encoding/xml"
 // specifies a two cell anchor placeholder for a group, a shape, or a drawing
 // element. It moves with cells and its extents are in EMU units.
 type decodeCellAnchor struct {
-	EditAs     string            `xml:"editAs,attr,omitempty"`
-	From       *decodeFrom       `xml:"from"`
-	To         *decodeTo         `xml:"to"`
-	Sp         *decodeSp         `xml:"sp"`
-	Pic        *decodePic        `xml:"pic"`
-	ClientData *decodeClientData `xml:"clientData"`
-	Content    string            `xml:",innerxml"`
+	EditAs           string                  `xml:"editAs,attr,omitempty"`
+	From             *decodeFrom             `xml:"from"`
+	To               *decodeTo               `xml:"to"`
+	Sp               *decodeSp               `xml:"sp"`
+	Pic              *decodePic              `xml:"pic"`
+	ClientData       *decodeClientData       `xml:"clientData"`
+	AlternateContent []*xlsxAlternateContent `xml:"mc:AlternateContent"`
+	Content          string                  `xml:",innerxml"`
 }
 
 // decodeCellAnchorPos defines the structure used to deserialize the cell anchor
 // for adjust drawing object on inserting/deleting column/rows.
 type decodeCellAnchorPos struct {
-	EditAs       string        `xml:"editAs,attr,omitempty"`
-	From         *xlsxFrom     `xml:"from"`
-	To           *xlsxTo       `xml:"to"`
-	Pos          *xlsxInnerXML `xml:"pos"`
-	Ext          *xlsxInnerXML `xml:"ext"`
-	Sp           *xlsxInnerXML `xml:"sp"`
-	GrpSp        *xlsxInnerXML `xml:"grpSp"`
-	GraphicFrame *xlsxInnerXML `xml:"graphicFrame"`
-	CxnSp        *xlsxInnerXML `xml:"cxnSp"`
-	Pic          *xlsxInnerXML `xml:"pic"`
-	ContentPart  *xlsxInnerXML `xml:"contentPart"`
-	ClientData   *xlsxInnerXML `xml:"clientData"`
+	EditAs           string                  `xml:"editAs,attr,omitempty"`
+	From             *xlsxFrom               `xml:"from"`
+	To               *xlsxTo                 `xml:"to"`
+	Pos              *xlsxInnerXML           `xml:"pos"`
+	Ext              *xlsxInnerXML           `xml:"ext"`
+	Sp               *xlsxInnerXML           `xml:"sp"`
+	GrpSp            *xlsxInnerXML           `xml:"grpSp"`
+	GraphicFrame     *xlsxInnerXML           `xml:"graphicFrame"`
+	CxnSp            *xlsxInnerXML           `xml:"cxnSp"`
+	Pic              *xlsxInnerXML           `xml:"pic"`
+	ContentPart      *xlsxInnerXML           `xml:"contentPart"`
+	AlternateContent []*xlsxAlternateContent `xml:"AlternateContent"`
+	ClientData       *xlsxInnerXML           `xml:"clientData"`
 }
 
 // xdrSp (Shape) directly maps the sp element. This element specifies the

@@ -838,7 +838,7 @@ func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirecti
 		return nil
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
-	drawingXML := strings.ReplaceAll(target, "..", "xl")
+	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	var (
 		err  error
 		wsDr *xlsxWsDr
@@ -855,6 +855,9 @@ func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirecti
 		_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + a.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
 		_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchorPos>" + a.GraphicFrame + "</decodeCellAnchorPos>")).Decode(&deCellAnchorPos)
 		xlsxCellAnchorPos := xlsxCellAnchorPos(deCellAnchorPos)
+		for i := 0; i < len(xlsxCellAnchorPos.AlternateContent); i++ {
+			xlsxCellAnchorPos.AlternateContent[i].XMLNSMC = SourceRelationshipCompatibility.Value
+		}
 		if deCellAnchor.From != nil {
 			xlsxCellAnchorPos.From = &xlsxFrom{
 				Col: deCellAnchor.From.Col, ColOff: deCellAnchor.From.ColOff,

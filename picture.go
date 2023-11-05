@@ -470,7 +470,7 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 		return nil, err
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
-	drawingXML := strings.ReplaceAll(target, "..", "xl")
+	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	drawingRelationships := strings.ReplaceAll(
 		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
 
@@ -491,7 +491,7 @@ func (f *File) GetPictureCells(sheet string) ([]string, error) {
 		return nil, err
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
-	drawingXML := strings.ReplaceAll(target, "..", "xl")
+	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	drawingRelationships := strings.ReplaceAll(
 		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
 

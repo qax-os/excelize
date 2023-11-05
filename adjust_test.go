@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"encoding/xml"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -1021,4 +1022,9 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, a.adjustDrawings(columns, 0, 0))
 	p := xlsxCellAnchorPos{}
 	assert.NoError(t, p.adjustDrawings(columns, 0, 0, ""))
+
+	f, err = OpenFile(wb)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><twoCellAnchor><from><col>0</col><colOff>0</colOff><row>0</row><rowOff>0</rowOff></from><to><col>1</col><colOff>0</colOff><row>1</row><rowOff>0</rowOff></to><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></twoCellAnchor></wsDr>`))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 }
