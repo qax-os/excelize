@@ -177,9 +177,8 @@ func (f *File) workSheetWriter() {
 
 // trimRow provides a function to trim empty rows.
 func trimRow(sheetData *xlsxSheetData) []xlsxRow {
-	var (
-		row xlsxRow
-	)
+	var row xlsxRow
+
 	nextIndex := 0
 	for k := range sheetData.Row {
 		row = sheetData.Row[k]
