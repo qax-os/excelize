@@ -29,6 +29,28 @@ const (
 	rows    adjustDirection = true
 )
 
+// adjustHelperFunc defines functions to adjust helper.
+var adjustHelperFunc = [6]func(*File, *xlsxWorksheet, string, adjustDirection, int, int, int) error{
+	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+		return f.adjustTable(ws, sheet, dir, num, offset, sheetID)
+	},
+	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+		return f.adjustMergeCells(ws, sheet, dir, num, offset, sheetID)
+	},
+	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+		return f.adjustAutoFilter(ws, sheet, dir, num, offset, sheetID)
+	},
+	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+		return f.adjustCalcChain(ws, sheet, dir, num, offset, sheetID)
+	},
+	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+		return f.adjustVolatileDeps(ws, sheet, dir, num, offset, sheetID)
+	},
+	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+		return f.adjustDrawings(ws, sheet, dir, num, offset, sheetID)
+	},
+}
+
 // adjustHelper provides a function to adjust rows and columns dimensions,
 // hyperlinks, merged cells and auto filter when inserting or deleting rows or
 // columns.
@@ -56,23 +78,14 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
 	ws.checkSheet()
 	_ = ws.checkRow()
-	f.adjustTable(ws, sheet, dir, num, offset)
-	if err = f.adjustMergeCells(ws, dir, num, offset); err != nil {
-		return err
-	}
-	if err = f.adjustAutoFilter(ws, dir, num, offset); err != nil {
-		return err
-	}
-	if err = f.adjustCalcChain(dir, num, offset, sheetID); err != nil {
-		return err
-	}
-	if err = f.adjustVolatileDeps(dir, num, offset, sheetID); err != nil {
-		return err
+	for _, fn := range adjustHelperFunc {
+		if err := fn(f, ws, sheet, dir, num, offset, sheetID); err != nil {
+			return err
+		}
 	}
 	if ws.MergeCells != nil && len(ws.MergeCells.Cells) == 0 {
 		ws.MergeCells = nil
 	}
-
 	return nil
 }
 
@@ -460,9 +473,9 @@ func (f *File) adjustHyperlinks(ws *xlsxWorksheet, sheet string, dir adjustDirec
 
 // adjustTable provides a function to update the table when inserting or
 // deleting rows or columns.
-func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) {
+func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
 	if ws.TableParts == nil || len(ws.TableParts.TableParts) == 0 {
-		return
+		return nil
 	}
 	for idx := 0; idx < len(ws.TableParts.TableParts); idx++ {
 		tbl := ws.TableParts.TableParts[idx]
@@ -475,11 +488,11 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 		t := xlsxTable{}
 		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
 			Decode(&t); err != nil && err != io.EOF {
-			return
+			return nil
 		}
 		coordinates, err := rangeRefToCoordinates(t.Ref)
 		if err != nil {
-			return
+			return err
 		}
 		// Remove the table when deleting the header row of the table
 		if dir == rows && num == coordinates[0] && offset == -1 {
@@ -506,11 +519,12 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 		table, _ := xml.Marshal(t)
 		f.saveFileList(tableXML, table)
 	}
+	return nil
 }
 
 // adjustAutoFilter provides a function to update the auto filter when
 // inserting or deleting rows or columns.
-func (f *File) adjustAutoFilter(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
+func (f *File) adjustAutoFilter(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
 	if ws.AutoFilter == nil {
 		return nil
 	}
@@ -563,7 +577,7 @@ func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, nu
 
 // adjustMergeCells provides a function to update merged cells when inserting
 // or deleting rows or columns.
-func (f *File) adjustMergeCells(ws *xlsxWorksheet, dir adjustDirection, num, offset int) error {
+func (f *File) adjustMergeCells(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
 	if ws.MergeCells == nil {
 		return nil
 	}
@@ -657,7 +671,7 @@ func adjustCellName(cell string, dir adjustDirection, c, r, offset int) (string,
 
 // adjustCalcChain provides a function to update the calculation chain when
 // inserting or deleting rows or columns.
-func (f *File) adjustCalcChain(dir adjustDirection, num, offset, sheetID int) error {
+func (f *File) adjustCalcChain(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
 	if f.CalcChain == nil {
 		return nil
 	}
@@ -728,7 +742,7 @@ func (vt *xlsxVolTypes) adjustVolatileDepsTopic(cell string, dir adjustDirection
 
 // adjustVolatileDeps updates the volatile dependencies when inserting or
 // deleting rows or columns.
-func (f *File) adjustVolatileDeps(dir adjustDirection, num, offset, sheetID int) error {
+func (f *File) adjustVolatileDeps(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
 	volTypes, err := f.volatileDepsReader()
 	if err != nil || volTypes == nil {
 		return err
@@ -746,6 +760,126 @@ func (f *File) adjustVolatileDeps(dir adjustDirection, num, offset, sheetID int)
 					}
 				}
 			}
+		}
+	}
+	return nil
+}
+
+// adjustDrawings updates the starting anchor of the two cell anchor pictures
+// and charts object when inserting or deleting rows or columns.
+func (from *xlsxFrom) adjustDrawings(dir adjustDirection, num, offset int, editAs string) (bool, error) {
+	var ok bool
+	if dir == columns && from.Col+1 >= num && from.Col+offset >= 0 {
+		if from.Col+offset >= MaxColumns {
+			return false, ErrColumnNumber
+		}
+		from.Col += offset
+		ok = editAs == "oneCell"
+	}
+	if dir == rows && from.Row+1 >= num && from.Row+offset >= 0 {
+		if from.Row+offset >= TotalRows {
+			return false, ErrMaxRows
+		}
+		from.Row += offset
+		ok = editAs == "oneCell"
+	}
+	return ok, nil
+}
+
+// adjustDrawings updates the ending anchor of the two cell anchor pictures
+// and charts object when inserting or deleting rows or columns.
+func (to *xlsxTo) adjustDrawings(dir adjustDirection, num, offset int, editAs string, ok bool) error {
+	if dir == columns && to.Col+1 >= num && to.Col+offset >= 0 && ok {
+		if to.Col+offset >= MaxColumns {
+			return ErrColumnNumber
+		}
+		to.Col += offset
+	}
+	if dir == rows && to.Row+1 >= num && to.Row+offset >= 0 && ok {
+		if to.Row+offset >= TotalRows {
+			return ErrMaxRows
+		}
+		to.Row += offset
+	}
+	return nil
+}
+
+// adjustDrawings updates the two cell anchor pictures and charts object when
+// inserting or deleting rows or columns.
+func (a *xdrCellAnchor) adjustDrawings(dir adjustDirection, num, offset int) error {
+	editAs := a.EditAs
+	if a.From == nil || a.To == nil || editAs == "absolute" {
+		return nil
+	}
+	ok, err := a.From.adjustDrawings(dir, num, offset, editAs)
+	if err != nil {
+		return err
+	}
+	return a.To.adjustDrawings(dir, num, offset, editAs, ok || editAs == "")
+}
+
+// adjustDrawings updates the existing two cell anchor pictures and charts
+// object when inserting or deleting rows or columns.
+func (a *xlsxCellAnchorPos) adjustDrawings(dir adjustDirection, num, offset int, editAs string) error {
+	if a.From == nil || a.To == nil || editAs == "absolute" {
+		return nil
+	}
+	ok, err := a.From.adjustDrawings(dir, num, offset, editAs)
+	if err != nil {
+		return err
+	}
+	return a.To.adjustDrawings(dir, num, offset, editAs, ok || editAs == "")
+}
+
+// adjustDrawings updates the pictures and charts object when inserting or
+// deleting rows or columns.
+func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+	if ws.Drawing == nil {
+		return nil
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
+	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
+	var (
+		err  error
+		wsDr *xlsxWsDr
+	)
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return err
+	}
+	anchorCb := func(a *xdrCellAnchor) error {
+		if a.GraphicFrame == "" {
+			return a.adjustDrawings(dir, num, offset)
+		}
+		deCellAnchor := decodeCellAnchor{}
+		deCellAnchorPos := decodeCellAnchorPos{}
+		_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + a.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
+		_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchorPos>" + a.GraphicFrame + "</decodeCellAnchorPos>")).Decode(&deCellAnchorPos)
+		xlsxCellAnchorPos := xlsxCellAnchorPos(deCellAnchorPos)
+		for i := 0; i < len(xlsxCellAnchorPos.AlternateContent); i++ {
+			xlsxCellAnchorPos.AlternateContent[i].XMLNSMC = SourceRelationshipCompatibility.Value
+		}
+		if deCellAnchor.From != nil {
+			xlsxCellAnchorPos.From = &xlsxFrom{
+				Col: deCellAnchor.From.Col, ColOff: deCellAnchor.From.ColOff,
+				Row: deCellAnchor.From.Row, RowOff: deCellAnchor.From.RowOff,
+			}
+		}
+		if deCellAnchor.To != nil {
+			xlsxCellAnchorPos.To = &xlsxTo{
+				Col: deCellAnchor.To.Col, ColOff: deCellAnchor.To.ColOff,
+				Row: deCellAnchor.To.Row, RowOff: deCellAnchor.To.RowOff,
+			}
+		}
+		if err = xlsxCellAnchorPos.adjustDrawings(dir, num, offset, a.EditAs); err != nil {
+			return err
+		}
+		cellAnchor, _ := xml.Marshal(xlsxCellAnchorPos)
+		a.GraphicFrame = strings.TrimSuffix(strings.TrimPrefix(string(cellAnchor), "<xlsxCellAnchorPos>"), "</xlsxCellAnchorPos>")
+		return err
+	}
+	for _, anchor := range wsDr.TwoCellAnchor {
+		if err = anchorCb(anchor); err != nil {
+			return err
 		}
 	}
 	return nil
