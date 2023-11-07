@@ -334,7 +334,7 @@ func TestAdjustTable(t *testing.T) {
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
 	// Test adjust table with unsupported charset
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
-	assert.NoError(t, f.RemoveRow(sheetName, 1))
+	assert.EqualError(t, f.RemoveRow(sheetName, 1), "XML syntax error on line 1: invalid UTF-8")
 	// Test adjust table with invalid table range reference
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
 	assert.Equal(t, ErrParameterInvalid, f.RemoveRow(sheetName, 1))
@@ -452,6 +452,17 @@ func TestAdjustCols(t *testing.T) {
 	assert.NoError(t, f.RemoveCol(sheetName, "A"))
 
 	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	assert.NoError(t, f.SetColWidth("Sheet1", "XFB", "XFC", 12))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 2))
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	assert.Equal(t, MaxColumns, ws.(*xlsxWorksheet).Cols.Col[0].Min)
+	assert.Equal(t, MaxColumns, ws.(*xlsxWorksheet).Cols.Col[0].Max)
+
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 2))
+	assert.Nil(t, ws.(*xlsxWorksheet).Cols)
 }
 
 func TestAdjustColDimensions(t *testing.T) {
@@ -550,9 +561,9 @@ func TestAdjustFormula(t *testing.T) {
 	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
 	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
 
-	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", columns, 0, 1)
+	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", false, columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
-	_, err = f.adjustFormulaRef("Sheet1", "Sheet1", "XFD1", columns, 0, 1)
+	_, err = f.adjustFormulaRef("Sheet1", "Sheet1", "XFD1", false, columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
 
 	f = NewFile()
@@ -1027,4 +1038,68 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><twoCellAnchor><from><col>0</col><colOff>0</colOff><row>0</row><rowOff>0</rowOff></from><to><col>1</col><colOff>0</colOff><row>1</row><rowOff>0</rowOff></to><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></twoCellAnchor></wsDr>`))
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+}
+
+func TestAdjustDefinedNames(t *testing.T) {
+	f := NewFile()
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	for _, dn := range []*DefinedName{
+		{Name: "Name1", RefersTo: "Sheet1!$XFD$1"},
+		{Name: "Name2", RefersTo: "Sheet2!$C$1", Scope: "Sheet1"},
+		{Name: "Name3", RefersTo: "Sheet2!$C$1:$D$2", Scope: "Sheet1"},
+		{Name: "Name4", RefersTo: "Sheet2!$C1:D$2"},
+		{Name: "Name5", RefersTo: "Sheet2!C$1:$D2"},
+		{Name: "Name6", RefersTo: "Sheet2!C:$D"},
+		{Name: "Name7", RefersTo: "Sheet2!$C:D"},
+		{Name: "Name8", RefersTo: "Sheet2!C:D"},
+		{Name: "Name9", RefersTo: "Sheet2!$C:$D"},
+		{Name: "Name10", RefersTo: "Sheet2!1:2"},
+	} {
+		assert.NoError(t, f.SetDefinedName(dn))
+	}
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	assert.NoError(t, f.InsertCols("Sheet2", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet2", 1, 1))
+	definedNames := f.GetDefinedName()
+	for i, expected := range []string{
+		"Sheet1!$XFD$2",
+		"Sheet2!$D$2",
+		"Sheet2!$D$2:$E$3",
+		"Sheet2!$D1:D$3",
+		"Sheet2!C$2:$E2",
+		"Sheet2!C:$E",
+		"Sheet2!$D:D",
+		"Sheet2!C:D",
+		"Sheet2!$D:$E",
+		"Sheet2!1:2",
+	} {
+		assert.Equal(t, expected, definedNames[i].RefersTo)
+	}
+
+	f = NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name1",
+		RefersTo: "Sheet1!$A$1",
+		Scope:    "Sheet1",
+	}))
+	assert.NoError(t, f.RemoveCol("Sheet1", "A"))
+	definedNames = f.GetDefinedName()
+	assert.Equal(t, "Sheet1!$A$1", definedNames[0].RefersTo)
+
+	f = NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name1",
+		RefersTo: "'1.A & B C'!#REF!",
+		Scope:    "Sheet1",
+	}))
+	assert.NoError(t, f.RemoveCol("Sheet1", "A"))
+	definedNames = f.GetDefinedName()
+	assert.Equal(t, "'1.A & B C'!#REF!", definedNames[0].RefersTo)
+
+	f = NewFile()
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.adjustDefinedNames(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
 }
