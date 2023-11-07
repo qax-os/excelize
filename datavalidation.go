@@ -23,12 +23,12 @@ type DataValidationType int
 
 // Data validation types.
 const (
-	_DataValidationType = iota
-	typeNone            // inline use
+	_        DataValidationType = iota
+	typeNone                    // inline use
 	DataValidationTypeCustom
 	DataValidationTypeDate
 	DataValidationTypeDecimal
-	typeList // inline use
+	DataValidationTypeList // inline use
 	DataValidationTypeTextLength
 	DataValidationTypeTime
 	// DataValidationTypeWhole Integer
@@ -58,7 +58,7 @@ type DataValidationOperator int
 
 // Data validation operators.
 const (
-	_DataValidationOperator = iota
+	_ DataValidationOperator = iota
 	DataValidationOperatorBetween
 	DataValidationOperatorEqual
 	DataValidationOperatorGreaterThan
@@ -76,6 +76,11 @@ var formulaEscaper = strings.NewReplacer(
 	`<`, `&lt;`,
 	`>`, `&gt;`,
 	`"`, `""`,
+)
+
+const (
+	formula1Name = "formula1"
+	formula2Name = "formula2"
 )
 
 // NewDataValidation return data validation struct.
@@ -119,18 +124,26 @@ func (dv *DataValidation) SetInput(title, msg string) {
 // worksheet cells, and use the SetSqrefDropList function to set the reference
 // for their cells.
 func (dv *DataValidation) SetDropList(keys []string) error {
-	formula := strings.Join(keys, ",")
-	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
-		return ErrDataValidationFormulaLength
+	formula, err := dv.extractListFormula(keys, formula1Name)
+	if err != nil {
+		return err
 	}
-	dv.Formula1 = fmt.Sprintf(`<formula1>"%s"</formula1>`, formulaEscaper.Replace(formula))
-	dv.Type = convDataValidationType(typeList)
+	dv.Formula1 = formula
+	dv.Type = convDataValidationType(DataValidationTypeList)
 	return nil
 }
 
+func (dv *DataValidation) extractListFormula(keys []string, formulaName string) (string, error) {
+	formula := strings.Join(keys, ",")
+	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
+		return "", ErrDataValidationFormulaLength
+	}
+	return fmt.Sprintf(`<%[2]s>"%[1]s"</%[2]s>`, formulaEscaper.Replace(formula), formulaName), nil
+}
+
 // SetRange provides function to set data validation range in drop list, only
-// accepts int, float64, or string data type formula argument.
-func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
+// accepts int, float64, string or []string data type formula argument.
+func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) (err error) {
 	var formula1, formula2 string
 	switch v := f1.(type) {
 	case int:
@@ -142,9 +155,15 @@ func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 		formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", v)
 	case string:
 		formula1 = fmt.Sprintf("<formula1>%s</formula1>", v)
+	case []string:
+		formula1, err = dv.extractListFormula(v, formula1Name)
+		if err != nil {
+			return err
+		}
 	default:
 		return ErrParameterInvalid
 	}
+
 	switch v := f2.(type) {
 	case int:
 		formula2 = fmt.Sprintf("<formula2>%d</formula2>", v)
@@ -155,6 +174,11 @@ func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 		formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", v)
 	case string:
 		formula2 = fmt.Sprintf("<formula2>%s</formula2>", v)
+	case []string:
+		formula2, err = dv.extractListFormula(v, formula2Name)
+		if err != nil {
+			return err
+		}
 	default:
 		return ErrParameterInvalid
 	}
@@ -180,7 +204,7 @@ func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 //	err := f.AddDataValidation("Sheet1", dv)
 func (dv *DataValidation) SetSqrefDropList(sqref string) {
 	dv.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
-	dv.Type = convDataValidationType(typeList)
+	dv.Type = convDataValidationType(DataValidationTypeList)
 }
 
 // SetSqref provides function to set data validation range in drop list.
@@ -199,7 +223,7 @@ func convDataValidationType(t DataValidationType) string {
 		DataValidationTypeCustom:     "custom",
 		DataValidationTypeDate:       "date",
 		DataValidationTypeDecimal:    "decimal",
-		typeList:                     "list",
+		DataValidationTypeList:       "list",
 		DataValidationTypeTextLength: "textLength",
 		DataValidationTypeTime:       "time",
 		DataValidationTypeWhole:      "whole",
