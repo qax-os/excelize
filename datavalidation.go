@@ -23,15 +23,14 @@ type DataValidationType int
 
 // Data validation types.
 const (
-	_        DataValidationType = iota
-	typeNone                    // inline use
+	_ DataValidationType = iota
+	DataValidationTypeNone
 	DataValidationTypeCustom
 	DataValidationTypeDate
 	DataValidationTypeDecimal
-	DataValidationTypeList // inline use
+	DataValidationTypeList
 	DataValidationTypeTextLength
 	DataValidationTypeTime
-	// DataValidationTypeWhole Integer
 	DataValidationTypeWhole
 )
 
@@ -124,65 +123,41 @@ func (dv *DataValidation) SetInput(title, msg string) {
 // worksheet cells, and use the SetSqrefDropList function to set the reference
 // for their cells.
 func (dv *DataValidation) SetDropList(keys []string) error {
-	formula, err := dv.extractListFormula(keys, formula1Name)
-	if err != nil {
-		return err
-	}
-	dv.Formula1 = formula
-	dv.Type = convDataValidationType(DataValidationTypeList)
-	return nil
-}
-
-func (dv *DataValidation) extractListFormula(keys []string, formulaName string) (string, error) {
 	formula := strings.Join(keys, ",")
 	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
-		return "", ErrDataValidationFormulaLength
+		return ErrDataValidationFormulaLength
 	}
-	return fmt.Sprintf(`<%[2]s>"%[1]s"</%[2]s>`, formulaEscaper.Replace(formula), formulaName), nil
+	dv.Formula1 = fmt.Sprintf(`<%[2]s>"%[1]s"</%[2]s>`, formulaEscaper.Replace(formula), formula1Name)
+	dv.Type = convDataValidationType(DataValidationTypeList)
+	return nil
 }
 
 // SetRange provides function to set data validation range in drop list, only
 // accepts int, float64, string or []string data type formula argument.
 func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) (err error) {
-	var formula1, formula2 string
-	switch v := f1.(type) {
-	case int:
-		formula1 = fmt.Sprintf("<formula1>%d</formula1>", v)
-	case float64:
-		if math.Abs(v) > math.MaxFloat32 {
-			return ErrDataValidationRange
+	genFormula := func(name string, val interface{}) (string, error) {
+		var formula string
+		switch v := val.(type) {
+		case int:
+			formula = fmt.Sprintf("<%s>%d</%s>", name, v, name)
+		case float64:
+			if math.Abs(v) > math.MaxFloat32 {
+				return formula, ErrDataValidationRange
+			}
+			formula = fmt.Sprintf("<%s>%.17g</%s>", name, v, name)
+		case string:
+			formula = fmt.Sprintf("<%s>%s</%s>", name, v, name)
+		default:
+			return formula, ErrParameterInvalid
 		}
-		formula1 = fmt.Sprintf("<formula1>%.17g</formula1>", v)
-	case string:
-		formula1 = fmt.Sprintf("<formula1>%s</formula1>", v)
-	case []string:
-		formula1, err = dv.extractListFormula(v, formula1Name)
-		if err != nil {
-			return err
-		}
-	default:
-		return ErrParameterInvalid
+		return formula, nil
 	}
-
-	switch v := f2.(type) {
-	case int:
-		formula2 = fmt.Sprintf("<formula2>%d</formula2>", v)
-	case float64:
-		if math.Abs(v) > math.MaxFloat32 {
-			return ErrDataValidationRange
-		}
-		formula2 = fmt.Sprintf("<formula2>%.17g</formula2>", v)
-	case string:
-		formula2 = fmt.Sprintf("<formula2>%s</formula2>", v)
-	case []string:
-		formula2, err = dv.extractListFormula(v, formula2Name)
-		if err != nil {
-			return err
-		}
-	default:
-		return ErrParameterInvalid
+	if dv.Formula1, err = genFormula(formula1Name, f1); err != nil {
+		return err
 	}
-	dv.Formula1, dv.Formula2 = formula1, formula2
+	if dv.Formula2, err = genFormula(formula2Name, f2); err != nil {
+		return err
+	}
 	dv.Type = convDataValidationType(t)
 	dv.Operator = convDataValidationOperator(o)
 	return nil
@@ -211,15 +186,15 @@ func (dv *DataValidation) SetSqrefDropList(sqref string) {
 func (dv *DataValidation) SetSqref(sqref string) {
 	if dv.Sqref == "" {
 		dv.Sqref = sqref
-	} else {
-		dv.Sqref = fmt.Sprintf("%s %s", dv.Sqref, sqref)
+		return
 	}
+	dv.Sqref = fmt.Sprintf("%s %s", dv.Sqref, sqref)
 }
 
 // convDataValidationType get excel data validation type.
 func convDataValidationType(t DataValidationType) string {
 	typeMap := map[DataValidationType]string{
-		typeNone:                     "none",
+		DataValidationTypeNone:       "none",
 		DataValidationTypeCustom:     "custom",
 		DataValidationTypeDate:       "date",
 		DataValidationTypeDecimal:    "decimal",
