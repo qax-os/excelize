@@ -158,7 +158,7 @@ func (dv *DataValidation) SetDropList(keys []string) error {
 
 // SetRange provides function to set data validation range in drop list, only
 // accepts int, float64, string or []string data type formula argument.
-func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) (err error) {
+func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
 	genFormula := func(name string, val interface{}) (string, error) {
 		var formula string
 		switch v := val.(type) {
@@ -176,15 +176,18 @@ func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 		}
 		return formula, nil
 	}
-	if dv.Formula1, err = genFormula(formula1Name, f1); err != nil {
+	formula1, err := genFormula(formula1Name, f1)
+	if err != nil {
 		return err
 	}
-	if dv.Formula2, err = genFormula(formula2Name, f2); err != nil {
+	formula2, err := genFormula(formula2Name, f2)
+	if err != nil {
 		return err
 	}
+	dv.Formula1, dv.Formula2 = formula1, formula2
 	dv.Type = dataValidationTypeMap[t]
 	dv.Operator = dataValidationOperatorMap[o]
-	return nil
+	return err
 }
 
 // SetSqrefDropList provides set data validation on a range with source
