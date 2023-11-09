@@ -1223,7 +1223,7 @@ func TestConditionalFormat(t *testing.T) {
 		},
 	))
 	// Set conditional format with illegal criteria type
-	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10",
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat(sheet1, "K1:K10",
 		[]ConditionalFormatOptions{
 			{
 				Type:     "data_bar",

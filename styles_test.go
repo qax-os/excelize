@@ -191,6 +191,19 @@ func TestSetConditionalFormat(t *testing.T) {
 	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", condFmts), "XML syntax error on line 1: element <conditionalFormattings> closed by </conditionalFormatting>")
 	// Test creating a conditional format with invalid icon set style
 	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}), ErrParameterInvalid.Error())
+	// Test unsupported conditional formatting rule types
+	for _, val := range []string{
+		"date",
+		"time",
+		"text",
+		"time_period",
+		"blanks",
+		"no_blanks",
+		"errors",
+		"no_errors",
+	} {
+		assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: val}}))
+	}
 }
 
 func TestGetConditionalFormats(t *testing.T) {

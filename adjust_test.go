@@ -962,6 +962,37 @@ func TestAdjustVolatileDeps(t *testing.T) {
 	f.volatileDepsWriter()
 }
 
+func TestAdjustConditionalFormats(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "B1", &[]interface{}{1, nil, 1, 1}))
+	formatID, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "09600B"}, Fill: Fill{Type: "pattern", Color: []string{"C7EECF"}, Pattern: 1}})
+	assert.NoError(t, err)
+	format := []ConditionalFormatOptions{
+		{
+			Type:     "cell",
+			Criteria: "greater than",
+			Format:   formatID,
+			Value:    "0",
+		},
+	}
+	for _, ref := range []string{"B1", "D1:E1"} {
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, format))
+	}
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	opts, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, format, 1)
+	assert.Equal(t, format, opts["C1:D1"])
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ConditionalFormatting[0].SQRef = "-"
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.RemoveCol("Sheet1", "B"))
+
+	ws.(*xlsxWorksheet).ConditionalFormatting[0] = nil
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+}
+
 func TestAdjustDrawings(t *testing.T) {
 	f := NewFile()
 	// Test add pictures to sheet with positioning
