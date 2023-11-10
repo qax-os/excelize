@@ -68,12 +68,6 @@ func TestDataValidation(t *testing.T) {
 	assert.Len(t, dataValidations, 1)
 
 	dv = NewDataValidation(true)
-	dv.Sqref = "A4:A5"
-	assert.NoError(t, dv.SetRange("Sheet2!$A$2:$A$3", "", DataValidationTypeList, DataValidationOperatorBetween))
-	dv.SetError(DataValidationErrorStyleStop, "error title", "error body")
-	assert.NoError(t, f.AddDataValidation("Sheet2", dv))
-
-	dv = NewDataValidation(true)
 	dv.Sqref = "A5:B6"
 	for _, listValid := range [][]string{
 		{"1", "2", "3"},

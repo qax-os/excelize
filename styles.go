@@ -2664,8 +2664,10 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 						f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
 					}
 					cfRule = append(cfRule, rule)
+					continue
 				}
 			}
+			return ErrParameterInvalid
 		}
 	}
 
