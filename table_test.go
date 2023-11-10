@@ -45,7 +45,7 @@ func TestAddTable(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
 	// Test add table with invalid sheet name
-	assert.EqualError(t, f.AddTable("Sheet:1", &Table{Range: "B26:A21"}), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.AddTable("Sheet:1", &Table{Range: "B26:A21"}))
 	// Test addTable with illegal cell reference
 	f = NewFile()
 	assert.Equal(t, newCoordinatesToCellNameError(0, 0), f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil))
@@ -64,13 +64,13 @@ func TestAddTable(t *testing.T) {
 		{name: "\u0f5f\u0fb3\u0f0b\u0f21", err: newInvalidNameError("\u0f5f\u0fb3\u0f0b\u0f21")},
 		{name: strings.Repeat("c", MaxFieldLength+1), err: ErrNameLength},
 	} {
-		assert.EqualError(t, f.AddTable("Sheet1", &Table{
+		assert.Equal(t, cases.err, f.AddTable("Sheet1", &Table{
 			Range: "A1:B2",
 			Name:  cases.name,
-		}), cases.err.Error())
-		assert.EqualError(t, f.SetDefinedName(&DefinedName{
+		}))
+		assert.Equal(t, cases.err, f.SetDefinedName(&DefinedName{
 			Name: cases.name, RefersTo: "Sheet1!$A$2:$D$5",
-		}), cases.err.Error())
+		}))
 	}
 	// Test check duplicate table name with unsupported charset table parts
 	f = NewFile()
@@ -115,9 +115,9 @@ func TestDeleteTable(t *testing.T) {
 	assert.NoError(t, f.DeleteTable("Table2"))
 	assert.NoError(t, f.DeleteTable("Table1"))
 	// Test delete table with invalid table name
-	assert.EqualError(t, f.DeleteTable("Table 1"), newInvalidNameError("Table 1").Error())
+	assert.Equal(t, newInvalidNameError("Table 1"), f.DeleteTable("Table 1"))
 	// Test delete table with no exist table name
-	assert.EqualError(t, f.DeleteTable("Table"), newNoExistTableError("Table").Error())
+	assert.Equal(t, newNoExistTableError("Table"), f.DeleteTable("Table"))
 	// Test delete table with unsupported charset
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
@@ -164,10 +164,10 @@ func TestAutoFilter(t *testing.T) {
 	}
 
 	// Test add auto filter with invalid sheet name
-	assert.EqualError(t, f.AutoFilter("Sheet:1", "A1:B1", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.AutoFilter("Sheet:1", "A1:B1", nil))
 	// Test add auto filter with illegal cell reference
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A:B1", nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A1:B", nil), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AutoFilter("Sheet1", "A:B1", nil))
+	assert.Equal(t, newCellNameToCoordinatesError("B", newInvalidCellNameError("B")), f.AutoFilter("Sheet1", "A1:B", nil))
 	// Test add auto filter with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)

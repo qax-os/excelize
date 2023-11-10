@@ -294,9 +294,9 @@ func TestDeletePicture(t *testing.T) {
 	// Test delete picture on not exists worksheet
 	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete picture with invalid sheet name
-	assert.EqualError(t, f.DeletePicture("Sheet:1", "A1"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.DeletePicture("Sheet:1", "A1"))
 	// Test delete picture with invalid coordinates
-	assert.EqualError(t, f.DeletePicture("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("", newInvalidCellNameError("")), f.DeletePicture("Sheet1", ""))
 	assert.NoError(t, f.Close())
 	// Test delete picture on no chart worksheet
 	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))

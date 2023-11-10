@@ -224,46 +224,46 @@ func TestAddSparkline(t *testing.T) {
 		Range:    []string{"Sheet2!A3:E3"},
 	}), "sheet SheetN does not exist")
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", nil), ErrParameterRequired.Error())
+	assert.Equal(t, ErrParameterRequired, f.AddSparkline("Sheet1", nil))
 
 	// Test add sparkline with invalid sheet name
-	assert.EqualError(t, f.AddSparkline("Sheet:1", &SparklineOptions{
+	assert.Equal(t, ErrSheetNameInvalid, f.AddSparkline("Sheet:1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Type:     "win_loss",
 		Negative: true,
-	}), ErrSheetNameInvalid.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineLocation, f.AddSparkline("Sheet1", &SparklineOptions{
 		Range: []string{"Sheet2!A3:E3"},
-	}), ErrSparklineLocation.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineRange, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
-	}), ErrSparklineRange.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparkline, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F2", "F3"},
 		Range:    []string{"Sheet2!A3:E3"},
-	}), ErrSparkline.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineType, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Type:     "unknown_type",
-	}), ErrSparklineType.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineStyle, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Style:    -1,
-	}), ErrSparklineStyle.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineStyle, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Style:    -1,
-	}), ErrSparklineStyle.Error())
+	}))
 	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)

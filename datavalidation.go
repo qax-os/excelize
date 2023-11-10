@@ -75,7 +75,11 @@ var (
 		`&`, `&amp;`,
 		`<`, `&lt;`,
 		`>`, `&gt;`,
-		`"`, `""`,
+	)
+	formulaUnescaper = strings.NewReplacer(
+		`&amp;`, `&`,
+		`&lt;`, `<`,
+		`&gt;`, `>`,
 	)
 	// dataValidationTypeMap defined supported data validation types.
 	dataValidationTypeMap = map[DataValidationType]string{
@@ -99,11 +103,6 @@ var (
 		DataValidationOperatorNotBetween:         "notBetween",
 		DataValidationOperatorNotEqual:           "notEqual",
 	}
-)
-
-const (
-	formula1Name = "formula1"
-	formula2Name = "formula2"
 )
 
 // NewDataValidation return data validation struct.
@@ -151,36 +150,40 @@ func (dv *DataValidation) SetDropList(keys []string) error {
 	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
 		return ErrDataValidationFormulaLength
 	}
-	dv.Formula1 = fmt.Sprintf(`<%[2]s>"%[1]s"</%[2]s>`, formulaEscaper.Replace(formula), formula1Name)
 	dv.Type = dataValidationTypeMap[DataValidationTypeList]
+	if strings.HasPrefix(formula, "=") {
+		dv.Formula1 = formulaEscaper.Replace(formula)
+		return nil
+	}
+	dv.Formula1 = fmt.Sprintf(`"%s"`, strings.NewReplacer(`"`, `""`).Replace(formulaEscaper.Replace(formula)))
 	return nil
 }
 
 // SetRange provides function to set data validation range in drop list, only
 // accepts int, float64, string or []string data type formula argument.
 func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o DataValidationOperator) error {
-	genFormula := func(name string, val interface{}) (string, error) {
+	genFormula := func(val interface{}) (string, error) {
 		var formula string
 		switch v := val.(type) {
 		case int:
-			formula = fmt.Sprintf("<%s>%d</%s>", name, v, name)
+			formula = fmt.Sprintf("%d", v)
 		case float64:
 			if math.Abs(v) > math.MaxFloat32 {
 				return formula, ErrDataValidationRange
 			}
-			formula = fmt.Sprintf("<%s>%.17g</%s>", name, v, name)
+			formula = fmt.Sprintf("%.17g", v)
 		case string:
-			formula = fmt.Sprintf("<%s>%s</%s>", name, v, name)
+			formula = v
 		default:
 			return formula, ErrParameterInvalid
 		}
 		return formula, nil
 	}
-	formula1, err := genFormula(formula1Name, f1)
+	formula1, err := genFormula(f1)
 	if err != nil {
 		return err
 	}
-	formula2, err := genFormula(formula2Name, f2)
+	formula2, err := genFormula(f2)
 	if err != nil {
 		return err
 	}
@@ -205,7 +208,7 @@ func (dv *DataValidation) SetRange(f1, f2 interface{}, t DataValidationType, o D
 //	dv.SetSqrefDropList("$E$1:$E$3")
 //	err := f.AddDataValidation("Sheet1", dv)
 func (dv *DataValidation) SetSqrefDropList(sqref string) {
-	dv.Formula1 = fmt.Sprintf("<formula1>%s</formula1>", sqref)
+	dv.Formula1 = sqref
 	dv.Type = dataValidationTypeMap[DataValidationTypeList]
 }
 
@@ -256,7 +259,27 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	if nil == ws.DataValidations {
 		ws.DataValidations = new(xlsxDataValidations)
 	}
-	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dv)
+	dataValidation := &xlsxDataValidation{
+		AllowBlank:       dv.AllowBlank,
+		Error:            dv.Error,
+		ErrorStyle:       dv.ErrorStyle,
+		ErrorTitle:       dv.ErrorTitle,
+		Operator:         dv.Operator,
+		Prompt:           dv.Prompt,
+		PromptTitle:      dv.PromptTitle,
+		ShowDropDown:     dv.ShowDropDown,
+		ShowErrorMessage: dv.ShowErrorMessage,
+		ShowInputMessage: dv.ShowInputMessage,
+		Sqref:            dv.Sqref,
+		Type:             dv.Type,
+	}
+	if dv.Formula1 != "" {
+		dataValidation.Formula1 = &xlsxInnerXML{Content: dv.Formula1}
+	}
+	if dv.Formula2 != "" {
+		dataValidation.Formula2 = &xlsxInnerXML{Content: dv.Formula2}
+	}
+	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dataValidation)
 	ws.DataValidations.Count = len(ws.DataValidations.DataValidation)
 	return err
 }
@@ -270,7 +293,33 @@ func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 	if ws.DataValidations == nil || len(ws.DataValidations.DataValidation) == 0 {
 		return nil, err
 	}
-	return ws.DataValidations.DataValidation, err
+	var dvs []*DataValidation
+	for _, dv := range ws.DataValidations.DataValidation {
+		if dv != nil {
+			dataValidation := &DataValidation{
+				AllowBlank:       dv.AllowBlank,
+				Error:            dv.Error,
+				ErrorStyle:       dv.ErrorStyle,
+				ErrorTitle:       dv.ErrorTitle,
+				Operator:         dv.Operator,
+				Prompt:           dv.Prompt,
+				PromptTitle:      dv.PromptTitle,
+				ShowDropDown:     dv.ShowDropDown,
+				ShowErrorMessage: dv.ShowErrorMessage,
+				ShowInputMessage: dv.ShowInputMessage,
+				Sqref:            dv.Sqref,
+				Type:             dv.Type,
+			}
+			if dv.Formula1 != nil {
+				dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
+			}
+			if dv.Formula2 != nil {
+				dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
+			}
+			dvs = append(dvs, dataValidation)
+		}
+	}
+	return dvs, err
 }
 
 // DeleteDataValidation delete data validation by given worksheet name and
@@ -350,4 +399,12 @@ func (f *File) squashSqref(cells [][]int) []string {
 		ref, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 	}
 	return append(refs, ref)
+}
+
+// unescapeDataValidationFormula returns unescaped data validation formula.
+func unescapeDataValidationFormula(val string) string {
+	if strings.HasPrefix(val, "\"") { // Text detection
+		return strings.NewReplacer(`""`, `"`).Replace(formulaUnescaper.Replace(val))
+	}
+	return formulaUnescaper.Replace(val)
 }

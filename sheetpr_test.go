@@ -30,7 +30,7 @@ func TestSetPageMargins(t *testing.T) {
 	// Test set page margins on not exists worksheet
 	assert.EqualError(t, f.SetPageMargins("SheetN", nil), "sheet SheetN does not exist")
 	// Test set page margins with invalid sheet name
-	assert.EqualError(t, f.SetPageMargins("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.SetPageMargins("Sheet:1", nil))
 }
 
 func TestGetPageMargins(t *testing.T) {
@@ -40,7 +40,7 @@ func TestGetPageMargins(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get page margins with invalid sheet name
 	_, err = f.GetPageMargins("Sheet:1")
-	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, err)
 }
 
 func TestSetSheetProps(t *testing.T) {
@@ -88,7 +88,7 @@ func TestSetSheetProps(t *testing.T) {
 	// Test set worksheet properties on not exists worksheet
 	assert.EqualError(t, f.SetSheetProps("SheetN", nil), "sheet SheetN does not exist")
 	// Test set worksheet properties with invalid sheet name
-	assert.EqualError(t, f.SetSheetProps("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.SetSheetProps("Sheet:1", nil))
 }
 
 func TestGetSheetProps(t *testing.T) {
@@ -98,5 +98,5 @@ func TestGetSheetProps(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get worksheet properties with invalid sheet name
 	_, err = f.GetSheetProps("Sheet:1")
-	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, err)
 }

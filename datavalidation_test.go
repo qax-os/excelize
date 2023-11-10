@@ -71,6 +71,7 @@ func TestDataValidation(t *testing.T) {
 	dv.Sqref = "A5:B6"
 	for _, listValid := range [][]string{
 		{"1", "2", "3"},
+		{"=A1"},
 		{strings.Repeat("&", MaxFieldLength)},
 		{strings.Repeat("\u4E00", MaxFieldLength)},
 		{strings.Repeat("\U0001F600", 100), strings.Repeat("\u4E01", 50), "<&>"},
@@ -82,7 +83,7 @@ func TestDataValidation(t *testing.T) {
 		assert.NotEqual(t, "", dv.Formula1,
 			"Formula1 should not be empty for valid input %v", listValid)
 	}
-	assert.Equal(t, `<formula1>"A&lt;,B&gt;,C"",D	,E',F"</formula1>`, dv.Formula1)
+	assert.Equal(t, `"A&lt;,B&gt;,C"",D	,E',F"`, dv.Formula1)
 	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
 
 	dataValidations, err = f.GetDataValidations("Sheet1")

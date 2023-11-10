@@ -190,7 +190,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: "<ext><x14:conditionalFormattings></x14:conditionalFormatting></x14:conditionalFormattings></ext>"}
 	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", condFmts), "XML syntax error on line 1: element <conditionalFormattings> closed by </conditionalFormatting>")
 	// Test creating a conditional format with invalid icon set style
-	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}), ErrParameterInvalid.Error())
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}))
 	// Test unsupported conditional formatting rule types
 	for _, val := range []string{
 		"date",
@@ -235,7 +235,7 @@ func TestGetConditionalFormats(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get conditional formats with invalid sheet name
 	_, err = f.GetConditionalFormats("Sheet:1")
-	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, err)
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
@@ -249,7 +249,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	// Test unset conditional format on not exists worksheet
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Test unset conditional format with invalid sheet name
-	assert.EqualError(t, f.UnsetConditionalFormat("Sheet:1", "A1:A10"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.UnsetConditionalFormat("Sheet:1", "A1:A10"))
 	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }
@@ -469,9 +469,9 @@ func TestSetCellStyle(t *testing.T) {
 	// Test set cell style on not exists worksheet
 	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN does not exist")
 	// Test set cell style with invalid style ID
-	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", -1), newInvalidStyleID(-1).Error())
+	assert.Equal(t, newInvalidStyleID(-1), f.SetCellStyle("Sheet1", "A1", "A2", -1))
 	// Test set cell style with not exists style ID
-	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", 10), newInvalidStyleID(10).Error())
+	assert.Equal(t, newInvalidStyleID(10), f.SetCellStyle("Sheet1", "A1", "A2", 10))
 	// Test set cell style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)

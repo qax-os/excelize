@@ -743,7 +743,7 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 		formula, err = f.GetCellFormula("Sheet1", "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "SUM('Sheet 1'!A3,A5)", formula)
+		assert.Equal(t, "SUM('Sheet 1'!A2,A5)", formula)
 
 		f = NewFile()
 		// Test adjust formula on insert col in the middle of the range
@@ -991,6 +991,76 @@ func TestAdjustConditionalFormats(t *testing.T) {
 
 	ws.(*xlsxWorksheet).ConditionalFormatting[0] = nil
 	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+}
+
+func TestAdjustDataValidations(t *testing.T) {
+	f := NewFile()
+	dv := NewDataValidation(true)
+	dv.Sqref = "B1"
+	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	dvs, err := f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, dvs, 0)
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "F2", 1))
+	assert.NoError(t, f.SetCellValue("Sheet1", "F3", 2))
+	dv = NewDataValidation(true)
+	dv.Sqref = "C2:D3"
+	dv.SetSqrefDropList("$F$2:$F$3")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+
+	assert.NoError(t, f.AddChartSheet("Chart1", &Chart{Type: Line}))
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetSheetRow("Sheet2", "C1", &[]interface{}{1, 10}))
+	dv = NewDataValidation(true)
+	dv.Sqref = "C5:D6"
+	assert.NoError(t, dv.SetRange("Sheet2!C1", "Sheet2!D1", DataValidationTypeWhole, DataValidationOperatorBetween))
+	dv.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	assert.NoError(t, f.RemoveCol("Sheet2", "B"))
+	dvs, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "B2:C3", dvs[0].Sqref)
+	assert.Equal(t, "$E$2:$E$3", dvs[0].Formula1)
+	assert.Equal(t, "B5:C6", dvs[1].Sqref)
+	assert.Equal(t, "Sheet2!B1", dvs[1].Formula1)
+	assert.Equal(t, "Sheet2!C1", dvs[1].Formula2)
+
+	dv = NewDataValidation(true)
+	dv.Sqref = "C8:D10"
+	assert.NoError(t, dv.SetDropList([]string{`A<`, `B>`, `C"`, "D\t", `E'`, `F`}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	dvs, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "\"A<,B>,C\",D\t,E',F\"", dvs[2].Formula1)
+
+	dv = NewDataValidation(true)
+	dv.Sqref = "C5:D6"
+	assert.NoError(t, dv.SetRange("Sheet1!A1048576", "Sheet1!XFD1", DataValidationTypeWhole, DataValidationOperatorBetween))
+	dv.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
+	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet1", 1, 1))
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "-"
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.RemoveCol("Sheet1", "B"))
+
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0] = nil
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	ws.(*xlsxWorksheet).DataValidations = nil
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.adjustDataValidations(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAdjustDrawings(t *testing.T) {

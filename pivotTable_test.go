@@ -174,7 +174,7 @@ func TestPivotTable(t *testing.T) {
 	}))
 
 	// Test empty pivot table options
-	assert.EqualError(t, f.AddPivotTable(nil), ErrParameterRequired.Error())
+	assert.Equal(t, ErrParameterRequired, f.AddPivotTable(nil))
 	// Test add pivot table with custom name which exceeds the max characters limit
 	assert.Equal(t, ErrNameLength, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "dataRange",
