@@ -195,12 +195,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	for _, val := range []string{
 		"date",
 		"time",
-		"text",
 		"time_period",
-		"blanks",
-		"no_blanks",
-		"errors",
-		"no_errors",
 	} {
 		assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: val}}))
 	}
@@ -210,6 +205,10 @@ func TestGetConditionalFormats(t *testing.T) {
 	for _, format := range [][]ConditionalFormatOptions{
 		{{Type: "cell", Format: 1, Criteria: "greater than", Value: "6"}},
 		{{Type: "cell", Format: 1, Criteria: "between", MinValue: "6", MaxValue: "8"}},
+		{{Type: "text", Format: 1, Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
+		{{Type: "text", Format: 1, Criteria: "not containing", Value: "text"}},
+		{{Type: "text", Format: 1, Criteria: "begins with", Value: "prefix"}},
+		{{Type: "text", Format: 1, Criteria: "ends with", Value: "suffix"}},
 		{{Type: "top", Format: 1, Criteria: "=", Value: "6"}},
 		{{Type: "bottom", Format: 1, Criteria: "=", Value: "6"}},
 		{{Type: "average", AboveAverage: true, Format: 1, Criteria: "="}},
@@ -220,10 +219,14 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: 1, Criteria: "="}},
+		{{Type: "blanks", Format: 1}},
+		{{Type: "no_blanks", Format: 1}},
+		{{Type: "errors", Format: 1}},
+		{{Type: "no_errors", Format: 1}},
 		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
-		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)
+		err := f.SetConditionalFormat("Sheet1", "A2:A1", format)
 		assert.NoError(t, err)
 		opts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)

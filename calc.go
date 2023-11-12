@@ -844,7 +844,7 @@ func (f *File) calcCellValue(ctx *calcContext, sheet, cell string) (result formu
 	ps := efp.ExcelParser()
 	tokens := ps.Parse(formula)
 	if tokens == nil {
-		return
+		return f.cellResolver(ctx, sheet, cell)
 	}
 	result, err = f.evalInfixExp(ctx, sheet, cell, tokens)
 	return
@@ -1225,6 +1225,12 @@ func calcAdd(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcSubtract evaluate subtraction arithmetic operations.
 func calcSubtract(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Value() == "" {
+		rOpd = newNumberFormulaArg(0)
+	}
+	if lOpd.Value() == "" {
+		lOpd = newNumberFormulaArg(0)
+	}
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
 		return errors.New(lOpdVal.Value())
@@ -1300,22 +1306,27 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		">=": calcGe,
 		"&":  calcSplice,
 	}
-	fn, ok := tokenCalcFunc[opt.TValue]
-	if ok {
+	if fn, ok := tokenCalcFunc[opt.TValue]; ok {
 		if opdStack.Len() < 2 {
 			return ErrInvalidFormula
 		}
 		rOpd := opdStack.Pop().(formulaArg)
 		lOpd := opdStack.Pop().(formulaArg)
+		if opt.TValue != "&" {
+			if rOpd.Value() == "" {
+				rOpd = newNumberFormulaArg(0)
+			}
+			if lOpd.Value() == "" {
+				lOpd = newNumberFormulaArg(0)
+			}
+		}
 		if rOpd.Type == ArgError {
 			return errors.New(rOpd.Value())
 		}
 		if lOpd.Type == ArgError {
 			return errors.New(lOpd.Value())
 		}
-		if err := fn(rOpd, lOpd, opdStack); err != nil {
-			return err
-		}
+		return fn(rOpd, lOpd, opdStack)
 	}
 	return nil
 }
@@ -1329,6 +1340,10 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	tokenPriority := getPriority(token)
 	topOpt := optStack.Peek().(efp.Token)
 	topOptPriority := getPriority(topOpt)
+	if topOpt.TValue == "-" && topOpt.TType == efp.TokenTypeOperatorPrefix && token.TValue == "-" && token.TType == efp.TokenTypeOperatorPrefix {
+		optStack.Pop()
+		return
+	}
 	if tokenPriority > topOptPriority {
 		optStack.Push(token)
 		return
@@ -13757,7 +13772,7 @@ func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LEN requires 1 string argument")
 	}
-	return newNumberFormulaArg(float64(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).String)))
+	return newNumberFormulaArg(float64(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).Value())))
 }
 
 // LENB returns the number of bytes used to represent the characters in a text
@@ -13790,7 +13805,7 @@ func (fn *formulaFuncs) LOWER(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LOWER requires 1 argument")
 	}
-	return newStringFormulaArg(strings.ToLower(argsList.Front().Value.(formulaArg).String))
+	return newStringFormulaArg(strings.ToLower(argsList.Front().Value.(formulaArg).Value()))
 }
 
 // MID function returns a specified number of characters from the middle of a
@@ -13881,7 +13896,7 @@ func (fn *formulaFuncs) PROPER(argsList *list.List) formulaArg {
 	}
 	buf := bytes.Buffer{}
 	isLetter := false
-	for _, char := range argsList.Front().Value.(formulaArg).String {
+	for _, char := range argsList.Front().Value.(formulaArg).Value() {
 		if !isLetter && unicode.IsLetter(char) {
 			buf.WriteRune(unicode.ToUpper(char))
 		} else {
@@ -13962,7 +13977,7 @@ func (fn *formulaFuncs) REPT(argsList *list.List) formulaArg {
 	}
 	buf := bytes.Buffer{}
 	for i := 0; i < int(times.Number); i++ {
-		buf.WriteString(text.String)
+		buf.WriteString(text.Value())
 	}
 	return newStringFormulaArg(buf.String())
 }
@@ -14327,7 +14342,7 @@ func (fn *formulaFuncs) UPPER(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "UPPER requires 1 argument")
 	}
-	return newStringFormulaArg(strings.ToUpper(argsList.Front().Value.(formulaArg).String))
+	return newStringFormulaArg(strings.ToUpper(argsList.Front().Value.(formulaArg).Value()))
 }
 
 // VALUE function converts a text string into a numeric value. The syntax of
@@ -14405,7 +14420,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 	)
 	switch token.Type {
 	case ArgString:
-		if cond, err = strconv.ParseBool(token.String); err != nil {
+		if cond, err = strconv.ParseBool(token.Value()); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
 	case ArgNumber:
@@ -14421,7 +14436,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		case ArgNumber:
 			result = value.ToNumber()
 		default:
-			result = newStringFormulaArg(value.String)
+			result = newStringFormulaArg(value.Value())
 		}
 		return result
 	}
@@ -14431,7 +14446,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		case ArgNumber:
 			result = value.ToNumber()
 		default:
-			result = newStringFormulaArg(value.String)
+			result = newStringFormulaArg(value.Value())
 		}
 	}
 	return result
@@ -14582,7 +14597,7 @@ func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte 
 		}
 		return criteriaG
 	case ArgString:
-		ls, rs := lhs.String, rhs.String
+		ls, rs := lhs.Value(), rhs.Value()
 		if !caseSensitive {
 			ls, rs = strings.ToLower(ls), strings.ToLower(rs)
 		}
