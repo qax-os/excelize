@@ -192,19 +192,23 @@ func TestSetConditionalFormat(t *testing.T) {
 	// Test creating a conditional format with invalid icon set style
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}))
 	// Test unsupported conditional formatting rule types
-	for _, val := range []string{
-		"date",
-		"time",
-		"time_period",
-	} {
-		assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: val}}))
-	}
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: "unsupported"}}))
 }
 
 func TestGetConditionalFormats(t *testing.T) {
 	for _, format := range [][]ConditionalFormatOptions{
 		{{Type: "cell", Format: 1, Criteria: "greater than", Value: "6"}},
 		{{Type: "cell", Format: 1, Criteria: "between", MinValue: "6", MaxValue: "8"}},
+		{{Type: "time_period", Format: 1, Criteria: "yesterday"}},
+		{{Type: "time_period", Format: 1, Criteria: "today"}},
+		{{Type: "time_period", Format: 1, Criteria: "tomorrow"}},
+		{{Type: "time_period", Format: 1, Criteria: "last 7 days"}},
+		{{Type: "time_period", Format: 1, Criteria: "last week"}},
+		{{Type: "time_period", Format: 1, Criteria: "this week"}},
+		{{Type: "time_period", Format: 1, Criteria: "continue week"}},
+		{{Type: "time_period", Format: 1, Criteria: "last month"}},
+		{{Type: "time_period", Format: 1, Criteria: "this month"}},
+		{{Type: "time_period", Format: 1, Criteria: "continue month"}},
 		{{Type: "text", Format: 1, Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
 		{{Type: "text", Format: 1, Criteria: "not containing", Value: "text"}},
 		{{Type: "text", Format: 1, Criteria: "begins with", Value: "prefix"}},
