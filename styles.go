@@ -26,15 +26,13 @@ import (
 // validType defined the list of valid validation types.
 var validType = map[string]string{
 	"cell":          "cellIs",
-	"date":          "date", // Doesn't support currently
-	"time":          "time", // Doesn't support currently
 	"average":       "aboveAverage",
 	"duplicate":     "duplicateValues",
 	"unique":        "uniqueValues",
 	"top":           "top10",
 	"bottom":        "top10",
 	"text":          "text",
-	"time_period":   "timePeriod", // Doesn't support currently
+	"time_period":   "timePeriod",
 	"blanks":        "containsBlanks",
 	"no_blanks":     "notContainsBlanks",
 	"errors":        "containsErrors",
@@ -48,60 +46,62 @@ var validType = map[string]string{
 
 // criteriaType defined the list of valid criteria types.
 var criteriaType = map[string]string{
-	"between":                  "between",
-	"not between":              "notBetween",
-	"equal to":                 "equal",
+	"!=":                       "notEqual",
+	"<":                        "lessThan",
+	"<=":                       "lessThanOrEqual",
+	"<>":                       "notEqual",
 	"=":                        "equal",
 	"==":                       "equal",
-	"not equal to":             "notEqual",
-	"!=":                       "notEqual",
-	"<>":                       "notEqual",
-	"greater than":             "greaterThan",
 	">":                        "greaterThan",
-	"less than":                "lessThan",
-	"<":                        "lessThan",
-	"greater than or equal to": "greaterThanOrEqual",
 	">=":                       "greaterThanOrEqual",
-	"less than or equal to":    "lessThanOrEqual",
-	"<=":                       "lessThanOrEqual",
-	"containing":               "containsText",
-	"not containing":           "notContains",
 	"begins with":              "beginsWith",
+	"between":                  "between",
+	"containing":               "containsText",
+	"continue month":           "nextMonth",
+	"continue week":            "nextWeek",
 	"ends with":                "endsWith",
-	"yesterday":                "yesterday",
-	"today":                    "today",
+	"equal to":                 "equal",
+	"greater than or equal to": "greaterThanOrEqual",
+	"greater than":             "greaterThan",
 	"last 7 days":              "last7Days",
-	"last week":                "lastWeek",
-	"this week":                "thisWeek",
-	"continue week":            "continueWeek",
 	"last month":               "lastMonth",
+	"last week":                "lastWeek",
+	"less than or equal to":    "lessThanOrEqual",
+	"less than":                "lessThan",
+	"not between":              "notBetween",
+	"not containing":           "notContains",
+	"not equal to":             "notEqual",
 	"this month":               "thisMonth",
-	"continue month":           "continueMonth",
+	"this week":                "thisWeek",
+	"today":                    "today",
+	"tomorrow":                 "tomorrow",
+	"yesterday":                "yesterday",
 }
 
 // operatorType defined the list of valid operator types.
 var operatorType = map[string]string{
-	"lastMonth":          "last month",
-	"between":            "between",
-	"notEqual":           "not equal to",
-	"greaterThan":        "greater than",
-	"lessThanOrEqual":    "less than or equal to",
-	"today":              "today",
-	"equal":              "equal to",
-	"notContains":        "not containing",
-	"thisWeek":           "this week",
-	"endsWith":           "ends with",
-	"yesterday":          "yesterday",
-	"lessThan":           "less than",
 	"beginsWith":         "begins with",
-	"last7Days":          "last 7 days",
-	"thisMonth":          "this month",
+	"between":            "between",
 	"containsText":       "containing",
-	"lastWeek":           "last week",
-	"continueWeek":       "continue week",
-	"continueMonth":      "continue month",
-	"notBetween":         "not between",
+	"endsWith":           "ends with",
+	"equal":              "equal to",
+	"greaterThan":        "greater than",
 	"greaterThanOrEqual": "greater than or equal to",
+	"last7Days":          "last 7 days",
+	"lastMonth":          "last month",
+	"lastWeek":           "last week",
+	"lessThan":           "less than",
+	"lessThanOrEqual":    "less than or equal to",
+	"nextMonth":          "continue month",
+	"nextWeek":           "continue week",
+	"notBetween":         "not between",
+	"notContains":        "not containing",
+	"notEqual":           "not equal to",
+	"thisMonth":          "this month",
+	"thisWeek":           "this week",
+	"today":              "today",
+	"tomorrow":           "tomorrow",
+	"yesterday":          "yesterday",
 }
 
 // stylesReader provides a function to get the pointer to the structure after
@@ -1225,6 +1225,7 @@ var (
 	// drawContFmtFunc defines functions to create conditional formats.
 	drawContFmtFunc = map[string]func(p int, ct, ref, GUID string, fmtCond *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule){
 		"cellIs":            drawCondFmtCellIs,
+		"timePeriod":        drawCondFmtTimePeriod,
 		"text":              drawCondFmtText,
 		"top10":             drawCondFmtTop10,
 		"aboveAverage":      drawCondFmtAboveAverage,
@@ -1243,6 +1244,7 @@ var (
 	// extractContFmtFunc defines functions to get conditional formats.
 	extractContFmtFunc = map[string]func(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions{
 		"cellIs":            extractCondFmtCellIs,
+		"timePeriod":        extractCondFmtTimePeriod,
 		"containsText":      extractCondFmtText,
 		"notContainsText":   extractCondFmtText,
 		"beginsWith":        extractCondFmtText,
@@ -2241,10 +2243,6 @@ func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
 //	               | Value
 //	               | MinValue
 //	               | MaxValue
-//	 date          | Criteria
-//	               | Value
-//	               | MinValue
-//	               | MaxValue
 //	 time_period   | Criteria
 //	 text          | Criteria
 //	               | Value
@@ -2772,6 +2770,12 @@ func extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOp
 	return format
 }
 
+// extractCondFmtTimePeriod provides a function to extract conditional format
+// settings for time period by given conditional formatting rule.
+func extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+	return ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: operatorType[c.Operator], Format: *c.DxfID}
+}
+
 // extractCondFmtText provides a function to extract conditional format
 // settings for text cell values by given conditional formatting rule.
 func extractCondFmtText(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
@@ -3032,6 +3036,32 @@ func drawCondFmtCellIs(p int, ct, ref, GUID string, format *ConditionalFormatOpt
 		c.Formula = append(c.Formula, format.Value)
 	}
 	return c, nil
+}
+
+// drawCondFmtTimePeriod provides a function to create conditional formatting
+// rule for time period by given priority, criteria type and format settings.
+func drawCondFmtTimePeriod(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
+	return &xlsxCfRule{
+		Priority:   p + 1,
+		StopIfTrue: format.StopIfTrue,
+		Type:       "timePeriod",
+		Operator:   ct,
+		Formula: []string{
+			map[string]string{
+				"yesterday":      fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref),
+				"today":          fmt.Sprintf("FLOOR(%s,1)=TODAY()", ref),
+				"tomorrow":       fmt.Sprintf("FLOOR(%s,1)=TODAY()+1", ref),
+				"last 7 days":    fmt.Sprintf("AND(TODAY()-FLOOR(%[1]s,1)<=6,FLOOR(%[1]s,1)<=TODAY())", ref),
+				"last week":      fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)>=(WEEKDAY(TODAY())),TODAY()-ROUNDDOWN(%[1]s,0)<(WEEKDAY(TODAY())+7))", ref),
+				"this week":      fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)<=WEEKDAY(TODAY())-1,ROUNDDOWN(%[1]s,0)-TODAY()>=7-WEEKDAY(TODAY()))", ref),
+				"continue week":  fmt.Sprintf("AND(ROUNDDOWN(%[1]s,0)-TODAY()>(7-WEEKDAY(TODAY())),ROUNDDOWN(%[1]s,0)-TODAY()<(15-WEEKDAY(TODAY())))", ref),
+				"last month":     fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())-1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=1,YEAR(%[1]s)=YEAR(TODAY())-1)))", ref),
+				"this month":     fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY()),YEAR(%[1]s)=YEAR(TODAY()))", ref),
+				"continue month": fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())+1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=12,YEAR(%[1]s)=YEAR(TODAY())+1)))", ref),
+			}[ct],
+		},
+		DxfID: intPtr(format.Format),
+	}, nil
 }
 
 // drawCondFmtText provides a function to create conditional formatting rule for
