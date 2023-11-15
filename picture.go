@@ -622,9 +622,10 @@ func (f *File) extractDecodeCellAnchor(anchor *xdrCellAnchor, drawingRelationshi
 	_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
 	if deCellAnchor.From != nil && deCellAnchor.Pic != nil {
 		if cond(deCellAnchor.From) {
-			drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed)
-			if _, ok := supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
-				cb(deCellAnchor, drawRel)
+			if drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
+				if _, ok := supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
+					cb(deCellAnchor, drawRel)
+				}
 			}
 		}
 	}
