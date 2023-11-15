@@ -231,8 +231,16 @@ func TestGetPageLayout(t *testing.T) {
 	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 }
 
-func TestSetHeaderFooter(t *testing.T) {
+func TestHeaderFooter(t *testing.T) {
 	f := NewFile()
+	// Test get header and footer with default header and footer settings
+	opts, err := f.GetHeaderFooter("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, (*HeaderFooterOptions)(nil), opts)
+	// Test get header and footer on not exists worksheet
+	_, err = f.GetHeaderFooter("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+
 	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN does not exist")
@@ -252,7 +260,7 @@ func TestSetHeaderFooter(t *testing.T) {
 		EvenFooter:  text,
 		FirstHeader: text,
 	}))
-	assert.NoError(t, f.SetHeaderFooter("Sheet1", &HeaderFooterOptions{
+	expected := &HeaderFooterOptions{
 		DifferentFirst:   true,
 		DifferentOddEven: true,
 		OddHeader:        "&R&P",
@@ -260,7 +268,11 @@ func TestSetHeaderFooter(t *testing.T) {
 		EvenHeader:       "&L&P",
 		EvenFooter:       "&L&D&R&T",
 		FirstHeader:      `&CCenter &"-,Bold"Bold&"-,Regular"HeaderU+000A&D`,
-	}))
+	}
+	assert.NoError(t, f.SetHeaderFooter("Sheet1", expected))
+	opts, err = f.GetHeaderFooter("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetHeaderFooter.xlsx")))
 }
 
