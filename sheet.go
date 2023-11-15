@@ -1289,6 +1289,32 @@ func (f *File) SetHeaderFooter(sheet string, opts *HeaderFooterOptions) error {
 	return err
 }
 
+// GetHeaderFooter provides a function to get worksheet header and footer by
+// given worksheet name.
+func (f *File) GetHeaderFooter(sheet string) (*HeaderFooterOptions, error) {
+	var opts *HeaderFooterOptions
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return opts, err
+	}
+	if ws.HeaderFooter == nil {
+		return opts, err
+	}
+	opts = &HeaderFooterOptions{
+		AlignWithMargins: ws.HeaderFooter.AlignWithMargins,
+		DifferentFirst:   ws.HeaderFooter.DifferentFirst,
+		DifferentOddEven: ws.HeaderFooter.DifferentOddEven,
+		ScaleWithDoc:     ws.HeaderFooter.ScaleWithDoc,
+		OddHeader:        ws.HeaderFooter.OddHeader,
+		OddFooter:        ws.HeaderFooter.OddFooter,
+		EvenHeader:       ws.HeaderFooter.EvenHeader,
+		EvenFooter:       ws.HeaderFooter.EvenFooter,
+		FirstHeader:      ws.HeaderFooter.FirstHeader,
+		FirstFooter:      ws.HeaderFooter.FirstFooter,
+	}
+	return opts, err
+}
+
 // ProtectSheet provides a function to prevent other users from accidentally or
 // deliberately changing, moving, or deleting data in a worksheet. The
 // optional field AlgorithmName specified hash algorithm, support XOR, MD4,
