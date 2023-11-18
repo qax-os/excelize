@@ -45,10 +45,10 @@ import (
 //	    fmt.Println()
 //	}
 func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
-	rows, err := f.Rows(sheet)
-	if err != nil {
+	if _, err := f.workSheetReader(sheet); err != nil {
 		return nil, err
 	}
+	rows, _ := f.Rows(sheet)
 	results, cur, max := make([][]string, 0, 64), 0, 0
 	for rows.Next() {
 		cur++
