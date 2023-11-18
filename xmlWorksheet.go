@@ -419,31 +419,31 @@ type xlsxMergeCells struct {
 // xlsxDataValidations expresses all data validation information for cells in a
 // sheet which have data validation features applied.
 type xlsxDataValidations struct {
-	XMLName        xml.Name          `xml:"dataValidations"`
-	Count          int               `xml:"count,attr,omitempty"`
-	DisablePrompts bool              `xml:"disablePrompts,attr,omitempty"`
-	XWindow        int               `xml:"xWindow,attr,omitempty"`
-	YWindow        int               `xml:"yWindow,attr,omitempty"`
-	DataValidation []*DataValidation `xml:"dataValidation"`
+	XMLName        xml.Name              `xml:"dataValidations"`
+	Count          int                   `xml:"count,attr,omitempty"`
+	DisablePrompts bool                  `xml:"disablePrompts,attr,omitempty"`
+	XWindow        int                   `xml:"xWindow,attr,omitempty"`
+	YWindow        int                   `xml:"yWindow,attr,omitempty"`
+	DataValidation []*xlsxDataValidation `xml:"dataValidation"`
 }
 
 // DataValidation directly maps the single item of data validation defined
 // on a range of the worksheet.
-type DataValidation struct {
-	AllowBlank       bool    `xml:"allowBlank,attr"`
-	Error            *string `xml:"error,attr"`
-	ErrorStyle       *string `xml:"errorStyle,attr"`
-	ErrorTitle       *string `xml:"errorTitle,attr"`
-	Operator         string  `xml:"operator,attr,omitempty"`
-	Prompt           *string `xml:"prompt,attr"`
-	PromptTitle      *string `xml:"promptTitle,attr"`
-	ShowDropDown     bool    `xml:"showDropDown,attr,omitempty"`
-	ShowErrorMessage bool    `xml:"showErrorMessage,attr,omitempty"`
-	ShowInputMessage bool    `xml:"showInputMessage,attr,omitempty"`
-	Sqref            string  `xml:"sqref,attr"`
-	Type             string  `xml:"type,attr,omitempty"`
-	Formula1         string  `xml:",innerxml"`
-	Formula2         string  `xml:",innerxml"`
+type xlsxDataValidation struct {
+	AllowBlank       bool          `xml:"allowBlank,attr"`
+	Error            *string       `xml:"error,attr"`
+	ErrorStyle       *string       `xml:"errorStyle,attr"`
+	ErrorTitle       *string       `xml:"errorTitle,attr"`
+	Operator         string        `xml:"operator,attr,omitempty"`
+	Prompt           *string       `xml:"prompt,attr"`
+	PromptTitle      *string       `xml:"promptTitle,attr"`
+	ShowDropDown     bool          `xml:"showDropDown,attr,omitempty"`
+	ShowErrorMessage bool          `xml:"showErrorMessage,attr,omitempty"`
+	ShowInputMessage bool          `xml:"showInputMessage,attr,omitempty"`
+	Sqref            string        `xml:"sqref,attr"`
+	Type             string        `xml:"type,attr,omitempty"`
+	Formula1         *xlsxInnerXML `xml:"formula1"`
+	Formula2         *xlsxInnerXML `xml:"formula2"`
 }
 
 // xlsxC collection represents a cell in the worksheet. Information about the
@@ -833,6 +833,24 @@ type xlsxX14Sparklines struct {
 type xlsxX14Sparkline struct {
 	F     string `xml:"xm:f"`
 	Sqref string `xml:"xm:sqref"`
+}
+
+// DataValidation directly maps the settings of the data validation rule.
+type DataValidation struct {
+	AllowBlank       bool
+	Error            *string
+	ErrorStyle       *string
+	ErrorTitle       *string
+	Operator         string
+	Prompt           *string
+	PromptTitle      *string
+	ShowDropDown     bool
+	ShowErrorMessage bool
+	ShowInputMessage bool
+	Sqref            string
+	Type             string
+	Formula1         string
+	Formula2         string
 }
 
 // SparklineOptions directly maps the settings of the sparkline.

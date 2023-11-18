@@ -652,7 +652,8 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	}
 
 	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
-	f.adjustSingleRowDimensions(&rowCopy, row2, row2-row, true)
+	rowCopy.adjustSingleRowDimensions(row2 - row)
+	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row, true)
 
 	if idx2 != -1 {
 		ws.SheetData.Row[idx2] = rowCopy

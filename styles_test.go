@@ -190,13 +190,29 @@ func TestSetConditionalFormat(t *testing.T) {
 	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: "<ext><x14:conditionalFormattings></x14:conditionalFormatting></x14:conditionalFormattings></ext>"}
 	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", condFmts), "XML syntax error on line 1: element <conditionalFormattings> closed by </conditionalFormatting>")
 	// Test creating a conditional format with invalid icon set style
-	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}), ErrParameterInvalid.Error())
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}))
+	// Test unsupported conditional formatting rule types
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: "unsupported"}}))
 }
 
 func TestGetConditionalFormats(t *testing.T) {
 	for _, format := range [][]ConditionalFormatOptions{
 		{{Type: "cell", Format: 1, Criteria: "greater than", Value: "6"}},
 		{{Type: "cell", Format: 1, Criteria: "between", MinValue: "6", MaxValue: "8"}},
+		{{Type: "time_period", Format: 1, Criteria: "yesterday"}},
+		{{Type: "time_period", Format: 1, Criteria: "today"}},
+		{{Type: "time_period", Format: 1, Criteria: "tomorrow"}},
+		{{Type: "time_period", Format: 1, Criteria: "last 7 days"}},
+		{{Type: "time_period", Format: 1, Criteria: "last week"}},
+		{{Type: "time_period", Format: 1, Criteria: "this week"}},
+		{{Type: "time_period", Format: 1, Criteria: "continue week"}},
+		{{Type: "time_period", Format: 1, Criteria: "last month"}},
+		{{Type: "time_period", Format: 1, Criteria: "this month"}},
+		{{Type: "time_period", Format: 1, Criteria: "continue month"}},
+		{{Type: "text", Format: 1, Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
+		{{Type: "text", Format: 1, Criteria: "not containing", Value: "text"}},
+		{{Type: "text", Format: 1, Criteria: "begins with", Value: "prefix"}},
+		{{Type: "text", Format: 1, Criteria: "ends with", Value: "suffix"}},
 		{{Type: "top", Format: 1, Criteria: "=", Value: "6"}},
 		{{Type: "bottom", Format: 1, Criteria: "=", Value: "6"}},
 		{{Type: "average", AboveAverage: true, Format: 1, Criteria: "="}},
@@ -207,10 +223,14 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: 1, Criteria: "="}},
+		{{Type: "blanks", Format: 1}},
+		{{Type: "no_blanks", Format: 1}},
+		{{Type: "errors", Format: 1}},
+		{{Type: "no_errors", Format: 1}},
 		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
-		err := f.SetConditionalFormat("Sheet1", "A1:A2", format)
+		err := f.SetConditionalFormat("Sheet1", "A2:A1", format)
 		assert.NoError(t, err)
 		opts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)
@@ -222,7 +242,7 @@ func TestGetConditionalFormats(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get conditional formats with invalid sheet name
 	_, err = f.GetConditionalFormats("Sheet:1")
-	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, err)
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
@@ -236,7 +256,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	// Test unset conditional format on not exists worksheet
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Test unset conditional format with invalid sheet name
-	assert.EqualError(t, f.UnsetConditionalFormat("Sheet:1", "A1:A10"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.UnsetConditionalFormat("Sheet:1", "A1:A10"))
 	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }
@@ -391,6 +411,18 @@ func TestConditionalStyle(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	_, err = f.GetConditionalStyle(1)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	f = NewFile()
+	// Test get conditional style with background color and empty pattern type
+	idx, err = f.NewConditionalStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+	assert.NoError(t, err)
+	f.Styles.Dxfs.Dxfs[0].Fill.PatternFill.PatternType = ""
+	f.Styles.Dxfs.Dxfs[0].Fill.PatternFill.FgColor = nil
+	f.Styles.Dxfs.Dxfs[0].Fill.PatternFill.BgColor = &xlsxColor{Theme: intPtr(6)}
+	style, err = f.GetConditionalStyle(idx)
+	assert.NoError(t, err)
+	assert.Equal(t, "pattern", style.Fill.Type)
+	assert.Equal(t, []string{"A5A5A5"}, style.Fill.Color)
 }
 
 func TestGetDefaultFont(t *testing.T) {
@@ -436,7 +468,7 @@ func TestThemeReader(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathTheme, MacintoshCyrillicCharset)
 	theme, err := f.themeReader()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
-	assert.EqualValues(t, &xlsxTheme{XMLNSa: NameSpaceDrawingML.Value, XMLNSr: SourceRelationship.Value}, theme)
+	assert.EqualValues(t, &decodeTheme{}, theme)
 }
 
 func TestSetCellStyle(t *testing.T) {
@@ -444,9 +476,9 @@ func TestSetCellStyle(t *testing.T) {
 	// Test set cell style on not exists worksheet
 	assert.EqualError(t, f.SetCellStyle("SheetN", "A1", "A2", 1), "sheet SheetN does not exist")
 	// Test set cell style with invalid style ID
-	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", -1), newInvalidStyleID(-1).Error())
+	assert.Equal(t, newInvalidStyleID(-1), f.SetCellStyle("Sheet1", "A1", "A2", -1))
 	// Test set cell style with not exists style ID
-	assert.EqualError(t, f.SetCellStyle("Sheet1", "A1", "A2", 10), newInvalidStyleID(10).Error())
+	assert.Equal(t, newInvalidStyleID(10), f.SetCellStyle("Sheet1", "A1", "A2", 10))
 	// Test set cell style with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
@@ -593,6 +625,12 @@ func TestGetStyle(t *testing.T) {
 		},
 	}
 	assert.Equal(t, "012345", f.getThemeColor(&xlsxColor{Indexed: 0}))
+
+	f.Styles.Fonts.Font[0].U = &attrValString{}
+	f.Styles.CellXfs.Xf[0].FontID = intPtr(0)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, "single", style.Font.Underline)
 
 	// Test get style with invalid style index
 	style, err = f.GetStyle(-1)

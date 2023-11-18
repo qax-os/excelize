@@ -178,36 +178,39 @@ func (f *File) workSheetWriter() {
 // trimRow provides a function to trim empty rows.
 func trimRow(sheetData *xlsxSheetData) []xlsxRow {
 	var (
-		row  xlsxRow
-		rows []xlsxRow
+		row xlsxRow
+		i   int
 	)
-	for k, v := range sheetData.Row {
+
+	for k := range sheetData.Row {
 		row = sheetData.Row[k]
-		if row.C = trimCell(v.C); len(row.C) != 0 || row.hasAttr() {
-			rows = append(rows, row)
+		if row = trimCell(row); len(row.C) != 0 || row.hasAttr() {
+			sheetData.Row[i] = row
 		}
+		i++
 	}
-	return rows
+	return sheetData.Row[:i]
 }
 
 // trimCell provides a function to trim blank cells which created by fillColumns.
-func trimCell(column []xlsxC) []xlsxC {
+func trimCell(row xlsxRow) xlsxRow {
+	column := row.C
 	rowFull := true
 	for i := range column {
 		rowFull = column[i].hasValue() && rowFull
 	}
 	if rowFull {
-		return column
+		return row
 	}
-	col := make([]xlsxC, len(column))
 	i := 0
 	for _, c := range column {
 		if c.hasValue() {
-			col[i] = c
+			row.C[i] = c
 			i++
 		}
 	}
-	return col[:i]
+	row.C = row.C[:i]
+	return row
 }
 
 // setContentTypes provides a function to read and update property of contents
@@ -1284,6 +1287,32 @@ func (f *File) SetHeaderFooter(sheet string, opts *HeaderFooterOptions) error {
 		FirstHeader:      opts.FirstHeader,
 	}
 	return err
+}
+
+// GetHeaderFooter provides a function to get worksheet header and footer by
+// given worksheet name.
+func (f *File) GetHeaderFooter(sheet string) (*HeaderFooterOptions, error) {
+	var opts *HeaderFooterOptions
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return opts, err
+	}
+	if ws.HeaderFooter == nil {
+		return opts, err
+	}
+	opts = &HeaderFooterOptions{
+		AlignWithMargins: ws.HeaderFooter.AlignWithMargins,
+		DifferentFirst:   ws.HeaderFooter.DifferentFirst,
+		DifferentOddEven: ws.HeaderFooter.DifferentOddEven,
+		ScaleWithDoc:     ws.HeaderFooter.ScaleWithDoc,
+		OddHeader:        ws.HeaderFooter.OddHeader,
+		OddFooter:        ws.HeaderFooter.OddFooter,
+		EvenHeader:       ws.HeaderFooter.EvenHeader,
+		EvenFooter:       ws.HeaderFooter.EvenFooter,
+		FirstHeader:      ws.HeaderFooter.FirstHeader,
+		FirstFooter:      ws.HeaderFooter.FirstFooter,
+	}
+	return opts, err
 }
 
 // ProtectSheet provides a function to prevent other users from accidentally or

@@ -35,7 +35,7 @@ func TestAddComment(t *testing.T) {
 	// Test add comment on not exists worksheet
 	assert.EqualError(t, f.AddComment("SheetN", Comment{Cell: "B7", Author: "Excelize", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), "sheet SheetN does not exist")
 	// Test add comment on with illegal cell reference
-	assert.EqualError(t, f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AddComment("Sheet1", Comment{Cell: "A", Author: "Excelize", Paragraph: []RichTextRun{{Text: "Excelize: ", Font: &Font{Bold: true}}, {Text: "This is a comment."}}}))
 	comments, err := f.GetComments("Sheet1")
 	assert.NoError(t, err)
 	assert.Len(t, comments, 2)
@@ -57,7 +57,7 @@ func TestAddComment(t *testing.T) {
 	assert.Len(t, comments, 0)
 
 	// Test add comments with invalid sheet name
-	assert.EqualError(t, f.AddComment("Sheet:1", Comment{Cell: "A1", Author: "Excelize", Text: "This is a comment."}), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.AddComment("Sheet:1", Comment{Cell: "A1", Author: "Excelize", Text: "This is a comment."}))
 
 	// Test add comments with unsupported charset
 	f.Comments["xl/comments2.xml"] = nil
@@ -105,7 +105,7 @@ func TestDeleteComment(t *testing.T) {
 	assert.Len(t, comments, 0)
 
 	// Test delete comment with invalid sheet name
-	assert.EqualError(t, f.DeleteComment("Sheet:1", "A1"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.DeleteComment("Sheet:1", "A1"))
 	// Test delete all comments in a worksheet
 	assert.NoError(t, f.DeleteComment("Sheet2", "A41"))
 	assert.NoError(t, f.DeleteComment("Sheet2", "C41"))

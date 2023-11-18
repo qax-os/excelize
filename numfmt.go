@@ -4953,7 +4953,7 @@ func (nf *numberFormat) numberHandler() string {
 		fracLen = nf.fracPadding
 	}
 	if isNum, precision, decimal := isNumeric(nf.value); isNum {
-		if precision > 15 && intLen+fracLen > 15 {
+		if precision > 15 && intLen+fracLen > 15 && !nf.useScientificNotation {
 			return nf.printNumberLiteral(nf.printBigNumber(decimal, fracLen))
 		}
 	}
@@ -4961,14 +4961,13 @@ func (nf *numberFormat) numberHandler() string {
 	if fracLen > 0 {
 		paddingLen++
 	}
-	flag := "f"
+	fmtCode := fmt.Sprintf("%%0%d.%df%s", paddingLen, fracLen, strings.Repeat("%%", nf.percent))
 	if nf.useScientificNotation {
 		if nf.expBaseLen != 2 {
 			return nf.value
 		}
-		flag = "E"
+		fmtCode = fmt.Sprintf("%%.%dE%s", fracLen, strings.Repeat("%%", nf.percent))
 	}
-	fmtCode := fmt.Sprintf("%%0%d.%d%s%s", paddingLen, fracLen, flag, strings.Repeat("%%", nf.percent))
 	if nf.percent > 0 {
 		num *= math.Pow(100, float64(nf.percent))
 	}

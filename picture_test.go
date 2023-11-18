@@ -81,7 +81,7 @@ func TestAddPicture(t *testing.T) {
 	// Test get picture cells
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"A30", "F21", "B30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
+	assert.Equal(t, []string{"F21", "A30", "B30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
 	assert.NoError(t, f.Close())
 
 	f, err = OpenFile(filepath.Join("test", "TestAddPicture1.xlsx"))
@@ -92,6 +92,7 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"F21", "A30", "B30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
 	// Test get picture cells with unsupported charset
+	f.Drawings.Delete(path)
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
 	_, err = f.GetPictureCells("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
@@ -226,6 +227,7 @@ func TestGetPicture(t *testing.T) {
 
 	// Test get pictures with unsupported charset
 	path := "xl/drawings/drawing1.xml"
+	f.Drawings.Delete(path)
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
 	_, err = f.getPicture(20, 5, path, "xl/drawings/_rels/drawing2.xml.rels")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
@@ -292,9 +294,9 @@ func TestDeletePicture(t *testing.T) {
 	// Test delete picture on not exists worksheet
 	assert.EqualError(t, f.DeletePicture("SheetN", "A1"), "sheet SheetN does not exist")
 	// Test delete picture with invalid sheet name
-	assert.EqualError(t, f.DeletePicture("Sheet:1", "A1"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.DeletePicture("Sheet:1", "A1"))
 	// Test delete picture with invalid coordinates
-	assert.EqualError(t, f.DeletePicture("Sheet1", ""), newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("", newInvalidCellNameError("")), f.DeletePicture("Sheet1", ""))
 	assert.NoError(t, f.Close())
 	// Test delete picture on no chart worksheet
 	assert.NoError(t, NewFile().DeletePicture("Sheet1", "A1"))
@@ -388,7 +390,7 @@ func TestGetPictureCells(t *testing.T) {
 
 func TestExtractDecodeCellAnchor(t *testing.T) {
 	f := NewFile()
-	cond := func(a *decodeCellAnchor) bool { return true }
+	cond := func(a *decodeFrom) bool { return true }
 	cb := func(a *decodeCellAnchor, r *xlsxRelationship) {}
-	f.extractDecodeCellAnchor(&decodeCellAnchor{Content: string(MacintoshCyrillicCharset)}, "", cond, cb)
+	f.extractDecodeCellAnchor(&xdrCellAnchor{GraphicFrame: string(MacintoshCyrillicCharset)}, "", cond, cb)
 }

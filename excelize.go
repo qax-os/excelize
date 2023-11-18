@@ -29,31 +29,32 @@ import (
 // File define a populated spreadsheet file struct.
 type File struct {
 	mu               sync.Mutex
-	options          *Options
-	xmlAttr          sync.Map
 	checked          sync.Map
+	options          *Options
+	sharedStringItem [][]uint
+	sharedStringsMap map[string]int
+	sharedStringTemp *os.File
 	sheetMap         map[string]string
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
-	sharedStringsMap map[string]int
-	sharedStringItem [][]uint
-	sharedStringTemp *os.File
+	xmlAttr          sync.Map
 	CalcChain        *xlsxCalcChain
+	CharsetReader    charsetTranscoderFn
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
+	DecodeVMLDrawing map[string]*decodeVmlDrawing
 	Drawings         sync.Map
 	Path             string
+	Pkg              sync.Map
+	Relationships    sync.Map
 	SharedStrings    *xlsxSST
 	Sheet            sync.Map
 	SheetCount       int
 	Styles           *xlsxStyleSheet
-	Theme            *xlsxTheme
-	DecodeVMLDrawing map[string]*decodeVmlDrawing
+	Theme            *decodeTheme
 	VMLDrawing       map[string]*vmlDrawing
+	VolatileDeps     *xlsxVolTypes
 	WorkBook         *xlsxWorkbook
-	Relationships    sync.Map
-	Pkg              sync.Map
-	CharsetReader    charsetTranscoderFn
 }
 
 // charsetTranscoderFn set user-defined codepage transcoder function for open

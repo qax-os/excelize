@@ -1202,16 +1202,18 @@ func TestConditionalFormat(t *testing.T) {
 			},
 		},
 	))
+	// Test set conditional format with invalid cell reference
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.SetConditionalFormat("Sheet1", "A1:-", nil))
 	// Test set conditional format on not exists worksheet
 	assert.EqualError(t, f.SetConditionalFormat("SheetN", "L1:L10", nil), "sheet SheetN does not exist")
 	// Test set conditional format with invalid sheet name
-	assert.EqualError(t, f.SetConditionalFormat("Sheet:1", "L1:L10", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.SetConditionalFormat("Sheet:1", "L1:L10", nil))
 
 	err = f.SaveAs(filepath.Join("test", "TestConditionalFormat.xlsx"))
 	assert.NoError(t, err)
 
 	// Set conditional format with illegal valid type
-	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10",
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat(sheet1, "K1:K10",
 		[]ConditionalFormatOptions{
 			{
 				Type:     "",
@@ -1223,7 +1225,7 @@ func TestConditionalFormat(t *testing.T) {
 		},
 	))
 	// Set conditional format with illegal criteria type
-	assert.NoError(t, f.SetConditionalFormat(sheet1, "K1:K10",
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat(sheet1, "K1:K10",
 		[]ConditionalFormatOptions{
 			{
 				Type:     "data_bar",

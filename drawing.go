@@ -94,23 +94,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			SolidFill: &aSolidFill{
 				SchemeClr: &aSchemeClr{Val: "bg1"},
 			},
-			Ln: &aLn{
-				W:    9525,
-				Cap:  "flat",
-				Cmpd: "sng",
-				Algn: "ctr",
-				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{
-						Val: "tx1",
-						LumMod: &attrValInt{
-							Val: intPtr(15000),
-						},
-						LumOff: &attrValInt{
-							Val: intPtr(85000),
-						},
-					},
-				},
-			},
+			Ln: f.drawChartLn(&opts.Border),
 		},
 		PrintSettings: &cPrintSettings{
 			PageMargins: &cPageMargins{
@@ -756,7 +740,7 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	spPrScatter := &cSpPr{
 		Ln: &aLn{
 			W:      25400,
-			NoFill: " ",
+			NoFill: &attrValString{},
 		},
 	}
 	spPrLine := &cSpPr{
@@ -1235,6 +1219,36 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 		}
 	}
 	return cTxPr
+}
+
+// drawChartLn provides a function to draw the a:ln element.
+func (f *File) drawChartLn(opts *ChartLine) *aLn {
+	ln := &aLn{
+		W:    f.ptToEMUs(opts.Width),
+		Cap:  "flat",
+		Cmpd: "sng",
+		Algn: "ctr",
+	}
+	switch opts.Type {
+	case ChartLineSolid:
+		ln.SolidFill = &aSolidFill{
+			SchemeClr: &aSchemeClr{
+				Val: "tx1",
+				LumMod: &attrValInt{
+					Val: intPtr(15000),
+				},
+				LumOff: &attrValInt{
+					Val: intPtr(85000),
+				},
+			},
+		}
+		return ln
+	case ChartLineNone:
+		ln.NoFill = &attrValString{}
+		return ln
+	default:
+		return nil
+	}
 }
 
 // drawingParser provides a function to parse drawingXML. In order to solve
