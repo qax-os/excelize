@@ -1335,8 +1335,8 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 		return "", err
 	}
 	lastRowNum := 0
-	if l := len(ws.SheetData.Row); l > 0 {
-		lastRowNum = ws.SheetData.Row[l-1].R
+	if l := len(ws.SheetData.Row); l > 0 && ws.SheetData.Row[l-1].R != nil {
+		lastRowNum = *ws.SheetData.Row[l-1].R
 	}
 
 	// keep in mind: row starts from 1
@@ -1346,7 +1346,7 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 
 	for rowIdx := range ws.SheetData.Row {
 		rowData := &ws.SheetData.Row[rowIdx]
-		if rowData.R != row {
+		if rowData.R != nil && *rowData.R != row {
 			continue
 		}
 		for colIdx := range rowData.C {

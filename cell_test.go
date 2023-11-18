@@ -358,9 +358,6 @@ func TestGetCellValue(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="0"><c r="H6" t="inlineStr"><is><t>H6</t></is></c><c r="A1" t="inlineStr"><is><t>r0A6</t></is></c><c r="F4" t="inlineStr"><is><t>F4</t></is></c></row><row><c r="A1" t="inlineStr"><is><t>A6</t></is></c><c r="B1" t="inlineStr"><is><t>B6</t></is></c><c r="C1" t="inlineStr"><is><t>C6</t></is></c></row><row r="3"><c r="A3"><v>100</v></c><c r="B3" t="inlineStr"><is><t>B3</t></is></c></row>`)))
 	f.checked = sync.Map{}
-	cell, err = f.GetCellValue("Sheet1", "H6")
-	assert.Equal(t, "H6", cell)
-	assert.NoError(t, err)
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{
 		{"A6", "B6", "C6"},
@@ -370,6 +367,19 @@ func TestGetCellValue(t *testing.T) {
 		nil,
 		{"", "", "", "", "", "", "", "H6"},
 	}, rows)
+	assert.NoError(t, err)
+	cell, err = f.GetCellValue("Sheet1", "H6")
+	assert.Equal(t, "H6", cell)
+	assert.NoError(t, err)
+
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row><c r="A1" t="inlineStr"><is><t>A1</t></is></c></row><row></row><row><c r="A3" t="inlineStr"><is><t>A3</t></is></c></row>`)))
+	f.checked = sync.Map{}
+	rows, err = f.GetRows("Sheet1")
+	assert.Equal(t, [][]string{{"A1"}, nil, {"A3"}}, rows)
+	assert.NoError(t, err)
+	cell, err = f.GetCellValue("Sheet1", "A3")
+	assert.Equal(t, "A3", cell)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
