@@ -303,64 +303,83 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 // checkSheet provides a function to fill each row element and make that is
 // continuous in a worksheet of XML.
 func (ws *xlsxWorksheet) checkSheet() {
-	var row int
-	var r0 xlsxRow
-	for i, r := range ws.SheetData.Row {
-		if i == 0 && r.R == 0 {
-			r0 = r
-			ws.SheetData.Row = ws.SheetData.Row[1:]
-			continue
-		}
-		if r.R != 0 && r.R > row {
-			row = r.R
-			continue
-		}
-		if r.R != row {
-			row++
-		}
-	}
+	row, r0 := ws.checkSheetRows()
 	sheetData := xlsxSheetData{Row: make([]xlsxRow, row)}
 	row = 0
 	for _, r := range ws.SheetData.Row {
-		if r.R == row && row > 0 {
-			sheetData.Row[r.R-1].C = append(sheetData.Row[r.R-1].C, r.C...)
-			continue
-		}
-		if r.R != 0 {
-			sheetData.Row[r.R-1] = r
-			row = r.R
-			continue
-		}
-		row++
-		r.R = row
-		if len(sheetData.Row) > row-1 {
+		if r.R == nil {
+			row++
+			r.R = intPtr(row)
 			sheetData.Row[row-1] = r
+			continue
+		}
+		if *r.R == row && row > 0 {
+			sheetData.Row[*r.R-1].C = append(sheetData.Row[*r.R-1].C, r.C...)
+			continue
+		}
+		if *r.R != 0 {
+			sheetData.Row[*r.R-1] = r
+			row = *r.R
 		}
 	}
-	for i := 1; i <= row; i++ {
-		if len(sheetData.Row) > i-1 {
-			sheetData.Row[i-1].R = i
+	for i := 1; i <= len(sheetData.Row); i++ {
+		sheetData.Row[i-1].R = intPtr(i)
+	}
+	ws.checkSheetR0(&sheetData, r0)
+}
+
+// checkSheetRows returns the last row number of the worksheet and rows element
+// with r="0" attribute.
+func (ws *xlsxWorksheet) checkSheetRows() (int, []xlsxRow) {
+	var (
+		row, max  int
+		r0        []xlsxRow
+		maxRowNum = func(num int, c []xlsxC) int {
+			for _, cell := range c {
+				if _, n, err := CellNameToCoordinates(cell.R); err == nil && n > num {
+					num = n
+				}
+			}
+			return num
+		}
+	)
+	for i, r := range ws.SheetData.Row {
+		if r.R == nil {
+			row++
+			continue
+		}
+		if i == 0 && *r.R == 0 {
+			if num := maxRowNum(row, r.C); num > max {
+				max = num
+			}
+			r0 = append(r0, r)
+			continue
+		}
+		if *r.R != 0 && *r.R > row {
+			row = *r.R
 		}
 	}
-	ws.checkSheetR0(&sheetData, &r0)
+	if max > row {
+		row = max
+	}
+	return row, r0
 }
 
 // checkSheetR0 handle the row element with r="0" attribute, cells in this row
 // could be disorderly, the cell in this row can be used as the value of
 // which cell is empty in the normal rows.
-func (ws *xlsxWorksheet) checkSheetR0(sheetData *xlsxSheetData, r0 *xlsxRow) {
-	for _, cell := range r0.C {
-		if col, row, err := CellNameToCoordinates(cell.R); err == nil {
-			rows, rowIdx := len(sheetData.Row), row-1
-			for r := rows; r < row; r++ {
-				sheetData.Row = append(sheetData.Row, xlsxRow{R: r + 1})
-			}
-			columns, colIdx := len(sheetData.Row[rowIdx].C), col-1
-			for c := columns; c < col; c++ {
-				sheetData.Row[rowIdx].C = append(sheetData.Row[rowIdx].C, xlsxC{})
-			}
-			if !sheetData.Row[rowIdx].C[colIdx].hasValue() {
-				sheetData.Row[rowIdx].C[colIdx] = cell
+func (ws *xlsxWorksheet) checkSheetR0(sheetData *xlsxSheetData, r0s []xlsxRow) {
+	for _, r0 := range r0s {
+		for _, cell := range r0.C {
+			if col, row, err := CellNameToCoordinates(cell.R); err == nil {
+				rowIdx := row - 1
+				columns, colIdx := len(sheetData.Row[rowIdx].C), col-1
+				for c := columns; c < col; c++ {
+					sheetData.Row[rowIdx].C = append(sheetData.Row[rowIdx].C, xlsxC{})
+				}
+				if !sheetData.Row[rowIdx].C[colIdx].hasValue() {
+					sheetData.Row[rowIdx].C[colIdx] = cell
+				}
 			}
 		}
 	}

@@ -1951,7 +1951,7 @@ func (ws *xlsxWorksheet) prepareSheetXML(col int, row int) {
 	if rowCount < row {
 		// append missing rows
 		for rowIdx := rowCount; rowIdx < row; rowIdx++ {
-			ws.SheetData.Row = append(ws.SheetData.Row, xlsxRow{R: rowIdx + 1, CustomHeight: customHeight, Ht: ht, C: make([]xlsxC, 0, sizeHint)})
+			ws.SheetData.Row = append(ws.SheetData.Row, xlsxRow{R: intPtr(rowIdx + 1), CustomHeight: customHeight, Ht: ht, C: make([]xlsxC, 0, sizeHint)})
 		}
 	}
 	rowData := &ws.SheetData.Row[row-1]

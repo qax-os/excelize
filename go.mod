@@ -1,4 +1,4 @@
-module github.com/lujin1/excelize
+module github.com/xuri/excelize/v2
 
 go 1.16
 

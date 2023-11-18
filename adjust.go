@@ -201,13 +201,13 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 		return nil
 	}
 	lastRow := &ws.SheetData.Row[totalRows-1]
-	if newRow := lastRow.R + offset; lastRow.R >= row && newRow > 0 && newRow > TotalRows {
+	if newRow := *lastRow.R + offset; *lastRow.R >= row && newRow > 0 && newRow > TotalRows {
 		return ErrMaxRows
 	}
 	numOfRows := len(ws.SheetData.Row)
 	for i := 0; i < numOfRows; i++ {
 		r := &ws.SheetData.Row[i]
-		if newRow := r.R + offset; r.R >= row && newRow > 0 {
+		if newRow := *r.R + offset; *r.R >= row && newRow > 0 {
 			r.adjustSingleRowDimensions(offset)
 		}
 		if err := f.adjustSingleRowFormulas(sheet, sheet, r, row, offset, false); err != nil {
@@ -219,10 +219,10 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 
 // adjustSingleRowDimensions provides a function to adjust single row dimensions.
 func (r *xlsxRow) adjustSingleRowDimensions(offset int) {
-	r.R += offset
+	r.R = intPtr(*r.R + offset)
 	for i, col := range r.C {
 		colName, _, _ := SplitCellName(col.R)
-		r.C[i].R, _ = JoinCellName(colName, r.R)
+		r.C[i].R, _ = JoinCellName(colName, *r.R)
 	}
 }
 
@@ -561,7 +561,7 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, sheet string, dir adjustDirec
 		ws.AutoFilter = nil
 		for rowIdx := range ws.SheetData.Row {
 			rowData := &ws.SheetData.Row[rowIdx]
-			if rowData.R > y1 && rowData.R <= y2 {
+			if rowData.R != nil && *rowData.R > y1 && *rowData.R <= y2 {
 				rowData.Hidden = false
 			}
 		}

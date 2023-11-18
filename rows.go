@@ -368,7 +368,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 	defer ws.mu.Unlock()
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
-		if v.R == row && v.Ht != nil {
+		if v.R != nil && *v.R == row && v.Ht != nil {
 			return int(convertRowHeightToPixels(*v.Ht))
 		}
 	}
@@ -399,7 +399,7 @@ func (f *File) GetRowHeight(sheet string, row int) (float64, error) {
 		return ht, nil // it will be better to use 0, but we take care with BC
 	}
 	for _, v := range ws.SheetData.Row {
-		if v.R == row && v.Ht != nil {
+		if v.R != nil && *v.R == row && v.Ht != nil {
 			return *v.Ht, nil
 		}
 	}
@@ -554,7 +554,7 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	keep := 0
 	for rowIdx := 0; rowIdx < len(ws.SheetData.Row); rowIdx++ {
 		v := &ws.SheetData.Row[rowIdx]
-		if v.R != row {
+		if v.R != nil && *v.R != row {
 			ws.SheetData.Row[keep] = *v
 			keep++
 		}
@@ -625,7 +625,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	var rowCopy xlsxRow
 
 	for i, r := range ws.SheetData.Row {
-		if r.R == row {
+		if *r.R == row {
 			rowCopy = deepcopy.Copy(ws.SheetData.Row[i]).(xlsxRow)
 			ok = true
 			break
@@ -642,7 +642,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 
 	idx2 := -1
 	for i, r := range ws.SheetData.Row {
-		if r.R == row2 {
+		if *r.R == row2 {
 			idx2 = i
 			break
 		}

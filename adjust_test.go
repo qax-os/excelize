@@ -289,7 +289,7 @@ func TestAdjustAutoFilter(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.adjustAutoFilter(&xlsxWorksheet{
 		SheetData: xlsxSheetData{
-			Row: []xlsxRow{{Hidden: true, R: 2}},
+			Row: []xlsxRow{{Hidden: true, R: intPtr(2)}},
 		},
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A1:A3",
