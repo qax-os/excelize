@@ -971,6 +971,9 @@ func (f *File) SetCellHyperLink(sheet, cell, link, linkType string, opts ...Hype
 
 // getCellRichText returns rich text of cell by given string item.
 func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
+	if si.T != nil {
+		runs = append(runs, RichTextRun{Text: si.T.Val})
+	}
 	for _, v := range si.R {
 		run := RichTextRun{
 			Text: v.T.Val,
@@ -992,6 +995,13 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 	}
 	c, _, _, err := ws.prepareCell(cell)
 	if err != nil {
+		return
+	}
+	if c.T == "inlineStr" && c.IS != nil {
+		runs = getCellRichText(c.IS)
+		return
+	}
+	if c.T == "" {
 		return
 	}
 	siIdx, err := strconv.Atoi(c.V)

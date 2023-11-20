@@ -685,26 +685,41 @@ func TestGetCellRichText(t *testing.T) {
 	runsSource[1].Font.Color = strings.ToUpper(runsSource[1].Font.Color)
 	assert.True(t, reflect.DeepEqual(runsSource[1].Font, runs[1].Font), "should get the same font")
 
-	// Test get cell rich text when string item index overflow
+	// Test get cell rich text with inlineStr
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "2"
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{
+		T: "inlineStr",
+		IS: &xlsxSI{
+			T: &xlsxT{Val: "A"},
+			R: []xlsxR{{T: &xlsxT{Val: "1"}}},
+		},
+	}
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, []RichTextRun{{Text: "A"}, {Text: "1"}}, runs)
+
+	// Test get cell rich text when string item index overflow
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{V: "2", IS: &xlsxSI{}}
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text when string item index is negative
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "-1"
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{T: "s", V: "-1", IS: &xlsxSI{}}
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text on invalid string item index
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].V = "x"
-	_, err = f.GetCellRichText("Sheet1", "A1")
-	assert.EqualError(t, err, "strconv.Atoi: parsing \"x\": invalid syntax")
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{V: "x"}
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(runs))
 	// Test set cell rich text on not exists worksheet
 	_, err = f.GetCellRichText("SheetN", "A1")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
