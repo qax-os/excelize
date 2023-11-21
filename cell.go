@@ -495,7 +495,7 @@ func (f *File) setSharedString(val string) (int, error) {
 	val, t.Space = trimCellValue(val, false)
 	sst.SI = append(sst.SI, xlsxSI{T: &t})
 	f.sharedStringsMap[val] = sst.UniqueCount - 1
-	return sst.UniqueCount - 1, nil
+	return len(sst.SI) - 1, nil
 }
 
 // trimCellValue provides a function to set string type to cell.
