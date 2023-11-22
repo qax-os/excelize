@@ -260,6 +260,23 @@ func TestSetCellValue(t *testing.T) {
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", time.Now().UTC()), "XML syntax error on line 1: invalid UTF-8")
+	// Test set cell value with the shared string table's count not equal with unique count
+	f = NewFile()
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, []byte(fmt.Sprintf(`<sst xmlns="%s" count="2" uniqueCount="1"><si><t>a</t></si><si><t>a</t></si></sst>`, NameSpaceSpreadSheet.Value)))
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
+		SheetData: xlsxSheetData{Row: []xlsxRow{
+			{R: intPtr(1), C: []xlsxC{{R: "A1", T: "str", V: "1"}}},
+		}},
+	})
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "b"))
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "b", val)
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "b"))
+	val, err = f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "b", val)
 }
 
 func TestSetCellValues(t *testing.T) {
