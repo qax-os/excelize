@@ -290,7 +290,7 @@ func (f *File) GetColVisible(sheet, col string) (bool, error) {
 //
 //	err := f.SetColVisible("Sheet1", "D:F", false)
 func (f *File) SetColVisible(sheet, columns string, visible bool) error {
-	min, max, err := f.parseColRange(columns)
+	minVal, maxVal, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
@@ -301,8 +301,8 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	colData := xlsxCol{
-		Min:         min,
-		Max:         max,
+		Min:         minVal,
+		Max:         maxVal,
 		Width:       float64Ptr(defaultColWidth),
 		Hidden:      !visible,
 		CustomWidth: true,
@@ -427,7 +427,7 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 //
 //	err = f.SetColStyle("Sheet1", "C:F", style)
 func (f *File) SetColStyle(sheet, columns string, styleID int) error {
-	min, max, err := f.parseColRange(columns)
+	minVal, maxVal, err := f.parseColRange(columns)
 	if err != nil {
 		return err
 	}
@@ -453,10 +453,14 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	if ws.Cols == nil {
 		ws.Cols = &xlsxCols{}
 	}
+	width := defaultColWidth
+	if ws.SheetFormatPr != nil && ws.SheetFormatPr.DefaultColWidth > 0 {
+		width = ws.SheetFormatPr.DefaultColWidth
+	}
 	ws.Cols.Col = flatCols(xlsxCol{
-		Min:   min,
-		Max:   max,
-		Width: float64Ptr(defaultColWidth),
+		Min:   minVal,
+		Max:   maxVal,
+		Width: float64Ptr(width),
 		Style: styleID,
 	}, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
@@ -470,7 +474,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	})
 	ws.mu.Unlock()
 	if rows := len(ws.SheetData.Row); rows > 0 {
-		for col := min; col <= max; col++ {
+		for col := minVal; col <= maxVal; col++ {
 			from, _ := CoordinatesToCellName(col, 1)
 			to, _ := CoordinatesToCellName(col, rows)
 			err = f.SetCellStyle(sheet, from, to, styleID)
@@ -484,7 +488,7 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 //
 //	err := f.SetColWidth("Sheet1", "A", "H", 20)
 func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error {
-	min, max, err := f.parseColRange(startCol + ":" + endCol)
+	minVal, maxVal, err := f.parseColRange(startCol + ":" + endCol)
 	if err != nil {
 		return err
 	}
@@ -501,8 +505,8 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	col := xlsxCol{
-		Min:         min,
-		Max:         max,
+		Min:         minVal,
+		Max:         maxVal,
 		Width:       float64Ptr(width),
 		CustomWidth: true,
 	}
