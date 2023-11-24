@@ -366,6 +366,16 @@ func TestSetColStyle(t *testing.T) {
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetColStyle("Sheet1", "C:F", styleID), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test set column style with worksheet properties columns default width settings
+	f = NewFile()
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{DefaultColWidth: float64Ptr(20)}))
+	style, err = f.NewStyle(&Style{Alignment: &Alignment{Vertical: "center"}})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetColStyle("Sheet1", "A:Z", style))
+	width, err := f.GetColWidth("Sheet1", "B")
+	assert.NoError(t, err)
+	assert.Equal(t, 20.0, width)
 }
 
 func TestColWidth(t *testing.T) {
