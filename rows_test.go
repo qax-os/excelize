@@ -878,6 +878,23 @@ func TestDuplicateRow(t *testing.T) {
 	}))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "Amount+C1"))
 	assert.NoError(t, f.SetCellValue("Sheet1", "A10", "A10"))
+
+	format, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+	assert.NoError(t, err)
+
+	expected := []ConditionalFormatOptions{
+		{Type: "cell", Criteria: "greater than", Format: format, Value: "0"},
+	}
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1", expected))
+
+	dv := NewDataValidation(true)
+	dv.Sqref = "A1"
+	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A1"
+
 	assert.NoError(t, f.DuplicateRowTo("Sheet1", 1, 10))
 	formula, err := f.GetCellFormula("Sheet1", "A10")
 	assert.NoError(t, err)
@@ -885,6 +902,28 @@ func TestDuplicateRow(t *testing.T) {
 	value, err := f.GetCellValue("Sheet1", "A11")
 	assert.NoError(t, err)
 	assert.Equal(t, "A10", value)
+
+	cfs, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, cfs, 2)
+	assert.Equal(t, expected, cfs["A10:A10"])
+
+	dvs, err := f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, dvs, 2)
+	assert.Equal(t, "A10:A10", dvs[1].Sqref)
+
+	// Test duplicate data validation with row number exceeds maximum limit
+	assert.Equal(t, ErrMaxRows, f.duplicateDataValidations(ws.(*xlsxWorksheet), "Sheet1", 1, TotalRows+1))
+	// Test duplicate data validation with invalid range reference
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A"
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.duplicateDataValidations(ws.(*xlsxWorksheet), "Sheet1", 1, 10))
+
+	// Test duplicate conditional formatting with row number exceeds maximum limit
+	assert.Equal(t, ErrMaxRows, f.duplicateConditionalFormat(ws.(*xlsxWorksheet), "Sheet1", 1, TotalRows+1))
+	// Test duplicate conditional formatting with invalid range reference
+	ws.(*xlsxWorksheet).ConditionalFormatting[0].SQRef = "A"
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.duplicateConditionalFormat(ws.(*xlsxWorksheet), "Sheet1", 1, 10))
 }
 
 func TestDuplicateRowTo(t *testing.T) {
@@ -911,9 +950,9 @@ func TestDuplicateMergeCells(t *testing.T) {
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{
 		Cells: []*xlsxMergeCell{{Ref: "A1:-"}},
 	}}
-	assert.EqualError(t, f.duplicateMergeCells("Sheet1", ws, 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+	assert.EqualError(t, f.duplicateMergeCells(ws, "Sheet1", 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 	ws.MergeCells.Cells[0].Ref = "A1:B1"
-	assert.EqualError(t, f.duplicateMergeCells("SheetN", ws, 1, 2), "sheet SheetN does not exist")
+	assert.EqualError(t, f.duplicateMergeCells(ws, "SheetN", 1, 2), "sheet SheetN does not exist")
 }
 
 func TestGetValueFromInlineStr(t *testing.T) {
