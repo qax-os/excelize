@@ -18,6 +18,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -200,31 +201,40 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			return err
 		}
 	}
-	var err error
+	var (
+		err              error
+		files, tempFiles []string
+	)
 	f.Pkg.Range(func(path, content interface{}) bool {
-		if err != nil {
-			return false
-		}
 		if _, ok := f.streams[path.(string)]; ok {
 			return true
 		}
-		var fi io.Writer
-		if fi, err = zw.Create(path.(string)); err != nil {
-			return false
-		}
-		_, err = fi.Write(content.([]byte))
+		files = append(files, path.(string))
 		return true
 	})
+	sort.Strings(files)
+	for _, path := range files {
+		var fi io.Writer
+		if fi, err = zw.Create(path); err != nil {
+			break
+		}
+		content, _ := f.Pkg.Load(path)
+		_, err = fi.Write(content.([]byte))
+	}
 	f.tempFiles.Range(func(path, content interface{}) bool {
 		if _, ok := f.Pkg.Load(path); ok {
 			return true
 		}
-		var fi io.Writer
-		if fi, err = zw.Create(path.(string)); err != nil {
-			return false
-		}
-		_, err = fi.Write(f.readBytes(path.(string)))
+		tempFiles = append(tempFiles, path.(string))
 		return true
 	})
+	sort.Strings(tempFiles)
+	for _, path := range tempFiles {
+		var fi io.Writer
+		if fi, err = zw.Create(path); err != nil {
+			break
+		}
+		_, err = fi.Write(f.readBytes(path))
+	}
 	return err
 }
