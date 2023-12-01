@@ -1034,6 +1034,22 @@ func TestSetRowStyle(t *testing.T) {
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, cellStyleID), "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestSetRowHeight(t *testing.T) {
+	f := NewFile()
+	// Test hidden row by set row height to 0
+	assert.NoError(t, f.SetRowHeight("Sheet1", 2, 0))
+	ht, err := f.GetRowHeight("Sheet1", 2)
+	assert.NoError(t, err)
+	assert.Empty(t, ht)
+	// Test unset custom row height
+	assert.NoError(t, f.SetRowHeight("Sheet1", 2, -1))
+	ht, err = f.GetRowHeight("Sheet1", 2)
+	assert.NoError(t, err)
+	assert.Equal(t, defaultRowHeight, ht)
+	// Test set row height with invalid height value
+	assert.Equal(t, ErrParameterInvalid, f.SetRowHeight("Sheet1", 2, -2))
+}
+
 func TestNumberFormats(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
