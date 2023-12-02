@@ -350,8 +350,10 @@ func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 	return true, f.xmlNewDecoder(tempFile), tempFile, err
 }
 
-// SetRowHeight provides a function to set the height of a single row. For
-// example, set the height of the first row in Sheet1:
+// SetRowHeight provides a function to set the height of a single row. If the
+// value of height is 0, will hide the specified row, if the value of height is
+// -1, will unset the custom row height. For example, set the height of the
+// first row in Sheet1:
 //
 //	err := f.SetRowHeight("Sheet1", 1, 50)
 func (f *File) SetRowHeight(sheet string, row int, height float64) error {
@@ -361,6 +363,9 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	if height > MaxRowHeight {
 		return ErrMaxRowHeight
 	}
+	if height < -1 {
+		return ErrParameterInvalid
+	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -369,9 +374,14 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 	ws.prepareSheetXML(0, row)
 
 	rowIdx := row - 1
+	if height == -1 {
+		ws.SheetData.Row[rowIdx].Ht = nil
+		ws.SheetData.Row[rowIdx].CustomHeight = false
+		return err
+	}
 	ws.SheetData.Row[rowIdx].Ht = float64Ptr(height)
 	ws.SheetData.Row[rowIdx].CustomHeight = true
-	return nil
+	return err
 }
 
 // getRowHeight provides a function to get row height in pixels by given sheet
