@@ -449,6 +449,7 @@ func TestSetActiveSheet(t *testing.T) {
 	f = NewFile()
 	f.SetActiveSheet(-1)
 	assert.Equal(t, f.GetActiveSheetIndex(), 0)
+	assert.Equal(t, f.GetActiveSheetName(), "")
 
 	f = NewFile()
 	f.WorkBook.BookViews = nil
@@ -458,6 +459,7 @@ func TestSetActiveSheet(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{}}
 	f.SetActiveSheet(idx)
+	assert.Equal(t, f.GetActiveSheetName(), "Sheet2")
 }
 
 func TestSetSheetName(t *testing.T) {
@@ -504,7 +506,7 @@ func TestDeleteSheet(t *testing.T) {
 	_, err = f.NewSheet("Sheet3")
 	assert.NoError(t, err)
 	assert.NoError(t, f.DeleteSheet("Sheet1"))
-	assert.Equal(t, "Sheet2", f.GetSheetName(f.GetActiveSheetIndex()))
+	assert.Equal(t, "Sheet2", f.GetActiveSheetName())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet.xlsx")))
 	// Test with auto filter defined names
 	f = NewFile()

@@ -316,6 +316,13 @@ func (f *File) SetActiveSheet(index int) {
 	}
 }
 
+// GetActiveSheetName provides a function that can easily get sheet name
+// for the active sheet. When there's no active sheet, it will return empty string.
+func (f *File) GetActiveSheetName() (name string) {
+	idx := f.GetActiveSheetIndex()
+	return f.GetSheetName(idx)
+}
+
 // GetActiveSheetIndex provides a function to get active sheet index of the
 // spreadsheet. If not found the active sheet will be return integer 0.
 func (f *File) GetActiveSheetIndex() (index int) {
