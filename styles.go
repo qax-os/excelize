@@ -23,87 +23,6 @@ import (
 	"strings"
 )
 
-// validType defined the list of valid validation types.
-var validType = map[string]string{
-	"cell":          "cellIs",
-	"average":       "aboveAverage",
-	"duplicate":     "duplicateValues",
-	"unique":        "uniqueValues",
-	"top":           "top10",
-	"bottom":        "top10",
-	"text":          "text",
-	"time_period":   "timePeriod",
-	"blanks":        "containsBlanks",
-	"no_blanks":     "notContainsBlanks",
-	"errors":        "containsErrors",
-	"no_errors":     "notContainsErrors",
-	"2_color_scale": "2_color_scale",
-	"3_color_scale": "3_color_scale",
-	"data_bar":      "dataBar",
-	"formula":       "expression",
-	"icon_set":      "iconSet",
-}
-
-// criteriaType defined the list of valid criteria types.
-var criteriaType = map[string]string{
-	"!=":                       "notEqual",
-	"<":                        "lessThan",
-	"<=":                       "lessThanOrEqual",
-	"<>":                       "notEqual",
-	"=":                        "equal",
-	"==":                       "equal",
-	">":                        "greaterThan",
-	">=":                       "greaterThanOrEqual",
-	"begins with":              "beginsWith",
-	"between":                  "between",
-	"containing":               "containsText",
-	"continue month":           "nextMonth",
-	"continue week":            "nextWeek",
-	"ends with":                "endsWith",
-	"equal to":                 "equal",
-	"greater than or equal to": "greaterThanOrEqual",
-	"greater than":             "greaterThan",
-	"last 7 days":              "last7Days",
-	"last month":               "lastMonth",
-	"last week":                "lastWeek",
-	"less than or equal to":    "lessThanOrEqual",
-	"less than":                "lessThan",
-	"not between":              "notBetween",
-	"not containing":           "notContains",
-	"not equal to":             "notEqual",
-	"this month":               "thisMonth",
-	"this week":                "thisWeek",
-	"today":                    "today",
-	"tomorrow":                 "tomorrow",
-	"yesterday":                "yesterday",
-}
-
-// operatorType defined the list of valid operator types.
-var operatorType = map[string]string{
-	"beginsWith":         "begins with",
-	"between":            "between",
-	"containsText":       "containing",
-	"endsWith":           "ends with",
-	"equal":              "equal to",
-	"greaterThan":        "greater than",
-	"greaterThanOrEqual": "greater than or equal to",
-	"last7Days":          "last 7 days",
-	"lastMonth":          "last month",
-	"lastWeek":           "last week",
-	"lessThan":           "less than",
-	"lessThanOrEqual":    "less than or equal to",
-	"nextMonth":          "continue month",
-	"nextWeek":           "continue week",
-	"notBetween":         "not between",
-	"notContains":        "not containing",
-	"notEqual":           "not equal to",
-	"thisMonth":          "this month",
-	"thisWeek":           "this week",
-	"today":              "today",
-	"tomorrow":           "tomorrow",
-	"yesterday":          "yesterday",
-}
-
 // stylesReader provides a function to get the pointer to the structure after
 // deserialization of xl/styles.xml.
 func (f *File) stylesReader() (*xlsxStyleSheet, error) {
@@ -1261,6 +1180,140 @@ var (
 		"dataBar":           extractCondFmtDataBar,
 		"expression":        extractCondFmtExp,
 		"iconSet":           extractCondFmtIconSet,
+	}
+	// validType defined the list of valid validation types.
+	validType = map[string]string{
+		"cell":          "cellIs",
+		"average":       "aboveAverage",
+		"duplicate":     "duplicateValues",
+		"unique":        "uniqueValues",
+		"top":           "top10",
+		"bottom":        "top10",
+		"text":          "text",
+		"time_period":   "timePeriod",
+		"blanks":        "containsBlanks",
+		"no_blanks":     "notContainsBlanks",
+		"errors":        "containsErrors",
+		"no_errors":     "notContainsErrors",
+		"2_color_scale": "2_color_scale",
+		"3_color_scale": "3_color_scale",
+		"data_bar":      "dataBar",
+		"formula":       "expression",
+		"icon_set":      "iconSet",
+	}
+	// criteriaType defined the list of valid criteria types.
+	criteriaType = map[string]string{
+		"!=":                       "notEqual",
+		"<":                        "lessThan",
+		"<=":                       "lessThanOrEqual",
+		"<>":                       "notEqual",
+		"=":                        "equal",
+		"==":                       "equal",
+		">":                        "greaterThan",
+		">=":                       "greaterThanOrEqual",
+		"begins with":              "beginsWith",
+		"between":                  "between",
+		"containing":               "containsText",
+		"continue month":           "nextMonth",
+		"continue week":            "nextWeek",
+		"ends with":                "endsWith",
+		"equal to":                 "equal",
+		"greater than or equal to": "greaterThanOrEqual",
+		"greater than":             "greaterThan",
+		"last 7 days":              "last7Days",
+		"last month":               "lastMonth",
+		"last week":                "lastWeek",
+		"less than or equal to":    "lessThanOrEqual",
+		"less than":                "lessThan",
+		"not between":              "notBetween",
+		"not containing":           "notContains",
+		"not equal to":             "notEqual",
+		"this month":               "thisMonth",
+		"this week":                "thisWeek",
+		"today":                    "today",
+		"tomorrow":                 "tomorrow",
+		"yesterday":                "yesterday",
+	}
+	// operatorType defined the list of valid operator types.
+	operatorType = map[string]string{
+		"beginsWith":         "begins with",
+		"between":            "between",
+		"containsText":       "containing",
+		"endsWith":           "ends with",
+		"equal":              "equal to",
+		"greaterThan":        "greater than",
+		"greaterThanOrEqual": "greater than or equal to",
+		"last7Days":          "last 7 days",
+		"lastMonth":          "last month",
+		"lastWeek":           "last week",
+		"lessThan":           "less than",
+		"lessThanOrEqual":    "less than or equal to",
+		"nextMonth":          "continue month",
+		"nextWeek":           "continue week",
+		"notBetween":         "not between",
+		"notContains":        "not containing",
+		"notEqual":           "not equal to",
+		"thisMonth":          "this month",
+		"thisWeek":           "this week",
+		"today":              "today",
+		"tomorrow":           "tomorrow",
+		"yesterday":          "yesterday",
+	}
+	// cellIsCriteriaType defined the list of valid criteria types used for
+	// cellIs conditional formats.
+	cellIsCriteriaType = []string{
+		"equal",
+		"notEqual",
+		"greaterThan",
+		"lessThan",
+		"greaterThanOrEqual",
+		"lessThanOrEqual",
+		"containsText",
+		"notContains",
+		"beginsWith",
+		"endsWith",
+	}
+	// cfvo3 defined the icon set conditional formatting rules.
+	cfvo3 = &xlsxCfRule{IconSet: &xlsxIconSet{Cfvo: []*xlsxCfvo{
+		{Type: "percent", Val: "0"},
+		{Type: "percent", Val: "33"},
+		{Type: "percent", Val: "67"},
+	}}}
+	// cfvo4 defined the icon set conditional formatting rules.
+	cfvo4 = &xlsxCfRule{IconSet: &xlsxIconSet{Cfvo: []*xlsxCfvo{
+		{Type: "percent", Val: "0"},
+		{Type: "percent", Val: "25"},
+		{Type: "percent", Val: "50"},
+		{Type: "percent", Val: "75"},
+	}}}
+	// cfvo5 defined the icon set conditional formatting rules.
+	cfvo5 = &xlsxCfRule{IconSet: &xlsxIconSet{Cfvo: []*xlsxCfvo{
+		{Type: "percent", Val: "0"},
+		{Type: "percent", Val: "20"},
+		{Type: "percent", Val: "40"},
+		{Type: "percent", Val: "60"},
+		{Type: "percent", Val: "80"},
+	}}}
+	// condFmtIconSetPresets defined the list of icon set conditional formatting
+	// rules.
+	condFmtIconSetPresets = map[string]*xlsxCfRule{
+		"3Arrows":         cfvo3,
+		"3ArrowsGray":     cfvo3,
+		"3Flags":          cfvo3,
+		"3Signs":          cfvo3,
+		"3Symbols":        cfvo3,
+		"3Symbols2":       cfvo3,
+		"3TrafficLights1": cfvo3,
+		"3TrafficLights2": cfvo3,
+		"4Arrows":         cfvo4,
+		"4ArrowsGray":     cfvo4,
+		"4Rating":         cfvo4,
+		"4RedToBlack":     cfvo4,
+		"4TrafficLights":  cfvo4,
+		"5Arrows":         cfvo5,
+		"5ArrowsGray":     cfvo5,
+		"5Quarters":       cfvo5,
+		"5Rating":         cfvo5,
 	}
 )
 
@@ -2761,7 +2814,10 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 // settings for cell value (include between, not between, equal, not equal,
 // greater than and less than) by given conditional formatting rule.
 func extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "cell", Criteria: operatorType[c.Operator], Format: *c.DxfID}
+	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "cell", Criteria: operatorType[c.Operator]}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
 	if len(c.Formula) == 2 {
 		format.MinValue, format.MaxValue = c.Formula[0], c.Formula[1]
 		return format
@@ -2773,13 +2829,21 @@ func extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOp
 // extractCondFmtTimePeriod provides a function to extract conditional format
 // settings for time period by given conditional formatting rule.
 func extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: operatorType[c.Operator], Format: *c.DxfID}
+	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: operatorType[c.Operator]}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtText provides a function to extract conditional format
 // settings for text cell values by given conditional formatting rule.
 func extractCondFmtText(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "text", Criteria: operatorType[c.Operator], Format: *c.DxfID, Value: c.Text}
+	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "text", Criteria: operatorType[c.Operator], Value: c.Text}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtTop10 provides a function to extract conditional format
@@ -2790,9 +2854,11 @@ func extractCondFmtTop10(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOpt
 		StopIfTrue: c.StopIfTrue,
 		Type:       "top",
 		Criteria:   "=",
-		Format:     *c.DxfID,
 		Percent:    c.Percent,
 		Value:      strconv.Itoa(c.Rank),
+	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
 	}
 	if c.Bottom {
 		format.Type = "bottom"
@@ -2804,68 +2870,88 @@ func extractCondFmtTop10(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOpt
 // settings for above average and below average by given conditional formatting
 // rule.
 func extractCondFmtAboveAverage(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{
-		StopIfTrue:   c.StopIfTrue,
-		Type:         "average",
-		Criteria:     "=",
-		Format:       *c.DxfID,
-		AboveAverage: *c.AboveAverage,
+	format := ConditionalFormatOptions{
+		StopIfTrue: c.StopIfTrue,
+		Type:       "average",
+		Criteria:   "=",
 	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	if c.AboveAverage != nil {
+		format.AboveAverage = *c.AboveAverage
+	}
+	return format
 }
 
 // extractCondFmtDuplicateUniqueValues provides a function to extract
 // conditional format settings for duplicate and unique values by given
 // conditional formatting rule.
 func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{
+	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type: map[string]string{
 			"duplicateValues": "duplicate",
 			"uniqueValues":    "unique",
 		}[c.Type],
 		Criteria: "=",
-		Format:   *c.DxfID,
 	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtBlanks provides a function to extract conditional format
 // settings for blank cells by given conditional formatting rule.
 func extractCondFmtBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{
+	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "blanks",
-		Format:     *c.DxfID,
 	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtNoBlanks provides a function to extract conditional format
 // settings for no blank cells by given conditional formatting rule.
 func extractCondFmtNoBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{
+	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "no_blanks",
-		Format:     *c.DxfID,
 	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtErrors provides a function to extract conditional format
 // settings for cells with errors by given conditional formatting rule.
 func extractCondFmtErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{
+	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "errors",
-		Format:     *c.DxfID,
 	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtNoErrors provides a function to extract conditional format
 // settings for cells without errors by given conditional formatting rule.
 func extractCondFmtNoErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{
+	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "no_errors",
-		Format:     *c.DxfID,
 	}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
+	return format
 }
 
 // extractCondFmtColorScale provides a function to extract conditional format
@@ -2960,7 +3046,10 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 // extractCondFmtExp provides a function to extract conditional format settings
 // for expression by given conditional formatting rule.
 func extractCondFmtExp(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "formula", Format: *c.DxfID}
+	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "formula"}
+	if c.DxfID != nil {
+		format.Format = *c.DxfID
+	}
 	if len(c.Formula) > 0 {
 		format.Criteria = c.Formula[0]
 	}
@@ -3032,7 +3121,7 @@ func drawCondFmtCellIs(p int, ct, ref, GUID string, format *ConditionalFormatOpt
 	if ct == "between" || ct == "notBetween" {
 		c.Formula = append(c.Formula, []string{format.MinValue, format.MaxValue}...)
 	}
-	if inStrSlice([]string{"equal", "notEqual", "greaterThan", "lessThan", "greaterThanOrEqual", "lessThanOrEqual", "containsText", "notContains", "beginsWith", "endsWith"}, ct, true) != -1 {
+	if inStrSlice(cellIsCriteriaType, ct, true) != -1 {
 		c.Formula = append(c.Formula, format.Value)
 	}
 	return c, nil
@@ -3277,44 +3366,7 @@ func drawCondFmtNoBlanks(p int, ct, ref, GUID string, format *ConditionalFormatO
 // drawCondFmtIconSet provides a function to create conditional formatting rule
 // for icon set by given priority, criteria type and format settings.
 func drawCondFmtIconSet(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
-	cfvo3 := &xlsxCfRule{IconSet: &xlsxIconSet{Cfvo: []*xlsxCfvo{
-		{Type: "percent", Val: "0"},
-		{Type: "percent", Val: "33"},
-		{Type: "percent", Val: "67"},
-	}}}
-	cfvo4 := &xlsxCfRule{IconSet: &xlsxIconSet{Cfvo: []*xlsxCfvo{
-		{Type: "percent", Val: "0"},
-		{Type: "percent", Val: "25"},
-		{Type: "percent", Val: "50"},
-		{Type: "percent", Val: "75"},
-	}}}
-	cfvo5 := &xlsxCfRule{IconSet: &xlsxIconSet{Cfvo: []*xlsxCfvo{
-		{Type: "percent", Val: "0"},
-		{Type: "percent", Val: "20"},
-		{Type: "percent", Val: "40"},
-		{Type: "percent", Val: "60"},
-		{Type: "percent", Val: "80"},
-	}}}
-	presets := map[string]*xlsxCfRule{
-		"3Arrows":         cfvo3,
-		"3ArrowsGray":     cfvo3,
-		"3Flags":          cfvo3,
-		"3Signs":          cfvo3,
-		"3Symbols":        cfvo3,
-		"3Symbols2":       cfvo3,
-		"3TrafficLights1": cfvo3,
-		"3TrafficLights2": cfvo3,
-		"4Arrows":         cfvo4,
-		"4ArrowsGray":     cfvo4,
-		"4Rating":         cfvo4,
-		"4RedToBlack":     cfvo4,
-		"4TrafficLights":  cfvo4,
-		"5Arrows":         cfvo5,
-		"5ArrowsGray":     cfvo5,
-		"5Quarters":       cfvo5,
-		"5Rating":         cfvo5,
-	}
-	cfRule, ok := presets[format.IconStyle]
+	cfRule, ok := condFmtIconSetPresets[format.IconStyle]
 	if !ok {
 		return nil, nil
 	}
