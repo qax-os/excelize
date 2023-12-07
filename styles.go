@@ -3238,7 +3238,7 @@ func drawCondFmtErrors(p int, ct, ref, GUID string, format *ConditionalFormatOpt
 	}, nil
 }
 
-// drawCondFmtErrors provides a function to create conditional formatting rule
+// drawCondFmtNoErrors provides a function to create conditional formatting rule
 // for cells without errors by given priority, criteria type and format settings.
 func drawCondFmtNoErrors(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
 	return &xlsxCfRule{
@@ -3250,7 +3250,7 @@ func drawCondFmtNoErrors(p int, ct, ref, GUID string, format *ConditionalFormatO
 	}, nil
 }
 
-// drawCondFmtErrors provides a function to create conditional formatting rule
+// drawCondFmtBlanks provides a function to create conditional formatting rule
 // for blank cells by given priority, criteria type and format settings.
 func drawCondFmtBlanks(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
 	return &xlsxCfRule{
@@ -3262,7 +3262,7 @@ func drawCondFmtBlanks(p int, ct, ref, GUID string, format *ConditionalFormatOpt
 	}, nil
 }
 
-// drawCondFmtErrors provides a function to create conditional formatting rule
+// drawCondFmtNoBlanks provides a function to create conditional formatting rule
 // for no blanks cells by given priority, criteria type and format settings.
 func drawCondFmtNoBlanks(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
 	return &xlsxCfRule{

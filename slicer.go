@@ -349,7 +349,7 @@ func (f *File) genSlicerName(name string) string {
 	return slicerName
 }
 
-// genSlicerNames generates a unique slicer cache name by giving the slicer name.
+// genSlicerCacheName generates a unique slicer cache name by giving the slicer name.
 func (f *File) genSlicerCacheName(name string) string {
 	var (
 		cnt             int

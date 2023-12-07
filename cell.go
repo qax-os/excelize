@@ -547,7 +547,7 @@ func (c *xlsxC) setStr(val string) {
 	c.V, c.XMLSpace = trimCellValue(val, false)
 }
 
-// getCellDate parse cell value which containing a boolean.
+// getCellBool parse cell value which containing a boolean.
 func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
 	if !raw {
 		if c.V == "1" {

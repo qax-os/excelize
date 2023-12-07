@@ -676,7 +676,7 @@ func (c *cfb) writeUint64(value int) {
 	c.writeBytes(buf)
 }
 
-// writeBytes write strings in the stream by a given value with an offset.
+// writeStrings write strings in the stream by a given value with an offset.
 func (c *cfb) writeStrings(value string) {
 	encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
 	buffer, err := encoder.Bytes([]byte(value))
