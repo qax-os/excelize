@@ -443,13 +443,6 @@ type Shape struct {
 	Paragraph []RichTextRun
 }
 
-// ShapeColor directly maps the color settings of the shape.
-type ShapeColor struct {
-	Line   string
-	Fill   string
-	Effect string
-}
-
 // ShapeLine directly maps the line settings of the shape.
 type ShapeLine struct {
 	Color string
