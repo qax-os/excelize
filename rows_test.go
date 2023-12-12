@@ -353,6 +353,15 @@ func TestRemoveRow(t *testing.T) {
 	assert.NoError(t, f.RemoveRow(sheet1, 10))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
 
+	f = NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A1", "C1"))
+	assert.NoError(t, f.MergeCell("Sheet1", "A2", "C2"))
+	assert.NoError(t, f.RemoveRow("Sheet1", 1))
+	mergedCells, err := f.GetMergeCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "A1", mergedCells[0].GetStartAxis())
+	assert.Equal(t, "C1", mergedCells[0].GetEndAxis())
+
 	// Test remove row on not exist worksheet
 	assert.EqualError(t, f.RemoveRow("SheetN", 1), "sheet SheetN does not exist")
 	// Test remove row with invalid sheet name
