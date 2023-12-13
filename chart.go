@@ -688,11 +688,11 @@ func (opts *Chart) parseTitle() {
 //
 //	Name
 //	Categories
-//	Sizes
 //	Values
 //	Fill
 //	Line
 //	Marker
+//	DataLabelPosition
 //
 // Name: Set the name for the series. The name is displayed in the chart legend
 // and in the formula bar. The 'Name' property is optional and if it isn't
@@ -702,8 +702,6 @@ func (opts *Chart) parseTitle() {
 // Categories: This sets the chart category labels. The category is more or less
 // the same as the X axis. In most chart types the 'Categories' property is
 // optional and the chart will just assume a sequential series from 1..n.
-//
-// Sizes: This sets the bubble size in a data series.
 //
 // Values: This is the most important property of a series and is the only
 // mandatory option for every chart object. This option links the chart with
@@ -732,6 +730,8 @@ func (opts *Chart) parseTitle() {
 //	triangle
 //	x
 //	auto
+//
+// DataLabelPosition: This sets the position of the chart series data label.
 //
 // Set properties of the chart legend. The options that can be set are:
 //
@@ -776,11 +776,11 @@ func (opts *Chart) parseTitle() {
 // Specifies that each data marker in the series has a different color by
 // 'VaryColors'. The default value is true.
 //
-// Set chart offset, scale, aspect ratio setting and print settings by format,
+// Set chart offset, scale, aspect ratio setting and print settings by 'Format',
 // same as function 'AddPicture'.
 //
-// Set the position of the chart plot area by PlotArea. The properties that can
-// be set are:
+// Set the position of the chart plot area by 'PlotArea'. The properties that
+// can be set are:
 //
 //	SecondPlotValues
 //	ShowBubbleSize
@@ -890,6 +890,15 @@ func (opts *Chart) parseTitle() {
 //
 // Set chart size by 'Dimension' property. The 'Dimension' property is optional.
 // The default width is 480, and height is 260.
+//
+// Set the bubble size in all data series for the bubble chart or 3D bubble
+// chart  by 'BubbleSizes' property. The 'BubbleSizes' property is optional.
+// The default width is 100, and the value should be great than 0 and less or
+// equal than 300.
+//
+// Set the doughnut hole size in all data series for the doughnut chart by
+// 'HoleSize' property. The 'HoleSize' property is optional. The default width
+// is 75, and the value should be great than 0 and less or equal than 90.
 //
 // combo: Specifies the create a chart that combines two or more chart types in
 // a single chart. For example, create a clustered column - line chart with

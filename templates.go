@@ -217,6 +217,54 @@ const (
 	ColorMappingTypeUnset int = -1
 )
 
+// ChartDataLabelPositionType is the type of chart data labels position.
+type ChartDataLabelPositionType byte
+
+// Chart data labels positions types enumeration.
+const (
+	ChartDataLabelsPositionUnset ChartDataLabelPositionType = iota
+	ChartDataLabelsPositionBestFit
+	ChartDataLabelsPositionBelow
+	ChartDataLabelsPositionCenter
+	ChartDataLabelsPositionInsideBase
+	ChartDataLabelsPositionInsideEnd
+	ChartDataLabelsPositionLeft
+	ChartDataLabelsPositionOutsideEnd
+	ChartDataLabelsPositionRight
+	ChartDataLabelsPositionAbove
+)
+
+// chartDataLabelsPositionTypes defined supported chart data labels position
+// types.
+var chartDataLabelsPositionTypes = map[ChartDataLabelPositionType]string{
+	ChartDataLabelsPositionBestFit:    "bestFit",
+	ChartDataLabelsPositionBelow:      "b",
+	ChartDataLabelsPositionCenter:     "ctr",
+	ChartDataLabelsPositionInsideBase: "inBase",
+	ChartDataLabelsPositionInsideEnd:  "inEnd",
+	ChartDataLabelsPositionLeft:       "l",
+	ChartDataLabelsPositionOutsideEnd: "outEnd",
+	ChartDataLabelsPositionRight:      "r",
+	ChartDataLabelsPositionAbove:      "t",
+}
+
+// supportedChartDataLabelsPosition defined supported chart data labels position
+// types for each type of chart.
+var supportedChartDataLabelsPosition = map[ChartType][]ChartDataLabelPositionType{
+	Bar:               {ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideBase, ChartDataLabelsPositionInsideEnd, ChartDataLabelsPositionOutsideEnd},
+	BarStacked:        {ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideBase, ChartDataLabelsPositionInsideEnd},
+	BarPercentStacked: {ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideBase, ChartDataLabelsPositionInsideEnd},
+	Col:               {ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideBase, ChartDataLabelsPositionInsideEnd, ChartDataLabelsPositionOutsideEnd},
+	ColStacked:        {ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideBase, ChartDataLabelsPositionInsideEnd},
+	ColPercentStacked: {ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideBase, ChartDataLabelsPositionInsideEnd},
+	Line:              {ChartDataLabelsPositionBelow, ChartDataLabelsPositionCenter, ChartDataLabelsPositionLeft, ChartDataLabelsPositionRight, ChartDataLabelsPositionAbove},
+	Pie:               {ChartDataLabelsPositionBestFit, ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideEnd, ChartDataLabelsPositionOutsideEnd},
+	Pie3D:             {ChartDataLabelsPositionBestFit, ChartDataLabelsPositionCenter, ChartDataLabelsPositionInsideEnd, ChartDataLabelsPositionOutsideEnd},
+	Scatter:           {ChartDataLabelsPositionBelow, ChartDataLabelsPositionCenter, ChartDataLabelsPositionLeft, ChartDataLabelsPositionRight, ChartDataLabelsPositionAbove},
+	Bubble:            {ChartDataLabelsPositionBelow, ChartDataLabelsPositionCenter, ChartDataLabelsPositionLeft, ChartDataLabelsPositionRight, ChartDataLabelsPositionAbove},
+	Bubble3D:          {ChartDataLabelsPositionBelow, ChartDataLabelsPositionCenter, ChartDataLabelsPositionLeft, ChartDataLabelsPositionRight, ChartDataLabelsPositionAbove},
+}
+
 const (
 	defaultTempFileSST          = "sharedStrings"
 	defaultXMLPathCalcChain     = "xl/calcChain.xml"
