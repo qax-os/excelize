@@ -659,6 +659,9 @@ func (f *File) drawBubbleChart(opts *Chart) *cPlotArea {
 		},
 		ValAx: []*cAxs{f.drawPlotAreaCatAx(opts)[0], f.drawPlotAreaValAx(opts)[0]},
 	}
+	if opts.BubbleSize > 0 && opts.BubbleSize <= 300 {
+		plotArea.BubbleChart.BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
+	}
 	return plotArea
 }
 
@@ -710,7 +713,7 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 			SpPr:             f.drawChartSeriesSpPr(k, opts),
 			Marker:           f.drawChartSeriesMarker(k, opts),
 			DPt:              f.drawChartSeriesDPt(k, opts),
-			DLbls:            f.drawChartSeriesDLbls(opts),
+			DLbls:            f.drawChartSeriesDLbls(k, opts),
 			InvertIfNegative: &attrValBool{Val: boolPtr(false)},
 			Cat:              f.drawChartSeriesCat(opts.Series[k], opts),
 			Smooth:           &attrValBool{Val: boolPtr(opts.Series[k].Line.Smooth)},
@@ -885,12 +888,12 @@ func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 // drawCharSeriesBubbleSize provides a function to draw the c:bubbleSize
 // element by given chart series and format sets.
 func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
-	if _, ok := map[ChartType]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok || v.Sizes == "" {
+	if _, ok := map[ChartType]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok {
 		return nil
 	}
 	return &cVal{
 		NumRef: &cNumRef{
-			F: v.Sizes,
+			F: v.Values,
 		},
 	}
 }
@@ -932,15 +935,32 @@ func (f *File) drawChartDLbls(opts *Chart) *cDLbls {
 	}
 }
 
+// inSupportedChartDataLabelsPositionType provides a method to check if an
+// element is present in an array, and return the index of its location,
+// otherwise return -1.
+func inSupportedChartDataLabelsPositionType(a []ChartDataLabelPositionType, x ChartDataLabelPositionType) int {
+	for idx, n := range a {
+		if x == n {
+			return idx
+		}
+	}
+	return -1
+}
+
 // drawChartSeriesDLbls provides a function to draw the c:dLbls element by
 // given format sets.
-func (f *File) drawChartSeriesDLbls(opts *Chart) *cDLbls {
+func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
 	dLbls := f.drawChartDLbls(opts)
 	chartSeriesDLbls := map[ChartType]*cDLbls{
-		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil, Bubble: nil, Bubble3D: nil,
+		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil,
 	}
 	if _, ok := chartSeriesDLbls[opts.Type]; ok {
 		return nil
+	}
+	if types, ok := supportedChartDataLabelsPosition[opts.Type]; ok && opts.Series[i].DataLabelPosition != ChartDataLabelsPositionUnset {
+		if inSupportedChartDataLabelsPositionType(types, opts.Series[i].DataLabelPosition) != -1 {
+			dLbls.DLblPos = &attrValString{Val: stringPtr(chartDataLabelsPositionTypes[opts.Series[i].DataLabelPosition])}
+		}
 	}
 	return dLbls
 }

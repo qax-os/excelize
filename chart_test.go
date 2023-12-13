@@ -176,14 +176,14 @@ func TestAddChart(t *testing.T) {
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
 	series4 := []ChartSeries{
-		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Sizes: "Sheet1!$B$30:$D$30"},
-		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", Sizes: "Sheet1!$B$31:$D$31"},
-		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", Sizes: "Sheet1!$B$32:$D$32"},
-		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33", Sizes: "Sheet1!$B$33:$D$33"},
-		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34", Sizes: "Sheet1!$B$34:$D$34"},
-		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35", Sizes: "Sheet1!$B$35:$D$35"},
-		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36", Sizes: "Sheet1!$B$36:$D$36"},
-		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Sizes: "Sheet1!$B$37:$D$37"},
+		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", DataLabelPosition: ChartDataLabelsPositionAbove},
+		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", DataLabelPosition: ChartDataLabelsPositionLeft},
+		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", DataLabelPosition: ChartDataLabelsPositionBestFit},
+		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33", DataLabelPosition: ChartDataLabelsPositionCenter},
+		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34", DataLabelPosition: ChartDataLabelsPositionInsideBase},
+		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35", DataLabelPosition: ChartDataLabelsPositionInsideEnd},
+		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36", DataLabelPosition: ChartDataLabelsPositionOutsideEnd},
+		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", DataLabelPosition: ChartDataLabelsPositionRight},
 	}
 	format := GraphicOptions{
 		ScaleX:          defaultDrawingScale,
@@ -265,7 +265,7 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "AV32", opts: &Chart{Type: Contour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "BD1", opts: &Chart{Type: WireframeContour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Wireframe Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// bubble chart
-		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", BubbleSize: 75}},
 		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: Bubble3D, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// pie of pie chart
 		{sheetName: "Sheet2", cell: "BD48", opts: &Chart{Type: PieOfPie, Series: series3, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Pie of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},

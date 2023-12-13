@@ -482,14 +482,15 @@ type cNumCache struct {
 // entire series or the entire chart. It contains child elements that specify
 // the specific formatting and positioning settings.
 type cDLbls struct {
-	NumFmt          *cNumFmt     `xml:"numFmt"`
-	ShowLegendKey   *attrValBool `xml:"showLegendKey"`
-	ShowVal         *attrValBool `xml:"showVal"`
-	ShowCatName     *attrValBool `xml:"showCatName"`
-	ShowSerName     *attrValBool `xml:"showSerName"`
-	ShowPercent     *attrValBool `xml:"showPercent"`
-	ShowBubbleSize  *attrValBool `xml:"showBubbleSize"`
-	ShowLeaderLines *attrValBool `xml:"showLeaderLines"`
+	NumFmt          *cNumFmt       `xml:"numFmt"`
+	DLblPos         *attrValString `xml:"dLblPos"`
+	ShowLegendKey   *attrValBool   `xml:"showLegendKey"`
+	ShowVal         *attrValBool   `xml:"showVal"`
+	ShowCatName     *attrValBool   `xml:"showCatName"`
+	ShowSerName     *attrValBool   `xml:"showSerName"`
+	ShowPercent     *attrValBool   `xml:"showPercent"`
+	ShowBubbleSize  *attrValBool   `xml:"showBubbleSize"`
+	ShowLeaderLines *attrValBool   `xml:"showLeaderLines"`
 }
 
 // cLegend (Legend) directly maps the legend element. This element specifies
@@ -577,6 +578,7 @@ type Chart struct {
 	PlotArea     ChartPlotArea
 	Border       ChartLine
 	ShowBlanksAs string
+	BubbleSize   int
 	HoleSize     int
 	order        int
 }
@@ -602,11 +604,11 @@ type ChartLine struct {
 
 // ChartSeries directly maps the format settings of the chart series.
 type ChartSeries struct {
-	Name       string
-	Categories string
-	Sizes      string
-	Values     string
-	Fill       Fill
-	Line       ChartLine
-	Marker     ChartMarker
+	Name              string
+	Categories        string
+	Values            string
+	Fill              Fill
+	Line              ChartLine
+	Marker            ChartMarker
+	DataLabelPosition ChartDataLabelPositionType
 }
