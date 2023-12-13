@@ -618,6 +618,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, sheet string, dir adjustDirec
 		if dir == rows {
 			if y1 == num && y2 == num && offset < 0 {
 				f.deleteMergeCell(ws, i)
+				i--
 				continue
 			}
 
@@ -625,6 +626,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, sheet string, dir adjustDirec
 		} else {
 			if x1 == num && x2 == num && offset < 0 {
 				f.deleteMergeCell(ws, i)
+				i--
 				continue
 			}
 
@@ -644,8 +646,8 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, sheet string, dir adjustDirec
 }
 
 // adjustMergeCellsHelper provides a function for adjusting merge cells to
-// compare and calculate cell reference by the given pivot, operation reference and
-// offset.
+// compare and calculate cell reference by the given pivot, operation reference
+// and offset.
 func (f *File) adjustMergeCellsHelper(p1, p2, num, offset int) (int, int) {
 	if p2 < p1 {
 		p1, p2 = p2, p1
