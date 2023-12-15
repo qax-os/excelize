@@ -2236,6 +2236,8 @@ func TestCalcCellValue(t *testing.T) {
 		// YIELDMAT
 		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5.5%,101)":   "0.0419422478838651",
 		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5.5%,101,0)": "0.0419422478838651",
+		// DISPIMG
+		"=_xlfn.DISPIMG(\"ID_********************************\",1)": "ID_********************************",
 	}
 	for formula, expected := range mathCalc {
 		f := prepareCalcData(cellData)
@@ -4609,6 +4611,8 @@ func TestCalcCellValue(t *testing.T) {
 		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",-1,101,0)":    {"#NUM!", "YIELDMAT requires rate >= 0"},
 		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",1,0,0)":       {"#NUM!", "YIELDMAT requires pr > 0"},
 		"=YIELDMAT(\"01/01/2017\",\"06/30/2018\",\"06/01/2014\",5.5%,101,5)":  {"#NUM!", "invalid basis"},
+		// DISPIMG
+		"=_xlfn.DISPIMG()": {"#VALUE!", "DISPIMG requires 2 numeric arguments"},
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareCalcData(cellData)

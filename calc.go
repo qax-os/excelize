@@ -18640,3 +18640,14 @@ func (fn *formulaFuncs) DVAR(argsList *list.List) formulaArg {
 func (fn *formulaFuncs) DVARP(argsList *list.List) formulaArg {
 	return fn.database("DVARP", argsList)
 }
+
+// DISPIMG function calculates the Kingsoft WPS Office embedded image ID. The
+// syntax of the function is:
+//
+//	DISPIMG(picture_name,display_mode)
+func (fn *formulaFuncs) DISPIMG(argsList *list.List) formulaArg {
+	if argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DISPIMG requires 2 numeric arguments")
+	}
+	return argsList.Front().Value.(formulaArg)
+}

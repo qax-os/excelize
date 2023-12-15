@@ -216,6 +216,7 @@ func TestGetPicture(t *testing.T) {
 	cells, err := f.GetPictureCells("Sheet2")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"K16"}, cells)
+	assert.NoError(t, f.Close())
 
 	// Test get picture from none drawing worksheet
 	f = NewFile()
@@ -229,11 +230,41 @@ func TestGetPicture(t *testing.T) {
 	path := "xl/drawings/drawing1.xml"
 	f.Drawings.Delete(path)
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	_, err = f.GetPictures("Sheet1", "F21")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	_, err = f.getPicture(20, 5, path, "xl/drawings/_rels/drawing2.xml.rels")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	f.Drawings.Delete(path)
 	_, err = f.getPicture(20, 5, path, "xl/drawings/_rels/drawing2.xml.rels")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	// Test get embedded cell pictures
+	f, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "F21", "=_xlfn.DISPIMG(\"ID_********************************\",1)"))
+	f.Pkg.Store(defaultXMLPathCellImages, []byte(`<etc:cellImages xmlns:etc="http://www.wps.cn/officeDocument/2017/etCustomData"><etc:cellImage><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="1" name="ID_********************************" descr="CellImage1"/></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/></xdr:blipFill></xdr:pic></etc:cellImage></etc:cellImages>`))
+	f.Pkg.Store(defaultXMLPathCellImagesRels, []byte(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.jpeg"/></Relationships>`))
+	pics, err = f.GetPictures("Sheet1", "F21")
+	assert.NoError(t, err)
+	assert.Len(t, pics, 2)
+	assert.Equal(t, "CellImage1", pics[0].Format.AltText)
+
+	// Test get embedded cell pictures with invalid formula
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=_xlfn.DISPIMG()"))
+	_, err = f.GetPictures("Sheet1", "A1")
+	assert.EqualError(t, err, "DISPIMG requires 2 numeric arguments")
+
+	// Test get embedded cell pictures with unsupported charset
+	f.Relationships.Delete(defaultXMLPathCellImagesRels)
+	f.Pkg.Store(defaultXMLPathCellImagesRels, MacintoshCyrillicCharset)
+	_, err = f.GetPictures("Sheet1", "F21")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	f.Pkg.Store(defaultXMLPathCellImages, MacintoshCyrillicCharset)
+	f.DecodeCellImages = nil
+	_, err = f.GetPictures("Sheet1", "F21")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
 }
 
 func TestAddDrawingPicture(t *testing.T) {
@@ -393,4 +424,13 @@ func TestExtractDecodeCellAnchor(t *testing.T) {
 	cond := func(a *decodeFrom) bool { return true }
 	cb := func(a *decodeCellAnchor, r *xlsxRelationship) {}
 	f.extractDecodeCellAnchor(&xdrCellAnchor{GraphicFrame: string(MacintoshCyrillicCharset)}, "", cond, cb)
+}
+
+func TestGetCellImages(t *testing.T) {
+	f := NewFile()
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	_, err := f.getCellImages("Sheet1", "A1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
 }
