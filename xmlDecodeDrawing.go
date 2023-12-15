@@ -83,7 +83,7 @@ type decodeCNvSpPr struct {
 // changed after serialization and deserialization, two different structures
 // are defined. decodeWsDr just for deserialization.
 type decodeWsDr struct {
-	XMLName          xml.Name            `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr,omitempty"`
+	XMLName          xml.Name            `xml:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing wsDr"`
 	A                string              `xml:"xmlns a,attr"`
 	Xdr              string              `xml:"xmlns xdr,attr"`
 	R                string              `xml:"xmlns r,attr"`
@@ -241,4 +241,16 @@ type decodeTo struct {
 type decodeClientData struct {
 	FLocksWithSheet  bool `xml:"fLocksWithSheet,attr"`
 	FPrintsWithSheet bool `xml:"fPrintsWithSheet,attr"`
+}
+
+// decodeCellImages directly maps the Kingsoft WPS Office embedded cell images.
+type decodeCellImages struct {
+	XMLName   xml.Name          `xml:"http://www.wps.cn/officeDocument/2017/etCustomData cellImages"`
+	CellImage []decodeCellImage `xml:"cellImage"`
+}
+
+// decodeCellImage defines the structure used to deserialize the Kingsoft WPS
+// Office embedded cell images.
+type decodeCellImage struct {
+	Pic decodePic `xml:"pic"`
 }

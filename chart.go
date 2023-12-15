@@ -892,9 +892,9 @@ func (opts *Chart) parseTitle() {
 // The default width is 480, and height is 260.
 //
 // Set the bubble size in all data series for the bubble chart or 3D bubble
-// chart  by 'BubbleSizes' property. The 'BubbleSizes' property is optional.
-// The default width is 100, and the value should be great than 0 and less or
-// equal than 300.
+// chart by 'BubbleSizes' property. The 'BubbleSizes' property is optional. The
+// default width is 100, and the value should be great than 0 and less or equal
+// than 300.
 //
 // Set the doughnut hole size in all data series for the doughnut chart by
 // 'HoleSize' property. The 'HoleSize' property is optional. The default width
@@ -932,7 +932,7 @@ func (opts *Chart) parseTitle() {
 //	    }
 //	    enable, disable := true, false
 //	    if err := f.AddChart("Sheet1", "E1", &excelize.Chart{
-//	        Type: "col",
+//	        Type: excelize.Col,
 //	        Series: []excelize.ChartSeries{
 //	            {
 //	                Name:       "Sheet1!$A$2",
@@ -966,7 +966,7 @@ func (opts *Chart) parseTitle() {
 //	            ShowVal:         true,
 //	        },
 //	    }, &excelize.Chart{
-//	        Type: "line",
+//	        Type: excelize.Line,
 //	        Series: []excelize.ChartSeries{
 //	            {
 //	                Name:       "Sheet1!$A$4",
