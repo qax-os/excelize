@@ -9,8 +9,8 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/xuri/efp v0.0.0-20230802181842-ad255f2331ca
 	github.com/xuri/nfp v0.0.0-20230919160717-d98342af3f05
-	golang.org/x/crypto v0.14.0
+	golang.org/x/crypto v0.17.0
 	golang.org/x/image v0.11.0
 	golang.org/x/net v0.17.0
-	golang.org/x/text v0.13.0
+	golang.org/x/text v0.14.0
 )
