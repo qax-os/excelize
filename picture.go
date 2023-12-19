@@ -497,14 +497,21 @@ func (f *File) GetPictureCells(sheet string) ([]string, error) {
 	}
 	f.mu.Unlock()
 	if ws.Drawing == nil {
-		return nil, err
+		return f.getEmbeddedImageCells(sheet)
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	drawingRelationships := strings.ReplaceAll(
 		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
-
-	return f.getPictureCells(drawingXML, drawingRelationships)
+	embeddedImageCells, err := f.getEmbeddedImageCells(sheet)
+	if err != nil {
+		return nil, err
+	}
+	imageCells, err := f.getPictureCells(drawingXML, drawingRelationships)
+	if err != nil {
+		return nil, err
+	}
+	return append(embeddedImageCells, imageCells...), err
 }
 
 // DeletePicture provides a function to delete all pictures in a cell by given
@@ -762,6 +769,31 @@ func (f *File) cellImagesReader() (*decodeCellImages, error) {
 		}
 	}
 	return f.DecodeCellImages, nil
+}
+
+// getEmbeddedImageCells returns all the Kingsoft WPS Office embedded image
+// cells reference by given worksheet name.
+func (f *File) getEmbeddedImageCells(sheet string) ([]string, error) {
+	var (
+		err   error
+		cells []string
+	)
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return cells, err
+	}
+	for _, row := range ws.SheetData.Row {
+		for _, c := range row.C {
+			if c.F != nil && c.F.Content != "" &&
+				strings.HasPrefix(strings.TrimPrefix(strings.TrimPrefix(c.F.Content, "="), "_xlfn."), "DISPIMG") {
+				if _, err = f.CalcCellValue(sheet, c.R); err != nil {
+					return cells, err
+				}
+				cells = append(cells, c.R)
+			}
+		}
+	}
+	return cells, err
 }
 
 // getCellImages provides a function to get the Kingsoft WPS Office embedded

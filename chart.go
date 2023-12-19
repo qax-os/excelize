@@ -789,6 +789,7 @@ func (opts *Chart) parseTitle() {
 //	ShowPercent
 //	ShowSerName
 //	ShowVal
+//	NumFmt
 //
 // SecondPlotValues: Specifies the values in second plot for the 'pieOfPie' and
 // 'barOfPie' chart.
@@ -810,6 +811,10 @@ func (opts *Chart) parseTitle() {
 //
 // ShowVal: Specifies that the value shall be shown in a data label.
 // The 'ShowVal' property is optional. The default value is false.
+//
+// NumFmt: Specifies that if linked to source and set custom number format code
+// for data labels. The 'NumFmt' property is optional. The default format code
+// is 'General'.
 //
 // Set the primary horizontal and vertical axis options by 'XAxis' and 'YAxis'.
 // The properties of 'XAxis' that can be set are:

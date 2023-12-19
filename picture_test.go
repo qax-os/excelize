@@ -417,6 +417,21 @@ func TestGetPictureCells(t *testing.T) {
 	// Test get picture cells on not exists worksheet
 	_, err = f.GetPictureCells("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.NoError(t, f.Close())
+
+	// Test get embedded picture cells
+	f = NewFile()
+	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), nil))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=_xlfn.DISPIMG(\"ID_********************************\",1)"))
+	cells, err = f.GetPictureCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"A2", "A1"}, cells)
+
+	// Test get embedded cell pictures with invalid formula
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=_xlfn.DISPIMG()"))
+	_, err = f.GetPictureCells("Sheet1")
+	assert.EqualError(t, err, "DISPIMG requires 2 numeric arguments")
+	assert.NoError(t, f.Close())
 }
 
 func TestExtractDecodeCellAnchor(t *testing.T) {
@@ -431,6 +446,15 @@ func TestGetCellImages(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err := f.getCellImages("Sheet1", "A1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+}
+
+func TestGetEmbeddedImageCells(t *testing.T) {
+	f := NewFile()
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	_, err := f.getEmbeddedImageCells("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
