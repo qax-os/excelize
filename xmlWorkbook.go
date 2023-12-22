@@ -142,19 +142,19 @@ type xlsxBookViews struct {
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main This element
 // specifies a single Workbook view.
 type xlsxWorkBookView struct {
-	Visibility             string `xml:"visibility,attr,omitempty"`
-	Minimized              bool   `xml:"minimized,attr,omitempty"`
-	ShowHorizontalScroll   *bool  `xml:"showHorizontalScroll,attr"`
-	ShowVerticalScroll     *bool  `xml:"showVerticalScroll,attr"`
-	ShowSheetTabs          *bool  `xml:"showSheetTabs,attr"`
-	XWindow                string `xml:"xWindow,attr,omitempty"`
-	YWindow                string `xml:"yWindow,attr,omitempty"`
-	WindowWidth            int    `xml:"windowWidth,attr,omitempty"`
-	WindowHeight           int    `xml:"windowHeight,attr,omitempty"`
-	TabRatio               int    `xml:"tabRatio,attr,omitempty"`
-	FirstSheet             int    `xml:"firstSheet,attr,omitempty"`
-	ActiveTab              int    `xml:"activeTab,attr,omitempty"`
-	AutoFilterDateGrouping *bool  `xml:"autoFilterDateGrouping,attr"`
+	Visibility             string  `xml:"visibility,attr,omitempty"`
+	Minimized              bool    `xml:"minimized,attr,omitempty"`
+	ShowHorizontalScroll   *bool   `xml:"showHorizontalScroll,attr"`
+	ShowVerticalScroll     *bool   `xml:"showVerticalScroll,attr"`
+	ShowSheetTabs          *bool   `xml:"showSheetTabs,attr"`
+	XWindow                string  `xml:"xWindow,attr,omitempty"`
+	YWindow                string  `xml:"yWindow,attr,omitempty"`
+	WindowWidth            int     `xml:"windowWidth,attr,omitempty"`
+	WindowHeight           int     `xml:"windowHeight,attr,omitempty"`
+	TabRatio               float64 `xml:"tabRatio,attr,omitempty"`
+	FirstSheet             int     `xml:"firstSheet,attr,omitempty"`
+	ActiveTab              int     `xml:"activeTab,attr,omitempty"`
+	AutoFilterDateGrouping *bool   `xml:"autoFilterDateGrouping,attr"`
 }
 
 // xlsxSheets directly maps the sheets element from the namespace
@@ -349,30 +349,30 @@ type xlsxCustomWorkbookViews struct {
 // to implement configurable display modes, the customWorkbookView element
 // should be used to persist the settings for those display modes.
 type xlsxCustomWorkbookView struct {
-	ActiveSheetID        *int    `xml:"activeSheetId,attr"`
-	AutoUpdate           *bool   `xml:"autoUpdate,attr"`
-	ChangesSavedWin      *bool   `xml:"changesSavedWin,attr"`
-	GUID                 *string `xml:"guid,attr"`
-	IncludeHiddenRowCol  *bool   `xml:"includeHiddenRowCol,attr"`
-	IncludePrintSettings *bool   `xml:"includePrintSettings,attr"`
-	Maximized            *bool   `xml:"maximized,attr"`
-	MergeInterval        int     `xml:"mergeInterval,attr"`
-	Minimized            *bool   `xml:"minimized,attr"`
-	Name                 *string `xml:"name,attr"`
-	OnlySync             *bool   `xml:"onlySync,attr"`
-	PersonalView         *bool   `xml:"personalView,attr"`
-	ShowComments         *string `xml:"showComments,attr"`
-	ShowFormulaBar       *bool   `xml:"showFormulaBar,attr"`
-	ShowHorizontalScroll *bool   `xml:"showHorizontalScroll,attr"`
-	ShowObjects          *string `xml:"showObjects,attr"`
-	ShowSheetTabs        *bool   `xml:"showSheetTabs,attr"`
-	ShowStatusbar        *bool   `xml:"showStatusbar,attr"`
-	ShowVerticalScroll   *bool   `xml:"showVerticalScroll,attr"`
-	TabRatio             *int    `xml:"tabRatio,attr"`
-	WindowHeight         *int    `xml:"windowHeight,attr"`
-	WindowWidth          *int    `xml:"windowWidth,attr"`
-	XWindow              *int    `xml:"xWindow,attr"`
-	YWindow              *int    `xml:"yWindow,attr"`
+	ActiveSheetID        *int     `xml:"activeSheetId,attr"`
+	AutoUpdate           *bool    `xml:"autoUpdate,attr"`
+	ChangesSavedWin      *bool    `xml:"changesSavedWin,attr"`
+	GUID                 *string  `xml:"guid,attr"`
+	IncludeHiddenRowCol  *bool    `xml:"includeHiddenRowCol,attr"`
+	IncludePrintSettings *bool    `xml:"includePrintSettings,attr"`
+	Maximized            *bool    `xml:"maximized,attr"`
+	MergeInterval        int      `xml:"mergeInterval,attr"`
+	Minimized            *bool    `xml:"minimized,attr"`
+	Name                 *string  `xml:"name,attr"`
+	OnlySync             *bool    `xml:"onlySync,attr"`
+	PersonalView         *bool    `xml:"personalView,attr"`
+	ShowComments         *string  `xml:"showComments,attr"`
+	ShowFormulaBar       *bool    `xml:"showFormulaBar,attr"`
+	ShowHorizontalScroll *bool    `xml:"showHorizontalScroll,attr"`
+	ShowObjects          *string  `xml:"showObjects,attr"`
+	ShowSheetTabs        *bool    `xml:"showSheetTabs,attr"`
+	ShowStatusbar        *bool    `xml:"showStatusbar,attr"`
+	ShowVerticalScroll   *bool    `xml:"showVerticalScroll,attr"`
+	TabRatio             *float64 `xml:"tabRatio,attr"`
+	WindowHeight         *int     `xml:"windowHeight,attr"`
+	WindowWidth          *int     `xml:"windowWidth,attr"`
+	XWindow              *int     `xml:"xWindow,attr"`
+	YWindow              *int     `xml:"yWindow,attr"`
 }
 
 // DefinedName directly maps the name for a cell or cell range on a
