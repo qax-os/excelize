@@ -607,6 +607,7 @@ type ChartSeries struct {
 	Name              string
 	Categories        string
 	Values            string
+	Sizes             string
 	Fill              Fill
 	Line              ChartLine
 	Marker            ChartMarker

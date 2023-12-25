@@ -176,14 +176,14 @@ func TestAddChart(t *testing.T) {
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
 	series4 := []ChartSeries{
-		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", DataLabelPosition: ChartDataLabelsPositionAbove},
-		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", DataLabelPosition: ChartDataLabelsPositionLeft},
-		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", DataLabelPosition: ChartDataLabelsPositionBestFit},
-		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33", DataLabelPosition: ChartDataLabelsPositionCenter},
-		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34", DataLabelPosition: ChartDataLabelsPositionInsideBase},
-		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35", DataLabelPosition: ChartDataLabelsPositionInsideEnd},
-		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36", DataLabelPosition: ChartDataLabelsPositionOutsideEnd},
-		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", DataLabelPosition: ChartDataLabelsPositionRight},
+		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Sizes: "Sheet1!$B$30:$D$30", DataLabelPosition: ChartDataLabelsPositionAbove},
+		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", Sizes: "Sheet1!$B$31:$D$31", DataLabelPosition: ChartDataLabelsPositionLeft},
+		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", Sizes: "Sheet1!$B$32:$D$32", DataLabelPosition: ChartDataLabelsPositionBestFit},
+		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33", Sizes: "Sheet1!$B$33:$D$33", DataLabelPosition: ChartDataLabelsPositionCenter},
+		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34", Sizes: "Sheet1!$B$34:$D$34", DataLabelPosition: ChartDataLabelsPositionInsideBase},
+		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35", Sizes: "Sheet1!$B$35:$D$35", DataLabelPosition: ChartDataLabelsPositionInsideEnd},
+		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36", Sizes: "Sheet1!$B$36:$D$36", DataLabelPosition: ChartDataLabelsPositionOutsideEnd},
+		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Sizes: "Sheet1!$B$37:$D$37", DataLabelPosition: ChartDataLabelsPositionRight},
 	}
 	format := GraphicOptions{
 		ScaleX:          defaultDrawingScale,

@@ -891,9 +891,13 @@ func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
 	if _, ok := map[ChartType]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok {
 		return nil
 	}
+	fVal := v.Values
+	if v.Sizes != "" {
+		fVal = v.Sizes
+	}
 	return &cVal{
 		NumRef: &cNumRef{
-			F: v.Values,
+			F: fVal,
 		},
 	}
 }

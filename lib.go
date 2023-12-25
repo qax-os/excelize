@@ -431,8 +431,8 @@ func boolPtr(b bool) *bool { return &b }
 // intPtr returns a pointer to an int with the given value.
 func intPtr(i int) *int { return &i }
 
-// uintPtr returns a pointer to an int with the given value.
-func uintPtr(i uint) *uint { return &i }
+// uintPtr returns a pointer to an unsigned integer with the given value.
+func uintPtr(u uint) *uint { return &u }
 
 // float64Ptr returns a pointer to a float64 with the given value.
 func float64Ptr(f float64) *float64 { return &f }

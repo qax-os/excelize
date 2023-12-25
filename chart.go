@@ -707,7 +707,11 @@ func (opts *Chart) parseTitle() {
 // mandatory option for every chart object. This option links the chart with
 // the worksheet data that it displays.
 //
-// Fill: This set the format for the data series fill.
+// Sizes: This sets the bubble size in a data series. The 'Sizes' property is
+// optional and the default value was same with 'Values'.
+//
+// Fill: This set the format for the data series fill. The 'Fill' property is
+// optional
 //
 // Line: This sets the line format of the line chart. The 'Line' property is
 // optional and if it isn't supplied it will default style. The options that
