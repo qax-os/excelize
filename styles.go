@@ -1161,25 +1161,61 @@ var (
 		"iconSet":           drawCondFmtIconSet,
 	}
 	// extractContFmtFunc defines functions to get conditional formats.
-	extractContFmtFunc = map[string]func(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions{
-		"cellIs":            extractCondFmtCellIs,
-		"timePeriod":        extractCondFmtTimePeriod,
-		"containsText":      extractCondFmtText,
-		"notContainsText":   extractCondFmtText,
-		"beginsWith":        extractCondFmtText,
-		"endsWith":          extractCondFmtText,
-		"top10":             extractCondFmtTop10,
-		"aboveAverage":      extractCondFmtAboveAverage,
-		"duplicateValues":   extractCondFmtDuplicateUniqueValues,
-		"uniqueValues":      extractCondFmtDuplicateUniqueValues,
-		"containsBlanks":    extractCondFmtBlanks,
-		"notContainsBlanks": extractCondFmtNoBlanks,
-		"containsErrors":    extractCondFmtErrors,
-		"notContainsErrors": extractCondFmtNoErrors,
-		"colorScale":        extractCondFmtColorScale,
-		"dataBar":           extractCondFmtDataBar,
-		"expression":        extractCondFmtExp,
-		"iconSet":           extractCondFmtIconSet,
+	extractContFmtFunc = map[string]func(*File, *xlsxCfRule, *xlsxExtLst) ConditionalFormatOptions{
+		"cellIs": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtCellIs(c, extLst)
+		},
+		"timePeriod": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtTimePeriod(c, extLst)
+		},
+		"containsText": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtText(c, extLst)
+		},
+		"notContainsText": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtText(c, extLst)
+		},
+		"beginsWith": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtText(c, extLst)
+		},
+		"endsWith": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtText(c, extLst)
+		},
+		"top10": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtTop10(c, extLst)
+		},
+		"aboveAverage": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtAboveAverage(c, extLst)
+		},
+		"duplicateValues": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtDuplicateUniqueValues(c, extLst)
+		},
+		"uniqueValues": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtDuplicateUniqueValues(c, extLst)
+		},
+		"containsBlanks": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtBlanks(c, extLst)
+		},
+		"notContainsBlanks": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtNoBlanks(c, extLst)
+		},
+		"containsErrors": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtErrors(c, extLst)
+		},
+		"notContainsErrors": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtNoErrors(c, extLst)
+		},
+		"colorScale": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtColorScale(c, extLst)
+		},
+		"dataBar": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtDataBar(c, extLst)
+		},
+		"expression": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtExp(c, extLst)
+		},
+		"iconSet": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtIconSet(c, extLst)
+		},
 	}
 	// validType defined the list of valid validation types.
 	validType = map[string]string{
@@ -2713,7 +2749,6 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 		rules += len(cf.CfRule)
 	}
 	var (
-		GUID            = fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), rules)
 		cfRule          []*xlsxCfRule
 		noCriteriaTypes = []string{
 			"containsBlanks",
@@ -2735,7 +2770,8 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 			if ok || inStrSlice(noCriteriaTypes, vt, true) != -1 {
 				drawFunc, ok := drawContFmtFunc[vt]
 				if ok {
-					rule, x14rule := drawFunc(p, ct, strings.Split(rangeRef, ":")[0], GUID, &v)
+					rule, x14rule := drawFunc(p, ct, strings.Split(rangeRef, ":")[0],
+						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), rules+p), &v)
 					if rule == nil {
 						return ErrParameterInvalid
 					}
@@ -2813,7 +2849,7 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 // extractCondFmtCellIs provides a function to extract conditional format
 // settings for cell value (include between, not between, equal, not equal,
 // greater than and less than) by given conditional formatting rule.
-func extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "cell", Criteria: operatorType[c.Operator]}
 	if c.DxfID != nil {
 		format.Format = *c.DxfID
@@ -2828,7 +2864,7 @@ func extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOp
 
 // extractCondFmtTimePeriod provides a function to extract conditional format
 // settings for time period by given conditional formatting rule.
-func extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: operatorType[c.Operator]}
 	if c.DxfID != nil {
 		format.Format = *c.DxfID
@@ -2838,7 +2874,7 @@ func extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalForm
 
 // extractCondFmtText provides a function to extract conditional format
 // settings for text cell values by given conditional formatting rule.
-func extractCondFmtText(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtText(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "text", Criteria: operatorType[c.Operator], Value: c.Text}
 	if c.DxfID != nil {
 		format.Format = *c.DxfID
@@ -2849,7 +2885,7 @@ func extractCondFmtText(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOpti
 // extractCondFmtTop10 provides a function to extract conditional format
 // settings for top N (default is top 10) by given conditional formatting
 // rule.
-func extractCondFmtTop10(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtTop10(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "top",
@@ -2869,7 +2905,7 @@ func extractCondFmtTop10(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOpt
 // extractCondFmtAboveAverage provides a function to extract conditional format
 // settings for above average and below average by given conditional formatting
 // rule.
-func extractCondFmtAboveAverage(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtAboveAverage(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "average",
@@ -2887,7 +2923,7 @@ func extractCondFmtAboveAverage(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFo
 // extractCondFmtDuplicateUniqueValues provides a function to extract
 // conditional format settings for duplicate and unique values by given
 // conditional formatting rule.
-func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtDuplicateUniqueValues(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type: map[string]string{
@@ -2904,7 +2940,7 @@ func extractCondFmtDuplicateUniqueValues(c *xlsxCfRule, extLst *xlsxExtLst) Cond
 
 // extractCondFmtBlanks provides a function to extract conditional format
 // settings for blank cells by given conditional formatting rule.
-func extractCondFmtBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "blanks",
@@ -2917,7 +2953,7 @@ func extractCondFmtBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOp
 
 // extractCondFmtNoBlanks provides a function to extract conditional format
 // settings for no blank cells by given conditional formatting rule.
-func extractCondFmtNoBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtNoBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "no_blanks",
@@ -2930,7 +2966,7 @@ func extractCondFmtNoBlanks(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormat
 
 // extractCondFmtErrors provides a function to extract conditional format
 // settings for cells with errors by given conditional formatting rule.
-func extractCondFmtErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "errors",
@@ -2943,7 +2979,7 @@ func extractCondFmtErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOp
 
 // extractCondFmtNoErrors provides a function to extract conditional format
 // settings for cells without errors by given conditional formatting rule.
-func extractCondFmtNoErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtNoErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{
 		StopIfTrue: c.StopIfTrue,
 		Type:       "no_errors",
@@ -2957,7 +2993,7 @@ func extractCondFmtNoErrors(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormat
 // extractCondFmtColorScale provides a function to extract conditional format
 // settings for color scale (include 2 color scale and 3 color scale) by given
 // conditional formatting rule.
-func extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue}
 	format.Type, format.Criteria = "2_color_scale", "="
 	values := len(c.ColorScale.Cfvo)
@@ -2967,12 +3003,12 @@ func extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalForm
 		if c.ColorScale.Cfvo[0].Val != "0" {
 			format.MinValue = c.ColorScale.Cfvo[0].Val
 		}
-		format.MinColor = "#" + strings.TrimPrefix(strings.ToUpper(c.ColorScale.Color[0].RGB), "FF")
+		format.MinColor = "#" + f.getThemeColor(c.ColorScale.Color[0])
 		format.MaxType = c.ColorScale.Cfvo[1].Type
 		if c.ColorScale.Cfvo[1].Val != "0" {
 			format.MaxValue = c.ColorScale.Cfvo[1].Val
 		}
-		format.MaxColor = "#" + strings.TrimPrefix(strings.ToUpper(c.ColorScale.Color[1].RGB), "FF")
+		format.MaxColor = "#" + f.getThemeColor(c.ColorScale.Color[1])
 	}
 	if colors == 3 {
 		format.Type = "3_color_scale"
@@ -2980,19 +3016,37 @@ func extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalForm
 		if c.ColorScale.Cfvo[1].Val != "0" {
 			format.MidValue = c.ColorScale.Cfvo[1].Val
 		}
-		format.MidColor = "#" + strings.TrimPrefix(strings.ToUpper(c.ColorScale.Color[1].RGB), "FF")
+		format.MidColor = "#" + f.getThemeColor(c.ColorScale.Color[1])
 		format.MaxType = c.ColorScale.Cfvo[2].Type
 		if c.ColorScale.Cfvo[2].Val != "0" {
 			format.MaxValue = c.ColorScale.Cfvo[2].Val
 		}
-		format.MaxColor = "#" + strings.TrimPrefix(strings.ToUpper(c.ColorScale.Color[2].RGB), "FF")
+		format.MaxColor = "#" + f.getThemeColor(c.ColorScale.Color[2])
 	}
 	return format
 }
 
+// extractCondFmtDataBarRule provides a function to extract conditional format
+// settings for data bar by given conditional formatting rule extension list.
+func (f *File) extractCondFmtDataBarRule(ID string, format *ConditionalFormatOptions, condFmts []decodeX14ConditionalFormatting) {
+	for _, condFmt := range condFmts {
+		for _, rule := range condFmt.CfRule {
+			if rule.DataBar != nil && rule.ID == ID {
+				format.BarDirection = rule.DataBar.Direction
+				if rule.DataBar.Gradient != nil && !*rule.DataBar.Gradient {
+					format.BarSolid = true
+				}
+				if rule.DataBar.BorderColor != nil {
+					format.BarBorderColor = "#" + f.getThemeColor(rule.DataBar.BorderColor)
+				}
+			}
+		}
+	}
+}
+
 // extractCondFmtDataBar provides a function to extract conditional format
 // settings for data bar by given conditional formatting rule.
-func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{Type: "data_bar", Criteria: "="}
 	if c.DataBar != nil {
 		format.StopIfTrue = c.StopIfTrue
@@ -3000,33 +3054,17 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 		format.MinValue = c.DataBar.Cfvo[0].Val
 		format.MaxType = c.DataBar.Cfvo[1].Type
 		format.MaxValue = c.DataBar.Cfvo[1].Val
-		format.BarColor = "#" + strings.TrimPrefix(strings.ToUpper(c.DataBar.Color[0].RGB), "FF")
+		format.BarColor = "#" + f.getThemeColor(c.DataBar.Color[0])
 		if c.DataBar.ShowValue != nil {
 			format.BarOnly = !*c.DataBar.ShowValue
 		}
 	}
-	extractDataBarRule := func(condFmts []decodeX14ConditionalFormatting) {
-		for _, condFmt := range condFmts {
-			for _, rule := range condFmt.CfRule {
-				if rule.DataBar != nil {
-					format.BarSolid = !rule.DataBar.Gradient
-					format.BarDirection = rule.DataBar.Direction
-					if rule.DataBar.BorderColor != nil {
-						format.BarBorderColor = "#" + strings.TrimPrefix(strings.ToUpper(rule.DataBar.BorderColor.RGB), "FF")
-					}
-				}
-			}
-		}
-	}
-	extractExtLst := func(extLst *decodeExtLst) {
+	extractExtLst := func(ID string, extLst *decodeExtLst) {
 		for _, ext := range extLst.Ext {
 			if ext.URI == ExtURIConditionalFormattings {
-				decodeCondFmts := new(decodeX14ConditionalFormattings)
+				decodeCondFmts := new(decodeX14ConditionalFormattingRules)
 				if err := xml.Unmarshal([]byte(ext.Content), &decodeCondFmts); err == nil {
-					var condFmts []decodeX14ConditionalFormatting
-					if err = xml.Unmarshal([]byte(decodeCondFmts.Content), &condFmts); err == nil {
-						extractDataBarRule(condFmts)
-					}
+					f.extractCondFmtDataBarRule(ID, &format, decodeCondFmts.CondFmt)
 				}
 			}
 		}
@@ -3036,7 +3074,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 		if err := xml.Unmarshal([]byte(c.ExtLst.Ext), &ext); err == nil && extLst != nil {
 			decodeExtLst := new(decodeExtLst)
 			if err = xml.Unmarshal([]byte("<extLst>"+extLst.Ext+"</extLst>"), decodeExtLst); err == nil {
-				extractExtLst(decodeExtLst)
+				extractExtLst(ext.ID, decodeExtLst)
 			}
 		}
 	}
@@ -3045,7 +3083,7 @@ func extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatO
 
 // extractCondFmtExp provides a function to extract conditional format settings
 // for expression by given conditional formatting rule.
-func extractCondFmtExp(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtExp(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue, Type: "formula"}
 	if c.DxfID != nil {
 		format.Format = *c.DxfID
@@ -3058,7 +3096,7 @@ func extractCondFmtExp(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptio
 
 // extractCondFmtIconSet provides a function to extract conditional format
 // settings for icon sets by given conditional formatting rule.
-func extractCondFmtIconSet(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+func (f *File) extractCondFmtIconSet(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{Type: "icon_set"}
 	if c.IconSet != nil {
 		if c.IconSet.ShowValue != nil {
@@ -3082,7 +3120,7 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 		var opts []ConditionalFormatOptions
 		for _, cr := range cf.CfRule {
 			if extractFunc, ok := extractContFmtFunc[cr.Type]; ok {
-				opts = append(opts, extractFunc(cr, ws.ExtLst))
+				opts = append(opts, extractFunc(f, cr, ws.ExtLst))
 			}
 		}
 		conditionalFormats[cf.SQRef] = opts

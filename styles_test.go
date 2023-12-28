@@ -236,9 +236,21 @@ func TestGetConditionalFormats(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, format, opts["A1:A2"])
 	}
-	// Test get conditional formats on no exists worksheet
+	// Test get multiple conditional formats
 	f := NewFile()
-	_, err := f.GetConditionalFormats("SheetN")
+	expected := []ConditionalFormatOptions{
+		{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true},
+		{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: false, StopIfTrue: true},
+	}
+	err := f.SetConditionalFormat("Sheet1", "A1:A2", expected)
+	assert.NoError(t, err)
+	opts, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts["A1:A2"])
+
+	// Test get conditional formats on no exists worksheet
+	f = NewFile()
+	_, err = f.GetConditionalFormats("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get conditional formats with invalid sheet name
 	_, err = f.GetConditionalFormats("Sheet:1")

@@ -720,6 +720,14 @@ type decodeX14ConditionalFormattings struct {
 	Content string   `xml:",innerxml"`
 }
 
+// decodeX14ConditionalFormattingRules directly maps the conditionalFormattings
+// element.
+type decodeX14ConditionalFormattingRules struct {
+	XMLName xml.Name                         `xml:"conditionalFormattings"`
+	XMLNSXM string                           `xml:"xmlns:xm,attr"`
+	CondFmt []decodeX14ConditionalFormatting `xml:"conditionalFormatting"`
+}
+
 // decodeX14ConditionalFormatting directly maps the conditionalFormatting
 // element.
 type decodeX14ConditionalFormatting struct {
@@ -741,7 +749,7 @@ type decodeX14DataBar struct {
 	MaxLength         int         `xml:"maxLength,attr"`
 	MinLength         int         `xml:"minLength,attr"`
 	Border            bool        `xml:"border,attr,omitempty"`
-	Gradient          bool        `xml:"gradient,attr"`
+	Gradient          *bool       `xml:"gradient,attr"`
 	ShowValue         bool        `xml:"showValue,attr,omitempty"`
 	Direction         string      `xml:"direction,attr,omitempty"`
 	Cfvo              []*xlsxCfvo `xml:"cfvo"`
