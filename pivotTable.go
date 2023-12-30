@@ -274,8 +274,8 @@ func (f *File) addPivotCache(opts *PivotTableOptions) error {
 	}
 	// data range has been checked
 	order, _ := f.getTableFieldsOrder(opts)
-	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
-	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
+	topLeftCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
+	bottomRightCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
 		SaveData:              false,
 		RefreshOnLoad:         true,
@@ -285,7 +285,7 @@ func (f *File) addPivotCache(opts *PivotTableOptions) error {
 		CacheSource: &xlsxCacheSource{
 			Type: "worksheet",
 			WorksheetSource: &xlsxWorksheetSource{
-				Ref:   hCell + ":" + vCell,
+				Ref:   topLeftCell + ":" + bottomRightCell,
 				Sheet: dataSheet,
 			},
 		},
@@ -315,8 +315,8 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 		return newPivotTableRangeError(err.Error())
 	}
 
-	hCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
-	vCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
+	topLeftCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
+	bottomRightCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 
 	pivotTableStyle := func() string {
 		if opts.PivotTableStyleName == "" {
@@ -340,7 +340,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 		ShowError:             &opts.ShowError,
 		DataCaption:           "Values",
 		Location: &xlsxLocation{
-			Ref:            hCell + ":" + vCell,
+			Ref:            topLeftCell + ":" + bottomRightCell,
 			FirstDataCol:   1,
 			FirstDataRow:   1,
 			FirstHeaderRow: 1,

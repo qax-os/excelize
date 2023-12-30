@@ -484,16 +484,16 @@ func (sw *StreamWriter) SetPanes(panes *Panes) error {
 // MergeCell provides a function to merge cells by a given range reference for
 // the StreamWriter. Don't create a merged cell that overlaps with another
 // existing merged cell.
-func (sw *StreamWriter) MergeCell(hCell, vCell string) error {
-	_, err := cellRefsToCoordinates(hCell, vCell)
+func (sw *StreamWriter) MergeCell(topLeftCell, bottomRightCell string) error {
+	_, err := cellRefsToCoordinates(topLeftCell, bottomRightCell)
 	if err != nil {
 		return err
 	}
 	sw.mergeCellsCount++
 	_, _ = sw.mergeCells.WriteString(`<mergeCell ref="`)
-	_, _ = sw.mergeCells.WriteString(hCell)
+	_, _ = sw.mergeCells.WriteString(topLeftCell)
 	_, _ = sw.mergeCells.WriteString(`:`)
-	_, _ = sw.mergeCells.WriteString(vCell)
+	_, _ = sw.mergeCells.WriteString(bottomRightCell)
 	_, _ = sw.mergeCells.WriteString(`"/>`)
 	return nil
 }

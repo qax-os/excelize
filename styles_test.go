@@ -193,6 +193,48 @@ func TestSetConditionalFormat(t *testing.T) {
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}))
 	// Test unsupported conditional formatting rule types
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: "unsupported"}}))
+
+	t.Run("multi_conditional_formatting_rules_priority", func(t *testing.T) {
+		f := NewFile()
+		var condFmts []ConditionalFormatOptions
+		for _, color := range []string{
+			"#264B96", // Blue
+			"#F9A73E", // Yellow
+			"#006F3C", // Green
+		} {
+			condFmts = append(condFmts, ConditionalFormatOptions{
+				Type:     "data_bar",
+				Criteria: "=",
+				MinType:  "num",
+				MaxType:  "num",
+				MinValue: "0",
+				MaxValue: "5",
+				BarColor: color,
+				BarSolid: true,
+			})
+		}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A5", condFmts))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "B1:B5", condFmts))
+		for r := 1; r <= 20; r++ {
+			cell, err := CoordinatesToCellName(1, r)
+			assert.NoError(t, err)
+			assert.NoError(t, f.SetCellValue("Sheet1", cell, r))
+			cell, err = CoordinatesToCellName(2, r)
+			assert.NoError(t, err)
+			assert.NoError(t, f.SetCellValue("Sheet1", cell, r))
+		}
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		var priorities []int
+		expected := []int{1, 2, 3, 4, 5, 6}
+		for _, condFmt := range ws.(*xlsxWorksheet).ConditionalFormatting {
+			for _, rule := range condFmt.CfRule {
+				priorities = append(priorities, rule.Priority)
+			}
+		}
+		assert.Equal(t, expected, priorities)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestGetConditionalFormats(t *testing.T) {

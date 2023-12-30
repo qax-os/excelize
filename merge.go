@@ -49,16 +49,16 @@ func (mc *xlsxMergeCell) Rect() ([]int, error) {
 //	|                        |
 //	|A8(x3,y4)      C8(x4,y4)|
 //	+------------------------+
-func (f *File) MergeCell(sheet, hCell, vCell string) error {
-	rect, err := rangeRefToCoordinates(hCell + ":" + vCell)
+func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
+	rect, err := rangeRefToCoordinates(topLeftCell + ":" + bottomRightCell)
 	if err != nil {
 		return err
 	}
 	// Correct the range reference, such correct C1:B3 to B1:C3.
 	_ = sortCoordinates(rect)
 
-	hCell, _ = CoordinatesToCellName(rect[0], rect[1])
-	vCell, _ = CoordinatesToCellName(rect[2], rect[3])
+	topLeftCell, _ = CoordinatesToCellName(rect[0], rect[1])
+	bottomRightCell, _ = CoordinatesToCellName(rect[2], rect[3])
 
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -66,7 +66,7 @@ func (f *File) MergeCell(sheet, hCell, vCell string) error {
 	}
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
-	ref := hCell + ":" + vCell
+	ref := topLeftCell + ":" + bottomRightCell
 	if ws.MergeCells != nil {
 		ws.MergeCells.Cells = append(ws.MergeCells.Cells, &xlsxMergeCell{Ref: ref, rect: rect})
 	} else {
@@ -82,14 +82,14 @@ func (f *File) MergeCell(sheet, hCell, vCell string) error {
 //	err := f.UnmergeCell("Sheet1", "D3", "E9")
 //
 // Attention: overlapped range will also be unmerged.
-func (f *File) UnmergeCell(sheet, hCell, vCell string) error {
+func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
-	rect1, err := rangeRefToCoordinates(hCell + ":" + vCell)
+	rect1, err := rangeRefToCoordinates(topLeftCell + ":" + bottomRightCell)
 	if err != nil {
 		return err
 	}
@@ -265,9 +265,9 @@ func mergeCell(cell1, cell2 *xlsxMergeCell) *xlsxMergeCell {
 	if rect1[3] < rect2[3] {
 		rect1[3], rect2[3] = rect2[3], rect1[3]
 	}
-	hCell, _ := CoordinatesToCellName(rect1[0], rect1[1])
-	vCell, _ := CoordinatesToCellName(rect1[2], rect1[3])
-	return &xlsxMergeCell{rect: rect1, Ref: hCell + ":" + vCell}
+	topLeftCell, _ := CoordinatesToCellName(rect1[0], rect1[1])
+	bottomRightCell, _ := CoordinatesToCellName(rect1[2], rect1[3])
+	return &xlsxMergeCell{rect: rect1, Ref: topLeftCell + ":" + bottomRightCell}
 }
 
 // MergeCell define a merged cell data.

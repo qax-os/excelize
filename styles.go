@@ -2262,13 +2262,13 @@ func (f *File) GetCellStyle(sheet, cell string) (int, error) {
 //	    fmt.Println(err)
 //	}
 //	err = f.SetCellStyle("Sheet1", "H9", "H9", style)
-func (f *File) SetCellStyle(sheet, hCell, vCell string, styleID int) error {
-	hCol, hRow, err := CellNameToCoordinates(hCell)
+func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID int) error {
+	hCol, hRow, err := CellNameToCoordinates(topLeftCell)
 	if err != nil {
 		return err
 	}
 
-	vCol, vRow, err := CellNameToCoordinates(vCell)
+	vCol, vRow, err := CellNameToCoordinates(bottomRightCell)
 	if err != nil {
 		return err
 	}
@@ -2759,19 +2759,20 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 			"iconSet",
 		}
 	)
-	for p, v := range opts {
+	for i, opt := range opts {
 		var vt, ct string
 		var ok bool
 		// "type" is a required parameter, check for valid validation types.
-		vt, ok = validType[v.Type]
+		vt, ok = validType[opt.Type]
 		if ok {
 			// Check for valid criteria types.
-			ct, ok = criteriaType[v.Criteria]
+			ct, ok = criteriaType[opt.Criteria]
 			if ok || inStrSlice(noCriteriaTypes, vt, true) != -1 {
 				drawFunc, ok := drawContFmtFunc[vt]
 				if ok {
-					rule, x14rule := drawFunc(p, ct, strings.Split(rangeRef, ":")[0],
-						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), rules+p), &v)
+					priority := rules + i
+					rule, x14rule := drawFunc(priority, ct, strings.Split(rangeRef, ":")[0],
+						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), priority), &opt)
 					if rule == nil {
 						return ErrParameterInvalid
 					}
