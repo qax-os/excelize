@@ -1,4 +1,4 @@
-// Copyright 2016 - 2023 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2024 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -4678,6 +4678,67 @@ func (f *File) checkDateTimePattern() error {
 		}
 	}
 	return nil
+}
+
+// extractNumFmtDecimal returns decimal places, if has a decimal point token and
+// zero place holder token from a number format code token list.
+func extractNumFmtDecimal(tokens []nfp.Token) (int, bool, bool) {
+	decimal, point, zero := 0, false, false
+	for _, token := range tokens {
+		if token.TType == nfp.TokenTypeDecimalPoint {
+			point = true
+		}
+		if token.TType == nfp.TokenTypeZeroPlaceHolder {
+			if point {
+				decimal = len(token.TValue)
+			}
+			zero = true
+		}
+	}
+	return decimal, point, zero
+}
+
+// extractNumFmtDecimal returns decimal places from a number format code that
+// has the same decimal places in positive part negative part or only positive
+// part, if the given number format code is not suitable for numeric this
+// function will return -1.
+func (f *File) extractNumFmtDecimal(fmtCode string) int {
+	var (
+		p                                              = nfp.NumberFormatParser()
+		pos, neg, posPoint, negPoint, posZero, negZero bool
+		posDecimal, negDecimal                         int
+	)
+	for i, section := range p.Parse(fmtCode) {
+		if i == 0 {
+			pos = true
+			posDecimal, posPoint, posZero = extractNumFmtDecimal(section.Items)
+		}
+		if i == 1 {
+			neg = true
+			negDecimal, negPoint, negZero = extractNumFmtDecimal(section.Items)
+		}
+	}
+	if !pos {
+		return -1
+	}
+	equalPosNegDecimal := posPoint && negPoint && posDecimal == negDecimal
+	equalPosNegZero := !posPoint && !negPoint && posZero && negZero
+	if neg {
+		if equalPosNegDecimal {
+			return posDecimal
+		}
+		if equalPosNegZero {
+			return 0
+		}
+		return -1
+	}
+	if posPoint {
+		return posDecimal
+	}
+	if posZero {
+		return 0
+	}
+	return -1
 }
 
 // langNumFmtFuncZhCN returns number format code by given date and time pattern

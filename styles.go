@@ -1,4 +1,4 @@
-// Copyright 2016 - 2023 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2024 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -277,6 +277,14 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	 none
 //	 single
 //	 double
+//
+// NumFmt is used to set the built-in all languages formats index, built-in
+// language formats index, or built-in currency formats index, it doesn't work
+// when you specify the custom number format by CustomNumFmt. When you get
+// style definition by the GetStyle or GetConditionalStyle function, the NumFmt
+// only works if the number format code is exactly equal with any built-in all
+// languages format code, built-in language formats code, or built-in currency
+// format code.
 //
 // Excel's built-in all languages formats are shown in the following table:
 //
@@ -919,8 +927,8 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	 633   | ZWN
 //	 634   | ZWR
 //
-// Excelize support set custom number format for cell. For example, set number
-// as date type in Uruguay (Spanish) format for Sheet1!A6:
+// Excelize support set custom number format for cell by CustomNumFmt field. For
+// example, set number as date type in Uruguay (Spanish) format for Sheet1!A6:
 //
 //	f := excelize.NewFile()
 //	defer func() {
@@ -940,7 +948,15 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	}
 //	err = f.SetCellStyle("Sheet1", "A6", "A6", style)
 //
-// Cell Sheet1!A6 in the Excel Application: martes, 04 de Julio de 2017
+// Cell Sheet1!A6 in the spreadsheet application: martes, 04 de Julio de 2017
+//
+// DecimalPlaces is used to set the decimal places for built-in currency
+// formats, it doesn't work if you have specified the built-in all languages
+// formats or built-in language formats by NumFmt field, or specify the custom
+// number format by CustomNumFmt. When you get style definition by the GetStyle
+// or GetConditionalStyle function, the DecimalPlaces only doesn't nil if a
+// number format code has the same decimal places in the positive part negative
+// part, or only the positive part.
 func (f *File) NewStyle(style *Style) (int, error) {
 	var (
 		fs                                  *Style
@@ -1498,12 +1514,21 @@ func (f *File) extractFont(fnt *xlsxFont, s *xlsxStyleSheet, style *Style) {
 func (f *File) extractNumFmt(n *int, s *xlsxStyleSheet, style *Style) {
 	if n != nil {
 		numFmtID := *n
-		if _, ok := builtInNumFmt[numFmtID]; ok || isLangNumFmt(numFmtID) {
+		if builtInFmtCode, ok := builtInNumFmt[numFmtID]; ok || isLangNumFmt(numFmtID) {
 			style.NumFmt = numFmtID
+			if decimalPlaces := f.extractNumFmtDecimal(builtInFmtCode); decimalPlaces != -1 {
+				style.DecimalPlaces = &decimalPlaces
+			}
 			return
 		}
 		if s.NumFmts != nil {
 			for _, numFmt := range s.NumFmts.NumFmt {
+				if numFmt.NumFmtID != numFmtID {
+					continue
+				}
+				if decimalPlaces := f.extractNumFmtDecimal(numFmt.FormatCode); decimalPlaces != -1 {
+					style.DecimalPlaces = &decimalPlaces
+				}
 				style.CustomNumFmt = &numFmt.FormatCode
 				if strings.Contains(numFmt.FormatCode, ";[Red]") {
 					style.NegRed = true

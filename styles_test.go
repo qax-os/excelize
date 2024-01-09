@@ -443,7 +443,8 @@ func TestConditionalStyle(t *testing.T) {
 	assert.NoError(t, err)
 	style, err = f.GetConditionalStyle(idx)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, style)
+	assert.Equal(t, expected.NumFmt, style.NumFmt)
+	assert.Zero(t, *style.DecimalPlaces)
 	_, err = f.NewConditionalStyle(&Style{NumFmt: 27})
 	assert.NoError(t, err)
 	numFmt := "general"
@@ -641,6 +642,7 @@ func TestGetStyle(t *testing.T) {
 	assert.Equal(t, expected.Alignment, style.Alignment)
 	assert.Equal(t, expected.Protection, style.Protection)
 	assert.Equal(t, expected.NumFmt, style.NumFmt)
+	assert.Nil(t, style.DecimalPlaces)
 
 	expected = &Style{
 		Fill: Fill{Type: "pattern", Pattern: 1, Color: []string{"0000FF"}},
@@ -650,6 +652,15 @@ func TestGetStyle(t *testing.T) {
 	style, err = f.GetStyle(styleID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.Fill, style.Fill)
+	assert.Nil(t, style.DecimalPlaces)
+
+	expected = &Style{NumFmt: 2}
+	styleID, err = f.NewStyle(expected)
+	assert.NoError(t, err)
+	style, err = f.GetStyle(styleID)
+	assert.NoError(t, err)
+	assert.Equal(t, expected.NumFmt, style.NumFmt)
+	assert.Equal(t, 2, *style.DecimalPlaces)
 
 	expected = &Style{NumFmt: 27}
 	styleID, err = f.NewStyle(expected)
@@ -657,6 +668,7 @@ func TestGetStyle(t *testing.T) {
 	style, err = f.GetStyle(styleID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.NumFmt, style.NumFmt)
+	assert.Nil(t, style.DecimalPlaces)
 
 	expected = &Style{NumFmt: 165}
 	styleID, err = f.NewStyle(expected)
@@ -664,13 +676,50 @@ func TestGetStyle(t *testing.T) {
 	style, err = f.GetStyle(styleID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.NumFmt, style.NumFmt)
+	assert.Equal(t, 2, *style.DecimalPlaces)
 
-	expected = &Style{NumFmt: 165, NegRed: true}
+	decimal := 4
+	expected = &Style{NumFmt: 165, DecimalPlaces: &decimal, NegRed: true}
 	styleID, err = f.NewStyle(expected)
 	assert.NoError(t, err)
 	style, err = f.GetStyle(styleID)
 	assert.NoError(t, err)
-	assert.Equal(t, expected.NumFmt, style.NumFmt)
+	assert.Equal(t, 0, style.NumFmt)
+	assert.Equal(t, *expected.DecimalPlaces, *style.DecimalPlaces)
+	assert.Equal(t, "[$$-409]#,##0.0000;[Red][$$-409]#,##0.0000", *style.CustomNumFmt)
+
+	for _, val := range [][]interface{}{
+		{"$#,##0", 0},
+		{"$#,##0.0", 1},
+		{"_($* #,##0_);_($* (#,##0);_($* \"-\"_);_(@_)", 0},
+		{"_($* #,##000_);_($* (#,##000);_($* \"-\"_);_(@_)", 0},
+		{"_($* #,##0.0000_);_($* (#,##0.0000);_($* \"-\"????_);_(@_)", 4},
+	} {
+		numFmtCode := val[0].(string)
+		expected = &Style{CustomNumFmt: &numFmtCode}
+		styleID, err = f.NewStyle(expected)
+		assert.NoError(t, err)
+		style, err = f.GetStyle(styleID)
+		assert.NoError(t, err)
+		assert.Equal(t, val[1].(int), *style.DecimalPlaces, numFmtCode)
+	}
+
+	for _, val := range []string{
+		";$#,##0",
+		";$#,##0;",
+		";$#,##0.0",
+		";$#,##0.0;",
+		"$#,##0;0.0",
+		"_($* #,##0_);;_($* \"-\"_);_(@_)",
+		"_($* #,##0.0_);_($* (#,##0.00);_($* \"-\"_);_(@_)",
+	} {
+		expected = &Style{CustomNumFmt: &val}
+		styleID, err = f.NewStyle(expected)
+		assert.NoError(t, err)
+		style, err = f.GetStyle(styleID)
+		assert.NoError(t, err)
+		assert.Nil(t, style.DecimalPlaces)
+	}
 
 	// Test get style with custom color index
 	f.Styles.Colors = &xlsxStyleColors{
