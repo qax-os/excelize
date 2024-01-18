@@ -60,7 +60,7 @@ func TestAddPicture(t *testing.T) {
 	// Test add picture to worksheet from bytes
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", &Picture{Extension: ".png", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}}))
 	// Test add picture to worksheet from bytes with illegal cell reference
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "A", &Picture{Extension: ".png", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AddPictureFromBytes("Sheet1", "A", &Picture{Extension: ".png", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}}))
 
 	for _, preset := range [][]string{{"Q8", "gif"}, {"Q15", "jpg"}, {"Q22", "tif"}, {"Q28", "bmp"}} {
 		assert.NoError(t, f.AddPicture("Sheet1", preset[0], filepath.Join("test", "images", fmt.Sprintf("excel.%s", preset[1])), nil))
@@ -165,7 +165,7 @@ func TestGetPicture(t *testing.T) {
 
 	// Try to get picture from a worksheet with illegal cell reference
 	_, err = f.GetPictures("Sheet1", "A")
-	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
 
 	// Try to get picture from a worksheet that doesn't contain any images
 	pics, err = f.GetPictures("Sheet3", "I9")
@@ -366,11 +366,11 @@ func TestDrawingResize(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test calculate drawing resize with invalid coordinates
 	_, _, _, _, err = f.drawingResize("Sheet1", "", 1, 1, nil)
-	assert.EqualError(t, err, newCellNameToCoordinatesError("", newInvalidCellNameError("")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("", newInvalidCellNameError("")), err)
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
-	assert.EqualError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}))
 }
 
 func TestSetContentTypePartRelsExtensions(t *testing.T) {

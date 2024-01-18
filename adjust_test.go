@@ -557,9 +557,9 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
 	assert.NoError(t, f.Close())
 
-	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", nil, rows, 0, 0, false))
-	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
-	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
+	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{}, rows, 0, 0, false))
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "-"}}, rows, 0, 0, false))
+	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "XFD1:XFD1"}}, columns, 0, 1, false))
 
 	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", false, columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
@@ -939,6 +939,26 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, f.AddChartSheet("Chart1", &Chart{Type: Line}))
 		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 		assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	})
+	t.Run("for_array_formula_cell", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "C1:C2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1:A2*B1:B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+		assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+		assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+		result, err := f.CalcCellValue("Sheet1", "D2")
+		assert.NoError(t, err)
+		assert.Equal(t, "2", result)
+		result, err = f.CalcCellValue("Sheet1", "D3")
+		assert.NoError(t, err)
+		assert.Equal(t, "12", result)
+
+		// Test adjust array formula with invalid range reference
+		formulaType, ref = STCellFormulaTypeArray, "E1:E2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "XFD1:XFD1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+		assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "the column number must be greater than or equal to 1 and less than or equal to 16384")
 	})
 }
 
