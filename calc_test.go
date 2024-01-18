@@ -4689,7 +4689,7 @@ func TestCalcCellValue(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get calculated cell value with invalid sheet name
 	_, err = f.CalcCellValue("Sheet:1", "A1")
-	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, err)
 	// Test get calculated cell value with not support formula
 	f = prepareCalcData(cellData)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=UNSUPPORT(A1)"))
@@ -4821,6 +4821,119 @@ func TestCalcCompareFormulaArgMatrix(t *testing.T) {
 	lhs = newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})
 	rhs = newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(0)}})
 	assert.Equal(t, compareFormulaArgMatrix(lhs, rhs, newNumberFormulaArg(matchModeMaxLess), false), criteriaG)
+}
+
+func TestCalcANCHORARRAY(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", 2))
+	formulaType, ref := STCellFormulaTypeArray, "B1:B2"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "A1:A2",
+		FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "SUM(_xlfn.ANCHORARRAY($B$1))"))
+	result, err := f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "3", result)
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "SUM(_xlfn.ANCHORARRAY(\"\",\"\"))"))
+	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.EqualError(t, err, "ANCHORARRAY requires 1 numeric argument")
+	assert.Equal(t, "#VALUE!", result)
+
+	fn := &formulaFuncs{f: f, sheet: "SheetN"}
+	argsList := list.New()
+	argsList.PushBack(newStringFormulaArg("$B$1"))
+	formulaArg := fn.ANCHORARRAY(argsList)
+	assert.Equal(t, "sheet SheetN does not exist", formulaArg.Value())
+
+	fn.sheet = "Sheet1"
+	argsList = argsList.Init()
+	arg := newStringFormulaArg("$A$1")
+	arg.cellRefs = list.New()
+	arg.cellRefs.PushBack(cellRef{Row: 1, Col: 1})
+	argsList.PushBack(arg)
+	formulaArg = fn.ANCHORARRAY(argsList)
+	assert.Equal(t, ArgEmpty, formulaArg.Type)
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].F = &xlsxF{}
+	formulaArg = fn.ANCHORARRAY(argsList)
+	assert.Equal(t, ArgError, formulaArg.Type)
+	assert.Equal(t, ErrParameterInvalid.Error(), formulaArg.Value())
+
+	argsList = argsList.Init()
+	arg = newStringFormulaArg("$B$1")
+	arg.cellRefs = list.New()
+	arg.cellRefs.PushBack(cellRef{Row: 1, Col: 1, Sheet: "SheetN"})
+	argsList.PushBack(arg)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0].F = &xlsxF{Ref: "A1:A1"}
+	formulaArg = fn.ANCHORARRAY(argsList)
+	assert.Equal(t, ArgError, formulaArg.Type)
+	assert.Equal(t, "sheet SheetN does not exist", formulaArg.Value())
+}
+
+func TestCalcArrayFormula(t *testing.T) {
+	t.Run("matrix_multiplication", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "C1:C2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1:A2*B1:B2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
+		assert.Equal(t, "2", result)
+		result, err = f.CalcCellValue("Sheet1", "C2")
+		assert.NoError(t, err)
+		assert.Equal(t, "12", result)
+	})
+	t.Run("matrix_multiplication_with_defined_name", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "matrix",
+			RefersTo: "Sheet1!$A$1:$A$2",
+		}))
+		formulaType, ref := STCellFormulaTypeArray, "C1:C2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "matrix*B1:B2+\"1\"",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
+		assert.Equal(t, "3", result)
+		result, err = f.CalcCellValue("Sheet1", "C2")
+		assert.NoError(t, err)
+		assert.Equal(t, "13", result)
+	})
+	t.Run("columm_multiplication", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "C1:C1048576"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A:A*B:B",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
+		assert.Equal(t, "2", result)
+		result, err = f.CalcCellValue("Sheet1", "C2")
+		assert.NoError(t, err)
+		assert.Equal(t, "12", result)
+	})
+	t.Run("row_multiplication", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "A3:XFD3"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "1:1*2:2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "3", result)
+		result, err = f.CalcCellValue("Sheet1", "B3")
+		assert.NoError(t, err)
+		assert.Equal(t, "8", result)
+	})
 }
 
 func TestCalcTRANSPOSE(t *testing.T) {
