@@ -178,6 +178,10 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
 	}
 	f = NewFile()
+	// Test creating a conditional format without cell reference
+	assert.Equal(t, ErrParameterRequired, f.SetConditionalFormat("Sheet1", "", nil))
+	// Test creating a conditional format with invalid cell reference
+	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2:A3", nil))
 	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
@@ -272,11 +276,11 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
-		err := f.SetConditionalFormat("Sheet1", "A2:A1", format)
+		err := f.SetConditionalFormat("Sheet1", "A2:A1,B:B,2:2", format)
 		assert.NoError(t, err)
 		opts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)
-		assert.Equal(t, format, opts["A1:A2"])
+		assert.Equal(t, format, opts["A2:A1 B1:B1048576 A2:XFD2"])
 	}
 	// Test get multiple conditional formats
 	f := NewFile()

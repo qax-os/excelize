@@ -471,12 +471,12 @@ func (af *arrayFormulaOperandToken) setCoordinates() error {
 		}
 		var c, r int
 		if col {
-			if cellRef.Row = TotalRows; i == 1 {
+			if cellRef.Row = TotalRows; i == 0 {
 				cellRef.Row = 1
 			}
 		}
 		if row {
-			if cellRef.Col = MaxColumns; i == 1 {
+			if cellRef.Col = MaxColumns; i == 0 {
 				cellRef.Col = 1
 			}
 		}
