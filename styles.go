@@ -2760,13 +2760,9 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	if err != nil {
 		return err
 	}
-	if strings.Contains(rangeRef, ":") {
-		rect, err := rangeRefToCoordinates(rangeRef)
-		if err != nil {
-			return err
-		}
-		_ = sortCoordinates(rect)
-		rangeRef, _ = f.coordinatesToRangeRef(rect, strings.Contains(rangeRef, "$"))
+	SQRef, mastCell, err := prepareConditionalFormatRange(rangeRef)
+	if err != nil {
+		return err
 	}
 	// Create a pseudo GUID for each unique rule.
 	var rules int
@@ -2796,7 +2792,7 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 				drawFunc, ok := drawContFmtFunc[vt]
 				if ok {
 					priority := rules + i
-					rule, x14rule := drawFunc(priority, ct, strings.Split(rangeRef, ":")[0],
+					rule, x14rule := drawFunc(priority, ct, mastCell,
 						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), priority), &opt)
 					if rule == nil {
 						return ErrParameterInvalid
@@ -2817,10 +2813,51 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	}
 
 	ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
-		SQRef:  rangeRef,
+		SQRef:  SQRef,
 		CfRule: cfRule,
 	})
 	return err
+}
+
+// prepareConditionalFormatRange returns checked cell range and master cell
+// reference by giving conditional formatting range reference.
+func prepareConditionalFormatRange(rangeRef string) (string, string, error) {
+	var SQRef, mastCell string
+	if rangeRef == "" {
+		return SQRef, mastCell, ErrParameterRequired
+	}
+	rangeRef = strings.ReplaceAll(rangeRef, ",", " ")
+	for i, cellRange := range strings.Split(rangeRef, " ") {
+		var cellNames []string
+		for j, ref := range strings.Split(cellRange, ":") {
+			if j > 1 {
+				return SQRef, mastCell, ErrParameterInvalid
+			}
+			cellRef, col, row, err := parseRef(ref)
+			if err != nil {
+				return SQRef, mastCell, err
+			}
+			var c, r int
+			if col {
+				if cellRef.Row = TotalRows; j == 0 {
+					cellRef.Row = 1
+				}
+			}
+			if row {
+				if cellRef.Col = MaxColumns; j == 0 {
+					cellRef.Col = 1
+				}
+			}
+			c, r = cellRef.Col, cellRef.Row
+			cellName, _ := CoordinatesToCellName(c, r)
+			cellNames = append(cellNames, cellName)
+			if i == 0 && j == 0 {
+				mastCell = cellName
+			}
+		}
+		SQRef += strings.Join(cellNames, ":") + " "
+	}
+	return strings.TrimSuffix(SQRef, " "), mastCell, nil
 }
 
 // appendCfRule provides a function to append rules to conditional formatting.
