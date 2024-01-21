@@ -107,6 +107,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			},
 		},
 	}
+	xlsxChartSpace.SpPr = f.drawShapeFill(opts.Fill, xlsxChartSpace.SpPr)
 	plotAreaFunc := map[ChartType]func(*Chart) *cPlotArea{
 		Area:                        f.drawBaseChart,
 		AreaStacked:                 f.drawBaseChart,
@@ -167,6 +168,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 	if opts.Legend.Position == "none" {
 		xlsxChartSpace.Chart.Legend = nil
 	}
+	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
 	addChart := func(c, p *cPlotArea) {
 		immutable, mutable := reflect.ValueOf(c).Elem(), reflect.ValueOf(p).Elem()
 		for i := 0; i < mutable.NumField(); i++ {
@@ -727,19 +729,28 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 	return &ser
 }
 
+// drawShapeFill provides a function to draw the a:solidFill element by given
+// fill format sets.
+func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
+	if fill.Type == "pattern" && fill.Pattern == 1 {
+		if spPr == nil {
+			spPr = &cSpPr{}
+		}
+		if len(fill.Color) == 1 {
+			spPr.SolidFill = &aSolidFill{SrgbClr: &attrValString{Val: stringPtr(strings.TrimPrefix(fill.Color[0], "#"))}}
+			return spPr
+		}
+		spPr.SolidFill = nil
+		spPr.NoFill = stringPtr("")
+	}
+	return spPr
+}
+
 // drawChartSeriesSpPr provides a function to draw the c:spPr element by given
 // format sets.
 func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
-	var srgbClr *attrValString
-	var schemeClr *aSchemeClr
-
-	if color := opts.Series[i].Fill.Color; len(color) == 1 {
-		srgbClr = &attrValString{Val: stringPtr(strings.TrimPrefix(color[0], "#"))}
-	} else {
-		schemeClr = &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}
-	}
-
-	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: schemeClr, SrgbClr: srgbClr}}
+	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}}}
+	spPr = f.drawShapeFill(opts.Series[i].Fill, spPr)
 	spPrScatter := &cSpPr{
 		Ln: &aLn{
 			W:      25400,
@@ -748,12 +759,9 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	}
 	spPrLine := &cSpPr{
 		Ln: &aLn{
-			W:   f.ptToEMUs(opts.Series[i].Line.Width),
-			Cap: "rnd", // rnd, sq, flat
-			SolidFill: &aSolidFill{
-				SchemeClr: schemeClr,
-				SrgbClr:   srgbClr,
-			},
+			W:         f.ptToEMUs(opts.Series[i].Line.Width),
+			Cap:       "rnd", // rnd, sq, flat
+			SolidFill: spPr.SolidFill,
 		},
 	}
 	if chartSeriesSpPr, ok := map[ChartType]*cSpPr{
@@ -761,7 +769,7 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	}[opts.Type]; ok {
 		return chartSeriesSpPr
 	}
-	if srgbClr != nil {
+	if spPr.SolidFill.SrgbClr != nil {
 		return spPr
 	}
 	return nil
@@ -857,6 +865,7 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 			},
 		}
 	}
+	marker.SpPr = f.drawShapeFill(opts.Series[i].Marker.Fill, marker.SpPr)
 	chartSeriesMarker := map[ChartType]*cMarker{Scatter: marker, Line: marker}
 	return chartSeriesMarker[opts.Type]
 }
