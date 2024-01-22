@@ -561,6 +561,7 @@ type ChartPlotArea struct {
 	ShowPercent      bool
 	ShowSerName      bool
 	ShowVal          bool
+	Fill             Fill
 	NumFmt           ChartNumFmt
 }
 
@@ -576,6 +577,7 @@ type Chart struct {
 	XAxis        ChartAxis
 	YAxis        ChartAxis
 	PlotArea     ChartPlotArea
+	Fill         Fill
 	Border       ChartLine
 	ShowBlanksAs string
 	BubbleSize   int
@@ -591,6 +593,7 @@ type ChartLegend struct {
 
 // ChartMarker directly maps the format settings of the chart marker.
 type ChartMarker struct {
+	Fill   Fill
 	Symbol string
 	Size   int
 }
