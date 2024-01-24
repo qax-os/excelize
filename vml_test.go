@@ -122,6 +122,10 @@ func TestDeleteComment(t *testing.T) {
 	f.Comments["xl/comments2.xml"] = nil
 	f.Pkg.Store("xl/comments2.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.DeleteComment("Sheet2", "A41"), "XML syntax error on line 1: invalid UTF-8")
+
+	f = NewFile()
+	// Test delete comment on a no comments worksheet
+	assert.NoError(t, f.DeleteComment("Sheet1", "A1"))
 }
 
 func TestDecodeVMLDrawingReader(t *testing.T) {

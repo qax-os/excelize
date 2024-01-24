@@ -130,13 +130,14 @@ func (f *File) AddComment(sheet string, opts Comment) error {
 //
 //	err := f.DeleteComment("Sheet1", "A30")
 func (f *File) DeleteComment(sheet, cell string) error {
-	if err := checkSheetName(sheet); err != nil {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
 		return err
 	}
-	sheetXMLPath, ok := f.getSheetXMLPath(sheet)
-	if !ok {
-		return ErrSheetNotExist{sheet}
+	if ws.LegacyDrawing == nil {
+		return err
 	}
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	commentsXML := f.getSheetComments(filepath.Base(sheetXMLPath))
 	if !strings.HasPrefix(commentsXML, "/") {
 		commentsXML = "xl" + strings.TrimPrefix(commentsXML, "..")
@@ -164,6 +165,82 @@ func (f *File) DeleteComment(sheet, cell string) error {
 		}
 		f.Comments[commentsXML] = cmts
 	}
+	sheetRelationshipsDrawingVML := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	return f.deleteFormControl(sheetRelationshipsDrawingVML, cell, true)
+}
+
+// deleteFormControl provides the method to delete shape from
+// xl/drawings/vmlDrawing%d.xml by giving path, cell and shape type.
+func (f *File) deleteFormControl(sheetRelationshipsDrawingVML, cell string, isComment bool) error {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return err
+	}
+	vmlID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
+	drawingVML := strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		vml = &vmlDrawing{
+			XMLNSv:  "urn:schemas-microsoft-com:vml",
+			XMLNSo:  "urn:schemas-microsoft-com:office:office",
+			XMLNSx:  "urn:schemas-microsoft-com:office:excel",
+			XMLNSmv: "http://macVmlSchemaUri",
+			ShapeLayout: &xlsxShapeLayout{
+				Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: vmlID},
+			},
+			ShapeType: &xlsxShapeType{
+				Stroke: &xlsxStroke{JoinStyle: "miter"},
+				VPath:  &vPath{GradientShapeOK: "t", ConnectType: "rect"},
+			},
+		}
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return err
+		}
+		if d != nil {
+			vml.ShapeType.ID = d.ShapeType.ID
+			vml.ShapeType.CoordSize = d.ShapeType.CoordSize
+			vml.ShapeType.Spt = d.ShapeType.Spt
+			vml.ShapeType.Path = d.ShapeType.Path
+			for _, v := range d.Shape {
+				s := xlsxShape{
+					ID:          v.ID,
+					Type:        v.Type,
+					Style:       v.Style,
+					Button:      v.Button,
+					Filled:      v.Filled,
+					FillColor:   v.FillColor,
+					InsetMode:   v.InsetMode,
+					Stroked:     v.Stroked,
+					StrokeColor: v.StrokeColor,
+					Val:         v.Val,
+				}
+				vml.Shape = append(vml.Shape, s)
+			}
+		}
+	}
+	cond := func(objectType string) bool {
+		if isComment {
+			return objectType == "Note"
+		}
+		return objectType != "Note"
+	}
+	for i, sp := range vml.Shape {
+		var shapeVal decodeShapeVal
+		if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", sp.Val)), &shapeVal); err == nil &&
+			cond(shapeVal.ClientData.ObjectType) && shapeVal.ClientData.Anchor != "" {
+			leftCol, topRow, err := extractAnchorCell(shapeVal.ClientData.Anchor)
+			if err != nil {
+				return err
+			}
+			if leftCol == col-1 && topRow == row-1 {
+				vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
+				break
+			}
+		}
+	}
+	f.VMLDrawing[drawingVML] = vml
 	return err
 }
 
@@ -375,74 +452,11 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 	if err != nil {
 		return err
 	}
-	col, row, err := CellNameToCoordinates(cell)
-	if err != nil {
-		return err
-	}
 	if ws.LegacyDrawing == nil {
 		return err
 	}
 	sheetRelationshipsDrawingVML := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
-	vmlID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
-	drawingVML := strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
-	vml := f.VMLDrawing[drawingVML]
-	if vml == nil {
-		vml = &vmlDrawing{
-			XMLNSv:  "urn:schemas-microsoft-com:vml",
-			XMLNSo:  "urn:schemas-microsoft-com:office:office",
-			XMLNSx:  "urn:schemas-microsoft-com:office:excel",
-			XMLNSmv: "http://macVmlSchemaUri",
-			ShapeLayout: &xlsxShapeLayout{
-				Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: vmlID},
-			},
-			ShapeType: &xlsxShapeType{
-				Stroke: &xlsxStroke{JoinStyle: "miter"},
-				VPath:  &vPath{GradientShapeOK: "t", ConnectType: "rect"},
-			},
-		}
-		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
-		d, err := f.decodeVMLDrawingReader(drawingVML)
-		if err != nil {
-			return err
-		}
-		if d != nil {
-			vml.ShapeType.ID = d.ShapeType.ID
-			vml.ShapeType.CoordSize = d.ShapeType.CoordSize
-			vml.ShapeType.Spt = d.ShapeType.Spt
-			vml.ShapeType.Path = d.ShapeType.Path
-			for _, v := range d.Shape {
-				s := xlsxShape{
-					ID:          v.ID,
-					Type:        v.Type,
-					Style:       v.Style,
-					Button:      v.Button,
-					Filled:      v.Filled,
-					FillColor:   v.FillColor,
-					InsetMode:   v.InsetMode,
-					Stroked:     v.Stroked,
-					StrokeColor: v.StrokeColor,
-					Val:         v.Val,
-				}
-				vml.Shape = append(vml.Shape, s)
-			}
-		}
-	}
-	for i, sp := range vml.Shape {
-		var shapeVal decodeShapeVal
-		if err = xml.Unmarshal([]byte(fmt.Sprintf("<shape>%s</shape>", sp.Val)), &shapeVal); err == nil &&
-			shapeVal.ClientData.ObjectType != "Note" && shapeVal.ClientData.Anchor != "" {
-			leftCol, topRow, err := extractAnchorCell(shapeVal.ClientData.Anchor)
-			if err != nil {
-				return err
-			}
-			if leftCol == col-1 && topRow == row-1 {
-				vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
-				break
-			}
-		}
-	}
-	f.VMLDrawing[drawingVML] = vml
-	return err
+	return f.deleteFormControl(sheetRelationshipsDrawingVML, cell, false)
 }
 
 // countVMLDrawing provides a function to get VML drawing files count storage
