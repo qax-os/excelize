@@ -455,6 +455,7 @@ type formulaFuncs struct {
 //	DAYS
 //	DAYS360
 //	DB
+//	DBCS
 //	DCOUNT
 //	DCOUNTA
 //	DDB
@@ -13564,6 +13565,38 @@ func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
 		}
 	}
 	return newStringFormulaArg(buf.String())
+}
+
+// DBCS converts half-width (single-byte) letters within a character string to
+// full-width (double-byte) characters. The syntax of the function is:
+//
+//	DBCS(text)
+func (fn *formulaFuncs) DBCS(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DBCS requires 1 argument")
+	}
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.Type == ArgError {
+		return arg
+	}
+	if fn.f.options.CultureInfo == CultureNameZhCN {
+		var chars []string
+		for _, r := range arg.Value() {
+			code := r
+			if code == 32 {
+				code = 12288
+			} else {
+				code += 65248
+			}
+			if (code < 32 || code > 126) && r != 165 && code < 65381 {
+				chars = append(chars, string(code))
+			} else {
+				chars = append(chars, string(r))
+			}
+		}
+		return newStringFormulaArg(strings.Join(chars, ""))
+	}
+	return arg
 }
 
 // EXACT function tests if two supplied text strings or values are exactly

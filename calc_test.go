@@ -1723,6 +1723,10 @@ func TestCalcCellValue(t *testing.T) {
 		"=CONCATENATE(TRUE(),1,FALSE(),\"0\",INT(2))": "TRUE1FALSE02",
 		"=CONCATENATE(MUNIT(2))":                      "1001",
 		"=CONCATENATE(A1:B2)":                         "1425",
+		// DBCS
+		"=DBCS(\"\")":        "",
+		"=DBCS(123.456)":     "123.456",
+		"=DBCS(\"123.456\")": "123.456",
 		// EXACT
 		"=EXACT(1,\"1\")":     "TRUE",
 		"=EXACT(1,1)":         "TRUE",
@@ -3836,6 +3840,9 @@ func TestCalcCellValue(t *testing.T) {
 		// CONCATENATE
 		"=CONCATENATE(NA())":  {"#N/A", "#N/A"},
 		"=CONCATENATE(1,1/0)": {"#DIV/0!", "#DIV/0!"},
+		// DBCS
+		"=DBCS(NA())": {"#N/A", "#N/A"},
+		"=DBCS()":     {"#VALUE!", "DBCS requires 1 argument"},
 		// EXACT
 		"=EXACT()":      {"#VALUE!", "EXACT requires 2 arguments"},
 		"=EXACT(1,2,3)": {"#VALUE!", "EXACT requires 2 arguments"},
@@ -5192,6 +5199,14 @@ func TestCalcDatabase(t *testing.T) {
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
+}
+
+func TestCalcDBCS(t *testing.T) {
+	f := NewFile(Options{CultureInfo: CultureNameZhCN})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=DBCS(\"`~·!@#$¥%…^&*()_-+=[]{}\\|;:'\"\"<,>.?/01234567890 abc ABC \uff65\uff9e\uff9f \uff74\uff78\uff7e\uff99\")"))
+	result, err := f.CalcCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "\uff40\uff5e\u00b7\uff01\uff20\uff03\uff04\u00a5\uff05\u2026\uff3e\uff06\uff0a\uff08\uff09\uff3f\uff0d\uff0b\uff1d\uff3b\uff3d\uff5b\uff5d\uff3c\uff5c\uff1b\uff1a\uff07\uff02\uff1c\uff0c\uff1e\uff0e\uff1f\uff0f\uff10\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19\uff10\u3000\uff41\uff42\uff43\u3000\uff21\uff22\uff23\u3000\uff65\uff9e\uff9f\u3000\uff74\uff78\uff7e\uff99", result)
 }
 
 func TestCalcFORMULATEXT(t *testing.T) {
