@@ -454,6 +454,33 @@ func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool
 	return val, nil
 }
 
+// adjustRangeSheetName returns replaced range reference by given source and
+// target sheet name.
+func adjustRangeSheetName(rng, source, target string) string {
+	cellRefs := strings.Split(rng, ",")
+	for i, cellRef := range cellRefs {
+		rangeRefs := strings.Split(cellRef, ":")
+		for j, rangeRef := range rangeRefs {
+			parts := strings.Split(rangeRef, "!")
+			for k, part := range parts {
+				singleQuote := strings.HasPrefix(part, "'") && strings.HasSuffix(part, "'")
+				if singleQuote {
+					part = strings.TrimPrefix(strings.TrimSuffix(part, "'"), "'")
+				}
+				if part == source {
+					if part = target; singleQuote {
+						part = "'" + part + "'"
+					}
+				}
+				parts[k] = part
+			}
+			rangeRefs[j] = strings.Join(parts, "!")
+		}
+		cellRefs[i] = strings.Join(rangeRefs, ":")
+	}
+	return strings.Join(cellRefs, ",")
+}
+
 // arrayFormulaOperandToken defines meta fields for transforming the array
 // formula to the normal formula.
 type arrayFormulaOperandToken struct {
