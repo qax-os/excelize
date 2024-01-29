@@ -1369,14 +1369,11 @@ var (
 	}
 )
 
-// getThemeColor provides a function to convert theme color or index color to
-// RGB color.
-func (f *File) getThemeColor(clr *xlsxColor) string {
-	var RGB string
-	if clr == nil || f.Theme == nil {
-		return RGB
-	}
-	if clrScheme := f.Theme.ThemeElements.ClrScheme; clr.Theme != nil {
+// GetBaseColor returns the preferred hex color code by giving hex color code,
+// indexed color, and theme color.
+func (f *File) GetBaseColor(hexColor string, indexedColor int, themeColor *int) string {
+	if f.Theme != nil && themeColor != nil {
+		clrScheme := f.Theme.ThemeElements.ClrScheme
 		if val, ok := map[int]*string{
 			0: &clrScheme.Lt1.SysClr.LastClr,
 			1: &clrScheme.Dk1.SysClr.LastClr,
@@ -1388,21 +1385,35 @@ func (f *File) getThemeColor(clr *xlsxColor) string {
 			7: clrScheme.Accent4.SrgbClr.Val,
 			8: clrScheme.Accent5.SrgbClr.Val,
 			9: clrScheme.Accent6.SrgbClr.Val,
-		}[*clr.Theme]; ok && val != nil {
-			return strings.TrimPrefix(ThemeColor(*val, clr.Tint), "FF")
+		}[*themeColor]; ok && val != nil {
+			return *val
 		}
 	}
-	if len(clr.RGB) == 6 {
-		return clr.RGB
+	if len(hexColor) == 6 {
+		return hexColor
 	}
-	if len(clr.RGB) == 8 {
-		return strings.TrimPrefix(clr.RGB, "FF")
+	if len(hexColor) == 8 {
+		return strings.TrimPrefix(hexColor, "FF")
 	}
-	if f.Styles.Colors != nil && f.Styles.Colors.IndexedColors != nil && clr.Indexed < len(f.Styles.Colors.IndexedColors.RgbColor) {
-		return strings.TrimPrefix(ThemeColor(strings.TrimPrefix(f.Styles.Colors.IndexedColors.RgbColor[clr.Indexed].RGB, "FF"), clr.Tint), "FF")
+	if f.Styles != nil && f.Styles.Colors != nil && f.Styles.Colors.IndexedColors != nil &&
+		indexedColor < len(f.Styles.Colors.IndexedColors.RgbColor) {
+		return strings.TrimPrefix(f.Styles.Colors.IndexedColors.RgbColor[indexedColor].RGB, "FF")
 	}
-	if clr.Indexed < len(IndexedColorMapping) {
-		return strings.TrimPrefix(ThemeColor(IndexedColorMapping[clr.Indexed], clr.Tint), "FF")
+	if indexedColor < len(IndexedColorMapping) {
+		return IndexedColorMapping[indexedColor]
+	}
+	return hexColor
+}
+
+// getThemeColor provides a function to convert theme color or index color to
+// RGB color.
+func (f *File) getThemeColor(clr *xlsxColor) string {
+	var RGB string
+	if clr == nil || f.Theme == nil {
+		return RGB
+	}
+	if RGB = f.GetBaseColor(clr.RGB, clr.Indexed, clr.Theme); RGB != "" {
+		RGB = strings.TrimPrefix(ThemeColor(RGB, clr.Tint), "FF")
 	}
 	return RGB
 }
