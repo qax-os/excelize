@@ -374,6 +374,12 @@ func (f *File) SetSheetName(source, target string) error {
 			delete(f.sheetMap, source)
 		}
 	}
+	if wb.DefinedNames == nil {
+		return err
+	}
+	for i, dn := range wb.DefinedNames.DefinedName {
+		wb.DefinedNames.DefinedName[i].Data = adjustRangeSheetName(dn.Data, source, target)
+	}
 	return err
 }
 
