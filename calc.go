@@ -823,7 +823,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		styleIdx, _ = f.GetCellStyle(sheet, cell)
 	}
 	result = token.Value()
-	if isNum, precision, decimal := isNumeric(result); isNum {
+	if isNum, precision, decimal := isNumeric(result); isNum && !rawCellValue {
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			return

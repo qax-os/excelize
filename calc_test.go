@@ -6301,6 +6301,28 @@ func TestNestedFunctionsWithOperators(t *testing.T) {
 	}
 }
 
+func TestFormulaRawCellValueOption(t *testing.T) {
+	f := NewFile()
+	rawTest := []struct {
+		value    string
+		raw      bool
+		expected string
+	}{
+		{"=\"10e3\"", false, "10000"},
+		{"=\"10e3\"", true, "10e3"},
+		{"=\"10\" & \"e3\"", false, "10000"},
+		{"=\"10\" & \"e3\"", true, "10e3"},
+		{"=\"1111111111111111\"", false, "1.11111111111111E+15"},
+		{"=\"1111111111111111\"", true, "1111111111111111"},
+	}
+	for _, test := range rawTest {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", test.value))
+		val, err := f.CalcCellValue("Sheet1", "A1", Options{RawCellValue: test.raw})
+		assert.NoError(t, err)
+		assert.Equal(t, test.expected, val)
+	}
+}
+
 func TestFormulaArgToToken(t *testing.T) {
 	assert.Equal(t,
 		efp.Token{
