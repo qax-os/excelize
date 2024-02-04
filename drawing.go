@@ -1155,6 +1155,34 @@ func (f *File) drawPlotAreaSerAx(opts *Chart) []*cAxs {
 	}
 }
 
+// drawChartFont provides a function to draw the a:rPr element.
+func drawChartFont(fnt *Font, r *aRPr) {
+	if fnt == nil {
+		return
+	}
+	r.B = fnt.Bold
+	r.I = fnt.Italic
+	if idx := inStrSlice(supportedDrawingUnderlineTypes, fnt.Underline, true); idx != -1 {
+		r.U = supportedDrawingUnderlineTypes[idx]
+	}
+	if fnt.Color != "" {
+		if r.SolidFill == nil {
+			r.SolidFill = &aSolidFill{}
+		}
+		r.SolidFill.SchemeClr = nil
+		r.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(fnt.Color), "#", ""))}
+	}
+	if fnt.Family != "" {
+		r.Latin.Typeface = fnt.Family
+	}
+	if fnt.Size > 0 {
+		r.Sz = fnt.Size * 100
+	}
+	if fnt.Strike {
+		r.Strike = "sngStrike"
+	}
+}
+
 // drawPlotAreaTitles provides a function to draw the c:title element.
 func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
 	if len(runs) == 0 {
@@ -1163,15 +1191,7 @@ func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
 	title := &cTitle{Tx: cTx{Rich: &cRich{}}, Overlay: &attrValBool{Val: boolPtr(false)}}
 	for _, run := range runs {
 		r := &aR{T: run.Text}
-		if run.Font != nil {
-			r.RPr.B, r.RPr.I = run.Font.Bold, run.Font.Italic
-			if run.Font.Color != "" {
-				r.RPr.SolidFill = &aSolidFill{SrgbClr: &attrValString{Val: stringPtr(run.Font.Color)}}
-			}
-			if run.Font.Size > 0 {
-				r.RPr.Sz = run.Font.Size * 100
-			}
-		}
+		drawChartFont(run.Font, &r.RPr)
 		title.Tx.Rich.P = append(title.Tx.Rich.P, aP{
 			PPr:        &aPPr{DefRPr: aRPr{}},
 			R:          r,
@@ -1241,15 +1261,7 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 		},
 	}
 	if opts != nil {
-		cTxPr.P.PPr.DefRPr.B = opts.Font.Bold
-		cTxPr.P.PPr.DefRPr.I = opts.Font.Italic
-		if idx := inStrSlice(supportedDrawingUnderlineTypes, opts.Font.Underline, true); idx != -1 {
-			cTxPr.P.PPr.DefRPr.U = supportedDrawingUnderlineTypes[idx]
-		}
-		if opts.Font.Color != "" {
-			cTxPr.P.PPr.DefRPr.SolidFill.SchemeClr = nil
-			cTxPr.P.PPr.DefRPr.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(opts.Font.Color), "#", ""))}
-		}
+		drawChartFont(&opts.Font, &cTxPr.P.PPr.DefRPr)
 	}
 	return cTxPr
 }
