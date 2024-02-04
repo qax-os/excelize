@@ -31,7 +31,7 @@ jobs:
       run: env GO111MODULE=on go test -v -timeout 30m -race ./... -coverprofile=coverage.txt -covermode=atomic
 
     - name: Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: coverage.txt
         flags: unittests
