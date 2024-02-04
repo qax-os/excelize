@@ -6379,6 +6379,35 @@ func TestCalcCellResolver(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expected, result)
 	}
+	// Test calculates formula that reference date and error type cells
+	assert.NoError(t, f.SetCellValue("Sheet1", "C1", "20200208T080910.123"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "C2", "2020-07-10 15:00:00.000"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "C3", formulaErrorDIV))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[2].T = "d"
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[2].V = "20200208T080910.123"
+	ws.(*xlsxWorksheet).SheetData.Row[1].C[2].T = "d"
+	ws.(*xlsxWorksheet).SheetData.Row[1].C[2].V = "2020-07-10 15:00:00.000"
+	ws.(*xlsxWorksheet).SheetData.Row[2].C[2].T = "e"
+	ws.(*xlsxWorksheet).SheetData.Row[2].C[2].V = formulaErrorDIV
+	for _, tbl := range [][]string{
+		{"D1", "=SUM(C1,1)", "43870.3397004977"},
+		{"D2", "=LEN(C2)", "23"},
+		{"D3", "=IFERROR(C3,TRUE)", "TRUE"},
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", tbl[0], tbl[1]))
+		result, err := f.CalcCellValue("Sheet1", tbl[0])
+		assert.NoError(t, err)
+		assert.Equal(t, tbl[2], result)
+	}
+	// Test calculates formula that reference invalid cell
+	assert.NoError(t, f.SetCellValue("Sheet1", "E1", "E1"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "F1", "=LEN(E1)"))
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	_, err := f.CalcCellValue("Sheet1", "F1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestEvalInfixExp(t *testing.T) {
