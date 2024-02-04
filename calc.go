@@ -1632,8 +1632,20 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 		return arg.ToNumber(), err
 	case CellTypeInlineString, CellTypeSharedString:
 		return arg, err
-	default:
+	case CellTypeFormula:
+		if value != "" {
+			return arg, err
+		}
 		return newEmptyFormulaArg(), err
+	case CellTypeDate:
+		if value, err = f.GetCellValue(sheet, cell); err == nil {
+			if num := newStringFormulaArg(value).ToNumber(); num.Type == ArgNumber {
+				return num, err
+			}
+		}
+		return arg, err
+	default:
+		return newErrorFormulaArg(value, value), err
 	}
 }
 
