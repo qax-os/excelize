@@ -50,7 +50,7 @@ func NewFile(opts ...Options) *File {
 	ws, _ := f.workSheetReader("Sheet1")
 	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
 	f.Theme, _ = f.themeReader()
-	f.options = getOptions(opts...)
+	f.options = f.getOptions(opts...)
 	return f
 }
 

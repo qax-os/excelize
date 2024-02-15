@@ -93,8 +93,7 @@ func (cols *Cols) Rows(opts ...Options) ([]string, error) {
 	if cols.stashCol >= cols.curCol {
 		return rowIterator.cells, rowIterator.err
 	}
-	opts = append([]Options{*cols.f.options}, opts...)
-	cols.rawCellValue = getOptions(opts...).RawCellValue
+	cols.rawCellValue = cols.f.getOptions(opts...).RawCellValue
 	if cols.sst, rowIterator.err = cols.f.sharedStringsReader(); rowIterator.err != nil {
 		return rowIterator.cells, rowIterator.err
 	}

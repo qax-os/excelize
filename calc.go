@@ -805,15 +805,14 @@ type formulaFuncs struct {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
-	opts = append([]Options{*f.options}, opts...)
 	var (
-		rawCellValue = getOptions(opts...).RawCellValue
+		rawCellValue = f.getOptions(opts...).RawCellValue
 		styleIdx     int
 		token        formulaArg
 	)
 	if token, err = f.calcCellValue(&calcContext{
 		entry:             fmt.Sprintf("%s!%s", sheet, cell),
-		maxCalcIterations: getOptions(opts...).MaxCalcIterations,
+		maxCalcIterations: f.getOptions(opts...).MaxCalcIterations,
 		iterations:        make(map[string]uint),
 		iterationsCache:   make(map[string]formulaArg),
 	}, sheet, cell); err != nil {
