@@ -72,7 +72,7 @@ func (f *File) GetCellValue(sheet, cell string, opts ...Options) (string, error)
 		if err != nil {
 			return "", true, err
 		}
-		val, err := c.getValueFrom(f, sst, getOptions(opts...).RawCellValue)
+		val, err := c.getValueFrom(f, sst, f.getOptions(opts...).RawCellValue)
 		return val, true, err
 	})
 }

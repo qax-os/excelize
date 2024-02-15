@@ -151,7 +151,7 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	}
 	var rowIterator rowXMLIterator
 	var token xml.Token
-	rows.rawCellValue = getOptions(opts...).RawCellValue
+	rows.rawCellValue = rows.f.getOptions(opts...).RawCellValue
 	if rows.sst, rowIterator.err = rows.f.sharedStringsReader(); rowIterator.err != nil {
 		return rowIterator.cells, rowIterator.err
 	}
