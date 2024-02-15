@@ -63,8 +63,6 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 		return nil, err
 	}
 	rows, _ := f.Rows(sheet)
-	// Adding the OpenReader function options
-	opts = append([]Options{*f.options}, opts...)
 	results, cur, max := make([][]string, 0, 64), 0, 0
 	for rows.Next() {
 		cur++

@@ -68,7 +68,6 @@ func (f *File) GetCols(sheet string, opts ...Options) ([][]string, error) {
 	}
 	cols, err := f.Cols(sheet)
 	results := make([][]string, 0, 64)
-	opts = append([]Options{*f.options}, opts...)
 	for cols.Next() {
 		col, _ := cols.Rows(opts...)
 		results = append(results, col)
