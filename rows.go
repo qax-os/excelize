@@ -64,7 +64,7 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 	}
 	rows, _ := f.Rows(sheet)
 	// Adding the OpenReader function options
-	opts = append(opts, *f.options) 
+	opts = append([]Options{*f.options}, opts...)
 	results, cur, max := make([][]string, 0, 64), 0, 0
 	for rows.Next() {
 		cur++
@@ -153,6 +153,7 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	}
 	var rowIterator rowXMLIterator
 	var token xml.Token
+	opts = append([]Options{*rows.f.options}, opts...)
 	rows.rawCellValue = getOptions(opts...).RawCellValue
 	if rows.sst, rowIterator.err = rows.f.sharedStringsReader(); rowIterator.err != nil {
 		return rowIterator.cells, rowIterator.err
