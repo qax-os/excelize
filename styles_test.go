@@ -341,7 +341,16 @@ func TestNewStyle(t *testing.T) {
 	_, err = f.NewStyle(nil)
 	assert.NoError(t, err)
 
+	// Test gradient fills
+	f = NewFile()
+	styleID1, err := f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "4E71BE"}, Shading: 1, Pattern: 1}})
+	assert.NoError(t, err)
+	styleID2, err := f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FF0000", "4E71BE"}, Shading: 1, Pattern: 1}})
+	assert.NoError(t, err)
+	assert.NotEqual(t, styleID1, styleID2)
+
 	var exp string
+	f = NewFile()
 	_, err = f.NewStyle(&Style{CustomNumFmt: &exp})
 	assert.Equal(t, ErrCustomNumFmt, err)
 	_, err = f.NewStyle(&Style{Font: &Font{Family: strings.Repeat("s", MaxFontFamilyLength+1)}})
@@ -356,7 +365,7 @@ func TestNewStyle(t *testing.T) {
 		CustomNumFmt: &numFmt,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, styleID)
+	assert.Equal(t, 1, styleID)
 
 	assert.NotNil(t, f.Styles)
 	assert.NotNil(t, f.Styles.CellXfs)
@@ -371,7 +380,7 @@ func TestNewStyle(t *testing.T) {
 		NumFmt: 32, // must not be in currencyNumFmt
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 3, styleID)
+	assert.Equal(t, 2, styleID)
 
 	assert.NotNil(t, f.Styles)
 	assert.NotNil(t, f.Styles.CellXfs)
