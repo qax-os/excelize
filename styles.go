@@ -1071,25 +1071,28 @@ var (
 		"gray0625",
 	}
 	// styleFillVariants list all preset variants of the fill style.
-	styleFillVariants = []xlsxGradientFill{
-		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 270, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 180, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 255, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 315, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
-		{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path"},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Left: 1, Right: 1},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Top: 1},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Left: 1, Right: 1, Top: 1},
-		{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 0.5, Left: 0.5, Right: 0.5, Top: 0.5},
+	styleFillVariants = func() []xlsxGradientFill {
+		return []xlsxGradientFill{
+			{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 270, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 90, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 180, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+			{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 255, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 45, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+			{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 315, Stop: []*xlsxGradientFillStop{{}, {Position: 1}}},
+			{Degree: 135, Stop: []*xlsxGradientFillStop{{}, {Position: 0.5}, {Position: 1}}},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path"},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Left: 1, Right: 1},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Top: 1},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 1, Left: 1, Right: 1, Top: 1},
+			{Stop: []*xlsxGradientFillStop{{}, {Position: 1}}, Type: "path", Bottom: 0.5, Left: 0.5, Right: 0.5, Top: 0.5},
+		}
 	}
+
 	// getXfIDFuncs provides a function to get xfID by given style.
 	getXfIDFuncs = map[string]func(int, xlsxXf, *Style) bool{
 		"numFmt": func(numFmtID int, xf xlsxXf, style *Style) bool {
@@ -1132,6 +1135,7 @@ var (
 			return reflect.DeepEqual(xf.Protection, newProtection(style)) && xf.ApplyProtection != nil && *xf.ApplyProtection
 		},
 	}
+
 	// extractStyleCondFuncs provides a function set to returns if shoudle be
 	// extract style definition by given style.
 	extractStyleCondFuncs = map[string]func(xlsxXf, *xlsxStyleSheet) bool{
@@ -1157,6 +1161,7 @@ var (
 			return xf.ApplyProtection == nil || (xf.ApplyProtection != nil && *xf.ApplyProtection)
 		},
 	}
+
 	// drawContFmtFunc defines functions to create conditional formats.
 	drawContFmtFunc = map[string]func(p int, ct, ref, GUID string, fmtCond *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule){
 		"cellIs":            drawCondFmtCellIs,
@@ -1176,6 +1181,7 @@ var (
 		"expression":        drawCondFmtExp,
 		"iconSet":           drawCondFmtIconSet,
 	}
+
 	// extractContFmtFunc defines functions to get conditional formats.
 	extractContFmtFunc = map[string]func(*File, *xlsxCfRule, *xlsxExtLst) ConditionalFormatOptions{
 		"cellIs": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
@@ -1233,6 +1239,7 @@ var (
 			return f.extractCondFmtIconSet(c, extLst)
 		},
 	}
+
 	// validType defined the list of valid validation types.
 	validType = map[string]string{
 		"cell":          "cellIs",
@@ -1456,7 +1463,7 @@ func (f *File) extractFills(fl *xlsxFill, s *xlsxStyleSheet, style *Style) {
 		var fill Fill
 		if fl.GradientFill != nil {
 			fill.Type = "gradient"
-			for shading, variants := range styleFillVariants {
+			for shading, variants := range styleFillVariants() {
 				if fl.GradientFill.Bottom == variants.Bottom &&
 					fl.GradientFill.Degree == variants.Degree &&
 					fl.GradientFill.Left == variants.Left &&
@@ -2024,7 +2031,7 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		if len(style.Fill.Color) != 2 || style.Fill.Shading < 0 || style.Fill.Shading > 16 {
 			break
 		}
-		gradient := styleFillVariants[style.Fill.Shading]
+		gradient := styleFillVariants()[style.Fill.Shading]
 		gradient.Stop[0].Color.RGB = getPaletteColor(style.Fill.Color[0])
 		gradient.Stop[1].Color.RGB = getPaletteColor(style.Fill.Color[1])
 		if len(gradient.Stop) == 3 {
