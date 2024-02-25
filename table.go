@@ -19,7 +19,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 )
 
@@ -316,14 +315,22 @@ func checkDefinedName(name string) error {
 	if utf8.RuneCountInString(name) > MaxFieldLength {
 		return ErrNameLength
 	}
+	inCodeRange := func(code int, tbl []int) bool {
+		for i := 0; i < len(tbl); i += 2 {
+			if tbl[i] <= code && code <= tbl[i+1] {
+				return true
+			}
+		}
+		return false
+	}
 	for i, c := range name {
-		if string(c) == "_" {
-			continue
+		if i == 0 {
+			if inCodeRange(int(c), supportedDefinedNameAtStartCharCodeRange) {
+				continue
+			}
+			return newInvalidNameError(name)
 		}
-		if unicode.IsLetter(c) {
-			continue
-		}
-		if i > 0 && (unicode.IsDigit(c) || c == '.') {
+		if inCodeRange(int(c), supportedDefinedNameAfterStartCharCodeRange) {
 			continue
 		}
 		return newInvalidNameError(name)

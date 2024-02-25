@@ -334,9 +334,9 @@ func (ws *xlsxWorksheet) checkSheet() {
 // with r="0" attribute.
 func (ws *xlsxWorksheet) checkSheetRows() (int, []xlsxRow) {
 	var (
-		row, max  int
-		r0        []xlsxRow
-		maxRowNum = func(num int, c []xlsxC) int {
+		row, maxVal int
+		r0          []xlsxRow
+		maxRowNum   = func(num int, c []xlsxC) int {
 			for _, cell := range c {
 				if _, n, err := CellNameToCoordinates(cell.R); err == nil && n > num {
 					num = n
@@ -351,8 +351,8 @@ func (ws *xlsxWorksheet) checkSheetRows() (int, []xlsxRow) {
 			continue
 		}
 		if i == 0 && *r.R == 0 {
-			if num := maxRowNum(row, r.C); num > max {
-				max = num
+			if num := maxRowNum(row, r.C); num > maxVal {
+				maxVal = num
 			}
 			r0 = append(r0, r)
 			continue
@@ -361,8 +361,8 @@ func (ws *xlsxWorksheet) checkSheetRows() (int, []xlsxRow) {
 			row = *r.R
 		}
 	}
-	if max > row {
-		row = max
+	if maxVal > row {
+		row = maxVal
 	}
 	return row, r0
 }

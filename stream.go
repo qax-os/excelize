@@ -439,24 +439,24 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 // the width column B:C as 20:
 //
 //	err := sw.SetColWidth(2, 3, 20)
-func (sw *StreamWriter) SetColWidth(min, max int, width float64) error {
+func (sw *StreamWriter) SetColWidth(minVal, maxVal int, width float64) error {
 	if sw.sheetWritten {
 		return ErrStreamSetColWidth
 	}
-	if min < MinColumns || min > MaxColumns || max < MinColumns || max > MaxColumns {
+	if minVal < MinColumns || minVal > MaxColumns || maxVal < MinColumns || maxVal > MaxColumns {
 		return ErrColumnNumber
 	}
 	if width > MaxColumnWidth {
 		return ErrColumnWidth
 	}
-	if min > max {
-		min, max = max, min
+	if minVal > maxVal {
+		minVal, maxVal = maxVal, minVal
 	}
 
 	sw.cols.WriteString(`<col min="`)
-	sw.cols.WriteString(strconv.Itoa(min))
+	sw.cols.WriteString(strconv.Itoa(minVal))
 	sw.cols.WriteString(`" max="`)
-	sw.cols.WriteString(strconv.Itoa(max))
+	sw.cols.WriteString(strconv.Itoa(maxVal))
 	sw.cols.WriteString(`" width="`)
 	sw.cols.WriteString(strconv.FormatFloat(width, 'f', -1, 64))
 	sw.cols.WriteString(`" customWidth="1"/>`)

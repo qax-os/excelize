@@ -63,7 +63,7 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 		return nil, err
 	}
 	rows, _ := f.Rows(sheet)
-	results, cur, max := make([][]string, 0, 64), 0, 0
+	results, cur, maxVal := make([][]string, 0, 64), 0, 0
 	for rows.Next() {
 		cur++
 		row, err := rows.Columns(opts...)
@@ -72,10 +72,10 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 		}
 		results = append(results, row)
 		if len(row) > 0 {
-			max = cur
+			maxVal = cur
 		}
 	}
-	return results[:max], rows.Close()
+	return results[:maxVal], rows.Close()
 }
 
 // Rows defines an iterator to a sheet.

@@ -5776,7 +5776,7 @@ func localMonthsNameKiche(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesKiche[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesKicheAbbr[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesKicheAbbr[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameKinyarwanda returns the Kinyarwanda name of the month.
@@ -5787,7 +5787,7 @@ func localMonthsNameKinyarwanda(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesKinyarwanda[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesKinyarwanda[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesKinyarwanda[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameKiswahili returns the Kiswahili name of the month.
@@ -5798,7 +5798,7 @@ func localMonthsNameKiswahili(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesKiswahili[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesKiswahili[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesKiswahili[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameKonkani returns the Konkani name of the month.
@@ -5809,7 +5809,7 @@ func localMonthsNameKonkani(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesKonkani[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesKonkani[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesKonkani[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameKorean returns the Korean name of the month.
@@ -5828,7 +5828,7 @@ func localMonthsNameKyrgyz(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesKyrgyz[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesKyrgyz[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesKyrgyz[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameLao returns the Lao name of the month.
@@ -5839,7 +5839,7 @@ func localMonthsNameLao(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesLao[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesLao[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesLao[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameLatin returns the Latin name of the month.
@@ -5850,7 +5850,7 @@ func localMonthsNameLatin(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesLatin[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesLatin[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesLatin[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameLatvian returns the Latvian name of the month.
@@ -5861,7 +5861,7 @@ func localMonthsNameLatvian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesLatvian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesLatvian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesLatvian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameLithuanian returns the Lithuanian name of the month.
@@ -5872,7 +5872,7 @@ func localMonthsNameLithuanian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesLithuanian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesLithuanian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesLithuanian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameLowerSorbian returns the LowerSorbian name of the month.
@@ -5883,7 +5883,7 @@ func localMonthsNameLowerSorbian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesLowerSorbian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesLowerSorbian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesLowerSorbian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameLuxembourgish returns the Luxembourgish name of the month.
@@ -5894,7 +5894,7 @@ func localMonthsNameLuxembourgish(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesLuxembourgish[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesLuxembourgish[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesLuxembourgish[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMacedonian returns the Macedonian name of the month.
@@ -5905,7 +5905,7 @@ func localMonthsNameMacedonian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMacedonian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMacedonian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMacedonian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMalay returns the Malay name of the month.
@@ -5916,7 +5916,7 @@ func localMonthsNameMalay(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMalay[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMalay[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMalay[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMalayalam returns the Malayalam name of the month.
@@ -5927,7 +5927,7 @@ func localMonthsNameMalayalam(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMalayalam[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMalayalam[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMalayalam[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMaltese returns the Maltese name of the month.
@@ -5938,7 +5938,7 @@ func localMonthsNameMaltese(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMaltese[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMaltese[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMaltese[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMaori returns the Maori name of the month.
@@ -5949,13 +5949,13 @@ func localMonthsNameMaori(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMaori[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMaori[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMaori[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMapudungun returns the Mapudungun name of the month.
 func localMonthsNameMapudungun(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesMapudungun[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesMapudungun[(t.Month() - 1)])[:1])
 	}
 	return monthNamesMapudungun[int(t.Month())-1]
 }
@@ -5968,7 +5968,7 @@ func localMonthsNameMarathi(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMarathi[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMarathi[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMarathi[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMohawk returns the Mohawk name of the month.
@@ -5979,7 +5979,7 @@ func localMonthsNameMohawk(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMohawk[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMohawk[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMohawk[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMongolian returns the Mongolian name of the month.
@@ -5990,7 +5990,7 @@ func localMonthsNameMongolian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesMongolian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesMongolian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesMongolian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameMorocco returns the Morocco name of the month.
@@ -6012,7 +6012,7 @@ func localMonthsNameNepali(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesNepali[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesNepali[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesNepali[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameNepaliIN returns the India Nepali name of the month.
@@ -6023,7 +6023,7 @@ func localMonthsNameNepaliIN(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesNepaliIN[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesNepaliIN[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesNepaliIN[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameNigeria returns the Nigeria name of the month.
@@ -6045,7 +6045,7 @@ func localMonthsNameNorwegian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesNorwegian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesNorwegian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesNorwegian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameOccitan returns the Occitan name of the month.
@@ -6056,13 +6056,13 @@ func localMonthsNameOccitan(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesOccitan[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesOccitan[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesOccitan[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameOdia returns the Odia name of the month.
 func localMonthsNameOdia(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesOdia[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesOdia[(t.Month() - 1)])[:1])
 	}
 	return monthNamesOdia[int(t.Month())-1]
 }
@@ -6075,7 +6075,7 @@ func localMonthsNameOromo(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesOromo[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesOromo[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesOromo[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNamePashto returns the Pashto name of the month.
@@ -6094,7 +6094,7 @@ func localMonthsNamePashto(t time.Time, abbr int) string {
 // localMonthsNamePersian returns the Persian name of the month.
 func localMonthsNamePersian(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesPersian[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesPersian[(t.Month() - 1)])[:1])
 	}
 	return monthNamesPersian[int(t.Month())-1]
 }
@@ -6102,29 +6102,29 @@ func localMonthsNamePersian(t time.Time, abbr int) string {
 // localMonthsNamePolish returns the Polish name of the month.
 func localMonthsNamePolish(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesPolish[int(t.Month()-1)])[:3])
+		return string([]rune(monthNamesPolish[(t.Month() - 1)])[:3])
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesPolish[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesPolish[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesPolish[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNamePortuguese returns the Portuguese name of the month.
 func localMonthsNamePortuguese(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesPortuguese[int(t.Month()-1)])[:3])
+		return string([]rune(monthNamesPortuguese[(t.Month() - 1)])[:3])
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesPortuguese[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesPortuguese[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesPortuguese[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNamePunjabi returns the Punjabi name of the month.
 func localMonthsNamePunjabi(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesPunjabi[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesPunjabi[(t.Month() - 1)])[:1])
 	}
 	return monthNamesPunjabi[int(t.Month())-1]
 }
@@ -6132,7 +6132,7 @@ func localMonthsNamePunjabi(t time.Time, abbr int) string {
 // localMonthsNamePunjabiArab returns the Punjabi Arab name of the month.
 func localMonthsNamePunjabiArab(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesPunjabiArab[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesPunjabiArab[(t.Month() - 1)])[:1])
 	}
 	return monthNamesPunjabiArab[int(t.Month())-1]
 }
@@ -6140,26 +6140,26 @@ func localMonthsNamePunjabiArab(t time.Time, abbr int) string {
 // localMonthsNameQuechua returns the Quechua name of the month.
 func localMonthsNameQuechua(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesQuechua[int(t.Month()-1)])[:3])
+		return string([]rune(monthNamesQuechua[(t.Month() - 1)])[:3])
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesQuechua[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesQuechua[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesQuechua[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameQuechuaEcuador returns the QuechuaEcuador name of the month.
 func localMonthsNameQuechuaEcuador(t time.Time, abbr int) string {
 	if abbr == 3 {
 		if int(t.Month()) == 1 {
-			return string([]rune(monthNamesQuechuaEcuador[int(t.Month()-1)])[:4])
+			return string([]rune(monthNamesQuechuaEcuador[(t.Month() - 1)])[:4])
 		}
-		return string([]rune(monthNamesQuechuaEcuador[int(t.Month()-1)])[:3])
+		return string([]rune(monthNamesQuechuaEcuador[(t.Month() - 1)])[:3])
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesQuechuaEcuador[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesQuechuaEcuador[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesQuechuaEcuador[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameRomanian returns the Romanian name of the month.
@@ -6170,7 +6170,7 @@ func localMonthsNameRomanian(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesRomanian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesRomanian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesRomanian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameRomansh returns the Romansh name of the month.
@@ -6181,7 +6181,7 @@ func localMonthsNameRomansh(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesRomansh[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesRomansh[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesRomansh[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameRussian returns the Russian name of the month.
@@ -6207,7 +6207,7 @@ func localMonthsNameSakha(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSakha[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSakha[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSakha[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSami returns the Sami name of the month.
@@ -6218,7 +6218,7 @@ func localMonthsNameSami(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSami[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSami[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSami[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSamiLule returns the Sami (Lule) name of the month.
@@ -6229,25 +6229,25 @@ func localMonthsNameSamiLule(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSamiLule[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSamiLule[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSamiLule[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSamiNorthern returns the Sami (Northern) name of the month.
 func localMonthsNameSamiNorthern(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSamiNorthernAbbr[int(t.Month()-1)]
+		return monthNamesSamiNorthernAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSamiNorthern[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSamiNorthern[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSamiNorthern[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSamiNorthernFI returns the Sami (Northern) Finland name of the
 // month.
 func localMonthsNameSamiNorthernFI(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSamiNorthernAbbr[int(t.Month()-1)]
+		return monthNamesSamiNorthernAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		if int(t.Month()) == 1 {
@@ -6255,13 +6255,13 @@ func localMonthsNameSamiNorthernFI(t time.Time, abbr int) string {
 		}
 		return monthNamesSamiNorthern[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSamiNorthern[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSamiNorthern[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSamiSkolt returns the Sami (Skolt) name of the month.
 func localMonthsNameSamiSkolt(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesSamiSkolt[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesSamiSkolt[(t.Month() - 1)])[:1])
 	}
 	return monthNamesSamiSkolt[int(t.Month())-1]
 }
@@ -6269,18 +6269,18 @@ func localMonthsNameSamiSkolt(t time.Time, abbr int) string {
 // localMonthsNameSamiSouthern returns the Sami (Southern) name of the month.
 func localMonthsNameSamiSouthern(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSamiSouthernAbbr[int(t.Month()-1)]
+		return monthNamesSamiSouthernAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSamiSouthern[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSamiSouthern[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSamiSouthern[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSanskrit returns the Sanskrit name of the month.
 func localMonthsNameSanskrit(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesSanskrit[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesSanskrit[(t.Month() - 1)])[:1])
 	}
 	return monthNamesSanskrit[int(t.Month())-1]
 }
@@ -6288,85 +6288,85 @@ func localMonthsNameSanskrit(t time.Time, abbr int) string {
 // localMonthsNameScottishGaelic returns the Scottish Gaelic name of the month.
 func localMonthsNameScottishGaelic(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesScottishGaelicAbbr[int(t.Month()-1)]
+		return monthNamesScottishGaelicAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesScottishGaelic[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesScottishGaelic[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesScottishGaelic[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSerbian returns the Serbian (Cyrillic) name of the month.
 func localMonthsNameSerbian(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSerbianAbbr[int(t.Month()-1)]
+		return monthNamesSerbianAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSerbian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSerbian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSerbian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSerbianBA returns the Serbian (Cyrillic) Bosnia and
 // Herzegovina name of the month.
 func localMonthsNameSerbianBA(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSerbianBAAbbr[int(t.Month()-1)]
+		return monthNamesSerbianBAAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSerbianBA[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSerbianBA[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSerbianBA[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSerbianLatin returns the Serbian (Latin) name of the month.
 func localMonthsNameSerbianLatin(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return string([]rune(monthNamesSerbianLatin[int(t.Month()-1)])[:3])
+		return string([]rune(monthNamesSerbianLatin[(t.Month() - 1)])[:3])
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSerbianLatin[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSerbianLatin[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSerbianLatin[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSerbianLatinCS returns the Serbian (Latin) name of the month.
 func localMonthsNameSerbianLatinCS(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSerbianLatinAbbr[int(t.Month()-1)]
+		return monthNamesSerbianLatinAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSerbianLatin[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSerbianLatin[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSerbianLatin[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSesothoSaLeboa returns the Sesotho sa Leboa name of the month.
 func localMonthsNameSesothoSaLeboa(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSesothoSaLeboaAbbr[int(t.Month()-1)]
+		return monthNamesSesothoSaLeboaAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSesothoSaLeboa[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSesothoSaLeboa[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSesothoSaLeboa[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSetswana returns the Setswana name of the month.
 func localMonthsNameSetswana(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSetswanaAbbr[int(t.Month()-1)]
+		return monthNamesSetswanaAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSetswana[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSetswana[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSetswana[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSindhi returns the Sindhi name of the month.
 func localMonthsNameSindhi(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesSindhi[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesSindhi[(t.Month() - 1)])[:1])
 	}
 	return monthNamesSindhi[int(t.Month())-1]
 }
@@ -6374,12 +6374,12 @@ func localMonthsNameSindhi(t time.Time, abbr int) string {
 // localMonthsNameSinhala returns the Sinhala name of the month.
 func localMonthsNameSinhala(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSinhalaAbbr[int(t.Month()-1)]
+		return monthNamesSinhalaAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSinhala[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSinhala[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSinhala[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSlovak returns the Slovak name of the month.
@@ -6390,40 +6390,40 @@ func localMonthsNameSlovak(t time.Time, abbr int) string {
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSlovak[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSlovak[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSlovak[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSlovenian returns the Slovenian name of the month.
 func localMonthsNameSlovenian(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSlovenianAbbr[int(t.Month()-1)]
+		return monthNamesSlovenianAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSlovenian[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSlovenian[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSlovenian[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSomali returns the Somali name of the month.
 func localMonthsNameSomali(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSomaliAbbr[int(t.Month()-1)]
+		return monthNamesSomaliAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSomali[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSomali[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSomali[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSotho returns the Sotho name of the month.
 func localMonthsNameSotho(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesSothoAbbr[int(t.Month()-1)]
+		return monthNamesSothoAbbr[(t.Month() - 1)]
 	}
 	if abbr == 4 || abbr > 6 {
 		return monthNamesSotho[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSotho[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSotho[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSpanish returns the Spanish name of the month.
@@ -6478,7 +6478,7 @@ func localMonthsNameSyriac(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesSyriac[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesSyriac[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesSyriac[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTajik returns the Tajik name of the month.
@@ -6489,7 +6489,7 @@ func localMonthsNameTajik(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTajik[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTajik[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTajik[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTamazight returns the Tamazight name of the month.
@@ -6500,13 +6500,13 @@ func localMonthsNameTamazight(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTamazight[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTamazight[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTamazight[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTamil returns the Tamil name of the month.
 func localMonthsNameTamil(t time.Time, abbr int) string {
 	if abbr == 5 {
-		return string([]rune(monthNamesTamil[int(t.Month()-1)])[:1])
+		return string([]rune(monthNamesTamil[(t.Month() - 1)])[:1])
 	}
 	return monthNamesTamil[int(t.Month())-1]
 }
@@ -6519,7 +6519,7 @@ func localMonthsNameTamilLK(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTamil[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTamil[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTamil[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTatar returns the Tatar name of the month.
@@ -6530,7 +6530,7 @@ func localMonthsNameTatar(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTatar[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTatar[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTatar[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTelugu returns the Telugu name of the month.
@@ -6541,7 +6541,7 @@ func localMonthsNameTelugu(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTelugu[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTelugu[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTelugu[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameSyllabics returns the Syllabics name of the month.
@@ -6589,7 +6589,7 @@ func localMonthsNameTigrinya(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTigrinya[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTigrinya[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTigrinya[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTsonga returns the Tsonga name of the month.
@@ -6600,7 +6600,7 @@ func localMonthsNameTsonga(t time.Time, abbr int) string {
 	if abbr == 4 {
 		return monthNamesTsonga[int(t.Month())-1]
 	}
-	return string([]rune(monthNamesTsonga[int(t.Month()-1)])[:1])
+	return string([]rune(monthNamesTsonga[(t.Month() - 1)])[:1])
 }
 
 // localMonthsNameTraditionalMongolian returns the Traditional Mongolian name of
@@ -6922,10 +6922,10 @@ func (nf *numberFormat) daysHandler(token nfp.Token) {
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "A") {
 		if l == 3 {
-			nf.result += weekdayNamesAbbr[int(nf.t.Weekday())]
+			nf.result += weekdayNamesAbbr[nf.t.Weekday()]
 		}
 		if l > 3 {
-			nf.result += weekdayNames[int(nf.t.Weekday())]
+			nf.result += weekdayNames[nf.t.Weekday()]
 		}
 		return
 	}
@@ -6936,9 +6936,9 @@ func (nf *numberFormat) daysHandler(token nfp.Token) {
 		case 2:
 			nf.result += fmt.Sprintf("%02d", nf.t.Day())
 		case 3:
-			nf.result += weekdayNamesAbbr[int(nf.t.Weekday())]
+			nf.result += weekdayNamesAbbr[nf.t.Weekday()]
 		default:
-			nf.result += weekdayNames[int(nf.t.Weekday())]
+			nf.result += weekdayNames[nf.t.Weekday()]
 		}
 	}
 }

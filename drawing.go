@@ -980,21 +980,21 @@ func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
 
 // drawPlotAreaCatAx provides a function to draw the c:catAx element.
 func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
-	max := &attrValFloat{Val: opts.XAxis.Maximum}
-	min := &attrValFloat{Val: opts.XAxis.Minimum}
+	maxVal := &attrValFloat{Val: opts.XAxis.Maximum}
+	minVal := &attrValFloat{Val: opts.XAxis.Minimum}
 	if opts.XAxis.Maximum == nil {
-		max = nil
+		maxVal = nil
 	}
 	if opts.XAxis.Minimum == nil {
-		min = nil
+		minVal = nil
 	}
 	axs := []*cAxs{
 		{
 			AxID: &attrValInt{Val: intPtr(100000000)},
 			Scaling: &cScaling{
 				Orientation: &attrValString{Val: stringPtr(orientation[opts.XAxis.ReverseOrder])},
-				Max:         max,
-				Min:         min,
+				Max:         maxVal,
+				Min:         minVal,
 			},
 			Delete:        &attrValBool{Val: boolPtr(opts.XAxis.None)},
 			AxPos:         &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
@@ -1030,8 +1030,8 @@ func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 			AxID: &attrValInt{Val: intPtr(opts.XAxis.axID)},
 			Scaling: &cScaling{
 				Orientation: &attrValString{Val: stringPtr(orientation[opts.XAxis.ReverseOrder])},
-				Max:         max,
-				Min:         min,
+				Max:         maxVal,
+				Min:         minVal,
 			},
 			Delete:        &attrValBool{Val: boolPtr(true)},
 			AxPos:         &attrValString{Val: stringPtr("b")},
@@ -1052,13 +1052,13 @@ func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 
 // drawPlotAreaValAx provides a function to draw the c:valAx element.
 func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
-	max := &attrValFloat{Val: opts.YAxis.Maximum}
-	min := &attrValFloat{Val: opts.YAxis.Minimum}
+	maxVal := &attrValFloat{Val: opts.YAxis.Maximum}
+	minVal := &attrValFloat{Val: opts.YAxis.Minimum}
 	if opts.YAxis.Maximum == nil {
-		max = nil
+		maxVal = nil
 	}
 	if opts.YAxis.Minimum == nil {
-		min = nil
+		minVal = nil
 	}
 	var logBase *attrValFloat
 	if opts.YAxis.LogBase >= 2 && opts.YAxis.LogBase <= 1000 {
@@ -1070,8 +1070,8 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 			Scaling: &cScaling{
 				LogBase:     logBase,
 				Orientation: &attrValString{Val: stringPtr(orientation[opts.YAxis.ReverseOrder])},
-				Max:         max,
-				Min:         min,
+				Max:         maxVal,
+				Min:         minVal,
 			},
 			Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
 			AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
@@ -1109,8 +1109,8 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 			AxID: &attrValInt{Val: intPtr(opts.YAxis.axID)},
 			Scaling: &cScaling{
 				Orientation: &attrValString{Val: stringPtr(orientation[opts.YAxis.ReverseOrder])},
-				Max:         max,
-				Min:         min,
+				Max:         maxVal,
+				Min:         minVal,
 			},
 			Delete:        &attrValBool{Val: boolPtr(false)},
 			AxPos:         &attrValString{Val: stringPtr("r")},
@@ -1129,21 +1129,21 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 
 // drawPlotAreaSerAx provides a function to draw the c:serAx element.
 func (f *File) drawPlotAreaSerAx(opts *Chart) []*cAxs {
-	max := &attrValFloat{Val: opts.YAxis.Maximum}
-	min := &attrValFloat{Val: opts.YAxis.Minimum}
+	maxVal := &attrValFloat{Val: opts.YAxis.Maximum}
+	minVal := &attrValFloat{Val: opts.YAxis.Minimum}
 	if opts.YAxis.Maximum == nil {
-		max = nil
+		maxVal = nil
 	}
 	if opts.YAxis.Minimum == nil {
-		min = nil
+		minVal = nil
 	}
 	return []*cAxs{
 		{
 			AxID: &attrValInt{Val: intPtr(100000005)},
 			Scaling: &cScaling{
 				Orientation: &attrValString{Val: stringPtr(orientation[opts.YAxis.ReverseOrder])},
-				Max:         max,
-				Min:         min,
+				Max:         maxVal,
+				Min:         minVal,
 			},
 			Delete:     &attrValBool{Val: boolPtr(opts.YAxis.None)},
 			AxPos:      &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},

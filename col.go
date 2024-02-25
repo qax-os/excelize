@@ -354,20 +354,20 @@ func (f *File) GetColOutlineLevel(sheet, col string) (uint8, error) {
 }
 
 // parseColRange parse and convert column range with column name to the column number.
-func (f *File) parseColRange(columns string) (min, max int, err error) {
+func (f *File) parseColRange(columns string) (minVal, maxVal int, err error) {
 	colsTab := strings.Split(columns, ":")
-	min, err = ColumnNameToNumber(colsTab[0])
+	minVal, err = ColumnNameToNumber(colsTab[0])
 	if err != nil {
 		return
 	}
-	max = min
+	maxVal = minVal
 	if len(colsTab) == 2 {
-		if max, err = ColumnNameToNumber(colsTab[1]); err != nil {
+		if maxVal, err = ColumnNameToNumber(colsTab[1]); err != nil {
 			return
 		}
 	}
-	if max < min {
-		min, max = max, min
+	if maxVal < minVal {
+		minVal, maxVal = maxVal, minVal
 	}
 	return
 }

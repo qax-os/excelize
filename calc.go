@@ -281,6 +281,10 @@ func (fa formulaArg) Value() (value string) {
 		return fmt.Sprintf("%g", fa.Number)
 	case ArgString:
 		return fa.String
+	case ArgMatrix:
+		if args := fa.ToList(); len(args) > 0 {
+			return args[0].Value()
+		}
 	case ArgError:
 		return fa.Error
 	}
@@ -299,6 +303,10 @@ func (fa formulaArg) ToNumber() formulaArg {
 		}
 	case ArgNumber:
 		n = fa.Number
+	case ArgMatrix:
+		if args := fa.ToList(); len(args) > 0 {
+			return args[0].ToNumber()
+		}
 	}
 	return newNumberFormulaArg(n)
 }
@@ -920,9 +928,14 @@ func newEmptyFormulaArg() formulaArg {
 //
 // TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.Token) (formulaArg, error) {
-	var err error
-	opdStack, optStack, opfStack, opfdStack, opftStack, argsStack := NewStack(), NewStack(), NewStack(), NewStack(), NewStack(), NewStack()
-	var inArray, inArrayRow bool
+	var (
+		err                             error
+		inArray, inArrayRow             bool
+		formulaArray                    [][]formulaArg
+		formulaArrayRow                 []formulaArg
+		opdStack, optStack, opfStack    = NewStack(), NewStack(), NewStack()
+		opfdStack, opftStack, argsStack = NewStack(), NewStack(), NewStack()
+	)
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 
@@ -936,11 +949,11 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 		// function start
 		if isFunctionStartToken(token) {
 			if token.TValue == "ARRAY" {
-				inArray = true
+				inArray, formulaArray = true, [][]formulaArg{}
 				continue
 			}
 			if token.TValue == "ARRAYROW" {
-				inArrayRow = true
+				inArrayRow, formulaArrayRow = true, []formulaArg{}
 				continue
 			}
 			opfStack.Push(token)
@@ -1021,14 +1034,16 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 			}
 
 			if inArrayRow && isOperand(token) {
+				formulaArrayRow = append(formulaArrayRow, opfdStack.Pop().(formulaArg))
 				continue
 			}
 			if inArrayRow && isFunctionStopToken(token) {
+				formulaArray = append(formulaArray, formulaArrayRow)
 				inArrayRow = false
 				continue
 			}
 			if inArray && isFunctionStopToken(token) {
-				argsStack.Peek().(*list.List).PushBack(opfdStack.Pop())
+				argsStack.Peek().(*list.List).PushBack(newMatrixFormulaArg(formulaArray))
 				inArray = false
 				continue
 			}
@@ -1825,13 +1840,13 @@ func (fn *formulaFuncs) bassel(argsList *list.List, modfied bool) formulaArg {
 	if n.Type != ArgNumber {
 		return n
 	}
-	max, x1 := 100, x.Number*0.5
+	maxVal, x1 := 100, x.Number*0.5
 	x2 := x1 * x1
 	x1 = math.Pow(x1, n.Number)
 	n1, n2, n3, n4, add := fact(n.Number), 1.0, 0.0, n.Number, false
 	result := x1 / n1
 	t := result * 0.9
-	for result != t && max != 0 {
+	for result != t && maxVal != 0 {
 		x1 *= x2
 		n3++
 		n1 *= n3
@@ -1844,7 +1859,7 @@ func (fn *formulaFuncs) bassel(argsList *list.List, modfied bool) formulaArg {
 		} else {
 			result -= r
 		}
-		max--
+		maxVal--
 		add = !add
 	}
 	return newNumberFormulaArg(result)
@@ -2151,8 +2166,8 @@ func (fn *formulaFuncs) bitwise(name string, argsList *list.List) formulaArg {
 	if num1.Type != ArgNumber || num2.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	max := math.Pow(2, 48) - 1
-	if num1.Number < 0 || num1.Number > max || num2.Number < 0 || num2.Number > max {
+	maxVal := math.Pow(2, 48) - 1
+	if num1.Number < 0 || num1.Number > maxVal || num2.Number < 0 || num2.Number > maxVal {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	bitwiseFuncMap := map[string]func(a, b int) int{
@@ -6958,9 +6973,9 @@ func (fn *formulaFuncs) BETAdotINV(argsList *list.List) formulaArg {
 
 // incompleteGamma is an implementation of the incomplete gamma function.
 func incompleteGamma(a, x float64) float64 {
-	max := 32
+	maxVal := 32
 	summer := 0.0
-	for n := 0; n <= max; n++ {
+	for n := 0; n <= maxVal; n++ {
 		divisor := a
 		for i := 1; i <= n; i++ {
 			divisor *= a + float64(i)
@@ -7079,7 +7094,7 @@ func (fn *formulaFuncs) BINOMdotDISTdotRANGE(argsList *list.List) formulaArg {
 
 // binominv implement inverse of the binomial distribution calculation.
 func binominv(n, p, alpha float64) float64 {
-	q, i, sum, max := 1-p, 0.0, 0.0, 0.0
+	q, i, sum, maxVal := 1-p, 0.0, 0.0, 0.0
 	n = math.Floor(n)
 	if q > p {
 		factor := math.Pow(q, n)
@@ -7091,8 +7106,8 @@ func binominv(n, p, alpha float64) float64 {
 		return i
 	}
 	factor := math.Pow(p, n)
-	sum, max = 1-factor, n
-	for i = 0; i < max && sum >= alpha; i++ {
+	sum, maxVal = 1-factor, n
+	for i = 0; i < maxVal && sum >= alpha; i++ {
 		factor *= (n - i) / (i + 1) * q / p
 		sum -= factor
 	}
@@ -8078,10 +8093,13 @@ func (fn *formulaFuncs) FORECASTdotLINEAR(argsList *list.List) formulaArg {
 	return fn.pearsonProduct("FORECAST.LINEAR", 3, argsList)
 }
 
-// maritxToSortedColumnList convert matrix formula arguments to a ascending
+// matrixToSortedColumnList convert matrix formula arguments to a ascending
 // order list by column.
-func maritxToSortedColumnList(arg formulaArg) formulaArg {
-	mtx, cols := []formulaArg{}, len(arg.Matrix[0])
+func matrixToSortedColumnList(arg formulaArg) formulaArg {
+	var (
+		mtx  []formulaArg
+		cols = len(arg.Matrix[0])
+	)
 	for colIdx := 0; colIdx < cols; colIdx++ {
 		for _, row := range arg.Matrix {
 			cell := row[colIdx]
@@ -8120,14 +8138,14 @@ func (fn *formulaFuncs) FREQUENCY(argsList *list.List) formulaArg {
 		c                [][]formulaArg
 		i, j             int
 	)
-	if dataMtx = maritxToSortedColumnList(data); dataMtx.Type != ArgList {
+	if dataMtx = matrixToSortedColumnList(data); dataMtx.Type != ArgList {
 		return dataMtx
 	}
-	if binsMtx = maritxToSortedColumnList(bins); binsMtx.Type != ArgList {
+	if binsMtx = matrixToSortedColumnList(bins); binsMtx.Type != ArgList {
 		return binsMtx
 	}
 	for row := 0; row < len(binsMtx.List)+1; row++ {
-		rows := []formulaArg{}
+		var rows []formulaArg
 		for col := 0; col < 1; col++ {
 			rows = append(rows, newNumberFormulaArg(0))
 		}
@@ -8349,8 +8367,8 @@ func (fn *formulaFuncs) GEOMEAN(argsList *list.List) formulaArg {
 		return product
 	}
 	count := fn.COUNT(argsList)
-	min := fn.MIN(argsList)
-	if product.Number > 0 && min.Number > 0 {
+	minVal := fn.MIN(argsList)
+	if product.Number > 0 && minVal.Number > 0 {
 		return newNumberFormulaArg(math.Pow(product.Number, 1/count.Number))
 	}
 	return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
@@ -9055,7 +9073,7 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "HARMEAN requires at least 1 argument")
 	}
-	if min := fn.MIN(argsList); min.Number < 0 {
+	if minVal := fn.MIN(argsList); minVal.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	number, val, cnt := 0.0, 0.0, 0.0
@@ -10002,7 +10020,7 @@ func (fn *formulaFuncs) MAX(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MAX requires at least 1 argument")
 	}
-	return fn.max(false, argsList)
+	return fn.maxValue(false, argsList)
 }
 
 // MAXA function returns the largest value from a supplied set of numeric
@@ -10015,7 +10033,7 @@ func (fn *formulaFuncs) MAXA(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MAXA requires at least 1 argument")
 	}
-	return fn.max(true, argsList)
+	return fn.maxValue(true, argsList)
 }
 
 // MAXIFS function returns the maximum value from a subset of values that are
@@ -10031,36 +10049,36 @@ func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	var args []formulaArg
-	max, maxRange := -math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix
+	maxVal, maxRange := -math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
 	for _, ref := range formulaIfsMatch(args) {
-		if num := maxRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && max < num.Number {
-			max = num.Number
+		if num := maxRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && maxVal < num.Number {
+			maxVal = num.Number
 		}
 	}
-	if max == -math.MaxFloat64 {
-		max = 0
+	if maxVal == -math.MaxFloat64 {
+		maxVal = 0
 	}
-	return newNumberFormulaArg(max)
+	return newNumberFormulaArg(maxVal)
 }
 
 // calcListMatrixMax is part of the implementation max.
-func calcListMatrixMax(maxa bool, max float64, arg formulaArg) float64 {
+func calcListMatrixMax(maxa bool, maxVal float64, arg formulaArg) float64 {
 	for _, cell := range arg.ToList() {
-		if cell.Type == ArgNumber && cell.Number > max {
+		if cell.Type == ArgNumber && cell.Number > maxVal {
 			if maxa && cell.Boolean || !cell.Boolean {
-				max = cell.Number
+				maxVal = cell.Number
 			}
 		}
 	}
-	return max
+	return maxVal
 }
 
-// max is an implementation of the formula functions MAX and MAXA.
-func (fn *formulaFuncs) max(maxa bool, argsList *list.List) formulaArg {
-	max := -math.MaxFloat64
+// maxValue is an implementation of the formula functions MAX and MAXA.
+func (fn *formulaFuncs) maxValue(maxa bool, argsList *list.List) formulaArg {
+	maxVal := -math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
@@ -10069,29 +10087,29 @@ func (fn *formulaFuncs) max(maxa bool, argsList *list.List) formulaArg {
 				continue
 			} else {
 				num := arg.ToBool()
-				if num.Type == ArgNumber && num.Number > max {
-					max = num.Number
+				if num.Type == ArgNumber && num.Number > maxVal {
+					maxVal = num.Number
 					continue
 				}
 			}
 			num := arg.ToNumber()
-			if num.Type != ArgError && num.Number > max {
-				max = num.Number
+			if num.Type != ArgError && num.Number > maxVal {
+				maxVal = num.Number
 			}
 		case ArgNumber:
-			if arg.Number > max {
-				max = arg.Number
+			if arg.Number > maxVal {
+				maxVal = arg.Number
 			}
 		case ArgList, ArgMatrix:
-			max = calcListMatrixMax(maxa, max, arg)
+			maxVal = calcListMatrixMax(maxa, maxVal, arg)
 		case ArgError:
 			return arg
 		}
 	}
-	if max == -math.MaxFloat64 {
-		max = 0
+	if maxVal == -math.MaxFloat64 {
+		maxVal = 0
 	}
-	return newNumberFormulaArg(max)
+	return newNumberFormulaArg(maxVal)
 }
 
 // MEDIAN function returns the statistical median (the middle value) of a list
@@ -10145,7 +10163,7 @@ func (fn *formulaFuncs) MIN(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MIN requires at least 1 argument")
 	}
-	return fn.min(false, argsList)
+	return fn.minValue(false, argsList)
 }
 
 // MINA function returns the smallest value from a supplied set of numeric
@@ -10158,7 +10176,7 @@ func (fn *formulaFuncs) MINA(argsList *list.List) formulaArg {
 	if argsList.Len() == 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "MINA requires at least 1 argument")
 	}
-	return fn.min(true, argsList)
+	return fn.minValue(true, argsList)
 }
 
 // MINIFS function returns the minimum value from a subset of values that are
@@ -10174,36 +10192,36 @@ func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	var args []formulaArg
-	min, minRange := math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix
+	minVal, minRange := math.MaxFloat64, argsList.Front().Value.(formulaArg).Matrix
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
 	for _, ref := range formulaIfsMatch(args) {
-		if num := minRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && min > num.Number {
-			min = num.Number
+		if num := minRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && minVal > num.Number {
+			minVal = num.Number
 		}
 	}
-	if min == math.MaxFloat64 {
-		min = 0
+	if minVal == math.MaxFloat64 {
+		minVal = 0
 	}
-	return newNumberFormulaArg(min)
+	return newNumberFormulaArg(minVal)
 }
 
 // calcListMatrixMin is part of the implementation min.
-func calcListMatrixMin(mina bool, min float64, arg formulaArg) float64 {
+func calcListMatrixMin(mina bool, minVal float64, arg formulaArg) float64 {
 	for _, cell := range arg.ToList() {
-		if cell.Type == ArgNumber && cell.Number < min {
+		if cell.Type == ArgNumber && cell.Number < minVal {
 			if mina && cell.Boolean || !cell.Boolean {
-				min = cell.Number
+				minVal = cell.Number
 			}
 		}
 	}
-	return min
+	return minVal
 }
 
-// min is an implementation of the formula functions MIN and MINA.
-func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
-	min := math.MaxFloat64
+// minValue is an implementation of the formula functions MIN and MINA.
+func (fn *formulaFuncs) minValue(mina bool, argsList *list.List) formulaArg {
+	minVal := math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
@@ -10212,29 +10230,29 @@ func (fn *formulaFuncs) min(mina bool, argsList *list.List) formulaArg {
 				continue
 			} else {
 				num := arg.ToBool()
-				if num.Type == ArgNumber && num.Number < min {
-					min = num.Number
+				if num.Type == ArgNumber && num.Number < minVal {
+					minVal = num.Number
 					continue
 				}
 			}
 			num := arg.ToNumber()
-			if num.Type != ArgError && num.Number < min {
-				min = num.Number
+			if num.Type != ArgError && num.Number < minVal {
+				minVal = num.Number
 			}
 		case ArgNumber:
-			if arg.Number < min {
-				min = arg.Number
+			if arg.Number < minVal {
+				minVal = arg.Number
 			}
 		case ArgList, ArgMatrix:
-			min = calcListMatrixMin(mina, min, arg)
+			minVal = calcListMatrixMin(mina, minVal, arg)
 		case ArgError:
 			return arg
 		}
 	}
-	if min == math.MaxFloat64 {
-		min = 0
+	if minVal == math.MaxFloat64 {
+		minVal = 0
 	}
-	return newNumberFormulaArg(min)
+	return newNumberFormulaArg(minVal)
 }
 
 // pearsonProduct is an implementation of the formula functions FORECAST,
@@ -13554,7 +13572,7 @@ func (fn *formulaFuncs) code(name string, argsList *list.List) formulaArg {
 //
 //	CONCAT(text1,[text2],...)
 func (fn *formulaFuncs) CONCAT(argsList *list.List) formulaArg {
-	return fn.concat("CONCAT", argsList)
+	return fn.concat(argsList)
 }
 
 // CONCATENATE function joins together a series of supplied text strings into
@@ -13562,12 +13580,12 @@ func (fn *formulaFuncs) CONCAT(argsList *list.List) formulaArg {
 //
 //	CONCATENATE(text1,[text2],...)
 func (fn *formulaFuncs) CONCATENATE(argsList *list.List) formulaArg {
-	return fn.concat("CONCATENATE", argsList)
+	return fn.concat(argsList)
 }
 
 // concat is an implementation of the formula functions CONCAT and
 // CONCATENATE.
-func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
+func (fn *formulaFuncs) concat(argsList *list.List) formulaArg {
 	var buf bytes.Buffer
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		for _, cell := range arg.Value.(formulaArg).ToList() {
@@ -13831,16 +13849,16 @@ func (fn *formulaFuncs) LENB(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LENB requires 1 string argument")
 	}
-	bytes := 0
+	result := 0
 	for _, r := range argsList.Front().Value.(formulaArg).Value() {
 		b := utf8.RuneLen(r)
 		if b == 1 {
-			bytes++
+			result++
 		} else if b > 1 {
-			bytes += 2
+			result += 2
 		}
 	}
-	return newNumberFormulaArg(float64(bytes))
+	return newNumberFormulaArg(float64(result))
 }
 
 // LOWER converts all characters in a supplied text string to lower case. The
@@ -14774,7 +14792,7 @@ func (fn *formulaFuncs) COLUMN(argsList *list.List) formulaArg {
 
 // calcColsRowsMinMax calculation min and max value for given formula arguments
 // sequence of the formula functions COLUMNS and ROWS.
-func calcColsRowsMinMax(cols bool, argsList *list.List) (min, max int) {
+func calcColsRowsMinMax(cols bool, argsList *list.List) (minVal, maxVal int) {
 	getVal := func(cols bool, cell cellRef) int {
 		if cols {
 			return cell.Col
@@ -14784,22 +14802,22 @@ func calcColsRowsMinMax(cols bool, argsList *list.List) (min, max int) {
 	if argsList.Front().Value.(formulaArg).cellRanges != nil && argsList.Front().Value.(formulaArg).cellRanges.Len() > 0 {
 		crs := argsList.Front().Value.(formulaArg).cellRanges
 		for cr := crs.Front(); cr != nil; cr = cr.Next() {
-			if min == 0 {
-				min = getVal(cols, cr.Value.(cellRange).From)
+			if minVal == 0 {
+				minVal = getVal(cols, cr.Value.(cellRange).From)
 			}
-			if max < getVal(cols, cr.Value.(cellRange).To) {
-				max = getVal(cols, cr.Value.(cellRange).To)
+			if maxVal < getVal(cols, cr.Value.(cellRange).To) {
+				maxVal = getVal(cols, cr.Value.(cellRange).To)
 			}
 		}
 	}
 	if argsList.Front().Value.(formulaArg).cellRefs != nil && argsList.Front().Value.(formulaArg).cellRefs.Len() > 0 {
 		cr := argsList.Front().Value.(formulaArg).cellRefs
 		for refs := cr.Front(); refs != nil; refs = refs.Next() {
-			if min == 0 {
-				min = getVal(cols, refs.Value.(cellRef))
+			if minVal == 0 {
+				minVal = getVal(cols, refs.Value.(cellRef))
 			}
-			if max < getVal(cols, refs.Value.(cellRef)) {
-				max = getVal(cols, refs.Value.(cellRef))
+			if maxVal < getVal(cols, refs.Value.(cellRef)) {
+				maxVal = getVal(cols, refs.Value.(cellRef))
 			}
 		}
 	}
@@ -14814,13 +14832,13 @@ func (fn *formulaFuncs) COLUMNS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COLUMNS requires 1 argument")
 	}
-	min, max := calcColsRowsMinMax(true, argsList)
-	if max == MaxColumns {
+	minVal, maxVal := calcColsRowsMinMax(true, argsList)
+	if maxVal == MaxColumns {
 		return newNumberFormulaArg(float64(MaxColumns))
 	}
-	result := max - min + 1
-	if max == min {
-		if min == 0 {
+	result := maxVal - minVal + 1
+	if maxVal == minVal {
+		if minVal == 0 {
 			return newErrorFormulaArg(formulaErrorVALUE, "invalid reference")
 		}
 		return newNumberFormulaArg(float64(1))
@@ -15555,13 +15573,13 @@ func (fn *formulaFuncs) ROWS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROWS requires 1 argument")
 	}
-	min, max := calcColsRowsMinMax(false, argsList)
-	if max == TotalRows {
+	minVal, maxVal := calcColsRowsMinMax(false, argsList)
+	if maxVal == TotalRows {
 		return newNumberFormulaArg(TotalRows)
 	}
-	result := max - min + 1
-	if max == min {
-		if min == 0 {
+	result := maxVal - minVal + 1
+	if maxVal == minVal {
+		if minVal == 0 {
 			return newErrorFormulaArg(formulaErrorVALUE, "invalid reference")
 		}
 		return newNumberFormulaArg(float64(1))
