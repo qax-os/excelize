@@ -114,6 +114,31 @@ func NewDataValidation(allowBlank bool) *DataValidation {
 	}
 }
 
+// newXlsxDataValidation is a internal function to create xlsxDataValidation by given data validation object.
+func newXlsxDataValidation(dv *DataValidation) *xlsxDataValidation {
+	dataValidation := &xlsxDataValidation{
+		AllowBlank:       dv.AllowBlank,
+		Error:            dv.Error,
+		ErrorStyle:       dv.ErrorStyle,
+		ErrorTitle:       dv.ErrorTitle,
+		Operator:         dv.Operator,
+		Prompt:           dv.Prompt,
+		PromptTitle:      dv.PromptTitle,
+		ShowDropDown:     dv.ShowDropDown,
+		ShowErrorMessage: dv.ShowErrorMessage,
+		ShowInputMessage: dv.ShowInputMessage,
+		Sqref:            dv.Sqref,
+		Type:             dv.Type,
+	}
+	if dv.Formula1 != "" {
+		dataValidation.Formula1 = &xlsxInnerXML{Content: dv.Formula1}
+	}
+	if dv.Formula2 != "" {
+		dataValidation.Formula2 = &xlsxInnerXML{Content: dv.Formula2}
+	}
+	return dataValidation
+}
+
 // SetError set error notice.
 func (dv *DataValidation) SetError(style DataValidationErrorStyle, title, msg string) {
 	dv.Error = &msg
@@ -256,29 +281,12 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	if err != nil {
 		return err
 	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if nil == ws.DataValidations {
 		ws.DataValidations = new(xlsxDataValidations)
 	}
-	dataValidation := &xlsxDataValidation{
-		AllowBlank:       dv.AllowBlank,
-		Error:            dv.Error,
-		ErrorStyle:       dv.ErrorStyle,
-		ErrorTitle:       dv.ErrorTitle,
-		Operator:         dv.Operator,
-		Prompt:           dv.Prompt,
-		PromptTitle:      dv.PromptTitle,
-		ShowDropDown:     dv.ShowDropDown,
-		ShowErrorMessage: dv.ShowErrorMessage,
-		ShowInputMessage: dv.ShowInputMessage,
-		Sqref:            dv.Sqref,
-		Type:             dv.Type,
-	}
-	if dv.Formula1 != "" {
-		dataValidation.Formula1 = &xlsxInnerXML{Content: dv.Formula1}
-	}
-	if dv.Formula2 != "" {
-		dataValidation.Formula2 = &xlsxInnerXML{Content: dv.Formula2}
-	}
+	dataValidation := newXlsxDataValidation(dv)
 	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dataValidation)
 	ws.DataValidations.Count = len(ws.DataValidations.DataValidation)
 	return err
@@ -330,6 +338,8 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 	if err != nil {
 		return err
 	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if ws.DataValidations == nil {
 		return nil
 	}

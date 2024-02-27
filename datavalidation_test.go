@@ -12,9 +12,12 @@
 package excelize
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -104,6 +107,41 @@ func TestDataValidation(t *testing.T) {
 	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, []*DataValidation(nil), dataValidations)
+}
+
+func TestConcurrentAddDataValidation(t *testing.T) {
+	var (
+		resultFile        = filepath.Join("test", "TestConcurrentAddDataValidation.xlsx")
+		f                 = NewFile()
+		sheet1            = "Sheet1"
+		dataValidationLen = 1000
+	)
+
+	// data validation list
+	dvs := make([]*DataValidation, dataValidationLen)
+	for i := 0; i < dataValidationLen; i++ {
+		dvi := NewDataValidation(true)
+		dvi.Sqref = fmt.Sprintf("A%d:B%d", i+1, i+1)
+		dvi.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+		dvi.SetInput(fmt.Sprintf("title:%d", i+1), strconv.Itoa(i+1))
+		dvs[i] = dvi
+	}
+	assert.Len(t, dvs, dataValidationLen)
+	// simulated concurrency
+	var wg sync.WaitGroup
+	wg.Add(dataValidationLen)
+	for i := 0; i < dataValidationLen; i++ {
+		go func(i int) {
+			f.AddDataValidation(sheet1, dvs[i])
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	// Test the length of data validation after concurrent
+	dataValidations, err := f.GetDataValidations(sheet1)
+	assert.NoError(t, err)
+	assert.Len(t, dataValidations, dataValidationLen)
+	assert.NoError(t, f.SaveAs(resultFile))
 }
 
 func TestDataValidationError(t *testing.T) {
