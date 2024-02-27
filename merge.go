@@ -11,9 +11,7 @@
 
 package excelize
 
-import (
-	"strings"
-)
+import "strings"
 
 // Rect gets merged cell rectangle coordinates sequence.
 func (mc *xlsxMergeCell) Rect() ([]int, error) {
