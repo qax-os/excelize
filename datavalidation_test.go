@@ -142,6 +142,89 @@ func TestConcurrentAddDataValidation(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, dataValidations, dataValidationLen)
 	assert.NoError(t, f.SaveAs(resultFile))
+
+	// Test the length of data validation after calling DeleteDataValidation()
+	f.DeleteDataValidation(sheet1)
+	dataValidations, err = f.GetDataValidations(sheet1)
+	assert.NoError(t, err)
+	assert.Len(t, dataValidations, 0)
+	// Test the length of data validation after calling BatchAddDataValidation()
+	f.BatchAddDataValidation(sheet1, dvs)
+	dataValidations, err = f.GetDataValidations(sheet1)
+	assert.NoError(t, err)
+	assert.Len(t, dataValidations, dataValidationLen)
+	assert.NoError(t, f.SaveAs(resultFile))
+}
+
+func TestBatchAddDataValidation(t *testing.T) {
+	resultFile := filepath.Join("test", "TestBatchAddDataValidation.xlsx")
+	f := NewFile()
+	// data validation 1
+	dv1 := NewDataValidation(true)
+	dv1.Sqref = "A1:B2"
+	assert.NoError(t, dv1.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorBetween))
+	dv1.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	dv1.SetError(DataValidationErrorStyleWarning, "error title", "error body")
+	dv1.SetError(DataValidationErrorStyleInformation, "error title", "error body")
+	// data validation 2
+	dv2 := NewDataValidation(true)
+	dv2.Sqref = "A3:B4"
+	assert.NoError(t, dv2.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan))
+	dv2.SetInput("input title", "input body")
+	// data validation 3
+	dv3 := NewDataValidation(true)
+	dv3.Sqref = "A1:B1"
+	assert.NoError(t, dv3.SetRange("INDIRECT($A$2)", "INDIRECT($A$3)", DataValidationTypeWhole, DataValidationOperatorBetween))
+	dv3.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	// data validation 4
+	dv4 := NewDataValidation(true)
+	dv4.Sqref = "A5:B6"
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetSheetRow("Sheet2", "A2", &[]interface{}{"B2", 1}))
+	assert.NoError(t, f.SetSheetRow("Sheet2", "A3", &[]interface{}{"B3", 3}))
+	for _, listValid := range [][]string{
+		{"1", "2", "3"},
+		{"=A1"},
+		{strings.Repeat("&", MaxFieldLength)},
+		{strings.Repeat("\u4E00", MaxFieldLength)},
+		{strings.Repeat("\U0001F600", 100), strings.Repeat("\u4E01", 50), "<&>"},
+		{`A<`, `B>`, `C"`, "D\t", `E'`, `F`},
+	} {
+		dv4.Formula1 = ""
+		assert.NoError(t, dv4.SetDropList(listValid),
+			"SetDropList failed for valid input %v", listValid)
+		assert.NotEqual(t, "", dv4.Formula1,
+			"Formula1 should not be empty for valid input %v", listValid)
+	}
+	assert.Equal(t, `"A&lt;,B&gt;,C"",D	,E',F"`, dv4.Formula1)
+
+	// Test batch append data to the worksheet
+	assert.NoError(t, f.BatchAddDataValidation("Sheet1", []*DataValidation{dv1, dv2, dv3}))
+	assert.NoError(t, f.BatchAddDataValidation("Sheet2", []*DataValidation{dv4}))
+
+	// Test the length of data validation of above worksheet.
+	dataValidations, err := f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, dataValidations, 3)
+	assert.NoError(t, f.SaveAs(resultFile))
+	dataValidations, err = f.GetDataValidations("Sheet2")
+	assert.NoError(t, err)
+	assert.Len(t, dataValidations, 1)
+
+	// Test get data validation on no exists worksheet
+	_, err = f.GetDataValidations("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get data validation with invalid sheet name
+	_, err = f.GetDataValidations("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+
+	assert.NoError(t, f.SaveAs(resultFile))
+	// Test get data validation on a worksheet without data validation settings
+	f = NewFile()
+	dataValidations, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []*DataValidation(nil), dataValidations)
 }
 
 func TestDataValidationError(t *testing.T) {

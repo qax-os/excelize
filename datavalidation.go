@@ -292,6 +292,26 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	return err
 }
 
+// BatchAddDataValidation is a function supports batch append data validation to the worksheet, reference to AddDataValidation().
+func (f *File) BatchAddDataValidation(sheet string, dvs []*DataValidation) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if nil == ws.DataValidations {
+		ws.DataValidations = new(xlsxDataValidations)
+	}
+	dataValidations := make([]*xlsxDataValidation, len(dvs))
+	for i := 0; i < len(dvs); i++ {
+		dataValidations[i] = newXlsxDataValidation(dvs[i])
+	}
+	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dataValidations...)
+	ws.DataValidations.Count = len(ws.DataValidations.DataValidation)
+	return err
+}
+
 // GetDataValidations returns data validations list by given worksheet name.
 func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 	ws, err := f.workSheetReader(sheet)
