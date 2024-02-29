@@ -218,14 +218,13 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 }
 
 func TestCoordinatesToRangeRef(t *testing.T) {
-	f := NewFile()
-	_, err := f.coordinatesToRangeRef([]int{})
+	_, err := coordinatesToRangeRef([]int{})
 	assert.EqualError(t, err, ErrCoordinates.Error())
-	_, err = f.coordinatesToRangeRef([]int{1, -1, 1, 1})
+	_, err = coordinatesToRangeRef([]int{1, -1, 1, 1})
 	assert.Equal(t, newCoordinatesToCellNameError(1, -1), err)
-	_, err = f.coordinatesToRangeRef([]int{1, 1, 1, -1})
+	_, err = coordinatesToRangeRef([]int{1, 1, 1, -1})
 	assert.Equal(t, newCoordinatesToCellNameError(1, -1), err)
-	ref, err := f.coordinatesToRangeRef([]int{1, 1, 1, 1})
+	ref, err := coordinatesToRangeRef([]int{1, 1, 1, 1})
 	assert.NoError(t, err)
 	assert.EqualValues(t, ref, "A1:A1")
 }

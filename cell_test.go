@@ -94,6 +94,8 @@ func TestConcurrency(t *testing.T) {
 			dv.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
 			dv.SetInput(fmt.Sprintf("title:%d", val), strconv.Itoa(val))
 			f.AddDataValidation("Sheet1", dv)
+			// Concurrency delete data validation with reference sequence
+			f.DeleteDataValidation("Sheet1", dv.Sqref)
 			wg.Done()
 		}(i, t)
 	}
@@ -106,7 +108,7 @@ func TestConcurrency(t *testing.T) {
 	// Test the length of data validation
 	dataValidations, err := f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Len(t, dataValidations, 5)
+	assert.Len(t, dataValidations, 0)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestConcurrency.xlsx")))
 	assert.NoError(t, f.Close())
 }

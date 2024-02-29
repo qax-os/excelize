@@ -184,7 +184,7 @@ func (sw *StreamWriter) AddTable(table *Table) error {
 	}
 
 	// Correct table reference range, such correct C1:B3 to B1:C3.
-	ref, err := sw.file.coordinatesToRangeRef(coordinates)
+	ref, err := coordinatesToRangeRef(coordinates)
 	if err != nil {
 		return err
 	}
