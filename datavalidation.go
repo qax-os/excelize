@@ -247,8 +247,9 @@ func (dv *DataValidation) SetSqref(sqref string) {
 }
 
 // AddDataValidation provides set data validation on a range of the worksheet
-// by given data validation object and worksheet name. The data validation
-// object can be created by NewDataValidation function.
+// by given data validation object and worksheet name. This function is
+// concurrency safe. The data validation object can be created by
+// NewDataValidation function.
 //
 // Example 1, set data validation on Sheet1!A1:B2 with validation criteria
 // settings, show error alert after invalid data is entered with "Stop" style
@@ -281,33 +282,13 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	if err != nil {
 		return err
 	}
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	if nil == ws.DataValidations {
 		ws.DataValidations = new(xlsxDataValidations)
 	}
 	dataValidation := newXlsxDataValidation(dv)
 	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dataValidation)
-	ws.DataValidations.Count = len(ws.DataValidations.DataValidation)
-	return err
-}
-
-// BatchAddDataValidation is a function supports batch append data validation to the worksheet, reference to AddDataValidation().
-func (f *File) BatchAddDataValidation(sheet string, dvs []*DataValidation) error {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
-	}
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if nil == ws.DataValidations {
-		ws.DataValidations = new(xlsxDataValidations)
-	}
-	dataValidations := make([]*xlsxDataValidation, len(dvs))
-	for i := 0; i < len(dvs); i++ {
-		dataValidations[i] = newXlsxDataValidation(dvs[i])
-	}
-	ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, dataValidations...)
 	ws.DataValidations.Count = len(ws.DataValidations.DataValidation)
 	return err
 }
@@ -358,8 +339,8 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 	if err != nil {
 		return err
 	}
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	if ws.DataValidations == nil {
 		return nil
 	}

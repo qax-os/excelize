@@ -88,6 +88,12 @@ func TestConcurrency(t *testing.T) {
 			visible, err := f.GetColVisible("Sheet1", "A")
 			assert.NoError(t, err)
 			assert.Equal(t, true, visible)
+			// Concurrency add data validation
+			dv := NewDataValidation(true)
+			dv.Sqref = fmt.Sprintf("A%d:B%d", val, val)
+			dv.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
+			dv.SetInput(fmt.Sprintf("title:%d", val), strconv.Itoa(val))
+			f.AddDataValidation("Sheet1", dv)
 			wg.Done()
 		}(i, t)
 	}
@@ -97,6 +103,10 @@ func TestConcurrency(t *testing.T) {
 		t.Error(err)
 	}
 	assert.Equal(t, "1", val)
+	// Test the length of data validation
+	dataValidations, err := f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, dataValidations, 5)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestConcurrency.xlsx")))
 	assert.NoError(t, f.Close())
 }
