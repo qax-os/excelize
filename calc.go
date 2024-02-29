@@ -11602,7 +11602,22 @@ func (fn *formulaFuncs) ISNUMBER(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISNUMBER requires 1 argument")
 	}
-	if argsList.Front().Value.(formulaArg).Type == ArgNumber {
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.Type == ArgMatrix {
+		var mtx [][]formulaArg
+		for _, row := range arg.Matrix {
+			var array []formulaArg
+			for _, val := range row {
+				if val.Type == ArgNumber {
+					array = append(array, newBoolFormulaArg(true))
+				}
+				array = append(array, newBoolFormulaArg(false))
+			}
+			mtx = append(mtx, array)
+		}
+		return newMatrixFormulaArg(mtx)
+	}
+	if arg.Type == ArgNumber {
 		return newBoolFormulaArg(true)
 	}
 	return newBoolFormulaArg(false)
@@ -11951,11 +11966,14 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 				return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
 			}
 		case ArgMatrix:
-			// TODO
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			args := list.New()
+			for _, arg := range token.ToList() {
+				args.PushBack(arg)
+			}
+			return fn.OR(args)
 		}
 	}
-	return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
+	return newBoolFormulaArg(or)
 }
 
 // SWITCH function compares a number of supplied values to a supplied test
@@ -13741,34 +13759,48 @@ func (fn *formulaFuncs) find(name string, argsList *list.List) formulaArg {
 	if args.Type != ArgList {
 		return args
 	}
-	findText := argsList.Front().Value.(formulaArg).Value()
+	findTextArg := argsList.Front().Value.(formulaArg)
 	withinText := argsList.Front().Next().Value.(formulaArg).Value()
 	startNum := int(args.List[0].Number)
-	if findText == "" {
-		return newNumberFormulaArg(float64(startNum))
-	}
 	dbcs, search := name == "FINDB" || name == "SEARCHB", name == "SEARCH" || name == "SEARCHB"
-	if search {
-		findText, withinText = strings.ToUpper(findText), strings.ToUpper(withinText)
-	}
-	offset, ok := matchPattern(findText, withinText, dbcs, startNum)
-	if !ok {
-		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-	}
-	result := offset
-	if dbcs {
-		var pre int
-		for idx := range withinText {
-			if pre > offset {
-				break
-			}
-			if idx-pre > 1 {
-				result++
-			}
-			pre = idx
+	find := func(findText string) formulaArg {
+		if findText == "" {
+			return newNumberFormulaArg(float64(startNum))
 		}
+		if search {
+			findText, withinText = strings.ToUpper(findText), strings.ToUpper(withinText)
+		}
+		offset, ok := matchPattern(findText, withinText, dbcs, startNum)
+		if !ok {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		result := offset
+		if dbcs {
+			var pre int
+			for idx := range withinText {
+				if pre > offset {
+					break
+				}
+				if idx-pre > 1 {
+					result++
+				}
+				pre = idx
+			}
+		}
+		return newNumberFormulaArg(float64(result))
 	}
-	return newNumberFormulaArg(float64(result))
+	if findTextArg.Type == ArgMatrix {
+		var mtx [][]formulaArg
+		for _, row := range findTextArg.Matrix {
+			var array []formulaArg
+			for _, findText := range row {
+				array = append(array, find(findText.Value()))
+			}
+			mtx = append(mtx, array)
+		}
+		return newMatrixFormulaArg(mtx)
+	}
+	return find(findTextArg.Value())
 }
 
 // LEFT function returns a specified number of characters from the start of a
