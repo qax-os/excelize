@@ -1451,8 +1451,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=ISNONTEXT(\"Excelize\")": "FALSE",
 		"=ISNONTEXT(NA())":         "TRUE",
 		// ISNUMBER
-		"=ISNUMBER(A1)": "TRUE",
-		"=ISNUMBER(D1)": "FALSE",
+		"=ISNUMBER(A1)":    "TRUE",
+		"=ISNUMBER(D1)":    "FALSE",
+		"=ISNUMBER(A1:B1)": "TRUE",
 		// ISODD
 		"=ISODD(A1)": "TRUE",
 		"=ISODD(A2)": "FALSE",
@@ -1526,6 +1527,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=OR(1=2,2=3)":            "FALSE",
 		"=OR(1=1,2=3)":            "TRUE",
 		"=OR(\"TRUE\",\"FALSE\")": "TRUE",
+		"=OR(A1:B1)":              "TRUE",
 		// SWITCH
 		"=SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",
 		"=SWITCH(3,1,\"A\",2,\"B\",3,\"C\",\"N\")": "C",
@@ -1748,6 +1750,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=FIND(\"\",\"Original Text\")":    "1",
 		"=FIND(\"\",\"Original Text\",2)":  "2",
 		"=FIND(\"s\",\"Sales\",2)":         "5",
+		"=FIND(D1:E2,\"Month\")":           "1",
 		// FINDB
 		"=FINDB(\"T\",\"Original Text\")":   "10",
 		"=FINDB(\"t\",\"Original Text\")":   "13",
@@ -3663,7 +3666,6 @@ func TestCalcCellValue(t *testing.T) {
 		"=NOT(\"\")":  {"#VALUE!", "NOT expects 1 boolean or numeric argument"},
 		// OR
 		"=OR(\"text\")":                          {"#VALUE!", "#VALUE!"},
-		"=OR(A1:B1)":                             {"#VALUE!", "#VALUE!"},
 		"=OR(\"1\",\"TRUE\",\"FALSE\")":          {"#VALUE!", "#VALUE!"},
 		"=OR()":                                  {"#VALUE!", "OR requires at least 1 argument"},
 		"=OR(1" + strings.Repeat(",1", 30) + ")": {"#VALUE!", "OR accepts at most 30 arguments"},
@@ -4773,7 +4775,7 @@ func TestCalcOR(t *testing.T) {
 	})
 	fn := formulaFuncs{}
 	result := fn.OR(argsList)
-	assert.Equal(t, result.String, "FALSE")
+	assert.Equal(t, result.Value(), "FALSE")
 	assert.Empty(t, result.Error)
 }
 

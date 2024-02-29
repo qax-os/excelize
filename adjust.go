@@ -320,7 +320,9 @@ func adjustFormulaColumnName(name, operand string, abs, keepRelative bool, dir a
 		return "", operand, false, err
 	}
 	if dir == columns && col >= num {
-		col += offset
+		if col += offset; col < 1 {
+			col = 1
+		}
 		colName, err := ColumnNumberToName(col)
 		return "", operand + colName, false, err
 	}
@@ -334,8 +336,10 @@ func adjustFormulaRowNumber(name, operand string, abs, keepRelative bool, dir ad
 	}
 	row, _ := strconv.Atoi(name)
 	if dir == rows && row >= num {
-		row += offset
-		if row <= 0 || row > TotalRows {
+		if row += offset; row < 1 {
+			row = 1
+		}
+		if row > TotalRows {
 			return "", operand + name, false, ErrMaxRows
 		}
 		return "", operand + strconv.Itoa(row), false, nil
