@@ -13,7 +13,6 @@ package excelize
 
 import (
 	"encoding/xml"
-	"io"
 	"sync"
 )
 
@@ -267,17 +266,6 @@ type LinkDataValidation struct {
 // Formula used to LinkDataValidation
 type Formula struct {
 	F string `xml:"f"`
-}
-
-// ParseXMLToStruct takes an XML reader and parses it into the Ext struct.
-func ParseXMLToStruct(r io.Reader) (*Ext, error) {
-	var ext Ext
-	decoder := xml.NewDecoder(r)
-	err := decoder.Decode(&ext)
-	if err != nil {
-		return nil, err
-	}
-	return &ext, nil
 }
 
 // xlsxAlternateContent is a container for a sequence of multiple
