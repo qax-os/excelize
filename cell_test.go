@@ -93,9 +93,9 @@ func TestConcurrency(t *testing.T) {
 			dv.Sqref = fmt.Sprintf("A%d:B%d", val, val)
 			dv.SetRange(10, 20, DataValidationTypeWhole, DataValidationOperatorGreaterThan)
 			dv.SetInput(fmt.Sprintf("title:%d", val), strconv.Itoa(val))
-			f.AddDataValidation("Sheet1", dv)
+			assert.NoError(t, f.AddDataValidation("Sheet1", dv))
 			// Concurrency delete data validation with reference sequence
-			f.DeleteDataValidation("Sheet1", dv.Sqref)
+			assert.NoError(t, f.DeleteDataValidation("Sheet1", dv.Sqref))
 			wg.Done()
 		}(i, t)
 	}
