@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"encoding/xml"
+	"io"
 	"sync"
 )
 
@@ -229,6 +230,54 @@ type xlsxExt struct {
 	URI     string   `xml:"uri,attr"`
 	Content string   `xml:",innerxml"`
 	xmlns   []xml.Attr
+}
+
+// Ext The Ext structure is used to parse XML and obtain relevant content from the *xlsxExtLst structure.
+type Ext struct {
+	XMLName             xml.Name             `xml:"ext"`
+	URI                 string               `xml:"uri,attr"`
+	LinkDataValidations *LinkDataValidations `xml:"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main dataValidations"`
+}
+
+// LinkDataValidations used to Ext
+type LinkDataValidations struct {
+	Count          int                   `xml:"count,attr"`
+	DataValidation []*LinkDataValidation `xml:"dataValidation"`
+}
+
+// LinkDataValidation used to LinkDataValidations
+type LinkDataValidation struct {
+	AllowBlank       bool     `xml:"allowBlank,attr"`
+	Error            *string  `xml:"error,attr"`
+	ErrorStyle       *string  `xml:"errorStyle,attr"`
+	ErrorTitle       *string  `xml:"errorTitle,attr"`
+	Operator         string   `xml:"operator,attr,omitempty"`
+	Prompt           *string  `xml:"prompt,attr"`
+	PromptTitle      *string  `xml:"promptTitle,attr"`
+	ShowDropDown     bool     `xml:"showDropDown,attr,omitempty"`
+	ShowErrorMessage bool     `xml:"showErrorMessage,attr,omitempty"`
+	ShowInputMessage bool     `xml:"showInputMessage,attr,omitempty"`
+	Sqref            string   `xml:"sqref"`
+	UID              string   `xml:"uid,attr"`
+	Type             string   `xml:"type,attr"`
+	Formula1         *Formula `xml:"formula1"`
+	Formula2         *Formula `xml:"formula2"`
+}
+
+// Formula used to LinkDataValidation
+type Formula struct {
+	F string `xml:"f"`
+}
+
+// ParseXMLToStruct takes an XML reader and parses it into the Ext struct.
+func ParseXMLToStruct(r io.Reader) (*Ext, error) {
+	var ext Ext
+	decoder := xml.NewDecoder(r)
+	err := decoder.Decode(&ext)
+	if err != nil {
+		return nil, err
+	}
+	return &ext, nil
 }
 
 // xlsxAlternateContent is a container for a sequence of multiple

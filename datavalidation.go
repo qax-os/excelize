@@ -325,6 +325,80 @@ func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 	return dvs, err
 }
 
+// GetAllLinkedDataValidations The GetDataValidations method sometimes fails to retrieve all data validations completely, including those linked to other pages.
+// This method serves as a temporary fix for this issue, allowing the retrieval of associated data validation content from other sheets through the Ext structure.
+// Please note that this is an interim solution and the Ext structure may contain more than just the data validation components.
+func (f *File) GetAllLinkedDataValidations(sheet string) ([]*DataValidation, error) {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return nil, err
+	}
+	if ws.DataValidations == nil || len(ws.DataValidations.DataValidation) == 0 {
+		return nil, err
+	}
+	var dvs []*DataValidation
+	if ws.ExtLst != nil {
+		extStruct, err := ParseXMLToStruct(strings.NewReader(ws.ExtLst.Ext))
+		if err != nil {
+			fmt.Println("Error parsing XML to struct:", err)
+		} else {
+			if extStruct != nil && extStruct.LinkDataValidations != nil {
+				for _, v := range extStruct.LinkDataValidations.DataValidation {
+					linkDataValidation := &xlsxDataValidation{
+						AllowBlank:       v.AllowBlank,
+						Error:            v.Error,
+						ErrorStyle:       v.ErrorStyle,
+						ErrorTitle:       v.ErrorTitle,
+						Operator:         v.Operator,
+						Prompt:           v.Prompt,
+						PromptTitle:      v.PromptTitle,
+						ShowDropDown:     v.ShowDropDown,
+						ShowErrorMessage: v.ShowErrorMessage,
+						ShowInputMessage: v.ShowInputMessage,
+						Sqref:            v.Sqref,
+						Type:             v.Type,
+					}
+					if v.Formula1 != nil {
+						linkDataValidation.Formula1 = &xlsxInnerXML{Content: v.Formula1.F}
+					}
+					if v.Formula2 != nil {
+						linkDataValidation.Formula2 = &xlsxInnerXML{Content: v.Formula2.F}
+					}
+					ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, linkDataValidation)
+				}
+
+			}
+		}
+		//ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, ws.ExtLst.DataValidations.DataValidation...)
+	}
+	for _, dv := range ws.DataValidations.DataValidation {
+		if dv != nil {
+			dataValidation := &DataValidation{
+				AllowBlank:       dv.AllowBlank,
+				Error:            dv.Error,
+				ErrorStyle:       dv.ErrorStyle,
+				ErrorTitle:       dv.ErrorTitle,
+				Operator:         dv.Operator,
+				Prompt:           dv.Prompt,
+				PromptTitle:      dv.PromptTitle,
+				ShowDropDown:     dv.ShowDropDown,
+				ShowErrorMessage: dv.ShowErrorMessage,
+				ShowInputMessage: dv.ShowInputMessage,
+				Sqref:            dv.Sqref,
+				Type:             dv.Type,
+			}
+			if dv.Formula1 != nil {
+				dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
+			}
+			if dv.Formula2 != nil {
+				dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
+			}
+			dvs = append(dvs, dataValidation)
+		}
+	}
+	return dvs, err
+}
+
 // DeleteDataValidation delete data validation by given worksheet name and
 // reference sequence. This function is concurrency safe.
 // All data validations in the worksheet will be deleted

@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"log"
 	"math"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestGetA(t *testing.T) {
+	file, err := OpenFile("file2.xlsx")
+	if err != nil {
+		panic(err)
+	}
+	validations, err := file.GetAllLinkedDataValidations("5")
+	if err != nil {
+		panic(err)
+	}
+
+	for i := range validations {
+		log.Println(validations[i].Type)
+	}
+}
 
 func TestDataValidation(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidation.xlsx")
