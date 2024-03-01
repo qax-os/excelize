@@ -267,7 +267,7 @@ func (f *File) adjustCellRef(ref string, dir adjustDirection, num, offset int) (
 			coordinates[3] += offset
 		}
 	}
-	ref, err = f.coordinatesToRangeRef(coordinates)
+	ref, err = coordinatesToRangeRef(coordinates)
 	return ref, delete, err
 }
 
@@ -666,7 +666,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			idx--
 			continue
 		}
-		t.Ref, _ = f.coordinatesToRangeRef([]int{x1, y1, x2, y2})
+		t.Ref, _ = coordinatesToRangeRef([]int{x1, y1, x2, y2})
 		if t.AutoFilter != nil {
 			t.AutoFilter.Ref = t.Ref
 		}
@@ -706,7 +706,7 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, sheet string, dir adjustDirec
 	coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
 	x1, y1, x2, y2 = coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 
-	ws.AutoFilter.Ref, err = f.coordinatesToRangeRef([]int{x1, y1, x2, y2})
+	ws.AutoFilter.Ref, err = coordinatesToRangeRef([]int{x1, y1, x2, y2})
 	return err
 }
 
@@ -773,7 +773,7 @@ func (f *File) adjustMergeCells(ws *xlsxWorksheet, sheet string, dir adjustDirec
 			continue
 		}
 		mergedCells.rect = []int{x1, y1, x2, y2}
-		if mergedCells.Ref, err = f.coordinatesToRangeRef([]int{x1, y1, x2, y2}); err != nil {
+		if mergedCells.Ref, err = coordinatesToRangeRef([]int{x1, y1, x2, y2}); err != nil {
 			return err
 		}
 	}

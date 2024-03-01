@@ -2014,7 +2014,7 @@ func (f *File) SetSheetDimension(sheet string, rangeRef string) error {
 		return err
 	}
 	_ = sortCoordinates(coordinates)
-	ref, err := f.coordinatesToRangeRef(coordinates)
+	ref, err := coordinatesToRangeRef(coordinates)
 	ws.Dimension = &xlsxDimension{Ref: ref}
 	return err
 }

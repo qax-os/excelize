@@ -222,8 +222,9 @@ func (dv *DataValidation) SetSqref(sqref string) {
 }
 
 // AddDataValidation provides set data validation on a range of the worksheet
-// by given data validation object and worksheet name. The data validation
-// object can be created by NewDataValidation function.
+// by given data validation object and worksheet name. This function is
+// concurrency safe. The data validation object can be created by
+// NewDataValidation function.
 //
 // Example 1, set data validation on Sheet1!A1:B2 with validation criteria
 // settings, show error alert after invalid data is entered with "Stop" style
@@ -256,6 +257,8 @@ func (f *File) AddDataValidation(sheet string, dv *DataValidation) error {
 	if err != nil {
 		return err
 	}
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	if nil == ws.DataValidations {
 		ws.DataValidations = new(xlsxDataValidations)
 	}
@@ -323,13 +326,16 @@ func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 }
 
 // DeleteDataValidation delete data validation by given worksheet name and
-// reference sequence. All data validations in the worksheet will be deleted
+// reference sequence. This function is concurrency safe.
+// All data validations in the worksheet will be deleted
 // if not specify reference sequence parameter.
 func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
 	}
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	if ws.DataValidations == nil {
 		return nil
 	}
@@ -337,14 +343,14 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 		ws.DataValidations = nil
 		return nil
 	}
-	delCells, err := f.flatSqref(sqref[0])
+	delCells, err := flatSqref(sqref[0])
 	if err != nil {
 		return err
 	}
 	dv := ws.DataValidations
 	for i := 0; i < len(dv.DataValidation); i++ {
 		var applySqref []string
-		colCells, err := f.flatSqref(dv.DataValidation[i].Sqref)
+		colCells, err := flatSqref(dv.DataValidation[i].Sqref)
 		if err != nil {
 			return err
 		}
@@ -357,7 +363,7 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 			}
 		}
 		for _, col := range colCells {
-			applySqref = append(applySqref, f.squashSqref(col)...)
+			applySqref = append(applySqref, squashSqref(col)...)
 		}
 		dv.DataValidation[i].Sqref = strings.Join(applySqref, " ")
 		if len(applySqref) == 0 {
@@ -373,7 +379,7 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 }
 
 // squashSqref generates cell reference sequence by given cells coordinates list.
-func (f *File) squashSqref(cells [][]int) []string {
+func squashSqref(cells [][]int) []string {
 	if len(cells) == 1 {
 		cell, _ := CoordinatesToCellName(cells[0][0], cells[0][1])
 		return []string{cell}
@@ -384,7 +390,7 @@ func (f *File) squashSqref(cells [][]int) []string {
 	l, r := 0, 0
 	for i := 1; i < len(cells); i++ {
 		if cells[i][0] == cells[r][0] && cells[i][1]-cells[r][1] > 1 {
-			ref, _ := f.coordinatesToRangeRef(append(cells[l], cells[r]...))
+			ref, _ := coordinatesToRangeRef(append(cells[l], cells[r]...))
 			if l == r {
 				ref, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 			}
@@ -394,7 +400,7 @@ func (f *File) squashSqref(cells [][]int) []string {
 			r++
 		}
 	}
-	ref, _ := f.coordinatesToRangeRef(append(cells[l], cells[r]...))
+	ref, _ := coordinatesToRangeRef(append(cells[l], cells[r]...))
 	if l == r {
 		ref, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 	}

@@ -705,7 +705,7 @@ func (f *File) duplicateConditionalFormat(ws *xlsxWorksheet, sheet string, row, 
 			x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 			if y1 == y2 && y1 == row {
 				cfCopy := deepcopy.Copy(*cf).(xlsxConditionalFormatting)
-				if cfCopy.SQRef, err = f.coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
+				if cfCopy.SQRef, err = coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
 					return err
 				}
 				cfs = append(cfs, &cfCopy)
@@ -736,7 +736,7 @@ func (f *File) duplicateDataValidations(ws *xlsxWorksheet, sheet string, row, ro
 			x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
 			if y1 == y2 && y1 == row {
 				dvCopy := deepcopy.Copy(*dv).(xlsxDataValidation)
-				if dvCopy.Sqref, err = f.coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
+				if dvCopy.Sqref, err = coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
 					return err
 				}
 				dvs = append(dvs, &dvCopy)
