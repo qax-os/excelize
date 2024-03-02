@@ -1655,8 +1655,10 @@ func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
 // Note that this function not validate ref tag to check the cell whether in
 // allow range reference, and always return origin shared formula.
 func getSharedFormula(ws *xlsxWorksheet, si int, cell string) string {
-	for _, r := range ws.SheetData.Row {
-		for _, c := range r.C {
+	for row := 0; row < len(ws.SheetData.Row); row++ {
+		r := &ws.SheetData.Row[row]
+		for column := 0; column < len(r.C); column++ {
+			c := &r.C[column]
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {
 				col, row, _ := CellNameToCoordinates(cell)
 				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
