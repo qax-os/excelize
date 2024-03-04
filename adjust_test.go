@@ -1059,6 +1059,16 @@ func TestAdjustDataValidations(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "\"A<,B>,C\",D\t,E',F\"", dvs[2].Formula1)
 
+	// Test adjust data validation with multiple cell range
+	dv = NewDataValidation(true)
+	dv.Sqref = "G1:G3 H1:H3"
+	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+	dvs, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "G1:G4 H1:H4", dvs[3].Sqref)
+
 	dv = NewDataValidation(true)
 	dv.Sqref = "C5:D6"
 	assert.NoError(t, dv.SetRange("Sheet1!A1048576", "Sheet1!XFD1", DataValidationTypeWhole, DataValidationOperatorBetween))

@@ -1540,8 +1540,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=XOR(1>0,0>1,INT(0),INT(1),A1:A4,2)": "FALSE",
 		// Date and Time Functions
 		// DATE
-		"=DATE(2020,10,21)": "2020-10-21 00:00:00 +0000 UTC",
-		"=DATE(1900,1,1)":   "1899-12-31 00:00:00 +0000 UTC",
+		"=DATE(2020,10,21)":   "44125",
+		"=DATE(2020,10,21)+1": "44126",
+		"=DATE(1900,1,1)":     "1",
 		// DATEDIF
 		"=DATEDIF(43101,43101,\"D\")":  "0",
 		"=DATEDIF(43101,43891,\"d\")":  "790",

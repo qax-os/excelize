@@ -12081,7 +12081,7 @@ func (fn *formulaFuncs) DATE(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DATE requires 3 number arguments")
 	}
 	d := makeDate(int(year.Number), time.Month(month.Number), int(day.Number))
-	return newStringFormulaArg(timeFromExcelTime(daysBetween(excelMinTime1900.Unix(), d)+1, false).String())
+	return newNumberFormulaArg(daysBetween(excelMinTime1900.Unix(), d) + 1)
 }
 
 // calcDateDif is an implementation of the formula function DATEDIF,

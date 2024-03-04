@@ -237,38 +237,43 @@ func (f *File) adjustSingleRowFormulas(sheet, sheetN string, r *xlsxRow, num, of
 }
 
 // adjustCellRef provides a function to adjust cell reference.
-func (f *File) adjustCellRef(ref string, dir adjustDirection, num, offset int) (string, bool, error) {
-	if !strings.Contains(ref, ":") {
-		ref += ":" + ref
+func (f *File) adjustCellRef(cellRef string, dir adjustDirection, num, offset int) (string, error) {
+	var SQRef []string
+	for _, ref := range strings.Split(cellRef, " ") {
+		if !strings.Contains(ref, ":") {
+			ref += ":" + ref
+		}
+		coordinates, err := rangeRefToCoordinates(ref)
+		if err != nil {
+			return "", err
+		}
+		if dir == columns {
+			if offset < 0 && coordinates[0] == coordinates[2] {
+				continue
+			}
+			if coordinates[0] >= num {
+				coordinates[0] += offset
+			}
+			if coordinates[2] >= num {
+				coordinates[2] += offset
+			}
+		} else {
+			if offset < 0 && coordinates[1] == coordinates[3] {
+				continue
+			}
+			if coordinates[1] >= num {
+				coordinates[1] += offset
+			}
+			if coordinates[3] >= num {
+				coordinates[3] += offset
+			}
+		}
+		if ref, err = coordinatesToRangeRef(coordinates); err != nil {
+			return "", err
+		}
+		SQRef = append(SQRef, ref)
 	}
-	var delete bool
-	coordinates, err := rangeRefToCoordinates(ref)
-	if err != nil {
-		return ref, delete, err
-	}
-	if dir == columns {
-		if offset < 0 && coordinates[0] == coordinates[2] {
-			delete = true
-		}
-		if coordinates[0] >= num {
-			coordinates[0] += offset
-		}
-		if coordinates[2] >= num {
-			coordinates[2] += offset
-		}
-	} else {
-		if offset < 0 && coordinates[1] == coordinates[3] {
-			delete = true
-		}
-		if coordinates[1] >= num {
-			coordinates[1] += offset
-		}
-		if coordinates[3] >= num {
-			coordinates[3] += offset
-		}
-	}
-	ref, err = coordinatesToRangeRef(coordinates)
-	return ref, delete, err
+	return strings.Join(SQRef, " "), nil
 }
 
 // adjustFormula provides a function to adjust formula reference and shared
@@ -284,7 +289,7 @@ func (f *File) adjustFormula(sheet, sheetN string, cell *xlsxC, dir adjustDirect
 		return nil
 	}
 	if cell.F.Ref != "" && sheet == sheetN {
-		if cell.F.Ref, _, err = f.adjustCellRef(cell.F.Ref, dir, num, offset); err != nil {
+		if cell.F.Ref, err = f.adjustCellRef(cell.F.Ref, dir, num, offset); err != nil {
 			return err
 		}
 		if si && cell.F.Si != nil {
@@ -932,11 +937,11 @@ func (f *File) adjustConditionalFormats(ws *xlsxWorksheet, sheet string, dir adj
 		if cf == nil {
 			continue
 		}
-		ref, del, err := f.adjustCellRef(cf.SQRef, dir, num, offset)
+		ref, err := f.adjustCellRef(cf.SQRef, dir, num, offset)
 		if err != nil {
 			return err
 		}
-		if del {
+		if ref == "" {
 			ws.ConditionalFormatting = append(ws.ConditionalFormatting[:i],
 				ws.ConditionalFormatting[i+1:]...)
 			i--
@@ -967,11 +972,11 @@ func (f *File) adjustDataValidations(ws *xlsxWorksheet, sheet string, dir adjust
 				continue
 			}
 			if sheet == sheetN {
-				ref, del, err := f.adjustCellRef(dv.Sqref, dir, num, offset)
+				ref, err := f.adjustCellRef(dv.Sqref, dir, num, offset)
 				if err != nil {
 					return err
 				}
-				if del {
+				if ref == "" {
 					worksheet.DataValidations.DataValidation = append(worksheet.DataValidations.DataValidation[:i],
 						worksheet.DataValidations.DataValidation[i+1:]...)
 					i--

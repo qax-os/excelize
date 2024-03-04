@@ -474,7 +474,7 @@ func (f *File) AutoFilter(sheet, rangeRef string, opts []AutoFilterOptions) erro
 	}
 	filterRange := fmt.Sprintf("'%s'!%s", sheet, ref)
 	d := xlsxDefinedName{
-		Name:         builtInDefinedNames[2],
+		Name:         builtInDefinedNames[3],
 		Hidden:       true,
 		LocalSheetID: intPtr(sheetID),
 		Data:         filterRange,
@@ -490,7 +490,7 @@ func (f *File) AutoFilter(sheet, rangeRef string, opts []AutoFilterOptions) erro
 			if definedName.LocalSheetID != nil {
 				localSheetID = *definedName.LocalSheetID
 			}
-			if definedName.Name == builtInDefinedNames[2] && localSheetID == sheetID && definedName.Hidden {
+			if definedName.Name == builtInDefinedNames[3] && localSheetID == sheetID && definedName.Hidden {
 				wb.DefinedNames.DefinedName[idx].Data = filterRange
 				definedNameExists = true
 			}
