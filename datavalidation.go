@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"unicode/utf16"
@@ -293,110 +294,70 @@ func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ws.DataValidations == nil || len(ws.DataValidations.DataValidation) == 0 {
-		return nil, err
+	var (
+		dataValidations       []*DataValidation
+		decodeExtLst          = new(decodeExtLst)
+		decodeDataValidations *xlsxDataValidations
+		ext                   *xlsxExt
+	)
+	if ws.DataValidations != nil {
+		dataValidations = append(dataValidations, getDataValidations(ws.DataValidations)...)
 	}
-	var dvs []*DataValidation
-	for _, dv := range ws.DataValidations.DataValidation {
-		if dv != nil {
-			dataValidation := &DataValidation{
-				AllowBlank:       dv.AllowBlank,
-				Error:            dv.Error,
-				ErrorStyle:       dv.ErrorStyle,
-				ErrorTitle:       dv.ErrorTitle,
-				Operator:         dv.Operator,
-				Prompt:           dv.Prompt,
-				PromptTitle:      dv.PromptTitle,
-				ShowDropDown:     dv.ShowDropDown,
-				ShowErrorMessage: dv.ShowErrorMessage,
-				ShowInputMessage: dv.ShowInputMessage,
-				Sqref:            dv.Sqref,
-				Type:             dv.Type,
+	if ws.ExtLst != nil {
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return dataValidations, err
+		}
+		for _, ext = range decodeExtLst.Ext {
+			if ext.URI == ExtURIDataValidations {
+				decodeDataValidations = new(xlsxDataValidations)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeDataValidations)
+				dataValidations = append(dataValidations, getDataValidations(decodeDataValidations)...)
 			}
-			if dv.Formula1 != nil {
-				dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
-			}
-			if dv.Formula2 != nil {
-				dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
-			}
-			dvs = append(dvs, dataValidation)
 		}
 	}
-	return dvs, err
+	return dataValidations, err
 }
 
-// GetAllLinkedDataValidations The GetDataValidations method sometimes fails to retrieve all data validations completely, including those linked to other pages.
-// This method serves as a temporary fix for this issue, allowing the retrieval of associated data validation content from other sheets through the Ext structure.
-// Please note that this is an interim solution and the Ext structure may contain more than just the data validation components.
-func (f *File) GetAllLinkedDataValidations(sheet string) ([]*DataValidation, error) {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return nil, err
+// getDataValidations returns data validations list by given worksheet data
+// validations.
+func getDataValidations(dvs *xlsxDataValidations) []*DataValidation {
+	if dvs == nil {
+		return nil
 	}
-	if ws.DataValidations == nil || len(ws.DataValidations.DataValidation) == 0 {
-		return nil, err
-	}
-	var dvs []*DataValidation
-	if ws.ExtLst != nil {
-		extStruct, err := ParseXMLToStruct(strings.NewReader(ws.ExtLst.Ext))
-		if err != nil {
-			fmt.Println("Error parsing XML to struct:", err)
-		} else {
-			if extStruct != nil && extStruct.LinkDataValidations != nil {
-				for _, v := range extStruct.LinkDataValidations.DataValidation {
-					linkDataValidation := &xlsxDataValidation{
-						AllowBlank:       v.AllowBlank,
-						Error:            v.Error,
-						ErrorStyle:       v.ErrorStyle,
-						ErrorTitle:       v.ErrorTitle,
-						Operator:         v.Operator,
-						Prompt:           v.Prompt,
-						PromptTitle:      v.PromptTitle,
-						ShowDropDown:     v.ShowDropDown,
-						ShowErrorMessage: v.ShowErrorMessage,
-						ShowInputMessage: v.ShowInputMessage,
-						Sqref:            v.Sqref,
-						Type:             v.Type,
-					}
-					if v.Formula1 != nil {
-						linkDataValidation.Formula1 = &xlsxInnerXML{Content: v.Formula1.F}
-					}
-					if v.Formula2 != nil {
-						linkDataValidation.Formula2 = &xlsxInnerXML{Content: v.Formula2.F}
-					}
-					ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, linkDataValidation)
-				}
-
-			}
+	var dataValidations []*DataValidation
+	for _, dv := range dvs.DataValidation {
+		if dv == nil {
+			continue
 		}
-		//ws.DataValidations.DataValidation = append(ws.DataValidations.DataValidation, ws.ExtLst.DataValidations.DataValidation...)
-	}
-	for _, dv := range ws.DataValidations.DataValidation {
-		if dv != nil {
-			dataValidation := &DataValidation{
-				AllowBlank:       dv.AllowBlank,
-				Error:            dv.Error,
-				ErrorStyle:       dv.ErrorStyle,
-				ErrorTitle:       dv.ErrorTitle,
-				Operator:         dv.Operator,
-				Prompt:           dv.Prompt,
-				PromptTitle:      dv.PromptTitle,
-				ShowDropDown:     dv.ShowDropDown,
-				ShowErrorMessage: dv.ShowErrorMessage,
-				ShowInputMessage: dv.ShowInputMessage,
-				Sqref:            dv.Sqref,
-				Type:             dv.Type,
-			}
-			if dv.Formula1 != nil {
-				dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
-			}
-			if dv.Formula2 != nil {
-				dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
-			}
-			dvs = append(dvs, dataValidation)
+		dataValidation := &DataValidation{
+			AllowBlank:       dv.AllowBlank,
+			Error:            dv.Error,
+			ErrorStyle:       dv.ErrorStyle,
+			ErrorTitle:       dv.ErrorTitle,
+			Operator:         dv.Operator,
+			Prompt:           dv.Prompt,
+			PromptTitle:      dv.PromptTitle,
+			ShowDropDown:     dv.ShowDropDown,
+			ShowErrorMessage: dv.ShowErrorMessage,
+			ShowInputMessage: dv.ShowInputMessage,
+			Sqref:            dv.Sqref,
+			Type:             dv.Type,
 		}
+		if dv.Formula1 != nil {
+			dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
+		}
+		if dv.Formula2 != nil {
+			dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
+		}
+		if dv.XMSqref != "" {
+			dataValidation.Sqref = dv.XMSqref
+			dataValidation.Formula1 = strings.TrimSuffix(strings.TrimPrefix(dataValidation.Formula1, "<xm:f>"), "</xm:f>")
+			dataValidation.Formula2 = strings.TrimSuffix(strings.TrimPrefix(dataValidation.Formula2, "<xm:f>"), "</xm:f>")
+		}
+		dataValidations = append(dataValidations, dataValidation)
 	}
-	return dvs, err
+	return dataValidations
 }
 
 // DeleteDataValidation delete data validation by given worksheet name and

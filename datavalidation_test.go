@@ -12,7 +12,7 @@
 package excelize
 
 import (
-	"log"
+	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -20,21 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestGetA(t *testing.T) {
-	file, err := OpenFile("file2.xlsx")
-	if err != nil {
-		panic(err)
-	}
-	validations, err := file.GetAllLinkedDataValidations("5")
-	if err != nil {
-		panic(err)
-	}
-
-	for i := range validations {
-		log.Println(validations[i].Type)
-	}
-}
 
 func TestDataValidation(t *testing.T) {
 	resultFile := filepath.Join("test", "TestDataValidation.xlsx")
@@ -120,6 +105,31 @@ func TestDataValidation(t *testing.T) {
 	dataValidations, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, []*DataValidation(nil), dataValidations)
+
+	// Test get data validations which storage in the extension lists
+	f = NewFile()
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s" xmlns:x14="%s"><x14:dataValidations><x14:dataValidation type="list" allowBlank="1"><x14:formula1><xm:f>Sheet1!$B$1:$B$5</xm:f></x14:formula1><xm:sqref>A7:B8</xm:sqref></x14:dataValidation></x14:dataValidations></ext>`, ExtURIDataValidations, NameSpaceSpreadSheetX14.Value)}
+	dataValidations, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []*DataValidation{
+		{
+			AllowBlank: true,
+			Type:       "list",
+			Formula1:   "Sheet1!$B$1:$B$5",
+			Sqref:      "A7:B8",
+		},
+	}, dataValidations)
+
+	// Test get data validations with invalid extension list characters
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s" xmlns:x14="%s"><x14:dataValidations></x14:dataValidation></x14:dataValidations></ext>`, ExtURIDataValidations, NameSpaceSpreadSheetX14.Value)}
+	_, err = f.GetDataValidations("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: element <dataValidations> closed by </dataValidation>")
+
+	// Test get validations without validations
+	assert.Nil(t, getDataValidations(nil))
+	assert.Nil(t, getDataValidations(&xlsxDataValidations{DataValidation: []*xlsxDataValidation{nil}}))
 }
 
 func TestDataValidationError(t *testing.T) {
