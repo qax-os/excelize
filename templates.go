@@ -103,7 +103,7 @@ const (
 	ExtURIConditionalFormattingRuleID    = "{B025F937-C7B1-47D3-B67F-A62EFF666E3E}"
 	ExtURIConditionalFormattings         = "{78C0D931-6437-407d-A8EE-F0AAD7539E65}"
 	ExtURIDataModel                      = "{FCE2AD5D-F65C-4FA6-A056-5C36A1767C68}"
-	ExtURIDataValidations                = "{CCE6A557-97BC-4B89-ADB6-D9C93CAAB3DF}"
+	ExtURIDataValidations                = "{CCE6A557-97BC-4b89-ADB6-D9C93CAAB3DF}"
 	ExtURIDrawingBlip                    = "{28A0092B-C50C-407E-A947-70E740481C1C}"
 	ExtURIExternalLinkPr                 = "{FCE6A71B-6B00-49CD-AB44-F6B1AE7CDE65}"
 	ExtURIIgnoredErrors                  = "{01252117-D84E-4E92-8308-4BE1C098FCBB}"

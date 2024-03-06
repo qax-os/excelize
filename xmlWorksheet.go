@@ -441,6 +441,7 @@ type xlsxDataValidation struct {
 	ShowErrorMessage bool          `xml:"showErrorMessage,attr,omitempty"`
 	ShowInputMessage bool          `xml:"showInputMessage,attr,omitempty"`
 	Sqref            string        `xml:"sqref,attr"`
+	XMSqref          string        `xml:"sqref,omitempty"`
 	Type             string        `xml:"type,attr,omitempty"`
 	Formula1         *xlsxInnerXML `xml:"formula1"`
 	Formula2         *xlsxInnerXML `xml:"formula2"`

@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"unicode/utf16"
@@ -293,36 +294,70 @@ func (f *File) GetDataValidations(sheet string) ([]*DataValidation, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ws.DataValidations == nil || len(ws.DataValidations.DataValidation) == 0 {
-		return nil, err
+	var (
+		dataValidations       []*DataValidation
+		decodeExtLst          = new(decodeExtLst)
+		decodeDataValidations *xlsxDataValidations
+		ext                   *xlsxExt
+	)
+	if ws.DataValidations != nil {
+		dataValidations = append(dataValidations, getDataValidations(ws.DataValidations)...)
 	}
-	var dvs []*DataValidation
-	for _, dv := range ws.DataValidations.DataValidation {
-		if dv != nil {
-			dataValidation := &DataValidation{
-				AllowBlank:       dv.AllowBlank,
-				Error:            dv.Error,
-				ErrorStyle:       dv.ErrorStyle,
-				ErrorTitle:       dv.ErrorTitle,
-				Operator:         dv.Operator,
-				Prompt:           dv.Prompt,
-				PromptTitle:      dv.PromptTitle,
-				ShowDropDown:     dv.ShowDropDown,
-				ShowErrorMessage: dv.ShowErrorMessage,
-				ShowInputMessage: dv.ShowInputMessage,
-				Sqref:            dv.Sqref,
-				Type:             dv.Type,
+	if ws.ExtLst != nil {
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return dataValidations, err
+		}
+		for _, ext = range decodeExtLst.Ext {
+			if ext.URI == ExtURIDataValidations {
+				decodeDataValidations = new(xlsxDataValidations)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeDataValidations)
+				dataValidations = append(dataValidations, getDataValidations(decodeDataValidations)...)
 			}
-			if dv.Formula1 != nil {
-				dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
-			}
-			if dv.Formula2 != nil {
-				dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
-			}
-			dvs = append(dvs, dataValidation)
 		}
 	}
-	return dvs, err
+	return dataValidations, err
+}
+
+// getDataValidations returns data validations list by given worksheet data
+// validations.
+func getDataValidations(dvs *xlsxDataValidations) []*DataValidation {
+	if dvs == nil {
+		return nil
+	}
+	var dataValidations []*DataValidation
+	for _, dv := range dvs.DataValidation {
+		if dv == nil {
+			continue
+		}
+		dataValidation := &DataValidation{
+			AllowBlank:       dv.AllowBlank,
+			Error:            dv.Error,
+			ErrorStyle:       dv.ErrorStyle,
+			ErrorTitle:       dv.ErrorTitle,
+			Operator:         dv.Operator,
+			Prompt:           dv.Prompt,
+			PromptTitle:      dv.PromptTitle,
+			ShowDropDown:     dv.ShowDropDown,
+			ShowErrorMessage: dv.ShowErrorMessage,
+			ShowInputMessage: dv.ShowInputMessage,
+			Sqref:            dv.Sqref,
+			Type:             dv.Type,
+		}
+		if dv.Formula1 != nil {
+			dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
+		}
+		if dv.Formula2 != nil {
+			dataValidation.Formula2 = unescapeDataValidationFormula(dv.Formula2.Content)
+		}
+		if dv.XMSqref != "" {
+			dataValidation.Sqref = dv.XMSqref
+			dataValidation.Formula1 = strings.TrimSuffix(strings.TrimPrefix(dataValidation.Formula1, "<xm:f>"), "</xm:f>")
+			dataValidation.Formula2 = strings.TrimSuffix(strings.TrimPrefix(dataValidation.Formula2, "<xm:f>"), "</xm:f>")
+		}
+		dataValidations = append(dataValidations, dataValidation)
+	}
+	return dataValidations
 }
 
 // DeleteDataValidation delete data validation by given worksheet name and
