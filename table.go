@@ -201,6 +201,69 @@ func (f *File) DeleteTable(name string) error {
 	return newNoExistTableError(name)
 }
 
+// GetTableData provides the method to return the values of a table given its range
+// and worksheet name.
+func (f *File) GetTableData(sheet string, tableRange string) ([][]string, error) {
+	coordinates, err := rangeRefToCoordinates(tableRange)
+	if err != nil {
+		return nil, fmt.Errorf("failed converting range '%v' to coordinates: %w", tableRange, err)
+	}
+	_ = sortCoordinates(coordinates)
+
+	var data [][]string
+	for row := coordinates[1]; row <= coordinates[3]; row++ {
+		var rowValues []string
+		for col := coordinates[0]; col <= coordinates[2]; col++ {
+			cell, _ := CoordinatesToCellName(col, row)
+			cellValue, err := f.GetCellValue(sheet, cell)
+			if err != nil {
+				return nil, fmt.Errorf("failed getting cell value of '%s': %w", cell, err)
+			}
+			rowValues = append(rowValues, cellValue)
+		}
+		data = append(data, rowValues)
+	}
+
+	return data, nil
+}
+
+// GetTableColumns provides the method to return the values of a table as a map with the headers as the keys,
+// given its range and worksheet name.
+func (f *File) GetTableColumns(sheet string, table Table) (map[string][]string, error) {
+	coordinates, err := rangeRefToCoordinates(table.Range)
+	if err != nil {
+		return nil, fmt.Errorf("failed converting range '%v' to coordinates: %w", table.Range, err)
+	}
+	_ = sortCoordinates(coordinates)
+
+	data := make(map[string][]string, coordinates[2]-coordinates[0]+1)
+	for col := coordinates[0]; col <= coordinates[2]; col++ {
+		header := "Column" + strconv.Itoa(col-coordinates[0]+1)
+		firstRow := coordinates[1]
+		if table.ShowHeaderRow != nil && *table.ShowHeaderRow {
+			cell, _ := CoordinatesToCellName(col, coordinates[1])
+			header, err = f.GetCellValue(sheet, cell)
+			if err != nil {
+				return nil, fmt.Errorf("failed getting header from '%s': %w", cell, err)
+			}
+			firstRow++
+		}
+
+		var rowValues []string
+		for row := firstRow; row <= coordinates[3]; row++ {
+			cell, _ := CoordinatesToCellName(col, row)
+			cellValue, err := f.GetCellValue(sheet, cell)
+			if err != nil {
+				return nil, fmt.Errorf("failed getting cell value of '%s': %w", cell, err)
+			}
+			rowValues = append(rowValues, cellValue)
+		}
+		data[header] = rowValues
+	}
+
+	return data, nil
+}
+
 // countTables provides a function to get table files count storage in the
 // folder xl/tables.
 func (f *File) countTables() int {
