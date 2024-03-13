@@ -1136,7 +1136,7 @@ var (
 		},
 	}
 
-	// extractStyleCondFuncs provides a function set to returns if shoudle be
+	// extractStyleCondFuncs provides a function set to returns if should be
 	// extract style definition by given style.
 	extractStyleCondFuncs = map[string]func(xlsxXf, *xlsxStyleSheet) bool{
 		"fill": func(xf xlsxXf, s *xlsxStyleSheet) bool {
