@@ -278,7 +278,7 @@ func TestSetCellValue(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathSharedStrings, []byte(fmt.Sprintf(`<sst xmlns="%s" count="2" uniqueCount="1"><si><t>a</t></si><si><t>a</t></si></sst>`, NameSpaceSpreadSheet.Value)))
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		SheetData: xlsxSheetData{Row: []xlsxRow{
-			{R: intPtr(1), C: []xlsxC{{R: "A1", T: "str", V: "1"}}},
+			{R: 1, C: []xlsxC{{R: "A1", T: "str", V: "1"}}},
 		}},
 	})
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "b"))
@@ -387,6 +387,9 @@ func TestGetCellValue(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="0"><c r="H6" t="inlineStr"><is><t>H6</t></is></c><c r="A1" t="inlineStr"><is><t>r0A6</t></is></c><c r="F4" t="inlineStr"><is><t>F4</t></is></c></row><row><c r="A1" t="inlineStr"><is><t>A6</t></is></c><c r="B1" t="inlineStr"><is><t>B6</t></is></c><c r="C1" t="inlineStr"><is><t>C6</t></is></c></row><row r="3"><c r="A3"><v>100</v></c><c r="B3" t="inlineStr"><is><t>B3</t></is></c></row>`)))
 	f.checked = sync.Map{}
+	cell, err = f.GetCellValue("Sheet1", "H6")
+	assert.Equal(t, "H6", cell)
+	assert.NoError(t, err)
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{
 		{"A6", "B6", "C6"},
@@ -396,9 +399,6 @@ func TestGetCellValue(t *testing.T) {
 		nil,
 		{"", "", "", "", "", "", "", "H6"},
 	}, rows)
-	assert.NoError(t, err)
-	cell, err = f.GetCellValue("Sheet1", "H6")
-	assert.Equal(t, "H6", cell)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")

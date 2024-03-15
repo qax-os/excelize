@@ -63,16 +63,16 @@ type Cols struct {
 //	    fmt.Println()
 //	}
 func (f *File) GetCols(sheet string, opts ...Options) ([][]string, error) {
-	if _, err := f.workSheetReader(sheet); err != nil {
+	cols, err := f.Cols(sheet)
+	if err != nil {
 		return nil, err
 	}
-	cols, err := f.Cols(sheet)
 	results := make([][]string, 0, 64)
 	for cols.Next() {
 		col, _ := cols.Rows(opts...)
 		results = append(results, col)
 	}
-	return results, err
+	return results, nil
 }
 
 // Next will return true if the next column is found.
