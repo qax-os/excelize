@@ -308,7 +308,7 @@ type xlsxSheetData struct {
 // particular row in the worksheet.
 type xlsxRow struct {
 	C            []xlsxC  `xml:"c"`
-	R            *int     `xml:"r,attr"`
+	R            int      `xml:"r,attr,omitempty"`
 	Spans        string   `xml:"spans,attr,omitempty"`
 	S            int      `xml:"s,attr,omitempty"`
 	CustomFormat bool     `xml:"customFormat,attr,omitempty"`

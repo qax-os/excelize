@@ -140,7 +140,7 @@ func TestGetColsError(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)))
 	f.checked = sync.Map{}
 	_, err = f.GetCols("Sheet1")
-	assert.EqualError(t, err, `strconv.ParseInt: parsing "A": invalid syntax`)
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)))
 	_, err = f.GetCols("Sheet1")
