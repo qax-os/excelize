@@ -682,6 +682,7 @@ var (
 	}
 	// supportedTokenTypes list the supported number format token types currently.
 	supportedTokenTypes = []string{
+		nfp.TokenTypeAlignment,
 		nfp.TokenSubTypeCurrencyString,
 		nfp.TokenSubTypeLanguageInfo,
 		nfp.TokenTypeColor,
@@ -4797,14 +4798,14 @@ func format(value, numFmt string, date1904 bool, cellType CellType, opts *Option
 		if nf.isNumeric {
 			switch section.Type {
 			case nfp.TokenSectionPositive:
-				return nf.positiveHandler()
+				return nf.alignmentHandler(nf.positiveHandler())
 			case nfp.TokenSectionNegative:
-				return nf.negativeHandler()
+				return nf.alignmentHandler(nf.negativeHandler())
 			default:
-				return nf.zeroHandler()
+				return nf.alignmentHandler(nf.zeroHandler())
 			}
 		}
-		return nf.textHandler()
+		return nf.alignmentHandler(nf.textHandler())
 	}
 	return value
 }
@@ -5082,13 +5083,29 @@ func (nf *numberFormat) dateTimeHandler() string {
 	return nf.printSwitchArgument(nf.result)
 }
 
+// alignmentHandler will be handling alignment token for each number format
+// selection for a number format expression.
+func (nf *numberFormat) alignmentHandler(result string) string {
+	tokens := nf.section[nf.sectionIdx].Items
+	if len(tokens) == 0 {
+		return result
+	}
+	if tokens[0].TType == nfp.TokenTypeAlignment {
+		result = nfp.Whitespace + result
+	}
+	if l := len(tokens); tokens[l-1].TType == nfp.TokenTypeAlignment {
+		result += nfp.Whitespace
+	}
+	return result
+}
+
 // positiveHandler will be handling positive selection for a number format
 // expression.
 func (nf *numberFormat) positiveHandler() string {
 	var fmtNum bool
 	for _, token := range nf.section[nf.sectionIdx].Items {
-		if inStrSlice(supportedTokenTypes, token.TType, true) == -1 || token.TType == nfp.TokenTypeGeneral {
-			return nf.value
+		if token.TType == nfp.TokenTypeGeneral {
+			return strconv.FormatFloat(nf.number, 'G', 10, 64)
 		}
 		if inStrSlice(supportedNumberTokenTypes, token.TType, true) != -1 {
 			fmtNum = true
