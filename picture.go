@@ -14,6 +14,7 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"image"
 	"io"
 	"os"
@@ -834,4 +835,38 @@ func (f *File) getCellImages(sheet, cell string) ([]Picture, error) {
 		}
 	}
 	return pics, err
+}
+
+// GetCellPicture gets a picture that is embedded within a cell. Excel
+// itself (both standalone, and as part of Office 365) supports images
+// being embedded within a cell, as well as images floating over one
+// or more cells (supported by GetPictures and GetPictureCells).
+func (f *File) GetCellPicture(sheet, cell string) (*Picture, error) {
+	var pictureRel *xlsxRelationship
+	_, err := f.getCellStringFunc(sheet, cell, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+		if c.Vm == nil || c.V != `#VALUE!` {
+			return ``, true, nil
+		}
+		rels, err := f.relsReader(`xl/richData/_rels/richValueRel.xml.rels`)
+		if err != nil || rels == nil {
+			return ``, true, err
+		}
+		id := fmt.Sprintf("rId%d", *c.Vm)
+		for _, v := range rels.Relationships {
+			if v.ID == id {
+				pictureRel = &v
+				return ``, true, nil
+			}
+		}
+		return ``, true, nil
+	})
+	if err == nil && pictureRel != nil {
+		pic := Picture{Extension: filepath.Ext(pictureRel.Target), Format: &GraphicOptions{}}
+		path := strings.ReplaceAll(pictureRel.Target, "..", "xl")
+		if buffer, _ := f.Pkg.Load(path); buffer != nil {
+			pic.File = buffer.([]byte)
+			return &pic, nil
+		}
+	}
+	return nil, err
 }
