@@ -363,7 +363,7 @@ func (f *File) SetSheetName(source, target string) error {
 	if err = checkSheetName(target); err != nil {
 		return err
 	}
-	if strings.EqualFold(target, source) {
+	if target == source {
 		return err
 	}
 	wb, _ := f.workbookReader()
