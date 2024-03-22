@@ -831,8 +831,8 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 	if !rawCellValue {
 		styleIdx, _ = f.GetCellStyle(sheet, cell)
 	}
-	result = token.Value()
-	if isNum, precision, decimal := isNumeric(result); isNum && !rawCellValue {
+	if token.Type == ArgNumber && !token.Boolean {
+		_, precision, decimal := isNumeric(token.Value())
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			return
@@ -840,7 +840,9 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		if !strings.HasPrefix(result, "0") {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
+		return
 	}
+	result, err = f.formattedValue(&xlsxC{S: styleIdx, V: token.Value()}, rawCellValue, CellTypeInlineString)
 	return
 }
 
@@ -4281,7 +4283,7 @@ func (fn *formulaFuncs) EXP(argsList *list.List) formulaArg {
 	if number.Type == ArgError {
 		return number
 	}
-	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", math.Exp(number.Number))))
+	return newNumberFormulaArg(math.Exp(number.Number))
 }
 
 // fact returns the factorial of a supplied number.
@@ -4359,7 +4361,7 @@ func (fn *formulaFuncs) FLOOR(argsList *list.List) formulaArg {
 			val--
 		}
 	}
-	return newStringFormulaArg(strings.ToUpper(fmt.Sprintf("%g", val*significance.Number)))
+	return newNumberFormulaArg(val * significance.Number)
 }
 
 // FLOORdotMATH function rounds a supplied number down to a supplied multiple
@@ -11570,12 +11572,10 @@ func (fn *formulaFuncs) ISNA(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISNA requires 1 argument")
 	}
-	token := argsList.Front().Value.(formulaArg)
-	result := "FALSE"
-	if token.Type == ArgError && token.String == formulaErrorNA {
-		result = "TRUE"
+	if token := argsList.Front().Value.(formulaArg); token.Type == ArgError && token.String == formulaErrorNA {
+		return newBoolFormulaArg(true)
 	}
-	return newStringFormulaArg(result)
+	return newBoolFormulaArg(false)
 }
 
 // ISNONTEXT function tests if a supplied value is text. If not, the

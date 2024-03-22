@@ -6311,13 +6311,31 @@ func TestFormulaRawCellValueOption(t *testing.T) {
 		raw      bool
 		expected string
 	}{
-		{"=\"10e3\"", false, "10000"},
+		{"=VALUE(\"1.0E-07\")", false, "0.00"},
+		{"=VALUE(\"1.0E-07\")", true, "0.0000001"},
+		{"=\"text\"", false, "$text"},
+		{"=\"text\"", true, "text"},
+		{"=\"10e3\"", false, "$10e3"},
 		{"=\"10e3\"", true, "10e3"},
-		{"=\"10\" & \"e3\"", false, "10000"},
+		{"=\"10\" & \"e3\"", false, "$10e3"},
 		{"=\"10\" & \"e3\"", true, "10e3"},
-		{"=\"1111111111111111\"", false, "1.11111111111111E+15"},
+		{"=10e3", false, "10000.00"},
+		{"=10e3", true, "10000"},
+		{"=\"1111111111111111\"", false, "$1111111111111111"},
 		{"=\"1111111111111111\"", true, "1111111111111111"},
+		{"=1111111111111111", false, "1111111111111110.00"},
+		{"=1111111111111111", true, "1.11111111111111E+15"},
+		{"=1444.00000000003", false, "1444.00"},
+		{"=1444.00000000003", true, "1444.00000000003"},
+		{"=1444.000000000003", false, "1444.00"},
+		{"=1444.000000000003", true, "1444"},
+		{"=ROUND(1444.00000000000003,2)", false, "1444.00"},
+		{"=ROUND(1444.00000000000003,2)", true, "1444"},
 	}
+	exp := "0.00;0.00;;$@"
+	styleID, err := f.NewStyle(&Style{CustomNumFmt: &exp})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", styleID))
 	for _, test := range rawTest {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", test.value))
 		val, err := f.CalcCellValue("Sheet1", "A1", Options{RawCellValue: test.raw})
