@@ -453,14 +453,14 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
 // Office Excel application. This function will be remove value tag when met a
 // cell have a linked value. Reference
-// https://social.technet.microsoft.com/Forums/office/en-US/e16bae1f-6a2c-4325-8013-e989a3479066/excel-2010-linked-cells-not-updating
+// https://learn.microsoft.com/en-us/archive/msdn-technet-forums/e16bae1f-6a2c-4325-8013-e989a3479066
 //
 // Notice: after opening generated workbook, Excel will update the linked value
 // and generate a new value and will prompt to save the file or not.
 //
 // For example:
 //
-//	<row r="19" spans="2:2">
+//	<row r="19">
 //	    <c r="B19">
 //	        <f>SUM(Sheet2!D2,Sheet2!D11)</f>
 //	        <v>100</v>
@@ -469,7 +469,7 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 //
 // to
 //
-//	<row r="19" spans="2:2">
+//	<row r="19">
 //	    <c r="B19">
 //	        <f>SUM(Sheet2!D2,Sheet2!D11)</f>
 //	    </c>

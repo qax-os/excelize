@@ -463,6 +463,14 @@ func TestAdjustCols(t *testing.T) {
 
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 2))
 	assert.Nil(t, ws.(*xlsxWorksheet).Cols)
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "(1-0.5)/2"))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	formula, err := f.GetCellFormula("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "(1-0.5)/2", formula)
+	assert.NoError(t, f.Close())
 }
 
 func TestAdjustColDimensions(t *testing.T) {
@@ -1061,13 +1069,13 @@ func TestAdjustDataValidations(t *testing.T) {
 
 	// Test adjust data validation with multiple cell range
 	dv = NewDataValidation(true)
-	dv.Sqref = "G1:G3 H1:H3"
+	dv.Sqref = "G1:G3 H1:H3 A3:A1048576"
 	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
 	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
 	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 	dvs, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, "G1:G4 H1:H4", dvs[3].Sqref)
+	assert.Equal(t, "G1:G4 H1:H4 A4:A1048576", dvs[3].Sqref)
 
 	dv = NewDataValidation(true)
 	dv.Sqref = "C5:D6"
