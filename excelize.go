@@ -589,3 +589,41 @@ func (f *File) setContentTypePartProjectExtensions(contentType string) error {
 	}
 	return err
 }
+
+// metadataReader provides a function to get the pointer to the structure
+// after deserialization of xl/metadata.xml.
+func (f *File) metadataReader() (*xlsxMetadata, error) {
+	var mataData xlsxMetadata
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLMetadata)))).
+		Decode(&mataData); err != nil && err != io.EOF {
+		return &mataData, err
+	}
+	return &mataData, nil
+}
+
+// richValueRelReader provides a function to get the pointer to the structure
+// after deserialization of xl/richData/richValueRel.xml.
+func (f *File) richValueRelReader() (*xlsxRichValueRels, error) {
+	var richValueRels xlsxRichValueRels
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichValueRel)))).
+		Decode(&richValueRels); err != nil && err != io.EOF {
+		return &richValueRels, err
+	}
+	return &richValueRels, nil
+}
+
+// getRichDataRichValueRelRelationships provides a function to get drawing
+// relationships from xl/richData/_rels/richValueRel.xml.rels by given
+// relationship ID.
+func (f *File) getRichDataRichValueRelRelationships(rID string) *xlsxRelationship {
+	if rels, _ := f.relsReader(defaultXMLRichDataRichValueRelRels); rels != nil {
+		rels.mu.Lock()
+		defer rels.mu.Unlock()
+		for _, v := range rels.Relationships {
+			if v.ID == rID {
+				return &v
+			}
+		}
+	}
+	return nil
+}

@@ -497,13 +497,13 @@ func (f *File) GetPictureCells(sheet string) ([]string, error) {
 	}
 	f.mu.Unlock()
 	if ws.Drawing == nil {
-		return f.getEmbeddedImageCells(sheet)
+		return f.getImageCells(sheet)
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	drawingRelationships := strings.ReplaceAll(
 		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
-	embeddedImageCells, err := f.getEmbeddedImageCells(sheet)
+	embeddedImageCells, err := f.getImageCells(sheet)
 	if err != nil {
 		return nil, err
 	}
@@ -771,9 +771,9 @@ func (f *File) cellImagesReader() (*decodeCellImages, error) {
 	return f.DecodeCellImages, nil
 }
 
-// getEmbeddedImageCells returns all the Kingsoft WPS Office embedded image
-// cells reference by given worksheet name.
-func (f *File) getEmbeddedImageCells(sheet string) ([]string, error) {
+// getImageCells returns all the Microsoft 365 cell images and the Kingsoft WPS
+// Office embedded image cells reference by given worksheet name.
+func (f *File) getImageCells(sheet string) ([]string, error) {
 	var (
 		err   error
 		cells []string
@@ -791,14 +791,73 @@ func (f *File) getEmbeddedImageCells(sheet string) ([]string, error) {
 				}
 				cells = append(cells, c.R)
 			}
+			r, err := f.getImageCellRel(&c)
+			if err != nil {
+				return cells, err
+			}
+			if r != nil {
+				cells = append(cells, c.R)
+			}
+
 		}
 	}
 	return cells, err
 }
 
-// getCellImages provides a function to get the Kingsoft WPS Office embedded
-// cell images by given worksheet name and cell reference.
+// getImageCellRel returns the Microsoft 365 cell image relationship.
+func (f *File) getImageCellRel(c *xlsxC) (*xlsxRelationship, error) {
+	var r *xlsxRelationship
+	if c.Vm == nil || c.V != formulaErrorVALUE {
+		return r, nil
+	}
+	metaData, err := f.metadataReader()
+	if err != nil {
+		return r, err
+	}
+	vmd := metaData.ValueMetadata
+	if vmd == nil || int(*c.Vm) > len(vmd.Bk) || len(vmd.Bk[*c.Vm-1].Rc) == 0 {
+		return r, err
+	}
+	richValueRel, err := f.richValueRelReader()
+	if err != nil {
+		return r, err
+	}
+	if vmd.Bk[*c.Vm-1].Rc[0].V >= len(richValueRel.Rels) {
+		return r, err
+	}
+	rID := richValueRel.Rels[vmd.Bk[*c.Vm-1].Rc[0].V].ID
+	if r = f.getRichDataRichValueRelRelationships(rID); r != nil && r.Type != SourceRelationshipImage {
+		return nil, err
+	}
+	return r, err
+}
+
+// getCellImages provides a function to get the Microsoft 365 cell images and
+// the Kingsoft WPS Office embedded cell images by given worksheet name and cell
+// reference.
 func (f *File) getCellImages(sheet, cell string) ([]Picture, error) {
+	pics, err := f.getDispImages(sheet, cell)
+	if err != nil {
+		return pics, err
+	}
+	_, err = f.getCellStringFunc(sheet, cell, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
+		r, err := f.getImageCellRel(c)
+		if err != nil || r == nil {
+			return "", true, err
+		}
+		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+		if buffer, _ := f.Pkg.Load(strings.TrimPrefix(strings.ReplaceAll(r.Target, "..", "xl"), "/")); buffer != nil {
+			pic.File = buffer.([]byte)
+			pics = append(pics, pic)
+		}
+		return "", true, nil
+	})
+	return pics, err
+}
+
+// getDispImages provides a function to get the Kingsoft WPS Office embedded
+// cell images by given worksheet name and cell reference.
+func (f *File) getDispImages(sheet, cell string) ([]Picture, error) {
 	formula, err := f.GetCellFormula(sheet, cell)
 	if err != nil {
 		return nil, err
