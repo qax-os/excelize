@@ -448,13 +448,76 @@ func TestGetCellImages(t *testing.T) {
 	_, err := f.getCellImages("Sheet1", "A1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
+
+	// Test get the Microsoft 365 cell images
+	f = NewFile()
+	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), nil))
+	f.Pkg.Store(defaultXMLMetadata, []byte(`<metadata><valueMetadata count="1"><bk><rc t="1" v="0"/></bk></valueMetadata></metadata>`))
+	f.Pkg.Store(defaultXMLRichDataRichValueRel, []byte(`<richValueRels><rel r:id="rId1"/></richValueRels>`))
+	f.Pkg.Store(defaultXMLRichDataRichValueRelRels, []byte(fmt.Sprintf(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="%s" Target="../media/image1.png"/></Relationships>`, SourceRelationshipImage)))
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
+		SheetData: xlsxSheetData{Row: []xlsxRow{
+			{R: 1, C: []xlsxC{{R: "A1", T: "e", V: formulaErrorVALUE, Vm: uintPtr(1)}}},
+		}},
+	})
+	pics, err := f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pics))
+	cells, err := f.GetPictureCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"A1"}, cells)
+
+	// Test get the Microsoft 365 cell images without image relationships parts
+	f.Relationships.Delete(defaultXMLRichDataRichValueRelRels)
+	f.Pkg.Store(defaultXMLRichDataRichValueRelRels, []byte(fmt.Sprintf(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="%s" Target="../media/image1.png"/></Relationships>`, SourceRelationshipHyperLink)))
+	pics, err = f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Empty(t, pics)
+	// Test get the Microsoft 365 cell images with unsupported charset rich data rich value relationships
+	f.Relationships.Delete(defaultXMLRichDataRichValueRelRels)
+	f.Pkg.Store(defaultXMLRichDataRichValueRelRels, MacintoshCyrillicCharset)
+	pics, err = f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Empty(t, pics)
+	// Test get the Microsoft 365 cell images with unsupported charset rich data rich value
+	f.Pkg.Store(defaultXMLRichDataRichValueRel, MacintoshCyrillicCharset)
+	_, err = f.GetPictures("Sheet1", "A1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get the Microsoft 365 image cells without block of metadata records
+	cells, err = f.GetPictureCells("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.Empty(t, cells)
+	// Test get the Microsoft 365 cell images with rich data rich value relationships
+	f.Pkg.Store(defaultXMLMetadata, []byte(`<metadata><valueMetadata count="1"><bk><rc t="1" v="0"/></bk></valueMetadata></metadata>`))
+	f.Pkg.Store(defaultXMLRichDataRichValueRel, []byte(`<richValueRels/>`))
+	pics, err = f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Empty(t, pics)
+	// Test get the Microsoft 365 cell images with unsupported charset meta data
+	f.Pkg.Store(defaultXMLMetadata, MacintoshCyrillicCharset)
+	_, err = f.GetPictures("Sheet1", "A1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get the Microsoft 365 cell images without block of metadata records
+	f.Pkg.Store(defaultXMLMetadata, []byte(`<metadata><valueMetadata/></metadata>`))
+	pics, err = f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Empty(t, pics)
 }
 
-func TestGetEmbeddedImageCells(t *testing.T) {
+func TestGetImageCells(t *testing.T) {
 	f := NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
-	_, err := f.getEmbeddedImageCells("Sheet1")
+	_, err := f.getImageCells("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
+
+// func TestMe1(t *testing.T) {
+// 	f, _ := OpenFile("/Users/admin/Downloads/Book_modified.xlsx")
+// 	pics, err := f.GetPictures("Sheet1", "A17")
+// 	assert.NoError(t, err)
+// 	fmt.Println(pics)
+
+// 	fmt.Println(f.GetPictureCells("Sheet1"))
+// }
