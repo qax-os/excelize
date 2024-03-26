@@ -465,8 +465,11 @@ func TestSetSheetName(t *testing.T) {
 	// Test set worksheet with the same name
 	assert.NoError(t, f.SetSheetName("Sheet1", "Sheet1"))
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
+	// Test set worksheet with the different name
+	assert.NoError(t, f.SetSheetName("Sheet1", "sheet1"))
+	assert.Equal(t, "sheet1", f.GetSheetName(0))
 	// Test set sheet name with invalid sheet name
-	assert.EqualError(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid)
 
 	// Test set worksheet name with existing defined name and auto filter
 	assert.NoError(t, f.AutoFilter("Sheet1", "A1:A2", nil))

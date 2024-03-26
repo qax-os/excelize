@@ -239,6 +239,17 @@ func (f *File) adjustSingleRowFormulas(sheet, sheetN string, r *xlsxRow, num, of
 // adjustCellRef provides a function to adjust cell reference.
 func (f *File) adjustCellRef(cellRef string, dir adjustDirection, num, offset int) (string, error) {
 	var SQRef []string
+	applyOffset := func(coordinates []int, idx1, idx2, maxVal int) []int {
+		if coordinates[idx1] >= num {
+			coordinates[idx1] += offset
+		}
+		if coordinates[idx2] >= num {
+			if coordinates[idx2] += offset; coordinates[idx2] > maxVal {
+				coordinates[idx2] = maxVal
+			}
+		}
+		return coordinates
+	}
 	for _, ref := range strings.Split(cellRef, " ") {
 		if !strings.Contains(ref, ":") {
 			ref += ":" + ref
@@ -251,22 +262,12 @@ func (f *File) adjustCellRef(cellRef string, dir adjustDirection, num, offset in
 			if offset < 0 && coordinates[0] == coordinates[2] {
 				continue
 			}
-			if coordinates[0] >= num {
-				coordinates[0] += offset
-			}
-			if coordinates[2] >= num {
-				coordinates[2] += offset
-			}
+			coordinates = applyOffset(coordinates, 0, 2, MaxColumns)
 		} else {
 			if offset < 0 && coordinates[1] == coordinates[3] {
 				continue
 			}
-			if coordinates[1] >= num {
-				coordinates[1] += offset
-			}
-			if coordinates[3] >= num {
-				coordinates[3] += offset
-			}
+			coordinates = applyOffset(coordinates, 1, 3, TotalRows)
 		}
 		if ref, err = coordinatesToRangeRef(coordinates); err != nil {
 			return "", err
@@ -446,12 +447,8 @@ func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool
 			val += operand
 			continue
 		}
-		if isFunctionStartToken(token) {
-			val += token.TValue + string(efp.ParenOpen)
-			continue
-		}
-		if isFunctionStopToken(token) {
-			val += token.TValue + string(efp.ParenClose)
+		if paren := transformParenthesesToken(token); paren != "" {
+			val += transformParenthesesToken(token)
 			continue
 		}
 		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
@@ -461,6 +458,18 @@ func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool
 		val += token.TValue
 	}
 	return val, nil
+}
+
+// transformParenthesesToken returns formula part with parentheses by given
+// token.
+func transformParenthesesToken(token efp.Token) string {
+	if isFunctionStartToken(token) || isBeginParenthesesToken(token) {
+		return token.TValue + string(efp.ParenOpen)
+	}
+	if isFunctionStopToken(token) || isEndParenthesesToken(token) {
+		return token.TValue + string(efp.ParenClose)
+	}
+	return ""
 }
 
 // adjustRangeSheetName returns replaced range reference by given source and
@@ -551,12 +560,8 @@ func transformArrayFormula(tokens []efp.Token, afs []arrayFormulaOperandToken) s
 		if skip {
 			continue
 		}
-		if isFunctionStartToken(token) {
-			val += token.TValue + string(efp.ParenOpen)
-			continue
-		}
-		if isFunctionStopToken(token) {
-			val += token.TValue + string(efp.ParenClose)
+		if paren := transformParenthesesToken(token); paren != "" {
+			val += transformParenthesesToken(token)
 			continue
 		}
 		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
@@ -985,14 +990,14 @@ func (f *File) adjustDataValidations(ws *xlsxWorksheet, sheet string, dir adjust
 				worksheet.DataValidations.DataValidation[i].Sqref = ref
 			}
 			if worksheet.DataValidations.DataValidation[i].Formula1 != nil {
-				formula := unescapeDataValidationFormula(worksheet.DataValidations.DataValidation[i].Formula1.Content)
+				formula := formulaUnescaper.Replace(worksheet.DataValidations.DataValidation[i].Formula1.Content)
 				if formula, err = f.adjustFormulaRef(sheet, sheetN, formula, false, dir, num, offset); err != nil {
 					return err
 				}
 				worksheet.DataValidations.DataValidation[i].Formula1 = &xlsxInnerXML{Content: formulaEscaper.Replace(formula)}
 			}
 			if worksheet.DataValidations.DataValidation[i].Formula2 != nil {
-				formula := unescapeDataValidationFormula(worksheet.DataValidations.DataValidation[i].Formula2.Content)
+				formula := formulaUnescaper.Replace(worksheet.DataValidations.DataValidation[i].Formula2.Content)
 				if formula, err = f.adjustFormulaRef(sheet, sheetN, formula, false, dir, num, offset); err != nil {
 					return err
 				}
