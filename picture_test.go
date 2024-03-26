@@ -512,12 +512,3 @@ func TestGetImageCells(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
-
-// func TestMe1(t *testing.T) {
-// 	f, _ := OpenFile("/Users/admin/Downloads/Book_modified.xlsx")
-// 	pics, err := f.GetPictures("Sheet1", "A17")
-// 	assert.NoError(t, err)
-// 	fmt.Println(pics)
-
-// 	fmt.Println(f.GetPictureCells("Sheet1"))
-// }
