@@ -12,10 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkAddPictureFromBytes(b *testing.B) {
@@ -59,6 +58,8 @@ func TestAddPicture(t *testing.T) {
 
 	// Test add picture to worksheet from bytes
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "Q1", &Picture{Extension: ".png", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}}))
+	// Test add picture to worksheet from bytes with unsupported insert type
+	assert.Equal(t, ErrParameterInvalid, f.AddPictureFromBytes("Sheet1", "Q1", &Picture{Extension: ".png", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}, InsertType: PictureInsertTypePlaceInCell}))
 	// Test add picture to worksheet from bytes with illegal cell reference
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AddPictureFromBytes("Sheet1", "A", &Picture{Extension: ".png", File: file, Format: &GraphicOptions{AltText: "Excel Logo"}}))
 
@@ -150,6 +151,7 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pics[0].File, 13233)
 	assert.Empty(t, pics[0].Format.AltText)
+	assert.Equal(t, PictureInsertTypePlaceOverCells, pics[0].InsertType)
 
 	f, err = prepareTestBook1()
 	if !assert.NoError(t, err) {
@@ -249,6 +251,7 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pics, 2)
 	assert.Equal(t, "CellImage1", pics[0].Format.AltText)
+	assert.Equal(t, PictureInsertTypeDISPIMG, pics[0].InsertType)
 
 	// Test get embedded cell pictures with invalid formula
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=_xlfn.DISPIMG()"))
@@ -463,6 +466,7 @@ func TestGetCellImages(t *testing.T) {
 	pics, err := f.GetPictures("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pics))
+	assert.Equal(t, PictureInsertTypePlaceInCell, pics[0].InsertType)
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"A1"}, cells)

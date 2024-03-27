@@ -23,6 +23,17 @@ import (
 	"strings"
 )
 
+// PictureInsertType defines the type of the picture has been inserted into the
+// worksheet.
+type PictureInsertType int
+
+// Insert picture types.
+const (
+	PictureInsertTypePlaceOverCells PictureInsertType = iota
+	PictureInsertTypePlaceInCell
+	PictureInsertTypeDISPIMG
+)
+
 // parseGraphicOptions provides a function to parse the format settings of
 // the picture with default value.
 func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
@@ -52,7 +63,10 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 // AddPicture provides the method to add picture in a sheet by given picture
 // format set (such as offset, scale, aspect ratio setting and print settings)
 // and file path, supported image types: BMP, EMF, EMZ, GIF, JPEG, JPG, PNG,
-// SVG, TIF, TIFF, WMF, and WMZ. This function is concurrency safe. For example:
+// SVG, TIF, TIFF, WMF, and WMZ. This function is concurrency-safe. Note that
+// this function only supports adding pictures placed over the cells currently,
+// and doesn't support adding pictures placed in cells or creating the Kingsoft
+// WPS Office embedded image cells. For example:
 //
 //	package main
 //
@@ -167,8 +181,10 @@ func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error 
 // AddPictureFromBytes provides the method to add picture in a sheet by given
 // picture format set (such as offset, scale, aspect ratio setting and print
 // settings), file base name, extension name and file bytes, supported image
-// types: EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ. For
-// example:
+// types: EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ. Note that
+// this function only supports adding pictures placed over the cells currently,
+// and doesn't support adding pictures placed in cells or creating the Kingsoft
+// WPS Office embedded image cells.For example:
 //
 //	package main
 //
@@ -210,6 +226,9 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	ext, ok := supportedImageTypes[strings.ToLower(pic.Extension)]
 	if !ok {
 		return ErrImgExt
+	}
+	if pic.InsertType != PictureInsertTypePlaceOverCells {
+		return ErrParameterInvalid
 	}
 	options := parseGraphicOptions(pic.Format)
 	img, _, err := image.DecodeConfig(bytes.NewReader(pic.File))
@@ -577,7 +596,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	cond := func(from *xlsxFrom) bool { return from.Col == col && from.Row == row }
 	cond2 := func(from *decodeFrom) bool { return from.Col == col && from.Row == row }
 	cb := func(a *xdrCellAnchor, r *xlsxRelationship) {
-		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
 		if buffer, _ := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); buffer != nil {
 			pic.File = buffer.([]byte)
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
@@ -585,7 +604,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		}
 	}
 	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
-		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
 		if buffer, _ := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); buffer != nil {
 			pic.File = buffer.([]byte)
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
@@ -845,7 +864,7 @@ func (f *File) getCellImages(sheet, cell string) ([]Picture, error) {
 		if err != nil || r == nil {
 			return "", true, err
 		}
-		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceInCell}
 		if buffer, _ := f.Pkg.Load(strings.TrimPrefix(strings.ReplaceAll(r.Target, "..", "xl"), "/")); buffer != nil {
 			pic.File = buffer.([]byte)
 			pics = append(pics, pic)
@@ -882,7 +901,7 @@ func (f *File) getDispImages(sheet, cell string) ([]Picture, error) {
 		if cellImg.Pic.NvPicPr.CNvPr.Name == imgID {
 			for _, r := range rels.Relationships {
 				if r.ID == cellImg.Pic.BlipFill.Blip.Embed {
-					pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}}
+					pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypeDISPIMG}
 					if buffer, _ := f.Pkg.Load("xl/" + r.Target); buffer != nil {
 						pic.File = buffer.([]byte)
 						pic.Format.AltText = cellImg.Pic.NvPicPr.CNvPr.Descr
