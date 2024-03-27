@@ -201,6 +201,62 @@ func (f *File) DeleteTable(name string) error {
 	return newNoExistTableError(name)
 }
 
+// ResizeTable provides a function to resize table by given table name and
+// range reference.
+func (f *File) ResizeTable(name, rangeRef string) error {
+	if err := checkDefinedName(name); err != nil {
+		return err
+	}
+	for _, sheet := range f.GetSheetList() {
+		tables, err := f.GetTables(sheet)
+		if err != nil {
+			return err
+		}
+		for _, table := range tables {
+			if table.Name != name {
+				continue
+			}
+			// Get XML content of the table
+			content, ok := f.Pkg.Load(table.tableXML)
+			if !ok {
+				continue
+			}
+			// Convert xml content to xlsxTable
+			var tbl xlsxTable
+			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).Decode(&tbl); err != nil && err != io.EOF {
+				return err
+			}
+			// Convert reference range to coordinates
+			coordinates, err := rangeRefToCoordinates(rangeRef)
+			if err != nil {
+				return err
+			}
+			// Correct reference range, such correct C1:B3 to B1:C3.
+			_ = sortCoordinates(coordinates)
+			// Convert back coordinates to reference range
+			ref, _ := f.coordinatesToRangeRef(coordinates, true)
+			// Update the table with the new range
+			tbl.Ref = ref
+			tbl.AutoFilter.Ref = ref
+			table.Range = ref
+			// Update the header
+			hideHeaderRow := table.ShowHeaderRow != nil && !*table.ShowHeaderRow
+			if err = f.setTableColumns(sheet, !hideHeaderRow, coordinates[0], coordinates[1], coordinates[2], &tbl); err != nil {
+				return err
+			}
+			// Convert back xlsxTable to xml content
+			tableXML, err := xml.Marshal(tbl)
+			if err != nil {
+				return err
+			}
+			// Save the xml content of the table
+			f.saveFileList(table.tableXML, tableXML)
+			return err
+		}
+	}
+	return newNoExistTableError(name)
+}
+
 // countTables provides a function to get table files count storage in the
 // folder xl/tables.
 func (f *File) countTables() int {
