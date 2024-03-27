@@ -409,9 +409,10 @@ type xdrTxBody struct {
 
 // Picture maps the format settings of the picture.
 type Picture struct {
-	Extension string
-	File      []byte
-	Format    *GraphicOptions
+	Extension  string
+	File       []byte
+	Format     *GraphicOptions
+	InsertType PictureInsertType
 }
 
 // GraphicOptions directly maps the format settings of the picture.
