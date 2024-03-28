@@ -450,7 +450,8 @@ func (f *File) addMedia(file []byte, ext string) string {
 // GetPictures provides a function to get picture meta info and raw content
 // embed in spreadsheet by given worksheet and cell name. This function
 // returns the image contents as []byte data types. This function is
-// concurrency safe. For example:
+// concurrency safe. Note that, this function doesn't support getting cell image
+// inserted by IMAGE formula function currently. For example:
 //
 //	f, err := excelize.OpenFile("Book1.xlsx")
 //	if err != nil {
@@ -506,7 +507,8 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 }
 
 // GetPictureCells returns all picture cell references in a worksheet by a
-// specific worksheet name.
+// specific worksheet name. Note that, this function doesn't support getting
+// cell image inserted by IMAGE formula function currently.
 func (f *File) GetPictureCells(sheet string) ([]string, error) {
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
@@ -790,7 +792,7 @@ func (f *File) cellImagesReader() (*decodeCellImages, error) {
 	return f.DecodeCellImages, nil
 }
 
-// getImageCells returns all the Microsoft 365 cell images and the Kingsoft WPS
+// getImageCells returns all the cell images and the Kingsoft WPS
 // Office embedded image cells reference by given worksheet name.
 func (f *File) getImageCells(sheet string) ([]string, error) {
 	var (
@@ -823,7 +825,29 @@ func (f *File) getImageCells(sheet string) ([]string, error) {
 	return cells, err
 }
 
-// getImageCellRel returns the Microsoft 365 cell image relationship.
+// getImageCellRichValueIdx returns index of the cell image rich value by given
+// cell value meta index and meta blocks.
+func (f *File) getImageCellRichValueIdx(vm uint, blocks *xlsxMetadataBlocks) (int, error) {
+	richValueIdx := blocks.Bk[vm-1].Rc[0].V
+	richValue, err := f.richValueReader()
+	if err != nil {
+		return -1, err
+	}
+	if richValueIdx >= len(richValue.Rv) {
+		return -1, err
+	}
+	rv := richValue.Rv[richValueIdx].V
+	if len(rv) != 2 || rv[1] != "5" {
+		return -1, err
+	}
+	richValueRelIdx, err := strconv.Atoi(rv[0])
+	if err != nil {
+		return -1, err
+	}
+	return richValueRelIdx, err
+}
+
+// getImageCellRel returns the cell image relationship.
 func (f *File) getImageCellRel(c *xlsxC) (*xlsxRelationship, error) {
 	var r *xlsxRelationship
 	if c.Vm == nil || c.V != formulaErrorVALUE {
@@ -837,21 +861,25 @@ func (f *File) getImageCellRel(c *xlsxC) (*xlsxRelationship, error) {
 	if vmd == nil || int(*c.Vm) > len(vmd.Bk) || len(vmd.Bk[*c.Vm-1].Rc) == 0 {
 		return r, err
 	}
+	richValueRelIdx, err := f.getImageCellRichValueIdx(*c.Vm, vmd)
+	if err != nil || richValueRelIdx == -1 {
+		return r, err
+	}
 	richValueRel, err := f.richValueRelReader()
 	if err != nil {
 		return r, err
 	}
-	if vmd.Bk[*c.Vm-1].Rc[0].V >= len(richValueRel.Rels) {
+	if richValueRelIdx >= len(richValueRel.Rels) {
 		return r, err
 	}
-	rID := richValueRel.Rels[vmd.Bk[*c.Vm-1].Rc[0].V].ID
+	rID := richValueRel.Rels[richValueRelIdx].ID
 	if r = f.getRichDataRichValueRelRelationships(rID); r != nil && r.Type != SourceRelationshipImage {
 		return nil, err
 	}
 	return r, err
 }
 
-// getCellImages provides a function to get the Microsoft 365 cell images and
+// getCellImages provides a function to get the cell images and
 // the Kingsoft WPS Office embedded cell images by given worksheet name and cell
 // reference.
 func (f *File) getCellImages(sheet, cell string) ([]Picture, error) {

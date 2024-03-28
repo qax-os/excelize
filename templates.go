@@ -280,6 +280,7 @@ const (
 	defaultXMLPathVolatileDeps         = "xl/volatileDependencies.xml"
 	defaultXMLPathWorkbook             = "xl/workbook.xml"
 	defaultXMLPathWorkbookRels         = "xl/_rels/workbook.xml.rels"
+	defaultXMLRichDataRichValue        = "xl/richData/rdrichvalue.xml"
 	defaultXMLRichDataRichValueRel     = "xl/richData/richValueRel.xml"
 	defaultXMLRichDataRichValueRelRels = "xl/richData/_rels/richValueRel.xml.rels"
 )
