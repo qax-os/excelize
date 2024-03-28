@@ -601,6 +601,17 @@ func (f *File) metadataReader() (*xlsxMetadata, error) {
 	return &mataData, nil
 }
 
+// richValueReader provides a function to get the pointer to the structure after
+// deserialization of xl/richData/richvalue.xml.
+func (f *File) richValueReader() (*xlsxRichValueData, error) {
+	var richValue xlsxRichValueData
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichValue)))).
+		Decode(&richValue); err != nil && err != io.EOF {
+		return &richValue, err
+	}
+	return &richValue, nil
+}
+
 // richValueRelReader provides a function to get the pointer to the structure
 // after deserialization of xl/richData/richValueRel.xml.
 func (f *File) richValueRelReader() (*xlsxRichValueRels, error) {

@@ -68,6 +68,23 @@ type xlsxMetadataRecord struct {
 	V int `xml:"v,attr"`
 }
 
+// xlsxRichValueData directly maps the rvData element that specifies rich value
+// data.
+type xlsxRichValueData struct {
+	XMLName xml.Name        `xml:"rvData"`
+	Count   int             `xml:"count,attr,omitempty"`
+	Rv      []xlsxRichValue `xml:"rv"`
+	ExtLst  *xlsxInnerXML   `xml:"extLst"`
+}
+
+// xlsxRichValue directly maps the rv element that specifies rich value data
+// information for a single rich value
+type xlsxRichValue struct {
+	S  int           `xml:"s,attr"`
+	V  []string      `xml:"v"`
+	Fb *xlsxInnerXML `xml:"fb"`
+}
+
 // xlsxRichValueRels directly maps the richValueRels element. This element that
 // specifies a list of rich value relationships.
 type xlsxRichValueRels struct {
