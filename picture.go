@@ -184,7 +184,7 @@ func (f *File) AddPicture(sheet, cell, name string, opts *GraphicOptions) error 
 // types: EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ. Note that
 // this function only supports adding pictures placed over the cells currently,
 // and doesn't support adding pictures placed in cells or creating the Kingsoft
-// WPS Office embedded image cells.For example:
+// WPS Office embedded image cells. For example:
 //
 //	package main
 //
