@@ -31,6 +31,7 @@ type PictureInsertType int
 const (
 	PictureInsertTypePlaceOverCells PictureInsertType = iota
 	PictureInsertTypePlaceInCell
+	PictureInsertTypeIMAGE
 	PictureInsertTypeDISPIMG
 )
 
@@ -450,8 +451,7 @@ func (f *File) addMedia(file []byte, ext string) string {
 // GetPictures provides a function to get picture meta info and raw content
 // embed in spreadsheet by given worksheet and cell name. This function
 // returns the image contents as []byte data types. This function is
-// concurrency safe. Note that, this function doesn't support getting cell image
-// inserted by IMAGE formula function currently. For example:
+// concurrency safe. For example:
 //
 //	f, err := excelize.OpenFile("Book1.xlsx")
 //	if err != nil {
@@ -507,8 +507,7 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 }
 
 // GetPictureCells returns all picture cell references in a worksheet by a
-// specific worksheet name. Note that, this function doesn't support getting
-// cell image inserted by IMAGE formula function currently.
+// specific worksheet name.
 func (f *File) GetPictureCells(sheet string) ([]string, error) {
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
@@ -812,7 +811,7 @@ func (f *File) getImageCells(sheet string) ([]string, error) {
 				}
 				cells = append(cells, c.R)
 			}
-			r, err := f.getImageCellRel(&c)
+			r, err := f.getImageCellRel(&c, &Picture{})
 			if err != nil {
 				return cells, err
 			}
@@ -825,30 +824,52 @@ func (f *File) getImageCells(sheet string) ([]string, error) {
 	return cells, err
 }
 
-// getImageCellRichValueIdx returns index of the cell image rich value by given
-// cell value meta index and meta blocks.
-func (f *File) getImageCellRichValueIdx(vm uint, blocks *xlsxMetadataBlocks) (int, error) {
-	richValueIdx := blocks.Bk[vm-1].Rc[0].V
-	richValue, err := f.richValueReader()
+// getRichDataRichValueRel returns relationship of the cell image by given meta
+// blocks value.
+func (f *File) getRichDataRichValueRel(val string) (*xlsxRelationship, error) {
+	var r *xlsxRelationship
+	idx, err := strconv.Atoi(val)
 	if err != nil {
-		return -1, err
+		return r, err
 	}
-	if richValueIdx >= len(richValue.Rv) {
-		return -1, err
-	}
-	rv := richValue.Rv[richValueIdx].V
-	if len(rv) != 2 || rv[1] != "5" {
-		return -1, err
-	}
-	richValueRelIdx, err := strconv.Atoi(rv[0])
+	richValueRel, err := f.richValueRelReader()
 	if err != nil {
-		return -1, err
+		return r, err
 	}
-	return richValueRelIdx, err
+	if idx >= len(richValueRel.Rels) {
+		return r, err
+	}
+	rID := richValueRel.Rels[idx].ID
+	if r = f.getRichDataRichValueRelRelationships(rID); r != nil && r.Type != SourceRelationshipImage {
+		return nil, err
+	}
+	return r, err
+}
+
+// getRichDataWebImagesRel returns relationship of a web image by given meta
+// blocks value.
+func (f *File) getRichDataWebImagesRel(val string) (*xlsxRelationship, error) {
+	var r *xlsxRelationship
+	idx, err := strconv.Atoi(val)
+	if err != nil {
+		return r, err
+	}
+	richValueWebImages, err := f.richValueWebImageReader()
+	if err != nil {
+		return r, err
+	}
+	if idx >= len(richValueWebImages.WebImageSrd) {
+		return r, err
+	}
+	rID := richValueWebImages.WebImageSrd[idx].Blip.RID
+	if r = f.getRichValueWebImageRelationships(rID); r != nil && r.Type != SourceRelationshipImage {
+		return nil, err
+	}
+	return r, err
 }
 
 // getImageCellRel returns the cell image relationship.
-func (f *File) getImageCellRel(c *xlsxC) (*xlsxRelationship, error) {
+func (f *File) getImageCellRel(c *xlsxC, pic *Picture) (*xlsxRelationship, error) {
 	var r *xlsxRelationship
 	if c.Vm == nil || c.V != formulaErrorVALUE {
 		return r, nil
@@ -861,20 +882,23 @@ func (f *File) getImageCellRel(c *xlsxC) (*xlsxRelationship, error) {
 	if vmd == nil || int(*c.Vm) > len(vmd.Bk) || len(vmd.Bk[*c.Vm-1].Rc) == 0 {
 		return r, err
 	}
-	richValueRelIdx, err := f.getImageCellRichValueIdx(*c.Vm, vmd)
-	if err != nil || richValueRelIdx == -1 {
-		return r, err
-	}
-	richValueRel, err := f.richValueRelReader()
+	richValueIdx := vmd.Bk[*c.Vm-1].Rc[0].V
+	richValue, err := f.richValueReader()
 	if err != nil {
 		return r, err
 	}
-	if richValueRelIdx >= len(richValueRel.Rels) {
+	if richValueIdx >= len(richValue.Rv) {
 		return r, err
 	}
-	rID := richValueRel.Rels[richValueRelIdx].ID
-	if r = f.getRichDataRichValueRelRelationships(rID); r != nil && r.Type != SourceRelationshipImage {
-		return nil, err
+	rv := richValue.Rv[richValueIdx].V
+	if len(rv) == 2 && rv[1] == "5" {
+		pic.InsertType = PictureInsertTypePlaceInCell
+		return f.getRichDataRichValueRel(rv[0])
+	}
+	// cell image inserted by IMAGE formula function
+	if len(rv) > 3 && rv[1]+rv[2] == "10" {
+		pic.InsertType = PictureInsertTypeIMAGE
+		return f.getRichDataWebImagesRel(rv[0])
 	}
 	return r, err
 }
@@ -888,11 +912,12 @@ func (f *File) getCellImages(sheet, cell string) ([]Picture, error) {
 		return pics, err
 	}
 	_, err = f.getCellStringFunc(sheet, cell, func(x *xlsxWorksheet, c *xlsxC) (string, bool, error) {
-		r, err := f.getImageCellRel(c)
+		pic := Picture{Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceInCell}
+		r, err := f.getImageCellRel(c, &pic)
 		if err != nil || r == nil {
 			return "", true, err
 		}
-		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceInCell}
+		pic.Extension = filepath.Ext(r.Target)
 		if buffer, _ := f.Pkg.Load(strings.TrimPrefix(strings.ReplaceAll(r.Target, "..", "xl"), "/")); buffer != nil {
 			pic.File = buffer.([]byte)
 			pics = append(pics, pic)

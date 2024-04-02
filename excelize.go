@@ -605,7 +605,7 @@ func (f *File) metadataReader() (*xlsxMetadata, error) {
 // deserialization of xl/richData/richvalue.xml.
 func (f *File) richValueReader() (*xlsxRichValueData, error) {
 	var richValue xlsxRichValueData
-	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichValue)))).
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValuePart)))).
 		Decode(&richValue); err != nil && err != io.EOF {
 		return &richValue, err
 	}
@@ -616,18 +616,43 @@ func (f *File) richValueReader() (*xlsxRichValueData, error) {
 // after deserialization of xl/richData/richValueRel.xml.
 func (f *File) richValueRelReader() (*xlsxRichValueRels, error) {
 	var richValueRels xlsxRichValueRels
-	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichValueRel)))).
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValueRel)))).
 		Decode(&richValueRels); err != nil && err != io.EOF {
 		return &richValueRels, err
 	}
 	return &richValueRels, nil
 }
 
-// getRichDataRichValueRelRelationships provides a function to get drawing
-// relationships from xl/richData/_rels/richValueRel.xml.rels by given
-// relationship ID.
+// richValueWebImageReader provides a function to get the pointer to the
+// structure after deserialization of xl/richData/rdRichValueWebImage.xml.
+func (f *File) richValueWebImageReader() (*xlsxWebImagesSupportingRichData, error) {
+	var richValueWebImages xlsxWebImagesSupportingRichData
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValueWebImagePart)))).
+		Decode(&richValueWebImages); err != nil && err != io.EOF {
+		return &richValueWebImages, err
+	}
+	return &richValueWebImages, nil
+}
+
+// getRichDataRichValueRelRelationships provides a function to get relationships
+// from xl/richData/_rels/richValueRel.xml.rels by given relationship ID.
 func (f *File) getRichDataRichValueRelRelationships(rID string) *xlsxRelationship {
-	if rels, _ := f.relsReader(defaultXMLRichDataRichValueRelRels); rels != nil {
+	if rels, _ := f.relsReader(defaultXMLRdRichValueRelRels); rels != nil {
+		rels.mu.Lock()
+		defer rels.mu.Unlock()
+		for _, v := range rels.Relationships {
+			if v.ID == rID {
+				return &v
+			}
+		}
+	}
+	return nil
+}
+
+// getRichValueWebImageRelationships provides a function to get relationships
+// from xl/richData/_rels/rdRichValueWebImage.xml.rels by given relationship ID.
+func (f *File) getRichValueWebImageRelationships(rID string) *xlsxRelationship {
+	if rels, _ := f.relsReader(defaultXMLRdRichValueWebImagePartRels); rels != nil {
 		rels.mu.Lock()
 		defer rels.mu.Unlock()
 		for _, v := range rels.Relationships {

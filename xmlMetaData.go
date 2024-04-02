@@ -98,3 +98,20 @@ type xlsxRichValueRels struct {
 type xlsxRichValueRelRelationship struct {
 	ID string `xml:"id,attr"`
 }
+
+// xlsxWebImagesSupportingRichData directly maps the webImagesSrd element. This
+// element specifies a list of sets of properties associated with web image rich
+// values.
+type xlsxWebImagesSupportingRichData struct {
+	XMLName     xml.Name                         `xml:"webImagesSrd"`
+	WebImageSrd []xlsxWebImageSupportingRichData `xml:"webImageSrd"`
+	ExtLst      *xlsxInnerXML                    `xml:"extLst"`
+}
+
+// xlsxWebImageSupportingRichData directly maps the webImageSrd element. This
+// element specifies a set of properties for a web image rich value.
+type xlsxWebImageSupportingRichData struct {
+	Address           xlsxExternalReference `xml:"address"`
+	MoreImagesAddress xlsxExternalReference `xml:"moreImagesAddress"`
+	Blip              xlsxExternalReference `xml:"blip"`
+}
