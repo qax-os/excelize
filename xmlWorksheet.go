@@ -917,7 +917,7 @@ type ConditionalFormatOptions struct {
 	Type           string
 	AboveAverage   bool
 	Percent        bool
-	Format         int
+	Format         *int
 	Criteria       string
 	Value          string
 	MinType        string

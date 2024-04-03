@@ -999,7 +999,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 		{
 			Type:     "cell",
 			Criteria: "greater than",
-			Format:   formatID,
+			Format:   &formatID,
 			Value:    "0",
 		},
 	}

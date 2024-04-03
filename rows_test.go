@@ -892,7 +892,7 @@ func TestDuplicateRow(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []ConditionalFormatOptions{
-		{Type: "cell", Criteria: "greater than", Format: format, Value: "0"},
+		{Type: "cell", Criteria: "greater than", Format: &format, Value: "0"},
 	}
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1", expected))
 

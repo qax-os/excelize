@@ -172,7 +172,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	// Test creating a conditional format with a solid color data bar style
 	f := NewFile()
 	condFmts := []ConditionalFormatOptions{
-		{Type: "data_bar", BarColor: "#A9D08E", BarSolid: true, Format: 0, Criteria: "=", MinType: "min", MaxType: "max"},
+		{Type: "data_bar", BarColor: "#A9D08E", BarSolid: true, Format: intPtr(0), Criteria: "=", MinType: "min", MaxType: "max"},
 	}
 	for _, ref := range []string{"A1:A2", "B1:B2"} {
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
@@ -243,36 +243,36 @@ func TestSetConditionalFormat(t *testing.T) {
 
 func TestGetConditionalFormats(t *testing.T) {
 	for _, format := range [][]ConditionalFormatOptions{
-		{{Type: "cell", Format: 1, Criteria: "greater than", Value: "6"}},
-		{{Type: "cell", Format: 1, Criteria: "between", MinValue: "6", MaxValue: "8"}},
-		{{Type: "time_period", Format: 1, Criteria: "yesterday"}},
-		{{Type: "time_period", Format: 1, Criteria: "today"}},
-		{{Type: "time_period", Format: 1, Criteria: "tomorrow"}},
-		{{Type: "time_period", Format: 1, Criteria: "last 7 days"}},
-		{{Type: "time_period", Format: 1, Criteria: "last week"}},
-		{{Type: "time_period", Format: 1, Criteria: "this week"}},
-		{{Type: "time_period", Format: 1, Criteria: "continue week"}},
-		{{Type: "time_period", Format: 1, Criteria: "last month"}},
-		{{Type: "time_period", Format: 1, Criteria: "this month"}},
-		{{Type: "time_period", Format: 1, Criteria: "continue month"}},
-		{{Type: "text", Format: 1, Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
-		{{Type: "text", Format: 1, Criteria: "not containing", Value: "text"}},
-		{{Type: "text", Format: 1, Criteria: "begins with", Value: "prefix"}},
-		{{Type: "text", Format: 1, Criteria: "ends with", Value: "suffix"}},
-		{{Type: "top", Format: 1, Criteria: "=", Value: "6"}},
-		{{Type: "bottom", Format: 1, Criteria: "=", Value: "6"}},
-		{{Type: "average", AboveAverage: true, Format: 1, Criteria: "="}},
-		{{Type: "duplicate", Format: 1, Criteria: "="}},
-		{{Type: "unique", Format: 1, Criteria: "="}},
+		{{Type: "cell", Format: intPtr(1), Criteria: "greater than", Value: "6"}},
+		{{Type: "cell", Format: intPtr(1), Criteria: "between", MinValue: "6", MaxValue: "8"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "yesterday"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "today"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "tomorrow"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "last 7 days"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "last week"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "this week"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "continue week"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "last month"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "this month"}},
+		{{Type: "time_period", Format: intPtr(1), Criteria: "continue month"}},
+		{{Type: "text", Format: intPtr(1), Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
+		{{Type: "text", Format: intPtr(1), Criteria: "not containing", Value: "text"}},
+		{{Type: "text", Format: intPtr(1), Criteria: "begins with", Value: "prefix"}},
+		{{Type: "text", Format: intPtr(1), Criteria: "ends with", Value: "suffix"}},
+		{{Type: "top", Format: intPtr(1), Criteria: "=", Value: "6"}},
+		{{Type: "bottom", Format: intPtr(1), Criteria: "=", Value: "6"}},
+		{{Type: "average", AboveAverage: true, Format: intPtr(1), Criteria: "="}},
+		{{Type: "duplicate", Format: intPtr(1), Criteria: "="}},
+		{{Type: "unique", Format: intPtr(1), Criteria: "="}},
 		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
 		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
 		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
-		{{Type: "formula", Format: 1, Criteria: "="}},
-		{{Type: "blanks", Format: 1}},
-		{{Type: "no_blanks", Format: 1}},
-		{{Type: "errors", Format: 1}},
-		{{Type: "no_errors", Format: 1}},
+		{{Type: "formula", Format: intPtr(1), Criteria: "="}},
+		{{Type: "blanks", Format: intPtr(1)}},
+		{{Type: "no_blanks", Format: intPtr(1)}},
+		{{Type: "errors", Format: intPtr(1)}},
+		{{Type: "no_errors", Format: intPtr(1)}},
 		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
@@ -309,7 +309,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	format, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Criteria: ">", Format: format, Value: "6"}}))
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Criteria: ">", Format: &format, Value: "6"}}))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
 	// Test unset conditional format on not exists worksheet
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")

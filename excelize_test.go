@@ -1088,7 +1088,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "cell",
 				Criteria: "between",
-				Format:   format1,
+				Format:   &format1,
 				MinValue: "6",
 				MaxValue: "8",
 			},
@@ -1100,7 +1100,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "cell",
 				Criteria: ">",
-				Format:   format3,
+				Format:   &format3,
 				Value:    "6",
 			},
 		},
@@ -1111,7 +1111,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "top",
 				Criteria: "=",
-				Format:   format3,
+				Format:   &format3,
 			},
 		},
 	))
@@ -1121,7 +1121,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "unique",
 				Criteria: "=",
-				Format:   format2,
+				Format:   &format2,
 			},
 		},
 	))
@@ -1131,7 +1131,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "duplicate",
 				Criteria: "=",
-				Format:   format2,
+				Format:   &format2,
 			},
 		},
 	))
@@ -1141,7 +1141,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "top",
 				Criteria: "=",
-				Format:   format1,
+				Format:   &format1,
 				Value:    "6",
 				Percent:  true,
 			},
@@ -1153,7 +1153,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:         "average",
 				Criteria:     "=",
-				Format:       format3,
+				Format:       &format3,
 				AboveAverage: true,
 			},
 		},
@@ -1164,7 +1164,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:         "average",
 				Criteria:     "=",
-				Format:       format1,
+				Format:       &format1,
 				AboveAverage: false,
 			},
 		},
@@ -1187,7 +1187,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "formula",
 				Criteria: "L2<3",
-				Format:   format1,
+				Format:   &format1,
 			},
 		},
 	))
@@ -1197,7 +1197,7 @@ func TestConditionalFormat(t *testing.T) {
 			{
 				Type:     "cell",
 				Criteria: ">",
-				Format:   format4,
+				Format:   &format4,
 				Value:    "0",
 			},
 		},
