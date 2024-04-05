@@ -70,7 +70,7 @@ type xlsxMetadataRecord struct {
 
 // xlsxRichValueArrayData directly maps the arrayData element that specifies rich value
 // arrays.
-type XlsxRichValueArrayData struct {
+type xlsxRichValueArrayData struct {
 	XMLName xml.Name            `xml:"arrayData"`
 	Xmlns   string              `xml:"xmlns,attr"`
 	Count   string              `xml:"count,attr"`
@@ -125,7 +125,7 @@ type xlsxRichValueRelRelationship struct {
 
 // XlsxRichValueStructures directly maps the rvStructures element that specifies rich value structure
 // data.
-type XlsxRichValueStructures struct {
+type xlsxRichValueStructures struct {
 	XMLName xml.Name                 `xml:"rvStructures"`
 	Text    string                   `xml:",chardata"`
 	Xmlns   string                   `xml:"xmlns,attr"`
@@ -172,7 +172,7 @@ type xlsxRichDataSpb struct {
 }
 
 // XlsxRichDataSpbStructures directly maps the spbStructures element that specifies supporting property bag structure.
-type XlsxRichDataSpbStructures struct {
+type xlsxRichDataSpbStructures struct {
 	XMLName xml.Name                   `xml:"spbStructures"`
 	Text    string                     `xml:",chardata"`
 	Xmlns   string                     `xml:"xmlns,attr"`
