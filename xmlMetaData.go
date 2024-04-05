@@ -123,6 +123,51 @@ type xlsxRichValueRelRelationship struct {
 	ID string `xml:"id,attr"`
 }
 
+// XlsxRichValueStructures directly maps the rvStructures element that specifies rich value structure
+// data.
+type XlsxRichValueStructures struct {
+	XMLName xml.Name                 `xml:"rvStructures"`
+	Text    string                   `xml:",chardata"`
+	Xmlns   string                   `xml:"xmlns,attr"`
+	Count   string                   `xml:"count,attr"`
+	S       []XlsxRichValueStructure `xml:"s"`
+}
+
+// XlsxRichValueStructure directly maps the s element that specifies rich value structure data
+// information for a single rich value structure
+type XlsxRichValueStructure struct {
+	Text string                      `xml:",chardata"`
+	T    string                      `xml:"t,attr"`
+	K    []XlsxRichValueStructureKey `xml:"k"`
+}
+
+// XlsxRichValueStructureKey directly maps the k element that specifies rich value structure key data
+// information for a structure
+type XlsxRichValueStructureKey struct {
+	Text string `xml:",chardata"`
+	N    string `xml:"n,attr"`
+	T    string `xml:"t,attr"`
+}
+
+type XlsxRichDataSupportingPropertyBags struct {
+	XMLName xml.Name            `xml:"supportingPropertyBags"`
+	Text    string              `xml:",chardata"`
+	Xmlns   string              `xml:"xmlns,attr"`
+	SpbData XlsxRichDataSpbData `xml:"spbData"`
+}
+
+type XlsxRichDataSpbData struct {
+	Text  string            `xml:",chardata"`
+	Count string            `xml:"count,attr"`
+	Spb   []XlsxRichDataSpb `xml:"spb"`
+}
+
+type XlsxRichDataSpb struct {
+	Text string   `xml:",chardata"`
+	S    string   `xml:"s,attr"`
+	V    []string `xml:"v"`
+}
+
 // xlsxWebImagesSupportingRichData directly maps the webImagesSrd element. This
 // element specifies a list of sets of properties associated with web image rich
 // values.
