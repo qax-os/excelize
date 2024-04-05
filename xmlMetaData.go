@@ -74,20 +74,20 @@ type XlsxRichValueArrayData struct {
 	XMLName xml.Name            `xml:"arrayData"`
 	Xmlns   string              `xml:"xmlns,attr"`
 	Count   string              `xml:"count,attr"`
-	A       XlsxRichValuesArray `xml:"a"`
+	A       xlsxRichValuesArray `xml:"a"`
 }
 
 // xlsxRichValuesArray directly maps the a element that specifies rich values Array
 // information for an array data
-type XlsxRichValuesArray struct {
+type xlsxRichValuesArray struct {
 	R string               `xml:"r,attr"`
 	C string               `xml:"c,attr"`
-	V []XlsxRichArrayValue `xml:"v"`
+	V []xlsxRichArrayValue `xml:"v"`
 }
 
 // XlsxRichArrayValue directly maps the v element that specifies rich array value
 // information for a values array
-type XlsxRichArrayValue struct {
+type xlsxRichArrayValue struct {
 	Text string `xml:",chardata"`
 	T    string `xml:"t,attr"`
 }
@@ -130,20 +130,20 @@ type XlsxRichValueStructures struct {
 	Text    string                   `xml:",chardata"`
 	Xmlns   string                   `xml:"xmlns,attr"`
 	Count   string                   `xml:"count,attr"`
-	S       []XlsxRichValueStructure `xml:"s"`
+	S       []xlsxRichValueStructure `xml:"s"`
 }
 
 // XlsxRichValueStructure directly maps the s element that specifies rich value structure data
 // information for a single rich value structure
-type XlsxRichValueStructure struct {
+type xlsxRichValueStructure struct {
 	Text string                      `xml:",chardata"`
 	T    string                      `xml:"t,attr"`
-	K    []XlsxRichValueStructureKey `xml:"k"`
+	K    []xlsxRichValueStructureKey `xml:"k"`
 }
 
 // XlsxRichValueStructureKey directly maps the k element that specifies rich value structure key data
 // information for a structure
-type XlsxRichValueStructureKey struct {
+type xlsxRichValueStructureKey struct {
 	Text string `xml:",chardata"`
 	N    string `xml:"n,attr"`
 	T    string `xml:"t,attr"`
@@ -154,18 +154,18 @@ type XlsxRichDataSupportingPropertyBags struct {
 	XMLName xml.Name            `xml:"supportingPropertyBags"`
 	Text    string              `xml:",chardata"`
 	Xmlns   string              `xml:"xmlns,attr"`
-	SpbData XlsxRichDataSpbData `xml:"spbData"`
+	SpbData xlsxRichDataSpbData `xml:"spbData"`
 }
 
 // XlsxRichDataSpbData directly maps the spbData element that specifies supporting property bag data.
-type XlsxRichDataSpbData struct {
+type xlsxRichDataSpbData struct {
 	Text  string            `xml:",chardata"`
 	Count string            `xml:"count,attr"`
-	Spb   []XlsxRichDataSpb `xml:"spb"`
+	Spb   []xlsxRichDataSpb `xml:"spb"`
 }
 
 // XlsxRichDataSpb directly maps the spb element that specifies data for a single supporting property bag.
-type XlsxRichDataSpb struct {
+type xlsxRichDataSpb struct {
 	Text string   `xml:",chardata"`
 	S    string   `xml:"s,attr"`
 	V    []string `xml:"v"`
@@ -177,17 +177,17 @@ type XlsxRichDataSpbStructures struct {
 	Text    string                     `xml:",chardata"`
 	Xmlns   string                     `xml:"xmlns,attr"`
 	Count   string                     `xml:"count,attr"`
-	S       []XlsxRichDataSpbStructure `xml:"s"`
+	S       []xlsxRichDataSpbStructure `xml:"s"`
 }
 
 // XlsxRichDataSpbStructure directly maps the s element that specifies spb structure information for a single spb structure
-type XlsxRichDataSpbStructure struct {
+type xlsxRichDataSpbStructure struct {
 	Text string                        `xml:",chardata"`
-	K    []XlsxRichDataSpbStructureKey `xml:"k"`
+	K    []xlsxRichDataSpbStructureKey `xml:"k"`
 }
 
 // XlsxRichDataSpbStructureKey directly maps the k element that specifies spb structure key data and attributes information for a single spb structure
-type XlsxRichDataSpbStructureKey struct {
+type xlsxRichDataSpbStructureKey struct {
 	Text string `xml:",chardata"`
 	N    string `xml:"n,attr"`
 	T    string `xml:"t,attr"`
