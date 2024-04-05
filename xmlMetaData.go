@@ -68,6 +68,30 @@ type xlsxMetadataRecord struct {
 	V int `xml:"v,attr"`
 }
 
+// xlsxRichValueArrayData directly maps the arrayData element that specifies rich value
+// arrays.
+type XlsxRichValueArrayData struct {
+	XMLName xml.Name            `xml:"arrayData"`
+	Xmlns   string              `xml:"xmlns,attr"`
+	Count   string              `xml:"count,attr"`
+	A       XlsxRichValuesArray `xml:"a"`
+}
+
+// xlsxRichValuesArray directly maps the a element that specifies rich values Array
+// information for an array data
+type XlsxRichValuesArray struct {
+	R string               `xml:"r,attr"`
+	C string               `xml:"c,attr"`
+	V []XlsxRichArrayValue `xml:"v"`
+}
+
+// XlsxRichArrayValue directly maps the v element that specifies rich array value
+// information for a values array
+type XlsxRichArrayValue struct {
+	Text string `xml:",chardata"`
+	T    string `xml:"t,attr"`
+}
+
 // xlsxRichValueData directly maps the rvData element that specifies rich value
 // data.
 type xlsxRichValueData struct {
