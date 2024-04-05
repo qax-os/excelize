@@ -149,6 +149,7 @@ type XlsxRichValueStructureKey struct {
 	T    string `xml:"t,attr"`
 }
 
+// XlsxRichDataSupportingPropertyBags directly maps the supportingPropertyBags element that specifies supporting property bag data.
 type XlsxRichDataSupportingPropertyBags struct {
 	XMLName xml.Name            `xml:"supportingPropertyBags"`
 	Text    string              `xml:",chardata"`
@@ -156,12 +157,14 @@ type XlsxRichDataSupportingPropertyBags struct {
 	SpbData XlsxRichDataSpbData `xml:"spbData"`
 }
 
+// XlsxRichDataSpbData directly maps the spbData element that specifies supporting property bag data.
 type XlsxRichDataSpbData struct {
 	Text  string            `xml:",chardata"`
 	Count string            `xml:"count,attr"`
 	Spb   []XlsxRichDataSpb `xml:"spb"`
 }
 
+// XlsxRichDataSpb directly maps the spb element that specifies data for a single supporting property bag.
 type XlsxRichDataSpb struct {
 	Text string   `xml:",chardata"`
 	S    string   `xml:"s,attr"`
