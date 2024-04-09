@@ -104,9 +104,9 @@ type xlsxRichValueData struct {
 // xlsxRichValue directly maps the rv element that specifies rich value data
 // information for a single rich value
 type xlsxRichValue struct {
-	S  int           `xml:"s,attr"`
-	V  []string      `xml:"v"`
-	Fb *xlsxInnerXML `xml:"fb"`
+	S  int      `xml:"s,attr"`
+	V  []string `xml:"v"`
+	Fb string   `xml:"fb"`
 }
 
 // xlsxRichValueRels directly maps the richValueRels element. This element that
@@ -191,6 +191,100 @@ type xlsxRichDataSpbStructureKey struct {
 	Text string `xml:",chardata"`
 	N    string `xml:"n,attr"`
 	T    string `xml:"t,attr"`
+}
+
+type RvTypesInfo struct {
+	XMLName   xml.Name `xml:"rvTypesInfo"`
+	Text      string   `xml:",chardata"`
+	Xmlns     string   `xml:"xmlns,attr"`
+	Mc        string   `xml:"mc,attr"`
+	Ignorable string   `xml:"Ignorable,attr"`
+	X         string   `xml:"x,attr"`
+	Global    Global   `xml:"global"`
+}
+
+type Global struct {
+	Text     string   `xml:",chardata"`
+	KeyFlags KeyFlags `xml:"keyFlags"`
+}
+type KeyFlags struct {
+	Text string `xml:",chardata"`
+	Key  []Key  `xml:"key"`
+}
+type Key struct {
+	Text string `xml:",chardata"`
+	Name string `xml:"name,attr"`
+	Flag []Flag `xml:"flag"`
+}
+type Flag struct {
+	Text  string `xml:",chardata"`
+	Name  string `xml:"name,attr"`
+	Value string `xml:"value,attr"`
+}
+
+// this is where the richdatatyle file starts
+type RichStyleSheet struct {
+	XMLName        xml.Name       `xml:"richStyleSheet"`
+	Text           string         `xml:",chardata"`
+	Xmlns          string         `xml:"xmlns,attr"`
+	Mc             string         `xml:"mc,attr"`
+	Ignorable      string         `xml:"Ignorable,attr"`
+	X              string         `xml:"x,attr"`
+	Dxfs           Dxfs           `xml:"dxfs"`
+	RichProperties RichProperties `xml:"richProperties"`
+	RichStyles     RichStyles     `xml:"richStyles"`
+}
+
+// Dxfs struct is for the <dxfs> element.
+type Dxfs struct {
+	Text  string `xml:",chardata"`
+	Count string `xml:"count,attr"`
+	Dxf   []Dxf  `xml:"dxf"`
+}
+
+// Dxf struct is for the <dxf> elements within <dxfs>.
+type Dxf struct {
+	Text   string `xml:",chardata"`
+	NumFmt NumFmt `xml:"numFmt"`
+}
+
+// NumFmt struct is for the <numFmt> element within <dxf>.
+type NumFmt struct {
+	Text       string `xml:",chardata"`
+	NumFmtId   string `xml:"numFmtId,attr"`
+	FormatCode string `xml:"formatCode,attr"`
+}
+
+// RichProperties struct is for the <richProperties> element.
+type RichProperties struct {
+	Text string `xml:",chardata"`
+	RPr  RPr    `xml:"rPr"`
+}
+
+// RPr struct is for the <rPr> element within <richProperties>.
+type RPr struct {
+	Text string `xml:",chardata"`
+	N    string `xml:"n,attr"`
+	T    string `xml:"t,attr"`
+}
+
+// RichStyles struct is for the <richStyles> element.
+type RichStyles struct {
+	Text string `xml:",chardata"`
+	RSty []RSty `xml:"rSty"`
+}
+
+// RSty struct is for the <rSty> elements within <richStyles>.
+type RSty struct {
+	Text  string `xml:",chardata"`
+	Dxfid string `xml:"dxfid,attr"`
+	Rpv   Rpv    `xml:"rpv"`
+}
+
+// Rpv struct is for the <rpv> element within <rSty>.
+type Rpv struct {
+	Text string `xml:",chardata"`
+	I    string `xml:"i,attr"`
 }
 
 // xlsxWebImagesSupportingRichData directly maps the webImagesSrd element. This
