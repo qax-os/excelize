@@ -70,10 +70,9 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 		if err != nil {
 			break
 		}
-		if len(row) > 0 {	
-			nullCells := cur - maxVal
-			for i := 0; i < nullCells - 1; i++ {
-				results = append(results, []string(nil))
+		if len(row) > 0 {
+			if emptyRows := cur - maxVal - 1; emptyRows > 0 {
+				results = append(results, make([][]string, emptyRows)...)
 			}
 			results = append(results, row)
 			maxVal = cur
