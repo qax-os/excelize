@@ -70,8 +70,8 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 		if err != nil {
 			break
 		}
-		results = append(results, row)
 		if len(row) > 0 {
+			results = append(results, row)
 			maxVal = cur
 		}
 	}
