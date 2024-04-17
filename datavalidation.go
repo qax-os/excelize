@@ -76,11 +76,13 @@ var (
 		`&`, `&amp;`,
 		`<`, `&lt;`,
 		`>`, `&gt;`,
+		`"`, "&quot;",
 	)
 	formulaUnescaper = strings.NewReplacer(
 		`&amp;`, `&`,
 		`&lt;`, `<`,
 		`&gt;`, `>`,
+		"&quot;", `"`,
 	)
 	// dataValidationTypeMap defined supported data validation types.
 	dataValidationTypeMap = map[DataValidationType]string{
