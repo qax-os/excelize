@@ -989,14 +989,14 @@ func (f *File) adjustDataValidations(ws *xlsxWorksheet, sheet string, dir adjust
 				}
 				worksheet.DataValidations.DataValidation[i].Sqref = ref
 			}
-			if worksheet.DataValidations.DataValidation[i].Formula1 != nil {
+			if worksheet.DataValidations.DataValidation[i].Formula1.isFormula() {
 				formula := formulaUnescaper.Replace(worksheet.DataValidations.DataValidation[i].Formula1.Content)
 				if formula, err = f.adjustFormulaRef(sheet, sheetN, formula, false, dir, num, offset); err != nil {
 					return err
 				}
 				worksheet.DataValidations.DataValidation[i].Formula1 = &xlsxInnerXML{Content: formulaEscaper.Replace(formula)}
 			}
-			if worksheet.DataValidations.DataValidation[i].Formula2 != nil {
+			if worksheet.DataValidations.DataValidation[i].Formula2.isFormula() {
 				formula := formulaUnescaper.Replace(worksheet.DataValidations.DataValidation[i].Formula2.Content)
 				if formula, err = f.adjustFormulaRef(sheet, sheetN, formula, false, dir, num, offset); err != nil {
 					return err

@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	_ "image/jpeg"
@@ -1099,6 +1100,25 @@ func TestAdjustDataValidations(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.adjustDataValidations(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
+
+	t.Run("for_escaped_data_validation_rules_formula", func(t *testing.T) {
+		f := NewFile()
+		_, err := f.NewSheet("Sheet2")
+		assert.NoError(t, err)
+		dv := NewDataValidation(true)
+		dv.Sqref = "A1"
+		assert.NoError(t, dv.SetDropList([]string{"option1", strings.Repeat("\"", 4)}))
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		// The double quote symbol in none formula data validation rules will be escaped in the Kingsoft WPS Office
+		formula := strings.ReplaceAll(fmt.Sprintf("\"option1, %s", strings.Repeat("\"", 9)), "\"", "&quot;")
+		ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Formula1.Content = formula
+		f.RemoveCol("Sheet2", "A")
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, formula, dvs[0].Formula1)
+	})
 }
 
 func TestAdjustDrawings(t *testing.T) {
