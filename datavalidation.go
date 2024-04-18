@@ -76,13 +76,11 @@ var (
 		`&`, `&amp;`,
 		`<`, `&lt;`,
 		`>`, `&gt;`,
-		`"`, "&quot;",
 	)
 	formulaUnescaper = strings.NewReplacer(
 		`&amp;`, `&`,
 		`&lt;`, `<`,
 		`&gt;`, `>`,
-		"&quot;", `"`,
 	)
 	// dataValidationTypeMap defined supported data validation types.
 	dataValidationTypeMap = map[DataValidationType]string{
@@ -442,6 +440,11 @@ func squashSqref(cells [][]int) []string {
 		ref, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 	}
 	return append(refs, ref)
+}
+
+// isFormulaDataValidation returns whether the data validation rule is a formula.
+func (dv *xlsxInnerXML) isFormula() bool {
+	return dv != nil && !(strings.HasPrefix(dv.Content, "&quot;") && strings.HasSuffix(dv.Content, "&quot;"))
 }
 
 // unescapeDataValidationFormula returns unescaped data validation formula.
