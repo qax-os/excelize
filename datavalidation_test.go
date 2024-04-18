@@ -84,7 +84,7 @@ func TestDataValidation(t *testing.T) {
 		assert.NotEqual(t, "", dv.Formula1,
 			"Formula1 should not be empty for valid input %v", listValid)
 	}
-	assert.Equal(t, `"A&lt;,B&gt;,C&quot;,D	,E',F"`, dv.Formula1)
+	assert.Equal(t, `"A&lt;,B&gt;,C"",D	,E',F"`, dv.Formula1)
 	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
 
 	dataValidations, err = f.GetDataValidations("Sheet1")
