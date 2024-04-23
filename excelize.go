@@ -834,15 +834,16 @@ func (f *File) ReadEntity(sheet, cell string) (string, error) {
 							fmt.Println("Footer data with text and logo:")
 							fmt.Println(richDataSpbs.SpbData.Spb[spbIndex].V)
 							// can there be multiple providers for one card? What about provider logo
-						}
-						// fmt.Println("SPB structure value is:")
-						// fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S])
+						} else {
+							// fmt.Println("SPB structure value is:")
+							// fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S])
 
-						for spbDataValueIndex, spbDataValue := range richDataSpbs.SpbData.Spb[spbIndex].V {
-							fmt.Println("Spb data value is:")
-							fmt.Println(spbDataValue)
-							fmt.Println("Spb structure data is:")
-							fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S].K[spbDataValueIndex])
+							for spbDataValueIndex, spbDataValue := range richDataSpbs.SpbData.Spb[spbIndex].V {
+								fmt.Println("Spb data value is:")
+								fmt.Println(spbDataValue)
+								fmt.Println("Spb structure data is:")
+								fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S].K[spbDataValueIndex].N)
+							}
 						}
 
 					} else if cellRichStructure.T == "a" {
