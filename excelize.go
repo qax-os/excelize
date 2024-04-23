@@ -633,6 +633,15 @@ func (f *File) richDataSpbReader() (*XlsxRichDataSupportingPropertyBags, error) 
 	return &richDataspbs, nil
 }
 
+func (f *File) richDataSpbStructureReader() (*xlsxRichDataSpbStructures, error) {
+	var richDataSpbStructure xlsxRichDataSpbStructures
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataSupportingPropertyBagStructure)))).
+		Decode(&richDataSpbStructure); err != nil && err != io.EOF {
+		return &richDataSpbStructure, err
+	}
+	return &richDataSpbStructure, nil
+}
+
 func (f *File) TestRichValueReader() (*xlsxRichValueData, error) {
 	var richValue xlsxRichValueData
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValuePart)))).
@@ -773,6 +782,11 @@ func (f *File) ReadEntity(sheet, cell string) (string, error) {
 					return "", err
 				}
 
+				richDataSpbStructure, err := f.richDataSpbStructureReader()
+				if err != nil {
+					return "", err
+				}
+
 				for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
 					cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
 
@@ -804,22 +818,33 @@ func (f *File) ReadEntity(sheet, cell string) (string, error) {
 						fmt.Println(boolValue)
 					} else if cellRichStructure.T == "r" {
 						fmt.Println("Value is of type formatted string or entity or image")
+
 					} else if cellRichStructure.T == "spb" {
 						fmt.Println("Value is of type spb")
 						// lots of work needed here
-						fmt.Println("SPB index is:")
+						// fmt.Println("SPB index is:")
 						spbIndex, err := strconv.Atoi(cellRichDataValue)
 						if err != nil {
 							log.Fatal(err)
 						}
-						fmt.Println(spbIndex)
-						fmt.Println("SPB value is:")
-						fmt.Println(richDataSpbs.SpbData.Spb[spbIndex])
+						// fmt.Println(spbIndex)
+						// fmt.Println("SPB value is:")
+						// fmt.Println(richDataSpbs.SpbData.Spb[spbIndex])
 						if cellRichStructure.N == "_Provider" {
 							fmt.Println("Footer data with text and logo:")
 							fmt.Println(richDataSpbs.SpbData.Spb[spbIndex].V)
 							// can there be multiple providers for one card? What about provider logo
 						}
+						// fmt.Println("SPB structure value is:")
+						// fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S])
+
+						for spbDataValueIndex, spbDataValue := range richDataSpbs.SpbData.Spb[spbIndex].V {
+							fmt.Println("Spb data value is:")
+							fmt.Println(spbDataValue)
+							fmt.Println("Spb structure data is:")
+							fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S].K[spbDataValueIndex])
+						}
+
 					} else if cellRichStructure.T == "a" {
 						fmt.Println("Value is of type array")
 						// array data was mapped. Can reuse code

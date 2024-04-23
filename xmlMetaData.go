@@ -174,7 +174,7 @@ type xlsxRichDataSpbData struct {
 // XlsxRichDataSpb directly maps the spb element that specifies data for a single supporting property bag.
 type xlsxRichDataSpb struct {
 	Text string   `xml:",chardata"`
-	S    string   `xml:"s,attr"`
+	S    int      `xml:"s,attr"`
 	V    []string `xml:"v"`
 }
 
