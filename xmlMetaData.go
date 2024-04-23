@@ -44,7 +44,14 @@ type xlsxFutureMetadata struct {
 // a block of future metadata information. This is a location for storing
 // feature extension information.
 type xlsxFutureMetadataBlock struct {
-	ExtLst *xlsxInnerXML `xml:"extLst"`
+	ExtLst struct {
+		Ext struct {
+			URI string `xml:"uri,attr"`
+			Rvb struct {
+				I int `xml:"i,attr"`
+			} `xml:"rvb"`
+		} `xml:"ext"`
+	} `xml:"extLst"`
 }
 
 // xlsxMetadataBlocks directly maps the metadata element. This element

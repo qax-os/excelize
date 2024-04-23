@@ -16,7 +16,10 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"errors"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -612,6 +615,24 @@ func (f *File) richValueReader() (*xlsxRichValueData, error) {
 	return &richValue, nil
 }
 
+func (f *File) richStructureReader() (*xlsxRichValueStructures, error) {
+	var richValueStructures xlsxRichValueStructures
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichValueStructure)))).
+		Decode(&richValueStructures); err != nil && err != io.EOF {
+		return &richValueStructures, err
+	}
+	return &richValueStructures, nil
+}
+
+func (f *File) richDataSpbReader() (*XlsxRichDataSupportingPropertyBags, error) {
+	var richDataspbs XlsxRichDataSupportingPropertyBags
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataSupportingPropertyBag)))).
+		Decode(&richDataspbs); err != nil && err != io.EOF {
+		return &richDataspbs, err
+	}
+	return &richDataspbs, nil
+}
+
 func (f *File) TestRichValueReader() (*xlsxRichValueData, error) {
 	var richValue xlsxRichValueData
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValuePart)))).
@@ -673,6 +694,141 @@ func (f *File) TestRichValueTypes() (*RvTypesInfo, error) {
 		return &richDataTypes, err
 	}
 	return &richDataTypes, nil
+}
+
+// func (f *File) TestArrayData(sheet string) error {
+// 	if err := checkSheetName(sheet); err != nil {
+// 		return err
+// 	}
+// 	name := defaultXMLRichDataArray
+// 	if xmlFile, ok := f.Sheet.Load(name); ok && xmlFile != nil {
+// 		var arrayData xlsxRichValueArrayData
+// 		output, _ := xml.Marshal(arrayData)
+// 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
+// 	}
+// 	return nil
+// }
+
+func (f *File) CheckOrCreateRichData() {
+	f.CheckOrCreateXML(defaultXMLRdRichValuePart, []byte(xml.Header+templateRichValue))
+	f.CheckOrCreateXML(defaultXMLRichDataRichValueStructure, []byte(xml.Header+templateRichStructure))
+	f.CheckOrCreateXML(defaultXMLRichDataRichValueTypes, []byte(xml.Header+templateRichValuetypes))
+}
+
+func (f *File) CheckOrCreateXML(name string, defaultContent []byte) {
+	// Check if the XML file exists
+	if _, ok := f.Pkg.Load(name); !ok {
+		// The XML file does not exist, so create it with the default content
+		f.Pkg.Store(name, defaultContent)
+	}
+}
+
+func (f *File) AddEntity(sheet, cell, entityData string) {
+	f.CheckOrCreateRichData()
+	// marshal the entity data and store inside files accordingly
+}
+
+func (f *File) ReadEntity(sheet, cell string) (string, error) {
+
+	cellType, err := f.GetCellType(sheet, cell)
+	if err != nil {
+		return "", err
+	}
+	if cellType != 3 {
+		return "", errors.New("Cell is not of type entity")
+	}
+
+	metadata, err := f.metadataReader()
+	if err != nil {
+		return "", err
+	}
+
+	ws, _ := f.workSheetReader(sheet)
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+
+	for _, row := range ws.SheetData.Row {
+		for _, c := range row.C {
+			if c.R == cell {
+
+				cellMetadataIdx := *c.Vm - 1
+				richValueIdx := metadata.FutureMetadata[0].Bk[cellMetadataIdx].ExtLst.Ext.Rvb.I
+				richValue, err := f.richValueReader()
+				if err != nil {
+					return "", err
+				}
+				if richValueIdx >= len(richValue.Rv) {
+					return "", err
+				}
+
+				cellRichData := richValue.Rv[richValueIdx]
+
+				richValueStructure, err := f.richStructureReader()
+				if err != nil {
+					return "", err
+				}
+
+				richDataSpbs, err := f.richDataSpbReader()
+				if err != nil {
+					return "", err
+				}
+
+				for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
+					cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
+
+					print("\n\n")
+					fmt.Println(cellRichStructure)
+					fmt.Println(cellRichDataValue)
+
+					if cellRichStructure.T == "" {
+						fmt.Println("Key is:")
+						fmt.Println(cellRichStructure.N)
+						fmt.Println("Value is:")
+						fmt.Println(cellRichDataValue)
+					} else if cellRichStructure.T == "s" {
+						if cellRichStructure.N[0] == '_' {
+							fmt.Println("Value is richdata special formatted")
+							// more if else here
+							if cellRichStructure.N == "_DisplayString" {
+								fmt.Println("Outermost value which will be shown inside the cell")
+							} else if cellRichStructure.N == "_Icon" {
+								fmt.Println("Outermost icon which will be shown inside the cell")
+							}
+						}
+					} else if cellRichStructure.T == "b" {
+						fmt.Println("Value is boolean") // 1=true, 0=false
+						fmt.Println("Key is:")
+						fmt.Println(cellRichStructure.N)
+						fmt.Println("Value is:")
+						boolValue := cellRichDataValue == "1"
+						fmt.Println(boolValue)
+					} else if cellRichStructure.T == "r" {
+						fmt.Println("Value is of type formatted string or entity or image")
+					} else if cellRichStructure.T == "spb" {
+						fmt.Println("Value is of type spb")
+						// lots of work needed here
+						fmt.Println("SPB index is:")
+						spbIndex, err := strconv.Atoi(cellRichDataValue)
+						if err != nil {
+							log.Fatal(err)
+						}
+						fmt.Println(spbIndex)
+						fmt.Println("SPB value is:")
+						fmt.Println(richDataSpbs.SpbData.Spb[spbIndex])
+						if cellRichStructure.N == "_Provider" {
+							fmt.Println("Footer data with text and logo:")
+							fmt.Println(richDataSpbs.SpbData.Spb[spbIndex].V)
+							// can there be multiple providers for one card? What about provider logo
+						}
+					} else if cellRichStructure.T == "a" {
+						fmt.Println("Value is of type array")
+						// array data was mapped. Can reuse code
+					}
+				}
+			}
+		}
+	}
+	return "", err
 }
 
 // richValueRelReader provides a function to get the pointer to the structure
