@@ -717,10 +717,15 @@ func (f *File) TestRichValueTypes() (*RvTypesInfo, error) {
 // 	return nil
 // }
 
-func (f *File) CheckOrCreateRichData() {
+func (f *File) CheckOrCreateRichData() error {
+	dirPath := filepath.Join(f.Path, "xl", "richData")
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
 	f.CheckOrCreateXML(defaultXMLRdRichValuePart, []byte(xml.Header+templateRichValue))
 	f.CheckOrCreateXML(defaultXMLRichDataRichValueStructure, []byte(xml.Header+templateRichStructure))
 	f.CheckOrCreateXML(defaultXMLRichDataRichValueTypes, []byte(xml.Header+templateRichValuetypes))
+	return nil
 }
 
 func (f *File) CheckOrCreateXML(name string, defaultContent []byte) {
