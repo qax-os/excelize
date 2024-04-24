@@ -811,7 +811,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 			}
 
 		} else if cellRichStructure.T == "spb" {
-			err := f.processSpbType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue)
+			err := f.processSpbType(entityMap, cellRichStructure, cellRichDataValue)
 			if err != nil {
 				return entityMap, err
 			}
@@ -864,7 +864,7 @@ func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueSt
 	return nil
 }
 
-func (f *File) processSpbType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) error {
+func (f *File) processSpbType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) error {
 	richDataSpbs, err := f.richDataSpbReader()
 	if err != nil {
 		return err
@@ -894,7 +894,7 @@ func (f *File) processSpbType(entityMap map[string]any, stringValueMap map[strin
 			fmt.Println(spbDataValue)
 			fmt.Println("Spb structure data is:")
 			fmt.Println(richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N)
-			entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = stringValueMap[spbDataValue]
+			entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = spbDataValue
 		}
 	}
 	return nil
