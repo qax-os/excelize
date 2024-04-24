@@ -759,102 +759,129 @@ func (f *File) ReadEntity(sheet, cell string) (string, error) {
 	for _, row := range ws.SheetData.Row {
 		for _, c := range row.C {
 			if c.R == cell {
-
-				cellMetadataIdx := *c.Vm - 1
-				richValueIdx := metadata.FutureMetadata[0].Bk[cellMetadataIdx].ExtLst.Ext.Rvb.I
-				richValue, err := f.richValueReader()
-				if err != nil {
-					return "", err
-				}
-				if richValueIdx >= len(richValue.Rv) {
-					return "", err
-				}
-
-				cellRichData := richValue.Rv[richValueIdx]
-
-				richValueStructure, err := f.richStructureReader()
-				if err != nil {
-					return "", err
-				}
-
-				richDataSpbs, err := f.richDataSpbReader()
-				if err != nil {
-					return "", err
-				}
-
-				richDataSpbStructure, err := f.richDataSpbStructureReader()
-				if err != nil {
-					return "", err
-				}
-
-				for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
-					cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
-
-					print("\n\n")
-					fmt.Println(cellRichStructure)
-					fmt.Println(cellRichDataValue)
-
-					if cellRichStructure.T == "" {
-						fmt.Println("Key is:")
-						fmt.Println(cellRichStructure.N)
-						fmt.Println("Value is:")
-						fmt.Println(cellRichDataValue)
-					} else if cellRichStructure.T == "s" {
-						if cellRichStructure.N[0] == '_' {
-							fmt.Println("Value is richdata special formatted")
-							// more if else here
-							if cellRichStructure.N == "_DisplayString" {
-								fmt.Println("Outermost value which will be shown inside the cell")
-							} else if cellRichStructure.N == "_Icon" {
-								fmt.Println("Outermost icon which will be shown inside the cell")
-							}
-						}
-					} else if cellRichStructure.T == "b" {
-						fmt.Println("Value is boolean") // 1=true, 0=false
-						fmt.Println("Key is:")
-						fmt.Println(cellRichStructure.N)
-						fmt.Println("Value is:")
-						boolValue := cellRichDataValue == "1"
-						fmt.Println(boolValue)
-					} else if cellRichStructure.T == "r" {
-						fmt.Println("Value is of type formatted string or entity or image")
-
-					} else if cellRichStructure.T == "spb" {
-						fmt.Println("Value is of type spb")
-						// lots of work needed here
-						// fmt.Println("SPB index is:")
-						spbIndex, err := strconv.Atoi(cellRichDataValue)
-						if err != nil {
-							log.Fatal(err)
-						}
-						// fmt.Println(spbIndex)
-						// fmt.Println("SPB value is:")
-						// fmt.Println(richDataSpbs.SpbData.Spb[spbIndex])
-						if cellRichStructure.N == "_Provider" {
-							fmt.Println("Footer data with text and logo:")
-							fmt.Println(richDataSpbs.SpbData.Spb[spbIndex].V)
-							// can there be multiple providers for one card? What about provider logo
-						} else {
-							// fmt.Println("SPB structure value is:")
-							// fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S])
-
-							for spbDataValueIndex, spbDataValue := range richDataSpbs.SpbData.Spb[spbIndex].V {
-								fmt.Println("Spb data value is:")
-								fmt.Println(spbDataValue)
-								fmt.Println("Spb structure data is:")
-								fmt.Println(richDataSpbStructure.S[richDataSpbs.SpbData.Spb[spbIndex].S].K[spbDataValueIndex].N)
-							}
-						}
-
-					} else if cellRichStructure.T == "a" {
-						fmt.Println("Value is of type array")
-						// array data was mapped. Can reuse code
-					}
-				}
+				f.readCellEntity(c, metadata)
 			}
 		}
 	}
 	return "", err
+}
+
+func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (string, error) {
+
+	cellMetadataIdx := *c.Vm - 1
+	richValueIdx := metadata.FutureMetadata[0].Bk[cellMetadataIdx].ExtLst.Ext.Rvb.I
+	richValue, err := f.richValueReader()
+	if err != nil {
+		return "", err
+	}
+	if richValueIdx >= len(richValue.Rv) {
+		return "", err
+	}
+
+	cellRichData := richValue.Rv[richValueIdx]
+
+	richValueStructure, err := f.richStructureReader()
+	if err != nil {
+		return "", err
+	}
+
+	richDataSpbs, err := f.richDataSpbReader()
+	if err != nil {
+		return "", err
+	}
+
+	richDataSpbStructure, err := f.richDataSpbStructureReader()
+	if err != nil {
+		return "", err
+	}
+
+	entityMap := make(map[string]any)
+	stringValueMap := make(map[string]string)
+
+	for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
+		cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
+
+		print("\n\n")
+		fmt.Println(cellRichStructure)
+		fmt.Println(cellRichDataValue)
+
+		if cellRichStructure.T == "" {
+			entityMap[cellRichStructure.N] = cellRichDataValue
+		} else if cellRichStructure.T == "b" {
+			boolValue := cellRichDataValue == "1"
+			entityMap[cellRichStructure.N] = boolValue
+		} else if cellRichStructure.T == "s" {
+			processStringType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue)
+
+		} else if cellRichStructure.T == "r" {
+			err := processRichType(entityMap, cellRichStructure, cellRichDataValue, richValue)
+			if err != nil {
+				return "", err
+			}
+
+		} else if cellRichStructure.T == "spb" {
+			fmt.Println("Value is of type spb")
+			spbIndex, err := strconv.Atoi(cellRichDataValue)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if cellRichStructure.N == "_Provider" {
+				entityMap["Provider"] = richDataSpbs.SpbData.Spb[spbIndex].V[0]
+				// can there be multiple providers for one card? What about provider logo
+			} else if cellRichStructure.N == "_Display" {
+				displayData := richDataSpbs.SpbData.Spb[spbIndex]
+				for spbDataValueIndex, spbDataValue := range displayData.V {
+					fmt.Println("Spb data value is:")
+					fmt.Println(spbDataValue)
+					fmt.Println("Spb structure data is:")
+					fmt.Println(richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N)
+					entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = stringValueMap[spbDataValue]
+				}
+			}
+		}
+	}
+	fmt.Println(entityMap)
+	return "", err
+}
+
+func processStringType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {
+	if cellRichStructure.N[0] == '_' {
+		if cellRichStructure.N == "_DisplayString" {
+			entityMap["Display String"] = cellRichDataValue
+		} else if cellRichStructure.N == "_Icon" {
+			entityMap["Icon"] = cellRichDataValue
+		}
+	} else {
+		stringValueMap[cellRichStructure.N] = cellRichDataValue
+		fmt.Println("Value is normal string")
+		fmt.Println("Key is:")
+		fmt.Println(cellRichStructure.N)
+		fmt.Println("Value is:")
+		fmt.Println(cellRichDataValue)
+	}
+}
+
+func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richValue *xlsxRichValueData) error {
+	fmt.Println("Value is of type formatted string or entity or array")
+	fmt.Println("Key is:")
+	fmt.Println(cellRichStructure.N)
+	entityMap[cellRichStructure.N] = "Value is of type formatted string or entity or array"
+	fmt.Println("Rich Value index is:")
+	fmt.Println(cellRichDataValue)
+
+	cellRichDataValueInt, err := strconv.Atoi(cellRichDataValue)
+	if err != nil {
+		return err // Return the error instead of using log.Fatal to allow the caller to handle it
+	}
+
+	if cellRichDataValueInt < 0 || cellRichDataValueInt >= len(richValue.Rv) {
+		return fmt.Errorf("index out of range: %d", cellRichDataValueInt)
+	}
+
+	subRichData := richValue.Rv[cellRichDataValueInt]
+	_ = subRichData
+	// processing remaining
+	return nil
 }
 
 // richValueRelReader provides a function to get the pointer to the structure
