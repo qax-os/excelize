@@ -805,7 +805,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 			processStringType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue)
 
 		} else if cellRichStructure.T == "r" {
-			err := processRichType(entityMap, cellRichStructure, cellRichDataValue, richValue)
+			err := f.processRichType(entityMap, cellRichStructure, cellRichDataValue, richValue)
 			if err != nil {
 				return entityMap, err
 			}
@@ -838,7 +838,7 @@ func processStringType(entityMap map[string]any, stringValueMap map[string]strin
 	}
 }
 
-func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richValue *xlsxRichValueData) error {
+func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richValue *xlsxRichValueData) error {
 	fmt.Println("Value is of type formatted string or entity or array")
 	fmt.Println("Key is:")
 	fmt.Println(cellRichStructure.N)
@@ -858,6 +858,27 @@ func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueSt
 	subRichData := richValue.Rv[cellRichDataValueInt]
 	if subRichData.Fb != "" {
 		entityMap[cellRichStructure.N] = subRichData.Fb
+	} else {
+		richValueStructure, err := f.richStructureReader()
+		if err != nil {
+			return err
+		}
+		subRichStructure := richValueStructure.S[subRichData.S]
+		fmt.Println("Sub rich data:")
+		fmt.Println(subRichData)
+		fmt.Println("Sub rich structure")
+		fmt.Println(subRichStructure)
+
+		if subRichStructure.T == "_entity" {
+			subRichEntityMap := make(map[string]any)
+			for subRichDataValueIdx, subRichDatavalue := range subRichData.V {
+				subRichDataStructure := subRichStructure.K[subRichDataValueIdx].N
+				subRichEntityMap[subRichDataStructure] = subRichDatavalue
+			}
+			entityMap[cellRichStructure.N] = subRichEntityMap
+		} else if subRichStructure.T == "_array" {
+
+		}
 	}
 	_ = subRichData
 	// processing remaining
