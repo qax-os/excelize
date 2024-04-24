@@ -737,19 +737,20 @@ func (f *File) AddEntity(sheet, cell, entityData string) {
 	// marshal the entity data and store inside files accordingly
 }
 
-func (f *File) ReadEntity(sheet, cell string) (string, error) {
+func (f *File) ReadEntity(sheet, cell string) (map[string]any, error) {
 
+	entityMap := make(map[string]any)
 	cellType, err := f.GetCellType(sheet, cell)
 	if err != nil {
-		return "", err
+		return entityMap, err
 	}
 	if cellType != 3 {
-		return "", errors.New("Cell is not of type entity")
+		return entityMap, errors.New("Cell is not of type entity")
 	}
 
 	metadata, err := f.metadataReader()
 	if err != nil {
-		return "", err
+		return entityMap, err
 	}
 
 	ws, _ := f.workSheetReader(sheet)
@@ -759,44 +760,45 @@ func (f *File) ReadEntity(sheet, cell string) (string, error) {
 	for _, row := range ws.SheetData.Row {
 		for _, c := range row.C {
 			if c.R == cell {
-				f.readCellEntity(c, metadata)
+				entityMap, err := f.readCellEntity(c, metadata)
+				return entityMap, err
 			}
 		}
 	}
-	return "", err
+	return entityMap, err
 }
 
-func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (string, error) {
+func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, error) {
+
+	entityMap := make(map[string]any)
+	stringValueMap := make(map[string]string)
 
 	cellMetadataIdx := *c.Vm - 1
 	richValueIdx := metadata.FutureMetadata[0].Bk[cellMetadataIdx].ExtLst.Ext.Rvb.I
 	richValue, err := f.richValueReader()
 	if err != nil {
-		return "", err
+		return entityMap, err
 	}
 	if richValueIdx >= len(richValue.Rv) {
-		return "", err
+		return entityMap, err
 	}
 
 	cellRichData := richValue.Rv[richValueIdx]
 
 	richValueStructure, err := f.richStructureReader()
 	if err != nil {
-		return "", err
+		return entityMap, err
 	}
 
 	richDataSpbs, err := f.richDataSpbReader()
 	if err != nil {
-		return "", err
+		return entityMap, err
 	}
 
 	richDataSpbStructure, err := f.richDataSpbStructureReader()
 	if err != nil {
-		return "", err
+		return entityMap, err
 	}
-
-	entityMap := make(map[string]any)
-	stringValueMap := make(map[string]string)
 
 	for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
 		cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
@@ -816,7 +818,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (string, error) {
 		} else if cellRichStructure.T == "r" {
 			err := processRichType(entityMap, cellRichStructure, cellRichDataValue, richValue)
 			if err != nil {
-				return "", err
+				return entityMap, err
 			}
 
 		} else if cellRichStructure.T == "spb" {
@@ -840,8 +842,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (string, error) {
 			}
 		}
 	}
-	fmt.Println(entityMap)
-	return "", err
+	return entityMap, err
 }
 
 func processStringType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {
