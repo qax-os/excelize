@@ -789,16 +789,6 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 		return entityMap, err
 	}
 
-	richDataSpbs, err := f.richDataSpbReader()
-	if err != nil {
-		return entityMap, err
-	}
-
-	richDataSpbStructure, err := f.richDataSpbStructureReader()
-	if err != nil {
-		return entityMap, err
-	}
-
 	for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
 		cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
 
@@ -821,7 +811,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 			}
 
 		} else if cellRichStructure.T == "spb" {
-			err := processSpbType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue, richDataSpbs, richDataSpbStructure)
+			err := f.processSpbType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue)
 			if err != nil {
 				return entityMap, err
 			}
@@ -874,7 +864,16 @@ func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueSt
 	return nil
 }
 
-func processSpbType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richDataSpbs *XlsxRichDataSupportingPropertyBags, richDataSpbStructure *xlsxRichDataSpbStructures) error {
+func (f *File) processSpbType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) error {
+	richDataSpbs, err := f.richDataSpbReader()
+	if err != nil {
+		return err
+	}
+
+	richDataSpbStructure, err := f.richDataSpbStructureReader()
+	if err != nil {
+		return err
+	}
 	fmt.Println("Value is of type spb")
 	spbIndex, err := strconv.Atoi(cellRichDataValue)
 	if err != nil {
