@@ -823,7 +823,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 		} else if cellRichStructure.T == "spb" {
 			err := processSpbType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue, richDataSpbs, richDataSpbStructure)
 			if err != nil {
-				return entityMap, err // Handle the error appropriately
+				return entityMap, err
 			}
 		}
 	}
@@ -878,7 +878,7 @@ func processSpbType(entityMap map[string]any, stringValueMap map[string]string, 
 	fmt.Println("Value is of type spb")
 	spbIndex, err := strconv.Atoi(cellRichDataValue)
 	if err != nil {
-		return err // Return the error instead of using log.Fatal
+		return err
 	}
 
 	if spbIndex < 0 || spbIndex >= len(richDataSpbs.SpbData.Spb) {
@@ -898,7 +898,7 @@ func processSpbType(entityMap map[string]any, stringValueMap map[string]string, 
 			entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = stringValueMap[spbDataValue]
 		}
 	}
-	return nil // Return nil if no error occurred
+	return nil
 }
 
 // richValueRelReader provides a function to get the pointer to the structure
