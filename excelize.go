@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -822,27 +821,14 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 			}
 
 		} else if cellRichStructure.T == "spb" {
-			fmt.Println("Value is of type spb")
-			spbIndex, err := strconv.Atoi(cellRichDataValue)
+			err := processSpbType(entityMap, stringValueMap, cellRichStructure, cellRichDataValue, richDataSpbs, richDataSpbStructure)
 			if err != nil {
-				log.Fatal(err)
-			}
-			if cellRichStructure.N == "_Provider" {
-				entityMap["Provider"] = richDataSpbs.SpbData.Spb[spbIndex].V[0]
-				// can there be multiple providers for one card? What about provider logo
-			} else if cellRichStructure.N == "_Display" {
-				displayData := richDataSpbs.SpbData.Spb[spbIndex]
-				for spbDataValueIndex, spbDataValue := range displayData.V {
-					fmt.Println("Spb data value is:")
-					fmt.Println(spbDataValue)
-					fmt.Println("Spb structure data is:")
-					fmt.Println(richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N)
-					entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = stringValueMap[spbDataValue]
-				}
+				return entityMap, err // Handle the error appropriately
 			}
 		}
 	}
-	return entityMap, err
+	fmt.Println(stringValueMap)
+	return entityMap, nil
 }
 
 func processStringType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {
@@ -872,7 +858,7 @@ func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueSt
 
 	cellRichDataValueInt, err := strconv.Atoi(cellRichDataValue)
 	if err != nil {
-		return err // Return the error instead of using log.Fatal to allow the caller to handle it
+		return err
 	}
 
 	if cellRichDataValueInt < 0 || cellRichDataValueInt >= len(richValue.Rv) {
@@ -880,9 +866,39 @@ func processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueSt
 	}
 
 	subRichData := richValue.Rv[cellRichDataValueInt]
+	if subRichData.Fb != "" {
+		entityMap[cellRichStructure.N] = subRichData.Fb
+	}
 	_ = subRichData
 	// processing remaining
 	return nil
+}
+
+func processSpbType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richDataSpbs *XlsxRichDataSupportingPropertyBags, richDataSpbStructure *xlsxRichDataSpbStructures) error {
+	fmt.Println("Value is of type spb")
+	spbIndex, err := strconv.Atoi(cellRichDataValue)
+	if err != nil {
+		return err // Return the error instead of using log.Fatal
+	}
+
+	if spbIndex < 0 || spbIndex >= len(richDataSpbs.SpbData.Spb) {
+		return fmt.Errorf("index out of range: %d", spbIndex)
+	}
+
+	if cellRichStructure.N == "_Provider" {
+		entityMap["Provider"] = richDataSpbs.SpbData.Spb[spbIndex].V[0]
+		// Handle multiple providers or provider logo if necessary
+	} else if cellRichStructure.N == "_Display" {
+		displayData := richDataSpbs.SpbData.Spb[spbIndex]
+		for spbDataValueIndex, spbDataValue := range displayData.V {
+			fmt.Println("Spb data value is:")
+			fmt.Println(spbDataValue)
+			fmt.Println("Spb structure data is:")
+			fmt.Println(richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N)
+			entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = stringValueMap[spbDataValue]
+		}
+	}
+	return nil // Return nil if no error occurred
 }
 
 // richValueRelReader provides a function to get the pointer to the structure
