@@ -726,7 +726,7 @@ func (f *File) TestRichValueTypes() (*RvTypesInfo, error) {
 // 	return nil
 // }
 
-func (f *File) CheckOrCreateRichData() error {
+func (f *File) CheckOrCreateRichDataFiles() error {
 	dirPath := filepath.Join(f.Path, "xl", "richData")
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
@@ -744,7 +744,7 @@ func (f *File) CheckOrCreateXML(name string, defaultContent []byte) {
 }
 
 func (f *File) AddEntity(sheet, cell, entityData string) {
-	f.CheckOrCreateRichData()
+	f.CheckOrCreateRichDataFiles()
 	// marshal the entity data and store inside files accordingly
 }
 
