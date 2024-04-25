@@ -641,6 +641,15 @@ func (f *File) richDataSpbStructureReader() (*xlsxRichDataSpbStructures, error) 
 	return &richDataSpbStructure, nil
 }
 
+func (f *File) richDataArrayReader() (*xlsxRichValueArrayData, error) {
+	var richDataArray xlsxRichValueArrayData
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataArray)))).
+		Decode(&richDataArray); err != nil && err != io.EOF {
+		return &richDataArray, err
+	}
+	return &richDataArray, nil
+}
+
 func (f *File) TestRichValueReader() (*xlsxRichValueData, error) {
 	var richValue xlsxRichValueData
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValuePart)))).
@@ -729,9 +738,7 @@ func (f *File) CheckOrCreateRichData() error {
 }
 
 func (f *File) CheckOrCreateXML(name string, defaultContent []byte) {
-	// Check if the XML file exists
 	if _, ok := f.Pkg.Load(name); !ok {
-		// The XML file does not exist, so create it with the default content
 		f.Pkg.Store(name, defaultContent)
 	}
 }
@@ -829,9 +836,9 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 func processStringType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {
 	if cellRichStructure.N[0] == '_' {
 		if cellRichStructure.N == "_DisplayString" {
-			entityMap["Display String"] = cellRichDataValue
+			entityMap["_DisplayString"] = cellRichDataValue
 		} else if cellRichStructure.N == "_Icon" {
-			entityMap["Icon"] = cellRichDataValue
+			entityMap["_Icon"] = cellRichDataValue
 		}
 	} else {
 		stringValueMap[cellRichStructure.N] = cellRichDataValue
@@ -882,7 +889,39 @@ func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxR
 			}
 			entityMap[cellRichStructure.N] = subRichEntityMap
 		} else if subRichStructure.T == "_array" {
+			richDataArray, err := f.richDataArrayReader()
+			if err != nil {
+				return err
+			}
+			for subRichStructureIdx, _ := range subRichStructure.K {
+				colCount := richDataArray.A[subRichStructureIdx].C
+				rows := make([][]interface{}, 0)
+				row := make([]interface{}, 0, colCount)
+				for richDataArrayValueIdx, richDataArrayValue := range richDataArray.A[subRichStructureIdx].V {
+					if richDataArrayValue.T == "s" {
+						row = append(row, richDataArrayValue.Text)
+					} else if richDataArrayValue.T == "r" {
+						arrayValueRichValueIdx, err := strconv.Atoi(richDataArrayValue.Text)
+						if err != nil {
+							return err
+						}
+						arrayValueRichValue := richValue.Rv[arrayValueRichValueIdx]
+						if arrayValueRichValue.Fb != "" {
+							unformattedValue := arrayValueRichValue.Fb
+							row = append(row, unformattedValue)
+						}
 
+					}
+					if (richDataArrayValueIdx+1)%colCount == 0 {
+						rows = append(rows, row)
+						row = make([]interface{}, 0, colCount)
+					}
+				}
+				if len(row) > 0 {
+					rows = append(rows, row)
+				}
+				entityMap[cellRichStructure.N] = rows
+			}
 		}
 	}
 	_ = subRichData
@@ -911,8 +950,7 @@ func (f *File) processSpbType(entityMap map[string]any, cellRichStructure xlsxRi
 	}
 
 	if cellRichStructure.N == "_Provider" {
-		entityMap["Provider"] = richDataSpbs.SpbData.Spb[spbIndex].V[0]
-		// Handle multiple providers or provider logo if necessary
+		entityMap["_Provider"] = richDataSpbs.SpbData.Spb[spbIndex].V[0]
 	} else if cellRichStructure.N == "_Display" {
 		displayData := richDataSpbs.SpbData.Spb[spbIndex]
 		for spbDataValueIndex, spbDataValue := range displayData.V {

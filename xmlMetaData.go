@@ -78,17 +78,17 @@ type xlsxMetadataRecord struct {
 // xlsxRichValueArrayData directly maps the arrayData element that specifies rich value
 // arrays.
 type xlsxRichValueArrayData struct {
-	XMLName xml.Name            `xml:"arrayData"`
-	Xmlns   string              `xml:"xmlns,attr"`
-	Count   string              `xml:"count,attr"`
-	A       xlsxRichValuesArray `xml:"a"`
+	XMLName xml.Name              `xml:"arrayData"`
+	Xmlns   string                `xml:"xmlns,attr"`
+	Count   string                `xml:"count,attr"`
+	A       []xlsxRichValuesArray `xml:"a"`
 }
 
 // xlsxRichValuesArray directly maps the a element that specifies rich values Array
 // information for an array data
 type xlsxRichValuesArray struct {
 	R string               `xml:"r,attr"`
-	C string               `xml:"c,attr"`
+	C int                  `xml:"c,attr"`
 	V []xlsxRichArrayValue `xml:"v"`
 }
 
