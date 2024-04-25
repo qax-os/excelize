@@ -805,8 +805,6 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 		cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
 
 		print("\n\n")
-		fmt.Println(cellRichStructure)
-		fmt.Println(cellRichDataValue)
 
 		if cellRichStructure.T == "" {
 			entityMap[cellRichStructure.N] = cellRichDataValue
@@ -851,12 +849,6 @@ func processStringType(entityMap map[string]any, stringValueMap map[string]strin
 }
 
 func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richValue *xlsxRichValueData) error {
-	fmt.Println("Value is of type formatted string or entity or array")
-	fmt.Println("Key is:")
-	fmt.Println(cellRichStructure.N)
-	entityMap[cellRichStructure.N] = "Value is of type formatted string or entity or array"
-	fmt.Println("Rich Value index is:")
-	fmt.Println(cellRichDataValue)
 
 	cellRichDataValueInt, err := strconv.Atoi(cellRichDataValue)
 	if err != nil {
@@ -876,11 +868,6 @@ func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxR
 			return err
 		}
 		subRichStructure := richValueStructure.S[subRichData.S]
-		fmt.Println("Sub rich data:")
-		fmt.Println(subRichData)
-		fmt.Println("Sub rich structure")
-		fmt.Println(subRichStructure)
-
 		if subRichStructure.T == "_entity" {
 			subRichEntityMap := make(map[string]any)
 			for subRichDataValueIdx, subRichDatavalue := range subRichData.V {
@@ -889,46 +876,53 @@ func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxR
 			}
 			entityMap[cellRichStructure.N] = subRichEntityMap
 		} else if subRichStructure.T == "_array" {
-			richDataArray, err := f.richDataArrayReader()
+			err := f.processRichDataArrayType(entityMap, cellRichStructure, subRichStructure, richValue)
 			if err != nil {
 				return err
 			}
-			for subRichStructureIdx, _ := range subRichStructure.K {
-				colCount := richDataArray.A[subRichStructureIdx].C
-				rows := make([][]interface{}, 0)
-				row := make([]interface{}, 0, colCount)
-				for richDataArrayValueIdx, richDataArrayValue := range richDataArray.A[subRichStructureIdx].V {
-					if richDataArrayValue.T == "s" {
-						row = append(row, richDataArrayValue.Text)
-					} else if richDataArrayValue.T == "r" {
-						arrayValueRichValueIdx, err := strconv.Atoi(richDataArrayValue.Text)
-						if err != nil {
-							return err
-						}
-						arrayValueRichValue := richValue.Rv[arrayValueRichValueIdx]
-						if arrayValueRichValue.Fb != "" {
-							unformattedValue := arrayValueRichValue.Fb
-							row = append(row, unformattedValue)
-						}
-
-					}
-					if (richDataArrayValueIdx+1)%colCount == 0 {
-						rows = append(rows, row)
-						row = make([]interface{}, 0, colCount)
-					}
-				}
-				if len(row) > 0 {
-					rows = append(rows, row)
-				}
-				entityMap[cellRichStructure.N] = rows
-			}
 		}
 	}
-	_ = subRichData
-	// processing remaining
 	return nil
 }
+func (f *File) processRichDataArrayType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, subRichStructure xlsxRichValueStructure, richValue *xlsxRichValueData) error {
+	richDataArray, err := f.richDataArrayReader()
+	if err != nil {
+		return err
+	}
 
+	for subRichStructureIdx := range subRichStructure.K {
+		colCount := richDataArray.A[subRichStructureIdx].C
+		rows := make([][]interface{}, 0)
+		row := make([]interface{}, 0, colCount)
+		for richDataArrayValueIdx, richDataArrayValue := range richDataArray.A[subRichStructureIdx].V {
+			if richDataArrayValue.T == "s" {
+				row = append(row, richDataArrayValue.Text)
+			} else if richDataArrayValue.T == "r" {
+				arrayValueRichValueIdx, err := strconv.Atoi(richDataArrayValue.Text)
+				if err != nil {
+					return err
+				}
+				if arrayValueRichValueIdx < 0 || arrayValueRichValueIdx >= len(richValue.Rv) {
+					return fmt.Errorf("index out of range: %d", arrayValueRichValueIdx)
+				}
+				arrayValueRichValue := richValue.Rv[arrayValueRichValueIdx]
+				if arrayValueRichValue.Fb != "" {
+					unformattedValue := arrayValueRichValue.Fb
+					row = append(row, unformattedValue)
+				}
+			}
+			if (richDataArrayValueIdx+1)%colCount == 0 {
+				rows = append(rows, row)
+				row = make([]interface{}, 0, colCount)
+			}
+		}
+		if len(row) > 0 {
+			rows = append(rows, row)
+		}
+		entityMap[cellRichStructure.N] = rows
+	}
+	return nil
+}
 func (f *File) processSpbType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) error {
 	richDataSpbs, err := f.richDataSpbReader()
 	if err != nil {
@@ -939,7 +933,6 @@ func (f *File) processSpbType(entityMap map[string]any, cellRichStructure xlsxRi
 	if err != nil {
 		return err
 	}
-	fmt.Println("Value is of type spb")
 	spbIndex, err := strconv.Atoi(cellRichDataValue)
 	if err != nil {
 		return err
@@ -954,10 +947,6 @@ func (f *File) processSpbType(entityMap map[string]any, cellRichStructure xlsxRi
 	} else if cellRichStructure.N == "_Display" {
 		displayData := richDataSpbs.SpbData.Spb[spbIndex]
 		for spbDataValueIndex, spbDataValue := range displayData.V {
-			fmt.Println("Spb data value is:")
-			fmt.Println(spbDataValue)
-			fmt.Println("Spb structure data is:")
-			fmt.Println(richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N)
 			entityMap[richDataSpbStructure.S[displayData.S].K[spbDataValueIndex].N] = spbDataValue
 		}
 	}
