@@ -691,26 +691,46 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	return err
 }
 
+// duplicateSQRefHelper provides a function to adjust conditional formatting and
+// data validations cell reference when duplicate rows.
+func duplicateSQRefHelper(row, row2 int, ref string) (string, error) {
+	if !strings.Contains(ref, ":") {
+		ref += ":" + ref
+	}
+	abs := strings.Contains(ref, "$")
+	coordinates, err := rangeRefToCoordinates(ref)
+	if err != nil {
+		return "", err
+	}
+	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+	if y1 == y2 && y1 == row {
+		if ref, err = coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
+			return "", err
+		}
+		return ref, err
+	}
+	return "", err
+}
+
 // duplicateConditionalFormat create conditional formatting for the destination
 // row if there are conditional formats in the copied row.
 func (f *File) duplicateConditionalFormat(ws *xlsxWorksheet, sheet string, row, row2 int) error {
 	var cfs []*xlsxConditionalFormatting
 	for _, cf := range ws.ConditionalFormatting {
 		if cf != nil {
-			if !strings.Contains(cf.SQRef, ":") {
-				cf.SQRef += ":" + cf.SQRef
-			}
-			abs := strings.Contains(cf.SQRef, "$")
-			coordinates, err := rangeRefToCoordinates(cf.SQRef)
-			if err != nil {
-				return err
-			}
-			x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
-			if y1 == y2 && y1 == row {
-				cfCopy := deepcopy.Copy(*cf).(xlsxConditionalFormatting)
-				if cfCopy.SQRef, err = coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
+			var SQRef []string
+			for _, ref := range strings.Split(cf.SQRef, " ") {
+				coordinates, err := duplicateSQRefHelper(row, row2, ref)
+				if err != nil {
 					return err
 				}
+				if coordinates != "" {
+					SQRef = append(SQRef, coordinates)
+				}
+			}
+			if len(SQRef) > 0 {
+				cfCopy := deepcopy.Copy(*cf).(xlsxConditionalFormatting)
+				cfCopy.SQRef = strings.Join(SQRef, " ")
 				cfs = append(cfs, &cfCopy)
 			}
 		}
@@ -728,20 +748,19 @@ func (f *File) duplicateDataValidations(ws *xlsxWorksheet, sheet string, row, ro
 	var dvs []*xlsxDataValidation
 	for _, dv := range ws.DataValidations.DataValidation {
 		if dv != nil {
-			if !strings.Contains(dv.Sqref, ":") {
-				dv.Sqref += ":" + dv.Sqref
-			}
-			abs := strings.Contains(dv.Sqref, "$")
-			coordinates, err := rangeRefToCoordinates(dv.Sqref)
-			if err != nil {
-				return err
-			}
-			x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
-			if y1 == y2 && y1 == row {
-				dvCopy := deepcopy.Copy(*dv).(xlsxDataValidation)
-				if dvCopy.Sqref, err = coordinatesToRangeRef([]int{x1, row2, x2, row2}, abs); err != nil {
+			var SQRef []string
+			for _, ref := range strings.Split(dv.Sqref, " ") {
+				coordinates, err := duplicateSQRefHelper(row, row2, ref)
+				if err != nil {
 					return err
 				}
+				if coordinates != "" {
+					SQRef = append(SQRef, coordinates)
+				}
+			}
+			if len(SQRef) > 0 {
+				dvCopy := deepcopy.Copy(*dv).(xlsxDataValidation)
+				dvCopy.Sqref = strings.Join(SQRef, " ")
 				dvs = append(dvs, &dvCopy)
 			}
 		}

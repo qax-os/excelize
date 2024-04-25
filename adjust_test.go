@@ -1114,7 +1114,7 @@ func TestAdjustDataValidations(t *testing.T) {
 		// The double quote symbol in none formula data validation rules will be escaped in the Kingsoft WPS Office
 		formula := strings.ReplaceAll(fmt.Sprintf("\"option1, %s", strings.Repeat("\"", 9)), "\"", "&quot;")
 		ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Formula1.Content = formula
-		f.RemoveCol("Sheet2", "A")
+		assert.NoError(t, f.RemoveCol("Sheet2", "A"))
 		dvs, err := f.GetDataValidations("Sheet1")
 		assert.NoError(t, err)
 		assert.Equal(t, formula, dvs[0].Formula1)

@@ -506,7 +506,7 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 	if escape {
 		var buf bytes.Buffer
 		enc := xml.NewEncoder(&buf)
-		enc.EncodeToken(xml.CharData(value))
+		_ = enc.EncodeToken(xml.CharData(value))
 		enc.Flush()
 		value = buf.String()
 	}
