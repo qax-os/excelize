@@ -743,14 +743,29 @@ func (f *File) CheckOrCreateXML(name string, defaultContent []byte) {
 	}
 }
 
-func (f *File) AddEntity(sheet, cell, entityData string) {
+func (f *File) AddEntity(sheet, cell string, entityData map[string]interface{}) error {
 	f.CheckOrCreateRichDataFiles()
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	for _, row := range ws.SheetData.Row {
+		for _, c := range row.C {
+			if c.R == cell {
+				err := f.writeCellEntity(cell, entityData)
+				return err
+			}
+		}
+	}
 	// marshal the entity data and store inside files accordingly
+	return nil
 }
 
-func (f *File) ReadEntity(sheet, cell string) (map[string]any, error) {
+func (f *File) ReadEntity(sheet, cell string) (map[string]interface{}, error) {
 
-	entityMap := make(map[string]any)
+	entityMap := make(map[string]interface{})
 	cellType, err := f.GetCellType(sheet, cell)
 	if err != nil {
 		return entityMap, err
@@ -779,9 +794,9 @@ func (f *File) ReadEntity(sheet, cell string) (map[string]any, error) {
 	return entityMap, err
 }
 
-func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, error) {
+func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]interface{}, error) {
 
-	entityMap := make(map[string]any)
+	entityMap := make(map[string]interface{})
 	stringValueMap := make(map[string]string)
 
 	cellMetadataIdx := *c.Vm - 1
@@ -803,8 +818,6 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 
 	for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
 		cellRichStructure := richValueStructure.S[cellRichData.S].K[cellRichDataIdx]
-
-		print("\n\n")
 
 		if cellRichStructure.T == "" {
 			entityMap[cellRichStructure.N] = cellRichDataValue
@@ -831,7 +844,7 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]any, 
 	return entityMap, nil
 }
 
-func processStringType(entityMap map[string]any, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {
+func processStringType(entityMap map[string]interface{}, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {
 	if cellRichStructure.N[0] == '_' {
 		if cellRichStructure.N == "_DisplayString" {
 			entityMap["_DisplayString"] = cellRichDataValue
@@ -848,7 +861,7 @@ func processStringType(entityMap map[string]any, stringValueMap map[string]strin
 	}
 }
 
-func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richValue *xlsxRichValueData) error {
+func (f *File) processRichType(entityMap map[string]interface{}, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string, richValue *xlsxRichValueData) error {
 
 	cellRichDataValueInt, err := strconv.Atoi(cellRichDataValue)
 	if err != nil {
@@ -869,7 +882,7 @@ func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxR
 		}
 		subRichStructure := richValueStructure.S[subRichData.S]
 		if subRichStructure.T == "_entity" {
-			subRichEntityMap := make(map[string]any)
+			subRichEntityMap := make(map[string]interface{})
 			for subRichDataValueIdx, subRichDatavalue := range subRichData.V {
 				subRichDataStructure := subRichStructure.K[subRichDataValueIdx].N
 				subRichEntityMap[subRichDataStructure] = subRichDatavalue
@@ -884,7 +897,7 @@ func (f *File) processRichType(entityMap map[string]any, cellRichStructure xlsxR
 	}
 	return nil
 }
-func (f *File) processRichDataArrayType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, subRichStructure xlsxRichValueStructure, richValue *xlsxRichValueData) error {
+func (f *File) processRichDataArrayType(entityMap map[string]interface{}, cellRichStructure xlsxRichValueStructureKey, subRichStructure xlsxRichValueStructure, richValue *xlsxRichValueData) error {
 	richDataArray, err := f.richDataArrayReader()
 	if err != nil {
 		return err
@@ -923,7 +936,7 @@ func (f *File) processRichDataArrayType(entityMap map[string]any, cellRichStruct
 	}
 	return nil
 }
-func (f *File) processSpbType(entityMap map[string]any, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) error {
+func (f *File) processSpbType(entityMap map[string]interface{}, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) error {
 	richDataSpbs, err := f.richDataSpbReader()
 	if err != nil {
 		return err
