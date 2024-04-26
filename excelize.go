@@ -15,6 +15,7 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -59,6 +60,24 @@ type File struct {
 	VMLDrawing       map[string]*vmlDrawing
 	VolatileDeps     *xlsxVolTypes
 	WorkBook         *xlsxWorkbook
+}
+
+type Entity struct {
+	Type    string `json:"type"`
+	Text    string `json:"text"`
+	Layouts struct {
+		Compact struct {
+			Icon string `json:"icon"`
+		} `json:"compact"`
+		Card struct {
+			Title struct {
+				Property string `json:"property"`
+			} `json:"title"`
+			SubTitle struct {
+				Property string `json:"property"`
+			} `json:"subTitle"`
+		} `json:"card"`
+	} `json:"layouts"`
 }
 
 // charsetTranscoderFn set user-defined codepage transcoder function for open
@@ -726,25 +745,25 @@ func (f *File) TestRichValueTypes() (*RvTypesInfo, error) {
 // 	return nil
 // }
 
-func (f *File) CheckOrCreateRichDataFiles() error {
+func (f *File) checkOrCreateRichDataFiles() error {
 	dirPath := filepath.Join(f.Path, "xl", "richData")
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
-	f.CheckOrCreateXML(defaultXMLRdRichValuePart, []byte(xml.Header+templateRichValue))
-	f.CheckOrCreateXML(defaultXMLRichDataRichValueStructure, []byte(xml.Header+templateRichStructure))
-	f.CheckOrCreateXML(defaultXMLRichDataRichValueTypes, []byte(xml.Header+templateRichValuetypes))
+	f.checkOrCreateXML(defaultXMLRdRichValuePart, []byte(xml.Header+templateRichValue))
+	f.checkOrCreateXML(defaultXMLRichDataRichValueStructure, []byte(xml.Header+templateRichStructure))
+	f.checkOrCreateXML(defaultXMLRichDataRichValueTypes, []byte(xml.Header+templateRichValuetypes))
 	return nil
 }
 
-func (f *File) CheckOrCreateXML(name string, defaultContent []byte) {
+func (f *File) checkOrCreateXML(name string, defaultContent []byte) {
 	if _, ok := f.Pkg.Load(name); !ok {
 		f.Pkg.Store(name, defaultContent)
 	}
 }
 
-func (f *File) AddEntity(sheet, cell string, entityData map[string]interface{}) error {
-	f.CheckOrCreateRichDataFiles()
+func (f *File) AddEntity(sheet, cell string, entityData []byte) error {
+	f.checkOrCreateRichDataFiles()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -759,42 +778,52 @@ func (f *File) AddEntity(sheet, cell string, entityData map[string]interface{}) 
 			}
 		}
 	}
-	// marshal the entity data and store inside files accordingly
 	return nil
 }
 
-func (f *File) ReadEntity(sheet, cell string) (map[string]interface{}, error) {
+func (f *File) writeCellEntity(cell string, entity []byte) error {
+	return nil
+}
 
-	entityMap := make(map[string]interface{})
+func (f *File) ReadEntity(sheet, cell string) ([]byte, error) {
+
 	cellType, err := f.GetCellType(sheet, cell)
 	if err != nil {
-		return entityMap, err
+		return nil, err
 	}
 	if cellType != 3 {
-		return entityMap, errors.New("Cell is not of type entity")
+		return nil, errors.New("Cell is not of type entity")
 	}
 
 	metadata, err := f.metadataReader()
 	if err != nil {
-		return entityMap, err
+		return nil, err
 	}
 
 	ws, _ := f.workSheetReader(sheet)
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
-
+	entityStruct := Entity{}
 	for _, row := range ws.SheetData.Row {
 		for _, c := range row.C {
 			if c.R == cell {
-				entityMap, err := f.readCellEntity(c, metadata)
-				return entityMap, err
+				err = f.readCellEntity(c, metadata, &entityStruct)
+				if err != nil {
+					return nil, err
+				}
+				entityJSON, err := json.Marshal(entityStruct)
+				if err != nil {
+					return nil, err
+				}
+				return entityJSON, nil
+
 			}
 		}
 	}
-	return entityMap, err
+	return nil, nil
 }
 
-func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]interface{}, error) {
+func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata, entity *Entity) error {
 
 	entityMap := make(map[string]interface{})
 	stringValueMap := make(map[string]string)
@@ -803,17 +832,17 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]inter
 	richValueIdx := metadata.FutureMetadata[0].Bk[cellMetadataIdx].ExtLst.Ext.Rvb.I
 	richValue, err := f.richValueReader()
 	if err != nil {
-		return entityMap, err
+		return err
 	}
 	if richValueIdx >= len(richValue.Rv) {
-		return entityMap, err
+		return err
 	}
 
 	cellRichData := richValue.Rv[richValueIdx]
 
 	richValueStructure, err := f.richStructureReader()
 	if err != nil {
-		return entityMap, err
+		return err
 	}
 
 	for cellRichDataIdx, cellRichDataValue := range cellRichData.V {
@@ -830,18 +859,24 @@ func (f *File) readCellEntity(c xlsxC, metadata *xlsxMetadata) (map[string]inter
 		} else if cellRichStructure.T == "r" {
 			err := f.processRichType(entityMap, cellRichStructure, cellRichDataValue, richValue)
 			if err != nil {
-				return entityMap, err
+				return err
 			}
 
 		} else if cellRichStructure.T == "spb" {
 			err := f.processSpbType(entityMap, cellRichStructure, cellRichDataValue)
 			if err != nil {
-				return entityMap, err
+				return err
 			}
 		}
 	}
 	fmt.Println(stringValueMap)
-	return entityMap, nil
+	fmt.Println(entityMap)
+	entity.Text = entityMap["_DisplayString"].(string)
+	entity.Layouts.Compact.Icon = entityMap["_Icon"].(string)
+	entity.Layouts.Card.Title.Property = entityMap["TitleProperty"].(string)
+	entity.Layouts.Card.SubTitle.Property = entityMap["SubTitleProperty"].(string)
+
+	return nil
 }
 
 func processStringType(entityMap map[string]interface{}, stringValueMap map[string]string, cellRichStructure xlsxRichValueStructureKey, cellRichDataValue string) {

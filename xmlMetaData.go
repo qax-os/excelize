@@ -113,7 +113,7 @@ type xlsxRichValueData struct {
 type xlsxRichValue struct {
 	S  int      `xml:"s,attr"`
 	V  []string `xml:"v"`
-	Fb string   `xml:"fb"`
+	Fb string   `xml:"fb,omitempty"`
 }
 
 // xlsxRichValueRels directly maps the richValueRels element. This element that
