@@ -212,7 +212,9 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		files = append(files, path.(string))
 		return true
 	})
-	sort.Strings(files)
+	
+	sortExcelFiles(files)
+	
 	for _, path := range files {
 		var fi io.Writer
 		if fi, err = zw.Create(path); err != nil {
@@ -228,7 +230,9 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		tempFiles = append(tempFiles, path.(string))
 		return true
 	})
-	sort.Strings(tempFiles)
+	
+	sortExcelFiles(tempFiles)
+	
 	for _, path := range tempFiles {
 		var fi io.Writer
 		if fi, err = zw.Create(path); err != nil {
@@ -237,4 +241,53 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		_, err = fi.Write(f.readBytes(path))
 	}
 	return err
+}
+
+//
+func sortExcelFiles(files []string) {
+	dirMap := make(map[string][]string)
+
+	for _, f := range files {
+		s := strings.SplitN(f, "/", 2)
+		if len(s) > 1 {
+			dirMap[s[0]] = append(dirMap[s[0]], s[1])
+		} else {
+			dirMap[""] = append(dirMap[""], s[0])
+		}
+	}
+
+	for k, fl := range dirMap {
+		sort.Strings(fl)
+		dirMap[k] = fl
+	}
+
+	out := files[0:0]
+
+	out = appendExcelFile(out, "xl", dirMap["xl"])
+
+	delete(dirMap, "xl")
+
+	var dirs []string
+	for k := range dirMap {
+		dirs = append(dirs, k)
+	}
+
+	sort.Strings(dirs)
+
+	for _, d := range dirs {
+		out = appendExcelFile(out, d, dirMap[d])
+	}
+}
+
+//
+func appendExcelFile(inFiles []string, d string, files []string) []string {
+	if len(d) > 0 {
+		d += "/"
+	}
+
+	for _, f := range files {
+		inFiles = append(inFiles, d+f)
+	}
+
+	return inFiles
 }
