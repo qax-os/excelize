@@ -57,6 +57,10 @@ const (
 	CultureNameUnknown CultureName = iota
 	CultureNameEnUS
 	CultureNameZhCN
+	CultureNameZhTW
+	CultureNameJaJP
+	CultureNameKoKR
+	CultureNameThTH
 )
 
 var (
@@ -4754,6 +4758,54 @@ func (f *File) langNumFmtFuncZhCN(numFmtID int) string {
 	return langNumFmt["zh-cn"][numFmtID]
 }
 
+// langNumFmtFuncZhTW returns number format code by given date and time pattern
+// for country code zh-tw.
+func (f *File) langNumFmtFuncZhTW(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["zh-tw"][numFmtID]
+}
+
+// langNumFmtFuncJaJP returns number format code by given date and time pattern
+// for country code ja-jp.
+func (f *File) langNumFmtFuncJaJP(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["ja-jp"][numFmtID]
+}
+
+// langNumFmtFuncKoKR returns number format code by given date and time pattern
+// for country code ko-kr.
+func (f *File) langNumFmtFuncKoKR(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["ko-kr"][numFmtID]
+}
+
+// langNumFmtFuncThTH returns number format code by given date and time pattern
+// for country code th-th.
+func (f *File) langNumFmtFuncThTH(numFmtID int) string {
+	if f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["th-th"][numFmtID]
+}
+
 // getBuiltInNumFmtCode convert number format index to number format code with
 // specified locale and language.
 func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
@@ -4766,6 +4818,18 @@ func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
 		}
 		if f.options.CultureInfo == CultureNameZhCN {
 			return f.langNumFmtFuncZhCN(numFmtID), true
+		}
+		if f.options.CultureInfo == CultureNameZhTW {
+			return f.langNumFmtFuncZhTW(numFmtID), true
+		}
+		if f.options.CultureInfo == CultureNameJaJP {
+			return f.langNumFmtFuncJaJP(numFmtID), true
+		}
+		if f.options.CultureInfo == CultureNameKoKR {
+			return f.langNumFmtFuncKoKR(numFmtID), true
+		}
+		if f.options.CultureInfo == CultureNameThTH {
+			return f.langNumFmtFuncThTH(numFmtID), true
 		}
 	}
 	return "", false
