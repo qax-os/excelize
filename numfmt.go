@@ -4797,17 +4797,10 @@ func (f *File) langNumFmtFuncKoKR(numFmtID int) string {
 // langNumFmtFuncThTH returns number format code by given date and time pattern
 // for country code th-th.
 func (f *File) langNumFmtFuncThTH(numFmtID int) string {
-<<<<<<< HEAD
-	if f.options.ShortDatePattern != "" {
-		return f.options.ShortDatePattern
-	}
-	if f.options.LongTimePattern != "" {
-=======
 	if numFmtID == 71 && f.options.ShortDatePattern != "" {
 		return f.options.ShortDatePattern
 	}
 	if numFmtID == 76 && f.options.LongTimePattern != "" {
->>>>>>> f26dbfd (This closes #1885,add more langNumFmtFunc)
 		return f.options.LongTimePattern
 	}
 	return langNumFmt["th-th"][numFmtID]
