@@ -3613,3 +3613,74 @@ func TestNumFmt(t *testing.T) {
 	assert.Equal(t, ErrUnsupportedNumberFormat, err)
 	assert.False(t, changeNumFmtCode)
 }
+
+func TestLangNumFmtFunc(t *testing.T) {
+	shortDatePattern, longTimePattern := "M/d/yy", "h:mm:ss"
+	t.Run("test langNumFmtFuncZhTW", func(t *testing.T) {
+		f := NewFile(Options{
+			CultureInfo:      CultureNameZhTW,
+			ShortDatePattern: shortDatePattern,
+			LongTimePattern:  longTimePattern,
+		})
+		for k, v := range langNumFmt["zh-tw"] {
+			if k == 30 {
+				assert.Equal(t, f.langNumFmtFuncZhTW(k), shortDatePattern)
+			} else if 32 <= k && k <= 33 {
+				assert.Equal(t, f.langNumFmtFuncZhTW(k), longTimePattern)
+			} else {
+				assert.Equal(t, f.langNumFmtFuncZhTW(k), v)
+			}
+		}
+	})
+
+	t.Run("test langNumFmtFuncJaJP", func(t *testing.T) {
+		f := NewFile(Options{
+			CultureInfo:      CultureNameJaJP,
+			ShortDatePattern: shortDatePattern,
+			LongTimePattern:  longTimePattern,
+		})
+		for k, v := range langNumFmt["ja-jp"] {
+			if k == 30 {
+				assert.Equal(t, f.langNumFmtFuncJaJP(k), shortDatePattern)
+			} else if 32 <= k && k <= 33 {
+				assert.Equal(t, f.langNumFmtFuncJaJP(k), longTimePattern)
+			} else {
+				assert.Equal(t, f.langNumFmtFuncJaJP(k), v)
+			}
+		}
+	})
+
+	t.Run("test langNumFmtFuncKoKR", func(t *testing.T) {
+		f := NewFile(Options{
+			CultureInfo:      CultureNameKoKR,
+			ShortDatePattern: shortDatePattern,
+			LongTimePattern:  longTimePattern,
+		})
+		for k, v := range langNumFmt["ko-kr"] {
+			if k == 30 {
+				assert.Equal(t, f.langNumFmtFuncKoKR(k), shortDatePattern)
+			} else if 32 <= k && k <= 33 {
+				assert.Equal(t, f.langNumFmtFuncKoKR(k), longTimePattern)
+			} else {
+				assert.Equal(t, f.langNumFmtFuncKoKR(k), v)
+			}
+		}
+	})
+
+	t.Run("test langNumFmtFuncThTH", func(t *testing.T) {
+		f := NewFile(Options{
+			CultureInfo:      CultureNameThTH,
+			ShortDatePattern: shortDatePattern,
+			LongTimePattern:  longTimePattern,
+		})
+		for k, v := range langNumFmt["th-th"] {
+			if k == 71 {
+				assert.Equal(t, f.langNumFmtFuncThTH(k), shortDatePattern)
+			} else if k == 76 {
+				assert.Equal(t, f.langNumFmtFuncThTH(k), longTimePattern)
+			} else {
+				assert.Equal(t, f.langNumFmtFuncThTH(k), v)
+			}
+		}
+	})
+}
