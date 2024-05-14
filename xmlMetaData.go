@@ -24,7 +24,9 @@ import "encoding/xml"
 // can be propagated along with the value as it is referenced in formulas.
 type xlsxMetadata struct {
 	XMLName         xml.Name             `xml:"metadata"`
-	MetadataTypes   *xlsxInnerXML        `xml:"metadataTypes"`
+	Xmlns           string               `xml:"xmlns,attr"`
+	XmlnsXlrd       string               `xml:"xmlns:xlrd,attr"`
+	MetadataTypes   xlsxMetadataTypes    `xml:"metadataTypes"`
 	MetadataStrings *xlsxInnerXML        `xml:"metadataStrings"`
 	MdxMetadata     *xlsxInnerXML        `xml:"mdxMetadata"`
 	FutureMetadata  []xlsxFutureMetadata `xml:"futureMetadata"`
@@ -33,9 +35,31 @@ type xlsxMetadata struct {
 	ExtLst          *xlsxInnerXML        `xml:"extLst"`
 }
 
+type xlsxMetadataTypes struct {
+	Count        int                `xml:"count,attr"`
+	MetadataType []xlsxMetadataType `xml:"metadataType"`
+}
+
+type xlsxMetadataType struct {
+	MetadataName        string `xml:"name,attr"`
+	MinSupportedVersion int    `xml:"minSupportedVersion,attr"`
+	Copy                int    `xml:"copy,attr"`
+	PasteAll            int    `xml:"pasteAll,attr"`
+	PasteValues         int    `xml:"pasteValues,attr"`
+	Merge               int    `xml:"merge,attr"`
+	SplitFirst          int    `xml:"splitFirst,attr"`
+	RowColShift         int    `xml:"rowColShift,attr"`
+	ClearFormats        int    `xml:"clearFormats,attr"`
+	ClearComments       int    `xml:"clearComments,attr"`
+	Assign              int    `xml:"assign,attr"`
+	Coerce              int    `xml:"coerce,attr"`
+}
+
 // xlsxFutureMetadata directly maps the futureMetadata element. This element
 // represents future metadata information.
 type xlsxFutureMetadata struct {
+	Name   string                    `xml:"name,attr"`
+	Count  int                       `xml:"count,attr"`
 	Bk     []xlsxFutureMetadataBlock `xml:"bk"`
 	ExtLst *xlsxInnerXML             `xml:"extLst"`
 }
@@ -44,14 +68,20 @@ type xlsxFutureMetadata struct {
 // a block of future metadata information. This is a location for storing
 // feature extension information.
 type xlsxFutureMetadataBlock struct {
-	ExtLst struct {
-		Ext struct {
-			URI string `xml:"uri,attr"`
-			Rvb struct {
-				I int `xml:"i,attr"`
-			} `xml:"rvb"`
-		} `xml:"ext"`
-	} `xml:"extLst"`
+	ExtLst ExtLst `xml:"extLst"`
+}
+
+type ExtLst struct {
+	Ext Ext `xml:"ext"`
+}
+
+type Ext struct {
+	URI string `xml:"uri,attr"`
+	Rvb Rvb    `xml:"xlrd:rvb"`
+}
+
+type Rvb struct {
+	I int `xml:"i,attr"`
 }
 
 // xlsxMetadataBlocks directly maps the metadata element. This element
@@ -78,10 +108,10 @@ type xlsxMetadataRecord struct {
 // xlsxRichValueArrayData directly maps the arrayData element that specifies rich value
 // arrays.
 type xlsxRichValueArrayData struct {
-	XMLName xml.Name              `xml:"arrayData"`
-	Xmlns   string                `xml:"xmlns,attr"`
-	Count   string                `xml:"count,attr"`
-	A       []xlsxRichValuesArray `xml:"a"`
+	XMLName xml.Name `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2 arrayData"`
+	// Xmlns   string                `xml:"xmlns,attr"`
+	Count int                   `xml:"count,attr"`
+	A     []xlsxRichValuesArray `xml:"a"`
 }
 
 // xlsxRichValuesArray directly maps the a element that specifies rich values Array
@@ -102,7 +132,7 @@ type xlsxRichArrayValue struct {
 // xlsxRichValueData directly maps the rvData element that specifies rich value
 // data.
 type xlsxRichValueData struct {
-	XMLName xml.Name        `xml:"rvData"`
+	XMLName xml.Name        `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata rvData"`
 	Count   int             `xml:"count,attr,omitempty"`
 	Rv      []xlsxRichValue `xml:"rv"`
 	ExtLst  *xlsxInnerXML   `xml:"extLst"`
@@ -133,7 +163,7 @@ type xlsxRichValueRelRelationship struct {
 // XlsxRichValueStructures directly maps the rvStructures element that specifies rich value structure
 // data.
 type xlsxRichValueStructures struct {
-	XMLName xml.Name                 `xml:"rvStructures"`
+	XMLName xml.Name                 `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata rvStructures"`
 	Text    string                   `xml:",chardata"`
 	Xmlns   string                   `xml:"xmlns,attr"`
 	Count   string                   `xml:"count,attr"`
@@ -153,12 +183,12 @@ type xlsxRichValueStructure struct {
 type xlsxRichValueStructureKey struct {
 	Text string `xml:",chardata"`
 	N    string `xml:"n,attr"`
-	T    string `xml:"t,attr"`
+	T    string `xml:"t,attr,omitempty"`
 }
 
 // XlsxRichDataSupportingPropertyBags directly maps the supportingPropertyBags element that specifies supporting property bag data.
 type XlsxRichDataSupportingPropertyBags struct {
-	XMLName xml.Name            `xml:"supportingPropertyBags"`
+	XMLName xml.Name            `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2 supportingPropertyBags"`
 	Text    string              `xml:",chardata"`
 	Xmlns   string              `xml:"xmlns,attr"`
 	SpbData xlsxRichDataSpbData `xml:"spbData"`
@@ -167,23 +197,23 @@ type XlsxRichDataSupportingPropertyBags struct {
 // XlsxRichDataSpbData directly maps the spbData element that specifies supporting property bag data.
 type xlsxRichDataSpbData struct {
 	Text  string            `xml:",chardata"`
-	Count string            `xml:"count,attr"`
+	Count int               `xml:"count,attr"`
 	Spb   []xlsxRichDataSpb `xml:"spb"`
 }
 
 // XlsxRichDataSpb directly maps the spb element that specifies data for a single supporting property bag.
 type xlsxRichDataSpb struct {
-	Text string   `xml:",chardata"`
-	S    int      `xml:"s,attr"`
-	V    []string `xml:"v"`
+	// Text string   `xml:",chardata"`
+	S int      `xml:"s,attr"`
+	V []string `xml:"v"`
 }
 
 // XlsxRichDataSpbStructures directly maps the spbStructures element that specifies supporting property bag structure.
 type xlsxRichDataSpbStructures struct {
-	XMLName xml.Name                   `xml:"spbStructures"`
+	XMLName xml.Name                   `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2 spbStructures"`
 	Text    string                     `xml:",chardata"`
 	Xmlns   string                     `xml:"xmlns,attr"`
-	Count   string                     `xml:"count,attr"`
+	Count   int                        `xml:"count,attr"`
 	S       []xlsxRichDataSpbStructure `xml:"s"`
 }
 
@@ -201,7 +231,7 @@ type xlsxRichDataSpbStructureKey struct {
 }
 
 type RvTypesInfo struct {
-	XMLName   xml.Name `xml:"rvTypesInfo"`
+	XMLName   xml.Name `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2 rvTypesInfo"`
 	Text      string   `xml:",chardata"`
 	Xmlns     string   `xml:"xmlns,attr"`
 	Mc        string   `xml:"mc,attr"`
@@ -231,7 +261,7 @@ type Flag struct {
 
 // this is where the richdatatyle file starts
 type RichStyleSheet struct {
-	XMLName        xml.Name       `xml:"richStyleSheet"`
+	XMLName        xml.Name       `xml:"http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2 richStyleSheet"`
 	Text           string         `xml:",chardata"`
 	Xmlns          string         `xml:"xmlns,attr"`
 	Mc             string         `xml:"mc,attr"`

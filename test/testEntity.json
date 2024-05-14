@@ -1,0 +1,35 @@
+{
+  "type": "Entity",
+  "text": "Card Top Title",
+  "properties": {
+    "Effective Date": {
+      "type": "FormattedNumber",
+      "basicValue": 29253,
+      "numberFormat": "yyyy-mm-dd"
+    },
+    "Owner": { "type": "String", "basicValue": "Jan Krynauw" },
+    "Price": {
+      "type": "FormattedNumber",
+      "basicValue": 55.4,
+      "numberFormat": "$0.00"
+    },
+    "Sub Properties A": {
+      "type": "Entity",
+      "text": "Another one",
+      "properties": {
+        "Key 1": { "type": "String", "basicValue": "Value 1" },
+        "Key 2": { "type": "String", "basicValue": "Value 2" }
+      }
+    },
+    "Total Amount": { "type": "Double", "basicValue": 7777.77 },
+    "Validated": { "type": "Boolean", "basicValue": true }
+  },
+  "layouts": {
+    "compact": { "icon": "Cloud" },
+    "card": {
+      "title": { "property": "Owner" },
+      "subTitle": { "property": "Effective Date" }
+    }
+  },
+  "provider": { "description": "Some nice description" }
+}
