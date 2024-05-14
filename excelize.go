@@ -228,7 +228,7 @@ func (f *File) getOptions(opts ...Options) *Options {
 }
 
 // CharsetTranscoder Set user defined codepage transcoder function for open
-// XLSX from non UTF-8 encoding.
+// workbook from non UTF-8 encoding.
 func (f *File) CharsetTranscoder(fn charsetTranscoderFn) *File { f.CharsetReader = fn; return f }
 
 // Creates new XML decoder with charset reader.
