@@ -3,6 +3,7 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -224,6 +225,8 @@ func TestStreamTable(t *testing.T) {
 	assert.Equal(t, newCellNameToCoordinatesError("B", newInvalidCellNameError("B")), streamWriter.AddTable(&Table{Range: "A1:B"}))
 	// Test add table with invalid table name
 	assert.Equal(t, newInvalidNameError("1Table"), streamWriter.AddTable(&Table{Range: "A:B1", Name: "1Table"}))
+	// Test add table with row number exceeds maximum limit
+	assert.Equal(t, ErrMaxRows, streamWriter.AddTable(&Table{Range: "A1048576:C1048576"}))
 	// Test add table with unsupported charset content types
 	file.ContentTypes = nil
 	file.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
@@ -332,8 +335,7 @@ func TestStreamSetRowWithStyle(t *testing.T) {
 		Cell{StyleID: blueStyleID, Value: "value3"},
 		&Cell{StyleID: blueStyleID, Value: "value3"},
 	}, RowOpts{StyleID: grayStyleID}))
-	err = streamWriter.Flush()
-	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.Flush())
 
 	ws, err := file.workSheetReader("Sheet1")
 	assert.NoError(t, err)
@@ -397,4 +399,55 @@ func TestStreamWriterOutlineLevel(t *testing.T) {
 		assert.Equal(t, expected, level)
 	}
 	assert.NoError(t, file.Close())
+}
+
+func TestStreamWriterReader(t *testing.T) {
+	var (
+		err error
+		sw  = StreamWriter{
+			rawData: bufferedWriter{},
+		}
+	)
+	sw.rawData.tmp, err = os.CreateTemp(os.TempDir(), "excelize-")
+	assert.NoError(t, err)
+	assert.NoError(t, sw.rawData.tmp.Close())
+	// Test reader stat a closed temp file
+	_, err = sw.rawData.Reader()
+	assert.Error(t, err)
+	_, err = sw.getRowValues(1, 1, 1)
+	assert.Error(t, err)
+	os.Remove(sw.rawData.tmp.Name())
+
+	sw = StreamWriter{
+		file:    NewFile(),
+		rawData: bufferedWriter{},
+	}
+	// Test getRowValues without expected row
+	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c r=\"B1\"></c></row><worksheet/>")
+	_, err = sw.getRowValues(1, 1, 1)
+	assert.NoError(t, err)
+	sw.rawData.buf.Reset()
+	// Test getRowValues with illegal cell reference
+	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c r=\"A\"></c></row><worksheet/>")
+	_, err = sw.getRowValues(1, 1, 1)
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
+	sw.rawData.buf.Reset()
+	// Test getRowValues with invalid c element characters
+	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c></row><worksheet/>")
+	_, err = sw.getRowValues(1, 1, 1)
+	assert.EqualError(t, err, "XML syntax error on line 1: element <c> closed by </row>")
+	sw.rawData.buf.Reset()
+}
+
+func TestStreamWriterGetRowElement(t *testing.T) {
+	// Test get row element without r attribute
+	dec := xml.NewDecoder(strings.NewReader("<row ht=\"0\" />"))
+	for {
+		token, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		_, ok := getRowElement(token, 0)
+		assert.False(t, ok)
+	}
 }
