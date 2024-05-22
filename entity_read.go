@@ -60,7 +60,7 @@ func (f *File) processRichDataArrayType(entityMap map[string]interface{}, cellRi
 					return fmt.Errorf("index out of range: %d", arrayValueRichValueIdx)
 				}
 				arrayValueRichValue := richValue.Rv[arrayValueRichValueIdx]
-				if arrayValueRichValue.Fb != "" {
+				if arrayValueRichValue.Fb != 0 {
 					unformattedValue := arrayValueRichValue.Fb
 					row = append(row, unformattedValue)
 				}
@@ -90,7 +90,7 @@ func (f *File) processRichType(entityMap map[string]interface{}, cellRichStructu
 	}
 
 	subRichData := richValue.Rv[cellRichDataValueInt]
-	if subRichData.Fb != "" {
+	if subRichData.Fb != 0 {
 		entityMap[cellRichStructure.N] = subRichData.Fb
 	} else {
 		richValueStructure, err := f.richStructureReader()

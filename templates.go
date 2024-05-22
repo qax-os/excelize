@@ -536,3 +536,4 @@ const templateSpbStructure = `<spbStructures xmlns="http://schemas.microsoft.com
 
 const templateRDArray = `<arrayData xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" count="0"></arrayData>
 `
+const templateRichStyles = `<richStyleSheet xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dxfs count="2"><x:dxf><x:numFmt numFmtId="19" formatCode="m/d/yy" /></x:dxf><x:dxf><x:numFmt numFmtId="0" formatCode="General" /></x:dxf></dxfs><richProperties><rPr n="NumberFormat" t="s" /></richProperties><richStyles></richStyles></richStyleSheet>`

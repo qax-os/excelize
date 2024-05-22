@@ -5,24 +5,30 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type Location struct {
-	array     []int
-	subEntity []int
+	maxRdRichValueStructureIndex int
+	maxRdRichValueIndex          int
+	spbStructureIndex            int
+	arrayCount                   int
+	spbDataIndex                 int
 }
 
-var location Location
+var location = Location{
+	maxRdRichValueStructureIndex: 0,
+	maxRdRichValueIndex:          0,
+	spbStructureIndex:            0,
+	arrayCount:                   0,
+	spbDataIndex:                 0,
+}
 
 func (f *File) AddEntity(sheet, cell string, entityData []byte) error {
 	err := f.checkOrCreateRichDataFiles()
-	if err != nil {
-		return err
-	}
-	err = f.writeMetadata()
 	if err != nil {
 		return err
 	}
@@ -30,16 +36,11 @@ func (f *File) AddEntity(sheet, cell string, entityData []byte) error {
 	if err != nil {
 		return err
 	}
-	writeJSONToFile(string(entityData), "./console/mashalEntity.json")
 
 	var entity Entity
 	err = json.Unmarshal(entityData, &entity)
 	if err != nil {
 		return err
-	}
-	if err := writeJSONToFile(entity, "./console/unmashalEntity.json"); err != nil {
-		//fmt.println("Error writing JSON to file:", err)
-		// return
 	}
 
 	err = f.writeRdRichValueStructure(entity)
@@ -47,6 +48,10 @@ func (f *File) AddEntity(sheet, cell string, entityData []byte) error {
 		return err
 	}
 	err = f.writeRdRichValue(entity)
+	if err != nil {
+		return err
+	}
+	err = f.writeMetadata()
 	if err != nil {
 		return err
 	}
@@ -58,9 +63,12 @@ func (f *File) AddEntity(sheet, cell string, entityData []byte) error {
 	if err != nil {
 		return err
 	}
-
-	// f.WriteProvider(entity)
+	// err = f.writeRichStyles(entity)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
+
 }
 
 func (f *File) writeRdRichValueStructure(entity Entity) error {
@@ -70,6 +78,9 @@ func (f *File) writeRdRichValueStructure(entity Entity) error {
 		return err
 	}
 	newRichValueStructureKeys := []xlsxRichValueStructureKey{}
+	if entity.Layouts.Card.Title.Property != "" || entity.Layouts.Card.SubTitle.Property != "" {
+		newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: "_Display", T: "spb"})
+	}
 	if entity.Text != "" {
 		newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: "_DisplayString", T: "s"})
 	}
@@ -86,32 +97,47 @@ func (f *File) writeRdRichValueStructure(entity Entity) error {
 	}
 	sort.Strings(keys)
 
-	var array_count int = 0
 	for _, key := range keys {
 		propertyMap := properties[key].(map[string]interface{})
 		if propertyMap["type"] == "String" {
-			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "s"}) // type needs to be determined and can vary from spb to r to s
+			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "s"})
 		} else if propertyMap["type"] == "Double" {
 			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key})
+		} else if propertyMap["type"] == "FormattedNumber" {
+			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "s"})
 		} else if propertyMap["type"] == "Boolean" {
 			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "b"})
 		} else if propertyMap["type"] == "Array" {
 			//append in _entity
 			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "r"})
 
-			arrayStructure, err := f.createArrayStructure(propertyMap["elements"])
+			arrayStructure, err := f.createArrayStructure()
 			if err != nil {
 				return err
 			}
-			location.array = append(location.array, array_count)
-			array_count++
 			richValueStructure.S = append(richValueStructure.S, arrayStructure)
 
 			//creating new rv for array
 
+		} else if propertyMap["type"] == "Entity" {
+			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "r"})
+			subEntityJson, err := json.Marshal(propertyMap)
+			if err != nil {
+				fmt.Println(err)
+			}
+			var subEntity Entity
+			err = json.Unmarshal(subEntityJson, &subEntity)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			err = f.writeSubEntityRdRichValueStructure(subEntity, richValueStructure)
+			if err != nil {
+				return err
+			}
+
 		}
 	}
-	// fmt.Println(newRichValueStructureKeys)
 
 	newRichValueStructure := xlsxRichValueStructure{
 		T: "_entity",
@@ -120,7 +146,6 @@ func (f *File) writeRdRichValueStructure(entity Entity) error {
 
 	richValueStructure.S = append(richValueStructure.S, newRichValueStructure)
 	richValueStructure.Count = strconv.Itoa(len(richValueStructure.S))
-	// fmt.Println(richValueStructure)
 	xmlData, err := xml.Marshal(richValueStructure)
 	if err != nil {
 		return err
@@ -131,7 +156,66 @@ func (f *File) writeRdRichValueStructure(entity Entity) error {
 
 }
 
-func (f *File) createArrayStructure(elements interface{}) (xlsxRichValueStructure, error) {
+func (f *File) writeSubEntityRdRichValueStructure(subEntity Entity, richValueStructures *xlsxRichValueStructures) error {
+	properties := subEntity.Properties
+	keys := make([]string, 0, len(properties))
+	for key := range properties {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	newRichValueStructureKeys := []xlsxRichValueStructureKey{}
+
+	if subEntity.Text != "" {
+		newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: "_DisplayString", T: "s"})
+	}
+
+	for _, key := range keys {
+		propertyMap := properties[key].(map[string]interface{})
+		if propertyMap["type"] == "String" {
+			newRichValueStructureKeys = append(newRichValueStructureKeys, xlsxRichValueStructureKey{N: key, T: "s"})
+		}
+	}
+
+	richValueStructure := xlsxRichValueStructure{
+		T: "_entity",
+		K: newRichValueStructureKeys,
+	}
+	richValueStructures.S = append(richValueStructures.S, richValueStructure)
+
+	return nil
+}
+
+func (f *File) writeSubentityRdRichValue(subEntity Entity, richValueData *xlsxRichValueData) error {
+
+	properties := subEntity.Properties
+	keys := make([]string, 0, len(properties))
+	for key := range properties {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	richDataRichValues := []string{}
+	richDataRichValues = append(richDataRichValues, subEntity.Text)
+	for _, key := range keys {
+		propertyMap := properties[key].(map[string]interface{})
+		if propertyMap["type"] == "String" {
+			richDataRichValues = append(richDataRichValues, propertyMap["basicValue"].(string))
+		}
+	}
+
+	newRichValue := xlsxRichValue{
+		S: location.maxRdRichValueStructureIndex,
+		V: richDataRichValues,
+	}
+	location.maxRdRichValueStructureIndex++
+
+	richValueData.Rv = append(richValueData.Rv, newRichValue)
+	location.maxRdRichValueIndex++
+
+	return nil
+}
+
+func (f *File) createArrayStructure() (xlsxRichValueStructure, error) {
 
 	newArrayRichValueStructure := []xlsxRichValueStructureKey{}
 	newArrayRichValueStructure = append(newArrayRichValueStructure, xlsxRichValueStructureKey{N: "array", T: "a"})
@@ -143,47 +227,53 @@ func (f *File) createArrayStructure(elements interface{}) (xlsxRichValueStructur
 	return arrayRichStructure, nil
 }
 
-func (f *File) writeRDRichArrayValue(data interface{}) (xlsxRichValue, error) {
-	newRichValue := xlsxRichValue{}
-	return newRichValue, nil
+func (f *File) createArrayFbStructure(elements interface{}) (xlsxRichValueStructure, error) {
+	var arrayFbStructure xlsxRichValueStructure
+
+	arrayElements := elements.([]interface{})
+	for _, element_row := range arrayElements {
+		newRow := element_row.([]interface{})
+		for _, key := range newRow {
+			newMap := key.(map[string]interface{})
+
+			if newMap["type"].(string) == "FormattedNumber" {
+
+				newArrayFbStructure := []xlsxRichValueStructureKey{}
+				newArrayFbStructure = append(newArrayFbStructure, xlsxRichValueStructureKey{N: "_Format", T: "spb"})
+
+				arrayFbStructure = xlsxRichValueStructure{
+					T: "_formattednumber",
+					K: newArrayFbStructure,
+				}
+
+			}
+		}
+	}
+
+	return arrayFbStructure, nil
 }
 
 func (f *File) writeRdRichValue(entity Entity) error {
-	richValueStructure, err := f.richStructureReader()
-	// _ = richDataArray
-	if err != nil {
-		return err
-	}
-
-	richDataArray, err := f.richDataArrayReader()
-	// richDataArray.Count = 0
-	// richDataArray.Xmlns s= "http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"
-
-	if err != nil {
-		return err
-	}
-	structureValue := len(richValueStructure.S) - 1
 	richValue, err := f.richValueReader()
 	if err != nil {
 		return err
 	}
 	richDataRichValues := []string{}
+	if entity.Layouts.Card.Title.Property != "" || entity.Layouts.Card.SubTitle.Property != "" {
+		richDataRichValues = append(richDataRichValues, strconv.Itoa(location.spbDataIndex))
+		location.spbDataIndex++
+	}
 	richDataRichValues = append(richDataRichValues, entity.Text)
-	richDataRichValues = append(richDataRichValues, entity.Layouts.Compact.Icon)
-
+	if entity.Layouts.Compact.Icon != "" {
+		richDataRichValues = append(richDataRichValues, entity.Layouts.Compact.Icon)
+	}
 	if entity.Provider.Description != "" {
-		richDataSpbs, err := f.richDataSpbReader()
-		if err != nil {
-			return err
-		}
-		spbLen := len(richDataSpbs.SpbData.Spb)
-		richDataRichValues = append(richDataRichValues, strconv.Itoa(spbLen))
+
+		richDataRichValues = append(richDataRichValues, strconv.Itoa(location.spbDataIndex))
+		location.spbDataIndex++
 	}
 
-	writeJSONToFile(entity.Properties, "./console/entityproperties.json")
 	var index int = 0
-	var count int = 0
-	var array_count int = 0
 
 	properties := entity.Properties
 	keys := make([]string, 0, len(properties))
@@ -194,10 +284,29 @@ func (f *File) writeRdRichValue(entity Entity) error {
 
 	for _, key := range keys {
 		propertyMap := properties[key].(map[string]interface{})
-		writeJSONToFile(properties[key], fmt.Sprintf("./console/propertyValue%d.json", index))
 		index++
 		if propertyMap["type"] == "String" {
 			richDataRichValues = append(richDataRichValues, propertyMap["basicValue"].(string))
+		} else if propertyMap["type"] == "FormattedNumber" {
+			formattedValue := propertyMap["basicValue"].(float64)
+			var formattedString string
+			if propertyMap["numberFormat"] == "yyyy-mm-dd" {
+				base := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+				formattedDateValue := int(formattedValue)
+				target := base.AddDate(0, 0, formattedDateValue-2)
+				formattedString = target.Format("2006-01-02")
+			} else {
+				numFormat := propertyMap["numberFormat"]
+				firstChar := string(numFormat.(string)[0])
+				parts := strings.Split(numFormat.(string), ".")
+				decimalPlaces := 0
+				if len(parts) > 1 {
+					decimalPlaces = strings.Count(parts[1], "0")
+				}
+				formattedString = fmt.Sprintf("%s%.*f", firstChar, decimalPlaces, formattedValue)
+			}
+			richDataRichValues = append(richDataRichValues, formattedString)
+
 		} else if propertyMap["type"] == "Double" {
 			richDataRichValues = append(richDataRichValues, fmt.Sprintf("%v", propertyMap["basicValue"]))
 		} else if propertyMap["type"] == "Boolean" {
@@ -207,23 +316,25 @@ func (f *File) writeRdRichValue(entity Entity) error {
 				richDataRichValues = append(richDataRichValues, "0")
 			}
 		} else if propertyMap["type"] == "Array" {
-			richDataRichValues = append(richDataRichValues, strconv.Itoa(location.array[count]))
+			richDataRichValues = append(richDataRichValues, strconv.Itoa(location.maxRdRichValueIndex))
 
 			//creating new rv for array
 			richDataRichArrayValues := []string{}
-			richDataRichArrayValues = append(richDataRichArrayValues, strconv.Itoa(count))
+			richDataRichArrayValues = append(richDataRichArrayValues, strconv.Itoa(location.arrayCount))
+			location.arrayCount++
 			newRichArrayValue := xlsxRichValue{
-				S: array_count,
+				S: location.maxRdRichValueStructureIndex,
 				V: richDataRichArrayValues,
 			}
+			location.maxRdRichValueStructureIndex++
 
 			richValue.Rv = append(richValue.Rv, newRichArrayValue)
+			location.maxRdRichValueIndex++
 
 			//creating rdarrayfile
 
 			f.checkOrCreateXML(defaultXMLRichDataArray, []byte(xml.Header+templateRDArray))
 
-			writeJSONToFile(propertyMap["elements"], "./console/elements.json")
 			elements, ok := propertyMap["elements"].([]interface{})
 			if !ok {
 				fmt.Println("Error: elements is not a slice")
@@ -245,15 +356,47 @@ func (f *File) writeRdRichValue(entity Entity) error {
 				for _, key := range newRow {
 					newMap := key.(map[string]interface{})
 
-					fmt.Println("\n\n\n\newMap")
-					fmt.Println(newMap)
-					xlsxRichArrayValue := xlsxRichArrayValue{
-						Text: "basicValue",
-						T:    "s",
+					if newMap["type"].(string) == "String" {
+						basicValue := newMap["basicValue"].(string)
+
+						xlsxRichArrayValue := xlsxRichArrayValue{
+							Text: basicValue,
+							T:    "s",
+						}
+						values_array = append(values_array, xlsxRichArrayValue)
+					} else if newMap["type"].(string) == "FormattedNumber" {
+
+						formattedValue := newMap["basicValue"].(float64)
+						var formattedString string
+						if newMap["numberFormat"] == "yyyy-mm-dd" {
+							base := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+							formattedDateValue := int(formattedValue)
+							target := base.AddDate(0, 0, formattedDateValue-2)
+							formattedString = target.Format("2006-01-02")
+						} else {
+							numFormat := newMap["numberFormat"]
+							firstChar := string(numFormat.(string)[0])
+							parts := strings.Split(numFormat.(string), ".")
+							decimalPlaces := 0
+							if len(parts) > 1 {
+								decimalPlaces = strings.Count(parts[1], "0")
+							}
+							formattedString = fmt.Sprintf("%s%.*f", firstChar, decimalPlaces, formattedValue)
+						}
+						xlsxRichArrayValue := xlsxRichArrayValue{
+							Text: formattedString,
+							T:    "s",
+						}
+						values_array = append(values_array, xlsxRichArrayValue)
+
 					}
-					values_array = append(values_array, xlsxRichArrayValue)
 
 				}
+			}
+
+			richDataArray, err := f.richDataArrayReader()
+			if err != nil {
+				return err
 			}
 
 			array_data := xlsxRichValuesArray{
@@ -263,25 +406,38 @@ func (f *File) writeRdRichValue(entity Entity) error {
 			}
 			richDataArray.A = append(richDataArray.A, array_data)
 			richDataArray.Count++
-			array_count++
-			count++
-			//for array
+
 			arrayData, err := xml.Marshal(richDataArray)
 			if err != nil {
 				return err
 			}
 			f.saveFileList(defaultXMLRichDataArray, arrayData)
 
+		} else if propertyMap["type"] == "Entity" {
+			richDataRichValues = append(richDataRichValues, strconv.Itoa(location.maxRdRichValueIndex))
+
+			subEntityJson, err := json.Marshal(propertyMap)
+			if err != nil {
+				fmt.Println(err)
+			}
+			var subEntity Entity
+			err = json.Unmarshal(subEntityJson, &subEntity)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			f.writeSubentityRdRichValue(subEntity, richValue)
 		}
 	}
 
 	newRichValue := xlsxRichValue{
-		S: structureValue,
+		S: location.maxRdRichValueStructureIndex,
 		V: richDataRichValues,
 	}
+	location.maxRdRichValueStructureIndex++
+
 	richValue.Rv = append(richValue.Rv, newRichValue)
 	richValue.Count = len(richValue.Rv)
-	// fmt.Println(richValue)
 	xmlData, err := xml.Marshal(richValue)
 	if err != nil {
 		return err
@@ -291,11 +447,6 @@ func (f *File) writeRdRichValue(entity Entity) error {
 }
 
 func (f *File) writeMetadata() error {
-	richValue, err := f.richValueReader()
-	if err != nil {
-		return err
-	}
-	rvbIdx := len(richValue.Rv)
 	metadata, err := f.metadataReader()
 	if err != nil {
 		return err
@@ -340,7 +491,7 @@ func (f *File) writeMetadata() error {
 			Ext: Ext{
 				URI: ExtURIFutureMetadata,
 				Rvb: Rvb{
-					I: rvbIdx,
+					I: location.maxRdRichValueIndex,
 				},
 			},
 		},
@@ -353,7 +504,6 @@ func (f *File) writeMetadata() error {
 	metadata.FutureMetadata[0].Name = "XLRICHVALUE"
 	metadata.XmlnsXlrd = "http://schemas.microsoft.com/office/spreadsheetml/2017/richdata"
 	metadata.Xmlns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-	// fmt.Println(metadata)
 	xmlData, err := xml.Marshal(metadata)
 	if err != nil {
 		return err
@@ -402,82 +552,163 @@ func (f *File) writeSheetData(sheet, cell string) error {
 	c.Vm = &vmValueUint
 	c.V = "#VALUE!"
 	c.T = "e"
-	// fmt.Println(ws.SheetData)
 	return nil
 }
 
 func (f *File) writeSpbData(entity Entity) error {
-	if entity.Provider.Description != "" {
-		f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBag, []byte(xml.Header+templateSpbData))
-		richDataSpbs, err := f.richDataSpbReader()
-		if err != nil {
-			return err
-		}
-		richDataSpbStructure, err := f.richDataSpbStructureReader()
-		if err != nil {
-			return err
-		}
 
-		providerSpb := xlsxRichDataSpb{
-			S: len(richDataSpbStructure.S),
-			V: []string{entity.Provider.Description},
-		}
-
-		richDataSpbs.SpbData.Spb = append(richDataSpbs.SpbData.Spb, providerSpb)
-		richDataSpbs.SpbData.Count++
-		xmlData, err := xml.Marshal(richDataSpbs)
-		if err != nil {
-			return err
-		}
-		xmlData = bytes.ReplaceAll(xmlData, []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`), []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`))
-		f.saveFileList(defaultXMLRichDataSupportingPropertyBag, xmlData)
+	properties := entity.Properties
+	keys := make([]string, 0, len(properties))
+	for key := range properties {
+		keys = append(keys, key)
 	}
+	sort.Strings(keys)
+	f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBag, []byte(xml.Header+templateSpbData))
+
+	richDataSpbs, err := f.richDataSpbReader()
+	if err != nil {
+		return err
+	}
+
+	if entity.Provider.Description != "" || entity.Layouts.Card.SubTitle.Property != "" || entity.Layouts.Card.Title.Property != "" {
+		f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBag, []byte(xml.Header+templateSpbData))
+		if entity.Layouts.Card.Title.Property != "" || entity.Layouts.Card.SubTitle.Property != "" {
+			titlesSpb := xlsxRichDataSpb{
+				S: location.spbStructureIndex,
+			}
+			if entity.Layouts.Card.Title.Property != "" {
+				titlesSpb.V = append(titlesSpb.V, entity.Layouts.Card.Title.Property)
+			}
+			if entity.Layouts.Card.SubTitle.Property != "" {
+				titlesSpb.V = append(titlesSpb.V, entity.Layouts.Card.SubTitle.Property)
+			}
+
+			richDataSpbs.SpbData.Spb = append(richDataSpbs.SpbData.Spb, titlesSpb)
+			location.spbStructureIndex++
+			richDataSpbs.SpbData.Count++
+		}
+
+		if entity.Provider.Description != "" {
+
+			providerSpb := xlsxRichDataSpb{
+				S: location.spbStructureIndex,
+				V: []string{entity.Provider.Description},
+			}
+			location.spbStructureIndex++
+
+			richDataSpbs.SpbData.Spb = append(richDataSpbs.SpbData.Spb, providerSpb)
+			richDataSpbs.SpbData.Count++
+		}
+	}
+
+	xmlData, err := xml.Marshal(richDataSpbs)
+	if err != nil {
+		return err
+	}
+	xmlData = bytes.ReplaceAll(xmlData, []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`), []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`))
+	f.saveFileList(defaultXMLRichDataSupportingPropertyBag, xmlData)
+
 	return nil
 }
 
 func (f *File) writeSpbStructure(entity Entity) error {
 
-	if entity.Provider.Description != "" {
-		f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBagStructure, []byte(xml.Header+templateSpbStructure))
-		richDataSpbStructure, err := f.richDataSpbStructureReader()
-		if err != nil {
-			return err
-		}
-
-		providerSpbStructureKey := xlsxRichDataSpbStructureKey{
-			N: "name",
-			T: "s",
-		}
-
-		providerSpbStructure := xlsxRichDataSpbStructure{}
-		providerSpbStructure.K = append(providerSpbStructure.K, providerSpbStructureKey)
-
-		richDataSpbStructure.S = append(richDataSpbStructure.S, providerSpbStructure)
-		richDataSpbStructure.Count++
-		xmlData, err := xml.Marshal(richDataSpbStructure)
-		if err != nil {
-			return err
-		}
-		xmlData = bytes.ReplaceAll(xmlData, []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`), []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`))
-		f.saveFileList(defaultXMLRichDataSupportingPropertyBagStructure, xmlData)
-
+	properties := entity.Properties
+	keys := make([]string, 0, len(properties))
+	for key := range properties {
+		keys = append(keys, key)
 	}
-	return nil
-}
+	sort.Strings(keys)
 
-func writeJSONToFile(data interface{}, filename string) error {
-	// Open a file for writing (create if not exists, truncate if exists)
-	file, err := os.Create(filename)
+	f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBagStructure, []byte(xml.Header+templateSpbStructure))
+	richDataSpbStructure, err := f.richDataSpbStructureReader()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	// Encode the data to JSON and write it to the file
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(data); err != nil {
+	if entity.Provider.Description != "" || entity.Layouts.Card.SubTitle.Property != "" || entity.Layouts.Card.Title.Property != "" {
+
+		spbStructure := xlsxRichDataSpbStructure{}
+
+		if entity.Layouts.Card.Title.Property != "" || entity.Layouts.Card.SubTitle.Property != "" {
+
+			if entity.Layouts.Card.Title.Property != "" {
+				titleSpbStructureKey := xlsxRichDataSpbStructureKey{
+					N: "TitleProperty",
+					T: "s",
+				}
+				spbStructure.K = append(spbStructure.K, titleSpbStructureKey)
+			}
+
+			if entity.Layouts.Card.SubTitle.Property != "" {
+				subtitleSpbStructureKey := xlsxRichDataSpbStructureKey{
+					N: "SubTitleProperty",
+					T: "s",
+				}
+				spbStructure.K = append(spbStructure.K, subtitleSpbStructureKey)
+			}
+
+			richDataSpbStructure.S = append(richDataSpbStructure.S, spbStructure)
+			richDataSpbStructure.Count++
+		}
+
+		if entity.Provider.Description != "" {
+
+			providerSpbStructureKey := xlsxRichDataSpbStructureKey{
+				N: "name",
+				T: "s",
+			}
+
+			providerSpbStructure := xlsxRichDataSpbStructure{}
+			providerSpbStructure.K = append(providerSpbStructure.K, providerSpbStructureKey)
+
+			richDataSpbStructure.S = append(richDataSpbStructure.S, providerSpbStructure)
+			richDataSpbStructure.Count++
+		}
+
+	}
+
+	xmlData, err := xml.Marshal(richDataSpbStructure)
+	if err != nil {
+		return err
+	}
+	xmlData = bytes.ReplaceAll(xmlData, []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`), []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`))
+	f.saveFileList(defaultXMLRichDataSupportingPropertyBagStructure, xmlData)
+	return nil
+}
+
+func (f *File) writeRichStyles(entity Entity) error {
+	f.checkOrCreateXML(defaultXMLRichDataRichStyles, []byte(xml.Header+templateRichStyles))
+	rdRichStyles, err := f.richDataStyleReader()
+	if err != nil {
 		return err
 	}
 
+	properties := entity.Properties
+	keys := make([]string, 0, len(properties))
+	for key := range properties {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		propertyMap := properties[key].(map[string]interface{})
+		if propertyMap["type"] == "FormattedNumber" {
+			newRpv := Rpv{
+				I:    "0",
+				Text: propertyMap["numberFormat"].(string),
+			}
+			newRichSty := RSty{}
+			newRichSty.Rpv = newRpv
+			rdRichStyles.RichStyles.RSty = append(rdRichStyles.RichStyles.RSty, newRichSty)
+		}
+	}
+	fmt.Println(rdRichStyles)
+	xmlData, err := xml.Marshal(rdRichStyles)
+	if err != nil {
+		return err
+	}
+	xmlData = bytes.ReplaceAll(xmlData, []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`), []byte(`xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2"`))
+	f.saveFileList(defaultXMLRichDataRichStyles, xmlData)
 	return nil
 }

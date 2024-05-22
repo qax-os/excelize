@@ -143,7 +143,7 @@ type xlsxRichValueData struct {
 type xlsxRichValue struct {
 	S  int      `xml:"s,attr"`
 	V  []string `xml:"v"`
-	Fb string   `xml:"fb,omitempty"`
+	Fb float64  `xml:"fb,omitempty"`
 }
 
 // xlsxRichValueRels directly maps the richValueRels element. This element that
@@ -314,7 +314,7 @@ type RichStyles struct {
 // RSty struct is for the <rSty> elements within <richStyles>.
 type RSty struct {
 	Text  string `xml:",chardata"`
-	Dxfid string `xml:"dxfid,attr"`
+	Dxfid int    `xml:"dxfid,attr"`
 	Rpv   Rpv    `xml:"rpv"`
 }
 

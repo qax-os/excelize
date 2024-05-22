@@ -674,6 +674,15 @@ func (f *File) richDataSpbStructureReader() (*xlsxRichDataSpbStructures, error) 
 	return &richDataSpbStructure, nil
 }
 
+func (f *File) richDataStyleReader() (*RichStyleSheet, error) {
+	var richDataStyles RichStyleSheet
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichStyles)))).
+		Decode(&richDataStyles); err != nil && err != io.EOF {
+		return &richDataStyles, err
+	}
+	return &richDataStyles, nil
+}
+
 func (f *File) richDataArrayReader() (*xlsxRichValueArrayData, error) {
 	var richDataArray xlsxRichValueArrayData
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataArray)))).
