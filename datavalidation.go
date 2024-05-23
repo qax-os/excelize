@@ -442,6 +442,11 @@ func squashSqref(cells [][]int) []string {
 	return append(refs, ref)
 }
 
+// isFormulaDataValidation returns whether the data validation rule is a formula.
+func (dv *xlsxInnerXML) isFormula() bool {
+	return dv != nil && !(strings.HasPrefix(dv.Content, "&quot;") && strings.HasSuffix(dv.Content, "&quot;"))
+}
+
 // unescapeDataValidationFormula returns unescaped data validation formula.
 func unescapeDataValidationFormula(val string) string {
 	if strings.HasPrefix(val, "\"") { // Text detection

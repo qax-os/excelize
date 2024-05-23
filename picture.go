@@ -598,7 +598,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	cond2 := func(from *decodeFrom) bool { return from.Col == col && from.Row == row }
 	cb := func(a *xdrCellAnchor, r *xlsxRelationship) {
 		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
-		if buffer, _ := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); buffer != nil {
+		if buffer, _ := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); buffer != nil {
 			pic.File = buffer.([]byte)
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
 			pics = append(pics, pic)
@@ -606,7 +606,7 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	}
 	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
 		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
-		if buffer, _ := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); buffer != nil {
+		if buffer, _ := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); buffer != nil {
 			pic.File = buffer.([]byte)
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
 			pics = append(pics, pic)
@@ -756,14 +756,14 @@ func (f *File) getPictureCells(drawingXML, drawingRelationships string) ([]strin
 	cond := func(from *xlsxFrom) bool { return true }
 	cond2 := func(from *decodeFrom) bool { return true }
 	cb := func(a *xdrCellAnchor, r *xlsxRelationship) {
-		if _, ok := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); ok {
+		if _, ok := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); ok {
 			if cell, err := CoordinatesToCellName(a.From.Col+1, a.From.Row+1); err == nil && inStrSlice(cells, cell, true) == -1 {
 				cells = append(cells, cell)
 			}
 		}
 	}
 	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
-		if _, ok := f.Pkg.Load(strings.ReplaceAll(r.Target, "..", "xl")); ok {
+		if _, ok := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); ok {
 			if cell, err := CoordinatesToCellName(a.From.Col+1, a.From.Row+1); err == nil && inStrSlice(cells, cell, true) == -1 {
 				cells = append(cells, cell)
 			}

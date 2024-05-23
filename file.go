@@ -212,7 +212,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		files = append(files, path.(string))
 		return true
 	})
-	sort.Strings(files)
+	sort.Sort(sort.Reverse(sort.StringSlice(files)))
 	for _, path := range files {
 		var fi io.Writer
 		if fi, err = zw.Create(path); err != nil {
@@ -228,7 +228,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		tempFiles = append(tempFiles, path.(string))
 		return true
 	})
-	sort.Strings(tempFiles)
+	sort.Sort(sort.Reverse(sort.StringSlice(tempFiles)))
 	for _, path := range tempFiles {
 		var fi io.Writer
 		if fi, err = zw.Create(path); err != nil {

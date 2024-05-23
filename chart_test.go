@@ -409,7 +409,7 @@ func TestDeleteChart(t *testing.T) {
 }
 
 func TestChartWithLogarithmicBase(t *testing.T) {
-	// Create test XLSX file with data
+	// Create test workbook with data
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	categories := map[string]float64{
@@ -454,14 +454,14 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		assert.NoError(t, f.AddChart(sheet1, c.cell, c.opts))
 	}
 
-	// Export XLSX file for human confirmation
+	// Export workbook for human confirmation
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestChartWithLogarithmicBase10.xlsx")))
 
-	// Write the XLSX file to a buffer
+	// Write the workbook to a buffer
 	var buffer bytes.Buffer
 	assert.NoError(t, f.Write(&buffer))
 
-	// Read back the XLSX file from the buffer
+	// Read back the workbook from the buffer
 	newFile, err := OpenReader(&buffer)
 	assert.NoError(t, err)
 
