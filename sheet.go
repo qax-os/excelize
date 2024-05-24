@@ -167,7 +167,7 @@ func (f *File) workSheetWriter() {
 			_, ok := f.checked.Load(p.(string))
 			if ok {
 				f.Sheet.Delete(p.(string))
-				f.checked.Store(p.(string), false)
+				f.checked.Delete(p.(string))
 			}
 			buffer.Reset()
 		}

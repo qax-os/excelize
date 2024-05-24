@@ -208,6 +208,30 @@ func TestSaveFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Save())
 	assert.NoError(t, f.Close())
+
+	t.Run("for_save_multiple_times", func(t *testing.T) {
+		{
+			f, err := OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
+			assert.NoError(t, err)
+			assert.NoError(t, f.SetCellValue("Sheet1", "A20", 20))
+			assert.NoError(t, f.Save())
+
+			assert.NoError(t, f.SetCellValue("Sheet1", "A21", 21))
+			assert.NoError(t, f.Save())
+			assert.NoError(t, f.Close())
+		}
+		{
+			f, err := OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
+			assert.NoError(t, err)
+			val, err := f.GetCellValue("Sheet1", "A20")
+			assert.NoError(t, err)
+			assert.Equal(t, "20", val)
+			val, err = f.GetCellValue("Sheet1", "A21")
+			assert.NoError(t, err)
+			assert.Equal(t, "21", val)
+			assert.NoError(t, f.Close())
+		}
+	})
 }
 
 func TestSaveAsWrongPath(t *testing.T) {
