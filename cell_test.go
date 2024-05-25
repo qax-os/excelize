@@ -42,6 +42,9 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, err)
 			// Concurrency set cell style
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
+			// Concurrency get cell style
+			_, err = f.GetCellStyle("Sheet1", "A3")
+			assert.NoError(t, err)
 			// Concurrency add picture
 			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 				&GraphicOptions{

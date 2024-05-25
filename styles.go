@@ -2186,19 +2186,22 @@ func setCellXfs(style *xlsxStyleSheet, fontID, numFmtID, fillID, borderID int, a
 }
 
 // GetCellStyle provides a function to get cell style index by given worksheet
-// name and cell reference.
+// name and cell reference. This function is concurrency safe.
 func (f *File) GetCellStyle(sheet, cell string) (int, error) {
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return 0, err
 	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return 0, err
 	}
 	ws.prepareSheetXML(col, row)
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
 	return ws.prepareCellStyle(col, row, ws.SheetData.Row[row-1].C[col-1].S), err
 }
 
