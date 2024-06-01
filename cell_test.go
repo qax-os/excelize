@@ -319,6 +319,13 @@ func TestSetCellBool(t *testing.T) {
 	assert.Equal(t, ErrSheetNameInvalid, f.SetCellBool("Sheet:1", "A1", true))
 }
 
+func TestSetCellAutoFitPicture(t *testing.T) {
+	f := NewFile()
+	err := f.SetCellAutoFitPicture("Sheet1", "A1", "./logo.png", 50)
+	assert.NoError(t, err)
+	//f.SaveAs("t1111.xlsx")
+}
+
 func TestSetCellTime(t *testing.T) {
 	date, err := time.Parse(time.RFC3339Nano, "2009-11-10T23:00:00Z")
 	assert.NoError(t, err)

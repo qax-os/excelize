@@ -15,8 +15,10 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"image"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -154,6 +156,60 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 		err = f.SetCellStr(sheet, cell, fmt.Sprint(value))
 	}
 	return err
+}
+
+// SetCellAutoFitPicture requires you to pass in the worksheet 'sheet', the cell 'cell', the image path 'filepath', and the expected cell height.
+//
+// The function will automatically calculate the required cell height, but there is one thing to note: for best results, use images with similar or approximate shapes.
+//
+// Bad examples are as follows, please do not do this:
+//
+// A:200*200 B:200*800 C:200*20
+//
+// Good examples:
+//
+// A:200*300 B:400*600 C:20*30
+func (f *File) SetCellAutoFitPicture(sheet, cell string, filePath string, expectedHeight float64) error {
+	var err error
+	var ratio float64
+	ratio, err = getPictureAspectRatio(filePath)
+	if err != nil {
+		return err
+	}
+	re := regexp.MustCompile(`\d+`)
+	rowIndex := re.FindString(cell)
+	num, err := strconv.Atoi(rowIndex)
+	if err != nil {
+		return err
+	}
+	err = f.SetRowHeight(sheet, num, expectedHeight/ratio)
+	err = f.AddPicture(sheet, cell, filePath, &GraphicOptions{
+		AutoFit: true,
+	})
+	return err
+}
+
+// getPictureAspectRatio passes in the path of the image and returns the aspect ratio of the image
+func getPictureAspectRatio(name string) (float64, error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return 1, err
+	}
+	if file != nil {
+		defer file.Close()
+	}
+
+	img, _, err := image.Decode(file)
+	if err != nil || img == nil {
+		return 1, err
+	}
+
+	bounds := img.Bounds()
+	width := bounds.Max.X
+	height := bounds.Max.Y
+	aspectRatio := float64(width) / float64(height)
+	return aspectRatio, nil
+
 }
 
 // String extracts characters from a string item.
