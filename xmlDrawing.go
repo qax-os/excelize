@@ -422,6 +422,7 @@ type GraphicOptions struct {
 	Locked          *bool
 	LockAspectRatio bool
 	AutoFit         bool
+	Fill            bool
 	OffsetX         int
 	OffsetY         int
 	ScaleX          float64

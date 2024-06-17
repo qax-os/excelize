@@ -727,15 +727,19 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 			cellHeight += f.getRowHeight(sheet, row)
 		}
 	}
-	if float64(cellWidth) < width {
-		asp := float64(cellWidth) / width
-		width, height = float64(cellWidth), height*asp
+	if opts.Fill {
+		width, height = float64(cellWidth), float64(cellHeight)
+	} else {
+		if float64(cellWidth) < width {
+			asp := float64(cellWidth) / width
+			width, height = float64(cellWidth), height*asp
+		}
+		if float64(cellHeight) < height {
+			asp := float64(cellHeight) / height
+			height, width = float64(cellHeight), width*asp
+		}
+		width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	}
-	if float64(cellHeight) < height {
-		asp := float64(cellHeight) / height
-		height, width = float64(cellHeight), width*asp
-	}
-	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	w, h = int(width*opts.ScaleX), int(height*opts.ScaleY)
 	return
 }
