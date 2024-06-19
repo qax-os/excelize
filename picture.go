@@ -140,6 +140,10 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 // The optional parameter "AutoFit" specifies if you make graph object size
 // auto-fits the cell, the default value of that is 'false'.
 //
+// The optional parameter "AutoFitIgnoreAspect" specifies if fill the cell with
+// the image and ignore its aspect ratio, the default value of that is 'false'.
+// This option only works when the "AutoFit" is enabled.
+//
 // The optional parameter "OffsetX" specifies the horizontal offset of the graph
 // object with the cell, the default value of that is 0.
 //
@@ -727,19 +731,18 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 			cellHeight += f.getRowHeight(sheet, row)
 		}
 	}
-	if opts.Fill {
-		width, height = float64(cellWidth), float64(cellHeight)
-	} else {
-		if float64(cellWidth) < width {
-			asp := float64(cellWidth) / width
-			width, height = float64(cellWidth), height*asp
-		}
-		if float64(cellHeight) < height {
-			asp := float64(cellHeight) / height
-			height, width = float64(cellHeight), width*asp
-		}
-		width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
+	if float64(cellWidth) < width {
+		asp := float64(cellWidth) / width
+		width, height = float64(cellWidth), height*asp
 	}
+	if float64(cellHeight) < height {
+		asp := float64(cellHeight) / height
+		height, width = float64(cellHeight), width*asp
+	}
+	if opts.AutoFitIgnoreAspect {
+		width, height = float64(cellWidth), float64(cellHeight)
+	}
+	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	w, h = int(width*opts.ScaleX), int(height*opts.ScaleY)
 	return
 }

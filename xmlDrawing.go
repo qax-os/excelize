@@ -417,19 +417,19 @@ type Picture struct {
 
 // GraphicOptions directly maps the format settings of the picture.
 type GraphicOptions struct {
-	AltText         string
-	PrintObject     *bool
-	Locked          *bool
-	LockAspectRatio bool
-	AutoFit         bool
-	Fill            bool
-	OffsetX         int
-	OffsetY         int
-	ScaleX          float64
-	ScaleY          float64
-	Hyperlink       string
-	HyperlinkType   string
-	Positioning     string
+	AltText             string
+	PrintObject         *bool
+	Locked              *bool
+	LockAspectRatio     bool
+	AutoFit             bool
+	AutoFitIgnoreAspect bool
+	OffsetX             int
+	OffsetY             int
+	ScaleX              float64
+	ScaleY              float64
+	Hyperlink           string
+	HyperlinkType       string
+	Positioning         string
 }
 
 // Shape directly maps the format settings of the shape.
