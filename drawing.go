@@ -1088,7 +1088,6 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 	if opts.order > 0 && opts.YAxis.Secondary && pa.ValAx != nil {
 		ax.AxID = &attrValInt{Val: intPtr(opts.YAxis.axID)}
 		ax.AxPos = &attrValString{Val: stringPtr("r")}
-		ax.Title = nil
 		ax.Crosses = &attrValString{Val: stringPtr("max")}
 		ax.CrossAx = &attrValInt{Val: intPtr(opts.XAxis.axID)}
 		return []*cAxs{pa.ValAx[0], ax}
