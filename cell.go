@@ -597,10 +597,48 @@ func (c *xlsxC) getCellDate(f *File, raw bool) (string, error) {
 	return f.formattedValue(c, raw, CellTypeDate)
 }
 
+// maybeRecalc runs File.CalcCellValue() if the cell's .F is not nil and its .R is not empty.
+// TODO: Consider adding more values to check when .V has an 'empty' value?
+// TODO: Allow this to be disabled (or enabled?) via a new option, for performance.
+//
+//	Maybe numerous options for recalc; always, never, or when .V is 'empty'?
+func (c *xlsxC) maybeRecalc(f *File, raw bool) (err error) {
+	var sheet, value string
+	if c.F == nil {
+		// Is checking for nil sufficient, or so I check for more here?
+		return nil
+	}
+	if c.R == "" {
+		// Is checking for empty sufficient, or so I check for more here?
+		return nil
+	}
+	switch c.V {
+	case "", "0", "0.0": // TODO: What other values should be here?
+		// TODO: These are ones we want to recalc for, correct?
+	default:
+		return nil
+	}
+	// TODO: Are there other things to check before recalcing?
+	// TODO: Is this always the correct sheet?
+	sheet = f.GetSheetName(f.GetActiveSheetIndex())
+	// TODO: Is there a lower-level private alternative to the public CalcCellValue()
+	//       that exists or could be created that we might want to use here instead?
+	// TODO: Is *f.options correct here?
+	value, err = f.CalcCellValue(sheet, c.R, *f.options)
+	// TODO: Should I maybe save its original value somewhere, for debugging/other?
+	c.V = strings.TrimSpace(value)
+	return err
+}
+
 // getValueFrom return a value from a column/row cell, this function is
 // intended to be used with for range on rows an argument with the spreadsheet
 // opened file.
 func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
+	// TODO: Is there a better place than this to recalc?
+	err := c.maybeRecalc(f, raw)
+	if err != nil {
+		return "", err
+	}
 	switch c.T {
 	case "b":
 		return c.getCellBool(f, raw)
