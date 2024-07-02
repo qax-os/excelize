@@ -65,7 +65,7 @@ func (f *File) NewSheet(sheet string, options ...Option) (int, error) {
 	// Update [Content_Types].xml
 	_ = f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
-	f.setSheet(sheetID, sheet)
+	f.setSheet(sheetID, sheet, options...)
 	// Update workbook.xml.rels
 	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
