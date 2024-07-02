@@ -34,7 +34,9 @@ type Option func(ws *xlsxWorksheet)
 
 func WithMaxSheetRow(count int) Option {
 	return func(ws *xlsxWorksheet) {
-		ws.SheetData.Row = make([]xlsxRow, 0, count)
+		if count > 0 {
+			ws.SheetData.Row = make([]xlsxRow, 0, count)
+		}
 	}
 }
 
