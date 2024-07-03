@@ -237,10 +237,10 @@ func ColumnNumberToName(num int) (string, error) {
 		estimatedLength++
 	}
 
-	result := make([]rune, estimatedLength)
+	result := make([]byte, estimatedLength)
 	for num > 0 {
 		estimatedLength--
-		result[estimatedLength] = rune((num-1)%26 + 'A')
+		result[estimatedLength] = byte((num-1)%26 + 'A')
 		num = (num - 1) / 26
 	}
 	return string(result), nil
