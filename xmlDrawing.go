@@ -325,6 +325,28 @@ type xlsxChart struct {
 	R   string `xml:"xmlns:r,attr"`
 }
 
+// decodeChoice defines the structure used to deserialize the mc:Choice element.
+type decodeChoice struct {
+	XMLName      xml.Name           `xml:"Choice"`
+	XMLNSA14     string             `xml:"a14,attr"`
+	XMLNSSle15   string             `xml:"sle15,attr"`
+	Requires     string             `xml:"Requires,attr"`
+	GraphicFrame decodeGraphicFrame `xml:"graphicFrame"`
+}
+
+// decodeGraphicFrame defines the structure used to deserialize the
+// xdr:graphicFrame element.
+type decodeGraphicFrame struct {
+	Macro            string                 `xml:"macro,attr"`
+	NvGraphicFramePr decodeNvGraphicFramePr `xml:"nvGraphicFramePr"`
+}
+
+// decodeNvGraphicFramePr defines the structure used to deserialize the
+// xdr:nvGraphicFramePr element.
+type decodeNvGraphicFramePr struct {
+	CNvPr decodeCNvPr `xml:"cNvPr"`
+}
+
 // xdrSp (Shape) directly maps the xdr:sp element. This element specifies the
 // existence of a single shape. A shape can either be a preset or a custom
 // geometry, defined using the SpreadsheetDrawingML framework. In addition to a
