@@ -30,21 +30,11 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
-type Option func(ws *xlsxWorksheet)
-
-func WithMaxSheetRow(count int) Option {
-	return func(ws *xlsxWorksheet) {
-		if count > 0 {
-			ws.SheetData.Row = make([]xlsxRow, 0, count)
-		}
-	}
-}
-
 // NewSheet provides the function to create a new sheet by given a worksheet
 // name and returns the index of the sheets in the workbook after it appended.
 // Note that when creating a new workbook, the default worksheet named
 // `Sheet1` will be created.
-func (f *File) NewSheet(sheet string, options ...Option) (int, error) {
+func (f *File) NewSheet(sheet string) (int, error) {
 	var err error
 	if err = checkSheetName(sheet); err != nil {
 		return -1, err
@@ -67,7 +57,7 @@ func (f *File) NewSheet(sheet string, options ...Option) (int, error) {
 	// Update [Content_Types].xml
 	_ = f.setContentTypes("/xl/worksheets/sheet"+strconv.Itoa(sheetID)+".xml", ContentTypeSpreadSheetMLWorksheet)
 	// Create new sheet /xl/worksheets/sheet%d.xml
-	f.setSheet(sheetID, sheet, options...)
+	f.setSheet(sheetID, sheet)
 	// Update workbook.xml.rels
 	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
@@ -240,15 +230,12 @@ func (f *File) setContentTypes(partName, contentType string) error {
 }
 
 // setSheet provides a function to update sheet property by given index.
-func (f *File) setSheet(index int, name string, options ...Option) {
+func (f *File) setSheet(index int, name string) {
 	ws := xlsxWorksheet{
 		Dimension: &xlsxDimension{Ref: "A1"},
 		SheetViews: &xlsxSheetViews{
 			SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
 		},
-	}
-	for _, opt := range options {
-		opt(&ws)
 	}
 	sheetXMLPath := "xl/worksheets/sheet" + strconv.Itoa(index) + ".xml"
 	f.sheetMap[name] = sheetXMLPath

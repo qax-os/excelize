@@ -36,9 +36,6 @@ func TestNewSheet(t *testing.T) {
 	sheetID, err = f.NewSheet(":\\/?*[]")
 	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 	assert.Equal(t, -1, sheetID)
-	sheetID, err = f.NewSheet("Sheet3", WithMaxSheetRow(50))
-	assert.NoError(t, err)
-
 }
 
 func TestPanes(t *testing.T) {
