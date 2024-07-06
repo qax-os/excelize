@@ -139,6 +139,13 @@ func TestPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
+
+	// Test get pivot table with across worksheet data range
+	pivotTables, err = f.GetPivotTables("Sheet2")
+	assert.NoError(t, err)
+	assert.Len(t, pivotTables, 1)
+	assert.Equal(t, "Sheet1!A1:E31", pivotTables[0].DataRange)
+
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
 		PivotTableRange: "Sheet2!A20:AR60",
