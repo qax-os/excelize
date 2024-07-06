@@ -805,7 +805,7 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		pivotTableXML:   pivotTableXML,
 		pivotCacheXML:   pivotCacheXML,
 		pivotSheetName:  sheet,
-		DataRange:       fmt.Sprintf("%s!%s", sheet, pc.CacheSource.WorksheetSource.Ref),
+		DataRange:       fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref),
 		PivotTableRange: fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
 		Name:            pt.Name,
 	}
