@@ -455,6 +455,18 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.Equal(t, link, true)
 	assert.Equal(t, "https://github.com/xuri/excelize", target)
 	assert.NoError(t, err)
+
+	// Test remove hyperlink for a cell
+	f = NewFile()
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "Sheet1!D8", "Location"))
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).Hyperlinks.Hyperlink[0].Ref = "A1:D4"
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "B2", "", "None"))
+	// Test remove hyperlink for a cell with invalid cell reference
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "Sheet1!D8", "Location"))
+	ws.(*xlsxWorksheet).Hyperlinks.Hyperlink[0].Ref = "A:A"
+	assert.Error(t, f.SetCellHyperLink("Sheet1", "B2", "", "None"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 }
 
 func TestGetCellHyperLink(t *testing.T) {

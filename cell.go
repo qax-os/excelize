@@ -957,14 +957,36 @@ type HyperlinkOpts struct {
 	Tooltip *string
 }
 
+// removeHyperLink remove hyperlink for worksheet and delete relationships for
+// the worksheet by given sheet name and cell reference. Note that if the cell
+// in a range reference, the whole hyperlinks will be deleted.
+func (f *File) removeHyperLink(ws *xlsxWorksheet, sheet, cell string) error {
+	for idx := 0; idx < len(ws.Hyperlinks.Hyperlink); idx++ {
+		link := ws.Hyperlinks.Hyperlink[idx]
+		ok, err := f.checkCellInRangeRef(cell, link.Ref)
+		if err != nil {
+			return err
+		}
+		if link.Ref == cell || ok {
+			ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink[:idx], ws.Hyperlinks.Hyperlink[idx+1:]...)
+			idx--
+			f.deleteSheetRelationships(sheet, link.RID)
+		}
+	}
+	if len(ws.Hyperlinks.Hyperlink) == 0 {
+		ws.Hyperlinks = nil
+	}
+	return nil
+}
+
 // SetCellHyperLink provides a function to set cell hyperlink by given
-// worksheet name and link URL address. LinkType defines two types of
+// worksheet name and link URL address. LinkType defines three types of
 // hyperlink "External" for website or "Location" for moving to one of cell in
-// this workbook. Maximum limit hyperlinks in a worksheet is 65530. This
-// function is only used to set the hyperlink of the cell and doesn't affect
-// the value of the cell. If you need to set the value of the cell, please use
-// the other functions such as `SetCellStyle` or `SetSheetRow`. The below is
-// example for external link.
+// this workbook or "None" for remove hyperlink. Maximum limit hyperlinks in a
+// worksheet is 65530. This function is only used to set the hyperlink of the
+// cell and doesn't affect the value of the cell. If you need to set the value
+// of the cell, please use the other functions such as `SetCellStyle` or
+// `SetSheetRow`. The below is example for external link.
 //
 //	display, tooltip := "https://github.com/xuri/excelize", "Excelize on GitHub"
 //	if err := f.SetCellHyperLink("Sheet1", "A3",
@@ -1032,6 +1054,8 @@ func (f *File) SetCellHyperLink(sheet, cell, link, linkType string, opts ...Hype
 			Ref:      cell,
 			Location: link,
 		}
+	case "None":
+		return f.removeHyperLink(ws, sheet, cell)
 	default:
 		return newInvalidLinkTypeError(linkType)
 	}
