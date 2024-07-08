@@ -24,7 +24,7 @@ type decodeCellAnchor struct {
 	Sp               *decodeSp               `xml:"sp"`
 	Pic              *decodePic              `xml:"pic"`
 	ClientData       *decodeClientData       `xml:"clientData"`
-	AlternateContent []*xlsxAlternateContent `xml:"mc:AlternateContent"`
+	AlternateContent []*xlsxAlternateContent `xml:"AlternateContent"`
 	Content          string                  `xml:",innerxml"`
 }
 
