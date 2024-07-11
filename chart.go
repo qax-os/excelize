@@ -90,6 +90,19 @@ const (
 	ChartLineAutomatic
 )
 
+// ChartTickLabelPositionType is the type of supported chart tick label position
+// types.
+type ChartTickLabelPositionType byte
+
+// This section defines the supported chart tick label position types
+// enumeration.
+const (
+	ChartTickLabelNextToAxis ChartTickLabelPositionType = iota
+	ChartTickLabelHigh
+	ChartTickLabelLow
+	ChartTickLabelNone
+)
+
 // This section defines the default value of chart properties.
 var (
 	chartView3DRotX = map[ChartType]int{
@@ -484,7 +497,13 @@ var (
 		true:  "r",
 		false: "l",
 	}
-	valTickLblPos = map[ChartType]string{
+	tickLblPosVal = map[ChartTickLabelPositionType]string{
+		ChartTickLabelNextToAxis: "nextTo",
+		ChartTickLabelHigh:       "high",
+		ChartTickLabelLow:        "low",
+		ChartTickLabelNone:       "none",
+	}
+	tickLblPosNone = map[ChartType]string{
 		Contour:          "none",
 		WireframeContour: "none",
 	}
