@@ -4799,10 +4799,8 @@ func format(value, numFmt string, date1904 bool, cellType CellType, opts *Option
 			switch section.Type {
 			case nfp.TokenSectionPositive:
 				return nf.alignmentHandler(nf.positiveHandler())
-			case nfp.TokenSectionNegative:
-				return nf.alignmentHandler(nf.negativeHandler())
 			default:
-				return nf.alignmentHandler(nf.zeroHandler())
+				return nf.alignmentHandler(nf.negativeHandler())
 			}
 		}
 		return nf.alignmentHandler(nf.textHandler())
@@ -7108,11 +7106,6 @@ func (nf *numberFormat) negativeHandler() (result string) {
 	return nf.numberHandler()
 }
 
-// zeroHandler will be handling zero selection for a number format expression.
-func (nf *numberFormat) zeroHandler() string {
-	return nf.value
-}
-
 // textHandler will be handling text selection for a number format expression.
 func (nf *numberFormat) textHandler() (result string) {
 	for _, token := range nf.section[nf.sectionIdx].Items {
@@ -7137,21 +7130,18 @@ func (nf *numberFormat) getValueSectionType(value string) (float64, string) {
 		return 0, nfp.TokenSectionText
 	}
 	number, _ := strconv.ParseFloat(value, 64)
-	if number > 0 {
+	if number >= 0 {
 		return number, nfp.TokenSectionPositive
 	}
-	if number < 0 {
-		var hasNeg bool
-		for _, sec := range nf.section {
-			if sec.Type == nfp.TokenSectionNegative {
-				hasNeg = true
-			}
+	var hasNeg bool
+	for _, sec := range nf.section {
+		if sec.Type == nfp.TokenSectionNegative {
+			hasNeg = true
 		}
-		if !hasNeg {
-			nf.usePositive = true
-			return number, nfp.TokenSectionPositive
-		}
-		return number, nfp.TokenSectionNegative
 	}
-	return number, nfp.TokenSectionZero
+	if !hasNeg {
+		nf.usePositive = true
+		return number, nfp.TokenSectionPositive
+	}
+	return number, nfp.TokenSectionNegative
 }
