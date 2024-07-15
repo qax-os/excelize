@@ -46,7 +46,29 @@ type decodeCellAnchorPos struct {
 	ClientData       *xlsxInnerXML           `xml:"clientData"`
 }
 
-// xdrSp (Shape) directly maps the sp element. This element specifies the
+// decodeChoice defines the structure used to deserialize the mc:Choice element.
+type decodeChoice struct {
+	XMLName      xml.Name           `xml:"Choice"`
+	XMLNSA14     string             `xml:"a14,attr"`
+	XMLNSSle15   string             `xml:"sle15,attr"`
+	Requires     string             `xml:"Requires,attr"`
+	GraphicFrame decodeGraphicFrame `xml:"graphicFrame"`
+}
+
+// decodeGraphicFrame defines the structure used to deserialize the
+// xdr:graphicFrame element.
+type decodeGraphicFrame struct {
+	Macro            string                 `xml:"macro,attr"`
+	NvGraphicFramePr decodeNvGraphicFramePr `xml:"nvGraphicFramePr"`
+}
+
+// decodeNvGraphicFramePr defines the structure used to deserialize the
+// xdr:nvGraphicFramePr element.
+type decodeNvGraphicFramePr struct {
+	CNvPr decodeCNvPr `xml:"cNvPr"`
+}
+
+// decodeSp (Shape) directly maps the sp element. This element specifies the
 // existence of a single shape. A shape can either be a preset or a custom
 // geometry, defined using the SpreadsheetDrawingML framework. In addition to
 // a geometry each shape can have both visual and non-visual properties
@@ -58,7 +80,7 @@ type decodeSp struct {
 	SpPr   *decodeSpPr   `xml:"spPr"`
 }
 
-// decodeSp (Non-Visual Properties for a Shape) directly maps the nvSpPr
+// decodeNvSpPr (Non-Visual Properties for a Shape) directly maps the nvSpPr
 // element. This element specifies all non-visual properties for a shape. This
 // element is a container for the non-visual identification properties, shape
 // properties and application properties that are to be associated with a
