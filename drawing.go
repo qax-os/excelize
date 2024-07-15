@@ -1001,7 +1001,7 @@ func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		MajorTickMark: &attrValString{Val: stringPtr("none")},
 		MinorTickMark: &attrValString{Val: stringPtr("none")},
 		Title:         f.drawPlotAreaTitles(opts.XAxis.Title, ""),
-		TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
+		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.XAxis.TickLabelPosition])},
 		SpPr:          f.drawPlotAreaSpPr(),
 		TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
 		CrossAx:       &attrValInt{Val: intPtr(100000001)},
@@ -1063,7 +1063,7 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		},
 		MajorTickMark: &attrValString{Val: stringPtr("none")},
 		MinorTickMark: &attrValString{Val: stringPtr("none")},
-		TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
+		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.YAxis.TickLabelPosition])},
 		SpPr:          f.drawPlotAreaSpPr(),
 		TxPr:          f.drawPlotAreaTxPr(&opts.YAxis),
 		CrossAx:       &attrValInt{Val: intPtr(100000000)},
@@ -1079,7 +1079,7 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 	if opts.YAxis.MinorGridLines {
 		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
-	if pos, ok := valTickLblPos[opts.Type]; ok {
+	if pos, ok := tickLblPosNone[opts.Type]; ok {
 		ax.TickLblPos.Val = stringPtr(pos)
 	}
 	if opts.YAxis.MajorUnit != 0 {
@@ -1115,7 +1115,7 @@ func (f *File) drawPlotAreaSerAx(opts *Chart) []*cAxs {
 			},
 			Delete:     &attrValBool{Val: boolPtr(opts.YAxis.None)},
 			AxPos:      &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
-			TickLblPos: &attrValString{Val: stringPtr("nextTo")},
+			TickLblPos: &attrValString{Val: stringPtr(tickLblPosVal[opts.YAxis.TickLabelPosition])},
 			SpPr:       f.drawPlotAreaSpPr(),
 			TxPr:       f.drawPlotAreaTxPr(nil),
 			CrossAx:    &attrValInt{Val: intPtr(100000001)},

@@ -232,12 +232,18 @@ func ColumnNumberToName(num int) (string, error) {
 	if num < MinColumns || num > MaxColumns {
 		return "", ErrColumnNumber
 	}
-	var col string
+	estimatedLength := 0
+	for n := num; n > 0; n = (n - 1) / 26 {
+		estimatedLength++
+	}
+
+	result := make([]byte, estimatedLength)
 	for num > 0 {
-		col = string(rune((num-1)%26+65)) + col
+		estimatedLength--
+		result[estimatedLength] = byte((num-1)%26 + 'A')
 		num = (num - 1) / 26
 	}
-	return col, nil
+	return string(result), nil
 }
 
 // CellNameToCoordinates converts alphanumeric cell name to [X, Y] coordinates

@@ -260,6 +260,9 @@ func (f *File) getTableFieldsOrder(opts *PivotTableOptions) ([]string, error) {
 		if err != nil {
 			return order, err
 		}
+		if name == "" {
+			return order, ErrParameterInvalid
+		}
 		order = append(order, name)
 	}
 	return order, nil
@@ -272,8 +275,10 @@ func (f *File) addPivotCache(opts *PivotTableOptions) error {
 	if err != nil {
 		return newPivotTableDataRangeError(err.Error())
 	}
-	// data range has been checked
-	order, _ := f.getTableFieldsOrder(opts)
+	order, err := f.getTableFieldsOrder(opts)
+	if err != nil {
+		return newPivotTableDataRangeError(err.Error())
+	}
 	topLeftCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	bottomRightCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
@@ -806,7 +811,7 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		pivotTableXML:   pivotTableXML,
 		pivotCacheXML:   pivotCacheXML,
 		pivotSheetName:  sheet,
-		DataRange:       fmt.Sprintf("%s!%s", sheet, pc.CacheSource.WorksheetSource.Ref),
+		DataRange:       fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref),
 		PivotTableRange: fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
 		Name:            pt.Name,
 	}

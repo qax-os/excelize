@@ -139,6 +139,13 @@ func TestPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
+
+	// Test get pivot table with across worksheet data range
+	pivotTables, err = f.GetPivotTables("Sheet2")
+	assert.NoError(t, err)
+	assert.Len(t, pivotTables, 1)
+	assert.Equal(t, "Sheet1!A1:E31", pivotTables[0].DataRange)
+
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
 		PivotTableRange: "Sheet2!A20:AR60",
@@ -293,6 +300,7 @@ func TestPivotTable(t *testing.T) {
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot table with unsupported charset content types.
 	f = NewFile()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"}))
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
@@ -386,6 +394,25 @@ func TestPivotTableDataRange(t *testing.T) {
 	f.Relationships.Delete("xl/worksheets/_rels/sheet1.xml.rels")
 	f.Pkg.Delete("xl/worksheets/_rels/sheet1.xml.rels")
 	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTable1"), "table PivotTable1 does not exist")
+
+	t.Run("data_range_with_empty_column", func(t *testing.T) {
+		// Test add pivot table with data range doesn't organized as a list with labeled columns
+		f := NewFile()
+		// Create some data in a sheet
+		month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+		types := []string{"Meat", "Dairy", "Beverages", "Produce"}
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "", "Type"}))
+		for row := 2; row < 32; row++ {
+			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[rand.Intn(12)]))
+			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[rand.Intn(4)]))
+		}
+		assert.Equal(t, newPivotTableDataRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
+			DataRange:       "Sheet1!A1:E31",
+			PivotTableRange: "Sheet1!G2:M34",
+			Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}},
+			Data:            []PivotTableField{{Data: "Type"}},
+		}))
+	})
 }
 
 func TestParseFormatPivotTableSet(t *testing.T) {
