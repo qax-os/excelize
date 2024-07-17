@@ -598,8 +598,7 @@ func (f *File) drawScatterChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 			DLbls: f.drawChartDLbls(opts),
 			AxID:  f.genAxID(opts),
 		},
-		CatAx: f.drawPlotAreaCatAx(pa, opts),
-		ValAx: f.drawPlotAreaValAx(pa, opts),
+		ValAx: append(f.drawPlotAreaCatAx(pa, opts), f.drawPlotAreaValAx(pa, opts)...),
 	}
 }
 
@@ -659,7 +658,7 @@ func (f *File) drawBubbleChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 			DLbls: f.drawChartDLbls(opts),
 			AxID:  f.genAxID(opts),
 		},
-		ValAx: []*cAxs{f.drawPlotAreaCatAx(pa, opts)[0], f.drawPlotAreaValAx(pa, opts)[0]},
+		ValAx: append(f.drawPlotAreaCatAx(pa, opts), f.drawPlotAreaValAx(pa, opts)...),
 	}
 	if opts.BubbleSize > 0 && opts.BubbleSize <= 300 {
 		plotArea.BubbleChart.BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
