@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -385,6 +386,9 @@ func setCellBool(value bool) (t string, v string) {
 //	var x float32 = 1.325
 //	f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSize int) error {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return f.SetCellStr(sheet, cell, fmt.Sprint(value))
+	}
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -399,16 +403,19 @@ func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSiz
 		return err
 	}
 	c.S = ws.prepareCellStyle(col, row, c.S)
-	c.T, c.V = setCellFloat(value, precision, bitSize)
-	c.IS = nil
+	c.setCellFloat(value, precision, bitSize)
 	return f.removeFormula(c, ws, sheet)
 }
 
 // setCellFloat prepares cell type and string type cell value by a given float
 // value.
-func setCellFloat(value float64, precision, bitSize int) (t string, v string) {
-	v = strconv.FormatFloat(value, 'f', precision, bitSize)
-	return
+func (c *xlsxC) setCellFloat(value float64, precision, bitSize int) {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		c.setInlineStr(fmt.Sprint(value))
+		return
+	}
+	c.T, c.V = "", strconv.FormatFloat(value, 'f', precision, bitSize)
+	c.IS = nil
 }
 
 // SetCellStr provides a function to set string type value of a cell. Total

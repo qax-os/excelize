@@ -292,6 +292,19 @@ func TestSetCellValue(t *testing.T) {
 	val, err = f.GetCellValue("Sheet1", "B1")
 	assert.NoError(t, err)
 	assert.Equal(t, "b", val)
+
+	f = NewFile()
+	// Test set cell value with an IEEE 754 "not-a-number" value or infinity
+	for num, expected := range map[float64]string{
+		math.NaN():   "NaN",
+		math.Inf(0):  "+Inf",
+		math.Inf(-1): "-Inf",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", num))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
 }
 
 func TestSetCellValues(t *testing.T) {

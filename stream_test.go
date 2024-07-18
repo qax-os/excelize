@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -76,6 +77,8 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.SetRow("A7", nil, RowOpts{Height: 20, Hidden: true, StyleID: styleID}))
 	assert.Equal(t, ErrMaxRowHeight, streamWriter.SetRow("A8", nil, RowOpts{Height: MaxRowHeight + 1}))
 
+	assert.NoError(t, streamWriter.SetRow("A9", []interface{}{math.NaN(), math.Inf(0), math.Inf(-1)}))
+
 	for rowID := 10; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
 		for colID := 0; colID < 50; colID++ {
@@ -145,7 +148,7 @@ func TestStreamWriter(t *testing.T) {
 		cells += len(row)
 	}
 	assert.NoError(t, rows.Close())
-	assert.Equal(t, 2559559, cells)
+	assert.Equal(t, 2559562, cells)
 	// Save spreadsheet with password.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
