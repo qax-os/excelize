@@ -36,7 +36,7 @@ type decodeCellAnchorPos struct {
 	To               *xlsxTo                 `xml:"to"`
 	Pos              *xlsxInnerXML           `xml:"pos"`
 	Ext              *xlsxInnerXML           `xml:"ext"`
-	Sp               *xlsxInnerXML           `xml:"sp"`
+	Sp               *xlsxSp                 `xml:"sp"`
 	GrpSp            *xlsxInnerXML           `xml:"grpSp"`
 	GraphicFrame     *xlsxInnerXML           `xml:"graphicFrame"`
 	CxnSp            *xlsxInnerXML           `xml:"cxnSp"`
@@ -76,8 +76,12 @@ type decodeNvGraphicFramePr struct {
 // to a shape. This shape is specified along with all other shapes within
 // either the shape tree or group shape elements.
 type decodeSp struct {
-	NvSpPr *decodeNvSpPr `xml:"nvSpPr"`
-	SpPr   *decodeSpPr   `xml:"spPr"`
+	Macro      string        `xml:"macro,attr,omitempty"`
+	TextLink   string        `xml:"textlink,attr,omitempty"`
+	FLocksText bool          `xml:"fLocksText,attr,omitempty"`
+	FPublished *bool         `xml:"fPublished,attr"`
+	NvSpPr     *decodeNvSpPr `xml:"nvSpPr"`
+	SpPr       *decodeSpPr   `xml:"spPr"`
 }
 
 // decodeNvSpPr (Non-Visual Properties for a Shape) directly maps the nvSpPr

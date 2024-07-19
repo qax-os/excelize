@@ -238,7 +238,7 @@ type xlsxCellAnchorPos struct {
 	To               *xlsxTo                 `xml:"xdr:to"`
 	Pos              *xlsxInnerXML           `xml:"xdr:pos"`
 	Ext              *xlsxInnerXML           `xml:"xdr:ext"`
-	Sp               *xlsxInnerXML           `xml:"xdr:sp"`
+	Sp               *xlsxSp                 `xml:"xdr:sp"`
 	GrpSp            *xlsxInnerXML           `xml:"xdr:grpSp"`
 	GraphicFrame     *xlsxInnerXML           `xml:"xdr:graphicFrame"`
 	CxnSp            *xlsxInnerXML           `xml:"xdr:cxnSp"`
@@ -246,6 +246,21 @@ type xlsxCellAnchorPos struct {
 	ContentPart      *xlsxInnerXML           `xml:"xdr:contentPart"`
 	AlternateContent []*xlsxAlternateContent `xml:"mc:AlternateContent"`
 	ClientData       *xlsxInnerXML           `xml:"xdr:clientData"`
+}
+
+// xdrSp (Shape) directly maps the sp element. This element specifies the
+// existence of a single shape. A shape can either be a preset or a custom
+// geometry, defined using the SpreadsheetDrawingML framework. In addition to
+// a geometry each shape can have both visual and non-visual properties
+// attached. Text and corresponding styling information can also be attached
+// to a shape. This shape is specified along with all other shapes within
+// either the shape tree or group shape elements.
+type xlsxSp struct {
+	Macro      string `xml:"macro,attr,omitempty"`
+	TextLink   string `xml:"textlink,attr,omitempty"`
+	FLocksText bool   `xml:"fLocksText,attr,omitempty"`
+	FPublished *bool  `xml:"fPublished,attr"`
+	Content    string `xml:",innerxml"`
 }
 
 // xlsxPoint2D describes the position of a drawing element within a spreadsheet.
