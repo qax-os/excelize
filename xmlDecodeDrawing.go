@@ -36,7 +36,7 @@ type decodeCellAnchorPos struct {
 	To               *xlsxTo                 `xml:"to"`
 	Pos              *xlsxInnerXML           `xml:"pos"`
 	Ext              *xlsxInnerXML           `xml:"ext"`
-	Sp               *xlsxInnerXML           `xml:"sp"`
+	Sp               *xlsxSp                 `xml:"sp"`
 	GrpSp            *xlsxInnerXML           `xml:"grpSp"`
 	GraphicFrame     *xlsxInnerXML           `xml:"graphicFrame"`
 	CxnSp            *xlsxInnerXML           `xml:"cxnSp"`
@@ -46,16 +46,14 @@ type decodeCellAnchorPos struct {
 	ClientData       *xlsxInnerXML           `xml:"clientData"`
 }
 
-// xdrSp (Shape) directly maps the sp element. This element specifies the
-// existence of a single shape. A shape can either be a preset or a custom
-// geometry, defined using the SpreadsheetDrawingML framework. In addition to
-// a geometry each shape can have both visual and non-visual properties
-// attached. Text and corresponding styling information can also be attached
-// to a shape. This shape is specified along with all other shapes within
-// either the shape tree or group shape elements.
+// decodeSp defines the structure used to deserialize the sp element.
 type decodeSp struct {
-	NvSpPr *decodeNvSpPr `xml:"nvSpPr"`
-	SpPr   *decodeSpPr   `xml:"spPr"`
+	Macro      string        `xml:"macro,attr,omitempty"`
+	TextLink   string        `xml:"textlink,attr,omitempty"`
+	FLocksText bool          `xml:"fLocksText,attr,omitempty"`
+	FPublished *bool         `xml:"fPublished,attr"`
+	NvSpPr     *decodeNvSpPr `xml:"nvSpPr"`
+	SpPr       *decodeSpPr   `xml:"spPr"`
 }
 
 // decodeSp (Non-Visual Properties for a Shape) directly maps the nvSpPr
