@@ -1626,7 +1626,10 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 			if ctx.iterations[ref] <= f.options.MaxCalcIterations {
 				ctx.iterations[ref]++
 				ctx.mu.Unlock()
-				arg, _ = f.calcCellValue(ctx, sheet, cell)
+				arg, err = f.calcCellValue(ctx, sheet, cell)
+				if err != nil && err.Error() != "#N/A" {
+					return arg, err
+				}
 				ctx.iterationsCache[ref] = arg
 				return arg, nil
 			}
