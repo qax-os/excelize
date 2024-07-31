@@ -773,6 +773,11 @@ func (f *File) SetSheetVisible(sheet string, visible bool, veryHidden ...bool) e
 			return err
 		}
 		tabSelected := false
+		if ws.SheetViews == nil {
+			ws.SheetViews = &xlsxSheetViews{
+				SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+			}
+		}
 		if len(ws.SheetViews.SheetView) > 0 {
 			tabSelected = ws.SheetViews.SheetView[0].TabSelected
 		}

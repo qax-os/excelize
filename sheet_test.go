@@ -570,6 +570,18 @@ func TestSetSheetVisible(t *testing.T) {
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test set sheet visible with empty sheet views
+	f = NewFile()
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet2.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = nil
+	assert.NoError(t, f.SetSheetVisible("Sheet2", false))
+	visible, err := f.GetSheetVisible("Sheet2")
+	assert.NoError(t, err)
+	assert.False(t, visible)
 }
 
 func TestGetSheetVisible(t *testing.T) {
