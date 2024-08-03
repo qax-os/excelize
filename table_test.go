@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -106,6 +108,69 @@ func TestGetTables(t *testing.T) {
 	tables, err = f.GetTables("Sheet1")
 	assert.Len(t, tables, 0)
 	assert.NoError(t, err)
+}
+
+func TestTableValuesExtraction(t *testing.T) {
+	sheetName := "Sheet1"
+	f := NewFile()
+
+	// Set headers
+	assert.NoError(t, f.SetCellValue(sheetName, "B3", "ID"))
+	assert.NoError(t, f.SetCellValue(sheetName, "C3", "Type"))
+	assert.NoError(t, f.SetCellValue(sheetName, "D3", "Name"))
+
+	// Set values
+	assert.NoError(t, f.SetCellValue(sheetName, "B4", 4))
+	assert.NoError(t, f.SetCellValue(sheetName, "C4", "Fire"))
+	assert.NoError(t, f.SetCellValue(sheetName, "D4", "Charmander"))
+	assert.NoError(t, f.SetCellValue(sheetName, "B5", 7))
+	assert.NoError(t, f.SetCellValue(sheetName, "C5", "Water"))
+	assert.NoError(t, f.SetCellValue(sheetName, "D5", "Squirtle"))
+	assert.NoError(t, f.SetCellValue(sheetName, "B6", 25))
+	assert.NoError(t, f.SetCellValue(sheetName, "C6", "Electric"))
+	assert.NoError(t, f.SetCellValue(sheetName, "D6", "Pikachu"))
+
+	// Add the table
+	pokemonTable := &Table{
+		Range:         "B3:D6",
+		Name:          "PokemonsTable",
+		ShowHeaderRow: boolPtr(true),
+	}
+	assert.NoError(t, f.AddTable(sheetName, pokemonTable))
+
+	// Test GetTableData
+	data, err := f.GetTableData(sheetName, pokemonTable.Range)
+	assert.NoError(t, err)
+	expectedData := [][]string{
+		{"ID", "Type", "Name"},
+		{"4", "Fire", "Charmander"},
+		{"7", "Water", "Squirtle"},
+		{"25", "Electric", "Pikachu"},
+	}
+	assert.True(t, cmp.Equal(data, expectedData), cmp.Diff(data, expectedData))
+
+	// Test GetTableColumns with headers
+	pokemonHeadersColumns, err := f.GetTableColumns(sheetName, *pokemonTable)
+	assert.NoError(t, err)
+	expectedHeadersData := map[string][]string{
+		"ID":   {"4", "7", "25"},
+		"Type": {"Fire", "Water", "Electric"},
+		"Name": {"Charmander", "Squirtle", "Pikachu"},
+	}
+	assert.True(t, cmp.Equal(pokemonHeadersColumns, expectedHeadersData),
+		cmp.Diff(pokemonHeadersColumns, expectedHeadersData))
+
+	// Test GetTableColumns without headers
+	pokemonTable.ShowHeaderRow = boolPtr(false)
+	pokemonColumns, err := f.GetTableColumns(sheetName, *pokemonTable)
+	assert.NoError(t, err)
+	expectedColumnsData := map[string][]string{
+		"Column1": {"ID", "4", "7", "25"},
+		"Column2": {"Type", "Fire", "Water", "Electric"},
+		"Column3": {"Name", "Charmander", "Squirtle", "Pikachu"},
+	}
+	assert.True(t, cmp.Equal(pokemonColumns, expectedColumnsData),
+		cmp.Diff(pokemonColumns, expectedColumnsData))
 }
 
 func TestDeleteTable(t *testing.T) {
