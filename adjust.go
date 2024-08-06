@@ -259,12 +259,12 @@ func (f *File) adjustCellRef(cellRef string, dir adjustDirection, num, offset in
 			return "", err
 		}
 		if dir == columns {
-			if offset < 0 && coordinates[0] == coordinates[2] {
+			if offset < 0 && coordinates[0] == coordinates[2] && num == coordinates[0] {
 				continue
 			}
 			coordinates = applyOffset(coordinates, 0, 2, MaxColumns)
 		} else {
-			if offset < 0 && coordinates[1] == coordinates[3] {
+			if offset < 0 && coordinates[1] == coordinates[3] && num == coordinates[1] {
 				continue
 			}
 			coordinates = applyOffset(coordinates, 1, 3, TotalRows)

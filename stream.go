@@ -529,9 +529,9 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		setCellIntFunc(c, val)
 	case float32:
-		c.T, c.V = setCellFloat(float64(val), -1, 32)
+		c.setCellFloat(float64(val), -1, 32)
 	case float64:
-		c.T, c.V = setCellFloat(val, -1, 64)
+		c.setCellFloat(val, -1, 64)
 	case string:
 		c.setCellValue(val)
 	case []byte:
