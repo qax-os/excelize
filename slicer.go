@@ -395,9 +395,8 @@ func (f *File) setSlicerCache(sheet string, colIdx int, opts *SlicerOptions, tab
 	var slicerCacheName string
 	f.Pkg.Range(func(k, v interface{}) bool {
 		if strings.Contains(k.(string), "xl/slicerCaches/slicerCache") {
-			slicerCache := &xlsxSlicerCacheDefinition{}
-			if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v.([]byte)))).
-				Decode(slicerCache); err != nil && err != io.EOF {
+			slicerCache, err := f.slicerCacheReader(k.(string))
+			if err != nil {
 				return true
 			}
 			if pivotTable != nil && slicerCache.PivotTables != nil {
@@ -447,6 +446,20 @@ func (f *File) slicerReader(slicerXML string) (*xlsxSlicers, error) {
 		}
 	}
 	return slicer, nil
+}
+
+// slicerCacheReader provides a function to get the pointer to the structure
+// after deserialization of xl/slicerCaches/slicerCache%d.xml.
+func (f *File) slicerCacheReader(slicerCacheXML string) (*xlsxSlicerCacheDefinition, error) {
+	content, ok := f.Pkg.Load(slicerCacheXML)
+	slicerCache := &xlsxSlicerCacheDefinition{}
+	if ok && content != nil {
+		if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(content.([]byte)))).
+			Decode(slicerCache); err != nil && err != io.EOF {
+			return nil, err
+		}
+	}
+	return slicerCache, nil
 }
 
 // timelineReader provides a function to get the pointer to the structure
@@ -586,6 +599,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 		return err
 	}
 	graphicFrame := xlsxGraphicFrame{
+		Macro: opts.Macro,
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
 				ID:   cNvPrID,
@@ -723,5 +737,203 @@ func (f *File) addWorkbookSlicerCache(slicerCacheID int, URI string) error {
 	})
 	extLstBytes, err = xml.Marshal(decodeExtLst)
 	wb.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+	return err
+}
+
+// GetSlicers provides the method to get all slicers in a worksheet by a given
+// worksheet name. Note that, this function does not support getting the height,
+// width, and graphic options of the slicer shape currently.
+func (f *File) GetSlicers(sheet string) ([]SlicerOptions, error) {
+	var (
+		slicers      []SlicerOptions
+		ws, err      = f.workSheetReader(sheet)
+		decodeExtLst = new(decodeExtLst)
+		slicerList   = new(decodeSlicerList)
+	)
+	if err != nil {
+		return slicers, err
+	}
+	if ws.ExtLst == nil {
+		return slicers, err
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
+	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
+	if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+		Decode(decodeExtLst); err != nil && err != io.EOF {
+		return slicers, err
+	}
+	for _, ext := range decodeExtLst.Ext {
+		if ext.URI == ExtURISlicerListX14 || ext.URI == ExtURISlicerListX15 {
+			_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(slicerList)
+			for _, slicer := range slicerList.Slicer {
+				if slicer.RID != "" {
+					sheetRelationshipsDrawingXML := f.getSheetRelationshipsTargetByID(sheet, slicer.RID)
+					slicerXML := strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
+					opts, err := f.getSlicers(slicerXML, drawingXML)
+					if err != nil {
+						return slicers, err
+					}
+					slicers = append(slicers, opts...)
+				}
+			}
+		}
+	}
+	return slicers, err
+}
+
+// getSlicerCache provides a function to get a slicer cache by given slicer
+// cache name.
+func (f *File) getSlicerCache(slicerCacheName string) *xlsxSlicerCacheDefinition {
+	var (
+		err         error
+		slicerCache *xlsxSlicerCacheDefinition
+	)
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/slicerCaches/slicerCache") {
+			slicerCache, err = f.slicerCacheReader(k.(string))
+			if err != nil {
+				return true
+			}
+			if slicerCache.Name == slicerCacheName {
+				return false
+			}
+		}
+		return true
+	})
+	return slicerCache
+}
+
+// getSlicers provides a function to get slicers options by given slicer part
+// path, drawing part path, table and pivot table options.
+func (f *File) getSlicers(slicerXML, drawingXML string) ([]SlicerOptions, error) {
+	var opts []SlicerOptions
+	slicers, err := f.slicerReader(slicerXML)
+	if err != nil {
+		return opts, err
+	}
+	for _, slicer := range slicers.Slicer {
+		opt := SlicerOptions{
+			Name:          slicer.Name,
+			Caption:       slicer.Caption,
+			DisplayHeader: slicer.ShowCaption,
+		}
+		slicerCache := f.getSlicerCache(slicer.Cache)
+		if slicerCache == nil {
+			return opts, err
+		}
+		if err := f.extractTableSlicer(slicerCache, &opt); err != nil {
+			return opts, err
+		}
+		if err := f.extractPivotTableSlicer(slicerCache, &opt); err != nil {
+			return opts, err
+		}
+		if err = f.extractSlicerCellAnchor(drawingXML, &opt); err != nil {
+			return opts, err
+		}
+		opts = append(opts, opt)
+	}
+	return opts, err
+}
+
+// extractTableSlicer extract table slicer options from slicer cache.
+func (f *File) extractTableSlicer(slicerCache *xlsxSlicerCacheDefinition, opt *SlicerOptions) error {
+	if slicerCache.ExtLst != nil {
+		tables, err := f.getTables()
+		if err != nil {
+			return err
+		}
+		ext := new(xlsxExt)
+		_ = f.xmlNewDecoder(strings.NewReader(slicerCache.ExtLst.Ext)).Decode(ext)
+		if ext.URI == ExtURISlicerCacheDefinition {
+			tableSlicerCache := new(decodeTableSlicerCache)
+			_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(tableSlicerCache)
+			opt.ItemDesc = tableSlicerCache.SortOrder == "descending"
+			for sheetName, sheetTables := range tables {
+				for _, table := range sheetTables {
+					if tableSlicerCache.TableID == table.tID {
+						opt.TableName = table.Name
+						opt.TableSheet = sheetName
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// extractPivotTableSlicer extract pivot table slicer options from slicer cache.
+func (f *File) extractPivotTableSlicer(slicerCache *xlsxSlicerCacheDefinition, opt *SlicerOptions) error {
+	pivotTables, err := f.getPivotTables()
+	if err != nil {
+		return err
+	}
+	if slicerCache.PivotTables != nil {
+		for _, pt := range slicerCache.PivotTables.PivotTable {
+			opt.TableName = pt.Name
+			for sheetName, sheetPivotTables := range pivotTables {
+				for _, pivotTable := range sheetPivotTables {
+					if opt.TableName == pivotTable.Name {
+						opt.TableSheet = sheetName
+					}
+				}
+			}
+		}
+		if slicerCache.Data != nil && slicerCache.Data.Tabular != nil {
+			opt.ItemDesc = slicerCache.Data.Tabular.SortOrder == "descending"
+		}
+	}
+	return nil
+}
+
+// extractSlicerCellAnchor extract slicer drawing object from two cell anchor by
+// giving drawing part path and slicer options.
+func (f *File) extractSlicerCellAnchor(drawingXML string, opt *SlicerOptions) error {
+	var (
+		wsDr         *xlsxWsDr
+		deCellAnchor = new(decodeCellAnchor)
+		deChoice     = new(decodeChoice)
+		err          error
+	)
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return err
+	}
+	wsDr.mu.Lock()
+	defer wsDr.mu.Unlock()
+	cond := func(ac *xlsxAlternateContent) bool {
+		if ac != nil {
+			_ = f.xmlNewDecoder(strings.NewReader(ac.Content)).Decode(&deChoice)
+			if deChoice.XMLNSSle15 == NameSpaceDrawingMLSlicerX15.Value || deChoice.XMLNSA14 == NameSpaceDrawingMLA14.Value {
+				if deChoice.GraphicFrame.NvGraphicFramePr.CNvPr.Name == opt.Name {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for _, anchor := range wsDr.TwoCellAnchor {
+		for _, ac := range anchor.AlternateContent {
+			if cond(ac) {
+				if anchor.From != nil {
+					opt.Macro = deChoice.GraphicFrame.Macro
+					if opt.Cell, err = CoordinatesToCellName(anchor.From.Col+1, anchor.From.Row+1); err != nil {
+						return err
+					}
+				}
+				return err
+			}
+		}
+		_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
+		for _, ac := range deCellAnchor.AlternateContent {
+			if cond(ac) {
+				if deCellAnchor.From != nil {
+					opt.Macro = deChoice.GraphicFrame.Macro
+					if opt.Cell, err = CoordinatesToCellName(deCellAnchor.From.Col+1, deCellAnchor.From.Row+1); err != nil {
+						return err
+					}
+				}
+				return err
+			}
+		}
+	}
 	return err
 }
