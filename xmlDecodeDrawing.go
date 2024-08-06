@@ -46,13 +46,7 @@ type decodeCellAnchorPos struct {
 	ClientData       *xlsxInnerXML           `xml:"clientData"`
 }
 
-// xdrSp (Shape) directly maps the sp element. This element specifies the
-// existence of a single shape. A shape can either be a preset or a custom
-// geometry, defined using the SpreadsheetDrawingML framework. In addition to
-// a geometry each shape can have both visual and non-visual properties
-// attached. Text and corresponding styling information can also be attached
-// to a shape. This shape is specified along with all other shapes within
-// either the shape tree or group shape elements.
+// decodeSp defines the structure used to deserialize the sp element.
 type decodeSp struct {
 	Macro      string        `xml:"macro,attr,omitempty"`
 	TextLink   string        `xml:"textlink,attr,omitempty"`
