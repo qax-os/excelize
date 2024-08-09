@@ -46,6 +46,28 @@ type decodeCellAnchorPos struct {
 	ClientData       *xlsxInnerXML           `xml:"clientData"`
 }
 
+// decodeChoice defines the structure used to deserialize the mc:Choice element.
+type decodeChoice struct {
+	XMLName      xml.Name           `xml:"Choice"`
+	XMLNSA14     string             `xml:"a14,attr"`
+	XMLNSSle15   string             `xml:"sle15,attr"`
+	Requires     string             `xml:"Requires,attr"`
+	GraphicFrame decodeGraphicFrame `xml:"graphicFrame"`
+}
+
+// decodeGraphicFrame defines the structure used to deserialize the
+// xdr:graphicFrame element.
+type decodeGraphicFrame struct {
+	Macro            string                 `xml:"macro,attr"`
+	NvGraphicFramePr decodeNvGraphicFramePr `xml:"nvGraphicFramePr"`
+}
+
+// decodeNvGraphicFramePr defines the structure used to deserialize the
+// xdr:nvGraphicFramePr element.
+type decodeNvGraphicFramePr struct {
+	CNvPr decodeCNvPr `xml:"cNvPr"`
+}
+
 // decodeSp defines the structure used to deserialize the sp element.
 type decodeSp struct {
 	Macro      string        `xml:"macro,attr,omitempty"`
