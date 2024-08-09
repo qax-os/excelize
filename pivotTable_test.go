@@ -343,6 +343,8 @@ func TestPivotTable(t *testing.T) {
 	f.Pkg.Store("xl/pivotTables/pivotTable1.xml", MacintoshCyrillicCharset)
 	_, err = f.GetPivotTables("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	_, err = f.getPivotTables()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
 

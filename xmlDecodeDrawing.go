@@ -24,7 +24,7 @@ type decodeCellAnchor struct {
 	Sp               *decodeSp               `xml:"sp"`
 	Pic              *decodePic              `xml:"pic"`
 	ClientData       *decodeClientData       `xml:"clientData"`
-	AlternateContent []*xlsxAlternateContent `xml:"mc:AlternateContent"`
+	AlternateContent []*xlsxAlternateContent `xml:"AlternateContent"`
 	Content          string                  `xml:",innerxml"`
 }
 
@@ -46,6 +46,28 @@ type decodeCellAnchorPos struct {
 	ClientData       *xlsxInnerXML           `xml:"clientData"`
 }
 
+// decodeChoice defines the structure used to deserialize the mc:Choice element.
+type decodeChoice struct {
+	XMLName      xml.Name           `xml:"Choice"`
+	XMLNSA14     string             `xml:"a14,attr"`
+	XMLNSSle15   string             `xml:"sle15,attr"`
+	Requires     string             `xml:"Requires,attr"`
+	GraphicFrame decodeGraphicFrame `xml:"graphicFrame"`
+}
+
+// decodeGraphicFrame defines the structure used to deserialize the
+// xdr:graphicFrame element.
+type decodeGraphicFrame struct {
+	Macro            string                 `xml:"macro,attr"`
+	NvGraphicFramePr decodeNvGraphicFramePr `xml:"nvGraphicFramePr"`
+}
+
+// decodeNvGraphicFramePr defines the structure used to deserialize the
+// xdr:nvGraphicFramePr element.
+type decodeNvGraphicFramePr struct {
+	CNvPr decodeCNvPr `xml:"cNvPr"`
+}
+
 // decodeSp defines the structure used to deserialize the sp element.
 type decodeSp struct {
 	Macro      string        `xml:"macro,attr,omitempty"`
@@ -56,7 +78,7 @@ type decodeSp struct {
 	SpPr       *decodeSpPr   `xml:"spPr"`
 }
 
-// decodeSp (Non-Visual Properties for a Shape) directly maps the nvSpPr
+// decodeNvSpPr (Non-Visual Properties for a Shape) directly maps the nvSpPr
 // element. This element specifies all non-visual properties for a shape. This
 // element is a container for the non-visual identification properties, shape
 // properties and application properties that are to be associated with a

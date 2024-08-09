@@ -173,11 +173,11 @@ func (f *File) DeleteTable(name string) error {
 	if err := checkDefinedName(name); err != nil {
 		return err
 	}
-	for _, sheet := range f.GetSheetList() {
-		tables, err := f.GetTables(sheet)
-		if err != nil {
-			return err
-		}
+	tbls, err := f.getTables()
+	if err != nil {
+		return err
+	}
+	for sheet, tables := range tbls {
 		for _, table := range tables {
 			if table.Name != name {
 				continue
@@ -199,6 +199,20 @@ func (f *File) DeleteTable(name string) error {
 		}
 	}
 	return newNoExistTableError(name)
+}
+
+// getTables provides a function to get all tables in a workbook.
+func (f *File) getTables() (map[string][]Table, error) {
+	tables := map[string][]Table{}
+	for _, sheetName := range f.GetSheetList() {
+		tbls, err := f.GetTables(sheetName)
+		e := ErrSheetNotExist{sheetName}
+		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
+			return tables, err
+		}
+		tables[sheetName] = append(tables[sheetName], tbls...)
+	}
+	return tables, nil
 }
 
 // countTables provides a function to get table files count storage in the

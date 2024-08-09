@@ -149,9 +149,10 @@ type xlsxX15SlicerCaches struct {
 // decodeTableSlicerCache defines the structure used to parse the
 // x15:tableSlicerCache element of the table slicer cache.
 type decodeTableSlicerCache struct {
-	XMLName xml.Name `xml:"tableSlicerCache"`
-	TableID int      `xml:"tableId,attr"`
-	Column  int      `xml:"column,attr"`
+	XMLName   xml.Name `xml:"tableSlicerCache"`
+	TableID   int      `xml:"tableId,attr"`
+	Column    int      `xml:"column,attr"`
+	SortOrder string   `xml:"sortOrder,attr"`
 }
 
 // decodeSlicerList defines the structure used to parse the x14:slicerList
