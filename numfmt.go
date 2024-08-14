@@ -1165,7 +1165,6 @@ var (
 	}
 	// supportedLanguageCodeInfo directly maps the supported language code and tags.
 	supportedLanguageCodeInfo = map[string]languageInfo{
-		"800411":            {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, weekdayNames: weekdayNamesJapanese, weekdayNamesAbbr: weekdayNamesJapaneseAbbr},
 		"JA-JP-X-GANNEN":    {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, weekdayNames: weekdayNamesJapanese, weekdayNamesAbbr: weekdayNamesJapaneseAbbr},
 		"JA-JP-X-GANNEN,80": {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, weekdayNames: weekdayNamesJapanese, weekdayNamesAbbr: weekdayNamesJapaneseAbbr, useGannen: true},
 	}
@@ -4638,13 +4637,18 @@ var (
 )
 
 // getSupportedLanguageInfo returns language infomation by giving language code.
+// This function does not support different calendar type of the language
+// currently. For example: the hexadecimal language code 3010429 (fa-IR,301)
+// will be convert to 0429 (fa-IR).
 func getSupportedLanguageInfo(lang string) (languageInfo, bool) {
-	if len(lang) <= 4 {
-		n := new(big.Int)
-		n.SetString(lang, 16)
-		if info, ok := supportedLanguageInfo[int(n.Int64())]; ok {
-			return info, ok
-		}
+	hex := lang
+	if len(hex) > 4 {
+		hex = hex[len(hex)-4:]
+	}
+	n := new(big.Int)
+	n.SetString(hex, 16)
+	if info, ok := supportedLanguageInfo[int(n.Int64())]; ok {
+		return info, ok
 	}
 	if info, ok := supportedLanguageCodeInfo[lang]; ok {
 		return info, ok
@@ -5166,14 +5170,14 @@ func (nf *numberFormat) currencyLanguageHandler(token nfp.Token) (bool, error) {
 			return false, ErrUnsupportedNumberFormat
 		}
 		if part.Token.TType == nfp.TokenSubTypeLanguageInfo {
-			if strings.EqualFold(part.Token.TValue, "F800") { // [$-x-sysdate]
+			if inStrSlice([]string{"F800", "x-sysdate", "1010000"}, part.Token.TValue, false) != -1 {
 				if nf.opts != nil && nf.opts.LongDatePattern != "" {
 					nf.value = format(nf.value, nf.opts.LongDatePattern, nf.date1904, nf.cellType, nf.opts)
 					return true, nil
 				}
 				part.Token.TValue = "409"
 			}
-			if strings.EqualFold(part.Token.TValue, "F400") { // [$-x-systime]
+			if inStrSlice([]string{"F400", "x-systime"}, part.Token.TValue, false) != -1 {
 				if nf.opts != nil && nf.opts.LongTimePattern != "" {
 					nf.value = format(nf.value, nf.opts.LongTimePattern, nf.date1904, nf.cellType, nf.opts)
 					return true, nil
