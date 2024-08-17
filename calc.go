@@ -14459,7 +14459,7 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 		value, _ := decimal.Float64()
 		return newNumberFormulaArg(value * percent)
 	}
-	dateValue, timeValue, errTime, errDate := 0.0, 0.0, false, false
+	dateValue, timeValue, errTime := 0.0, 0.0, false
 	if !isDateOnlyFmt(text) {
 		h, m, s, _, _, err := strToTime(text)
 		errTime = err.Type == ArgError
@@ -14468,7 +14468,7 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 		}
 	}
 	y, m, d, _, err := strToDate(text)
-	errDate = err.Type == ArgError
+	errDate := err.Type == ArgError
 	if !errDate {
 		dateValue = daysBetween(excelMinTime1900.Unix(), makeDate(y, time.Month(m), d)) + 1
 	}
