@@ -53,17 +53,23 @@ import (
 //
 // Format specifies the format of the slicer, this setting is optional.
 type SlicerOptions struct {
-	Name          string
-	Cell          string
-	TableSheet    string
-	TableName     string
-	Caption       string
-	Macro         string
-	Width         uint
-	Height        uint
-	DisplayHeader *bool
-	ItemDesc      bool
-	Format        GraphicOptions
+	slicerXML       string
+	slicerCacheXML  string
+	slicerCacheName string
+	slicerSheetName string
+	slicerSheetRID  string
+	drawingXML      string
+	Name            string
+	Cell            string
+	TableSheet      string
+	TableName       string
+	Caption         string
+	Macro           string
+	Width           uint
+	Height          uint
+	DisplayHeader   *bool
+	ItemDesc        bool
+	Format          GraphicOptions
 }
 
 // AddSlicer function inserts a slicer by giving the worksheet name and slicer
@@ -99,7 +105,7 @@ func (f *File) AddSlicer(sheet string, opts *SlicerOptions) error {
 	if err != nil {
 		return err
 	}
-	slicerCacheName, err := f.setSlicerCache(sheet, colIdx, opts, table, pivotTable)
+	slicerCacheName, err := f.setSlicerCache(colIdx, opts, table, pivotTable)
 	if err != nil {
 		return err
 	}
@@ -224,7 +230,6 @@ func (f *File) addSheetSlicer(sheet, extURI string) (int, error) {
 		slicerID     = f.countSlicers() + 1
 		ws, err      = f.workSheetReader(sheet)
 		decodeExtLst = new(decodeExtLst)
-		slicerList   = new(decodeSlicerList)
 	)
 	if err != nil {
 		return slicerID, err
@@ -236,6 +241,7 @@ func (f *File) addSheetSlicer(sheet, extURI string) (int, error) {
 		}
 		for _, ext := range decodeExtLst.Ext {
 			if ext.URI == extURI {
+				slicerList := new(decodeSlicerList)
 				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(slicerList)
 				for _, slicer := range slicerList.Slicer {
 					if slicer.RID != "" {
@@ -390,7 +396,7 @@ func (f *File) genSlicerCacheName(name string) string {
 // setSlicerCache check if a slicer cache already exists or add a new slicer
 // cache by giving the column index, slicer, table options, and returns the
 // slicer cache name.
-func (f *File) setSlicerCache(sheet string, colIdx int, opts *SlicerOptions, table *Table, pivotTable *PivotTableOptions) (string, error) {
+func (f *File) setSlicerCache(colIdx int, opts *SlicerOptions, table *Table, pivotTable *PivotTableOptions) (string, error) {
 	var ok bool
 	var slicerCacheName string
 	f.Pkg.Range(func(k, v interface{}) bool {
@@ -748,7 +754,6 @@ func (f *File) GetSlicers(sheet string) ([]SlicerOptions, error) {
 		slicers      []SlicerOptions
 		ws, err      = f.workSheetReader(sheet)
 		decodeExtLst = new(decodeExtLst)
-		slicerList   = new(decodeSlicerList)
 	)
 	if err != nil {
 		return slicers, err
@@ -764,12 +769,11 @@ func (f *File) GetSlicers(sheet string) ([]SlicerOptions, error) {
 	}
 	for _, ext := range decodeExtLst.Ext {
 		if ext.URI == ExtURISlicerListX14 || ext.URI == ExtURISlicerListX15 {
-			_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(slicerList)
+			slicerList := new(decodeSlicerList)
+			_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(&slicerList)
 			for _, slicer := range slicerList.Slicer {
 				if slicer.RID != "" {
-					sheetRelationshipsDrawingXML := f.getSheetRelationshipsTargetByID(sheet, slicer.RID)
-					slicerXML := strings.ReplaceAll(sheetRelationshipsDrawingXML, "..", "xl")
-					opts, err := f.getSlicers(slicerXML, drawingXML)
+					opts, err := f.getSlicers(sheet, slicer.RID, drawingXML)
 					if err != nil {
 						return slicers, err
 					}
@@ -782,8 +786,8 @@ func (f *File) GetSlicers(sheet string) ([]SlicerOptions, error) {
 }
 
 // getSlicerCache provides a function to get a slicer cache by given slicer
-// cache name.
-func (f *File) getSlicerCache(slicerCacheName string) *xlsxSlicerCacheDefinition {
+// cache name and slicer options.
+func (f *File) getSlicerCache(slicerCacheName string, opt *SlicerOptions) *xlsxSlicerCacheDefinition {
 	var (
 		err         error
 		slicerCache *xlsxSlicerCacheDefinition
@@ -795,6 +799,7 @@ func (f *File) getSlicerCache(slicerCacheName string) *xlsxSlicerCacheDefinition
 				return true
 			}
 			if slicerCache.Name == slicerCacheName {
+				opt.slicerCacheXML = k.(string)
 				return false
 			}
 		}
@@ -803,21 +808,30 @@ func (f *File) getSlicerCache(slicerCacheName string) *xlsxSlicerCacheDefinition
 	return slicerCache
 }
 
-// getSlicers provides a function to get slicers options by given slicer part
-// path, drawing part path, table and pivot table options.
-func (f *File) getSlicers(slicerXML, drawingXML string) ([]SlicerOptions, error) {
-	var opts []SlicerOptions
-	slicers, err := f.slicerReader(slicerXML)
+// getSlicers provides a function to get slicers options by given worksheet
+// name, slicer part relationship ID and drawing part path.
+func (f *File) getSlicers(sheet, rID, drawingXML string) ([]SlicerOptions, error) {
+	var (
+		opts                        []SlicerOptions
+		sheetRelationshipsSlicerXML = f.getSheetRelationshipsTargetByID(sheet, rID)
+		slicerXML                   = strings.ReplaceAll(sheetRelationshipsSlicerXML, "..", "xl")
+		slicers, err                = f.slicerReader(slicerXML)
+	)
 	if err != nil {
 		return opts, err
 	}
 	for _, slicer := range slicers.Slicer {
 		opt := SlicerOptions{
-			Name:          slicer.Name,
-			Caption:       slicer.Caption,
-			DisplayHeader: slicer.ShowCaption,
+			slicerXML:       slicerXML,
+			slicerCacheName: slicer.Cache,
+			slicerSheetName: sheet,
+			slicerSheetRID:  rID,
+			drawingXML:      drawingXML,
+			Name:            slicer.Name,
+			Caption:         slicer.Caption,
+			DisplayHeader:   slicer.ShowCaption,
 		}
-		slicerCache := f.getSlicerCache(slicer.Cache)
+		slicerCache := f.getSlicerCache(slicer.Cache, &opt)
 		if slicerCache == nil {
 			return opts, err
 		}
@@ -936,4 +950,101 @@ func (f *File) extractSlicerCellAnchor(drawingXML string, opt *SlicerOptions) er
 		}
 	}
 	return err
+}
+
+// getAllSlicers provides a function to get all slicers in a workbook.
+func (f *File) getAllSlicers() (map[string][]SlicerOptions, error) {
+	slicers := map[string][]SlicerOptions{}
+	for _, sheetName := range f.GetSheetList() {
+		sles, err := f.GetSlicers(sheetName)
+		e := ErrSheetNotExist{sheetName}
+		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
+			return slicers, err
+		}
+		slicers[sheetName] = append(slicers[sheetName], sles...)
+	}
+	return slicers, nil
+}
+
+// DeleteSlicer provides the method to delete a slicer by a given slicer name.
+func (f *File) DeleteSlicer(name string) error {
+	sles, err := f.getAllSlicers()
+	if err != nil {
+		return err
+	}
+	for _, slicers := range sles {
+		for _, slicer := range slicers {
+			if slicer.Name != name {
+				continue
+			}
+			_ = f.deleteSlicer(slicer)
+			return f.deleteSlicerCache(sles, slicer)
+		}
+	}
+	return newNoExistSlicerError(name)
+}
+
+// getSlicers provides a function to delete slicer by given slicer options.
+func (f *File) deleteSlicer(opts SlicerOptions) error {
+	slicers, err := f.slicerReader(opts.slicerXML)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(slicers.Slicer); i++ {
+		if slicers.Slicer[i].Name == opts.Name {
+			slicers.Slicer = append(slicers.Slicer[:i], slicers.Slicer[i+1:]...)
+			i--
+		}
+	}
+	if len(slicers.Slicer) == 0 {
+		var (
+			extLstBytes  []byte
+			ws, err      = f.workSheetReader(opts.slicerSheetName)
+			decodeExtLst = new(decodeExtLst)
+		)
+		if err != nil {
+			return err
+		}
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return err
+		}
+		for i, ext := range decodeExtLst.Ext {
+			if ext.URI == ExtURISlicerListX14 || ext.URI == ExtURISlicerListX15 {
+				slicerList := new(decodeSlicerList)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(slicerList)
+				for _, slicer := range slicerList.Slicer {
+					if slicer.RID == opts.slicerSheetRID {
+						decodeExtLst.Ext = append(decodeExtLst.Ext[:i], decodeExtLst.Ext[i+1:]...)
+						extLstBytes, err = xml.Marshal(decodeExtLst)
+						ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+						f.Pkg.Delete(opts.slicerXML)
+						_ = f.removeContentTypesPart(ContentTypeSlicer, "/"+opts.slicerXML)
+						f.deleteSheetRelationships(opts.slicerSheetName, opts.slicerSheetRID)
+						return err
+					}
+				}
+			}
+		}
+	}
+	output, err := xml.Marshal(slicers)
+	f.saveFileList(opts.slicerXML, output)
+	return err
+}
+
+// deleteSlicerCache provides a function to delete the slicer cache by giving
+// slicer options if the slicer cache is no longer used.
+func (f *File) deleteSlicerCache(sles map[string][]SlicerOptions, opts SlicerOptions) error {
+	for _, slicers := range sles {
+		for _, slicer := range slicers {
+			if slicer.Name != opts.Name && slicer.slicerCacheName == opts.slicerCacheName {
+				return nil
+			}
+		}
+	}
+	if err := f.DeleteDefinedName(&DefinedName{Name: opts.slicerCacheName}); err != nil {
+		return err
+	}
+	f.Pkg.Delete(opts.slicerCacheXML)
+	return f.removeContentTypesPart(ContentTypeSlicerCache, "/"+opts.slicerCacheXML)
 }

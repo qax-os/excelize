@@ -444,6 +444,26 @@ func TestSlicer(t *testing.T) {
 	_, err = f.GetSlicers("Sheet1")
 	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
 	assert.NoError(t, f.Close())
+
+	// Test open a workbook and delete slicers
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	for _, name := range []string{colName, "Column1 1", "Column1"} {
+		assert.NoError(t, f.DeleteSlicer(name))
+	}
+	for _, name := range []string{"Month", "Month 1", "Region"} {
+		assert.NoError(t, f.DeleteSlicer(name))
+	}
+	// Test delete slicer with no exits slicer name
+	assert.Equal(t, newNoExistSlicerError("x"), f.DeleteSlicer("x"))
+	assert.NoError(t, f.Close())
+
+	// Test open a workbook and delete sheet slicer with unsupported charset slicer cache
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/slicers/slicer1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteSlicer("Column1"), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
 }
 
 func TestAddSheetSlicer(t *testing.T) {
@@ -466,33 +486,78 @@ func TestAddSheetTableSlicer(t *testing.T) {
 func TestSetSlicerCache(t *testing.T) {
 	f := NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache1.xml", MacintoshCyrillicCharset)
-	_, err := f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{}, nil)
+	_, err := f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer2" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"><tableSlicerCache tableId="1" column="2"/></ext></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{tID: 1}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{tID: 1}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{tID: 1}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{tID: 1}, nil)
 	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+}
+
+func TestDeleteSlicer(t *testing.T) {
+	f, slicerXML := NewFile(), "xl/slicers/slicer1.xml"
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	assert.NoError(t, f.AddSlicer("Sheet1", &SlicerOptions{
+		Name:       "Column1",
+		Cell:       "E1",
+		TableSheet: "Sheet1",
+		TableName:  "Table1",
+		Caption:    "Column1",
+	}))
+	// Test delete sheet slicers with invalid worksheet extension list
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst.Ext = "<>"
+	assert.Error(t, f.deleteSlicer(SlicerOptions{
+		slicerXML:       slicerXML,
+		slicerSheetName: "Sheet1",
+		Name:            "Column1",
+	}))
+	// Test delete slicer with unsupported charset worksheet
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSlicer(SlicerOptions{
+		slicerXML:       slicerXML,
+		slicerSheetName: "Sheet1",
+		Name:            "Column1",
+	}), "XML syntax error on line 1: invalid UTF-8")
+	// Test delete slicer with unsupported charset slicer
+	f.Pkg.Store(slicerXML, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSlicer(SlicerOptions{slicerXML: slicerXML}), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+}
+
+func TestDeleteSlicerCache(t *testing.T) {
+	f := NewFile()
+	// Test delete slicer cache with unsupported charset workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSlicerCache(nil, SlicerOptions{}), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
 
