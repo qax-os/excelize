@@ -1902,27 +1902,25 @@ func (f *File) newFont(style *Style) (*xlsxFont, error) {
 
 // getNumFmtID provides a function to get number format code ID.
 // If given number format code does not exist, will return -1.
-func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) (numFmtID int) {
-	numFmtID = -1
+func getNumFmtID(styleSheet *xlsxStyleSheet, style *Style) int {
+	numFmtID := -1
 	if _, ok := builtInNumFmt[style.NumFmt]; ok {
 		return style.NumFmt
 	}
 	if (27 <= style.NumFmt && style.NumFmt <= 36) || (50 <= style.NumFmt && style.NumFmt <= 81) {
-		numFmtID = style.NumFmt
-		return
+		return style.NumFmt
 	}
 	if fmtCode, ok := currencyNumFmt[style.NumFmt]; ok {
 		numFmtID = style.NumFmt
 		if styleSheet.NumFmts != nil {
 			for _, numFmt := range styleSheet.NumFmts.NumFmt {
 				if numFmt.FormatCode == fmtCode {
-					numFmtID = numFmt.NumFmtID
-					return
+					return numFmt.NumFmtID
 				}
 			}
 		}
 	}
-	return
+	return numFmtID
 }
 
 // newNumFmt provides a function to check if number format code in the range
