@@ -790,9 +790,9 @@ func (f *File) getPivotTableDataRange(opts *PivotTableOptions) error {
 		return err
 	}
 	for sheetName, tables := range tbls {
- 		for _, table := range tables {
- 			if table.Name == opts.DataRange {
- 				opts.pivotDataRange, opts.namedDataRange = fmt.Sprintf("%s!%s", sheetName, table.Range), true
+		for _, table := range tables {
+			if table.Name == opts.DataRange {
+				opts.pivotDataRange, opts.namedDataRange = fmt.Sprintf("%s!%s", sheetName, table.Range), true
 				return err
 			}
 		}
