@@ -785,12 +785,11 @@ func (f *File) getPivotTableDataRange(opts *PivotTableOptions) error {
 		opts.pivotDataRange = opts.DataRange
 		return nil
 	}
-	for _, sheetName := range f.GetSheetList() {
-		tables, err := f.GetTables(sheetName)
-		e := ErrSheetNotExist{sheetName}
-		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
-			return err
-		}
+	tbls, err := f.getTables()
+	if err != nil {
+		return err
+	}
+	for sheetName, tables := range tbls {
 		for _, table := range tables {
 			if table.Name == opts.DataRange {
 				opts.pivotDataRange, opts.namedDataRange = fmt.Sprintf("%s!%s", sheetName, table.Range), true
@@ -1016,8 +1015,8 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		return err
 	}
 	pivotTableCaches := map[string]int{}
-	for _, sheetName := range f.GetSheetList() {
-		sheetPivotTables, _ := f.GetPivotTables(sheetName)
+	pivotTables, _ := f.getPivotTables()
+	for _, sheetPivotTables := range pivotTables {
 		for _, sheetPivotTable := range sheetPivotTables {
 			pivotTableCaches[sheetPivotTable.pivotCacheXML]++
 		}
@@ -1037,4 +1036,18 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		}
 	}
 	return newNoExistTableError(name)
+}
+
+// getPivotTables provides a function to get all pivot tables in a workbook.
+func (f *File) getPivotTables() (map[string][]PivotTableOptions, error) {
+	pivotTables := map[string][]PivotTableOptions{}
+	for _, sheetName := range f.GetSheetList() {
+		pts, err := f.GetPivotTables(sheetName)
+		e := ErrSheetNotExist{sheetName}
+		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
+			return pivotTables, err
+		}
+		pivotTables[sheetName] = append(pivotTables[sheetName], pts...)
+	}
+	return pivotTables, nil
 }

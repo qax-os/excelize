@@ -264,6 +264,12 @@ func newInvalidStyleID(styleID int) error {
 	return fmt.Errorf("invalid style ID %d", styleID)
 }
 
+// newNoExistSlicerError defined the error message on receiving the non existing
+// slicer name.
+func newNoExistSlicerError(name string) error {
+	return fmt.Errorf("slicer %s does not exist", name)
+}
+
 // newNoExistTableError defined the error message on receiving the non existing
 // table name.
 func newNoExistTableError(name string) error {
