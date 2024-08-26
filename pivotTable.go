@@ -62,6 +62,10 @@ type PivotTableOptions struct {
 }
 
 // PivotTableField directly maps the field settings of the pivot table.
+//
+// Name specifies the name of the data field. Maximum 255 characters
+// are allowed in data field name, excess characters will be truncated.
+//
 // Subtotal specifies the aggregation function that applies to this data
 // field. The default value is sum. The possible values for this attribute
 // are:
@@ -78,8 +82,9 @@ type PivotTableOptions struct {
 //	Var
 //	Varp
 //
-// Name specifies the name of the data field. Maximum 255 characters
-// are allowed in data field name, excess characters will be truncated.
+// NumFmt specifies the number format ID of the data field, this filed only
+// accepts built-in number format ID and does not support custom number format
+// expression currently.
 type PivotTableField struct {
 	Compact         bool
 	Data            string
@@ -87,6 +92,7 @@ type PivotTableField struct {
 	Outline         bool
 	Subtotal        string
 	DefaultSubtotal bool
+	NumFmt          int
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
@@ -452,6 +458,7 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 	}
 	dataFieldsSubtotals := f.getPivotTableFieldsSubtotal(opts.Data)
 	dataFieldsName := f.getPivotTableFieldsName(opts.Data)
+	dataFieldsNumFmtID := f.getPivotTableFieldsNumFmtID(opts.Data)
 	for idx, dataField := range dataFieldsIndex {
 		if pt.DataFields == nil {
 			pt.DataFields = &xlsxDataFields{}
@@ -460,6 +467,7 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 			Name:     dataFieldsName[idx],
 			Fld:      dataField,
 			Subtotal: dataFieldsSubtotals[idx],
+			NumFmtID: dataFieldsNumFmtID[idx],
 		})
 	}
 
@@ -687,6 +695,22 @@ func (f *File) getPivotTableFieldName(name string, fields []PivotTableField) str
 	return ""
 }
 
+// getPivotTableFieldsNumFmtID prepare fields number format ID by given pivot
+// table fields.
+func (f *File) getPivotTableFieldsNumFmtID(fields []PivotTableField) []int {
+	field := make([]int, len(fields))
+	for idx, fld := range fields {
+		if _, ok := builtInNumFmt[fld.NumFmt]; ok {
+			field[idx] = fld.NumFmt
+			continue
+		}
+		if (27 <= fld.NumFmt && fld.NumFmt <= 36) || (50 <= fld.NumFmt && fld.NumFmt <= 81) {
+			field[idx] = fld.NumFmt
+		}
+	}
+	return field
+}
+
 // getPivotTableFieldOptions return options for specific field by given field name.
 func (f *File) getPivotTableFieldOptions(name string, fields []PivotTableField) (options PivotTableField, ok bool) {
 	for _, field := range fields {
@@ -761,12 +785,11 @@ func (f *File) getPivotTableDataRange(opts *PivotTableOptions) error {
 		opts.pivotDataRange = opts.DataRange
 		return nil
 	}
-	for _, sheetName := range f.GetSheetList() {
-		tables, err := f.GetTables(sheetName)
-		e := ErrSheetNotExist{sheetName}
-		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
-			return err
-		}
+	tbls, err := f.getTables()
+	if err != nil {
+		return err
+	}
+	for sheetName, tables := range tbls {
 		for _, table := range tables {
 			if table.Name == opts.DataRange {
 				opts.pivotDataRange, opts.namedDataRange = fmt.Sprintf("%s!%s", sheetName, table.Range), true
@@ -891,6 +914,7 @@ func (f *File) extractPivotTableFields(order []string, pt *xlsxPivotTableDefinit
 				Data:     order[field.Fld],
 				Name:     field.Name,
 				Subtotal: cases.Title(language.English).String(field.Subtotal),
+				NumFmt:   field.NumFmtID,
 			})
 		}
 	}
@@ -991,8 +1015,8 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		return err
 	}
 	pivotTableCaches := map[string]int{}
-	for _, sheetName := range f.GetSheetList() {
-		sheetPivotTables, _ := f.GetPivotTables(sheetName)
+	pivotTables, _ := f.getPivotTables()
+	for _, sheetPivotTables := range pivotTables {
 		for _, sheetPivotTable := range sheetPivotTables {
 			pivotTableCaches[sheetPivotTable.pivotCacheXML]++
 		}
@@ -1012,4 +1036,18 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		}
 	}
 	return newNoExistTableError(name)
+}
+
+// getPivotTables provides a function to get all pivot tables in a workbook.
+func (f *File) getPivotTables() (map[string][]PivotTableOptions, error) {
+	pivotTables := map[string][]PivotTableOptions{}
+	for _, sheetName := range f.GetSheetList() {
+		pts, err := f.GetPivotTables(sheetName)
+		e := ErrSheetNotExist{sheetName}
+		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
+			return pivotTables, err
+		}
+		pivotTables[sheetName] = append(pivotTables[sheetName], pts...)
+	}
+	return pivotTables, nil
 }

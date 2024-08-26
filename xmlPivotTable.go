@@ -273,7 +273,7 @@ type xlsxDataField struct {
 	ShowDataAs string      `xml:"showDataAs,attr,omitempty"`
 	BaseField  int         `xml:"baseField,attr,omitempty"`
 	BaseItem   int64       `xml:"baseItem,attr,omitempty"`
-	NumFmtID   string      `xml:"numFmtId,attr,omitempty"`
+	NumFmtID   int         `xml:"numFmtId,attr,omitempty"`
 	ExtLst     *xlsxExtLst `xml:"extLst"`
 }
 
