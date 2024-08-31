@@ -4838,12 +4838,26 @@ func format(value, numFmt string, date1904 bool, cellType CellType, opts *Option
 
 // getNumberPartLen returns the length of integer and fraction parts for the
 // numeric.
-func getNumberPartLen(n float64) (int, int) {
-	parts := strings.Split(strconv.FormatFloat(math.Abs(n), 'f', -1, 64), ".")
+func (nf *numberFormat) getNumberPartLen() (int, int) {
+	var intPart, fracPart, intLen, fracLen int
+	parts := strings.Split(strconv.FormatFloat(math.Abs(nf.number), 'f', -1, 64), ".")
+	intPart = len(parts[0])
 	if len(parts) == 2 {
-		return len(parts[0]), len(parts[1])
+		fracPart = len(parts[1])
 	}
-	return len(parts[0]), 0
+	if nf.intHolder > intPart {
+		nf.intHolder = intPart
+	}
+	if intLen = intPart; nf.intPadding+nf.intHolder > intPart {
+		intLen = nf.intPadding + nf.intHolder
+	}
+	if fracLen = fracPart; fracPart > nf.fracHolder+nf.fracPadding {
+		fracLen = nf.fracHolder + nf.fracPadding
+	}
+	if nf.fracPadding > fracPart {
+		fracLen = nf.fracPadding
+	}
+	return intLen, fracLen
 }
 
 // getNumberFmtConf generate the number format padding and placeholder
@@ -5021,25 +5035,12 @@ func (nf *numberFormat) printBigNumber(decimal float64, fracLen int) string {
 // numberHandler handling number format expression for positive and negative
 // numeric.
 func (nf *numberFormat) numberHandler() string {
-	var (
-		num               = nf.number
-		intPart, fracPart = getNumberPartLen(nf.number)
-		intLen, fracLen   int
-		result            string
-	)
 	nf.getNumberFmtConf()
-	if nf.intHolder > intPart {
-		nf.intHolder = intPart
-	}
-	if intLen = intPart; nf.intPadding+nf.intHolder > intPart {
-		intLen = nf.intPadding + nf.intHolder
-	}
-	if fracLen = fracPart; fracPart > nf.fracHolder+nf.fracPadding {
-		fracLen = nf.fracHolder + nf.fracPadding
-	}
-	if nf.fracPadding > fracPart {
-		fracLen = nf.fracPadding
-	}
+	var (
+		num             = nf.number
+		intLen, fracLen = nf.getNumberPartLen()
+		result          string
+	)
 	if isNum, precision, decimal := isNumeric(nf.value); isNum {
 		if precision > 15 && intLen+fracLen > 15 && !nf.useScientificNotation {
 			return nf.printNumberLiteral(nf.printBigNumber(decimal, fracLen))
@@ -5061,6 +5062,10 @@ func (nf *numberFormat) numberHandler() string {
 	}
 	if nf.useFraction {
 		num = math.Floor(math.Abs(num))
+	}
+	if !nf.useScientificNotation {
+		ratio := math.Pow(10, float64(fracLen))
+		num = math.Round(num*ratio) / ratio
 	}
 	if result = fmt.Sprintf(fmtCode, math.Abs(num)); nf.useCommaSep {
 		result = printCommaSep(result)
