@@ -58,6 +58,8 @@ type PivotTableOptions struct {
 	ShowRowStripes      bool
 	ShowColStripes      bool
 	ShowLastColumn      bool
+	FieldPrintTitles    bool
+	ItemPrintTitles     bool
 	PivotTableStyleName string
 }
 
@@ -90,6 +92,8 @@ type PivotTableField struct {
 	Data            string
 	Name            string
 	Outline         bool
+	ShowAll         bool
+	InsertBlankRow  bool
 	Subtotal        string
 	DefaultSubtotal bool
 	NumFmt          int
@@ -349,6 +353,8 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 		CreatedVersion:        pivotTableVersion,
 		CompactData:           &opts.CompactData,
 		ShowError:             &opts.ShowError,
+		FieldPrintTitles:      opts.FieldPrintTitles,
+		ItemPrintTitles:       opts.ItemPrintTitles,
 		DataCaption:           "Values",
 		Location: &xlsxLocation{
 			Ref:            topLeftCell + ":" + bottomRightCell,
@@ -555,6 +561,8 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOpti
 				DataField:       inPivotTableField(opts.Data, name) != -1,
 				Compact:         &rowOptions.Compact,
 				Outline:         &rowOptions.Outline,
+				ShowAll:         rowOptions.ShowAll,
+				InsertBlankRow:  rowOptions.InsertBlankRow,
 				DefaultSubtotal: &rowOptions.DefaultSubtotal,
 				Items: &xlsxItems{
 					Count: len(items),
@@ -591,6 +599,8 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOpti
 				DataField:       inPivotTableField(opts.Data, name) != -1,
 				Compact:         &columnOptions.Compact,
 				Outline:         &columnOptions.Outline,
+				ShowAll:         columnOptions.ShowAll,
+				InsertBlankRow:  columnOptions.InsertBlankRow,
 				DefaultSubtotal: &columnOptions.DefaultSubtotal,
 				Items: &xlsxItems{
 					Count: len(items),
@@ -831,12 +841,14 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		return opts, err
 	}
 	opts = PivotTableOptions{
-		pivotTableXML:   pivotTableXML,
-		pivotCacheXML:   pivotCacheXML,
-		pivotSheetName:  sheet,
-		DataRange:       fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref),
-		PivotTableRange: fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
-		Name:            pt.Name,
+		pivotTableXML:    pivotTableXML,
+		pivotCacheXML:    pivotCacheXML,
+		pivotSheetName:   sheet,
+		DataRange:        fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref),
+		PivotTableRange:  fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
+		Name:             pt.Name,
+		FieldPrintTitles: pt.FieldPrintTitles,
+		ItemPrintTitles:  pt.ItemPrintTitles,
 	}
 	if pc.CacheSource.WorksheetSource.Name != "" {
 		opts.DataRange = pc.CacheSource.WorksheetSource.Name
@@ -924,7 +936,9 @@ func (f *File) extractPivotTableFields(order []string, pt *xlsxPivotTableDefinit
 // settings by given pivot table fields.
 func extractPivotTableField(data string, fld *xlsxPivotField) PivotTableField {
 	pivotTableField := PivotTableField{
-		Data: data,
+		Data:           data,
+		ShowAll:        fld.ShowAll,
+		InsertBlankRow: fld.InsertBlankRow,
 	}
 	fields := []string{"Compact", "Name", "Outline", "Subtotal", "DefaultSubtotal"}
 	immutable, mutable := reflect.ValueOf(*fld), reflect.ValueOf(&pivotTableField).Elem()

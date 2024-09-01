@@ -31,9 +31,9 @@ func TestPivotTable(t *testing.T) {
 		DataRange:           "Sheet1!A1:E31",
 		PivotTableRange:     "Sheet1!G2:M34",
 		Name:                "PivotTable1",
-		Rows:                []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Rows:                []PivotTableField{{Data: "Month", ShowAll: true, DefaultSubtotal: true}, {Data: "Year"}},
 		Filter:              []PivotTableField{{Data: "Region"}},
-		Columns:             []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
+		Columns:             []PivotTableField{{Data: "Type", ShowAll: true, InsertBlankRow: true, DefaultSubtotal: true}},
 		Data:                []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Summarize by Sum", NumFmt: 38}},
 		RowGrandTotals:      true,
 		ColGrandTotals:      true,
@@ -42,6 +42,8 @@ func TestPivotTable(t *testing.T) {
 		ShowColHeaders:      true,
 		ShowLastColumn:      true,
 		ShowError:           true,
+		ItemPrintTitles:     true,
+		FieldPrintTitles:    true,
 		PivotTableStyleName: "PivotStyleLight16",
 	}
 	assert.NoError(t, f.AddPivotTable(expected))
