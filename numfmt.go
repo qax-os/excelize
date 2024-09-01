@@ -5136,7 +5136,10 @@ func (nf *numberFormat) positiveHandler() string {
 	var fmtNum bool
 	for _, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeGeneral {
-			return strconv.FormatFloat(nf.number, 'G', 10, 64)
+			if isNum, precision, _ := isNumeric(nf.value); isNum && precision > 11 {
+				return strconv.FormatFloat(nf.number, 'G', 10, 64)
+			}
+			return nf.value
 		}
 		if inStrSlice(supportedNumberTokenTypes, token.TType, true) != -1 {
 			fmtNum = true
