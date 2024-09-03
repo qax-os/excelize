@@ -497,8 +497,7 @@ func (f *File) GetPictures(sheet, cell string) ([]Picture, error) {
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	drawingRelationships := strings.ReplaceAll(
-		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
-
+		strings.ReplaceAll(drawingXML, "xl/drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
 	imgs, err := f.getCellImages(sheet, cell)
 	if err != nil {
 		return nil, err
@@ -526,7 +525,8 @@ func (f *File) GetPictureCells(sheet string) ([]string, error) {
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
 	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	drawingRelationships := strings.ReplaceAll(
-		strings.ReplaceAll(target, "../drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
+		strings.ReplaceAll(drawingXML, "xl/drawings", "xl/drawings/_rels"), ".xml", ".xml.rels")
+
 	embeddedImageCells, err := f.getImageCells(sheet)
 	if err != nil {
 		return nil, err
@@ -609,8 +609,15 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 		}
 	}
 	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
-		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
-		if buffer, _ := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); buffer != nil {
+		var target string
+		if strings.HasPrefix(r.Target, "/") {
+			target = strings.TrimPrefix(r.Target, "/")
+		} else {
+			target = filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))
+		}
+
+		pic := Picture{Extension: filepath.Ext(target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
+		if buffer, _ := f.Pkg.Load(target); buffer != nil {
 			pic.File = buffer.([]byte)
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
 			pics = append(pics, pic)
@@ -770,7 +777,14 @@ func (f *File) getPictureCells(drawingXML, drawingRelationships string) ([]strin
 		}
 	}
 	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
-		if _, ok := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); ok {
+		var target string
+		if strings.HasPrefix(r.Target, "/") {
+			target = strings.TrimPrefix(r.Target, "/")
+		} else {
+			target = filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))
+		}
+
+		if _, ok := f.Pkg.Load(target); ok {
 			if cell, err := CoordinatesToCellName(a.From.Col+1, a.From.Row+1); err == nil && inStrSlice(cells, cell, true) == -1 {
 				cells = append(cells, cell)
 			}
