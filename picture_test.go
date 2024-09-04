@@ -219,6 +219,19 @@ func TestGetPicture(t *testing.T) {
 	cells, err := f.GetPictureCells("Sheet2")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"K16"}, cells)
+
+	// Try to get picture cells with absolute target path in the drawing relationship
+	rels, err := f.relsReader("xl/drawings/_rels/drawing2.xml.rels")
+	assert.NoError(t, err)
+	rels.Relationships[0].Target = "/xl/media/image2.jpeg"
+	cells, err = f.GetPictureCells("Sheet2")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"K16"}, cells)
+	// Try to get pictures with absolute target path in the drawing relationship
+	pics, err = f.GetPictures("Sheet2", "K16")
+	assert.NoError(t, err)
+	assert.Len(t, pics, 1)
+
 	assert.NoError(t, f.Close())
 
 	// Test get picture from none drawing worksheet
