@@ -176,7 +176,12 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			if field.IsNil() {
 				continue
 			}
-			immutable.FieldByName(mutable.Type().Field(i).Name).Set(field)
+			fld := immutable.FieldByName(mutable.Type().Field(i).Name)
+			if field.Kind() == reflect.Slice && i < 16 { // All []*cCharts type fields
+				fld.Set(reflect.Append(fld, field.Index(0)))
+				continue
+			}
+			fld.Set(field)
 		}
 	}
 	addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[opts.Type](xlsxChartSpace.Chart.PlotArea, opts))
@@ -194,239 +199,241 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 // drawBaseChart provides a function to draw the c:plotArea element for bar,
 // and column series charts by given format sets.
 func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
-	c := cCharts{
-		BarDir: &attrValString{
-			Val: stringPtr("col"),
+	c := []*cCharts{
+		{
+			BarDir: &attrValString{
+				Val: stringPtr("col"),
+			},
+			Grouping: &attrValString{
+				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+			},
+			VaryColors: &attrValBool{
+				Val: opts.VaryColors,
+			},
+			Ser:     f.drawChartSeries(opts),
+			Shape:   f.drawChartShape(opts),
+			DLbls:   f.drawChartDLbls(opts),
+			AxID:    f.genAxID(opts),
+			Overlap: &attrValInt{Val: intPtr(100)},
 		},
-		Grouping: &attrValString{
-			Val: stringPtr(plotAreaChartGrouping[opts.Type]),
-		},
-		VaryColors: &attrValBool{
-			Val: opts.VaryColors,
-		},
-		Ser:     f.drawChartSeries(opts),
-		Shape:   f.drawChartShape(opts),
-		DLbls:   f.drawChartDLbls(opts),
-		AxID:    f.genAxID(opts),
-		Overlap: &attrValInt{Val: intPtr(100)},
 	}
 	var ok bool
-	if *c.BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
-		c.BarDir = nil
+	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
+		c[0].BarDir = nil
 	}
-	if *c.Overlap.Val, ok = plotAreaChartOverlap[opts.Type]; !ok {
-		c.Overlap = nil
+	if *c[0].Overlap.Val, ok = plotAreaChartOverlap[opts.Type]; !ok {
+		c[0].Overlap = nil
 	}
 	catAx := f.drawPlotAreaCatAx(pa, opts)
 	valAx := f.drawPlotAreaValAx(pa, opts)
 	charts := map[ChartType]*cPlotArea{
 		Area: {
-			AreaChart: &c,
+			AreaChart: c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
 		AreaStacked: {
-			AreaChart: &c,
+			AreaChart: c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
 		AreaPercentStacked: {
-			AreaChart: &c,
+			AreaChart: c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
 		Area3D: {
-			Area3DChart: &c,
+			Area3DChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Area3DStacked: {
-			Area3DChart: &c,
+			Area3DChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Area3DPercentStacked: {
-			Area3DChart: &c,
+			Area3DChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Bar: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		BarStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		BarPercentStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		Bar3DClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DConeClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DConeStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DConePercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPyramidClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPyramidStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPyramidPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DCylinderClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DCylinderStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DCylinderPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		ColStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		ColPercentStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		Col3D: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCone: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DConeClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DConeStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DConePercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramid: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramidClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramidStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramidPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinder: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinderClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinderStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinderPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bubble: {
-			BubbleChart: &c,
+			BubbleChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Bubble3D: {
-			BubbleChart: &c,
+			BubbleChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
@@ -443,12 +450,14 @@ func (f *File) drawDoughnutChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	}
 
 	return &cPlotArea{
-		DoughnutChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		DoughnutChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:      f.drawChartSeries(opts),
+				HoleSize: &attrValInt{Val: intPtr(holeSize)},
 			},
-			Ser:      f.drawChartSeries(opts),
-			HoleSize: &attrValInt{Val: intPtr(holeSize)},
 		},
 	}
 }
@@ -457,16 +466,18 @@ func (f *File) drawDoughnutChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // chart by given format sets.
 func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		LineChart: &cCharts{
-			Grouping: &attrValString{
-				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+		LineChart: []*cCharts{
+			{
+				Grouping: &attrValString{
+					Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
@@ -477,16 +488,18 @@ func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // chart by given format sets.
 func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		Line3DChart: &cCharts{
-			Grouping: &attrValString{
-				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+		Line3DChart: []*cCharts{
+			{
+				Grouping: &attrValString{
+					Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
@@ -497,11 +510,13 @@ func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // chart by given format sets.
 func (f *File) drawPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		PieChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		PieChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser: f.drawChartSeries(opts),
 			},
-			Ser: f.drawChartSeries(opts),
 		},
 	}
 }
@@ -510,11 +525,13 @@ func (f *File) drawPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // pie chart by given format sets.
 func (f *File) drawPie3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		Pie3DChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		Pie3DChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser: f.drawChartSeries(opts),
 			},
-			Ser: f.drawChartSeries(opts),
 		},
 	}
 }
@@ -527,16 +544,18 @@ func (f *File) drawPieOfPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		splitPos = &attrValInt{Val: intPtr(opts.PlotArea.SecondPlotValues)}
 	}
 	return &cPlotArea{
-		OfPieChart: &cCharts{
-			OfPieType: &attrValString{
-				Val: stringPtr("pie"),
+		OfPieChart: []*cCharts{
+			{
+				OfPieType: &attrValString{
+					Val: stringPtr("pie"),
+				},
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:      f.drawChartSeries(opts),
+				SplitPos: splitPos,
+				SerLines: &attrValString{},
 			},
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
-			},
-			Ser:      f.drawChartSeries(opts),
-			SplitPos: splitPos,
-			SerLines: &attrValString{},
 		},
 	}
 }
@@ -549,16 +568,18 @@ func (f *File) drawBarOfPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		splitPos = &attrValInt{Val: intPtr(opts.PlotArea.SecondPlotValues)}
 	}
 	return &cPlotArea{
-		OfPieChart: &cCharts{
-			OfPieType: &attrValString{
-				Val: stringPtr("bar"),
+		OfPieChart: []*cCharts{
+			{
+				OfPieType: &attrValString{
+					Val: stringPtr("bar"),
+				},
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				SplitPos: splitPos,
+				Ser:      f.drawChartSeries(opts),
+				SerLines: &attrValString{},
 			},
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
-			},
-			SplitPos: splitPos,
-			Ser:      f.drawChartSeries(opts),
-			SerLines: &attrValString{},
 		},
 	}
 }
@@ -567,16 +588,18 @@ func (f *File) drawBarOfPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // chart by given format sets.
 func (f *File) drawRadarChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		RadarChart: &cCharts{
-			RadarStyle: &attrValString{
-				Val: stringPtr("marker"),
+		RadarChart: []*cCharts{
+			{
+				RadarStyle: &attrValString{
+					Val: stringPtr("marker"),
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
@@ -587,16 +610,18 @@ func (f *File) drawRadarChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // scatter chart by given format sets.
 func (f *File) drawScatterChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		ScatterChart: &cCharts{
-			ScatterStyle: &attrValString{
-				Val: stringPtr("smoothMarker"), // line,lineMarker,marker,none,smooth,smoothMarker
+		ScatterChart: []*cCharts{
+			{
+				ScatterStyle: &attrValString{
+					Val: stringPtr("smoothMarker"), // line,lineMarker,marker,none,smooth,smoothMarker
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
 		ValAx: append(f.drawPlotAreaCatAx(pa, opts), f.drawPlotAreaValAx(pa, opts)...),
 	}
@@ -606,12 +631,14 @@ func (f *File) drawScatterChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // given format sets.
 func (f *File) drawSurface3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
-		Surface3DChart: &cCharts{
-			Ser: f.drawChartSeries(opts),
-			AxID: []*attrValInt{
-				{Val: intPtr(100000000)},
-				{Val: intPtr(100000001)},
-				{Val: intPtr(100000005)},
+		Surface3DChart: []*cCharts{
+			{
+				Ser: f.drawChartSeries(opts),
+				AxID: []*attrValInt{
+					{Val: intPtr(100000000)},
+					{Val: intPtr(100000001)},
+					{Val: intPtr(100000005)},
+				},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
@@ -619,7 +646,7 @@ func (f *File) drawSurface3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		SerAx: f.drawPlotAreaSerAx(opts),
 	}
 	if opts.Type == WireframeSurface3D {
-		plotArea.Surface3DChart.Wireframe = &attrValBool{Val: boolPtr(true)}
+		plotArea.Surface3DChart[0].Wireframe = &attrValBool{Val: boolPtr(true)}
 	}
 	return plotArea
 }
@@ -628,12 +655,14 @@ func (f *File) drawSurface3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // given format sets.
 func (f *File) drawSurfaceChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
-		SurfaceChart: &cCharts{
-			Ser: f.drawChartSeries(opts),
-			AxID: []*attrValInt{
-				{Val: intPtr(100000000)},
-				{Val: intPtr(100000001)},
-				{Val: intPtr(100000005)},
+		SurfaceChart: []*cCharts{
+			{
+				Ser: f.drawChartSeries(opts),
+				AxID: []*attrValInt{
+					{Val: intPtr(100000000)},
+					{Val: intPtr(100000001)},
+					{Val: intPtr(100000005)},
+				},
 			},
 		},
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
@@ -641,7 +670,7 @@ func (f *File) drawSurfaceChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		SerAx: f.drawPlotAreaSerAx(opts),
 	}
 	if opts.Type == WireframeContour {
-		plotArea.SurfaceChart.Wireframe = &attrValBool{Val: boolPtr(true)}
+		plotArea.SurfaceChart[0].Wireframe = &attrValBool{Val: boolPtr(true)}
 	}
 	return plotArea
 }
@@ -650,18 +679,20 @@ func (f *File) drawSurfaceChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // given format sets.
 func (f *File) drawBubbleChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
-		BubbleChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		BubbleChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
 		ValAx: append(f.drawPlotAreaCatAx(pa, opts), f.drawPlotAreaValAx(pa, opts)...),
 	}
 	if opts.BubbleSize > 0 && opts.BubbleSize <= 300 {
-		plotArea.BubbleChart.BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
+		plotArea.BubbleChart[0].BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
 	}
 	return plotArea
 }
@@ -750,23 +781,19 @@ func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
 func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}}}
 	spPr = f.drawShapeFill(opts.Series[i].Fill, spPr)
-	spPrScatter := &cSpPr{
-		Ln: &aLn{
-			W:      25400,
-			NoFill: &attrValString{},
-		},
-	}
-	spPrLine := &cSpPr{
+	solid := &cSpPr{
 		Ln: &aLn{
 			W:         f.ptToEMUs(opts.Series[i].Line.Width),
 			Cap:       "rnd", // rnd, sq, flat
 			SolidFill: spPr.SolidFill,
 		},
 	}
-	if chartSeriesSpPr, ok := map[ChartType]*cSpPr{
-		Line: spPrLine, Scatter: spPrScatter,
+	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
+	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
+		Line:    {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
+		Scatter: {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
 	}[opts.Type]; ok {
-		return chartSeriesSpPr
+		return chartSeriesSpPr[opts.Series[i].Line.Type]
 	}
 	if spPr.SolidFill.SrgbClr != nil {
 		return spPr

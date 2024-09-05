@@ -85,7 +85,8 @@ type ChartLineType byte
 
 // This section defines the currently supported chart line types enumeration.
 const (
-	ChartLineSolid ChartLineType = iota
+	ChartLineUnset ChartLineType = iota
+	ChartLineSolid
 	ChartLineNone
 	ChartLineAutomatic
 )
