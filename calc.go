@@ -478,6 +478,7 @@ type formulaFuncs struct {
 //	DISC
 //	DMAX
 //	DMIN
+//	DOLLAR
 //	DOLLARDE
 //	DOLLARFR
 //	DPRODUCT
@@ -16339,6 +16340,49 @@ func (fn *formulaFuncs) discIntrate(name string, argsList *list.List) formulaArg
 //	DISC(settlement,maturity,pr,redemption,[basis])
 func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
 	return fn.discIntrate("DISC", argsList)
+}
+
+// DOLLAR function rounds a supplied number to a specified number of decimal
+// places and then converts this into a text string with a currency format. The
+// syntax of the function is:
+//
+//	DOLLAR(number,[decimals])
+func (fn *formulaFuncs) DOLLAR(argsList *list.List) formulaArg {
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DOLLAR requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DOLLAR requires 1 or 2 arguments")
+	}
+	numArg := argsList.Front().Value.(formulaArg)
+	n := numArg.ToNumber()
+	if n.Type != ArgNumber {
+		return n
+	}
+	decimals, dot, value := 2, ".", numArg.Value()
+	if argsList.Len() == 2 {
+		d := argsList.Back().Value.(formulaArg).ToNumber()
+		if d.Type != ArgNumber {
+			return d
+		}
+		if d.Number < 0 {
+			value = strconv.FormatFloat(fn.round(n.Number, d.Number, down), 'f', -1, 64)
+		}
+		if d.Number >= 128 {
+			return newErrorFormulaArg(formulaErrorVALUE, "decimal value should be less than 128")
+		}
+		if decimals = int(d.Number); decimals < 0 {
+			decimals, dot = 0, ""
+		}
+	}
+	symbol := map[CultureName]string{
+		CultureNameUnknown: "$",
+		CultureNameEnUS:    "$",
+		CultureNameZhCN:    "¥",
+	}[fn.f.options.CultureInfo]
+	numFmtCode := fmt.Sprintf("%s#,##0%s%s;(%s#,##0%s%s)",
+		symbol, dot, strings.Repeat("0", decimals), symbol, dot, strings.Repeat("0", decimals))
+	return newStringFormulaArg(format(value, numFmtCode, false, CellTypeNumber, nil))
 }
 
 // DOLLARDE function converts a dollar value in fractional notation, into a

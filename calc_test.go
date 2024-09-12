@@ -2117,6 +2117,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=DDB(10000,1000,5,5)": "296",
 		// DISC
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100)": "0.01",
+		// DOLLAR
+		"=DOLLAR(1234.56)":     "$1,234.56",
+		"=DOLLAR(1234.56,0)":   "$1,235",
+		"=DOLLAR(1234.56,1)":   "$1,234.6",
+		"=DOLLAR(1234.56,2)":   "$1,234.56",
+		"=DOLLAR(1234.56,3)":   "$1,234.560",
+		"=DOLLAR(1234.56,-2)":  "$1,200",
+		"=DOLLAR(1234.56,-3)":  "$1,000",
+		"=DOLLAR(-1234.56,3)":  "($1,234.560)",
+		"=DOLLAR(-1234.56,-3)": "($1,000)",	
 		// DOLLARDE
 		"=DOLLARDE(1.01,16)": "1.0625",
 		// DOLLARFR
@@ -4250,6 +4260,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=DISC(\"04/01/2016\",\"03/31/2021\",0,100)":       {"#NUM!", "DISC requires pr > 0"},
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,0)":        {"#NUM!", "DISC requires redemption > 0"},
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    {"#NUM!", "invalid basis"},
+		// DOLLAR
+		"DOLLAR()":       {"#VALUE!", "DOLLAR requires at least 1 argument"},
+		"DOLLAR(0,0,0)":  {"#VALUE!", "DOLLAR requires 1 or 2 arguments"},
+		"DOLLAR(\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"DOLLAR(0,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"DOLLAR(1,200)":  {"#VALUE!", "decimal value should be less than 128"},
 		// DOLLARDE
 		"=DOLLARDE()":       {"#VALUE!", "DOLLARDE requires 2 arguments"},
 		"=DOLLARDE(\"\",0)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
