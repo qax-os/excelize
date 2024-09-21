@@ -38,12 +38,13 @@ func TestPivotTable(t *testing.T) {
 		RowGrandTotals:      true,
 		ColGrandTotals:      true,
 		ShowDrill:           true,
+		ClassicLayout:       true,
+		ShowError:           true,
 		ShowRowHeaders:      true,
 		ShowColHeaders:      true,
 		ShowLastColumn:      true,
-		ShowError:           true,
-		ItemPrintTitles:     true,
 		FieldPrintTitles:    true,
+		ItemPrintTitles:     true,
 		PivotTableStyleName: "PivotStyleLight16",
 	}
 	assert.NoError(t, f.AddPivotTable(expected))
@@ -265,18 +266,25 @@ func TestPivotTable(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test add pivot table with invalid sheet name
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Error(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet:1!A1:E31",
 		PivotTableRange: "Sheet:1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Year"}},
-	}), ErrSheetNameInvalid.Error())
+	}), ErrSheetNameInvalid)
+	// Test add pivot table with enable ClassicLayout and CompactData in the same time
+	assert.Error(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		CompactData:     true,
+		ClassicLayout:   true,
+	}), ErrPivotTableClassicLayout)
 	// Test delete pivot table with not exists worksheet
 	assert.EqualError(t, f.DeletePivotTable("SheetN", "PivotTable1"), "sheet SheetN does not exist")
 	// Test delete pivot table with not exists pivot table name
 	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTableN"), "table PivotTableN does not exist")
 	// Test adjust range with invalid range
 	_, _, err = f.adjustRange("")
-	assert.EqualError(t, err, ErrParameterRequired.Error())
+	assert.Error(t, err, ErrParameterRequired)
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")
 	assert.EqualError(t, err, "parameter is invalid")

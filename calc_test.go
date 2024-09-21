@@ -2126,7 +2126,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=DOLLAR(1234.56,-2)":  "$1,200",
 		"=DOLLAR(1234.56,-3)":  "$1,000",
 		"=DOLLAR(-1234.56,3)":  "($1,234.560)",
-		"=DOLLAR(-1234.56,-3)": "($1,000)",	
+		"=DOLLAR(-1234.56,-3)": "($1,000)",
 		// DOLLARDE
 		"=DOLLARDE(1.01,16)": "1.0625",
 		// DOLLARFR

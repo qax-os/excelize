@@ -1657,6 +1657,24 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //	    Comment:  "defined name comment",
 //	    Scope:    "Sheet2",
 //	})
+//
+// If you fill the RefersTo property with only one columns range without a
+// comma, it will work as "Columns to repeat at left" only. For example:
+//
+//	err := f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "_xlnm.Print_Titles",
+//	    RefersTo: "Sheet1!$A:$A",
+//	    Scope:    "Sheet1",
+//	})
+//
+// If you fill the RefersTo property with only one rows range without a comma,
+// it will work as "Rows to repeat at top" only. For example:
+//
+//	err := f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "_xlnm.Print_Titles",
+//	    RefersTo: "Sheet1!$1:$1",
+//	    Scope:    "Sheet1",
+//	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if definedName.Name == "" || definedName.RefersTo == "" {
 		return ErrParameterInvalid
