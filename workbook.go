@@ -130,6 +130,89 @@ func (f *File) UnprotectWorkbook(password ...string) error {
 	return err
 }
 
+// unselectSheetTab deselects the sheet tab at the specified sheet index
+// if it is currently active.
+func (f *File) unselectSheetTab(sheetIdx int, wb *xlsxWorkbook) {
+	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
+	if activeSheetName == wb.Sheets.Sheet[sheetIdx].Name {
+		ws, err := f.workSheetReader(wb.Sheets.Sheet[sheetIdx].Name)
+		if err != nil {
+			return
+		}
+		ws.SheetViews.SheetView[0].TabSelected = false
+	}
+}
+
+// SwapSheets swaps the position of two sheets in the workbook
+// based on their index positions. If the indices of the sheets
+// are the same, the function does nothing. Note that the index
+// must be greater than or equal to 0 and less than SheetCount.
+// For example:
+//
+//	err := f.SwapSheets(1, 3)
+//	if err != nil {
+//	  // handle the error
+//	}
+func (f *File) SwapSheets(sheet1Idx, sheet2Idx int) error {
+	if sheet1Idx == sheet2Idx {
+		return nil
+	}
+
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	if sheet1Idx >= f.SheetCount || sheet2Idx >= f.SheetCount || sheet1Idx < 0 || sheet2Idx < 0 {
+		return ErrSheetIdx
+	}
+
+	// Unselect the tab of a sheet by index
+	f.unselectSheetTab(sheet1Idx, wb)
+	f.unselectSheetTab(sheet2Idx, wb)
+
+	tempSheet := wb.Sheets.Sheet[sheet1Idx]
+	wb.Sheets.Sheet[sheet1Idx] = wb.Sheets.Sheet[sheet2Idx]
+	wb.Sheets.Sheet[sheet2Idx] = tempSheet
+	return nil
+}
+
+// MoveSheet moves a worksheet to a specified position in the workbook.
+// The function takes the index of the source sheet and the target index.
+// After moving the worksheet to the target index, other sheets will be
+// shifted to the left or right. If the sheet is already at the target position,
+// the function will not perform any action. Note that the index must be
+// greater than or equal to 0 and less than SheetCount.
+// For example:
+//
+//	err := f.MoveSheet(0, 3)
+//	if err != nil {
+//	  // handle the error
+//	}
+func (f *File) MoveSheet(sourceIdx, targetIdx int) error {
+	if sourceIdx == targetIdx {
+		return nil
+	}
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+
+	if sourceIdx >= f.SheetCount || sourceIdx < 0 || targetIdx >= f.SheetCount || targetIdx < 0 {
+		return ErrSheetIdx
+	}
+
+	// Unselect the tab of a sheet by index
+	f.unselectSheetTab(targetIdx, wb)
+	f.unselectSheetTab(sourceIdx, wb)
+
+	sourceSheet := wb.Sheets.Sheet[sourceIdx]
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet[:sourceIdx], wb.Sheets.Sheet[sourceIdx+1:]...)
+	sheetsTemp := append([]xlsxSheet{sourceSheet}, wb.Sheets.Sheet[targetIdx:]...)
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet[:targetIdx], sheetsTemp...)
+
+	return nil
+}
+
 // setWorkbook update workbook property of the spreadsheet. Maximum 31
 // characters are allowed in sheet title.
 func (f *File) setWorkbook(name string, sheetID, rid int) {

@@ -1607,6 +1607,153 @@ func TestAttrValToInt(t *testing.T) {
 	assert.EqualError(t, err, `strconv.Atoi: parsing "s": invalid syntax`)
 }
 
+func TestMoveSheet(t *testing.T) {
+	f := NewFile()
+
+	for i := 2; i < 6; i++ {
+		f.NewSheet("Sheet" + strconv.Itoa(i))
+	}
+
+	sheetList := f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"}, sheetList)
+
+	// Move target to first position
+	err := f.MoveSheet(1, 0)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet2", "Sheet1", "Sheet3", "Sheet4", "Sheet5"}, sheetList)
+	assert.NoError(t, err)
+	ws, _ := f.workSheetReader("Sheet1")
+	assert.Equal(t, ws.SheetViews.SheetView[0].TabSelected, false)
+
+	// Move target to last position
+	err = f.MoveSheet(0, f.SheetCount-1)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet4", "Sheet5", "Sheet2"}, sheetList)
+	assert.NoError(t, err)
+
+	// Move target to same position
+	err = f.MoveSheet(4, 4)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet4", "Sheet5", "Sheet2"}, sheetList)
+	assert.NoError(t, err)
+
+	// Move target to non start and end position
+	err = f.MoveSheet(4, 2)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet2", "Sheet4", "Sheet5"}, sheetList)
+	assert.NoError(t, err)
+
+	err = f.MoveSheet(4, 1)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet3", "Sheet2", "Sheet4"}, sheetList)
+	assert.NoError(t, err)
+
+	// MoveSheets and test grouping
+	err = f.MoveSheet(3, 2)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet2", "Sheet3", "Sheet4"}, sheetList)
+	assert.NoError(t, err)
+	f.SetActiveSheet(2)
+	f.GroupSheets([]string{"Sheet2", "Sheet3"})
+	for _, sheet := range []string{"Sheet2", "Sheet3"} {
+		ws, _ := f.workSheetReader(sheet)
+		assert.Equal(t, ws.SheetViews.SheetView[0].TabSelected, true)
+	}
+
+	// Test Moving the ChartSheet
+	err = prepareTestChartSheet(f)
+	assert.NoError(t, err)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet2", "Sheet3", "Sheet4", "ChartSheet"}, sheetList)
+	err = f.MoveSheet(5, 2)
+	assert.NoError(t, err)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "ChartSheet", "Sheet2", "Sheet3", "Sheet4"}, sheetList)
+	// Test Moving the Active ChartSheet
+	f.SetActiveSheet(2)
+	err = f.MoveSheet(2, 3)
+	assert.NoError(t, err)
+
+	// Move With Error Index
+	assert.Error(t, f.MoveSheet(0, -1), ErrSheetIdx)
+	assert.Error(t, f.MoveSheet(1, f.SheetCount), ErrSheetIdx)
+
+	// Test Move with error Workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.MoveSheet(0, 1), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestSwapSheets(t *testing.T) {
+	f := NewFile()
+
+	for i := 2; i < 6; i++ {
+		f.NewSheet("Sheet" + strconv.Itoa(i))
+	}
+
+	sheetList := f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"}, sheetList)
+
+	err := f.SwapSheets(0, 1)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet2", "Sheet1", "Sheet3", "Sheet4", "Sheet5"}, sheetList)
+	assert.NoError(t, err)
+
+	err = f.SwapSheets(1, 4)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet2", "Sheet5", "Sheet3", "Sheet4", "Sheet1"}, sheetList)
+	assert.NoError(t, err)
+
+	err = f.SwapSheets(3, 2)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet2", "Sheet5", "Sheet4", "Sheet3", "Sheet1"}, sheetList)
+	assert.NoError(t, err)
+
+	err = f.SwapSheets(0, f.SheetCount-1)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet4", "Sheet3", "Sheet2"}, sheetList)
+	assert.NoError(t, err)
+
+	// Test SwapSheets with same index
+	err = f.SwapSheets(0, 0)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet4", "Sheet3", "Sheet2"}, sheetList)
+	assert.NoError(t, err)
+
+	// Swap sheet and test grouping
+	err = f.SwapSheets(3, 2)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet3", "Sheet4", "Sheet2"}, sheetList)
+	assert.NoError(t, err)
+	f.SetActiveSheet(2)
+	f.GroupSheets([]string{"Sheet2", "Sheet3"})
+	for _, sheet := range []string{"Sheet2", "Sheet3"} {
+		ws, _ := f.workSheetReader(sheet)
+		assert.Equal(t, ws.SheetViews.SheetView[0].TabSelected, true)
+	}
+
+	// Test Swapping the ChartSheet
+	err = prepareTestChartSheet(f)
+	assert.NoError(t, err)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "Sheet3", "Sheet4", "Sheet2", "ChartSheet"}, sheetList)
+	err = f.SwapSheets(5, 2)
+	assert.NoError(t, err)
+	sheetList = f.GetSheetList()
+	assert.Equal(t, []string{"Sheet1", "Sheet5", "ChartSheet", "Sheet4", "Sheet2", "Sheet3"}, sheetList)
+
+	// Swap With Error index
+	assert.Error(t, f.SwapSheets(-1, 0), ErrSheetIdx)
+	assert.Error(t, f.SwapSheets(0, -1), ErrSheetIdx)
+	assert.Error(t, f.SwapSheets(f.SheetCount, 0), ErrSheetIdx)
+	assert.Error(t, f.SwapSheets(0, f.SheetCount), ErrSheetIdx)
+
+	// Test Swap with error Workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SwapSheets(0, 1), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func prepareTestBook1() (*File, error) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if err != nil {
@@ -1710,6 +1857,45 @@ func prepareTestBook5(opts Options) (*File, error) {
 		}
 	}
 	return f, nil
+}
+
+func prepareTestChartSheet(f *File) error {
+	for idx, row := range [][]interface{}{
+		{nil, "Apple", "Orange", "Pear"},
+		{"Small", 2, 3, 3},
+		{"Normal", 5, 2, 4},
+		{"Large", 6, 7, 8},
+	} {
+		cell, err := CoordinatesToCellName(1, idx+1)
+		if err != nil {
+			return err
+		}
+		if err := f.SetSheetRow("Sheet1", cell, &row); err != nil {
+			return err
+		}
+	}
+	if err := f.AddChartSheet("ChartSheet", &Chart{
+		Type: Col,
+		Series: []ChartSeries{
+			{
+				Name:       "Sheet1!$A$2",
+				Categories: "Sheet1!$B$1:$D$1",
+				Values:     "Sheet1!$B$2:$D$2",
+			},
+		},
+	}, &Chart{
+		Type: Line,
+		Series: []ChartSeries{
+			{
+				Name:       "Sheet1!$A$4",
+				Categories: "Sheet1!$B$1:$D$1",
+				Values:     "Sheet1!$B$4:$D$4",
+			},
+		},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func fillCells(f *File, sheet string, colCount, rowCount int) error {
