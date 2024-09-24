@@ -1677,6 +1677,8 @@ func TestMoveSheet(t *testing.T) {
 	// Move With Error Index
 	assert.Error(t, f.MoveSheet(0, -1), ErrSheetIdx)
 	assert.Error(t, f.MoveSheet(1, f.SheetCount), ErrSheetIdx)
+	assert.Error(t, f.MoveSheet(-1, 0), ErrSheetIdx)
+	assert.Error(t, f.MoveSheet(f.SheetCount, 0), ErrSheetIdx)
 
 	// Test Move with error Workbook
 	f.WorkBook = nil
