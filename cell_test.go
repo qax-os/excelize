@@ -785,6 +785,13 @@ func TestGetCellRichText(t *testing.T) {
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
+	// Test get cell rich text when string item index is invalid
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{T: "s", V: "A", IS: &xlsxSI{}}
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.EqualError(t, err, "strconv.Atoi: parsing \"A\": invalid syntax")
+	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text on invalid string item index
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)

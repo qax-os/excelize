@@ -97,7 +97,8 @@ var (
 	// ErrPasswordLengthInvalid defined the error message on invalid password
 	// length.
 	ErrPasswordLengthInvalid = errors.New("password length invalid")
-	// ErrPivotTableClassicLayout
+	// ErrPivotTableClassicLayout defined the error message on enable
+	// ClassicLayout and CompactData in the same time.
 	ErrPivotTableClassicLayout = errors.New("cannot enable ClassicLayout and CompactData in the same time")
 	// ErrSave defined the error message for saving file.
 	ErrSave = errors.New("no path defined for file, consider File.WriteTo or File.Write")
