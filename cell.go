@@ -1115,10 +1115,7 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 		runs = getCellRichText(c.IS)
 		return
 	}
-	if c.T != "s" {
-		return
-	}
-	if c.V == "" {
+	if c.T != "s" || c.V == "" {
 		return
 	}
 	siIdx, err := strconv.Atoi(c.V)
