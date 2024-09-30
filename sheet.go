@@ -604,7 +604,10 @@ func (f *File) DeleteSheet(sheet string) error {
 // moves the source sheet before the target sheet. After moving, other sheets
 // will be shifted to the left or right. If the sheet is already at the target
 // position, the function will not perform any action. Not that this function
-// will be ungroup all sheets after moving.
+// will be ungroup all sheets after moving. For example, move Sheet2 before
+// Sheet1:
+//
+//	err := f.MoveSheet("Sheet2", "Sheet1")
 func (f *File) MoveSheet(source, target string) error {
 	if strings.EqualFold(source, target) {
 		return nil
