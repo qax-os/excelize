@@ -600,6 +600,46 @@ func (f *File) DeleteSheet(sheet string) error {
 	return err
 }
 
+// MoveSheet moves a sheet to a specified position in the workbook. The function
+// moves the source sheet before the target sheet. After moving, other sheets
+// will be shifted to the left or right. If the sheet is already at the target
+// position, the function will not perform any action. Not that this function
+// will be ungroup all sheets after moving.
+func (f *File) MoveSheet(source, target string) error {
+	if strings.EqualFold(source, target) {
+		return nil
+	}
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	sourceIdx, err := f.GetSheetIndex(source)
+	if err != nil {
+		return err
+	}
+	targetIdx, err := f.GetSheetIndex(target)
+	if err != nil {
+		return err
+	}
+	if sourceIdx < 0 {
+		return ErrSheetNotExist{source}
+	}
+	if targetIdx < 0 {
+		return ErrSheetNotExist{target}
+	}
+	_ = f.UngroupSheets()
+	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
+	sourceSheet := wb.Sheets.Sheet[sourceIdx]
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet[:sourceIdx], wb.Sheets.Sheet[sourceIdx+1:]...)
+	if targetIdx > sourceIdx {
+		targetIdx--
+	}
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet[:targetIdx], append([]xlsxSheet{sourceSheet}, wb.Sheets.Sheet[targetIdx:]...)...)
+	activeSheetIdx, _ := f.GetSheetIndex(activeSheetName)
+	f.SetActiveSheet(activeSheetIdx)
+	return err
+}
+
 // deleteAndAdjustDefinedNames delete and adjust defined name in the workbook
 // by given worksheet ID.
 func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
