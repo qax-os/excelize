@@ -547,6 +547,43 @@ func TestDeleteSheet(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet2.xlsx")))
 }
 
+func TestMoveSheet(t *testing.T) {
+	f := NewFile()
+	defer f.Close()
+	for i := 2; i < 6; i++ {
+		_, err := f.NewSheet("Sheet" + strconv.Itoa(i))
+		assert.NoError(t, err)
+	}
+	assert.Equal(t, []string{"Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"}, f.GetSheetList())
+
+	// Move target to first position
+	assert.NoError(t, f.MoveSheet("Sheet2", "Sheet1"))
+	assert.Equal(t, []string{"Sheet2", "Sheet1", "Sheet3", "Sheet4", "Sheet5"}, f.GetSheetList())
+	assert.Equal(t, "Sheet1", f.GetSheetName(f.GetActiveSheetIndex()))
+
+	// Move target to last position
+	assert.NoError(t, f.MoveSheet("Sheet2", "Sheet5"))
+	assert.NoError(t, f.MoveSheet("Sheet5", "Sheet2"))
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet4", "Sheet5", "Sheet2"}, f.GetSheetList())
+
+	// Move target to same position
+	assert.NoError(t, f.MoveSheet("Sheet1", "Sheet1"))
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet4", "Sheet5", "Sheet2"}, f.GetSheetList())
+
+	// Test move sheet with invalid sheet name
+	assert.Equal(t, ErrSheetNameBlank, f.MoveSheet("", "Sheet2"))
+	assert.Equal(t, ErrSheetNameBlank, f.MoveSheet("Sheet1", ""))
+
+	// Test move sheet on not exists worksheet
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.MoveSheet("SheetN", "Sheet2"))
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.MoveSheet("Sheet1", "SheetN"))
+
+	// Test move sheet with unsupported workbook charset
+	f.WorkBook = nil
+	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.MoveSheet("Sheet2", "Sheet1"), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestDeleteAndAdjustDefinedNames(t *testing.T) {
 	deleteAndAdjustDefinedNames(nil, 0)
 	deleteAndAdjustDefinedNames(&xlsxWorkbook{}, 0)
