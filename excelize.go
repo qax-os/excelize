@@ -1,3 +1,7 @@
+// follow the standard of use or not use standalone=yes
+// next step complete richdatavalue writer
+// and then rdrichstructure writer
+
 // Copyright 2016 - 2024 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
@@ -16,6 +20,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -57,6 +62,36 @@ type File struct {
 	VMLDrawing       map[string]*vmlDrawing
 	VolatileDeps     *xlsxVolTypes
 	WorkBook         *xlsxWorkbook
+}
+
+type Entity struct {
+	Type       string                 `json:"type"`
+	Text       string                 `json:"text"`
+	Layouts    Layouts                `json:"layouts,omitempty"`
+	Properties map[string]interface{} `json:"properties,omitempty"`
+	Provider   Provider               `json:"provider,omitempty"`
+}
+
+type Layouts struct {
+	Compact Compact `json:"compact,omitempty"`
+	Card    Card    `json:"card,omitempty"`
+}
+
+type Compact struct {
+	Icon string `json:"icon,omitempty"`
+}
+
+type Card struct {
+	Title    CardProperty `json:"title,omitempty"`
+	SubTitle CardProperty `json:"subTitle,omitempty"`
+}
+
+type CardProperty struct {
+	Property string `json:"property,omitempty"`
+}
+
+type Provider struct {
+	Description string `json:"description,omitempty"`
 }
 
 // charsetTranscoderFn set user-defined codepage transcoder function for open
@@ -611,6 +646,80 @@ func (f *File) richValueReader() (*xlsxRichValueData, error) {
 	}
 	return &richValue, nil
 }
+
+func (f *File) richStructureReader() (*xlsxRichValueStructures, error) {
+	var richValueStructures xlsxRichValueStructures
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichValueStructure)))).
+		Decode(&richValueStructures); err != nil && err != io.EOF {
+		return &richValueStructures, err
+	}
+	return &richValueStructures, nil
+}
+
+func (f *File) richDataSpbReader() (*XlsxRichDataSupportingPropertyBags, error) {
+	var richDataspbs XlsxRichDataSupportingPropertyBags
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataSupportingPropertyBag)))).
+		Decode(&richDataspbs); err != nil && err != io.EOF {
+		return &richDataspbs, err
+	}
+	return &richDataspbs, nil
+}
+
+func (f *File) richDataSpbStructureReader() (*xlsxRichDataSpbStructures, error) {
+	var richDataSpbStructure xlsxRichDataSpbStructures
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataSupportingPropertyBagStructure)))).
+		Decode(&richDataSpbStructure); err != nil && err != io.EOF {
+		return &richDataSpbStructure, err
+	}
+	return &richDataSpbStructure, nil
+}
+
+func (f *File) richDataStyleReader() (*RichStyleSheet, error) {
+	var richDataStyles RichStyleSheet
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataRichStyles)))).
+		Decode(&richDataStyles); err != nil && err != io.EOF {
+		return &richDataStyles, err
+	}
+	return &richDataStyles, nil
+}
+
+func (f *File) richDataArrayReader() (*xlsxRichValueArrayData, error) {
+	var richDataArray xlsxRichValueArrayData
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRichDataArray)))).
+		Decode(&richDataArray); err != nil && err != io.EOF {
+		return &richDataArray, err
+	}
+	return &richDataArray, nil
+}
+
+func (f *File) checkOrCreateRichDataFiles() error {
+	dirPath := filepath.Join(f.Path, "xl", "richData")
+	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+	f.checkOrCreateXML(defaultXMLRdRichValuePart, []byte(xml.Header+templateRichValue))
+	f.checkOrCreateXML(defaultXMLRichDataRichValueStructure, []byte(xml.Header+templateRichStructure))
+	f.checkOrCreateXML(defaultXMLRichDataRichValueTypes, []byte(templateRichValuetypes))
+	return nil
+}
+
+func (f *File) checkOrCreateXML(name string, defaultContent []byte) {
+	if _, ok := f.Pkg.Load(name); !ok {
+		f.Pkg.Store(name, defaultContent)
+	}
+}
+
+// func (f *File) WriteProvider(entity Entity) error {
+// 	f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBag, []byte(xml.Header+templateSpbData))
+// 	f.checkOrCreateXML(defaultXMLRichDataSupportingPropertyBagStructure, []byte(xml.Header+templateSpbData))
+// 	spbData, err := f.richDataSpbReader()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	spbStructure, err := f.richDataSpbStructureReader()
+// 	provider := entity.Provider.Description
+// 	return nil
+// }
 
 // richValueRelReader provides a function to get the pointer to the structure
 // after deserialization of xl/richData/richValueRel.xml.
