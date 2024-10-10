@@ -214,3 +214,31 @@ func formatYear(y int) int {
 	}
 	return y
 }
+
+// getDurationNumFmt returns most simplify numbers format code for time
+// duration type cell value by given worksheet name, cell reference and number.
+func getDurationNumFmt(d time.Duration) int {
+	if d >= time.Hour*24 {
+		return 46
+	}
+	// Whole minutes
+	if d.Minutes() == float64(int(d.Minutes())) {
+		return 20
+	}
+	return 21
+}
+
+// getTimeNumFmt returns most simplify numbers format code for time type cell
+// value by given worksheet name, cell reference and number.
+func getTimeNumFmt(t time.Time) int {
+	nextMonth := t.AddDate(0, 1, 0)
+	// Whole months
+	if t.Day() == 1 && nextMonth.Day() == 1 {
+		return 17
+	}
+	// Whole days
+	if t.Hour() == 0 && t.Minute() == 0 && t.Second() == 0 && t.Nanosecond() == 0 {
+		return 14
+	}
+	return 22
+}

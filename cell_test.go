@@ -305,6 +305,29 @@ func TestSetCellValue(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expected, val)
 	}
+	// Test set cell value with time duration
+	for val, expected := range map[time.Duration]string{
+		time.Hour*21 + time.Minute*51 + time.Second*44: "21:51:44",
+		time.Hour*21 + time.Minute*50:                  "21:50",
+		time.Hour*24 + time.Minute*51 + time.Second*44: "24:51:44",
+		time.Hour*24 + time.Minute*50:                  "24:50:00",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
+	// Test set cell value with time
+	for val, expected := range map[time.Time]string{
+		time.Date(2024, time.October, 1, 0, 0, 0, 0, time.UTC):   "Oct-24",
+		time.Date(2024, time.October, 10, 0, 0, 0, 0, time.UTC):  "10-10-24",
+		time.Date(2024, time.October, 10, 12, 0, 0, 0, time.UTC): "10/10/24 12:00",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -314,7 +337,7 @@ func TestSetCellValues(t *testing.T) {
 
 	v, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
-	assert.Equal(t, v, "12/31/10 00:00")
+	assert.Equal(t, v, "12-31-10")
 
 	// Test date value lower than min date supported by Excel
 	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))

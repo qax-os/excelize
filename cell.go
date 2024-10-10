@@ -144,7 +144,7 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = f.setDefaultTimeStyle(sheet, cell, 21)
+		err = f.setDefaultTimeStyle(sheet, cell, getDurationNumFmt(v))
 	case time.Time:
 		err = f.setCellTimeFunc(sheet, cell, v)
 	case bool:
@@ -256,7 +256,7 @@ func (f *File) setCellTimeFunc(sheet, cell string, value time.Time) error {
 		return err
 	}
 	if isNum {
-		_ = f.setDefaultTimeStyle(sheet, cell, 22)
+		_ = f.setDefaultTimeStyle(sheet, cell, getTimeNumFmt(value))
 	}
 	return err
 }
