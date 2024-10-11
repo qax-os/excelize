@@ -42,6 +42,9 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, err)
 			// Concurrency set cell style
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
+			// Concurrency get cell style
+			_, err = f.GetCellStyle("Sheet1", "A3")
+			assert.NoError(t, err)
 			// Concurrency add picture
 			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 				&GraphicOptions{
@@ -289,6 +292,42 @@ func TestSetCellValue(t *testing.T) {
 	val, err = f.GetCellValue("Sheet1", "B1")
 	assert.NoError(t, err)
 	assert.Equal(t, "b", val)
+
+	f = NewFile()
+	// Test set cell value with an IEEE 754 "not-a-number" value or infinity
+	for num, expected := range map[float64]string{
+		math.NaN():   "NaN",
+		math.Inf(0):  "+Inf",
+		math.Inf(-1): "-Inf",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", num))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
+	// Test set cell value with time duration
+	for val, expected := range map[time.Duration]string{
+		time.Hour*21 + time.Minute*51 + time.Second*44: "21:51:44",
+		time.Hour*21 + time.Minute*50:                  "21:50",
+		time.Hour*24 + time.Minute*51 + time.Second*44: "24:51:44",
+		time.Hour*24 + time.Minute*50:                  "24:50:00",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
+	// Test set cell value with time
+	for val, expected := range map[time.Time]string{
+		time.Date(2024, time.October, 1, 0, 0, 0, 0, time.UTC):   "Oct-24",
+		time.Date(2024, time.October, 10, 0, 0, 0, 0, time.UTC):  "10-10-24",
+		time.Date(2024, time.October, 10, 12, 0, 0, 0, time.UTC): "10/10/24 12:00",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -298,7 +337,7 @@ func TestSetCellValues(t *testing.T) {
 
 	v, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
-	assert.Equal(t, v, "12/31/10 00:00")
+	assert.Equal(t, v, "12-31-10")
 
 	// Test date value lower than min date supported by Excel
 	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
@@ -768,6 +807,13 @@ func TestGetCellRichText(t *testing.T) {
 	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{T: "s", V: "-1", IS: &xlsxSI{}}
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
+	assert.Equal(t, 0, len(runs))
+	// Test get cell rich text when string item index is invalid
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{T: "s", V: "A", IS: &xlsxSI{}}
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.EqualError(t, err, "strconv.Atoi: parsing \"A\": invalid syntax")
 	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text on invalid string item index
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")

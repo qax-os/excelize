@@ -613,6 +613,8 @@ func TestGetThemeColor(t *testing.T) {
 	assert.Equal(t, "FFFFFF", f.getThemeColor(&xlsxColor{RGB: "FFFFFF"}))
 	assert.Equal(t, "FF8080", f.getThemeColor(&xlsxColor{Indexed: 2, Tint: 0.5}))
 	assert.Empty(t, f.getThemeColor(&xlsxColor{Indexed: len(IndexedColorMapping), Tint: 0.5}))
+	clr := &decodeCTColor{}
+	assert.Nil(t, clr.colorChoice())
 }
 
 func TestGetStyle(t *testing.T) {

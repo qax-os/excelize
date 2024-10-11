@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -143,7 +144,7 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = f.setDefaultTimeStyle(sheet, cell, 21)
+		err = f.setDefaultTimeStyle(sheet, cell, getDurationNumFmt(v))
 	case time.Time:
 		err = f.setCellTimeFunc(sheet, cell, v)
 	case bool:
@@ -255,7 +256,7 @@ func (f *File) setCellTimeFunc(sheet, cell string, value time.Time) error {
 		return err
 	}
 	if isNum {
-		_ = f.setDefaultTimeStyle(sheet, cell, 22)
+		_ = f.setDefaultTimeStyle(sheet, cell, getTimeNumFmt(value))
 	}
 	return err
 }
@@ -385,6 +386,9 @@ func setCellBool(value bool) (t string, v string) {
 //	var x float32 = 1.325
 //	f.SetCellFloat("Sheet1", "A1", float64(x), 2, 32)
 func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSize int) error {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return f.SetCellStr(sheet, cell, fmt.Sprint(value))
+	}
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -399,16 +403,19 @@ func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSiz
 		return err
 	}
 	c.S = ws.prepareCellStyle(col, row, c.S)
-	c.T, c.V = setCellFloat(value, precision, bitSize)
-	c.IS = nil
+	c.setCellFloat(value, precision, bitSize)
 	return f.removeFormula(c, ws, sheet)
 }
 
 // setCellFloat prepares cell type and string type cell value by a given float
 // value.
-func setCellFloat(value float64, precision, bitSize int) (t string, v string) {
-	v = strconv.FormatFloat(value, 'f', precision, bitSize)
-	return
+func (c *xlsxC) setCellFloat(value float64, precision, bitSize int) {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		c.setInlineStr(fmt.Sprint(value))
+		return
+	}
+	c.T, c.V = "", strconv.FormatFloat(value, 'f', precision, bitSize)
+	c.IS = nil
 }
 
 // SetCellStr provides a function to set string type value of a cell. Total
@@ -957,14 +964,36 @@ type HyperlinkOpts struct {
 	Tooltip *string
 }
 
+// removeHyperLink remove hyperlink for worksheet and delete relationships for
+// the worksheet by given sheet name and cell reference. Note that if the cell
+// in a range reference, the whole hyperlinks will be deleted.
+func (f *File) removeHyperLink(ws *xlsxWorksheet, sheet, cell string) error {
+	for idx := 0; idx < len(ws.Hyperlinks.Hyperlink); idx++ {
+		link := ws.Hyperlinks.Hyperlink[idx]
+		ok, err := f.checkCellInRangeRef(cell, link.Ref)
+		if err != nil {
+			return err
+		}
+		if link.Ref == cell || ok {
+			ws.Hyperlinks.Hyperlink = append(ws.Hyperlinks.Hyperlink[:idx], ws.Hyperlinks.Hyperlink[idx+1:]...)
+			idx--
+			f.deleteSheetRelationships(sheet, link.RID)
+		}
+	}
+	if len(ws.Hyperlinks.Hyperlink) == 0 {
+		ws.Hyperlinks = nil
+	}
+	return nil
+}
+
 // SetCellHyperLink provides a function to set cell hyperlink by given
-// worksheet name and link URL address. LinkType defines two types of
+// worksheet name and link URL address. LinkType defines three types of
 // hyperlink "External" for website or "Location" for moving to one of cell in
-// this workbook. Maximum limit hyperlinks in a worksheet is 65530. This
-// function is only used to set the hyperlink of the cell and doesn't affect
-// the value of the cell. If you need to set the value of the cell, please use
-// the other functions such as `SetCellStyle` or `SetSheetRow`. The below is
-// example for external link.
+// this workbook or "None" for remove hyperlink. Maximum limit hyperlinks in a
+// worksheet is 65530. This function is only used to set the hyperlink of the
+// cell and doesn't affect the value of the cell. If you need to set the value
+// of the cell, please use the other functions such as `SetCellStyle` or
+// `SetSheetRow`. The below is example for external link.
 //
 //	display, tooltip := "https://github.com/xuri/excelize", "Excelize on GitHub"
 //	if err := f.SetCellHyperLink("Sheet1", "A3",
@@ -1032,6 +1061,8 @@ func (f *File) SetCellHyperLink(sheet, cell, link, linkType string, opts ...Hype
 			Ref:      cell,
 			Location: link,
 		}
+	case "None":
+		return f.removeHyperLink(ws, sheet, cell)
 	default:
 		return newInvalidLinkTypeError(linkType)
 	}
@@ -1084,11 +1115,11 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 		runs = getCellRichText(c.IS)
 		return
 	}
-	if c.T == "" {
+	if c.T != "s" || c.V == "" {
 		return
 	}
 	siIdx, err := strconv.Atoi(c.V)
-	if err != nil || c.T != "s" {
+	if err != nil {
 		return
 	}
 	sst, err := f.sharedStringsReader()

@@ -2117,6 +2117,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=DDB(10000,1000,5,5)": "296",
 		// DISC
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100)": "0.01",
+		// DOLLAR
+		"=DOLLAR(1234.56)":     "$1,234.56",
+		"=DOLLAR(1234.56,0)":   "$1,235",
+		"=DOLLAR(1234.56,1)":   "$1,234.6",
+		"=DOLLAR(1234.56,2)":   "$1,234.56",
+		"=DOLLAR(1234.56,3)":   "$1,234.560",
+		"=DOLLAR(1234.56,-2)":  "$1,200",
+		"=DOLLAR(1234.56,-3)":  "$1,000",
+		"=DOLLAR(-1234.56,3)":  "($1,234.560)",
+		"=DOLLAR(-1234.56,-3)": "($1,000)",
 		// DOLLARDE
 		"=DOLLARDE(1.01,16)": "1.0625",
 		// DOLLARFR
@@ -4250,6 +4260,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=DISC(\"04/01/2016\",\"03/31/2021\",0,100)":       {"#NUM!", "DISC requires pr > 0"},
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,0)":        {"#NUM!", "DISC requires redemption > 0"},
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    {"#NUM!", "invalid basis"},
+		// DOLLAR
+		"DOLLAR()":       {"#VALUE!", "DOLLAR requires at least 1 argument"},
+		"DOLLAR(0,0,0)":  {"#VALUE!", "DOLLAR requires 1 or 2 arguments"},
+		"DOLLAR(\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"DOLLAR(0,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"DOLLAR(1,200)":  {"#VALUE!", "decimal value should be less than 128"},
 		// DOLLARDE
 		"=DOLLARDE()":       {"#VALUE!", "DOLLARDE requires 2 arguments"},
 		"=DOLLARDE(\"\",0)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -5562,13 +5578,13 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 
 func TestCalcXIRR(t *testing.T) {
 	cellData := [][]interface{}{
-		{-100.00, "01/01/2016"},
-		{20.00, "04/01/2016"},
-		{40.00, "10/01/2016"},
-		{25.00, "02/01/2017"},
-		{8.00, "03/01/2017"},
-		{15.00, "06/01/2017"},
-		{-1e-10, "09/01/2017"},
+		{-100.00, 42370},
+		{20.00, 42461},
+		{40.00, 42644},
+		{25.00, 42767},
+		{8.00, 42795},
+		{15.00, 42887},
+		{-1e-10, 42979},
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
@@ -5584,8 +5600,8 @@ func TestCalcXIRR(t *testing.T) {
 	calcError := map[string][]string{
 		"=XIRR()":                 {"#VALUE!", "XIRR requires 2 or 3 arguments"},
 		"=XIRR(A1:A4,B1:B4,-1)":   {"#VALUE!", "XIRR requires guess > -1"},
-		"=XIRR(\"\",B1:B4)":       {"#NUM!", "#NUM!"},
-		"=XIRR(A1:A4,\"\")":       {"#NUM!", "#NUM!"},
+		"=XIRR(\"\",B1:B4)":       {"#VALUE!", "#VALUE!"},
+		"=XIRR(A1:A4,\"\")":       {"#VALUE!", "#VALUE!"},
 		"=XIRR(A1:A4,B1:B4,\"\")": {"#NUM!", "#NUM!"},
 		"=XIRR(A2:A6,B2:B6)":      {"#NUM!", "#NUM!"},
 		"=XIRR(A2:A7,B2:B7)":      {"#NUM!", "#NUM!"},
@@ -5708,15 +5724,15 @@ func TestCalcXLOOKUP(t *testing.T) {
 func TestCalcXNPV(t *testing.T) {
 	cellData := [][]interface{}{
 		{nil, 0.05},
-		{"01/01/2016", -10000, nil},
-		{"02/01/2016", 2000},
-		{"05/01/2016", 2400},
-		{"07/01/2016", 2900},
-		{"11/01/2016", 3500},
-		{"01/01/2017", 4100},
+		{42370, -10000, nil},
+		{42401, 2000},
+		{42491, 2400},
+		{42552, 2900},
+		{42675, 3500},
+		{42736, 4100},
 		{},
-		{"02/01/2016"},
-		{"01/01/2016"},
+		{42401},
+		{42370},
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
@@ -5732,9 +5748,9 @@ func TestCalcXNPV(t *testing.T) {
 		"=XNPV()":                 {"#VALUE!", "XNPV requires 3 arguments"},
 		"=XNPV(\"\",B2:B7,A2:A7)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"=XNPV(0,B2:B7,A2:A7)":    {"#VALUE!", "XNPV requires rate > 0"},
-		"=XNPV(B1,\"\",A2:A7)":    {"#NUM!", "#NUM!"},
-		"=XNPV(B1,B2:B7,\"\")":    {"#NUM!", "#NUM!"},
-		"=XNPV(B1,B2:B7,C2:C7)":   {"#NUM!", "#NUM!"},
+		"=XNPV(B1,\"\",A2:A7)":    {"#VALUE!", "#VALUE!"},
+		"=XNPV(B1,B2:B7,\"\")":    {"#VALUE!", "#VALUE!"},
+		"=XNPV(B1,B2:B7,C2:C7)":   {"#VALUE!", "#VALUE!"},
 		"=XNPV(B1,B2,A2)":         {"#NUM!", "#NUM!"},
 		"=XNPV(B1,B2:B3,A2:A5)":   {"#NUM!", "#NUM!"},
 		"=XNPV(B1,B2:B3,A9:A10)":  {"#VALUE!", "#VALUE!"},

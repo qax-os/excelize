@@ -18,350 +18,352 @@ import (
 	"strings"
 )
 
-// sparklineGroupPresets defined the list of sparkline group to create
-// x14:sparklineGroups element by given sparkline style ID.
-var sparklineGroupPresets = []*xlsxX14SparklineGroup{
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(5)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(4)},
-		ColorLow:      &xlsxColor{Theme: intPtr(4)},
-	}, // 0
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(5)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(4)},
-		ColorLow:      &xlsxColor{Theme: intPtr(4)},
-	}, // 1
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(6)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(5)},
-		ColorLow:      &xlsxColor{Theme: intPtr(5)},
-	}, // 2
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(7)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(6)},
-		ColorLow:      &xlsxColor{Theme: intPtr(6)},
-	}, // 3
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(8)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(7)},
-		ColorLow:      &xlsxColor{Theme: intPtr(7)},
-	}, // 4
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(9)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(8)},
-		ColorLow:      &xlsxColor{Theme: intPtr(8)},
-	}, // 5
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(4)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
-		ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: 0.39997558519241921},
-		ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: 0.39997558519241921},
-		ColorHigh:     &xlsxColor{Theme: intPtr(9)},
-		ColorLow:      &xlsxColor{Theme: intPtr(9)},
-	}, // 6
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorNegative: &xlsxColor{Theme: intPtr(5)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(5)},
-		ColorLow:      &xlsxColor{Theme: intPtr(5)},
-	}, // 7
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorNegative: &xlsxColor{Theme: intPtr(6)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-	}, // 8
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorNegative: &xlsxColor{Theme: intPtr(7)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-	}, // 9
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorNegative: &xlsxColor{Theme: intPtr(8)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-	}, // 10
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorNegative: &xlsxColor{Theme: intPtr(9)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-	}, // 11
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorNegative: &xlsxColor{Theme: intPtr(4)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-	}, // 12
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(4)},
-		ColorNegative: &xlsxColor{Theme: intPtr(5)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-	}, // 13
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(5)},
-		ColorNegative: &xlsxColor{Theme: intPtr(6)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-	}, // 14
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(6)},
-		ColorNegative: &xlsxColor{Theme: intPtr(7)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-	}, // 15
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(7)},
-		ColorNegative: &xlsxColor{Theme: intPtr(8)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-	}, // 16
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(8)},
-		ColorNegative: &xlsxColor{Theme: intPtr(9)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-	}, // 17
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(9)},
-		ColorNegative: &xlsxColor{Theme: intPtr(4)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-	}, // 18
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: 0.79998168889431442},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
-		ColorLow:      &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
-	}, // 19
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(5), Tint: 0.39997558519241921},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: 0.79998168889431442},
-		ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
-		ColorLow:      &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
-	}, // 20
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(6), Tint: 0.39997558519241921},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: 0.79998168889431442},
-		ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
-		ColorLow:      &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
-	}, // 21
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(7), Tint: 0.39997558519241921},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: 0.79998168889431442},
-		ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
-		ColorLow:      &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
-	}, // 22
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(8), Tint: 0.39997558519241921},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: 0.79998168889431442},
-		ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
-		ColorLow:      &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
-	}, // 23
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(9), Tint: 0.39997558519241921},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: 0.79998168889431442},
-		ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
-		ColorLow:      &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
-	}, // 24
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(1), Tint: 0.499984740745262},
-		ColorNegative: &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
-	}, // 25
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(1), Tint: 0.34998626667073579},
-		ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
-		ColorFirst:    &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
-		ColorLast:     &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
-		ColorHigh:     &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
-		ColorLow:      &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
-	}, // 26
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF323232"},
-		ColorNegative: &xlsxColor{RGB: "FFD00000"},
-		ColorMarkers:  &xlsxColor{RGB: "FFD00000"},
-		ColorFirst:    &xlsxColor{RGB: "FFD00000"},
-		ColorLast:     &xlsxColor{RGB: "FFD00000"},
-		ColorHigh:     &xlsxColor{RGB: "FFD00000"},
-		ColorLow:      &xlsxColor{RGB: "FFD00000"},
-	}, // 27
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF000000"},
-		ColorNegative: &xlsxColor{RGB: "FF0070C0"},
-		ColorMarkers:  &xlsxColor{RGB: "FF0070C0"},
-		ColorFirst:    &xlsxColor{RGB: "FF0070C0"},
-		ColorLast:     &xlsxColor{RGB: "FF0070C0"},
-		ColorHigh:     &xlsxColor{RGB: "FF0070C0"},
-		ColorLow:      &xlsxColor{RGB: "FF0070C0"},
-	}, // 28
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF376092"},
-		ColorNegative: &xlsxColor{RGB: "FFD00000"},
-		ColorMarkers:  &xlsxColor{RGB: "FFD00000"},
-		ColorFirst:    &xlsxColor{RGB: "FFD00000"},
-		ColorLast:     &xlsxColor{RGB: "FFD00000"},
-		ColorHigh:     &xlsxColor{RGB: "FFD00000"},
-		ColorLow:      &xlsxColor{RGB: "FFD00000"},
-	}, // 29
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF0070C0"},
-		ColorNegative: &xlsxColor{RGB: "FF000000"},
-		ColorMarkers:  &xlsxColor{RGB: "FF000000"},
-		ColorFirst:    &xlsxColor{RGB: "FF000000"},
-		ColorLast:     &xlsxColor{RGB: "FF000000"},
-		ColorHigh:     &xlsxColor{RGB: "FF000000"},
-		ColorLow:      &xlsxColor{RGB: "FF000000"},
-	}, // 30
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF5F5F5F"},
-		ColorNegative: &xlsxColor{RGB: "FFFFB620"},
-		ColorMarkers:  &xlsxColor{RGB: "FFD70077"},
-		ColorFirst:    &xlsxColor{RGB: "FF5687C2"},
-		ColorLast:     &xlsxColor{RGB: "FF359CEB"},
-		ColorHigh:     &xlsxColor{RGB: "FF56BE79"},
-		ColorLow:      &xlsxColor{RGB: "FFFF5055"},
-	}, // 31
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF5687C2"},
-		ColorNegative: &xlsxColor{RGB: "FFFFB620"},
-		ColorMarkers:  &xlsxColor{RGB: "FFD70077"},
-		ColorFirst:    &xlsxColor{RGB: "FF777777"},
-		ColorLast:     &xlsxColor{RGB: "FF359CEB"},
-		ColorHigh:     &xlsxColor{RGB: "FF56BE79"},
-		ColorLow:      &xlsxColor{RGB: "FFFF5055"},
-	}, // 32
-	{
-		ColorSeries:   &xlsxColor{RGB: "FFC6EFCE"},
-		ColorNegative: &xlsxColor{RGB: "FFFFC7CE"},
-		ColorMarkers:  &xlsxColor{RGB: "FF8CADD6"},
-		ColorFirst:    &xlsxColor{RGB: "FFFFDC47"},
-		ColorLast:     &xlsxColor{RGB: "FFFFEB9C"},
-		ColorHigh:     &xlsxColor{RGB: "FF60D276"},
-		ColorLow:      &xlsxColor{RGB: "FFFF5367"},
-	}, // 33
-	{
-		ColorSeries:   &xlsxColor{RGB: "FF00B050"},
-		ColorNegative: &xlsxColor{RGB: "FFFF0000"},
-		ColorMarkers:  &xlsxColor{RGB: "FF0070C0"},
-		ColorFirst:    &xlsxColor{RGB: "FFFFC000"},
-		ColorLast:     &xlsxColor{RGB: "FFFFC000"},
-		ColorHigh:     &xlsxColor{RGB: "FF00B050"},
-		ColorLow:      &xlsxColor{RGB: "FFFF0000"},
-	}, // 34
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(3)},
-		ColorNegative: &xlsxColor{Theme: intPtr(9)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(8)},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4)},
-		ColorLast:     &xlsxColor{Theme: intPtr(5)},
-		ColorHigh:     &xlsxColor{Theme: intPtr(6)},
-		ColorLow:      &xlsxColor{Theme: intPtr(7)},
-	}, // 35
-	{
-		ColorSeries:   &xlsxColor{Theme: intPtr(1)},
-		ColorNegative: &xlsxColor{Theme: intPtr(9)},
-		ColorMarkers:  &xlsxColor{Theme: intPtr(8)},
-		ColorFirst:    &xlsxColor{Theme: intPtr(4)},
-		ColorLast:     &xlsxColor{Theme: intPtr(5)},
-		ColorHigh:     &xlsxColor{Theme: intPtr(6)},
-		ColorLow:      &xlsxColor{Theme: intPtr(7)},
-	}, // 36
+// getSparklineGroupPresets returns the preset list of sparkline group to create
+// x14:sparklineGroups element.
+func getSparklineGroupPresets() []*xlsxX14SparklineGroup {
+	return []*xlsxX14SparklineGroup{
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(5)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(4)},
+			ColorLow:      &xlsxColor{Theme: intPtr(4)},
+		}, // 0
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(5)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(4)},
+			ColorLow:      &xlsxColor{Theme: intPtr(4)},
+		}, // 1
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(6)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(5)},
+			ColorLow:      &xlsxColor{Theme: intPtr(5)},
+		}, // 2
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(7)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(6)},
+			ColorLow:      &xlsxColor{Theme: intPtr(6)},
+		}, // 3
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(8)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(7)},
+			ColorLow:      &xlsxColor{Theme: intPtr(7)},
+		}, // 4
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(9)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(8)},
+			ColorLow:      &xlsxColor{Theme: intPtr(8)},
+		}, // 5
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(4)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
+			ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: 0.39997558519241921},
+			ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: 0.39997558519241921},
+			ColorHigh:     &xlsxColor{Theme: intPtr(9)},
+			ColorLow:      &xlsxColor{Theme: intPtr(9)},
+		}, // 6
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorNegative: &xlsxColor{Theme: intPtr(5)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(5)},
+			ColorLow:      &xlsxColor{Theme: intPtr(5)},
+		}, // 7
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorNegative: &xlsxColor{Theme: intPtr(6)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+		}, // 8
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorNegative: &xlsxColor{Theme: intPtr(7)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+		}, // 9
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorNegative: &xlsxColor{Theme: intPtr(8)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+		}, // 10
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorNegative: &xlsxColor{Theme: intPtr(9)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+		}, // 11
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorNegative: &xlsxColor{Theme: intPtr(4)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+		}, // 12
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(4)},
+			ColorNegative: &xlsxColor{Theme: intPtr(5)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+		}, // 13
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(5)},
+			ColorNegative: &xlsxColor{Theme: intPtr(6)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+		}, // 14
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(6)},
+			ColorNegative: &xlsxColor{Theme: intPtr(7)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+		}, // 15
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(7)},
+			ColorNegative: &xlsxColor{Theme: intPtr(8)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+		}, // 16
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(8)},
+			ColorNegative: &xlsxColor{Theme: intPtr(9)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+		}, // 17
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(9)},
+			ColorNegative: &xlsxColor{Theme: intPtr(4)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+		}, // 18
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(4), Tint: 0.39997558519241921},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(4), Tint: 0.79998168889431442},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(4), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
+			ColorLow:      &xlsxColor{Theme: intPtr(4), Tint: -0.499984740745262},
+		}, // 19
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(5), Tint: 0.39997558519241921},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(5), Tint: 0.79998168889431442},
+			ColorFirst:    &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(5), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
+			ColorLow:      &xlsxColor{Theme: intPtr(5), Tint: -0.499984740745262},
+		}, // 20
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(6), Tint: 0.39997558519241921},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(6), Tint: 0.79998168889431442},
+			ColorFirst:    &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(6), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
+			ColorLow:      &xlsxColor{Theme: intPtr(6), Tint: -0.499984740745262},
+		}, // 21
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(7), Tint: 0.39997558519241921},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(7), Tint: 0.79998168889431442},
+			ColorFirst:    &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(7), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
+			ColorLow:      &xlsxColor{Theme: intPtr(7), Tint: -0.499984740745262},
+		}, // 22
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(8), Tint: 0.39997558519241921},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(8), Tint: 0.79998168889431442},
+			ColorFirst:    &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(8), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
+			ColorLow:      &xlsxColor{Theme: intPtr(8), Tint: -0.499984740745262},
+		}, // 23
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(9), Tint: 0.39997558519241921},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: -0.499984740745262},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(9), Tint: 0.79998168889431442},
+			ColorFirst:    &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(9), Tint: -0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
+			ColorLow:      &xlsxColor{Theme: intPtr(9), Tint: -0.499984740745262},
+		}, // 24
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(1), Tint: 0.499984740745262},
+			ColorNegative: &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(1), Tint: 0.249977111117893},
+		}, // 25
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(1), Tint: 0.34998626667073579},
+			ColorNegative: &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
+			ColorFirst:    &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
+			ColorLast:     &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
+			ColorHigh:     &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
+			ColorLow:      &xlsxColor{Theme: intPtr(0), Tint: 0.249977111117893},
+		}, // 26
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF323232"},
+			ColorNegative: &xlsxColor{RGB: "FFD00000"},
+			ColorMarkers:  &xlsxColor{RGB: "FFD00000"},
+			ColorFirst:    &xlsxColor{RGB: "FFD00000"},
+			ColorLast:     &xlsxColor{RGB: "FFD00000"},
+			ColorHigh:     &xlsxColor{RGB: "FFD00000"},
+			ColorLow:      &xlsxColor{RGB: "FFD00000"},
+		}, // 27
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF000000"},
+			ColorNegative: &xlsxColor{RGB: "FF0070C0"},
+			ColorMarkers:  &xlsxColor{RGB: "FF0070C0"},
+			ColorFirst:    &xlsxColor{RGB: "FF0070C0"},
+			ColorLast:     &xlsxColor{RGB: "FF0070C0"},
+			ColorHigh:     &xlsxColor{RGB: "FF0070C0"},
+			ColorLow:      &xlsxColor{RGB: "FF0070C0"},
+		}, // 28
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF376092"},
+			ColorNegative: &xlsxColor{RGB: "FFD00000"},
+			ColorMarkers:  &xlsxColor{RGB: "FFD00000"},
+			ColorFirst:    &xlsxColor{RGB: "FFD00000"},
+			ColorLast:     &xlsxColor{RGB: "FFD00000"},
+			ColorHigh:     &xlsxColor{RGB: "FFD00000"},
+			ColorLow:      &xlsxColor{RGB: "FFD00000"},
+		}, // 29
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF0070C0"},
+			ColorNegative: &xlsxColor{RGB: "FF000000"},
+			ColorMarkers:  &xlsxColor{RGB: "FF000000"},
+			ColorFirst:    &xlsxColor{RGB: "FF000000"},
+			ColorLast:     &xlsxColor{RGB: "FF000000"},
+			ColorHigh:     &xlsxColor{RGB: "FF000000"},
+			ColorLow:      &xlsxColor{RGB: "FF000000"},
+		}, // 30
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF5F5F5F"},
+			ColorNegative: &xlsxColor{RGB: "FFFFB620"},
+			ColorMarkers:  &xlsxColor{RGB: "FFD70077"},
+			ColorFirst:    &xlsxColor{RGB: "FF5687C2"},
+			ColorLast:     &xlsxColor{RGB: "FF359CEB"},
+			ColorHigh:     &xlsxColor{RGB: "FF56BE79"},
+			ColorLow:      &xlsxColor{RGB: "FFFF5055"},
+		}, // 31
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF5687C2"},
+			ColorNegative: &xlsxColor{RGB: "FFFFB620"},
+			ColorMarkers:  &xlsxColor{RGB: "FFD70077"},
+			ColorFirst:    &xlsxColor{RGB: "FF777777"},
+			ColorLast:     &xlsxColor{RGB: "FF359CEB"},
+			ColorHigh:     &xlsxColor{RGB: "FF56BE79"},
+			ColorLow:      &xlsxColor{RGB: "FFFF5055"},
+		}, // 32
+		{
+			ColorSeries:   &xlsxColor{RGB: "FFC6EFCE"},
+			ColorNegative: &xlsxColor{RGB: "FFFFC7CE"},
+			ColorMarkers:  &xlsxColor{RGB: "FF8CADD6"},
+			ColorFirst:    &xlsxColor{RGB: "FFFFDC47"},
+			ColorLast:     &xlsxColor{RGB: "FFFFEB9C"},
+			ColorHigh:     &xlsxColor{RGB: "FF60D276"},
+			ColorLow:      &xlsxColor{RGB: "FFFF5367"},
+		}, // 33
+		{
+			ColorSeries:   &xlsxColor{RGB: "FF00B050"},
+			ColorNegative: &xlsxColor{RGB: "FFFF0000"},
+			ColorMarkers:  &xlsxColor{RGB: "FF0070C0"},
+			ColorFirst:    &xlsxColor{RGB: "FFFFC000"},
+			ColorLast:     &xlsxColor{RGB: "FFFFC000"},
+			ColorHigh:     &xlsxColor{RGB: "FF00B050"},
+			ColorLow:      &xlsxColor{RGB: "FFFF0000"},
+		}, // 34
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(3)},
+			ColorNegative: &xlsxColor{Theme: intPtr(9)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(8)},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4)},
+			ColorLast:     &xlsxColor{Theme: intPtr(5)},
+			ColorHigh:     &xlsxColor{Theme: intPtr(6)},
+			ColorLow:      &xlsxColor{Theme: intPtr(7)},
+		}, // 35
+		{
+			ColorSeries:   &xlsxColor{Theme: intPtr(1)},
+			ColorNegative: &xlsxColor{Theme: intPtr(9)},
+			ColorMarkers:  &xlsxColor{Theme: intPtr(8)},
+			ColorFirst:    &xlsxColor{Theme: intPtr(4)},
+			ColorLast:     &xlsxColor{Theme: intPtr(5)},
+			ColorHigh:     &xlsxColor{Theme: intPtr(6)},
+			ColorLow:      &xlsxColor{Theme: intPtr(7)},
+		}, // 36
+	}
 }
 
 // AddSparkline provides a function to add sparklines to the worksheet by
 // given formatting options. Sparklines are small charts that fit in a single
 // cell and are used to show trends in data. Sparklines are a feature of Excel
-// 2010 and later only. You can write them to an XLSX file that can be read by
-// Excel 2007, but they won't be displayed. For example, add a grouped
-// sparkline. Changes are applied to all three:
+// 2010 and later only. You can write them to workbook that can be read by Excel
+// 2007, but they won't be displayed. For example, add a grouped sparkline.
+// Changes are applied to all three:
 //
 //	err := f.AddSparkline("Sheet1", &excelize.SparklineOptions{
 //	    Location: []string{"A1", "A2", "A3"},
@@ -412,7 +414,7 @@ func (f *File) AddSparkline(sheet string, opts *SparklineOptions) error {
 		}
 		sparkType = specifiedSparkTypes
 	}
-	group = sparklineGroupPresets[opts.Style]
+	group = getSparklineGroupPresets()[opts.Style]
 	group.Type = sparkType
 	group.ColorAxis = &xlsxColor{RGB: "FF000000"}
 	group.DisplayEmptyCellsAs = "gap"

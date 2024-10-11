@@ -56,15 +56,15 @@ type xlsxPivotTableDefinition struct {
 	EnableDrill             bool                     `xml:"enableDrill,attr,omitempty"`
 	EnableFieldProperties   bool                     `xml:"enableFieldProperties,attr,omitempty"`
 	PreserveFormatting      bool                     `xml:"preserveFormatting,attr,omitempty"`
-	UseAutoFormatting       *bool                    `xml:"useAutoFormatting,attr,omitempty"`
+	UseAutoFormatting       *bool                    `xml:"useAutoFormatting,attr"`
 	PageWrap                int                      `xml:"pageWrap,attr,omitempty"`
-	PageOverThenDown        *bool                    `xml:"pageOverThenDown,attr,omitempty"`
+	PageOverThenDown        *bool                    `xml:"pageOverThenDown,attr"`
 	SubtotalHiddenItems     bool                     `xml:"subtotalHiddenItems,attr,omitempty"`
-	RowGrandTotals          *bool                    `xml:"rowGrandTotals,attr,omitempty"`
-	ColGrandTotals          *bool                    `xml:"colGrandTotals,attr,omitempty"`
+	RowGrandTotals          *bool                    `xml:"rowGrandTotals,attr"`
+	ColGrandTotals          *bool                    `xml:"colGrandTotals,attr"`
 	FieldPrintTitles        bool                     `xml:"fieldPrintTitles,attr,omitempty"`
 	ItemPrintTitles         bool                     `xml:"itemPrintTitles,attr,omitempty"`
-	MergeItem               *bool                    `xml:"mergeItem,attr,omitempty"`
+	MergeItem               *bool                    `xml:"mergeItem,attr"`
 	ShowDropZones           bool                     `xml:"showDropZones,attr,omitempty"`
 	CreatedVersion          int                      `xml:"createdVersion,attr,omitempty"`
 	Indent                  int                      `xml:"indent,attr,omitempty"`
@@ -74,7 +74,7 @@ type xlsxPivotTableDefinition struct {
 	Compact                 *bool                    `xml:"compact,attr"`
 	Outline                 *bool                    `xml:"outline,attr"`
 	OutlineData             bool                     `xml:"outlineData,attr,omitempty"`
-	CompactData             *bool                    `xml:"compactData,attr,omitempty"`
+	CompactData             *bool                    `xml:"compactData,attr"`
 	Published               bool                     `xml:"published,attr,omitempty"`
 	GridDropZones           bool                     `xml:"gridDropZones,attr,omitempty"`
 	Immersive               bool                     `xml:"immersive,attr,omitempty"`
@@ -150,7 +150,7 @@ type xlsxPivotField struct {
 	DataSourceSort               bool               `xml:"dataSourceSort,attr,omitempty"`
 	NonAutoSortDefault           bool               `xml:"nonAutoSortDefault,attr,omitempty"`
 	RankBy                       int                `xml:"rankBy,attr,omitempty"`
-	DefaultSubtotal              *bool              `xml:"defaultSubtotal,attr,omitempty"`
+	DefaultSubtotal              *bool              `xml:"defaultSubtotal,attr"`
 	SumSubtotal                  bool               `xml:"sumSubtotal,attr,omitempty"`
 	CountASubtotal               bool               `xml:"countASubtotal,attr,omitempty"`
 	AvgSubtotal                  bool               `xml:"avgSubtotal,attr,omitempty"`
@@ -273,7 +273,7 @@ type xlsxDataField struct {
 	ShowDataAs string      `xml:"showDataAs,attr,omitempty"`
 	BaseField  int         `xml:"baseField,attr,omitempty"`
 	BaseItem   int64       `xml:"baseItem,attr,omitempty"`
-	NumFmtID   string      `xml:"numFmtId,attr,omitempty"`
+	NumFmtID   int         `xml:"numFmtId,attr,omitempty"`
 	ExtLst     *xlsxExtLst `xml:"extLst"`
 }
 

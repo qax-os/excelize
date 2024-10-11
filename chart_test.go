@@ -237,7 +237,7 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "P1", opts: &Chart{Type: Line3D, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1, NumFmt: ChartNumFmt{CustomNumFmt: "General"}}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1, NumFmt: ChartNumFmt{CustomNumFmt: "General"}}}},
 		{sheetName: "Sheet2", cell: "X1", opts: &Chart{Type: Scatter, Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Scatter Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: Doughnut, Series: series3, Format: format, Legend: ChartLegend{Position: "right", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Doughnut Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
-		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: Line, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
+		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: Line, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1, TickLabelPosition: ChartTickLabelLow}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
 		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: Pie3D, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: Pie, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Pie Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false, NumFmt: ChartNumFmt{CustomNumFmt: "0.00%;0;;"}}, ShowBlanksAs: "gap"}},
 		// bar series chart
@@ -409,7 +409,7 @@ func TestDeleteChart(t *testing.T) {
 }
 
 func TestChartWithLogarithmicBase(t *testing.T) {
-	// Create test XLSX file with data
+	// Create test workbook with data
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	categories := map[string]float64{
@@ -454,14 +454,14 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		assert.NoError(t, f.AddChart(sheet1, c.cell, c.opts))
 	}
 
-	// Export XLSX file for human confirmation
+	// Export workbook for human confirmation
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestChartWithLogarithmicBase10.xlsx")))
 
-	// Write the XLSX file to a buffer
+	// Write the workbook to a buffer
 	var buffer bytes.Buffer
 	assert.NoError(t, f.Write(&buffer))
 
-	// Read back the XLSX file from the buffer
+	// Read back the workbook from the buffer
 	newFile, err := OpenReader(&buffer)
 	assert.NoError(t, err)
 

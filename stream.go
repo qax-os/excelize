@@ -290,7 +290,7 @@ func (sw *StreamWriter) getRowValues(hRow, hCol, vCol int) (res []string, err er
 	}
 }
 
-// Check if the token is an XLSX row with the matching row number.
+// Check if the token is an worksheet row with the matching row number.
 func getRowElement(token xml.Token, hRow int) (startElement xml.StartElement, ok bool) {
 	startElement, ok = token.(xml.StartElement)
 	if !ok {
@@ -527,11 +527,11 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	var err error
 	switch val := val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		err = setCellIntFunc(c, val)
+		setCellIntFunc(c, val)
 	case float32:
-		c.T, c.V = setCellFloat(float64(val), -1, 32)
+		c.setCellFloat(float64(val), -1, 32)
 	case float64:
-		c.T, c.V = setCellFloat(val, -1, 64)
+		c.setCellFloat(val, -1, 64)
 	case string:
 		c.setCellValue(val)
 	case []byte:
@@ -554,7 +554,7 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 }
 
 // setCellIntFunc is a wrapper of SetCellInt.
-func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
+func setCellIntFunc(c *xlsxC, val interface{}) {
 	switch val := val.(type) {
 	case int:
 		c.T, c.V = setCellInt(val)
@@ -576,9 +576,7 @@ func setCellIntFunc(c *xlsxC, val interface{}) (err error) {
 		c.T, c.V = setCellUint(uint64(val))
 	case uint64:
 		c.T, c.V = setCellUint(val)
-	default:
 	}
-	return
 }
 
 // writeCell constructs a cell XML and writes it to the buffer.

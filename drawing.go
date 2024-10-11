@@ -108,7 +108,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		},
 	}
 	xlsxChartSpace.SpPr = f.drawShapeFill(opts.Fill, xlsxChartSpace.SpPr)
-	plotAreaFunc := map[ChartType]func(*Chart) *cPlotArea{
+	plotAreaFunc := map[ChartType]func(pa *cPlotArea, opts *Chart) *cPlotArea{
 		Area:                        f.drawBaseChart,
 		AreaStacked:                 f.drawBaseChart,
 		AreaPercentStacked:          f.drawBaseChart,
@@ -176,14 +176,19 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			if field.IsNil() {
 				continue
 			}
-			immutable.FieldByName(mutable.Type().Field(i).Name).Set(field)
+			fld := immutable.FieldByName(mutable.Type().Field(i).Name)
+			if field.Kind() == reflect.Slice && i < 16 { // All []*cCharts type fields
+				fld.Set(reflect.Append(fld, field.Index(0)))
+				continue
+			}
+			fld.Set(field)
 		}
 	}
-	addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[opts.Type](opts))
+	addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[opts.Type](xlsxChartSpace.Chart.PlotArea, opts))
 	order := len(opts.Series)
 	for idx := range comboCharts {
 		comboCharts[idx].order = order
-		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[comboCharts[idx].Type](comboCharts[idx]))
+		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[comboCharts[idx].Type](xlsxChartSpace.Chart.PlotArea, comboCharts[idx]))
 		order += len(comboCharts[idx].Series)
 	}
 	chart, _ := xml.Marshal(xlsxChartSpace)
@@ -193,240 +198,242 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 
 // drawBaseChart provides a function to draw the c:plotArea element for bar,
 // and column series charts by given format sets.
-func (f *File) drawBaseChart(opts *Chart) *cPlotArea {
-	c := cCharts{
-		BarDir: &attrValString{
-			Val: stringPtr("col"),
+func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
+	c := []*cCharts{
+		{
+			BarDir: &attrValString{
+				Val: stringPtr("col"),
+			},
+			Grouping: &attrValString{
+				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+			},
+			VaryColors: &attrValBool{
+				Val: opts.VaryColors,
+			},
+			Ser:     f.drawChartSeries(opts),
+			Shape:   f.drawChartShape(opts),
+			DLbls:   f.drawChartDLbls(opts),
+			AxID:    f.genAxID(opts),
+			Overlap: &attrValInt{Val: intPtr(100)},
 		},
-		Grouping: &attrValString{
-			Val: stringPtr(plotAreaChartGrouping[opts.Type]),
-		},
-		VaryColors: &attrValBool{
-			Val: opts.VaryColors,
-		},
-		Ser:     f.drawChartSeries(opts),
-		Shape:   f.drawChartShape(opts),
-		DLbls:   f.drawChartDLbls(opts),
-		AxID:    f.genAxID(opts),
-		Overlap: &attrValInt{Val: intPtr(100)},
 	}
 	var ok bool
-	if *c.BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
-		c.BarDir = nil
+	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
+		c[0].BarDir = nil
 	}
-	if *c.Overlap.Val, ok = plotAreaChartOverlap[opts.Type]; !ok {
-		c.Overlap = nil
+	if *c[0].Overlap.Val, ok = plotAreaChartOverlap[opts.Type]; !ok {
+		c[0].Overlap = nil
 	}
-	catAx := f.drawPlotAreaCatAx(opts)
-	valAx := f.drawPlotAreaValAx(opts)
+	catAx := f.drawPlotAreaCatAx(pa, opts)
+	valAx := f.drawPlotAreaValAx(pa, opts)
 	charts := map[ChartType]*cPlotArea{
 		Area: {
-			AreaChart: &c,
+			AreaChart: c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
 		AreaStacked: {
-			AreaChart: &c,
+			AreaChart: c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
 		AreaPercentStacked: {
-			AreaChart: &c,
+			AreaChart: c,
 			CatAx:     catAx,
 			ValAx:     valAx,
 		},
 		Area3D: {
-			Area3DChart: &c,
+			Area3DChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Area3DStacked: {
-			Area3DChart: &c,
+			Area3DChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Area3DPercentStacked: {
-			Area3DChart: &c,
+			Area3DChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Bar: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		BarStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		BarPercentStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		Bar3DClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DConeClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DConeStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DConePercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPyramidClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPyramidStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DPyramidPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DCylinderClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DCylinderStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bar3DCylinderPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		ColStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		ColPercentStacked: {
-			BarChart: &c,
+			BarChart: c,
 			CatAx:    catAx,
 			ValAx:    valAx,
 		},
 		Col3D: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCone: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DConeClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DConeStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DConePercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramid: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramidClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramidStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DPyramidPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinder: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinderClustered: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinderStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Col3DCylinderPercentStacked: {
-			Bar3DChart: &c,
+			Bar3DChart: c,
 			CatAx:      catAx,
 			ValAx:      valAx,
 		},
 		Bubble: {
-			BubbleChart: &c,
+			BubbleChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
 		Bubble3D: {
-			BubbleChart: &c,
+			BubbleChart: c,
 			CatAx:       catAx,
 			ValAx:       valAx,
 		},
@@ -436,233 +443,256 @@ func (f *File) drawBaseChart(opts *Chart) *cPlotArea {
 
 // drawDoughnutChart provides a function to draw the c:plotArea element for
 // doughnut chart by given format sets.
-func (f *File) drawDoughnutChart(opts *Chart) *cPlotArea {
+func (f *File) drawDoughnutChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	holeSize := 75
 	if opts.HoleSize > 0 && opts.HoleSize <= 90 {
 		holeSize = opts.HoleSize
 	}
 
 	return &cPlotArea{
-		DoughnutChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		DoughnutChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:      f.drawChartSeries(opts),
+				HoleSize: &attrValInt{Val: intPtr(holeSize)},
 			},
-			Ser:      f.drawChartSeries(opts),
-			HoleSize: &attrValInt{Val: intPtr(holeSize)},
 		},
 	}
 }
 
 // drawLineChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
-func (f *File) drawLineChart(opts *Chart) *cPlotArea {
+func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		LineChart: &cCharts{
-			Grouping: &attrValString{
-				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+		LineChart: []*cCharts{
+			{
+				Grouping: &attrValString{
+					Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
-		CatAx: f.drawPlotAreaCatAx(opts),
-		ValAx: f.drawPlotAreaValAx(opts),
+		CatAx: f.drawPlotAreaCatAx(pa, opts),
+		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 }
 
 // drawLine3DChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
-func (f *File) drawLine3DChart(opts *Chart) *cPlotArea {
+func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		Line3DChart: &cCharts{
-			Grouping: &attrValString{
-				Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+		Line3DChart: []*cCharts{
+			{
+				Grouping: &attrValString{
+					Val: stringPtr(plotAreaChartGrouping[opts.Type]),
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
-		CatAx: f.drawPlotAreaCatAx(opts),
-		ValAx: f.drawPlotAreaValAx(opts),
+		CatAx: f.drawPlotAreaCatAx(pa, opts),
+		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 }
 
 // drawPieChart provides a function to draw the c:plotArea element for pie
 // chart by given format sets.
-func (f *File) drawPieChart(opts *Chart) *cPlotArea {
+func (f *File) drawPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		PieChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		PieChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser: f.drawChartSeries(opts),
 			},
-			Ser: f.drawChartSeries(opts),
 		},
 	}
 }
 
 // drawPie3DChart provides a function to draw the c:plotArea element for 3D
 // pie chart by given format sets.
-func (f *File) drawPie3DChart(opts *Chart) *cPlotArea {
+func (f *File) drawPie3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		Pie3DChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		Pie3DChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser: f.drawChartSeries(opts),
 			},
-			Ser: f.drawChartSeries(opts),
 		},
 	}
 }
 
 // drawPieOfPieChart provides a function to draw the c:plotArea element for
 // pie chart by given format sets.
-func (f *File) drawPieOfPieChart(opts *Chart) *cPlotArea {
+func (f *File) drawPieOfPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	var splitPos *attrValInt
 	if opts.PlotArea.SecondPlotValues > 0 {
 		splitPos = &attrValInt{Val: intPtr(opts.PlotArea.SecondPlotValues)}
 	}
 	return &cPlotArea{
-		OfPieChart: &cCharts{
-			OfPieType: &attrValString{
-				Val: stringPtr("pie"),
+		OfPieChart: []*cCharts{
+			{
+				OfPieType: &attrValString{
+					Val: stringPtr("pie"),
+				},
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:      f.drawChartSeries(opts),
+				SplitPos: splitPos,
+				SerLines: &attrValString{},
 			},
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
-			},
-			Ser:      f.drawChartSeries(opts),
-			SplitPos: splitPos,
-			SerLines: &attrValString{},
 		},
 	}
 }
 
 // drawBarOfPieChart provides a function to draw the c:plotArea element for
 // pie chart by given format sets.
-func (f *File) drawBarOfPieChart(opts *Chart) *cPlotArea {
+func (f *File) drawBarOfPieChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	var splitPos *attrValInt
 	if opts.PlotArea.SecondPlotValues > 0 {
 		splitPos = &attrValInt{Val: intPtr(opts.PlotArea.SecondPlotValues)}
 	}
 	return &cPlotArea{
-		OfPieChart: &cCharts{
-			OfPieType: &attrValString{
-				Val: stringPtr("bar"),
+		OfPieChart: []*cCharts{
+			{
+				OfPieType: &attrValString{
+					Val: stringPtr("bar"),
+				},
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				SplitPos: splitPos,
+				Ser:      f.drawChartSeries(opts),
+				SerLines: &attrValString{},
 			},
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
-			},
-			SplitPos: splitPos,
-			Ser:      f.drawChartSeries(opts),
-			SerLines: &attrValString{},
 		},
 	}
 }
 
 // drawRadarChart provides a function to draw the c:plotArea element for radar
 // chart by given format sets.
-func (f *File) drawRadarChart(opts *Chart) *cPlotArea {
+func (f *File) drawRadarChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		RadarChart: &cCharts{
-			RadarStyle: &attrValString{
-				Val: stringPtr("marker"),
+		RadarChart: []*cCharts{
+			{
+				RadarStyle: &attrValString{
+					Val: stringPtr("marker"),
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
-		CatAx: f.drawPlotAreaCatAx(opts),
-		ValAx: f.drawPlotAreaValAx(opts),
+		CatAx: f.drawPlotAreaCatAx(pa, opts),
+		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 }
 
 // drawScatterChart provides a function to draw the c:plotArea element for
 // scatter chart by given format sets.
-func (f *File) drawScatterChart(opts *Chart) *cPlotArea {
+func (f *File) drawScatterChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return &cPlotArea{
-		ScatterChart: &cCharts{
-			ScatterStyle: &attrValString{
-				Val: stringPtr("smoothMarker"), // line,lineMarker,marker,none,smooth,smoothMarker
+		ScatterChart: []*cCharts{
+			{
+				ScatterStyle: &attrValString{
+					Val: stringPtr("smoothMarker"), // line,lineMarker,marker,none,smooth,smoothMarker
+				},
+				VaryColors: &attrValBool{
+					Val: boolPtr(false),
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			VaryColors: &attrValBool{
-				Val: boolPtr(false),
-			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
-		CatAx: f.drawPlotAreaCatAx(opts),
-		ValAx: f.drawPlotAreaValAx(opts),
+		ValAx: append(f.drawPlotAreaCatAx(pa, opts), f.drawPlotAreaValAx(pa, opts)...),
 	}
 }
 
 // drawSurface3DChart provides a function to draw the c:surface3DChart element by
 // given format sets.
-func (f *File) drawSurface3DChart(opts *Chart) *cPlotArea {
+func (f *File) drawSurface3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
-		Surface3DChart: &cCharts{
-			Ser: f.drawChartSeries(opts),
-			AxID: []*attrValInt{
-				{Val: intPtr(100000000)},
-				{Val: intPtr(100000001)},
-				{Val: intPtr(100000005)},
+		Surface3DChart: []*cCharts{
+			{
+				Ser: f.drawChartSeries(opts),
+				AxID: []*attrValInt{
+					{Val: intPtr(100000000)},
+					{Val: intPtr(100000001)},
+					{Val: intPtr(100000005)},
+				},
 			},
 		},
-		CatAx: f.drawPlotAreaCatAx(opts),
-		ValAx: f.drawPlotAreaValAx(opts),
+		CatAx: f.drawPlotAreaCatAx(pa, opts),
+		ValAx: f.drawPlotAreaValAx(pa, opts),
 		SerAx: f.drawPlotAreaSerAx(opts),
 	}
 	if opts.Type == WireframeSurface3D {
-		plotArea.Surface3DChart.Wireframe = &attrValBool{Val: boolPtr(true)}
+		plotArea.Surface3DChart[0].Wireframe = &attrValBool{Val: boolPtr(true)}
 	}
 	return plotArea
 }
 
 // drawSurfaceChart provides a function to draw the c:surfaceChart element by
 // given format sets.
-func (f *File) drawSurfaceChart(opts *Chart) *cPlotArea {
+func (f *File) drawSurfaceChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
-		SurfaceChart: &cCharts{
-			Ser: f.drawChartSeries(opts),
-			AxID: []*attrValInt{
-				{Val: intPtr(100000000)},
-				{Val: intPtr(100000001)},
-				{Val: intPtr(100000005)},
+		SurfaceChart: []*cCharts{
+			{
+				Ser: f.drawChartSeries(opts),
+				AxID: []*attrValInt{
+					{Val: intPtr(100000000)},
+					{Val: intPtr(100000001)},
+					{Val: intPtr(100000005)},
+				},
 			},
 		},
-		CatAx: f.drawPlotAreaCatAx(opts),
-		ValAx: f.drawPlotAreaValAx(opts),
+		CatAx: f.drawPlotAreaCatAx(pa, opts),
+		ValAx: f.drawPlotAreaValAx(pa, opts),
 		SerAx: f.drawPlotAreaSerAx(opts),
 	}
 	if opts.Type == WireframeContour {
-		plotArea.SurfaceChart.Wireframe = &attrValBool{Val: boolPtr(true)}
+		plotArea.SurfaceChart[0].Wireframe = &attrValBool{Val: boolPtr(true)}
 	}
 	return plotArea
 }
 
 // drawBubbleChart provides a function to draw the c:bubbleChart element by
 // given format sets.
-func (f *File) drawBubbleChart(opts *Chart) *cPlotArea {
+func (f *File) drawBubbleChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
-		BubbleChart: &cCharts{
-			VaryColors: &attrValBool{
-				Val: opts.VaryColors,
+		BubbleChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
 			},
-			Ser:   f.drawChartSeries(opts),
-			DLbls: f.drawChartDLbls(opts),
-			AxID:  f.genAxID(opts),
 		},
-		ValAx: []*cAxs{f.drawPlotAreaCatAx(opts)[0], f.drawPlotAreaValAx(opts)[0]},
+		ValAx: append(f.drawPlotAreaCatAx(pa, opts), f.drawPlotAreaValAx(pa, opts)...),
 	}
 	if opts.BubbleSize > 0 && opts.BubbleSize <= 300 {
-		plotArea.BubbleChart.BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
+		plotArea.BubbleChart[0].BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
 	}
 	return plotArea
 }
@@ -751,23 +781,19 @@ func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
 func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}}}
 	spPr = f.drawShapeFill(opts.Series[i].Fill, spPr)
-	spPrScatter := &cSpPr{
-		Ln: &aLn{
-			W:      25400,
-			NoFill: &attrValString{},
-		},
-	}
-	spPrLine := &cSpPr{
+	solid := &cSpPr{
 		Ln: &aLn{
 			W:         f.ptToEMUs(opts.Series[i].Line.Width),
 			Cap:       "rnd", // rnd, sq, flat
 			SolidFill: spPr.SolidFill,
 		},
 	}
-	if chartSeriesSpPr, ok := map[ChartType]*cSpPr{
-		Line: spPrLine, Scatter: spPrScatter,
+	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
+	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
+		Line:    {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
+		Scatter: {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
 	}[opts.Type]; ok {
-		return chartSeriesSpPr
+		return chartSeriesSpPr[opts.Series[i].Line.Type]
 	}
 	if spPr.SolidFill.SrgbClr != nil {
 		return spPr
@@ -979,7 +1005,7 @@ func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
 }
 
 // drawPlotAreaCatAx provides a function to draw the c:catAx element.
-func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
+func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 	maxVal := &attrValFloat{Val: opts.XAxis.Maximum}
 	minVal := &attrValFloat{Val: opts.XAxis.Minimum}
 	if opts.XAxis.Maximum == nil {
@@ -988,70 +1014,53 @@ func (f *File) drawPlotAreaCatAx(opts *Chart) []*cAxs {
 	if opts.XAxis.Minimum == nil {
 		minVal = nil
 	}
-	axs := []*cAxs{
-		{
-			AxID: &attrValInt{Val: intPtr(100000000)},
-			Scaling: &cScaling{
-				Orientation: &attrValString{Val: stringPtr(orientation[opts.XAxis.ReverseOrder])},
-				Max:         maxVal,
-				Min:         minVal,
-			},
-			Delete:        &attrValBool{Val: boolPtr(opts.XAxis.None)},
-			AxPos:         &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
-			NumFmt:        &cNumFmt{FormatCode: "General"},
-			MajorTickMark: &attrValString{Val: stringPtr("none")},
-			MinorTickMark: &attrValString{Val: stringPtr("none")},
-			Title:         f.drawPlotAreaTitles(opts.XAxis.Title, ""),
-			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
-			SpPr:          f.drawPlotAreaSpPr(),
-			TxPr:          f.drawPlotAreaTxPr(&opts.YAxis),
-			CrossAx:       &attrValInt{Val: intPtr(100000001)},
-			Crosses:       &attrValString{Val: stringPtr("autoZero")},
-			Auto:          &attrValBool{Val: boolPtr(true)},
-			LblAlgn:       &attrValString{Val: stringPtr("ctr")},
-			LblOffset:     &attrValInt{Val: intPtr(100)},
-			NoMultiLvlLbl: &attrValBool{Val: boolPtr(false)},
+	ax := &cAxs{
+		AxID: &attrValInt{Val: intPtr(100000000)},
+		Scaling: &cScaling{
+			Orientation: &attrValString{Val: stringPtr(orientation[opts.XAxis.ReverseOrder])},
+			Max:         maxVal,
+			Min:         minVal,
 		},
+		Delete:        &attrValBool{Val: boolPtr(opts.XAxis.None)},
+		AxPos:         &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
+		NumFmt:        &cNumFmt{FormatCode: "General"},
+		MajorTickMark: &attrValString{Val: stringPtr("none")},
+		MinorTickMark: &attrValString{Val: stringPtr("none")},
+		Title:         f.drawPlotAreaTitles(opts.XAxis.Title, ""),
+		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.XAxis.TickLabelPosition])},
+		SpPr:          f.drawPlotAreaSpPr(),
+		TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
+		CrossAx:       &attrValInt{Val: intPtr(100000001)},
+		Crosses:       &attrValString{Val: stringPtr("autoZero")},
+		Auto:          &attrValBool{Val: boolPtr(true)},
+		LblAlgn:       &attrValString{Val: stringPtr("ctr")},
+		LblOffset:     &attrValInt{Val: intPtr(100)},
+		NoMultiLvlLbl: &attrValBool{Val: boolPtr(false)},
 	}
 	if numFmt := f.drawChartNumFmt(opts.XAxis.NumFmt); numFmt != nil {
-		axs[0].NumFmt = numFmt
+		ax.NumFmt = numFmt
 	}
 	if opts.XAxis.MajorGridLines {
-		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.MinorGridLines {
-		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.TickLabelSkip != 0 {
-		axs[0].TickLblSkip = &attrValInt{Val: intPtr(opts.XAxis.TickLabelSkip)}
+		ax.TickLblSkip = &attrValInt{Val: intPtr(opts.XAxis.TickLabelSkip)}
 	}
-	if opts.order > 0 && opts.YAxis.Secondary {
-		axs = append(axs, &cAxs{
-			AxID: &attrValInt{Val: intPtr(opts.XAxis.axID)},
-			Scaling: &cScaling{
-				Orientation: &attrValString{Val: stringPtr(orientation[opts.XAxis.ReverseOrder])},
-				Max:         maxVal,
-				Min:         minVal,
-			},
-			Delete:        &attrValBool{Val: boolPtr(true)},
-			AxPos:         &attrValString{Val: stringPtr("b")},
-			MajorTickMark: &attrValString{Val: stringPtr("none")},
-			MinorTickMark: &attrValString{Val: stringPtr("none")},
-			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
-			SpPr:          f.drawPlotAreaSpPr(),
-			TxPr:          f.drawPlotAreaTxPr(&opts.YAxis),
-			CrossAx:       &attrValInt{Val: intPtr(opts.YAxis.axID)},
-			Auto:          &attrValBool{Val: boolPtr(true)},
-			LblAlgn:       &attrValString{Val: stringPtr("ctr")},
-			LblOffset:     &attrValInt{Val: intPtr(100)},
-			NoMultiLvlLbl: &attrValBool{Val: boolPtr(false)},
-		})
+	if opts.order > 0 && opts.YAxis.Secondary && pa.CatAx != nil {
+		ax.AxID = &attrValInt{Val: intPtr(opts.XAxis.axID)}
+		ax.Delete = &attrValBool{Val: boolPtr(true)}
+		ax.Crosses = nil
+		ax.CrossAx = &attrValInt{Val: intPtr(opts.YAxis.axID)}
+		return []*cAxs{pa.CatAx[0], ax}
 	}
-	return axs
+	return []*cAxs{ax}
 }
 
 // drawPlotAreaValAx provides a function to draw the c:valAx element.
-func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
+func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 	maxVal := &attrValFloat{Val: opts.YAxis.Maximum}
 	minVal := &attrValFloat{Val: opts.YAxis.Minimum}
 	if opts.YAxis.Maximum == nil {
@@ -1064,67 +1073,52 @@ func (f *File) drawPlotAreaValAx(opts *Chart) []*cAxs {
 	if opts.YAxis.LogBase >= 2 && opts.YAxis.LogBase <= 1000 {
 		logBase = &attrValFloat{Val: float64Ptr(opts.YAxis.LogBase)}
 	}
-	axs := []*cAxs{
-		{
-			AxID: &attrValInt{Val: intPtr(100000001)},
-			Scaling: &cScaling{
-				LogBase:     logBase,
-				Orientation: &attrValString{Val: stringPtr(orientation[opts.YAxis.ReverseOrder])},
-				Max:         maxVal,
-				Min:         minVal,
-			},
-			Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
-			AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
-			Title:  f.drawPlotAreaTitles(opts.YAxis.Title, "horz"),
-			NumFmt: &cNumFmt{
-				FormatCode: chartValAxNumFmtFormatCode[opts.Type],
-			},
-			MajorTickMark: &attrValString{Val: stringPtr("none")},
-			MinorTickMark: &attrValString{Val: stringPtr("none")},
-			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
-			SpPr:          f.drawPlotAreaSpPr(),
-			TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
-			CrossAx:       &attrValInt{Val: intPtr(100000000)},
-			Crosses:       &attrValString{Val: stringPtr("autoZero")},
-			CrossBetween:  &attrValString{Val: stringPtr(chartValAxCrossBetween[opts.Type])},
+	ax := &cAxs{
+		AxID: &attrValInt{Val: intPtr(100000001)},
+		Scaling: &cScaling{
+			LogBase:     logBase,
+			Orientation: &attrValString{Val: stringPtr(orientation[opts.YAxis.ReverseOrder])},
+			Max:         maxVal,
+			Min:         minVal,
 		},
+		Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
+		AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
+		Title:  f.drawPlotAreaTitles(opts.YAxis.Title, "horz"),
+		NumFmt: &cNumFmt{
+			FormatCode: chartValAxNumFmtFormatCode[opts.Type],
+		},
+		MajorTickMark: &attrValString{Val: stringPtr("none")},
+		MinorTickMark: &attrValString{Val: stringPtr("none")},
+		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.YAxis.TickLabelPosition])},
+		SpPr:          f.drawPlotAreaSpPr(),
+		TxPr:          f.drawPlotAreaTxPr(&opts.YAxis),
+		CrossAx:       &attrValInt{Val: intPtr(100000000)},
+		Crosses:       &attrValString{Val: stringPtr("autoZero")},
+		CrossBetween:  &attrValString{Val: stringPtr(chartValAxCrossBetween[opts.Type])},
 	}
 	if numFmt := f.drawChartNumFmt(opts.YAxis.NumFmt); numFmt != nil {
-		axs[0].NumFmt = numFmt
+		ax.NumFmt = numFmt
 	}
 	if opts.YAxis.MajorGridLines {
-		axs[0].MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.YAxis.MinorGridLines {
-		axs[0].MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
 	}
-	if pos, ok := valTickLblPos[opts.Type]; ok {
-		axs[0].TickLblPos.Val = stringPtr(pos)
+	if pos, ok := tickLblPosNone[opts.Type]; ok {
+		ax.TickLblPos.Val = stringPtr(pos)
 	}
 	if opts.YAxis.MajorUnit != 0 {
-		axs[0].MajorUnit = &attrValFloat{Val: float64Ptr(opts.YAxis.MajorUnit)}
+		ax.MajorUnit = &attrValFloat{Val: float64Ptr(opts.YAxis.MajorUnit)}
 	}
-	if opts.order > 0 && opts.YAxis.Secondary {
-		axs = append(axs, &cAxs{
-			AxID: &attrValInt{Val: intPtr(opts.YAxis.axID)},
-			Scaling: &cScaling{
-				Orientation: &attrValString{Val: stringPtr(orientation[opts.YAxis.ReverseOrder])},
-				Max:         maxVal,
-				Min:         minVal,
-			},
-			Delete:        &attrValBool{Val: boolPtr(false)},
-			AxPos:         &attrValString{Val: stringPtr("r")},
-			MajorTickMark: &attrValString{Val: stringPtr("none")},
-			MinorTickMark: &attrValString{Val: stringPtr("none")},
-			TickLblPos:    &attrValString{Val: stringPtr("nextTo")},
-			SpPr:          f.drawPlotAreaSpPr(),
-			TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
-			CrossAx:       &attrValInt{Val: intPtr(opts.XAxis.axID)},
-			Crosses:       &attrValString{Val: stringPtr("max")},
-			CrossBetween:  &attrValString{Val: stringPtr(chartValAxCrossBetween[opts.Type])},
-		})
+	if opts.order > 0 && opts.YAxis.Secondary && pa.ValAx != nil {
+		ax.AxID = &attrValInt{Val: intPtr(opts.YAxis.axID)}
+		ax.AxPos = &attrValString{Val: stringPtr("r")}
+		ax.Crosses = &attrValString{Val: stringPtr("max")}
+		ax.CrossAx = &attrValInt{Val: intPtr(opts.XAxis.axID)}
+		return []*cAxs{pa.ValAx[0], ax}
 	}
-	return axs
+	return []*cAxs{ax}
 }
 
 // drawPlotAreaSerAx provides a function to draw the c:serAx element.
@@ -1147,7 +1141,7 @@ func (f *File) drawPlotAreaSerAx(opts *Chart) []*cAxs {
 			},
 			Delete:     &attrValBool{Val: boolPtr(opts.YAxis.None)},
 			AxPos:      &attrValString{Val: stringPtr(catAxPos[opts.XAxis.ReverseOrder])},
-			TickLblPos: &attrValString{Val: stringPtr("nextTo")},
+			TickLblPos: &attrValString{Val: stringPtr(tickLblPosVal[opts.YAxis.TickLabelPosition])},
 			SpPr:       f.drawPlotAreaSpPr(),
 			TxPr:       f.drawPlotAreaTxPr(nil),
 			CrossAx:    &attrValInt{Val: intPtr(100000001)},

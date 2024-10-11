@@ -48,6 +48,7 @@ func TestAddPicture(t *testing.T) {
 	// Test add picture to worksheet with autofit
 	assert.NoError(t, f.AddPicture("Sheet1", "A30", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true}))
 	assert.NoError(t, f.AddPicture("Sheet1", "B30", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{OffsetX: 10, OffsetY: 10, AutoFit: true}))
+	assert.NoError(t, f.AddPicture("Sheet1", "C30", filepath.Join("test", "images", "excel.jpg"), &GraphicOptions{AutoFit: true, AutoFitIgnoreAspect: true}))
 	_, err = f.NewSheet("AddPicture")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetRowHeight("AddPicture", 10, 30))
@@ -82,7 +83,7 @@ func TestAddPicture(t *testing.T) {
 	// Test get picture cells
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"F21", "A30", "B30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
+	assert.Equal(t, []string{"F21", "A30", "B30", "C30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
 	assert.NoError(t, f.Close())
 
 	f, err = OpenFile(filepath.Join("test", "TestAddPicture1.xlsx"))
@@ -91,7 +92,7 @@ func TestAddPicture(t *testing.T) {
 	f.Drawings.Delete(path)
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"F21", "A30", "B30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
+	assert.Equal(t, []string{"F21", "A30", "B30", "C30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
 	// Test get picture cells with unsupported charset
 	f.Drawings.Delete(path)
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
@@ -218,6 +219,19 @@ func TestGetPicture(t *testing.T) {
 	cells, err := f.GetPictureCells("Sheet2")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"K16"}, cells)
+
+	// Try to get picture cells with absolute target path in the drawing relationship
+	rels, err := f.relsReader("xl/drawings/_rels/drawing2.xml.rels")
+	assert.NoError(t, err)
+	rels.Relationships[0].Target = "/xl/media/image2.jpeg"
+	cells, err = f.GetPictureCells("Sheet2")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"K16"}, cells)
+	// Try to get pictures with absolute target path in the drawing relationship
+	pics, err = f.GetPictures("Sheet2", "K16")
+	assert.NoError(t, err)
+	assert.Len(t, pics, 1)
+
 	assert.NoError(t, f.Close())
 
 	// Test get picture from none drawing worksheet

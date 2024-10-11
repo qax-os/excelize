@@ -300,26 +300,26 @@ type cView3D struct {
 // cPlotArea directly maps the plotArea element. This element specifies the
 // plot area of the chart.
 type cPlotArea struct {
-	Layout         *string  `xml:"layout"`
-	AreaChart      *cCharts `xml:"areaChart"`
-	Area3DChart    *cCharts `xml:"area3DChart"`
-	BarChart       *cCharts `xml:"barChart"`
-	Bar3DChart     *cCharts `xml:"bar3DChart"`
-	BubbleChart    *cCharts `xml:"bubbleChart"`
-	DoughnutChart  *cCharts `xml:"doughnutChart"`
-	LineChart      *cCharts `xml:"lineChart"`
-	Line3DChart    *cCharts `xml:"line3DChart"`
-	PieChart       *cCharts `xml:"pieChart"`
-	Pie3DChart     *cCharts `xml:"pie3DChart"`
-	OfPieChart     *cCharts `xml:"ofPieChart"`
-	RadarChart     *cCharts `xml:"radarChart"`
-	ScatterChart   *cCharts `xml:"scatterChart"`
-	Surface3DChart *cCharts `xml:"surface3DChart"`
-	SurfaceChart   *cCharts `xml:"surfaceChart"`
-	CatAx          []*cAxs  `xml:"catAx"`
-	ValAx          []*cAxs  `xml:"valAx"`
-	SerAx          []*cAxs  `xml:"serAx"`
-	SpPr           *cSpPr   `xml:"spPr"`
+	Layout         *string    `xml:"layout"`
+	AreaChart      []*cCharts `xml:"areaChart"`
+	Area3DChart    []*cCharts `xml:"area3DChart"`
+	BarChart       []*cCharts `xml:"barChart"`
+	Bar3DChart     []*cCharts `xml:"bar3DChart"`
+	BubbleChart    []*cCharts `xml:"bubbleChart"`
+	DoughnutChart  []*cCharts `xml:"doughnutChart"`
+	LineChart      []*cCharts `xml:"lineChart"`
+	Line3DChart    []*cCharts `xml:"line3DChart"`
+	PieChart       []*cCharts `xml:"pieChart"`
+	Pie3DChart     []*cCharts `xml:"pie3DChart"`
+	OfPieChart     []*cCharts `xml:"ofPieChart"`
+	RadarChart     []*cCharts `xml:"radarChart"`
+	ScatterChart   []*cCharts `xml:"scatterChart"`
+	Surface3DChart []*cCharts `xml:"surface3DChart"`
+	SurfaceChart   []*cCharts `xml:"surfaceChart"`
+	CatAx          []*cAxs    `xml:"catAx"`
+	ValAx          []*cAxs    `xml:"valAx"`
+	SerAx          []*cAxs    `xml:"serAx"`
+	SpPr           *cSpPr     `xml:"spPr"`
 }
 
 // cCharts specifies the common element of the chart.
@@ -530,20 +530,21 @@ type ChartNumFmt struct {
 
 // ChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
-	None           bool
-	MajorGridLines bool
-	MinorGridLines bool
-	MajorUnit      float64
-	TickLabelSkip  int
-	ReverseOrder   bool
-	Secondary      bool
-	Maximum        *float64
-	Minimum        *float64
-	Font           Font
-	LogBase        float64
-	NumFmt         ChartNumFmt
-	Title          []RichTextRun
-	axID           int
+	None              bool
+	MajorGridLines    bool
+	MinorGridLines    bool
+	MajorUnit         float64
+	TickLabelPosition ChartTickLabelPositionType
+	TickLabelSkip     int
+	ReverseOrder      bool
+	Secondary         bool
+	Maximum           *float64
+	Minimum           *float64
+	Font              Font
+	LogBase           float64
+	NumFmt            ChartNumFmt
+	Title             []RichTextRun
+	axID              int
 }
 
 // ChartDimension directly maps the dimension of the chart.

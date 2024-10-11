@@ -139,8 +139,8 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 	return nil
 }
 
-// GetMergeCells provides a function to get all merged cells from a worksheet
-// currently.
+// GetMergeCells provides a function to get all merged cells from a specific
+// worksheet.
 func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	var mergeCells []MergeCell
 	ws, err := f.workSheetReader(sheet)

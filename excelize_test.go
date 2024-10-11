@@ -208,6 +208,30 @@ func TestSaveFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.Save())
 	assert.NoError(t, f.Close())
+
+	t.Run("for_save_multiple_times", func(t *testing.T) {
+		{
+			f, err := OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
+			assert.NoError(t, err)
+			assert.NoError(t, f.SetCellValue("Sheet1", "A20", 20))
+			assert.NoError(t, f.Save())
+
+			assert.NoError(t, f.SetCellValue("Sheet1", "A21", 21))
+			assert.NoError(t, f.Save())
+			assert.NoError(t, f.Close())
+		}
+		{
+			f, err := OpenFile(filepath.Join("test", "TestSaveFile.xlsx"))
+			assert.NoError(t, err)
+			val, err := f.GetCellValue("Sheet1", "A20")
+			assert.NoError(t, err)
+			assert.Equal(t, "20", val)
+			val, err = f.GetCellValue("Sheet1", "A21")
+			assert.NoError(t, err)
+			assert.Equal(t, "21", val)
+			assert.NoError(t, f.Close())
+		}
+	})
 }
 
 func TestSaveAsWrongPath(t *testing.T) {
@@ -365,11 +389,11 @@ func TestNewFile(t *testing.T) {
 	f := NewFile()
 	_, err := f.NewSheet("Sheet1")
 	assert.NoError(t, err)
-	_, err = f.NewSheet("XLSXSheet2")
+	_, err = f.NewSheet("Sheet2")
 	assert.NoError(t, err)
-	_, err = f.NewSheet("XLSXSheet3")
+	_, err = f.NewSheet("Sheet3")
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellInt("XLSXSheet2", "A23", 56))
+	assert.NoError(t, f.SetCellInt("Sheet2", "A23", 56))
 	assert.NoError(t, f.SetCellStr("Sheet1", "B20", "42"))
 	f.SetActiveSheet(0)
 
@@ -431,6 +455,18 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.Equal(t, link, true)
 	assert.Equal(t, "https://github.com/xuri/excelize", target)
 	assert.NoError(t, err)
+
+	// Test remove hyperlink for a cell
+	f = NewFile()
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "Sheet1!D8", "Location"))
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).Hyperlinks.Hyperlink[0].Ref = "A1:D4"
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "B2", "", "None"))
+	// Test remove hyperlink for a cell with invalid cell reference
+	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "Sheet1!D8", "Location"))
+	ws.(*xlsxWorksheet).Hyperlinks.Hyperlink[0].Ref = "A:A"
+	assert.Error(t, f.SetCellHyperLink("Sheet1", "B2", "", "None"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 }
 
 func TestGetCellHyperLink(t *testing.T) {
@@ -962,7 +998,7 @@ func TestSetDeleteSheet(t *testing.T) {
 		f, err := prepareTestBook3()
 		assert.NoError(t, err)
 
-		assert.NoError(t, f.DeleteSheet("XLSXSheet3"))
+		assert.NoError(t, f.DeleteSheet("Sheet3"))
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDeleteSheet.TestBook3.xlsx")))
 	})
 
@@ -1610,13 +1646,13 @@ func prepareTestBook1() (*File, error) {
 
 func prepareTestBook3() (*File, error) {
 	f := NewFile()
-	if _, err := f.NewSheet("XLSXSheet2"); err != nil {
+	if _, err := f.NewSheet("Sheet2"); err != nil {
 		return nil, err
 	}
-	if _, err := f.NewSheet("XLSXSheet3"); err != nil {
+	if _, err := f.NewSheet("Sheet3"); err != nil {
 		return nil, err
 	}
-	if err := f.SetCellInt("XLSXSheet2", "A23", 56); err != nil {
+	if err := f.SetCellInt("Sheet2", "A23", 56); err != nil {
 		return nil, err
 	}
 	if err := f.SetCellStr("Sheet1", "B20", "42"); err != nil {

@@ -478,6 +478,7 @@ type formulaFuncs struct {
 //	DISC
 //	DMAX
 //	DMIN
+//	DOLLAR
 //	DOLLARDE
 //	DOLLARFR
 //	DPRODUCT
@@ -14459,7 +14460,7 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 		value, _ := decimal.Float64()
 		return newNumberFormulaArg(value * percent)
 	}
-	dateValue, timeValue, errTime, errDate := 0.0, 0.0, false, false
+	dateValue, timeValue, errTime := 0.0, 0.0, false
 	if !isDateOnlyFmt(text) {
 		h, m, s, _, _, err := strToTime(text)
 		errTime = err.Type == ArgError
@@ -14468,7 +14469,7 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 		}
 	}
 	y, m, d, _, err := strToDate(text)
-	errDate = err.Type == ArgError
+	errDate := err.Type == ArgError
 	if !errDate {
 		dateValue = daysBetween(excelMinTime1900.Unix(), makeDate(y, time.Month(m), d)) + 1
 	}
@@ -16341,6 +16342,49 @@ func (fn *formulaFuncs) DISC(argsList *list.List) formulaArg {
 	return fn.discIntrate("DISC", argsList)
 }
 
+// DOLLAR function rounds a supplied number to a specified number of decimal
+// places and then converts this into a text string with a currency format. The
+// syntax of the function is:
+//
+//	DOLLAR(number,[decimals])
+func (fn *formulaFuncs) DOLLAR(argsList *list.List) formulaArg {
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DOLLAR requires at least 1 argument")
+	}
+	if argsList.Len() > 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "DOLLAR requires 1 or 2 arguments")
+	}
+	numArg := argsList.Front().Value.(formulaArg)
+	n := numArg.ToNumber()
+	if n.Type != ArgNumber {
+		return n
+	}
+	decimals, dot, value := 2, ".", numArg.Value()
+	if argsList.Len() == 2 {
+		d := argsList.Back().Value.(formulaArg).ToNumber()
+		if d.Type != ArgNumber {
+			return d
+		}
+		if d.Number < 0 {
+			value = strconv.FormatFloat(fn.round(n.Number, d.Number, down), 'f', -1, 64)
+		}
+		if d.Number >= 128 {
+			return newErrorFormulaArg(formulaErrorVALUE, "decimal value should be less than 128")
+		}
+		if decimals = int(d.Number); decimals < 0 {
+			decimals, dot = 0, ""
+		}
+	}
+	symbol := map[CultureName]string{
+		CultureNameUnknown: "$",
+		CultureNameEnUS:    "$",
+		CultureNameZhCN:    "¥",
+	}[fn.f.options.CultureInfo]
+	numFmtCode := fmt.Sprintf("%s#,##0%s%s;(%s#,##0%s%s)",
+		symbol, dot, strings.Repeat("0", decimals), symbol, dot, strings.Repeat("0", decimals))
+	return newStringFormulaArg(format(value, numFmtCode, false, CellTypeNumber, nil))
+}
+
 // DOLLARDE function converts a dollar value in fractional notation, into a
 // dollar value expressed as a decimal. The syntax of the function is:
 //
@@ -18197,28 +18241,26 @@ func (fn *formulaFuncs) prepareXArgs(values, dates formulaArg) (valuesArg, dates
 			valuesArg = append(valuesArg, numArg.Number)
 			continue
 		}
-		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		err = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		return
 	}
 	if len(valuesArg) < 2 {
 		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 		return
 	}
-	args, date := list.New(), 0.0
+	date := 0.0
 	for _, arg := range dates.ToList() {
-		args.Init()
-		args.PushBack(arg)
-		dateValue := fn.DATEVALUE(args)
-		if dateValue.Type != ArgNumber {
-			err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
-			return
+		if arg.Type == ArgNumber {
+			datesArg = append(datesArg, arg.Number)
+			if arg.Number < date {
+				err = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+				return
+			}
+			date = arg.Number
+			continue
 		}
-		if dateValue.Number < date {
-			err = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-			return
-		}
-		datesArg = append(datesArg, dateValue.Number)
-		date = dateValue.Number
+		err = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		return
 	}
 	if len(valuesArg) != len(datesArg) {
 		err = newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)

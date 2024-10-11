@@ -1020,6 +1020,57 @@ func TestAdjustConditionalFormats(t *testing.T) {
 
 	ws.(*xlsxWorksheet).ConditionalFormatting[0] = nil
 	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	t.Run("for_remove_conditional_formats_column", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
+		assert.NoError(t, f.RemoveCol("Sheet1", "D"))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 0)
+	})
+	t.Run("for_remove_conditional_formats_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:E2", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "F2", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 2))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 0)
+	})
+	t.Run("for_adjust_conditional_formats_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 1))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 2)
+		assert.Equal(t, format, opts["D1:D2"])
+		assert.Equal(t, format, opts["D4:D4"])
+	})
 }
 
 func TestAdjustDataValidations(t *testing.T) {

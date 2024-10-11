@@ -51,6 +51,7 @@ type PivotTableOptions struct {
 	UseAutoFormatting   bool
 	PageOverThenDown    bool
 	MergeItem           bool
+	ClassicLayout       bool
 	CompactData         bool
 	ShowError           bool
 	ShowRowHeaders      bool
@@ -58,10 +59,16 @@ type PivotTableOptions struct {
 	ShowRowStripes      bool
 	ShowColStripes      bool
 	ShowLastColumn      bool
+	FieldPrintTitles    bool
+	ItemPrintTitles     bool
 	PivotTableStyleName string
 }
 
 // PivotTableField directly maps the field settings of the pivot table.
+//
+// Name specifies the name of the data field. Maximum 255 characters
+// are allowed in data field name, excess characters will be truncated.
+//
 // Subtotal specifies the aggregation function that applies to this data
 // field. The default value is sum. The possible values for this attribute
 // are:
@@ -78,15 +85,19 @@ type PivotTableOptions struct {
 //	Var
 //	Varp
 //
-// Name specifies the name of the data field. Maximum 255 characters
-// are allowed in data field name, excess characters will be truncated.
+// NumFmt specifies the number format ID of the data field, this filed only
+// accepts built-in number format ID and does not support custom number format
+// expression currently.
 type PivotTableField struct {
 	Compact         bool
 	Data            string
 	Name            string
 	Outline         bool
+	ShowAll         bool
+	InsertBlankRow  bool
 	Subtotal        string
 	DefaultSubtotal bool
+	NumFmt          int
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
@@ -210,6 +221,9 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 	if !ok {
 		return dataSheet, pivotTableSheetPath, ErrSheetNotExist{pivotTableSheetName}
 	}
+	if opts.CompactData && opts.ClassicLayout {
+		return nil, "", ErrPivotTableClassicLayout
+	}
 	return dataSheet, pivotTableSheetPath, err
 }
 
@@ -260,6 +274,9 @@ func (f *File) getTableFieldsOrder(opts *PivotTableOptions) ([]string, error) {
 		if err != nil {
 			return order, err
 		}
+		if name == "" {
+			return order, ErrParameterInvalid
+		}
 		order = append(order, name)
 	}
 	return order, nil
@@ -272,8 +289,10 @@ func (f *File) addPivotCache(opts *PivotTableOptions) error {
 	if err != nil {
 		return newPivotTableDataRangeError(err.Error())
 	}
-	// data range has been checked
-	order, _ := f.getTableFieldsOrder(opts)
+	order, err := f.getTableFieldsOrder(opts)
+	if err != nil {
+		return newPivotTableDataRangeError(err.Error())
+	}
 	topLeftCell, _ := CoordinatesToCellName(coordinates[0], coordinates[1])
 	bottomRightCell, _ := CoordinatesToCellName(coordinates[2], coordinates[3])
 	pc := xlsxPivotCacheDefinition{
@@ -337,7 +356,10 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 		MergeItem:             &opts.MergeItem,
 		CreatedVersion:        pivotTableVersion,
 		CompactData:           &opts.CompactData,
+		GridDropZones:         opts.ClassicLayout,
 		ShowError:             &opts.ShowError,
+		FieldPrintTitles:      opts.FieldPrintTitles,
+		ItemPrintTitles:       opts.ItemPrintTitles,
 		DataCaption:           "Values",
 		Location: &xlsxLocation{
 			Ref:            topLeftCell + ":" + bottomRightCell,
@@ -370,6 +392,12 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 	if pt.Name == "" {
 		pt.Name = fmt.Sprintf("PivotTable%d", pivotTableID)
 	}
+
+	// set classic layout
+	if opts.ClassicLayout {
+		pt.Compact, pt.CompactData = boolPtr(false), boolPtr(false)
+	}
+
 	// pivot fields
 	_ = f.addPivotFields(&pt, opts)
 
@@ -447,6 +475,7 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 	}
 	dataFieldsSubtotals := f.getPivotTableFieldsSubtotal(opts.Data)
 	dataFieldsName := f.getPivotTableFieldsName(opts.Data)
+	dataFieldsNumFmtID := f.getPivotTableFieldsNumFmtID(opts.Data)
 	for idx, dataField := range dataFieldsIndex {
 		if pt.DataFields == nil {
 			pt.DataFields = &xlsxDataFields{}
@@ -455,6 +484,7 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 			Name:     dataFieldsName[idx],
 			Fld:      dataField,
 			Subtotal: dataFieldsSubtotals[idx],
+			NumFmtID: dataFieldsNumFmtID[idx],
 		})
 	}
 
@@ -518,6 +548,14 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opts *PivotTableO
 	return err
 }
 
+// setClassicLayout provides a method to set classic layout for pivot table by
+// setting Compact and Outline to false.
+func (fld *xlsxPivotField) setClassicLayout(classicLayout bool) {
+	if classicLayout {
+		fld.Compact, fld.Outline = boolPtr(false), boolPtr(false)
+	}
+}
+
 // addPivotFields create pivot fields based on the column order of the first
 // row in the data region by given pivot table definition and option.
 func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOptions) error {
@@ -535,23 +573,26 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOpti
 			} else {
 				items = append(items, &xlsxItem{T: "default"})
 			}
-
-			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
+			fld := &xlsxPivotField{
 				Name:            f.getPivotTableFieldName(name, opts.Rows),
 				Axis:            "axisRow",
 				DataField:       inPivotTableField(opts.Data, name) != -1,
 				Compact:         &rowOptions.Compact,
 				Outline:         &rowOptions.Outline,
+				ShowAll:         rowOptions.ShowAll,
+				InsertBlankRow:  rowOptions.InsertBlankRow,
 				DefaultSubtotal: &rowOptions.DefaultSubtotal,
 				Items: &xlsxItems{
 					Count: len(items),
 					Item:  items,
 				},
-			})
+			}
+			fld.setClassicLayout(opts.ClassicLayout)
+			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, fld)
 			continue
 		}
 		if inPivotTableField(opts.Filter, name) != -1 {
-			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
+			fld := &xlsxPivotField{
 				Axis:      "axisPage",
 				DataField: inPivotTableField(opts.Data, name) != -1,
 				Name:      f.getPivotTableFieldName(name, opts.Columns),
@@ -561,7 +602,9 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOpti
 						{T: "default"},
 					},
 				},
-			})
+			}
+			fld.setClassicLayout(opts.ClassicLayout)
+			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, fld)
 			continue
 		}
 		if inPivotTableField(opts.Columns, name) != -1 {
@@ -572,27 +615,35 @@ func (f *File) addPivotFields(pt *xlsxPivotTableDefinition, opts *PivotTableOpti
 			} else {
 				items = append(items, &xlsxItem{T: "default"})
 			}
-			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
+			fld := &xlsxPivotField{
 				Name:            f.getPivotTableFieldName(name, opts.Columns),
 				Axis:            "axisCol",
 				DataField:       inPivotTableField(opts.Data, name) != -1,
 				Compact:         &columnOptions.Compact,
 				Outline:         &columnOptions.Outline,
+				ShowAll:         columnOptions.ShowAll,
+				InsertBlankRow:  columnOptions.InsertBlankRow,
 				DefaultSubtotal: &columnOptions.DefaultSubtotal,
 				Items: &xlsxItems{
 					Count: len(items),
 					Item:  items,
 				},
-			})
+			}
+			fld.setClassicLayout(opts.ClassicLayout)
+			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, fld)
 			continue
 		}
 		if inPivotTableField(opts.Data, name) != -1 {
-			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{
+			fld := &xlsxPivotField{
 				DataField: true,
-			})
+			}
+			fld.setClassicLayout(opts.ClassicLayout)
+			pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, fld)
 			continue
 		}
-		pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, &xlsxPivotField{})
+		fld := &xlsxPivotField{}
+		fld.setClassicLayout(opts.ClassicLayout)
+		pt.PivotFields.PivotField = append(pt.PivotFields.PivotField, fld)
 	}
 	return err
 }
@@ -682,6 +733,22 @@ func (f *File) getPivotTableFieldName(name string, fields []PivotTableField) str
 	return ""
 }
 
+// getPivotTableFieldsNumFmtID prepare fields number format ID by given pivot
+// table fields.
+func (f *File) getPivotTableFieldsNumFmtID(fields []PivotTableField) []int {
+	field := make([]int, len(fields))
+	for idx, fld := range fields {
+		if _, ok := builtInNumFmt[fld.NumFmt]; ok {
+			field[idx] = fld.NumFmt
+			continue
+		}
+		if (27 <= fld.NumFmt && fld.NumFmt <= 36) || (50 <= fld.NumFmt && fld.NumFmt <= 81) {
+			field[idx] = fld.NumFmt
+		}
+	}
+	return field
+}
+
 // getPivotTableFieldOptions return options for specific field by given field name.
 func (f *File) getPivotTableFieldOptions(name string, fields []PivotTableField) (options PivotTableField, ok bool) {
 	for _, field := range fields {
@@ -756,12 +823,11 @@ func (f *File) getPivotTableDataRange(opts *PivotTableOptions) error {
 		opts.pivotDataRange = opts.DataRange
 		return nil
 	}
-	for _, sheetName := range f.GetSheetList() {
-		tables, err := f.GetTables(sheetName)
-		e := ErrSheetNotExist{sheetName}
-		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
-			return err
-		}
+	tbls, err := f.getTables()
+	if err != nil {
+		return err
+	}
+	for sheetName, tables := range tbls {
 		for _, table := range tables {
 			if table.Name == opts.DataRange {
 				opts.pivotDataRange, opts.namedDataRange = fmt.Sprintf("%s!%s", sheetName, table.Range), true
@@ -803,12 +869,15 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		return opts, err
 	}
 	opts = PivotTableOptions{
-		pivotTableXML:   pivotTableXML,
-		pivotCacheXML:   pivotCacheXML,
-		pivotSheetName:  sheet,
-		DataRange:       fmt.Sprintf("%s!%s", sheet, pc.CacheSource.WorksheetSource.Ref),
-		PivotTableRange: fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
-		Name:            pt.Name,
+		pivotTableXML:    pivotTableXML,
+		pivotCacheXML:    pivotCacheXML,
+		pivotSheetName:   sheet,
+		DataRange:        fmt.Sprintf("%s!%s", pc.CacheSource.WorksheetSource.Sheet, pc.CacheSource.WorksheetSource.Ref),
+		PivotTableRange:  fmt.Sprintf("%s!%s", sheet, pt.Location.Ref),
+		Name:             pt.Name,
+		ClassicLayout:    pt.GridDropZones,
+		FieldPrintTitles: pt.FieldPrintTitles,
+		ItemPrintTitles:  pt.ItemPrintTitles,
 	}
 	if pc.CacheSource.WorksheetSource.Name != "" {
 		opts.DataRange = pc.CacheSource.WorksheetSource.Name
@@ -886,6 +955,7 @@ func (f *File) extractPivotTableFields(order []string, pt *xlsxPivotTableDefinit
 				Data:     order[field.Fld],
 				Name:     field.Name,
 				Subtotal: cases.Title(language.English).String(field.Subtotal),
+				NumFmt:   field.NumFmtID,
 			})
 		}
 	}
@@ -895,7 +965,9 @@ func (f *File) extractPivotTableFields(order []string, pt *xlsxPivotTableDefinit
 // settings by given pivot table fields.
 func extractPivotTableField(data string, fld *xlsxPivotField) PivotTableField {
 	pivotTableField := PivotTableField{
-		Data: data,
+		Data:           data,
+		ShowAll:        fld.ShowAll,
+		InsertBlankRow: fld.InsertBlankRow,
 	}
 	fields := []string{"Compact", "Name", "Outline", "Subtotal", "DefaultSubtotal"}
 	immutable, mutable := reflect.ValueOf(*fld), reflect.ValueOf(&pivotTableField).Elem()
@@ -986,8 +1058,8 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		return err
 	}
 	pivotTableCaches := map[string]int{}
-	for _, sheetName := range f.GetSheetList() {
-		sheetPivotTables, _ := f.GetPivotTables(sheetName)
+	pivotTables, _ := f.getPivotTables()
+	for _, sheetPivotTables := range pivotTables {
 		for _, sheetPivotTable := range sheetPivotTables {
 			pivotTableCaches[sheetPivotTable.pivotCacheXML]++
 		}
@@ -1007,4 +1079,18 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		}
 	}
 	return newNoExistTableError(name)
+}
+
+// getPivotTables provides a function to get all pivot tables in a workbook.
+func (f *File) getPivotTables() (map[string][]PivotTableOptions, error) {
+	pivotTables := map[string][]PivotTableOptions{}
+	for _, sheetName := range f.GetSheetList() {
+		pts, err := f.GetPivotTables(sheetName)
+		e := ErrSheetNotExist{sheetName}
+		if err != nil && err.Error() != newNotWorksheetError(sheetName).Error() && err.Error() != e.Error() {
+			return pivotTables, err
+		}
+		pivotTables[sheetName] = append(pivotTables[sheetName], pts...)
+	}
+	return pivotTables, nil
 }

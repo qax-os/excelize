@@ -167,7 +167,7 @@ func (f *File) workSheetWriter() {
 			_, ok := f.checked.Load(p.(string))
 			if ok {
 				f.Sheet.Delete(p.(string))
-				f.checked.Store(p.(string), false)
+				f.checked.Delete(p.(string))
 			}
 			buffer.Reset()
 		}
@@ -600,6 +600,49 @@ func (f *File) DeleteSheet(sheet string) error {
 	return err
 }
 
+// MoveSheet moves a sheet to a specified position in the workbook. The function
+// moves the source sheet before the target sheet. After moving, other sheets
+// will be shifted to the left or right. If the sheet is already at the target
+// position, the function will not perform any action. Not that this function
+// will be ungroup all sheets after moving. For example, move Sheet2 before
+// Sheet1:
+//
+//	err := f.MoveSheet("Sheet2", "Sheet1")
+func (f *File) MoveSheet(source, target string) error {
+	if strings.EqualFold(source, target) {
+		return nil
+	}
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	sourceIdx, err := f.GetSheetIndex(source)
+	if err != nil {
+		return err
+	}
+	targetIdx, err := f.GetSheetIndex(target)
+	if err != nil {
+		return err
+	}
+	if sourceIdx < 0 {
+		return ErrSheetNotExist{source}
+	}
+	if targetIdx < 0 {
+		return ErrSheetNotExist{target}
+	}
+	_ = f.UngroupSheets()
+	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
+	sourceSheet := wb.Sheets.Sheet[sourceIdx]
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet[:sourceIdx], wb.Sheets.Sheet[sourceIdx+1:]...)
+	if targetIdx > sourceIdx {
+		targetIdx--
+	}
+	wb.Sheets.Sheet = append(wb.Sheets.Sheet[:targetIdx], append([]xlsxSheet{sourceSheet}, wb.Sheets.Sheet[targetIdx:]...)...)
+	activeSheetIdx, _ := f.GetSheetIndex(activeSheetName)
+	f.SetActiveSheet(activeSheetIdx)
+	return err
+}
+
 // deleteAndAdjustDefinedNames delete and adjust defined name in the workbook
 // by given worksheet ID.
 func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
@@ -773,6 +816,11 @@ func (f *File) SetSheetVisible(sheet string, visible bool, veryHidden ...bool) e
 			return err
 		}
 		tabSelected := false
+		if ws.SheetViews == nil {
+			ws.SheetViews = &xlsxSheetViews{
+				SheetView: []xlsxSheetView{{WorkbookViewID: 0}},
+			}
+		}
 		if len(ws.SheetViews.SheetView) > 0 {
 			tabSelected = ws.SheetViews.SheetView[0].TabSelected
 		}
@@ -1651,6 +1699,24 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //	    RefersTo: "Sheet1!$A$2:$D$5",
 //	    Comment:  "defined name comment",
 //	    Scope:    "Sheet2",
+//	})
+//
+// If you fill the RefersTo property with only one columns range without a
+// comma, it will work as "Columns to repeat at left" only. For example:
+//
+//	err := f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "_xlnm.Print_Titles",
+//	    RefersTo: "Sheet1!$A:$A",
+//	    Scope:    "Sheet1",
+//	})
+//
+// If you fill the RefersTo property with only one rows range without a comma,
+// it will work as "Rows to repeat at top" only. For example:
+//
+//	err := f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "_xlnm.Print_Titles",
+//	    RefersTo: "Sheet1!$1:$1",
+//	    Scope:    "Sheet1",
 //	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if definedName.Name == "" || definedName.RefersTo == "" {
