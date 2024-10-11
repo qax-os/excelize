@@ -706,8 +706,10 @@ func (f *File) drawingsWriter() {
 	})
 }
 
-// drawingResize calculate the height and width after resizing.
-func (f *File) drawingResize(sheet, cell string, width, height float64, opts *GraphicOptions) (w, h, c, r int, err error) {
+// GetCellPixelsWithCoordinates returns the pixel dimensions of a specified cell within a given sheet,
+// accounting for merged cells. This function calculates the total pixel width and height
+// for individual or merged cells and provides the column and row index of the cell.
+func (f *File) GetCellPixelsWithCoordinates(sheet, cell string) (cellWidth, cellHeight, c, r int, err error) {
 	var mergeCells []MergeCell
 	mergeCells, err = f.GetMergeCells(sheet)
 	if err != nil {
@@ -718,7 +720,7 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 	if c, r, err = CellNameToCoordinates(cell); err != nil {
 		return
 	}
-	cellWidth, cellHeight := f.getColWidth(sheet, c), f.getRowHeight(sheet, r)
+	cellWidth, cellHeight = f.getColWidth(sheet, c), f.getRowHeight(sheet, r)
 	for _, mergeCell := range mergeCells {
 		if inMergeCell {
 			continue
@@ -738,6 +740,12 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 			cellHeight += f.getRowHeight(sheet, row)
 		}
 	}
+	return
+}
+
+// drawingResize calculate the height and width after resizing.
+func (f *File) drawingResize(sheet, cell string, width, height float64, opts *GraphicOptions) (w, h, c, r int, err error) {
+	cellWidth, cellHeight, c, r, err := f.GetCellPixelsWithCoordinates(sheet, cell)
 	if float64(cellWidth) < width {
 		asp := float64(cellWidth) / width
 		width, height = float64(cellWidth), height*asp
