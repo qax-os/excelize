@@ -6961,7 +6961,6 @@ func (nf *numberFormat) japaneseYearHandler(token nfp.Token, langInfo languageIn
 		if year == -1 {
 			return
 		}
-		langInfo, _ := getSupportedLanguageInfo(nf.localCode)
 		nf.useGannen = langInfo.useGannen
 		switch len(token.TValue) {
 		case 1:
@@ -6972,7 +6971,6 @@ func (nf *numberFormat) japaneseYearHandler(token nfp.Token, langInfo languageIn
 		default:
 			nf.result += japaneseEraNames[i]
 		}
-		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "E") {
 		_, year := eraYear(nf.t)
@@ -7021,7 +7019,6 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 		}
 		if len(token.TValue) == 1 && !nf.useGannen {
 			nf.result += strconv.Itoa(year)
-			return
 		}
 	}
 }
@@ -7038,11 +7035,19 @@ func (nf *numberFormat) yearsHandler(token nfp.Token) {
 		return
 	}
 	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
-	if inStrSlice(langInfo.tags, "zh-TW", false) != -1 {
+	if inStrSlice(langInfo.tags, "zh-TW", false) != -1 ||
+		nf.opts != nil && nf.opts.CultureInfo == CultureNameZhTW {
 		nf.republicOfChinaYearHandler(token, langInfo)
+		return
 	}
-	if inStrSlice(langInfo.tags, "ja-JP", false) != -1 {
+	if inStrSlice(langInfo.tags, "ja-JP", false) != -1 ||
+		nf.opts != nil && nf.opts.CultureInfo == CultureNameJaJP {
 		nf.japaneseYearHandler(token, langInfo)
+		return
+	}
+	if strings.Contains(strings.ToUpper(token.TValue), "E") {
+		nf.result += strconv.Itoa(nf.t.Year())
+		return
 	}
 }
 
