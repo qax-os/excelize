@@ -16381,6 +16381,7 @@ func (fn *formulaFuncs) DOLLAR(argsList *list.List) formulaArg {
 		CultureNameUnknown: "$",
 		CultureNameEnUS:    "$",
 		CultureNameJaJP:    "¥",
+		CultureNameKoKR:    "\u20a9",
 		CultureNameZhCN:    "¥",
 		CultureNameZhTW:    "NT$",
 	}[fn.f.options.CultureInfo]

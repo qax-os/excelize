@@ -58,6 +58,7 @@ const (
 	CultureNameUnknown CultureName = iota
 	CultureNameEnUS
 	CultureNameJaJP
+	CultureNameKoKR
 	CultureNameZhCN
 	CultureNameZhTW
 )
@@ -4648,6 +4649,9 @@ var (
 		CultureNameJaJP: func(f *File, numFmtID int) string {
 			return f.langNumFmtFuncJaJP(numFmtID)
 		},
+		CultureNameKoKR: func(f *File, numFmtID int) string {
+			return f.langNumFmtFuncKoKR(numFmtID)
+		},
 		CultureNameZhCN: func(f *File, numFmtID int) string {
 			return f.langNumFmtFuncZhCN(numFmtID)
 		},
@@ -4725,6 +4729,18 @@ func (f *File) langNumFmtFuncJaJP(numFmtID int) string {
 		return f.options.LongTimePattern
 	}
 	return langNumFmt["ja-jp"][numFmtID]
+}
+
+// langNumFmtFuncKoKR returns number format code by given date and time pattern
+// for country code ko-kr.
+func (f *File) langNumFmtFuncKoKR(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["ko-kr"][numFmtID]
 }
 
 // langNumFmtFuncZhCN returns number format code by given date and time pattern
@@ -7026,15 +7042,19 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 // yearsHandler will be handling years in the date and times types tokens for a
 // number format expression.
 func (nf *numberFormat) yearsHandler(token nfp.Token) {
+	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
 	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
+		year := nf.t.Year()
+		if nf.opts != nil && nf.opts.CultureInfo == CultureNameKoKR {
+			year += 2333
+		}
 		if len(token.TValue) <= 2 {
-			nf.result += strconv.Itoa(nf.t.Year())[2:]
+			nf.result += strconv.Itoa(year)[2:]
 			return
 		}
-		nf.result += strconv.Itoa(nf.t.Year())
+		nf.result += strconv.Itoa(year)
 		return
 	}
-	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
 	if inStrSlice(langInfo.tags, "zh-TW", false) != -1 ||
 		nf.opts != nil && nf.opts.CultureInfo == CultureNameZhTW {
 		nf.republicOfChinaYearHandler(token, langInfo)
