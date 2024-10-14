@@ -870,9 +870,9 @@ func TestSetCellStyleCurrencyNumberFormat(t *testing.T) {
 }
 
 func TestSetCellStyleLangNumberFormat(t *testing.T) {
-	rawCellValues := [][]string{make([]string, 42)}
+	rawCellValues := make([][]string, 42)
 	for i := 0; i < 42; i++ {
-		rawCellValues[0][i] = "45162"
+		rawCellValues[i] = []string{"45162"}
 	}
 	for lang, expected := range map[CultureName][][]string{
 		CultureNameUnknown: rawCellValues,
