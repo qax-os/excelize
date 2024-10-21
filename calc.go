@@ -13629,7 +13629,9 @@ func (fn *formulaFuncs) DBCS(argsList *list.List) formulaArg {
 	if arg.Type == ArgError {
 		return arg
 	}
-	if fn.f.options.CultureInfo == CultureNameZhCN {
+	if fn.f.options.CultureInfo == CultureNameJaJP ||
+		fn.f.options.CultureInfo == CultureNameZhCN ||
+		fn.f.options.CultureInfo == CultureNameZhTW {
 		var chars []string
 		for _, r := range arg.Value() {
 			code := r
@@ -16378,7 +16380,10 @@ func (fn *formulaFuncs) DOLLAR(argsList *list.List) formulaArg {
 	symbol := map[CultureName]string{
 		CultureNameUnknown: "$",
 		CultureNameEnUS:    "$",
+		CultureNameJaJP:    "¥",
+		CultureNameKoKR:    "\u20a9",
 		CultureNameZhCN:    "¥",
+		CultureNameZhTW:    "NT$",
 	}[fn.f.options.CultureInfo]
 	numFmtCode := fmt.Sprintf("%s#,##0%s%s;(%s#,##0%s%s)",
 		symbol, dot, strings.Repeat("0", decimals), symbol, dot, strings.Repeat("0", decimals))

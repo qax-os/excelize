@@ -57,7 +57,10 @@ type CultureName byte
 const (
 	CultureNameUnknown CultureName = iota
 	CultureNameEnUS
+	CultureNameJaJP
+	CultureNameKoKR
 	CultureNameZhCN
+	CultureNameZhTW
 )
 
 var (
@@ -791,7 +794,7 @@ var (
 		31748: {tags: []string{"zh-Hant"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2},
 		3076:  {tags: []string{"zh-HK"}, localMonth: localMonthsNameChinese2, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2},
 		5124:  {tags: []string{"zh-MO"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2},
-		1028:  {tags: []string{"zh-TW"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2},
+		1028:  {tags: []string{"zh-TW"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2, useGannen: true},
 		9:     {tags: []string{"en"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
 		4096: {tags: []string{
 			"aa", "aa-DJ", "aa-ER", "aa-ER", "aa-NA", "agq", "agq-CM", "ak", "ak-GH", "sq-ML",
@@ -1168,6 +1171,10 @@ var (
 		"JA-JP-X-GANNEN":    {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, weekdayNames: weekdayNamesJapanese, weekdayNamesAbbr: weekdayNamesJapaneseAbbr},
 		"JA-JP-X-GANNEN,80": {tags: []string{"ja-JP"}, localMonth: localMonthsNameChinese3, apFmt: apFmtJapanese, weekdayNames: weekdayNamesJapanese, weekdayNamesAbbr: weekdayNamesJapaneseAbbr, useGannen: true},
 	}
+	// republicOfChinaYear defined start time of the Republic of China
+	republicOfChinaYear = time.Date(1912, time.January, 1, 0, 0, 0, 0, time.UTC)
+	// republicOfChinaEraName defined the Republic of China era name for the Republic of China calendar.
+	republicOfChinaEraName = []string{"\u4e2d\u83ef\u6c11\u570b", "\u6c11\u570b", "\u524d"}
 	// japaneseEraYears list the Japanese era name periods.
 	japaneseEraYears = []time.Time{
 		time.Date(1868, time.August, 8, 0, 0, 0, 0, time.UTC),
@@ -4634,6 +4641,24 @@ var (
 			return r.Replace(s)
 		},
 	}
+	// langNumFmtFunc defines functions to apply language number format code.
+	langNumFmtFunc = map[CultureName]func(f *File, numFmtID int) string{
+		CultureNameEnUS: func(f *File, numFmtID int) string {
+			return f.langNumFmtFuncEnUS(numFmtID)
+		},
+		CultureNameJaJP: func(f *File, numFmtID int) string {
+			return f.langNumFmtFuncJaJP(numFmtID)
+		},
+		CultureNameKoKR: func(f *File, numFmtID int) string {
+			return f.langNumFmtFuncKoKR(numFmtID)
+		},
+		CultureNameZhCN: func(f *File, numFmtID int) string {
+			return f.langNumFmtFuncZhCN(numFmtID)
+		},
+		CultureNameZhTW: func(f *File, numFmtID int) string {
+			return f.langNumFmtFuncZhTW(numFmtID)
+		},
+	}
 )
 
 // getSupportedLanguageInfo returns language infomation by giving language code.
@@ -4692,6 +4717,54 @@ func (f *File) langNumFmtFuncEnUS(numFmtID int) string {
 		return shortDatePattern
 	}
 	return ""
+}
+
+// langNumFmtFuncJaJP returns number format code by given date and time pattern
+// for country code ja-jp.
+func (f *File) langNumFmtFuncJaJP(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["ja-jp"][numFmtID]
+}
+
+// langNumFmtFuncKoKR returns number format code by given date and time pattern
+// for country code ko-kr.
+func (f *File) langNumFmtFuncKoKR(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["ko-kr"][numFmtID]
+}
+
+// langNumFmtFuncZhCN returns number format code by given date and time pattern
+// for country code zh-cn.
+func (f *File) langNumFmtFuncZhCN(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["zh-cn"][numFmtID]
+}
+
+// langNumFmtFuncZhTW returns number format code by given date and time pattern
+// for country code zh-tw.
+func (f *File) langNumFmtFuncZhTW(numFmtID int) string {
+	if numFmtID == 30 && f.options.ShortDatePattern != "" {
+		return f.options.ShortDatePattern
+	}
+	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
+		return f.options.LongTimePattern
+	}
+	return langNumFmt["zh-tw"][numFmtID]
 }
 
 // checkDateTimePattern check and validate date and time options field value.
@@ -4770,18 +4843,6 @@ func (f *File) extractNumFmtDecimal(fmtCode string) int {
 	return -1
 }
 
-// langNumFmtFuncZhCN returns number format code by given date and time pattern
-// for country code zh-cn.
-func (f *File) langNumFmtFuncZhCN(numFmtID int) string {
-	if numFmtID == 30 && f.options.ShortDatePattern != "" {
-		return f.options.ShortDatePattern
-	}
-	if (32 <= numFmtID && numFmtID <= 33) && f.options.LongTimePattern != "" {
-		return f.options.LongTimePattern
-	}
-	return langNumFmt["zh-cn"][numFmtID]
-}
-
 // getBuiltInNumFmtCode convert number format index to number format code with
 // specified locale and language.
 func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
@@ -4789,11 +4850,8 @@ func (f *File) getBuiltInNumFmtCode(numFmtID int) (string, bool) {
 		return fmtCode, true
 	}
 	if isLangNumFmt(numFmtID) {
-		if f.options.CultureInfo == CultureNameEnUS {
-			return f.langNumFmtFuncEnUS(numFmtID), true
-		}
-		if f.options.CultureInfo == CultureNameZhCN {
-			return f.langNumFmtFuncZhCN(numFmtID), true
+		if fn, ok := langNumFmtFunc[f.options.CultureInfo]; ok {
+			return fn(f, numFmtID), true
 		}
 	}
 	return "", false
@@ -6912,23 +6970,13 @@ func eraYear(t time.Time) (int, int) {
 	return i, year
 }
 
-// yearsHandler will be handling years in the date and times types tokens for a
-// number format expression.
-func (nf *numberFormat) yearsHandler(token nfp.Token) {
-	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
-		if len(token.TValue) <= 2 {
-			nf.result += strconv.Itoa(nf.t.Year())[2:]
-			return
-		}
-		nf.result += strconv.Itoa(nf.t.Year())
-		return
-	}
+// japaneseYearHandler handling the Japanease calendar years.
+func (nf *numberFormat) japaneseYearHandler(token nfp.Token, langInfo languageInfo) {
 	if strings.Contains(strings.ToUpper(token.TValue), "G") {
 		i, year := eraYear(nf.t)
 		if year == -1 {
 			return
 		}
-		langInfo, _ := getSupportedLanguageInfo(nf.localCode)
 		nf.useGannen = langInfo.useGannen
 		switch len(token.TValue) {
 		case 1:
@@ -6939,7 +6987,6 @@ func (nf *numberFormat) yearsHandler(token nfp.Token) {
 		default:
 			nf.result += japaneseEraNames[i]
 		}
-		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "E") {
 		_, year := eraYear(nf.t)
@@ -6958,6 +7005,69 @@ func (nf *numberFormat) yearsHandler(token nfp.Token) {
 		if len(token.TValue) == 2 {
 			nf.result += fmt.Sprintf("%02d", year)
 		}
+	}
+}
+
+// republicOfChinaYearHandler handling the Republic of China calendar years.
+func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo languageInfo) {
+	if strings.Contains(strings.ToUpper(token.TValue), "G") {
+		year := nf.t.Year() - republicOfChinaYear.Year() + 1
+		if year == 1 {
+			nf.useGannen = langInfo.useGannen
+		}
+		var name string
+		if name = republicOfChinaEraName[0]; len(token.TValue) < 3 {
+			name = republicOfChinaEraName[1]
+		}
+		if year < 0 {
+			name += republicOfChinaEraName[2]
+		}
+		nf.result += name
+	}
+	if strings.Contains(strings.ToUpper(token.TValue), "E") {
+		year := nf.t.Year() - republicOfChinaYear.Year() + 1
+		if year < 0 {
+			year = republicOfChinaYear.Year() - nf.t.Year()
+		}
+		if year == 1 && nf.useGannen {
+			nf.result += "\u5143"
+			return
+		}
+		if len(token.TValue) == 1 && !nf.useGannen {
+			nf.result += strconv.Itoa(year)
+		}
+	}
+}
+
+// yearsHandler will be handling years in the date and times types tokens for a
+// number format expression.
+func (nf *numberFormat) yearsHandler(token nfp.Token) {
+	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
+	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
+		year := nf.t.Year()
+		if nf.opts != nil && nf.opts.CultureInfo == CultureNameKoKR {
+			year += 2333
+		}
+		if len(token.TValue) <= 2 {
+			nf.result += strconv.Itoa(year)[2:]
+			return
+		}
+		nf.result += strconv.Itoa(year)
+		return
+	}
+	if inStrSlice(langInfo.tags, "zh-TW", false) != -1 ||
+		nf.opts != nil && nf.opts.CultureInfo == CultureNameZhTW {
+		nf.republicOfChinaYearHandler(token, langInfo)
+		return
+	}
+	if inStrSlice(langInfo.tags, "ja-JP", false) != -1 ||
+		nf.opts != nil && nf.opts.CultureInfo == CultureNameJaJP {
+		nf.japaneseYearHandler(token, langInfo)
+		return
+	}
+	if strings.Contains(strings.ToUpper(token.TValue), "E") {
+		nf.result += strconv.Itoa(nf.t.Year())
+		return
 	}
 }
 
