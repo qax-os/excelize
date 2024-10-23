@@ -2051,11 +2051,12 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		if style.Fill.Pattern > 18 || style.Fill.Pattern < 0 {
 			break
 		}
-		if len(style.Fill.Color) < 1 {
-			break
-		}
 		var pattern xlsxPatternFill
 		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
+		if len(style.Fill.Color) < 1 {
+			fill.PatternFill = &pattern
+			break
+		}
 		if fg {
 			if pattern.FgColor == nil {
 				pattern.FgColor = new(xlsxColor)
