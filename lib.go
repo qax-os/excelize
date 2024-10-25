@@ -652,10 +652,15 @@ func getRootElement(d *xml.Decoder) []xml.Attr {
 		case xml.StartElement:
 			tokenIdx++
 			if tokenIdx == 1 {
+				var ns bool
 				for i := 0; i < len(startElement.Attr); i++ {
-					if startElement.Attr[i].Value == NameSpaceSpreadSheet.Value {
-						startElement.Attr[i] = NameSpaceSpreadSheet
+					if startElement.Attr[i].Value == NameSpaceSpreadSheet.Value &&
+						startElement.Attr[i].Name == NameSpaceSpreadSheet.Name {
+						ns = true
 					}
+				}
+				if !ns {
+					startElement.Attr = append(startElement.Attr, NameSpaceSpreadSheet)
 				}
 				return startElement.Attr
 			}

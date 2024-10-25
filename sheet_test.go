@@ -580,7 +580,7 @@ func TestMoveSheet(t *testing.T) {
 
 	// Test move sheet with unsupported workbook charset
 	f.WorkBook = nil
-	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.MoveSheet("Sheet2", "Sheet1"), "XML syntax error on line 1: invalid UTF-8")
 }
 

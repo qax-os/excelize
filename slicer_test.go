@@ -597,7 +597,7 @@ func TestAddWorkbookSlicerCache(t *testing.T) {
 	// Test add a workbook slicer cache with unsupported charset workbook
 	f := NewFile()
 	f.WorkBook = nil
-	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.addWorkbookSlicerCache(1, ExtURISlicerCachesX15), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }

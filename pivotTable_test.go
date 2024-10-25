@@ -516,7 +516,7 @@ func TestDeleteWorkbookPivotCache(t *testing.T) {
 	f := NewFile()
 	// Test delete workbook pivot table cache with unsupported workbook charset
 	f.WorkBook = nil
-	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.deleteWorkbookPivotCache(PivotTableOptions{pivotCacheXML: "pivotCache/pivotCacheDefinition1.xml"}), "XML syntax error on line 1: invalid UTF-8")
 
 	// Test delete workbook pivot table cache with unsupported workbook relationships charset
