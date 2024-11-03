@@ -412,3 +412,23 @@ func TestExtractFormControl(t *testing.T) {
 	_, err := extractFormControl(string(MacintoshCyrillicCharset))
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
+
+func ExampleFile_SetLegacyDrawingHF() {
+	f := NewFile()
+	sheet := "Sheet1"
+	headerFooterOptions := HeaderFooterOptions{
+		OddHeader: "&LExcelize&R&G",
+	}
+	f.SetHeaderFooter(sheet, &headerFooterOptions)
+	file, _ := os.ReadFile("test/images/excel.png")
+	f.SetLegacyDrawingHF(sheet, &HeaderFooterGraphics{
+		Extension: ".png",
+		File:      file,
+		Width:     "50pt",
+		Height:    "32pt",
+	})
+	f.SetCellValue(sheet, "A1", "Example")
+	out, _ := os.CreateTemp("", "header-graphics-*.xlsx")
+	f.Write(out)
+	f.Close()
+}

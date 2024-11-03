@@ -20,7 +20,7 @@ type vmlDrawing struct {
 	XMLNSv      string           `xml:"xmlns:v,attr"`
 	XMLNSo      string           `xml:"xmlns:o,attr"`
 	XMLNSx      string           `xml:"xmlns:x,attr"`
-	XMLNSmv     string           `xml:"xmlns:mv,attr"`
+	XMLNSmv     string           `xml:"xmlns:mv,attr,omitempty"`
 	ShapeLayout *xlsxShapeLayout `xml:"o:shapelayout"`
 	ShapeType   *xlsxShapeType   `xml:"v:shapetype"`
 	Shape       []xlsxShape      `xml:"v:shape"`
@@ -44,6 +44,7 @@ type xlsxIDmap struct {
 type xlsxShape struct {
 	XMLName     xml.Name `xml:"v:shape"`
 	ID          string   `xml:"id,attr"`
+	Spid        string   `xml:"o:spid,attr,omitempty"`
 	Type        string   `xml:"type,attr"`
 	Style       string   `xml:"style,attr"`
 	Button      string   `xml:"o:button,attr,omitempty"`
@@ -57,12 +58,17 @@ type xlsxShape struct {
 
 // xlsxShapeType directly maps the shapetype element.
 type xlsxShapeType struct {
-	ID        string      `xml:"id,attr"`
-	CoordSize string      `xml:"coordsize,attr"`
-	Spt       int         `xml:"o:spt,attr"`
-	Path      string      `xml:"path,attr"`
-	Stroke    *xlsxStroke `xml:"v:stroke"`
-	VPath     *vPath      `xml:"v:path"`
+	ID             string      `xml:"id,attr"`
+	CoordSize      string      `xml:"coordsize,attr"`
+	Spt            int         `xml:"o:spt,attr"`
+	PreferRelative string      `xml:"o:preferrelative,attr,omitempty"`
+	Path           string      `xml:"path,attr"`
+	Filled         string      `xml:"filled,attr,omitempty"`
+	Stroked        string      `xml:"stroked,attr,omitempty"`
+	Stroke         *xlsxStroke `xml:"v:stroke"`
+	VFormulas      *vFormulas  `xml:"v:formulas"`
+	VPath          *vPath      `xml:"v:path"`
+	Lock           *oLock      `xml:"o:lock"`
 }
 
 // xlsxStroke directly maps the stroke element.
@@ -72,8 +78,26 @@ type xlsxStroke struct {
 
 // vPath directly maps the v:path element.
 type vPath struct {
+	ExtrusionOK     string `xml:"o:extrusionok,attr,omitempty"`
 	GradientShapeOK string `xml:"gradientshapeok,attr,omitempty"`
 	ConnectType     string `xml:"o:connecttype,attr"`
+}
+
+// oLock directly maps the o:lock element.
+type oLock struct {
+	Ext         string `xml:"v:ext,attr"`
+	Rotation    string `xml:"rotation,attr,omitempty"`
+	AspectRatio string `xml:"aspectratio,attr,omitempty"`
+}
+
+// vFormulas directly maps to the v:formulas element
+type vFormulas struct {
+	Formulas []vFormula `xml:"v:f"`
+}
+
+// vFormula directly maps to the v:f element
+type vFormula struct {
+	Equation string `xml:"eqn,attr"`
 }
 
 // vFill directly maps the v:fill element. This element must be defined within a
@@ -104,6 +128,13 @@ type vShadow struct {
 type vTextBox struct {
 	Style string   `xml:"style,attr"`
 	Div   *xlsxDiv `xml:"div"`
+}
+
+// vImageData directly maps the v:imagedata element. This element must be
+// defined within a Shape element.
+type vImageData struct {
+	RelID string `xml:"o:relid,attr"`
+	Title string `xml:"o:title,attr,omitempty"`
 }
 
 // xlsxDiv directly maps the div element.
@@ -254,7 +285,9 @@ type encodeShape struct {
 	Shadow     *vShadow     `xml:"v:shadow"`
 	Path       *vPath       `xml:"v:path"`
 	TextBox    *vTextBox    `xml:"v:textbox"`
+	ImageData  *vImageData  `xml:"v:imagedata"`
 	ClientData *xClientData `xml:"x:ClientData"`
+	Lock       *oLock       `xml:"o:lock"`
 }
 
 // formCtrlPreset defines the structure used to form control presets.
@@ -300,4 +333,13 @@ type FormControl struct {
 	Paragraph    []RichTextRun
 	Type         FormControlType
 	Format       GraphicOptions
+}
+
+// HeaderFooterGraphics defines the settings for an image to be
+// accessible from the header/footer options.
+type HeaderFooterGraphics struct {
+	File      []byte
+	Extension string
+	Width     string
+	Height    string
 }
