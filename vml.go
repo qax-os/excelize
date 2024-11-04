@@ -1070,3 +1070,82 @@ func extractVMLFont(font []decodeVMLFont) []RichTextRun {
 	}
 	return runs
 }
+
+// SetLegacyDrawingHF provides a mechanism to set the graphics that
+// can be referenced in the Header/Footer defitions via &G.
+//
+// The extension should be provided with a "." in front, e.g. ".png".
+// The width/height should have units in them, e.g. "100pt".
+func (f *File) SetLegacyDrawingHF(sheet string, g *HeaderFooterGraphics) error {
+	vmlID := f.countVMLDrawing() + 1
+
+	vml := &vmlDrawing{
+		XMLNSv: "urn:schemas-microsoft-com:vml",
+		XMLNSo: "urn:schemas-microsoft-com:office:office",
+		XMLNSx: "urn:schemas-microsoft-com:office:excel",
+		ShapeLayout: &xlsxShapeLayout{
+			Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: vmlID},
+		},
+		ShapeType: &xlsxShapeType{
+			ID:             "_x0000_t75",
+			CoordSize:      "21600,21600",
+			Spt:            75,
+			PreferRelative: "t",
+			Path:           "m@4@5l@4@11@9@11@9@5xe",
+			Filled:         "f",
+			Stroked:        "f",
+			Stroke:         &xlsxStroke{JoinStyle: "miter"},
+			VFormulas: &vFormulas{
+				Formulas: []vFormula{
+					{Equation: "if lineDrawn pixelLineWidth 0"},
+					{Equation: "sum @0 1 0"},
+					{Equation: "sum 0 0 @1"},
+					{Equation: "prod @2 1 2"},
+					{Equation: "prod @3 21600 pixelWidth"},
+					{Equation: "prod @3 21600 pixelHeight"},
+					{Equation: "sum @0 0 1"},
+					{Equation: "prod @6 1 2"},
+					{Equation: "prod @7 21600 pixelWidth"},
+					{Equation: "sum @8 21600 0"},
+					{Equation: "prod @7 21600 pixelHeight"},
+					{Equation: "sum @10 21600 0"},
+				},
+			},
+			VPath: &vPath{ExtrusionOK: "f", GradientShapeOK: "t", ConnectType: "rect"},
+			Lock:  &oLock{Ext: "edit", AspectRatio: "t"},
+		},
+	}
+
+	style := fmt.Sprintf("position:absolute;margin-left:0;margin-top:0;width:%s;height:%s;z-index:1", g.Width, g.Height)
+	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
+	drawingVMLRels := "xl/drawings/_rels/vmlDrawing" + strconv.Itoa(vmlID) + ".vml.rels"
+
+	mediaStr := ".." + strings.TrimPrefix(f.addMedia(g.File, g.Extension), "xl")
+	imageID := f.addRels(drawingVMLRels, SourceRelationshipImage, mediaStr, "")
+
+	shape := xlsxShape{
+		ID:    "RH",
+		Spid:  "_x0000_s1025",
+		Type:  "#_x0000_t75",
+		Style: style,
+	}
+	s, _ := xml.Marshal(encodeShape{
+		ImageData: &vImageData{RelID: "rId" + strconv.Itoa(imageID)},
+		Lock:      &oLock{Ext: "edit", Rotation: "t"},
+	})
+	shape.Val = string(s[13 : len(s)-14])
+	vml.Shape = append(vml.Shape, shape)
+	f.VMLDrawing[drawingVML] = vml
+
+	sheetRelationshipsDrawingVML := "../drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
+
+	drawingID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
+	f.addSheetNameSpace(sheet, SourceRelationship)
+	f.addSheetLegacyDrawingHF(sheet, drawingID)
+	if err := f.setContentTypePartImageExtensions(); err != nil {
+		return err
+	}
+	return f.setContentTypePartVMLExtensions()
+}

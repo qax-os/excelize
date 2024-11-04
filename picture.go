@@ -295,6 +295,16 @@ func (f *File) addSheetLegacyDrawing(sheet string, rID int) {
 	}
 }
 
+// addSheetLegacyDrawingHF provides a function to add legacy drawing
+// header/footer element to xl/worksheets/sheet%d.xml by given
+// worksheet name and relationship index.
+func (f *File) addSheetLegacyDrawingHF(sheet string, rID int) {
+	ws, _ := f.workSheetReader(sheet)
+	ws.LegacyDrawingHF = &xlsxLegacyDrawingHF{
+		RID: "rId" + strconv.Itoa(rID),
+	}
+}
+
 // addSheetDrawing provides a function to add drawing element to
 // xl/worksheets/sheet%d.xml by given worksheet name and relationship index.
 func (f *File) addSheetDrawing(sheet string, rID int) {
