@@ -1097,18 +1097,18 @@ func (f *File) SetLegacyDrawingHF(sheet string, g *HeaderFooterGraphics) error {
 			Stroke:         &xlsxStroke{JoinStyle: "miter"},
 			VFormulas: &vFormulas{
 				Formulas: []vFormula{
-					vFormula{Equation: "if lineDrawn pixelLineWidth 0"},
-					vFormula{Equation: "sum @0 1 0"},
-					vFormula{Equation: "sum 0 0 @1"},
-					vFormula{Equation: "prod @2 1 2"},
-					vFormula{Equation: "prod @3 21600 pixelWidth"},
-					vFormula{Equation: "prod @3 21600 pixelHeight"},
-					vFormula{Equation: "sum @0 0 1"},
-					vFormula{Equation: "prod @6 1 2"},
-					vFormula{Equation: "prod @7 21600 pixelWidth"},
-					vFormula{Equation: "sum @8 21600 0"},
-					vFormula{Equation: "prod @7 21600 pixelHeight"},
-					vFormula{Equation: "sum @10 21600 0"},
+					{Equation: "if lineDrawn pixelLineWidth 0"},
+					{Equation: "sum @0 1 0"},
+					{Equation: "sum 0 0 @1"},
+					{Equation: "prod @2 1 2"},
+					{Equation: "prod @3 21600 pixelWidth"},
+					{Equation: "prod @3 21600 pixelHeight"},
+					{Equation: "sum @0 0 1"},
+					{Equation: "prod @6 1 2"},
+					{Equation: "prod @7 21600 pixelWidth"},
+					{Equation: "sum @8 21600 0"},
+					{Equation: "prod @7 21600 pixelHeight"},
+					{Equation: "sum @10 21600 0"},
 				},
 			},
 			VPath: &vPath{ExtrusionOK: "f", GradientShapeOK: "t", ConnectType: "rect"},
@@ -1144,8 +1144,7 @@ func (f *File) SetLegacyDrawingHF(sheet string, g *HeaderFooterGraphics) error {
 	drawingID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	f.addSheetLegacyDrawingHF(sheet, drawingID)
-	err := f.setContentTypePartImageExtensions()
-	if err != nil {
+	if err := f.setContentTypePartImageExtensions(); err != nil {
 		return err
 	}
 	return f.setContentTypePartVMLExtensions()
