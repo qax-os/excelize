@@ -98,6 +98,8 @@ type PivotTableField struct {
 	Subtotal        string
 	DefaultSubtotal bool
 	NumFmt          int
+	ShowDataAs      string // runTotal for cumulative sum
+	BaseField       string // the field for calculating cumulative aggregation
 }
 
 // AddPivotTable provides the method to add pivot table by given pivot table
@@ -475,17 +477,27 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 	}
 	dataFieldsSubtotals := f.getPivotTableFieldsSubtotal(opts.Data)
 	dataFieldsName := f.getPivotTableFieldsName(opts.Data)
-	dataFieldsNumFmtID := f.getPivotTableFieldsNumFmtID(opts.Data)
-	for idx, dataField := range dataFieldsIndex {
+	for idx, field := range dataFieldsIndex {
+		data := opts.Data[idx]
 		if pt.DataFields == nil {
 			pt.DataFields = &xlsxDataFields{}
 		}
-		pt.DataFields.DataField = append(pt.DataFields.DataField, &xlsxDataField{
+		dataField := &xlsxDataField{
 			Name:     dataFieldsName[idx],
-			Fld:      dataField,
+			Fld:      field,
 			Subtotal: dataFieldsSubtotals[idx],
-			NumFmtID: dataFieldsNumFmtID[idx],
-		})
+		}
+		if data.ShowDataAs != "" {
+			dataField.ShowDataAs = data.ShowDataAs
+		}
+		if data.BaseField != "" {
+			baseField, err := f.getPivotFieldIndex(data.BaseField, opts)
+			if err != nil {
+				return err
+			}
+			dataField.BaseField = baseField
+		}
+		pt.DataFields.DataField = append(pt.DataFields.DataField, dataField)
 	}
 
 	// count data fields
@@ -688,6 +700,19 @@ func (f *File) getPivotFieldsIndex(fields []PivotTableField, opts *PivotTableOpt
 		}
 	}
 	return pivotFieldsIndex, nil
+}
+
+// getPivotFieldIndex returns the index of pivot field by given pivot option.
+func (f *File) getPivotFieldIndex(fieldName string, opts *PivotTableOptions) (int, error) {
+	var pivotFieldIndex int
+	orders, err := f.getTableFieldsOrder(opts)
+	if err != nil {
+		return pivotFieldIndex, err
+	}
+	if pos := inStrSlice(orders, fieldName, true); pos != -1 {
+		pivotFieldIndex = pos
+	}
+	return pivotFieldIndex, nil
 }
 
 // getPivotTableFieldsSubtotal prepare fields subtotal by given pivot table fields.
