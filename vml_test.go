@@ -413,7 +413,7 @@ func TestExtractFormControl(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestSetLegacyDrawingHF(t *testing.T) {
+func TestSetHeaderFooterImage(t *testing.T) {
 	f := NewFile()
 	sheet := "Sheet1"
 	headerFooterOptions := HeaderFooterOptions{
@@ -422,21 +422,21 @@ func TestSetLegacyDrawingHF(t *testing.T) {
 	assert.NoError(t, f.SetHeaderFooter(sheet, &headerFooterOptions))
 	file, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetLegacyDrawingHF(sheet, &HeaderFooterGraphics{
+	assert.NoError(t, f.SetHeaderFooterImage(sheet, &HeaderFooterGraphics{
 		Extension: ".png",
 		File:      file,
 		Width:     "50pt",
 		Height:    "32pt",
 	}))
 	assert.NoError(t, f.SetCellValue(sheet, "A1", "Example"))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetLegacyDrawingHF.xlsx")))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetHeaderFooterImage.xlsx")))
 	assert.NoError(t, f.Close())
 
 	// Test set legacy drawing header/footer with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.SetLegacyDrawingHF(sheet, &HeaderFooterGraphics{
+	assert.EqualError(t, f.SetHeaderFooterImage(sheet, &HeaderFooterGraphics{
 		Extension: ".png",
 		File:      file,
 		Width:     "50pt",

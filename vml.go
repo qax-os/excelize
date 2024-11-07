@@ -1071,12 +1071,12 @@ func extractVMLFont(font []decodeVMLFont) []RichTextRun {
 	return runs
 }
 
-// SetLegacyDrawingHF provides a mechanism to set the graphics that
+// SetHeaderFooterImage provides a mechanism to set the graphics that
 // can be referenced in the Header/Footer defitions via &G.
 //
 // The extension should be provided with a "." in front, e.g. ".png".
 // The width/height should have units in them, e.g. "100pt".
-func (f *File) SetLegacyDrawingHF(sheet string, g *HeaderFooterGraphics) error {
+func (f *File) SetHeaderFooterImage(sheet string, g *HeaderFooterGraphics) error {
 	vmlID := f.countVMLDrawing() + 1
 
 	vml := &vmlDrawing{
