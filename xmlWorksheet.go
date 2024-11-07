@@ -1006,6 +1006,9 @@ type PageLayoutOptions struct {
 	FitToWidth *int
 	// BlackAndWhite specified print black and white.
 	BlackAndWhite *bool
+	// PageOrder specifies the ordering of multiple pages. Values
+	// accepted: overThenDown, downThenOver
+	PageOrder *string
 }
 
 // ViewOptions directly maps the settings of sheet view.

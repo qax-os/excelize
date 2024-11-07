@@ -1652,6 +1652,10 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
 		ws.newPageSetUp()
 		ws.PageSetUp.BlackAndWhite = *opts.BlackAndWhite
 	}
+	if opts.PageOrder != nil && (*opts.PageOrder == "overThenDown" || *opts.PageOrder == "downThenOver") {
+		ws.newPageSetUp()
+		ws.PageSetUp.PageOrder = *opts.PageOrder
+	}
 }
 
 // GetPageLayout provides a function to gets worksheet page layout.
@@ -1686,6 +1690,9 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 			opts.FitToWidth = ws.PageSetUp.FitToWidth
 		}
 		opts.BlackAndWhite = boolPtr(ws.PageSetUp.BlackAndWhite)
+		if ws.PageSetUp.PageOrder != "" {
+			opts.PageOrder = stringPtr(ws.PageSetUp.PageOrder)
+		}
 	}
 	return opts, err
 }

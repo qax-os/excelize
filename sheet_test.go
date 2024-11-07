@@ -210,6 +210,7 @@ func TestSetPageLayout(t *testing.T) {
 		FitToHeight:     intPtr(2),
 		FitToWidth:      intPtr(2),
 		BlackAndWhite:   boolPtr(true),
+		PageOrder:       stringPtr("overThenDown"),
 	}
 	assert.NoError(t, f.SetPageLayout("Sheet1", &expected))
 	opts, err := f.GetPageLayout("Sheet1")
