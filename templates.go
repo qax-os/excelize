@@ -498,6 +498,12 @@ var supportedDrawingUnderlineTypes = []string{
 // supportedPositioning defined supported positioning types.
 var supportedPositioning = []string{"absolute", "oneCell", "twoCell"}
 
+// supportedPageOrientation defined supported page setup page orientation.
+var supportedPageOrientation = []string{"portrait", "landscape"}
+
+// supportedPageOrder defined supported page setup page order.
+var supportedPageOrder = []string{"overThenDown", "downThenOver"}
+
 // builtInDefinedNames defined built-in defined names are built with a _xlnm prefix.
 var builtInDefinedNames = []string{"_xlnm.Print_Area", "_xlnm.Print_Titles", "_xlnm.Criteria", "_xlnm._FilterDatabase", "_xlnm.Extract", "_xlnm.Consolidate_Area", "_xlnm.Database", "_xlnm.Sheet_Title"}
 

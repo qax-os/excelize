@@ -1627,7 +1627,7 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
 		ws.newPageSetUp()
 		ws.PageSetUp.PaperSize = opts.Size
 	}
-	if opts.Orientation != nil && (*opts.Orientation == "portrait" || *opts.Orientation == "landscape") {
+	if opts.Orientation != nil && inStrSlice(supportedPageOrientation, *opts.Orientation, true) != -1 {
 		ws.newPageSetUp()
 		ws.PageSetUp.Orientation = *opts.Orientation
 	}
@@ -1652,7 +1652,7 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
 		ws.newPageSetUp()
 		ws.PageSetUp.BlackAndWhite = *opts.BlackAndWhite
 	}
-	if opts.PageOrder != nil && (*opts.PageOrder == "overThenDown" || *opts.PageOrder == "downThenOver") {
+	if opts.PageOrder != nil && inStrSlice(supportedPageOrder, *opts.PageOrder, true) != -1 {
 		ws.newPageSetUp()
 		ws.PageSetUp.PageOrder = *opts.PageOrder
 	}
@@ -1662,7 +1662,7 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
 func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 	opts := PageLayoutOptions{
 		Size:            intPtr(0),
-		Orientation:     stringPtr("portrait"),
+		Orientation:     stringPtr(supportedPageOrientation[0]),
 		FirstPageNumber: uintPtr(1),
 		AdjustTo:        uintPtr(100),
 	}
