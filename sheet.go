@@ -1609,8 +1609,7 @@ func (f *File) SetPageLayout(sheet string, opts *PageLayoutOptions) error {
 	if opts == nil {
 		return err
 	}
-	ws.setPageSetUp(opts)
-	return err
+	return ws.setPageSetUp(opts)
 }
 
 // newPageSetUp initialize page setup settings for the worksheet if which not
@@ -1622,12 +1621,15 @@ func (ws *xlsxWorksheet) newPageSetUp() {
 }
 
 // setPageSetUp set page setup settings for the worksheet by given options.
-func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
+func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) error {
 	if opts.Size != nil {
 		ws.newPageSetUp()
 		ws.PageSetUp.PaperSize = opts.Size
 	}
-	if opts.Orientation != nil && (*opts.Orientation == "portrait" || *opts.Orientation == "landscape") {
+	if opts.Orientation != nil {
+		if inStrSlice(supportedPageOrientation, *opts.Orientation, true) == -1 {
+			return newInvalidPageLayoutValueError("Orientation", *opts.Orientation, strings.Join(supportedPageOrientation, ", "))
+		}
 		ws.newPageSetUp()
 		ws.PageSetUp.Orientation = *opts.Orientation
 	}
@@ -1636,7 +1638,10 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
 		ws.PageSetUp.FirstPageNumber = strconv.Itoa(int(*opts.FirstPageNumber))
 		ws.PageSetUp.UseFirstPageNumber = true
 	}
-	if opts.AdjustTo != nil && 10 <= *opts.AdjustTo && *opts.AdjustTo <= 400 {
+	if opts.AdjustTo != nil {
+		if *opts.AdjustTo < 10 || 400 < *opts.AdjustTo {
+			return ErrPageSetupAdjustTo
+		}
 		ws.newPageSetUp()
 		ws.PageSetUp.Scale = int(*opts.AdjustTo)
 	}
@@ -1652,13 +1657,21 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) {
 		ws.newPageSetUp()
 		ws.PageSetUp.BlackAndWhite = *opts.BlackAndWhite
 	}
+	if opts.PageOrder != nil {
+		if inStrSlice(supportedPageOrder, *opts.PageOrder, true) == -1 {
+			return newInvalidPageLayoutValueError("PageOrder", *opts.PageOrder, strings.Join(supportedPageOrder, ", "))
+		}
+		ws.newPageSetUp()
+		ws.PageSetUp.PageOrder = *opts.PageOrder
+	}
+	return nil
 }
 
 // GetPageLayout provides a function to gets worksheet page layout.
 func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 	opts := PageLayoutOptions{
 		Size:            intPtr(0),
-		Orientation:     stringPtr("portrait"),
+		Orientation:     stringPtr(supportedPageOrientation[0]),
 		FirstPageNumber: uintPtr(1),
 		AdjustTo:        uintPtr(100),
 	}
@@ -1686,6 +1699,9 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 			opts.FitToWidth = ws.PageSetUp.FitToWidth
 		}
 		opts.BlackAndWhite = boolPtr(ws.PageSetUp.BlackAndWhite)
+		if ws.PageSetUp.PageOrder != "" {
+			opts.PageOrder = stringPtr(ws.PageSetUp.PageOrder)
+		}
 	}
 	return opts, err
 }
