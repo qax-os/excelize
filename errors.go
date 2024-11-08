@@ -88,6 +88,9 @@ var (
 	// ErrOutlineLevel defined the error message on receive an invalid outline
 	// level number.
 	ErrOutlineLevel = errors.New("invalid outline level")
+	// ErrPageSetupAdjustTo defined the error message for receiving a page setup
+	// adjust to value exceeds limit.
+	ErrPageSetupAdjustTo = errors.New("adjust to value must be between 10 and 400")
 	// ErrParameterInvalid defined the error message on receive the invalid
 	// parameter.
 	ErrParameterInvalid = errors.New("parameter is invalid")
@@ -247,6 +250,12 @@ func newInvalidLinkTypeError(linkType string) error {
 // defined name or table name.
 func newInvalidNameError(name string) error {
 	return fmt.Errorf("invalid name %q, the name should be starts with a letter or underscore, can not include a space or character, and can not conflict with an existing name in the workbook", name)
+}
+
+// newInvalidPageLayoutValueError defined the error message on receiving the invalid
+// page layout options value.
+func newInvalidPageLayoutValueError(name, value, msg string) error {
+	return fmt.Errorf("invalid %s value %q, acceptable value should be one of %s", name, value, msg)
 }
 
 // newInvalidRowNumberError defined the error message on receiving the invalid

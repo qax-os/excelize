@@ -220,6 +220,16 @@ func TestSetPageLayout(t *testing.T) {
 	assert.EqualError(t, f.SetPageLayout("SheetN", nil), "sheet SheetN does not exist")
 	// Test set page layout with invalid sheet name
 	assert.EqualError(t, f.SetPageLayout("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	// Test set page layout with invalid parameters
+	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+		AdjustTo: uintPtr(5),
+	}), "adjust to value must be between 10 and 400")
+	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+		Orientation: stringPtr("x"),
+	}), "invalid Orientation value \"x\", acceptable value should be one of portrait, landscape")
+	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+		PageOrder: stringPtr("x"),
+	}), "invalid PageOrder value \"x\", acceptable value should be one of overThenDown, downThenOver")
 }
 
 func TestGetPageLayout(t *testing.T) {
