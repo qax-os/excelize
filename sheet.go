@@ -1239,7 +1239,7 @@ func attrValToBool(name string, attrs []xml.Attr) (val bool, err error) {
 //	                        |
 //	 &F                     | Current workbook's file name
 //	                        |
-//	 &G                     | Drawing object as background (Use SetLegacyDrawingHF)
+//	 &G                     | Drawing object as background (Use AddHeaderFooterImage)
 //	                        |
 //	 &H                     | Shadow text format
 //	                        |

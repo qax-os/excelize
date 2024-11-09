@@ -44,7 +44,7 @@ type xlsxIDmap struct {
 type xlsxShape struct {
 	XMLName     xml.Name `xml:"v:shape"`
 	ID          string   `xml:"id,attr"`
-	Spid        string   `xml:"o:spid,attr,omitempty"`
+	SpID        string   `xml:"o:spid,attr,omitempty"`
 	Type        string   `xml:"type,attr"`
 	Style       string   `xml:"style,attr"`
 	Button      string   `xml:"o:button,attr,omitempty"`
@@ -193,15 +193,19 @@ type decodeVmlDrawing struct {
 // decodeShapeType defines the structure used to parse the shapetype element in
 // the file xl/drawings/vmlDrawing%d.vml.
 type decodeShapeType struct {
-	ID        string `xml:"id,attr"`
-	CoordSize string `xml:"coordsize,attr"`
-	Spt       int    `xml:"spt,attr"`
-	Path      string `xml:"path,attr"`
+	ID             string `xml:"id,attr"`
+	CoordSize      string `xml:"coordsize,attr"`
+	Spt            int    `xml:"spt,attr"`
+	PreferRelative string `xml:"preferrelative,attr,omitempty"`
+	Path           string `xml:"path,attr"`
+	Filled         string `xml:"filled,attr,omitempty"`
+	Stroked        string `xml:"stroked,attr,omitempty"`
 }
 
 // decodeShape defines the structure used to parse the particular shape element.
 type decodeShape struct {
 	ID          string `xml:"id,attr"`
+	SpID        string `xml:"spid,attr,omitempty"`
 	Type        string `xml:"type,attr"`
 	Style       string `xml:"style,attr"`
 	Button      string `xml:"button,attr,omitempty"`
@@ -335,10 +339,13 @@ type FormControl struct {
 	Format       GraphicOptions
 }
 
-// HeaderFooterGraphics defines the settings for an image to be
-// accessible from the header/footer options.
-type HeaderFooterGraphics struct {
+// HeaderFooterImageOptions defines the settings for an image to be accessible
+// from the worksheet header and footer options.
+type HeaderFooterImageOptions struct {
+	Position  HeaderFooterImagePositionType
 	File      []byte
+	IsFooter  bool
+	FirstPage bool
 	Extension string
 	Width     string
 	Height    string

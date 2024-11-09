@@ -36,6 +36,16 @@ const (
 	FormControlScrollBar
 )
 
+// HeaderFooterImagePositionType is the type of header and footer image position.
+type HeaderFooterImagePositionType byte
+
+// Worksheet header and footer image position types enumeration.
+const (
+	HeaderFooterImagePositionLeft HeaderFooterImagePositionType = iota
+	HeaderFooterImagePositionCenter
+	HeaderFooterImagePositionRight
+)
+
 // GetComments retrieves all comments in a worksheet by given worksheet name.
 func (f *File) GetComments(sheet string) ([]Comment, error) {
 	var comments []Comment
@@ -519,6 +529,7 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 		}
 		vmlID = f.countVMLDrawing() + 1
 	}
+	sheetID := f.getSheetID(opts.sheet)
 	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
 	sheetRelationshipsDrawingVML := "../drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
 	sheetXMLPath, _ := f.getSheetXMLPath(opts.sheet)
@@ -534,7 +545,7 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 		f.addSheetNameSpace(opts.sheet, SourceRelationship)
 		f.addSheetLegacyDrawing(opts.sheet, rID)
 	}
-	if err = f.addDrawingVML(vmlID, drawingVML, prepareFormCtrlOptions(&opts)); err != nil {
+	if err = f.addDrawingVML(sheetID, drawingVML, prepareFormCtrlOptions(&opts)); err != nil {
 		return err
 	}
 	if !opts.formCtrl {
@@ -823,7 +834,7 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 // anchor value is a comma-separated list of data written out as: LeftColumn,
 // LeftOffset, TopRow, TopOffset, RightColumn, RightOffset, BottomRow,
 // BottomOffset.
-func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) error {
+func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) error {
 	col, row, err := CellNameToCoordinates(opts.FormControl.Cell)
 	if err != nil {
 		return err
@@ -843,7 +854,7 @@ func (f *File) addDrawingVML(dataID int, drawingVML string, opts *vmlOptions) er
 			XMLNSx:  "urn:schemas-microsoft-com:office:excel",
 			XMLNSmv: "http://macVmlSchemaUri",
 			ShapeLayout: &xlsxShapeLayout{
-				Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: dataID},
+				Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: sheetID},
 			},
 			ShapeType: &xlsxShapeType{
 				ID:        fmt.Sprintf("_x0000_t%d", vmlID),
@@ -1071,79 +1082,138 @@ func extractVMLFont(font []decodeVMLFont) []RichTextRun {
 	return runs
 }
 
-// SetLegacyDrawingHF provides a mechanism to set the graphics that
-// can be referenced in the Header/Footer defitions via &G.
+// AddHeaderFooterImage provides a mechanism to set the graphics that can be
+// referenced in the header and footer definitions via &G, file base name,
+// extension name and file bytes, supported image types: EMF, EMZ, GIF, JPEG,
+// JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 //
 // The extension should be provided with a "." in front, e.g. ".png".
-// The width/height should have units in them, e.g. "100pt".
-func (f *File) SetLegacyDrawingHF(sheet string, g *HeaderFooterGraphics) error {
+// The width and height should have units in them, e.g. "100pt".
+func (f *File) AddHeaderFooterImage(sheet string, opts *HeaderFooterImageOptions) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	ext, ok := supportedImageTypes[strings.ToLower(opts.Extension)]
+	if !ok {
+		return ErrImgExt
+	}
+	sheetID := f.getSheetID(sheet)
 	vmlID := f.countVMLDrawing() + 1
-
-	vml := &vmlDrawing{
-		XMLNSv: "urn:schemas-microsoft-com:vml",
-		XMLNSo: "urn:schemas-microsoft-com:office:office",
-		XMLNSx: "urn:schemas-microsoft-com:office:excel",
-		ShapeLayout: &xlsxShapeLayout{
-			Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: vmlID},
-		},
-		ShapeType: &xlsxShapeType{
-			ID:             "_x0000_t75",
-			CoordSize:      "21600,21600",
-			Spt:            75,
-			PreferRelative: "t",
-			Path:           "m@4@5l@4@11@9@11@9@5xe",
-			Filled:         "f",
-			Stroked:        "f",
-			Stroke:         &xlsxStroke{JoinStyle: "miter"},
-			VFormulas: &vFormulas{
-				Formulas: []vFormula{
-					{Equation: "if lineDrawn pixelLineWidth 0"},
-					{Equation: "sum @0 1 0"},
-					{Equation: "sum 0 0 @1"},
-					{Equation: "prod @2 1 2"},
-					{Equation: "prod @3 21600 pixelWidth"},
-					{Equation: "prod @3 21600 pixelHeight"},
-					{Equation: "sum @0 0 1"},
-					{Equation: "prod @6 1 2"},
-					{Equation: "prod @7 21600 pixelWidth"},
-					{Equation: "sum @8 21600 0"},
-					{Equation: "prod @7 21600 pixelHeight"},
-					{Equation: "sum @10 21600 0"},
-				},
-			},
-			VPath: &vPath{ExtrusionOK: "f", GradientShapeOK: "t", ConnectType: "rect"},
-			Lock:  &oLock{Ext: "edit", AspectRatio: "t"},
-		},
-	}
-
-	style := fmt.Sprintf("position:absolute;margin-left:0;margin-top:0;width:%s;height:%s;z-index:1", g.Width, g.Height)
 	drawingVML := "xl/drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
-	drawingVMLRels := "xl/drawings/_rels/vmlDrawing" + strconv.Itoa(vmlID) + ".vml.rels"
-
-	mediaStr := ".." + strings.TrimPrefix(f.addMedia(g.File, g.Extension), "xl")
-	imageID := f.addRels(drawingVMLRels, SourceRelationshipImage, mediaStr, "")
-
-	shape := xlsxShape{
-		ID:    "RH",
-		Spid:  "_x0000_s1025",
-		Type:  "#_x0000_t75",
-		Style: style,
-	}
-	s, _ := xml.Marshal(encodeShape{
-		ImageData: &vImageData{RelID: "rId" + strconv.Itoa(imageID)},
-		Lock:      &oLock{Ext: "edit", Rotation: "t"},
-	})
-	shape.Val = string(s[13 : len(s)-14])
-	vml.Shape = append(vml.Shape, shape)
-	f.VMLDrawing[drawingVML] = vml
-
 	sheetRelationshipsDrawingVML := "../drawings/vmlDrawing" + strconv.Itoa(vmlID) + ".vml"
 	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
+	if ws.LegacyDrawingHF != nil {
+		// The worksheet already has a VML relationships, use the relationships drawing ../drawings/vmlDrawing%d.vml.
+		sheetRelationshipsDrawingVML = f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawingHF.RID)
+		vmlID, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
+		drawingVML = strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
+	} else {
+		// Add first VML drawing for given sheet.
+		rID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
+		f.addSheetNameSpace(sheet, SourceRelationship)
+		f.addSheetLegacyDrawingHF(sheet, rID)
+	}
 
-	drawingID := f.addRels(sheetRels, SourceRelationshipDrawingVML, sheetRelationshipsDrawingVML, "")
-	f.addSheetNameSpace(sheet, SourceRelationship)
-	f.addSheetLegacyDrawingHF(sheet, drawingID)
+	shapeID := map[HeaderFooterImagePositionType]string{
+		HeaderFooterImagePositionLeft:   "L",
+		HeaderFooterImagePositionCenter: "C",
+		HeaderFooterImagePositionRight:  "R",
+	}[opts.Position] +
+		map[bool]string{false: "H", true: "F"}[opts.IsFooter] +
+		map[bool]string{false: "", true: "FIRST"}[opts.FirstPage]
+	vml := f.VMLDrawing[drawingVML]
+	if vml == nil {
+		vml = &vmlDrawing{
+			XMLNSv: "urn:schemas-microsoft-com:vml",
+			XMLNSo: "urn:schemas-microsoft-com:office:office",
+			XMLNSx: "urn:schemas-microsoft-com:office:excel",
+			ShapeLayout: &xlsxShapeLayout{
+				Ext: "edit", IDmap: &xlsxIDmap{Ext: "edit", Data: sheetID},
+			},
+			ShapeType: &xlsxShapeType{
+				ID:             "_x0000_t75",
+				CoordSize:      "21600,21600",
+				Spt:            75,
+				PreferRelative: "t",
+				Path:           "m@4@5l@4@11@9@11@9@5xe",
+				Filled:         "f",
+				Stroked:        "f",
+				Stroke:         &xlsxStroke{JoinStyle: "miter"},
+				VFormulas: &vFormulas{
+					Formulas: []vFormula{
+						{Equation: "if lineDrawn pixelLineWidth 0"},
+						{Equation: "sum @0 1 0"},
+						{Equation: "sum 0 0 @1"},
+						{Equation: "prod @2 1 2"},
+						{Equation: "prod @3 21600 pixelWidth"},
+						{Equation: "prod @3 21600 pixelHeight"},
+						{Equation: "sum @0 0 1"},
+						{Equation: "prod @6 1 2"},
+						{Equation: "prod @7 21600 pixelWidth"},
+						{Equation: "sum @8 21600 0"},
+						{Equation: "prod @7 21600 pixelHeight"},
+						{Equation: "sum @10 21600 0"},
+					},
+				},
+				VPath: &vPath{ExtrusionOK: "f", GradientShapeOK: "t", ConnectType: "rect"},
+				Lock:  &oLock{Ext: "edit", AspectRatio: "t"},
+			},
+		}
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return err
+		}
+		if d != nil {
+			vml.ShapeType.ID = d.ShapeType.ID
+			vml.ShapeType.CoordSize = d.ShapeType.CoordSize
+			vml.ShapeType.Spt = d.ShapeType.Spt
+			vml.ShapeType.PreferRelative = d.ShapeType.PreferRelative
+			vml.ShapeType.Path = d.ShapeType.Path
+			vml.ShapeType.Filled = d.ShapeType.Filled
+			vml.ShapeType.Stroked = d.ShapeType.Stroked
+			for _, v := range d.Shape {
+				s := xlsxShape{
+					ID:    v.ID,
+					SpID:  v.SpID,
+					Type:  v.Type,
+					Style: v.Style,
+					Val:   v.Val,
+				}
+				vml.Shape = append(vml.Shape, s)
+			}
+		}
+	}
+
+	for idx, shape := range vml.Shape {
+		if shape.ID == shapeID {
+			vml.Shape = append(vml.Shape[:idx], vml.Shape[idx+1:]...)
+		}
+	}
+
+	style := fmt.Sprintf("position:absolute;margin-left:0;margin-top:0;width:%s;height:%s;z-index:1", opts.Width, opts.Height)
+	drawingVMLRels := "xl/drawings/_rels/vmlDrawing" + strconv.Itoa(vmlID) + ".vml.rels"
+
+	mediaStr := ".." + strings.TrimPrefix(f.addMedia(opts.File, ext), "xl")
+	imageID := f.addRels(drawingVMLRels, SourceRelationshipImage, mediaStr, "")
+
+	shape := xlsxShape{
+		ID:    shapeID,
+		SpID:  "_x0000_s1025",
+		Type:  "#_x0000_t75",
+		Style: style,
+	}
+	sp, _ := xml.Marshal(encodeShape{
+		ImageData: &vImageData{RelID: "rId" + strconv.Itoa(imageID)},
+		Lock:      &oLock{Ext: "edit", Rotation: "t"},
+	})
+
+	shape.Val = string(sp[13 : len(sp)-14])
+	vml.Shape = append(vml.Shape, shape)
+	f.VMLDrawing[drawingVML] = vml
+
 	if err := f.setContentTypePartImageExtensions(); err != nil {
 		return err
 	}
