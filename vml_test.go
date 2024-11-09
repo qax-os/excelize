@@ -413,32 +413,97 @@ func TestExtractFormControl(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestSetHeaderFooterImage(t *testing.T) {
-	f := NewFile()
-	sheet := "Sheet1"
+func TestAddHeaderFooterImage(t *testing.T) {
+	f, sheet, wb := NewFile(), "Sheet1", filepath.Join("test", "TestAddHeaderFooterImage.xlsx")
 	headerFooterOptions := HeaderFooterOptions{
-		OddHeader: "&LExcelize&R&G",
+		DifferentFirst: true,
+		OddHeader:      "&L&GExcelize&C&G&R&G",
+		OddFooter:      "&L&GExcelize&C&G&R&G",
+		FirstHeader:    "&L&GExcelize&C&G&R&G",
+		FirstFooter:    "&L&GExcelize&C&G&R&G",
 	}
 	assert.NoError(t, f.SetHeaderFooter(sheet, &headerFooterOptions))
-	file, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
+	assert.NoError(t, f.SetSheetView(sheet, -1, &ViewOptions{View: stringPtr("pageLayout")}))
+	images := map[string][]byte{
+		".wmf": nil, ".tif": nil, ".png": nil,
+		".jpg": nil, ".gif": nil, ".emz": nil, ".emf": nil,
+	}
+	for ext := range images {
+		img, err := os.ReadFile(filepath.Join("test", "images", "excel"+ext))
+		assert.NoError(t, err)
+		images[ext] = img
+	}
+	for _, opt := range []struct {
+		position  HeaderFooterImagePositionType
+		file      []byte
+		isFooter  bool
+		firstPage bool
+		ext       string
+	}{
+		{position: HeaderFooterImagePositionLeft, file: images[".tif"], firstPage: true, ext: ".tif"},
+		{position: HeaderFooterImagePositionCenter, file: images[".gif"], firstPage: true, ext: ".gif"},
+		{position: HeaderFooterImagePositionRight, file: images[".png"], firstPage: true, ext: ".png"},
+		{position: HeaderFooterImagePositionLeft, file: images[".emf"], isFooter: true, firstPage: true, ext: ".emf"},
+		{position: HeaderFooterImagePositionCenter, file: images[".wmf"], isFooter: true, firstPage: true, ext: ".wmf"},
+		{position: HeaderFooterImagePositionRight, file: images[".emz"], isFooter: true, firstPage: true, ext: ".emz"},
+		{position: HeaderFooterImagePositionLeft, file: images[".png"], ext: ".png"},
+		{position: HeaderFooterImagePositionCenter, file: images[".png"], ext: ".png"},
+		{position: HeaderFooterImagePositionRight, file: images[".png"], ext: ".png"},
+		{position: HeaderFooterImagePositionLeft, file: images[".tif"], isFooter: true, ext: ".tif"},
+		{position: HeaderFooterImagePositionCenter, file: images[".tif"], isFooter: true, ext: ".tif"},
+		{position: HeaderFooterImagePositionRight, file: images[".tif"], isFooter: true, ext: ".tif"},
+	} {
+		assert.NoError(t, f.AddHeaderFooterImage(sheet, &HeaderFooterImageOptions{
+			Position:  opt.position,
+			File:      opt.file,
+			IsFooter:  opt.isFooter,
+			FirstPage: opt.firstPage,
+			Extension: opt.ext,
+			Width:     "50pt",
+			Height:    "32pt",
+		}))
+	}
+	assert.NoError(t, f.SetCellValue(sheet, "A1", "Example"))
+
+	// Test add header footer image with not exist sheet
+	assert.EqualError(t, f.AddHeaderFooterImage("SheetN", nil), "sheet SheetN does not exist")
+	// Test add header footer image with unsupported file type
+	assert.Equal(t, f.AddHeaderFooterImage(sheet, &HeaderFooterImageOptions{
+		Extension: "jpg",
+	}), ErrImgExt)
+	assert.NoError(t, f.SaveAs(wb))
+	assert.NoError(t, f.Close())
+	// Test change already exist header image with the different image
+	f, err := OpenFile(wb)
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetHeaderFooterImage(sheet, &HeaderFooterGraphics{
-		Extension: ".png",
-		File:      file,
+	assert.NoError(t, f.AddHeaderFooterImage(sheet, &HeaderFooterImageOptions{
+		File:      images[".jpg"],
+		FirstPage: true,
+		Extension: ".jpg",
 		Width:     "50pt",
 		Height:    "32pt",
 	}))
-	assert.NoError(t, f.SetCellValue(sheet, "A1", "Example"))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetHeaderFooterImage.xlsx")))
+	assert.NoError(t, f.Save())
 	assert.NoError(t, f.Close())
 
+	// Test add header image with unsupported charset VML drawing
+	f, err = OpenFile(wb)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddHeaderFooterImage(sheet, &HeaderFooterImageOptions{
+		File:      images[".jpg"],
+		Extension: ".jpg",
+		Width:     "50pt",
+		Height:    "32pt",
+	}), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
 	// Test set legacy drawing header/footer with unsupported charset content types
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.SetHeaderFooterImage(sheet, &HeaderFooterGraphics{
+	assert.EqualError(t, f.AddHeaderFooterImage(sheet, &HeaderFooterImageOptions{
 		Extension: ".png",
-		File:      file,
+		File:      images[".png"],
 		Width:     "50pt",
 		Height:    "32pt",
 	}), "XML syntax error on line 1: invalid UTF-8")
