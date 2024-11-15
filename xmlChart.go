@@ -540,6 +540,7 @@ type ChartAxis struct {
 	Secondary         bool
 	Maximum           *float64
 	Minimum           *float64
+	Alignment         Alignment
 	Font              Font
 	LogBase           float64
 	NumFmt            ChartNumFmt

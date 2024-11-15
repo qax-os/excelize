@@ -1256,6 +1256,12 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 	}
 	if opts != nil {
 		drawChartFont(&opts.Font, &cTxPr.P.PPr.DefRPr)
+		if -90 <= opts.Alignment.TextRotation && opts.Alignment.TextRotation <= 90 {
+			cTxPr.BodyPr.Rot = opts.Alignment.TextRotation * 60000
+		}
+		if idx := inStrSlice(supportedDrawingTextVerticalType, opts.Alignment.Vertical, true); idx != -1 {
+			cTxPr.BodyPr.Vert = supportedDrawingTextVerticalType[idx]
+		}
 	}
 	return cTxPr
 }

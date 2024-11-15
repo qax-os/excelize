@@ -495,6 +495,10 @@ var supportedDrawingUnderlineTypes = []string{
 	"wavyDbl",
 }
 
+// supportedDrawingTextVerticalType defined supported text vertical types in
+// drawing markup language.
+var supportedDrawingTextVerticalType = []string{"horz", "vert", "vert270", "wordArtVert", "eaVert", "mongolianVert", "wordArtVertRtl"}
+
 // supportedPositioning defined supported positioning types.
 var supportedPositioning = []string{"absolute", "oneCell", "twoCell"}
 

@@ -850,6 +850,7 @@ func (opts *Chart) parseTitle() {
 //	ReverseOrder
 //	Maximum
 //	Minimum
+//	Alignment
 //	Font
 //	NumFmt
 //	Title
@@ -864,6 +865,7 @@ func (opts *Chart) parseTitle() {
 //	ReverseOrder
 //	Maximum
 //	Minimum
+//	Alignment
 //	Font
 //	LogBase
 //	NumFmt
@@ -895,6 +897,24 @@ func (opts *Chart) parseTitle() {
 //
 // Minimum: Specifies that the fixed minimum, 0 is auto. The 'Minimum' property
 // is optional. The default value is auto.
+//
+// Alignment: Specifies that the alignment of the horizontal and vertical axis.
+// The properties of font that can be set are:
+//
+//	TextRotation
+//	Vertical
+//
+// The value of 'TextRotation' that can be set from -90 to 90:
+//
+// The value of 'Vertical' that can be set are:
+//
+//	horz
+//	vert
+//	vert270
+//	wordArtVert
+//	eaVert
+//	mongolianVert
+//	wordArtVertRtl
 //
 // Font: Specifies that the font of the horizontal and vertical axis. The
 // properties of font that can be set are:
