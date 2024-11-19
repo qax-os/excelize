@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	_ "image/jpeg"
@@ -334,7 +335,7 @@ func TestAdjustTable(t *testing.T) {
 	assert.NoError(t, f.RemoveRow(sheetName, 1))
 	// Test adjust table with unsupported charset
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
-	assert.NoError(t, f.RemoveRow(sheetName, 1))
+	assert.EqualError(t, f.RemoveRow(sheetName, 1), "XML syntax error on line 1: invalid UTF-8")
 	// Test adjust table with invalid table range reference
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
 	assert.Equal(t, ErrParameterInvalid, f.RemoveRow(sheetName, 1))
@@ -452,6 +453,25 @@ func TestAdjustCols(t *testing.T) {
 	assert.NoError(t, f.RemoveCol(sheetName, "A"))
 
 	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	assert.NoError(t, f.SetColWidth("Sheet1", "XFB", "XFC", 12))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 2))
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	assert.Equal(t, MaxColumns, ws.(*xlsxWorksheet).Cols.Col[0].Min)
+	assert.Equal(t, MaxColumns, ws.(*xlsxWorksheet).Cols.Col[0].Max)
+
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 2))
+	assert.Nil(t, ws.(*xlsxWorksheet).Cols)
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "(1-0.5)/2"))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	formula, err := f.GetCellFormula("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "(1-0.5)/2", formula)
+	assert.NoError(t, f.Close())
 }
 
 func TestAdjustColDimensions(t *testing.T) {
@@ -546,13 +566,13 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
 	assert.NoError(t, f.Close())
 
-	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", nil, rows, 0, 0, false))
-	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "-"}, rows, 0, 0, false))
-	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxF{Ref: "XFD1:XFD1"}, columns, 0, 1, false))
+	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{}, rows, 0, 0, false))
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "-"}}, rows, 0, 0, false))
+	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "XFD1:XFD1"}}, columns, 0, 1, false))
 
-	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", columns, 0, 1)
+	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", false, columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
-	_, err = f.adjustFormulaRef("Sheet1", "Sheet1", "XFD1", columns, 0, 1)
+	_, err = f.adjustFormulaRef("Sheet1", "Sheet1", "XFD1", false, columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
 
 	f = NewFile()
@@ -732,7 +752,7 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 		formula, err = f.GetCellFormula("Sheet1", "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "SUM('Sheet 1'!A3,A5)", formula)
+		assert.Equal(t, "SUM('Sheet 1'!A2,A5)", formula)
 
 		f = NewFile()
 		// Test adjust formula on insert col in the middle of the range
@@ -929,6 +949,26 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 		assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	})
+	t.Run("for_array_formula_cell", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "C1:C2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1:A2*B1:B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+		assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+		assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+		result, err := f.CalcCellValue("Sheet1", "D2")
+		assert.NoError(t, err)
+		assert.Equal(t, "2", result)
+		result, err = f.CalcCellValue("Sheet1", "D3")
+		assert.NoError(t, err)
+		assert.Equal(t, "12", result)
+
+		// Test adjust array formula with invalid range reference
+		formulaType, ref = STCellFormulaTypeArray, "E1:E2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "XFD1:XFD1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+		assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "the column number must be greater than or equal to 1 and less than or equal to 16384")
+	})
 }
 
 func TestAdjustVolatileDeps(t *testing.T) {
@@ -949,6 +989,187 @@ func TestAdjustVolatileDeps(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathVolatileDeps, []byte(fmt.Sprintf(`<volTypes xmlns="%s"><volType><main><tp><tr r="A" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value)))
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.InsertCols("Sheet1", "A", 1))
 	f.volatileDepsWriter()
+}
+
+func TestAdjustConditionalFormats(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "B1", &[]interface{}{1, nil, 1, 1}))
+	formatID, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "09600B"}, Fill: Fill{Type: "pattern", Color: []string{"C7EECF"}, Pattern: 1}})
+	assert.NoError(t, err)
+	format := []ConditionalFormatOptions{
+		{
+			Type:     "cell",
+			Criteria: "greater than",
+			Format:   &formatID,
+			Value:    "0",
+		},
+	}
+	for _, ref := range []string{"B1", "D1:E1"} {
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, format))
+	}
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	opts, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, format, 1)
+	assert.Equal(t, format, opts["C1:D1"])
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ConditionalFormatting[0].SQRef = "-"
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.RemoveCol("Sheet1", "B"))
+
+	ws.(*xlsxWorksheet).ConditionalFormatting[0] = nil
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	t.Run("for_remove_conditional_formats_column", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
+		assert.NoError(t, f.RemoveCol("Sheet1", "D"))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 0)
+	})
+	t.Run("for_remove_conditional_formats_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:E2", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "F2", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 2))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 0)
+	})
+	t.Run("for_adjust_conditional_formats_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 1))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 2)
+		assert.Equal(t, format, opts["D1:D2"])
+		assert.Equal(t, format, opts["D4:D4"])
+	})
+}
+
+func TestAdjustDataValidations(t *testing.T) {
+	f := NewFile()
+	dv := NewDataValidation(true)
+	dv.Sqref = "B1"
+	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	dvs, err := f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, dvs, 0)
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "F2", 1))
+	assert.NoError(t, f.SetCellValue("Sheet1", "F3", 2))
+	dv = NewDataValidation(true)
+	dv.Sqref = "C2:D3"
+	dv.SetSqrefDropList("$F$2:$F$3")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+
+	assert.NoError(t, f.AddChartSheet("Chart1", &Chart{Type: Line}))
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetSheetRow("Sheet2", "C1", &[]interface{}{1, 10}))
+	dv = NewDataValidation(true)
+	dv.Sqref = "C5:D6"
+	assert.NoError(t, dv.SetRange("Sheet2!C1", "Sheet2!D1", DataValidationTypeWhole, DataValidationOperatorBetween))
+	dv.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	assert.NoError(t, f.RemoveCol("Sheet2", "B"))
+	dvs, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "B2:C3", dvs[0].Sqref)
+	assert.Equal(t, "$E$2:$E$3", dvs[0].Formula1)
+	assert.Equal(t, "B5:C6", dvs[1].Sqref)
+	assert.Equal(t, "Sheet2!B1", dvs[1].Formula1)
+	assert.Equal(t, "Sheet2!C1", dvs[1].Formula2)
+
+	dv = NewDataValidation(true)
+	dv.Sqref = "C8:D10"
+	assert.NoError(t, dv.SetDropList([]string{`A<`, `B>`, `C"`, "D\t", `E'`, `F`}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+	dvs, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "\"A<,B>,C\",D\t,E',F\"", dvs[2].Formula1)
+
+	// Test adjust data validation with multiple cell range
+	dv = NewDataValidation(true)
+	dv.Sqref = "G1:G3 H1:H3 A3:A1048576"
+	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
+	dvs, err = f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "G1:G4 H1:H4 A4:A1048576", dvs[3].Sqref)
+
+	dv = NewDataValidation(true)
+	dv.Sqref = "C5:D6"
+	assert.NoError(t, dv.SetRange("Sheet1!A1048576", "Sheet1!XFD1", DataValidationTypeWhole, DataValidationOperatorBetween))
+	dv.SetError(DataValidationErrorStyleStop, "error title", "error body")
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
+	assert.Equal(t, ErrMaxRows, f.InsertRows("Sheet1", 1, 1))
+
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "-"
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.RemoveCol("Sheet1", "B"))
+
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0] = nil
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	ws.(*xlsxWorksheet).DataValidations = nil
+	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.adjustDataValidations(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
+
+	t.Run("for_escaped_data_validation_rules_formula", func(t *testing.T) {
+		f := NewFile()
+		_, err := f.NewSheet("Sheet2")
+		assert.NoError(t, err)
+		dv := NewDataValidation(true)
+		dv.Sqref = "A1"
+		assert.NoError(t, dv.SetDropList([]string{"option1", strings.Repeat("\"", 4)}))
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		// The double quote symbol in none formula data validation rules will be escaped in the Kingsoft WPS Office
+		formula := strings.ReplaceAll(fmt.Sprintf("\"option1, %s", strings.Repeat("\"", 9)), "\"", "&quot;")
+		ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Formula1.Content = formula
+		assert.NoError(t, f.RemoveCol("Sheet2", "A"))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, formula, dvs[0].Formula1)
+	})
 }
 
 func TestAdjustDrawings(t *testing.T) {
@@ -1027,4 +1248,68 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><twoCellAnchor><from><col>0</col><colOff>0</colOff><row>0</row><rowOff>0</rowOff></from><to><col>1</col><colOff>0</colOff><row>1</row><rowOff>0</rowOff></to><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></twoCellAnchor></wsDr>`))
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+}
+
+func TestAdjustDefinedNames(t *testing.T) {
+	f := NewFile()
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	for _, dn := range []*DefinedName{
+		{Name: "Name1", RefersTo: "Sheet1!$XFD$1"},
+		{Name: "Name2", RefersTo: "Sheet2!$C$1", Scope: "Sheet1"},
+		{Name: "Name3", RefersTo: "Sheet2!$C$1:$D$2", Scope: "Sheet1"},
+		{Name: "Name4", RefersTo: "Sheet2!$C1:D$2"},
+		{Name: "Name5", RefersTo: "Sheet2!C$1:$D2"},
+		{Name: "Name6", RefersTo: "Sheet2!C:$D"},
+		{Name: "Name7", RefersTo: "Sheet2!$C:D"},
+		{Name: "Name8", RefersTo: "Sheet2!C:D"},
+		{Name: "Name9", RefersTo: "Sheet2!$C:$D"},
+		{Name: "Name10", RefersTo: "Sheet2!1:2"},
+	} {
+		assert.NoError(t, f.SetDefinedName(dn))
+	}
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+	assert.NoError(t, f.InsertCols("Sheet2", "A", 1))
+	assert.NoError(t, f.InsertRows("Sheet2", 1, 1))
+	definedNames := f.GetDefinedName()
+	for i, expected := range []string{
+		"Sheet1!$XFD$2",
+		"Sheet2!$D$2",
+		"Sheet2!$D$2:$E$3",
+		"Sheet2!$D1:D$3",
+		"Sheet2!C$2:$E2",
+		"Sheet2!C:$E",
+		"Sheet2!$D:D",
+		"Sheet2!C:D",
+		"Sheet2!$D:$E",
+		"Sheet2!1:2",
+	} {
+		assert.Equal(t, expected, definedNames[i].RefersTo)
+	}
+
+	f = NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name1",
+		RefersTo: "Sheet1!$A$1",
+		Scope:    "Sheet1",
+	}))
+	assert.NoError(t, f.RemoveCol("Sheet1", "A"))
+	definedNames = f.GetDefinedName()
+	assert.Equal(t, "Sheet1!$A$1", definedNames[0].RefersTo)
+
+	f = NewFile()
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name1",
+		RefersTo: "'1.A & B C'!#REF!",
+		Scope:    "Sheet1",
+	}))
+	assert.NoError(t, f.RemoveCol("Sheet1", "A"))
+	definedNames = f.GetDefinedName()
+	assert.Equal(t, "'1.A & B C'!#REF!", definedNames[0].RefersTo)
+
+	f = NewFile()
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.adjustDefinedNames(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
 }

@@ -218,14 +218,13 @@ func TestCoordinatesToCellName_Error(t *testing.T) {
 }
 
 func TestCoordinatesToRangeRef(t *testing.T) {
-	f := NewFile()
-	_, err := f.coordinatesToRangeRef([]int{})
+	_, err := coordinatesToRangeRef([]int{})
 	assert.EqualError(t, err, ErrCoordinates.Error())
-	_, err = f.coordinatesToRangeRef([]int{1, -1, 1, 1})
+	_, err = coordinatesToRangeRef([]int{1, -1, 1, 1})
 	assert.Equal(t, newCoordinatesToCellNameError(1, -1), err)
-	_, err = f.coordinatesToRangeRef([]int{1, 1, 1, -1})
+	_, err = coordinatesToRangeRef([]int{1, 1, 1, -1})
 	assert.Equal(t, newCoordinatesToCellNameError(1, -1), err)
-	ref, err := f.coordinatesToRangeRef([]int{1, 1, 1, 1})
+	ref, err := coordinatesToRangeRef([]int{1, 1, 1, 1})
 	assert.NoError(t, err)
 	assert.EqualValues(t, ref, "A1:A1")
 }
@@ -290,6 +289,10 @@ func TestBytesReplace(t *testing.T) {
 
 func TestGetRootElement(t *testing.T) {
 	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
+	// Test get workbook root element which all workbook XML namespace has prefix
+	f := NewFile()
+	d := f.xmlNewDecoder(bytes.NewReader([]byte(`<x:workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"></x:workbook>`)))
+	assert.Len(t, getRootElement(d), 3)
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {

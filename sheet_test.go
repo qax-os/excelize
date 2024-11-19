@@ -181,7 +181,7 @@ func TestSearchSheet(t *testing.T) {
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
 	result, err = f.SearchSheet("Sheet1", "A")
-	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
 	assert.Equal(t, []string(nil), result)
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="0"><c r="A1" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`))
@@ -210,6 +210,7 @@ func TestSetPageLayout(t *testing.T) {
 		FitToHeight:     intPtr(2),
 		FitToWidth:      intPtr(2),
 		BlackAndWhite:   boolPtr(true),
+		PageOrder:       stringPtr("overThenDown"),
 	}
 	assert.NoError(t, f.SetPageLayout("Sheet1", &expected))
 	opts, err := f.GetPageLayout("Sheet1")
@@ -219,6 +220,16 @@ func TestSetPageLayout(t *testing.T) {
 	assert.EqualError(t, f.SetPageLayout("SheetN", nil), "sheet SheetN does not exist")
 	// Test set page layout with invalid sheet name
 	assert.EqualError(t, f.SetPageLayout("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	// Test set page layout with invalid parameters
+	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+		AdjustTo: uintPtr(5),
+	}), "adjust to value must be between 10 and 400")
+	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+		Orientation: stringPtr("x"),
+	}), "invalid Orientation value \"x\", acceptable value should be one of portrait, landscape")
+	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+		PageOrder: stringPtr("x"),
+	}), "invalid PageOrder value \"x\", acceptable value should be one of overThenDown, downThenOver")
 }
 
 func TestGetPageLayout(t *testing.T) {
@@ -231,8 +242,16 @@ func TestGetPageLayout(t *testing.T) {
 	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 }
 
-func TestSetHeaderFooter(t *testing.T) {
+func TestHeaderFooter(t *testing.T) {
 	f := NewFile()
+	// Test get header and footer with default header and footer settings
+	opts, err := f.GetHeaderFooter("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, (*HeaderFooterOptions)(nil), opts)
+	// Test get header and footer on not exists worksheet
+	_, err = f.GetHeaderFooter("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+
 	assert.NoError(t, f.SetCellStr("Sheet1", "A1", "Test SetHeaderFooter"))
 	// Test set header and footer on not exists worksheet
 	assert.EqualError(t, f.SetHeaderFooter("SheetN", nil), "sheet SheetN does not exist")
@@ -252,7 +271,7 @@ func TestSetHeaderFooter(t *testing.T) {
 		EvenFooter:  text,
 		FirstHeader: text,
 	}))
-	assert.NoError(t, f.SetHeaderFooter("Sheet1", &HeaderFooterOptions{
+	expected := &HeaderFooterOptions{
 		DifferentFirst:   true,
 		DifferentOddEven: true,
 		OddHeader:        "&R&P",
@@ -260,7 +279,11 @@ func TestSetHeaderFooter(t *testing.T) {
 		EvenHeader:       "&L&P",
 		EvenFooter:       "&L&D&R&T",
 		FirstHeader:      `&CCenter &"-,Bold"Bold&"-,Regular"HeaderU+000A&D`,
-	}))
+	}
+	assert.NoError(t, f.SetHeaderFooter("Sheet1", expected))
+	opts, err = f.GetHeaderFooter("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetHeaderFooter.xlsx")))
 }
 
@@ -453,8 +476,30 @@ func TestSetSheetName(t *testing.T) {
 	// Test set worksheet with the same name
 	assert.NoError(t, f.SetSheetName("Sheet1", "Sheet1"))
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
+	// Test set worksheet with the different name
+	assert.NoError(t, f.SetSheetName("Sheet1", "sheet1"))
+	assert.Equal(t, "sheet1", f.GetSheetName(0))
 	// Test set sheet name with invalid sheet name
-	assert.EqualError(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid)
+
+	// Test set worksheet name with existing defined name and auto filter
+	assert.NoError(t, f.AutoFilter("Sheet1", "A1:A2", nil))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name1",
+		RefersTo: "$B$2",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name2",
+		RefersTo: "$A1$2:A2",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name3",
+		RefersTo: "Sheet1!$A$1:'Sheet1'!A1:Sheet1!$A$1,Sheet1!A1:Sheet3!A1,Sheet3!A1",
+	}))
+	assert.NoError(t, f.SetSheetName("Sheet1", "Sheet2"))
+	for i, expected := range []string{"'Sheet2'!$A$1:$A$2", "$B$2", "$A1$2:A2", "Sheet2!$A$1:'Sheet2'!A1:Sheet2!$A$1,Sheet2!A1:Sheet3!A1,Sheet3!A1"} {
+		assert.Equal(t, expected, f.WorkBook.DefinedNames.DefinedName[i].Data)
+	}
 }
 
 func TestWorksheetWriter(t *testing.T) {
@@ -513,6 +558,43 @@ func TestDeleteSheet(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteSheet2.xlsx")))
 }
 
+func TestMoveSheet(t *testing.T) {
+	f := NewFile()
+	defer f.Close()
+	for i := 2; i < 6; i++ {
+		_, err := f.NewSheet("Sheet" + strconv.Itoa(i))
+		assert.NoError(t, err)
+	}
+	assert.Equal(t, []string{"Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"}, f.GetSheetList())
+
+	// Move target to first position
+	assert.NoError(t, f.MoveSheet("Sheet2", "Sheet1"))
+	assert.Equal(t, []string{"Sheet2", "Sheet1", "Sheet3", "Sheet4", "Sheet5"}, f.GetSheetList())
+	assert.Equal(t, "Sheet1", f.GetSheetName(f.GetActiveSheetIndex()))
+
+	// Move target to last position
+	assert.NoError(t, f.MoveSheet("Sheet2", "Sheet5"))
+	assert.NoError(t, f.MoveSheet("Sheet5", "Sheet2"))
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet4", "Sheet5", "Sheet2"}, f.GetSheetList())
+
+	// Move target to same position
+	assert.NoError(t, f.MoveSheet("Sheet1", "Sheet1"))
+	assert.Equal(t, []string{"Sheet1", "Sheet3", "Sheet4", "Sheet5", "Sheet2"}, f.GetSheetList())
+
+	// Test move sheet with invalid sheet name
+	assert.Equal(t, ErrSheetNameBlank, f.MoveSheet("", "Sheet2"))
+	assert.Equal(t, ErrSheetNameBlank, f.MoveSheet("Sheet1", ""))
+
+	// Test move sheet on not exists worksheet
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.MoveSheet("SheetN", "Sheet2"))
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.MoveSheet("Sheet1", "SheetN"))
+
+	// Test move sheet with unsupported workbook charset
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.MoveSheet("Sheet2", "Sheet1"), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestDeleteAndAdjustDefinedNames(t *testing.T) {
 	deleteAndAdjustDefinedNames(nil, 0)
 	deleteAndAdjustDefinedNames(&xlsxWorkbook{}, 0)
@@ -536,6 +618,18 @@ func TestSetSheetVisible(t *testing.T) {
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetSheetVisible("Sheet1", false), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test set sheet visible with empty sheet views
+	f = NewFile()
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet2.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = nil
+	assert.NoError(t, f.SetSheetVisible("Sheet2", false))
+	visible, err := f.GetSheetVisible("Sheet2")
+	assert.NoError(t, err)
+	assert.False(t, visible)
 }
 
 func TestGetSheetVisible(t *testing.T) {

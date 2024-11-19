@@ -42,16 +42,16 @@ func TestAddShape(t *testing.T) {
 			},
 		},
 	), "sheet Sheet3 does not exist")
-	assert.EqualError(t, f.AddShape("Sheet3", nil), ErrParameterInvalid.Error())
-	assert.EqualError(t, f.AddShape("Sheet1", &Shape{Cell: "A1"}), ErrParameterInvalid.Error())
-	assert.EqualError(t, f.AddShape("Sheet1", &Shape{
+	assert.Equal(t, ErrParameterInvalid, f.AddShape("Sheet3", nil))
+	assert.Equal(t, ErrParameterInvalid, f.AddShape("Sheet1", &Shape{Cell: "A1"}))
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AddShape("Sheet1", &Shape{
 		Cell: "A",
 		Type: "rect",
 		Paragraph: []RichTextRun{
 			{Text: "Rectangle", Font: &Font{Color: "CD5C5C"}},
 			{Text: "Shape", Font: &Font{Bold: true, Color: "2980B9"}},
 		},
-	}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape1.xlsx")))
 
 	// Test add first shape for given sheet
@@ -79,14 +79,14 @@ func TestAddShape(t *testing.T) {
 		}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
 	// Test add shape with invalid sheet name
-	assert.EqualError(t, f.AddShape("Sheet:1", &Shape{
+	assert.Equal(t, ErrSheetNameInvalid, f.AddShape("Sheet:1", &Shape{
 		Cell: "A30",
 		Type: "rect",
 		Paragraph: []RichTextRun{
 			{Text: "Rectangle", Font: &Font{Color: "CD5C5C"}},
 			{Text: "Shape", Font: &Font{Bold: true, Color: "2980B9"}},
 		},
-	}), ErrSheetNameInvalid.Error())
+	}))
 	// Test add shape with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)

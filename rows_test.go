@@ -239,7 +239,7 @@ func TestColumns(t *testing.T) {
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
 	assert.True(t, rows.Next())
 	_, err = rows.Columns()
-	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
 
 	// Test token is nil
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
@@ -352,6 +352,15 @@ func TestRemoveRow(t *testing.T) {
 
 	assert.NoError(t, f.RemoveRow(sheet1, 10))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
+
+	f = NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A1", "C1"))
+	assert.NoError(t, f.MergeCell("Sheet1", "A2", "C2"))
+	assert.NoError(t, f.RemoveRow("Sheet1", 1))
+	mergedCells, err := f.GetMergeCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "A1", mergedCells[0].GetStartAxis())
+	assert.Equal(t, "C1", mergedCells[0].GetEndAxis())
 
 	// Test remove row on not exist worksheet
 	assert.EqualError(t, f.RemoveRow("SheetN", 1), "sheet SheetN does not exist")
@@ -878,6 +887,23 @@ func TestDuplicateRow(t *testing.T) {
 	}))
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "Amount+C1"))
 	assert.NoError(t, f.SetCellValue("Sheet1", "A10", "A10"))
+
+	format, err := f.NewConditionalStyle(&Style{Font: &Font{Color: "9A0511"}, Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+	assert.NoError(t, err)
+
+	expected := []ConditionalFormatOptions{
+		{Type: "cell", Criteria: "greater than", Format: &format, Value: "0"},
+	}
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1", expected))
+
+	dv := NewDataValidation(true)
+	dv.Sqref = "A1"
+	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A1"
+
 	assert.NoError(t, f.DuplicateRowTo("Sheet1", 1, 10))
 	formula, err := f.GetCellFormula("Sheet1", "A10")
 	assert.NoError(t, err)
@@ -885,6 +911,28 @@ func TestDuplicateRow(t *testing.T) {
 	value, err := f.GetCellValue("Sheet1", "A11")
 	assert.NoError(t, err)
 	assert.Equal(t, "A10", value)
+
+	cfs, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, cfs, 2)
+	assert.Equal(t, expected, cfs["A10:A10"])
+
+	dvs, err := f.GetDataValidations("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, dvs, 2)
+	assert.Equal(t, "A10:A10", dvs[1].Sqref)
+
+	// Test duplicate data validation with row number exceeds maximum limit
+	assert.Equal(t, ErrMaxRows, f.duplicateDataValidations(ws.(*xlsxWorksheet), "Sheet1", 1, TotalRows+1))
+	// Test duplicate data validation with invalid range reference
+	ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Sqref = "A"
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.duplicateDataValidations(ws.(*xlsxWorksheet), "Sheet1", 1, 10))
+
+	// Test duplicate conditional formatting with row number exceeds maximum limit
+	assert.Equal(t, ErrMaxRows, f.duplicateConditionalFormat(ws.(*xlsxWorksheet), "Sheet1", 1, TotalRows+1))
+	// Test duplicate conditional formatting with invalid range reference
+	ws.(*xlsxWorksheet).ConditionalFormatting[0].SQRef = "A"
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.duplicateConditionalFormat(ws.(*xlsxWorksheet), "Sheet1", 1, 10))
 }
 
 func TestDuplicateRowTo(t *testing.T) {
@@ -911,9 +959,9 @@ func TestDuplicateMergeCells(t *testing.T) {
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{
 		Cells: []*xlsxMergeCell{{Ref: "A1:-"}},
 	}}
-	assert.EqualError(t, f.duplicateMergeCells("Sheet1", ws, 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
+	assert.EqualError(t, f.duplicateMergeCells(ws, "Sheet1", 0, 0), `cannot convert cell "-" to coordinates: invalid cell name "-"`)
 	ws.MergeCells.Cells[0].Ref = "A1:B1"
-	assert.EqualError(t, f.duplicateMergeCells("SheetN", ws, 1, 2), "sheet SheetN does not exist")
+	assert.EqualError(t, f.duplicateMergeCells(ws, "SheetN", 1, 2), "sheet SheetN does not exist")
 }
 
 func TestGetValueFromInlineStr(t *testing.T) {
@@ -993,6 +1041,22 @@ func TestSetRowStyle(t *testing.T) {
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetRowStyle("Sheet1", 1, 1, cellStyleID), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestSetRowHeight(t *testing.T) {
+	f := NewFile()
+	// Test hidden row by set row height to 0
+	assert.NoError(t, f.SetRowHeight("Sheet1", 2, 0))
+	ht, err := f.GetRowHeight("Sheet1", 2)
+	assert.NoError(t, err)
+	assert.Empty(t, ht)
+	// Test unset custom row height
+	assert.NoError(t, f.SetRowHeight("Sheet1", 2, -1))
+	ht, err = f.GetRowHeight("Sheet1", 2)
+	assert.NoError(t, err)
+	assert.Equal(t, defaultRowHeight, ht)
+	// Test set row height with invalid height value
+	assert.Equal(t, ErrParameterInvalid, f.SetRowHeight("Sheet1", 2, -2))
 }
 
 func TestNumberFormats(t *testing.T) {

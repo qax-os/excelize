@@ -5,12 +5,13 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddSlicer(t *testing.T) {
+func TestSlicer(t *testing.T) {
 	f := NewFile()
 	disable, colName := false, "_!@#$%^&*()-+=|\\/<>"
 	assert.NoError(t, f.SetCellValue("Sheet1", "B1", colName))
@@ -45,8 +46,29 @@ func TestAddSlicer(t *testing.T) {
 		DisplayHeader: &disable,
 		ItemDesc:      true,
 	}))
+	// Test get table slicers
+	slicers, err := f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Column1", slicers[0].Name)
+	assert.Equal(t, "E1", slicers[0].Cell)
+	assert.Equal(t, "Sheet1", slicers[0].TableSheet)
+	assert.Equal(t, "Table1", slicers[0].TableName)
+	assert.Equal(t, "Column1", slicers[0].Caption)
+	assert.Equal(t, "Column1 1", slicers[1].Name)
+	assert.Equal(t, "I1", slicers[1].Cell)
+	assert.Equal(t, "Sheet1", slicers[1].TableSheet)
+	assert.Equal(t, "Table1", slicers[1].TableName)
+	assert.Equal(t, "Column1", slicers[1].Caption)
+	assert.Equal(t, colName, slicers[2].Name)
+	assert.Equal(t, "M1", slicers[2].Cell)
+	assert.Equal(t, "Sheet1", slicers[2].TableSheet)
+	assert.Equal(t, "Table1", slicers[2].TableName)
+	assert.Equal(t, colName, slicers[2].Caption)
+	assert.Equal(t, "Button1_Click", slicers[2].Macro)
+	assert.False(t, *slicers[2].DisplayHeader)
+	assert.True(t, slicers[2].ItemDesc)
 	// Test create two pivot tables in a new worksheet
-	_, err := f.NewSheet("Sheet2")
+	_, err = f.NewSheet("Sheet2")
 	assert.NoError(t, err)
 	// Create some data in a sheet
 	month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
@@ -116,6 +138,25 @@ func TestAddSlicer(t *testing.T) {
 		Caption:    "Region",
 		ItemDesc:   true,
 	}))
+	// Test get pivot table slicers
+	slicers, err = f.GetSlicers("Sheet2")
+	assert.NoError(t, err)
+	assert.Equal(t, "Month", slicers[0].Name)
+	assert.Equal(t, "G42", slicers[0].Cell)
+	assert.Equal(t, "Sheet2", slicers[0].TableSheet)
+	assert.Equal(t, "PivotTable1", slicers[0].TableName)
+	assert.Equal(t, "Month", slicers[0].Caption)
+	assert.Equal(t, "Month 1", slicers[1].Name)
+	assert.Equal(t, "K42", slicers[1].Cell)
+	assert.Equal(t, "Sheet2", slicers[1].TableSheet)
+	assert.Equal(t, "PivotTable1", slicers[1].TableName)
+	assert.Equal(t, "Month", slicers[1].Caption)
+	assert.Equal(t, "Region", slicers[2].Name)
+	assert.Equal(t, "O42", slicers[2].Cell)
+	assert.Equal(t, "Sheet2", slicers[2].TableSheet)
+	assert.Equal(t, "PivotTable2", slicers[2].TableName)
+	assert.Equal(t, "Region", slicers[2].Caption)
+	assert.True(t, slicers[2].ItemDesc)
 	// Test add a table slicer with empty slicer options
 	assert.Equal(t, ErrParameterRequired, f.AddSlicer("Sheet1", nil))
 	// Test add a table slicer with invalid slicer options
@@ -166,6 +207,48 @@ func TestAddSlicer(t *testing.T) {
 		Caption:    "Month",
 	}), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
+
+	// Test open a workbook and get already exist slicers
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	slicers, err = f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Column1", slicers[0].Name)
+	assert.Equal(t, "E1", slicers[0].Cell)
+	assert.Equal(t, "Sheet1", slicers[0].TableSheet)
+	assert.Equal(t, "Table1", slicers[0].TableName)
+	assert.Equal(t, "Column1", slicers[0].Caption)
+	assert.Equal(t, "Column1 1", slicers[1].Name)
+	assert.Equal(t, "I1", slicers[1].Cell)
+	assert.Equal(t, "Sheet1", slicers[1].TableSheet)
+	assert.Equal(t, "Table1", slicers[1].TableName)
+	assert.Equal(t, "Column1", slicers[1].Caption)
+	assert.Equal(t, colName, slicers[2].Name)
+	assert.Equal(t, "M1", slicers[2].Cell)
+	assert.Equal(t, "Sheet1", slicers[2].TableSheet)
+	assert.Equal(t, "Table1", slicers[2].TableName)
+	assert.Equal(t, colName, slicers[2].Caption)
+	assert.Equal(t, "Button1_Click", slicers[2].Macro)
+	assert.False(t, *slicers[2].DisplayHeader)
+	assert.True(t, slicers[2].ItemDesc)
+	slicers, err = f.GetSlicers("Sheet2")
+	assert.NoError(t, err)
+	assert.Equal(t, "Month", slicers[0].Name)
+	assert.Equal(t, "G42", slicers[0].Cell)
+	assert.Equal(t, "Sheet2", slicers[0].TableSheet)
+	assert.Equal(t, "PivotTable1", slicers[0].TableName)
+	assert.Equal(t, "Month", slicers[0].Caption)
+	assert.Equal(t, "Month 1", slicers[1].Name)
+	assert.Equal(t, "K42", slicers[1].Cell)
+	assert.Equal(t, "Sheet2", slicers[1].TableSheet)
+	assert.Equal(t, "PivotTable1", slicers[1].TableName)
+	assert.Equal(t, "Month", slicers[1].Caption)
+	assert.Equal(t, "Region", slicers[2].Name)
+	assert.Equal(t, "O42", slicers[2].Cell)
+	assert.Equal(t, "Sheet2", slicers[2].TableSheet)
+	assert.Equal(t, "PivotTable2", slicers[2].TableName)
+	assert.Equal(t, "Region", slicers[2].Caption)
+	assert.True(t, slicers[2].ItemDesc)
 
 	// Test add a pivot table slicer with workbook which contains timeline
 	f, err = OpenFile(workbookPath)
@@ -274,6 +357,113 @@ func TestAddSlicer(t *testing.T) {
 		Caption:    "Column1",
 	}), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	// Test get sheet slicers without slicer
+	slicers, err = f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, slicers)
+	// Test get sheet slicers with not exist worksheet name
+	_, err = f.GetSlicers("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	// Test get sheet slicers with unsupported charset slicer cache
+	f.Pkg.Store("xl/slicerCaches/slicerCache1.xml", MacintoshCyrillicCharset)
+	_, err = f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	// Test get sheet slicers with unsupported charset slicer
+	f.Pkg.Store("xl/slicers/slicer1.xml", MacintoshCyrillicCharset)
+	_, err = f.GetSlicers("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get sheet slicers with invalid worksheet extension list
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst.Ext = "<>"
+	_, err = f.GetSlicers("Sheet1")
+	assert.Error(t, err)
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	// Test get sheet slicers without slicer cache
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/slicerCaches/slicerCache") {
+			f.Pkg.Delete(k.(string))
+		}
+		return true
+	})
+	slicers, err = f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, slicers)
+	assert.NoError(t, f.Close())
+	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing part
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><twoCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></twoCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value)))
+	_, err = f.GetSlicers("Sheet1")
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
+	// Test get sheet slicer without slicer shape in the drawing part
+	f.Drawings.Delete("xl/drawings/drawing1.xml")
+	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><twoCellAnchor/></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value)))
+	_, err = f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	f.Drawings.Delete("xl/drawings/drawing1.xml")
+	// Test get sheet slicers with unsupported charset drawing part
+	f.Pkg.Store("xl/drawings/drawing1.xml", MacintoshCyrillicCharset)
+	_, err = f.GetSlicers("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get sheet slicers with unsupported charset table
+	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
+	_, err = f.GetSlicers("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get sheet slicers with unsupported charset pivot table
+	f.Pkg.Store("xl/pivotTables/pivotTable1.xml", MacintoshCyrillicCharset)
+	_, err = f.GetSlicers("Sheet2")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	// Test create a workbook and get sheet slicer with invalid cell reference in the drawing part
+	f = NewFile()
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	assert.NoError(t, f.AddSlicer("Sheet1", &SlicerOptions{
+		Name:       "Column1",
+		Cell:       "E1",
+		TableSheet: "Sheet1",
+		TableName:  "Table1",
+		Caption:    "Column1",
+	}))
+	drawing, ok := f.Drawings.Load("xl/drawings/drawing1.xml")
+	assert.True(t, ok)
+	drawing.(*xlsxWsDr).TwoCellAnchor[0].From = &xlsxFrom{Col: -1, Row: -1}
+	_, err = f.GetSlicers("Sheet1")
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
+	assert.NoError(t, f.Close())
+
+	// Test open a workbook and delete slicers
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	for _, name := range []string{colName, "Column1 1", "Column1"} {
+		assert.NoError(t, f.DeleteSlicer(name))
+	}
+	for _, name := range []string{"Month", "Month 1", "Region"} {
+		assert.NoError(t, f.DeleteSlicer(name))
+	}
+	// Test delete slicer with no exits slicer name
+	assert.Equal(t, newNoExistSlicerError("x"), f.DeleteSlicer("x"))
+	assert.NoError(t, f.Close())
+
+	// Test open a workbook and delete sheet slicer with unsupported charset slicer cache
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/slicers/slicer1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteSlicer("Column1"), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
 }
 
 func TestAddSheetSlicer(t *testing.T) {
@@ -296,33 +486,78 @@ func TestAddSheetTableSlicer(t *testing.T) {
 func TestSetSlicerCache(t *testing.T) {
 	f := NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache1.xml", MacintoshCyrillicCharset)
-	_, err := f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{}, nil)
+	_, err := f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer2" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"><tableSlicerCache tableId="1" column="2"/></ext></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{tID: 1}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{tID: 1}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
 	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value)))
-	_, err = f.setSlicerCache("Sheet1", 1, &SlicerOptions{}, &Table{tID: 1}, nil)
+	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{tID: 1}, nil)
 	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+}
+
+func TestDeleteSlicer(t *testing.T) {
+	f, slicerXML := NewFile(), "xl/slicers/slicer1.xml"
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	assert.NoError(t, f.AddSlicer("Sheet1", &SlicerOptions{
+		Name:       "Column1",
+		Cell:       "E1",
+		TableSheet: "Sheet1",
+		TableName:  "Table1",
+		Caption:    "Column1",
+	}))
+	// Test delete sheet slicers with invalid worksheet extension list
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst.Ext = "<>"
+	assert.Error(t, f.deleteSlicer(SlicerOptions{
+		slicerXML:       slicerXML,
+		slicerSheetName: "Sheet1",
+		Name:            "Column1",
+	}))
+	// Test delete slicer with unsupported charset worksheet
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSlicer(SlicerOptions{
+		slicerXML:       slicerXML,
+		slicerSheetName: "Sheet1",
+		Name:            "Column1",
+	}), "XML syntax error on line 1: invalid UTF-8")
+	// Test delete slicer with unsupported charset slicer
+	f.Pkg.Store(slicerXML, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSlicer(SlicerOptions{slicerXML: slicerXML}), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+}
+
+func TestDeleteSlicerCache(t *testing.T) {
+	f := NewFile()
+	// Test delete slicer cache with unsupported charset workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.deleteSlicerCache(nil, SlicerOptions{}), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
 
@@ -362,7 +597,7 @@ func TestAddWorkbookSlicerCache(t *testing.T) {
 	// Test add a workbook slicer cache with unsupported charset workbook
 	f := NewFile()
 	f.WorkBook = nil
-	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.addWorkbookSlicerCache(1, ExtURISlicerCachesX15), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }

@@ -5,8 +5,8 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.16.x, 1.17.x, 1.18.x, 1.19.x, 1.20.x, '>=1.21.1']
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: [1.18.x, 1.19.x, 1.20.x, '>=1.21.1', 1.22.x, 1.23.x]
+        os: [ubuntu-latest, macos-13, windows-latest]
         targetplatform: [x86, x64]
 
     runs-on: ${{ matrix.os }}
@@ -14,9 +14,10 @@ jobs:
     steps:
 
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
+        cache: false
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -28,10 +29,12 @@ jobs:
       run: go build -v .
 
     - name: Test
-      run: env GO111MODULE=on go test -v -timeout 30m -race ./... -coverprofile=coverage.txt -covermode=atomic
+      run: env GO111MODULE=on go test -v -timeout 30m -race ./... -coverprofile='coverage.txt' -covermode=atomic
 
     - name: Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       with:
         file: coverage.txt
         flags: unittests
