@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mohae/deepcopy"
+	"github.com/tiendc/go-deepcopy"
 )
 
 // Define the default cell size and EMU unit of measurement.
@@ -533,7 +533,8 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
 	var fc []xlsxCol
 	for i := col.Min; i <= col.Max; i++ {
-		c := deepcopy.Copy(col).(xlsxCol)
+		var c xlsxCol
+		deepcopy.Copy(&c, col)
 		c.Min, c.Max = i, i
 		fc = append(fc, c)
 	}
@@ -551,7 +552,8 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 				fc[idx] = replacer(fc[idx], column)
 				continue
 			}
-			c := deepcopy.Copy(column).(xlsxCol)
+			var c xlsxCol
+			deepcopy.Copy(&c, column)
 			c.Min, c.Max = i, i
 			fc = append(fc, c)
 		}

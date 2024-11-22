@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mohae/deepcopy"
+	"github.com/tiendc/go-deepcopy"
 )
 
 // duplicateHelperFunc defines functions to duplicate helper.
@@ -653,7 +653,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 
 	for i, r := range ws.SheetData.Row {
 		if r.R == row {
-			rowCopy = deepcopy.Copy(ws.SheetData.Row[i]).(xlsxRow)
+			deepcopy.Copy(&rowCopy, ws.SheetData.Row[i])
 			ok = true
 			break
 		}
@@ -729,7 +729,8 @@ func (f *File) duplicateConditionalFormat(ws *xlsxWorksheet, sheet string, row, 
 				}
 			}
 			if len(SQRef) > 0 {
-				cfCopy := deepcopy.Copy(*cf).(xlsxConditionalFormatting)
+				var cfCopy xlsxConditionalFormatting
+				deepcopy.Copy(&cfCopy, *cf)
 				cfCopy.SQRef = strings.Join(SQRef, " ")
 				cfs = append(cfs, &cfCopy)
 			}
@@ -759,7 +760,8 @@ func (f *File) duplicateDataValidations(ws *xlsxWorksheet, sheet string, row, ro
 				}
 			}
 			if len(SQRef) > 0 {
-				dvCopy := deepcopy.Copy(*dv).(xlsxDataValidation)
+				var dvCopy xlsxDataValidation
+				deepcopy.Copy(&dvCopy, *dv)
 				dvCopy.Sqref = strings.Join(SQRef, " ")
 				dvs = append(dvs, &dvCopy)
 			}

@@ -27,7 +27,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/mohae/deepcopy"
+	"github.com/tiendc/go-deepcopy"
 )
 
 // NewSheet provides the function to create a new sheet by given a worksheet
@@ -124,7 +124,8 @@ func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
 				Width:        ws.Cols.Col[i-1].Width,
 			}, ws.Cols.Col[i]); i++ {
 		}
-		column := deepcopy.Copy(ws.Cols.Col[left]).(xlsxCol)
+		var column xlsxCol
+		deepcopy.Copy(&column, ws.Cols.Col[left])
 		if left < i-1 {
 			column.Max = ws.Cols.Col[i-1].Min
 		}
@@ -750,7 +751,8 @@ func (f *File) copySheet(from, to int) error {
 	if err != nil {
 		return err
 	}
-	worksheet := deepcopy.Copy(sheet).(*xlsxWorksheet)
+	worksheet := &xlsxWorksheet{}
+	deepcopy.Copy(worksheet, sheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
 	sheetXMLPath := "xl/worksheets/sheet" + toSheetID + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
