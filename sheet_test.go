@@ -675,7 +675,7 @@ func BenchmarkNewSheet(b *testing.B) {
 func newSheetWithSet() {
 	file := NewFile()
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), i)
+		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
 	}
 	file = nil
 }
@@ -691,7 +691,7 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 func newSheetWithSave() {
 	file := NewFile()
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), i)
+		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
 	}
 	_ = file.Save()
 }

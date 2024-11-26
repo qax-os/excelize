@@ -380,6 +380,29 @@ func TestStreamSetCellValFunc(t *testing.T) {
 	}
 }
 
+func TestSetCellIntFunc(t *testing.T) {
+	cases := []struct{
+		val interface{}
+		target string
+	}{
+		{val: 128, target: "128"},
+		{val: int8(-128), target: "-128"},
+		{val: int16(-32768), target: "-32768"},
+		{val: int32(-2147483648), target: "-2147483648"},
+		{val: int64(-9223372036854775808), target: "-9223372036854775808"},
+		{val: uint(128), target: "128"},
+		{val: uint8(255), target: "255"},
+		{val: uint16(65535), target: "65535"},
+		{val: uint32(4294967295), target: "4294967295"},
+		{val: uint64(18446744073709551615), target: "18446744073709551615"},
+	}
+	for _, c := range cases {
+		cell := &xlsxC{}
+		setCellIntFunc(cell, c.val)
+		assert.Equal(t, c.target, cell.V)
+	}
+}
+
 func TestStreamWriterOutlineLevel(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
