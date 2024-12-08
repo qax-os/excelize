@@ -336,6 +336,7 @@ type cCharts struct {
 	SplitPos     *attrValInt    `xml:"splitPos"`
 	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
+	GapWidth     *attrValInt    `xml:"gapWidth"`
 	Shape        *attrValString `xml:"shape"`
 	HoleSize     *attrValInt    `xml:"holeSize"`
 	Smooth       *attrValBool   `xml:"smooth"`
@@ -584,6 +585,8 @@ type Chart struct {
 	ShowBlanksAs string
 	BubbleSize   int
 	HoleSize     int
+	GapWidth     *uint
+	Overlap      *int
 	order        int
 }
 

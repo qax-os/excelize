@@ -486,6 +486,42 @@ var (
 		Line:                        "standard",
 		Line3D:                      "standard",
 	}
+	barColChartTypes = []ChartType{
+		Bar,
+		BarStacked,
+		BarPercentStacked,
+		Bar3DClustered,
+		Bar3DStacked,
+		Bar3DPercentStacked,
+		Bar3DConeClustered,
+		Bar3DConeStacked,
+		Bar3DConePercentStacked,
+		Bar3DPyramidClustered,
+		Bar3DPyramidStacked,
+		Bar3DPyramidPercentStacked,
+		Bar3DCylinderClustered,
+		Bar3DCylinderStacked,
+		Bar3DCylinderPercentStacked,
+		Col,
+		ColStacked,
+		ColPercentStacked,
+		Col3D,
+		Col3DClustered,
+		Col3DStacked,
+		Col3DPercentStacked,
+		Col3DCone,
+		Col3DConeStacked,
+		Col3DConeClustered,
+		Col3DConePercentStacked,
+		Col3DPyramid,
+		Col3DPyramidClustered,
+		Col3DPyramidStacked,
+		Col3DPyramidPercentStacked,
+		Col3DCylinder,
+		Col3DCylinderClustered,
+		Col3DCylinderStacked,
+		Col3DCylinderPercentStacked,
+	}
 	orientation = map[bool]string{
 		true:  "maxMin",
 		false: "minMax",
@@ -904,7 +940,7 @@ func (opts *Chart) parseTitle() {
 //	TextRotation
 //	Vertical
 //
-// The value of 'TextRotation' that can be set from -90 to 90:
+// The value of 'TextRotation' that can be set from -90 to 90.
 //
 // The value of 'Vertical' that can be set are:
 //
@@ -948,6 +984,14 @@ func (opts *Chart) parseTitle() {
 // Set the doughnut hole size in all data series for the doughnut chart by
 // 'HoleSize' property. The 'HoleSize' property is optional. The default width
 // is 75, and the value should be great than 0 and less or equal than 90.
+//
+// Set the gap with of the column and bar series chart by 'GapWidth' property.
+// The 'GapWidth' property is optional. The default width is 150, and the value
+// should be great or equal than 0 and less or equal than 500.
+//
+// Set series overlap of the column and bar series chart by 'Overlap' property.
+// The 'Overlap' property is optional. The default width is 0, and the value
+// should be great or equal than -100 and less or equal than 100.
 //
 // combo: Specifies the create a chart that combines two or more chart types in
 // a single chart. For example, create a clustered column - line chart with

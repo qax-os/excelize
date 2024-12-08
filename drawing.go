@@ -210,19 +210,17 @@ func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 			VaryColors: &attrValBool{
 				Val: opts.VaryColors,
 			},
-			Ser:     f.drawChartSeries(opts),
-			Shape:   f.drawChartShape(opts),
-			DLbls:   f.drawChartDLbls(opts),
-			AxID:    f.genAxID(opts),
-			Overlap: &attrValInt{Val: intPtr(100)},
+			Ser:      f.drawChartSeries(opts),
+			Shape:    f.drawChartShape(opts),
+			DLbls:    f.drawChartDLbls(opts),
+			GapWidth: f.drawChartGapWidth(opts),
+			AxID:     f.genAxID(opts),
+			Overlap:  f.drawChartOverlap(opts),
 		},
 	}
 	var ok bool
 	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
 		c[0].BarDir = nil
-	}
-	if *c[0].Overlap.Val, ok = plotAreaChartOverlap[opts.Type]; !ok {
-		c[0].Overlap = nil
 	}
 	catAx := f.drawPlotAreaCatAx(pa, opts)
 	valAx := f.drawPlotAreaValAx(pa, opts)
@@ -695,6 +693,35 @@ func (f *File) drawBubbleChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		plotArea.BubbleChart[0].BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
 	}
 	return plotArea
+}
+
+// drawChartGapWidth provides a function to draw the c:gapWidth element by given
+// format sets.
+func (f *File) drawChartGapWidth(opts *Chart) *attrValInt {
+	for _, t := range barColChartTypes {
+		if t == opts.Type && opts.GapWidth != nil && *opts.GapWidth != 150 && *opts.GapWidth <= 500 {
+			return &attrValInt{intPtr(int(*opts.GapWidth))}
+		}
+	}
+	return nil
+}
+
+// drawChartOverlap provides a function to draw the c:overlap element by given
+// format sets.
+func (f *File) drawChartOverlap(opts *Chart) *attrValInt {
+	var val *attrValInt
+	if _, ok := plotAreaChartOverlap[opts.Type]; ok {
+		val = &attrValInt{intPtr(100)}
+	}
+	if opts.Overlap != nil && -100 <= *opts.Overlap && *opts.Overlap <= 100 {
+		val = &attrValInt{intPtr(*opts.Overlap)}
+	}
+	for _, t := range barColChartTypes {
+		if t == opts.Type {
+			return val
+		}
+	}
+	return nil
 }
 
 // drawChartShape provides a function to draw the c:shape element by given
