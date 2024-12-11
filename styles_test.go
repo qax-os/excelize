@@ -177,6 +177,15 @@ func TestSetConditionalFormat(t *testing.T) {
 	for _, ref := range []string{"A1:A2", "B1:B2"} {
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
 	}
+	// Test creating a conditional format with a "new" icon set
+	f = NewFile()
+	condFmts = []ConditionalFormatOptions{
+		{Type: "icon_set", IconStyle: "3Triangles"},
+	}
+	for _, ref := range []string{"A1:A2", "B1:B2"} {
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
+	}
+
 	f = NewFile()
 	// Test creating a conditional format without cell reference
 	assert.Equal(t, ErrParameterRequired, f.SetConditionalFormat("Sheet1", "", nil))
@@ -274,6 +283,7 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "errors", Format: intPtr(1)}},
 		{{Type: "no_errors", Format: intPtr(1)}},
 		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
+		{{Type: "icon_set", IconStyle: "3Triangles", ReverseIcons: true, IconsOnly: true}},
 	} {
 		f := NewFile()
 		err := f.SetConditionalFormat("Sheet1", "A2:A1,B:B,2:2", format)

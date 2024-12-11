@@ -735,14 +735,17 @@ type decodeX14ConditionalFormattingRules struct {
 type decodeX14ConditionalFormatting struct {
 	XMLName xml.Name           `xml:"conditionalFormatting"`
 	CfRule  []*decodeX14CfRule `xml:"cfRule"`
+	SQRef   string             `xml:"sqref"`
 }
 
 // decodeX14CfRule directly maps the cfRule element.
 type decodeX14CfRule struct {
-	XMLName xml.Name          `xml:"cfRule"`
-	Type    string            `xml:"type,attr,omitempty"`
-	ID      string            `xml:"id,attr,omitempty"`
-	DataBar *decodeX14DataBar `xml:"dataBar"`
+	XMLName  xml.Name          `xml:"cfRule"`
+	Type     string            `xml:"type,attr,omitempty"`
+	ID       string            `xml:"id,attr,omitempty"`
+	Priority int               `xml:"priority,attr,omitempty"`
+	DataBar  *decodeX14DataBar `xml:"dataBar"`
+	IconSet  *decodeX14IconSet `xml:"iconSet"`
 }
 
 // decodeX14DataBar directly maps the dataBar element.
@@ -760,6 +763,23 @@ type decodeX14DataBar struct {
 	AxisColor         *xlsxColor  `xml:"axisColor"`
 }
 
+// decodeX14IconSet directly maps the iconSet element.
+type decodeX14IconSet struct {
+	XMLName   xml.Name         `xml:"iconSet"`
+	Cfvo      []*decodeX14Cfvo `xml:"cfvo"`
+	IconSet   string           `xml:"iconSet,attr,omitempty"`
+	ShowValue *bool            `xml:"showValue,attr"`
+	Reverse   bool             `xml:"reverse,attr,omitempty"`
+}
+
+// decodeX14Cfvo directly maps the cfvo element.
+type decodeX14Cfvo struct {
+	XMLName xml.Name `xml:"cfvo"`
+	Gte     bool     `xml:"gte,attr,omitempty"`
+	Type    string   `xml:"type,attr,omitempty"`
+	Val     string   `xml:"f"`
+}
+
 // xlsxX14ConditionalFormattings directly maps the conditionalFormattings
 // element.
 type xlsxX14ConditionalFormattings struct {
@@ -772,13 +792,16 @@ type xlsxX14ConditionalFormatting struct {
 	XMLName xml.Name         `xml:"x14:conditionalFormatting"`
 	XMLNSXM string           `xml:"xmlns:xm,attr"`
 	CfRule  []*xlsxX14CfRule `xml:"x14:cfRule"`
+	SQRef   string           `xml:"xm:sqref"`
 }
 
 // xlsxX14CfRule directly maps the cfRule element.
 type xlsxX14CfRule struct {
-	Type    string         `xml:"type,attr,omitempty"`
-	ID      string         `xml:"id,attr,omitempty"`
-	DataBar *xlsx14DataBar `xml:"x14:dataBar"`
+	Type     string         `xml:"type,attr,omitempty"`
+	ID       string         `xml:"id,attr,omitempty"`
+	Priority int            `xml:"priority,attr,omitempty"`
+	DataBar  *xlsx14DataBar `xml:"x14:dataBar"`
+	IconSet  *xlsx14IconSet `xml:"x14:iconSet"`
 }
 
 // xlsx14DataBar directly maps the dataBar element.
@@ -793,6 +816,22 @@ type xlsx14DataBar struct {
 	BorderColor       *xlsxColor  `xml:"x14:borderColor"`
 	NegativeFillColor *xlsxColor  `xml:"x14:negativeFillColor"`
 	AxisColor         *xlsxColor  `xml:"x14:axisColor"`
+}
+
+// xlsxIconSet (Icon Set) describes an icon set conditional formatting rule.
+type xlsx14IconSet struct {
+	Cfvo      []*xlsx14Cfvo `xml:"x14:cfvo"`
+	IconSet   string        `xml:"iconSet,attr,omitempty"`
+	ShowValue *bool         `xml:"showValue,attr"`
+	Reverse   bool          `xml:"reverse,attr,omitempty"`
+}
+
+// cfvo (Conditional Format Value Object) describes the values of the
+// interpolation points in a gradient scale.
+type xlsx14Cfvo struct {
+	Gte  bool   `xml:"gte,attr,omitempty"`
+	Type string `xml:"type,attr,omitempty"`
+	Val  string `xml:"xm:f"`
 }
 
 // xlsxX14SparklineGroups directly maps the sparklineGroups element.
