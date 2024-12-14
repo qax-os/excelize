@@ -935,7 +935,7 @@ func (opts *Chart) parseTitle() {
 // is optional. The default value is auto.
 //
 // Alignment: Specifies that the alignment of the horizontal and vertical axis.
-// The properties of font that can be set are:
+// The properties of alignment that can be set are:
 //
 //	TextRotation
 //	Vertical
