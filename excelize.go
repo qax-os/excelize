@@ -242,18 +242,15 @@ func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {
 // time.Time type cell value by given worksheet name, cell reference and
 // number format code.
 func (f *File) setDefaultTimeStyle(sheet, cell string, format int) error {
-	styleIdx, err := f.GetCellStyle(sheet, cell)
+	s, err := f.GetCellStyle(sheet, cell)
 	if err != nil {
 		return err
 	}
-	if styleIdx == 0 {
-		styleIdx, _ = f.NewStyle(&Style{NumFmt: format})
-	} else {
-		style, _ := f.GetStyle(styleIdx)
-		style.NumFmt = format
-		styleIdx, _ = f.NewStyle(style)
+	if s == 0 {
+		style, _ := f.NewStyle(&Style{NumFmt: format})
+		err = f.SetCellStyle(sheet, cell, cell, style)
 	}
-	return f.SetCellStyle(sheet, cell, cell, styleIdx)
+	return err
 }
 
 // workSheetReader provides a function to get the pointer to the structure
