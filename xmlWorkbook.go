@@ -39,7 +39,7 @@ type xlsxWorkbook struct {
 	XMLName                xml.Name                 `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main workbook"`
 	Conformance            string                   `xml:"conformance,attr,omitempty"`
 	FileVersion            *xlsxFileVersion         `xml:"fileVersion"`
-	FileSharing            *xlsxExtLst              `xml:"fileSharing"`
+	FileSharing            *xlsxFileSharing         `xml:"fileSharing"`
 	WorkbookPr             *xlsxWorkbookPr          `xml:"workbookPr"`
 	AlternateContent       *xlsxAlternateContent    `xml:"mc:AlternateContent"`
 	DecodeAlternateContent *xlsxInnerXML            `xml:"http://schemas.openxmlformats.org/markup-compatibility/2006 AlternateContent"`
@@ -104,6 +104,11 @@ type xlsxFileVersion struct {
 	LastEdited   string `xml:"lastEdited,attr,omitempty"`
 	LowestEdited string `xml:"lowestEdited,attr,omitempty"`
 	RupBuild     string `xml:"rupBuild,attr,omitempty"`
+}
+
+// xlsxFileSharing directly maps the fileSharing element.
+type xlsxFileSharing struct {
+	ReadOnlyRecommended string `xml:"readOnlyRecommended,attr"`
 }
 
 // xlsxWorkbookPr directly maps the workbookPr element from the namespace
@@ -393,8 +398,9 @@ type WorkbookPropsOptions struct {
 
 // WorkbookProtectionOptions directly maps the settings of workbook protection.
 type WorkbookProtectionOptions struct {
-	AlgorithmName string
-	Password      string
-	LockStructure bool
-	LockWindows   bool
+	AlgorithmName       string
+	Password            string
+	LockStructure       bool
+	LockWindows         bool
+	ReadOnlyRecommended bool
 }

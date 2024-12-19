@@ -99,6 +99,13 @@ func (f *File) ProtectWorkbook(opts *WorkbookProtectionOptions) error {
 		wb.WorkbookProtection.WorkbookHashValue = hashValue
 		wb.WorkbookProtection.WorkbookSpinCount = int(workbookProtectionSpinCount)
 	}
+	if opts.ReadOnlyRecommended {
+		if wb.FileSharing == nil {
+			wb.FileSharing = new(xlsxFileSharing)
+		}
+		wb.FileSharing.ReadOnlyRecommended = "1"
+	}
+
 	return nil
 }
 
