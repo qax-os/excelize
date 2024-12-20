@@ -159,14 +159,16 @@ type xlsxBorders struct {
 // border formats (left, right, top, bottom, diagonal). Color is optional. When
 // missing, 'automatic' is implied.
 type xlsxBorder struct {
-	DiagonalDown bool     `xml:"diagonalDown,attr,omitempty"`
-	DiagonalUp   bool     `xml:"diagonalUp,attr,omitempty"`
-	Outline      bool     `xml:"outline,attr,omitempty"`
-	Left         xlsxLine `xml:"left,omitempty"`
-	Right        xlsxLine `xml:"right,omitempty"`
-	Top          xlsxLine `xml:"top,omitempty"`
-	Bottom       xlsxLine `xml:"bottom,omitempty"`
-	Diagonal     xlsxLine `xml:"diagonal,omitempty"`
+	DiagonalDown bool      `xml:"diagonalDown,attr,omitempty"`
+	DiagonalUp   bool      `xml:"diagonalUp,attr,omitempty"`
+	Outline      bool      `xml:"outline,attr,omitempty"`
+	Left         xlsxLine  `xml:"left"`
+	Right        xlsxLine  `xml:"right"`
+	Top          xlsxLine  `xml:"top"`
+	Bottom       xlsxLine  `xml:"bottom"`
+	Diagonal     xlsxLine  `xml:"diagonal"`
+	Vertical     *xlsxLine `xml:"vertical"`
+	Horizontal   *xlsxLine `xml:"horizontal"`
 }
 
 // xlsxCellStyles directly maps the cellStyles element. This element contains
