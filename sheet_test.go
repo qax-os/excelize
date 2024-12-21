@@ -821,3 +821,23 @@ func TestSheetDimension(t *testing.T) {
 	assert.Empty(t, dimension)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
+
+func TestAddIgnoredErrors(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsEvalError))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsEvalError))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsTwoDigitTextYear))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsNumberStoredAsText))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsFormula))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsFormulaRange))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsUnlockedFormula))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsEmptyCellReference))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsListDataValidation))
+	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsCalculatedColumn))
+
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddIgnoredErrors("SheetN", "A1", IgnoredErrorsEvalError))
+	assert.Equal(t, ErrParameterInvalid, f.AddIgnoredErrors("Sheet1", "", IgnoredErrorsEvalError))
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddIgnoredErrors.xlsx")))
+	assert.NoError(t, f.Close())
+}

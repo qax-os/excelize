@@ -30,6 +30,22 @@ import (
 	"github.com/tiendc/go-deepcopy"
 )
 
+// IgnoredErrorsType is the type of ignored errors.
+type IgnoredErrorsType byte
+
+// Ignored errors types enumeration.
+const (
+	IgnoredErrorsEvalError = iota
+	IgnoredErrorsTwoDigitTextYear
+	IgnoredErrorsNumberStoredAsText
+	IgnoredErrorsFormula
+	IgnoredErrorsFormulaRange
+	IgnoredErrorsUnlockedFormula
+	IgnoredErrorsEmptyCellReference
+	IgnoredErrorsListDataValidation
+	IgnoredErrorsCalculatedColumn
+)
+
 // NewSheet provides the function to create a new sheet by given a worksheet
 // name and returns the index of the sheets in the workbook after it appended.
 // Note that when creating a new workbook, the default worksheet named
@@ -2026,7 +2042,7 @@ func (f *File) relsReader(path string) (*xlsxRelationships, error) {
 // fillSheetData ensures there are enough rows, and columns in the chosen
 // row to accept data. Missing rows are backfilled and given their row number
 // Uses the last populated row as a hint for the size of the next row to add
-func (ws *xlsxWorksheet) prepareSheetXML(col int, row int) {
+func (ws *xlsxWorksheet) prepareSheetXML(col, row int) {
 	rowCount := len(ws.SheetData.Row)
 	sizeHint := 0
 	var ht *float64
@@ -2072,7 +2088,7 @@ func (ws *xlsxWorksheet) makeContiguousColumns(fromRow, toRow, colCount int) {
 // of used cells in the worksheet. The range reference is set using the A1
 // reference style(e.g., "A1:D5"). Passing an empty range reference will remove
 // the used range of the worksheet.
-func (f *File) SetSheetDimension(sheet string, rangeRef string) error {
+func (f *File) SetSheetDimension(sheet, rangeRef string) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -2114,4 +2130,36 @@ func (f *File) GetSheetDimension(sheet string) (string, error) {
 		ref = ws.Dimension.Ref
 	}
 	return ref, err
+}
+
+// AddIgnoredErrors provides the method to ignored error for a range of cells.
+func (f *File) AddIgnoredErrors(sheet, rangeRef string, ignoredErrorsType IgnoredErrorsType) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	if rangeRef == "" {
+		return ErrParameterInvalid
+	}
+	if ws.IgnoredErrors == nil {
+		ws.IgnoredErrors = &xlsxIgnoredErrors{}
+	}
+	ie := map[IgnoredErrorsType]xlsxIgnoredError{
+		IgnoredErrorsEvalError:          {Sqref: rangeRef, EvalError: true},
+		IgnoredErrorsTwoDigitTextYear:   {Sqref: rangeRef, TwoDigitTextYear: true},
+		IgnoredErrorsNumberStoredAsText: {Sqref: rangeRef, NumberStoredAsText: true},
+		IgnoredErrorsFormula:            {Sqref: rangeRef, Formula: true},
+		IgnoredErrorsFormulaRange:       {Sqref: rangeRef, FormulaRange: true},
+		IgnoredErrorsUnlockedFormula:    {Sqref: rangeRef, UnlockedFormula: true},
+		IgnoredErrorsEmptyCellReference: {Sqref: rangeRef, EmptyCellReference: true},
+		IgnoredErrorsListDataValidation: {Sqref: rangeRef, ListDataValidation: true},
+		IgnoredErrorsCalculatedColumn:   {Sqref: rangeRef, CalculatedColumn: true},
+	}[ignoredErrorsType]
+	for _, val := range ws.IgnoredErrors.IgnoredError {
+		if reflect.DeepEqual(val, ie) {
+			return err
+		}
+	}
+	ws.IgnoredErrors.IgnoredError = append(ws.IgnoredErrors.IgnoredError, ie)
+	return err
 }

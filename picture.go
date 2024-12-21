@@ -25,7 +25,7 @@ import (
 
 // PictureInsertType defines the type of the picture has been inserted into the
 // worksheet.
-type PictureInsertType int
+type PictureInsertType byte
 
 // Insert picture types.
 const (

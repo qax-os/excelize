@@ -48,7 +48,7 @@ type xlsxWorksheet struct {
 	ColBreaks              *xlsxColBreaks               `xml:"colBreaks"`
 	CustomProperties       *xlsxInnerXML                `xml:"customProperties"`
 	CellWatches            *xlsxInnerXML                `xml:"cellWatches"`
-	IgnoredErrors          *xlsxInnerXML                `xml:"ignoredErrors"`
+	IgnoredErrors          *xlsxIgnoredErrors           `xml:"ignoredErrors"`
 	SmartTags              *xlsxInnerXML                `xml:"smartTags"`
 	Drawing                *xlsxDrawing                 `xml:"drawing"`
 	LegacyDrawing          *xlsxLegacyDrawing           `xml:"legacyDrawing"`
@@ -677,6 +677,28 @@ type xlsxTablePart struct {
 type xlsxPicture struct {
 	XMLName xml.Name `xml:"picture"`
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxIgnoredError specifies a single ignored error for a range of cells.
+type xlsxIgnoredError struct {
+	XMLName            xml.Name `xml:"ignoredError"`
+	Sqref              string   `xml:"sqref,attr"`
+	EvalError          bool     `xml:"evalError,attr,omitempty"`
+	TwoDigitTextYear   bool     `xml:"twoDigitTextYear,attr,omitempty"`
+	NumberStoredAsText bool     `xml:"numberStoredAsText,attr,omitempty"`
+	Formula            bool     `xml:"formula,attr,omitempty"`
+	FormulaRange       bool     `xml:"formulaRange,attr,omitempty"`
+	UnlockedFormula    bool     `xml:"unlockedFormula,attr,omitempty"`
+	EmptyCellReference bool     `xml:"emptyCellReference,attr,omitempty"`
+	ListDataValidation bool     `xml:"listDataValidation,attr,omitempty"`
+	CalculatedColumn   bool     `xml:"calculatedColumn,attr,omitempty"`
+}
+
+// xlsxIgnoredErrors specifies a collection of ignored errors, by cell range.
+type xlsxIgnoredErrors struct {
+	XMLName      xml.Name           `xml:"ignoredErrors"`
+	IgnoredError []xlsxIgnoredError `xml:"ignoredError"`
+	ExtLst       *xlsxExtLst        `xml:"extLst"`
 }
 
 // xlsxLegacyDrawing directly maps the legacyDrawing element in the namespace

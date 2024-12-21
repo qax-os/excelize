@@ -20,7 +20,7 @@ import (
 )
 
 // DataValidationType defined the type of data validation.
-type DataValidationType int
+type DataValidationType byte
 
 // Data validation types.
 const (
@@ -36,7 +36,7 @@ const (
 )
 
 // DataValidationErrorStyle defined the style of data validation error alert.
-type DataValidationErrorStyle int
+type DataValidationErrorStyle byte
 
 // Data validation error styles.
 const (
@@ -54,7 +54,7 @@ const (
 )
 
 // DataValidationOperator operator enum.
-type DataValidationOperator int
+type DataValidationOperator byte
 
 // Data validation operators.
 const (
