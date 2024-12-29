@@ -1214,8 +1214,8 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 }
 
 // SetCellRichText provides a function to set cell with rich text by given
-// worksheet. For example, set rich text on the A1 cell of the worksheet named
-// Sheet1:
+// worksheet name, cell reference and rich text runs. For example, set rich text
+// on the A1 cell of the worksheet named Sheet1:
 //
 //	package main
 //

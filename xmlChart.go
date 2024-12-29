@@ -484,6 +484,8 @@ type cNumCache struct {
 // the specific formatting and positioning settings.
 type cDLbls struct {
 	NumFmt          *cNumFmt       `xml:"numFmt"`
+	SpPr            *cSpPr         `xml:"spPr"`
+	TxPr            *cTxPr         `xml:"txPr"`
 	DLblPos         *attrValString `xml:"dLblPos"`
 	ShowLegendKey   *attrValBool   `xml:"showLegendKey"`
 	ShowVal         *attrValBool   `xml:"showVal"`
@@ -610,6 +612,13 @@ type ChartLine struct {
 	Width  float64
 }
 
+// ChartDataLabel directly maps the format settings of the chart labels.
+type ChartDataLabel struct {
+	Alignment Alignment
+	Font      Font
+	Fill      Fill
+}
+
 // ChartSeries directly maps the format settings of the chart series.
 type ChartSeries struct {
 	Name              string
@@ -619,5 +628,6 @@ type ChartSeries struct {
 	Fill              Fill
 	Line              ChartLine
 	Marker            ChartMarker
+	DataLabel         ChartDataLabel
 	DataLabelPosition ChartDataLabelPositionType
 }

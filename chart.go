@@ -748,6 +748,7 @@ func (opts *Chart) parseTitle() {
 //	Fill
 //	Line
 //	Marker
+//	DataLabel
 //	DataLabelPosition
 //
 // Name: Set the name for the series. The name is displayed in the chart legend
@@ -790,6 +791,8 @@ func (opts *Chart) parseTitle() {
 //	triangle
 //	x
 //	auto
+//
+// DataLabel: This sets the format of the chart series data label.
 //
 // DataLabelPosition: This sets the position of the chart series data label.
 //

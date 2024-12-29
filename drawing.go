@@ -1028,6 +1028,10 @@ func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
 			dLbls.DLblPos = &attrValString{Val: stringPtr(chartDataLabelsPositionTypes[opts.Series[i].DataLabelPosition])}
 		}
 	}
+	dLbl := opts.Series[i].DataLabel
+	dLbls.SpPr = f.drawShapeFill(dLbl.Fill, dLbls.SpPr)
+	dLbls.TxPr = &cTxPr{BodyPr: aBodyPr{}, P: aP{PPr: &aPPr{DefRPr: aRPr{}}}}
+	drawChartFont(&dLbl.Font, &dLbls.TxPr.P.PPr.DefRPr)
 	return dLbls
 }
 
