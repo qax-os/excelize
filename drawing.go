@@ -1484,13 +1484,14 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *GraphicOpt
 // deleteDrawing provides a function to delete the chart graphic frame and
 // returns deleted embed relationships ID (for unique picture cell anchor) by
 // given coordinates and graphic type.
-func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (string, error) {
+func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) ([]string, error) {
 	var (
-		err             error
-		rID             string
-		rIDs            []string
-		wsDr            *xlsxWsDr
-		deTwoCellAnchor *decodeCellAnchor
+		err            error
+		rID            string
+		delRID, refRID []string
+		rIDMaps        = map[string]int{}
+		wsDr           *xlsxWsDr
+		deCellAnchor   *decodeCellAnchor
 	)
 	xdrCellAnchorFuncs := map[string]func(anchor *xdrCellAnchor) bool{
 		"Chart": func(anchor *xdrCellAnchor) bool { return anchor.Pic == nil },
@@ -1502,54 +1503,70 @@ func (f *File) deleteDrawing(col, row int, drawingXML, drawingType string) (stri
 	}
 	onAnchorCell := func(c, r int) bool { return c == col && r == row }
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
-		return rID, err
+		return delRID, err
 	}
-	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		if err = nil; wsDr.TwoCellAnchor[idx].From != nil && xdrCellAnchorFuncs[drawingType](wsDr.TwoCellAnchor[idx]) {
-			if onAnchorCell(wsDr.TwoCellAnchor[idx].From.Col, wsDr.TwoCellAnchor[idx].From.Row) {
-				rID, _ = extractEmbedRID(wsDr.TwoCellAnchor[idx].Pic, nil, rIDs)
-				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
-				idx--
+	deleteCellAnchor := func(ca []*xdrCellAnchor) ([]*xdrCellAnchor, error) {
+		for idx := 0; idx < len(ca); idx++ {
+			if err = nil; ca[idx].From != nil && xdrCellAnchorFuncs[drawingType](ca[idx]) {
+				rID = extractEmbedRID(ca[idx].Pic, nil)
+				rIDMaps[rID]++
+				if onAnchorCell(ca[idx].From.Col, ca[idx].From.Row) {
+					refRID = append(refRID, rID)
+					ca = append(ca[:idx], ca[idx+1:]...)
+					idx--
+					rIDMaps[rID]--
+				}
 				continue
 			}
-			_, rIDs = extractEmbedRID(wsDr.TwoCellAnchor[idx].Pic, nil, rIDs)
-		}
-	}
-	for idx := 0; idx < len(wsDr.TwoCellAnchor); idx++ {
-		deTwoCellAnchor = new(decodeCellAnchor)
-		if err = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + wsDr.TwoCellAnchor[idx].GraphicFrame + "</decodeCellAnchor>")).
-			Decode(deTwoCellAnchor); err != nil && err != io.EOF {
-			return rID, err
-		}
-		if err = nil; deTwoCellAnchor.From != nil && decodeCellAnchorFuncs[drawingType](deTwoCellAnchor) {
-			if onAnchorCell(deTwoCellAnchor.From.Col, deTwoCellAnchor.From.Row) {
-				rID, _ = extractEmbedRID(nil, deTwoCellAnchor.Pic, rIDs)
-				wsDr.TwoCellAnchor = append(wsDr.TwoCellAnchor[:idx], wsDr.TwoCellAnchor[idx+1:]...)
-				idx--
-				continue
+			deCellAnchor = new(decodeCellAnchor)
+			if err = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + ca[idx].GraphicFrame + "</decodeCellAnchor>")).
+				Decode(deCellAnchor); err != nil && err != io.EOF {
+				return ca, err
 			}
-			_, rIDs = extractEmbedRID(nil, deTwoCellAnchor.Pic, rIDs)
+			if err = nil; deCellAnchor.From != nil && decodeCellAnchorFuncs[drawingType](deCellAnchor) {
+				rID = extractEmbedRID(nil, deCellAnchor.Pic)
+				rIDMaps[rID]++
+				if onAnchorCell(deCellAnchor.From.Col, deCellAnchor.From.Row) {
+					refRID = append(refRID, rID)
+					ca = append(ca[:idx], ca[idx+1:]...)
+					idx--
+					rIDMaps[rID]--
+				}
+			}
 		}
+		return ca, err
 	}
-	if inStrSlice(rIDs, rID, true) != -1 {
-		rID = ""
+	if wsDr.OneCellAnchor, err = deleteCellAnchor(wsDr.OneCellAnchor); err != nil {
+		return delRID, err
+	}
+	if wsDr.TwoCellAnchor, err = deleteCellAnchor(wsDr.TwoCellAnchor); err != nil {
+		return delRID, err
 	}
 	f.Drawings.Store(drawingXML, wsDr)
-	return rID, err
+	return getUnusedCellAnchorRID(delRID, refRID, rIDMaps), err
 }
 
-// extractEmbedRID returns embed relationship ID and all relationship ID lists
-// for giving cell anchor.
-func extractEmbedRID(pic *xlsxPic, decodePic *decodePic, rIDs []string) (string, []string) {
+// extractEmbedRID returns embed relationship ID by giving cell anchor.
+func extractEmbedRID(pic *xlsxPic, decodePic *decodePic) string {
+	var rID string
 	if pic != nil {
-		rIDs = append(rIDs, pic.BlipFill.Blip.Embed)
-		return pic.BlipFill.Blip.Embed, rIDs
+		rID = pic.BlipFill.Blip.Embed
 	}
 	if decodePic != nil {
-		rIDs = append(rIDs, decodePic.BlipFill.Blip.Embed)
-		return decodePic.BlipFill.Blip.Embed, rIDs
+		rID = decodePic.BlipFill.Blip.Embed
 	}
-	return "", rIDs
+	return rID
+}
+
+// getUnusedCellAnchorRID returns relationship ID lists in the cell anchor which
+// for remove.
+func getUnusedCellAnchorRID(delRID, refRID []string, rIDMaps map[string]int) []string {
+	for _, rID := range refRID {
+		if rIDMaps[rID] == 0 && inStrSlice(delRID, rID, false) == -1 {
+			delRID = append(delRID, rID)
+		}
+	}
+	return delRID
 }
 
 // deleteDrawingRels provides a function to delete relationships in

@@ -124,6 +124,11 @@ func TestDeleteDrawing(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
 	assert.NoError(t, err)
+	f.Drawings.Store(path, &xlsxWsDr{OneCellAnchor: []*xdrCellAnchor{{
+		GraphicFrame: string(MacintoshCyrillicCharset),
+	}}})
+	_, err = f.deleteDrawing(0, 0, path, "Chart")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	f.Drawings.Store(path, &xlsxWsDr{TwoCellAnchor: []*xdrCellAnchor{{
 		GraphicFrame: string(MacintoshCyrillicCharset),
 	}}})

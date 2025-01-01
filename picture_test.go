@@ -334,9 +334,9 @@ func TestDeletePicture(t *testing.T) {
 	f, err = OpenFile(filepath.Join("test", "TestDeletePicture.xlsx"))
 	assert.NoError(t, err)
 	// Test delete same picture on different worksheet, the images should be removed
-	assert.NoError(t, f.DeletePicture("Sheet1", "F10"))
-	assert.NoError(t, f.DeletePicture("Sheet2", "F1"))
+	assert.NoError(t, f.DeletePicture("Sheet1", "F20"))
 	assert.NoError(t, f.DeletePicture("Sheet1", "I20"))
+	assert.NoError(t, f.DeletePicture("Sheet2", "F1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeletePicture2.xlsx")))
 
 	// Test delete picture on not exists worksheet
@@ -362,6 +362,14 @@ func TestDeletePicture(t *testing.T) {
 	f.Relationships.Delete("xl/drawings/_rels/drawing1.xml.rels")
 	f.Pkg.Store("xl/drawings/_rels/drawing1.xml.rels", MacintoshCyrillicCharset)
 	assert.NoError(t, f.DeletePicture("Sheet2", "F1"))
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filepath.Join("test", "TestDeletePicture.xlsx"))
+	assert.NoError(t, err)
+	// Test delete picture without drawing relationships
+	f.Relationships.Delete("xl/drawings/_rels/drawing1.xml.rels")
+	f.Pkg.Delete("xl/drawings/_rels/drawing1.xml.rels")
+	assert.NoError(t, f.DeletePicture("Sheet1", "I20"))
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
