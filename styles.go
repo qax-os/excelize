@@ -1374,6 +1374,26 @@ var (
 		"5Quarters":       cfvo5,
 		"5Rating":         cfvo5,
 	}
+
+	// cfvo3 defined the icon set conditional formatting rules.
+	x14cfvo3 = &xlsxX14CfRule{IconSet: &xlsx14IconSet{Cfvo: []*xlsx14Cfvo{
+		{Type: "percent", Val: "0"},
+		{Type: "percent", Val: "33"},
+		{Type: "percent", Val: "67"},
+	}}}
+	// cfvo5 defined the icon set conditional formatting rules.
+	x14cfvo5 = &xlsxX14CfRule{IconSet: &xlsx14IconSet{Cfvo: []*xlsx14Cfvo{
+		{Type: "percent", Val: "0"},
+		{Type: "percent", Val: "20"},
+		{Type: "percent", Val: "40"},
+		{Type: "percent", Val: "60"},
+		{Type: "percent", Val: "80"},
+	}}}
+	condFmtNewIconSetPresets = map[string]*xlsxX14CfRule{
+		"3Stars":     x14cfvo3,
+		"3Triangles": x14cfvo3,
+		"5Boxes":     x14cfvo5,
+	}
 )
 
 // colorChoice returns a hex color code from the actual color values.
@@ -2764,10 +2784,12 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	3ArrowsGray
 //	3Flags
 //	3Signs
+//	3Stars
 //	3Symbols
 //	3Symbols2
 //	3TrafficLights1
 //	3TrafficLights2
+//	3Triangles
 //	4Arrows
 //	4ArrowsGray
 //	4Rating
@@ -2775,6 +2797,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	4TrafficLights
 //	5Arrows
 //	5ArrowsGray
+//	5Boxes
 //	5Quarters
 //	5Rating
 //
@@ -2802,6 +2825,7 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	}
 	var (
 		cfRule          []*xlsxCfRule
+		x14CfRule       []*xlsxX14CfRule
 		noCriteriaTypes = []string{
 			"containsBlanks",
 			"notContainsBlanks",
@@ -2825,16 +2849,15 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 					priority := rules + i
 					rule, x14rule := drawFunc(priority, ct, mastCell,
 						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), priority), &opt)
-					if rule == nil {
+					if rule == nil && x14rule == nil {
 						return ErrParameterInvalid
 					}
 					if x14rule != nil {
-						if err = f.appendCfRule(ws, x14rule); err != nil {
-							return err
-						}
-						f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
+						x14CfRule = append(x14CfRule, x14rule)
 					}
-					cfRule = append(cfRule, rule)
+					if rule != nil {
+						cfRule = append(cfRule, rule)
+					}
 					continue
 				}
 			}
@@ -2843,10 +2866,19 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 		return ErrParameterInvalid
 	}
 
-	ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
-		SQRef:  SQRef,
-		CfRule: cfRule,
-	})
+	if len(cfRule) > 0 {
+		ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
+			SQRef:  SQRef,
+			CfRule: cfRule,
+		})
+	}
+
+	if len(x14CfRule) > 0 {
+		if err = f.appendCfRule(ws, x14CfRule, SQRef); err != nil {
+			return err
+		}
+		f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
+	}
 	return err
 }
 
@@ -2892,7 +2924,7 @@ func prepareConditionalFormatRange(rangeRef string) (string, string, error) {
 }
 
 // appendCfRule provides a function to append rules to conditional formatting.
-func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
+func (f *File) appendCfRule(ws *xlsxWorksheet, rules []*xlsxX14CfRule, SQRef string) error {
 	var (
 		err                                      error
 		idx                                      int
@@ -2904,7 +2936,7 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 		condFmtBytes, condFmtsBytes, extLstBytes []byte
 	)
 	condFmtBytes, _ = xml.Marshal([]*xlsxX14ConditionalFormatting{
-		{XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value, CfRule: []*xlsxX14CfRule{rule}},
+		{XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value, CfRule: rules, SQRef: SQRef},
 	})
 	if ws.ExtLst != nil { // append mode ext
 		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
@@ -3155,6 +3187,20 @@ func (f *File) extractCondFmtExp(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalF
 	return format
 }
 
+// extractCondFmtIconSetRule provides a function to extract conditional format
+// settings for icon set by given conditional formatting rule extension list.
+func (f *File) extractCondFmtIconSetRule(c *decodeX14CfRule) ConditionalFormatOptions {
+	format := ConditionalFormatOptions{Type: "icon_set"}
+	if c.IconSet != nil {
+		if c.IconSet.ShowValue != nil {
+			format.IconsOnly = !*c.IconSet.ShowValue
+		}
+		format.IconStyle = c.IconSet.IconSet
+		format.ReverseIcons = c.IconSet.Reverse
+	}
+	return format
+}
+
 // extractCondFmtIconSet provides a function to extract conditional format
 // settings for icon sets by given conditional formatting rule.
 func (f *File) extractCondFmtIconSet(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
@@ -3186,6 +3232,29 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 		}
 		conditionalFormats[cf.SQRef] = opts
 	}
+	if ws.ExtLst != nil {
+		decodeExtLst := new(decodeExtLst)
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return conditionalFormats, err
+		}
+		for _, ext := range decodeExtLst.Ext {
+			if ext.URI == ExtURIConditionalFormattings {
+				decodeCondFmts := new(decodeX14ConditionalFormattingRules)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeCondFmts)
+				for _, condFmt := range decodeCondFmts.CondFmt {
+					var opts []ConditionalFormatOptions
+					for _, rule := range condFmt.CfRule {
+						if rule.Type == "iconSet" {
+							opts = append(opts, f.extractCondFmtIconSetRule(rule))
+						}
+					}
+					conditionalFormats[condFmt.SQRef] = append(conditionalFormats[condFmt.SQRef], opts...)
+				}
+			}
+		}
+	}
+
 	return conditionalFormats, err
 }
 
@@ -3467,7 +3536,16 @@ func drawCondFmtNoBlanks(p int, ct, ref, GUID string, format *ConditionalFormatO
 func drawCondFmtIconSet(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
 	cfRule, ok := condFmtIconSetPresets[format.IconStyle]
 	if !ok {
-		return nil, nil
+		x14CfRule, ok := condFmtNewIconSetPresets[format.IconStyle]
+		if !ok {
+			return nil, nil
+		}
+		x14CfRule.Priority = p + 1
+		x14CfRule.IconSet.IconSet = format.IconStyle
+		x14CfRule.IconSet.Reverse = format.ReverseIcons
+		x14CfRule.IconSet.ShowValue = boolPtr(!format.IconsOnly)
+		x14CfRule.Type = validType[format.Type]
+		return nil, x14CfRule
 	}
 	cfRule.Priority = p + 1
 	cfRule.IconSet.IconSet = format.IconStyle
