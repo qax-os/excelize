@@ -1636,7 +1636,6 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formul
 	}
 	cellRef, _, _, err := parseRef(reference)
 	if err != nil {
-		fmt.Println(err)
 		return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), errors.New("invalid reference")
 	}
 	if cellRef.Sheet == "" {
