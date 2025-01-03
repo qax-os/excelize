@@ -16,6 +16,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -39,6 +40,7 @@ type File struct {
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
+	tableRefs        *sync.Map
 	CalcChain        *xlsxCalcChain
 	CharsetReader    charsetTranscoderFn
 	Comments         map[string]*xlsxComments
@@ -140,6 +142,7 @@ func newFile() *File {
 		checked:          sync.Map{},
 		sheetMap:         make(map[string]string),
 		tempFiles:        sync.Map{},
+		tableRefs:        &sync.Map{},
 		Comments:         make(map[string]*xlsxComments),
 		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
@@ -203,6 +206,16 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	f.SheetCount = sheetCount
 	for k, v := range file {
 		f.Pkg.Store(k, v)
+
+		if strings.Contains(k, "xl/tables/table") {
+			var t xlsxTable
+			dec := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v)))
+			if err := dec.Decode(&t); err != nil && err != io.EOF {
+				return nil, fmt.Errorf("parsing table %s: %w", k, err)
+			}
+
+			f.tableRefs.Store(t.Name, t.Ref)
+		}
 	}
 	if f.CalcChain, err = f.calcChainReader(); err != nil {
 		return f, err

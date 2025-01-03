@@ -17,6 +17,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/xuri/efp"
@@ -508,9 +509,9 @@ type arrayFormulaOperandToken struct {
 
 // setCoordinates convert each corner cell reference in the array formula cell
 // range to the coordinate number.
-func (af *arrayFormulaOperandToken) setCoordinates() error {
+func (af *arrayFormulaOperandToken) setCoordinates(tableRefs *sync.Map) error {
 	for i, ref := range strings.Split(af.sourceCellRef, ":") {
-		cellRef, col, row, err := parseRef(ref)
+		cellRef, col, row, err := parseRef(ref, tableRefs)
 		if err != nil {
 			return err
 		}
@@ -575,7 +576,7 @@ func transformArrayFormula(tokens []efp.Token, afs []arrayFormulaOperandToken) s
 
 // getArrayFormulaTokens returns parsed formula token and operand related token
 // list for in array formula.
-func getArrayFormulaTokens(sheet, formula string, definedNames []DefinedName) ([]efp.Token, []arrayFormulaOperandToken, error) {
+func getArrayFormulaTokens(sheet, formula string, definedNames []DefinedName, tableRefs *sync.Map) ([]efp.Token, []arrayFormulaOperandToken, error) {
 	var (
 		ps                        = efp.ExcelParser()
 		tokens                    = ps.Parse(formula)
@@ -594,7 +595,7 @@ func getArrayFormulaTokens(sheet, formula string, definedNames []DefinedName) ([
 					operandTokenIndex: i,
 					sourceCellRef:     tokenVal,
 				}
-				if err := arrayFormulaOperandToken.setCoordinates(); err != nil {
+				if err := arrayFormulaOperandToken.setCoordinates(tableRefs); err != nil {
 					return tokens, arrayFormulaOperandTokens, err
 				}
 				arrayFormulaOperandTokens = append(arrayFormulaOperandTokens, arrayFormulaOperandToken)

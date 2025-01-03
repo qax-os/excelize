@@ -98,9 +98,13 @@ const (
 	tfmmss     = `(([0-9])+):(([0-9])+\.([0-9])+)( (am|pm))?`
 	tfhhmmss   = `(([0-9])+):(([0-9])+):(([0-9])+(\.([0-9])+)?)( (am|pm))?`
 	timeSuffix = `( (` + tfhh + `|` + tfhhmm + `|` + tfmmss + `|` + tfhhmmss + `))?$`
+	tableRef   = `^(\w+)\[([^\]]+)\]$`
+
+	tableRefPartsCnt = 2
 )
 
 var (
+	errNotExistingTable = errors.New("not existing table")
 	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
@@ -211,6 +215,7 @@ var (
 		criteriaL,
 		criteriaG,
 	}
+	tableRefRe = regexp.MustCompile(tableRef)
 )
 
 // calcContext defines the formula execution context.
@@ -1487,13 +1492,28 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 }
 
 // parseRef parse reference for a cell, column name or row number.
-func parseRef(ref string) (cellRef, bool, bool, error) {
+func parseRef(ref string, tableRefs *sync.Map) (cellRef, bool, bool, error) {
 	var (
 		err, colErr, rowErr error
 		cr                  cellRef
 		cell                = ref
-		tokens              = strings.Split(ref, "!")
 	)
+
+	submatch := tableRefRe.FindStringSubmatch(ref)
+	if len(submatch) == tableRefPartsCnt {
+		tableName := submatch[0]
+		rawRef, ok := tableRefs.Load(tableName)
+		if !ok {
+			return cr, false, false, fmt.Errorf("referencing table `%s`: %w", tableName, errNotExistingTable)
+		}
+
+		ref, ok = rawRef.(string)
+		if !ok {
+			panic(fmt.Sprintf("unexpected reference type %T", ref))
+		}
+	}
+
+	tokens := strings.Split(ref, "!")
 	if len(tokens) == 2 { // have a worksheet
 		cr.Sheet, cell = tokens[0], tokens[1]
 	}
@@ -1546,7 +1566,7 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formul
 	if len(ranges) > 1 {
 		var cr cellRange
 		for i, ref := range ranges {
-			cellRef, col, row, err := parseRef(ref)
+			cellRef, col, row, err := parseRef(ref, f.tableRefs)
 			if err != nil {
 				return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), errors.New("invalid reference")
 			}
@@ -1570,7 +1590,7 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formul
 		cellRanges.PushBack(cr)
 		return f.rangeResolver(ctx, cellRefs, cellRanges)
 	}
-	cellRef, _, _, err := parseRef(reference)
+	cellRef, _, _, err := parseRef(reference, f.tableRefs)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), errors.New("invalid reference")
 	}
