@@ -6457,19 +6457,19 @@ func TestTableReference(t *testing.T) {
 
 	res, err := f.CalcCellValue("Sheet1", "A1")
 	assert.NoError(t, err, "calculating cell A1")
-	assert.Equal(t, res, "Foo", "A1 calc is wrong")
+	assert.Equal(t, "Foo", res, "A1 calc is wrong")
 
 	res, err = f.CalcCellValue("Sheet1", "B1")
 	assert.NoError(t, err, "calculating cell B1")
-	assert.Equal(t, res, "12.5", "B1 calc is wrong")
+	assert.Equal(t, "12.5", res, "B1 calc is wrong")
 
 	res, err = f.CalcCellValue("Sheet1", "C1")
 	assert.NoError(t, err, "calculating cell C1")
-	assert.Equal(t, res, "25", "C1 calc is wrong")
+	assert.Equal(t, "25", res, "C1 calc is wrong")
 
 	res, err = f.CalcCellValue("Sheet1", "D1")
 	assert.NoError(t, err, "calculating cell D1")
-	assert.Equal(t, res, "Hedgehog", "D1 calc is wrong")
+	assert.Equal(t, "Hedgehog", res, "D1 calc is wrong")
 }
 
 func TestTableReferenceToNotExistingTable(t *testing.T) {
