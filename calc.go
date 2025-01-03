@@ -1530,6 +1530,7 @@ func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
 		return "", fmt.Errorf("column `%s` not in table: %w", colName, errNotExistingColumn)
 	}
 
+	// Tables having just a single cell are invalid. Hence it is safe to assume it should always be a range reference.
 	coords, err := rangeRefToCoordinates(tblRef.ref)
 	if err != nil {
 		return "", err
@@ -1540,13 +1541,13 @@ func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
 
 func tryParseAsTableRef(ref string, tableRefs *sync.Map) (string, error) {
 	submatch := tableRefRe.FindStringSubmatch(ref)
-	tableName := submatch[1]
-	colName := submatch[2]
-
 	// Fallback to regular ref.
 	if len(submatch) != tableRefPartsCnt {
 		return ref, nil
 	}
+
+	tableName := submatch[1]
+	colName := submatch[2]
 
 	rawTblRef, ok := tableRefs.Load(tableName)
 	if !ok {
@@ -1556,13 +1557,6 @@ func tryParseAsTableRef(ref string, tableRefs *sync.Map) (string, error) {
 	tblRef, ok := rawTblRef.(tableRef)
 	if !ok {
 		panic(fmt.Sprintf("unexpected reference type %T", ref))
-	}
-
-	if !strings.Contains(tblRef.ref, ":") {
-		if len(tblRef.columns) != 1 && tblRef.columns[0] != colName {
-			return "", fmt.Errorf("column `%s` not in table `%s`: %w", colName, tableName, errNotExistingColumn)
-		}
-		return tblRef.ref, nil
 	}
 
 	return pickColumnInTableRef(tblRef, colName)

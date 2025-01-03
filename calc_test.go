@@ -6448,16 +6448,59 @@ func TestCalcCellResolver(t *testing.T) {
 }
 
 func TestTableReference(t *testing.T) {
-	f := NewFile()
+	f := sheetWithTables(t)
 
-	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A2:C5", Name: "FieryTable"}), "adding table")
-	assert.NoError(t, f.SetCellValue("Sheet1", "A3", "Foo"), "set A3")
-
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[Column1], 2)"), "set cell formula for A1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[Column1], 2)"), "cell formula for A1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=INDEX(FieryTable[Column2], 2)"), "cell formula for A2")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=B1*2"), "cell formula for A3")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=INDEX(FrostyTable[Column1], 2)"), "cell formula for A1")
 
 	res, err := f.CalcCellValue("Sheet1", "A1")
-	assert.NoError(t, err, "calculating cell value")
-	assert.Equal(t, res, "Foo", "asserting cell value calculated by referencing a table")
+	assert.NoError(t, err, "calculating cell A1")
+	assert.Equal(t, res, "Foo", "A1 calc is wrong")
+
+	res, err = f.CalcCellValue("Sheet1", "B1")
+	assert.NoError(t, err, "calculating cell B1")
+	assert.Equal(t, res, "12.5", "B1 calc is wrong")
+
+	res, err = f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err, "calculating cell C1")
+	assert.Equal(t, res, "25", "C1 calc is wrong")
+
+	res, err = f.CalcCellValue("Sheet1", "D1")
+	assert.NoError(t, err, "calculating cell D1")
+	assert.Equal(t, res, "Hedgehog", "D1 calc is wrong")
+}
+
+func TestTableReferenceToNotExistingTable(t *testing.T) {
+	f := sheetWithTables(t)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(NotExisting[Column1], 2)"), "cell formula for A1")
+
+	_, err := f.CalcCellValue("Sheet1", "A1")
+	assert.Error(t, err, "A1 calc is wrong")
+}
+
+func TestTableReferenceToNotExistingColumn(t *testing.T) {
+	f := sheetWithTables(t)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[NotExisting], 2)"), "cell formula for A1")
+
+	_, err := f.CalcCellValue("Sheet1", "A1")
+	assert.Error(t, err, "A1 calc is wrong")
+}
+
+func sheetWithTables(t *testing.T) *File {
+	f := NewFile()
+
+	// Multi column with default column names
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A2:C5", Name: "FieryTable"}), "adding FieryTable")
+	assert.NoError(t, f.SetCellValue("Sheet1", "A3", "Foo"), "set A3")
+	assert.NoError(t, f.SetCellValue("Sheet1", "B3", "12.5"), "set A3")
+
+	// Single column with renamed column
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A8:A9", Name: "FrostyTable"}), "adding FrostyTable")
+	assert.NoError(t, f.SetCellValue("Sheet1", "A9", "Hedgehog"), "set A3")
+
+	return f
 }
 
 func TestEvalInfixExp(t *testing.T) {
