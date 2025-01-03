@@ -21,7 +21,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 // stylesReader provides a function to get the pointer to the structure after
@@ -2792,7 +2791,7 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	if err != nil {
 		return err
 	}
-	SQRef, mastCell, err := prepareConditionalFormatRange(rangeRef, f.tableRefs)
+	SQRef, mastCell, err := prepareConditionalFormatRange(rangeRef)
 	if err != nil {
 		return err
 	}
@@ -2853,7 +2852,7 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 
 // prepareConditionalFormatRange returns checked cell range and master cell
 // reference by giving conditional formatting range reference.
-func prepareConditionalFormatRange(rangeRef string, tableRefs *sync.Map) (string, string, error) {
+func prepareConditionalFormatRange(rangeRef string) (string, string, error) {
 	var SQRef, mastCell string
 	if rangeRef == "" {
 		return SQRef, mastCell, ErrParameterRequired
@@ -2865,7 +2864,7 @@ func prepareConditionalFormatRange(rangeRef string, tableRefs *sync.Map) (string
 			if j > 1 {
 				return SQRef, mastCell, ErrParameterInvalid
 			}
-			cellRef, col, row, err := parseRef(ref, tableRefs)
+			cellRef, col, row, err := parseRef(ref)
 			if err != nil {
 				return SQRef, mastCell, err
 			}

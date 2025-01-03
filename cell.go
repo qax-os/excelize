@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode/utf8"
 )
@@ -811,7 +810,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 			}
 			c.F.T = *opt.Type
 			if c.F.T == STCellFormulaTypeArray && opt.Ref != nil {
-				if err = ws.setArrayFormula(sheet, &xlsxF{Ref: *opt.Ref, Content: formula}, f.GetDefinedName(), f.tableRefs); err != nil {
+				if err = ws.setArrayFormula(sheet, &xlsxF{Ref: *opt.Ref, Content: formula}, f.GetDefinedName()); err != nil {
 					return err
 				}
 			}
@@ -832,7 +831,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 // setArrayFormula transform the array formula in an array formula range to the
 // normal formula and set cells in this range to the formula as the normal
 // formula.
-func (ws *xlsxWorksheet) setArrayFormula(sheet string, formula *xlsxF, definedNames []DefinedName, tableRef *sync.Map) error {
+func (ws *xlsxWorksheet) setArrayFormula(sheet string, formula *xlsxF, definedNames []DefinedName) error {
 	if len(strings.Split(formula.Ref, ":")) < 2 {
 		return nil
 	}
@@ -841,7 +840,7 @@ func (ws *xlsxWorksheet) setArrayFormula(sheet string, formula *xlsxF, definedNa
 		return err
 	}
 	_ = sortCoordinates(coordinates)
-	tokens, arrayFormulaOperandTokens, err := getArrayFormulaTokens(sheet, formula.Content, definedNames, tableRef)
+	tokens, arrayFormulaOperandTokens, err := getArrayFormulaTokens(sheet, formula.Content, definedNames)
 	if err != nil {
 		return err
 	}
@@ -880,7 +879,7 @@ func (f *File) setArrayFormulaCells() error {
 		for _, row := range ws.SheetData.Row {
 			for _, cell := range row.C {
 				if cell.F != nil && cell.F.T == STCellFormulaTypeArray {
-					if err = ws.setArrayFormula(sheetN, cell.F, definedNames, f.tableRefs); err != nil {
+					if err = ws.setArrayFormula(sheetN, cell.F, definedNames); err != nil {
 						return err
 					}
 				}

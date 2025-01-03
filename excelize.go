@@ -61,6 +61,11 @@ type File struct {
 	WorkBook         *xlsxWorkbook
 }
 
+type tableRef struct {
+	ref     string
+	columns []string
+}
+
 // charsetTranscoderFn set user-defined codepage transcoder function for open
 // the spreadsheet from non-UTF-8 encoding.
 type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
@@ -214,7 +219,7 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 				return nil, fmt.Errorf("parsing table %s: %w", k, err)
 			}
 
-			f.tableRefs.Store(t.Name, t.Ref)
+			f.tableRefs.Store(t.Name, tableRefFromXLSXTable(t))
 		}
 	}
 	if f.CalcChain, err = f.calcChainReader(); err != nil {
@@ -228,6 +233,17 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	}
 	f.Theme, err = f.themeReader()
 	return f, err
+}
+
+func tableRefFromXLSXTable(t xlsxTable) tableRef {
+	tblRef := tableRef{
+		ref:     t.Ref,
+		columns: make([]string, 0, t.TableColumns.Count),
+	}
+	for _, col := range t.TableColumns.TableColumn {
+		tblRef.columns = append(tblRef.columns, col.Name)
+	}
+	return tblRef
 }
 
 // getOptions provides a function to parse the optional settings for open

@@ -6447,6 +6447,19 @@ func TestCalcCellResolver(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestTableReference(t *testing.T) {
+	f := NewFile()
+
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A2:C5", Name: "FieryTable"}), "adding table")
+	assert.NoError(t, f.SetCellValue("Sheet1", "A3", "Foo"), "set A3")
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[Column1], 2)"), "set cell formula for A1")
+
+	res, err := f.CalcCellValue("Sheet1", "A1")
+	assert.NoError(t, err, "calculating cell value")
+	assert.Equal(t, res, "Foo", "asserting cell value calculated by referencing a table")
+}
+
 func TestEvalInfixExp(t *testing.T) {
 	f := NewFile()
 	arg, err := f.evalInfixExp(nil, "Sheet1", "A1", []efp.Token{
