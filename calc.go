@@ -105,7 +105,6 @@ const (
 var (
 	errNotExistingTable  = errors.New("not existing table")
 	errNotExistingColumn = errors.New("not existing column")
-	errInvalidTableRef   = errors.New("invalid table ref")
 	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
@@ -1537,7 +1536,7 @@ func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
 	}
 
 	col := coords[0] + offset
-	return coordinatesToRangeRef([]int{col, coords[1], col, coords[3]})
+	return coordinatesToRangeRef([]int{col, coords[1] + 1, col, coords[3]})
 }
 
 func tryParseAsTableRef(ref string, tableRefs *sync.Map) (string, error) {

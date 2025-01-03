@@ -6450,10 +6450,10 @@ func TestCalcCellResolver(t *testing.T) {
 func TestTableReference(t *testing.T) {
 	f := sheetWithTables(t)
 
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[Column1], 2)"), "cell formula for A1")
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=INDEX(FieryTable[Column2], 2)"), "cell formula for A2")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[Column1], 1)"), "cell formula for A1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=INDEX(FieryTable[Column2], 1)"), "cell formula for A2")
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=B1*2"), "cell formula for A3")
-	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=INDEX(FrostyTable[Column1], 2)"), "cell formula for A1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=INDEX(FrostyTable[Column1], 1)"), "cell formula for A1")
 
 	res, err := f.CalcCellValue("Sheet1", "A1")
 	assert.NoError(t, err, "calculating cell A1")
@@ -6474,7 +6474,7 @@ func TestTableReference(t *testing.T) {
 
 func TestTableReferenceToNotExistingTable(t *testing.T) {
 	f := sheetWithTables(t)
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(NotExisting[Column1], 2)"), "cell formula for A1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(NotExisting[Column1], 1)"), "cell formula for A1")
 
 	_, err := f.CalcCellValue("Sheet1", "A1")
 	assert.Error(t, err, "A1 calc is wrong")
@@ -6482,7 +6482,7 @@ func TestTableReferenceToNotExistingTable(t *testing.T) {
 
 func TestTableReferenceToNotExistingColumn(t *testing.T) {
 	f := sheetWithTables(t)
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[NotExisting], 2)"), "cell formula for A1")
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[NotExisting], 1)"), "cell formula for A1")
 
 	_, err := f.CalcCellValue("Sheet1", "A1")
 	assert.Error(t, err, "A1 calc is wrong")
