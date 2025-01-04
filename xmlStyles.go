@@ -162,11 +162,11 @@ type xlsxBorder struct {
 	DiagonalDown bool      `xml:"diagonalDown,attr,omitempty"`
 	DiagonalUp   bool      `xml:"diagonalUp,attr,omitempty"`
 	Outline      bool      `xml:"outline,attr,omitempty"`
-	Left         xlsxLine  `xml:"left"`
-	Right        xlsxLine  `xml:"right"`
-	Top          xlsxLine  `xml:"top"`
-	Bottom       xlsxLine  `xml:"bottom"`
-	Diagonal     xlsxLine  `xml:"diagonal"`
+	Left         *xlsxLine `xml:"left"`
+	Right        *xlsxLine `xml:"right"`
+	Top          *xlsxLine `xml:"top"`
+	Bottom       *xlsxLine `xml:"bottom"`
+	Diagonal     *xlsxLine `xml:"diagonal"`
 	Vertical     *xlsxLine `xml:"vertical"`
 	Horizontal   *xlsxLine `xml:"horizontal"`
 }

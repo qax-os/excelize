@@ -1441,8 +1441,8 @@ func (f *File) getThemeColor(clr *xlsxColor) string {
 func (f *File) extractBorders(bdr *xlsxBorder, s *xlsxStyleSheet, style *Style) {
 	if bdr != nil {
 		var borders []Border
-		extractBorder := func(lineType string, line xlsxLine) {
-			if line.Style != "" {
+		extractBorder := func(lineType string, line *xlsxLine) {
+			if line != nil && line.Style != "" {
 				borders = append(borders, Border{
 					Type:  lineType,
 					Color: f.getThemeColor(line.Color),
@@ -1450,7 +1450,7 @@ func (f *File) extractBorders(bdr *xlsxBorder, s *xlsxStyleSheet, style *Style) 
 				})
 			}
 		}
-		for i, line := range []xlsxLine{
+		for i, line := range []*xlsxLine{
 			bdr.Left, bdr.Right, bdr.Top, bdr.Bottom, bdr.Diagonal, bdr.Diagonal,
 		} {
 			if i < 4 {
@@ -2128,29 +2128,20 @@ func newBorders(style *Style) *xlsxBorder {
 	var border xlsxBorder
 	for _, v := range style.Border {
 		if 0 <= v.Style && v.Style < 14 {
-			var color xlsxColor
-			color.RGB = getPaletteColor(v.Color)
+			line := &xlsxLine{Style: styleBorders[v.Style], Color: &xlsxColor{RGB: getPaletteColor(v.Color)}}
 			switch v.Type {
 			case "left":
-				border.Left.Style = styleBorders[v.Style]
-				border.Left.Color = &color
+				border.Left = line
 			case "right":
-				border.Right.Style = styleBorders[v.Style]
-				border.Right.Color = &color
+				border.Right = line
 			case "top":
-				border.Top.Style = styleBorders[v.Style]
-				border.Top.Color = &color
+				border.Top = line
 			case "bottom":
-				border.Bottom.Style = styleBorders[v.Style]
-				border.Bottom.Color = &color
+				border.Bottom = line
 			case "diagonalUp":
-				border.Diagonal.Style = styleBorders[v.Style]
-				border.Diagonal.Color = &color
-				border.DiagonalUp = true
+				border.Diagonal, border.DiagonalUp = line, true
 			case "diagonalDown":
-				border.Diagonal.Style = styleBorders[v.Style]
-				border.Diagonal.Color = &color
-				border.DiagonalDown = true
+				border.Diagonal, border.DiagonalDown = line, true
 			}
 		}
 	}
