@@ -4661,7 +4661,7 @@ var (
 	}
 )
 
-// getSupportedLanguageInfo returns language infomation by giving language code.
+// getSupportedLanguageInfo returns language information by giving language code.
 // This function does not support different calendar type of the language
 // currently. For example: the hexadecimal language code 3010429 (fa-IR,301)
 // will be convert to 0429 (fa-IR).
