@@ -899,12 +899,25 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		opts.ShowLastColumn = si.ShowLastColumn
 		opts.PivotTableStyleName = si.Name
 	}
-	order, err := f.getTableFieldsOrder(&opts)
-	if err != nil {
+	if err = f.getPivotTableDataRange(&opts); err != nil {
 		return opts, err
 	}
-	f.extractPivotTableFields(order, pt, &opts)
+	f.extractPivotTableFields(pc.getPivotCacheFieldsName(), pt, &opts)
 	return opts, err
+}
+
+// getPivotCacheFieldsName returns pivot table fields name list by order from
+// pivot cache fields.
+func (pc *xlsxPivotCacheDefinition) getPivotCacheFieldsName() []string {
+	var order []string
+	if pc.CacheFields != nil {
+		for _, cf := range pc.CacheFields.CacheField {
+			if cf != nil {
+				order = append(order, cf.Name)
+			}
+		}
+	}
+	return order
 }
 
 // pivotTableReader provides a function to get the pointer to the structure
