@@ -1544,7 +1544,7 @@ func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
 	return fmt.Sprintf("%s!%s", tblRef.sheet, rangeRef), nil
 }
 
-func tryParseAsTableRef(ref string, tableRefs *sync.Map) (string, error) {
+func (f *File) tryParseAsTableRef(ref string) (string, error) {
 	submatch := tableRefRe.FindStringSubmatch(ref)
 	// Fallback to regular ref.
 	if len(submatch) != tableRefPartsCnt {
@@ -1554,7 +1554,7 @@ func tryParseAsTableRef(ref string, tableRefs *sync.Map) (string, error) {
 	tableName := submatch[1]
 	colName := submatch[2]
 
-	rawTblRef, ok := tableRefs.Load(tableName)
+	rawTblRef, ok := f.tableRefs.Load(tableName)
 	if !ok {
 		return "", fmt.Errorf("referencing table `%s`: %w", tableName, errNotExistingTable)
 	}
@@ -1600,7 +1600,7 @@ func (cr *cellRange) prepareCellRange(col, row bool, cellRef cellRef) error {
 // characters and default sheet name.
 func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formulaArg, error) {
 	reference = strings.ReplaceAll(reference, "$", "")
-	reference, err := tryParseAsTableRef(reference, f.tableRefs)
+	reference, err := f.tryParseAsTableRef(reference)
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), err
 	}

@@ -43,7 +43,7 @@ type File struct {
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
-	tableRefs        *sync.Map
+	tableRefs        sync.Map
 	CalcChain        *xlsxCalcChain
 	CharsetReader    charsetTranscoderFn
 	Comments         map[string]*xlsxComments
@@ -158,7 +158,7 @@ func newFile() *File {
 		checked:          sync.Map{},
 		sheetMap:         make(map[string]string),
 		tempFiles:        sync.Map{},
-		tableRefs:        &sync.Map{},
+		tableRefs:        sync.Map{},
 		Comments:         make(map[string]*xlsxComments),
 		Drawings:         sync.Map{},
 		sharedStringsMap: make(map[string]int),
