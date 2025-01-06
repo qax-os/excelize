@@ -397,7 +397,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 	}
 	table, err := xml.Marshal(t)
 	f.saveFileList(tableXML, table)
-	f.tableRefs.Store(t.Name, tableRefFromXLSXTable(t))
+	f.tableRefs.Store(t.Name, tableRefFromXLSXTable(&t, sheet))
 	return err
 }
 

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -26,6 +27,8 @@ import (
 
 	"golang.org/x/net/html/charset"
 )
+
+const targetModeExternal = "external"
 
 // File define a populated spreadsheet file struct.
 type File struct {
@@ -63,7 +66,15 @@ type File struct {
 
 type tableRef struct {
 	ref     string
+	sheet   string
 	columns []string
+}
+
+type relationMetadata struct {
+	wb           *xlsxWorkbook
+	wbRels       *xlsxRelationships
+	relsPerSheet map[string]*xlsxRelationships
+	tables       map[string]*xlsxTable
 }
 
 // charsetTranscoderFn set user-defined codepage transcoder function for open
@@ -211,16 +222,10 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	f.SheetCount = sheetCount
 	for k, v := range file {
 		f.Pkg.Store(k, v)
+	}
 
-		if strings.Contains(k, "xl/tables/table") {
-			var t xlsxTable
-			dec := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v)))
-			if err := dec.Decode(&t); err != nil && err != io.EOF {
-				return nil, fmt.Errorf("parsing table %s: %w", k, err)
-			}
-
-			f.tableRefs.Store(t.Name, tableRefFromXLSXTable(t))
-		}
+	if err := f.storeRelations(file); err != nil {
+		return f, err
 	}
 	if f.CalcChain, err = f.calcChainReader(); err != nil {
 		return f, err
@@ -235,9 +240,128 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	return f, err
 }
 
-func tableRefFromXLSXTable(t xlsxTable) tableRef {
+func (f *File) storeRelations(files map[string][]byte) error {
+	relMetadata, err := f.parseRelationMetadata(files)
+	if err != nil {
+		return err
+	}
+	if relMetadata.wb == nil || relMetadata.wbRels == nil {
+		return nil
+	}
+
+	sheetRelIDs := make(map[string]string)
+	for _, sheet := range relMetadata.wb.Sheets.Sheet {
+		sheetRelIDs[sheet.ID] = sheet.Name
+	}
+
+	sheetBaseToSheetNames := make(map[string]string)
+	for _, rel := range relMetadata.wbRels.Relationships {
+		sheetName, ok := sheetRelIDs[rel.ID]
+
+		if !ok || strings.ToLower(rel.TargetMode) == targetModeExternal || rel.Type != SourceRelationshipWorkSheet {
+			continue
+		}
+
+		sheetBaseToSheetNames[fmt.Sprintf("%s.rels", path.Base(rel.Target))] = sheetName
+	}
+
+	tableBaseToSheetNames := make(map[string]string)
+	for key, sheetRels := range relMetadata.relsPerSheet {
+		sheetName, ok := sheetBaseToSheetNames[key]
+		if !ok {
+			continue
+		}
+
+		for _, rel := range sheetRels.Relationships {
+			if strings.ToLower(rel.TargetMode) == targetModeExternal || rel.Type != SourceRelationshipTable {
+				continue
+			}
+
+			tableBaseToSheetNames[path.Base(rel.Target)] = sheetName
+		}
+	}
+
+	for key, t := range relMetadata.tables {
+		if sheetName, ok := tableBaseToSheetNames[key]; ok {
+			f.tableRefs.Store(t.Name, tableRefFromXLSXTable(t, sheetName))
+		}
+	}
+
+	return nil
+}
+
+func (f *File) parseRelationMetadata(files map[string][]byte) (*relationMetadata, error) {
+	var err error
+	relMetadata := &relationMetadata{
+		relsPerSheet: map[string]*xlsxRelationships{},
+		tables:       map[string]*xlsxTable{},
+	}
+
+	for k, v := range files {
+		switch {
+		case strings.Contains(k, "xl/workbook.xml") && v != nil:
+			relMetadata.wb, err = f.parseWorkbook(v)
+			if err != nil {
+				return nil, err
+			}
+		case strings.Contains(k, "xl/_rels/workbook.xml.rels") && v != nil:
+			relMetadata.wbRels, err = f.parseRelationships(v)
+			if err != nil {
+				return nil, fmt.Errorf("workbook rels: %w", err)
+			}
+		case strings.Contains(k, "xl/worksheets/_rels") && v != nil:
+			sheetRels, err := f.parseRelationships(v)
+			if err != nil {
+				return nil, fmt.Errorf("workbook sheet rel %s: %w", k, err)
+			}
+			relMetadata.relsPerSheet[path.Base(k)] = sheetRels
+		case strings.Contains(k, "xl/tables") && v != nil:
+			table, err := f.parseTable(v)
+			if err != nil {
+				return nil, fmt.Errorf("table %s: %w", k, err)
+			}
+			relMetadata.tables[path.Base(k)] = table
+		}
+	}
+
+	return relMetadata, nil
+}
+
+func (f *File) parseWorkbook(v []byte) (*xlsxWorkbook, error) {
+	var wb *xlsxWorkbook
+
+	dec := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v)))
+	if err := dec.Decode(&wb); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("decoding workbook: %w", err)
+	}
+
+	return wb, nil
+}
+
+func (f *File) parseRelationships(v []byte) (*xlsxRelationships, error) {
+	var rels *xlsxRelationships
+
+	dec := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v)))
+	if err := dec.Decode(&rels); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("decoding relationships: %w", err)
+	}
+
+	return rels, nil
+}
+
+func (f *File) parseTable(v []byte) (*xlsxTable, error) {
+	var table *xlsxTable
+	dec := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(v)))
+	if err := dec.Decode(&table); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("parsing table: %w", err)
+	}
+	return table, nil
+}
+
+func tableRefFromXLSXTable(t *xlsxTable, sheet string) tableRef {
 	tblRef := tableRef{
 		ref:     t.Ref,
+		sheet:   sheet,
 		columns: make([]string, 0, t.TableColumns.Count),
 	}
 	for _, col := range t.TableColumns.TableColumn {

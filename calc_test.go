@@ -6472,6 +6472,29 @@ func TestTableReference(t *testing.T) {
 	assert.Equal(t, "Hedgehog", res, "D1 calc is wrong")
 }
 
+func TestTableRefenceFromOtherSheet(t *testing.T) {
+	f := sheetWithTables(t)
+
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err, "creating Sheet2")
+
+	assert.NoError(t, f.SetCellFormula("Sheet2", "A1", "=INDEX(FieryTable[Column1], 1)"), "cell formula for A1")
+
+	res, err := f.CalcCellValue("Sheet2", "A1")
+	assert.NoError(t, err, "calculating cell A1")
+	assert.Equal(t, "Foo", res, "A1 calc is wrong")
+}
+
+func TestTableReferenceWithDeletedTable(t *testing.T) {
+	f := sheetWithTables(t)
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(FieryTable[Column1], 1)"), "cell formula for A1")
+	assert.NoError(t, f.DeleteTable("FieryTable"), "deleting table")
+
+	_, err := f.CalcCellValue("Sheet1", "A1")
+	assert.Error(t, err, "A1 calc is wrong")
+}
+
 func TestTableReferenceToNotExistingTable(t *testing.T) {
 	f := sheetWithTables(t)
 	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=INDEX(NotExisting[Column1], 1)"), "cell formula for A1")

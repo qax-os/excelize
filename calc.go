@@ -1536,7 +1536,12 @@ func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
 	}
 
 	col := coords[0] + offset
-	return coordinatesToRangeRef([]int{col, coords[1] + 1, col, coords[3]})
+	rangeRef, err := coordinatesToRangeRef([]int{col, coords[1] + 1, col, coords[3]})
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s!%s", tblRef.sheet, rangeRef), nil
 }
 
 func tryParseAsTableRef(ref string, tableRefs *sync.Map) (string, error) {
