@@ -87,7 +87,7 @@ func (ws *xlsxWorksheet) prepareSheetPr() {
 	}
 }
 
-// setSheetOutlinePr set worksheet outline properties by given options.
+// setSheetOutlineProps set worksheet outline properties by given options.
 func (ws *xlsxWorksheet) setSheetOutlineProps(opts *SheetPropsOptions) {
 	prepareOutlinePr := func(ws *xlsxWorksheet) {
 		ws.prepareSheetPr()
