@@ -207,15 +207,15 @@ func (f *File) setCellIntFunc(sheet, cell string, value interface{}) error {
 	var err error
 	switch v := value.(type) {
 	case int:
-		err = f.SetCellInt(sheet, cell, v)
+		err = f.SetCellInt(sheet, cell, int64(v))
 	case int8:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellInt(sheet, cell, int64(v))
 	case int16:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellInt(sheet, cell, int64(v))
 	case int32:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellInt(sheet, cell, int64(v))
 	case int64:
-		err = f.SetCellInt(sheet, cell, int(v))
+		err = f.SetCellInt(sheet, cell, v)
 	case uint:
 		err = f.SetCellUint(sheet, cell, uint64(v))
 	case uint8:
@@ -288,7 +288,7 @@ func setCellDuration(value time.Duration) (t string, v string) {
 
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell reference and cell value.
-func (f *File) SetCellInt(sheet, cell string, value int) error {
+func (f *File) SetCellInt(sheet, cell string, value int64) error {
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -309,8 +309,8 @@ func (f *File) SetCellInt(sheet, cell string, value int) error {
 }
 
 // setCellInt prepares cell type and string type cell value by a given integer.
-func setCellInt(value int) (t string, v string) {
-	v = strconv.Itoa(value)
+func setCellInt(value int64) (t string, v string) {
+	v = strconv.FormatInt(value, 10)
 	return
 }
 

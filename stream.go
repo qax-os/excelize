@@ -557,15 +557,15 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 func setCellIntFunc(c *xlsxC, val interface{}) {
 	switch val := val.(type) {
 	case int:
-		c.T, c.V = setCellInt(val)
+		c.T, c.V = setCellInt(int64(val))
 	case int8:
-		c.T, c.V = setCellInt(int(val))
+		c.T, c.V = setCellInt(int64(val))
 	case int16:
-		c.T, c.V = setCellInt(int(val))
+		c.T, c.V = setCellInt(int64(val))
 	case int32:
-		c.T, c.V = setCellInt(int(val))
+		c.T, c.V = setCellInt(int64(val))
 	case int64:
-		c.T, c.V = setCellInt(int(val))
+		c.T, c.V = setCellInt(val)
 	case uint:
 		c.T, c.V = setCellUint(uint64(val))
 	case uint8:

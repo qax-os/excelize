@@ -628,7 +628,7 @@ func TestWriteArrayFormula(t *testing.T) {
 		valCell := cell(1, i+firstResLine)
 		assocCell := cell(2, i+firstResLine)
 
-		assert.NoError(t, f.SetCellInt("Sheet1", valCell, values[i]))
+		assert.NoError(t, f.SetCellInt("Sheet1", valCell, int64(values[i])))
 		assert.NoError(t, f.SetCellStr("Sheet1", assocCell, sample[assoc[i]]))
 	}
 
@@ -642,8 +642,8 @@ func TestWriteArrayFormula(t *testing.T) {
 		stdevCell := cell(i+2, 4)
 		calcStdevCell := cell(i+2, 5)
 
-		assert.NoError(t, f.SetCellInt("Sheet1", calcAvgCell, average(i)))
-		assert.NoError(t, f.SetCellInt("Sheet1", calcStdevCell, stdev(i)))
+		assert.NoError(t, f.SetCellInt("Sheet1", calcAvgCell, int64(average(i))))
+		assert.NoError(t, f.SetCellInt("Sheet1", calcStdevCell, int64(stdev(i))))
 
 		// Average can be done with AVERAGEIF
 		assert.NoError(t, f.SetCellFormula("Sheet1", avgCell, fmt.Sprintf("ROUND(AVERAGEIF(%s,%s,%s),0)", assocRange, nameCell, valRange)))
