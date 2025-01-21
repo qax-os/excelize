@@ -1170,6 +1170,25 @@ func TestAdjustDataValidations(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, formula, dvs[0].Formula1)
 	})
+
+	t.Run("no_data_validations_on_first_sheet", func(t *testing.T) {
+		f := NewFile()
+
+		// Add Sheet2 and set a data validation
+		_, err = f.NewSheet("Sheet2")
+		assert.NoError(t, err)
+		dv := NewDataValidation(true)
+		dv.Sqref = "C5:D6"
+		assert.NoError(t, f.AddDataValidation("Sheet2", dv))
+
+		// Adjust Sheet2 by removing a column
+		assert.NoError(t, f.RemoveCol("Sheet2", "A"))
+
+		// Verify that data validations on Sheet2 are adjusted correctly
+		dvs, err = f.GetDataValidations("Sheet2")
+		assert.NoError(t, err)
+		assert.Equal(t, "B5:C6", dvs[0].Sqref) // Adjusted range
+	})
 }
 
 func TestAdjustDrawings(t *testing.T) {
