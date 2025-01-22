@@ -969,7 +969,7 @@ func (f *File) adjustDataValidations(ws *xlsxWorksheet, sheet string, dir adjust
 			return err
 		}
 		if worksheet.DataValidations == nil {
-			return nil
+			continue
 		}
 		for i := 0; i < len(worksheet.DataValidations.DataValidation); i++ {
 			dv := worksheet.DataValidations.DataValidation[i]
