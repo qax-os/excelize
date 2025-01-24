@@ -29,7 +29,6 @@ type StreamWriter struct {
 	Sheet           string
 	SheetID         int
 	sheetWritten    bool
-	cols            strings.Builder
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
 	rows            int
@@ -413,15 +412,17 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: ref, S: options.StyleID}
+		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col, row, options.StyleID)}
+		var s int
 		if v, ok := val.(Cell); ok {
-			c.S = v.StyleID
-			val = v.Value
+			s, val = v.StyleID, v.Value
 			setCellFormula(&c, v.Formula)
 		} else if v, ok := val.(*Cell); ok && v != nil {
-			c.S = v.StyleID
-			val = v.Value
+			s, val = v.StyleID, v.Value
 			setCellFormula(&c, v.Formula)
+		}
+		if s > 0 {
+			c.S = s
 		}
 		if err = sw.setCellValFunc(&c, val); err != nil {
 			_, _ = sw.rawData.WriteString(`</row>`)
@@ -431,6 +432,33 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
+}
+
+// SetColStyle provides a function to set the style of a single column or
+// multiple columns for the StreamWriter. Note that you must call
+// the 'SetColStyle' function before the 'SetRow' function. For example set
+// style of column H on Sheet1:
+//
+//	err := sw.SetColStyle(8, 8, style)
+func (sw *StreamWriter) SetColStyle(minVal, maxVal, styleID int) error {
+	if sw.sheetWritten {
+		return ErrStreamSetColStyle
+	}
+	if minVal < MinColumns || minVal > MaxColumns || maxVal < MinColumns || maxVal > MaxColumns {
+		return ErrColumnNumber
+	}
+	if maxVal < minVal {
+		minVal, maxVal = maxVal, minVal
+	}
+	s, err := sw.file.stylesReader()
+	if err != nil {
+		return err
+	}
+	if styleID < 0 || s.CellXfs == nil || len(s.CellXfs.Xf) <= styleID {
+		return newInvalidStyleID(styleID)
+	}
+	sw.worksheet.setColStyle(minVal, maxVal, styleID)
+	return nil
 }
 
 // SetColWidth provides a function to set the width of a single column or
@@ -452,14 +480,7 @@ func (sw *StreamWriter) SetColWidth(minVal, maxVal int, width float64) error {
 	if minVal > maxVal {
 		minVal, maxVal = maxVal, minVal
 	}
-
-	sw.cols.WriteString(`<col min="`)
-	sw.cols.WriteString(strconv.Itoa(minVal))
-	sw.cols.WriteString(`" max="`)
-	sw.cols.WriteString(strconv.Itoa(maxVal))
-	sw.cols.WriteString(`" width="`)
-	sw.cols.WriteString(strconv.FormatFloat(width, 'f', -1, 64))
-	sw.cols.WriteString(`" customWidth="1"/>`)
+	sw.worksheet.setColWidth(minVal, maxVal, width)
 	return nil
 }
 
@@ -642,10 +663,27 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
 		bulkAppendFields(&sw.rawData, sw.worksheet, 4, 5)
-		if sw.cols.Len() > 0 {
-			_, _ = sw.rawData.WriteString("<cols>")
-			_, _ = sw.rawData.WriteString(sw.cols.String())
-			_, _ = sw.rawData.WriteString("</cols>")
+		if sw.worksheet.Cols != nil {
+			for _, col := range sw.worksheet.Cols.Col {
+				_, _ = sw.rawData.WriteString("<cols>")
+				sw.rawData.WriteString(`<col min="`)
+				sw.rawData.WriteString(strconv.Itoa(col.Min))
+				sw.rawData.WriteString(`" max="`)
+				sw.rawData.WriteString(strconv.Itoa(col.Max))
+				sw.rawData.WriteString(`"`)
+				if col.Width != nil {
+					sw.rawData.WriteString(` width="`)
+					sw.rawData.WriteString(strconv.FormatFloat(*col.Width, 'f', -1, 64))
+					sw.rawData.WriteString(`" customWidth="1"`)
+				}
+				if col.Style != 0 {
+					sw.rawData.WriteString(` style="`)
+					sw.rawData.WriteString(strconv.Itoa(col.Style))
+					sw.rawData.WriteString(`"`)
+				}
+				sw.rawData.WriteString(`/>`)
+				_, _ = sw.rawData.WriteString("</cols>")
+			}
 		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true
