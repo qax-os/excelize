@@ -135,15 +135,12 @@ var (
 	// ErrSparklineType defined the error message on receive the invalid
 	// sparkline Type parameters.
 	ErrSparklineType = errors.New("parameter 'Type' must be 'line', 'column' or 'win_loss'")
+	// ErrStreamSetColStyle defined the error message on set column style in
+	// stream writing mode.
+	ErrStreamSetColStyle = errors.New("must call the SetColStyle function before the SetRow function")
 	// ErrStreamSetColWidth defined the error message on set column width in
 	// stream writing mode.
 	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
-	// ErrStreamSetCol defined the error message on set row height in
-	// stream writing mode.
-	ErrStreamSetCol = errors.New("must call the SetCol function before the SetRow function")
-	// ErrStreamSetColMultipleTime defined the error message on set column
-	// height multiple times in stream writing mode.
-	ErrStreamSetColMultipleTime = errors.New("must call the SetCol function only once")
 	// ErrStreamSetPanes defined the error message on set panes in stream
 	// writing mode.
 	ErrStreamSetPanes = errors.New("must call the SetPanes function before the SetRow function")

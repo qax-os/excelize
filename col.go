@@ -450,6 +450,21 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 	}
 	s.mu.Unlock()
 	ws.mu.Lock()
+	ws.setColStyle(minVal, maxVal, styleID)
+	ws.mu.Unlock()
+	if rows := len(ws.SheetData.Row); rows > 0 {
+		for col := minVal; col <= maxVal; col++ {
+			from, _ := CoordinatesToCellName(col, 1)
+			to, _ := CoordinatesToCellName(col, rows)
+			err = f.SetCellStyle(sheet, from, to, styleID)
+		}
+	}
+	return err
+}
+
+// setColStyle provides a function to set the style of a single column or
+// multiple columns.
+func (ws *xlsxWorksheet) setColStyle(minVal, maxVal, styleID int) {
 	if ws.Cols == nil {
 		ws.Cols = &xlsxCols{}
 	}
@@ -472,15 +487,6 @@ func (f *File) SetColStyle(sheet, columns string, styleID int) error {
 		fc.Width = c.Width
 		return fc
 	})
-	ws.mu.Unlock()
-	if rows := len(ws.SheetData.Row); rows > 0 {
-		for col := minVal; col <= maxVal; col++ {
-			from, _ := CoordinatesToCellName(col, 1)
-			to, _ := CoordinatesToCellName(col, rows)
-			err = f.SetCellStyle(sheet, from, to, styleID)
-		}
-	}
-	return err
 }
 
 // SetColWidth provides a function to set the width of a single column or
@@ -504,6 +510,13 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	f.mu.Unlock()
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
+	ws.setColWidth(minVal, maxVal, width)
+	return err
+}
+
+// setColWidth provides a function to set the width of a single column or
+// multiple columns.
+func (ws *xlsxWorksheet) setColWidth(minVal, maxVal int, width float64) {
 	col := xlsxCol{
 		Min:         minVal,
 		Max:         maxVal,
@@ -514,7 +527,7 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, col)
 		ws.Cols = &cols
-		return err
+		return
 	}
 	ws.Cols.Col = flatCols(col, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
@@ -525,7 +538,6 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 		fc.Style = c.Style
 		return fc
 	})
-	return err
 }
 
 // flatCols provides a method for the column's operation functions to flatten
