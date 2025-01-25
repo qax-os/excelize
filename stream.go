@@ -664,8 +664,8 @@ func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
 		bulkAppendFields(&sw.rawData, sw.worksheet, 4, 5)
 		if sw.worksheet.Cols != nil {
+			_, _ = sw.rawData.WriteString("<cols>")
 			for _, col := range sw.worksheet.Cols.Col {
-				_, _ = sw.rawData.WriteString("<cols>")
 				sw.rawData.WriteString(`<col min="`)
 				sw.rawData.WriteString(strconv.Itoa(col.Min))
 				sw.rawData.WriteString(`" max="`)
@@ -682,8 +682,8 @@ func (sw *StreamWriter) writeSheetData() {
 					sw.rawData.WriteString(`"`)
 				}
 				sw.rawData.WriteString(`/>`)
-				_, _ = sw.rawData.WriteString("</cols>")
 			}
+			_, _ = sw.rawData.WriteString("</cols>")
 		}
 		_, _ = sw.rawData.WriteString(`<sheetData>`)
 		sw.sheetWritten = true

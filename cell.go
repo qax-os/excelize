@@ -1101,7 +1101,7 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 }
 
 // GetCellRichText provides a function to get rich text of cell by given
-// worksheet.
+// worksheet and cell reference.
 func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err error) {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -1164,7 +1164,7 @@ func newRpr(fnt *Font) *xlsxRPr {
 
 // newFont create font format by given run properties for the rich text.
 func newFont(rPr *xlsxRPr) *Font {
-	font := Font{Underline: "none"}
+	var font Font
 	font.Bold = rPr.B != nil
 	font.Italic = rPr.I != nil
 	if rPr.U != nil {
@@ -1178,6 +1178,9 @@ func newFont(rPr *xlsxRPr) *Font {
 	}
 	if rPr.Sz != nil && rPr.Sz.Val != nil {
 		font.Size = *rPr.Sz.Val
+	}
+	if rPr.VertAlign != nil && rPr.VertAlign.Val != nil {
+		font.VertAlign = *rPr.VertAlign.Val
 	}
 	font.Strike = rPr.Strike != nil
 	if rPr.Color != nil {
@@ -1245,7 +1248,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 //	            Text: "bold",
 //	            Font: &excelize.Font{
 //	                Bold:   true,
-//	                Color:  "2354e8",
+//	                Color:  "2354E8",
 //	                Family: "Times New Roman",
 //	            },
 //	        },
@@ -1259,7 +1262,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 //	            Text: "italic ",
 //	            Font: &excelize.Font{
 //	                Bold:   true,
-//	                Color:  "e83723",
+//	                Color:  "E83723",
 //	                Italic: true,
 //	                Family: "Times New Roman",
 //	            },
@@ -1268,7 +1271,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 //	            Text: "text with color and font-family,",
 //	            Font: &excelize.Font{
 //	                Bold:   true,
-//	                Color:  "2354e8",
+//	                Color:  "2354E8",
 //	                Family: "Times New Roman",
 //	            },
 //	        },
@@ -1276,20 +1279,20 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 //	            Text: "\r\nlarge text with ",
 //	            Font: &excelize.Font{
 //	                Size:  14,
-//	                Color: "ad23e8",
+//	                Color: "AD23E8",
 //	            },
 //	        },
 //	        {
 //	            Text: "strike",
 //	            Font: &excelize.Font{
-//	                Color:  "e89923",
+//	                Color:  "E89923",
 //	                Strike: true,
 //	            },
 //	        },
 //	        {
 //	            Text: " superscript",
 //	            Font: &excelize.Font{
-//	                Color:     "dbc21f",
+//	                Color:     "DBC21F",
 //	                VertAlign: "superscript",
 //	            },
 //	        },
@@ -1297,14 +1300,14 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 //	            Text: " and ",
 //	            Font: &excelize.Font{
 //	                Size:      14,
-//	                Color:     "ad23e8",
+//	                Color:     "AD23E8",
 //	                VertAlign: "baseline",
 //	            },
 //	        },
 //	        {
 //	            Text: "underline",
 //	            Font: &excelize.Font{
-//	                Color:     "23e833",
+//	                Color:     "23E833",
 //	                Underline: "single",
 //	            },
 //	        },

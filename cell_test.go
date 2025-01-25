@@ -856,7 +856,7 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "bold",
 			Font: &Font{
 				Bold:         true,
-				Color:        "2354e8",
+				Color:        "2354E8",
 				ColorIndexed: 0,
 				Family:       "Times New Roman",
 			},
@@ -871,7 +871,7 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "italic ",
 			Font: &Font{
 				Bold:   true,
-				Color:  "e83723",
+				Color:  "E83723",
 				Italic: true,
 				Family: "Times New Roman",
 			},
@@ -880,7 +880,7 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "text with color and font-family, ",
 			Font: &Font{
 				Bold:   true,
-				Color:  "2354e8",
+				Color:  "2354E8",
 				Family: "Times New Roman",
 			},
 		},
@@ -888,20 +888,20 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "\r\nlarge text with ",
 			Font: &Font{
 				Size:  14,
-				Color: "ad23e8",
+				Color: "AD23E8",
 			},
 		},
 		{
 			Text: "strike",
 			Font: &Font{
-				Color:  "e89923",
+				Color:  "E89923",
 				Strike: true,
 			},
 		},
 		{
 			Text: " superscript",
 			Font: &Font{
-				Color:     "dbc21f",
+				Color:     "DBC21F",
 				VertAlign: "superscript",
 			},
 		},
@@ -909,14 +909,14 @@ func TestSetCellRichText(t *testing.T) {
 			Text: " and ",
 			Font: &Font{
 				Size:      14,
-				Color:     "ad23e8",
-				VertAlign: "BASELINE",
+				Color:     "AD23E8",
+				VertAlign: "baseline",
 			},
 		},
 		{
 			Text: "underline",
 			Font: &Font{
-				Color:     "23e833",
+				Color:     "23E833",
 				Underline: "single",
 			},
 		},
@@ -937,6 +937,11 @@ func TestSetCellRichText(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+
+	runs, err := f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, richTextRun, runs)
+
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
 	// Test set cell rich text on not exists worksheet
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN does not exist")
@@ -1151,6 +1156,29 @@ func TestSharedStringsError(t *testing.T) {
 	f.tempFiles.Range(func(k, v interface{}) bool {
 		return assert.NoError(t, os.Remove(v.(string)))
 	})
+}
+
+func TestSetCellIntFunc(t *testing.T) {
+	cases := []struct {
+		val    interface{}
+		target string
+	}{
+		{val: 128, target: "128"},
+		{val: int8(-128), target: "-128"},
+		{val: int16(-32768), target: "-32768"},
+		{val: int32(-2147483648), target: "-2147483648"},
+		{val: int64(-9223372036854775808), target: "-9223372036854775808"},
+		{val: uint(128), target: "128"},
+		{val: uint8(255), target: "255"},
+		{val: uint16(65535), target: "65535"},
+		{val: uint32(4294967295), target: "4294967295"},
+		{val: uint64(18446744073709551615), target: "18446744073709551615"},
+	}
+	for _, c := range cases {
+		cell := &xlsxC{}
+		setCellIntFunc(cell, c.val)
+		assert.Equal(t, c.target, cell.V)
+	}
 }
 
 func TestSIString(t *testing.T) {
