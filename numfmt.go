@@ -4962,37 +4962,54 @@ func (nf *numberFormat) getNumberFmtConf() {
 	}
 }
 
+// handleDigitsLiteral apply hash and zero place holder tokens for the number
+// literal.
+func handleDigitsLiteral(text string, tokenValueLen, intPartLen, hashZeroPartLen int) (int, string) {
+	var result string
+	l := tokenValueLen
+	if intPartLen == 0 && len(text) > hashZeroPartLen {
+		l = len(text) + tokenValueLen - hashZeroPartLen
+	}
+	if len(text) < hashZeroPartLen {
+		intPartLen += len(text) - hashZeroPartLen
+	}
+	for i := 0; i < l; i++ {
+		j := i + intPartLen
+		if 0 <= j && j < len([]rune(text)) {
+			result += string([]rune(text)[j])
+		}
+	}
+	return l, result
+}
+
 // printNumberLiteral apply literal tokens for the pre-formatted text.
 func (nf *numberFormat) printNumberLiteral(text string) string {
 	var (
-		result                                  string
-		frac                                    float64
-		useFraction, useLiteral, usePlaceHolder bool
+		result                      string
+		frac                        float64
+		useFraction                 bool
+		intPartLen, hashZeroPartLen int
 	)
 	if nf.usePositive {
 		result += "-"
 	}
 	for _, token := range nf.section[nf.sectionIdx].Items {
+		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
+			hashZeroPartLen += len(token.TValue)
+		}
+	}
+	for _, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
-			if changeNumFmtCode, err := nf.currencyLanguageHandler(token); err != nil || changeNumFmtCode {
-				return nf.value
-			}
+			_, _ = nf.currencyLanguageHandler(token)
 			result += nf.currencyString
 		}
 		if token.TType == nfp.TokenTypeLiteral {
-			if usePlaceHolder {
-				useLiteral = true
-			}
 			result += token.TValue
 		}
 		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
-			if useLiteral && usePlaceHolder {
-				return nf.value
-			}
-			if !usePlaceHolder {
-				usePlaceHolder = true
-				result += text
-			}
+			digits, str := handleDigitsLiteral(text, len(token.TValue), intPartLen, hashZeroPartLen)
+			intPartLen += digits
+			result += str
 		}
 		if token.TType == nfp.TokenTypeFraction {
 			_, frac = math.Modf(nf.number)
@@ -5257,6 +5274,7 @@ func (nf *numberFormat) currencyLanguageHandler(token nfp.Token) (bool, error) {
 		}
 		if part.Token.TType == nfp.TokenSubTypeCurrencyString {
 			nf.currencyString = part.Token.TValue
+			return false, nil
 		}
 	}
 	return false, nil
