@@ -215,7 +215,7 @@ var (
 		criteriaL,
 		criteriaG,
 	}
-	tableRefRe = regexp.MustCompile(`^(\w+)\[([^\]]+)\]$`)
+	tableRefRe = regexp.MustCompile(`^(\w+)\[([^\]]*)\]$`)
 )
 
 // calcContext defines the formula execution context.
@@ -1517,6 +1517,39 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 
 func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
 	offset := -1
+
+	if colName == "#HEADERS" {
+		coords, err := rangeRefToCoordinates(tblRef.ref)
+		if err != nil {
+			return "", err
+		}
+		headerStart, err := CoordinatesToCellName(coords[0], coords[1])
+		if err != nil {
+			return "", err
+		}
+		headerEnd, err := CoordinatesToCellName(coords[2], coords[1])
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s!%s:%s", tblRef.sheet, headerStart, headerEnd), nil
+	} else if colName == "#ALL" {
+		return fmt.Sprintf("%s!%s", tblRef.sheet, tblRef.ref), nil
+	} else if colName == "" {
+		coords, err := rangeRefToCoordinates(tblRef.ref)
+		if err != nil {
+			return "", err
+		}
+		// skip the header row
+		dataStart, err := CoordinatesToCellName(coords[0], coords[1]+1)
+		if err != nil {
+			return "", err
+		}
+		dataEnd, err := CoordinatesToCellName(coords[2], coords[3])
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s!%s:%s", tblRef.sheet, dataStart, dataEnd), nil
+	}
 
 	// Column ID is not reliable for order so we need to iterate through them.
 	for i, otherColName := range tblRef.columns {
