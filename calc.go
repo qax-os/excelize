@@ -1008,13 +1008,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				}
 			}
 
-			if isEndParenthesesToken(token) && isBeginParenthesesToken(opftStack.Peek().(efp.Token)) {
-				if arg := argsStack.Peek().(*list.List).Back(); arg != nil {
-					opfdStack.Push(arg.Value.(formulaArg))
-					argsStack.Peek().(*list.List).Remove(arg)
-				}
-			}
-
 			// check current token is opft
 			if err = f.parseToken(ctx, sheet, token, opfdStack, opftStack); err != nil {
 				return newEmptyFormulaArg(), err
@@ -1085,7 +1078,7 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 	opftStack.Pop() // remove current function separator
 	opfStack.Pop()
 	if opfStack.Len() > 0 { // still in function stack
-		if nextToken.TType == efp.TokenTypeOperatorInfix || (opftStack.Len() > 1 && opfdStack.Len() > 0) {
+		if nextToken.TType == efp.TokenTypeOperatorInfix || opftStack.Len() > 1 {
 			// mathematics calculate in formula function
 			opfdStack.Push(arg)
 			return newEmptyFormulaArg()
