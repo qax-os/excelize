@@ -510,14 +510,14 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 	if utf8.RuneCountInString(value) > TotalCellChars {
 		value = string([]rune(value)[:TotalCellChars])
 	}
-	if escape {
+	if escape && value != "" {
 		var buf bytes.Buffer
 		enc := xml.NewEncoder(&buf)
 		_ = enc.EncodeToken(xml.CharData(value))
-		enc.Flush()
+		_ = enc.Flush()
 		value = buf.String()
 	}
-	if len(value) > 0 {
+	if value != "" {
 		prefix, suffix := value[0], value[len(value)-1]
 		for _, ascii := range []byte{9, 10, 13, 32} {
 			if prefix == ascii || suffix == ascii {
