@@ -688,7 +688,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 			return err
 		}
 	}
-	return err
+	return nil
 }
 
 // duplicateSQRefHelper provides a function to adjust conditional formatting and
