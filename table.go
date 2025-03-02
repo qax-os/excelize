@@ -187,6 +187,7 @@ func (f *File) DeleteTable(name string) error {
 				if tbl.RID == table.rID {
 					ws.TableParts.TableParts = append(ws.TableParts.TableParts[:i], ws.TableParts.TableParts[i+1:]...)
 					f.Pkg.Delete(table.tableXML)
+					f.tableRefs.Delete(table.Name)
 					_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLTable, "/"+table.tableXML)
 					f.deleteSheetRelationships(sheet, tbl.RID)
 					break
@@ -396,6 +397,7 @@ func (f *File) addTable(sheet, tableXML string, x1, y1, x2, y2, i int, opts *Tab
 	}
 	table, err := xml.Marshal(t)
 	f.saveFileList(tableXML, table)
+	f.tableRefs.Store(t.Name, tableRefFromXLSXTable(&t, sheet))
 	return err
 }
 
