@@ -453,6 +453,21 @@ func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	return rID
 }
 
+// SetCalcOnOpen sets says Excel to recalulate formula cells on open document.
+// Call it before save document.
+func (f *File) SetCalcOnOpen() error {
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	// recalculate formulas
+	wb.CalcPr = &xlsxCalcPr{
+		FullCalcOnLoad: true,
+	}
+
+	return nil
+}
+
 // UpdateLinkedValue fix linked values within a spreadsheet are not updating in
 // Office Excel application. This function will be remove value tag when met a
 // cell have a linked value. Reference
