@@ -16,12 +16,16 @@ import (
 	"encoding/xml"
 	"io"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 )
 
 // SetWorkbookProps provides a function to sets workbook properties.
 func (f *File) SetWorkbookProps(opts *WorkbookPropsOptions) error {
+	if opts == nil {
+		return nil
+	}
 	wb, err := f.workbookReader()
 	if err != nil {
 		return err
@@ -29,19 +33,9 @@ func (f *File) SetWorkbookProps(opts *WorkbookPropsOptions) error {
 	if wb.WorkbookPr == nil {
 		wb.WorkbookPr = new(xlsxWorkbookPr)
 	}
-	if opts == nil {
-		return nil
-	}
-	if opts.Date1904 != nil {
-		wb.WorkbookPr.Date1904 = *opts.Date1904
-	}
-	if opts.FilterPrivacy != nil {
-		wb.WorkbookPr.FilterPrivacy = *opts.FilterPrivacy
-	}
-	if opts.CodeName != nil {
-		wb.WorkbookPr.CodeName = *opts.CodeName
-	}
-	return nil
+	setNoPtrFieldsVal([]string{"Date1904", "FilterPrivacy", "CodeName"},
+		reflect.ValueOf(*opts), reflect.ValueOf(wb.WorkbookPr).Elem())
+	return err
 }
 
 // GetWorkbookProps provides a function to gets workbook properties.
@@ -51,11 +45,63 @@ func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
 	if err != nil {
 		return opts, err
 	}
-	if wb.WorkbookPr != nil {
-		opts.Date1904 = boolPtr(wb.WorkbookPr.Date1904)
-		opts.FilterPrivacy = boolPtr(wb.WorkbookPr.FilterPrivacy)
-		opts.CodeName = stringPtr(wb.WorkbookPr.CodeName)
+	if wb.WorkbookPr == nil {
+		return opts, err
 	}
+	setPtrFieldsVal([]string{"Date1904", "FilterPrivacy", "CodeName"},
+		reflect.ValueOf(*wb.WorkbookPr), reflect.ValueOf(&opts).Elem())
+	return opts, err
+}
+
+// SetCalcProps provides a function to sets calculation properties.
+func (f *File) SetCalcProps(opts *CalcPropsOptions) error {
+	if opts == nil {
+		return nil
+	}
+	wb, err := f.workbookReader()
+	if err != nil {
+		return err
+	}
+	if wb.CalcPr == nil {
+		wb.CalcPr = new(xlsxCalcPr)
+	}
+	setNoPtrFieldsVal([]string{
+		"CalcCompleted", "CalcOnSave", "ForceFullCalc", "FullCalcOnLoad", "FullPrecision", "Iterate",
+		"IterateDelta",
+		"CalcMode", "RefMode",
+	}, reflect.ValueOf(*opts), reflect.ValueOf(wb.CalcPr).Elem())
+	if opts.CalcID != nil {
+		wb.CalcPr.CalcID = int(*opts.CalcID)
+	}
+	if opts.ConcurrentManualCount != nil {
+		wb.CalcPr.ConcurrentManualCount = int(*opts.ConcurrentManualCount)
+	}
+	if opts.IterateCount != nil {
+		wb.CalcPr.IterateCount = int(*opts.IterateCount)
+	}
+	wb.CalcPr.ConcurrentCalc = opts.ConcurrentCalc
+	return err
+}
+
+// GetCalcProps provides a function to gets calculation properties.
+func (f *File) GetCalcProps() (CalcPropsOptions, error) {
+	var opts CalcPropsOptions
+	wb, err := f.workbookReader()
+	if err != nil {
+		return opts, err
+	}
+	if wb.CalcPr == nil {
+		return opts, err
+	}
+	setPtrFieldsVal([]string{
+		"CalcCompleted", "CalcOnSave", "ForceFullCalc", "FullCalcOnLoad", "FullPrecision", "Iterate",
+		"IterateDelta",
+		"CalcMode", "RefMode",
+	}, reflect.ValueOf(*wb.CalcPr), reflect.ValueOf(&opts).Elem())
+	opts.CalcID = uintPtr(uint(wb.CalcPr.CalcID))
+	opts.ConcurrentManualCount = uintPtr(uint(wb.CalcPr.ConcurrentManualCount))
+	opts.IterateCount = uintPtr(uint(wb.CalcPr.IterateCount))
+	opts.ConcurrentCalc = wb.CalcPr.ConcurrentCalc
 	return opts, err
 }
 
@@ -99,7 +145,7 @@ func (f *File) ProtectWorkbook(opts *WorkbookProtectionOptions) error {
 		wb.WorkbookProtection.WorkbookHashValue = hashValue
 		wb.WorkbookProtection.WorkbookSpinCount = int(workbookProtectionSpinCount)
 	}
-	return nil
+	return err
 }
 
 // UnprotectWorkbook provides a function to remove protection for workbook,

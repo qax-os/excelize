@@ -21,6 +21,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -876,6 +877,54 @@ func continuedFraction(n float64, i int64, limit int64, prec float64) *big.Rat {
 	res := ratY.Add(ratY, ratNext)
 	res = res.Inv(res)
 	return res
+}
+
+// assignFieldValue assigns the value from an immutable reflect.Value to a
+// mutable reflect.Value based on the type of the immutable value.
+func assignFieldValue(field string, immutable, mutable reflect.Value) {
+	switch immutable.Kind() {
+	case reflect.Bool:
+		mutable.FieldByName(field).SetBool(immutable.Bool())
+	case reflect.Int:
+		mutable.FieldByName(field).SetInt(immutable.Int())
+	default:
+		mutable.FieldByName(field).SetString(immutable.String())
+	}
+}
+
+// setNoPtrFieldsVal assigns values from the pointer or no-pointer structs
+// fields (immutable) value to no-pointer struct field.
+func setNoPtrFieldsVal(fields []string, immutable, mutable reflect.Value) {
+	for _, field := range fields {
+		immutableField := immutable.FieldByName(field)
+		if immutableField.Kind() == reflect.Ptr {
+			if immutableField.IsValid() && !immutableField.IsNil() {
+				assignFieldValue(field, immutableField.Elem(), mutable)
+			}
+			continue
+		}
+		assignFieldValue(field, immutableField, mutable)
+	}
+}
+
+// setPtrFieldsVal assigns values from the pointer or no-pointer structs
+// fields (immutable) value to pointer struct field.
+func setPtrFieldsVal(fields []string, immutable, mutable reflect.Value) {
+	for _, field := range fields {
+		immutableField := immutable.FieldByName(field)
+		if immutableField.Kind() == reflect.Ptr {
+			if immutableField.IsValid() && !immutableField.IsNil() {
+				mutable.FieldByName(field).Set(immutableField.Elem())
+			}
+			continue
+		}
+		if immutableField.IsZero() {
+			continue
+		}
+		ptr := reflect.New(immutableField.Type())
+		ptr.Elem().Set(immutableField)
+		mutable.FieldByName(field).Set(ptr)
+	}
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.
