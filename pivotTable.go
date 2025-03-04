@@ -883,14 +883,10 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 		opts.DataRange = pc.CacheSource.WorksheetSource.Name
 		_ = f.getPivotTableDataRange(&opts)
 	}
-	fields := []string{"RowGrandTotals", "ColGrandTotals", "ShowDrill", "UseAutoFormatting", "PageOverThenDown", "MergeItem", "CompactData", "ShowError"}
-	immutable, mutable := reflect.ValueOf(*pt), reflect.ValueOf(&opts).Elem()
-	for _, field := range fields {
-		immutableField := immutable.FieldByName(field)
-		if immutableField.Kind() == reflect.Ptr && !immutableField.IsNil() && immutableField.Elem().Kind() == reflect.Bool {
-			mutable.FieldByName(field).SetBool(immutableField.Elem().Bool())
-		}
-	}
+	setPtrFieldsVal([]string{
+		"RowGrandTotals", "ColGrandTotals", "ShowDrill",
+		"UseAutoFormatting", "PageOverThenDown", "MergeItem", "CompactData", "ShowError",
+	}, reflect.ValueOf(*pt), reflect.ValueOf(&opts).Elem())
 	if si := pt.PivotTableStyleInfo; si != nil {
 		opts.ShowRowHeaders = si.ShowRowHeaders
 		opts.ShowColHeaders = si.ShowColHeaders
@@ -982,17 +978,8 @@ func extractPivotTableField(data string, fld *xlsxPivotField) PivotTableField {
 		ShowAll:        fld.ShowAll,
 		InsertBlankRow: fld.InsertBlankRow,
 	}
-	fields := []string{"Compact", "Name", "Outline", "Subtotal", "DefaultSubtotal"}
-	immutable, mutable := reflect.ValueOf(*fld), reflect.ValueOf(&pivotTableField).Elem()
-	for _, field := range fields {
-		immutableField := immutable.FieldByName(field)
-		if immutableField.Kind() == reflect.String {
-			mutable.FieldByName(field).SetString(immutableField.String())
-		}
-		if immutableField.Kind() == reflect.Ptr && !immutableField.IsNil() && immutableField.Elem().Kind() == reflect.Bool {
-			mutable.FieldByName(field).SetBool(immutableField.Elem().Bool())
-		}
-	}
+	setPtrFieldsVal([]string{"Compact", "Name", "Outline", "DefaultSubtotal"},
+		reflect.ValueOf(*fld), reflect.ValueOf(&pivotTableField).Elem())
 	return pivotTableField
 }
 

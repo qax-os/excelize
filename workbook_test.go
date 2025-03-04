@@ -21,6 +21,10 @@ func TestWorkbookProps(t *testing.T) {
 	opts, err := f.GetWorkbookProps()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, opts)
+	wb.WorkbookPr = nil
+	opts, err = f.GetWorkbookProps()
+	assert.NoError(t, err)
+	assert.Equal(t, WorkbookPropsOptions{}, opts)
 	// Test set workbook properties with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
@@ -29,6 +33,38 @@ func TestWorkbookProps(t *testing.T) {
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	_, err = f.GetWorkbookProps()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestCalcProps(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCalcProps(nil))
+	wb, err := f.workbookReader()
+	assert.NoError(t, err)
+	wb.CalcPr = nil
+	expected := CalcPropsOptions{
+		FullCalcOnLoad:        boolPtr(true),
+		CalcID:                uintPtr(122211),
+		ConcurrentManualCount: uintPtr(5),
+		IterateCount:          uintPtr(10),
+		ConcurrentCalc:        boolPtr(true),
+	}
+	assert.NoError(t, f.SetCalcProps(&expected))
+	opts, err := f.GetCalcProps()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
+	wb.CalcPr = nil
+	opts, err = f.GetCalcProps()
+	assert.NoError(t, err)
+	assert.Equal(t, CalcPropsOptions{}, opts)
+	// Test set workbook properties with unsupported charset workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetCalcProps(&expected), "XML syntax error on line 1: invalid UTF-8")
+	// Test get workbook properties with unsupported charset workbook
+	f.WorkBook = nil
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
+	_, err = f.GetCalcProps()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 

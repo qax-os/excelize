@@ -315,7 +315,7 @@ type xlsxDefinedName struct {
 // displaying the results as values in the cells that contain the formulas.
 type xlsxCalcPr struct {
 	CalcCompleted         bool    `xml:"calcCompleted,attr,omitempty"`
-	CalcID                string  `xml:"calcId,attr,omitempty"`
+	CalcID                int     `xml:"calcId,attr,omitempty"`
 	CalcMode              string  `xml:"calcMode,attr,omitempty"`
 	CalcOnSave            bool    `xml:"calcOnSave,attr,omitempty"`
 	ConcurrentCalc        *bool   `xml:"concurrentCalc,attr"`
@@ -382,6 +382,24 @@ type DefinedName struct {
 	Comment  string
 	RefersTo string
 	Scope    string
+}
+
+// CalcPropsOptions defines the collection of properties the application uses to
+// record calculation status and details.
+type CalcPropsOptions struct {
+	CalcID                *uint    `xml:"calcId,attr"`
+	CalcMode              *string  `xml:"calcMode,attr"`
+	FullCalcOnLoad        *bool    `xml:"fullCalcOnLoad,attr"`
+	RefMode               *string  `xml:"refMode,attr"`
+	Iterate               *bool    `xml:"iterate,attr"`
+	IterateCount          *uint    `xml:"iterateCount,attr"`
+	IterateDelta          *float64 `xml:"iterateDelta,attr"`
+	FullPrecision         *bool    `xml:"fullPrecision,attr"`
+	CalcCompleted         *bool    `xml:"calcCompleted,attr"`
+	CalcOnSave            *bool    `xml:"calcOnSave,attr"`
+	ConcurrentCalc        *bool    `xml:"concurrentCalc,attr"`
+	ConcurrentManualCount *uint    `xml:"concurrentManualCount,attr"`
+	ForceFullCalc         *bool    `xml:"forceFullCalc,attr"`
 }
 
 // WorkbookPropsOptions directly maps the settings of workbook proprieties.
