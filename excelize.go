@@ -217,6 +217,60 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	return f, err
 }
 
+// StreamRead 流式读取，不支持加密的 Excel 2003
+func StreamRead(filename string, opts ...Options) (*File, error) {
+	file, err := os.Open(filepath.Clean(filename))
+	if err != nil {
+		return nil, err
+	}
+	f, err := openByName(file.Name(), opts...)
+	if err != nil {
+		if closeErr := file.Close(); closeErr != nil {
+			return f, closeErr
+		}
+		return f, err
+	}
+	f.Path = filename
+	return f, file.Close()
+}
+
+// 不支持 加密的 Excel 2003 格式！
+// openByName read data stream from io.Reader and return a populated
+// spreadsheet file.
+func openByName(name string, opts ...Options) (*File, error) {
+	f := newFile()
+	f.options = f.getOptions(opts...)
+	if err := f.checkOpenReaderOptions(); err != nil {
+		return nil, err
+	}
+	zr, err := zip.OpenReader(name)
+	if err != nil {
+		if len(f.options.Password) > 0 {
+			return nil, ErrWorkbookPassword
+		}
+		return nil, err
+	}
+	file, sheetCount, err := f.ReadZipReader(&zr.Reader)
+	if err != nil {
+		return nil, err
+	}
+	f.SheetCount = sheetCount
+	for k, v := range file {
+		f.Pkg.Store(k, v)
+	}
+	if f.CalcChain, err = f.calcChainReader(); err != nil {
+		return f, err
+	}
+	if f.sheetMap, err = f.getSheetMap(); err != nil {
+		return f, err
+	}
+	if f.Styles, err = f.stylesReader(); err != nil {
+		return f, err
+	}
+	f.Theme, err = f.themeReader()
+	return f, err
+}
+
 // getOptions provides a function to parse the optional settings for open
 // and reading spreadsheet.
 func (f *File) getOptions(opts ...Options) *Options {
