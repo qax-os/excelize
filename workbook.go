@@ -53,7 +53,9 @@ func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
 	return opts, err
 }
 
-// SetCalcProps provides a function to sets calculation properties.
+// SetCalcProps provides a function to sets calculation properties. Optional
+// value of "CalcMode" property is: "manual", "auto" or "autoNoTable". Optional
+// value of "RefMode" property is: "A1" or "R1C1".
 func (f *File) SetCalcProps(opts *CalcPropsOptions) error {
 	if opts == nil {
 		return nil
@@ -64,6 +66,12 @@ func (f *File) SetCalcProps(opts *CalcPropsOptions) error {
 	}
 	if wb.CalcPr == nil {
 		wb.CalcPr = new(xlsxCalcPr)
+	}
+	if opts.CalcMode != nil && inStrSlice(supportedCalcMode, *opts.CalcMode, true) == -1 {
+		return newInvalidOptionalValue("CalcMode", *opts.CalcMode, supportedCalcMode)
+	}
+	if opts.RefMode != nil && inStrSlice(supportedRefMode, *opts.RefMode, true) == -1 {
+		return newInvalidOptionalValue("RefMode", *opts.RefMode, supportedRefMode)
 	}
 	setNoPtrFieldsVal([]string{
 		"CalcCompleted", "CalcOnSave", "ForceFullCalc", "FullCalcOnLoad", "FullPrecision", "Iterate",

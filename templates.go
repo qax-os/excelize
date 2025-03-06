@@ -476,6 +476,12 @@ var supportedImageTypes = map[string]string{
 	".tif": ".tiff", ".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
 }
 
+// supportedCalcMode defined supported formula calculate mode.
+var supportedCalcMode = []string{"manual", "auto", "autoNoTable"}
+
+// supportedRefMode defined supported formula calculate mode.
+var supportedRefMode = []string{"A1", "R1C1"}
+
 // supportedContentTypes defined supported file format types.
 var supportedContentTypes = map[string]string{
 	".xlam": ContentTypeAddinMacro,

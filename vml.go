@@ -809,7 +809,7 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 	if opts.Format.Positioning != "" {
 		idx := inStrSlice(supportedPositioning, opts.Format.Positioning, true)
 		if idx == -1 {
-			return &sp, ErrParameterInvalid
+			return &sp, newInvalidOptionalValue("Positioning", opts.Format.Positioning, supportedPositioning)
 		}
 		sp.ClientData.MoveWithCells = []*string{stringPtr(""), nil, nil}[idx]
 		sp.ClientData.SizeWithCells = []*string{stringPtr(""), stringPtr(""), nil}[idx]

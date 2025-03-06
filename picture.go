@@ -355,7 +355,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 		return err
 	}
 	if opts.Positioning != "" && inStrSlice(supportedPositioning, opts.Positioning, true) == -1 {
-		return ErrParameterInvalid
+		return newInvalidOptionalValue("Positioning", opts.Positioning, supportedPositioning)
 	}
 	width, height := img.Width, img.Height
 	if opts.AutoFit {

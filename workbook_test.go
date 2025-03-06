@@ -57,11 +57,14 @@ func TestCalcProps(t *testing.T) {
 	opts, err = f.GetCalcProps()
 	assert.NoError(t, err)
 	assert.Equal(t, CalcPropsOptions{}, opts)
-	// Test set workbook properties with unsupported charset workbook
+	// Test set calculation properties with unsupported optional value
+	assert.Equal(t, newInvalidOptionalValue("CalcMode", "AUTO", supportedCalcMode), f.SetCalcProps(&CalcPropsOptions{CalcMode: stringPtr("AUTO")}))
+	assert.Equal(t, newInvalidOptionalValue("RefMode", "a1", supportedRefMode), f.SetCalcProps(&CalcPropsOptions{RefMode: stringPtr("a1")}))
+	// Test set calculation properties with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.SetCalcProps(&expected), "XML syntax error on line 1: invalid UTF-8")
-	// Test get workbook properties with unsupported charset workbook
+	// Test get calculation properties with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	_, err = f.GetCalcProps()

@@ -1646,7 +1646,7 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) error {
 	}
 	if opts.Orientation != nil {
 		if inStrSlice(supportedPageOrientation, *opts.Orientation, true) == -1 {
-			return newInvalidPageLayoutValueError("Orientation", *opts.Orientation, strings.Join(supportedPageOrientation, ", "))
+			return newInvalidOptionalValue("Orientation", *opts.Orientation, supportedPageOrientation)
 		}
 		ws.newPageSetUp()
 		ws.PageSetUp.Orientation = *opts.Orientation
@@ -1677,7 +1677,7 @@ func (ws *xlsxWorksheet) setPageSetUp(opts *PageLayoutOptions) error {
 	}
 	if opts.PageOrder != nil {
 		if inStrSlice(supportedPageOrder, *opts.PageOrder, true) == -1 {
-			return newInvalidPageLayoutValueError("PageOrder", *opts.PageOrder, strings.Join(supportedPageOrder, ", "))
+			return newInvalidOptionalValue("PageOrder", *opts.PageOrder, supportedPageOrder)
 		}
 		ws.newPageSetUp()
 		ws.PageSetUp.PageOrder = *opts.PageOrder

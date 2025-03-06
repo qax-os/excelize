@@ -14,6 +14,7 @@ package excelize
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -255,10 +256,10 @@ func newInvalidNameError(name string) error {
 	return fmt.Errorf("invalid name %q, the name should be starts with a letter or underscore, can not include a space or character, and can not conflict with an existing name in the workbook", name)
 }
 
-// newInvalidPageLayoutValueError defined the error message on receiving the invalid
-// page layout options value.
-func newInvalidPageLayoutValueError(name, value, msg string) error {
-	return fmt.Errorf("invalid %s value %q, acceptable value should be one of %s", name, value, msg)
+// newInvalidOptionalValue defined the error message on receiving the invalid
+// optional value.
+func newInvalidOptionalValue(name, value string, values []string) error {
+	return fmt.Errorf("invalid %s value %q, acceptable value should be one of %s", name, value, strings.Join(values, ", "))
 }
 
 // newInvalidRowNumberError defined the error message on receiving the invalid

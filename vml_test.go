@@ -271,10 +271,11 @@ func TestFormControl(t *testing.T) {
 		Cell: "A1", Type: FormControlButton, Macro: "Button1_Click",
 	}))
 	// Test add form control with invalid positioning types
-	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
-		Cell: "A1", Type: FormControlButton,
-		Format: GraphicOptions{Positioning: "x"},
-	}), ErrParameterInvalid)
+	assert.Equal(t, newInvalidOptionalValue("Positioning", "x", supportedPositioning),
+		f.AddFormControl("Sheet1", FormControl{
+			Cell: "A1", Type: FormControlButton,
+			Format: GraphicOptions{Positioning: "x"},
+		}))
 	// Test add spin form control with illegal cell link reference
 	assert.Equal(t, f.AddFormControl("Sheet1", FormControl{
 		Cell: "C5", Type: FormControlSpinButton, CellLink: "*",
