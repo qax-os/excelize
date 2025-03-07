@@ -510,11 +510,6 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 	if utf8.RuneCountInString(value) > TotalCellChars {
 		value = string([]rune(value)[:TotalCellChars])
 	}
-	if escape && value != "" {
-		var buf bytes.Buffer
-		_ = escapeText(&buf, []byte(value))
-		value = buf.String()
-	}
 	if value != "" {
 		prefix, suffix := value[0], value[len(value)-1]
 		for _, ascii := range []byte{9, 10, 13, 32} {
@@ -525,6 +520,12 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 				}
 				break
 			}
+		}
+
+		if escape {
+			var buf bytes.Buffer
+			_ = xml.EscapeText(&buf, []byte(value))
+			value = buf.String()
 		}
 	}
 	v = bstrMarshal(value)
