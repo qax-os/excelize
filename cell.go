@@ -512,7 +512,7 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 	}
 	if value != "" {
 		prefix, suffix := value[0], value[len(value)-1]
-		for _, ascii := range []byte{9, 10, 13, 32} {
+		for _, ascii := range []byte{9, 10, 13, 32} { //
 			if prefix == ascii || suffix == ascii {
 				ns = xml.Attr{
 					Name:  xml.Name{Space: NameSpaceXML, Local: "space"},
@@ -524,7 +524,7 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 
 		if escape {
 			var buf bytes.Buffer
-			_ = xml.EscapeText(&buf, []byte(value))
+			_ = escapeText(&buf, []byte(value))
 			value = buf.String()
 		}
 	}
