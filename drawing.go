@@ -1198,6 +1198,9 @@ func drawChartFont(fnt *Font, r *aRPr) {
 		r.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(fnt.Color), "#", ""))}
 	}
 	if fnt.Family != "" {
+		if r.Latin == nil {
+			r.Latin = &xlsxCTTextFont{}
+		}
 		r.Latin.Typeface = fnt.Family
 	}
 	if fnt.Size > 0 {
