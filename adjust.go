@@ -847,7 +847,7 @@ func (f *File) adjustCalcChain(ws *xlsxWorksheet, sheet string, dir adjustDirect
 	// If sheet ID is omitted, it is assumed to be the same as the i value of
 	// the previous cell.
 	var prevSheetID int
-	for i := 0; i < len(f.CalcChain.C); i++ {
+	for i := 0; f.CalcChain != nil && i < len(f.CalcChain.C); i++ {
 		c := f.CalcChain.C[i]
 		if c.I == 0 {
 			c.I = prevSheetID

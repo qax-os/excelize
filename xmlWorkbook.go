@@ -387,19 +387,19 @@ type DefinedName struct {
 // CalcPropsOptions defines the collection of properties the application uses to
 // record calculation status and details.
 type CalcPropsOptions struct {
-	CalcID                *uint    `xml:"calcId,attr"`
-	CalcMode              *string  `xml:"calcMode,attr"`
-	FullCalcOnLoad        *bool    `xml:"fullCalcOnLoad,attr"`
-	RefMode               *string  `xml:"refMode,attr"`
-	Iterate               *bool    `xml:"iterate,attr"`
-	IterateCount          *uint    `xml:"iterateCount,attr"`
-	IterateDelta          *float64 `xml:"iterateDelta,attr"`
-	FullPrecision         *bool    `xml:"fullPrecision,attr"`
-	CalcCompleted         *bool    `xml:"calcCompleted,attr"`
-	CalcOnSave            *bool    `xml:"calcOnSave,attr"`
-	ConcurrentCalc        *bool    `xml:"concurrentCalc,attr"`
-	ConcurrentManualCount *uint    `xml:"concurrentManualCount,attr"`
-	ForceFullCalc         *bool    `xml:"forceFullCalc,attr"`
+	CalcID                *uint
+	CalcMode              *string
+	FullCalcOnLoad        *bool
+	RefMode               *string
+	Iterate               *bool
+	IterateCount          *uint
+	IterateDelta          *float64
+	FullPrecision         *bool
+	CalcCompleted         *bool
+	CalcOnSave            *bool
+	ConcurrentCalc        *bool
+	ConcurrentManualCount *uint
+	ForceFullCalc         *bool
 }
 
 // WorkbookPropsOptions directly maps the settings of workbook proprieties.
