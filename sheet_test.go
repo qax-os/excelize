@@ -841,3 +841,62 @@ func TestAddIgnoredErrors(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddIgnoredErrors.xlsx")))
 	assert.NoError(t, f.Close())
 }
+
+func TestFile_SetSheetAutoScalingPageByMode(t *testing.T) {
+	type values struct {
+		fitToPage   bool
+		fitToHeight bool
+		fitToWidth  bool
+	}
+	tests := []struct {
+		name    string
+		mode    SheetAutoScalingPageMode
+		values  values
+		wantErr error
+	}{
+		{name: "fitOnPage", mode: SheetFitOnPage, values: values{fitToPage: true}},
+		{name: "fitAllColumnsOnPage", mode: SheetFitAllColumnsOnPage, values: values{fitToPage: true, fitToHeight: true}},
+		{name: "fitAllRowsOnPage", mode: SheetFitAllRowsOnPage, values: values{fitToPage: true, fitToWidth: true}},
+		{name: "fitAllRowsOnPage", mode: 10, wantErr: ErrUnknownSheetAutoScalingPageMode},
+	}
+
+	const sheetName = "Sheet1"
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				f   = NewFile()
+				err = f.SetSheetAutoScalingPageByMode(sheetName, tt.mode)
+				v   values
+				po  SheetPropsOptions
+				lo  PageLayoutOptions
+			)
+
+			if tt.wantErr != nil {
+				assert.EqualError(t, err, tt.wantErr.Error())
+			} else if err != nil {
+				assert.NoError(t, err)
+			}
+
+			if po, err = f.GetSheetProps(sheetName); err != nil {
+				assert.NoError(t, err)
+			} else if po.FitToPage != nil {
+				v.fitToPage = *po.FitToPage
+			}
+
+			if lo, err = f.GetPageLayout(sheetName); err != nil {
+				assert.NoError(t, err)
+			}
+
+			if lo.FitToWidth != nil {
+				v.fitToWidth = (*lo.FitToWidth) == 0
+			}
+
+			if lo.FitToHeight != nil {
+				v.fitToHeight = (*lo.FitToHeight) == 0
+			}
+
+			assert.Equal(t, tt.values, v)
+		})
+	}
+}

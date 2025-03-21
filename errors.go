@@ -178,6 +178,9 @@ var (
 	// ErrWorkbookPassword defined the error message on receiving the incorrect
 	// workbook password.
 	ErrWorkbookPassword = errors.New("the supplied open workbook password is not correct")
+	// ErrUnknownSheetAutoScalingPageMode defined the error message on unsupported
+	// SheetAutoScalingPageMode.
+	ErrUnknownSheetAutoScalingPageMode = errors.New("unknown sheet auto scaling page mode")
 )
 
 // ErrSheetNotExist defined an error of sheet that does not exist.
