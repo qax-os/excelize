@@ -2163,3 +2163,49 @@ func (f *File) AddIgnoredErrors(sheet, rangeRef string, ignoredErrorsType Ignore
 	ws.IgnoredErrors.IgnoredError = append(ws.IgnoredErrors.IgnoredError, ie)
 	return err
 }
+
+type SheetAutoScalingPageMode uint8
+
+func (p SheetAutoScalingPageMode) String() string {
+	switch p {
+	case 0:
+		return ""
+	case SheetFitOnPage:
+		return "SheetFitOnPage"
+	case SheetFitAllColumnsOnPage:
+		return "SheetFitAllColumnsOnPage"
+	case SheetFitAllRowsOnPage:
+		return "SheetFitAllRowsOnPage"
+	default:
+		return fmt.Sprintf("AutoScalingPage(%d)", p)
+	}
+}
+
+const (
+	// SheetFitOnPage fit sheet on single page
+	SheetFitOnPage SheetAutoScalingPageMode = iota + 1
+	// SheetFitAllColumnsOnPage fit all columns on page and auto create page breaks by rows
+	SheetFitAllColumnsOnPage
+	// SheetFitAllRowsOnPage fit all rows on page and auto create page breaks by columns
+	SheetFitAllRowsOnPage
+)
+
+// SetSheetAutoScalingPageByMode this is a helper to alto scaling sheet page by mode SheetFitOnPage or SheetFitAllColumnsOnPage
+// or SheetFitAllRowsOnPage.
+func (f *File) SetSheetAutoScalingPageByMode(sheet string, mode SheetAutoScalingPageMode) (err error) {
+	switch mode {
+	case SheetFitOnPage, SheetFitAllColumnsOnPage, SheetFitAllRowsOnPage:
+		if err = f.SetSheetProps(sheet, &SheetPropsOptions{FitToPage: boolPtr(true)}); err != nil {
+			return
+		}
+		switch mode {
+		case SheetFitAllColumnsOnPage:
+			return f.SetPageLayout(sheet, &PageLayoutOptions{FitToHeight: intPtr(0)})
+		case SheetFitAllRowsOnPage:
+			return f.SetPageLayout(sheet, &PageLayoutOptions{FitToWidth: intPtr(0)})
+		}
+		return
+	default:
+		return ErrUnknownSheetAutoScalingPageMode
+	}
+}
