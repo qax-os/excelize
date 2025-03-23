@@ -1071,7 +1071,58 @@ type ViewOptions struct {
 	ZoomScale *float64
 }
 
-// SheetPropsOptions directly maps the settings of sheet view.
+// SetSheetProps provides a function to set worksheet properties. There 4 kinds
+// of presets "Custom Scaling Options" in the spreadsheet applications, if you
+// need to set those kind of scaling options, please using the "SetSheetProps"
+// and "SetPageLayout" functions to approach these 4 scaling options:
+//
+// 1. No Scaling (Print sheets at their actual size):
+//
+//	disable := false
+//	if err := f.SetSheetProps("Sheet1", &excelize.SheetPropsOptions{
+//	    FitToPage: &disable,
+//	}); err != nil {
+//	    fmt.Println(err)
+//	}
+//
+// 2. Fit Sheet on One Page (Shrink the printout so that it fits on one page):
+//
+//	enable := true
+//	if err := f.SetSheetProps("Sheet1", &excelize.SheetPropsOptions{
+//	    FitToPage: &enable,
+//	}); err != nil {
+//	    fmt.Println(err)
+//	}
+//
+// 3. Fit All Columns on One Page (Shrink the printout so that it is one page
+// wide):
+//
+//	enable, zero := true, 0
+//	if err := f.SetSheetProps("Sheet1", &excelize.SheetPropsOptions{
+//	    FitToPage: &enable,
+//	}); err != nil {
+//	    fmt.Println(err)
+//	}
+//	if err := f.SetPageLayout("Sheet1", &excelize.PageLayoutOptions{
+//	    FitToHeight: &zero,
+//	}); err != nil {
+//	    fmt.Println(err)
+//	}
+//
+// 4. Fit All Rows on One Page (Shrink the printout so that it is one page
+// high):
+//
+//	enable, zero := true, 0
+//	if err := f.SetSheetProps("Sheet1", &excelize.SheetPropsOptions{
+//	    FitToPage: &enable,
+//	}); err != nil {
+//	    fmt.Println(err)
+//	}
+//	if err := f.SetPageLayout("Sheet1", &excelize.PageLayoutOptions{
+//	    FitToWidth: &zero,
+//	}); err != nil {
+//	    fmt.Println(err)
+//	}
 type SheetPropsOptions struct {
 	// Specifies a stable name of the sheet, which should not change over time,
 	// and does not change from user input. This name should be used by code
