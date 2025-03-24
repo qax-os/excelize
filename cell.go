@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
 	"math"
@@ -523,7 +522,7 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 		}
 
 		if escape {
-			var buf bytes.Buffer
+			var buf strings.Builder
 			_ = xml.EscapeText(&buf, []byte(value))
 			value = strings.ReplaceAll(buf.String(), "&#xA;", "\n")
 		}
