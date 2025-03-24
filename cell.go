@@ -524,8 +524,8 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 
 		if escape {
 			var buf bytes.Buffer
-			_ = escapeText(&buf, []byte(value))
-			value = buf.String()
+			_ = xml.EscapeText(&buf, []byte(value))
+			value = strings.ReplaceAll(buf.String(), "&#xA;", "\n")
 		}
 	}
 	v = bstrMarshal(value)
