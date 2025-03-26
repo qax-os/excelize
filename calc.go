@@ -98,9 +98,13 @@ const (
 	tfmmss     = `(([0-9])+):(([0-9])+\.([0-9])+)( (am|pm))?`
 	tfhhmmss   = `(([0-9])+):(([0-9])+):(([0-9])+(\.([0-9])+)?)( (am|pm))?`
 	timeSuffix = `( (` + tfhh + `|` + tfhhmm + `|` + tfmmss + `|` + tfhhmmss + `))?$`
+
+	tableRefPartsCnt = 3
 )
 
 var (
+	errNotExistingTable  = errors.New("not existing table")
+	errNotExistingColumn = errors.New("not existing column")
 	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
@@ -211,6 +215,7 @@ var (
 		criteriaL,
 		criteriaG,
 	}
+	tableRefRe = regexp.MustCompile(`^(\w+)\[([^\]]+)\]$`)
 )
 
 // calcContext defines the formula execution context.
@@ -1487,6 +1492,7 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 		cell                = ref
 		tokens              = strings.Split(ref, "!")
 	)
+
 	if len(tokens) == 2 { // have a worksheet
 		cr.Sheet, cell = tokens[0], tokens[1]
 	}
@@ -1500,6 +1506,58 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 		return cr, false, false, err
 	}
 	return cr, false, false, err
+}
+
+func pickColumnInTableRef(tblRef tableRef, colName string) (string, error) {
+	offset := -1
+
+	// Column ID is not reliable for order so we need to iterate through them.
+	for i, otherColName := range tblRef.columns {
+		if colName == otherColName {
+			offset = i
+		}
+	}
+
+	if offset == -1 {
+		return "", fmt.Errorf("column `%s` not in table: %w", colName, errNotExistingColumn)
+	}
+
+	// Tables having just a single cell are invalid. Hence it is safe to assume it should always be a range reference.
+	coords, err := rangeRefToCoordinates(tblRef.ref)
+	if err != nil {
+		return "", err
+	}
+
+	col := coords[0] + offset
+	rangeRef, err := coordinatesToRangeRef([]int{col, coords[1] + 1, col, coords[3]})
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s!%s", tblRef.sheet, rangeRef), nil
+}
+
+func (f *File) tryParseAsTableRef(ref string) (string, error) {
+	submatch := tableRefRe.FindStringSubmatch(ref)
+	// Fallback to regular ref.
+	if len(submatch) != tableRefPartsCnt {
+		return ref, nil
+	}
+
+	tableName := submatch[1]
+	colName := submatch[2]
+
+	rawTblRef, ok := f.tableRefs.Load(tableName)
+	if !ok {
+		return "", fmt.Errorf("referencing table `%s`: %w", tableName, errNotExistingTable)
+	}
+
+	tblRef, ok := rawTblRef.(tableRef)
+	if !ok {
+		panic(fmt.Sprintf("unexpected reference type %T", ref))
+	}
+
+	return pickColumnInTableRef(tblRef, colName)
 }
 
 // prepareCellRange checking and convert cell reference to a cell range.
@@ -1535,6 +1593,11 @@ func (cr *cellRange) prepareCellRange(col, row bool, cellRef cellRef) error {
 // characters and default sheet name.
 func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formulaArg, error) {
 	reference = strings.ReplaceAll(reference, "$", "")
+	reference, err := f.tryParseAsTableRef(reference)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorNAME, "invalid reference"), err
+	}
+
 	ranges, cellRanges, cellRefs := strings.Split(reference, ":"), list.New(), list.New()
 	if len(ranges) > 1 {
 		var cr cellRange
