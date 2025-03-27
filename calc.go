@@ -1690,16 +1690,31 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 	// extract value from ranges
 	if cellRanges.Len() > 0 {
 		arg.Type = ArgMatrix
+
+		var ws *xlsxWorksheet
+		ws, err = f.workSheetReader(sheet)
+		if err != nil {
+			return
+		}
+
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
+			colMax := 0
+			if row <= len(ws.SheetData.Row) {
+				rowData := &ws.SheetData.Row[row-1]
+				colMax = min(valueRange[3], len(rowData.C))
+			}
+
 			var matrixRow []formulaArg
 			for col := valueRange[2]; col <= valueRange[3]; col++ {
-				var cell string
-				var value formulaArg
-				if cell, err = CoordinatesToCellName(col, row); err != nil {
-					return
-				}
-				if value, err = f.cellResolver(ctx, sheet, cell); err != nil {
-					return
+				value := newEmptyFormulaArg()
+				if col <= colMax {
+					var cell string
+					if cell, err = CoordinatesToCellName(col, row); err != nil {
+						return
+					}
+					if value, err = f.cellResolver(ctx, sheet, cell); err != nil {
+						return
+					}
 				}
 				matrixRow = append(matrixRow, value)
 			}
