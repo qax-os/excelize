@@ -1071,10 +1071,11 @@ type ViewOptions struct {
 	ZoomScale *float64
 }
 
-// SetSheetProps provides a function to set worksheet properties. There 4 kinds
-// of presets "Custom Scaling Options" in the spreadsheet applications, if you
-// need to set those kind of scaling options, please using the "SetSheetProps"
-// and "SetPageLayout" functions to approach these 4 scaling options:
+// SheetPropsOptions provides a function to set worksheet properties. There 4
+// kinds of presets "Custom Scaling Options" in the spreadsheet applications, if
+// you need to set those kind of scaling options, please using the
+// "SetSheetProps" and "SetPageLayout" functions to approach these 4 scaling
+// options:
 //
 // 1. No Scaling (Print sheets at their actual size):
 //

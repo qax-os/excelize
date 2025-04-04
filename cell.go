@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/xuri/efp"
 )
 
 // CellType is the type of cell value type.
@@ -1640,44 +1642,16 @@ func isOverlap(rect1, rect2 []int) bool {
 
 // parseSharedFormula generate dynamic part of shared formula for target cell
 // by given column and rows distance and origin shared formula.
-func parseSharedFormula(dCol, dRow int, orig []byte) (res string, start int) {
-	var (
-		end           int
-		stringLiteral bool
-	)
-	for end = 0; end < len(orig); end++ {
-		c := orig[end]
-		if c == '"' {
-			stringLiteral = !stringLiteral
-		}
-		if stringLiteral {
-			continue // Skip characters in quotes
-		}
-		if c >= 'A' && c <= 'Z' || c == '$' {
-			res += string(orig[start:end])
-			start = end
-			end++
-			foundNum := false
-			for ; end < len(orig); end++ {
-				idc := orig[end]
-				if idc >= '0' && idc <= '9' || idc == '$' {
-					foundNum = true
-				} else if idc >= 'A' && idc <= 'Z' {
-					if foundNum {
-						break
-					}
-				} else {
-					break
-				}
-			}
-			if foundNum {
-				cellID := string(orig[start:end])
-				res += shiftCell(cellID, dCol, dRow)
-				start = end
-			}
+func parseSharedFormula(dCol, dRow int, orig string) string {
+	ps := efp.ExcelParser()
+	tokens := ps.Parse(string(orig))
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
+			tokens[i].TValue = shiftCell(token.TValue, dCol, dRow)
 		}
 	}
-	return
+	return ps.Render()
 }
 
 // getSharedFormula find a cell contains the same formula as another cell,
@@ -1698,12 +1672,7 @@ func getSharedFormula(ws *xlsxWorksheet, si int, cell string) string {
 				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
 				dCol := col - sharedCol
 				dRow := row - sharedRow
-				orig := []byte(c.F.Content)
-				res, start := parseSharedFormula(dCol, dRow, orig)
-				if start < len(orig) {
-					res += string(orig[start:])
-				}
-				return res
+				return parseSharedFormula(dCol, dRow, c.F.Content)
 			}
 		}
 	}
@@ -1712,21 +1681,39 @@ func getSharedFormula(ws *xlsxWorksheet, si int, cell string) string {
 
 // shiftCell returns the cell shifted according to dCol and dRow taking into
 // consideration absolute references with dollar sign ($)
-func shiftCell(cellID string, dCol, dRow int) string {
-	fCol, fRow, _ := CellNameToCoordinates(cellID)
-	signCol, signRow := "", ""
-	if strings.Index(cellID, "$") == 0 {
-		signCol = "$"
-	} else {
-		// Shift column
-		fCol += dCol
+func shiftCell(val string, dCol, dRow int) string {
+	parts := strings.Split(val, ":")
+	for j := 0; j < len(parts); j++ {
+		cell := parts[j]
+		trimmedCellName := strings.ReplaceAll(cell, "$", "")
+		c, r, err := CellNameToCoordinates(trimmedCellName)
+		if err == nil {
+			absCol := strings.Index(cell, "$") == 0
+			absRow := strings.LastIndex(cell, "$") > 0
+			if !absCol && !absRow {
+				parts[j], _ = CoordinatesToCellName(c+dCol, r+dRow)
+			}
+			if !absCol && absRow {
+				colName, _ := ColumnNumberToName(c + dCol)
+				parts[j] = colName + "$" + strconv.Itoa(r)
+			}
+			if absCol && !absRow {
+				colName, _ := ColumnNumberToName(c)
+				parts[j] = "$" + colName + strconv.Itoa(r+dRow)
+			}
+			continue
+		}
+		// Cell reference is a column name
+		c, err = ColumnNameToNumber(trimmedCellName)
+		if err == nil && !strings.HasPrefix(cell, "$") {
+			parts[j], _ = ColumnNumberToName(c + dCol)
+			continue
+		}
+		// Cell reference is a row number
+		r, err = strconv.Atoi(trimmedCellName)
+		if err == nil && !strings.HasPrefix(cell, "$") {
+			parts[j] = strconv.Itoa(r + dRow)
+		}
 	}
-	if strings.LastIndex(cellID, "$") > 0 {
-		signRow = "$"
-	} else {
-		// Shift row
-		fRow += dRow
-	}
-	colName, _ := ColumnNumberToName(fCol)
-	return signCol + colName + signRow + strconv.Itoa(fRow)
+	return strings.Join(parts, ":")
 }

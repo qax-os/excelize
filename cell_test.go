@@ -591,9 +591,11 @@ func TestGetCellFormula(t *testing.T) {
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><f>2*A1</f></c></row><row r="2"><c r="A2"><v>2</v></c><c r="B2"><f t="shared" ref="B2:B7" si="0">%s</f></c></row><row r="3"><c r="A3"><v>3</v></c><c r="B3"><f t="shared" si="0"/></c></row><row r="4"><c r="A4"><v>4</v></c><c r="B4"><f t="shared" si="0"/></c></row><row r="5"><c r="A5"><v>5</v></c><c r="B5"><f t="shared" si="0"/></c></row><row r="6"><c r="A6"><v>6</v></c><c r="B6"><f t="shared" si="0"/></c></row><row r="7"><c r="A7"><v>7</v></c><c r="B7"><f t="shared" si="0"/></c></row></sheetData></worksheet>`
 
 	for sharedFormula, expected := range map[string]string{
-		`2*A2`:           `2*A3`,
-		`2*A1A`:          `2*A2A`,
-		`2*$A$2+LEN("")`: `2*$A$2+LEN("")`,
+		`2*A2`:                 `2*A3`,
+		`2*A1A`:                `2*A1A`,
+		`2*$A$2+LEN("")`:       `2*$A$2+LEN("")`,
+		`SUMIF(A:A,$B11, 5:5)`: `SUMIF(A:A,$B12,6:6)`,
+		`SUMIF(A:A,B$11, 5:5)`: `SUMIF(A:A,B$11,6:6)`,
 	} {
 		f.Sheet.Delete("xl/worksheets/sheet1.xml")
 		f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, sharedFormula)))
