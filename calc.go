@@ -12940,9 +12940,7 @@ func (fn *formulaFuncs) NETWORKDAYSdotINTL(argsList *list.List) formulaArg {
 	sign := 1
 	if startDate.Number > endDate.Number {
 		sign = -1
-		temp := startDate.Number
-		startDate.Number = endDate.Number
-		endDate.Number = temp
+		startDate.Number, endDate.Number = endDate.Number, startDate.Number
 	}
 	offset := endDate.Number - startDate.Number
 	count := int(math.Floor(offset/7) * float64(workdaysPerWeek))
