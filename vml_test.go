@@ -192,7 +192,7 @@ func TestFormControl(t *testing.T) {
 		},
 		{
 			Cell: "A6", Type: FormControlCheckBox, Text: "Check Box 2",
-			Format: GraphicOptions{Positioning: "twoCell"},
+			CellLink: "C5", Format: GraphicOptions{Positioning: "twoCell"},
 		},
 		{
 			Cell: "A7", Type: FormControlOptionButton, Text: "Option Button 1", Checked: true,
