@@ -42,6 +42,9 @@ func TestConcurrency(t *testing.T) {
 			assert.NoError(t, err)
 			// Concurrency set cell style
 			assert.NoError(t, f.SetCellStyle("Sheet1", "A3", "A3", style))
+			// Concurrency get cell style
+			_, err = f.GetCellStyle("Sheet1", "A3")
+			assert.NoError(t, err)
 			// Concurrency add picture
 			assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 				&GraphicOptions{
@@ -278,7 +281,7 @@ func TestSetCellValue(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathSharedStrings, []byte(fmt.Sprintf(`<sst xmlns="%s" count="2" uniqueCount="1"><si><t>a</t></si><si><t>a</t></si></sst>`, NameSpaceSpreadSheet.Value)))
 	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
 		SheetData: xlsxSheetData{Row: []xlsxRow{
-			{R: intPtr(1), C: []xlsxC{{R: "A1", T: "str", V: "1"}}},
+			{R: 1, C: []xlsxC{{R: "A1", T: "str", V: "1"}}},
 		}},
 	})
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "b"))
@@ -289,6 +292,42 @@ func TestSetCellValue(t *testing.T) {
 	val, err = f.GetCellValue("Sheet1", "B1")
 	assert.NoError(t, err)
 	assert.Equal(t, "b", val)
+
+	f = NewFile()
+	// Test set cell value with an IEEE 754 "not-a-number" value or infinity
+	for num, expected := range map[float64]string{
+		math.NaN():   "NaN",
+		math.Inf(0):  "+Inf",
+		math.Inf(-1): "-Inf",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", num))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
+	// Test set cell value with time duration
+	for val, expected := range map[time.Duration]string{
+		time.Hour*21 + time.Minute*51 + time.Second*44: "21:51:44",
+		time.Hour*21 + time.Minute*50:                  "21:50",
+		time.Hour*24 + time.Minute*51 + time.Second*44: "24:51:44",
+		time.Hour*24 + time.Minute*50:                  "24:50:00",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
+	// Test set cell value with time
+	for val, expected := range map[time.Time]string{
+		time.Date(2024, time.October, 1, 0, 0, 0, 0, time.UTC):   "Oct-24",
+		time.Date(2024, time.October, 10, 0, 0, 0, 0, time.UTC):  "10-10-24",
+		time.Date(2024, time.October, 10, 12, 0, 0, 0, time.UTC): "10/10/24 12:00",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		val, err := f.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val)
+	}
 }
 
 func TestSetCellValues(t *testing.T) {
@@ -298,7 +337,7 @@ func TestSetCellValues(t *testing.T) {
 
 	v, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
-	assert.Equal(t, v, "12/31/10 00:00")
+	assert.Equal(t, v, "12-31-10")
 
 	// Test date value lower than min date supported by Excel
 	err = f.SetCellValue("Sheet1", "A1", time.Date(1600, time.December, 31, 0, 0, 0, 0, time.UTC))
@@ -387,6 +426,9 @@ func TestGetCellValue(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="0"><c r="H6" t="inlineStr"><is><t>H6</t></is></c><c r="A1" t="inlineStr"><is><t>r0A6</t></is></c><c r="F4" t="inlineStr"><is><t>F4</t></is></c></row><row><c r="A1" t="inlineStr"><is><t>A6</t></is></c><c r="B1" t="inlineStr"><is><t>B6</t></is></c><c r="C1" t="inlineStr"><is><t>C6</t></is></c></row><row r="3"><c r="A3"><v>100</v></c><c r="B3" t="inlineStr"><is><t>B3</t></is></c></row>`)))
 	f.checked = sync.Map{}
+	cell, err = f.GetCellValue("Sheet1", "H6")
+	assert.Equal(t, "H6", cell)
+	assert.NoError(t, err)
 	rows, err = f.GetRows("Sheet1")
 	assert.Equal(t, [][]string{
 		{"A6", "B6", "C6"},
@@ -396,9 +438,6 @@ func TestGetCellValue(t *testing.T) {
 		nil,
 		{"", "", "", "", "", "", "", "H6"},
 	}, rows)
-	assert.NoError(t, err)
-	cell, err = f.GetCellValue("Sheet1", "H6")
-	assert.Equal(t, "H6", cell)
 	assert.NoError(t, err)
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
@@ -552,9 +591,11 @@ func TestGetCellFormula(t *testing.T) {
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><f>2*A1</f></c></row><row r="2"><c r="A2"><v>2</v></c><c r="B2"><f t="shared" ref="B2:B7" si="0">%s</f></c></row><row r="3"><c r="A3"><v>3</v></c><c r="B3"><f t="shared" si="0"/></c></row><row r="4"><c r="A4"><v>4</v></c><c r="B4"><f t="shared" si="0"/></c></row><row r="5"><c r="A5"><v>5</v></c><c r="B5"><f t="shared" si="0"/></c></row><row r="6"><c r="A6"><v>6</v></c><c r="B6"><f t="shared" si="0"/></c></row><row r="7"><c r="A7"><v>7</v></c><c r="B7"><f t="shared" si="0"/></c></row></sheetData></worksheet>`
 
 	for sharedFormula, expected := range map[string]string{
-		`2*A2`:           `2*A3`,
-		`2*A1A`:          `2*A2A`,
-		`2*$A$2+LEN("")`: `2*$A$2+LEN("")`,
+		`2*A2`:                 `2*A3`,
+		`2*A1A`:                `2*A1A`,
+		`2*$A$2+LEN("")`:       `2*$A$2+LEN("")`,
+		`SUMIF(A:A,$B11, 5:5)`: `SUMIF(A:A,$B12,6:6)`,
+		`SUMIF(A:A,B$11, 5:5)`: `SUMIF(A:A,B$11,6:6)`,
 	} {
 		f.Sheet.Delete("xl/worksheets/sheet1.xml")
 		f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, sharedFormula)))
@@ -769,6 +810,13 @@ func TestGetCellRichText(t *testing.T) {
 	runs, err = f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(runs))
+	// Test get cell rich text when string item index is invalid
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row[0].C[0] = xlsxC{T: "s", V: "A", IS: &xlsxSI{}}
+	runs, err = f.GetCellRichText("Sheet1", "A1")
+	assert.EqualError(t, err, "strconv.Atoi: parsing \"A\": invalid syntax")
+	assert.Equal(t, 0, len(runs))
 	// Test get cell rich text on invalid string item index
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
@@ -810,7 +858,7 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "bold",
 			Font: &Font{
 				Bold:         true,
-				Color:        "2354e8",
+				Color:        "2354E8",
 				ColorIndexed: 0,
 				Family:       "Times New Roman",
 			},
@@ -825,7 +873,7 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "italic ",
 			Font: &Font{
 				Bold:   true,
-				Color:  "e83723",
+				Color:  "E83723",
 				Italic: true,
 				Family: "Times New Roman",
 			},
@@ -834,7 +882,7 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "text with color and font-family, ",
 			Font: &Font{
 				Bold:   true,
-				Color:  "2354e8",
+				Color:  "2354E8",
 				Family: "Times New Roman",
 			},
 		},
@@ -842,20 +890,20 @@ func TestSetCellRichText(t *testing.T) {
 			Text: "\r\nlarge text with ",
 			Font: &Font{
 				Size:  14,
-				Color: "ad23e8",
+				Color: "AD23E8",
 			},
 		},
 		{
 			Text: "strike",
 			Font: &Font{
-				Color:  "e89923",
+				Color:  "E89923",
 				Strike: true,
 			},
 		},
 		{
 			Text: " superscript",
 			Font: &Font{
-				Color:     "dbc21f",
+				Color:     "DBC21F",
 				VertAlign: "superscript",
 			},
 		},
@@ -863,14 +911,14 @@ func TestSetCellRichText(t *testing.T) {
 			Text: " and ",
 			Font: &Font{
 				Size:      14,
-				Color:     "ad23e8",
-				VertAlign: "BASELINE",
+				Color:     "AD23E8",
+				VertAlign: "baseline",
 			},
 		},
 		{
 			Text: "underline",
 			Font: &Font{
-				Color:     "23e833",
+				Color:     "23E833",
 				Underline: "single",
 			},
 		},
@@ -891,6 +939,11 @@ func TestSetCellRichText(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+
+	runs, err := f.GetCellRichText("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, richTextRun, runs)
+
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellRichText.xlsx")))
 	// Test set cell rich text on not exists worksheet
 	assert.EqualError(t, f.SetCellRichText("SheetN", "A1", richTextRun), "sheet SheetN does not exist")
@@ -1105,6 +1158,29 @@ func TestSharedStringsError(t *testing.T) {
 	f.tempFiles.Range(func(k, v interface{}) bool {
 		return assert.NoError(t, os.Remove(v.(string)))
 	})
+}
+
+func TestSetCellIntFunc(t *testing.T) {
+	cases := []struct {
+		val    interface{}
+		target string
+	}{
+		{val: 128, target: "128"},
+		{val: int8(-128), target: "-128"},
+		{val: int16(-32768), target: "-32768"},
+		{val: int32(-2147483648), target: "-2147483648"},
+		{val: int64(-9223372036854775808), target: "-9223372036854775808"},
+		{val: uint(128), target: "128"},
+		{val: uint8(255), target: "255"},
+		{val: uint16(65535), target: "65535"},
+		{val: uint32(4294967295), target: "4294967295"},
+		{val: uint64(18446744073709551615), target: "18446744073709551615"},
+	}
+	for _, c := range cases {
+		cell := &xlsxC{}
+		setCellIntFunc(cell, c.val)
+		assert.Equal(t, c.target, cell.V)
+	}
 }
 
 func TestSIString(t *testing.T) {

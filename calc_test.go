@@ -895,6 +895,9 @@ func TestCalcCellValue(t *testing.T) {
 		"=1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.6666666666667",
 		"=SUM(1+ROW())":                       "2",
 		"=SUM((SUM(2))+1)":                    "3",
+		"=IF(2<0, 1, (4))":                    "4",
+		"=IF(2>0, (1), 4)":                    "1",
+		"=IF(2>0, (A1)*2.5, 4)":               "2.5",
 		"=SUM({1,2,3,4,\"\"})":                "10",
 		// SUMIF
 		"=SUMIF(F1:F5, \"\")":             "0",
@@ -2117,6 +2120,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=DDB(10000,1000,5,5)": "296",
 		// DISC
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100)": "0.01",
+		// DOLLAR
+		"=DOLLAR(1234.56)":     "$1,234.56",
+		"=DOLLAR(1234.56,0)":   "$1,235",
+		"=DOLLAR(1234.56,1)":   "$1,234.6",
+		"=DOLLAR(1234.56,2)":   "$1,234.56",
+		"=DOLLAR(1234.56,3)":   "$1,234.560",
+		"=DOLLAR(1234.56,-2)":  "$1,200",
+		"=DOLLAR(1234.56,-3)":  "$1,000",
+		"=DOLLAR(-1234.56,3)":  "($1,234.560)",
+		"=DOLLAR(-1234.56,-3)": "($1,000)",
 		// DOLLARDE
 		"=DOLLARDE(1.01,16)": "1.0625",
 		// DOLLARFR
@@ -4250,6 +4263,12 @@ func TestCalcCellValue(t *testing.T) {
 		"=DISC(\"04/01/2016\",\"03/31/2021\",0,100)":       {"#NUM!", "DISC requires pr > 0"},
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,0)":        {"#NUM!", "DISC requires redemption > 0"},
 		"=DISC(\"04/01/2016\",\"03/31/2021\",95,100,5)":    {"#NUM!", "invalid basis"},
+		// DOLLAR
+		"DOLLAR()":       {"#VALUE!", "DOLLAR requires at least 1 argument"},
+		"DOLLAR(0,0,0)":  {"#VALUE!", "DOLLAR requires 1 or 2 arguments"},
+		"DOLLAR(\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"DOLLAR(0,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"DOLLAR(1,200)":  {"#VALUE!", "decimal value should be less than 128"},
 		// DOLLARDE
 		"=DOLLARDE()":       {"#VALUE!", "DOLLARDE requires 2 arguments"},
 		"=DOLLARDE(\"\",0)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -5562,13 +5581,13 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 
 func TestCalcXIRR(t *testing.T) {
 	cellData := [][]interface{}{
-		{-100.00, "01/01/2016"},
-		{20.00, "04/01/2016"},
-		{40.00, "10/01/2016"},
-		{25.00, "02/01/2017"},
-		{8.00, "03/01/2017"},
-		{15.00, "06/01/2017"},
-		{-1e-10, "09/01/2017"},
+		{-100.00, 42370},
+		{20.00, 42461},
+		{40.00, 42644},
+		{25.00, 42767},
+		{8.00, 42795},
+		{15.00, 42887},
+		{-1e-10, 42979},
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
@@ -5584,8 +5603,8 @@ func TestCalcXIRR(t *testing.T) {
 	calcError := map[string][]string{
 		"=XIRR()":                 {"#VALUE!", "XIRR requires 2 or 3 arguments"},
 		"=XIRR(A1:A4,B1:B4,-1)":   {"#VALUE!", "XIRR requires guess > -1"},
-		"=XIRR(\"\",B1:B4)":       {"#NUM!", "#NUM!"},
-		"=XIRR(A1:A4,\"\")":       {"#NUM!", "#NUM!"},
+		"=XIRR(\"\",B1:B4)":       {"#VALUE!", "#VALUE!"},
+		"=XIRR(A1:A4,\"\")":       {"#VALUE!", "#VALUE!"},
 		"=XIRR(A1:A4,B1:B4,\"\")": {"#NUM!", "#NUM!"},
 		"=XIRR(A2:A6,B2:B6)":      {"#NUM!", "#NUM!"},
 		"=XIRR(A2:A7,B2:B7)":      {"#NUM!", "#NUM!"},
@@ -5708,15 +5727,15 @@ func TestCalcXLOOKUP(t *testing.T) {
 func TestCalcXNPV(t *testing.T) {
 	cellData := [][]interface{}{
 		{nil, 0.05},
-		{"01/01/2016", -10000, nil},
-		{"02/01/2016", 2000},
-		{"05/01/2016", 2400},
-		{"07/01/2016", 2900},
-		{"11/01/2016", 3500},
-		{"01/01/2017", 4100},
+		{42370, -10000, nil},
+		{42401, 2000},
+		{42491, 2400},
+		{42552, 2900},
+		{42675, 3500},
+		{42736, 4100},
 		{},
-		{"02/01/2016"},
-		{"01/01/2016"},
+		{42401},
+		{42370},
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
@@ -5732,9 +5751,9 @@ func TestCalcXNPV(t *testing.T) {
 		"=XNPV()":                 {"#VALUE!", "XNPV requires 3 arguments"},
 		"=XNPV(\"\",B2:B7,A2:A7)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"=XNPV(0,B2:B7,A2:A7)":    {"#VALUE!", "XNPV requires rate > 0"},
-		"=XNPV(B1,\"\",A2:A7)":    {"#NUM!", "#NUM!"},
-		"=XNPV(B1,B2:B7,\"\")":    {"#NUM!", "#NUM!"},
-		"=XNPV(B1,B2:B7,C2:C7)":   {"#NUM!", "#NUM!"},
+		"=XNPV(B1,\"\",A2:A7)":    {"#VALUE!", "#VALUE!"},
+		"=XNPV(B1,B2:B7,\"\")":    {"#VALUE!", "#VALUE!"},
+		"=XNPV(B1,B2:B7,C2:C7)":   {"#VALUE!", "#VALUE!"},
 		"=XNPV(B1,B2,A2)":         {"#NUM!", "#NUM!"},
 		"=XNPV(B1,B2:B3,A2:A5)":   {"#NUM!", "#NUM!"},
 		"=XNPV(B1,B2:B3,A9:A10)":  {"#VALUE!", "#VALUE!"},
@@ -6284,6 +6303,43 @@ func TestCalcBetainvProbIterator(t *testing.T) {
 	assert.Equal(t, 1.0, betainvProbIterator(1, 1, 1, 1, 1, 1, 1, 1, 1))
 }
 
+func TestCalcRangeResolver(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=SUM(Sheet1!B:B)"))
+	cellRefs := list.New()
+	cellRanges := list.New()
+	// Test extract value from ranges on invalid ranges
+	cellRanges.PushBack(cellRange{
+		From: cellRef{Col: 1, Row: 1, Sheet: "SheetN"},
+		To:   cellRef{Col: 1, Row: TotalRows, Sheet: "SheetN"},
+	})
+	_, err := f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+
+	ws, err := f.workSheetReader("Sheet1")
+	ws.SheetData.Row = make([]xlsxRow, TotalRows+1)
+	ws.SheetData.Row[TotalRows].C = make([]xlsxC, 3)
+	assert.NoError(t, err)
+	cellRanges.Init()
+	cellRanges.PushBack(cellRange{
+		From: cellRef{Col: 3, Row: TotalRows, Sheet: "Sheet1"},
+		To:   cellRef{Col: 3, Row: TotalRows + 1, Sheet: "Sheet1"},
+	})
+	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
+	assert.Equal(t, ErrMaxRows, err)
+
+	// Test extract value from references with invalid references
+	cellRanges.Init()
+	cellRefs.PushBack(cellRef{Col: 1, Row: 1, Sheet: "SheetN"})
+	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+
+	cellRefs.Init()
+	cellRefs.PushBack(cellRef{Col: 1, Row: TotalRows + 1, Sheet: "SheetN"})
+	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
+	assert.Equal(t, ErrMaxRows, err)
+}
+
 func TestNestedFunctionsWithOperators(t *testing.T) {
 	f := NewFile()
 	formulaList := map[string]string{
@@ -6311,13 +6367,31 @@ func TestFormulaRawCellValueOption(t *testing.T) {
 		raw      bool
 		expected string
 	}{
-		{"=\"10e3\"", false, "10000"},
+		{"=VALUE(\"1.0E-07\")", false, "0.00"},
+		{"=VALUE(\"1.0E-07\")", true, "0.0000001"},
+		{"=\"text\"", false, "$text"},
+		{"=\"text\"", true, "text"},
+		{"=\"10e3\"", false, "$10e3"},
 		{"=\"10e3\"", true, "10e3"},
-		{"=\"10\" & \"e3\"", false, "10000"},
+		{"=\"10\" & \"e3\"", false, "$10e3"},
 		{"=\"10\" & \"e3\"", true, "10e3"},
-		{"=\"1111111111111111\"", false, "1.11111111111111E+15"},
+		{"=10e3", false, "10000.00"},
+		{"=10e3", true, "10000"},
+		{"=\"1111111111111111\"", false, "$1111111111111111"},
 		{"=\"1111111111111111\"", true, "1111111111111111"},
+		{"=1111111111111111", false, "1111111111111110.00"},
+		{"=1111111111111111", true, "1.11111111111111E+15"},
+		{"=1444.00000000003", false, "1444.00"},
+		{"=1444.00000000003", true, "1444.00000000003"},
+		{"=1444.000000000003", false, "1444.00"},
+		{"=1444.000000000003", true, "1444"},
+		{"=ROUND(1444.00000000000003,2)", false, "1444.00"},
+		{"=ROUND(1444.00000000000003,2)", true, "1444"},
 	}
+	exp := "0.00;0.00;;$@"
+	styleID, err := f.NewStyle(&Style{CustomNumFmt: &exp})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", styleID))
 	for _, test := range rawTest {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", test.value))
 		val, err := f.CalcCellValue("Sheet1", "A1", Options{RawCellValue: test.raw})

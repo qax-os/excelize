@@ -31,17 +31,20 @@ func TestPivotTable(t *testing.T) {
 		DataRange:           "Sheet1!A1:E31",
 		PivotTableRange:     "Sheet1!G2:M34",
 		Name:                "PivotTable1",
-		Rows:                []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Rows:                []PivotTableField{{Data: "Month", ShowAll: true, DefaultSubtotal: true}, {Data: "Year"}},
 		Filter:              []PivotTableField{{Data: "Region"}},
-		Columns:             []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:                []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Summarize by Sum"}},
+		Columns:             []PivotTableField{{Data: "Type", ShowAll: true, InsertBlankRow: true, DefaultSubtotal: true}},
+		Data:                []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Summarize by Sum", NumFmt: 38}},
 		RowGrandTotals:      true,
 		ColGrandTotals:      true,
 		ShowDrill:           true,
+		ClassicLayout:       true,
+		ShowError:           true,
 		ShowRowHeaders:      true,
 		ShowColHeaders:      true,
 		ShowLastColumn:      true,
-		ShowError:           true,
+		FieldPrintTitles:    true,
+		ItemPrintTitles:     true,
 		PivotTableStyleName: "PivotStyleLight16",
 	}
 	assert.NoError(t, f.AddPivotTable(expected))
@@ -131,7 +134,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet2!A1:AN17",
 		Rows:            []PivotTableField{{Data: "Month"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Min", Name: "Summarize by Min"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Min", Name: "Summarize by Min", NumFmt: 32}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -139,12 +142,19 @@ func TestPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
+
+	// Test get pivot table with across worksheet data range
+	pivotTables, err = f.GetPivotTables("Sheet2")
+	assert.NoError(t, err)
+	assert.Len(t, pivotTables, 1)
+	assert.Equal(t, "Sheet1!A1:E31", pivotTables[0].DataRange)
+
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
 		PivotTableRange: "Sheet2!A20:AR60",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Type"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Product", Name: "Summarize by Product"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Product", Name: "Summarize by Product", NumFmt: 32}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -164,7 +174,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet2!A65:AJ100",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Sum of Sales"}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Sum of Sales", NumFmt: -1}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales", NumFmt: 38}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -256,18 +266,25 @@ func TestPivotTable(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test add pivot table with invalid sheet name
-	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
+	assert.Error(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet:1!A1:E31",
 		PivotTableRange: "Sheet:1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Year"}},
-	}), ErrSheetNameInvalid.Error())
+	}), ErrSheetNameInvalid)
+	// Test add pivot table with enable ClassicLayout and CompactData in the same time
+	assert.Error(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		CompactData:     true,
+		ClassicLayout:   true,
+	}), ErrPivotTableClassicLayout)
 	// Test delete pivot table with not exists worksheet
 	assert.EqualError(t, f.DeletePivotTable("SheetN", "PivotTable1"), "sheet SheetN does not exist")
 	// Test delete pivot table with not exists pivot table name
 	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTableN"), "table PivotTableN does not exist")
 	// Test adjust range with invalid range
 	_, _, err = f.adjustRange("")
-	assert.EqualError(t, err, ErrParameterRequired.Error())
+	assert.Error(t, err, ErrParameterRequired)
 	// Test adjust range with incorrect range
 	_, _, err = f.adjustRange("sheet1!")
 	assert.EqualError(t, err, "parameter is invalid")
@@ -293,6 +310,7 @@ func TestPivotTable(t *testing.T) {
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot table with unsupported charset content types.
 	f = NewFile()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"}))
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
@@ -334,6 +352,8 @@ func TestPivotTable(t *testing.T) {
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/pivotTables/pivotTable1.xml", MacintoshCyrillicCharset)
 	_, err = f.GetPivotTables("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	_, err = f.getPivotTables()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
@@ -386,6 +406,25 @@ func TestPivotTableDataRange(t *testing.T) {
 	f.Relationships.Delete("xl/worksheets/_rels/sheet1.xml.rels")
 	f.Pkg.Delete("xl/worksheets/_rels/sheet1.xml.rels")
 	assert.EqualError(t, f.DeletePivotTable("Sheet1", "PivotTable1"), "table PivotTable1 does not exist")
+
+	t.Run("data_range_with_empty_column", func(t *testing.T) {
+		// Test add pivot table with data range doesn't organized as a list with labeled columns
+		f := NewFile()
+		// Create some data in a sheet
+		month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+		types := []string{"Meat", "Dairy", "Beverages", "Produce"}
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "", "Type"}))
+		for row := 2; row < 32; row++ {
+			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[rand.Intn(12)]))
+			assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[rand.Intn(4)]))
+		}
+		assert.Equal(t, newPivotTableDataRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
+			DataRange:       "Sheet1!A1:E31",
+			PivotTableRange: "Sheet1!G2:M34",
+			Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}},
+			Data:            []PivotTableField{{Data: "Type"}},
+		}))
+	})
 }
 
 func TestParseFormatPivotTableSet(t *testing.T) {
@@ -477,7 +516,7 @@ func TestDeleteWorkbookPivotCache(t *testing.T) {
 	f := NewFile()
 	// Test delete workbook pivot table cache with unsupported workbook charset
 	f.WorkBook = nil
-	f.Pkg.Store("xl/workbook.xml", MacintoshCyrillicCharset)
+	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.deleteWorkbookPivotCache(PivotTableOptions{pivotCacheXML: "pivotCache/pivotCacheDefinition1.xml"}), "XML syntax error on line 1: invalid UTF-8")
 
 	// Test delete workbook pivot table cache with unsupported workbook relationships charset

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -289,6 +288,10 @@ func TestBytesReplace(t *testing.T) {
 
 func TestGetRootElement(t *testing.T) {
 	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
+	// Test get workbook root element which all workbook XML namespace has prefix
+	f := NewFile()
+	d := f.xmlNewDecoder(bytes.NewReader([]byte(`<x:workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"></x:workbook>`)))
+	assert.Len(t, getRootElement(d), 3)
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {
@@ -358,9 +361,6 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
-	if ver := runtime.Version(); strings.HasPrefix(ver, "go1.19") || strings.HasPrefix(ver, "go1.2") {
-		t.Skip()
-	}
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
 	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))
@@ -378,7 +378,7 @@ func TestUnzipToTemp(t *testing.T) {
 		"\x00\x00\x00\x00\x0000000000\x00\x00\x00\x00000" +
 		"00000000PK\x01\x0200000000" +
 		"0000000000000000\v\x00\x00\x00" +
-		"\x00\x0000PK\x05\x06000000\x05\x000000" +
+		"\x00\x0000PK\x05\x06000000\x05\x00\xfd\x00\x00\x00" +
 		"\v\x00\x00\x00\x00\x00")
 	z, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	assert.NoError(t, err)

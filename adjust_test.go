@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	_ "image/jpeg"
@@ -289,7 +290,7 @@ func TestAdjustAutoFilter(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.adjustAutoFilter(&xlsxWorksheet{
 		SheetData: xlsxSheetData{
-			Row: []xlsxRow{{Hidden: true, R: intPtr(2)}},
+			Row: []xlsxRow{{Hidden: true, R: 2}},
 		},
 		AutoFilter: &xlsxAutoFilter{
 			Ref: "A1:A3",
@@ -463,6 +464,14 @@ func TestAdjustCols(t *testing.T) {
 
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 2))
 	assert.Nil(t, ws.(*xlsxWorksheet).Cols)
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "(1-0.5)/2"))
+	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+	formula, err := f.GetCellFormula("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "(1-0.5)/2", formula)
+	assert.NoError(t, f.Close())
 }
 
 func TestAdjustColDimensions(t *testing.T) {
@@ -991,7 +1000,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 		{
 			Type:     "cell",
 			Criteria: "greater than",
-			Format:   formatID,
+			Format:   &formatID,
 			Value:    "0",
 		},
 	}
@@ -1011,6 +1020,57 @@ func TestAdjustConditionalFormats(t *testing.T) {
 
 	ws.(*xlsxWorksheet).ConditionalFormatting[0] = nil
 	assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+
+	t.Run("for_remove_conditional_formats_column", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
+		assert.NoError(t, f.RemoveCol("Sheet1", "D"))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 0)
+	})
+	t.Run("for_remove_conditional_formats_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:E2", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "F2", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 2))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 0)
+	})
+	t.Run("for_adjust_conditional_formats_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "#638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 1))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, opts, 2)
+		assert.Equal(t, format, opts["D1:D2"])
+		assert.Equal(t, format, opts["D4:D4"])
+	})
 }
 
 func TestAdjustDataValidations(t *testing.T) {
@@ -1061,13 +1121,13 @@ func TestAdjustDataValidations(t *testing.T) {
 
 	// Test adjust data validation with multiple cell range
 	dv = NewDataValidation(true)
-	dv.Sqref = "G1:G3 H1:H3"
+	dv.Sqref = "G1:G3 H1:H3 A3:A1048576"
 	assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
 	assert.NoError(t, f.AddDataValidation("Sheet1", dv))
 	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 	dvs, err = f.GetDataValidations("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, "G1:G4 H1:H4", dvs[3].Sqref)
+	assert.Equal(t, "G1:G4 H1:H4 A4:A1048576", dvs[3].Sqref)
 
 	dv = NewDataValidation(true)
 	dv.Sqref = "C5:D6"
@@ -1091,6 +1151,44 @@ func TestAdjustDataValidations(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.adjustDataValidations(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
+
+	t.Run("for_escaped_data_validation_rules_formula", func(t *testing.T) {
+		f := NewFile()
+		_, err := f.NewSheet("Sheet2")
+		assert.NoError(t, err)
+		dv := NewDataValidation(true)
+		dv.Sqref = "A1"
+		assert.NoError(t, dv.SetDropList([]string{"option1", strings.Repeat("\"", 4)}))
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		// The double quote symbol in none formula data validation rules will be escaped in the Kingsoft WPS Office
+		formula := strings.ReplaceAll(fmt.Sprintf("\"option1, %s", strings.Repeat("\"", 9)), "\"", "&quot;")
+		ws.(*xlsxWorksheet).DataValidations.DataValidation[0].Formula1.Content = formula
+		assert.NoError(t, f.RemoveCol("Sheet2", "A"))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, formula, dvs[0].Formula1)
+	})
+
+	t.Run("no_data_validations_on_first_sheet", func(t *testing.T) {
+		f := NewFile()
+
+		// Add Sheet2 and set a data validation
+		_, err = f.NewSheet("Sheet2")
+		assert.NoError(t, err)
+		dv := NewDataValidation(true)
+		dv.Sqref = "C5:D6"
+		assert.NoError(t, f.AddDataValidation("Sheet2", dv))
+
+		// Adjust Sheet2 by removing a column
+		assert.NoError(t, f.RemoveCol("Sheet2", "A"))
+
+		// Verify that data validations on Sheet2 are adjusted correctly
+		dvs, err = f.GetDataValidations("Sheet2")
+		assert.NoError(t, err)
+		assert.Equal(t, "B5:C6", dvs[0].Sqref) // Adjusted range
+	})
 }
 
 func TestAdjustDrawings(t *testing.T) {

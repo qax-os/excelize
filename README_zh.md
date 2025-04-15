@@ -13,7 +13,7 @@
 
 ## 简介
 
-Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLAM / XLSM / XLSX / XLTM / XLTX 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写函数，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.18 或更高版本，请注意，Go 1.21.0 中存在[不兼容的更改](https://github.com/golang/go/issues/61881)，导致 Excelize 基础库无法在该版本上正常工作，如果您使用的是 Go 1.21.x，请升级到 Go 1.21.1 及更高版本。完整的使用文档请访问 [go.dev](https://pkg.go.dev/github.com/xuri/excelize/v2) 或查看 [参考文档](https://xuri.me/excelize/)。
+Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLAM / XLSM / XLSX / XLTM / XLTX 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写函数，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.23 或更高版本。完整的使用文档请访问 [go.dev](https://pkg.go.dev/github.com/xuri/excelize/v2) 或查看 [参考文档](https://xuri.me/excelize/)。
 
 ## 快速上手
 
