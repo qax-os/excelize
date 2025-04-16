@@ -231,7 +231,7 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 	if rowIterator.inElement == "c" {
 		rowIterator.cellCol++
 		colCell := xlsxC{}
-		_ = rows.decoder.DecodeElement(&colCell, xmlElement)
+		colCell.cellXMLHandler(rows.decoder, xmlElement)
 		if colCell.R != "" {
 			if rowIterator.cellCol, _, rowIterator.err = CellNameToCoordinates(colCell.R); rowIterator.err != nil {
 				return
@@ -240,6 +240,74 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 		blank := rowIterator.cellCol - len(rowIterator.cells)
 		if val, _ := colCell.getValueFrom(rows.f, rows.sst, raw); val != "" || colCell.F != nil {
 			rowIterator.cells = append(appendSpace(blank, rowIterator.cells), val)
+		}
+	}
+}
+
+func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) (err error) {
+	cell.XMLName = start.Name
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "space" {
+			cell.XMLSpace = attr
+		} else if attr.Name.Local == "r" {
+			cell.R = attr.Value
+		} else if attr.Name.Local == "s" {
+			cell.S, err = strconv.Atoi(attr.Value)
+		} else if attr.Name.Local == "t" {
+			cell.T = attr.Value
+		} else if attr.Name.Local == "cm" {
+			res, err := strconv.ParseUint(attr.Value, 10, 64)
+			if err != nil {
+				return err
+			}
+			cm := uint(res)
+			cell.Cm = &cm
+		} else if attr.Name.Local == "vm" {
+			res, err := strconv.ParseUint(attr.Value, 10, 64)
+			if err != nil {
+				return err
+			}
+			vm := uint(res)
+			cell.Vm = &vm
+		} else if attr.Name.Local == "ph" {
+			r, err := strconv.ParseBool(attr.Value)
+			if err != nil {
+				return err
+			}
+			cell.Ph = &r
+		}
+	}
+
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			return err
+		}
+		var se xml.StartElement
+		switch el := tok.(type) {
+		case xml.StartElement:
+			se = el
+		case xml.EndElement:
+			if el == start.End() {
+				return nil
+			}
+			continue
+		default:
+			continue
+		}
+
+		switch se.Name.Local {
+		case "v":
+			err = decoder.DecodeElement(&cell.V, &se)
+		case "f":
+			err = decoder.DecodeElement(&cell.F, &se)
+		case "is":
+			err = decoder.DecodeElement(&cell.IS, &se)
+		default:
+			continue
+		}
+		if err != nil {
+			return err
 		}
 	}
 }
