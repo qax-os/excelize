@@ -31,6 +31,7 @@ type File struct {
 	mu               sync.Mutex
 	checked          sync.Map
 	formulaChecked   bool
+	zip64Entries     []string
 	options          *Options
 	sharedStringItem [][]uint
 	sharedStringsMap map[string]int

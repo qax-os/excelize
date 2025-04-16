@@ -14,8 +14,10 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/binary"
 	"encoding/xml"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -123,17 +125,11 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 			return 0, err
 		}
 	}
-	if f.options != nil && f.options.Password != "" {
-		buf, err := f.WriteToBuffer()
-		if err != nil {
-			return 0, err
-		}
-		return buf.WriteTo(w)
-	}
-	if err := f.writeDirectToWriter(w); err != nil {
+	buf, err := f.WriteToBuffer()
+	if err != nil {
 		return 0, err
 	}
-	return 0, nil
+	return buf.WriteTo(w)
 }
 
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
@@ -143,32 +139,22 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	zw := zip.NewWriter(buf)
 
 	if err := f.writeToZip(zw); err != nil {
-		return buf, zw.Close()
+		_ = zw.Close()
+		return buf, err
 	}
-
+	if err := zw.Close(); err != nil {
+		return buf, err
+	}
+	f.writeZip64LFH(buf)
 	if f.options != nil && f.options.Password != "" {
-		if err := zw.Close(); err != nil {
-			return buf, err
-		}
 		b, err := Encrypt(buf.Bytes(), f.options)
 		if err != nil {
 			return buf, err
 		}
 		buf.Reset()
 		buf.Write(b)
-		return buf, nil
 	}
-	return buf, zw.Close()
-}
-
-// writeDirectToWriter provides a function to write to io.Writer.
-func (f *File) writeDirectToWriter(w io.Writer) error {
-	zw := zip.NewWriter(w)
-	if err := f.writeToZip(zw); err != nil {
-		_ = zw.Close()
-		return err
-	}
-	return zw.Close()
+	return buf, nil
 }
 
 // writeToZip provides a function to write to zip.Writer
@@ -197,11 +183,16 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			_ = stream.rawData.Close()
 			return err
 		}
-		if _, err = io.Copy(fi, from); err != nil {
+		written, err := io.Copy(fi, from)
+		if err != nil {
 			return err
+		}
+		if written > math.MaxUint32 {
+			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
 	var (
+		n                int
 		err              error
 		files, tempFiles []string
 	)
@@ -219,7 +210,9 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			break
 		}
 		content, _ := f.Pkg.Load(path)
-		_, err = fi.Write(content.([]byte))
+		if n, err = fi.Write(content.([]byte)); n > math.MaxUint32 {
+			f.zip64Entries = append(f.zip64Entries, path)
+		}
 	}
 	f.tempFiles.Range(func(path, content interface{}) bool {
 		if _, ok := f.Pkg.Load(path); ok {
@@ -234,7 +227,46 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		if fi, err = zw.Create(path); err != nil {
 			break
 		}
-		_, err = fi.Write(f.readBytes(path))
+		if n, err = fi.Write(f.readBytes(path)); n > math.MaxUint32 {
+			f.zip64Entries = append(f.zip64Entries, path)
+		}
 	}
 	return err
+}
+
+// writeZip64LFH function sets the ZIP version to 0x2D (45) in the Local File
+// Header (LFH). Excel strictly enforces ZIP64 format validation rules. When any
+// file within the workbook (OCP) exceeds 4GB in size, the ZIP64 format must be
+// used according to the PKZIP specification. However, ZIP files generated using
+// Go's standard archive/zip library always set the version in the local file
+// header to 20 (ZIP version 2.0) by default, as defined in the internal
+// 'writeHeader' function during ZIP creation. The archive/zip package only sets
+// the 'ReaderVersion' to 45 (ZIP64 version 4.5) in the central directory for
+// entries larger than 4GB. This results in a version mismatch between the
+// central directory and the local file header. As a result, opening the
+// generated workbook with spreadsheet application will prompt file corruption.
+func (f *File) writeZip64LFH(buf *bytes.Buffer) error {
+	if len(f.zip64Entries) == 0 {
+		return nil
+	}
+	data, offset := buf.Bytes(), 0
+	for offset < len(data) {
+		idx := bytes.Index(data[offset:], []byte{0x50, 0x4b, 0x03, 0x04})
+		if idx == -1 {
+			break
+		}
+		idx += offset
+		if idx+30 > len(data) {
+			break
+		}
+		filenameLen := int(binary.LittleEndian.Uint16(data[idx+26 : idx+28]))
+		if idx+30+filenameLen > len(data) {
+			break
+		}
+		if inStrSlice(f.zip64Entries, string(data[idx+30:idx+30+filenameLen]), true) != -1 {
+			binary.LittleEndian.PutUint16(data[idx+4:idx+6], 45)
+		}
+		offset = idx + 1
+	}
+	return nil
 }
