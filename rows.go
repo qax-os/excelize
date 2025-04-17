@@ -244,40 +244,42 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 	}
 }
 
-func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) (err error) {
-	cell.XMLName = start.Name
+func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) (err error) {
+	var res uint64
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "space" {
 			cell.XMLSpace = attr
 		} else if attr.Name.Local == "r" {
 			cell.R = attr.Value
 		} else if attr.Name.Local == "s" {
-			cell.S, err = strconv.Atoi(attr.Value)
+			var i64 int64
+			i64, err = strconv.ParseInt(attr.Value, 10, 64)
+			cell.S = int(i64)
 		} else if attr.Name.Local == "t" {
 			cell.T = attr.Value
 		} else if attr.Name.Local == "cm" {
-			res, err := strconv.ParseUint(attr.Value, 10, 64)
-			if err != nil {
-				return err
-			}
+			res, err = strconv.ParseUint(attr.Value, 10, 64)
 			cm := uint(res)
 			cell.Cm = &cm
 		} else if attr.Name.Local == "vm" {
-			res, err := strconv.ParseUint(attr.Value, 10, 64)
-			if err != nil {
-				return err
-			}
+			res, err = strconv.ParseUint(attr.Value, 10, 64)
 			vm := uint(res)
 			cell.Vm = &vm
 		} else if attr.Name.Local == "ph" {
-			r, err := strconv.ParseBool(attr.Value)
-			if err != nil {
-				return err
-			}
+			var r bool
+			r, err = strconv.ParseBool(attr.Value)
 			cell.Ph = &r
 		}
 	}
+	return
+}
 
+func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) (err error) {
+	cell.XMLName = start.Name
+	err = cell.cellXMLAttrHandler(start)
+	if err != nil {
+		return
+	}
 	for {
 		tok, err := decoder.Token()
 		if err != nil {
@@ -287,27 +289,21 @@ func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement)
 		switch el := tok.(type) {
 		case xml.StartElement:
 			se = el
+			switch se.Name.Local {
+			case "v":
+				err = decoder.DecodeElement(&cell.V, &se)
+			case "f":
+				err = decoder.DecodeElement(&cell.F, &se)
+			case "is":
+				err = decoder.DecodeElement(&cell.IS, &se)
+			}
+			if err != nil {
+				return err
+			}
 		case xml.EndElement:
 			if el == start.End() {
 				return nil
 			}
-			continue
-		default:
-			continue
-		}
-
-		switch se.Name.Local {
-		case "v":
-			err = decoder.DecodeElement(&cell.V, &se)
-		case "f":
-			err = decoder.DecodeElement(&cell.F, &se)
-		case "is":
-			err = decoder.DecodeElement(&cell.IS, &se)
-		default:
-			continue
-		}
-		if err != nil {
-			return err
 		}
 	}
 }

@@ -1157,6 +1157,96 @@ func TestNumberFormats(t *testing.T) {
 	assert.Equal(t, "2019/3/19", result, "A1")
 }
 
+func TestCellsDecode(t *testing.T) {
+	content := []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+		xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData>
+		<row spans="1:17" r="1">
+			<c r="A1" t="s" vm="15"><v>10</v></c>
+			<c r="B1"><is><t>String</t></is></c>
+		</row>
+		<row r="2">
+			<c r="A2" s="4" t="str"><f>CONCATENATE("total is ",C7," units")</f><v>total is 23 units</v></c>
+			<c r="C2" s="1" ph="true"><f>PMT(B3/12,B4,-B5)</f><v>672.68336574300008</v></c>
+			<c r="D2" t="d" cm="1" vm="2" ph="false"><v>1976-11-22T08:30</v></c>
+           <c r="X2" xml:space="spurious1"></c>
+           <c r="X2" space="spurious2"></c>
+		</row>
+		</sheetData></worksheet>`)
+	type RowXML struct {
+		Cells []xlsxC `xml:"c"`
+	}
+	type Worksheet struct {
+		SheetData struct {
+			Rows []RowXML `xml:"row"`
+		} `xml:"sheetData"`
+	}
+	var base Worksheet
+	err := xml.Unmarshal(content, &base)
+	assert.NoError(t, err)
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	var compare Worksheet
+	var lastRow *RowXML
+	row := Rows{decoder: decoder}
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch element := token.(type) {
+		case xml.StartElement:
+			if element.Name.Local == "row" {
+				compare.SheetData.Rows = append(compare.SheetData.Rows, RowXML{})
+				lastRow = &compare.SheetData.Rows[len(compare.SheetData.Rows)-1]
+			} else if element.Name.Local == "c" {
+				colCell := xlsxC{}
+				err = colCell.cellXMLHandler(row.decoder, &element)
+				assert.NoError(t, err)
+				lastRow.Cells = append(lastRow.Cells, colCell)
+			}
+		}
+	}
+	assert.Equal(t, base, compare)
+}
+
+func TestCellsDecodeFail(t *testing.T) {
+	type RowXML struct {
+		Cells []xlsxC `xml:"c"`
+	}
+	type Worksheet struct {
+		SheetData struct {
+			Rows []RowXML `xml:"row"`
+		} `xml:"sheetData"`
+	}
+	prefix := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>`
+	tail := `</sheetData></worksheet>`
+	contents := [][]byte{
+		[]byte(prefix + `<row spans="1:17" r="1"><c r="A1" t="s" s="A"><v>10</v></c></row>` + tail), // s need number
+		[]byte(prefix + `<row spans="1:17" r="1"><c r="A1"><v>10</v>     </row>` + tail),            // missing </c>
+		[]byte(prefix + `<row spans="1:17" r="1"><c r="B1"><is><t>`),                                // incorrect data
+	}
+	for _, content := range contents {
+		var base Worksheet
+		err1 := xml.Unmarshal(content, &base)
+		assert.Error(t, err1)
+		decoder := xml.NewDecoder(bytes.NewReader(content))
+		row := Rows{decoder: decoder}
+		for {
+			token, _ := decoder.Token()
+			if token == nil {
+				break
+			}
+			switch element := token.(type) {
+			case xml.StartElement:
+				if element.Name.Local == "c" {
+					colCell := xlsxC{}
+					err2 := colCell.cellXMLHandler(row.decoder, &element)
+					assert.Error(t, err2)
+					assert.EqualError(t, err1, err2.Error())
+				}
+			}
+		}
+	}
+}
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {
