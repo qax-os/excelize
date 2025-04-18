@@ -251,11 +251,13 @@ func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 		case "r":
 			cell.R = attr.Value
 		case "s":
-			i64, err := strconv.ParseInt(attr.Value, 10, 64)
+			val, err := strconv.ParseInt(attr.Value, 10, 64)
 			if err != nil {
 				return err
 			}
-			cell.S = int(i64)
+			if int64(math.MinInt) <= val && val <= int64(math.MaxInt) {
+				cell.S = int(val)
+			}
 		case "t":
 			cell.T = attr.Value
 		default:
