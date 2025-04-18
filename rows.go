@@ -244,41 +244,32 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 	}
 }
 
-func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) (err error) {
-	var res uint64
+// cellXMLAttrHandler parse the cell XML element attributes of the worksheet.
+func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 	for _, attr := range start.Attr {
-		if attr.Name.Local == "space" {
-			cell.XMLSpace = attr
-		} else if attr.Name.Local == "r" {
+		switch attr.Name.Local {
+		case "r":
 			cell.R = attr.Value
-		} else if attr.Name.Local == "s" {
-			var i64 int64
-			i64, err = strconv.ParseInt(attr.Value, 10, 64)
+		case "s":
+			i64, err := strconv.ParseInt(attr.Value, 10, 64)
+			if err != nil {
+				return err
+			}
 			cell.S = int(i64)
-		} else if attr.Name.Local == "t" {
+		case "t":
 			cell.T = attr.Value
-		} else if attr.Name.Local == "cm" {
-			res, err = strconv.ParseUint(attr.Value, 10, 64)
-			cm := uint(res)
-			cell.Cm = &cm
-		} else if attr.Name.Local == "vm" {
-			res, err = strconv.ParseUint(attr.Value, 10, 64)
-			vm := uint(res)
-			cell.Vm = &vm
-		} else if attr.Name.Local == "ph" {
-			var r bool
-			r, err = strconv.ParseBool(attr.Value)
-			cell.Ph = &r
+		default:
 		}
 	}
-	return
+	return nil
 }
 
-func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) (err error) {
+// cellXMLHandler parse the cell XML element of the worksheet.
+func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) error {
 	cell.XMLName = start.Name
-	err = cell.cellXMLAttrHandler(start)
+	err := cell.cellXMLAttrHandler(start)
 	if err != nil {
-		return
+		return err
 	}
 	for {
 		tok, err := decoder.Token()
