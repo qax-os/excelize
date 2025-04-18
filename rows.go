@@ -255,7 +255,7 @@ func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 			if err != nil {
 				return err
 			}
-			if int64(math.MinInt) <= val && val <= int64(math.MaxInt) {
+			if math.MinInt <= val && val <= math.MaxInt {
 				cell.S = int(val)
 			}
 		case "t":
