@@ -293,7 +293,7 @@ func TestAddChart(t *testing.T) {
 		{"I1", Doughnut, "Clustered Column - Doughnut Chart"},
 	}
 	for _, props := range clusteredColumnCombo {
-		assert.NoError(t, f.AddChart("Combo Charts", props[0].(string), &Chart{Type: Col, Series: series[:4], Format: format, Legend: legend, Title: []RichTextRun{{Text: props[2].(string)}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[1].(ChartType), Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}, YAxis: ChartAxis{Secondary: true}}))
+		assert.NoError(t, f.AddChart("Combo Charts", props[0].(string), &Chart{Type: Col, Series: series[:4], Format: format, Legend: legend, Title: []RichTextRun{{Text: props[2].(string)}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowDataTable: true, ShowDataTableKeys: true, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[1].(ChartType), Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}, YAxis: ChartAxis{Secondary: true}}))
 	}
 	stackedAreaCombo := map[string][]interface{}{
 		"A16": {Line, "Stacked Area - Line Chart"},

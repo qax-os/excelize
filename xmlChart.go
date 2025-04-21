@@ -215,6 +215,17 @@ type aRPr struct {
 	Cs         *aCs            `xml:"a:cs"`
 }
 
+// cDTable (Data Table) directly maps the dTable element.
+type cDTable struct {
+	ShowHorzBorder *attrValBool `xml:"showHorzBorder"`
+	ShowVertBorder *attrValBool `xml:"showVertBorder"`
+	ShowOutline    *attrValBool `xml:"showOutline"`
+	ShowKeys       *attrValBool `xml:"showKeys"`
+	SpPr           *cSpPr       `xml:"spPr"`
+	TxPr           *cTxPr       `xml:"txPr"`
+	ExtLst         *xlsxExtLst  `xml:"extLst"`
+}
+
 // cSpPr (Shape Properties) directly maps the spPr element. This element
 // specifies the visual shape properties that can be applied to a shape. These
 // properties include the shape fill, outline, geometry, effects, and 3D
@@ -319,6 +330,7 @@ type cPlotArea struct {
 	CatAx          []*cAxs    `xml:"catAx"`
 	ValAx          []*cAxs    `xml:"valAx"`
 	SerAx          []*cAxs    `xml:"serAx"`
+	DTable         *cDTable   `xml:"dTable"`
 	SpPr           *cSpPr     `xml:"spPr"`
 }
 
@@ -559,15 +571,17 @@ type ChartDimension struct {
 
 // ChartPlotArea directly maps the format settings of the plot area.
 type ChartPlotArea struct {
-	SecondPlotValues int
-	ShowBubbleSize   bool
-	ShowCatName      bool
-	ShowLeaderLines  bool
-	ShowPercent      bool
-	ShowSerName      bool
-	ShowVal          bool
-	Fill             Fill
-	NumFmt           ChartNumFmt
+	SecondPlotValues  int
+	ShowBubbleSize    bool
+	ShowCatName       bool
+	ShowDataTable     bool
+	ShowDataTableKeys bool
+	ShowLeaderLines   bool
+	ShowPercent       bool
+	ShowSerName       bool
+	ShowVal           bool
+	Fill              Fill
+	NumFmt            ChartNumFmt
 }
 
 // Chart directly maps the format settings of the chart.

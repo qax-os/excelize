@@ -169,6 +169,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		xlsxChartSpace.Chart.Legend = nil
 	}
 	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
+	xlsxChartSpace.Chart.PlotArea.DTable = f.drawPlotAreaDTable(opts)
 	addChart := func(c, p *cPlotArea) {
 		immutable, mutable := reflect.ValueOf(c).Elem(), reflect.ValueOf(p).Elem()
 		for i := 0; i < mutable.NumField(); i++ {
@@ -1230,6 +1231,19 @@ func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
 		title.Tx.Rich.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
 	}
 	return title
+}
+
+// drawPlotAreaDTable provides a function to draw the c:dTable element.
+func (f *File) drawPlotAreaDTable(opts *Chart) *cDTable {
+	if _, ok := plotAreaChartGrouping[opts.Type]; ok && opts.PlotArea.ShowDataTable {
+		return &cDTable{
+			ShowHorzBorder: &attrValBool{Val: boolPtr(true)},
+			ShowVertBorder: &attrValBool{Val: boolPtr(true)},
+			ShowOutline:    &attrValBool{Val: boolPtr(true)},
+			ShowKeys:       &attrValBool{Val: boolPtr(opts.PlotArea.ShowDataTableKeys)},
+		}
+	}
+	return nil
 }
 
 // drawPlotAreaSpPr provides a function to draw the c:spPr element.

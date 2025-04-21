@@ -863,6 +863,14 @@ func (opts *Chart) parseTitle() {
 // ShowCatName: Specifies that the category name shall be shown in the data
 // label. The 'ShowCatName' property is optional. The default value is true.
 //
+// ShowDataTable: Used for add data table under chart, depending on the chart
+// type, only available for area, bar, column and line series type charts. The
+// 'ShowDataTable' property is optional. The default value is false.
+//
+// ShowDataTableKeys: Used for add legend key in data table, only works on
+// 'ShowDataTable' is enabled. The 'ShowDataTableKeys' property is optional.
+// The default value is false.
+//
 // ShowLeaderLines: Specifies leader lines shall be shown for data labels. The
 // 'ShowLeaderLines' property is optional. The default value is false.
 //
