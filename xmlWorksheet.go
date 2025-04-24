@@ -20,6 +20,7 @@ import (
 // http://schemas.openxmlformats.org/spreadsheetml/2006/main.
 type xlsxWorksheet struct {
 	mu                     sync.Mutex
+	formulaSharedIndex     sync.Map
 	XMLName                xml.Name                     `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
 	SheetPr                *xlsxSheetPr                 `xml:"sheetPr"`
 	Dimension              *xlsxDimension               `xml:"dimension"`

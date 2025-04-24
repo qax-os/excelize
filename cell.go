@@ -1663,16 +1663,25 @@ func parseSharedFormula(dCol, dRow int, orig string) string {
 // Note that this function not validate ref tag to check the cell whether in
 // allow range reference, and always return origin shared formula.
 func getSharedFormula(ws *xlsxWorksheet, si int, cell string) string {
+	innerFunc := func(c *xlsxC) string {
+		col, row, _ := CellNameToCoordinates(cell)
+		sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
+		dCol := col - sharedCol
+		dRow := row - sharedRow
+		formula := parseSharedFormula(dCol, dRow, c.F.Content)
+		return formula
+	}
+	val, ok := ws.formulaSharedIndex.Load(si)
+	if ok {
+		return innerFunc(val.(*xlsxC))
+	}
 	for row := 0; row < len(ws.SheetData.Row); row++ {
 		r := &ws.SheetData.Row[row]
 		for column := 0; column < len(r.C); column++ {
 			c := &r.C[column]
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {
-				col, row, _ := CellNameToCoordinates(cell)
-				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
-				dCol := col - sharedCol
-				dRow := row - sharedRow
-				return parseSharedFormula(dCol, dRow, c.F.Content)
+				ws.formulaSharedIndex.Store(si, c)
+				return innerFunc(c)
 			}
 		}
 	}

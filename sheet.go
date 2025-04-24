@@ -27,6 +27,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	deepcopy2 "github.com/mohae/deepcopy"
 	"github.com/tiendc/go-deepcopy"
 )
 
@@ -767,8 +768,7 @@ func (f *File) copySheet(from, to int) error {
 	if err != nil {
 		return err
 	}
-	worksheet := &xlsxWorksheet{}
-	deepcopy.Copy(worksheet, sheet)
+	worksheet := deepcopy2.Copy(sheet).(*xlsxWorksheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
 	sheetXMLPath := "xl/worksheets/sheet" + toSheetID + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {

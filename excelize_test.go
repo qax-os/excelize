@@ -86,11 +86,13 @@ func TestOpenFile(t *testing.T) {
 
 	f.SetActiveSheet(2)
 	// Test get cell formula with given rows number
-	_, err = f.GetCellFormula("Sheet1", "B19")
+	formula, err := f.GetCellFormula("Sheet1", "B19")
 	assert.NoError(t, err)
+	assert.Equal(t, "SUM(Sheet2!D2,Sheet2!D11)", formula)
 	// Test get cell formula with illegal worksheet name
-	_, err = f.GetCellFormula("Sheet2", "B20")
+	formula, err = f.GetCellFormula("Sheet2", "B20")
 	assert.NoError(t, err)
+	assert.Equal(t, "", formula)
 	_, err = f.GetCellFormula("Sheet1", "B20")
 	assert.NoError(t, err)
 

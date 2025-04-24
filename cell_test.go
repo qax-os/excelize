@@ -602,6 +602,10 @@ func TestGetCellFormula(t *testing.T) {
 		formula, err := f.GetCellFormula("Sheet1", "B3")
 		assert.NoError(t, err)
 		assert.Equal(t, expected, formula)
+		// check cache hit
+		formula, err = f.GetCellFormula("Sheet1", "B3")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, formula)
 	}
 
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
@@ -628,6 +632,21 @@ func TestGetCellFormula(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.setArrayFormulaCells(), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestGetAndSet(t *testing.T) {
+	f := NewFile()
+	formulaType, ref := STCellFormulaTypeShared, "C2:C6"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err := f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2+B2", formula)
+
+	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2*B2", formula)
 }
 
 func ExampleFile_SetCellFloat() {
