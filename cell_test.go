@@ -563,7 +563,7 @@ func TestGetValueFrom(t *testing.T) {
 	assert.NoError(t, err)
 	value, err := c.getValueFrom(f, sst, false)
 	assert.NoError(t, err)
-	assert.Equal(t, "", value)
+	assert.Empty(t, value)
 
 	c = xlsxC{T: "s", V: " 1 "}
 	value, err = c.getValueFrom(f, &xlsxSST{Count: 1, SI: []xlsxSI{{}, {T: &xlsxT{Val: "s"}}}}, false)
@@ -612,7 +612,7 @@ func TestGetCellFormula(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="2"><c r="B2"><f t="shared" si="0"></f></c></row></sheetData></worksheet>`))
 	formula, err := f.GetCellFormula("Sheet1", "B2")
 	assert.NoError(t, err)
-	assert.Equal(t, "", formula)
+	assert.Empty(t, formula)
 
 	// Test get array formula with invalid cell range reference
 	f = NewFile()

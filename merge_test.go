@@ -35,7 +35,7 @@ func TestMergeCell(t *testing.T) {
 	assert.NoError(t, err)
 	// Merged cell ref is single coordinate
 	value, err = f.GetCellValue("Sheet2", "A6")
-	assert.Equal(t, "", value)
+	assert.Empty(t, value)
 	assert.NoError(t, err)
 	value, err = f.GetCellFormula("Sheet1", "G12")
 	assert.Equal(t, "SUM(Sheet1!B19,Sheet1!C19)", value)
@@ -104,7 +104,7 @@ func TestMergeCellOverlap(t *testing.T) {
 	assert.Len(t, mc, 1)
 	assert.Equal(t, "A1", mc[0].GetStartAxis())
 	assert.Equal(t, "D3", mc[0].GetEndAxis())
-	assert.Equal(t, "", mc[0].GetCellValue())
+	assert.Empty(t, mc[0].GetCellValue())
 	assert.NoError(t, f.Close())
 }
 

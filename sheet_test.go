@@ -418,8 +418,8 @@ func TestGetSheetName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Sheet1", f.GetSheetName(0))
 	assert.Equal(t, "Sheet2", f.GetSheetName(1))
-	assert.Equal(t, "", f.GetSheetName(-1))
-	assert.Equal(t, "", f.GetSheetName(2))
+	assert.Empty(t, f.GetSheetName(-1))
+	assert.Empty(t, f.GetSheetName(2))
 	assert.NoError(t, f.Close())
 }
 
@@ -519,7 +519,7 @@ func TestWorksheetWriter(t *testing.T) {
 func TestGetWorkbookPath(t *testing.T) {
 	f := NewFile()
 	f.Pkg.Delete("_rels/.rels")
-	assert.Equal(t, "", f.getWorkbookPath())
+	assert.Empty(t, f.getWorkbookPath())
 }
 
 func TestGetWorkbookRelsPath(t *testing.T) {
@@ -786,7 +786,7 @@ func TestSheetDimension(t *testing.T) {
 	assert.NoError(t, err)
 	dimension, err = f.GetSheetDimension(sheetName)
 	assert.NoError(t, err)
-	assert.Equal(t, "", dimension)
+	assert.Empty(t, dimension)
 	// Test set the worksheet dimension
 	for _, excepted := range []string{"A1", "A1:D5", "A1:XFD1048576", "a1", "A1:d5"} {
 		err = f.SetSheetDimension(sheetName, excepted)
