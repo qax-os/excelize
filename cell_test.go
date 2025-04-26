@@ -633,7 +633,8 @@ func TestGetCellFormula(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.setArrayFormulaCells(), "XML syntax error on line 1: invalid UTF-8")
 
-	// Test get shared formula after updated refer cell formula
+	// Test get shared formula after updated refer cell formula, the shared
+	// formula cell reference range covered the previous.
 	f = NewFile()
 	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
@@ -653,6 +654,27 @@ func TestGetCellFormula(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "A8*B8", formula)
 	assert.NoError(t, f.Close())
+
+	// Test get shared formula after updated refer cell formula, the shared
+	// formula cell reference range not over the previous.
+	f = NewFile()
+	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2+B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Equal(t, "A6+B6", formula)
+
+	formulaType, ref = STCellFormulaTypeShared, "C2:C4"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2*B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Empty(t, formula)
 
 	// Test get shared formula after remove refer cell formula
 	f = NewFile()

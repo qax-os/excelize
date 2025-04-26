@@ -817,6 +817,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 				}
 			}
 			if c.F.T == STCellFormulaTypeShared {
+				ws.deleteSharedFormula(c)
 				if err = ws.setSharedFormula(cell, *opt.Ref); err != nil {
 					return err
 				}
@@ -940,7 +941,7 @@ func (ws *xlsxWorksheet) deleteSharedFormula(c *xlsxC) {
 		ws.formulaSI.Delete(si)
 		for r, row := range ws.SheetData.Row {
 			for c, cell := range row.C {
-				if cell.F != nil && cell.F.Si != nil && *cell.F.Si == si {
+				if cell.F != nil && cell.F.Si != nil && *cell.F.Si == si && cell.F.Ref == "" {
 					ws.SheetData.Row[r].C[c].F = nil
 				}
 			}
