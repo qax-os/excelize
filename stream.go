@@ -137,7 +137,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXMLPath] = sw
 
 	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 2, 3)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 3, 4)
 	return sw, err
 }
 
@@ -662,7 +662,7 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 // sheetData XML start element to the buffer.
 func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
-		bulkAppendFields(&sw.rawData, sw.worksheet, 4, 5)
+		bulkAppendFields(&sw.rawData, sw.worksheet, 5, 6)
 		if sw.worksheet.Cols != nil {
 			_, _ = sw.rawData.WriteString("<cols>")
 			for _, col := range sw.worksheet.Cols.Col {
@@ -694,7 +694,7 @@ func (sw *StreamWriter) writeSheetData() {
 func (sw *StreamWriter) Flush() error {
 	sw.writeSheetData()
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 8, 15)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 9, 16)
 	mergeCells := strings.Builder{}
 	if sw.mergeCellsCount > 0 {
 		_, _ = mergeCells.WriteString(`<mergeCells count="`)
@@ -704,9 +704,9 @@ func (sw *StreamWriter) Flush() error {
 		_, _ = mergeCells.WriteString(`</mergeCells>`)
 	}
 	_, _ = sw.rawData.WriteString(mergeCells.String())
-	bulkAppendFields(&sw.rawData, sw.worksheet, 17, 38)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 18, 39)
 	_, _ = sw.rawData.WriteString(sw.tableParts)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 40, 40)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 41, 41)
 	_, _ = sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err

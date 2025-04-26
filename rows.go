@@ -632,11 +632,12 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	if err != nil {
 		return err
 	}
+	ws.formulaSI.Clear()
 	if row > len(ws.SheetData.Row) {
 		return f.adjustHelper(sheet, rows, row, -1)
 	}
 	keep := 0
-	for rowIdx := 0; rowIdx < len(ws.SheetData.Row); rowIdx++ {
+	for rowIdx := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[rowIdx]
 		if v.R != row {
 			ws.SheetData.Row[keep] = *v

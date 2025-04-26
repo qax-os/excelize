@@ -602,7 +602,7 @@ func TestGetCellFormula(t *testing.T) {
 		formula, err := f.GetCellFormula("Sheet1", "B3")
 		assert.NoError(t, err)
 		assert.Equal(t, expected, formula)
-		// check cache hit
+		// Test get shared formula form cache
 		formula, err = f.GetCellFormula("Sheet1", "B3")
 		assert.NoError(t, err)
 		assert.Equal(t, expected, formula)
@@ -632,21 +632,59 @@ func TestGetCellFormula(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.setArrayFormulaCells(), "XML syntax error on line 1: invalid UTF-8")
-}
 
-func TestGetAndSet(t *testing.T) {
-	f := NewFile()
-	formulaType, ref := STCellFormulaTypeShared, "C2:C6"
+	// Test get shared formula after updated refer cell formula
+	f = NewFile()
+	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
-	formula, err := f.GetCellFormula("Sheet1", "C2")
+	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2+B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Equal(t, "A6+B6", formula)
 
 	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2*B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C8")
+	assert.NoError(t, err)
+	assert.Equal(t, "A8*B8", formula)
+	assert.NoError(t, f.Close())
+
+	// Test get shared formula after remove refer cell formula
+	f = NewFile()
+	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", ""))
+
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Empty(t, formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Empty(t, formula)
+
+	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2*B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C8")
+	assert.NoError(t, err)
+	assert.Equal(t, "A8*B8", formula)
+	assert.NoError(t, f.Close())
+}
+
+func TestConvertSharedFormula(t *testing.T) {
+	c := xlsxC{R: "A"}
+	_, err := c.convertSharedFormula("A")
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
+	_, err = c.convertSharedFormula("A1")
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
 }
 
 func ExampleFile_SetCellFloat() {

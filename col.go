@@ -782,6 +782,7 @@ func (f *File) RemoveCol(sheet, col string) error {
 	if err != nil {
 		return err
 	}
+	ws.formulaSI.Clear()
 	for rowIdx := range ws.SheetData.Row {
 		rowData := &ws.SheetData.Row[rowIdx]
 		for colIdx := range rowData.C {
