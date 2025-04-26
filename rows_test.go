@@ -586,16 +586,16 @@ func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 		val, err = f.GetCellValue(sheet, "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 		val, err = f.GetCellValue(sheet, "A2")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 		val, err = f.GetCellValue(sheet, "B2")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 
 		assert.NoError(t, err)
 		expect := map[string]string{
@@ -971,7 +971,7 @@ func TestGetValueFromInlineStr(t *testing.T) {
 	d := &xlsxSST{}
 	val, err := c.getValueFrom(f, d, false)
 	assert.NoError(t, err)
-	assert.Equal(t, "", val)
+	assert.Empty(t, val)
 }
 
 func TestGetValueFromNumber(t *testing.T) {

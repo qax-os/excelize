@@ -689,7 +689,8 @@ func (f *File) getCellFormula(sheet, cell string, transformed bool) (string, err
 			return "", false, nil
 		}
 		if c.F.T == STCellFormulaTypeShared && c.F.Si != nil {
-			return getSharedFormula(x, *c.F.Si, c.R), true, nil
+			formula, err := getSharedFormula(x, *c.F.Si, c.R)
+			return formula, true, err
 		}
 		return c.F.Content, true, nil
 	})
@@ -793,6 +794,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 		return err
 	}
 	if formula == "" {
+		ws.deleteSharedFormula(c)
 		c.F = nil
 		return f.deleteCalcChain(f.getSheetID(sheet), cell)
 	}
@@ -815,7 +817,8 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 				}
 			}
 			if c.F.T == STCellFormulaTypeShared {
-				if err = ws.setSharedFormula(*opt.Ref); err != nil {
+				ws.deleteSharedFormula(c)
+				if err = ws.setSharedFormula(cell, *opt.Ref); err != nil {
 					return err
 				}
 			}
@@ -890,22 +893,28 @@ func (f *File) setArrayFormulaCells() error {
 }
 
 // setSharedFormula set shared formula for the cells.
-func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
+func (ws *xlsxWorksheet) setSharedFormula(cell, ref string) error {
 	coordinates, err := rangeRefToCoordinates(ref)
 	if err != nil {
 		return err
 	}
 	_ = sortCoordinates(coordinates)
-	cnt := ws.countSharedFormula()
-	for c := coordinates[0]; c <= coordinates[2]; c++ {
-		for r := coordinates[1]; r <= coordinates[3]; r++ {
-			ws.prepareSheetXML(c, r)
-			cell := &ws.SheetData.Row[r-1].C[c-1]
-			if cell.F == nil {
-				cell.F = &xlsxF{}
+	si := ws.countSharedFormula()
+	for col := coordinates[0]; col <= coordinates[2]; col++ {
+		for rol := coordinates[1]; rol <= coordinates[3]; rol++ {
+			ws.prepareSheetXML(col, rol)
+			c := &ws.SheetData.Row[rol-1].C[col-1]
+			if c.F == nil {
+				c.F = &xlsxF{}
 			}
-			cell.F.T = STCellFormulaTypeShared
-			cell.F.Si = &cnt
+			c.F.T = STCellFormulaTypeShared
+			if c.R == cell {
+				if c.F.Ref != "" {
+					si = *c.F.Si
+					continue
+				}
+			}
+			c.F.Si = &si
 		}
 	}
 	return err
@@ -921,6 +930,23 @@ func (ws *xlsxWorksheet) countSharedFormula() (count int) {
 		}
 	}
 	return
+}
+
+// deleteSharedFormula delete shared formula cell from worksheet shared formula
+// index cache and remove all shared cells formula which refer to the cell which
+// containing the formula.
+func (ws *xlsxWorksheet) deleteSharedFormula(c *xlsxC) {
+	if c.F != nil && c.F.Si != nil && c.F.Ref != "" {
+		si := *c.F.Si
+		ws.formulaSI.Delete(si)
+		for r, row := range ws.SheetData.Row {
+			for c, cell := range row.C {
+				if cell.F != nil && cell.F.Si != nil && *cell.F.Si == si && cell.F.Ref == "" {
+					ws.SheetData.Row[r].C[c].F = nil
+				}
+			}
+		}
+	}
 }
 
 // GetCellHyperLink gets a cell hyperlink based on the given worksheet name and
@@ -1640,18 +1666,27 @@ func isOverlap(rect1, rect2 []int) bool {
 		cellInRange([]int{rect2[2], rect2[3]}, rect1)
 }
 
-// parseSharedFormula generate dynamic part of shared formula for target cell
-// by given column and rows distance and origin shared formula.
-func parseSharedFormula(dCol, dRow int, orig string) string {
+// convertSharedFormula creates a non shared formula from the shared formula
+// counterpart by given cell reference which not containing the formula.
+func (c *xlsxC) convertSharedFormula(cell string) (string, error) {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
+		return "", err
+	}
+	sharedCol, sharedRow, err := CellNameToCoordinates(c.R)
+	if err != nil {
+		return "", err
+	}
+	dCol, dRow := col-sharedCol, row-sharedRow
 	ps := efp.ExcelParser()
-	tokens := ps.Parse(string(orig))
-	for i := 0; i < len(tokens); i++ {
+	tokens := ps.Parse(c.F.Content)
+	for i := range tokens {
 		token := tokens[i]
 		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
 			tokens[i].TValue = shiftCell(token.TValue, dCol, dRow)
 		}
 	}
-	return ps.Render()
+	return ps.Render(), nil
 }
 
 // getSharedFormula find a cell contains the same formula as another cell,
@@ -1662,21 +1697,23 @@ func parseSharedFormula(dCol, dRow int, orig string) string {
 //
 // Note that this function not validate ref tag to check the cell whether in
 // allow range reference, and always return origin shared formula.
-func getSharedFormula(ws *xlsxWorksheet, si int, cell string) string {
-	for row := 0; row < len(ws.SheetData.Row); row++ {
+func getSharedFormula(ws *xlsxWorksheet, si int, cell string) (string, error) {
+	val, ok := ws.formulaSI.Load(si)
+
+	if ok {
+		return val.(*xlsxC).convertSharedFormula(cell)
+	}
+	for row := range ws.SheetData.Row {
 		r := &ws.SheetData.Row[row]
-		for column := 0; column < len(r.C); column++ {
+		for column := range r.C {
 			c := &r.C[column]
 			if c.F != nil && c.F.Ref != "" && c.F.T == STCellFormulaTypeShared && c.F.Si != nil && *c.F.Si == si {
-				col, row, _ := CellNameToCoordinates(cell)
-				sharedCol, sharedRow, _ := CellNameToCoordinates(c.R)
-				dCol := col - sharedCol
-				dRow := row - sharedRow
-				return parseSharedFormula(dCol, dRow, c.F.Content)
+				ws.formulaSI.Store(si, c)
+				return c.convertSharedFormula(cell)
 			}
 		}
 	}
-	return ""
+	return "", nil
 }
 
 // shiftCell returns the cell shifted according to dCol and dRow taking into

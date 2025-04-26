@@ -86,13 +86,13 @@ func TestOpenFile(t *testing.T) {
 
 	f.SetActiveSheet(2)
 	// Test get cell formula with given rows number
-	_, err = f.GetCellFormula("Sheet1", "B19")
+	formula, err := f.GetCellFormula("Sheet1", "B19")
 	assert.NoError(t, err)
+	assert.Equal(t, "SUM(Sheet2!D2,Sheet2!D11)", formula)
 	// Test get cell formula with illegal worksheet name
-	_, err = f.GetCellFormula("Sheet2", "B20")
+	formula, err = f.GetCellFormula("Sheet2", "B20")
 	assert.NoError(t, err)
-	_, err = f.GetCellFormula("Sheet1", "B20")
-	assert.NoError(t, err)
+	assert.Empty(t, formula)
 
 	// Test get cell formula with illegal rows number
 	_, err = f.GetCellFormula("Sheet1", "B")
@@ -1060,7 +1060,7 @@ func TestCopySheetError(t *testing.T) {
 
 func TestGetSheetComments(t *testing.T) {
 	f := NewFile()
-	assert.Equal(t, "", f.getSheetComments("sheet0"))
+	assert.Empty(t, f.getSheetComments("sheet0"))
 }
 
 func TestGetActiveSheetIndex(t *testing.T) {
@@ -1414,7 +1414,7 @@ func TestProtectSheet(t *testing.T) {
 	assert.NoError(t, f.UnprotectSheet(sheetName, "password"))
 	// Test protect worksheet with empty password
 	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{}))
-	assert.Equal(t, "", ws.SheetProtection.Password)
+	assert.Empty(t, ws.SheetProtection.Password)
 	// Test protect worksheet with password exceeds the limit length
 	assert.EqualError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "MD4",

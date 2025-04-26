@@ -81,7 +81,7 @@ func TestDataValidation(t *testing.T) {
 		dv.Formula1 = ""
 		assert.NoError(t, dv.SetDropList(listValid),
 			"SetDropList failed for valid input %v", listValid)
-		assert.NotEqual(t, "", dv.Formula1,
+		assert.NotEmpty(t, dv.Formula1,
 			"Formula1 should not be empty for valid input %v", listValid)
 	}
 	assert.Equal(t, `"A&lt;,B&gt;,C"",D	,E',F"`, dv.Formula1)

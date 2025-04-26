@@ -95,12 +95,12 @@ func TestColumnNumberToName_OK(t *testing.T) {
 func TestColumnNumberToName_Error(t *testing.T) {
 	out, err := ColumnNumberToName(-1)
 	if assert.Error(t, err) {
-		assert.Equal(t, "", out)
+		assert.Empty(t, out)
 	}
 
 	out, err = ColumnNumberToName(0)
 	if assert.Error(t, err) {
-		assert.Equal(t, "", out)
+		assert.Empty(t, out)
 	}
 
 	_, err = ColumnNumberToName(MaxColumns + 1)

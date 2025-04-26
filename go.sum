@@ -9,8 +9,8 @@ github.com/richardlehane/msoleps v1.0.4 h1:WuESlvhX3gH2IHcd8UqyCuFY5yiq/GR/yqaSM
 github.com/richardlehane/msoleps v1.0.4/go.mod h1:BWev5JBpU9Ko2WAgmZEuiz4/u3ZYTKbjLycmwiWUfWg=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/tiendc/go-deepcopy v1.5.1 h1:5ymXIB8ReIywehne6oy3HgywC8LicXYucPBNnj5QQxE=
-github.com/tiendc/go-deepcopy v1.5.1/go.mod h1:toXoeQoUqXOOS/X4sKuiAoSk6elIdqc0pN7MTgOOo2I=
+github.com/tiendc/go-deepcopy v1.5.2 h1:fzTSgAOzxw4MFuDzvyxRDUsdwA7qs7FBTvgXVj28NpQ=
+github.com/tiendc/go-deepcopy v1.5.2/go.mod h1:toXoeQoUqXOOS/X4sKuiAoSk6elIdqc0pN7MTgOOo2I=
 github.com/xuri/efp v0.0.0-20250227110027-3491fafc2b79 h1:78nKszZqigiBRBVcoe/AuPzyLTWW5B+ltBaUX1rlIXA=
 github.com/xuri/efp v0.0.0-20250227110027-3491fafc2b79/go.mod h1:ybY/Jr0T0GTCnYjKqmdwxyxn2BQf2RcQIIvex5QldPI=
 github.com/xuri/nfp v0.0.0-20250226145837-86d5fc24b2ba h1:DhIu6n3qU0joqG9f4IO6a/Gkerd+flXrmlJ+0yX2W8U=
