@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -163,4 +164,25 @@ func TestZip64(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.Close())
 	})
+}
+
+func TestRemoveTempFiles(t *testing.T) {
+	tmp, err := os.CreateTemp("", "excelize-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpName := tmp.Name()
+	tmp.Close()
+	f := NewFile()
+	// fill the tempFiles map with non-existing (erroring on Remove) "files"
+	for i := 0; i < 1000; i++ {
+		f.tempFiles.Store(strconv.Itoa(i), "/hopefully not existing")
+	}
+	f.tempFiles.Store("existing", tmpName)
+
+	require.Error(t, f.Close())
+	if _, err := os.Stat(tmpName); err == nil {
+		t.Errorf("temp file %q still exist", tmpName)
+		os.Remove(tmpName)
+	}
 }

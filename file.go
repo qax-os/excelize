@@ -87,22 +87,23 @@ func (f *File) SaveAs(name string, opts ...Options) error {
 
 // Close closes and cleanup the open temporary file for the spreadsheet.
 func (f *File) Close() error {
-	var err error
+	var firstErr error
 	if f.sharedStringTemp != nil {
-		if err := f.sharedStringTemp.Close(); err != nil {
-			return err
-		}
+		firstErr = f.sharedStringTemp.Close()
+		f.sharedStringTemp = nil
 	}
-	f.tempFiles.Range(func(k, v interface{}) bool {
-		if err = os.Remove(v.(string)); err != nil {
-			return false
-		}
-		return true
-	})
 	for _, stream := range f.streams {
 		_ = stream.rawData.Close()
 	}
-	return err
+	f.streams = nil
+	f.tempFiles.Range(func(k, v interface{}) bool {
+		if err := os.Remove(v.(string)); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		return true
+	})
+	f.tempFiles.Clear()
+	return firstErr
 }
 
 // Write provides a function to write to an io.Writer.

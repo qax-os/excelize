@@ -139,8 +139,10 @@ func (rows *Rows) Error() error {
 // Close closes the open worksheet XML file in the system temporary
 // directory.
 func (rows *Rows) Close() error {
-	if rows.tempFile != nil {
-		return rows.tempFile.Close()
+	tempFile := rows.tempFile
+	rows.tempFile = nil
+	if tempFile != nil {
+		return tempFile.Close()
 	}
 	return nil
 }
@@ -366,7 +368,7 @@ func (f *File) getFromStringItem(index int) string {
 		}()
 	}
 	f.sharedStringItem = [][]uint{}
-	f.sharedStringTemp, _ = os.CreateTemp(os.TempDir(), "excelize-")
+	f.sharedStringTemp, _ = os.CreateTemp("", "excelize-")
 	f.tempFiles.Store(defaultTempFileSST, f.sharedStringTemp.Name())
 	var (
 		inElement string
