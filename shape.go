@@ -331,7 +331,7 @@ func (f *File) twoCellAnchorShape(sheet, drawingXML, cell string, width, height 
 	}
 	w := int(float64(width) * format.ScaleX)
 	h := int(float64(height) * format.ScaleY)
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, fromCol, fromRow, format.OffsetX, format.OffsetY, w, h)
+	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, fromCol, fromRow, format.OffsetX, format.OffsetY, w, h)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return content, nil, cNvPrID, err
@@ -340,9 +340,9 @@ func (f *File) twoCellAnchorShape(sheet, drawingXML, cell string, width, height 
 	twoCellAnchor.EditAs = format.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
-	from.ColOff = format.OffsetX * EMU
+	from.ColOff = x1 * EMU
 	from.Row = rowStart
-	from.RowOff = format.OffsetY * EMU
+	from.RowOff = y1 * EMU
 	to := xlsxTo{}
 	to.Col = colEnd
 	to.ColOff = x2 * EMU
