@@ -775,7 +775,7 @@ func (bw *bufferedWriter) Sync() (err error) {
 		return nil
 	}
 	if bw.tmp == nil {
-		bw.tmp, err = os.CreateTemp(os.TempDir(), "excelize-")
+		bw.tmp, err = os.CreateTemp("", "excelize-")
 		if err != nil {
 			// can not use local storage
 			return nil
