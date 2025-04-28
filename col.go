@@ -620,7 +620,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 //
 //	width           # Width of object frame.
 //	height          # Height of object frame.
-func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int) {
+func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int, int, int) {
 	colIdx, rowIdx := col-1, row-1
 	// Adjust start column for offsets that are greater than the col width.
 	for x1 >= f.getColWidth(sheet, colIdx+1) {
@@ -653,7 +653,7 @@ func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, heigh
 	}
 
 	// The end vertices are whatever is left from the width and height.
-	return colIdx, rowIdx, colEnd, rowEnd, width, height
+	return colIdx, rowIdx, colEnd, rowEnd, x1, y1, width, height
 }
 
 // getColWidth provides a function to get column width in pixels by given
