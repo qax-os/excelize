@@ -845,7 +845,7 @@ func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) e
 		leftOffset, vmlID = 0, 201
 		style = "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;mso-wrap-style:tight"
 	}
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(opts.sheet, col, row, opts.Format.OffsetX, opts.Format.OffsetY, int(opts.FormControl.Width), int(opts.FormControl.Height))
+	colStart, rowStart, colEnd, rowEnd, _, _, x2, y2 := f.positionObjectPixels(opts.sheet, col, row, opts.Format.OffsetX, opts.Format.OffsetY, int(opts.FormControl.Width), int(opts.FormControl.Height))
 	anchor := fmt.Sprintf("%d, %d, %d, 0, %d, %d, %d, %d", colStart, leftOffset, rowStart, colEnd, x2, rowEnd, y2)
 	if vml == nil {
 		vml = &vmlDrawing{
