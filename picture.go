@@ -764,7 +764,6 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 	if opts.AutoFitIgnoreAspect {
 		width, height = float64(cellWidth), float64(cellHeight)
 	}
-	width, height = width-float64(opts.OffsetX), height-float64(opts.OffsetY)
 	w, h = int(width*opts.ScaleX), int(height*opts.ScaleY)
 	return
 }
