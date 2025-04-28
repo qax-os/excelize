@@ -947,5 +947,5 @@ func convertRowHeightToPixels(height float64) float64 {
 	if height == 0 {
 		return 0
 	}
-	return math.Ceil(4.0 / 3.4 * height)
+	return height * 4.0 / 3.0
 }
