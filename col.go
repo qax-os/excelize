@@ -800,16 +800,15 @@ func (f *File) RemoveCol(sheet, col string) error {
 // pixel. If the width hasn't been set by the user we use the default value.
 // If the column is hidden it has a value of zero.
 func convertColWidthToPixels(width float64) float64 {
-	var padding float64 = 5
 	var pixels float64
-	var maxDigitWidth float64 = 7
+	var maxDigitWidth float64 = 8
 	if width == 0 {
 		return pixels
 	}
 	if width < 1 {
 		pixels = (width * 12) + 0.5
-		return math.Ceil(pixels)
+		return float64(int(pixels))
 	}
-	pixels = (width*maxDigitWidth + 0.5) + padding
-	return math.Ceil(pixels)
+	pixels = (width*maxDigitWidth + 0.5)
+	return float64(int(pixels))
 }
