@@ -16,11 +16,13 @@ import (
 // readAll is like io.ReadAll, but uses mmap if possible.
 func readAll(r io.Reader) ([]byte, error) {
 	if fder, ok := r.(interface {
-		Fd() int
+		Fd() uintptr
 		Stat() (os.FileInfo, error)
 	}); ok {
 		if fi, err := fder.Stat(); err == nil {
-			if b, err := syscall.Mmap(fder.Fd(), 0, int(fi.Size()),
+			if b, err := syscall.Mmap(
+				int(fder.Fd()),
+				0, int(fi.Size()),
 				syscall.PROT_READ,
 				syscall.MAP_PRIVATE|syscall.MAP_POPULATE,
 			); err == nil {
