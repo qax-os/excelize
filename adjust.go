@@ -1034,7 +1034,7 @@ func (from *xlsxFrom) adjustDrawings(dir adjustDirection, num, offset int, editA
 
 // adjustDrawings updates the ending anchor of the two cell anchor pictures
 // and charts object when inserting or deleting rows or columns.
-func (to *xlsxTo) adjustDrawings(dir adjustDirection, num, offset int, editAs string, ok bool) error {
+func (to *xlsxTo) adjustDrawings(dir adjustDirection, num, offset int, ok bool) error {
 	if dir == columns && to.Col+1 >= num && to.Col+offset >= 0 && ok {
 		if to.Col+offset >= MaxColumns {
 			return ErrColumnNumber
@@ -1054,27 +1054,35 @@ func (to *xlsxTo) adjustDrawings(dir adjustDirection, num, offset int, editAs st
 // inserting or deleting rows or columns.
 func (a *xdrCellAnchor) adjustDrawings(dir adjustDirection, num, offset int) error {
 	editAs := a.EditAs
-	if a.From == nil || a.To == nil || editAs == "absolute" {
+	if (a.From == nil && (a.To == nil || a.Ext == nil)) || editAs == "absolute" {
 		return nil
 	}
 	ok, err := a.From.adjustDrawings(dir, num, offset, editAs)
 	if err != nil {
 		return err
 	}
-	return a.To.adjustDrawings(dir, num, offset, editAs, ok || editAs == "")
+	if a.To != nil {
+		return a.To.adjustDrawings(dir, num, offset, ok || editAs == "")
+	} else {
+		return nil
+	}
 }
 
 // adjustDrawings updates the existing two cell anchor pictures and charts
 // object when inserting or deleting rows or columns.
 func (a *xlsxCellAnchorPos) adjustDrawings(dir adjustDirection, num, offset int, editAs string) error {
-	if a.From == nil || a.To == nil || editAs == "absolute" {
+	if (a.From == nil && (a.To == nil || a.Ext == nil)) || editAs == "absolute" {
 		return nil
 	}
 	ok, err := a.From.adjustDrawings(dir, num, offset, editAs)
 	if err != nil {
 		return err
 	}
-	return a.To.adjustDrawings(dir, num, offset, editAs, ok || editAs == "")
+	if a.To != nil {
+		return a.To.adjustDrawings(dir, num, offset, ok || editAs == "")
+	} else {
+		return nil
+	}
 }
 
 // adjustDrawings updates the pictures and charts object when inserting or
@@ -1124,6 +1132,11 @@ func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirecti
 		return err
 	}
 	for _, anchor := range wsDr.TwoCellAnchor {
+		if err = anchorCb(anchor); err != nil {
+			return err
+		}
+	}
+	for _, anchor := range wsDr.OneCellAnchor {
 		if err = anchorCb(anchor); err != nil {
 			return err
 		}
