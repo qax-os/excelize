@@ -366,25 +366,29 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 		width = int(float64(width) * opts.ScaleX)
 		height = int(float64(height) * opts.ScaleY)
 	}
-	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, opts.Positioning, col, row, opts.OffsetX, opts.OffsetY, width, height)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return err
 	}
-	twoCellAnchor := xdrCellAnchor{}
-	twoCellAnchor.EditAs = opts.Positioning
+	cellAnchor := xdrCellAnchor{}
+	cellAnchor.EditAs = opts.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
 	from.ColOff = x1 * EMU
 	from.Row = rowStart
 	from.RowOff = y1 * EMU
-	to := xlsxTo{}
-	to.Col = colEnd
-	to.ColOff = x2 * EMU
-	to.Row = rowEnd
-	to.RowOff = y2 * EMU
-	twoCellAnchor.From = &from
-	twoCellAnchor.To = &to
+	cellAnchor.From = &from
+
+	if opts.Positioning != "oneCell" {
+		to := xlsxTo{}
+		to.Col = colEnd
+		to.ColOff = x2 * EMU
+		to.Row = rowEnd
+		to.RowOff = y2 * EMU
+		cellAnchor.To = &to
+	}
+
 	pic := xlsxPic{}
 	pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect = opts.LockAspectRatio
 	pic.NvPicPr.CNvPr.ID = cNvPrID
@@ -413,14 +417,29 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	}
 	pic.SpPr.PrstGeom.Prst = "rect"
 
-	twoCellAnchor.Pic = &pic
-	twoCellAnchor.ClientData = &xdrClientData{
+	if opts.Positioning == "oneCell" {
+		cx := x2 * EMU
+		cy := y2 * EMU
+		cellAnchor.Ext = &aExt{
+			Cx: cx,
+			Cy: cy,
+		}
+		pic.SpPr.Xfrm.Ext.Cx = cx
+		pic.SpPr.Xfrm.Ext.Cy = cy
+	}
+
+	cellAnchor.Pic = &pic
+	cellAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  *opts.Locked,
 		FPrintsWithSheet: *opts.PrintObject,
 	}
 	content.mu.Lock()
 	defer content.mu.Unlock()
-	content.TwoCellAnchor = append(content.TwoCellAnchor, &twoCellAnchor)
+	if opts.Positioning == "oneCell" {
+		content.OneCellAnchor = append(content.OneCellAnchor, &cellAnchor)
+	} else {
+		content.TwoCellAnchor = append(content.TwoCellAnchor, &cellAnchor)
+	}
 	f.Drawings.Store(drawingXML, content)
 	return err
 }
@@ -756,12 +775,7 @@ func (f *File) drawingResize(sheet, cell string, width, height float64, opts *Gr
 	if float64(cellWidth) < width || float64(cellHeight) < height {
 		aspWidth := float64(cellWidth) / width
 		aspHeight := float64(cellHeight) / height
-		var asp float64
-		if aspWidth < aspHeight {
-			asp = aspWidth
-		} else {
-			asp = aspHeight
-		}
+		asp := min(aspWidth, aspHeight)
 		width, height = width*asp, height*asp
 	}
 	if opts.AutoFitIgnoreAspect {
