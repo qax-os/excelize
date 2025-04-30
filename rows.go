@@ -393,17 +393,22 @@ func (f *File) getRowHeight(sheet string, row int) int {
 	ws, _ := f.workSheetReader(sheet)
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
+	height := -1.0
 	for i := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[i]
 		if v.R == row && v.Ht != nil {
-			return int(convertRowHeightToPixels(*v.Ht))
+			height = *v.Ht
+			break
 		}
+	}
+	if height != -1.0 {
+		return int(convertRowHeightToPixels(height))
 	}
 	if ws.SheetFormatPr != nil && ws.SheetFormatPr.DefaultRowHeight > 0 {
 		return int(convertRowHeightToPixels(ws.SheetFormatPr.DefaultRowHeight))
 	}
 	// Optimization for when the row heights haven't changed.
-	return int(defaultRowHeightPixels)
+	return int(math.Round(defaultRowHeightPixels))
 }
 
 // GetRowHeight provides a function to get row height by given worksheet name
@@ -947,5 +952,5 @@ func convertRowHeightToPixels(height float64) float64 {
 	if height == 0 {
 		return 0
 	}
-	return height * 4.0 / 3.0
+	return float64(int(height*4.0/3.0 + 0.5))
 }
