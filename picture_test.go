@@ -83,7 +83,7 @@ func TestAddPicture(t *testing.T) {
 	// Test get picture cells
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"F21", "A30", "B30", "C30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
+	assert.Equal(t, []string{"A30", "B30", "C30", "Q1", "Q8", "Q15", "Q22", "Q28", "F21"}, cells)
 	assert.NoError(t, f.Close())
 
 	f, err = OpenFile(filepath.Join("test", "TestAddPicture1.xlsx"))
@@ -92,7 +92,7 @@ func TestAddPicture(t *testing.T) {
 	f.Drawings.Delete(path)
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"F21", "A30", "B30", "C30", "Q1", "Q8", "Q15", "Q22", "Q28"}, cells)
+	assert.Equal(t, []string{"A30", "B30", "C30", "Q1", "Q8", "Q15", "Q22", "Q28", "F21"}, cells)
 	// Test get picture cells with unsupported charset
 	f.Drawings.Delete(path)
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
