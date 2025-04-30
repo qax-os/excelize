@@ -1206,7 +1206,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, f.InsertRows("Sheet1", 15, 1))
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"D3", "D13", "B21"}, cells)
+	assert.Equal(t, []string{"D3", "B21", "D13"}, cells)
 	wb := filepath.Join("test", "TestAdjustDrawings.xlsx")
 	assert.NoError(t, f.SaveAs(wb))
 
@@ -1215,7 +1215,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, f.RemoveRow("Sheet1", 1))
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"C2", "C12", "B21"}, cells)
+	assert.Equal(t, []string{"C2", "B21", "C12"}, cells)
 
 	// Test adjust existing pictures on inserting columns and rows
 	f, err = OpenFile(wb)
@@ -1227,7 +1227,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, f.InsertRows("Sheet1", 16, 1))
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"F4", "F15", "B21"}, cells)
+	assert.Equal(t, []string{"F4", "B21", "F15"}, cells)
 
 	// Test adjust drawings with unsupported charset
 	f, err = OpenFile(wb)
