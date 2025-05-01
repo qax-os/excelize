@@ -1265,3 +1265,14 @@ func TestSetCellIntFunc(t *testing.T) {
 func TestSIString(t *testing.T) {
 	assert.Empty(t, xlsxSI{}.String())
 }
+
+func TestFormulaRecursionErr(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "FormulaRecursionErr.xlsx"), Options{UnzipXMLSizeLimit: 128})
+	assert.NoError(t, err)
+	_, err = f.CalcCellValue("Sheet1", "C1")
+	assert.Error(t, err)
+	_, err = f.CalcCellValue("Sheet1", "D1")
+	assert.Error(t, err)
+	err = f.Close()
+	assert.NoError(t, err)
+}
