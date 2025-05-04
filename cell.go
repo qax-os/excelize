@@ -1498,24 +1498,33 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 		return "", nil
 	}
 
+	var rowData *xlsxRow
 	for rowIdx := range ws.SheetData.Row {
-		rowData := &ws.SheetData.Row[rowIdx]
-		if rowData.R != row {
-			continue
+		if ws.SheetData.Row[rowIdx].R == row {
+			rowData = &ws.SheetData.Row[rowIdx]
+			break
 		}
-		for colIdx := range rowData.C {
-			colData := &rowData.C[colIdx]
-			if cell != colData.R {
-				continue
-			}
-			val, ok, err := fn(ws, colData)
-			if err != nil {
-				return "", err
-			}
-			if ok {
-				return val, nil
-			}
+	}
+	if rowData == nil {
+		return "", nil
+	}
+
+	var colData *xlsxC
+	for colIdx := range rowData.C {
+		if rowData.C[colIdx].R == cell {
+			colData = &rowData.C[colIdx]
+			break
 		}
+	}
+	if colData == nil {
+		return "", nil
+	}
+	val, ok, err := fn(ws, colData)
+	if err != nil {
+		return "", err
+	}
+	if ok {
+		return val, nil
 	}
 	return "", nil
 }
