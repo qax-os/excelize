@@ -38,10 +38,10 @@ var adjustHelperFunc = [9]func(*File, *xlsxWorksheet, string, adjustDirection, i
 		return f.adjustDataValidations(ws, sheet, dir, num, offset, sheetID)
 	},
 	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
-		return f.adjustDefinedNames(ws, sheet, dir, num, offset, sheetID)
+		return f.adjustDefinedNames(sheet, dir, num, offset)
 	},
 	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
-		return f.adjustDrawings(ws, sheet, dir, num, offset, sheetID)
+		return f.adjustDrawings(ws, sheet, dir, num, offset)
 	},
 	func(f *File, ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
 		return f.adjustMergeCells(ws, sheet, dir, num, offset, sheetID)
@@ -1063,9 +1063,8 @@ func (a *xdrCellAnchor) adjustDrawings(dir adjustDirection, num, offset int) err
 	}
 	if a.To != nil {
 		return a.To.adjustDrawings(dir, num, offset, ok || editAs == "")
-	} else {
-		return nil
 	}
+	return err
 }
 
 // adjustDrawings updates the existing two cell anchor pictures and charts
@@ -1080,14 +1079,13 @@ func (a *xlsxCellAnchorPos) adjustDrawings(dir adjustDirection, num, offset int,
 	}
 	if a.To != nil {
 		return a.To.adjustDrawings(dir, num, offset, ok || editAs == "")
-	} else {
-		return nil
 	}
+	return err
 }
 
 // adjustDrawings updates the pictures and charts object when inserting or
 // deleting rows or columns.
-func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset int) error {
 	if ws.Drawing == nil {
 		return nil
 	}
@@ -1146,7 +1144,7 @@ func (f *File) adjustDrawings(ws *xlsxWorksheet, sheet string, dir adjustDirecti
 
 // adjustDefinedNames updates the cell reference of the defined names when
 // inserting or deleting rows or columns.
-func (f *File) adjustDefinedNames(ws *xlsxWorksheet, sheet string, dir adjustDirection, num, offset, sheetID int) error {
+func (f *File) adjustDefinedNames(sheet string, dir adjustDirection, num, offset int) error {
 	wb, err := f.workbookReader()
 	if err != nil {
 		return err
