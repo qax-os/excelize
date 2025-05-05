@@ -1330,5 +1330,5 @@ func TestAdjustDefinedNames(t *testing.T) {
 	f = NewFile()
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.adjustDefinedNames(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.adjustDefinedNames("Sheet1", columns, 0, 0), "XML syntax error on line 1: invalid UTF-8")
 }
