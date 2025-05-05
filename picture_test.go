@@ -42,6 +42,16 @@ func TestAddPicture(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "F21", filepath.Join("test", "images", "excel.jpg"),
 		&GraphicOptions{OffsetX: 10, OffsetY: 10, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"}))
 
+	// Test add pictures to single cell with offsets
+	assert.NoError(t, f.AddPicture("Sheet2", "K22", filepath.Join("test", "images", "excel.jpg"),
+		&GraphicOptions{Positioning: "oneCell"}))
+	assert.NoError(t, f.AddPicture("Sheet2", "K22", filepath.Join("test", "images", "excel.jpg"),
+		&GraphicOptions{OffsetX: 200, Positioning: "oneCell"}))
+	assert.NoError(t, f.AddPicture("Sheet2", "K22", filepath.Join("test", "images", "excel.jpg"),
+		&GraphicOptions{OffsetX: 400, Positioning: "oneCell"}))
+	assert.NoError(t, f.AddPicture("Sheet2", "K22", filepath.Join("test", "images", "excel.jpg"),
+		&GraphicOptions{OffsetX: 600, Positioning: "oneCell"}))
+
 	file, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
 	assert.NoError(t, err)
 
